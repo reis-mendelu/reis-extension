@@ -40,9 +40,9 @@ The extension is currently in beta testing. A public release is planned for the 
 
 We are developing the project in three distinct phases:
 
--   **Phase 1 (ZS 2025/2026):** Development and internal testing of the core MVP (Dashboard & UI Simplification).
--   **Phase 2 (LS 2026):** Open beta testing with a wider group of students to gather qualitative and quantitative feedback.
--   **Phase 3 (ZS 2026/2027):** Final polish and public release on official browser stores.
+-   **Phase 1 (September/October 2025):** Development and internal testing of the core MVP (Dashboard & UI Simplification).
+-   **Phase 2 (November 2025):** Open beta testing with a wider group of students to gather qualitative and quantitative feedback.
+-   **Phase 3 (December 2025 / February 2026):** Final polish and public release on official browser stores.
 -   **Future:** We are constantly exploring new ideas, including advanced personalization and machine learning applications.
 
 ## 🤝 How to Contribute
