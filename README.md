@@ -56,9 +56,6 @@ While we are not currently looking for new developers, the project's success dep
 
 REIS.mendelu is a collaborative project built by a team of students who believe in improving our digital campus.
 
-*   **Dominik Holek - Co-founder & Project Lead:**
-    Dominik leads the project and sets its data-driven strategy. He ensures that every feature is designed to effectively and measurably simplify the student workflow.
-
 *   **Tomáš Vymazal - Co-founder & Lead Developer:**
     Tomáš is responsible for the technical architecture and overall design. He translates the project's vision into a robust, modern, and intuitive user interface.
 
@@ -67,3 +64,9 @@ REIS.mendelu is a collaborative project built by a team of students who believe 
 
 *   **Kryštof Janda - Co-founder & R&D Lead:**
     Kryštof explores new technologies and "out-of-the-box" solutions. His research ensures the project stays innovative and is always one step ahead.
+
+*   **Dominik Holek - Co-founder & Project Lead:**
+    Dominik leads the project and sets its data-driven strategy. He ensures that every feature is designed to effectively and measurably simplify the student workflow.
+
+## 📄 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
