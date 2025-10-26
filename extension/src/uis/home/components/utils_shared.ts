@@ -1,3 +1,6 @@
+import { MOCK_DATA } from "./helper";
+import { PRODUCTION } from "./variables";
+
 interface FileAttachment {
   name: string;
   type: string;
@@ -550,6 +553,9 @@ export function showFullSubjects(subjectsObject: Record<string, string>): Subjec
 }
 
 export async function fetchSchedule(date = new Date()) {
+  if(PRODUCTION == false){
+    return MOCK_DATA;
+  }
   try {
     const url = ENDPOINTS.SCHEDULE_FORM + '?rozvrh_student_obec=1;lang=cz';
     

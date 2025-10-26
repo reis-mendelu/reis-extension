@@ -1,5 +1,7 @@
+import { MOCK_FILES, sleep } from "./helper";
 import type { FileObject, StoredSubject } from "./object_types";
 import { fetchServerFilesById, fetchSubjects, parseServerFiles, showFullSubjects, type SubjectsData } from "./utils_shared";
+import { PRODUCTION } from "./variables";
 
 export const FAKE_STORAGE:{[key:string]:StoredSubject} = {
     "EBC-ZOO":{
@@ -11,9 +13,22 @@ export const FAKE_STORAGE:{[key:string]:StoredSubject} = {
         fetchedAt:"13.10.2025",
         //syllabusUrl:"",
     },
+    "EBC-PE":{
+        fullName:"Podniková ekonomika",
+        displayName:"PE",
+        subjectCode:"EBC-PE",
+        //semester:"ZS",
+        folderUrl:"auth/dok_server/slozka.pl?;id=150956",
+        fetchedAt:"13.10.2025",
+        //syllabusUrl:"",
+    },
 }
 
 export async function getStoredSubject(code:string):Promise<StoredSubject|null>{
+    if(PRODUCTION == false){
+        await sleep(1000);
+        return FAKE_STORAGE[code];
+    };
     const storage = window.localStorage;
     const value = storage.getItem("stored_subjects");
     if(value == null){
@@ -29,6 +44,12 @@ export async function getFilesFromId(id:string|null):Promise<FileObject[]>{
     if(id == null){
         return [];
     }
+    //
+    if(PRODUCTION == false){
+        await sleep(1000);
+        return MOCK_FILES;
+    };
+    //
     const files_html = await fetchServerFilesById(id);
     if(files_html == null){
         return [];
@@ -246,6 +267,9 @@ export async function getFilesFromId(id:string|null):Promise<FileObject[]>{
 
 
 export async function checkStoredSubjects():Promise<boolean>{
+    if(PRODUCTION == false){
+        return true;
+    }
     const storage = window.localStorage;
     const stored = storage.getItem("stored_subjects");
     return stored != null;

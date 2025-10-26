@@ -7,10 +7,16 @@ import { useEffect, useState } from "react";
 import { File } from 'lucide-react';
 import { UserStar } from 'lucide-react';
 import { Map } from 'lucide-react';
+import type { BlockLesson } from '../scheduele/scheduele';
 
 export interface SubjectPopupProps{
     code:CalendarSubject,
     setter:React.Dispatch<React.SetStateAction<CalendarSubject | null>>,
+}
+
+export interface SubjectPopupPropsV2{
+    code:BlockLesson,
+    onClose:()=>void,
 }
 
 export function RenderSubFiles(props:{status:number|null}){
@@ -93,10 +99,10 @@ export function RenderSubFiles(props:{status:number|null}){
     }
 }
 
-export function RenderEmptySubject(props:{code:string,setter:any}){
+export function RenderEmptySubject(props:{code:string,setter:()=>void}){
     return (
-        <div className="p-1 relative h-140 w-100 xl:h-220 xl:w-180 rounded-xl bg-gray-50 shadow-xl flex flex-col items-center justify-center">
-            <span className="absolute right-2 top-2 w-6 h-6 xl:w-8 xl:h-8 flex justify-center items-center text-gray-500 cursor-pointer hover:scale-90 transition-all" onClick={()=>{props.setter(null)}}>
+        <div className="p-1 pl-4 pr-4 relative h-full w-100 xl:w-180 rounded-xl bg-gray-50 shadow-xl flex flex-col items-center justify-center font-dm">
+            <span className="absolute right-2 top-2 w-6 h-6 xl:w-8 xl:h-8 flex justify-center items-center text-gray-500 cursor-pointer hover:scale-90 transition-all" onClick={()=>{props.setter()}}>
                 <X size={"2rem"}></X>
             </span>
             <span className="w-full h-8 xl:h-16 text-gray-800 flex flex-col justify-center items-center font-dm text-base xl:text-2xl">{`Předmět ${props.code} nenalezen v lokálním uložišti`}</span>
@@ -104,20 +110,39 @@ export function RenderEmptySubject(props:{code:string,setter:any}){
     )
 }
 
-export function RenderLoading(props:{code:string,setter:any}){
+export function RenderLoading(props:{code:string,setter:()=>void}){
     return (
-        <div className="fixed top-0 left-0 w-screen h-screen flex justify-center items-center bg-black/50 backdrop-grayscale">
-            <div className="p-1 relative h-140 w-100 xl:h-220 xl:w-180 rounded-xl bg-gray-50 shadow-xl flex flex-col items-center justify-center">
-                <span className="absolute right-2 top-2 w-6 h-6 xl:w-8 xl:h-8 flex justify-center items-center text-gray-500 cursor-pointer hover:scale-90 transition-all" onClick={()=>{props.setter(null)}}>
+        <div className="fixed z-999 top-0 left-0 w-screen h-screen flex justify-center items-center bg-black/50 backdrop-grayscale font-dm p-8">
+            <div className="p-1 pl-4 pr-4 relative h-full w-100 xl:w-180 rounded-xl bg-gray-50 shadow-xl flex flex-col items-center font-dm">
+                <span className="absolute right-2 top-2 w-6 h-6 xl:w-8 xl:h-8 flex justify-center items-center text-gray-500 cursor-pointer hover:scale-90 transition-all" onClick={()=>{props.setter()}}>
                     <X size={"2rem"}></X>
                 </span>
-                <span className="w-full h-8 xl:h-16 text-gray-800 flex flex-col justify-center items-center font-dm text-base xl:text-2xl">{`Načítání`}</span>
+                <div className='w-full h-full flex items-center justify-center'>
+                    <>
+                        <style>
+                            {`@keyframes rotation {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                            }`}
+                        </style>
+                        <span className='w-16 h-16'
+                            style={{
+                            border: "5px solid #8DC843",
+                            borderBottomColor: "transparent",
+                            borderRadius: "50%",
+                            display: "inline-block",
+                            boxSizing: "border-box",
+                            animation: "rotation 1s linear infinite",
+                            }}
+                        ></span>
+                    </>
+                </div>
             </div>
         </div>
     )
 }
 
-export function SubjectPopup(props:SubjectPopupProps){
+export function SubjectPopup(props:SubjectPopupPropsV2){
     //FETCH SUBJECT FROM STORAGE
     const [subject_data,setSubjectData] = useState<StoredSubject|number|null>(0);
     const [files,setFiles] = useState<FileObject[]|number|null>(0);
@@ -135,7 +160,7 @@ export function SubjectPopup(props:SubjectPopupProps){
     //
     useEffect(()=>{
         (async()=>{
-            const STORED_SUBJECT = await getStoredSubject(props.code.subjectCode);
+            const STORED_SUBJECT = await getStoredSubject(props.code.courseCode);
             setSubjectData(STORED_SUBJECT);
             if(STORED_SUBJECT == null){
                 setFiles(null);
@@ -166,32 +191,32 @@ export function SubjectPopup(props:SubjectPopupProps){
     };
     //
     if(subject_data == 0){
-        return <RenderLoading code={props.code.subjectCode} setter={props.setter}/>
+        return <RenderLoading code={props.code.courseCode} setter={props.onClose}/>
     }
     //
     return (
-        <div className="fixed top-0 left-0 w-screen h-screen flex justify-center items-center bg-black/50 backdrop-grayscale font-dm">
+        <div className="fixed z-999 top-0 left-0 w-screen h-screen flex justify-center items-center bg-black/50 backdrop-grayscale font-dm p-8">
             {/*Window*/}
             {subject_data!=null && typeof subject_data != "number"?
-            <div className="p-1 pl-4 pr-4 relative h-140 w-100 xl:h-220 xl:w-180 rounded-xl bg-gray-50 shadow-xl flex flex-col items-center font-dm">
-                <span className="absolute right-2 top-2 w-6 h-6 xl:w-8 xl:h-8 flex justify-center items-center text-gray-500 cursor-pointer hover:scale-90 transition-all" onClick={()=>{props.setter(null)}}>
+            <div className="p-1 pl-4 pr-4 relative h-full w-100 xl:w-180 rounded-xl bg-gray-50 shadow-xl flex flex-col items-center font-dm">
+                <span className="absolute right-2 top-2 w-6 h-6 xl:w-8 xl:h-8 flex justify-center items-center text-gray-500 cursor-pointer hover:scale-90 transition-all" onClick={()=>{props.onClose()}}>
                     <X size={"2rem"}></X>
                 </span>
                 <span className="w-full h-8 xl:h-16 text-gray-800 flex flex-col justify-center items-center font-dm text-base xl:text-2xl">{subject_data.fullName}</span>
                 <span className="w-full h-0.25 bg-gray-200 mb-2"></span>
                 <div className="text-base text-gray-700 w-full flex flex-col mt-4">
                     <span className="text-base xl:text-xl text-gray-700 font-medium">Vyučující události</span>
-                    <span className="text-base xl:text-lg text-gray-700">{props.code.teacher}</span>
+                    <span className="text-base xl:text-lg text-gray-700">{props.code.teachers[0].shortName}</span>
                 </div>
                 <div className="text-base text-gray-700 w-full flex flex-col mt-4">
                     <span className="text-base xl:text-xl text-gray-700 font-medium">Místnost</span>
                     <span className="w-fit relative text-base xl:text-lg text-gray-700" onClick={()=>{window.open(`https://mm.mendelu.cz/mapwidget/embed?placeName=${props.code.room}`,"_blank")}}>{props.code.room}<Map className="absolute top-0 -right-1 h-full aspect-square text-primary translate-x-1/1 cursor-pointer"></Map></span>
                 </div>
-                <div className="text-base text-gray-700 w-full flex flex-col mt-4">
-                    <span className="text-base xl:text-xl text-gray-700 font-medium">Dostupné soubory</span>
-                    {typeof files == "number" || files == null ?<RenderSubFiles status={files}/>:
-                        <div className="w-full h-80 xl:h-150 flex flex-col overflow-auto">
-                            {files.length === 0 ? (
+                <div className="text-base text-gray-700 w-full flex flex-col mt-4 h-3/5">
+                    <span className="text-base xl:text-xl text-gray-700 font-medium min-h-fit">Dostupné soubory</span>
+                    <div className='w-full flex flex-1 flex-col overflow-y-auto'>
+                        {typeof files == "number" || files == null ?<RenderSubFiles status={files}/>:
+                           files.length === 0 ? (
                                 <RenderSubFiles status={1} />
                             ) : loadingfile ? <RenderSubFiles status={2}/> : (
                                 files.map((data, i) =>
@@ -214,11 +239,10 @@ export function SubjectPopup(props:SubjectPopupProps){
                                 ))
                                 )
                             )}
-                        </div>
-                    }
+                    </div>
                 </div>
             </div>:
-            <RenderEmptySubject code={props.code.subjectCode} setter={props.setter}/>
+            <RenderEmptySubject code={props.code.courseCode} setter={props.onClose}/>
             }
         </div>
     )

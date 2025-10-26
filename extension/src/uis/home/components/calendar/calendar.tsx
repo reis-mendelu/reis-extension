@@ -1,7 +1,4 @@
-import { useState } from "react";
 //import { SCHOOL_TIMES } from "../helper";
-import { renderSubjects } from "./render_subjects";
-import { SubjectPopup } from "../popup/subject_popup";
 
 export interface CalendarSubject {
     day: string;
@@ -18,7 +15,7 @@ export interface CalendarSubject {
 export interface CalendarProps{
     data:CalendarSubject[]|null,
 }
-export function Calendar(props:CalendarProps){
+/*export function Calendar(props:CalendarProps){
     const is_empty = props.data == null || props.data.length == 0;
     //
     const [seleectedSubject,setSelectedSubject] = useState<CalendarSubject|null>(null);
@@ -43,4 +40,4 @@ export function Calendar(props:CalendarProps){
             {seleectedSubject!=null?<SubjectPopup code={seleectedSubject} setter={setSelectedSubject}/>:<></>}
         </div>
     )
-}
+}*/
