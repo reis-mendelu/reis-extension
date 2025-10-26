@@ -229,7 +229,7 @@ export function SubjectPopup(props:SubjectPopupPropsV2){
                                         className="text-gray-700 pl-2 pr-2 w-80 hover:text-primary cursor-pointer"
                                         onClick={() => loadFile(_.link)}
                                     >
-                                        {l === 0 ? parseName(data.file_name) : parseName(data.file_name + " (" + l.toString()+ ")")}
+                                        {data.files.length === 1 ? parseName(data.file_name) : parseName(data.file_name + ": část " + (l + 1))}
                                     </span>
                                     <div className="aspect-square h-full flex justify-center items-center">
                                         <UserStar />
