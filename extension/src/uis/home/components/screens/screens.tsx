@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Nav } from "../nav/nav";
 import SchoolCalendar, { type BlockLesson } from "../scheduele/scheduele";
 import { fetchWeekScheduele } from "../subject_fetcher";
+import { GenericFooter } from "../footer/footer";
 
 export type ScreenType = "SCHEDUELE"|"REPORT";
 export interface ScreenProps{
@@ -100,6 +101,10 @@ export function SchedueleScreenComponent(props:{type:string,setter:React.Dispatc
                 <div className="w-full h-full flex justify-center items-center font-semibold font-dm text-gray-600 text-base">
                     {error}
                 </div>
+                {/*Space filler*/}
+                <div className="flex flex-1 w-full"></div>
+                {/**/}
+                <GenericFooter/>
             </div>
         )
     }
@@ -127,6 +132,10 @@ export function SchedueleScreenComponent(props:{type:string,setter:React.Dispatc
                         ></span>
                     </>
                 </div>
+                {/*Space filler*/}
+                <div className="flex flex-1 w-full"></div>
+                {/**/}
+                <GenericFooter/>
             </div>
         )
     }
@@ -136,6 +145,10 @@ export function SchedueleScreenComponent(props:{type:string,setter:React.Dispatc
             <div className="w-full h-full overflow-y-auto modern-scrollbar">
                 <h1 className="font-dm text-gray-700 font-semibold xl:text-xl text-center mt-4">Osobní rozvrh</h1>
                 <SchoolCalendar hideScroll={false} data={scheduele??[]}/>
+                {/*Space filler*/}
+                <div className="flex flex-1 w-full"></div>
+                {/**/}
+                <GenericFooter/>
             </div>
         </div>
     )

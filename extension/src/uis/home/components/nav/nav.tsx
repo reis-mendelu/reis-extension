@@ -31,7 +31,7 @@ function SchedueleNav(_:NavProps){
             {/*Buttons*/}
             <div className="hidden absolute right-4 top-0 h-full min-w-32 w-fit md:flex flex-row-reverse items-center [&>*]:mr-1">
                 {/*<RoundButton icon={<UserRound color="#FFFFFF"/>} color="bg-primary"/>*/}
-                <RoundIconButton text="Nahlásit problém" color={"bg-red"} icon={<ArrowRight></ArrowRight>} onClick={_.setScreen?()=>{_.setScreen?_.setScreen("REPORT"):undefined}:undefined} textscale/>
+                <RoundIconButton text="Odhlásit se" color={"bg-red"} icon={<ArrowRight></ArrowRight>} onClick={()=>{performLogOut()}} textscale/>
             </div>
         </nav>
     ) 
