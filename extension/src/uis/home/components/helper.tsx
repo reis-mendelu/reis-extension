@@ -165,7 +165,8 @@ export const sleep = (delay:number) => new Promise((resolve) => setTimeout(resol
 
 export const MOCK_FILES = [
     {
-        "file_name": "Číselné soustavy a teorie informace",
+        "file_name": "Číselné soustavy a teorie informace",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "18. 9. 2025",
         "files": [
@@ -178,6 +179,7 @@ export const MOCK_FILES = [
     },
     {
         "file_name": "Formáty souborů",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "18. 9. 2025",
         "files": [
@@ -190,6 +192,7 @@ export const MOCK_FILES = [
     },
     {
         "file_name": "Formáty souborů",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "22. 9. 2025",
         "files": [
@@ -201,7 +204,8 @@ export const MOCK_FILES = [
         ]
     },
     {
-        "file_name": "Kódování a zabezpečení dat při přenosu",
+        "file_name": "Kódování a zabezpečení dat při přenosu",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "18. 9. 2025",
         "files": [
@@ -213,7 +217,8 @@ export const MOCK_FILES = [
         ]
     },
     {
-        "file_name": "Komprese, archivace a zálohování",
+        "file_name": "Komprese, archivace a zálohování",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "22. 9. 2025",
         "files": [
@@ -226,6 +231,7 @@ export const MOCK_FILES = [
     },
     {
         "file_name": "Počítačová kriminalita",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "22. 9. 2025",
         "files": [
@@ -238,6 +244,7 @@ export const MOCK_FILES = [
     },
     {
         "file_name": "Průvodce studiem předmětu",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "19. 9. 2025",
         "files": [
@@ -249,7 +256,8 @@ export const MOCK_FILES = [
         ]
     },
     {
-        "file_name": "Přenos a kódování dat",
+        "file_name": "Přenos a kódování dat",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "22. 9. 2025",
         "files": [
@@ -262,6 +270,7 @@ export const MOCK_FILES = [
     },
     {
         "file_name": "Souborové systémy, úvod do OS",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "22. 9. 2025",
         "files": [
@@ -273,7 +282,8 @@ export const MOCK_FILES = [
         ]
     },
     {
-        "file_name": "Teorie informace a informatika",
+        "file_name": "Teorie informace a informatika",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "22. 9. 2025",
         "files": [
@@ -286,6 +296,7 @@ export const MOCK_FILES = [
     },
     {
         "file_name": "Úvod do informatiky",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "22. 9. 2025",
         "files": [
@@ -303,6 +314,7 @@ export const MOCK_FILES = [
     },
     {
         "file_name": "Vnitřní reprezentace dat",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "18. 9. 2025",
         "files": [
@@ -315,6 +327,7 @@ export const MOCK_FILES = [
     },
     {
         "file_name": "Vnitřní reprezentace dat I",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "22. 9. 2025",
         "files": [
@@ -327,6 +340,7 @@ export const MOCK_FILES = [
     },
     {
         "file_name": "Vnitřní reprezentace dat II",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "22. 9. 2025",
         "files": [
@@ -344,6 +358,7 @@ export const MOCK_FILES = [
     },
     {
         "file_name": "Zabezpečení dat při přenosu",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "22. 9. 2025",
         "files": [
@@ -355,7 +370,8 @@ export const MOCK_FILES = [
         ]
     },
     {
-        "file_name": "Základy práce v prostředí OS typu Unix/Linux",
+        "file_name": "Základy práce v prostředí OS typu Unix/Linux",
+        "file_comment": "",
         "author": "P. Haluza",
         "date": "18. 9. 2025",
         "files": [

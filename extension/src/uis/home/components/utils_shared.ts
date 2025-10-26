@@ -9,6 +9,7 @@ interface FileAttachment {
 
 interface ParsedFile {
   file_name: string;
+  file_comment: string;
   author: string;
   date: string;
   files: FileAttachment[];
@@ -142,6 +143,9 @@ export async function parseServerFiles(html: string): Promise<ParsedFile[]> {
     
     // Extract file name (3rd child - index 2)
     const file_name = cells[(1 + adder)].textContent?.trim() || '';
+
+    // Extract file comment (4th child - index 3)
+    const file_comment = cells[(2 + adder)].textContent?.trim()|| '';
     
     // Extract author (5th child - index 4)
     const authorLink = cells[(3 + adder)].querySelector('a');
@@ -174,6 +178,7 @@ export async function parseServerFiles(html: string): Promise<ParsedFile[]> {
     if (extractedFiles.length > 0) {
       files.push({
         file_name: file_name,
+        file_comment,
         author: author,
         date: date,
         files: extractedFiles

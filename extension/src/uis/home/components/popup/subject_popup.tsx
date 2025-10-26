@@ -5,7 +5,7 @@ import { getFilesFromId, getStoredSubject } from "../helper_ignore";
 import type { FileObject, StoredSubject } from "../object_types";
 import { useEffect, useState } from "react";
 import { File } from 'lucide-react';
-import { UserStar } from 'lucide-react';
+import { FileType } from 'lucide-react';
 import { Map } from 'lucide-react';
 import type { BlockLesson } from '../scheduele/scheduele';
 
@@ -190,6 +190,37 @@ export function SubjectPopup(props:SubjectPopupPropsV2){
         //
     };
     //
+    function groupFilesByFolder(files: FileObject[]) {
+        const grouped: { [folderId: string]: FileObject[] } = {};
+        
+        files.forEach(file => {
+            const link = file.files[0]?.link || '';
+            const match = link.match(/id=(\d+)/);
+            const folderId = match ? match[1] : 'unknown';
+            
+            if (!grouped[folderId]) {
+                grouped[folderId] = [];
+            }
+            grouped[folderId].push(file);
+        });
+        
+        const sortedFolderIds = Object.keys(grouped).sort((a, b) => parseInt(a) - parseInt(b));
+        
+        // Flatten and sort files within each folder by comment number
+        const sortedFiles: FileObject[] = [];
+        sortedFolderIds.forEach(folderId => {
+            const folderFiles = grouped[folderId].sort((a, b) => {
+                // Extract numbers from file_comment (e.g., "Přednáška 3" -> 3)
+                const numA = parseInt(a.file_comment.match(/\d+/)?.[0] || '0');
+                const numB = parseInt(b.file_comment.match(/\d+/)?.[0] || '0');
+                return numA - numB;
+            });
+            sortedFiles.push(...folderFiles);
+        });
+        
+        return sortedFiles;
+    }
+    //
     if(subject_data == 0){
         return <RenderLoading code={props.code.courseCode} setter={props.onClose}/>
     }
@@ -219,7 +250,7 @@ export function SubjectPopup(props:SubjectPopupPropsV2){
                            files.length === 0 ? (
                                 <RenderSubFiles status={1} />
                             ) : loadingfile ? <RenderSubFiles status={2}/> : (
-                                files.map((data, i) =>
+                                groupFilesByFolder(files).map((data, i) =>
                                 data.files.map((_, l) => (
                                     <div key={`${i}-${l}`} className="relative w-full min-h-10 flex flex-row items-center text-xs xl:text-base">
                                     <div className="aspect-square h-full flex justify-center items-center">
@@ -231,13 +262,18 @@ export function SubjectPopup(props:SubjectPopupPropsV2){
                                     >
                                         {data.files.length === 1 ? parseName(data.file_name) : parseName(data.file_name + ": část " + (l + 1))}
                                     </span>
-                                    <div className="aspect-square h-full flex justify-center items-center">
-                                        <UserStar />
-                                    </div>
-                                    <span className="text-gray-400 ml-2">{data.author}</span>
+                                    {data.file_comment && (
+                                        <>
+                                            <div className="aspect-square h-full flex justify-center items-center">
+                                                <FileType />
+                                            </div>
+                                            <span className="text-gray-400 ml-2">{data.file_comment}</span>
+                                        </>
+                                    )}
+                                    {/* <span className="text-gray-400 ml-2">{data.author}</span> */}
                                     </div>
                                 ))
-                                )
+                            )
                             )}
                     </div>
                 </div>

@@ -16,6 +16,7 @@ export interface UniversityPerson{
 }
 export interface FileObject{
     file_name:string,
+    file_comment:string,
     author:string,
     date:string,
     files:FileActual[],
