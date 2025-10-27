@@ -9,7 +9,7 @@ export interface NavProps extends GenericProps{
 function ReportNav(_:NavProps){
     return (
         <nav className="relative w-full h-16 bg-gray-50 shadow-xl p-2 font-dm select-none pl-4 flex flex-row items-center">
-            <img draggable={false} src={MENDELU_IMAGE} className="h-3/4 w-fit object-contain object-center"></img>
+            <img draggable={false} src={MENDELU_IMAGE} className="h-3/4 w-fit object-contain object-center cursor-pointer" onClick={_.setScreen?()=>{_.setScreen?_.setScreen(null):undefined}:undefined}></img>
             {/*Buttons*/}
             <div className="hidden absolute right-4 top-0 h-full min-w-32 w-fit md:flex flex-row-reverse items-center [&>*]:mr-1">
                 {/*<RoundButton icon={<UserRound color="#FFFFFF"/>} color="bg-primary"/>*/}
@@ -21,10 +21,10 @@ function ReportNav(_:NavProps){
 function SchedueleNav(_:NavProps){
     return (
         <nav className="relative w-full h-16 bg-gray-50 shadow-xl p-2 font-dm select-none pl-4 flex flex-row items-center">
-            <img draggable={false} src={MENDELU_IMAGE} className="h-3/4 w-fit object-contain object-center"></img>
+            <img draggable={false} src={MENDELU_IMAGE} className="h-3/4 w-fit object-contain object-center cursor-pointer" onClick={_.setScreen?()=>{_.setScreen?_.setScreen(null):undefined}:undefined}></img>
             {/*Tabs*/}
             <div className="hidden absolute left-50 top-0 h-full min-w-64 w-fit md:flex flex-row items-center [&>*]:mr-5">
-                <RoundIconButton text="Domů" color={"bg-primary"} icon={<ArrowRight></ArrowRight>} onClick={_.setScreen?()=>{_.setScreen?_.setScreen(null):undefined}:undefined}/>
+                <RoundIconButton text="Osobní rozvrh" color={"bg-primary"} icon={<ArrowRight></ArrowRight>} onClick={_.setScreen?()=>{_.setScreen?_.setScreen("SCHEDUELE"):undefined}:undefined}/>
                 <RoundIconButton text="Testy" color={"bg-primary"} icon={<ArrowRight></ArrowRight>} onClick={()=>{window.open("https://is.mendelu.cz/auth/elis/ot/psani_testu.pl?;lang=cz","_blank")}}/>
                 <RoundIconButton text="Materiály k výuce" color={"bg-primary"} icon={<ArrowRight></ArrowRight>} onClick={()=>{window.open("https://is.mendelu.cz/auth/student/list.pl?lang=cz", "_blank")}}/>
             </div>
