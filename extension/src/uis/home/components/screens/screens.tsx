@@ -23,7 +23,7 @@ export function SchedueleScreen(_type:ScreenType,setter:React.Dispatch<React.Set
         (async()=>{
             const week_scheduele = await fetchWeekScheduele();
             if(week_scheduele == null){
-                setError("Pči načítání rozvrhu došlo k chybě.");
+                setError("Při načítání rozvrhu došlo k chybě.");
                 return;
             }
             setScheduele(week_scheduele);
