@@ -147,6 +147,7 @@ export function SubjectPopup(props:SubjectPopupPropsV2){
     const [subject_data,setSubjectData] = useState<StoredSubject|number|null>(0);
     const [files,setFiles] = useState<FileObject[]|number|null>(0);
     const [loadingfile,setLoadingFile] = useState<boolean>(false);
+    const [subfolderFilter, setSubfolderFilter] = useState<string>("all");
     //
     function parseName(name:string){
         const MAX_LENGTH = 40;
@@ -193,7 +194,12 @@ export function SubjectPopup(props:SubjectPopupPropsV2){
     function groupFilesByFolder(files: FileObject[]) {
         const grouped: { [folderId: string]: FileObject[] } = {};
         
-        files.forEach(file => {
+        // Filter files by subfolder if a filter is active
+        const filteredFiles = subfolderFilter === "all" 
+            ? files 
+            : files.filter(file => file.subfolder === subfolderFilter);
+        
+        filteredFiles.forEach(file => {
             const link = file.files[0]?.link || '';
             const match = link.match(/id=(\d+)/);
             const folderId = match ? match[1] : 'unknown';
@@ -220,6 +226,23 @@ export function SubjectPopup(props:SubjectPopupPropsV2){
         
         return sortedFiles;
     }
+    
+    // Get unique subfolders for filter dropdown
+    function getUniqueSubfolders(files: FileObject[]): string[] {
+        const subfolders = new Set<string>();
+        files.forEach(file => {
+            if (file.subfolder && file.subfolder.trim() !== '') {
+                subfolders.add(file.subfolder);
+            }
+        });
+        return Array.from(subfolders).sort();
+    }
+    
+    // Extract display name from subfolder (part after "/")
+    function getSubfolderDisplayName(subfolder: string): string {
+        const parts = subfolder.split('/');
+        return parts.length > 1 ? parts[1].trim() : subfolder;
+    }
     //
     if(subject_data == 0){
         return <RenderLoading code={props.code.courseCode} setter={props.onClose}/>
@@ -244,7 +267,23 @@ export function SubjectPopup(props:SubjectPopupPropsV2){
                     <span className="w-fit relative text-base xl:text-lg text-gray-700" onClick={()=>{window.open(`https://mm.mendelu.cz/mapwidget/embed?placeName=${props.code.room}`,"_blank")}}>{props.code.room}<Map className="absolute top-0 -right-1 h-full aspect-square text-primary translate-x-1/1 cursor-pointer"></Map></span>
                 </div>
                 <div className="text-base text-gray-700 w-full flex flex-col mt-4 h-3/5">
-                    <span className="text-base xl:text-xl text-gray-700 font-medium min-h-fit">Dostupné soubory</span>
+                    <div className="flex flex-row justify-between items-center min-h-fit">
+                        <span className="text-base xl:text-xl text-gray-700 font-medium">Dostupné soubory</span>
+                        {typeof files !== "number" && files !== null && files.length > 0 && getUniqueSubfolders(files).length > 1 && (
+                            <select 
+                                value={subfolderFilter}
+                                onChange={(e) => setSubfolderFilter(e.target.value)}
+                                className="text-gray-900 text-sm px-2 py-1 border border-primary rounded bg-white cursor-pointer"
+                            >
+                                <option value="all">Vše</option>
+                                {getUniqueSubfolders(files).map((subfolder) => (
+                                    <option key={subfolder} value={subfolder}>
+                                        {getSubfolderDisplayName(subfolder)}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
                     <div className='w-full flex flex-1 flex-col overflow-y-auto'>
                         {typeof files == "number" || files == null ?<RenderSubFiles status={files}/>:
                            files.length === 0 ? (
