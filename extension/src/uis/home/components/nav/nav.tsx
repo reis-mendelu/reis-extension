@@ -1,7 +1,7 @@
 import { RoundIconButton } from "../button_round/round_button";
 import { ArrowRight } from 'lucide-react';
 import { MENDELU_IMAGE, type GenericProps } from "../variables";
-import { performLogOut } from "../logout";
+// import { performLogOut } from "../logout";
 
 export interface NavProps extends GenericProps{
     page?:string,
@@ -25,13 +25,14 @@ function SchedueleNav(_:NavProps){
             {/*Tabs*/}
             <div className="hidden absolute left-50 top-0 h-full min-w-64 w-fit md:flex flex-row items-center [&>*]:mr-5">
                 <RoundIconButton text="Domů" color={"bg-primary"} icon={<ArrowRight></ArrowRight>} onClick={_.setScreen?()=>{_.setScreen?_.setScreen(null):undefined}:undefined}/>
-                <RoundIconButton text="Testy" disabled color={"bg-primary"} icon={<ArrowRight></ArrowRight>}/>
-                <RoundIconButton text="Materiály k výuce" disabled color={"bg-primary"} icon={<ArrowRight></ArrowRight>}/>
+                <RoundIconButton text="Testy" color={"bg-primary"} icon={<ArrowRight></ArrowRight>} onClick={()=>{window.open("https://is.mendelu.cz/auth/elis/ot/psani_testu.pl?;lang=cz","_blank")}}/>
+                <RoundIconButton text="Materiály k výuce" color={"bg-primary"} icon={<ArrowRight></ArrowRight>} onClick={()=>{window.open("https://is.mendelu.cz/auth/student/list.pl?lang=cz", "_blank")}}/>
             </div>
             {/*Buttons*/}
             <div className="hidden absolute right-4 top-0 h-full min-w-32 w-fit md:flex flex-row-reverse items-center [&>*]:mr-1">
                 {/*<RoundButton icon={<UserRound color="#FFFFFF"/>} color="bg-primary"/>*/}
-                <RoundIconButton text="Odhlásit se" color={"bg-red"} icon={<ArrowRight></ArrowRight>} onClick={()=>{performLogOut()}} textscale/>
+                {/* <RoundIconButton text="Odhlásit se" color={"bg-red"} icon={<ArrowRight></ArrowRight>} onClick={()=>{performLogOut()}} textscale/> */}
+                <RoundIconButton text="Nahlásit problém!" color={"bg-red"} onClick={()=>{window.open("https://docs.google.com/forms/d/e/1FAIpQLScPMKQD6it07S0TPSDgGxyiOqrqRYKvdLSK3m4xnWYE4vyiwg/viewform","_blank")}} textscale/>
             </div>
         </nav>
     ) 
@@ -60,7 +61,7 @@ export function Nav(_:NavProps){
                 <div className="hidden absolute right-4 top-0 h-full min-w-32 w-fit md:flex flex-row-reverse items-center [&>*]:mr-1">
                     {/*<RoundButton icon={<UserRound color="#FFFFFF"/>} color="bg-primary"/>*/}
                     {/*<RoundIconButton text="Odhlásit se" color={"bg-red"} icon={<ArrowRight></ArrowRight>} onClick={_.setScreen?()=>{_.setScreen?_.setScreen("REPORT"):undefined}:undefined} textscale/>*/}
-                    <RoundIconButton text="Odhlásit se" color={"bg-red"} icon={<ArrowRight></ArrowRight>} onClick={()=>{performLogOut()}} textscale/>
+                <RoundIconButton text="Nahlásit problém!" color={"bg-red"} onClick={()=>{window.open("https://docs.google.com/forms/d/e/1FAIpQLScPMKQD6it07S0TPSDgGxyiOqrqRYKvdLSK3m4xnWYE4vyiwg/viewform","_blank")}} textscale/>
                 </div>
             </nav>
         )
