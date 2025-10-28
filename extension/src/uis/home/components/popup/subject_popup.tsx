@@ -111,8 +111,14 @@ export function RenderEmptySubject(props:{code:string,setter:()=>void}){
 }
 
 export function RenderLoading(props:{code:string,setter:()=>void}){
+    const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (e.target === e.currentTarget) {
+            props.setter();
+        }
+    };
+    
     return (
-        <div className="fixed z-999 top-0 left-0 w-screen h-screen flex justify-center items-center bg-black/50 backdrop-grayscale font-dm p-8">
+        <div className="fixed z-999 top-0 left-0 w-screen h-screen flex justify-center items-center bg-black/50 backdrop-grayscale font-dm p-8" onClick={handleBackdropClick}>
             <div className="p-1 pl-4 pr-4 relative h-full w-100 xl:w-180 rounded-xl bg-gray-50 shadow-xl flex flex-col items-center font-dm">
                 <span className="absolute right-2 top-2 w-6 h-6 xl:w-8 xl:h-8 flex justify-center items-center text-gray-500 cursor-pointer hover:scale-90 transition-all" onClick={()=>{props.setter()}}>
                     <X size={"2rem"}></X>
@@ -172,6 +178,22 @@ export function SubjectPopup(props:SubjectPopupPropsV2){
             setFiles(files);
         })();
     },[])
+    //
+    // Add ESC key listener to close popup
+    useEffect(() => {
+        const handleEscKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                props.onClose();
+            }
+        };
+        
+        window.addEventListener('keydown', handleEscKey);
+        
+        // Cleanup listener when component unmounts
+        return () => {
+            window.removeEventListener('keydown', handleEscKey);
+        };
+    }, [props.onClose])
     //
     async function loadFile(link:string){
         setLoadingFile(true);
@@ -244,12 +266,20 @@ export function SubjectPopup(props:SubjectPopupPropsV2){
         return parts.length > 1 ? parts[1].trim() : subfolder;
     }
     //
+    // Handle click outside popup to close
+    const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        // Only close if clicking on the backdrop itself, not on child elements
+        if (e.target === e.currentTarget) {
+            props.onClose();
+        }
+    };
+    //
     if(subject_data == 0){
         return <RenderLoading code={props.code.courseCode} setter={props.onClose}/>
     }
     //
     return (
-        <div className="fixed z-999 top-0 left-0 w-screen h-screen flex justify-center items-center bg-black/50 backdrop-grayscale font-dm p-8">
+        <div className="fixed z-999 top-0 left-0 w-screen h-screen flex justify-center items-center bg-black/50 backdrop-grayscale font-dm p-8" onClick={handleBackdropClick}>
             {/*Window*/}
             {subject_data!=null && typeof subject_data != "number"?
             <div className="p-1 pl-4 pr-4 relative h-full w-100 xl:w-180 rounded-xl bg-gray-50 shadow-xl flex flex-col items-center font-dm">
