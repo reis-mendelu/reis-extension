@@ -150,9 +150,10 @@ export function RenderLoading(props:{code:string,setter:()=>void}){
 
 export function SubjectPopup(props:SubjectPopupPropsV2){
     //FETCH SUBJECT FROM STORAGE
-    const [subject_data,setSubjectData] = useState<StoredSubject|number|null>(0);
-    const [files,setFiles] = useState<FileObject[]|number|null>(0);
+    const [subject_data,setSubjectData] = useState<StoredSubject|null>(null);
+    const [files,setFiles] = useState<FileObject[]|null>(null);
     const [loadingfile,setLoadingFile] = useState<boolean>(false);
+    const [loadingFiles, setLoadingFiles] = useState<boolean>(true);
     const [subfolderFilter, setSubfolderFilter] = useState<string>("all");
     //
     function parseName(name:string){
@@ -170,12 +171,32 @@ export function SubjectPopup(props:SubjectPopupPropsV2){
             const STORED_SUBJECT = await getStoredSubject(props.code.courseCode);
             setSubjectData(STORED_SUBJECT);
             if(STORED_SUBJECT == null){
-                setFiles(null);
+                setFiles([]);
+                setLoadingFiles(false);
                 return;
             }
+            
+            // Try to load cached files first
+            const cachedKey = `files_${props.code.courseCode}`;
+            const cachedFiles = localStorage.getItem(cachedKey);
+            if (cachedFiles) {
+                try {
+                    setFiles(JSON.parse(cachedFiles));
+                } catch (e) {
+                    console.error("Failed to parse cached files", e);
+                }
+            }
+            
+            // Fetch fresh files in background
             console.log(GetIdFromLink(STORED_SUBJECT.folderUrl),STORED_SUBJECT.folderUrl);
             const files = await getFilesFromId(GetIdFromLink(STORED_SUBJECT.folderUrl));
             setFiles(files);
+            setLoadingFiles(false);
+            
+            // Cache for next time
+            if (files && files.length > 0) {
+                localStorage.setItem(cachedKey, JSON.stringify(files));
+            }
         })();
     },[])
     //
@@ -274,14 +295,24 @@ export function SubjectPopup(props:SubjectPopupPropsV2){
         }
     };
     //
-    if(subject_data == 0){
-        return <RenderLoading code={props.code.courseCode} setter={props.onClose}/>
+    // Show empty state if no subject data
+    if(subject_data === null && !loadingFiles){
+        return (
+            <div className="fixed z-999 top-0 left-0 w-screen h-screen flex justify-center items-center bg-black/50 backdrop-grayscale font-dm p-8" onClick={handleBackdropClick}>
+                <div className="p-4 relative h-fit w-100 xl:w-180 rounded-xl bg-gray-50 shadow-xl flex flex-col items-center justify-center font-dm">
+                    <span className="absolute right-2 top-2 w-6 h-6 xl:w-8 xl:h-8 flex justify-center items-center text-gray-500 cursor-pointer hover:scale-90 transition-all" onClick={props.onClose}>
+                        <X size={"2rem"}></X>
+                    </span>
+                    <span className="text-base xl:text-xl text-gray-700 py-8">{`Předmět ${props.code.courseCode} nenalezen`}</span>
+                </div>
+            </div>
+        );
     }
     //
     return (
         <div className="fixed z-999 top-0 left-0 w-screen h-screen flex justify-center items-center bg-black/50 backdrop-grayscale font-dm p-8" onClick={handleBackdropClick}>
             {/*Window*/}
-            {subject_data!=null && typeof subject_data != "number"?
+            {subject_data?
             <div className="p-1 pl-4 pr-4 relative h-full w-100 xl:w-180 rounded-xl bg-gray-50 shadow-xl flex flex-col items-center font-dm">
                 <span className="absolute right-2 top-2 w-6 h-6 xl:w-8 xl:h-8 flex justify-center items-center text-gray-500 cursor-pointer hover:scale-90 transition-all" onClick={()=>{props.onClose()}}>
                     <X size={"2rem"}></X>
@@ -315,11 +346,20 @@ export function SubjectPopup(props:SubjectPopupPropsV2){
                         )}
                     </div>
                     <div className='w-full flex flex-1 flex-col overflow-y-auto'>
-                        {typeof files == "number" || files == null ?<RenderSubFiles status={files}/>:
-                           files.length === 0 ? (
-                                <RenderSubFiles status={1} />
-                            ) : loadingfile ? <RenderSubFiles status={2}/> : (
-                                groupFilesByFolder(files).map((data, i) =>
+                        {loadingFiles && (!files || files.length === 0) ? (
+                            <div className="w-full h-32 flex justify-center items-center">
+                                <span className="text-sm text-gray-500">Načítání souborů...</span>
+                            </div>
+                        ) : files === null || files.length === 0 ? (
+                            <div className="w-full h-32 flex justify-center items-center">
+                                <span className="text-sm text-gray-500">Žádné soubory nejsou dostupné</span>
+                            </div>
+                        ) : loadingfile ? (
+                            <div className="w-full h-32 flex justify-center items-center">
+                                <span className="text-sm text-gray-500">Otevírání souboru...</span>
+                            </div>
+                        ) : (
+                            groupFilesByFolder(files).map((data, i) =>
                                 data.files.map((_, l) => (
                                     <div key={`${i}-${l}`} className="relative w-full min-h-10 flex flex-row items-center text-xs xl:text-base">
                                     <div className="aspect-square h-full flex justify-center items-center">
