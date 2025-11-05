@@ -1,22 +1,54 @@
 import { useEffect, useState } from "react";
-import { getBreakpoint, getSubjectLength, minutesToTimeDefault, SCHOOL_BLOCKS, TIME_LIST, timeToMinutes, timeToMinutesDefault, type SchoolBlocks } from "../helper";
+import { getBreakpoint, getSubjectLength, TIME_LIST, /*timeToMinutes*/ } from "../helper";
 import type { CalendarSubject } from "./calendar";
+//import { fillScheduleGaps } from "../helper1";
 
-export function renderSubjects(subjects:CalendarSubject[]|null){
+export function renderSubjects(subjects:CalendarSubject[]|null,subjectControler:{get:CalendarSubject|null,set:any}){
     if(subjects == null){
         return <></>;
     }
     //
+    const SUBJECTS_COPY:CalendarSubject[] = JSON.parse(JSON.stringify(subjects));
+    SUBJECTS_COPY.sort((a,b)=>{return parseInt(a.startTime.split(".")[0]) - parseInt(b.startTime.split(".")[0])})
+    const NEW_MAP:{[key:number]:boolean} = {};
+    for(const time of TIME_LIST){
+        NEW_MAP[time] = false;
+    }
+    //
+    for(const SUBJECT of SUBJECTS_COPY){
+        const [startInt,endInt] = [parseInt(SUBJECT.startTime.split(".")[0]),parseInt(SUBJECT.endTime.split(".")[0])];
+        for(let l=startInt;l<=endInt;l++){
+            NEW_MAP[l] = true;
+        }
+    }
+    //
+    for(const entry of Object.entries(NEW_MAP)){
+        const status = entry[1];
+        if(status == false){
+            const MOCK_COPY:CalendarSubject = JSON.parse(JSON.stringify(subjects[0]));
+            MOCK_COPY.type = "EMPTY";
+            MOCK_COPY.startTime = entry[0]+".00";
+            MOCK_COPY.endTime = entry[0]+".50";
+            SUBJECTS_COPY.push(MOCK_COPY);
+        }
+    }
+    //
+    SUBJECTS_COPY.sort((a,b)=>{return parseInt(a.startTime.split(".")[0]) - parseInt(b.startTime.split(".")[0])})
+    console.log(SUBJECTS_COPY,NEW_MAP);
+    
+    //
     const [width,setWidth] = useState(window.innerWidth);
     useEffect(()=>{
-        window.onresize = (e)=>{setWidth(window.innerWidth)};
+        window.onresize = ()=>{setWidth(window.innerWidth)};
     },[]);
     //
+    /*
     const NEW_MAP:{[key:number]:null|CalendarSubject} = {};
     for(const time of TIME_LIST){
         NEW_MAP[time] = null;
     }
     //
+    /*
     const SUBJECTS_COPY:CalendarSubject[] = JSON.parse(JSON.stringify(subjects));
     for(const subject of SUBJECTS_COPY){
         console.log("[PARSING] New subject: ",subject);
@@ -39,11 +71,11 @@ export function renderSubjects(subjects:CalendarSubject[]|null){
         //
     };
     //
-    console.log("[PARTS] Parts:",NEW_MAP);
+    console.log("[PARTS] Parts:",NEW_MAP);*/
     //
-    const TIME = "11:15";
+    //const TIME = "11:15";
     //
-    function subjectProgress(start:string,end:string){
+    /*function subjectProgress(start:string,end:string){
         const [starttime,endtime] = [timeToMinutes(start),timeToMinutes(end)];
         const current_time = timeToMinutes(TIME);
         //
@@ -63,32 +95,38 @@ export function renderSubjects(subjects:CalendarSubject[]|null){
         // Use Math.round or toFixed(0) for a cleaner integer percentage
         const percent = Math.round((elapsedTime / duration) * 100);
         return percent;
+    }*/
+    //
+    async function subjectClick(data:CalendarSubject){
+        subjectControler.set(data);
     }
     //
     return (
-        Object.entries(NEW_MAP).map((data,_)=>{
-            if(data[1] == null){
-                //RENDER BLACk BLOCK
-                return (
-                    <div className={`relative w-1/7 h-full ${/*_>0?"ml-4":""*/""}`}>
+        SUBJECTS_COPY.map((data,_)=>{
+                const data_value = data;
+                const lenght = getSubjectLength(data_value.startTime,data_value.endTime);
+                console.log(lenght);
+                if(data_value.type == "EMPTY"){
+                    return (
+                        <div className={`${_==0?"":"ml-2"} ${_==0?"mr-4":"mr-2"} pl-1 w-1/12 pr-1 relative h-full ${/*_>0?"ml-4":""*/""}`}>
                         
-                    </div>
-                )
-            }else{
-                const data_value = data[1];
-                return (
-                    <div className={`pl-1 pr-1 relative w-full h-full bg-gray-50 text-gray-800 shadow-md hover:text-primary transition-all cursor-pointer text-xs xl:text-base text-center font-dm rounded-2xl flex justify-center items-center ${/*_>0?"ml-4":""*/""}`}>
-                        {getBreakpoint(width)>2?data_value.subject:data_value.subjectCode}
-                        {/*<span className="absolute bottom-3 right-1 text-[10px] font-dm bg-gray-300 p-1 rounded-md">{`${data_value.startTime.replace(".",":")} - ${data_value.endTime.replace(".",":")}`}</span>*/}
-                        {/*<span className={`absolute bottom-0 left-0 h-1 bg-primary rounded-full`} style={{width:subjectProgress(data_value.startTime.replace(".",":"),data_value.endTime.replace(".",":"))+"%"}}></span>*/}               
-                        <span className={`absolute top-0 left-0 h-full w-1 flex items-center justify-center pt-2 pb-2`}>
-                            <span className={`h-full w-full rounded-full ${data_value.type.charAt(0).toLowerCase() == "p" ? "bg-[#00aab4]" : "bg-primary"}`}>
+                        </div>
+                    )
+                }else{
+                    return (
+                        <div style={{width:((lenght/12)*100)+"%"}} className={`${_==0?"":"ml-2"} ${_==0?"mr-4":"mr-2"} pl-1 pr-1 relative h-full bg-gray-50 text-gray-800 shadow-md hover:text-primary transition-all cursor-pointer text-xs xl:text-xl text-center font-dm rounded-2xl flex justify-center items-center ${/*_>0?"ml-4":""*/""}`} onClick={()=>{subjectClick(data_value)}}>
+                            {getBreakpoint(width)>2?data_value.subject:data_value.subjectCode}
+                            {/*<span className="absolute bottom-3 right-1 text-[10px] font-dm bg-gray-300 p-1 rounded-md">{`${data_value.startTime.replace(".",":")} - ${data_value.endTime.replace(".",":")}`}</span>*/}
+                            {/*<span className={`absolute bottom-0 left-0 h-1 bg-primary rounded-full`} style={{width:subjectProgress(data_value.startTime.replace(".",":"),data_value.endTime.replace(".",":"))+"%"}}></span>*/}               
+                            <span className={`absolute top-0 left-0 h-full w-1 flex items-center justify-center pt-2 pb-2`}>
+                                <span className={`h-full w-full rounded-full ${data_value.type.charAt(0).toLowerCase() == "p" ? "bg-[#00aab4]" : "bg-primary"}`}>
 
+                                </span>
                             </span>
-                        </span>
-                    </div>
-                )
-            }
+                            <span className="absolute top-1 left-4 text-xs lg:text-base font-semibold text-gray-400">{data_value.room}</span>
+                        </div>
+                    )
+                }
         })
     )
 }

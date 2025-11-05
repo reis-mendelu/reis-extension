@@ -1,5 +1,4 @@
-import { SCHOOL_TIMES } from "../helper";
-import { renderSubjects } from "./render_subjects";
+//import { SCHOOL_TIMES } from "../helper";
 
 export interface CalendarSubject {
     day: string;
@@ -16,15 +15,18 @@ export interface CalendarSubject {
 export interface CalendarProps{
     data:CalendarSubject[]|null,
 }
-export function Calendar(props:CalendarProps){
+/*export function Calendar(props:CalendarProps){
     const is_empty = props.data == null || props.data.length == 0;
+    //
+    const [seleectedSubject,setSelectedSubject] = useState<CalendarSubject|null>(null);
+    //
     return (
         <div className="relative w-90/100 h-fit bg-gray-200 rounded-md shadow-md justify flex flex-col items-center p-4">
-            <div className="w-full h-4 grid grid-cols-13 gap-0">
+            <div className="w-full h-6 grid grid-cols-12 gap-0">
                 {
-                    Array.from([7,8,9,10,11,12,13,14,15,16,17,18,19]).map((data,_)=>{
+                    Array.from([7,8,9,10,11,12,13,14,15,16,17,18]).map((data,_)=>{
                         return (
-                            <span className="w-full h-full text-sm font-dm font-semibold text-gray-500">
+                            <span className="w-full h-full text-md font-dm font-semibold text-gray-500">
                                 {data + ":"+"00"}
                             </span>
                         )
@@ -32,9 +34,10 @@ export function Calendar(props:CalendarProps){
                 }
             </div>
             <span className="w-full bg-gray-300 h-0.5"></span>
-            <div className="w-full h-30 mt-2 grid grid-cols-13 gap-4">
-                {is_empty?<div className="w-full h-full flex justify-center items-center text-gray-400 font-dm text-lg">Na dnešek nemáte žádný rozvrh</div>:renderSubjects(props.data)}
+            <div className="relative w-full h-20 xl:h-30 mt-2 flex flex-row items-center">
+                {is_empty?<div className="w-full h-full flex justify-center items-center text-gray-400 font-dm text-md lg:text-xl">Dnes je čas na odpočinek!</div>:renderSubjects(props.data,{get:seleectedSubject,set:setSelectedSubject})}
             </div>
+            {seleectedSubject!=null?<SubjectPopup code={seleectedSubject} setter={setSelectedSubject}/>:<></>}
         </div>
     )
-}
+}*/
