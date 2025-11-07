@@ -2,6 +2,7 @@ import { MOCK_DAY_SCHEDUELE, MOCK_WEEK_SCHEDUELE, sleep } from "./helper";
 import type { BlockLesson, ScheduleData } from "./scheduele/scheduele";
 import { getUserId } from "./user_id_fetcher";
 import { PRODUCTION } from "./variables";
+import { buildUrl } from './config';
 function getLastWeekData(){
     const today:Date = new Date();
     let start:string;
@@ -83,7 +84,7 @@ export async function fetchDayScheduele(day?:Date):Promise<BlockLesson[]|null>{
     console.log("[TIMESTAMP] Day format:",day_to_fetch);
     //
     try {
-        const f = await fetch("https://is.mendelu.cz/auth/katalog/rozvrhy_view.pl", {
+        const f = await fetch(buildUrl("auth/katalog/rozvrhy_view.pl"), {
         "headers": {
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
             "accept-language": "cs,en;q=0.9,en-GB;q=0.8,en-US;q=0.7",
@@ -98,7 +99,7 @@ export async function fetchDayScheduele(day?:Date):Promise<BlockLesson[]|null>{
             "sec-fetch-user": "?1",
             "upgrade-insecure-requests": "1"
         },
-        "referrer": "https://is.mendelu.cz/auth/katalog/rozvrhy_view.pl",
+        "referrer": buildUrl("auth/katalog/rozvrhy_view.pl"),
         "body": `rozvrh_student=${user_id}&zpet=..%2Fstudent%2Fmoje_studium.pl%3F_m%3D3110%2Cstudium%3D141978%2Cobdobi%3D801&rezervace=0&poznamky_base=1&poznamky_parovani=1&poznamky_jiny_areal=1&poznamky_dl_omez=1&typ_vypisu=konani&konani_od=${day_to_fetch}&konani_do=${day_to_fetch}&format=json&nezvol_all=2&poznamky=1&poznamky_zmeny=1&poznamky_dalsi_ucit=1&zobraz=1&zobraz2=Zobrazit`,
         "method": "POST",
         "mode": "cors",
@@ -136,7 +137,7 @@ export async function fetchWeekScheduele(specific?:{start:Date,end:Date}):Promis
     }
     //
     try {
-        const f = await fetch("https://is.mendelu.cz/auth/katalog/rozvrhy_view.pl", {
+        const f = await fetch(buildUrl("auth/katalog/rozvrhy_view.pl"), {
         "headers": {
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
             "accept-language": "cs,en;q=0.9,en-GB;q=0.8,en-US;q=0.7",
@@ -151,7 +152,7 @@ export async function fetchWeekScheduele(specific?:{start:Date,end:Date}):Promis
             "sec-fetch-user": "?1",
             "upgrade-insecure-requests": "1"
         },
-        "referrer": "https://is.mendelu.cz/auth/katalog/rozvrhy_view.pl",
+        "referrer": buildUrl("auth/katalog/rozvrhy_view.pl"),
         "body": `rozvrh_student=${user_id}&zpet=..%2Fstudent%2Fmoje_studium.pl%3F_m%3D3110%2Cstudium%3D141978%2Cobdobi%3D801&rezervace=0&poznamky_base=1&poznamky_parovani=1&poznamky_jiny_areal=1&poznamky_dl_omez=1&typ_vypisu=konani&konani_od=${start}&konani_do=${end}&format=json&nezvol_all=2&poznamky=1&poznamky_zmeny=1&poznamky_dalsi_ucit=1&zobraz=1&zobraz2=Zobrazit`,
         "method": "POST",
         "mode": "cors",

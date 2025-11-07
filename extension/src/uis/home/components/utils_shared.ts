@@ -1,5 +1,6 @@
 import { MOCK_DATA } from "./helper";
 import { PRODUCTION } from "./variables";
+import { buildUrl } from './config';
 
 interface FileAttachment {
   name: string;
@@ -89,7 +90,7 @@ export interface SubjectsData {
 
 export async function fetchServerFilesById(id: string): Promise<string | null> {
   try {
-    const result = await fetch("https://is.mendelu.cz/auth/dok_server/vyhledavani.pl", {
+    const result = await fetch(buildUrl("auth/dok_server/vyhledavani.pl"), {
       "headers": {
         "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         "accept-language": "cs,en;q=0.9,de;q=0.8,pt-BR;q=0.7,pt;q=0.6,sk;q=0.5,es;q=0.4,pl;q=0.3,ru;q=0.2",
@@ -104,7 +105,7 @@ export async function fetchServerFilesById(id: string): Promise<string | null> {
         "sec-fetch-user": "?1",
         "upgrade-insecure-requests": "1"
       },
-      "referrer": "https://is.mendelu.cz/auth/dok_server/vyhledavani.pl",
+      "referrer": buildUrl("auth/dok_server/vyhledavani.pl"),
       "body": `text=&_vzorekkdo_vlozil=&kdo_vlozil=0&od=&do=&priloha=0&id_slozky=${id}&najdi=Vyhledat`,
       "method": "POST",
       "mode": "cors",

@@ -8,6 +8,7 @@ import { File } from 'lucide-react';
 import { FileType } from 'lucide-react';
 import { Map } from 'lucide-react';
 import type { BlockLesson } from '../scheduele/scheduele';
+import { buildUrl } from '../config';
 
 export interface SubjectPopupProps{
     code:CalendarSubject,
@@ -219,7 +220,7 @@ export function SubjectPopup(props:SubjectPopupPropsV2){
     async function loadFile(link:string){
         setLoadingFile(true);
         try {
-            const response = await fetch(`https://is.mendelu.cz/auth/dok_server/${link}`, {
+            const response = await fetch(buildUrl(`auth/dok_server/${link}`), {
                 method: 'GET',
                 credentials: 'include' // important if authentication cookies are needed
             });

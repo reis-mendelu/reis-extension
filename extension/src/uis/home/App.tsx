@@ -8,6 +8,7 @@ import { SchedueleScreenComponent } from "./components/screens/screens";
 import SchoolCalendar, { type BlockLesson } from "./components/scheduele/scheduele";
 import { fetchDayScheduele } from "./components/subject_fetcher";
 import { GenericFooter } from "./components/footer/footer";
+import { buildUrl } from './components/config';
 
 export function HomePage(){
   const [loading,setLoading] = useState<boolean>(true);
@@ -47,7 +48,7 @@ export function HomePage(){
         // Fetch current user's actual ID
         const currentUserId = await (async () => {
           try {
-            const response = await fetch("https://is.mendelu.cz/auth/student/studium.pl");
+            const response = await fetch(buildUrl("auth/student/studium.pl"));
             const html = await response.text();
             const parser = new DOMParser().parseFromString(html, "text/html");
             const tds = parser.getElementsByTagName("td");

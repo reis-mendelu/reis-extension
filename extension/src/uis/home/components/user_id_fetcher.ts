@@ -1,4 +1,6 @@
-export const ID_URL = "https://is.mendelu.cz/auth/student/studium.pl";
+import { buildUrl } from './config';
+
+export const ID_URL = buildUrl("auth/student/studium.pl");
 async function fetchUserID():Promise<string|null>{
     const f = await fetch(ID_URL);
     const html = await f.text();
