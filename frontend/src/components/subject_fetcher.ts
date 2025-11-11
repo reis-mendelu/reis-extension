@@ -1,4 +1,5 @@
-import { MOCK_DAY_SCHEDUELE, MOCK_WEEK_SCHEDUELE, sleep } from "./helper";
+import { customFetch } from "./custom_fetch";
+import { MOCK_WEEK_SCHEDUELE, sleep } from "./helper";
 import type { BlockLesson, ScheduleData } from "./scheduele/scheduele";
 import { getUserId } from "./user_id_fetcher";
 import { PRODUCTION } from "./variables";
@@ -69,7 +70,7 @@ function getSchedueleFormat(date:Date){
 
 export async function fetchDayScheduele(day?:Date):Promise<BlockLesson[]|null>{
     if(PRODUCTION == false){
-        return MOCK_DAY_SCHEDUELE;
+        //return MOCK_DAY_SCHEDUELE;
     };
     const user_id = await getUserId();
     if(user_id == null){
@@ -83,7 +84,7 @@ export async function fetchDayScheduele(day?:Date):Promise<BlockLesson[]|null>{
     console.log("[TIMESTAMP] Day format:",day_to_fetch);
     //
     try {
-        const f = await fetch("https://is.mendelu.cz/auth/katalog/rozvrhy_view.pl", {
+        const f = await customFetch("https://is.mendelu.cz/auth/katalog/rozvrhy_view.pl", {
         "headers": {
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
             "accept-language": "cs,en;q=0.9,en-GB;q=0.8,en-US;q=0.7",

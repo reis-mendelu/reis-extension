@@ -460,6 +460,34 @@ export const MOCK_WEEK_SCHEDUELE = [
   {
     "date": "20251021",
     "isConsultation": "false",
+    "room": "Q01.48",
+    "roomStructured": {
+      "name": "Q01.48",
+      "id": "492"
+    },
+    "studyId": "141978",
+    "endTime": "18:50",
+    "facultyCode": "PEF",
+    "id": "1874128",
+    "startTime": "17:00",
+    "isDefaultCampus": "true",
+    "courseId": "159415",
+    "courseName": "Počítačové sítě",
+    "campus": "Brno - Černá Pole",
+    "isSeminar": "true",
+    "teachers": [
+      {
+        "fullName": "Ing. Miroslav Jaroš",
+        "id": "32865",
+        "shortName": "M. Jaroš"
+      }
+    ],
+    "courseCode": "EBC-PS",
+    "periodId": "801"
+  },
+  {
+    "date": "20251021",
+    "isConsultation": "false",
     "room": "Q15",
     "roomStructured": {
       "name": "Q15",

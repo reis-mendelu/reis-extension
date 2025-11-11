@@ -1,7 +1,15 @@
+import { customFetch } from "./custom_fetch";
+
 export const ID_URL = "https://is.mendelu.cz/auth/student/studium.pl";
 async function fetchUserID():Promise<string|null>{
-    const f = await fetch(ID_URL);
-    const html = await f.text();
+    let html = "";
+    try {
+        const f = await customFetch(ID_URL);
+        html = await f.text();
+    } catch (error) {
+        console.error("[ERROR] With custom fetch:",error);
+        return null;
+    }
     //
     const parser:Document = new DOMParser().parseFromString(html,"text/html");
     //
