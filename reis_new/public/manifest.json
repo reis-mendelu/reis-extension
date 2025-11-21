@@ -1,0 +1,32 @@
+{
+    "manifest_version": 3,
+    "name": "Reis Mendelu New",
+    "version": "1.0.0",
+    "description": "Modernized Reis extension for IS Mendelu",
+    "permissions": [
+        "storage",
+        "activeTab",
+        "scripting"
+    ],
+    "host_permissions": [
+        "https://is.mendelu.cz/*"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://is.mendelu.cz/auth/",
+                "https://is.mendelu.cz/auth/?*",
+                "https://is.mendelu.cz/auth/osobni_rozvrh",
+                "https://is.mendelu.cz/auth/osobni_rozvrh?*"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ],
+    "icons": {
+        "16": "vite.svg",
+        "48": "vite.svg",
+        "128": "vite.svg"
+    }
+}
