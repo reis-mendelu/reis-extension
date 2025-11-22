@@ -36,10 +36,10 @@ export function SearchBar({ placeholder = "Prohledej reIS", onSearch }: SearchBa
 
   const [recentSearches, setRecentSearches] = useState<SearchResult[]>([]);
 
-  // Load recent searches on mount
+  // Load recent searches on mount (from sessionStorage for better privacy)
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = sessionStorage.getItem(STORAGE_KEY);
       if (stored) {
         setRecentSearches(JSON.parse(stored));
       }
@@ -53,7 +53,7 @@ export function SearchBar({ placeholder = "Prohledej reIS", onSearch }: SearchBa
     setRecentSearches(prev => {
       const filtered = prev.filter(item => item.title !== result.title);
       const updated = [newItem, ...filtered].slice(0, MAX_RECENT_SEARCHES);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       return updated;
     });
   };

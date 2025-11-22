@@ -32,10 +32,9 @@ async function firstLoad() {
     }
 
     //
-    console.log("Content loaded");
-    // Remove all existing content
-    document.body.innerHTML = '';
-    document.head.innerHTML = ''; // The head is cleared here...
+    // Remove all existing content (safer than innerHTML = '')
+    document.body.replaceChildren();
+    document.head.replaceChildren();
 
     // ✨ 2. Call the function to add the font link to the new, empty head.
     injectDmSansFont();

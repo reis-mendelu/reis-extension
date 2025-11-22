@@ -73,10 +73,10 @@ export function parseRegisteredExams(html: string): ExamEvent[] {
         const capacity = cells[8].textContent?.trim() || '';
 
         // 10: Deadlines
-        // Split by <br>
-        // innerHTML needed to preserve <br>
-        const deadlinesHtml = cells[10].innerHTML;
-        const deadlinesParts = deadlinesHtml.split('<br>').map(s => s.trim());
+        // Use textContent to avoid XSS risks from innerHTML
+        const deadlinesText = cells[10].textContent || '';
+        // Split by newlines or multiple spaces that would indicate line breaks
+        const deadlinesParts = deadlinesText.split(/\n+/).map(s => s.trim()).filter(Boolean);
         // Line 1: Reg from, Line 2: Reg to, Line 3: Unreg to
         const deadlineLogout = deadlinesParts.length >= 3 ? deadlinesParts[2] : '';
 
