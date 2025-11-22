@@ -20,6 +20,10 @@ function App() {
     setCurrentDate(newDate);
   };
 
+  const handleToday = () => {
+    setCurrentDate(new Date());
+  };
+
   const getMonthYear = () => {
     return currentDate.toLocaleString('cs-CZ', { month: 'long', year: 'numeric' });
   };
@@ -40,6 +44,12 @@ function App() {
                   <ChevronRight size={20} />
                 </button>
               </div>
+              <button
+                onClick={handleToday}
+                className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-md transition-colors shadow-sm"
+              >
+                Dnes
+              </button>
               <span className="text-lg font-semibold text-gray-800 capitalize min-w-[150px]">{getMonthYear()}</span>
             </div>
 

@@ -200,8 +200,16 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                     const { lessons, totalRows } = organizeLessons(dayLessons);
                     const rowHeight = Math.max(ROW_HEIGHT, totalRows * 60); // Dynamic height if many overlaps
 
+
+                    const isToday = (() => {
+                        const today = new Date();
+                        return parseInt(dateInfo.day) === today.getDate() &&
+                            parseInt(dateInfo.month) === (today.getMonth() + 1) &&
+                            today.getFullYear() === new Date().getFullYear(); // Assuming current year for simplicity or pass year in dateInfo
+                    })();
+
                     return (
-                        <div key={dayIndex} className="flex border-b border-gray-100 min-h-[120px] relative z-10">
+                        <div key={dayIndex} className={`flex border border-gray-100 rounded-xl mb-3 overflow-hidden min-h-[120px] relative z-10 shadow-sm ${isToday ? 'bg-slate-50/60' : 'bg-white'}`}>
                             {/* Date Column */}
                             <div className="w-20 flex-shrink-0 border-r border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-2">
                                 <span className="text-xs font-bold text-gray-400 uppercase">{dateInfo.weekday}</span>
@@ -213,7 +221,7 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                                 {/* Row Grid */}
                                 <div className="absolute inset-0 flex pointer-events-none z-0">
                                     {Array.from({ length: END_HOUR - START_HOUR + 1 }).map((_, i) => (
-                                        <div key={i} className="flex-1 border-r border-gray-300 h-full"></div>
+                                        <div key={i} className="flex-1 border-r border-gray-200 h-full last:border-r-0"></div>
                                     ))}
                                 </div>
                                 {lessons.map((lesson) => {
@@ -234,7 +242,7 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                                     return (
                                         <div
                                             key={lesson.id}
-                                            className={`absolute ${lesson.isExam ? "bg-[#8D0B00] border-[#6d0800] text-white hover:bg-[#a30d00]" : lesson.isSeminar == "true" ? "bg-blue-50 border-blue-200 hover:bg-blue-100 text-gray-800" : "bg-green-50 border-green-200 hover:bg-green-100 text-gray-800"} border text-left font-dm p-2 rounded-lg shadow-sm cursor-pointer transition-all overflow-hidden group`}
+                                            className={`absolute ${lesson.isExam ? "bg-gradient-to-br from-rose-600 to-red-700 border-rose-800 text-white shadow-md hover:shadow-lg hover:from-rose-500 hover:to-red-600" : lesson.isSeminar == "true" ? "bg-indigo-50 border-indigo-200 text-indigo-900 hover:bg-indigo-100" : "bg-emerald-50 border-emerald-200 text-emerald-900 hover:bg-emerald-100"} border text-left font-dm p-1.5 rounded-md shadow-sm cursor-pointer transition-all overflow-hidden group`}
                                             style={{
                                                 left: `${leftPercent}%`,
                                                 width: `${widthPercent}%`,
@@ -245,21 +253,21 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                                             onClick={() => { setSelected(lesson) }}
                                             title={`${lesson.courseName}\n${lesson.startTime} - ${lesson.endTime}\n${lesson.room}\n${lesson.teachers[0]?.shortName}`}
                                         >
-                                            <div className="flex flex-col h-full justify-between">
+                                            <div className="flex flex-col h-full justify-between overflow-hidden">
                                                 <div>
-                                                    <div className={`text-xs font-bold truncate flex items-center gap-1 ${lesson.isExam ? "text-white" : "text-gray-900"}`}>
-                                                        {lesson.courseCode}
-                                                        <span className={`font-normal text-[10px] ml-auto ${lesson.isExam ? "text-gray-200" : "text-gray-500"}`}>{lesson.roomStructured.name}</span>
+                                                    <div className={`text-[11px] font-bold flex items-center gap-1 ${lesson.isExam ? "text-white" : "text-gray-900"}`}>
+                                                        <span className="truncate">{lesson.courseCode}</span>
+                                                        <span className={`font-normal text-[9px] ml-auto whitespace-nowrap ${lesson.isExam ? "text-gray-200" : "text-gray-500"}`}>{lesson.roomStructured.name}</span>
                                                     </div>
-                                                    <div className={`text-[10px] leading-tight truncate mt-0.5 group-hover:whitespace-normal group-hover:overflow-visible group-hover:bg-inherit group-hover:z-50 ${lesson.isExam ? "text-gray-100" : "text-gray-600"}`}>
+                                                    <div className={`text-[10px] leading-tight mt-0.5 line-clamp-2 ${lesson.isExam ? "text-rose-100" : "text-gray-600"}`}>
                                                         {lesson.courseName}
                                                     </div>
                                                 </div>
-                                                <div className={`text-[10px] mt-auto ${lesson.isExam ? "text-gray-300" : "text-gray-400"}`}>
+                                                <div className={`text-[9px] mt-auto ${lesson.isExam ? "text-rose-200" : "text-gray-400"}`}>
                                                     {lesson.startTime} - {lesson.endTime}
                                                 </div>
                                             </div>
-                                            <span className={`absolute left-0 top-2 bottom-2 w-0.5 rounded-r ${lesson.isExam ? "bg-red-400" : lesson.isSeminar == "true" ? "bg-blue-400" : "bg-green-400"}`}></span>
+                                            <span className={`absolute left-0 top-1 bottom-1 w-0.5 rounded-r ${lesson.isExam ? "bg-white/30" : lesson.isSeminar == "true" ? "bg-indigo-400" : "bg-emerald-400"}`}></span>
                                         </div>
                                     );
                                 })}
