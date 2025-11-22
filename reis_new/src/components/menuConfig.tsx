@@ -35,10 +35,16 @@ export const getMainMenuItems = (): MenuItem[] => [
     },
     {
         id: 'portal',
-        label: 'Portál studenta',
+        label: 'Student',
         icon: <User className="w-5 h-5" />,
         expandable: true,
         children: [
+            {
+                id: 'testy',
+                label: 'Testy',
+                icon: <FileQuestion className="w-4 h-4" />,
+                href: 'https://is.mendelu.cz/auth/elis/ot/psani_testu.pl?_m=205;lang=cz'
+            },
             {
                 id: 'zkousky',
                 label: 'Zkoušky',
@@ -61,7 +67,7 @@ export const getMainMenuItems = (): MenuItem[] => [
     },
     {
         id: 'o-studiu',
-        label: 'O studiu',
+        label: 'Studium',
         icon: <GraduationCap className="w-5 h-5" />,
         expandable: true,
         children: [

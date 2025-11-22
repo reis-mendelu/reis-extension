@@ -53,10 +53,16 @@ export const Sidebar = () => {
     },
     {
       id: 'portal',
-      label: 'Portál studenta',
+      label: 'Student',
       icon: <User className="w-5 h-5" />,
       expandable: true,
       children: [
+        {
+          id: 'testy',
+          label: 'Testy',
+          icon: <FileQuestion className="w-4 h-4" />,
+          href: 'https://is.mendelu.cz/auth/elis/ot/psani_testu.pl?_m=205;lang=cz'
+        },
         {
           id: 'zkousky',
           label: 'Zkoušky',
@@ -79,7 +85,7 @@ export const Sidebar = () => {
     },
     {
       id: 'o-studiu',
-      label: 'O studiu',
+      label: 'Studium',
       icon: <GraduationCap className="w-5 h-5" />,
       expandable: true,
       children: [
@@ -134,7 +140,7 @@ export const Sidebar = () => {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-20 h-screen bg-gray-50 border-r border-gray-200 fixed left-0 top-0 z-40 items-center py-6">
+      <aside className="hidden md:flex flex-col w-22 h-screen bg-gray-50 border-r border-gray-200 fixed left-0 top-0 z-40 items-center py-6">
         {/* Logo */}
         <div className="mb-8 w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center overflow-hidden">
           {logoUrl && <img src={logoUrl} alt="Mendelu Logo" className="w-8 h-8 object-contain" />}
@@ -158,7 +164,7 @@ export const Sidebar = () => {
                   }`}
               >
                 {item.icon}
-                <span className="text-[10px] mt-1 font-medium truncate w-full text-center px-1">
+                <span className="text-[10px] mt-1 font-medium w-full text-center px-1 leading-tight">
                   {item.label}
                 </span>
               </button>

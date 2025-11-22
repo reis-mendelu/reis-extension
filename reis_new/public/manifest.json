@@ -16,8 +16,7 @@
             "matches": [
                 "https://is.mendelu.cz/auth/",
                 "https://is.mendelu.cz/auth/?*",
-                "https://is.mendelu.cz/auth/osobni_rozvrh",
-                "https://is.mendelu.cz/auth/osobni_rozvrh?*"
+                "https://is.mendelu.cz/auth/index.pl*"
             ],
             "js": [
                 "content.js"

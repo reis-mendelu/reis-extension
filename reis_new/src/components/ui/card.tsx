@@ -50,10 +50,11 @@ export function Sidebar({ isOpen: _isOpen, onToggle: _onToggle }: SidebarProps) 
     },
     {
       id: 'portal',
-      label: 'Portál studenta',
-      shortLabel: 'Portál',
+      label: 'Student',
+      shortLabel: 'Student',
       icon: <User className="w-5 h-5" />,
       children: [
+        { id: 'testy', label: 'Testy', icon: <FileQuestion className="w-4 h-4" /> },
         { id: 'zkousky', label: 'Zkoušky', icon: <ClipboardCheck className="w-4 h-4" /> },
         { id: 'cvicne-testy', label: 'Cvičné testy', icon: <FileQuestion className="w-4 h-4" /> },
         { id: 'zapisy-predmetu', label: 'Zápisy předmětů', icon: <BookOpen className="w-4 h-4" /> }
@@ -61,7 +62,7 @@ export function Sidebar({ isOpen: _isOpen, onToggle: _onToggle }: SidebarProps) 
     },
     {
       id: 'o-studiu',
-      label: 'O studiu',
+      label: 'Studium',
       shortLabel: 'Studium',
       icon: <GraduationCap className="w-5 h-5" />,
       children: [
@@ -216,7 +217,7 @@ export function Sidebar({ isOpen: _isOpen, onToggle: _onToggle }: SidebarProps) 
   return (
     <>
       {/* Sidebar - Increased Z-Index to [120] to sit ABOVE the backdrop */}
-      <aside className="fixed left-0 top-0 w-20 bg-[#3F0E40] flex flex-col h-screen z-[120] border-r border-[#522653]">
+      <aside className="fixed left-0 top-0 w-25 bg-[#3F0E40] flex flex-col h-screen z-[120] border-r border-[#522653]">
         {/* Main navigation icons */}
         <nav className="flex-1 flex flex-col items-center py-4 gap-1 overflow-y-auto scrollbar-hide">
           {mainMenuItems.map(item => (

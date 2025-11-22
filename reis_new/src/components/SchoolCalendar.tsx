@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { SubjectPopup } from './SubjectPopup';
 import { timeToMinutes } from '../utils/calendarUtils';
 import { fetchWeekSchedule } from '../api/schedule';
+import { fetchExams, getCachedExams } from '../api/exams';
 import type { BlockLesson, LessonWithRow, OrganizedLessons, DateInfo } from '../types/calendarTypes';
 
 const DAYS = ['PO', 'ÚT', 'ST', 'ČT', 'PÁ'];
@@ -31,10 +32,71 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
             endOfWeek.setDate(startOfWeek.getDate() + 4); // Set to Friday
 
             const data = await fetchWeekSchedule({ start: startOfWeek, end: endOfWeek });
+
+            // Try to get cached exams first
+            let exams = await getCachedExams();
+
+            // Helper to process exams
+            const processExams = (examEvents: any[]) => {
+                return examEvents.map(exam => {
+                    const dateObj = new Date(exam.start);
+                    const dateStr = `${dateObj.getFullYear()}${String(dateObj.getMonth() + 1).padStart(2, '0')}${String(dateObj.getDate()).padStart(2, '0')}`;
+                    const startTime = `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
+                    const endObj = new Date(dateObj.getTime() + 90 * 60000);
+                    const endTime = `${String(endObj.getHours()).padStart(2, '0')}:${String(endObj.getMinutes()).padStart(2, '0')}`;
+
+                    return {
+                        id: `exam-${exam.id}-${exam.start}`,
+                        date: dateStr,
+                        startTime,
+                        endTime,
+                        courseCode: exam.id,
+                        courseName: exam.title,
+                        room: exam.location,
+                        roomStructured: { name: exam.location, id: '' },
+                        teachers: [{ fullName: exam.meta.teacher, shortName: exam.meta.teacher, id: '' }],
+                        isExam: true,
+                        examEvent: exam,
+                        isConsultation: 'false',
+                        studyId: '',
+                        facultyCode: '',
+                        isDefaultCampus: 'true',
+                        courseId: '',
+                        campus: '',
+                        isSeminar: 'false',
+                        periodId: ''
+                    } as BlockLesson;
+                });
+            };
+
+            let allLessons: BlockLesson[] = [];
             if (data) {
-                setScheduleData(data);
+                allLessons = [...data];
             }
+
+            // If we have cached exams, add them immediately
+            if (exams && exams.length > 0) {
+                const examLessons = processExams(exams);
+                setScheduleData([...allLessons, ...examLessons]);
+            } else {
+                setScheduleData(allLessons);
+            }
+
             setLoading(false);
+
+            // Fetch fresh exams in background
+            fetchExams().then(freshExams => {
+                if (freshExams && freshExams.length > 0) {
+                    const examLessons = processExams(freshExams);
+                    // Re-merge with current schedule data (which might have changed if week changed, but here we are in closure)
+                    // Better to just update state again
+                    setScheduleData(prev => {
+                        // Filter out old exams from prev state to avoid duplicates if we just append
+                        const nonExams = prev.filter(l => !l.isExam);
+                        return [...nonExams, ...examLessons];
+                    });
+                }
+            });
 
             // Set week dates for display
             const dates: DateInfo[] = [];
@@ -51,6 +113,14 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
             setWeekDates(dates);
         };
         loadData();
+
+        // Poll exams every minute
+        const intervalId = setInterval(() => {
+            console.log("Polling exams...");
+            loadData();
+        }, 60000);
+
+        return () => clearInterval(intervalId);
     }, [initialDate]);
 
 
@@ -164,7 +234,7 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                                     return (
                                         <div
                                             key={lesson.id}
-                                            className={`absolute ${lesson.isSeminar == "true" ? "bg-blue-50 border-blue-200 hover:bg-blue-100" : "bg-green-50 border-green-200 hover:bg-green-100"} border text-left text-gray-800 font-dm p-2 rounded-lg shadow-sm cursor-pointer transition-all overflow-hidden group`}
+                                            className={`absolute ${lesson.isExam ? "bg-[#8D0B00] border-[#6d0800] text-white hover:bg-[#a30d00]" : lesson.isSeminar == "true" ? "bg-blue-50 border-blue-200 hover:bg-blue-100 text-gray-800" : "bg-green-50 border-green-200 hover:bg-green-100 text-gray-800"} border text-left font-dm p-2 rounded-lg shadow-sm cursor-pointer transition-all overflow-hidden group`}
                                             style={{
                                                 left: `${leftPercent}%`,
                                                 width: `${widthPercent}%`,
@@ -177,19 +247,19 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                                         >
                                             <div className="flex flex-col h-full justify-between">
                                                 <div>
-                                                    <div className="text-xs font-bold text-gray-900 truncate flex items-center gap-1">
+                                                    <div className={`text-xs font-bold truncate flex items-center gap-1 ${lesson.isExam ? "text-white" : "text-gray-900"}`}>
                                                         {lesson.courseCode}
-                                                        <span className="font-normal text-gray-500 text-[10px] ml-auto">{lesson.roomStructured.name}</span>
+                                                        <span className={`font-normal text-[10px] ml-auto ${lesson.isExam ? "text-gray-200" : "text-gray-500"}`}>{lesson.roomStructured.name}</span>
                                                     </div>
-                                                    <div className="text-[10px] leading-tight text-gray-600 truncate mt-0.5 group-hover:whitespace-normal group-hover:overflow-visible group-hover:bg-inherit group-hover:z-50">
+                                                    <div className={`text-[10px] leading-tight truncate mt-0.5 group-hover:whitespace-normal group-hover:overflow-visible group-hover:bg-inherit group-hover:z-50 ${lesson.isExam ? "text-gray-100" : "text-gray-600"}`}>
                                                         {lesson.courseName}
                                                     </div>
                                                 </div>
-                                                <div className="text-[10px] text-gray-400 mt-auto">
+                                                <div className={`text-[10px] mt-auto ${lesson.isExam ? "text-gray-300" : "text-gray-400"}`}>
                                                     {lesson.startTime} - {lesson.endTime}
                                                 </div>
                                             </div>
-                                            <span className={`absolute left-0 top-2 bottom-2 w-0.5 rounded-r ${lesson.isSeminar == "true" ? "bg-blue-400" : "bg-green-400"}`}></span>
+                                            <span className={`absolute left-0 top-2 bottom-2 w-0.5 rounded-r ${lesson.isExam ? "bg-red-400" : lesson.isSeminar == "true" ? "bg-blue-400" : "bg-green-400"}`}></span>
                                         </div>
                                     );
                                 })}
@@ -199,12 +269,14 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                 })}
             </div>
 
-            {selected && (
-                <SubjectPopup
-                    code={selected}
-                    onClose={() => setSelected(null)}
-                />
-            )}
+            {
+                selected && (
+                    <SubjectPopup
+                        code={selected}
+                        onClose={() => setSelected(null)}
+                    />
+                )
+            }
         </div>
     );
 }

@@ -1,6 +1,9 @@
 import { Search, X, ChevronUp, ChevronDown, Clock, FileText, GraduationCap, Briefcase } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { searchPeople } from '../api/search';
+import { pagesData, BASE_URL } from '../data/pagesData';
+import type { PageItem, PageCategory } from '../data/pagesData';
+import { fuzzyIncludes } from '../utils/searchUtils';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -14,6 +17,7 @@ interface SearchResult {
   detail?: string;
   link?: string;
   personType?: 'student' | 'teacher' | 'staff' | 'unknown';
+  category?: string;
 }
 
 // Removed mock data
@@ -73,8 +77,11 @@ export function SearchBar({ placeholder = "Prohledej reIS", onSearch }: SearchBa
 
     debounceTimeout.current = setTimeout(async () => {
       try {
+        const searchQuery = query.toLowerCase();
+
+        // Search people
         const people = await searchPeople(query);
-        const results: SearchResult[] = people.map((p, index) => ({
+        const personResults: SearchResult[] = people.map((p, index) => ({
           id: p.id || `unknown-${index}`,
           title: p.name,
           type: 'person' as const,
@@ -83,11 +90,31 @@ export function SearchBar({ placeholder = "Prohledej reIS", onSearch }: SearchBa
           personType: p.type
         }));
 
-        // Sort results: Staff first, then Students, then others
-        // Sort results: Teachers first, then Staff, then Students, then others?
-        // Or maybe: Teachers -> Staff -> Students
-        results.sort((a, b) => {
-          // Define priority: teacher = 0, student = 1, staff = 2, others = 3
+        // Search pages
+        const pageResults: SearchResult[] = [];
+        pagesData.forEach((category: PageCategory) => {
+          category.items.forEach((page: PageItem) => {
+            // Match on label or keywords using fuzzy matching
+            const matchesLabel = fuzzyIncludes(page.label, searchQuery);
+            const matchesKeyword = page.keywords.some(keyword =>
+              fuzzyIncludes(keyword, searchQuery)
+            );
+
+            if (matchesLabel || matchesKeyword) {
+              pageResults.push({
+                id: page.id,
+                title: page.label,
+                type: 'page' as const,
+                detail: category.label,
+                link: page.path.startsWith('http') ? page.path : `${BASE_URL}${page.path}`,
+                category: category.label
+              });
+            }
+          });
+        });
+
+        // Sort person results: Teachers first, then Students, then Staff
+        personResults.sort((a, b) => {
           const getPriority = (type?: string) => {
             if (type === 'teacher') return 0;
             if (type === 'student') return 1;
@@ -97,7 +124,9 @@ export function SearchBar({ placeholder = "Prohledej reIS", onSearch }: SearchBa
           return getPriority(a.personType) - getPriority(b.personType);
         });
 
-        setFilteredResults(results);
+        // Combine results: pages first, then people
+        const combinedResults = [...pageResults, ...personResults];
+        setFilteredResults(combinedResults);
       } catch (error) {
         console.error("Search failed", error);
         setFilteredResults([]);
@@ -299,6 +328,10 @@ export function SearchBar({ placeholder = "Prohledej reIS", onSearch }: SearchBa
                       <div className="flex-shrink-0">
                         {query === '' ? (
                           <Clock className="w-4 h-4 text-gray-400" />
+                        ) : result.type === 'page' ? (
+                          <div className="w-6 h-6 rounded bg-green-100 flex items-center justify-center">
+                            <FileText className="w-3.5 h-3.5 text-green-600" />
+                          </div>
                         ) : result.personType === 'student' ? (
                           <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
                             <GraduationCap className="w-3.5 h-3.5 text-blue-600" />
