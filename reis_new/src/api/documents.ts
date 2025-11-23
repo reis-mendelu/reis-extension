@@ -214,7 +214,11 @@ export function parseServerFiles(html: string): ParsedFile[] {
         const extractedFiles: FileAttachment[] = [];
         fileLinks.forEach(link => {
             const img = link.querySelector('img[sysid]');
-            const href = link.getAttribute('href') || '';
+            let href = link.getAttribute('href') || '';
+
+            // Clean up the link - IS Mendelu uses semicolons in URLs which causes 404s
+            // Replace ?; with ? and any remaining ; with &
+            href = href.replace(/\?;/g, '?').replace(/;/g, '&');
 
             // Validate URL before adding
             const validatedUrl = validateUrl(href, 'is.mendelu.cz');

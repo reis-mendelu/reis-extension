@@ -41,6 +41,92 @@ export function RenderEmptySubject(props: { code: string, setter: () => void }) 
     )
 }
 
+// Helper to resolve the final file URL (handling intermediate pages and path corrections)
+async function resolveFinalFileUrl(link: string): Promise<string> {
+    // Clean up the link - IS Mendelu uses semicolons in URLs which causes 404s
+    // Replace ?; with ? and any remaining ; with &
+    link = link.replace(/\?;/g, '?').replace(/;/g, '&');
+
+    // Check if it's a "dokumenty_cteni.pl" link (view link)
+    // We can directly construct the download link and bypass the intermediate page
+    if (link.includes('dokumenty_cteni.pl')) {
+        try {
+            // Extract parameters
+            // Handle both & and ; as separators
+            const normalizedLink = link.replace(/;/g, '&').replace(/\?/g, '&');
+            const idMatch = normalizedLink.match(/[?&]id=(\d+)/);
+            const dokMatch = normalizedLink.match(/[?&]dok=(\d+)/);
+
+            if (idMatch && dokMatch) {
+                const id = idMatch[1];
+                const dok = dokMatch[1];
+                // Construct direct download URL
+                // Using z=1 as requested by user
+                return `https://is.mendelu.cz/auth/dok_server/slozka.pl?download=${dok}&id=${id}&z=1`;
+            }
+        } catch (e) {
+            console.warn('Failed to construct direct download URL:', e);
+            // Fallback to standard processing if extraction fails
+        }
+    }
+
+    // Construct the full URL for other cases
+    let fullUrl = '';
+    if (link.startsWith('http')) {
+        fullUrl = link;
+    } else {
+        // It's usually relative to /auth/dok_server/
+        if (link.startsWith('/')) {
+            fullUrl = `https://is.mendelu.cz${link}`;
+        } else {
+            fullUrl = `https://is.mendelu.cz/auth/dok_server/${link}`;
+        }
+    }
+
+    // Check if we need to find the download link (if it's an intermediate page)
+    // dokumenty_cteni.pl IS an intermediate page that contains the download link
+    if (!fullUrl.includes('download=')) {
+        try {
+            const pageResponse = await fetch(fullUrl, { credentials: 'include' });
+            const pageText = await pageResponse.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(pageText, 'text/html');
+
+            // Look for the download link: <a> containing <img sysid> and href with 'download='
+            const downloadLink = Array.from(doc.querySelectorAll('a')).find(a =>
+                a.href.includes('download=') && a.querySelector('img[sysid]')
+            );
+
+            if (downloadLink) {
+                let newLink = downloadLink.getAttribute('href');
+                if (newLink) {
+                    // Handle relative paths
+                    if (!newLink.startsWith('http')) {
+                        if (newLink.startsWith('/')) {
+                            if (newLink.includes('dokumenty_cteni.pl')) {
+                                fullUrl = `https://is.mendelu.cz/auth/dok_server${newLink}`;
+                            } else {
+                                fullUrl = `https://is.mendelu.cz${newLink}`;
+                            }
+                        } else {
+                            fullUrl = `https://is.mendelu.cz/auth/dok_server/${newLink}`;
+                        }
+                    } else {
+                        fullUrl = newLink;
+                        if (fullUrl.includes('dokumenty_cteni.pl') && !fullUrl.includes('/auth/')) {
+                            fullUrl = fullUrl.replace('is.mendelu.cz/dokumenty_cteni.pl', 'is.mendelu.cz/auth/dok_server/dokumenty_cteni.pl');
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to parse intermediate page:', e);
+            // Fallback to original URL if parsing fails
+        }
+    }
+    return fullUrl;
+}
+
 export function SubjectPopup(props: SubjectPopupPropsV2) {
     //FETCH SUBJECT FROM STORAGE
     const [subject_data, setSubjectData] = useState<StoredSubject | null>(null);
@@ -80,7 +166,7 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
                     return;
                 }
 
-                // Try to load cached files first
+                // Try to load cached files first for fast display
                 const cachedKey = `files_${props.code.courseCode}`;
                 const cachedFiles = localStorage.getItem(cachedKey);
                 if (cachedFiles) {
@@ -91,7 +177,7 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
                     }
                 }
 
-                // Fetch fresh files in background
+                // Fetch fresh files in background (URLs may be ephemeral)
                 const files = await getFilesFromId(GetIdFromLink(STORED_SUBJECT.folderUrl));
                 setFiles(files);
                 setLoadingFiles(false);
@@ -124,49 +210,10 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
         };
     }, [props.onClose])
     //
-    async function loadFile(link: string) {
+    async function loadFile(link: string, retryCount = 0) {
         setLoadingFile(true);
         try {
-            // Construct the full URL
-            let fullUrl = '';
-            if (link.startsWith('http')) {
-                fullUrl = link;
-            } else {
-                fullUrl = `https://is.mendelu.cz/auth/dok_server/${link}`;
-            }
-
-            // Step 1: Check if we need to find the download link (if it's an intermediate page)
-            if (!fullUrl.includes('download=')) {
-                const pageResponse = await fetch(fullUrl, { credentials: 'include' });
-                const pageText = await pageResponse.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(pageText, 'text/html');
-
-                // Look for the download link: <a> containing <img sysid> and href with 'download='
-                // The user provided example: <a href="...download=..."><img ... sysid="mime-pdf"></a>
-                const downloadLink = Array.from(doc.querySelectorAll('a')).find(a =>
-                    a.href.includes('download=') && a.querySelector('img[sysid]')
-                );
-
-                if (downloadLink) {
-                    let newLink = downloadLink.getAttribute('href');
-                    if (newLink) {
-                        // Handle relative paths
-                        if (!newLink.startsWith('http')) {
-                            // It's usually relative to /auth/dok_server/
-                            if (newLink.startsWith('/')) {
-                                fullUrl = `https://is.mendelu.cz${newLink}`;
-                            } else {
-                                fullUrl = `https://is.mendelu.cz/auth/dok_server/${newLink}`;
-                            }
-                        } else {
-                            fullUrl = newLink;
-                        }
-                    }
-                } else {
-                    console.warn('Could not find direct download link on page. Using original.');
-                }
-            }
+            const fullUrl = await resolveFinalFileUrl(link);
 
             // Step 2: Fetch the actual file
             const response = await fetch(fullUrl, {
@@ -177,8 +224,48 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
                 }
             });
 
+            // If 404, the URL is likely stale - refresh file list and retry once
+            if (response.status === 404) {
+                if (retryCount === 0) {
+                    console.log('[SubjectPopup] File URL returned 404, refreshing file list...');
+
+                    // Refresh file list to get fresh URLs
+                    if (subject_data) {
+                        const freshFiles = await getFilesFromId(GetIdFromLink(subject_data.folderUrl));
+                        if (freshFiles && freshFiles.length > 0) {
+                            setFiles(freshFiles);
+
+                            // Update cache with fresh URLs
+                            const cachedKey = `files_${props.code.courseCode}`;
+                            localStorage.setItem(cachedKey, JSON.stringify(freshFiles));
+
+                            // Find the refreshed link for this file
+                            const originalFileName = link.split('/').pop()?.split('?')[0];
+                            const refreshedFile = freshFiles.flatMap(f => f.files).find(f =>
+                                f.link.includes(originalFileName || '') || f.name === originalFileName
+                            );
+
+                            if (refreshedFile) {
+                                console.log('[SubjectPopup] Found refreshed URL, retrying...');
+                                await loadFile(refreshedFile.link, 1);
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                // If we get here, refresh failed or we already retried
+                console.warn('[SubjectPopup] Refresh failed or 404 persisted. Falling back to window.open');
+                window.open(fullUrl, '_blank');
+                setLoadingFile(false);
+                return;
+            }
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                console.warn(`[SubjectPopup] HTTP error ${response.status}. Falling back to window.open`);
+                window.open(fullUrl, '_blank');
+                setLoadingFile(false);
+                return;
             }
 
             const contentType = response.headers.get('content-type');
@@ -230,7 +317,7 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
             setLoadingFile(false);
             alert('Nepodařilo se otevřít soubor. Zkuste to prosím znovu.');
         }
-    };
+    }
     //
     function groupFilesByFolder(files: FileObject[]) {
         const grouped: { [folderId: string]: FileObject[] } = {};
@@ -339,40 +426,7 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
 
             const downloadPromises = filesToDownload.map(async (file) => {
                 try {
-                    // Handle URL construction properly - avoid double /auth/dok_server/
-                    let fullUrl: string;
-                    if (file.url.startsWith('http')) {
-                        fullUrl = file.url;
-                    } else if (file.url.startsWith('/auth/dok_server/')) {
-                        fullUrl = `https://is.mendelu.cz${file.url}`;
-                    } else if (file.url.startsWith('/')) {
-                        fullUrl = `https://is.mendelu.cz${file.url}`;
-                    } else {
-                        fullUrl = `https://is.mendelu.cz/auth/dok_server/${file.url}`;
-                    }
-
-                    // Handle intermediate pages logic (simplified from loadFile)
-                    if (!fullUrl.includes('download=')) {
-                        const pageResponse = await fetch(fullUrl, { credentials: 'include' });
-                        const pageText = await pageResponse.text();
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(pageText, 'text/html');
-                        const downloadLink = Array.from(doc.querySelectorAll('a')).find(a =>
-                            a.href.includes('download=') && a.querySelector('img[sysid]')
-                        );
-                        if (downloadLink) {
-                            let newLink = downloadLink.getAttribute('href');
-                            if (newLink) {
-                                if (newLink.startsWith('http')) {
-                                    fullUrl = newLink;
-                                } else if (newLink.startsWith('/')) {
-                                    fullUrl = `https://is.mendelu.cz${newLink}`;
-                                } else {
-                                    fullUrl = `https://is.mendelu.cz/auth/dok_server/${newLink}`;
-                                }
-                            }
-                        }
-                    }
+                    const fullUrl = await resolveFinalFileUrl(file.url);
 
                     const response = await fetch(fullUrl, { credentials: 'include' });
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
