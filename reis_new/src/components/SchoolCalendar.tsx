@@ -197,15 +197,11 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                         return parseInt(day) === parseInt(dateInfo.day) && parseInt(month) === parseInt(dateInfo.month);
                     });
 
+                    // Hide empty days
+                    if (dayLessons.length === 0) return null;
+
                     const { lessons, totalRows } = organizeLessons(dayLessons);
                     const rowHeight = Math.max(ROW_HEIGHT, totalRows * 60); // Dynamic height if many overlaps
-
-
-
-
-                    // ... (existing imports)
-
-                    // ... (inside SchoolCalendar component)
 
                     const isToday = (() => {
                         const today = new Date();
@@ -221,11 +217,11 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                     const holidayName = getCzechHoliday(checkDate);
 
                     return (
-                        <div key={dayIndex} className={`flex border border-gray-100 rounded-xl mb-3 overflow-hidden min-h-[120px] relative z-10 shadow-sm ${isToday ? 'bg-slate-50/60' : 'bg-white'}`}>
+                        <div key={dayIndex} className={`flex border rounded-xl mb-3 overflow-hidden min-h-[120px] relative z-10 shadow-sm transition-all ${isToday ? 'bg-blue-50/50 border-primary ring-1 ring-primary shadow-md' : 'bg-white border-gray-100'}`}>
                             {/* Date Column */}
-                            <div className="w-20 flex-shrink-0 border-r border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-2">
-                                <span className={`text-xs font-bold uppercase ${holidayName ? 'text-red-500' : 'text-gray-400'}`}>{dateInfo.weekday}</span>
-                                <span className={`text-xl font-bold ${holidayName ? 'text-red-600' : 'text-gray-800'}`}>{dateInfo.day}/{dateInfo.month}</span>
+                            <div className={`w-20 flex-shrink-0 border-r flex flex-col items-center justify-center p-2 ${isToday ? 'bg-blue-100/30 border-blue-100' : 'bg-gray-50 border-gray-200'}`}>
+                                <span className={`text-xs font-bold uppercase ${holidayName ? 'text-red-500' : isToday ? 'text-primary' : 'text-gray-400'}`}>{dateInfo.weekday}</span>
+                                <span className={`text-xl font-bold ${holidayName ? 'text-red-600' : isToday ? 'text-primary' : 'text-gray-800'}`}>{dateInfo.day}/{dateInfo.month}</span>
                             </div>
 
                             {/* Events Column */}

@@ -3,10 +3,15 @@ import './App.css'
 import { Sidebar } from './components/Sidebar'
 import { SearchBar } from './components/SearchBar'
 import { SchoolCalendar } from './components/SchoolCalendar'
+import { DashboardWidgets } from './components/DashboardWidgets'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { getSmartWeekRange } from './utils/calendarUtils'
 
 function App() {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(() => {
+    const { start } = getSmartWeekRange();
+    return start;
+  });
 
   const handlePrevWeek = () => {
     const newDate = new Date(currentDate);
@@ -21,7 +26,8 @@ function App() {
   };
 
   const handleToday = () => {
-    setCurrentDate(new Date());
+    const { start } = getSmartWeekRange();
+    setCurrentDate(start);
   };
 
   const getMonthYear = () => {
@@ -62,6 +68,7 @@ function App() {
         </div>
 
         <div className="p-8 max-w-8xl mx-auto">
+          <DashboardWidgets />
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-h-[800px]">
             <SchoolCalendar key={currentDate.toISOString()} initialDate={currentDate} />
           </div>

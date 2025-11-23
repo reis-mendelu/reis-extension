@@ -5,11 +5,12 @@ import App from './App';
 // ⚡ IMMEDIATELY hide the original page to prevent flash
 document.documentElement.style.visibility = 'hidden';
 
-// ✨ 1. Create a function to inject the font into the main document's head.
+// ✨ 1. Inject locally bundled DM Sans font
 function injectDmSansFont() {
     const fontLink = document.createElement('link');
     fontLink.rel = 'stylesheet';
-    fontLink.href = 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000&display=swap';
+    // Load from local extension bundle instead of Google CDN
+    fontLink.href = chrome.runtime.getURL('fonts/dm-sans.css');
 
     // Append the link to the document's head
     document.head.appendChild(fontLink);

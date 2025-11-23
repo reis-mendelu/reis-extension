@@ -1,3 +1,5 @@
+import { sanitizeString, validateDate, sanitizeTeacherName, validateRoomCode, validateUrl } from './validation';
+
 export interface ExamEvent {
     id: string;
     title: string;
@@ -28,70 +30,96 @@ export function parseRegisteredExams(html: string): ExamEvent[] {
     const events: ExamEvent[] = [];
 
     rows.forEach((row) => {
-        // Skip if not a valid row (though querySelectorAll should handle structure)
         const cells = row.querySelectorAll('td');
 
         if (cells.length < 13) {
             return;
         }
 
-        // Column Mapping (Zero-based)
-        // 1: Subject Code
-        const subjectCode = cells[1]?.textContent?.trim() || '';
+        // Column 1: Subject Code (VALIDATE)
+        const subjectCodeRaw = cells[1]?.textContent?.trim() || '';
+        const subjectCode = sanitizeString(subjectCodeRaw, 50);
+        if (!subjectCode) {
+            console.warn('examParser: empty subject code, skipping row');
+            return;
+        }
 
-        // 2: Subject Name (inside <a>)
+        // Column 2: Subject Name (SANITIZE)
         const subjectNameAnchor = cells[2].querySelector('a');
-        const subjectName = subjectNameAnchor?.textContent?.trim() || cells[2].textContent?.trim() || '';
+        const subjectNameRaw = subjectNameAnchor?.textContent?.trim() || cells[2].textContent?.trim() || '';
+        const subjectName = sanitizeString(subjectNameRaw, 200);
+        if (!subjectName) {
+            console.warn('examParser: empty subject name, skipping row');
+            return;
+        }
 
-        // 4: Date & Time -> DD.MM.YYYY HH:MM (day)
+        // Column 4: Date & Time (VALIDATE)
         const dateRaw = cells[4].textContent?.trim() || '';
-        // Regex remove the \s\(.*\) part
         const dateClean = dateRaw.replace(/\s*\(.*\)/, '');
-        // Parse to ISO
-        // Format: DD.MM.YYYY HH:MM
         const [datePart, timePart] = dateClean.split(' ');
+
         let isoDate = '';
         if (datePart && timePart) {
             const [day, month, year] = datePart.split('.');
-            // Create date object (assuming local time or specific timezone, usually IS is local/CET)
-            // We'll construct ISO string manually to preserve what we have or use Date
-            // ISO format: YYYY-MM-DDTHH:mm:00
             isoDate = `${year}-${month}-${day}T${timePart}:00`;
         }
 
-        // 5: Location
-        const locationAnchor = cells[5].querySelector('a');
-        const location = locationAnchor?.textContent?.trim() || cells[5].textContent?.trim() || '';
-
-        // 6: Exam Type
-        const examType = cells[6].textContent?.trim() || '';
-
-        // 7: Teacher
-        const teacher = cells[7].textContent?.trim() || '';
-
-        // 8: Capacity (Přihlášeno)
-        const capacity = cells[8].textContent?.trim() || '';
-
-        // 10: Deadlines
-        // Use textContent to avoid XSS risks from innerHTML
-        const deadlinesText = cells[10].textContent || '';
-        // Split by newlines or multiple spaces that would indicate line breaks
-        const deadlinesParts = deadlinesText.split(/\n+/).map(s => s.trim()).filter(Boolean);
-        // Line 1: Reg from, Line 2: Reg to, Line 3: Unreg to
-        const deadlineLogout = deadlinesParts.length >= 3 ? deadlinesParts[2] : '';
-
-        // 11: Info URL
-        const infoAnchor = cells[11].querySelector('a');
-        let infoUrl = infoAnchor?.getAttribute('href') || '';
-        if (infoUrl && !infoUrl.startsWith('http')) {
-            infoUrl = `https://is.mendelu.cz/auth/student/${infoUrl}`;
+        // Validate the constructed date
+        const validatedDate = validateDate(isoDate);
+        if (!validatedDate) {
+            console.warn('examParser: invalid date', dateClean);
+            return; // Skip exams with invalid dates
         }
 
-        // 12: Logout URL
+        // Column 5: Location (VALIDATE)
+        const locationAnchor = cells[5].querySelector('a');
+        const locationRaw = locationAnchor?.textContent?.trim() || cells[5].textContent?.trim() || '';
+        const location = sanitizeString(locationRaw, 50);
+
+        // Optionally validate room code format
+        if (location && !validateRoomCode(location) && location !== 'Online') {
+            console.warn('examParser: unusual room code', location);
+            // Don't skip, but log for monitoring
+        }
+
+        // Column 6: Exam Type (SANITIZE)
+        const examTypeRaw = cells[6].textContent?.trim() || '';
+        const examType = sanitizeString(examTypeRaw, 50);
+
+        // Column 7: Teacher (SANITIZE)
+        const teacherRaw = cells[7].textContent?.trim() || '';
+        const teacher = sanitizeTeacherName(teacherRaw);
+        if (!teacher) {
+            console.warn('examParser: invalid teacher name', teacherRaw);
+        }
+
+        // Column 8: Capacity (SANITIZE)
+        const capacityRaw = cells[8].textContent?.trim() || '';
+        const capacity = sanitizeString(capacityRaw, 20);
+
+        // Column 10: Deadlines (SANITIZE)
+        const deadlinesText = cells[10].textContent || '';
+        const deadlinesParts = deadlinesText.split(/\n+/).map(s => sanitizeString(s, 100)).filter(Boolean);
+        const deadlineLogout = deadlinesParts.length >= 3 ? deadlinesParts[2] : '';
+
+        // Column 11: Info URL (VALIDATE)
+        const infoAnchor = cells[11].querySelector('a');
+        let infoUrl = infoAnchor?.getAttribute('href') || '';
+        if (infoUrl) {
+            infoUrl = validateUrl(infoUrl, 'is.mendelu.cz');
+            if (!infoUrl) {
+                console.warn('examParser: invalid info URL');
+            }
+        }
+
+        // Column 12: Logout URL (VALIDATE)
         const logoutAnchor = cells[12].querySelector('a');
         let logoutUrl = logoutAnchor?.getAttribute('href') || '';
-        if (logoutUrl && !logoutUrl.startsWith('http')) {
-            logoutUrl = `https://is.mendelu.cz/auth/student/${logoutUrl}`;
+        if (logoutUrl) {
+            logoutUrl = validateUrl(logoutUrl, 'is.mendelu.cz');
+            if (!logoutUrl) {
+                console.warn('examParser: invalid logout URL');
+            }
         }
 
         events.push({

@@ -1,7 +1,7 @@
 import { fetchWithAuth, BASE_URL } from "./client";
 import type { ParsedFile, FileAttachment } from "../types/documents";
-
 import { fetchSubjects } from "./subjects";
+import { sanitizeString, validateFileName, validateUrl } from "../utils/validation";
 
 export async function fetchDocumentsForSubject(subjectCode: string): Promise<FileAttachment[]> {
     const subjectsData = await fetchSubjects();
@@ -39,13 +39,31 @@ export async function fetchFilesFromFolder(folderUrl: string, recursive: boolean
                 );
 
                 if (isFolder && file.files.length > 0) {
-                    const folderLink = file.files[0].link;
-                    // Convert relative link to absolute
-                    const absoluteUrl = folderLink.startsWith('http')
-                        ? folderLink
-                        : `${BASE_URL}/auth/dok_server/${folderLink}`;
+                    let folderLink = file.files[0].link;
 
-                    console.log(`Fetching subfolder: ${file.file_name}`);
+                    // Clean up the link - IS Mendelu uses semicolons in URLs which causes 404s
+                    // Replace ?; with ? and any remaining ; with &
+                    folderLink = folderLink.replace(/\?;/g, '?').replace(/;/g, '&');
+
+                    let absoluteUrl = '';
+
+                    // Robust handling for slozka.pl links
+                    if (folderLink.includes('slozka.pl')) {
+                        // Extract query string
+                        const queryMatch = folderLink.match(/slozka\.pl(\?.*)$/);
+                        const query = queryMatch ? queryMatch[1] : '';
+                        // Force correct path
+                        absoluteUrl = `${BASE_URL}/auth/dok_server/slozka.pl${query}`;
+                    } else {
+                        // Standard handling for other links
+                        absoluteUrl = folderLink.startsWith('http')
+                            ? folderLink
+                            : folderLink.startsWith('/')
+                                ? `${BASE_URL}${folderLink}`
+                                : `${BASE_URL}/auth/dok_server/${folderLink}`;
+                    }
+
+                    console.log(`Fetching subfolder: ${file.file_name}`, absoluteUrl);
                     const subfolderFiles = await fetchFilesFromFolder(absoluteUrl, false); // Don't recurse deeper
 
                     // Add subfolder info to each file
@@ -98,16 +116,27 @@ export function parseServerFiles(html: string): ParsedFile[] {
             const img = row?.querySelector('img[sysid]');
             const type = img?.getAttribute('sysid')?.replace('mime-', '') || 'unknown';
 
+            // Sanitize extracted metadata
+            const sanitizedName = validateFileName(name);
+            const sanitizedComment = sanitizeString(comment, 500);
+            const sanitizedAuthor = sanitizeString(author, 200);
+            const validatedUrl = validateUrl(link, 'is.mendelu.cz');
+
+            if (!sanitizedName || !validatedUrl) {
+                console.warn('parseServerFiles: invalid file metadata');
+                return [];
+            }
+
             return [{
                 subfolder: '',
-                file_name: name,
-                file_comment: comment,
-                author: author,
+                file_name: sanitizedName,
+                file_comment: sanitizedComment,
+                author: sanitizedAuthor,
                 date: date,
                 files: [{
-                    name: name,
+                    name: sanitizedName,
                     type: type,
-                    link: link
+                    link: validatedUrl
                 }]
             }];
         }
@@ -151,14 +180,22 @@ export function parseServerFiles(html: string): ParsedFile[] {
             return;
         }
 
-        const subfolder = cells[(adder)]?.textContent?.trim() || '';
-        const file_name = cells[(1 + adder)]?.textContent?.trim() || '';
-        const file_comment = cells[(2 + adder)]?.textContent?.trim() || '';
+        const subfolder = sanitizeString(cells[(adder)]?.textContent || '', 100);
+        const file_name = validateFileName(cells[(1 + adder)]?.textContent || '');
+        const file_comment = sanitizeString(cells[(2 + adder)]?.textContent || '', 500);
 
         const authorLink = cells[(3 + adder)]?.querySelector('a');
-        const author = authorLink ? authorLink.textContent?.trim() || '' : cells[(3 + adder)]?.textContent?.trim() || '';
+        const author = sanitizeString(
+            authorLink ? authorLink.textContent || '' : cells[(3 + adder)]?.textContent || '',
+            200
+        );
 
-        const date = cells[(4 + adder)]?.textContent?.trim() || '';
+        const date = sanitizeString(cells[(4 + adder)]?.textContent || '', 50);
+
+        // Skip rows with invalid/empty file names
+        if (!file_name) {
+            return;
+        }
 
         // Look for file links - try multiple cell indices
         let filesCell = cells[(6 + adder)];
@@ -177,25 +214,30 @@ export function parseServerFiles(html: string): ParsedFile[] {
         const extractedFiles: FileAttachment[] = [];
         fileLinks.forEach(link => {
             const img = link.querySelector('img[sysid]');
+            const href = link.getAttribute('href') || '';
+
+            // Validate URL before adding
+            const validatedUrl = validateUrl(href, 'is.mendelu.cz');
+            if (!validatedUrl) {
+                console.warn('parseServerFiles: invalid file URL', href);
+                return;
+            }
+
             if (img) {
                 const sysid = img.getAttribute('sysid') || '';
                 const type = sysid.startsWith('mime-') ? sysid.replace('mime-', '') : sysid;
 
                 extractedFiles.push({
                     name: file_name,
-                    type: type,
-                    link: link.getAttribute('href') || ''
+                    type: sanitizeString(type, 50),
+                    link: validatedUrl
                 });
-            } else {
-                // Try without img - maybe the link is directly the file
-                const href = link.getAttribute('href');
-                if (href && (href.includes('download') || href.includes('.pl'))) {
-                    extractedFiles.push({
-                        name: file_name || link.textContent?.trim() || 'Unknown',
-                        type: 'unknown',
-                        link: href
-                    });
-                }
+            } else if (href && (href.includes('download') || href.includes('.pl'))) {
+                extractedFiles.push({
+                    name: file_name || sanitizeString(link.textContent || 'Unknown', 200),
+                    type: 'unknown',
+                    link: validatedUrl
+                });
             }
         });
 

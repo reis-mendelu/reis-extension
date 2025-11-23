@@ -1,6 +1,7 @@
 import type { FileObject, StoredSubject } from "../types/calendarTypes";
 import { fetchSubjects } from "../api/subjects";
 import { fetchFilesFromFolder } from "../api/documents";
+import { encryptData, decryptData } from "./encryption";
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
@@ -37,12 +38,11 @@ export async function getStoredSubject(courseCode: string): Promise<StoredSubjec
         const now = Date.now();
         const STORAGE_KEY = 'subjects_cache';
 
-        // Try to load from Chrome storage first
-        let subjectsCache = await getChromeStorageData<{ data: Record<string, any>, timestamp: number }>(STORAGE_KEY);
+        // Try to load from Chrome storage first (data is now encrypted string)
+        let subjectsCache = await getChromeStorageData<{ data: string, timestamp: number }>(STORAGE_KEY);
 
         // Check if cache is valid
         if (!subjectsCache || (now - subjectsCache.timestamp > CACHE_DURATION)) {
-            console.log(`Fetching subjects data for ${courseCode}`);
             const subjectsData = await fetchSubjects();
 
             if (!subjectsData) {
@@ -50,17 +50,19 @@ export async function getStoredSubject(courseCode: string): Promise<StoredSubjec
                 return null;
             }
 
-            // Save to Chrome storage
+            // Encrypt data before storing
+            const encryptedData = await encryptData(JSON.stringify(subjectsData.data));
             subjectsCache = {
-                data: subjectsData.data,
+                data: encryptedData,
                 timestamp: now
             };
             await setChromeStorageData(STORAGE_KEY, subjectsCache);
-        } else {
-            console.log(`Using cached subjects data (age: ${Math.round((now - subjectsCache.timestamp) / 1000)}s)`);
         }
 
-        const subject = subjectsCache.data[courseCode];
+        // Decrypt data when reading from cache
+        const decryptedData = await decryptData(subjectsCache.data);
+        const parsedData = JSON.parse(decryptedData);
+        const subject = parsedData[courseCode];
 
         if (!subject) {
             console.warn(`Subject ${courseCode} not found in subjects data`);
@@ -84,14 +86,21 @@ export async function getFilesFromId(folderId: string | null): Promise<FileObjec
         const now = Date.now();
         const STORAGE_KEY = `files_cache_${folderId}`;
 
-        // Try to load from Chrome storage first
-        const cachedData = await getChromeStorageData<{ files: FileObject[], timestamp: number }>(STORAGE_KEY);
+        // Try to load from Chrome storage first (files now encrypted as string)
+        const cachedData = await getChromeStorageData<{ files: string, timestamp: number }>(STORAGE_KEY);
 
-        // If we have valid cache (less than 1 hour old), return it
-        const FILE_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for files
+        // If we have valid cache (5 minutes for files - fresh during lectures)
+        const FILE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes (was 1 hour)
         if (cachedData && (now - cachedData.timestamp < FILE_CACHE_DURATION)) {
-            console.log(`Using cached files for folder ${folderId} (age: ${Math.round((now - cachedData.timestamp) / 1000)}s)`);
-            return cachedData.files;
+            // Check if data is encrypted (string) or legacy (array)
+            if (typeof cachedData.files === 'string') {
+                // Decrypt cached files
+                const decryptedFiles = await decryptData(cachedData.files);
+                return JSON.parse(decryptedFiles);
+            } else {
+                // Legacy cache (plaintext) - ignore and re-fetch to encrypt
+                console.log('Legacy cache detected, re-fetching to encrypt...');
+            }
         }
 
         console.log(`Fetching files for folder ID: ${folderId}`);
@@ -106,9 +115,10 @@ export async function getFilesFromId(folderId: string | null): Promise<FileObjec
             return [];
         }
 
-        // Save to Chrome storage
+        // Encrypt files before storing
+        const encryptedFiles = await encryptData(JSON.stringify(files));
         await setChromeStorageData(STORAGE_KEY, {
-            files,
+            files: encryptedFiles,
             timestamp: now
         });
 

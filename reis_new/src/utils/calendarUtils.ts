@@ -388,3 +388,44 @@ export const MOCK_WEEK_SCHEDUELE = [
         "periodId": "801"
     },
 ];
+
+/**
+ * Smart Week Detection
+ * Returns the most relevant week to display:
+ * - On weekends (Sat/Sun): show NEXT week (upcoming Monday-Friday)
+ * - On weekdays: show CURRENT week (this Monday-Friday)
+ * 
+ * This ensures students always see their upcoming schedule, not past classes.
+ */
+export function getSmartWeekRange(referenceDate: Date = new Date()): { start: Date; end: Date } {
+    const now = new Date(referenceDate);
+    const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+
+    let startOfWeek: Date;
+
+    // If Saturday (6) or Sunday (0), show NEXT week
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+        // Calculate next Monday
+        const daysUntilMonday = dayOfWeek === 0 ? 1 : 2; // Sunday: +1 day, Saturday: +2 days
+        startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() + daysUntilMonday);
+        startOfWeek.setHours(0, 0, 0, 0);
+    } else {
+        // Weekday: show current week (go back to this week's Monday)
+        // If we are here, dayOfWeek is 1-5 (Mon-Fri).
+        // If we are here, dayOfWeek is 1-5 (Mon-Fri).
+        const daysToSubtract = dayOfWeek - 1;
+        startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - daysToSubtract);
+        startOfWeek.setHours(0, 0, 0, 0);
+    }
+
+    // End of week is always Friday (4 days after Monday)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 4);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    console.log(`[Smart Week] Reference: ${now.toLocaleDateString('cs-CZ')}, Day: ${dayOfWeek}, Week: ${startOfWeek.toLocaleDateString('cs-CZ')} - ${endOfWeek.toLocaleDateString('cs-CZ')}`);
+
+    return { start: startOfWeek, end: endOfWeek };
+}

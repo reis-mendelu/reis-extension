@@ -1,3 +1,5 @@
+import { sanitizeString, validateUrl } from '../utils/validation';
+
 export interface Person {
     id: string | null;
     name: string;
@@ -97,8 +99,26 @@ export function parseMendeluResults(htmlString: string): Person[] {
                 personLink += ';lang=cz';
             }
 
-            return { id, name, link: personLink, faculty, programAndMode, status, rawDetails, type };
-        });
+            // Sanitize and validate extracted data
+            const sanitizedName = sanitizeString(name, 200);
+            const validatedLink = validateUrl(personLink, 'is.mendelu.cz');
+
+            if (!sanitizedName) {
+                console.warn('parseMendeluResults: invalid name', name);
+                return null;
+            }
+
+            return {
+                id,
+                name: sanitizedName,
+                link: validatedLink || personLink, // Fall back to original if validation fails
+                faculty: sanitizeString(faculty, 100),
+                programAndMode: sanitizeString(programAndMode, 200),
+                status: sanitizeString(status, 100),
+                rawDetails: sanitizeString(rawDetails, 500),
+                type
+            };
+        }).filter(person => person !== null) as Person[];
     }
 
     // --- Case 2: Check for a single-person profile page (using your helpful snippet) ---
@@ -196,14 +216,23 @@ export function parseMendeluResults(htmlString: string): Person[] {
             personLink += ';lang=cz';
         }
 
+        // Sanitize and validate single person data
+        const sanitizedName = sanitizeString(name, 200);
+        const validatedLink = validateUrl(personLink, 'is.mendelu.cz');
+
+        if (!sanitizedName) {
+            console.warn('parseMendeluResults: invalid single person name', name);
+            return [];
+        }
+
         return [{
             id: id,
-            name: name,
-            link: personLink,
-            faculty: infoLines.length > 0 ? infoLines[0] : 'N/A',
+            name: sanitizedName,
+            link: validatedLink || personLink,
+            faculty: sanitizeString(infoLines.length > 0 ? infoLines[0] : 'N/A', 100),
             programAndMode: isStudent ? 'Student Profile' : 'Staff Profile',
             status: isStudent ? 'Student' : 'Staff',
-            rawDetails: rawDetails,
+            rawDetails: sanitizeString(rawDetails, 500),
             type: type
         }];
     }

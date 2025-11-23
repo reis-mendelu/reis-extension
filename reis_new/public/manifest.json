@@ -9,7 +9,7 @@
         "scripting"
     ],
     "content_security_policy": {
-        "extension_pages": "script-src 'self'; object-src 'self'; font-src 'self' https://fonts.gstatic.com; style-src 'self' https://fonts.googleapis.com"
+        "extension_pages": "script-src 'self'; object-src 'self'; font-src 'self'; style-src 'self'"
     },
     "host_permissions": [
         "https://is.mendelu.cz/*"
@@ -29,7 +29,8 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "mendelu-logo.png"
+                "mendelu-logo.png",
+                "fonts/*"
             ],
             "matches": [
                 "https://is.mendelu.cz/*"
