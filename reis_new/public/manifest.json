@@ -4,9 +4,7 @@
     "version": "2.0.0",
     "description": "Modernized reIS extension for IS Mendelu",
     "permissions": [
-        "storage",
-        "activeTab",
-        "scripting"
+        "storage"
     ],
     "content_security_policy": {
         "extension_pages": "script-src 'self'; object-src 'self'; font-src 'self'; style-src 'self'"
