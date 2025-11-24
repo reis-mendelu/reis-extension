@@ -22,7 +22,6 @@ export function parseRegisteredExams(html: string): ExamEvent[] {
     const table = doc.querySelector('#table_1');
 
     if (!table) {
-        console.warn("Exam table #table_1 not found in HTML");
         return [];
     }
 
@@ -40,7 +39,6 @@ export function parseRegisteredExams(html: string): ExamEvent[] {
         const subjectCodeRaw = cells[1]?.textContent?.trim() || '';
         const subjectCode = sanitizeString(subjectCodeRaw, 50);
         if (!subjectCode) {
-            console.warn('examParser: empty subject code, skipping row');
             return;
         }
 
@@ -49,7 +47,6 @@ export function parseRegisteredExams(html: string): ExamEvent[] {
         const subjectNameRaw = subjectNameAnchor?.textContent?.trim() || cells[2].textContent?.trim() || '';
         const subjectName = sanitizeString(subjectNameRaw, 200);
         if (!subjectName) {
-            console.warn('examParser: empty subject name, skipping row');
             return;
         }
 
@@ -67,7 +64,6 @@ export function parseRegisteredExams(html: string): ExamEvent[] {
         // Validate the constructed date
         const validatedDate = validateDate(isoDate);
         if (!validatedDate) {
-            console.warn('examParser: invalid date', dateClean);
             return; // Skip exams with invalid dates
         }
 
@@ -78,7 +74,6 @@ export function parseRegisteredExams(html: string): ExamEvent[] {
 
         // Optionally validate room code format
         if (location && !validateRoomCode(location) && location !== 'Online') {
-            console.warn('examParser: unusual room code', location);
             // Don't skip, but log for monitoring
         }
 
@@ -90,7 +85,6 @@ export function parseRegisteredExams(html: string): ExamEvent[] {
         const teacherRaw = cells[7].textContent?.trim() || '';
         const teacher = sanitizeTeacherName(teacherRaw);
         if (!teacher) {
-            console.warn('examParser: invalid teacher name', teacherRaw);
         }
 
         // Column 8: Capacity (SANITIZE)
@@ -108,7 +102,6 @@ export function parseRegisteredExams(html: string): ExamEvent[] {
         if (infoUrl) {
             infoUrl = validateUrl(infoUrl, 'is.mendelu.cz');
             if (!infoUrl) {
-                console.warn('examParser: invalid info URL');
             }
         }
 
@@ -118,7 +111,6 @@ export function parseRegisteredExams(html: string): ExamEvent[] {
         if (logoutUrl) {
             logoutUrl = validateUrl(logoutUrl, 'is.mendelu.cz');
             if (!logoutUrl) {
-                console.warn('examParser: invalid logout URL');
             }
         }
 

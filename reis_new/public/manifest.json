@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "Reis Mendelu New",
-    "version": "1.0.0",
-    "description": "Modernized Reis extension for IS Mendelu",
+    "name": "reIS",
+    "version": "2.0.0",
+    "description": "Modernized reIS extension for IS Mendelu",
     "permissions": [
         "storage",
         "activeTab",
@@ -29,7 +29,9 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "mendelu-logo.png",
+                "mendelu_logo_16.png",
+                "mendelu_logo_48.png",
+                "mendelu_logo_128.png",
                 "fonts/*"
             ],
             "matches": [
@@ -38,8 +40,8 @@
         }
     ],
     "icons": {
-        "16": "vite.svg",
-        "48": "vite.svg",
-        "128": "vite.svg"
+        "16": "mendelu_logo_16.png",
+        "48": "mendelu_logo_48.png",
+        "128": "mendelu_logo_128.png"
     }
 }

@@ -23,7 +23,6 @@ export async function fetchDocumentsForSubject(subjectCode: string): Promise<Fil
 }
 
 export async function fetchFilesFromFolder(folderUrl: string, recursive: boolean = true, currentDepth: number = 0, maxDepth: number = 2): Promise<ParsedFile[]> {
-    console.log(`Fetching files from: ${folderUrl} (Depth: ${currentDepth}, MaxDepth: ${maxDepth})`);
     try {
         // Ensure lang=cz is present
         let urlToFetch = folderUrl;
@@ -309,7 +308,6 @@ export function parseServerFiles(html: string): { files: ParsedFile[], paginatio
         }
 
         if (!link) {
-            console.debug('Row skipped: No link found in any cell');
             return;
         }
 
@@ -326,11 +324,8 @@ export function parseServerFiles(html: string): { files: ParsedFile[], paginatio
 
         // Skip rows with invalid/empty file names
         if (!file_name) {
-            console.debug('Row skipped: Empty file name');
             return;
         }
-
-        console.debug(`Processing row: ${file_name}`);
 
         // Look for file links - try multiple cell indices starting from the end
         // Usually the last two columns are View and Attach

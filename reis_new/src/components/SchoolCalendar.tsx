@@ -36,7 +36,6 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
 
             // Try to get cached exams first
             let exams = await getCachedExams();
-            console.log('[SchoolCalendar] Cached exams:', exams?.length || 0);
 
             // Helper to process exams
             const processExams = (examEvents: any[]) => {
@@ -46,8 +45,6 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                     const startTime = `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
                     const endObj = new Date(dateObj.getTime() + 90 * 60000);
                     const endTime = `${String(endObj.getHours()).padStart(2, '0')}:${String(endObj.getMinutes()).padStart(2, '0')}`;
-
-                    console.log(`[SchoolCalendar] Processing exam: ${exam.title} on ${dateStr} at ${startTime}`);
 
                     return {
                         id: `exam-${exam.id}-${exam.start}`,
@@ -71,7 +68,6 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                         periodId: ''
                     } as BlockLesson;
                 });
-                console.log(`[SchoolCalendar] Processed ${processed.length} exam events`);
                 return processed;
             };
 
@@ -83,7 +79,6 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
             // If we have cached exams, add them immediately
             if (exams && exams.length > 0) {
                 const examLessons = processExams(exams);
-                console.log(`[SchoolCalendar] Setting schedule with ${allLessons.length} lessons + ${examLessons.length} exams`);
                 setScheduleData([...allLessons, ...examLessons]);
             } else {
                 setScheduleData(allLessons);
@@ -93,7 +88,6 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
 
             // Fetch fresh exams in background
             fetchExams().then(freshExams => {
-                console.log('[SchoolCalendar] Fresh exams fetched:', freshExams?.length || 0);
                 if (freshExams && freshExams.length > 0) {
                     const examLessons = processExams(freshExams);
                     // Re-merge with current schedule data (which might have changed if week changed, but here we are in closure)
@@ -101,7 +95,6 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                     setScheduleData(prev => {
                         // Filter out old exams from prev state to avoid duplicates if we just append
                         const nonExams = prev.filter(l => !l.isExam);
-                        console.log(`[SchoolCalendar] Merging: ${nonExams.length} lessons + ${examLessons.length} fresh exams`);
                         return [...nonExams, ...examLessons];
                     });
                 }

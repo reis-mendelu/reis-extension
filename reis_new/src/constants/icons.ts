@@ -2,4 +2,4 @@
 // Teams and Outlook icons are now using Lucide React icons in Sidebar.tsx
 // Mendelu logo is imported from assets in components
 
-export const MENDELU_LOGO_PATH = "../assets/mendeluLogo.png";
+export const MENDELU_LOGO_PATH = "../assets/mendelu_logo_128.png";

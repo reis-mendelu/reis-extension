@@ -42,9 +42,6 @@ export function parseMendeluResults(htmlString: string): Person[] {
             const faculty = parts[0] ?? 'N/A';
             const programAndMode = parts.slice(1).join(' ');
 
-            // Debug logging
-            console.log(`[Search Debug] Name: ${name}, RawDetails: "${rawDetails}"`);
-
             // Classification logic
             // Students usually have [term X, year Y] or [ročník X] in their status/details
             // Staff usually have titles like Ing., Ph.D., doc., prof., etc. in their name
@@ -104,7 +101,6 @@ export function parseMendeluResults(htmlString: string): Person[] {
             const validatedLink = validateUrl(personLink, 'is.mendelu.cz');
 
             if (!sanitizedName) {
-                console.warn('parseMendeluResults: invalid name', name);
                 return null;
             }
 
@@ -204,10 +200,8 @@ export function parseMendeluResults(htmlString: string): Person[] {
             name.toLowerCase().includes('th.d.')
         ) {
             type = 'teacher';
-            console.log(`[Single Person Debug] ${name} classified as TEACHER based on rawDetails: "${rawDetails}"`);
         } else {
             type = 'staff';
-            console.log(`[Single Person Debug] ${name} classified as STAFF based on rawDetails: "${rawDetails}"`);
         }
 
         // Add ;lang=cz to the link
@@ -221,7 +215,6 @@ export function parseMendeluResults(htmlString: string): Person[] {
         const validatedLink = validateUrl(personLink, 'is.mendelu.cz');
 
         if (!sanitizedName) {
-            console.warn('parseMendeluResults: invalid single person name', name);
             return [];
         }
 
