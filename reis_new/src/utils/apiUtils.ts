@@ -108,13 +108,8 @@ export async function getFilesFromId(folderId: string | null): Promise<FileObjec
                     await setChromeStorageData(STORAGE_KEY, null);
                     // Fall through to fetch
                 }
-            } else {
-                // Legacy cache (plaintext) - ignore and re-fetch to encrypt
-                console.log('Legacy cache detected, re-fetching to encrypt...');
             }
         }
-
-        console.log(`Fetching files for folder ID: ${folderId}`);
 
         // Construct the folder URL from the ID
         const folderUrl = `https://is.mendelu.cz/auth/dok_server/slozka.pl?id=${folderId}`;
@@ -122,7 +117,6 @@ export async function getFilesFromId(folderId: string | null): Promise<FileObjec
         const files = await fetchFilesFromFolder(folderUrl);
 
         if (!files || files.length === 0) {
-            console.log(`No files found for folder ID: ${folderId}`);
             return [];
         }
 

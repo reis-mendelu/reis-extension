@@ -9,8 +9,6 @@ async function inspectFolders() {
     });
     const page = await context.newPage();
 
-    console.log('🔍 Starting Folder Inspection for ZOO, ICT, TZI...\n');
-
     const username = process.env.MENDELU_USER;
     const password = process.env.MENDELU_PASS;
 
@@ -21,7 +19,6 @@ async function inspectFolders() {
     }
 
     // Login
-    console.log('🔐 Attempting login...');
     await page.goto('https://is.mendelu.cz/auth/login.pl');
     await page.fill('input[name="credential_0"]', username);
     await page.fill('input[name="credential_1"]', password);
@@ -29,7 +26,6 @@ async function inspectFolders() {
     await page.waitForLoadState('networkidle');
 
     // Go to Subjects List
-    console.log('📂 Navigating to Subjects List...');
     await page.goto('https://is.mendelu.cz/auth/student/list.pl');
 
     // Find subjects
@@ -47,7 +43,6 @@ async function inspectFolders() {
                 if (link) {
                     const href = await link.getAttribute('href');
                     subjectLinks[subj] = href;
-                    console.log(`   ✅ Found ${subj}: ${href}`);
                 }
             }
         }
@@ -72,7 +67,6 @@ async function inspectFolders() {
             }
         }
 
-        console.log(`\n🕵️‍♀️ Inspecting ${subj} folder: ${targetUrl}`);
         await page.goto(targetUrl);
 
         // Dump table rows
@@ -93,15 +87,6 @@ async function inspectFolders() {
             });
         });
 
-        console.log(`   Found ${folderRows.length} rows.`);
-        folderRows.forEach((r, i) => {
-            if (r.cellCount > 1) { // Skip layout rows
-                console.log(`   Row ${i}: [Cells: ${r.cellCount}] ${r.text}`);
-                if (r.hasFolderLink) console.log(`      - Folder Link: ${r.folderLinkText} (${r.folderLinkHref})`);
-                if (r.hasDownloadLink) console.log(`      - Download Link Found`);
-            }
-        });
-
         // If ICT or TZI, try to go deeper into one subfolder
         if ((subj === 'ICT' || subj === 'TZI') && folderRows.some(r => r.hasFolderLink)) {
             const subfolderRow = folderRows.find(r =>
@@ -115,7 +100,6 @@ async function inspectFolders() {
             );
 
             if (subfolderRow) {
-                console.log(`\n   ↘️  Descending into subfolder: ${subfolderRow.folderLinkHref}`);
                 let subUrl = subfolderRow.folderLinkHref;
                 if (!subUrl.startsWith('http')) {
                     subUrl = `https://is.mendelu.cz/auth/dok_server/${subUrl}`; // Assuming relative to dok_server now
@@ -132,10 +116,6 @@ async function inspectFolders() {
                             hasDownloadLink: !!download
                         };
                     });
-                });
-                console.log(`   Subfolder content (${subRows.length} rows):`);
-                subRows.forEach((r, i) => {
-                    if (r.cellCount > 1) console.log(`      Row ${i}: ${r.text} ${r.hasDownloadLink ? '[DOWNLOAD]' : ''}`);
                 });
             }
         }

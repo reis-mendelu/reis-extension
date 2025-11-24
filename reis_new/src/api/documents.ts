@@ -417,6 +417,5 @@ export function parseServerFiles(html: string): { files: ParsedFile[], paginatio
         }
     });
 
-    console.log(`Total files parsed: ${files.length}, Pagination links: ${paginationLinks.length}`);
     return { files, paginationLinks };
 }

@@ -227,7 +227,6 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
             // If 404, the URL is likely stale - refresh file list and retry once
             if (response.status === 404) {
                 if (retryCount === 0) {
-                    console.log('[SubjectPopup] File URL returned 404, refreshing file list...');
 
                     // Refresh file list to get fresh URLs
                     if (subject_data) {
@@ -246,7 +245,6 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
                             );
 
                             if (refreshedFile) {
-                                console.log('[SubjectPopup] Found refreshed URL, retrying...');
                                 await loadFile(refreshedFile.link, 1);
                                 return;
                             }

@@ -1,0 +1,78 @@
+{
+  "http://localhost:8080": {
+    "scannedAt": "2025-11-18T18:15:48.997Z",
+    "formCount": 1,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/auth/katalog/rozvrhy_view.pl",
+          "method": "post",
+          "name": "wqqwqqwwqyw0",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "rozvrh_student",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "120344"
+          },
+          {
+            "name": "rezervace",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "0"
+          },
+          {
+            "name": "semester",
+            "type": "text",
+            "id": "",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "typ_vypisu",
+            "type": "radio",
+            "id": "",
+            "required": false,
+            "value": "souhrn"
+          },
+          {
+            "name": "typ_vypisu",
+            "type": "radio",
+            "id": "",
+            "required": false,
+            "value": "konani"
+          },
+          {
+            "name": "zobraz2",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "Display"
+          }
+        ],
+        "selects": [
+          {
+            "name": "format",
+            "id": "",
+            "required": false,
+            "optionCount": 2
+          }
+        ],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "Display",
+            "name": "zobraz2"
+          }
+        ],
+        "totalElements": 7
+      }
+    ]
+  }
+}

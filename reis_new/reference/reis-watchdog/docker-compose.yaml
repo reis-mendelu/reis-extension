@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  # 1. The Fake Website
+  mock-server:
+    image: nginx:alpine
+    volumes:
+      - ./mock-site:/usr/share/nginx/html
+    ports:
+      - "8080:80" # You can view it at http://localhost:8080
+
+  # 2. The Playwright Runner
+  e2e-tests:
+    image: mcr.microsoft.com/playwright:v1.56.1-jammy
+    ipc: host # PREVENTS CRASHES
+    working_dir: /app
+    environment:
+      - BASE_URL=http://mock-server
+      - CI=true
+    volumes:
+      - .:/app
+      - /app/node_modules # Anonymous volume for container-specific binaries
+    depends_on:
+      - mock-server
+    # Keep the container running so we can execute commands manually
+    command: sleep infinity

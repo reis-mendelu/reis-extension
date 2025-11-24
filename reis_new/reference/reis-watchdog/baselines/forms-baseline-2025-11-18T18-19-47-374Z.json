@@ -1,0 +1,636 @@
+{
+  "https://is.mendelu.cz/auth/katalog/rozvrhy_view.pl": {
+    "error": "page.goto: net::ERR_ABORTED at https://is.mendelu.cz/auth/katalog/rozvrhy_view.pl\nCall log:\n\u001b[2m  - navigating to \"https://is.mendelu.cz/auth/katalog/rozvrhy_view.pl\", waiting until \"networkidle\"\u001b[22m\n",
+    "scannedAt": "2025-11-18T18:19:42.005Z"
+  },
+  "https://is.mendelu.cz/auth/student/studium.pl": {
+    "scannedAt": "2025-11-18T18:19:42.732Z",
+    "formCount": 1,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/system/login.pl",
+          "method": "post",
+          "name": "wqqwqqwwqyw0",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "login_hidden",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "destination",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "/auth/student/studium.pl"
+          },
+          {
+            "name": "auth_id_hidden",
+            "type": "hidden",
+            "id": "auth_id_hidden",
+            "required": false,
+            "value": "0"
+          },
+          {
+            "name": "auth_2fa_type",
+            "type": "hidden",
+            "id": "auth_2fa_type",
+            "required": false,
+            "value": "no"
+          },
+          {
+            "name": "credential_0",
+            "type": "text",
+            "id": "credential_0",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_1",
+            "type": "password",
+            "id": "credential_1",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_k",
+            "type": "text",
+            "id": "overovaci_kod",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_cookie",
+            "type": "checkbox",
+            "id": "credential_cookie",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "login",
+            "type": "submit",
+            "id": "login-btn",
+            "required": false,
+            "value": "Log in"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "Log in",
+            "name": "login"
+          }
+        ],
+        "totalElements": 9
+      }
+    ]
+  },
+  "https://is.mendelu.cz/auth/student/list.pl": {
+    "scannedAt": "2025-11-18T18:19:43.704Z",
+    "formCount": 1,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/system/login.pl",
+          "method": "post",
+          "name": "wqqwqqwwqyw0",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "login_hidden",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "destination",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "/auth/student/list.pl"
+          },
+          {
+            "name": "auth_id_hidden",
+            "type": "hidden",
+            "id": "auth_id_hidden",
+            "required": false,
+            "value": "0"
+          },
+          {
+            "name": "auth_2fa_type",
+            "type": "hidden",
+            "id": "auth_2fa_type",
+            "required": false,
+            "value": "no"
+          },
+          {
+            "name": "credential_0",
+            "type": "text",
+            "id": "credential_0",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_1",
+            "type": "password",
+            "id": "credential_1",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_k",
+            "type": "text",
+            "id": "overovaci_kod",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_cookie",
+            "type": "checkbox",
+            "id": "credential_cookie",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "login",
+            "type": "submit",
+            "id": "login-btn",
+            "required": false,
+            "value": "Log in"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "Log in",
+            "name": "login"
+          }
+        ],
+        "totalElements": 9
+      }
+    ]
+  },
+  "https://is.mendelu.cz/auth/dok_server/vyhledavani.pl": {
+    "scannedAt": "2025-11-18T18:19:44.422Z",
+    "formCount": 1,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/system/login.pl",
+          "method": "post",
+          "name": "wqqwqqwwqyw0",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "login_hidden",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "destination",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "/auth/dok_server/vyhledavani.pl"
+          },
+          {
+            "name": "auth_id_hidden",
+            "type": "hidden",
+            "id": "auth_id_hidden",
+            "required": false,
+            "value": "0"
+          },
+          {
+            "name": "auth_2fa_type",
+            "type": "hidden",
+            "id": "auth_2fa_type",
+            "required": false,
+            "value": "no"
+          },
+          {
+            "name": "credential_0",
+            "type": "text",
+            "id": "credential_0",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_1",
+            "type": "password",
+            "id": "credential_1",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_k",
+            "type": "text",
+            "id": "overovaci_kod",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_cookie",
+            "type": "checkbox",
+            "id": "credential_cookie",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "login",
+            "type": "submit",
+            "id": "login-btn",
+            "required": false,
+            "value": "Log in"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "Log in",
+            "name": "login"
+          }
+        ],
+        "totalElements": 9
+      }
+    ]
+  },
+  "https://is.mendelu.cz/auth/student/moje_studium.pl": {
+    "scannedAt": "2025-11-18T18:19:45.135Z",
+    "formCount": 1,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/system/login.pl",
+          "method": "post",
+          "name": "wqqwqqwwqyw0",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "login_hidden",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "destination",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "/auth/student/moje_studium.pl"
+          },
+          {
+            "name": "auth_id_hidden",
+            "type": "hidden",
+            "id": "auth_id_hidden",
+            "required": false,
+            "value": "0"
+          },
+          {
+            "name": "auth_2fa_type",
+            "type": "hidden",
+            "id": "auth_2fa_type",
+            "required": false,
+            "value": "no"
+          },
+          {
+            "name": "credential_0",
+            "type": "text",
+            "id": "credential_0",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_1",
+            "type": "password",
+            "id": "credential_1",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_k",
+            "type": "text",
+            "id": "overovaci_kod",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_cookie",
+            "type": "checkbox",
+            "id": "credential_cookie",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "login",
+            "type": "submit",
+            "id": "login-btn",
+            "required": false,
+            "value": "Log in"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "Log in",
+            "name": "login"
+          }
+        ],
+        "totalElements": 9
+      }
+    ]
+  },
+  "https://is.mendelu.cz/auth/student/hodnoceni.pl": {
+    "scannedAt": "2025-11-18T18:19:45.870Z",
+    "formCount": 1,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/system/login.pl",
+          "method": "post",
+          "name": "wqqwqqwwqyw0",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "login_hidden",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "destination",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "/auth/student/hodnoceni.pl"
+          },
+          {
+            "name": "auth_id_hidden",
+            "type": "hidden",
+            "id": "auth_id_hidden",
+            "required": false,
+            "value": "0"
+          },
+          {
+            "name": "auth_2fa_type",
+            "type": "hidden",
+            "id": "auth_2fa_type",
+            "required": false,
+            "value": "no"
+          },
+          {
+            "name": "credential_0",
+            "type": "text",
+            "id": "credential_0",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_1",
+            "type": "password",
+            "id": "credential_1",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_k",
+            "type": "text",
+            "id": "overovaci_kod",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_cookie",
+            "type": "checkbox",
+            "id": "credential_cookie",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "login",
+            "type": "submit",
+            "id": "login-btn",
+            "required": false,
+            "value": "Log in"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "Log in",
+            "name": "login"
+          }
+        ],
+        "totalElements": 9
+      }
+    ]
+  },
+  "https://is.mendelu.cz/auth/katalog/plany.pl": {
+    "scannedAt": "2025-11-18T18:19:46.594Z",
+    "formCount": 1,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/system/login.pl",
+          "method": "post",
+          "name": "wqqwqqwwqyw0",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "login_hidden",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "destination",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "/auth/katalog/plany.pl"
+          },
+          {
+            "name": "auth_id_hidden",
+            "type": "hidden",
+            "id": "auth_id_hidden",
+            "required": false,
+            "value": "0"
+          },
+          {
+            "name": "auth_2fa_type",
+            "type": "hidden",
+            "id": "auth_2fa_type",
+            "required": false,
+            "value": "no"
+          },
+          {
+            "name": "credential_0",
+            "type": "text",
+            "id": "credential_0",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_1",
+            "type": "password",
+            "id": "credential_1",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_k",
+            "type": "text",
+            "id": "overovaci_kod",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_cookie",
+            "type": "checkbox",
+            "id": "credential_cookie",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "login",
+            "type": "submit",
+            "id": "login-btn",
+            "required": false,
+            "value": "Log in"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "Log in",
+            "name": "login"
+          }
+        ],
+        "totalElements": 9
+      }
+    ]
+  },
+  "https://is.mendelu.cz/auth/dok_server/slozka.pl": {
+    "scannedAt": "2025-11-18T18:19:47.315Z",
+    "formCount": 1,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/system/login.pl",
+          "method": "post",
+          "name": "wqqwqqwwqyw0",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "login_hidden",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "destination",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "/auth/dok_server/slozka.pl"
+          },
+          {
+            "name": "auth_id_hidden",
+            "type": "hidden",
+            "id": "auth_id_hidden",
+            "required": false,
+            "value": "0"
+          },
+          {
+            "name": "auth_2fa_type",
+            "type": "hidden",
+            "id": "auth_2fa_type",
+            "required": false,
+            "value": "no"
+          },
+          {
+            "name": "credential_0",
+            "type": "text",
+            "id": "credential_0",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_1",
+            "type": "password",
+            "id": "credential_1",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_k",
+            "type": "text",
+            "id": "overovaci_kod",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "credential_cookie",
+            "type": "checkbox",
+            "id": "credential_cookie",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "login",
+            "type": "submit",
+            "id": "login-btn",
+            "required": false,
+            "value": "Log in"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "Log in",
+            "name": "login"
+          }
+        ],
+        "totalElements": 9
+      }
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mock University Form</title>
+</head>
+<body>
+    <h1>University Schedule</h1>
+    <form action="https://is.mendelu.cz/auth/rozvrhy_view.pl" method="post">
+        <input type="hidden" name="rozvrh_student" value="12345">
+        
+        <label>
+            <input type="radio" name="typ_vypisu" value="kombinovany" checked> Combined
+        </label>
+        <label>
+            <input type="radio" name="typ_vypisu" value="prezenční"> Full-time
+        </label>
+
+        <select name="format">
+            <option value="html" selected>HTML</option>
+            <option value="pdf">PDF</option>
+        </select>
+
+        <input type="submit" value="Display">
+    </form>
+</body>
+</html>

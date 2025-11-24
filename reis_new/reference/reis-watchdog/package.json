@@ -1,0 +1,22 @@
+{
+  "name": "university-monitor",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "playwright test",
+    "watch": "node watch-mock-site.js",
+    "start-server": "node scripts/mock-server.js",
+    "discover-forms": "node scripts/discover-forms.js",
+    "compare-baselines": "node scripts/compare-baselines.js",
+    "pre-deploy": "bash scripts/pre-deployment-check.sh",
+    "test:all-forms": "playwright test university-monitor/tests/all-forms-regression.spec.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^24.10.1",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.0",
+    "dotenv": "^17.2.3"
+  }
+}

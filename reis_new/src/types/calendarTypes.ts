@@ -80,5 +80,6 @@ export interface DateInfo {
     weekday: string;
     day: string;
     month: string;
+    year: string;
     full: string;
 }

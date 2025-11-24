@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>University Mock</title>
+</head>
+
+<body>
+    <h1>Mock Schedule Form</h1>
+    <!-- This form has the random name "wqqwqqwwqyw0" -->
+    <!-- We will ensure our test ignores that name but checks the structure -->
+    <form action="/auth/katalog/rozvrhy_view.pl" enctype="application/x-www-form-urlencoded" method="post"
+        name="wqqwqqwwqyw0">
+
+        <!-- Hidden Inputs -->
+        <input name="rozvrh_student" type="hidden" value="120344" />
+        <input name="rezervace" type="hidden" value="0" />
+        <input name="semester" type="text" placeholder="Enter semester" />
+
+        <!-- Radio Buttons -->
+        <!-- TEST CHANGE to verify watcher -->
+        Type of list:
+        <input checked="checked" name="typ_vypisu" type="radio" value="souhrn" /> total weekly
+        <input name="typ_vypisu" type="radio" value="konani" /> particular in days
+
+        <!-- Select Dropdown -->
+        Format:
+        <select name="format">
+            <option selected="selected" value="html">HTML</option>
+            <option value="pdf">PDF</option>
+        </select>
+
+        <!-- Submit -->
+        <input name="zobraz2" type="submit" value="Display" />
+    </form>
+</body>
+
+</html>

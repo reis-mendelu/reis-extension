@@ -1,0 +1,11 @@
+data/
+test-results/
+playwright-report/
+node_modules/
+.DS_Store
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+.env
+.env

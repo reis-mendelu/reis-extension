@@ -1,0 +1,1289 @@
+{
+  "https://is.mendelu.cz/auth/katalog/rozvrhy_view.pl": {
+    "scannedAt": "2025-11-18T18:30:41.159Z",
+    "formCount": 4,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/auth/lide/index.pl",
+          "method": "post",
+          "name": "portlet_lide",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "UISID1_1763490640",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "aktivni_a_preruseni"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "zamestnanci"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "externiste"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "absolventi"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 6
+      },
+      {
+        "formIndex": 1,
+        "attributes": {
+          "action": "/auth/katalog/index.pl",
+          "method": "post",
+          "name": "portlet_predmety",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 2
+      },
+      {
+        "formIndex": 2,
+        "attributes": {
+          "action": "/auth/katalog/rozvrhy_view.pl",
+          "method": "post",
+          "name": "wqqwqqwwqyw0",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "osobni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "z",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "k",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "f",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "0"
+          },
+          {
+            "name": "studijni_zpet",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "0"
+          },
+          {
+            "name": "rozvrh",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "5622"
+          },
+          {
+            "name": "zobraz",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "Display"
+          }
+        ],
+        "selects": [
+          {
+            "name": "format",
+            "id": "",
+            "required": false,
+            "optionCount": 3
+          }
+        ],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "Display",
+            "name": "zobraz"
+          }
+        ],
+        "totalElements": 8
+      },
+      {
+        "formIndex": 3,
+        "attributes": {
+          "action": "/auth/katalog/rozvrhy_view.pl",
+          "method": "post",
+          "name": "formular",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "z",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "k",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "1"
+          },
+          {
+            "name": "f",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "0"
+          },
+          {
+            "name": "studijni_zpet",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "0"
+          },
+          {
+            "name": "rozvrh",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "5622"
+          },
+          {
+            "name": "indiv_mistnosti",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "Individual selection"
+          },
+          {
+            "name": "indiv",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "Individual selection"
+          },
+          {
+            "name": "zobraz",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "Display"
+          }
+        ],
+        "selects": [
+          {
+            "name": "mistnost",
+            "id": "",
+            "required": false,
+            "optionCount": 51
+          },
+          {
+            "name": "garant",
+            "id": "",
+            "required": false,
+            "optionCount": 83
+          },
+          {
+            "name": "ucitel",
+            "id": "",
+            "required": false,
+            "optionCount": 175
+          },
+          {
+            "name": "predmet",
+            "id": "",
+            "required": false,
+            "optionCount": 214
+          },
+          {
+            "name": "ustav",
+            "id": "",
+            "required": false,
+            "optionCount": 13
+          },
+          {
+            "name": "den",
+            "id": "",
+            "required": false,
+            "optionCount": 8
+          },
+          {
+            "name": "stupen",
+            "id": "",
+            "required": false,
+            "optionCount": 4
+          },
+          {
+            "name": "program",
+            "id": "",
+            "required": false,
+            "optionCount": 18
+          },
+          {
+            "name": "obor",
+            "id": "",
+            "required": false,
+            "optionCount": 1
+          },
+          {
+            "name": "spicalizace",
+            "id": "",
+            "required": false,
+            "optionCount": 2
+          },
+          {
+            "name": "rocnik",
+            "id": "",
+            "required": false,
+            "optionCount": 4
+          },
+          {
+            "name": "skupina",
+            "id": "",
+            "required": false,
+            "optionCount": 14
+          },
+          {
+            "name": "format",
+            "id": "",
+            "required": false,
+            "optionCount": 3
+          }
+        ],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "Individual selection",
+            "name": "indiv_mistnosti"
+          },
+          {
+            "type": "input",
+            "value": "Individual selection",
+            "name": "indiv"
+          },
+          {
+            "type": "input",
+            "value": "Display",
+            "name": "zobraz"
+          }
+        ],
+        "totalElements": 21
+      }
+    ]
+  },
+  "https://is.mendelu.cz/auth/student/studium.pl": {
+    "scannedAt": "2025-11-18T18:30:42.065Z",
+    "formCount": 3,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/auth/lide/index.pl",
+          "method": "post",
+          "name": "portlet_lide",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "UISID1_1763490641",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "aktivni_a_preruseni"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "zamestnanci"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "externiste"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "absolventi"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 6
+      },
+      {
+        "formIndex": 1,
+        "attributes": {
+          "action": "/auth/katalog/index.pl",
+          "method": "post",
+          "name": "portlet_predmety",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 2
+      },
+      {
+        "formIndex": 2,
+        "attributes": {
+          "action": "/auth/student/studium.pl",
+          "method": "post",
+          "name": "formular",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "studium",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "149707"
+          },
+          {
+            "name": "obdobi",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "801"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [],
+        "totalElements": 2
+      }
+    ]
+  },
+  "https://is.mendelu.cz/auth/student/list.pl": {
+    "scannedAt": "2025-11-18T18:30:43.639Z",
+    "formCount": 3,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/auth/lide/index.pl",
+          "method": "post",
+          "name": "portlet_lide",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "UISID1_1763490642",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "aktivni_a_preruseni"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "zamestnanci"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "externiste"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "absolventi"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 6
+      },
+      {
+        "formIndex": 1,
+        "attributes": {
+          "action": "/auth/katalog/index.pl",
+          "method": "post",
+          "name": "portlet_predmety",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 2
+      },
+      {
+        "formIndex": 2,
+        "attributes": {
+          "action": "/auth/student/list.pl",
+          "method": "post",
+          "name": "formular",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "studium",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "149707"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [],
+        "totalElements": 1
+      }
+    ]
+  },
+  "https://is.mendelu.cz/auth/dok_server/vyhledavani.pl": {
+    "scannedAt": "2025-11-18T18:30:45.008Z",
+    "formCount": 3,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/auth/lide/index.pl",
+          "method": "post",
+          "name": "portlet_lide",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "UISID4_1763490644",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "aktivni_a_preruseni"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "zamestnanci"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "externiste"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "absolventi"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 6
+      },
+      {
+        "formIndex": 1,
+        "attributes": {
+          "action": "/auth/katalog/index.pl",
+          "method": "post",
+          "name": "portlet_predmety",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 2
+      },
+      {
+        "formIndex": 2,
+        "attributes": {
+          "action": "/auth/dok_server/vyhledavani.pl",
+          "method": "post",
+          "name": "wqqwqqwwqyw0",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "text",
+            "type": "text",
+            "id": "text_nazev",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "_vzorekkdo_vlozil",
+            "type": "text",
+            "id": "UISID1_1763490643",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "_dohledatkdo_vlozil",
+            "type": "submit",
+            "id": "dohledat",
+            "required": false,
+            "value": "Search"
+          },
+          {
+            "name": "kdo_vlozil",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "0"
+          },
+          {
+            "name": "od",
+            "type": "text",
+            "id": "UISID2_1763490643",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "do",
+            "type": "text",
+            "id": "UISID3_1763490643",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "najdi",
+            "type": "submit",
+            "id": "btn_vyhledat",
+            "required": false,
+            "value": "Search"
+          }
+        ],
+        "selects": [
+          {
+            "name": "priloha",
+            "id": "",
+            "required": false,
+            "optionCount": 115
+          },
+          {
+            "name": "id_slozky",
+            "id": "",
+            "required": false,
+            "optionCount": 1836
+          }
+        ],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "Search",
+            "name": "_dohledatkdo_vlozil"
+          },
+          {
+            "type": "input",
+            "value": "Search",
+            "name": "najdi"
+          }
+        ],
+        "totalElements": 9
+      }
+    ]
+  },
+  "https://is.mendelu.cz/auth/student/moje_studium.pl": {
+    "scannedAt": "2025-11-18T18:30:46.275Z",
+    "formCount": 3,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/auth/lide/index.pl",
+          "method": "post",
+          "name": "portlet_lide",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "UISID1_1763490645",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "aktivni_a_preruseni"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "zamestnanci"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "externiste"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "absolventi"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 6
+      },
+      {
+        "formIndex": 1,
+        "attributes": {
+          "action": "/auth/katalog/index.pl",
+          "method": "post",
+          "name": "portlet_predmety",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 2
+      },
+      {
+        "formIndex": 2,
+        "attributes": {
+          "action": "/auth/student/moje_studium.pl",
+          "method": "post",
+          "name": "formular",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "studium",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "149707"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [],
+        "totalElements": 1
+      }
+    ]
+  },
+  "https://is.mendelu.cz/auth/student/hodnoceni.pl": {
+    "scannedAt": "2025-11-18T18:30:47.108Z",
+    "formCount": 2,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/auth/lide/index.pl",
+          "method": "post",
+          "name": "portlet_lide",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "UISID1_1763490646",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "aktivni_a_preruseni"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "zamestnanci"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "externiste"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "absolventi"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 6
+      },
+      {
+        "formIndex": 1,
+        "attributes": {
+          "action": "/auth/katalog/index.pl",
+          "method": "post",
+          "name": "portlet_predmety",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 2
+      }
+    ]
+  },
+  "https://is.mendelu.cz/auth/katalog/plany.pl": {
+    "scannedAt": "2025-11-18T18:30:47.923Z",
+    "formCount": 2,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/auth/lide/index.pl",
+          "method": "post",
+          "name": "portlet_lide",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "UISID1_1763490647",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "aktivni_a_preruseni"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "zamestnanci"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "externiste"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "absolventi"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 6
+      },
+      {
+        "formIndex": 1,
+        "attributes": {
+          "action": "/auth/katalog/index.pl",
+          "method": "post",
+          "name": "portlet_predmety",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 2
+      }
+    ]
+  },
+  "https://is.mendelu.cz/auth/dok_server/slozka.pl": {
+    "scannedAt": "2025-11-18T18:30:50.898Z",
+    "formCount": 4,
+    "forms": [
+      {
+        "formIndex": 0,
+        "attributes": {
+          "action": "/auth/lide/index.pl",
+          "method": "post",
+          "name": "portlet_lide",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "UISID1_1763490650",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "aktivni_a_preruseni"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "zamestnanci"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "externiste"
+          },
+          {
+            "name": "upresneni",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "absolventi"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 6
+      },
+      {
+        "formIndex": 1,
+        "attributes": {
+          "action": "/auth/katalog/index.pl",
+          "method": "post",
+          "name": "portlet_predmety",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "vzorek",
+            "type": "text",
+            "id": "",
+            "required": false,
+            "value": ""
+          },
+          {
+            "name": "Dohledat",
+            "type": "submit",
+            "id": "",
+            "required": false,
+            "value": "->"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [
+          {
+            "type": "input",
+            "value": "->",
+            "name": "Dohledat"
+          }
+        ],
+        "totalElements": 2
+      },
+      {
+        "formIndex": 2,
+        "attributes": {
+          "action": "/auth/dok_server/slozka.pl",
+          "method": "post",
+          "name": "wqqwqqwwqyw0",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "id",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "5"
+          },
+          {
+            "name": "on",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "0"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [],
+        "totalElements": 2
+      },
+      {
+        "formIndex": 3,
+        "attributes": {
+          "action": "/auth/dok_server/slozka.pl",
+          "method": "post",
+          "name": "wqqwqqwwqyw1",
+          "id": ""
+        },
+        "inputs": [
+          {
+            "name": "id",
+            "type": "hidden",
+            "id": "",
+            "required": false,
+            "value": "5"
+          }
+        ],
+        "selects": [],
+        "textareas": [],
+        "buttons": [],
+        "totalElements": 1
+      }
+    ]
+  }
+}

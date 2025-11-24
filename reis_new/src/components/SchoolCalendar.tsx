@@ -109,6 +109,7 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                     weekday: DAYS[i],
                     day: String(d.getDate()),
                     month: String(d.getMonth() + 1),
+                    year: String(d.getFullYear()),
                     full: d.toLocaleDateString('cs-CZ')
                 });
             }
@@ -188,14 +189,16 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
             {/* Calendar Body */}
             <div className="flex-1 overflow-y-auto relative">
 
-
                 {weekDates.map((dateInfo, dayIndex) => {
                     // Filter lessons for this day
                     const dayLessons = scheduleData.filter(l => {
                         // Assuming l.date is YYYYMMDD
+                        const year = l.date.substring(0, 4);
                         const month = l.date.substring(4, 6);
                         const day = l.date.substring(6, 8);
-                        return parseInt(day) === parseInt(dateInfo.day) && parseInt(month) === parseInt(dateInfo.month);
+                        return parseInt(year) === parseInt(dateInfo.year) &&
+                            parseInt(day) === parseInt(dateInfo.day) &&
+                            parseInt(month) === parseInt(dateInfo.month);
                     });
 
                     // Hide empty days
@@ -329,6 +332,34 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                         </div>
                     );
                 })}
+
+                {/* Empty State - No events this week */}
+                {(() => {
+                    // Check if this week has any events
+                    const hasEventsThisWeek = weekDates.some(dateInfo => {
+                        const dayLessons = scheduleData.filter(l => {
+                            const year = l.date.substring(0, 4);
+                            const month = l.date.substring(4, 6);
+                            const day = l.date.substring(6, 8);
+                            return parseInt(year) === parseInt(dateInfo.year) &&
+                                parseInt(day) === parseInt(dateInfo.day) &&
+                                parseInt(month) === parseInt(dateInfo.month);
+                        });
+                        return dayLessons.length > 0;
+                    });
+
+                    if (!hasEventsThisWeek) {
+                        return (
+                            <div className="flex items-center justify-center h-64">
+                                <div className="text-center p-8 rounded-xl bg-gray-50 border border-gray-200">
+                                    <div className="text-5xl mb-3">📅</div>
+                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Žádné události tento týden</h3>
+                                </div>
+                            </div>
+                        );
+                    }
+                    return null;
+                })()}
             </div>
 
             {
