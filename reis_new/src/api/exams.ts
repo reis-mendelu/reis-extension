@@ -15,9 +15,15 @@ export async function getCachedExams(): Promise<ExamEvent[] | null> {
         const result = await chrome.storage.local.get(STORAGE_KEY);
         const cached = result[STORAGE_KEY] as { data: string, timestamp: number };
         if (cached && cached.timestamp && (Date.now() - cached.timestamp < CACHE_DURATION)) {
-            // Decrypt cached exam data
-            const decryptedData = await decryptData(cached.data);
-            return JSON.parse(decryptedData);
+            try {
+                // Decrypt cached exam data
+                const decryptedData = await decryptData(cached.data);
+                return JSON.parse(decryptedData);
+            } catch (e) {
+                console.error("Decryption failed, clearing cache:", e);
+                await chrome.storage.local.remove(STORAGE_KEY);
+                return [];
+            }
         }
         return null;
     } catch (error) {

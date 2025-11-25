@@ -117,12 +117,12 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
         };
         loadData();
 
-        // Poll exams every minute
-        const intervalId = setInterval(() => {
-            loadData();
-        }, 60000);
+        // Poll exams every minute - REMOVED to prevent UI flashing
+        // const intervalId = setInterval(() => {
+        //     loadData();
+        // }, 60000);
 
-        return () => clearInterval(intervalId);
+        // return () => clearInterval(intervalId);
     }, [initialDate]);
 
 

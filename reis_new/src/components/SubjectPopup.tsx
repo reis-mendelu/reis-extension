@@ -1,10 +1,10 @@
-import { X, File, FileType, Map, Check, Download, Loader2, Minus } from 'lucide-react';
+import { X, FileType, Map as MapIcon, Check, Download, Loader2, Minus } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { GetIdFromLink } from "../utils/calendarUtils";
 import { getFilesFromId, getStoredSubject } from "../utils/apiUtils";
 import type { FileObject, StoredSubject, BlockLesson } from "../types/calendarTypes";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export interface SubjectPopupPropsV2 {
     code: BlockLesson,
@@ -139,6 +139,21 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
     // Bulk Download State
     const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
     const [isDownloading, setIsDownloading] = useState<boolean>(false);
+
+    // Drag Selection State
+    const [isDragging, setIsDragging] = useState(false);
+    const [selectionStart, setSelectionStart] = useState<{ x: number, y: number } | null>(null);
+    const [selectionEnd, setSelectionEnd] = useState<{ x: number, y: number } | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+    const fileRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+    // Refs for drag logic
+    const autoScrollInterval = useRef<NodeJS.Timeout | null>(null);
+    const lastMousePos = useRef<{ x: number, y: number } | null>(null);
+    const initialSelectedIds = useRef<string[]>([]);
+    const isDraggingRef = useRef(false);
+    const selectionStartRef = useRef<{ x: number, y: number } | null>(null);
     //
     function parseName(name: string, hasComment: boolean = false) {
         const MAX_LENGTH = hasComment ? 40 : 100; // kratší pro položky s komentářem, delší bez komentáře
@@ -480,6 +495,188 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
             setSelectedFileIds([]); // Optional: clear selection after download
         }
     };
+
+    // Drag Selection Handlers
+    // Drag Selection Handlers
+    const processSelection = (clientX: number, clientY: number) => {
+        if (!selectionStartRef.current || !containerRef.current) return;
+
+        const rect = containerRef.current.getBoundingClientRect();
+        const x = clientX - rect.left + containerRef.current.scrollLeft;
+        const y = clientY - rect.top + containerRef.current.scrollTop;
+
+        // Clamp coordinates to content boundaries to prevent infinite scrolling
+        const contentWidth = contentRef.current ? contentRef.current.scrollWidth : containerRef.current.scrollWidth;
+        const contentHeight = contentRef.current ? contentRef.current.scrollHeight : containerRef.current.scrollHeight;
+
+        const clampedX = Math.max(0, Math.min(x, contentWidth));
+        const clampedY = Math.max(0, Math.min(y, contentHeight));
+
+        setSelectionEnd({ x: clampedX, y: clampedY });
+
+        const boxLeft = Math.min(selectionStartRef.current.x, clampedX);
+        const boxTop = Math.min(selectionStartRef.current.y, clampedY);
+        const boxRight = Math.max(selectionStartRef.current.x, clampedX);
+        const boxBottom = Math.max(selectionStartRef.current.y, clampedY);
+
+        const newSelectedIds = new Set(initialSelectedIds.current);
+
+        fileRefs.current.forEach((node, link) => {
+            if (node) {
+                // Get node position relative to the container content
+                const nodeLeft = node.offsetLeft;
+                const nodeTop = node.offsetTop;
+                const nodeRight = nodeLeft + node.offsetWidth;
+                const nodeBottom = nodeTop + node.offsetHeight;
+
+                const isIntersecting = !(
+                    boxLeft > nodeRight ||
+                    boxRight < nodeLeft ||
+                    boxTop > nodeBottom ||
+                    boxBottom < nodeTop
+                );
+
+                if (isIntersecting) {
+                    newSelectedIds.add(link);
+                }
+            }
+        });
+
+        setSelectedFileIds(Array.from(newSelectedIds));
+    };
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+        lastMousePos.current = { x: e.clientX, y: e.clientY };
+
+        // Auto-scroll logic
+        if (containerRef.current) {
+            const { top, bottom } = containerRef.current.getBoundingClientRect();
+            const threshold = 50;
+            const speed = 10;
+
+            if (e.clientY < top + threshold) {
+                if (!autoScrollInterval.current) {
+                    autoScrollInterval.current = setInterval(() => {
+                        if (containerRef.current) {
+                            const currentScroll = containerRef.current.scrollTop;
+                            if (currentScroll > 0) {
+                                containerRef.current.scrollTop -= speed;
+                                if (lastMousePos.current) {
+                                    processSelection(lastMousePos.current.x, lastMousePos.current.y);
+                                }
+                            } else {
+                                // We are at the top, stop trying
+                                if (autoScrollInterval.current) {
+                                    clearInterval(autoScrollInterval.current);
+                                    autoScrollInterval.current = null;
+                                }
+                            }
+                        }
+                    }, 16);
+                }
+            } else if (e.clientY > bottom - threshold) {
+                if (!autoScrollInterval.current) {
+                    autoScrollInterval.current = setInterval(() => {
+                        if (containerRef.current) {
+                            const maxScroll = containerRef.current.scrollHeight - containerRef.current.clientHeight;
+                            const currentScroll = containerRef.current.scrollTop;
+
+                            // Use a small tolerance for float arithmetic
+                            if (maxScroll - currentScroll > 1) {
+                                containerRef.current.scrollTop += speed;
+                                if (lastMousePos.current) {
+                                    processSelection(lastMousePos.current.x, lastMousePos.current.y);
+                                }
+                            } else {
+                                // We are at the bottom, stop trying
+                                if (autoScrollInterval.current) {
+                                    clearInterval(autoScrollInterval.current);
+                                    autoScrollInterval.current = null;
+                                }
+                            }
+                        }
+                    }, 16);
+                }
+            } else {
+                if (autoScrollInterval.current) {
+                    clearInterval(autoScrollInterval.current);
+                    autoScrollInterval.current = null;
+                }
+            }
+        }
+
+        if (!isDraggingRef.current) {
+            if (!selectionStartRef.current) return;
+
+            const rect = containerRef.current!.getBoundingClientRect();
+            const x = e.clientX - rect.left + containerRef.current!.scrollLeft;
+            const y = e.clientY - rect.top + containerRef.current!.scrollTop;
+
+            const dx = x - selectionStartRef.current.x;
+            const dy = y - selectionStartRef.current.y;
+            // 5px threshold
+            if (Math.sqrt(dx * dx + dy * dy) < 5) return;
+
+            isDraggingRef.current = true;
+            setIsDragging(true);
+        }
+
+        if (isDraggingRef.current) {
+            processSelection(e.clientX, e.clientY);
+        }
+    };
+
+    const ignoreClickRef = useRef(false);
+
+    const handleGlobalMouseUp = () => {
+        if (autoScrollInterval.current) {
+            clearInterval(autoScrollInterval.current);
+            autoScrollInterval.current = null;
+        }
+
+        window.removeEventListener('mousemove', handleGlobalMouseMove);
+        window.removeEventListener('mouseup', handleGlobalMouseUp);
+
+        if (isDraggingRef.current) {
+            // Set flag to ignore the subsequent click event
+            ignoreClickRef.current = true;
+            // Reset flag after a short delay just in case
+            setTimeout(() => { ignoreClickRef.current = false; }, 100);
+
+            setIsDragging(false);
+            isDraggingRef.current = false;
+        }
+        setSelectionStart(null);
+        setSelectionEnd(null);
+        selectionStartRef.current = null;
+    };
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+
+        // Ignore if clicking on interactive elements
+        if ((e.target as HTMLElement).closest('.file-item-interactive')) return;
+
+        if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const x = e.clientX - rect.left + containerRef.current.scrollLeft;
+            const y = e.clientY - rect.top + containerRef.current.scrollTop;
+
+            // Just record start position, don't start dragging yet
+            setSelectionStart({ x, y });
+            setSelectionEnd({ x, y });
+            selectionStartRef.current = { x, y };
+
+            // Clear selection if not holding Ctrl/Shift/Meta
+            initialSelectedIds.current = (e.ctrlKey || e.shiftKey || e.metaKey) ? selectedFileIds : [];
+
+            if (!e.ctrlKey && !e.shiftKey && !e.metaKey) {
+                setSelectedFileIds([]);
+            }
+
+            window.addEventListener('mousemove', handleGlobalMouseMove);
+            window.addEventListener('mouseup', handleGlobalMouseUp);
+        }
+    };
     //
     // Handle click outside popup to close
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -549,7 +746,7 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
                             {props.code.room}
                             {/* Only rooms are 'Q' are currently supported in the widget with simple config */}
                             {props.code.room.startsWith('Q') && (
-                                <Map
+                                <MapIcon
                                     className="h-5 w-5 text-primary cursor-pointer hover:scale-110 transition-transform"
                                     onClick={() => { window.open(`https://mm.mendelu.cz/mapwidget/embed?placeName=${props.code.room}`, "_blank") }}
                                 />
@@ -561,18 +758,16 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
                             <div className="flex items-center gap-2">
                                 {files && files.length > 0 && (
                                     <div
-                                        className="w-5 h-5 rounded border-2 border-gray-600 bg-white flex items-center justify-center cursor-pointer hover:border-primary transition-colors"
+                                        className={`w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-colors shadow-sm ${allVisibleSelected || someVisibleSelected ? 'bg-[#8DC843] border-[#8DC843]' : 'bg-white border-gray-400 hover:border-[#8DC843]'}`}
                                         onClick={() => handleSelectAll(visibleFiles)}
                                     >
                                         {allVisibleSelected && (
-                                            <Check size={14} className="text-primary" strokeWidth={3} />
+                                            <Check size={14} className="text-white" strokeWidth={4} />
                                         )}
                                         {someVisibleSelected && (
-                                            <div className="w-2.5 h-2.5 bg-primary rounded-sm" />
+                                            <Minus size={14} className="text-white" strokeWidth={4} />
                                         )}
-                                        {!allVisibleSelected && !someVisibleSelected && (
-                                            <Minus size={14} className="text-gray-400" strokeWidth={2} />
-                                        )}
+                                        {/* Empty state is just the box */}
                                     </div>
                                 )}
                                 <span className="text-base xl:text-xl text-gray-700 font-medium">Dostupné soubory</span>
@@ -592,87 +787,105 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
                                 </select>
                             )}
                         </div>
-                        <div className='w-full flex flex-1 flex-col overflow-y-auto'>
-                            {loadingFiles && (!files || files.length === 0) ? (
-                                <div className="w-full h-32 flex justify-center items-center">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8DC843]"></div>
-                                </div>
-                            ) : files === null || files.length === 0 ? (
-                                <div className="w-full h-32 flex justify-center items-center">
-                                    <span className="text-sm text-gray-500">Ve složce nejsou žádné soubory</span>
-                                </div>
-                            ) : loadingfile ? (
-                                <div className="w-full h-32 flex justify-center items-center">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8DC843]"></div>
-                                    <span className="ml-3 text-sm text-gray-500">Otevírání souboru...</span>
-                                </div>
-                            ) : (
-                                visibleFiles.map((data, i) =>
-                                    data.files.map((subFile, l) => {
-                                        const isSelected = selectedFileIds.includes(subFile.link);
-                                        return (
-                                            <div key={`${i}-${l}`} className="group relative w-full min-h-10 flex flex-row items-center text-xs xl:text-base gap-2 hover:bg-gray-50 rounded-lg pr-2 transition-colors">
-                                                {/* Zone A: Selection Trigger */}
+                        <div
+                            className='w-full flex flex-1 flex-col overflow-y-auto relative select-none'
+                            ref={containerRef}
+                            onMouseDown={handleMouseDown}
+                        >
+                            {/* Selection Box */}
+                            {isDragging && selectionStart && selectionEnd && (
+                                <div
+                                    className="absolute bg-[#8DC843]/20 border border-[#8DC843] pointer-events-none z-50"
+                                    style={{
+                                        left: Math.min(selectionStart.x, selectionEnd.x),
+                                        top: Math.min(selectionStart.y, selectionEnd.y),
+                                        width: Math.abs(selectionEnd.x - selectionStart.x),
+                                        height: Math.abs(selectionEnd.y - selectionStart.y)
+                                    }}
+                                />
+                            )}
+
+                            <div ref={contentRef} className="w-full h-fit">
+                                {loadingFiles && (!files || files.length === 0) ? (
+                                    <div className="w-full h-32 flex justify-center items-center">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8DC843]"></div>
+                                    </div>
+                                ) : files === null || files.length === 0 ? (
+                                    <div className="w-full h-32 flex justify-center items-center">
+                                        <span className="text-sm text-gray-500">Ve složce nejsou žádné soubory</span>
+                                    </div>
+                                ) : loadingfile ? (
+                                    <div className="w-full h-32 flex justify-center items-center">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8DC843]"></div>
+                                        <span className="ml-3 text-sm text-gray-500">Otevírání souboru...</span>
+                                    </div>
+                                ) : (
+                                    visibleFiles.map((data, i) =>
+                                        data.files.map((subFile, l) => {
+                                            const isSelected = selectedFileIds.includes(subFile.link);
+                                            return (
                                                 <div
-                                                    className="aspect-square w-10 flex-none flex justify-center items-center cursor-pointer"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        toggleSelection(subFile.link);
+                                                    key={`${i}-${l}`}
+                                                    ref={(el) => {
+                                                        if (el) fileRefs.current.set(subFile.link, el);
+                                                        else fileRefs.current.delete(subFile.link);
                                                     }}
+                                                    className={`group relative w-full min-h-10 flex flex-row items-center text-xs xl:text-base gap-2 rounded-lg pr-2 transition-colors ${isSelected ? 'bg-gray-100' : 'hover:bg-gray-50'
+                                                        }`}
                                                 >
-                                                    {isSelected ? (
-                                                        <div className="w-5 h-5 rounded-full bg-green-500 border-2 border-green-500 flex items-center justify-center">
-                                                            <Check size={12} className="text-white" strokeWidth={3} />
-                                                        </div>
-                                                    ) : (
+                                                    {/* Zone A: Selection Trigger */}
+                                                    <div
+                                                        className="aspect-square w-10 flex-none flex justify-center items-center cursor-pointer file-item-interactive"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            toggleSelection(subFile.link);
+                                                        }}
+                                                    >
+                                                        {isSelected ? (
+                                                            <div className="w-5 h-5 rounded bg-[#8DC843] border-2 border-[#8DC843] flex items-center justify-center shadow-sm">
+                                                                <Check size={14} className="text-white" strokeWidth={4} />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-5 h-5 rounded border-2 border-gray-400 bg-white items-center justify-center flex group-hover:border-[#8DC843] transition-colors shadow-sm" />
+                                                        )}
+                                                    </div>
+
+                                                    {/* Zone B: Content Trigger */}
+                                                    <div className={`flex-1 pl-2 pr-2 min-w-0 ${data.file_comment ? 'w-80' : ''}`}>
+                                                        <span
+                                                            className="text-gray-700 hover:text-primary hover:underline cursor-pointer truncate inline-block max-w-full w-fit align-bottom"
+                                                            onClick={() => {
+                                                                // Prevent opening file if we just finished dragging
+                                                                if (ignoreClickRef.current) {
+                                                                    ignoreClickRef.current = false;
+                                                                    return;
+                                                                }
+                                                                loadFile(subFile.link);
+                                                            }}
+                                                            title={data.file_name} // Tooltip for full name
+                                                        >
+                                                            {data.files.length === 1 ?
+                                                                parseName(data.file_name, !!data.file_comment) :
+                                                                parseName(data.file_name + ": část " + (l + 1), !!data.file_comment)}
+                                                        </span>
+                                                    </div>
+
+                                                    {data.file_comment && (
                                                         <>
-                                                            <div className="w-5 h-5 rounded-full border-2 border-gray-300 items-center justify-center hidden group-hover:flex" />
-                                                            <File className="text-gray-400 group-hover:hidden" />
+                                                            <div className="aspect-square h-full flex justify-center items-center">
+                                                                <FileType size={16} className="text-gray-400" />
+                                                            </div>
+                                                            <span className="text-gray-400 ml-2 truncate max-w-[100px] mr-8">{data.file_comment}</span>
                                                         </>
                                                     )}
+
+
                                                 </div>
-
-                                                {/* Zone B: Content Trigger */}
-                                                <span
-                                                    className={`flex-1 text-gray-700 pl-2 pr-2 hover:text-primary cursor-pointer truncate ${data.file_comment ? 'w-80' : 'w-full'}`}
-                                                    onClick={() => loadFile(subFile.link)}
-                                                    title={data.file_name} // Tooltip for full name
-                                                >
-                                                    {data.files.length === 1 ?
-                                                        parseName(data.file_name, !!data.file_comment) :
-                                                        parseName(data.file_name + ": část " + (l + 1), !!data.file_comment)}
-                                                </span>
-
-                                                {data.file_comment && (
-                                                    <>
-                                                        <div className="aspect-square h-full flex justify-center items-center">
-                                                            <FileType size={16} className="text-gray-400" />
-                                                        </div>
-                                                        <span className="text-gray-400 ml-2 truncate max-w-[100px]">{data.file_comment}</span>
-                                                    </>
-                                                )}
-
-                                                {/* Zone C: Quick Action */}
-                                                <div
-                                                    className="w-8 h-8 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-gray-200 rounded-full"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        // Quick download logic - reuse loadFile but maybe force download? 
-                                                        // loadFile handles both but opens PDF in new tab. 
-                                                        // Requirement says "Triggers a direct single-file download".
-                                                        // For now, let's reuse loadFile as it's robust, but maybe we can tweak it later if needed.
-                                                        // Or better, let's just call loadFile which does the right thing mostly.
-                                                        loadFile(subFile.link);
-                                                    }}
-                                                    title="Stáhnout"
-                                                >
-                                                    <Download size={16} className="text-gray-600" />
-                                                </div>
-                                            </div>
-                                        )
-                                    })
-                                )
-                            )}
+                                            )
+                                        })
+                                    )
+                                )}
+                            </div>
                         </div>
 
                         {/* Floating Action Bar */}
