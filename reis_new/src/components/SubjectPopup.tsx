@@ -150,6 +150,7 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
 
     // Refs for drag logic
     const autoScrollInterval = useRef<NodeJS.Timeout | null>(null);
+    const autoScrollDelayTimeout = useRef<NodeJS.Timeout | null>(null);
     const lastMousePos = useRef<{ x: number, y: number } | null>(null);
     const initialSelectedIds = useRef<string[]>([]);
     const isDraggingRef = useRef(false);
@@ -555,52 +556,65 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
             const speed = 10;
 
             if (e.clientY < top + threshold) {
-                if (!autoScrollInterval.current) {
-                    autoScrollInterval.current = setInterval(() => {
-                        if (containerRef.current) {
-                            const currentScroll = containerRef.current.scrollTop;
-                            if (currentScroll > 0) {
-                                containerRef.current.scrollTop -= speed;
-                                if (lastMousePos.current) {
-                                    processSelection(lastMousePos.current.x, lastMousePos.current.y);
-                                }
-                            } else {
-                                // We are at the top, stop trying
-                                if (autoScrollInterval.current) {
-                                    clearInterval(autoScrollInterval.current);
-                                    autoScrollInterval.current = null;
+                // Top zone
+                if (!autoScrollInterval.current && !autoScrollDelayTimeout.current) {
+                    autoScrollDelayTimeout.current = setTimeout(() => {
+                        autoScrollDelayTimeout.current = null;
+                        autoScrollInterval.current = setInterval(() => {
+                            if (containerRef.current) {
+                                const currentScroll = containerRef.current.scrollTop;
+                                if (currentScroll > 0) {
+                                    containerRef.current.scrollTop -= speed;
+                                    if (lastMousePos.current) {
+                                        processSelection(lastMousePos.current.x, lastMousePos.current.y);
+                                    }
+                                } else {
+                                    // We are at the top, stop trying
+                                    if (autoScrollInterval.current) {
+                                        clearInterval(autoScrollInterval.current);
+                                        autoScrollInterval.current = null;
+                                    }
                                 }
                             }
-                        }
-                    }, 16);
+                        }, 16);
+                    }, 300); // 300ms delay
                 }
             } else if (e.clientY > bottom - threshold) {
-                if (!autoScrollInterval.current) {
-                    autoScrollInterval.current = setInterval(() => {
-                        if (containerRef.current) {
-                            const maxScroll = containerRef.current.scrollHeight - containerRef.current.clientHeight;
-                            const currentScroll = containerRef.current.scrollTop;
+                // Bottom zone
+                if (!autoScrollInterval.current && !autoScrollDelayTimeout.current) {
+                    autoScrollDelayTimeout.current = setTimeout(() => {
+                        autoScrollDelayTimeout.current = null;
+                        autoScrollInterval.current = setInterval(() => {
+                            if (containerRef.current) {
+                                const maxScroll = containerRef.current.scrollHeight - containerRef.current.clientHeight;
+                                const currentScroll = containerRef.current.scrollTop;
 
-                            // Use a small tolerance for float arithmetic
-                            if (maxScroll - currentScroll > 1) {
-                                containerRef.current.scrollTop += speed;
-                                if (lastMousePos.current) {
-                                    processSelection(lastMousePos.current.x, lastMousePos.current.y);
-                                }
-                            } else {
-                                // We are at the bottom, stop trying
-                                if (autoScrollInterval.current) {
-                                    clearInterval(autoScrollInterval.current);
-                                    autoScrollInterval.current = null;
+                                // Use a small tolerance for float arithmetic
+                                if (maxScroll - currentScroll > 1) {
+                                    containerRef.current.scrollTop += speed;
+                                    if (lastMousePos.current) {
+                                        processSelection(lastMousePos.current.x, lastMousePos.current.y);
+                                    }
+                                } else {
+                                    // We are at the bottom, stop trying
+                                    if (autoScrollInterval.current) {
+                                        clearInterval(autoScrollInterval.current);
+                                        autoScrollInterval.current = null;
+                                    }
                                 }
                             }
-                        }
-                    }, 16);
+                        }, 16);
+                    }, 300); // 300ms delay
                 }
             } else {
+                // Not in any scroll zone
                 if (autoScrollInterval.current) {
                     clearInterval(autoScrollInterval.current);
                     autoScrollInterval.current = null;
+                }
+                if (autoScrollDelayTimeout.current) {
+                    clearTimeout(autoScrollDelayTimeout.current);
+                    autoScrollDelayTimeout.current = null;
                 }
             }
         }
@@ -633,6 +647,10 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
             clearInterval(autoScrollInterval.current);
             autoScrollInterval.current = null;
         }
+        if (autoScrollDelayTimeout.current) {
+            clearTimeout(autoScrollDelayTimeout.current);
+            autoScrollDelayTimeout.current = null;
+        }
 
         window.removeEventListener('mousemove', handleGlobalMouseMove);
         window.removeEventListener('mouseup', handleGlobalMouseUp);
@@ -651,35 +669,17 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
         selectionStartRef.current = null;
     };
 
-    const handleMouseDown = (e: React.MouseEvent) => {
+    // MOVED handleMouseDown to above render to access it in the main div
+    // Removed old handleMouseDown definition to avoid duplication
 
-        // Ignore if clicking on interactive elements
-        if ((e.target as HTMLElement).closest('.file-item-interactive')) return;
-
-        if (containerRef.current) {
-            const rect = containerRef.current.getBoundingClientRect();
-            const x = e.clientX - rect.left + containerRef.current.scrollLeft;
-            const y = e.clientY - rect.top + containerRef.current.scrollTop;
-
-            // Just record start position, don't start dragging yet
-            setSelectionStart({ x, y });
-            setSelectionEnd({ x, y });
-            selectionStartRef.current = { x, y };
-
-            // Clear selection if not holding Ctrl/Shift/Meta
-            initialSelectedIds.current = (e.ctrlKey || e.shiftKey || e.metaKey) ? selectedFileIds : [];
-
-            if (!e.ctrlKey && !e.shiftKey && !e.metaKey) {
-                setSelectedFileIds([]);
-            }
-
-            window.addEventListener('mousemove', handleGlobalMouseMove);
-            window.addEventListener('mouseup', handleGlobalMouseUp);
-        }
-    };
     //
     // Handle click outside popup to close
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        // If we just finished dragging, ignore the click
+        if (ignoreClickRef.current) {
+            return;
+        }
+
         // Only close if clicking on the backdrop itself, not on child elements
         if (e.target === e.currentTarget) {
             props.onClose();
@@ -719,12 +719,59 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
     const allVisibleSelected = visibleCount > 0 && selectedVisibleCount === visibleCount;
     const someVisibleSelected = selectedVisibleCount > 0 && !allVisibleSelected;
 
+    // Handle click inside the popup content - REPLACED BY handleMouseDown
+    // We removed handlePopupClick because handleMouseDown now covers the "deselect on click" behavior
+    // by clearing selection when clicking anywhere on the card (that isn't interactive).
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        const target = e.target as HTMLElement;
+
+        // Ignore if clicking on interactive elements
+        if (target.closest('.file-item-interactive') ||
+            target.closest('a') ||
+            target.closest('button') ||
+            target.closest('select') ||
+            target.closest('.map-icon') ||
+            target.closest('.close-icon') ||
+            target.closest('.select-all-trigger') ||
+            target.closest('.floating-action-bar')
+        ) {
+            return;
+        }
+
+        if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            // Calculate x/y relative to the SCROLLABLE container
+            // If we click in the header, y will be negative relative to the container's top edge
+            const x = e.clientX - rect.left + containerRef.current.scrollLeft;
+            const y = e.clientY - rect.top + containerRef.current.scrollTop;
+
+            // Just record start position, don't start dragging yet
+            setSelectionStart({ x, y });
+            setSelectionEnd({ x, y });
+            selectionStartRef.current = { x, y };
+
+            // Clear selection if not holding Ctrl/Shift/Meta
+            initialSelectedIds.current = (e.ctrlKey || e.shiftKey || e.metaKey) ? selectedFileIds : [];
+
+            if (!e.ctrlKey && !e.shiftKey && !e.metaKey) {
+                setSelectedFileIds([]);
+            }
+
+            window.addEventListener('mousemove', handleGlobalMouseMove);
+            window.addEventListener('mouseup', handleGlobalMouseUp);
+        }
+    };
+
     return (
         <div className="fixed z-[999] top-0 left-0 w-screen h-screen flex justify-center items-center bg-black/50 backdrop-grayscale font-dm p-8" onClick={handleBackdropClick}>
             {/*Window*/}
             {subject_data ?
-                <div className="p-1 pl-4 pr-4 relative h-full w-100 xl:w-180 rounded-xl bg-gray-50 shadow-xl flex flex-col items-center font-dm bg-white">
-                    <span className="absolute right-2 top-2 w-6 h-6 xl:w-8 xl:h-8 flex justify-center items-center text-gray-500 cursor-pointer hover:scale-90 transition-all" onClick={() => { props.onClose() }}>
+                <div
+                    className="p-1 pl-4 pr-4 relative h-full w-100 xl:w-180 rounded-xl bg-gray-50 shadow-xl flex flex-col items-center font-dm bg-white select-none"
+                    onMouseDown={handleMouseDown}
+                >
+                    <span className="absolute right-2 top-2 w-6 h-6 xl:w-8 xl:h-8 flex justify-center items-center text-gray-500 cursor-pointer hover:scale-90 transition-all close-icon" onClick={() => { props.onClose() }}>
                         <X size={"2rem"}></X>
                     </span>
                     <span className="w-full h-8 xl:h-16 text-gray-800 flex flex-col justify-center items-center font-dm text-base xl:text-2xl">{subject_data.fullName}</span>
@@ -747,7 +794,7 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
                             {/* Only rooms are 'Q' are currently supported in the widget with simple config */}
                             {props.code.room.startsWith('Q') && (
                                 <MapIcon
-                                    className="h-5 w-5 text-primary cursor-pointer hover:scale-110 transition-transform"
+                                    className="h-5 w-5 text-primary cursor-pointer hover:scale-110 transition-transform map-icon"
                                     onClick={() => { window.open(`https://mm.mendelu.cz/mapwidget/embed?placeName=${props.code.room}`, "_blank") }}
                                 />
                             )}
@@ -758,7 +805,7 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
                             <div className="flex items-center gap-2">
                                 {files && files.length > 0 && (
                                     <div
-                                        className={`w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-colors shadow-sm ${allVisibleSelected || someVisibleSelected ? 'bg-[#8DC843] border-[#8DC843]' : 'bg-white border-gray-400 hover:border-[#8DC843]'}`}
+                                        className={`w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-colors shadow-sm select-all-trigger ${allVisibleSelected || someVisibleSelected ? 'bg-[#8DC843] border-[#8DC843]' : 'bg-white border-gray-400 hover:border-[#8DC843]'}`}
                                         onClick={() => handleSelectAll(visibleFiles)}
                                     >
                                         {allVisibleSelected && (
@@ -790,7 +837,6 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
                         <div
                             className='w-full flex flex-1 flex-col overflow-y-auto relative select-none'
                             ref={containerRef}
-                            onMouseDown={handleMouseDown}
                         >
                             {/* Selection Box */}
                             {isDragging && selectionStart && selectionEnd && (
@@ -890,7 +936,7 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
 
                         {/* Floating Action Bar */}
                         {selectedFileIds.length > 0 && (
-                            <div className="absolute bottom-6 right-6 bg-[#8DC843] text-white px-5 py-2.5 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-4 duration-200 z-50">
+                            <div className="absolute bottom-6 right-6 bg-[#8DC843] text-white px-5 py-2.5 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-4 duration-200 z-50 floating-action-bar">
                                 <span className="font-medium text-sm whitespace-nowrap">Vybráno: {selectedFileIds.length}</span>
                                 <div className="w-px h-4 bg-white/30"></div>
                                 <button
