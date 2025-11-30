@@ -1,7 +1,7 @@
 import { Search, X, ChevronUp, ChevronDown, Clock, FileText, GraduationCap, Briefcase } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { searchPeople } from '../api/search';
-import { pagesData, BASE_URL } from '../data/pagesData';
+import { pagesData } from '../data/pagesData';
 import type { PageItem, PageCategory } from '../data/pagesData';
 import { fuzzyIncludes } from '../utils/searchUtils';
 
@@ -93,20 +93,17 @@ export function SearchBar({ placeholder = "Prohledej reIS", onSearch }: SearchBa
         // Search pages
         const pageResults: SearchResult[] = [];
         pagesData.forEach((category: PageCategory) => {
-          category.items.forEach((page: PageItem) => {
-            // Match on label or keywords using fuzzy matching
+          category.children.forEach((page: PageItem) => {
+            // Match on label using fuzzy matching
             const matchesLabel = fuzzyIncludes(page.label, searchQuery);
-            const matchesKeyword = page.keywords.some(keyword =>
-              fuzzyIncludes(keyword, searchQuery)
-            );
 
-            if (matchesLabel || matchesKeyword) {
+            if (matchesLabel) {
               pageResults.push({
                 id: page.id,
                 title: page.label,
                 type: 'page' as const,
                 detail: category.label,
-                link: page.path.startsWith('http') ? page.path : `${BASE_URL}${page.path}`,
+                link: page.href,
                 category: category.label
               });
             }
