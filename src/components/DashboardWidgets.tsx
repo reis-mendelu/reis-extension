@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Clock, MapPin, Calendar } from 'lucide-react';
 import { fetchWeekSchedule } from '../api/schedule';
-import { fetchExams, getCachedExams } from '../api/exams';
+import { fetchExamData } from '../api/exams';
 import { timeToMinutes, getSmartWeekRange } from '../utils/calendarUtils';
+import { parseDate } from '../utils/dateHelpers';
 import type { BlockLesson } from '../types/calendarTypes';
 
 export function DashboardWidgets() {
@@ -51,22 +52,33 @@ export function DashboardWidgets() {
             }
 
             // 2. Fetch Exams
-            let exams = await getCachedExams();
-            if (!exams || exams.length === 0) {
-                exams = await fetchExams();
-            }
+            const subjects = await fetchExamData();
 
-            if (exams) {
+            if (subjects) {
+                // Flatten to exams
+                const exams: any[] = [];
+                subjects.forEach(subject => {
+                    subject.sections.forEach(section => {
+                        if (section.status === 'registered' && section.registeredTerm) {
+                            exams.push({
+                                title: `${subject.name} - ${section.name}`,
+                                start: parseDate(section.registeredTerm.date, section.registeredTerm.time),
+                                location: 'Unknown'
+                            });
+                        }
+                    });
+                });
+
                 // Filter for next 14 days
                 const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
 
                 const upcoming = exams.filter((exam: any) => {
-                    const examDate = new Date(exam.start);
+                    const examDate = exam.start;
                     return examDate >= now && examDate <= twoWeeksFromNow;
                 });
 
                 // Sort by date
-                upcoming.sort((a: any, b: any) => new Date(a.start).getTime() - new Date(b.start).getTime());
+                upcoming.sort((a: any, b: any) => a.start.getTime() - b.start.getTime());
                 setUpcomingExams(upcoming);
             }
 

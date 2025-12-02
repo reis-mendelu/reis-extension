@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { SubjectPopup } from './SubjectPopup';
 import { timeToMinutes } from '../utils/calendarUtils';
 import { fetchWeekSchedule } from '../api/schedule';
-import { fetchExams, getCachedExams } from '../api/exams';
+import { fetchExamData } from '../api/exams';
 import type { BlockLesson, LessonWithRow, OrganizedLessons, DateInfo } from '../types/calendarTypes';
 import { getCzechHoliday } from '../utils/holidays';
+import { parseDate } from '../utils/dateHelpers';
 
 const DAYS = ['PO', 'ÚT', 'ST', 'ČT', 'PÁ'];
 const START_HOUR = 7;
@@ -35,7 +36,7 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
             const data = await fetchWeekSchedule({ start: startOfWeek, end: endOfWeek });
 
             // Try to get cached exams first
-            let exams = await getCachedExams();
+            // let exams = await getCachedExams();
 
             // Helper to process exams
             const processExams = (examEvents: any[]) => {
@@ -77,23 +78,35 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
             }
 
             // If we have cached exams, add them immediately
-            if (exams && exams.length > 0) {
-                const examLessons = processExams(exams);
-                setScheduleData([...allLessons, ...examLessons]);
-            } else {
-                setScheduleData(allLessons);
-            }
+            // (Caching logic temporarily removed during refactor)
+            setScheduleData(allLessons);
 
             setLoading(false);
 
             // Fetch fresh exams in background
-            fetchExams().then(freshExams => {
-                if (freshExams && freshExams.length > 0) {
-                    const examLessons = processExams(freshExams);
-                    // Re-merge with current schedule data (which might have changed if week changed, but here we are in closure)
-                    // Better to just update state again
+            fetchExamData().then(subjects => {
+                // Flatten subjects to exams
+                const allExams: any[] = [];
+                subjects.forEach(subject => {
+                    subject.sections.forEach(section => {
+                        // Add registered term
+                        if (section.status === 'registered' && section.registeredTerm) {
+                            allExams.push({
+                                id: section.id,
+                                title: `${subject.name} - ${section.name}`,
+                                start: parseDate(section.registeredTerm.date, section.registeredTerm.time),
+                                location: 'Unknown', // Parser doesn't extract location yet
+                                meta: { teacher: 'Unknown' }
+                            });
+                        }
+                        // We could also add open terms if we want to show them on calendar? 
+                        // Usually calendar shows only registered exams.
+                    });
+                });
+
+                if (allExams.length > 0) {
+                    const examLessons = processExams(allExams);
                     setScheduleData(prev => {
-                        // Filter out old exams from prev state to avoid duplicates if we just append
                         const nonExams = prev.filter(l => !l.isExam);
                         return [...nonExams, ...examLessons];
                     });
