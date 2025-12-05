@@ -1,31 +1,41 @@
 "use client";
 
 import * as React from "react";
-import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import { CheckIcon } from "lucide-react";
-
 import { cn } from "./utils";
+
+/**
+ * Checkbox component using daisyUI checkbox
+ * Same API as Radix Checkbox for backward compatibility
+ */
+interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+  checked?: boolean;
+  defaultChecked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+}
 
 function Checkbox({
   className,
+  checked,
+  defaultChecked,
+  onCheckedChange,
+  disabled,
   ...props
-}: React.ComponentProps<typeof CheckboxPrimitive.Root>) {
+}: CheckboxProps) {
   return (
-    <CheckboxPrimitive.Root
+    <input
+      type="checkbox"
       data-slot="checkbox"
       className={cn(
-        "peer border bg-input-background dark:bg-input/30 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:data-[state=checked]:bg-primary data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
-        className,
+        "checkbox checkbox-primary checkbox-sm",
+        disabled && "opacity-50 cursor-not-allowed",
+        className
       )}
+      checked={checked}
+      defaultChecked={defaultChecked}
+      disabled={disabled}
+      onChange={(e) => onCheckedChange?.(e.target.checked)}
       {...props}
-    >
-      <CheckboxPrimitive.Indicator
-        data-slot="checkbox-indicator"
-        className="flex items-center justify-center text-current transition-none"
-      >
-        <CheckIcon className="size-3.5" />
-      </CheckboxPrimitive.Indicator>
-    </CheckboxPrimitive.Root>
+    />
   );
 }
 

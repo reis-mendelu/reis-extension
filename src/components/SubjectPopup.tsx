@@ -327,34 +327,43 @@ export function SubjectPopup(props: SubjectPopupPropsV2) {
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
 
+            // Extract filename from content-disposition header
+            const contentDisposition = response.headers.get('content-disposition');
+            let filename = 'document';
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                if (filenameMatch && filenameMatch[1]) {
+                    filename = filenameMatch[1];
+                }
+            }
+
             if (contentType?.includes('application/pdf')) {
-                // Open PDF in new tab
-                window.open(blobUrl, '_blank');
+                // Wrap PDF in HTML to show proper filename in browser tab
+                const wrapperHtml = `<!DOCTYPE html>
+<html><head><title>${filename}</title><style>body{margin:0;overflow:hidden}</style></head>
+<body><embed src="${blobUrl}" type="application/pdf" width="100%" height="100%"></body></html>`;
+                const wrapperBlob = new Blob([wrapperHtml], { type: 'text/html' });
+                const wrapperUrl = URL.createObjectURL(wrapperBlob);
+                window.open(wrapperUrl, '_blank');
+
+                // Cleanup wrapper URL after a delay (main blob URL is still needed by embed)
+                setTimeout(() => {
+                    URL.revokeObjectURL(wrapperUrl);
+                }, 2000);
             } else {
                 // Download other files
                 const a = document.createElement('a');
                 a.href = blobUrl;
-
-                // Try to get filename
-                const contentDisposition = response.headers.get('content-disposition');
-                let filename = 'download';
-                if (contentDisposition) {
-                    const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-                    if (filenameMatch && filenameMatch[1]) {
-                        filename = filenameMatch[1];
-                    }
-                }
-
                 a.download = filename;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
             }
 
-            // Cleanup
+            // Cleanup blob URL after generous delay (needed for PDF embed)
             setTimeout(() => {
                 URL.revokeObjectURL(blobUrl);
-            }, 1000);
+            }, 60000); // 1 minute for PDFs to load
 
             setLoadingFile(false);
         } catch (error) {

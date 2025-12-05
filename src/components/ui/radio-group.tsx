@@ -1,44 +1,79 @@
 "use client";
 
 import * as React from "react";
-import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
-import { CircleIcon } from "lucide-react";
-
 import { cn } from "./utils";
 
+/**
+ * RadioGroup component using daisyUI radio
+ */
+interface RadioGroupContextValue {
+  value: string;
+  onValueChange: (value: string) => void;
+  name: string;
+}
+
+const RadioGroupContext = React.createContext<RadioGroupContextValue | null>(null);
+
+interface RadioGroupProps extends React.HTMLAttributes<HTMLDivElement> {
+  value?: string;
+  defaultValue?: string;
+  onValueChange?: (value: string) => void;
+  name?: string;
+}
+
 function RadioGroup({
+  value: controlledValue,
+  defaultValue = "",
+  onValueChange,
+  name = "radio-group",
   className,
+  children,
   ...props
-}: React.ComponentProps<typeof RadioGroupPrimitive.Root>) {
+}: RadioGroupProps) {
+  const [uncontrolledValue, setUncontrolledValue] = React.useState(defaultValue);
+
+  const isControlled = controlledValue !== undefined;
+  const value = isControlled ? controlledValue : uncontrolledValue;
+  const handleValueChange = isControlled
+    ? (onValueChange ?? (() => { }))
+    : (val: string) => {
+      setUncontrolledValue(val);
+      onValueChange?.(val);
+    };
+
   return (
-    <RadioGroupPrimitive.Root
-      data-slot="radio-group"
-      className={cn("grid gap-3", className)}
-      {...props}
-    />
+    <RadioGroupContext.Provider value={{ value, onValueChange: handleValueChange, name }}>
+      <div
+        data-slot="radio-group"
+        role="radiogroup"
+        className={cn("grid gap-3", className)}
+        {...props}
+      >
+        {children}
+      </div>
+    </RadioGroupContext.Provider>
   );
 }
 
-function RadioGroupItem({
-  className,
-  ...props
-}: React.ComponentProps<typeof RadioGroupPrimitive.Item>) {
+interface RadioGroupItemProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+  value: string;
+}
+
+function RadioGroupItem({ value, className, ...props }: RadioGroupItemProps) {
+  const context = React.useContext(RadioGroupContext);
+  const isChecked = context?.value === value;
+
   return (
-    <RadioGroupPrimitive.Item
+    <input
+      type="radio"
       data-slot="radio-group-item"
-      className={cn(
-        "border-input text-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 aspect-square size-4 shrink-0 rounded-full border shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
-        className,
-      )}
+      name={context?.name}
+      value={value}
+      checked={isChecked}
+      onChange={() => context?.onValueChange(value)}
+      className={cn("radio radio-primary", className)}
       {...props}
-    >
-      <RadioGroupPrimitive.Indicator
-        data-slot="radio-group-indicator"
-        className="relative flex items-center justify-center"
-      >
-        <CircleIcon className="fill-primary absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2" />
-      </RadioGroupPrimitive.Indicator>
-    </RadioGroupPrimitive.Item>
+    />
   );
 }
 

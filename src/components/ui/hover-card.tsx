@@ -1,43 +1,73 @@
 "use client";
 
 import * as React from "react";
-import * as HoverCardPrimitive from "@radix-ui/react-hover-card";
-
 import { cn } from "./utils";
 
-function HoverCard({
-  ...props
-}: React.ComponentProps<typeof HoverCardPrimitive.Root>) {
-  return <HoverCardPrimitive.Root data-slot="hover-card" {...props} />;
+/**
+ * HoverCard component - CSS-based hover reveal
+ * No portals, works in Shadow DOM
+ */
+
+interface HoverCardProps {
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  openDelay?: number;
+  closeDelay?: number;
+  children: React.ReactNode;
 }
 
-function HoverCardTrigger({
-  ...props
-}: React.ComponentProps<typeof HoverCardPrimitive.Trigger>) {
+function HoverCard({ children }: HoverCardProps) {
   return (
-    <HoverCardPrimitive.Trigger data-slot="hover-card-trigger" {...props} />
+    <div data-slot="hover-card" className="relative inline-block group">
+      {children}
+    </div>
   );
+}
+
+interface HoverCardTriggerProps extends React.HTMLAttributes<HTMLDivElement> {
+  asChild?: boolean;
+}
+
+function HoverCardTrigger({ className, children, asChild, ...props }: HoverCardTriggerProps) {
+  return (
+    <div
+      data-slot="hover-card-trigger"
+      className={cn("inline-block", className)}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+
+interface HoverCardContentProps extends React.HTMLAttributes<HTMLDivElement> {
+  align?: "start" | "center" | "end";
+  sideOffset?: number;
 }
 
 function HoverCardContent({
   className,
+  children,
   align = "center",
-  sideOffset = 4,
   ...props
-}: React.ComponentProps<typeof HoverCardPrimitive.Content>) {
+}: HoverCardContentProps) {
   return (
-    <HoverCardPrimitive.Portal data-slot="hover-card-portal">
-      <HoverCardPrimitive.Content
-        data-slot="hover-card-content"
-        align={align}
-        sideOffset={sideOffset}
-        className={cn(
-          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-64 origin-(--radix-hover-card-content-transform-origin) rounded-md border p-4 shadow-md outline-hidden",
-          className,
-        )}
-        {...props}
-      />
-    </HoverCardPrimitive.Portal>
+    <div
+      data-slot="hover-card-content"
+      className={cn(
+        "absolute z-50 hidden group-hover:block",
+        "mt-2 w-64 rounded-md border bg-base-100 p-4 shadow-md",
+        "animate-in fade-in-0 zoom-in-95",
+        align === "start" && "left-0",
+        align === "center" && "left-1/2 -translate-x-1/2",
+        align === "end" && "right-0",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
   );
 }
 

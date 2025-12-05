@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { SubjectPopup } from './SubjectPopup';
+import { useState, useMemo, useRef } from 'react';
+import { EventPopover } from './EventPopover';
 import { timeToMinutes } from '../utils/calendarUtils';
 import { useSchedule, useExams } from '../hooks/data';
 import type { BlockLesson, LessonWithRow, OrganizedLessons, DateInfo } from '../types/calendarTypes';
@@ -21,6 +21,7 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
     const { exams: storedExams } = useExams();
 
     const [selected, setSelected] = useState<BlockLesson | null>(null);
+    const anchorRef = useRef<HTMLDivElement | null>(null);
 
     // Calculate the week range for display
     const weekDates = useMemo((): DateInfo[] => {
@@ -255,7 +256,7 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                                                 <div
                                                     key={lesson.id}
                                                     className={`absolute ${lesson.isExam
-                                                        ? "bg-[#FEF2F2] border-[#dc2626] border-2 shadow-md hover:shadow-lg"
+                                                        ? "bg-[#FEF2F2] border border-gray-200 shadow-sm hover:shadow-md"
                                                         : lesson.isSeminar == "true"
                                                             ? "bg-[#F0F7FF] border border-gray-200 shadow-sm hover:shadow-md"
                                                             : "bg-[#F3FAEA] border border-gray-200 shadow-sm hover:shadow-md"
@@ -267,14 +268,16 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                                                         height: `${heightPercent}%`,
                                                         zIndex: 10 + lesson.row
                                                     }}
-                                                    onClick={() => { setSelected(lesson) }}
+                                                    onClick={(e) => {
+                                                        anchorRef.current = e.currentTarget as HTMLDivElement;
+                                                        setSelected(lesson);
+                                                    }}
                                                     title={`${lesson.courseName}\n${lesson.startTime} - ${lesson.endTime}\n${lesson.room}\n${lesson.teachers[0]?.shortName}`}
                                                 >
-                                                    {/* Colored Strip for Lessons */}
-                                                    {!lesson.isExam && (
-                                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${lesson.isSeminar == "true" ? "bg-[#00548f]" : "bg-[#79be15]"
-                                                            }`}></div>
-                                                    )}
+                                                    {/* Colored Strip for Lessons & Exams */}
+                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${lesson.isExam ? "bg-[#dc2626]" :
+                                                        lesson.isSeminar == "true" ? "bg-[#00548f]" : "bg-[#79be15]"
+                                                        }`}></div>
 
                                                     <div className={`flex flex-col h-full justify-between p-2 ${!lesson.isExam ? "pl-3" : ""}`}>
                                                         <div>
@@ -347,14 +350,12 @@ export function SchoolCalendar({ initialDate = new Date() }: SchoolCalendarProps
                 })()}
             </div>
 
-            {
-                selected && (
-                    <SubjectPopup
-                        code={selected}
-                        onClose={() => setSelected(null)}
-                    />
-                )
-            }
+            <EventPopover
+                lesson={selected}
+                isOpen={!!selected}
+                onClose={() => setSelected(null)}
+                anchorRef={anchorRef}
+            />
         </div >
     );
 }

@@ -1,145 +1,258 @@
 "use client";
 
 import * as React from "react";
-import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
-
 import { cn } from "./utils";
-import { buttonVariants } from "./button";
+
+/**
+ * AlertDialog component using daisyUI
+ * No React Portals - works inside Shadow DOM
+ * 
+ * AlertDialog is similar to Dialog but requires explicit action
+ * (can't be dismissed by clicking outside)
+ */
+
+interface AlertDialogContextValue {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const AlertDialogContext = React.createContext<AlertDialogContextValue | null>(null);
+
+function useAlertDialogContext() {
+  const context = React.useContext(AlertDialogContext);
+  if (!context) {
+    throw new Error("AlertDialog components must be used within an AlertDialog");
+  }
+  return context;
+}
+
+interface AlertDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}
 
 function AlertDialog({
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
-  return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  defaultOpen = false,
+  children
+}: AlertDialogProps) {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen);
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const onOpenChange = isControlled
+    ? controlledOnOpenChange ?? (() => { })
+    : setUncontrolledOpen;
+
+  return (
+    <AlertDialogContext.Provider value={{ open, onOpenChange }}>
+      {children}
+    </AlertDialogContext.Provider>
+  );
+}
+
+interface AlertDialogTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  asChild?: boolean;
 }
 
 function AlertDialogTrigger({
+  asChild,
+  children,
+  onClick,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>) {
-  return (
-    <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
-  );
-}
+}: AlertDialogTriggerProps) {
+  const { onOpenChange } = useAlertDialogContext();
 
-function AlertDialogPortal({
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Portal>) {
-  return (
-    <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
-  );
-}
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    onClick?.(e);
+    onOpenChange(true);
+  };
 
-function AlertDialogOverlay({
-  className,
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>) {
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<any>, {
+      onClick: handleClick,
+    });
+  }
+
   return (
-    <AlertDialogPrimitive.Overlay
-      data-slot="alert-dialog-overlay"
-      className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
-        className,
-      )}
+    <button
+      type="button"
+      data-slot="alert-dialog-trigger"
+      onClick={handleClick}
       {...props}
-    />
+    >
+      {children}
+    </button>
   );
 }
 
-function AlertDialogContent({
-  className,
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
+interface AlertDialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode;
+}
+
+function AlertDialogContent({ className, children, ...props }: AlertDialogContentProps) {
+  const { open } = useAlertDialogContext();
+  const dialogRef = React.useRef<HTMLDialogElement>(null);
+
+  React.useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (open) {
+      dialog.showModal();
+    } else {
+      dialog.close();
+    }
+  }, [open]);
+
+  // Prevent escape key from closing (alert dialogs require explicit action)
+  const handleCancel = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    // Don't call onOpenChange - user must click action/cancel button
+  };
+
   return (
-    <AlertDialogPortal>
-      <AlertDialogOverlay />
-      <AlertDialogPrimitive.Content
+    <dialog
+      ref={dialogRef}
+      className="modal"
+      onCancel={handleCancel}
+    >
+      <div
         data-slot="alert-dialog-content"
-        className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
-          className,
-        )}
+        className={cn("modal-box", className)}
         {...props}
-      />
-    </AlertDialogPortal>
+      >
+        {children}
+      </div>
+      {/* No backdrop close for alert dialogs */}
+    </dialog>
   );
 }
 
-function AlertDialogHeader({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+function AlertDialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="alert-dialog-header"
-      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      className={cn("mb-4", className)}
       {...props}
     />
   );
 }
 
-function AlertDialogFooter({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+function AlertDialogFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="alert-dialog-footer"
-      className={cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
-        className,
-      )}
+      className={cn("modal-action", className)}
       {...props}
     />
   );
 }
 
-function AlertDialogTitle({
-  className,
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
+function AlertDialogTitle({ className, ...props }: React.ComponentProps<"h3">) {
   return (
-    <AlertDialogPrimitive.Title
+    <h3
       data-slot="alert-dialog-title"
-      className={cn("text-lg font-semibold", className)}
+      className={cn("font-bold text-lg", className)}
       {...props}
     />
   );
 }
 
-function AlertDialogDescription({
-  className,
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Description>) {
+function AlertDialogDescription({ className, ...props }: React.ComponentProps<"p">) {
   return (
-    <AlertDialogPrimitive.Description
+    <p
       data-slot="alert-dialog-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn("text-base-content/70 text-sm py-4", className)}
       {...props}
     />
   );
+}
+
+interface AlertDialogActionProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  asChild?: boolean;
 }
 
 function AlertDialogAction({
   className,
+  asChild,
+  children,
+  onClick,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Action>) {
+}: AlertDialogActionProps) {
+  const { onOpenChange } = useAlertDialogContext();
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    onClick?.(e);
+    onOpenChange(false);
+  };
+
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<any>, {
+      onClick: handleClick,
+    });
+  }
+
   return (
-    <AlertDialogPrimitive.Action
-      className={cn(buttonVariants(), className)}
+    <button
+      type="button"
+      data-slot="alert-dialog-action"
+      className={cn("btn btn-primary", className)}
+      onClick={handleClick}
       {...props}
-    />
+    >
+      {children}
+    </button>
   );
+}
+
+interface AlertDialogCancelProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  asChild?: boolean;
 }
 
 function AlertDialogCancel({
   className,
+  asChild,
+  children,
+  onClick,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Cancel>) {
+}: AlertDialogCancelProps) {
+  const { onOpenChange } = useAlertDialogContext();
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    onClick?.(e);
+    onOpenChange(false);
+  };
+
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<any>, {
+      onClick: handleClick,
+    });
+  }
+
   return (
-    <AlertDialogPrimitive.Cancel
-      className={cn(buttonVariants({ variant: "outline" }), className)}
+    <button
+      type="button"
+      data-slot="alert-dialog-cancel"
+      className={cn("btn btn-ghost", className)}
+      onClick={handleClick}
       {...props}
-    />
+    >
+      {children}
+    </button>
   );
+}
+
+// These are kept for API compatibility
+function AlertDialogPortal({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+
+function AlertDialogOverlay() {
+  return null; // daisyUI modal handles its own backdrop
 }
 
 export {

@@ -1,60 +1,87 @@
 "use client";
 
 import * as React from "react";
-import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-
 import { cn } from "./utils";
 
-function TooltipProvider({
-  delayDuration = 0,
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
+/**
+ * Tooltip component using daisyUI tooltip
+ * No portals - works in Shadow DOM
+ */
+
+interface TooltipProviderProps {
+  children: React.ReactNode;
+  delayDuration?: number;
+  skipDelayDuration?: number;
+  disableHoverableContent?: boolean;
+}
+
+function TooltipProvider({ children }: TooltipProviderProps) {
+  return <>{children}</>;
+}
+
+interface TooltipProps {
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  delayDuration?: number;
+  children: React.ReactNode;
+}
+
+function Tooltip({ children }: TooltipProps) {
+  return <>{children}</>;
+}
+
+interface TooltipTriggerProps extends React.HTMLAttributes<HTMLDivElement> {
+  asChild?: boolean;
+}
+
+function TooltipTrigger({ className, children, asChild, ...props }: TooltipTriggerProps) {
+  // The tooltip trigger wraps the TooltipContent
   return (
-    <TooltipPrimitive.Provider
-      data-slot="tooltip-provider"
-      delayDuration={delayDuration}
+    <div
+      data-slot="tooltip-trigger"
+      className={cn("inline-block", className)}
       {...props}
-    />
+    >
+      {children}
+    </div>
   );
 }
 
-function Tooltip({
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-  return (
-    <TooltipProvider>
-      <TooltipPrimitive.Root data-slot="tooltip" {...props} />
-    </TooltipProvider>
-  );
-}
-
-function TooltipTrigger({
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
+interface TooltipContentProps extends React.HTMLAttributes<HTMLDivElement> {
+  sideOffset?: number;
+  side?: "top" | "bottom" | "left" | "right";
+  align?: "start" | "center" | "end";
 }
 
 function TooltipContent({
   className,
-  sideOffset = 0,
   children,
+  side = "top",
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+}: TooltipContentProps) {
+  const positionClasses = {
+    top: "tooltip-top",
+    bottom: "tooltip-bottom",
+    left: "tooltip-left",
+    right: "tooltip-right",
+  };
+
+  // For daisyUI tooltip, parent needs tooltip class and data-tip
+  // This is a simplified implementation
   return (
-    <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Content
-        data-slot="tooltip-content"
-        sideOffset={sideOffset}
-        className={cn(
-          "bg-primary text-primary-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-md px-3 py-1.5 text-xs text-balance",
-          className,
-        )}
-        {...props}
-      >
-        {children}
-        <TooltipPrimitive.Arrow className="bg-primary fill-primary z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]" />
-      </TooltipPrimitive.Content>
-    </TooltipPrimitive.Portal>
+    <div
+      data-slot="tooltip-content"
+      className={cn(
+        "tooltip",
+        positionClasses[side],
+        className
+      )}
+      data-tip={typeof children === 'string' ? children : undefined}
+      {...props}
+    >
+      {typeof children !== 'string' && children}
+    </div>
   );
 }
 

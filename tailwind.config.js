@@ -1,10 +1,96 @@
 /** @type {import('tailwindcss').Config} */
+import daisyui from 'daisyui';
+
 export default {
     content: [
         "./index.html",
         "./src/**/*.{js,ts,jsx,tsx}",
     ],
     theme: {
+        // ========================================
+        // CRITICAL: Override ALL rem-based defaults to px
+        // This ensures consistency inside Shadow DOM
+        // regardless of host page's root font-size
+        // ========================================
+
+        // Override default font sizes (rem → px)
+        fontSize: {
+            'xs': ['12px', { lineHeight: '16px' }],
+            'sm': ['14px', { lineHeight: '20px' }],
+            'base': ['16px', { lineHeight: '24px' }],
+            'lg': ['18px', { lineHeight: '28px' }],
+            'xl': ['20px', { lineHeight: '28px' }],
+            '2xl': ['24px', { lineHeight: '32px' }],
+            '3xl': ['30px', { lineHeight: '36px' }],
+            '4xl': ['36px', { lineHeight: '40px' }],
+            '5xl': ['48px', { lineHeight: '48px' }],
+            '6xl': ['60px', { lineHeight: '60px' }],
+            '7xl': ['72px', { lineHeight: '72px' }],
+            '8xl': ['96px', { lineHeight: '96px' }],
+            '9xl': ['128px', { lineHeight: '128px' }],
+            '2xs': ['10px', { lineHeight: '14px' }], // Custom
+        },
+
+        // Override default spacing scale (rem → px)
+        spacing: {
+            'px': '1px',
+            '0': '0px',
+            '0.5': '2px',
+            '1': '4px',
+            '1.5': '6px',
+            '2': '8px',
+            '2.5': '10px',
+            '3': '12px',
+            '3.5': '14px',
+            '4': '16px',
+            '5': '20px',
+            '6': '24px',
+            '7': '28px',
+            '8': '32px',
+            '9': '36px',
+            '10': '40px',
+            '11': '44px',
+            '12': '48px',
+            '14': '56px',
+            '16': '64px',
+            '18': '72px',      // Custom
+            '20': '80px',
+            '24': '96px',
+            '28': '112px',
+            '32': '128px',
+            '36': '144px',
+            '40': '160px',
+            '44': '176px',
+            '48': '192px',
+            '52': '208px',
+            '56': '224px',
+            '60': '240px',
+            '64': '256px',
+            '72': '288px',
+            '80': '320px',
+            '88': '352px',     // Custom
+            '96': '384px',
+            '100': '400px',    // Custom
+            '120': '480px',    // Custom
+            '150': '600px',    // Custom
+            '180': '720px',    // Custom
+        },
+
+        // Override border radius (rem → px)
+        borderRadius: {
+            'none': '0px',
+            'sm': '2px',
+            'DEFAULT': '4px',
+            'md': '6px',
+            'lg': '8px',
+            'xl': '12px',
+            '2xl': '16px',
+            '3xl': '24px',
+            'full': '9999px',
+            'card': '12px',    // Custom
+            'button': '8px',   // Custom
+        },
+
         extend: {
             colors: {
                 // === Brand Colors ===
@@ -72,25 +158,6 @@ export default {
                 primary: '#79be15',
             },
 
-            // === Spacing Scale ===
-            spacing: {
-                '18': '4.5rem',
-                '88': '22rem',
-                '100': '25rem',
-                '120': '30rem',
-                '150': '37.5rem',
-                '180': '45rem',
-            },
-
-            // === Typography ===
-            fontFamily: {
-                dm: ['DM Sans', 'sans-serif'],
-            },
-
-            fontSize: {
-                '2xs': ['0.625rem', { lineHeight: '0.875rem' }],
-            },
-
             // === Shadows ===
             boxShadow: {
                 'card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
@@ -99,10 +166,9 @@ export default {
                 'drawer': '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
             },
 
-            // === Border Radius ===
-            borderRadius: {
-                'card': '0.75rem',
-                'button': '0.5rem',
+            // === Typography ===
+            fontFamily: {
+                dm: ['DM Sans', 'sans-serif'],
             },
 
             // === Transitions ===
@@ -111,5 +177,37 @@ export default {
             },
         },
     },
-    plugins: [],
+    plugins: [daisyui],
+    daisyui: {
+        themes: [
+            {
+                mendelu: {
+                    "primary": "#79be15",
+                    "primary-content": "#ffffff",
+                    "secondary": "#8DC843",
+                    "secondary-content": "#ffffff",
+                    "accent": "#00548f",
+                    "accent-content": "#ffffff",
+                    "neutral": "#444444",
+                    "neutral-content": "#ffffff",
+                    "base-100": "#ffffff",
+                    "base-200": "#f9fafb",
+                    "base-300": "#f3f4f6",
+                    "base-content": "#111827",
+                    "info": "#3b82f6",
+                    "info-content": "#ffffff",
+                    "success": "#22c55e",
+                    "success-content": "#ffffff",
+                    "warning": "#f59e0b",
+                    "warning-content": "#ffffff",
+                    "error": "#ef4444",
+                    "error-content": "#ffffff",
+                },
+            },
+        ],
+        base: true,      // Include base component styles
+        styled: true,    // Include component styles
+        utils: true,     // Include utility classes
+        logs: false,     // Disable console logs
+    },
 }

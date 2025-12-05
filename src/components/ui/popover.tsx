@@ -1,48 +1,119 @@
 "use client";
 
 import * as React from "react";
-import * as PopoverPrimitive from "@radix-ui/react-popover";
-
 import { cn } from "./utils";
 
-function Popover({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Root>) {
-  return <PopoverPrimitive.Root data-slot="popover" {...props} />;
+/**
+ * Popover component using daisyUI dropdown
+ * Works inside Shadow DOM without portals
+ */
+
+interface PopoverContextValue {
+  open: boolean;
+  setOpen: (open: boolean) => void;
 }
 
-function PopoverTrigger({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;
+const PopoverContext = React.createContext<PopoverContextValue | null>(null);
+
+interface PopoverProps {
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  children: React.ReactNode;
+}
+
+function Popover({
+  open: controlledOpen,
+  defaultOpen = false,
+  onOpenChange,
+  children
+}: PopoverProps) {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen);
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = isControlled
+    ? (val: boolean) => onOpenChange?.(val)
+    : (val: boolean) => {
+      setUncontrolledOpen(val);
+      onOpenChange?.(val);
+    };
+
+  return (
+    <PopoverContext.Provider value={{ open, setOpen }}>
+      <div data-slot="popover" className="dropdown">
+        {children}
+      </div>
+    </PopoverContext.Provider>
+  );
+}
+
+interface PopoverTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  asChild?: boolean;
+}
+
+function PopoverTrigger({ className, children, asChild, onClick, ...props }: PopoverTriggerProps) {
+  const context = React.useContext(PopoverContext);
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    onClick?.(e);
+    context?.setOpen(!context.open);
+  };
+
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<any>, {
+      onClick: handleClick,
+      tabIndex: 0,
+      "data-slot": "popover-trigger",
+    });
+  }
+
+  return (
+    <button
+      type="button"
+      data-slot="popover-trigger"
+      tabIndex={0}
+      className={cn("btn", className)}
+      onClick={handleClick}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+interface PopoverContentProps extends React.HTMLAttributes<HTMLDivElement> {
+  align?: "start" | "center" | "end";
+  sideOffset?: number;
 }
 
 function PopoverContent({
   className,
   align = "center",
-  sideOffset = 4,
+  children,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+}: PopoverContentProps) {
+  const context = React.useContext(PopoverContext);
+
+  if (!context?.open) return null;
+
   return (
-    <PopoverPrimitive.Portal>
-      <PopoverPrimitive.Content
-        data-slot="popover-content"
-        align={align}
-        sideOffset={sideOffset}
-        className={cn(
-          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-md border p-4 shadow-md outline-hidden",
-          className,
-        )}
-        {...props}
-      />
-    </PopoverPrimitive.Portal>
+    <div
+      data-slot="popover-content"
+      className={cn(
+        "dropdown-content z-50 bg-base-100 rounded-box p-4 shadow-lg border border-base-300 w-72",
+        align === "end" && "dropdown-end",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
   );
 }
 
-function PopoverAnchor({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
-  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />;
+function PopoverAnchor({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }
 
 export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor };

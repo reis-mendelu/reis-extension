@@ -1,65 +1,151 @@
 "use client";
 
 import * as React from "react";
-import * as TabsPrimitive from "@radix-ui/react-tabs";
-
 import { cn } from "./utils";
+
+/**
+ * Tabs component using daisyUI tabs
+ * Uses React state instead of Radix primitives
+ */
+
+interface TabsContextValue {
+  value: string;
+  onValueChange: (value: string) => void;
+}
+
+const TabsContext = React.createContext<TabsContextValue | null>(null);
+
+function useTabsContext() {
+  const context = React.useContext(TabsContext);
+  if (!context) {
+    throw new Error("Tabs components must be used within a Tabs");
+  }
+  return context;
+}
+
+interface TabsProps extends React.HTMLAttributes<HTMLDivElement> {
+  value?: string;
+  defaultValue?: string;
+  onValueChange?: (value: string) => void;
+}
 
 function Tabs({
   className,
+  value: controlledValue,
+  defaultValue,
+  onValueChange,
+  children,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Root>) {
+}: TabsProps) {
+  const [uncontrolledValue, setUncontrolledValue] = React.useState(defaultValue ?? "");
+
+  const isControlled = controlledValue !== undefined;
+  const value = isControlled ? controlledValue : uncontrolledValue;
+  const handleValueChange = isControlled
+    ? (onValueChange ?? (() => { }))
+    : (val: string) => {
+      setUncontrolledValue(val);
+      onValueChange?.(val);
+    };
+
   return (
-    <TabsPrimitive.Root
-      data-slot="tabs"
-      className={cn("flex flex-col gap-2", className)}
-      {...props}
-    />
+    <TabsContext.Provider value={{ value, onValueChange: handleValueChange }}>
+      <div
+        data-slot="tabs"
+        className={cn("flex flex-col gap-2", className)}
+        {...props}
+      >
+        {children}
+      </div>
+    </TabsContext.Provider>
   );
+}
+
+interface TabsListProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "default" | "boxed" | "bordered" | "lifted";
 }
 
 function TabsList({
   className,
+  variant = "boxed",
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.List>) {
+}: TabsListProps) {
+  const variantClasses = {
+    default: "",
+    boxed: "tabs-boxed",
+    bordered: "tabs-bordered",
+    lifted: "tabs-lifted",
+  };
+
   return (
-    <TabsPrimitive.List
+    <div
+      role="tablist"
       data-slot="tabs-list"
-      className={cn(
-        "bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-xl p-[3px] flex",
-        className,
-      )}
+      className={cn("tabs", variantClasses[variant], className)}
       {...props}
     />
   );
+}
+
+interface TabsTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  value: string;
 }
 
 function TabsTrigger({
   className,
+  value,
+  children,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+}: TabsTriggerProps) {
+  const { value: activeValue, onValueChange } = useTabsContext();
+  const isActive = activeValue === value;
+
   return (
-    <TabsPrimitive.Trigger
+    <button
+      role="tab"
+      type="button"
       data-slot="tabs-trigger"
+      data-state={isActive ? "active" : "inactive"}
+      aria-selected={isActive}
       className={cn(
-        "data-[state=active]:bg-card dark:data-[state=active]:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 text-foreground dark:text-muted-foreground inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-xl border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        className,
+        "tab",
+        isActive && "tab-active",
+        className
       )}
+      onClick={() => onValueChange(value)}
       {...props}
-    />
+    >
+      {children}
+    </button>
   );
+}
+
+interface TabsContentProps extends React.HTMLAttributes<HTMLDivElement> {
+  value: string;
 }
 
 function TabsContent({
   className,
+  value,
+  children,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Content>) {
+}: TabsContentProps) {
+  const { value: activeValue } = useTabsContext();
+
+  if (activeValue !== value) {
+    return null;
+  }
+
   return (
-    <TabsPrimitive.Content
+    <div
+      role="tabpanel"
       data-slot="tabs-content"
+      data-state="active"
       className={cn("flex-1 outline-none", className)}
       {...props}
-    />
+    >
+      {children}
+    </div>
   );
 }
 

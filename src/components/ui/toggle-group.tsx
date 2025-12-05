@@ -1,72 +1,123 @@
 "use client";
 
 import * as React from "react";
-import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group";
-import { type VariantProps } from "class-variance-authority";
-
 import { cn } from "./utils";
-import { toggleVariants } from "./toggle";
 
-const ToggleGroupContext = React.createContext<
-  VariantProps<typeof toggleVariants>
->({
-  size: "default",
-  variant: "default",
-});
+/**
+ * ToggleGroup component using daisyUI join
+ */
+
+interface ToggleGroupContextValue {
+  type: "single" | "multiple";
+  value: string | string[];
+  onValueChange: (value: string | string[]) => void;
+  variant?: "default" | "outline";
+  size?: "default" | "sm" | "lg";
+}
+
+const ToggleGroupContext = React.createContext<ToggleGroupContextValue | null>(null);
+
+interface ToggleGroupProps extends React.HTMLAttributes<HTMLDivElement> {
+  type?: "single" | "multiple";
+  value?: string | string[];
+  defaultValue?: string | string[];
+  onValueChange?: (value: string | string[]) => void;
+  variant?: "default" | "outline";
+  size?: "default" | "sm" | "lg";
+}
 
 function ToggleGroup({
+  type = "single",
+  value: controlledValue,
+  defaultValue,
+  onValueChange,
+  variant = "default",
+  size = "default",
   className,
-  variant,
-  size,
   children,
   ...props
-}: React.ComponentProps<typeof ToggleGroupPrimitive.Root> &
-  VariantProps<typeof toggleVariants>) {
+}: ToggleGroupProps) {
+  const [uncontrolledValue, setUncontrolledValue] = React.useState<string | string[]>(
+    defaultValue ?? (type === "multiple" ? [] : "")
+  );
+
+  const isControlled = controlledValue !== undefined;
+  const value = isControlled ? controlledValue : uncontrolledValue;
+  const handleValueChange = isControlled
+    ? (onValueChange ?? (() => { }))
+    : (val: string | string[]) => {
+      setUncontrolledValue(val);
+      onValueChange?.(val);
+    };
+
   return (
-    <ToggleGroupPrimitive.Root
-      data-slot="toggle-group"
-      data-variant={variant}
-      data-size={size}
-      className={cn(
-        "group/toggle-group flex w-fit items-center rounded-md data-[variant=outline]:shadow-xs",
-        className,
-      )}
-      {...props}
-    >
-      <ToggleGroupContext.Provider value={{ variant, size }}>
+    <ToggleGroupContext.Provider value={{ type, value, onValueChange: handleValueChange, variant, size }}>
+      <div
+        data-slot="toggle-group"
+        role="group"
+        className={cn("join", className)}
+        {...props}
+      >
         {children}
-      </ToggleGroupContext.Provider>
-    </ToggleGroupPrimitive.Root>
+      </div>
+    </ToggleGroupContext.Provider>
   );
 }
 
+interface ToggleGroupItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  value: string;
+}
+
 function ToggleGroupItem({
+  value,
   className,
   children,
-  variant,
-  size,
   ...props
-}: React.ComponentProps<typeof ToggleGroupPrimitive.Item> &
-  VariantProps<typeof toggleVariants>) {
+}: ToggleGroupItemProps) {
   const context = React.useContext(ToggleGroupContext);
 
+  const isPressed = context?.type === "multiple"
+    ? (context.value as string[]).includes(value)
+    : context?.value === value;
+
+  const handleClick = () => {
+    if (!context) return;
+
+    if (context.type === "multiple") {
+      const currentValue = context.value as string[];
+      const newValue = isPressed
+        ? currentValue.filter(v => v !== value)
+        : [...currentValue, value];
+      context.onValueChange(newValue);
+    } else {
+      context.onValueChange(isPressed ? "" : value);
+    }
+  };
+
+  const sizeClasses = {
+    default: "btn-md",
+    sm: "btn-sm",
+    lg: "btn-lg",
+  };
+
   return (
-    <ToggleGroupPrimitive.Item
+    <button
+      type="button"
       data-slot="toggle-group-item"
-      data-variant={context.variant || variant}
-      data-size={context.size || size}
+      data-state={isPressed ? "on" : "off"}
+      aria-pressed={isPressed}
+      onClick={handleClick}
       className={cn(
-        toggleVariants({
-          variant: context.variant || variant,
-          size: context.size || size,
-        }),
-        "min-w-0 flex-1 shrink-0 rounded-none shadow-none first:rounded-l-md last:rounded-r-md focus:z-10 focus-visible:z-10 data-[variant=outline]:border-l-0 data-[variant=outline]:first:border-l",
-        className,
+        "btn join-item",
+        context?.variant === "outline" && "btn-outline",
+        context?.size && sizeClasses[context.size],
+        isPressed && "btn-active",
+        className
       )}
       {...props}
     >
       {children}
-    </ToggleGroupPrimitive.Item>
+    </button>
   );
 }
 

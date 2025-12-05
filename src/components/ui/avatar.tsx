@@ -1,52 +1,74 @@
 "use client";
 
 import * as React from "react";
-import * as AvatarPrimitive from "@radix-ui/react-avatar";
-
 import { cn } from "./utils";
 
-function Avatar({
-  className,
-  ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Root>) {
+/**
+ * Avatar component using daisyUI avatar classes
+ */
+interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
+  size?: "xs" | "sm" | "md" | "lg";
+}
+
+function Avatar({ className, size, children, ...props }: AvatarProps) {
+  const sizeClasses = {
+    xs: "w-6",
+    sm: "w-8",
+    md: "w-10",
+    lg: "w-16",
+  };
+
   return (
-    <AvatarPrimitive.Root
+    <div
       data-slot="avatar"
-      className={cn(
-        "relative flex size-10 shrink-0 overflow-hidden rounded-full",
-        className,
-      )}
+      className={cn("avatar", className)}
       {...props}
-    />
+    >
+      <div className={cn(
+        "rounded-full overflow-hidden",
+        size && sizeClasses[size],
+        !size && "w-10"
+      )}>
+        {children}
+      </div>
+    </div>
   );
 }
 
-function AvatarImage({
-  className,
-  ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+interface AvatarImageProps extends React.ImgHTMLAttributes<HTMLImageElement> { }
+
+function AvatarImage({ className, alt = "", ...props }: AvatarImageProps) {
+  const [hasError, setHasError] = React.useState(false);
+
+  if (hasError) return null;
+
   return (
-    <AvatarPrimitive.Image
+    <img
       data-slot="avatar-image"
-      className={cn("aspect-square size-full", className)}
+      className={cn("aspect-square size-full object-cover", className)}
+      alt={alt}
+      onError={() => setHasError(true)}
       {...props}
     />
   );
 }
 
-function AvatarFallback({
-  className,
-  ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
+interface AvatarFallbackProps extends React.HTMLAttributes<HTMLDivElement> {
+  delayMs?: number;
+}
+
+function AvatarFallback({ className, children, ...props }: AvatarFallbackProps) {
   return (
-    <AvatarPrimitive.Fallback
+    <div
       data-slot="avatar-fallback"
       className={cn(
-        "bg-muted flex size-full items-center justify-center rounded-full",
-        className,
+        "bg-base-200 flex size-full items-center justify-center rounded-full text-sm font-medium",
+        className
       )}
       {...props}
-    />
+    >
+      {children}
+    </div>
   );
 }
 

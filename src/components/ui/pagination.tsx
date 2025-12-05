@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 
 import { cn } from "./utils";
-import { Button, buttonVariants } from "./button";
 
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
   return (
@@ -37,10 +36,18 @@ function PaginationItem({ ...props }: React.ComponentProps<"li">) {
   return <li data-slot="pagination-item" {...props} />;
 }
 
+// Size map for daisyUI button sizes
+const sizeClasses = {
+  default: "",
+  sm: "btn-sm",
+  lg: "btn-lg",
+  icon: "btn-square btn-sm",
+} as const;
+
 type PaginationLinkProps = {
   isActive?: boolean;
-} & Pick<React.ComponentProps<typeof Button>, "size"> &
-  React.ComponentProps<"a">;
+  size?: keyof typeof sizeClasses;
+} & React.ComponentProps<"a">;
 
 function PaginationLink({
   className,
@@ -54,10 +61,9 @@ function PaginationLink({
       data-slot="pagination-link"
       data-active={isActive}
       className={cn(
-        buttonVariants({
-          variant: isActive ? "outline" : "ghost",
-          size,
-        }),
+        "btn",
+        isActive ? "btn-outline" : "btn-ghost",
+        sizeClasses[size],
         className,
       )}
       {...props}
