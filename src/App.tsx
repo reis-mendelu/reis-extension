@@ -55,6 +55,16 @@ function App() {
             StorageService.set(STORAGE_KEYS.SUBJECTS_DATA, receivedData.subjects);
             console.log('[App] Wrote subjects to localStorage');
           }
+          if (receivedData.files && typeof receivedData.files === 'object') {
+            // Write files for each subject with prefix key
+            const filesData = receivedData.files as Record<string, unknown>;
+            const subjectCount = Object.keys(filesData).length;
+            for (const [courseCode, files] of Object.entries(filesData)) {
+              const key = `${STORAGE_KEYS.SUBJECT_FILES_PREFIX}${courseCode}`;
+              StorageService.set(key, files);
+            }
+            console.log('[App] Wrote files for', subjectCount, 'subjects to localStorage');
+          }
           if (receivedData.lastSync) {
             StorageService.set(STORAGE_KEYS.LAST_SYNC, receivedData.lastSync);
           }

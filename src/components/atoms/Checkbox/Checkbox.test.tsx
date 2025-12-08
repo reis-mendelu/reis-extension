@@ -77,13 +77,13 @@ describe('Checkbox', () => {
     it('should apply active styles when checked', () => {
         render(<Checkbox checked={true} onClick={vi.fn()} />);
         const checkbox = screen.getByRole('checkbox');
-        expect(checkbox.className).toContain('bg-[#79be15]');
+        expect(checkbox.className).toContain('bg-primary');
     });
 
     it('should apply inactive styles when unchecked', () => {
         render(<Checkbox checked={false} onClick={vi.fn()} />);
         const checkbox = screen.getByRole('checkbox');
-        expect(checkbox.className).toContain('bg-white');
-        expect(checkbox.className).toContain('border-slate-300');
+        expect(checkbox.className).toContain('bg-base-100');
+        expect(checkbox.className).toContain('border-base-300');
     });
 });

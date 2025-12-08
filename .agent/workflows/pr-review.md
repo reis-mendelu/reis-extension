@@ -1,44 +1,67 @@
 ---
-description: Full architecture, UI, and security review for pull requests
+description: Pre-merge review - architecture, UI, security
 ---
 
 # PR Review Workflow
 
-Run a comprehensive review before merging any significant changes.
-
-## Steps
-
-### 1. UI Compliance Check
-Invoke `@daisy-enforcer scan` on changed files:
-- Flag raw Tailwind button/card/input patterns
-- Ensure semantic color tokens are used
-- Check DaisyUI component usage
-
-### 2. Architecture Validation
-Invoke `@reis-guardian review` on changed files:
-- Verify StorageService usage (no raw chrome.storage)
-- Check asset URLs use chrome.runtime.getURL
-- Confirm types are imported from src/types/
-- Validate file structure conventions
-
-### 3. Security Audit
-Invoke `@extension-security audit` on changed files:
-- Check for XSS vulnerabilities
-- Verify no credential storage
-- Confirm CSP compliance
-- Flag any suspicious external requests
-
-### 4. Parser Observability (if parsers changed)
-Invoke `@parser-debugger scan` on changed parser files:
-- Ensure console.debug logging present
-- Verify edge cases are logged
+Comprehensive check before merging changes.
 
 ---
 
-## Usage
-
+## Step 1: Architecture Review
 ```
-/pr-review
+@reis-guardian review <changed-files>
 ```
 
-Or manually run each step for focused review.
+Check:
+- [ ] No UI in content script
+- [ ] Message origin validation
+- [ ] StorageService usage (no raw chrome.storage)
+- [ ] Asset URLs via chrome.runtime.getURL
+- [ ] Types from src/types/
+
+---
+
+## Step 2: UI Compliance
+```
+@daisy-enforcer scan <changed-files>
+```
+
+Check:
+- [ ] DaisyUI components over raw Tailwind
+- [ ] Semantic colors (no hex codes)
+- [ ] No inline styles for static layout
+
+---
+
+## Step 3: Security (if applicable)
+```
+@reis-guardian audit security
+```
+
+Check:
+- [ ] No XSS vectors (dangerouslySetInnerHTML)
+- [ ] No credential storage
+- [ ] CSP compliance
+
+---
+
+## Step 4: Parser Observability (if parsers changed)
+```
+@reis-guardian audit parsers
+```
+
+Check:
+- [ ] Entry logging
+- [ ] Result logging
+- [ ] Edge case handling
+
+---
+
+## Quick Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/pr-review` | Full review |
+| `@reis-guardian review src/components/...` | Architecture check |
+| `@daisy-enforcer scan src/components/...` | UI check |

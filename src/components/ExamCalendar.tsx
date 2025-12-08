@@ -43,13 +43,6 @@ export function ExamCalendar({ exams, onDateClick, highlightedDates, viewDate, h
         }
     }, [highlightedDates]);
 
-    // Auto-navigate to the first highlighted date when they change
-    useEffect(() => {
-        if (highlightedDates && highlightedDates.length > 0) {
-            setCurrentDate(highlightedDates[0]);
-        }
-    }, [highlightedDates]);
-
     // Extract registered exam dates
     const examDates = useMemo(() => {
         const dates: Date[] = [];
@@ -88,19 +81,19 @@ export function ExamCalendar({ exams, onDateClick, highlightedDates, viewDate, h
     const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
     return (
-        <div className="inline-flex bg-white rounded-lg shadow-lg overflow-hidden font-sans select-none">
+        <div className="inline-flex bg-base-100 rounded-lg shadow-lg overflow-hidden font-sans select-none">
             {/* Week Numbers Sidebar */}
-            <div className="flex flex-col bg-[#F0F4F9] border-r border-gray-100">
+            <div className="flex flex-col bg-base-200 border-r border-base-300">
                 {/* Empty space for header alignment */}
-                <div className="h-[56px]"></div>
+                <div className="h-14"></div>
                 {/* Empty space for days of week row */}
-                <div className="h-[24px] mb-1"></div>
+                <div className="h-6 mb-1"></div>
                 {/* Week numbers aligned with calendar rows */}
                 <div className="flex flex-col gap-0">
                     {weekNumbers.map((weekNum, index) => (
                         <div
                             key={index}
-                            className="w-[32px] h-[32px] flex items-center justify-center text-[10px] text-[#5F6368] font-medium"
+                            className="w-8 h-8 flex items-center justify-center text-[10px] text-base-content/60 font-medium"
                         >
                             {weekNum}
                         </div>
@@ -109,23 +102,23 @@ export function ExamCalendar({ exams, onDateClick, highlightedDates, viewDate, h
             </div>
 
             {/* Main Calendar Area */}
-            <div className="flex flex-col bg-white p-4">
+            <div className="flex flex-col bg-base-100 p-4">
                 {/* Header Row */}
                 <div className="flex items-center justify-between mb-3 pl-1">
-                    <h2 className="text-[16px] font-normal text-[#1F1F1F] capitalize">
+                    <h2 className="text-base font-normal text-base-content capitalize">
                         {format(currentDate, 'LLLL yyyy', { locale: cs })}
                     </h2>
                     <div className="flex gap-0">
                         <button
                             onClick={prevMonth}
-                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors text-[#444746]"
+                            className="w-8 h-8 flex items-center justify-center hover:bg-base-200 rounded-full transition-colors text-base-content/70"
                             aria-label="Previous month"
                         >
                             <ChevronLeft size={20} />
                         </button>
                         <button
                             onClick={nextMonth}
-                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors text-[#444746]"
+                            className="w-8 h-8 flex items-center justify-center hover:bg-base-200 rounded-full transition-colors text-base-content/70"
                             aria-label="Next month"
                         >
                             <ChevronRight size={20} />
@@ -138,7 +131,7 @@ export function ExamCalendar({ exams, onDateClick, highlightedDates, viewDate, h
                     {daysOfWeek.map((day, index) => (
                         <div
                             key={index}
-                            className="w-[32px] h-[24px] flex items-center justify-center text-[11px] font-medium text-[#5F6368] uppercase"
+                            className="w-8 h-6 flex items-center justify-center text-[11px] font-medium text-base-content/60 uppercase"
                         >
                             {day}
                         </div>
@@ -160,30 +153,30 @@ export function ExamCalendar({ exams, onDateClick, highlightedDates, viewDate, h
                                 return (
                                     <div
                                         key={day.toString()}
-                                        onMouseDown={(e) => e.preventDefault()} // Prevent focus loss/dropdown close
+                                        onMouseDown={(e) => e.preventDefault()}
                                         onClick={() => !isFullDate && onDateClick?.(day)}
-                                        className={`w-[32px] h-[32px] flex items-center justify-center relative group ${isFullDate ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                        className={`w-8 h-8 flex items-center justify-center relative group ${isFullDate ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                     >
                                         <div className={`
-                                            w-[20px] h-[20px] flex items-center justify-center rounded-full transition-all
-                                            ${isCurrentMonth ? 'text-[#1F1F1F]' : 'text-[#9AA0A6]'}
+                                            w-5 h-5 flex items-center justify-center rounded-full transition-all
+                                            ${isCurrentMonth ? 'text-base-content' : 'text-base-content/40'}
                                             ${isTodayDate
-                                                ? 'bg-[#0b57d0] text-white font-bold hover:bg-[#0b57d0]'
+                                                ? 'bg-info text-info-content font-bold hover:bg-info'
                                                 : isHighlightedDate
-                                                    ? 'bg-[#79be15] text-white font-bold hover:bg-[#79be15]'
+                                                    ? 'bg-primary text-primary-content font-bold hover:bg-primary'
                                                     : isFullDate
-                                                        ? 'bg-gray-200 text-gray-400 font-medium' // Full date style
-                                                        : 'group-hover:bg-gray-100'
+                                                        ? 'bg-base-200 text-base-content/40 font-medium'
+                                                        : 'group-hover:bg-base-200'
                                             }
                                             ${(isExamDay || isHighlightedDate) && !isTodayDate ? 'font-bold' : ''}
-                                            text-[12px] font-medium
-                                            ${isHovered ? 'ring-2 ring-[#0b57d0] z-10' : ''}
-                                            ${isHighlightedDate && !isHovered ? 'group-hover:ring-2 group-hover:ring-[#0b57d0]' : ''}
+                                            text-xs font-medium
+                                            ${isHovered ? 'ring-2 ring-primary z-10' : ''}
+                                            ${isHighlightedDate && !isHovered ? 'group-hover:ring-2 group-hover:ring-primary' : ''}
                                         `}>
                                             {format(day, 'd')}
                                         </div>
                                         {isExamDay && !isTodayDate && (
-                                            <div className="absolute bottom-[3px] w-[18px] h-[2px] bg-[#ea4335] rounded-[1px]"></div>
+                                            <div className="absolute bottom-0.5 w-4 h-0.5 bg-error rounded-sm"></div>
                                         )}
                                     </div>
                                 );
@@ -195,3 +188,4 @@ export function ExamCalendar({ exams, onDateClick, highlightedDates, viewDate, h
         </div>
     );
 }
+

@@ -8,21 +8,38 @@
 
 ---
 
-## Context: REIS Design System
+## Context: REIS Design System (Iframe Architecture)
+
+> **⚠️ ARCHITECTURE UPDATE:** Project now uses **Iframe Isolation Strategy**.
+> The React app runs inside a sandboxed iframe with full CSS isolation.
+> Shadow DOM hacks are DEPRECATED.
 
 This project uses DaisyUI with a custom `mendelu` theme. Reference:
-- `tailwind.config.js` — Custom theme with `mendelu` colors and semantic tokens
-- All sizing is **px-based** (not rem) for Shadow DOM isolation
+- `tailwind.config.js` — Custom theme with `mendelu` colors
+- **rem sizing is now SAFE** (iframe root is stable, no host page interference)
+- **Preflight (CSS reset) is ENABLED** inside the iframe
+
+### DaisyUI Semantic Color Mappings
+
+Map Mendelu brand colors to standard DaisyUI slots:
+
+| Mendelu Color | DaisyUI Slot | Usage |
+|---------------|--------------|-------|
+| `#79be15` (green) | `primary` | Buttons, active states, checkboxes |
+| `#0b57d0` (blue) | `info` | Today highlights, external links |
+| `#ea4335` (red) | `error` | Exam indicators, destructive actions |
+| `#F0F4F9` (gray) | `base-200` | Muted backgrounds, sidebars |
+| `#ffffff` | `base-100` | Card backgrounds, panels |
+| `#1F1F1F` | `base-content` | Primary text |
 
 ### Semantic Tokens to Enforce
 
 | Category | Tokens |
 |----------|--------|
-| **Brand** | `brand-primary`, `brand-accent`, `mendelu-green` |
-| **Surfaces** | `surface-primary`, `surface-secondary`, `surface-muted` |
-| **Content** | `content-primary`, `content-secondary`, `content-muted` |
-| **States** | `state-success`, `state-warning`, `state-error`, `state-info` |
-| **Event Types** | `exam-*`, `lecture-*`, `seminar-*` |
+| **Backgrounds** | `bg-base-100`, `bg-base-200`, `bg-base-300` |
+| **Text** | `text-base-content`, `text-base-content/70`, `text-base-content/50` |
+| **Primary** | `bg-primary`, `text-primary`, `border-primary` |
+| **States** | `bg-error`, `bg-info`, `bg-success`, `bg-warning` |
 
 ---
 
@@ -49,23 +66,36 @@ This project uses DaisyUI with a custom `mendelu` theme. Reference:
 
 ### 3. Color Anti-Patterns
 ```tsx
-// ❌ BAD: Literal colors
-className="text-green-500 bg-blue-100"
+// ❌ BAD: Hex colors
+className="text-[#79be15] bg-[#F0F4F9]"
 
 // ✅ GOOD: Semantic colors
-className="text-primary bg-info/10"
-// or REIS tokens:
-className="text-brand-primary bg-surface-secondary"
+className="text-primary bg-base-200"
 ```
 
-### 4. Form Input Anti-Patterns
+### 4. Toggle Anti-Patterns
 ```tsx
-// ❌ BAD: Custom input styling
-<input className="border border-gray-300 rounded px-3 py-2 focus:ring-2" />
+// ❌ BAD: Custom toggle with inline styles
+<button style={{ backgroundColor: enabled ? '#79be15' : '#d1d5db' }}>
 
-// ✅ GOOD: DaisyUI input
-<input className="input input-bordered" />
+// ✅ GOOD: DaisyUI toggle
+<input type="checkbox" className="toggle toggle-primary" checked={enabled} />
 ```
+
+---
+
+## Exceptions
+
+### High-Density Grids (Timetables)
+- **DO NOT** force `<div className="card">` on timetable cells
+- Timetable events need compact styling, not card padding
+- Use utility classes for precise positioning in calendar grids
+
+### Dynamic Positioning
+- Inline `style={{}}` is **ACCEPTABLE** for:
+  - Popup x/y positioning (computed at runtime)
+  - Calendar heights based on hour constants
+  - Animation transforms
 
 ---
 
@@ -86,3 +116,4 @@ When violations are found:
 | `@daisy-enforcer scan src/components` | Audit all components for violations |
 | `@daisy-enforcer fix <file>` | Suggest refactors for a specific file |
 | `@daisy-enforcer explain <pattern>` | Explain why a pattern is wrong |
+

@@ -32,14 +32,13 @@
     "content_scripts": [
         {
             "matches": [
-                "https://is.mendelu.cz/auth/",
-                "https://is.mendelu.cz/auth/?*",
-                "https://is.mendelu.cz/auth/index.pl*"
+                "https://is.mendelu.cz/auth/*"
             ],
             "js": [
                 "content.js"
             ],
-            "run_at": "document_start"
+            "run_at": "document_start",
+            "all_frames": false
         }
     ],
     "web_accessible_resources": [

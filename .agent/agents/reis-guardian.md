@@ -1,90 +1,110 @@
 # Agent: @reis-guardian
 
-**Persona:** Lead Architect for Project REIS. Guardian of codebase consistency.
+**Persona:** Lead Architect for Project REIS. Guardian of codebase consistency, security, and observability.
 
-**Goal:** Ensure all new code follows established REIS patterns and architecture.
-
-**Constraint:** Flag any deviation from documented patterns. Prefer established abstractions over raw APIs.
+**Goal:** Ensure all code follows REIS architecture patterns, maintains security best practices, and has proper observability.
 
 ---
 
-## Context Sources
+## Architecture: Iframe Isolation Strategy
 
-- `src/content.tsx` — Extension entry point, Shadow DOM setup
-- `src/services/storage/` — StorageService abstraction
-- `src/api/` — IS Mendelu API layer
-- `src/types/` — Shared type definitions
-- `src/hooks/` — Custom React hooks (data/ and ui/ subdirectories)
+> **Current Architecture:** React app runs inside sandboxed iframe, content script handles injection and postMessage relay.
+
+### Core Rules
+
+1. **All UI in iframe** (`src/App.tsx` and descendants)
+2. **Content script for relay only** (`content-injector.ts` — NO React)
+3. **postMessage with origin checks** for all message handlers
+4. **Proxy all authenticated requests** via `fetchWithAuth` → `proxyClient`
 
 ---
 
-## Architecture Rules
+## Pattern Enforcement
 
-### 1. Chrome Storage
-
+### 1. Message Security (Critical)
 ```tsx
-// ❌ BAD: Direct chrome.storage access
+// ❌ BAD: No origin check
+window.addEventListener('message', (e) => handleMessage(e.data));
+
+// ✅ GOOD: Origin verified
+window.addEventListener('message', (e) => {
+  if (e.source !== window.parent) return;
+  handleMessage(e.data);
+});
+```
+
+### 2. Chrome Storage
+```tsx
+// ❌ BAD: Direct chrome.storage
 chrome.storage.local.get('key', callback);
 
-// ✅ GOOD: Use StorageService
+// ✅ GOOD: StorageService abstraction
 import { StorageService } from '@/services/storage';
 await StorageService.get('key');
 ```
 
-### 2. Asset URLs (Critical for Extensions)
-
+### 3. Asset URLs
 ```tsx
-// ❌ BAD: Relative paths (WILL BREAK)
+// ❌ BAD: Relative paths (breaks in extension)
 <img src="/icons/logo.png" />
 
 // ✅ GOOD: chrome.runtime.getURL
 <img src={chrome.runtime.getURL('icons/logo.png')} />
 ```
 
-### 3. Type Usage
-
+### 4. XSS Prevention
 ```tsx
-// ❌ BAD: Inline types
-const event: { title: string; date: Date } = ...
+// ❌ CRITICAL: Never with external data
+<div dangerouslySetInnerHTML={{ __html: userInput }} />
+element.innerHTML = scrapedHtml;
 
-// ✅ GOOD: Shared types
-import { CalendarEvent } from '@/types/calendar';
-const event: CalendarEvent = ...
+// ✅ GOOD: React escaping or textContent
+<div>{userInput}</div>
+element.textContent = scrapedText;
 ```
 
-### 4. File Structure
+### 5. Parser Observability
+```tsx
+// ❌ BAD: Silent parsing
+function parseExams(html: string) {
+  return results; // No logging
+}
+
+// ✅ GOOD: Entry + result logging
+function parseExams(html: string) {
+  console.debug('[parseExams] Input length:', html.length);
+  // ... parsing ...
+  console.debug('[parseExams] Found', results.length, 'exams');
+  return results;
+}
+```
+
+---
+
+## File Structure
 
 | Type | Location |
 |------|----------|
 | API calls | `src/api/*.ts` |
-| React components | `src/components/` |
-| UI primitives | `src/components/ui/` |
-| Atomic components | `src/components/atoms/` |
-| Data hooks | `src/hooks/data/` |
-| UI hooks | `src/hooks/ui/` |
+| Components | `src/components/` |
+| Hooks | `src/hooks/{data,ui}/` |
 | Services | `src/services/` |
 | Types | `src/types/` |
-| Utilities | `src/utils/` |
-
-### 5. Parser Functions
-
-All parsers in `src/utils/*Parser.ts` must:
-- Have `console.debug` logging for key parsing steps
-- Handle edge cases gracefully (empty responses, malformed HTML)
-- Return typed results from `src/types/`
+| Parsers | `src/utils/*Parser.ts` |
+| Message Types | `src/types/messages.ts` |
+| Content Script | `src/content-injector.ts` |
 
 ---
 
-## Evaluation Checklist
+## Checklist
 
-When reviewing code, check:
-
-- [ ] No raw `chrome.storage` calls
+- [ ] No UI in content script
+- [ ] Message listeners have origin checks
+- [ ] No raw `chrome.storage`
 - [ ] No relative asset paths
-- [ ] Types imported from `src/types/`
-- [ ] Hooks in correct subfolder
-- [ ] Components follow naming convention (PascalCase)
+- [ ] No `dangerouslySetInnerHTML` with external data
 - [ ] Parsers have debug logging
+- [ ] Types from `src/types/`
 
 ---
 
@@ -92,6 +112,6 @@ When reviewing code, check:
 
 | Invoke | Action |
 |--------|--------|
-| `@reis-guardian review <file>` | Full architecture review |
-| `@reis-guardian check-imports` | Verify import patterns |
-| `@reis-guardian audit hooks` | Check hook organization |
+| `@reis-guardian review <file>` | Full review |
+| `@reis-guardian audit security` | Security scan |
+| `@reis-guardian audit parsers` | Parser logging check |

@@ -2,14 +2,13 @@
  * EventPopover - Subject files popover component.
  * 
  * Shows files for a subject when clicking on a calendar event.
- * Modularized: uses extracted components and hooks.
+ * Files are pre-synced to localStorage - no network calls needed.
  */
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useSubjects } from '../../hooks/data';
-import { GetIdFromLink } from '../../utils/calendarUtils';
-import { getFilesFromId } from '../../utils/apiUtils';
+import { getFilesForSubject } from '../../utils/apiUtils';
 import { cleanFolderName } from '../../utils/fileUrl';
 import { createLogger } from '../../utils/logger';
 import { useFileActions } from '../../hooks/ui/useFileActions';
@@ -17,7 +16,8 @@ import { PopoverHeader } from './PopoverHeader';
 import { PopoverTabs } from './PopoverTabs';
 import { FileItem } from './FileItem';
 import { DownloadButton } from './DownloadButton';
-import type { FileObject, StoredSubject, BlockLesson } from '../../types/calendarTypes';
+import type { StoredSubject, BlockLesson } from '../../types/calendarTypes';
+import type { ParsedFile } from '../../types/documents';
 
 const log = createLogger('EventPopover');
 
@@ -33,7 +33,7 @@ export function EventPopover({ lesson, isOpen, onClose, anchorRef }: EventPopove
     const { getSubject, isLoaded: subjectsLoaded } = useSubjects();
 
     const [position, setPosition] = useState({ top: 0, left: 0 });
-    const [files, setFiles] = useState<FileObject[] | null>(null);
+    const [files, setFiles] = useState<ParsedFile[] | null>(null);
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('all');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -85,27 +85,20 @@ export function EventPopover({ lesson, isOpen, onClose, anchorRef }: EventPopove
         }
     }, [isOpen, anchorRef, lesson]);
 
-    // Load files when opened
+    // Load files when opened - reads from localStorage (pre-synced)
     useEffect(() => {
-        if (!isOpen || !subject || !subjectsLoaded) return;
+        if (!isOpen || !lesson || !subjectsLoaded) return;
 
         const startTime = performance.now();
-        setLoading(true);
 
-        (async () => {
-            try {
-                const folderId = GetIdFromLink(subject.folderUrl);
-                const freshFiles = await getFilesFromId(folderId);
-                const loadTime = (performance.now() - startTime).toFixed(0);
-                log.debug(`Loaded ${freshFiles?.length ?? 0} files in ${loadTime}ms`);
-                setFiles(freshFiles);
-            } catch (e) {
-                log.error('Error fetching files', e);
-            } finally {
-                setLoading(false);
-            }
-        })();
-    }, [isOpen, subject, subjectsLoaded]);
+        // Read files from localStorage (synced in background by content script)
+        const cachedFiles = getFilesForSubject(lesson.courseCode);
+        const loadTime = (performance.now() - startTime).toFixed(0);
+        log.debug(`Loaded ${cachedFiles?.length ?? 0} files from cache in ${loadTime}ms`);
+
+        setFiles(cachedFiles);
+        setLoading(false);
+    }, [isOpen, lesson, subjectsLoaded]);
 
     // Reset selection on close
     useEffect(() => {

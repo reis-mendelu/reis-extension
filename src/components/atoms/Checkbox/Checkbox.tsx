@@ -1,8 +1,7 @@
 /**
  * Checkbox - Consistent checkbox with brand styling.
  * 
- * Consolidates the repeated pattern in SubjectPopup.tsx:
- * "w-5 h-5 rounded bg-[#8DC843] border-2 border-[#8DC843] flex items-center justify-center shadow-sm"
+ * Uses DaisyUI semantic colors for consistent theming.
  */
 
 import { Check, Minus } from 'lucide-react';
@@ -49,17 +48,18 @@ export function Checkbox({
                 'rounded border-2 flex items-center justify-center cursor-pointer transition-colors shadow-sm',
                 sizeClasses,
                 isActive
-                    ? 'bg-[#79be15] border-[#79be15]'
-                    : 'bg-white border-slate-300 hover:border-[#79be15]',
+                    ? 'bg-primary border-primary'
+                    : 'bg-base-100 border-base-300 hover:border-primary',
                 className
             )}
         >
             {checked && !indeterminate && (
-                <Check size={iconSize} className="text-white" strokeWidth={3} />
+                <Check size={iconSize} className="text-primary-content" strokeWidth={3} />
             )}
             {indeterminate && (
-                <Minus size={iconSize} className="text-white" strokeWidth={3} />
+                <Minus size={iconSize} className="text-primary-content" strokeWidth={3} />
             )}
         </div>
     );
 }
+

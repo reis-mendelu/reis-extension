@@ -31,7 +31,10 @@ const IFRAME_ID = 'reis-app-frame';
 import { fetchWeekSchedule } from './api/schedule';
 import { fetchExamData } from './api/exams';
 import { fetchSubjects } from './api/subjects';
+import { fetchFilesFromFolder } from './api/documents';
 import { registerExam, unregisterExam } from './api/exams';
+import type { SubjectsData } from './types/documents';
+import type { ParsedFile } from './types/documents';
 
 // =============================================================================
 // State
@@ -42,37 +45,37 @@ let syncIntervalId: ReturnType<typeof setInterval> | null = null;
 let cachedData: SyncedData = { lastSync: 0 };
 
 // =============================================================================
-// Initialization
+// DOM Sniper Pattern - Earliest Possible Iframe Injection
 // =============================================================================
+// This runs at document_start, often before <body> exists.
+// We use MutationObserver to inject the iframe the microsecond <body> appears.
 
-console.log('[REIS Content] Script loaded');
+console.log('[REIS Content] Script loaded (document_start)');
 
-// Hide page immediately to prevent flash
-document.documentElement.style.visibility = 'hidden';
-
-// Check for login page
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initialize);
-} else {
-    initialize();
+// Hide page immediately to prevent flash of university content
+if (document.documentElement) {
+    document.documentElement.style.visibility = 'hidden';
 }
 
-function initialize() {
-    // Check for login page
-    if (document.body.innerHTML.includes('/system/login.pl')) {
+// The main injection function
+function injectAndInitialize() {
+    // Avoid double injection
+    if (document.getElementById(IFRAME_ID)) {
+        console.log('[REIS Content] Iframe already exists, skipping');
+        return;
+    }
+
+    // Check for login page (need to wait for body content)
+    // We defer login check to after body exists
+    if (document.body?.innerHTML.includes('/system/login.pl')) {
         console.log('[REIS Content] Login page detected, showing original page');
         document.documentElement.style.visibility = 'visible';
         return;
     }
 
-    // Check for 404
-    if (document.title.includes('Page not found') || document.body.textContent?.includes('Page not found')) {
-        console.log('[REIS Content] 404 detected, redirecting to dashboard');
-        window.location.href = 'https://is.mendelu.cz/auth/';
-        return;
-    }
+    console.log('[REIS Content] Injecting iframe...');
 
-    // Clear page and inject iframe
+    // Inject the iframe
     injectIframe();
 
     // Set up message listener
@@ -81,6 +84,31 @@ function initialize() {
     // Start sync service
     startSyncService();
 }
+
+// DOM Sniper Logic - Watch for <body> to appear
+function startInjection() {
+    if (document.body) {
+        // Body already exists (rare with document_start, but possible)
+        console.log('[REIS Content] Body exists, injecting immediately');
+        injectAndInitialize();
+    } else {
+        // Watch for <body> to be created
+        console.log('[REIS Content] Waiting for body via MutationObserver...');
+        const observer = new MutationObserver((_mutations, obs) => {
+            if (document.body) {
+                console.log('[REIS Content] Body appeared, injecting now');
+                obs.disconnect();
+                injectAndInitialize();
+            }
+        });
+
+        // Observe the <html> element for new children
+        observer.observe(document.documentElement, { childList: true });
+    }
+}
+
+// Start the sniper immediately
+startInjection();
 
 // =============================================================================
 // Iframe Injection
@@ -330,18 +358,19 @@ async function syncAllData() {
     const startTime = Date.now();
 
     try {
-        // Fetch all data in parallel
+        // Fetch schedule, exams, subjects in parallel
         const [schedule, exams, subjects] = await Promise.allSettled([
             fetchScheduleData(),
             fetchExamData(),
             fetchSubjects()
         ]);
 
-        // Build cached data object
+        // Build initial cached data object
         cachedData = {
             schedule: schedule.status === 'fulfilled' ? schedule.value : null,
             exams: exams.status === 'fulfilled' ? exams.value : null,
             subjects: subjects.status === 'fulfilled' ? subjects.value : null,
+            files: {},
             lastSync: Date.now()
         };
 
@@ -356,11 +385,43 @@ async function syncAllData() {
             console.error('[REIS Content] Subjects sync failed:', subjects.reason);
         }
 
-        // Push to iframe
+        // Push initial data to iframe (without files, so UI can render)
         sendToIframe(Messages.syncUpdate(cachedData));
 
-        const duration = Date.now() - startTime;
-        console.log(`[REIS Content] Sync complete in ${duration}ms`);
+        const initialDuration = Date.now() - startTime;
+        console.log(`[REIS Content] Initial sync complete in ${initialDuration}ms, now syncing files...`);
+
+        // Now sync files for all subjects (runs after initial sync so UI is responsive)
+        if (subjects.status === 'fulfilled' && subjects.value) {
+            const subjectsData = subjects.value as SubjectsData;
+            const files: Record<string, ParsedFile[]> = {};
+            const subjectEntries = Object.entries(subjectsData.data);
+
+            console.log(`[REIS Content] Syncing files for ${subjectEntries.length} subjects...`);
+
+            // Fetch files for each subject sequentially to avoid overwhelming server
+            for (const [courseCode, subject] of subjectEntries) {
+                if (subject.folderUrl) {
+                    try {
+                        const subjectFiles = await fetchFilesFromFolder(subject.folderUrl);
+                        files[courseCode] = subjectFiles;
+                        console.log(`[REIS Content] Files for ${courseCode}: ${subjectFiles.length} items`);
+                    } catch (e) {
+                        console.warn(`[REIS Content] Failed to fetch files for ${courseCode}:`, e);
+                    }
+                }
+            }
+
+            // Update cached data with files
+            cachedData.files = files;
+            cachedData.lastSync = Date.now();
+
+            // Push updated data with files to iframe
+            sendToIframe(Messages.syncUpdate(cachedData));
+
+            const totalDuration = Date.now() - startTime;
+            console.log(`[REIS Content] Full sync with files complete in ${totalDuration}ms`);
+        }
 
     } catch (error) {
         console.error('[REIS Content] Sync failed:', error);
