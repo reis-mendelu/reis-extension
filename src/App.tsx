@@ -9,6 +9,8 @@ import { getSmartWeekRange } from './utils/calendarUtils'
 import { ExamDrawer } from './components/ExamDrawer'
 import { signalReady, requestData, isInIframe } from './api/proxyClient'
 import type { SyncedData } from './types/messages'
+import { StorageService, STORAGE_KEYS } from './services/storage'
+import { syncService } from './services/sync'
 
 function App() {
   const [currentDate, setCurrentDate] = useState(() => {
@@ -36,9 +38,32 @@ function App() {
         console.log('[App] Received message:', data.type);
 
         if (data.type === 'REIS_DATA' || data.type === 'REIS_SYNC_UPDATE') {
-          setSyncData(data.data || data);
+          const receivedData = data.data || data;
+          setSyncData(receivedData);
+
+          // Write data to localStorage so child components can read it
+          // This bridges the gap between postMessage and StorageService
+          if (receivedData.schedule) {
+            StorageService.set(STORAGE_KEYS.SCHEDULE_DATA, receivedData.schedule);
+            console.log('[App] Wrote schedule to localStorage:', Array.isArray(receivedData.schedule) ? receivedData.schedule.length : 'non-array');
+          }
+          if (receivedData.exams) {
+            StorageService.set(STORAGE_KEYS.EXAMS_DATA, receivedData.exams);
+            console.log('[App] Wrote exams to localStorage:', Array.isArray(receivedData.exams) ? receivedData.exams.length : 'non-array');
+          }
+          if (receivedData.subjects) {
+            StorageService.set(STORAGE_KEYS.SUBJECTS_DATA, receivedData.subjects);
+            console.log('[App] Wrote subjects to localStorage');
+          }
+          if (receivedData.lastSync) {
+            StorageService.set(STORAGE_KEYS.LAST_SYNC, receivedData.lastSync);
+          }
+
+          // Trigger hooks to re-read from localStorage
+          syncService.triggerRefresh();
+
           setIsLoading(false);
-          console.log('[App] Data received, loading complete');
+          console.log('[App] Data received, written to localStorage, loading complete');
         }
       };
 

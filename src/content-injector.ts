@@ -126,8 +126,8 @@ function injectIframe() {
         backgroundColor: '#f8fafc' // slate-50 as loading background
     });
 
-    // Security sandbox - allow scripts and same-origin for postMessage
-    iframeElement.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+    // Security sandbox - allow scripts, same-origin for postMessage, and popups for links
+    iframeElement.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox');
 
     // Allow all features the app might need
     iframeElement.setAttribute('allow', 'clipboard-write');

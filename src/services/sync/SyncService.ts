@@ -139,6 +139,15 @@ class SyncServiceClass {
     }
 
     /**
+     * Trigger a refresh of all subscribers.
+     * Used by iframe to notify hooks after receiving data via postMessage.
+     */
+    triggerRefresh(): void {
+        console.log('[SyncService] triggerRefresh called, notifying listeners');
+        this.notifyListeners();
+    }
+
+    /**
      * Notify all subscribers of data update.
      */
     private notifyListeners(): void {
