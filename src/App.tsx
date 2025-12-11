@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import './App.css'
 import { Sidebar } from './components/Sidebar'
 import { SearchBar } from './components/SearchBar'
@@ -11,12 +11,87 @@ import { signalReady, requestData, isInIframe } from './api/proxyClient'
 import type { SyncedData } from './types/messages'
 import { StorageService, STORAGE_KEYS } from './services/storage'
 import { syncService, outlookSyncService } from './services/sync'
+import { useSchedule, useExams } from './hooks/data'
+import { parseDate } from './utils/dateHelpers'
+
+// Helper: Get week date strings (YYYYMMDD format) for a given week start date
+function getWeekDateStrings(weekStart: Date): string[] {
+  const dates: string[] = [];
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    dates.push(`${year}${month}${day}`);
+  }
+  return dates;
+}
 
 function App() {
   // Initialize Outlook sync service on startup
   useEffect(() => {
     outlookSyncService.init();
   }, []);
+  
+  // Access schedule and exams data at App level for week content checking
+  const { schedule: storedSchedule } = useSchedule();
+  const { exams: storedExams } = useExams();
+  
+  // Pre-compute exam date strings (registered exams only)
+  const examDateStrings = useMemo(() => {
+    if (!storedExams || storedExams.length === 0) return new Set<string>();
+    
+    const dateSet = new Set<string>();
+    storedExams.forEach(subject => {
+      subject.sections.forEach((section: { status: string; registeredTerm?: { date: string; time: string } }) => {
+        if (section.status === 'registered' && section.registeredTerm) {
+          const examDate = parseDate(section.registeredTerm.date, section.registeredTerm.time);
+          const dateStr = `${examDate.getFullYear()}${String(examDate.getMonth() + 1).padStart(2, '0')}${String(examDate.getDate()).padStart(2, '0')}`;
+          dateSet.add(dateStr);
+        }
+      });
+    });
+    return dateSet;
+  }, [storedExams]);
+  
+  // Check if a given week has any events (schedule or exams)
+  const weekHasContent = useCallback((weekStart: Date): boolean => {
+    const weekDates = getWeekDateStrings(weekStart);
+    
+    // Check schedule
+    if (storedSchedule && storedSchedule.length > 0) {
+      const hasScheduleEvent = storedSchedule.some(lesson => weekDates.includes(lesson.date));
+      if (hasScheduleEvent) return true;
+    }
+    
+    // Check exams
+    const hasExamEvent = weekDates.some(dateStr => examDateStrings.has(dateStr));
+    if (hasExamEvent) return true;
+    
+    return false;
+  }, [storedSchedule, examDateStrings]);
+  
+  // Find the next week with content in a given direction
+  const findNextWeekWithContent = useCallback((fromDate: Date, direction: 'next' | 'prev'): Date => {
+    const MAX_WEEKS_TO_SKIP = 52; // Maximum weeks to search (1 year)
+    let candidate = new Date(fromDate);
+    
+    for (let i = 0; i < MAX_WEEKS_TO_SKIP; i++) {
+      candidate = new Date(candidate);
+      candidate.setDate(candidate.getDate() + (direction === 'next' ? 7 : -7));
+      
+      if (weekHasContent(candidate)) {
+        return candidate;
+      }
+    }
+    
+    // If no content found within limit, just return one week in direction
+    const fallback = new Date(fromDate);
+    fallback.setDate(fallback.getDate() + (direction === 'next' ? 7 : -7));
+    return fallback;
+  }, [weekHasContent]);
+  
   const [currentDate, setCurrentDate] = useState(() => {
     const { start } = getSmartWeekRange();
     return start;
@@ -100,14 +175,14 @@ function App() {
   }, []);
 
   const handlePrevWeek = () => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() - 7);
+    // Skip to previous week with content
+    const newDate = findNextWeekWithContent(currentDate, 'prev');
     setCurrentDate(newDate);
   };
 
   const handleNextWeek = () => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + 7);
+    // Skip to next week with content
+    const newDate = findNextWeekWithContent(currentDate, 'next');
     setCurrentDate(newDate);
   };
 
@@ -157,10 +232,10 @@ function App() {
   }
 
   return (
-    <div className="flex min-h-screen bg-base-200 font-sans text-base-content">
+    <div className="flex h-screen overflow-hidden bg-base-200 font-sans text-base-content">
       <Sidebar onOpenExamDrawer={() => setIsExamDrawerOpen(true)} />
-      <main className="flex-1 ml-0 md:ml-20 transition-all duration-300">
-        <div className="sticky top-0 z-30 bg-base-200/90 backdrop-blur-md border-b border-base-300 px-8 py-4">
+      <main className="flex-1 flex flex-col ml-0 md:ml-20 transition-all duration-300 overflow-hidden">
+        <div className="flex-shrink-0 z-30 bg-base-200/90 backdrop-blur-md border-b border-base-300 px-8 py-2">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             {/* Navigation Controls */}
             <div className="flex items-center gap-4">
@@ -187,19 +262,11 @@ function App() {
           </div>
         </div>
 
-        <div className="p-4 max-w-8xl mx-auto">
-
-          <div className="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden">
+        <div className="flex-1 pt-3 px-4 pb-1 overflow-hidden flex flex-col">
+          <div className="flex-1 bg-base-100 rounded-lg shadow-sm border border-base-300 overflow-hidden">
             <WeeklyCalendar
               key={currentDate.toISOString()}
               initialDate={currentDate}
-              onEmptyWeek={(direction) => {
-                if (direction === 'next') {
-                  handleNextWeek();
-                } else {
-                  handlePrevWeek();
-                }
-              }}
             />
           </div>
         </div>

@@ -5,7 +5,7 @@
  * Integrates REIS logic: useSchedule, useExams, auto-skip, Czech holidays, EventPopover.
  */
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { CalendarEventCard } from './CalendarEventCard';
 import { EventPopover } from './EventPopover';
 import { useSchedule, useExams } from '../hooks/data';
@@ -22,25 +22,25 @@ const DAYS = [
 ];
 
 const HOURS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
-const HOUR_HEIGHT = 48; // pixels per hour (reduced from 60 to fit without scrolling)
-const TOTAL_HOURS = 14; // 7:00 to 20:00 (inclusive)
-const CALENDAR_HEIGHT = TOTAL_HOURS * HOUR_HEIGHT;
+const TOTAL_HOURS = 13; // 7:00 to 20:00 (13 hour slots)
 
-// Convert time string to pixels from top (7:00)
-function timeToPixels(time: string): number {
+// Convert time string to percentage from top (7:00 = 0%, 20:00 = 100%)
+function timeToPercent(time: string): number {
     const [hours, minutes] = time.split(':').map(Number);
     const hoursFrom7 = hours - 7;
-    return hoursFrom7 * HOUR_HEIGHT + (minutes / 60) * HOUR_HEIGHT;
+    const totalMinutesFrom7 = hoursFrom7 * 60 + minutes;
+    const totalMinutesInDay = TOTAL_HOURS * 60; // 13 hours * 60 minutes
+    return (totalMinutesFrom7 / totalMinutesInDay) * 100;
 }
 
-// Calculate position style for an event
+// Calculate position style for an event using percentages
 function getEventStyle(startTime: string, endTime: string): { top: string; height: string } {
-    const topPixels = timeToPixels(startTime);
-    const bottomPixels = timeToPixels(endTime);
-    const heightPixels = bottomPixels - topPixels;
+    const topPercent = timeToPercent(startTime);
+    const bottomPercent = timeToPercent(endTime);
+    const heightPercent = bottomPercent - topPercent;
     return {
-        top: `${topPixels}px`,
-        height: `${heightPixels}px`,
+        top: `${topPercent}%`,
+        height: `${heightPercent}%`,
     };
 }
 
@@ -86,10 +86,9 @@ function organizeLessons(lessons: BlockLesson[]): OrganizedLessons {
 
 interface WeeklyCalendarProps {
     initialDate?: Date;
-    onEmptyWeek?: (direction: 'next' | 'prev') => void;
 }
 
-export function WeeklyCalendar({ initialDate = new Date(), onEmptyWeek }: WeeklyCalendarProps) {
+export function WeeklyCalendar({ initialDate = new Date() }: WeeklyCalendarProps) {
     // Get stored semester data from hooks
     const { schedule: storedSchedule } = useSchedule();
     const { exams: storedExams } = useExams();
@@ -193,19 +192,6 @@ export function WeeklyCalendar({ initialDate = new Date(), onEmptyWeek }: Weekly
         return [...lessons, ...weekExams];
     }, [storedSchedule, examLessons, weekDateStrings]);
 
-    // Check if this week has events
-    const hasEventsThisWeek = scheduleData.length > 0;
-
-    // Auto-skip empty weeks
-    useEffect(() => {
-        if (storedSchedule && storedSchedule.length > 0 && !hasEventsThisWeek && onEmptyWeek) {
-            const timer = setTimeout(() => {
-                onEmptyWeek('next');
-            }, 100);
-            return () => clearTimeout(timer);
-        }
-    }, [hasEventsThisWeek, onEmptyWeek, storedSchedule]);
-
     // Group lessons by day index (0-4 for Mon-Fri)
     const lessonsByDay = useMemo(() => {
         const grouped: Record<number, BlockLesson[]> = { 0: [], 1: [], 2: [], 3: [], 4: [] };
@@ -258,9 +244,9 @@ export function WeeklyCalendar({ initialDate = new Date(), onEmptyWeek }: Weekly
     }, [weekDates]);
 
     return (
-        <div className="flex h-screen overflow-hidden flex-col font-inter bg-base-100">
-            {/* Day headers - sticky */}
-            <div className="flex border-b border-base-300 bg-base-100 flex-shrink-0 h-[60px]">
+        <div className="flex h-full overflow-hidden flex-col font-inter bg-base-100">
+            {/* Day headers - compact */}
+            <div className="flex border-b border-base-300 bg-base-100 flex-shrink-0 h-[48px]">
                 {/* Empty space for time column */}
                 <div className="w-12 border-r border-base-300 bg-base-200"></div>
 
@@ -272,14 +258,14 @@ export function WeeklyCalendar({ initialDate = new Date(), onEmptyWeek }: Weekly
                     return (
                         <div
                             key={index}
-                            className={`flex-1 p-2 text-center border-r border-base-300 last:border-r-0 
-                                       ${isToday ? 'bg-primary/10' : ''}`}
+                            className={`flex-1 py-1 px-2 text-center border-r border-base-300 last:border-r-0 
+                                       ${isToday ? 'bg-current-day-header' : ''}`}
                         >
-                            <div className="flex flex-col items-center">
-                                <div className={`text-lg font-semibold ${holiday ? 'text-error' : isToday ? 'text-primary' : 'text-base-content'}`}>
+                            <div className="flex flex-col items-center justify-center h-full">
+                                <div className={`text-base font-semibold leading-tight ${holiday ? 'text-error' : isToday ? 'text-current-day' : 'text-base-content'}`}>
                                     {dateInfo?.day}
                                 </div>
-                                <div className={`text-xs ${holiday ? 'text-error' : 'text-content-secondary'}`}>
+                                <div className={`text-xs leading-tight ${holiday ? 'text-error' : 'text-content-secondary'}`}>
                                     {day.full}
                                 </div>
                             </div>
@@ -288,9 +274,9 @@ export function WeeklyCalendar({ initialDate = new Date(), onEmptyWeek }: Weekly
                 })}
             </div>
 
-            {/* Calendar body - no scroll */}
+            {/* Calendar body - fills remaining space */}
             <div className="flex-1 overflow-hidden">
-                <div className="flex" style={{ height: `${CALENDAR_HEIGHT}px` }}>
+                <div className="flex h-full">
                     {/* Time column */}
                     <div className="w-12 flex-shrink-0 border-r border-base-300 bg-base-200 relative">
                         {HOURS.map((hour, index) => (
@@ -298,8 +284,8 @@ export function WeeklyCalendar({ initialDate = new Date(), onEmptyWeek }: Weekly
                                 key={hour}
                                 className="absolute left-0 right-0 text-xs text-content-secondary text-right pr-1"
                                 style={{
-                                    top: `${index * HOUR_HEIGHT}px`,
-                                    height: `${HOUR_HEIGHT}px`,
+                                    top: `${(index / TOTAL_HOURS) * 100}%`,
+                                    height: `${100 / TOTAL_HOURS}%`,
                                 }}
                             >
                                 {hour}
@@ -319,7 +305,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onEmptyWeek }: Weekly
                                         hoursCount: HOURS.length,
                                         verticalBorder: 'border-r border-base-300',
                                         horizontalBorder: 'border-b border-base-200',
-                                        hourHeight: HOUR_HEIGHT,
+                                        hourHeightPercent: `${100 / TOTAL_HOURS}%`,
                                     });
                                 }
                                 return (
@@ -331,7 +317,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onEmptyWeek }: Weekly
                                             <div
                                                 key={hourIndex}
                                                 className="border-b border-base-200"
-                                                style={{ height: `${HOUR_HEIGHT}px` }}
+                                                style={{ height: `${100 / TOTAL_HOURS}%` }}
                                             ></div>
                                         ))}
                                     </div>
@@ -349,7 +335,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onEmptyWeek }: Weekly
                             return (
                                 <div
                                     key={dayIndex}
-                                    className={`flex-1 relative ${isToday ? 'bg-primary/5' : ''}`}
+                                    className={`flex-1 relative ${isToday ? 'bg-current-day' : ''}`}
                                 >
                                     {/* Holiday overlay */}
                                     {holiday && (

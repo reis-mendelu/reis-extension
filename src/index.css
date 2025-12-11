@@ -1,4 +1,15 @@
 @import "tailwindcss";
+
+/* CRITICAL: Prevent all scrolling at the page level */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
 /* Enable both light and dark Mendelu themes */
 @plugin "daisyui" {
   themes: mendelu, mendelu-dark --default;
@@ -6,6 +17,9 @@
 
 /* Safelist DaisyUI toggle component (not auto-detected by JIT scanner) */
 @source inline("toggle toggle-xs toggle-sm toggle-md toggle-lg toggle-primary toggle-secondary toggle-accent toggle-success toggle-warning toggle-error toggle-info");
+
+/* Safelist for calendar day highlight (dynamically constructed classes) */
+@source inline("bg-accent/5 bg-accent/10 text-accent");
 
 /* Custom Mendelu light theme for REIS extension */
 @plugin "daisyui/theme" {
@@ -121,4 +135,17 @@
 
   /* Typography */
   --font-inter: "Inter", sans-serif;
+}
+
+/* Custom current day highlight - bypassing Tailwind JIT issues */
+.bg-current-day {
+  background-color: color-mix(in srgb, var(--color-accent) 5%, transparent);
+}
+
+.bg-current-day-header {
+  background-color: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.text-current-day {
+  color: var(--color-accent);
 }
