@@ -4,6 +4,15 @@ import { fetchWithAuth } from "./client";
 import { getUserParams } from "../utils/userParams";
 
 /**
+ * Result of exam registration/unregistration.
+ * Includes success status and optional error message for UI feedback.
+ */
+export interface ExamActionResult {
+    success: boolean;
+    error?: string;
+}
+
+/**
  * Build exam list URL dynamically using user's studium.
  * Removed hardcoded studium that only worked for one user.
  */
@@ -14,6 +23,24 @@ async function getExamListUrl(): Promise<string> {
         return 'https://is.mendelu.cz/auth/student/terminy_seznam.pl?lang=cz';
     }
     return `https://is.mendelu.cz/auth/student/terminy_seznam.pl?studium=${params.studium};lang=cz`;
+}
+
+/**
+ * Check if HTML response indicates successful registration.
+ * IS MENDELU shows the term in table_1 (registered) after success.
+ */
+function verifyRegistrationSuccess(html: string, termId: string): boolean {
+    // After successful registration, the term should appear in registered table
+    // Check for the term ID in unregister links (confirms registration)
+    const hasUnregisterLink = html.includes(`termin=${termId}`) && html.includes('odhlasit_ihned=1');
+    
+    // Also check for common error patterns
+    const hasError = html.includes('Termín je již plný') || 
+                     html.includes('nelze přihlásit') ||
+                     html.includes('Chyba');
+    
+    console.debug('[exams] Verification:', { termId, hasUnregisterLink, hasError });
+    return hasUnregisterLink && !hasError;
 }
 
 export async function fetchExamData(): Promise<ExamSubject[]> {
@@ -30,40 +57,63 @@ export async function fetchExamData(): Promise<ExamSubject[]> {
     }
 }
 
-export async function registerExam(termId: string): Promise<boolean> {
+export async function registerExam(termId: string): Promise<ExamActionResult> {
     try {
         const params = await getUserParams();
         if (!params?.studium) {
             console.error('[exams] Cannot register: no studium available');
-            return false;
+            return { success: false, error: 'Chybí údaje o studiu. Zkuste obnovit stránku.' };
         }
-        const url = `https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=${termId};studium=${params.studium};prihlasit_ihned=1;lang=cz`;
-
+        
+        const url = `https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=${termId};studium=${params.studium};obdobi=${params.obdobi};prihlasit_ihned=1;lang=cz`;
+        console.log('[exams] Registering:', url);
+        
         const response = await fetchWithAuth(url);
-        void response;
-        return true;
+        const html = await response.text();
+        
+        // Verify the registration actually worked
+        if (verifyRegistrationSuccess(html, termId)) {
+            console.log('[exams] Registration verified for term:', termId);
+            return { success: true };
+        }
+        
+        // Check for specific error messages
+        if (html.includes('Termín je již plný')) {
+            return { success: false, error: 'Termín je již plný.' };
+        }
+        if (html.includes('nelze přihlásit')) {
+            return { success: false, error: 'Na tento termín se nelze přihlásit.' };
+        }
+        
+        // Generic failure
+        console.warn('[exams] Registration could not be verified for term:', termId);
+        return { success: false, error: 'Registrace se nepodařila ověřit. Zkontrolujte v IS.' };
+        
     } catch (error) {
         console.error("Error registering for exam:", error);
-        return false;
+        return { success: false, error: 'Chyba připojení. Zkuste to znovu.' };
     }
 }
 
-export async function unregisterExam(termId: string): Promise<boolean> {
+export async function unregisterExam(termId: string): Promise<ExamActionResult> {
     try {
         const params = await getUserParams();
         if (!params?.studium) {
             console.error('[exams] Cannot unregister: no studium available');
-            return false;
+            return { success: false, error: 'Chybí údaje o studiu. Zkuste obnovit stránku.' };
         }
-        const url = `https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=${termId};studium=${params.studium};odhlasit_ihned=1;lang=cz`;
-
-        const response = await fetchWithAuth(url);
-        void response;
-        return true;
+        
+        const url = `https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=${termId};studium=${params.studium};obdobi=${params.obdobi};odhlasit_ihned=1;lang=cz`;
+        console.log('[exams] Unregistering:', url);
+        
+        await fetchWithAuth(url);
+        
+        // Assume success if no HTTP error
+        console.log('[exams] Unregistration completed for term:', termId);
+        return { success: true };
+        
     } catch (error) {
         console.error("Error unregistering from exam:", error);
-        return false;
+        return { success: false, error: 'Chyba připojení. Zkuste to znovu.' };
     }
 }
-
-

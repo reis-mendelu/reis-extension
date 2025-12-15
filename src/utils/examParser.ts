@@ -1,10 +1,52 @@
 import type { ExamSubject } from '../types/exams';
 
+/**
+ * Validate that the HTML structure matches expected format.
+ * Logs warnings if structure has changed, helping detect IS changes.
+ */
+function validateHtmlStructure(doc: Document): void {
+    const warnings: string[] = [];
+    
+    // Check for expected tables
+    const table1 = doc.querySelector('#table_1');
+    const table2 = doc.querySelector('#table_2');
+    
+    if (!table1 && !table2) {
+        warnings.push('Neither #table_1 nor #table_2 found - page structure may have changed');
+    }
+    
+    // Check for expected column headers in available terms table
+    if (table2) {
+        const headers = table2.querySelectorAll('thead th');
+        const headerTexts = Array.from(headers).map(h => h.textContent?.trim() || '');
+        
+        const expectedHeaders = ['Datum', 'Místnost', 'Zkouška'];
+        const missingHeaders = expectedHeaders.filter(eh => 
+            !headerTexts.some(ht => ht.toLowerCase().includes(eh.toLowerCase()))
+        );
+        
+        if (missingHeaders.length > 0) {
+            warnings.push(`Missing expected headers: ${missingHeaders.join(', ')}`);
+        }
+    }
+    
+    // Log all warnings
+    if (warnings.length > 0) {
+        console.warn('[parseExamData] ⚠️ HTML structure validation warnings:');
+        warnings.forEach(w => console.warn(`  - ${w}`));
+        console.warn('[parseExamData] Parser may produce incorrect results. IS MENDELU may have updated their page.');
+    }
+}
+
 export function parseExamData(html: string): ExamSubject[] {
     console.debug('[parseExamData] Starting parse, input length:', html.length);
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
+    
+    // Validate structure before parsing
+    validateHtmlStructure(doc);
+    
     const subjectsMap = new Map<string, ExamSubject>();
 
     // Helper to get or create subject
@@ -86,6 +128,15 @@ export function parseExamData(html: string): ExamSubject[] {
             const room = cols[dateIndex + 1]?.textContent?.trim() || '';
             const sectionNameRaw = cols[dateIndex + 2]?.textContent?.trim() || '';
             const teacher = cols[dateIndex + 3]?.textContent?.trim() || '';
+            
+            // Extract teacher ID from link
+            const teacherLink = cols[dateIndex + 3]?.querySelector('a[href*="clovek.pl"]');
+            let teacherId = '';
+            if (teacherLink) {
+                const href = teacherLink.getAttribute('href') || '';
+                const match = href.match(/id=(\d+)/);
+                if (match) teacherId = match[1];
+            }
 
             // Clean up section name (remove newlines, extra spaces)
             const sectionName = sectionNameRaw.split('(')[0].trim();
@@ -106,6 +157,37 @@ export function parseExamData(html: string): ExamSubject[] {
             
             // Log for debugging Sidebar Title Issue
             console.debug(`[parseExamData] T1 Row ${rowIndex}: Code='${code}', Name='${name}'`);
+            
+            // DEBUG: Log all columns to see what we are working with
+            console.debug(`[parseExamData DEBUG] Row ${rowIndex} All Cols HTML:`, Array.from(cols).map(c => c.innerHTML));
+
+            // Extract deregistration deadline from column with <br> separators
+            // Format: "Přihlašování od<br>Přihlašování do<br>Odhlašování do"
+            // Values: "--<br>17.12.2025 23:59<br>17.12.2025 23:59"
+            let deregistrationDeadline: string | undefined;
+            for (let i = 0; i < cols.length; i++) {
+                if (cols[i].innerHTML.match(/<br\s*\/?>/i)) { // Check for any br tag
+                    const cellHtml = cols[i].innerHTML;
+                    const parts = cellHtml.split(/<br\s*\/?>/i);
+                    
+                    console.debug(`[parseExamData DEBUG] Row ${rowIndex} DateCol Candidates:`, parts.length, parts);
+                    
+                    if (parts.length >= 3) {
+                        const deadlineRaw = parts[2].replace(/<[^>]*>/g, '').trim();
+                        console.debug(`[parseExamData DEBUG] Row ${rowIndex} Raw Deadline: '${deadlineRaw}'`);
+                        
+                        if (deadlineRaw !== '--' && deadlineRaw.match(/\d{2}\.\d{2}\.\d{4}/)) {
+                            deregistrationDeadline = deadlineRaw;
+                            console.debug(`[parseExamData DEBUG] Row ${rowIndex} Valid Deadline Found: '${deregistrationDeadline}'`);
+                        } else {
+                             console.debug(`[parseExamData DEBUG] Row ${rowIndex} Deadline rejected (format/empty)`);
+                        }
+                    } else {
+                        console.debug(`[parseExamData DEBUG] Row ${rowIndex} < 3 parts found`);
+                    }
+                    break;
+                }
+            }
 
             const subject = getOrCreateSubject(code, name);
             const section = getOrCreateSection(subject, sectionName);
@@ -116,7 +198,9 @@ export function parseExamData(html: string): ExamSubject[] {
                 date,
                 time,
                 room,
-                teacher
+                teacher,
+                teacherId,
+                deregistrationDeadline
             };
 
             console.debug('[parseExamData] table_1 parsed registered term:', code, sectionName, date, time);
@@ -169,6 +253,15 @@ export function parseExamData(html: string): ExamSubject[] {
             const sectionNameRaw = cols[dateIndex + 2]?.textContent?.trim() || '';
             const teacher = cols[dateIndex + 3]?.textContent?.trim() || '';
             const capacityStr = cols[dateIndex + 4]?.textContent?.trim() || '';
+            
+            // Extract teacher ID from link
+            const teacherLink = cols[dateIndex + 3]?.querySelector('a[href*="clovek.pl"]');
+            let teacherId = '';
+            if (teacherLink) {
+                const href = teacherLink.getAttribute('href') || '';
+                const match = href.match(/id=(\d+)/);
+                if (match) teacherId = match[1];
+            }
 
             const sectionName = sectionNameRaw.split('(')[0].trim();
             const [datePart, timePart] = dateStr.split(' ');
@@ -202,16 +295,64 @@ export function parseExamData(html: string): ExamSubject[] {
             const finalId = termId || Math.random().toString(36).substr(2, 9);
 
             // Find registration info column (contains <br>)
+            // DEFENSIVE: Wrap in try/catch to detect IS MENDELU HTML structure changes
             let registrationStart: string | null = null;
-            for (let i = 0; i < cols.length; i++) {
-                if (cols[i].innerHTML.includes('<br>')) {
-                    const parts = cols[i].innerHTML.split('<br>');
-                    if (parts.length >= 1) {
-                        const startRaw = parts[0].replace(/<[^>]*>/g, '').trim(); // Remove tags and trim
-                        if (startRaw !== '--' && startRaw.match(/\d{2}\.\d{2}\.\d{4}/)) {
-                            registrationStart = startRaw;
+            let foundBrColumn = false;
+            
+            try {
+                for (let i = 0; i < cols.length; i++) {
+                    if (cols[i].innerHTML.includes('<br>')) {
+                        foundBrColumn = true;
+                        // Check for registration dates (contains <br>)
+                        // Only access innerHTML once
+                        const cellHtml = cols[i].innerHTML;
+                        const parts = cellHtml.split(/<br\s*\/?>/i);
+                        
+                        if (parts.length >= 1) { // Original logic was parts.length >= 1 for registrationStart
+                            const startRaw = parts[0].replace(/<[^>]*>/g, '').trim(); // Remove tags and trim
+                            if (startRaw !== '--' && startRaw.match(/\d{2}\.\d{2}\.\d{4}/)) {
+                                registrationStart = startRaw;
+                                // Validate time format if present
+                                const timePart = startRaw.split(' ')[1];
+                                if (timePart && !timePart.match(/^\d{2}:\d{2}$/)) {
+                                    console.warn('[parseExamData] Registration time format unexpected:', timePart, 'in row', rowIndex);
+                                }
+                            }
                         }
+                        break;
                     }
+                }
+                
+                // DEFENSIVE: Warn if expected structure not found
+                if (!foundBrColumn && cols.length > 0) {
+                    console.warn('[parseExamData] No <br> column found for registration dates. IS MENDELU HTML structure may have changed. Row:', rowIndex);
+                }
+            } catch (parseError) {
+                console.error('[parseExamData] Failed to parse registration date for row', rowIndex, ':', parseError);
+            }
+            
+            // Parse attempt type from "Typ termínu" column
+            // Looking for icons with alt/title text like "řádný", "opravný 1", etc.
+            let attemptType: 'regular' | 'retake1' | 'retake2' | 'retake3' | undefined;
+            for (let i = 0; i < cols.length; i++) {
+                const colHtml = cols[i].innerHTML.toLowerCase();
+                const img = cols[i].querySelector('img');
+                const imgAlt = img?.getAttribute('alt')?.toLowerCase() || '';
+                const imgTitle = img?.getAttribute('title')?.toLowerCase() || '';
+                const combinedText = colHtml + imgAlt + imgTitle;
+                
+                if (combinedText.includes('opravný 3') || combinedText.includes('opravny 3')) {
+                    attemptType = 'retake3';
+                    break;
+                } else if (combinedText.includes('opravný 2') || combinedText.includes('opravny 2')) {
+                    attemptType = 'retake2';
+                    break;
+                } else if (combinedText.includes('opravný 1') || combinedText.includes('opravny 1') || combinedText.includes('opravný') || combinedText.includes('opravny')) {
+                    attemptType = 'retake1';
+                    break;
+                } else if (combinedText.includes('řádný') || combinedText.includes('radny')) {
+                    attemptType = 'regular';
+                    break;
                 }
             }
 
@@ -226,10 +367,12 @@ export function parseExamData(html: string): ExamSubject[] {
                 full: isFull,
                 room,
                 teacher,
-                registrationStart: registrationStart || undefined
+                teacherId,
+                registrationStart: registrationStart || undefined,
+                attemptType
             });
 
-            console.debug('[parseExamData] table_2 parsed available term:', code, sectionName, datePart, timePart, 'full:', isFull);
+            console.debug('[parseExamData] table_2 parsed available term:', code, sectionName, datePart, timePart, 'full:', isFull, 'attemptType:', attemptType);
         });
     }
 

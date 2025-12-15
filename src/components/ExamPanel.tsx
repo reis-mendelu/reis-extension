@@ -10,14 +10,15 @@
  * Uses DaisyUI components per @daisy-enforcer requirements.
  */
 
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { X, ExternalLink, ChevronDown, ChevronUp, Calendar, Clock, MapPin } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { X, ExternalLink, ChevronDown, ChevronUp, CheckCircle2, CalendarDays, Timer, Check, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { useExams } from '../hooks/data';
 import { fetchExamData, registerExam, unregisterExam } from '../api/exams';
 import { ExamTimeline } from './ExamTimeline';
 import { TermTile } from './TermTile';
 import { StorageService } from '../services/storage';
-import type { ExamSubject, ExamSection, ExamFilterState, ExamTerm } from '../types/exams';
+import type { ExamSubject, ExamSection, ExamFilterState } from '../types/exams';
 
 interface ExamPanelProps {
     onClose: () => void;
@@ -45,9 +46,28 @@ function capacityToPercent(capacity?: string): number {
     return Math.min(100, (occupied / total) * 100);
 }
 
+/**
+ * Format timestamp to relative time string.
+ */
+function formatRelativeTime(timestamp: number | null): string {
+    if (!timestamp) return 'Neznámý čas';
+    
+    const now = Date.now();
+    const diffMs = now - timestamp;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMinutes / 60);
+    
+    if (diffMinutes < 1) return 'Právě teď';
+    if (diffMinutes < 60) return `Před ${diffMinutes} min`;
+    if (diffHours < 24) return `Před ${diffHours} h`;
+    
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' });
+}
+
 export function ExamPanel({ onClose }: ExamPanelProps) {
     // Get stored exam data from hook
-    const { exams: storedExams, isLoaded } = useExams();
+    const { exams: storedExams, isLoaded, lastSync } = useExams();
     
     // Local state for exams (allows updates after registration)
     const [exams, setExams] = useState<ExamSubject[]>([]);
@@ -94,13 +114,6 @@ export function ExamPanel({ onClose }: ExamPanelProps) {
     
     const [processingSectionId, setProcessingSectionId] = useState<string | null>(null);
     
-    // Confirmation modal state
-    const [pendingRegistration, setPendingRegistration] = useState<{
-        section: ExamSection;
-        term: ExamTerm;
-    } | null>(null);
-    const confirmModalRef = useRef<HTMLDialogElement>(null);
-    
     // Auto-booking state
     const [autoBookingTermId, setAutoBookingTermId] = useState<string | null>(null);
     
@@ -119,9 +132,62 @@ export function ExamPanel({ onClose }: ExamPanelProps) {
         return () => document.removeEventListener('keydown', handleEscape);
     }, [onClose, expandedSectionId]);
     
-    // Get unique subject codes for chip filters
-    const subjectCodes = useMemo(() => 
-        [...new Set(exams.map(e => e.code))].sort(),
+    // Compute filter counts for each status (without subject filter applied)
+    const filterCounts = useMemo(() => {
+        const counts = { registered: 0, available: 0, opening: 0 };
+        
+        exams.forEach(subject => {
+            subject.sections.forEach(section => {
+                if (section.status === 'registered') {
+                    counts.registered++;
+                } else {
+                    // Check for future opening
+                    const hasFutureOpening = section.terms.some(term => {
+                        if (!term.registrationStart) return false;
+                        try {
+                            const [datePart, timePart] = term.registrationStart.split(' ');
+                            const [day, month, year] = datePart.split('.').map(Number);
+                            const [hours, minutes] = (timePart || '00:00').split(':').map(Number);
+                            const regStart = new Date(year, month - 1, day, hours, minutes);
+                            return regStart > new Date();
+                        } catch {
+                            return false;
+                        }
+                    });
+                    
+                    if (hasFutureOpening) {
+                        counts.opening++;
+                    }
+                    
+                    // Check for currently available
+                    const hasAvailableTerms = section.terms.some(term => {
+                        if (!term.registrationStart) return true;
+                        try {
+                            const [datePart, timePart] = term.registrationStart.split(' ');
+                            const [day, month, year] = datePart.split('.').map(Number);
+                            const [hours, minutes] = (timePart || '00:00').split(':').map(Number);
+                            const regStart = new Date(year, month - 1, day, hours, minutes);
+                            return regStart <= new Date();
+                        } catch {
+                            return true;
+                        }
+                    });
+                    
+                    if (hasAvailableTerms) {
+                        counts.available++;
+                    }
+                }
+            });
+        });
+        
+        return counts;
+    }, [exams]);
+    
+    // Get unique subjects for chip filters (code for filtering, name for display)
+    const subjectOptions = useMemo(() => 
+        exams.map(e => ({ code: e.code, name: e.name }))
+            .filter((v, i, a) => a.findIndex(t => t.code === v.code) === i)
+            .sort((a, b) => a.name.localeCompare(b.name)),
     [exams]);
     
     // Filter exams based on current filters
@@ -219,27 +285,54 @@ export function ExamPanel({ onClose }: ExamPanelProps) {
         try {
             // If already registered, unregister first
             if (section.status === 'registered' && section.registeredTerm?.id) {
-                const successUnreg = await unregisterExam(section.registeredTerm.id);
-                if (!successUnreg) {
-                    alert("Nepodařilo se odhlásit z předchozího termínu.");
+                const unregResult = await unregisterExam(section.registeredTerm.id);
+                if (!unregResult.success) {
+                    toast.error(unregResult.error || 'Nepodařilo se odhlásit z předchozího termínu.');
                     setProcessingSectionId(null);
                     return;
                 }
             }
             
             // Register for new term
-            const successReg = await registerExam(termId);
-            if (successReg) {
+            const regResult = await registerExam(termId);
+            if (regResult.success) {
                 console.debug('[ExamPanel] Registration successful, refreshing data');
+                toast.success('Úspěšně přihlášeno na termín!');
                 const data = await fetchExamData();
                 setExams(data);
                 setExpandedSectionId(null); // Collapse after registration
             } else {
-                alert("Registrace selhala. Termín může být plný.");
+                toast.error(regResult.error || 'Registrace selhala.');
             }
         } catch (err) {
             console.error(err);
-            alert("Nastala chyba.");
+            toast.error('Nastala neočekávaná chyba.');
+        } finally {
+            setProcessingSectionId(null);
+        }
+    };
+    
+    // Unregister handler
+    const handleUnregister = async (section: ExamSection) => {
+        if (!section.registeredTerm?.id) {
+            toast.error('Chybí ID termínu.');
+            return;
+        }
+        
+        setProcessingSectionId(section.id);
+        
+        try {
+            const result = await unregisterExam(section.registeredTerm.id);
+            if (result.success) {
+                toast.success('Úspěšně odhlášeno z termínu.');
+                const data = await fetchExamData();
+                setExams(data);
+            } else {
+                toast.error(result.error || 'Odhlášení selhalo.');
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Nastala neočekávaná chyba.');
         } finally {
             setProcessingSectionId(null);
         }
@@ -267,7 +360,12 @@ export function ExamPanel({ onClose }: ExamPanelProps) {
             <div className="flex flex-col h-full bg-base-100 rounded-lg border border-base-300 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-base-200 bg-base-100">
-                    <h2 className="text-xl font-semibold text-base-content">Zápisy na zkoušky</h2>
+                    <div className="flex flex-col">
+                        <h2 className="text-xl font-semibold text-base-content">Zápisy na zkoušky</h2>
+                        <span className="text-xs text-base-content/50">
+                            Aktualizováno: {formatRelativeTime(lastSync)}
+                        </span>
+                    </div>
                     <div className="flex items-center gap-2">
                         <a
                             href="https://is.mendelu.cz/auth/student/terminy_seznam.pl?lang=cz"
@@ -305,52 +403,81 @@ export function ExamPanel({ onClose }: ExamPanelProps) {
                     <ExamTimeline exams={exams} />
                 </div>
                 
-                {/* Filter Bar */}
-                <div className="px-6 py-3 border-b border-base-200 space-y-3">
-                    {/* Status Tabs */}
-                    <div className="tabs tabs-boxed bg-base-200 p-1">
+                {/* Filter Bar - Redesigned for clarity */}
+                <div className="px-6 py-4 border-b border-base-200 space-y-4">
+                    {/* Status Segmented Control */}
+                    <div className="flex gap-2">
                         <button
-                            className={`tab ${statusFilter === 'registered' ? 'tab-active' : ''}`}
                             onClick={() => setStatusFilter('registered')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${
+                                statusFilter === 'registered'
+                                    ? 'bg-success/15 text-success border-2 border-success'
+                                    : 'bg-base-200 text-base-content/70 border-2 border-transparent hover:bg-base-300'
+                            }`}
                         >
-                            ✓ Přihlášen
+                            <CheckCircle2 size={18} />
+                            <span>Přihlášen</span>
+                            <span className={`badge badge-sm ${statusFilter === 'registered' ? 'badge-success' : 'badge-ghost'}`}>
+                                {filterCounts.registered}
+                            </span>
                         </button>
                         <button
-                            className={`tab ${statusFilter === 'available' ? 'tab-active' : ''}`}
                             onClick={() => setStatusFilter('available')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${
+                                statusFilter === 'available'
+                                    ? 'bg-primary/15 text-primary border-2 border-primary'
+                                    : 'bg-base-200 text-base-content/70 border-2 border-transparent hover:bg-base-300'
+                            }`}
                         >
-                            📅 Volné
+                            <CalendarDays size={18} />
+                            <span>Volné</span>
+                            <span className={`badge badge-sm ${statusFilter === 'available' ? 'badge-primary' : 'badge-ghost'}`}>
+                                {filterCounts.available}
+                            </span>
                         </button>
                         <button
-                            className={`tab ${statusFilter === 'opening' ? 'tab-active' : ''}`}
                             onClick={() => setStatusFilter('opening')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${
+                                statusFilter === 'opening'
+                                    ? 'bg-warning/15 text-warning border-2 border-warning'
+                                    : 'bg-base-200 text-base-content/70 border-2 border-transparent hover:bg-base-300'
+                            }`}
                         >
-                            ⏳ Otevírá se
+                            <Timer size={18} />
+                            <span>Otevírá se</span>
+                            <span className={`badge badge-sm ${statusFilter === 'opening' ? 'badge-warning' : 'badge-ghost'}`}>
+                                {filterCounts.opening}
+                            </span>
                         </button>
                     </div>
                     
-                    {/* Subject Chips */}
+                    {/* Subject Chips - Larger touch targets */}
                     <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm text-base-content/60">Předmět:</span>
-                        {subjectCodes.map(code => (
-                            <button
-                                key={code}
-                                onClick={() => toggleSubjectFilter(code)}
-                                className={`badge ${
-                                    selectedSubjects.includes(code)
-                                        ? 'badge-primary'
-                                        : 'badge-outline'
-                                } cursor-pointer hover:opacity-80`}
-                            >
-                                {code}
-                            </button>
-                        ))}
+                        <span className="text-sm text-base-content/60 mr-1">Předmět:</span>
+                        {subjectOptions.map(({ code, name }) => {
+                            const isSelected = selectedSubjects.includes(code);
+                            return (
+                                <button
+                                    key={code}
+                                    onClick={() => toggleSubjectFilter(code)}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                                        isSelected
+                                            ? 'bg-primary text-primary-content'
+                                            : 'bg-base-200 text-base-content/70 hover:bg-base-300'
+                                    }`}
+                                >
+                                    {isSelected && <Check size={14} />}
+                                    {name}
+                                </button>
+                            );
+                        })}
                         {selectedSubjects.length > 0 && (
                             <button
                                 onClick={clearAllFilters}
-                                className="text-xs text-base-content/50 hover:text-base-content underline"
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm text-error/80 hover:text-error hover:bg-error/10 transition-colors"
                             >
-                                Vymazat filtry
+                                <X size={14} />
+                                Vymazat
                             </button>
                         )}
                     </div>
@@ -396,10 +523,25 @@ export function ExamPanel({ onClose }: ExamPanelProps) {
                                                 
                                                 {/* Registered Term Details */}
                                                 {isRegistered && section.registeredTerm && (
-                                                    <div className="text-sm text-base-content/70">
-                                                        📅 {section.registeredTerm.date} ({getDayOfWeek(section.registeredTerm.date)})
-                                                        {' '}⏰ {section.registeredTerm.time}
-                                                        {section.registeredTerm.room && ` 📍 ${section.registeredTerm.room}`}
+                                                    <div className="text-sm text-base-content/70 flex flex-col gap-1">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <span>📅 {section.registeredTerm.date} ({getDayOfWeek(section.registeredTerm.date)})</span>
+                                                            <span className="text-base-content/30">•</span>
+                                                            <span>⏰ {section.registeredTerm.time}</span>
+                                                            {section.registeredTerm.room && (
+                                                                <>
+                                                                    <span className="text-base-content/30">•</span>
+                                                                    <span>📍 {section.registeredTerm.room}</span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        
+                                                        {section.registeredTerm.deregistrationDeadline && (
+                                                            <div className="flex items-center gap-1.5 text-xs text-warning mt-1">
+                                                                <AlertCircle size={12} />
+                                                                <span>Odhlášení do: {section.registeredTerm.deregistrationDeadline}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                                 
@@ -429,29 +571,37 @@ export function ExamPanel({ onClose }: ExamPanelProps) {
                                                 )}
                                             </div>
                                             
-                                            {/* Right: Expand/Collapse Button */}
+                                            {/* Right: Action Buttons */}
                                             <div className="flex items-center gap-2 shrink-0">
-                                                <button
-                                                    onClick={() => toggleExpand(section.id)}
-                                                    disabled={isProcessing}
-                                                    className={`btn btn-sm gap-1 ${
-                                                        expandedSectionId === section.id
-                                                            ? 'btn-ghost'
-                                                            : isRegistered
-                                                                ? 'btn-outline btn-error'
-                                                                : 'btn-primary'
-                                                    }`}
-                                                >
-                                                    {isProcessing ? (
-                                                        <span className="loading loading-spinner loading-xs"></span>
-                                                    ) : expandedSectionId === section.id ? (
-                                                        <>Zavřít <ChevronUp size={14} /></>
-                                                    ) : isRegistered ? (
-                                                        <>Změnit <ChevronDown size={14} /></>
-                                                    ) : (
-                                                        <>Vybrat <ChevronDown size={14} /></>
-                                                    )}
-                                                </button>
+                                                {/* Unregister button for registered exams */}
+                                                {isRegistered && (
+                                                    <button
+                                                        onClick={() => handleUnregister(section)}
+                                                        disabled={isProcessing}
+                                                        className="btn btn-sm btn-error btn-outline gap-1"
+                                                    >
+                                                        {isProcessing ? (
+                                                            <span className="loading loading-spinner loading-xs"></span>
+                                                        ) : (
+                                                            'Odhlásit se'
+                                                        )}
+                                                    </button>
+                                                )}
+                                                
+                                                {/* Expand button to show other terms */}
+                                                {section.terms.length > 0 && (
+                                                    <button
+                                                        onClick={() => toggleExpand(section.id)}
+                                                        disabled={isProcessing}
+                                                        className={`btn btn-sm btn-ghost gap-1`}
+                                                    >
+                                                        {expandedSectionId === section.id ? (
+                                                            <>Zavřít <ChevronUp size={14} /></>
+                                                        ) : (
+                                                            <>{isRegistered ? 'Změnit' : 'Vybrat'} <ChevronDown size={14} /></>
+                                                        )}
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                         
@@ -459,7 +609,7 @@ export function ExamPanel({ onClose }: ExamPanelProps) {
                                         {expandedSectionId === section.id && section.terms.length > 0 && (
                                             <div className="mt-4 pt-3 border-t border-base-200">
                                                 <div className="text-xs text-base-content/50 mb-2">
-                                                    Vyberte termín (kliknutím se přihlásíte):
+                                                    Klikněte pro přihlášení:
                                                 </div>
                                                 <div className="flex flex-col gap-2">
                                                     {section.terms.map(term => (
@@ -467,17 +617,8 @@ export function ExamPanel({ onClose }: ExamPanelProps) {
                                                             key={term.id}
                                                             term={term}
                                                             onSelect={() => {
-                                                                console.debug('[ExamPanel] === MODAL OPEN SEQUENCE START ===');
-                                                                console.debug('[ExamPanel] Term clicked:', term.id);
-                                                                console.debug('[ExamPanel] Modal ref exists:', !!confirmModalRef.current);
-                                                                console.debug('[ExamPanel] Modal open state before:', confirmModalRef.current?.open);
-                                                                console.debug('[ExamPanel] pendingRegistration before:', pendingRegistration);
-                                                                
-                                                                setPendingRegistration({ section, term });
-                                                                confirmModalRef.current?.showModal();
-                                                                
-                                                                console.debug('[ExamPanel] Modal open state after showModal:', confirmModalRef.current?.open);
-                                                                console.debug('[ExamPanel] === MODAL OPEN SEQUENCE END ===');
+                                                                console.debug('[ExamPanel] Direct registration for term:', term.id);
+                                                                handleRegister(section, term.id);
                                                             }}
                                                             isProcessing={isProcessing}
                                                         />
@@ -492,91 +633,6 @@ export function ExamPanel({ onClose }: ExamPanelProps) {
                     )}
                 </div>
             </div>
-            
-            {/* Confirmation Modal */}
-            <dialog 
-                ref={confirmModalRef} 
-                className="modal"
-                // NOTE: We don't use onClose because it fires before the close animation
-                // finishes, causing the content to disappear while modal is still visible.
-                // pendingRegistration is set fresh each time the modal opens.
-            >
-                <div className="modal-box" onClick={(e) => {
-                    console.debug('[ExamPanel] Modal-box clicked, stopping propagation');
-                    e.stopPropagation();
-                }}>
-                    <h3 className="font-bold text-lg mb-4">Potvrdit registraci</h3>
-                    {pendingRegistration && (
-                        <div className="space-y-2 mb-6">
-                            <div className="flex items-center gap-2 text-base-content">
-                                <Calendar size={16} className="text-primary" />
-                                <span className="font-medium">
-                                    {pendingRegistration.term.date} ({getDayOfWeek(pendingRegistration.term.date)})
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-base-content/70">
-                                <Clock size={16} className="text-base-content/50" />
-                                <span>{pendingRegistration.term.time}</span>
-                            </div>
-                            {pendingRegistration.term.room && (
-                                <div className="flex items-center gap-2 text-base-content/70">
-                                    <MapPin size={16} className="text-base-content/50" />
-                                    <span>{pendingRegistration.term.room}</span>
-                                </div>
-                            )}
-                            {pendingRegistration.term.capacity && (
-                                <div className="text-sm text-base-content/50 mt-2">
-                                    Kapacita: {pendingRegistration.term.capacity}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                    <div className="modal-action">
-                        <button 
-                            className="btn btn-ghost"
-                            onClick={() => {
-                                console.debug('[ExamPanel] === ZRUŠIT BUTTON CLICKED ===');
-                                console.debug('[ExamPanel] Modal open state before close():', confirmModalRef.current?.open);
-                                confirmModalRef.current?.close();
-                                console.debug('[ExamPanel] Modal open state after close():', confirmModalRef.current?.open);
-                            }}
-                        >
-                            Zrušit
-                        </button>
-                        <button
-                            className="btn btn-primary"
-                            disabled={processingSectionId !== null}
-                            onClick={async () => {
-                                if (pendingRegistration) {
-                                    console.debug('[ExamPanel] === PŘIHLÁSIT BUTTON CLICKED ===');
-                                    const { section, term } = pendingRegistration;
-                                    console.debug('[ExamPanel] Registering term:', term.id);
-                                    confirmModalRef.current?.close();
-                                    await handleRegister(section, term.id);
-                                }
-                            }}
-                        >
-                            {processingSectionId ? (
-                                <span className="loading loading-spinner loading-xs"></span>
-                            ) : (
-                                'Přihlásit'
-                            )}
-                        </button>
-                    </div>
-                </div>
-                {/* Backdrop - closes modal when clicked */}
-                <div 
-                    className="modal-backdrop"
-                    onClick={(e) => {
-                        console.debug('[ExamPanel] === BACKDROP CLICKED ===');
-                        console.debug('[ExamPanel] Event target:', e.target);
-                        console.debug('[ExamPanel] Event currentTarget:', e.currentTarget);
-                        console.debug('[ExamPanel] Modal open state before close():', confirmModalRef.current?.open);
-                        confirmModalRef.current?.close();
-                        console.debug('[ExamPanel] Modal open state after close():', confirmModalRef.current?.open);
-                    }}
-                />
-            </dialog>
         </>
     );
 }

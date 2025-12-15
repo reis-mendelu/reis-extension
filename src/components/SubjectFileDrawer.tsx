@@ -413,13 +413,6 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                             </div>
                         </div>
                         
-                        {/* Course Code */}
-                        {lesson?.courseCode && (
-                            <div className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
-                                {lesson.courseCode}
-                            </div>
-                        )}
-                        
                         {/* Course Name */}
                         <div className="mb-2">
                             {resolvedCourseId ? (

@@ -2,10 +2,12 @@
  * TermTile - Individual exam term selection tile.
  * 
  * Shows date, time, room, capacity with single-click registration.
+ * For future-opening terms, shows countdown until registration opens.
  * Uses DaisyUI components per @daisy-enforcer.
  */
 
-import { ChevronRight, Clock, MapPin, Users } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Clock, MapPin, Users, Timer, CircleCheck, RotateCcw } from 'lucide-react';
 import type { ExamTerm } from '../types/exams';
 
 interface TermTileProps {
@@ -33,9 +35,66 @@ function getDayOfWeek(dateStr: string): string {
     return ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'][date.getDay()];
 }
 
+/**
+ * Parse registrationStart string to Date object.
+ */
+function parseRegistrationStart(registrationStart: string): Date | null {
+    try {
+        const [datePart, timePart] = registrationStart.split(' ');
+        const [day, month, year] = datePart.split('.').map(Number);
+        const [hours, minutes] = (timePart || '00:00').split(':').map(Number);
+        return new Date(year, month - 1, day, hours, minutes);
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Format countdown from milliseconds to human readable string.
+ */
+function formatCountdown(ms: number): string {
+    if (ms <= 0) return 'Nyní';
+    
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) {
+        const remainingHours = hours % 24;
+        return `${days}d ${remainingHours}h`;
+    }
+    if (hours > 0) {
+        const remainingMinutes = minutes % 60;
+        return `${hours}h ${remainingMinutes}m`;
+    }
+    if (minutes > 0) {
+        const remainingSeconds = seconds % 60;
+        return `${minutes}m ${remainingSeconds}s`;
+    }
+    return `${seconds}s`;
+}
+
 export function TermTile({ term, onSelect, isProcessing = false }: TermTileProps) {
     const capacity = parseCapacity(term.capacity);
     const isFull = term.full || (capacity && capacity.occupied >= capacity.total);
+    
+    // Countdown state for future-opening terms
+    const [now, setNow] = useState(() => new Date());
+    const registrationDate = term.registrationStart ? parseRegistrationStart(term.registrationStart) : null;
+    const isFutureOpening = Boolean(registrationDate && registrationDate > now);
+    const msUntilOpen = isFutureOpening && registrationDate ? registrationDate.getTime() - now.getTime() : 0;
+    
+    // Update countdown every second when term is future-opening
+    useEffect(() => {
+        if (!isFutureOpening) return;
+        
+        const interval = setInterval(() => {
+            setNow(new Date());
+        }, 1000);
+        
+        return () => clearInterval(interval);
+    }, [isFutureOpening]);
     
     console.debug('[TermTile] Rendering term:', {
         id: term.id,
@@ -43,23 +102,27 @@ export function TermTile({ term, onSelect, isProcessing = false }: TermTileProps
         time: term.time,
         capacity: term.capacity,
         full: term.full,
-        room: term.room
+        room: term.room,
+        registrationStart: term.registrationStart,
+        isFutureOpening
     });
 
     return (
         <button
             onClick={() => {
-                if (!isFull && !isProcessing) {
+                if (!isFull && !isProcessing && !isFutureOpening) {
                     console.debug('[TermTile] Selected term:', term.id);
                     onSelect();
                 }
             }}
-            disabled={isFull || isProcessing}
+            disabled={isFull || isProcessing || isFutureOpening}
             className={`
                 flex items-center gap-3 w-full p-3 rounded-lg border transition-all text-left
-                ${isFull 
-                    ? 'bg-base-200 border-base-300 opacity-60 cursor-not-allowed' 
-                    : 'bg-base-100 border-base-300 hover:border-primary hover:shadow-sm cursor-pointer'
+                ${isFutureOpening 
+                    ? 'bg-warning/5 border-warning/30 cursor-not-allowed'
+                    : isFull 
+                        ? 'bg-base-200 border-base-300 opacity-60 cursor-not-allowed' 
+                        : 'bg-base-100 border-base-300 hover:border-primary hover:shadow-sm cursor-pointer'
                 }
             `}
         >
@@ -72,6 +135,28 @@ export function TermTile({ term, onSelect, isProcessing = false }: TermTileProps
                     {getDayOfWeek(term.date)}
                 </span>
             </div>
+            
+            {/* Attempt Type Badge */}
+            {term.attemptType && (
+                <div className="flex items-center" title={
+                    term.attemptType === 'regular' ? 'Řádný termín' :
+                    term.attemptType === 'retake1' ? 'Opravný termín 1' :
+                    term.attemptType === 'retake2' ? 'Opravný termín 2' :
+                    'Opravný termín 3'
+                }>
+                    {term.attemptType === 'regular' ? (
+                        <CircleCheck size={14} className="text-success" />
+                    ) : (
+                        <div className="flex items-center gap-0.5">
+                            <RotateCcw size={12} className="text-warning" />
+                            <span className="text-[10px] font-bold text-warning">
+                                {term.attemptType === 'retake1' ? '1' : 
+                                 term.attemptType === 'retake2' ? '2' : '3'}
+                            </span>
+                        </div>
+                    )}
+                </div>
+            )}
             
             {/* Time */}
             <div className="flex items-center gap-1 min-w-[60px]">
@@ -91,33 +176,50 @@ export function TermTile({ term, onSelect, isProcessing = false }: TermTileProps
                 </div>
             )}
             
-            {/* Capacity */}
-            {capacity && (
-                <div className="flex items-center gap-2 min-w-[90px]">
-                    <Users size={12} className="text-base-content/40" />
-                    <div className="flex items-center gap-1.5">
-                        <progress
-                            className={`progress w-12 h-1.5 ${
-                                isFull ? 'progress-error' : 'progress-primary'
-                            }`}
-                            value={capacity.percent}
-                            max="100"
-                        />
-                        <span className={`text-xs ${isFull ? 'text-error font-medium' : 'text-base-content/50'}`}>
-                            {isFull ? 'PLNÝ' : `${capacity.occupied}/${capacity.total}`}
+            {/* Future Opening Countdown - takes priority over capacity */}
+            {isFutureOpening ? (
+                <div className="flex items-center gap-2 min-w-[120px] bg-warning/10 px-2 py-1 rounded-md">
+                    <Timer size={14} className="text-warning" />
+                    <div className="flex flex-col">
+                        <span className="text-xs font-medium text-warning">
+                            Za {formatCountdown(msUntilOpen)}
+                        </span>
+                        <span className="text-[10px] text-warning/70">
+                            {term.registrationStart?.split(' ')[0]}
                         </span>
                     </div>
                 </div>
+            ) : (
+                /* Capacity */
+                capacity && (
+                    <div className="flex items-center gap-2 min-w-[90px]">
+                        <Users size={12} className="text-base-content/40" />
+                        <div className="flex items-center gap-1.5">
+                            <progress
+                                className={`progress w-12 h-1.5 ${
+                                    isFull ? 'progress-error' : 'progress-primary'
+                                }`}
+                                value={capacity.percent}
+                                max="100"
+                            />
+                            <span className={`text-xs ${isFull ? 'text-error font-medium' : 'text-base-content/50'}`}>
+                                {isFull ? 'PLNÝ' : `${capacity.occupied}/${capacity.total}`}
+                            </span>
+                        </div>
+                    </div>
+                )
             )}
             
-            {/* Action indicator */}
+            {/* Action button - direct registration */}
             <div className="shrink-0 ml-auto">
                 {isProcessing ? (
-                    <span className="loading loading-spinner loading-xs text-primary"></span>
+                    <span className="loading loading-spinner loading-sm text-primary"></span>
+                ) : isFutureOpening ? (
+                    <span className="text-warning text-sm font-medium">⏳</span>
                 ) : isFull ? (
-                    <span className="text-base-content/30 text-lg">✕</span>
+                    <span className="text-error/60 text-sm font-medium">✕</span>
                 ) : (
-                    <ChevronRight size={16} className="text-primary" />
+                    <span className="btn btn-primary btn-sm">Přihlásit se</span>
                 )}
             </div>
         </button>

@@ -31,8 +31,7 @@ e2e/
 │   ├── exam-timeline.spec.ts   # Exam view tests
 │   ├── search.spec.ts          # Search functionality
 │   ├── file-drawer.spec.ts     # File drawer tests
-│   ├── content-script.spec.ts  # Content script injection
-│   └── visual-proof.spec.ts    # Legacy screenshot capture
+│   └── content-script.spec.ts  # Content script injection
 └── global-setup.ts     # Authenticates with is.mendelu.cz before tests run
 ```
 
@@ -79,15 +78,6 @@ xvfb-run playwright test tests/visual/calendar.spec.ts
 2. **Subsequent runs**: Compares current UI against baselines
 3. **Failures**: Shows diff highlighting changed pixels
 4. **Update baselines**: Use `--update-snapshots` after intentional changes
-
-### Legacy Visual Proof
-
-Quick screenshot capture (no comparison, ephemeral):
-
-```bash
-xvfb-run playwright test visual-proof.spec.ts
-ls -l proof-*.png
-```
 
 ## Extension Fixture
 

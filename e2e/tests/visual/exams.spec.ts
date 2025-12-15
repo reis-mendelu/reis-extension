@@ -33,4 +33,28 @@ test.describe('Visual: Exams', () => {
       });
     }
   });
+
+  test('exam panel "Otevírá se" tab with countdown timers', async ({ extensionPage }) => {
+    // Click on "Otevírá se" tab (future-opening exams)
+    const openingTab = extensionPage.getByText('Otevírá se').first();
+    if (await openingTab.count() > 0) {
+      await openingTab.click();
+      await extensionPage.waitForTimeout(500);
+      
+      await expect(extensionPage).toHaveScreenshot('exams-opening-tab.png', {
+        fullPage: true,
+      });
+    }
+  });
+
+  test('exam panel shows last updated timestamp', async ({ extensionPage }) => {
+    // Verify "Aktualizováno" text is visible in header
+    const lastUpdated = extensionPage.getByText(/Aktualizováno:/);
+    await expect(lastUpdated).toBeVisible({ timeout: 5000 });
+    
+    await expect(extensionPage).toHaveScreenshot('exams-with-timestamp.png', {
+      fullPage: true,
+    });
+  });
 });
+

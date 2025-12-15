@@ -128,9 +128,9 @@ export function WeeklyCalendar({ initialDate = new Date() }: WeeklyCalendarProps
     const examLessons = useMemo((): BlockLesson[] => {
         if (!storedExams || storedExams.length === 0) return [];
 
-        const allExams: { id: string; subjectCode: string; title: string; start: Date; location: string; meta: { teacher: string } }[] = [];
+        const allExams: { id: string; subjectCode: string; title: string; start: Date; location: string; meta: { teacher: string; teacherId: string } }[] = [];
         storedExams.forEach(subject => {
-            subject.sections.forEach((section: { id: string; status: string; name: string; registeredTerm?: { date: string; time: string; room?: string; teacher?: string } }) => {
+            subject.sections.forEach((section: { id: string; status: string; name: string; registeredTerm?: { date: string; time: string; room?: string; teacher?: string; teacherId?: string } }) => {
                 if (section.status === 'registered' && section.registeredTerm) {
                     allExams.push({
                         id: section.id,
@@ -138,7 +138,10 @@ export function WeeklyCalendar({ initialDate = new Date() }: WeeklyCalendarProps
                         title: `${subject.name} - ${section.name}`,
                         start: parseDate(section.registeredTerm.date, section.registeredTerm.time),
                         location: section.registeredTerm.room || 'Unknown',
-                        meta: { teacher: section.registeredTerm.teacher || 'Unknown' }
+                        meta: { 
+                            teacher: section.registeredTerm.teacher || 'Unknown',
+                            teacherId: section.registeredTerm.teacherId || ''
+                        }
                     });
                 }
             });
@@ -160,7 +163,7 @@ export function WeeklyCalendar({ initialDate = new Date() }: WeeklyCalendarProps
                 courseName: exam.title,
                 room: exam.location,
                 roomStructured: { name: exam.location, id: '' },
-                teachers: [{ fullName: exam.meta.teacher, shortName: exam.meta.teacher, id: '' }],
+                teachers: [{ fullName: exam.meta.teacher, shortName: exam.meta.teacher, id: exam.meta.teacherId }],
                 isExam: true,
                 examEvent: exam,
                 isConsultation: 'false',

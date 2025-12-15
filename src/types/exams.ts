@@ -16,7 +16,9 @@ export interface ExamTerm {
     full?: boolean;
     room?: string;
     teacher?: string;
+    teacherId?: string;   // Teacher's MENDELU ID for linking
     registrationStart?: string;  // When registration opens
+    attemptType?: 'regular' | 'retake1' | 'retake2' | 'retake3';  // Exam attempt type
 }
 
 export interface ExamSection {
@@ -30,6 +32,8 @@ export interface ExamSection {
         time: string;
         room?: string;
         teacher?: string;
+        teacherId?: string;  // Teacher's MENDELU ID for linking
+        deregistrationDeadline?: string;  // When deregistration closes (format: "DD.MM.YYYY HH:MM")
     };
     terms: ExamTerm[];
 }

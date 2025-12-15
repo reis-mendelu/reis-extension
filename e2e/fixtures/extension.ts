@@ -16,6 +16,10 @@ export type ExtensionFixtures = {
   extensionContext: BrowserContext;
   extensionPage: Page;
   extensionId: string;
+  /** Console errors captured during the test - attached BEFORE page load */
+  consoleErrors: string[];
+  /** Page errors (uncaught exceptions) captured during the test */
+  pageErrors: string[];
 };
 
 export const test = base.extend<ExtensionFixtures>({
@@ -71,9 +75,37 @@ export const test = base.extend<ExtensionFixtures>({
     await use(EXTENSION_ID);
   },
 
-  // Page for extension popup/UI
-  extensionPage: async ({ extensionContext, extensionId }, use) => {
+  // Shared error arrays - populated before page load
+  consoleErrors: async ({}, use) => {
+    const errors: string[] = [];
+    await use(errors);
+  },
+
+  pageErrors: async ({}, use) => {
+    const errors: string[] = [];
+    await use(errors);
+  },
+
+  // Page for extension popup/UI - with console monitoring attached BEFORE navigation
+  extensionPage: async ({ extensionContext, extensionId, consoleErrors, pageErrors }, use) => {
     const page = await extensionContext.newPage();
+    
+    // CRITICAL: Attach listeners BEFORE navigation to catch all errors
+    // This is the Munger-style fix: monitor from the very start
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        const text = msg.text();
+        // Filter out favicon errors (common, harmless)
+        if (!text.includes('favicon')) {
+          consoleErrors.push(text);
+        }
+      }
+    });
+    
+    // Catch uncaught exceptions (pageerror)
+    page.on('pageerror', err => {
+      pageErrors.push(err.message);
+    });
     
     // Navigate to extension popup
     await page.goto(`chrome-extension://${extensionId}/index.html`, {

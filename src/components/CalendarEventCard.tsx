@@ -64,9 +64,6 @@ export function CalendarEventCard({ lesson, onClick }: CalendarEventCardProps) {
 
     const styles = getEventStyles();
 
-    // For exams: show the course code (e.g. EBC-ALG)
-    const displayCode = lesson.courseCode;
-
     // For exams: show the section name (e.g. "Průběžný test 2")
     // For others: show the full course name
     const courseTitle = lesson.isExam
@@ -81,15 +78,15 @@ export function CalendarEventCard({ lesson, onClick }: CalendarEventCardProps) {
             title={`${courseTitle}\n${lesson.startTime} - ${lesson.endTime}\n${lesson.room}\n${lesson.teachers[0]?.shortName || ''}`}
         >
             <div className="p-2 h-full flex flex-col text-sm overflow-hidden font-inter">
-                {/* Course code - always visible */}
-                <div className={`font-bold ${styles.text} flex-shrink-0`}>
-                    {displayCode}
+                {/* Course title - always visible */}
+                <div className={`font-semibold ${styles.text} flex-shrink-0 break-words line-clamp-2`}>
+                    {courseTitle}
                 </div>
 
-                {/* Course title - only for longer events */}
-                {isLongEnough && courseTitle && (
-                    <div className={`${lesson.isExam ? 'text-exam-text font-bold' : styles.text} break-words line-clamp-2 flex-shrink-0`}>
-                        {courseTitle}
+                {/* Additional course info - only for longer events */}
+                {isLongEnough && lesson.isExam && (
+                    <div className="text-exam-text font-medium text-xs flex-shrink-0">
+                        {lesson.courseName.split(' - ')[0]}
                     </div>
                 )}
 

@@ -4,22 +4,16 @@
 import { test, expect } from '../fixtures/extension';
 
 test.describe('Popup UI', () => {
-  test('popup loads without errors', async ({ extensionPage }) => {
+  test('popup loads without errors', async ({ extensionPage, consoleErrors, pageErrors }) => {
     // Check page loaded
     await expect(extensionPage).toHaveTitle(/reIS|Reis/i);
-    
-    // No console errors
-    const errors: string[] = [];
-    extensionPage.on('console', msg => {
-      if (msg.type() === 'error') {
-        errors.push(msg.text());
-      }
-    });
     
     // Wait for React to hydrate
     await extensionPage.waitForTimeout(2000);
     
-    expect(errors.filter(e => !e.includes('favicon'))).toHaveLength(0);
+    // Console errors are now captured automatically from page load via fixture
+    expect(consoleErrors).toHaveLength(0);
+    expect(pageErrors).toHaveLength(0);
   });
 
   test('sidebar renders with navigation items', async ({ extensionPage }) => {

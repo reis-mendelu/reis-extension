@@ -13,7 +13,6 @@ import {
     LayoutDashboard,
     Upload,
     FileText,
-    CalendarCheck,
     PenTool,
     Book
 } from 'lucide-react';
@@ -68,13 +67,7 @@ export const getMainMenuItems = (studiumId: string = '', obdobiId: string = ''):
                 icon: <PenTool className="w-4 h-4" />,
                 href: 'https://is.mendelu.cz/auth/elis/ot/psani_testu.pl?_m=205;lang=cz'
             },
-            {
-                id: 'zapisy-zkousky',
-                label: 'Zápisy na zkoušky',
-                icon: <CalendarCheck className="w-4 h-4" />,
-                href: `https://is.mendelu.cz/auth/student/terminy_seznam.pl?studium=${studiumId};obdobi=${obdobiId};lang=cz`,
-                isFeature: true // Built-in feature, not a redirect
-            },
+
             {
                 id: 'e-index',
                 label: 'E-index',

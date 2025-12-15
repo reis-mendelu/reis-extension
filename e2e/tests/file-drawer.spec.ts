@@ -5,8 +5,10 @@ import { test, expect } from '../fixtures/extension';
 
 test.describe('File Drawer', () => {
   test('subject files drawer can be opened', async ({ extensionPage }) => {
-    // Wait for calendar to load
-    await extensionPage.waitForTimeout(2000);
+    // Wait for calendar events to load
+    await extensionPage.waitForSelector('[class*="event"], [class*="subject"], [class*="tile"]', {
+      timeout: 5000
+    }).catch(() => {});
     
     // Try to find a clickable event/subject
     const eventTile = extensionPage.locator(
@@ -17,7 +19,10 @@ test.describe('File Drawer', () => {
       await eventTile.click();
       
       // Wait for drawer to open
-      await extensionPage.waitForTimeout(1000);
+      await extensionPage.waitForSelector(
+        '[class*="drawer"], [class*="panel"], [class*="sheet"], [role="dialog"]',
+        { timeout: 5000, state: 'visible' }
+      ).catch(() => {});
       
       // Look for drawer/panel
       const drawer = extensionPage.locator(
@@ -28,13 +33,15 @@ test.describe('File Drawer', () => {
         await expect(drawer.first()).toBeVisible();
       }
     } else {
-      // No events visible, skip test
       test.skip();
     }
   });
 
   test('files section renders in drawer', async ({ extensionPage }) => {
-    await extensionPage.waitForTimeout(2000);
+    // Wait for calendar events to load
+    await extensionPage.waitForSelector('[class*="event"], [class*="subject"], [class*="tile"]', {
+      timeout: 5000
+    }).catch(() => {});
     
     const eventTile = extensionPage.locator(
       '[class*="event"], [class*="subject"], [class*="tile"]'
@@ -42,7 +49,12 @@ test.describe('File Drawer', () => {
     
     if (await eventTile.count() > 0) {
       await eventTile.click();
-      await extensionPage.waitForTimeout(1500);
+      
+      // Wait for drawer content to load
+      await extensionPage.waitForSelector(
+        '[class*="drawer"], [role="dialog"]',
+        { timeout: 5000, state: 'visible' }
+      ).catch(() => {});
       
       // Look for files section
       const filesSection = extensionPage.locator(

@@ -9,7 +9,7 @@
  */
 
 import { useMemo } from 'react';
-import { CheckCircle, AlertCircle, Frown, Meh, Smile, Laugh, TrendingUp } from 'lucide-react';
+import { CheckCircle, AlertCircle, Frown, Meh, Smile, Laugh, TrendingUp, CalendarCheck } from 'lucide-react';
 import type { ExamSubject, RegisteredExam } from '../types/exams';
 
 interface ExamTimelineProps {
@@ -163,6 +163,11 @@ export function ExamTimeline({ exams }: ExamTimelineProps) {
 
     return (
         <div className="px-4 py-3 bg-base-200 rounded-lg overflow-x-auto">
+            {/* Main Header */}
+            <div className="flex items-center gap-2 mb-3">
+                <CalendarCheck size={18} className="text-primary" />
+                <h3 className="font-semibold text-base-content">Přihlášené zkoušky</h3>
+            </div>
             {/* Spacing Score Header - only show when 2+ exams */}
             {registeredExams.length >= 2 && (
                 <div className="flex items-center gap-3 mb-3 pb-3 border-b border-base-300">
