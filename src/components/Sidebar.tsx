@@ -50,9 +50,6 @@ export const Sidebar = ({ currentView: _currentView, onViewChange, onOpenSetting
   // Outlook sync hook
   const { isEnabled: outlookSyncEnabled, isLoading: outlookSyncLoading, toggle: toggleOutlookSync } = useOutlookSync();
 
-  // Google Drive sync - DORMANT (code preserved for future use)
-  // const { isEnabled: driveSyncEnabled, isLoading: driveSyncLoading, toggle: toggleDriveSync } = useDriveSync();
-
   // Theme toggle
   const { isDark, isLoading: themeLoading, toggle: toggleTheme } = useTheme();
 
@@ -96,7 +93,7 @@ export const Sidebar = ({ currentView: _currentView, onViewChange, onOpenSetting
         {/* Logo - click to return to calendar */}
         <div 
           onClick={() => onViewChange('calendar')}
-          className="mb-8 w-10 h-10 rounded-xl bg-base-100 shadow-sm flex items-center justify-center overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+          className="mb-8 w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center overflow-hidden cursor-pointer hover:shadow-md transition-shadow border border-base-300/50"
           title="Zpět na rozvrh"
         >
           <img src={MENDELU_LOGO_PATH} alt="Mendelu Logo" className="w-8 h-8 object-contain" />
@@ -287,21 +284,6 @@ export const Sidebar = ({ currentView: _currentView, onViewChange, onOpenSetting
                     />
                   </label>
 
-                  {/* Google Drive Sync Toggle - DORMANT (code preserved for future use)
-                  <label className="flex items-center justify-between gap-3 px-1 py-2 cursor-pointer hover:bg-base-200 rounded-lg transition-colors">
-                    <div className="flex items-center gap-2 flex-1">
-                      <HardDrive className="w-4 h-4 text-base-content/50 shrink-0" />
-                      <span className="text-xs text-base-content/70">Synchronizace souborů do Google Drive (beta)</span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      className="toggle toggle-primary toggle-sm"
-                      checked={driveSyncEnabled}
-                      disabled={driveSyncLoading}
-                      onChange={() => toggleDriveSync()}
-                    />
-                  </label>
-                  */}
                 </motion.div>
               )}
             </AnimatePresence>

@@ -269,7 +269,7 @@ function App() {
                 </div>
                 <button
                   onClick={handleToday}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm border-none shadow-sm"
                 >
                   Dnes
                 </button>

@@ -51,7 +51,7 @@ export default defineConfig(() => {
     plugins: [react(), tailwindcss()],
     build: {
       outDir: 'dist',
-      emptyOutDir: true,
+      emptyOutDir: false,
       rollupOptions: {
         input: resolve(__dirname, 'index.html'),
         output: {
@@ -63,7 +63,7 @@ export default defineConfig(() => {
     },
     test: {
       globals: true,
-      environment: 'jsdom',
+      environment: 'happy-dom',
       setupFiles: ['./src/test/setup.ts'],
       include: ['src/**/*.{test,spec}.{js,ts,jsx,tsx}'],
       coverage: {

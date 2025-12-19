@@ -369,10 +369,10 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
             {/* Drawer Container - wrapper for floating effect */}
             <div className="w-full flex justify-end items-start h-full pt-10 pb-10 relative z-10 pointer-events-none">
                 {/* Drawer */}
-                <div className="w-[600px] bg-white shadow-2xl rounded-2xl flex flex-col overflow-hidden border border-gray-100 font-inter h-full animate-in slide-in-from-right duration-300 pointer-events-auto">
+                <div className="w-[600px] bg-base-100 shadow-2xl rounded-2xl flex flex-col overflow-hidden border border-base-300 font-inter h-full animate-in slide-in-from-right duration-300 pointer-events-auto">
                     
                     {/* Header */}
-                    <div className="px-6 py-4 border-b border-gray-100 bg-white z-20">
+                    <div className="px-6 py-4 border-b border-base-300 bg-base-100 z-20">
                         {/* Top row: Badge + Date + Actions */}
                         <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
@@ -387,7 +387,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                                 })()}
                                 {/* Date */}
                                 {lesson?.date && (
-                                    <span className="text-sm text-slate-500">
+                                    <span className="text-sm text-base-content/60">
                                         {formatDate(lesson.date)}
                                     </span>
                                 )}
@@ -408,7 +408,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                                     </button>
                                 )}
                                 <button onClick={onClose} className="btn btn-ghost btn-circle btn-sm interactive">
-                                    <X size={20} className="text-slate-400" />
+                                    <X size={20} className="text-base-content/40" />
                                 </button>
                             </div>
                         </div>
@@ -420,20 +420,20 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                                     href={`https://is.mendelu.cz/auth/katalog/syllabus.pl?predmet=${resolvedCourseId};lang=cz`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="clickable-link text-xl font-bold text-slate-800 flex items-center gap-1"
+                                    className="clickable-link text-xl font-bold text-base-content flex items-center gap-1"
                                 >
                                     <span>{lesson?.courseName}</span>
                                     <ExternalLink size={14} className="opacity-50 flex-shrink-0" />
                                 </a>
                             ) : (
-                                <span className="text-xl font-bold text-slate-800">
+                                <span className="text-xl font-bold text-base-content">
                                     {lesson?.courseName}
                                 </span>
                             )}
                         </div>
                         
                         {/* Meta row: Teacher + Room + Time */}
-                        <div className="flex items-center gap-4 text-sm text-slate-500 flex-wrap">
+                        <div className="flex items-center gap-4 text-sm text-base-content/60 flex-wrap">
                             {/* Teacher */}
                             {lesson?.teachers && lesson.teachers.length > 0 && (
                                 lesson.teachers[0].id ? (
@@ -513,7 +513,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                                     />
                                     {/* Tooltip */}
                                     <div 
-                                        className="absolute bg-slate-800 text-white text-sm px-3 py-2 rounded-lg shadow-lg flex items-center gap-2"
+                                        className="absolute bg-neutral text-neutral-content text-sm px-3 py-2 rounded-lg shadow-lg flex items-center gap-2"
                                         style={{
                                             animation: 'dragHintFade 4s ease-in-out forwards',
                                             top: '200px',
@@ -521,7 +521,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                                             transform: 'translateX(-50%)',
                                         }}
                                     >
-                                        <MousePointer2 size={16} className="text-emerald-400" />
+                                        <MousePointer2 size={16} className="text-primary" />
                                         Tažením vyberete více souborů
                                     </div>
                                 </div>
@@ -555,13 +555,13 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                                             {/* Files Grid Skeleton */}
                                             <div className="grid grid-cols-1 gap-1">
                                                 {[1, 2, 3].map((j) => (
-                                                    <div key={j} className="flex items-center gap-3 p-3 rounded-lg border border-transparent bg-white">
-                                                        <div className="skeleton w-5 h-5 rounded bg-slate-200"></div>
+                                                    <div key={j} className="flex items-center gap-3 p-3 rounded-lg border border-transparent bg-base-100">
+                                                        <div className="skeleton w-5 h-5 rounded bg-base-300"></div>
                                                         <div className="flex-1 space-y-2">
-                                                            <div className="skeleton h-4 w-3/4 rounded bg-slate-200"></div>
-                                                            <div className="skeleton h-3 w-1/2 rounded bg-slate-200"></div>
+                                                            <div className="skeleton h-4 w-3/4 rounded bg-base-300"></div>
+                                                            <div className="skeleton h-3 w-1/2 rounded bg-base-300"></div>
                                                         </div>
-                                                        <div className="skeleton w-4 h-4 rounded bg-slate-200"></div>
+                                                        <div className="skeleton w-4 h-4 rounded bg-base-300"></div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -572,7 +572,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                                 <div className="p-6 space-y-6">
                                     {groupedFiles.map(group => (
                                         <div key={group.name} className="space-y-3">
-                                            <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 uppercase tracking-wider px-2">
+                                            <div className="flex items-center gap-2 text-sm font-semibold text-base-content/50 uppercase tracking-wider px-2">
                                                 <Folder size={14} />
                                                 {group.displayName}
                                             </div>
@@ -596,31 +596,31 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                                                                     className={`
                                                                         flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer group hover:shadow-sm
                                                                         ${isSelected 
-                                                                            ? 'bg-emerald-50 border-emerald-200 shadow-sm' 
-                                                                            : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'
+                                                                            ? 'bg-primary/10 border-primary/20 shadow-sm' 
+                                                                            : 'bg-base-100 border-transparent hover:bg-base-200/50 hover:border-base-300'
                                                                         }
                                                                     `}
                                                                 >
                                                                     <div 
                                                                         className={`
                                                                             w-5 h-5 rounded border flex items-center justify-center transition-colors interactive
-                                                                            ${isSelected ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 group-hover:border-emerald-400'}
+                                                                            ${isSelected ? 'bg-primary border-primary' : 'border-base-300 group-hover:border-primary/50'}
                                                                         `}
                                                                         onClick={(e) => toggleSelect(subFile.link, e)}
                                                                     >
-                                                                        {isSelected && <Check size={12} className="text-white" />}
+                                                                        {isSelected && <Check size={12} className="text-primary-content" />}
                                                                     </div>
                                                                     
                                                                     <div className="flex-1 min-w-0">
-                                                                        <div className={`font-medium truncate ${isSelected ? 'text-emerald-700' : 'text-slate-700'}`}>
+                                                                        <div className={`font-medium truncate ${isSelected ? 'text-primary' : 'text-base-content'}`}>
                                                                             {file.files.length > 1 ? `${file.file_name} (${j + 1})` : file.file_name}
                                                                         </div>
                                                                         {file.file_comment && (
-                                                                            <div className="text-xs text-slate-400 truncate">{file.file_comment}</div>
+                                                                            <div className="text-xs text-base-content/50 truncate">{file.file_comment}</div>
                                                                         )}
                                                                     </div>
-
-                                                                    <FileText size={16} className={`${isSelected ? 'text-emerald-400' : 'text-slate-300'}`} />
+ 
+                                                                    <FileText size={16} className={`${isSelected ? 'text-primary/50' : 'text-base-content/20'}`} />
                                                                 </div>
                                                             );
                                                          })}

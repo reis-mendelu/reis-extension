@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
-  testDir: './e2e/tests',
+  testDir: './e2e',
   globalSetup: path.join(__dirname, 'e2e', 'global-setup.ts'),
   timeout: 60000,
   expect: {
@@ -25,7 +25,16 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // Single worker for extension testing
-  reporter: [['html', { open: 'never' }], ['list']],
+  reporter: [
+    ['html', { open: 'never' }],
+    ['list'],
+    ['@serenity-js/playwright-test', {
+      crew: [
+        ['@serenity-js/console-reporter', { theme: 'monochrome' }],
+        ['@serenity-js/core:ArtifactArchiver', { outputDirectory: 'target/site/serenity' }],
+      ]
+    }]
+  ],
   use: {
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
