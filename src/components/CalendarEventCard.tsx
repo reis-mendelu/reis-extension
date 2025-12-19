@@ -41,21 +41,21 @@ export function CalendarEventCard({ lesson, onClick }: CalendarEventCardProps) {
     const getEventStyles = () => {
         if (lesson.isExam) {
             return {
-                bg: 'bg-exam-bg/90',
+                bg: 'bg-exam-bg/85',
                 border: 'border-l-exam-border',
                 text: 'text-gray-900',
             };
         } else if (lesson.isSeminar === 'true') {
             // Seminars/exercises use lecture colors (blue)
             return {
-                bg: 'bg-lecture-bg/90',
+                bg: 'bg-lecture-bg/85',
                 border: 'border-l-lecture-border',
                 text: 'text-gray-900',
             };
         } else {
             // Lectures use seminar colors (green)
             return {
-                bg: 'bg-seminar-bg/90',
+                bg: 'bg-seminar-bg/85',
                 border: 'border-l-seminar-border',
                 text: 'text-gray-900',
             };

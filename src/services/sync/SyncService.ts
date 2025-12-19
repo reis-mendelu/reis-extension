@@ -3,7 +3,7 @@
  * 
  * Pattern: Stale-while-revalidate
  * - Components show stored data immediately
- * - Sync runs in background every 5 minutes
+ * - Sync runs periodically while the page is open
  * - Subscribers are notified when new data is available
  */
 
@@ -28,7 +28,6 @@ class SyncServiceClass {
 
     /**
      * Start the background sync service.
-     * Performs initial sync and schedules periodic syncs.
      */
     start(): void {
         if (this.intervalId) {
@@ -36,12 +35,8 @@ class SyncServiceClass {
             return;
         }
 
-        console.log('[SyncService] Starting background sync (every 5 minutes)');
-
-        // Initial sync (background, don't block UI)
+        console.log('[SyncService] Starting background sync');
         this.syncAll();
-
-        // Schedule periodic sync
         this.intervalId = setInterval(() => {
             this.syncAll();
         }, SYNC_INTERVAL);
@@ -74,14 +69,12 @@ class SyncServiceClass {
         const startTime = Date.now();
 
         try {
-            // Run schedule, exams, subjects in parallel
             const results = await Promise.allSettled([
                 syncSchedule(),
                 syncExams(),
                 syncSubjects(),
             ]);
 
-            // Log any failures
             results.forEach((result, index) => {
                 const syncNames = ['schedule', 'exams', 'subjects'];
                 if (result.status === 'rejected') {
@@ -89,21 +82,18 @@ class SyncServiceClass {
                 }
             });
 
-            // Sync files AFTER subjects (files depend on subjects data)
             try {
                 await syncFiles();
             } catch (filesError) {
                 console.error('[SyncService] files sync failed:', filesError);
             }
 
-            // Update sync metadata
             StorageService.set(STORAGE_KEYS.LAST_SYNC, Date.now());
             StorageService.remove(STORAGE_KEYS.SYNC_ERROR);
 
             const duration = Date.now() - startTime;
             console.log(`[SyncService] Sync completed in ${duration}ms`);
 
-            // Notify all subscribers
             this.notifyListeners();
 
         } catch (error) {
@@ -115,11 +105,6 @@ class SyncServiceClass {
         }
     }
 
-    /**
-     * Subscribe to sync updates.
-     * Callback is called whenever new data is synced.
-     * Returns unsubscribe function.
-     */
     subscribe(callback: () => void): () => void {
         this.listeners.add(callback);
         return () => {
@@ -127,9 +112,6 @@ class SyncServiceClass {
         };
     }
 
-    /**
-     * Get current sync status.
-     */
     getStatus(): SyncStatus {
         return {
             isSyncing: this.isSyncing,
@@ -138,18 +120,11 @@ class SyncServiceClass {
         };
     }
 
-    /**
-     * Trigger a refresh of all subscribers.
-     * Used by iframe to notify hooks after receiving data via postMessage.
-     */
     triggerRefresh(): void {
         console.log('[SyncService] triggerRefresh called, notifying listeners');
         this.notifyListeners();
     }
 
-    /**
-     * Notify all subscribers of data update.
-     */
     private notifyListeners(): void {
         this.listeners.forEach(callback => {
             try {
@@ -161,5 +136,4 @@ class SyncServiceClass {
     }
 }
 
-// Singleton instance
 export const syncService = new SyncServiceClass();

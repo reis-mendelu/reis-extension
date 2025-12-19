@@ -2,6 +2,7 @@ import { test as base, chromium, BrowserContext, Page } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
 import { fileURLToPath } from 'url';
+import { calculateExtensionId } from '../utils/id';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,22 +57,16 @@ export const test = base.extend<ExtensionFixtures>({
     await use(context);
     await context.close();
   },
-
   // Extension ID
-  extensionId: async ({ extensionContext }, use) => {
-    // ID derived from the key in manifest.json (feildjaginpppijbpplcghalabdeibdb)
-    const EXTENSION_ID = 'feildjaginpppijbpplcghalabdeibdb';
-
-    // Optional: Verify it matches service worker if running
-    const workers = extensionContext.serviceWorkers();
-    if (workers.length > 0) {
-        const url = workers[0].url();
-        const match = url.match(/chrome-extension:\/\/([^/]+)/);
-        if (match && match[1] !== EXTENSION_ID) {
-             console.warn(`⚠️ Mismatch: Calculated ID ${EXTENSION_ID} vs runtime ${match[1]}`);
-        }
+  extensionId: async ({}, use) => {
+    const manifestPath = path.join(__dirname, '..', '..', 'public', 'manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    
+    if (!manifest.key) {
+        throw new Error('Manifest does not contain a "key" field. Extension ID cannot be determined.');
     }
 
+    const EXTENSION_ID = calculateExtensionId(manifest.key);
     await use(EXTENSION_ID);
   },
 

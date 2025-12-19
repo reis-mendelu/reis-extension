@@ -1,22 +1,18 @@
 {
   "manifest_version": 3,
   "name": "reIS",
-  "version": "3.1.0",
+  "version": "4.0.0",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtytAvPVCM6Wda+YVWJkHJ6hvl4EnrVoEOhiGi4mSRL+UBs22GpodIgtveT7x6ARVQyEQSsJdLCwuhFMo0LPNcQ4ylWLnue2ZiilhB2Jang10jMfFO2r2E+5raBMQauCaX4M01zSGxDX93Ui9pLZwfLY8R9cq8CB5uElJlrxf9jIBkUx3IoYkcGtiFnVEhiKIWAwhbPTzB6GTmr/eadU2fimDs3QECuRMIlPA7Z6J+EKBdgw9scZ7tdHFuXQdYkk1ZUs5M57VueLvEjDHyXfWxfKlkVhmfcM4MDItbQkKJfAkxP6RQWQR9kqcNiN48R9HXVFrTMIoOLLl2l7pZRGqnwIDAQAB",
   "description": "Modernized reIS extension for IS Mendelu",
-  "permissions": ["storage", "identity", "alarms", "downloads"],
-  "background": {
-    "service_worker": "background.js",
-    "type": "module"
+  "action": {
+    "default_popup": "index.html"
   },
+  "permissions": ["storage"],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; font-src 'self'; style-src 'self' 'unsafe-inline'"
   },
   "host_permissions": [
-    "https://is.mendelu.cz/*",
-    "https://www.googleapis.com/*",
-    "https://oauth2.googleapis.com/*",
-    "https://accounts.google.com/*"
+    "https://is.mendelu.cz/*"
   ],
   "content_scripts": [
     {
@@ -38,8 +34,7 @@
         "mendelu_logo_16.png",
         "mendelu_logo_48.png",
         "mendelu_logo_128.png",
-        "fonts/*",
-        "offscreen.html"
+        "fonts/*"
       ],
       "matches": ["https://is.mendelu.cz/*"],
       "extension_ids": []

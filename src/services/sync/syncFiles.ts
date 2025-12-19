@@ -1,15 +1,11 @@
 /**
  * Sync files for all subjects from IS Mendelu to storage.
- * 
- * Runs as part of background sync - fetches files for each subject
- * and stores them permanently.
  */
 
 import { StorageService, STORAGE_KEYS } from '../storage';
 import { fetchFilesFromFolder } from '../../api/documents';
 import type { SubjectsData } from '../../types/documents';
 
-// Extract folder ID from URL
 function getIdFromUrl(url: string): string | null {
     const match = url.match(/[?&;]id=(\d+)/);
     return match ? match[1] : null;
@@ -18,7 +14,6 @@ function getIdFromUrl(url: string): string | null {
 export async function syncFiles(): Promise<void> {
     console.log('[syncFiles] Starting files sync...');
 
-    // Get subjects from storage
     const subjectsData = StorageService.get<SubjectsData>(STORAGE_KEYS.SUBJECTS_DATA);
 
     if (!subjectsData || !subjectsData.data) {
@@ -32,7 +27,6 @@ export async function syncFiles(): Promise<void> {
     let successCount = 0;
     let errorCount = 0;
 
-    // Sync files for each subject (sequential to avoid overwhelming the server)
     for (const [courseCode, subject] of subjects) {
         try {
             const folderId = getIdFromUrl(subject.folderUrl);
@@ -48,7 +42,6 @@ export async function syncFiles(): Promise<void> {
                 const storageKey = `${STORAGE_KEYS.SUBJECT_FILES_PREFIX}${courseCode}`;
                 StorageService.set(storageKey, files);
                 await StorageService.setAsync(storageKey, files);
-                console.debug(`[syncFiles] Stored ${files.length} files for ${courseCode}`);
                 successCount++;
             }
         } catch (error) {
@@ -58,16 +51,4 @@ export async function syncFiles(): Promise<void> {
     }
 
     console.log(`[syncFiles] Completed: ${successCount} subjects synced, ${errorCount} errors`);
-
-    // Trigger Drive sync if files were updated
-    if (successCount > 0) {
-        console.log('[syncFiles] Triggering Google Drive sync...');
-        try {
-            await new Promise<void>((resolve) => {
-                chrome.runtime.sendMessage({ type: 'TRIGGER_DRIVE_SYNC' }, () => resolve());
-            });
-        } catch (e) {
-            console.error('[syncFiles] Failed to trigger Drive sync:', e);
-        }
-    }
 }
