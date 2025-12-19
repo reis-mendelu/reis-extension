@@ -26,6 +26,7 @@ export interface SyncedData {
     exams?: unknown;
     subjects?: unknown;
     files?: unknown;
+    successRates?: unknown;
     lastSync: number;
     error?: string;
 }
