@@ -339,6 +339,7 @@ export function SearchBar({ placeholder = "Prohledej reIS", onSearch, onOpenExam
                     <div
                       key={result.id}
                       role="option"
+                      data-testid="search-result-item"
                       aria-selected={selectedIndex === index}
                       onMouseEnter={() => setSelectedIndex(index)}
                       onMouseDown={(e) => {

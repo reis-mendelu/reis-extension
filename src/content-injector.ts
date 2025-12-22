@@ -357,41 +357,17 @@ async function syncAllData() {
                 `[REIS Content] Pre-stats sync complete in ${totalDuration}ms`
             );
 
-            // --- Success Rate Sync (Throttled 30 days) ---
+            // --- Success Rate Sync (simplified - uses API) ---
             const syncSuccessRates = async () => {
                 try {
-                    const STATS_LAST_SYNC_KEY = 'reis_last_stats_sync';
-                    const lastStatsSyncStr = localStorage.getItem(STATS_LAST_SYNC_KEY);
-                    const lastStatsSync = parseInt(lastStatsSyncStr || '0', 10);
-                    const now = Date.now();
-                    const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
-                    
-                    if (now - lastStatsSync > THIRTY_DAYS) {
-                        loggers.system.info('[REIS Content] Syncing success rates (throttled check passed)...');
-                        const codes = Object.keys(subjectsData.data);
-                        
-                        if (codes.length > 0) {
-                            const stats = await fetchSubjectSuccessRates(codes);
-                            cachedData.successRates = stats;
-                            cachedData.successRatesFetched = true;
-                            localStorage.setItem(STATS_LAST_SYNC_KEY, now.toString());
-                            localStorage.setItem('reis_success_rates', JSON.stringify(stats));
-                            localStorage.setItem('reis_success_rates_fetched', 'true');
-                            
-                            sendToIframe(Messages.syncUpdate(cachedData));
-                            loggers.system.info(`[REIS Content] Success rates synced for ${codes.length} subjects`);
-                        }
-                    } else {
-                        loggers.system.info('[REIS Content] Success rate sync throttled. Loading from cache...');
-                        const storedStats = localStorage.getItem('reis_success_rates');
-                        const storedFetched = localStorage.getItem('reis_success_rates_fetched');
-                        
-                        if (storedStats) {
-                            cachedData.successRates = JSON.parse(storedStats);
-                            cachedData.successRatesFetched = storedFetched === 'true';
-                            sendToIframe(Messages.syncUpdate(cachedData));
-                            loggers.system.info('[REIS Content] Loaded success rates from local cache');
-                        }
+                    const codes = Object.keys(subjectsData.data);
+                    if (codes.length > 0) {
+                        loggers.system.info(`[REIS Content] Fetching success rates for ${codes.length} subjects...`);
+                        const stats = await fetchSubjectSuccessRates(codes);
+                        cachedData.successRates = stats;
+                        cachedData.successRatesFetched = true;
+                        sendToIframe(Messages.syncUpdate(cachedData));
+                        loggers.system.info(`[REIS Content] Success rates synced`);
                     }
                 } catch (statsError) {
                     loggers.system.warn('[REIS Content] Success rate sync failed:', statsError);
@@ -402,7 +378,7 @@ async function syncAllData() {
             syncSuccessRates();
 
             loggers.system.info(
-                `[REIS Content] Full sync including success rates triggered in ${Date.now() - startTime}ms`
+                `[REIS Content] Full sync triggered in ${Date.now() - startTime}ms`
             );
         }
     } catch (error) {

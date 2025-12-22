@@ -14,6 +14,7 @@ config();
 import './db.js'; // Initialize database
 import authRoutes from './routes/auth.js';
 import notificationsRoutes from './routes/notifications.js';
+import successRatesRoutes from './routes/success-rates.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -35,6 +36,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/success-rates', successRatesRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

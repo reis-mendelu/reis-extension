@@ -4,50 +4,77 @@
 import { test, expect } from '../fixtures/extension';
 
 test.describe('Success Rate Tab', () => {
-  test('can switch to success rate tab', async ({ extensionPage }) => {
-    // Wait for calendar events to load
-    await extensionPage.waitForSelector('[class*="event"], [class*="subject"], [class*="tile"]', {
-      timeout: 10000
-    }).catch(() => {});
-    
-    // Try to find a clickable event/subject in calendar
-    let eventTile = extensionPage.locator(
-      '[class*="event"], [class*="subject"], [class*="tile"]'
-    ).first();
-    
-    if (await eventTile.count() === 0) {
-        // Fallback: Use search to find a subject
-        const searchInput = extensionPage.locator('input[placeholder*="Hledat"], .search-input').first();
-        if (await searchInput.count() > 0) {
-            await searchInput.fill('Finanční účetnictví');
-            await extensionPage.keyboard.press('Enter');
-            // Wait for results
-            await extensionPage.waitForSelector('[class*="search-result"], .result-item', { timeout: 5000 }).catch(() => {});
-            eventTile = extensionPage.locator('[class*="search-result"], .result-item').first();
-        }
-    }
+  test('can switch to success rate tab and see data', async ({ extensionPage }) => {
+    // 1. Mock the Success Rate API
+    await extensionPage.route('**/api/success-rates*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          lastUpdated: new Date().toISOString(),
+          data: {
+            'EBC-ALG': {
+              courseCode: 'EBC-ALG',
+              stats: [
+                {
+                  semesterName: 'LS 2024/2025 - PEF',
+                  year: 2024,
+                  totalPass: 10,
+                  totalFail: 5,
+                  terms: [
+                    {
+                      term: 'termín 1',
+                      pass: 10,
+                      fail: 5,
+                      grades: { A: 2, B: 2, C: 2, D: 2, E: 2, F: 5, FN: 0 }
+                    }
+                  ]
+                }
+              ],
+              lastUpdated: new Date().toISOString()
+            }
+          }
+        })
+      });
+    });
 
-    if (await eventTile.count() > 0) {
-      await eventTile.click();
-      
-      // Wait for drawer to open
-      await extensionPage.waitForSelector(
-        '[class*="drawer"], [role="dialog"]',
-        { timeout: 5000, state: 'visible' }
-      ).catch(() => {});
-      
-      // Find the tab button
-      const statsTabButton = extensionPage.locator('button', { hasText: /Úspěšnost/i });
-      await expect(statsTabButton).toBeVisible();
-      
-      // Click the tab
-      await statsTabButton.click();
-      
-      // Look for the stats content (gauges or skeleton)
-      const statsContent = extensionPage.locator('text=/Rozdělení známek|statist|načítání/i');
-      await expect(statsContent.first()).toBeVisible();
-    } else {
-      test.skip(true, 'No subject tiles found on page');
-    }
+    // 2. Mock the Global Search API to return a subject
+    await extensionPage.route('**/auth/hledani/index.pl*', async (route) => {
+      // Return a minimal HTML with a syllabus link that parseSubjectResults will find
+      const mockHtml = `
+        <html>
+          <body>
+            <span style="background-color: #ff0000">PEF</span>
+            <a href="../katalog/syllabus.pl?predmet=123456">EBC-ALG Algoritmy</a>
+            <span> - ZS 2024/2025 - PEF</span>
+          </body>
+        </html>
+      `;
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: mockHtml
+      });
+    });
+
+    // 3. Search for the subject
+    const searchInput = extensionPage.locator('input[placeholder*="Hledat"], input[aria-label="Vyhledávání"]').first();
+    await expect(searchInput).toBeVisible({ timeout: 10000 });
+    await searchInput.fill('Algoritmy');
+    await extensionPage.keyboard.press('Enter');
+    
+    // 3. Wait for and click result
+    const resultItem = extensionPage.locator('[data-testid="search-result-item"]').first();
+    await expect(resultItem).toBeVisible({ timeout: 5000 });
+    await resultItem.click();
+    
+    // 4. Navigate to success rate tab in drawer
+    const statsTabButton = extensionPage.locator('button', { hasText: /Úspěšnost/i });
+    await expect(statsTabButton).toBeVisible();
+    await statsTabButton.click();
+    
+    // 5. Verify stats content is visible
+    const statsContent = extensionPage.locator('text=/Rozdělení známek|statist/i');
+    await expect(statsContent.first()).toBeVisible();
   });
 });

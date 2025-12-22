@@ -354,10 +354,27 @@ export function parseExamData(html: string): ExamSubject[] {
         });
     }
 
-    // Convert Map to Array
+    // 3. Sanity Check & Return
     const results = Array.from(subjectsMap.values());
-    console.debug('[parseExamData] Completed. Returning', results.length, 'subjects with',
-        results.reduce((acc, s) => acc + s.sections.length, 0), 'total sections');
+    
+    // Filter out invalid/hallucinated subjects (Defense in Depth)
+    const validResults = results.filter(subject => {
+        const isMinLength = subject.name.length >= 2 && subject.code.length >= 2;
+        const hasSections = subject.sections.length > 0;
+        
+        // Munger-style Inversion: How can this be a hallucination?
+        // 1. If the code is a famous address (as seen in Project Vend video)
+        const isHallucinationAddress = subject.name.toLowerCase().includes('742 evergreen terrace'); // Simpsons address check 
+        
+        if (!isMinLength || !hasSections || isHallucinationAddress) {
+            loggers.parser.warn('[parseExamData] Hallucination/Invalid Data detected and filtered:', 
+                { code: subject.code, name: subject.name, sections: subject.sections.length });
+            return false;
+        }
+        return true;
+    });
 
-    return results;
+    console.debug('[parseExamData] Completed. Returning', validResults.length, 'valid subjects');
+
+    return validResults;
 }
