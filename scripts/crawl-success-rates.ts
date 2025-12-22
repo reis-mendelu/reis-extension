@@ -183,41 +183,70 @@ async function run() {
                continue;
             }
 
-            const rowMatches = cleanHtml.match(/<tr class="[^"]*uis-hl-table[^"]*">(.*?)<\/tr>/g);
-            if (!rowMatches) continue;
-
-            let courseHasStats = false;
-            for (const rowHtml of rowMatches) {
-               const cells = rowHtml.match(/<td[^>]*>(.*?)<\/td>/g);
-               if (!cells || cells.length < 9) continue;
-               
-               const getCellText = (cell: string) => cell.replace(/<[^>]*>/g, '').trim();
-               const getCellVal = (cell: string) => {
-                  const val = parseInt(getCellText(cell) || '0', 10);
-                  return isNaN(val) ? 0 : val;
-               };
-
-               const termName = getCellText(cells[1]);
-               const grades = {
-                  A: getCellVal(cells[2]),
-                  B: getCellVal(cells[3]),
-                  C: getCellVal(cells[4]),
-                  D: getCellVal(cells[5]),
-                  E: getCellVal(cells[6]),
-                  F: getCellVal(cells[7]),
-                  FN: getCellVal(cells[8])
-               };
-
-               if (grades.A || grades.B || grades.C || grades.D || grades.E || grades.F || grades.FN) {
-                  db.insertSuccessRate(courseId, semesterId, termName, grades);
-                  courseHasStats = true;
-               }
-            }
+            // Use NVD3 chart parsing for aggregate "Všechny termíny" (Final Outcome)
+            const chartRegex = /d3\.select\('#graph_\d+ svg'\)\s*\.datum\(\[\s*\{\s*values:\s*\[\s*([\s\S]*?)\]\s*}\s*,?\s*\]\)/;
+            const match = pageHtml.match(chartRegex);
             
-            if (courseHasStats) {
-              scrapedTotal++;
-              console.log(`      ✅ Scraped ${course.code} [${scrapedTotal}/${maxCourses > 10000 ? '?' : maxCourses}]`);
-              db.markCourseScraped(course.code);
+            if (match && match[1]) {
+                const valuesStr = match[1];
+                const valueRegex = /\{\s*x:\s*['"]([^'"]+)['"],\s*y:\s*(\d+)\s*}/g;
+                const grades: any = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, FN: 0 };
+                let vm;
+                while ((vm = valueRegex.exec(valuesStr)) !== null) {
+                    const grade = vm[1];
+                    const count = parseInt(vm[2], 10);
+                    if (grade === 'A') grades.A = count;
+                    else if (grade === 'B') grades.B = count;
+                    else if (grade === 'C') grades.C = count;
+                    else if (grade === 'D') grades.D = count;
+                    else if (grade === 'E') grades.E = count;
+                    else if (grade === 'F') grades.F = count;
+                    else if (grade === 'zk-nedost' || grade === 'FN' || grade.toLowerCase().includes('nedost')) grades.FN = count;
+                    else if (grade === 'zap-nedost') grades.FN = count;
+                }
+
+                // Insert as a single "Všechny termíny" record (Final Outcome)
+                db.insertSuccessRate(courseId, semesterId, 'Všechny termíny', grades, statsUrl);
+                scrapedTotal++;
+                console.log(`      ✅ Scraped ${course.code} (N=${Object.values(grades).reduce((a: any, b: any) => a + b, 0)}) [${scrapedTotal}/${maxCourses > 10000 ? '?' : maxCourses}]`);
+                db.markCourseScraped(course.code);
+            } else {
+                // Fallback to table parsing if chart not found (older IS pages or different layout)
+                const rowMatches = cleanHtml.match(/<tr class="[^"]*uis-hl-table[^"]*">(.*?)<\/tr>/g);
+                if (rowMatches) {
+                    let courseHasStats = false;
+                    for (const rowHtml of rowMatches) {
+                        const cells = rowHtml.match(/<td[^>]*>(.*?)<\/td>/g);
+                        if (!cells || cells.length < 9) continue;
+                        
+                        const getCellText = (cell: string) => cell.replace(/<[^>]*>/g, '').trim();
+                        const getCellVal = (cell: string) => {
+                            const val = parseInt(getCellText(cell) || '0', 10);
+                            return isNaN(val) ? 0 : val;
+                        };
+
+                        const termName = getCellText(cells[1]);
+                        const grades = {
+                            A: getCellVal(cells[2]),
+                            B: getCellVal(cells[3]),
+                            C: getCellVal(cells[4]),
+                            D: getCellVal(cells[5]),
+                            E: getCellVal(cells[6]),
+                            F: getCellVal(cells[7]),
+                            FN: getCellVal(cells[8])
+                        };
+
+                        if (grades.A || grades.B || grades.C || grades.D || grades.E || grades.F || grades.FN) {
+                            db.insertSuccessRate(courseId, semesterId, termName, grades, statsUrl);
+                            courseHasStats = true;
+                        }
+                    }
+                    if (courseHasStats) {
+                        scrapedTotal++;
+                        console.log(`      ✅ Scraped ${course.code} [${scrapedTotal}/${maxCourses > 10000 ? '?' : maxCourses}]`);
+                        db.markCourseScraped(course.code);
+                    }
+                }
             }
           } catch (e: any) {
             console.error(`      ❌ Error processing course ${course.code}:`, e.message);

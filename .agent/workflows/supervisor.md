@@ -18,6 +18,13 @@ grep -r "style={{" src/components --include="*.tsx" | wc -l
 
 ---
 
+## Stage 2: Safety Clearance (@safety-officer)
+- [ ] Run `/pre-flight` before major changes
+- [ ] `@safety-officer invert <implementation_plan>` performed
+- [ ] No "Negative Constraints" violated (Delete Root, Exfiltrate Keys, etc.)
+
+---
+
 ## Stage 3: Data Integrity (@seymour-cash)
 - [ ] Run `/seymour-scrutiny` if parsers or scripts were changed
 - [ ] Sanity bounds in `examParser.ts` (or similar) are confirmed

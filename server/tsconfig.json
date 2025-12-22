@@ -8,9 +8,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "./",
     "declaration": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "db/**/*"],
   "exclude": ["node_modules", "dist"]
 }

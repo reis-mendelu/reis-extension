@@ -8,7 +8,9 @@
 import { StorageService, STORAGE_KEYS } from "../services/storage";
 import type { SubjectSuccessRate, SuccessRateData } from "../types/documents";
 
-const API_URL = "https://reismendelu.app/api/success-rates";
+// For localized development, use localhost:3001. 
+// In production, this would be https://reismendelu.app/api/success-rates
+const API_URL = "http://localhost:3001/api/success-rates";
 const CACHE_EXPIRY = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 /**
@@ -59,9 +61,14 @@ export async function fetchSubjectSuccessRates(targetCodes: string[]): Promise<S
     const results: Record<string, SubjectSuccessRate> = { ...(existing?.data || {}) };
     
     const codesToFetch = targetCodes.filter(code => {
-        const hasCached = results[code] && results[code].stats.length > 0;
+        const cached = results[code];
+        const hasCached = cached && cached.stats && cached.stats.length > 0;
         const cacheValid = isCacheValid(code);
-        return !hasCached || !cacheValid;
+        
+        // Force re-fetch if data is missing the new sourceUrl metadata (Legacy data)
+        const isLegacy = hasCached && cached.stats.some(s => !s.sourceUrl);
+        
+        return !hasCached || !cacheValid || isLegacy;
     });
 
     if (codesToFetch.length === 0) {

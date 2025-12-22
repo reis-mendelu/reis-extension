@@ -3,7 +3,7 @@
  * Uses better-sqlite3 for synchronous, fast queries
  */
 
-import Database from 'better-sqlite3';
+import Database, { Database as DatabaseType } from 'better-sqlite3';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,7 +13,7 @@ const __dirname = dirname(__filename);
 const DB_PATH = join(__dirname, '../data/reis.db');
 
 // Initialize database with WAL mode for better concurrency
-const db = new Database(DB_PATH);
+const db: DatabaseType = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 
 // Create tables

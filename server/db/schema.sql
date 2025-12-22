@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS success_rates (
   grade_e INTEGER DEFAULT 0,
   grade_f INTEGER DEFAULT 0,
   grade_fn INTEGER DEFAULT 0,
+  source_url TEXT,
   scraped_at TEXT DEFAULT (datetime('now'))
 );
 

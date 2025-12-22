@@ -64,7 +64,8 @@ export function insertSuccessRate(
   courseId: number,
   semesterId: number,
   termName: string,
-  grades: { A: number; B: number; C: number; D: number; E: number; F: number; FN: number }
+  grades: { A: number; B: number; C: number; D: number; E: number; F: number; FN: number },
+  sourceUrl?: string
 ): void {
   const db = getDb();
   
@@ -75,9 +76,9 @@ export function insertSuccessRate(
   `).run(courseId, semesterId, termName);
   
   db.prepare(`
-    INSERT INTO success_rates (course_id, semester_id, term_name, grade_a, grade_b, grade_c, grade_d, grade_e, grade_f, grade_fn)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(courseId, semesterId, termName, grades.A, grades.B, grades.C, grades.D, grades.E, grades.F, grades.FN);
+    INSERT INTO success_rates (course_id, semester_id, term_name, grade_a, grade_b, grade_c, grade_d, grade_e, grade_f, grade_fn, source_url)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(courseId, semesterId, termName, grades.A, grades.B, grades.C, grades.D, grades.E, grades.F, grades.FN, sourceUrl || null);
 }
 
 export function markCourseScraped(code: string): void {
@@ -107,6 +108,7 @@ export function getSuccessRatesByCourse(courseCode: string): any {
     SELECT 
       sr.term_name,
       sr.grade_a, sr.grade_b, sr.grade_c, sr.grade_d, sr.grade_e, sr.grade_f, sr.grade_fn,
+      sr.source_url,
       s.name as semester_name, s.year,
       c.code as course_code
     FROM success_rates sr
@@ -122,19 +124,42 @@ export function getSuccessRatesByCourse(courseCode: string): any {
   const grouped: Record<string, any> = {};
   for (const r of rates as any[]) {
     const key = r.semester_name;
+    const isAggregate = r.term_name === 'Všechny termíny';
+    
     if (!grouped[key]) {
       grouped[key] = {
         semesterName: r.semester_name,
+        semesterId: key,
         year: r.year,
+        sourceUrl: null,
         totalPass: 0,
         totalFail: 0,
-        terms: []
+        terms: [],
+        hasAggregate: false
       };
     }
+    
+    // Always take sourceUrl if available in any row
+    if (r.source_url && !grouped[key].sourceUrl) {
+      grouped[key].sourceUrl = r.source_url;
+    }
+    
     const pass = r.grade_a + r.grade_b + r.grade_c + r.grade_d + r.grade_e;
     const fail = r.grade_f + r.grade_fn;
-    grouped[key].totalPass += pass;
-    grouped[key].totalFail += fail;
+    
+    if (isAggregate) {
+      // Aggregate row sets the exact counts, overriding any partial sums
+      grouped[key].totalPass = pass;
+      grouped[key].totalFail = fail;
+      grouped[key].hasAggregate = true;
+      // Aggregate row definitely has the correct URL
+      if (r.source_url) grouped[key].sourceUrl = r.source_url;
+    } else if (!grouped[key].hasAggregate) {
+      // Only sum if we haven't encountered the aggregate "Final Outcome" yet
+      grouped[key].totalPass += pass;
+      grouped[key].totalFail += fail;
+    }
+
     grouped[key].terms.push({
       term: r.term_name,
       grades: { A: r.grade_a, B: r.grade_b, C: r.grade_c, D: r.grade_d, E: r.grade_e, F: r.grade_f, FN: r.grade_fn },
@@ -143,9 +168,15 @@ export function getSuccessRatesByCourse(courseCode: string): any {
     });
   }
   
+  // Clean up internal flags before returning
+  const resultStats = Object.values(grouped).map((s: any) => {
+    delete s.hasAggregate;
+    return s;
+  });
+  
   return {
     courseCode,
-    stats: Object.values(grouped),
+    stats: resultStats,
     lastUpdated: new Date().toISOString()
   };
 }

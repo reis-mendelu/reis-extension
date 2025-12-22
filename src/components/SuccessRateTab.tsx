@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSuccessRate } from '../hooks/data/useSuccessRate';
-import { Users, TrendingUp, Clock, AlertTriangle, LineChart } from 'lucide-react';
+import { Users, TrendingUp, Clock, AlertTriangle, LineChart, ExternalLink } from 'lucide-react';
 import type { GradeStats } from '../types/documents';
 
 interface SuccessRateTabProps {
@@ -125,7 +125,7 @@ export function SuccessRateTab({ courseCode }: SuccessRateTabProps) {
                         <LineChart className="w-3 h-3" /> Historie úspěšnosti
                     </h3>
                 </div>
-                <div className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide snap-x">
+                <div className="flex gap-6 overflow-x-auto py-5 -my-4 scrollbar-hide snap-x">
                     {sortedStats.map(s => {
                         const sid = s.semesterId || s.semesterName;
                         const total = s.totalPass + s.totalFail;
@@ -170,7 +170,20 @@ export function SuccessRateTab({ courseCode }: SuccessRateTabProps) {
                     <div>
                         <div className="flex items-center gap-2 mb-1">
                             <span className="badge badge-primary badge-sm font-black rounded-sm">{activeSemester.year} {activeSemester.semesterName}</span>
-                            <span className="text-[10px] font-bold opacity-40 uppercase tracking-tighter">Detaily období</span>
+                            {activeSemester.sourceUrl ? (
+                                <a 
+                                    href={activeSemester.sourceUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1.5 opacity-40 hover:opacity-100 hover:text-primary transition-all group/link"
+                                    title="Zobrazit v IS MENDELU"
+                                >
+                                    <span className="text-[10px] font-bold uppercase tracking-tighter">Detaily období</span>
+                                    <ExternalLink className="w-3.5 h-3.5 transition-transform group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" />
+                                </a>
+                            ) : (
+                                <span className="text-[10px] font-bold opacity-40 uppercase tracking-tighter">Detaily období</span>
+                            )}
                         </div>
                         <h2 className="text-3xl font-black tracking-tight">{passRate}% <span className="text-sm font-medium opacity-50">Úspěšnost</span></h2>
                     </div>
