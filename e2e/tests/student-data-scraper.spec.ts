@@ -7,10 +7,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 test.describe('Student Subject Data Scraper', () => {
-  // Configuration
-  const FACULTY_IDS = [2, 14, 23, 38, 60, 220, 631, 79]; 
-  const TARGET_COURSES = ['EBC-ALG', 'EBC-AP', 'EBC-KOM', 'PLA', 'KRED', 'EBC-TZI', 'EBC-UICT', 'EBC-ZOO', 'ALG', 'ICT', 'TZI'];
-  const MAX_HISTORY_YEARS = 15;
+  // Configuration - Restricted to PEF and last 5 semesters
+  const FACULTY_IDS = [2]; // PEF only
+  const TARGET_COURSES = ['EBC-ALG', 'EBC-AP', 'EBC-KOM', 'EBC-TZI', 'EBC-UICT', 'EBC-ZOO', 'ALG', 'ICT', 'TZI'];
+  const MAX_SEMESTERS = 5;
   
   // State
   const results: any[] = [];
@@ -20,7 +20,7 @@ test.describe('Student Subject Data Scraper', () => {
     // Increase timeout for long scraping session
     test.setTimeout(10 * 60 * 1000); // 10 minutes
 
-    console.log(`🚀 Starting scraper (Targeting last ${MAX_HISTORY_YEARS} years)...`);
+    console.log(`🚀 Starting scraper (PEF only, last ${MAX_SEMESTERS} semesters)...`);
 
       // Level 1: Faculty Selection
       console.log(`\n🏫 Level 1: Investigating Faculty Selection Portal...`);
@@ -96,23 +96,18 @@ test.describe('Student Subject Data Scraper', () => {
         }
 
         if (name && url) {
-            const yearMatch = name.match(/(\d{4})/);
-            if (yearMatch) {
-                const year = parseInt(yearMatch[1], 10);
-                if (year < (currentYear - MAX_HISTORY_YEARS)) {
-                    console.log(`   🛑 Reached history limit (${year}), stopping.`);
-                    break;
-                }
-                const absUrl = new URL(url, page.url()).toString();
-                semesterLinks.push({ name, url: absUrl });
-            }
+            // Just collect all valid semester links, we'll slice to MAX_SEMESTERS later
+            const absUrl = new URL(url, page.url()).toString();
+            semesterLinks.push({ name, url: absUrl });
         }
       }
 
-      console.log(`   Found ${semesterLinks.length} valid semesters.`);
+      // Limit to MAX_SEMESTERS
+      const limitedSemesterLinks = semesterLinks.slice(0, MAX_SEMESTERS);
+      console.log(`   Found ${semesterLinks.length} semesters, processing ${limitedSemesterLinks.length}.`);
 
       // Process Semesters
-      for (const semester of semesterLinks) {
+      for (const semester of limitedSemesterLinks) {
         console.log(`   📅 Processing Semester: ${semester.name}`);
         await page.goto(semester.url);
 
@@ -177,50 +172,55 @@ test.describe('Student Subject Data Scraper', () => {
                  } catch (e) {}
                  continue;
              }
-
-             const statsRows = statsTable.locator('tr.uis-hl-table');
-             const statsCount = await statsRows.count();
-
+             // --- NEW LOGIC: Parse NVD3 Chart Script for "Všechny termíny" ---
+             const pageSource = await page.content();
+             
+             // Regex to extract the "Všechny termíny" chart data block
+             // It's the FIRST d3.select(#graph_X svg).datum([{values: [...]}]) block
+             const chartRegex = /d3\.select\('#graph_\d+ svg'\)\s*\.datum\(\[\s*\{\s*values:\s*\[\s*([\s\S]*?)\]\s*}\s*,?\s*\]\)/;
+             const match = pageSource.match(chartRegex);
+             
              let totalPass = 0;
              let totalFail = 0;
-             const terms: any[] = [];
-
-             for (let k = 0; k < statsCount; k++) {
-                const row = statsRows.nth(k);
-                
-                const cells = row.locator('td');
-                if (await cells.count() < 9) continue;
-
-                const getVal = async (idx: number) => {
-                    const txt = await cells.nth(idx).innerText();
-                    const val = parseInt(txt.trim(), 10);
-                    return isNaN(val) ? 0 : val;
-                };
-
-                const termName = (await cells.nth(1).innerText()).trim();
-                const a = await getVal(2);
-                const b = await getVal(3);
-                const c = await getVal(4);
-                const d = await getVal(5);
-                const e = await getVal(6);
-                const f = await getVal(7);
-                const fail = await getVal(8);
-
-                const rowPass = a + b + c + d + e;
-                const rowFail = f + fail;
-
-                totalPass += rowPass;
-                totalFail += rowFail;
-
-                terms.push({
-                    term: termName,
-                    grades: { A: a, B: b, C: c, D: d, E: e, F: f, FN: fail },
-                    pass: rowPass,
-                    fail: rowFail
-                });
+             let uniqueStudents = 0;
+             const grades: any = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, FN: 0 };
+             
+             if (match && match[1]) {
+                 // Parse the values array: { x: 'A', y: 10 }, ...
+                 const valuesStr = match[1];
+                 const valueRegex = /\{\s*x:\s*['"]([^'"]+)['"],\s*y:\s*(\d+)\s*}/g;
+                 let vm;
+                 while ((vm = valueRegex.exec(valuesStr)) !== null) {
+                     const grade = vm[1];
+                     const count = parseInt(vm[2], 10);
+                     if (grade === 'A') grades.A = count;
+                     else if (grade === 'B') grades.B = count;
+                     else if (grade === 'C') grades.C = count;
+                     else if (grade === 'D') grades.D = count;
+                     else if (grade === 'E') grades.E = count;
+                     else if (grade === 'F') grades.F = count;
+                     else if (grade === 'zk-nedost' || grade === 'FN' || grade.toLowerCase().includes('nedost')) grades.FN = count;
+                     // For "zap/nezap" style courses:
+                     else if (grade === 'zap') totalPass = count;
+                     else if (grade === 'nezap') totalFail += count;
+                     else if (grade === 'zap-nedost') grades.FN = count;
+                 }
+                 
+                 // Calculate pass/fail from ECTS grades if not "zap/nezap"
+                 if (totalPass === 0 && (grades.A + grades.B + grades.C + grades.D + grades.E) > 0) {
+                     totalPass = grades.A + grades.B + grades.C + grades.D + grades.E;
+                     totalFail = grades.F + grades.FN;
+                 } else if (totalPass > 0) {
+                     // "zap/nezap" style - already set
+                     totalFail += grades.FN;
+                 }
+                 
+                 uniqueStudents = totalPass + totalFail;
+                 console.log(`       📊 Final Outcome (Unique Students): Pass=${totalPass}, Fail=${totalFail}, N=${uniqueStudents}`);
+             } else {
+                 console.log(`       ⚠️ Could not find NVD3 chart data, skipping.`);
+                 continue;
              }
-
-             console.log(`       📊 Stats: Pass=${totalPass}, Fail=${totalFail}`);
 
              results.push({
                  facultyId,
@@ -228,7 +228,8 @@ test.describe('Student Subject Data Scraper', () => {
                  course: course.code,
                  totalPass,
                  totalFail,
-                 terms,
+                 grades,
+                 sourceUrl: course.url,
                  timestamp: new Date().toISOString()
              });
 

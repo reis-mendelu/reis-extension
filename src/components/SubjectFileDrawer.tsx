@@ -490,6 +490,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                             <button 
                                 onClick={() => setActiveTab('stats')}
                                 className={`text-sm font-bold pb-2 border-b-2 transition-all px-1 ${activeTab === 'stats' ? 'border-primary text-primary' : 'border-transparent text-base-content/40 hover:text-base-content/60'}`}
+                                data-testid="tab-stats"
                             >
                                 Úspěšnost
                             </button>

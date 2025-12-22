@@ -1,289 +1,213 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useSuccessRate } from '../hooks/data/useSuccessRate';
-import { BarChart3 } from 'lucide-react';
-import { StorageService, STORAGE_KEYS } from '../services/storage';
-import type { SemesterStats, GradeStats } from '../types/documents';
+import { Users, TrendingUp, Clock, AlertTriangle, LineChart } from 'lucide-react';
+import type { GradeStats } from '../types/documents';
 
 interface SuccessRateTabProps {
     courseCode: string;
 }
 
-// Grade colors for consistent styling
-const GRADE_COLORS: Record<keyof GradeStats, string> = {
-    A: '#10b981', // emerald-500
-    B: '#34d399', // emerald-400
-    C: '#84cc16', // lime-500
-    D: '#facc15', // yellow-400
-    E: '#fb923c', // orange-400
-    F: '#ef4444', // red-500
-    FN: '#dc2626', // red-600
-};
-
+// Grade order for consistent styling
 const GRADE_ORDER: (keyof GradeStats)[] = ['A', 'B', 'C', 'D', 'E', 'F', 'FN'];
 
-// Helper: Aggregate grades across all terms in a semester
-function aggregateGrades(semester: SemesterStats): GradeStats {
-    const combined: GradeStats = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, FN: 0 };
-    for (const term of semester.terms) {
-        for (const [grade, count] of Object.entries(term.grades)) {
-            combined[grade as keyof GradeStats] += count;
-        }
-    }
-    return combined;
-}
+// Helper: Get grade color from CSS variables
+const getGradeColor = (grade: keyof GradeStats) => {
+    // Fallback static colors in case CSS variables fail
+    const fallbacks: Record<keyof GradeStats, string> = {
+        A: '#10b981', B: '#34d399', C: '#84cc16', D: '#facc15', E: '#fb923c', F: '#ef4444', FN: '#dc2626'
+    };
+    return `var(--color-grade-${grade.toLowerCase()}, ${fallbacks[grade]})`;
+};
 
-// SVG Line Chart Component
-function GradeLineChart({ grades }: { grades: GradeStats }) {
-    const maxCount = Math.max(...Object.values(grades), 1);
-    const chartWidth = 280;
-    const chartHeight = 100;
-    const padding = { top: 10, right: 10, bottom: 25, left: 10 };
-    const innerWidth = chartWidth - padding.left - padding.right;
-    const innerHeight = chartHeight - padding.top - padding.bottom;
-
-    // Calculate points for the line
-    const points = GRADE_ORDER.map((grade, i) => {
-        const x = padding.left + (i / (GRADE_ORDER.length - 1)) * innerWidth;
-        const y = padding.top + innerHeight - (grades[grade] / maxCount) * innerHeight;
-        return { x, y, grade, count: grades[grade] };
-    });
-
-    // Create the line path
-    const linePath = points
-        .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`)
-        .join(' ');
-
-    // Create gradient area path
-    const areaPath = `${linePath} L ${points[points.length - 1].x} ${padding.top + innerHeight} L ${points[0].x} ${padding.top + innerHeight} Z`;
-
+// SVG Bar Chart for Grade Distribution
+function GradeBarChart({ grades }: { grades: GradeStats }) {
+    const data = GRADE_ORDER.map(grade => [grade, grades[grade] || 0] as [keyof GradeStats, number]);
+    const max = Math.max(...data.map(([, val]) => val), 1);
+    
     return (
-        <svg width={chartWidth} height={chartHeight} className="mx-auto">
-            <defs>
-                <linearGradient id="gradeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor={GRADE_COLORS.A} />
-                    <stop offset="50%" stopColor={GRADE_COLORS.D} />
-                    <stop offset="100%" stopColor={GRADE_COLORS.F} />
-                </linearGradient>
-                <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="currentColor" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-                </linearGradient>
-            </defs>
-            
-            {/* Grid lines */}
-            {[0, 0.5, 1].map((ratio) => (
-                <line
-                    key={ratio}
-                    x1={padding.left}
-                    y1={padding.top + innerHeight * (1 - ratio)}
-                    x2={padding.left + innerWidth}
-                    y2={padding.top + innerHeight * (1 - ratio)}
-                    stroke="currentColor"
-                    strokeOpacity={0.1}
-                    strokeDasharray="4,4"
-                />
-            ))}
+        <div className="flex items-end justify-between h-40 gap-1.5 mt-8 px-1 pb-6 pt-8 bg-base-content/[0.02] rounded-xl relative">
+            {data.map(([grade, value]) => {
+                const height = (value / max) * 100;
+                return (
+                    <div key={grade} className="flex-1 flex flex-col items-center h-full justify-end relative">
+                        {/* Student Count Label - pinned to bar top */}
+                        {value > 0 && (
+                            <span 
+                                className="absolute text-[10px] font-black opacity-30 mb-1 transition-all duration-500 ease-out"
+                                style={{ bottom: `calc(${height}% + 2px)` }}
+                            >
+                                {value}
+                            </span>
+                        )}
+                        
+                        {/* The Bar */}
+                        <div 
+                            className="w-full rounded-t-sm transition-all duration-500 ease-out hover:opacity-100"
+                            style={{ 
+                                height: `${height}%`, 
+                                backgroundColor: getGradeColor(grade),
+                                opacity: value === 0 ? 0.05 : 0.7
+                            }}
+                        />
 
-            {/* Area fill */}
-            <path
-                d={areaPath}
-                fill="url(#areaGradient)"
-                className="text-emerald-500"
-            />
-
-            {/* Line */}
-            <path
-                d={linePath}
-                fill="none"
-                stroke="url(#gradeGradient)"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-
-            {/* Data points */}
-            {points.map((p) => (
-                <g key={p.grade}>
-                    <circle
-                        cx={p.x}
-                        cy={p.y}
-                        r={4}
-                        fill={GRADE_COLORS[p.grade]}
-                        stroke="white"
-                        strokeWidth={2}
-                    />
-                    {/* Count label above point */}
-                    {p.count > 0 && (
-                        <text
-                            x={p.x}
-                            y={p.y - 8}
-                            textAnchor="middle"
-                            className="text-[9px] fill-neutral-content/70 font-medium"
-                        >
-                            {p.count}
-                        </text>
-                    )}
-                </g>
-            ))}
-
-            {/* X-axis labels */}
-            {points.map((p) => (
-                <text
-                    key={`label-${p.grade}`}
-                    x={p.x}
-                    y={chartHeight - 5}
-                    textAnchor="middle"
-                    className="text-[10px] fill-neutral-content/50 font-bold"
-                >
-                    {p.grade}
-                </text>
-            ))}
-        </svg>
+                        {/* Grade Label */}
+                        <span className="absolute -bottom-6 text-[10px] font-bold opacity-40">{grade}</span>
+                    </div>
+                );
+            })}
+        </div>
     );
 }
 
+
 export function SuccessRateTab({ courseCode }: SuccessRateTabProps) {
-    const { stats, loading, hasFetched, isGlobalLoaded, refresh } = useSuccessRate(courseCode);
-    const [selectedIndex, setSelectedIndex] = useState(0);
+    const { stats: data, loading } = useSuccessRate(courseCode);
+    const [activeId, setActiveId] = useState<string | null>(null);
 
-    const globalLastSync = StorageService.get<number>(STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC);
-    const lastSyncDate = globalLastSync ? new Date(globalLastSync).toLocaleDateString() : 'nikdy';
-
-    // Get semesters (not aggregated by year) - each semester is distinct
-    const semesters = useMemo(() => {
-        if (!stats?.stats) return [];
-        return [...stats.stats]
-            .filter(s => {
-                const total = s.totalPass + s.totalFail;
-                return total > 0 && !isNaN(s.totalPass / total);
-            })
-            .sort((a, b) => {
-                // Sort by year descending, then by semester name
+    // Auto-select latest semester
+    useEffect(() => {
+        if (data?.stats.length && !activeId) {
+            const sortedByYear = [...data.stats].sort((a, b) => {
                 if (b.year !== a.year) return b.year - a.year;
                 return b.semesterName.localeCompare(a.semesterName);
-            })
-            .slice(0, 6); // Show max 6 semesters
-    }, [stats]);
+            });
+            // Use semesterId or semesterName as the unique identifier
+            setActiveId(sortedByYear[0].semesterId || sortedByYear[0].semesterName);
+        }
+    }, [data, activeId]);
 
-    const activeSemester = semesters[selectedIndex];
-    
-    // Aggregate grades for the active semester
-    const aggregatedGrades = useMemo(() => {
-        if (!activeSemester) return { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, FN: 0 };
-        return aggregateGrades(activeSemester);
-    }, [activeSemester]);
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center h-64 gap-3 opacity-50">
+            <span className="loading loading-spinner loading-md text-primary"></span>
+            <span className="text-xs font-bold animate-pulse">Načítání statistik...</span>
+        </div>
+    );
 
-    // For E2E tests, we need a reliable way to know if global data is loaded
-    // If courseCode is provided but stats aren't there and we haven't fetched, it's loading
-    if ((loading && !hasFetched) || (courseCode && !stats && !hasFetched)) {
-        return (
-            <div className="p-6 space-y-6 animate-in fade-in duration-500">
-                <div className="bg-neutral rounded-xl p-4">
-                    <div className="h-32 flex items-center justify-center">
-                        <div className="skeleton w-64 h-24 rounded bg-neutral-content/10"></div>
-                    </div>
-                </div>
-                <div className="bg-neutral rounded-xl p-4">
-                    <div className="flex justify-around">
-                        {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="skeleton w-14 h-14 rounded-full bg-neutral-content/10"></div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    if (!data || !data.stats.length) return (
+        <div className="flex flex-col items-center justify-center h-64 p-8 text-center glass-card rounded-2xl mx-4 my-8">
+            <AlertTriangle className="w-12 h-12 text-warning mb-4 opacity-20" />
+            <h3 className="text-lg font-black mb-2 opacity-80">Data nejsou k dispozici</h3>
+            <p className="text-sm opacity-50 max-w-[240px]">Zatím jsme pro tento předmět nenashromáždili dostatek údajů o úspěšnosti.</p>
+        </div>
+    );
 
-    // Show empty state if we've fetched but have no data
-    if (semesters.length === 0 && hasFetched) {
-        return (
-            <div className="p-12 flex flex-col items-center justify-center text-center space-y-4">
-                <BarChart3 size={48} className="text-base-content/20" />
-                <div className="space-y-2">
-                    <h3 className="font-bold text-lg text-base-content/40">Statistiky nejsou dostupné</h3>
-                    <p className="text-sm text-base-content/30 max-w-xs">Pro tento předmět IS MENDELU neposkytuje historická data.</p>
-                </div>
-            </div>
-        );
-    }
+    // Reliable lookup using semesterId or semesterName
+    const activeSemester = data.stats.find(s => (s.semesterId || s.semesterName) === activeId) || data.stats[0];
+    const passRate = Math.round((activeSemester.totalPass / (activeSemester.totalPass + activeSemester.totalFail)) * 100) || 0;
+
+    // Aggregate grades from all terms in active semester
+    const activeGrades = activeSemester.terms.reduce((acc, term) => {
+        Object.entries(term.grades).forEach(([grade, count]) => {
+            const g = grade as keyof GradeStats;
+            acc[g] = (acc[g] || 0) + count;
+        });
+        return acc;
+    }, {} as GradeStats);
+
+    const sortedStats = [...data.stats].sort((a, b) => {
+        // Sort by year descending first
+        if (a.year !== b.year) return b.year - a.year;
+        // Within the same year, ZS (Winter) comes before LS (Summer) in descending order 
+        // because ZS starts the academic year (e.g., ZS 24 vs LS 24)
+        const isWinterA = a.semesterName.startsWith('ZS');
+        const isWinterB = b.semesterName.startsWith('ZS');
+        if (isWinterA && !isWinterB) return -1;
+        if (!isWinterA && isWinterB) return 1;
+        return 0;
+    });
 
     return (
-        <div className="flex flex-col h-full animate-in fade-in duration-300 p-4 gap-4">
-            {/* Line Chart Card */}
-            <div className="bg-neutral rounded-xl p-4 shadow-lg">
-                {/* Line Chart */}
-                <div className="mb-4">
-                    <GradeLineChart grades={aggregatedGrades} />
+        <div className="flex flex-col gap-6 px-4 py-6 select-none animate-in fade-in slide-in-from-bottom-2 duration-700">
+            {/* Horizontal Gauges Row */}
+            <div className="glass-card rounded-2xl p-6 shadow-xl overflow-hidden">
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xs font-black uppercase tracking-widest opacity-40 flex items-center gap-2">
+                        <LineChart className="w-3 h-3" /> Historie úspěšnosti
+                    </h3>
                 </div>
-
-                {/* Semester Tabs */}
-                <div className="flex justify-center gap-4 border-t border-neutral-content/10 pt-3 flex-wrap">
-                    {semesters.map((semester, idx) => {
-                        const isSelected = selectedIndex === idx;
-                        return (
-                            <button
-                                key={semester.semesterId}
-                                onClick={() => setSelectedIndex(idx)}
-                                className={`text-xs font-bold pb-1 border-b-2 transition-all ${
-                                    isSelected 
-                                        ? 'text-error border-error' 
-                                        : 'text-neutral-content/50 border-transparent hover:text-neutral-content/80'
-                                }`}
-                            >
-                                {semester.semesterName}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Success Rate Gauges Card */}
-            <div className="bg-neutral rounded-xl p-4 shadow-lg">
-                <div className="text-center text-neutral-content/70 text-sm font-medium mb-4">
-                    Úspěšnost
-                </div>
-                <div className="flex justify-around items-center flex-wrap gap-2">
-                    {semesters.map((semester, idx) => {
-                        const passRate = (semester.totalPass / (semester.totalPass + semester.totalFail)) * 100;
-                        const isSelected = selectedIndex === idx;
+                <div className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide snap-x">
+                    {sortedStats.map(s => {
+                        const sid = s.semesterId || s.semesterName;
+                        const total = s.totalPass + s.totalFail;
+                        const sRate = Math.round((s.totalPass / total) * 100) || 0;
+                        const isActive = sid === activeId;
                         
                         return (
-                            <button
-                                key={semester.semesterId}
-                                onClick={() => setSelectedIndex(idx)}
-                                className={`flex flex-col items-center gap-2 transition-all ${isSelected ? 'scale-110' : 'opacity-70 hover:opacity-100'}`}
+                            <button 
+                                key={sid}
+                                onClick={() => setActiveId(sid)}
+                                className={`flex flex-col items-center gap-2 snap-center transition-all ${isActive ? 'scale-110 opacity-100' : 'opacity-40 hover:opacity-70'}`}
                             >
-                                <div 
-                                    className="radial-progress text-emerald-500 border-4 border-neutral-content/10" 
-                                    style={{ 
-                                        "--value": Math.round(passRate), 
-                                        "--size": "3.5rem", 
-                                        "--thickness": "4px"
-                                    } as React.CSSProperties}
-                                >
-                                    <span className="text-xs font-bold text-neutral-content">
-                                        {Math.round(passRate)}%
-                                    </span>
+                                <div className="relative w-12 h-12 flex items-center justify-center">
+                                    <svg className="w-full h-full -rotate-90">
+                                        <circle cx="24" cy="24" r="20" className="fill-none stroke-base-content/10" strokeWidth="4" />
+                                        <circle 
+                                            cx="24" cy="24" r="20" 
+                                            className="fill-none stroke-primary transition-all duration-1000" 
+                                            strokeWidth="4" 
+                                            strokeDasharray={2 * Math.PI * 20}
+                                            strokeDashoffset={2 * Math.PI * 20 * (1 - sRate / 100)}
+                                            strokeLinecap="round"
+                                        />
+                                    </svg>
+                                    <span className="absolute text-[10px] font-black">{sRate}%</span>
                                 </div>
-                                <span className={`text-[10px] font-bold text-center max-w-16 leading-tight ${isSelected ? 'text-neutral-content' : 'text-neutral-content/50'}`}>
-                                    {semester.semesterName.split(' ')[0]}
-                                </span>
+                                <div className="flex flex-col items-center -gap-1">
+                                    <span className={`text-[10px] font-bold whitespace-nowrap ${isActive ? 'text-primary' : ''}`}>
+                                        {s.semesterName.split(' ')[0]} {s.year.toString().slice(2)}
+                                    </span>
+                                    <span className="text-[8px] opacity-40 font-black tracking-tighter">{total}</span>
+                                </div>
                             </button>
                         );
                     })}
                 </div>
             </div>
 
-            {/* Sync Info Footer */}
-            <div className="mt-2 pt-4 border-t border-white/5 flex justify-between items-center text-[10px] text-white/20 uppercase tracking-[0.2em] font-medium px-2">
-                <div className="flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-emerald-500/50"></span>
-                    <span>Aktualizace: {stats?.lastUpdated ? new Date(stats.lastUpdated).toLocaleDateString() : 'Neznámo'}</span>
+            {/* Selected Semester Details */}
+            <div className="glass-card rounded-2xl p-6 shadow-xl border-l-4 border-l-primary/50 relative overflow-hidden group">
+                <div className="flex items-start justify-between relative z-10">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="badge badge-primary badge-sm font-black rounded-sm">{activeSemester.year} {activeSemester.semesterName}</span>
+                            <span className="text-[10px] font-bold opacity-40 uppercase tracking-tighter">Detaily období</span>
+                        </div>
+                        <h2 className="text-3xl font-black tracking-tight">{passRate}% <span className="text-sm font-medium opacity-50">Úspěšnost</span></h2>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 opacity-50">
+                        <div className="flex items-center gap-1 text-xs">
+                            <Users className="w-3 h-3" />
+                            <span className="font-bold">{activeSemester.totalPass + activeSemester.totalFail}</span>
+                        </div>
+                        <span className="text-[9px] uppercase font-black">Studentů</span>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-blue-500/50"></span>
-                    <span>Globální cache: {lastSyncDate}</span>
+
+                <div className="mt-8">
+                    <div className="flex items-baseline justify-between mb-2">
+                        <h3 className="text-xs font-bold opacity-40">Rozložení známek</h3>
+                        <div className="flex gap-4">
+                             <div className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
+                                <span className="text-[10px] font-bold opacity-40">Prospělo: {activeSemester.totalPass}</span>
+                             </div>
+                             <div className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-error"></span>
+                                <span className="text-[10px] font-bold opacity-40">Neprospělo: {activeSemester.totalFail}</span>
+                             </div>
+                        </div>
+                    </div>
+                    <GradeBarChart grades={activeGrades} />
                 </div>
+
+                {/* Subtle Background Icon */}
+                <TrendingUp className="absolute -bottom-4 -right-4 w-32 h-32 opacity-[0.03] rotate-12" />
+            </div>
+
+            {/* Footer with Timestamp */}
+            <div className="flex items-center justify-center gap-1.5 opacity-20 hover:opacity-40 transition-opacity">
+                <Clock className="w-3 h-3" />
+                <span className="text-[10px] font-medium italic">Data aktualizována: {new Date(data.lastUpdated).toLocaleDateString('cs-CZ')}</span>
             </div>
         </div>
     );

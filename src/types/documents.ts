@@ -43,6 +43,7 @@ export interface SemesterStats {
     year: number;
     totalPass: number;
     totalFail: number;
+    sourceUrl?: string; // Original IS MENDELU URL
     terms: TermStats[];
 }
 
