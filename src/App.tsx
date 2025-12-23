@@ -9,6 +9,7 @@ import { ExamPanel } from './components/ExamPanel'
 import { AppHeader } from './components/AppHeader'
 import type { BlockLesson } from './types/calendarTypes'
 import { outlookSyncService } from './services/sync'
+import './utils/devFeatures'; // Ensure dev tools are loaded
 import { useOutlookSync } from './hooks/data'
 import { useMessageBridge } from './hooks/ui/useMessageBridge'
 import { useCalendarNavigation } from './hooks/ui/useCalendarNavigation'

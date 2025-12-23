@@ -1,6 +1,6 @@
 import { Search, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { useRef, useEffect } from 'react';
-import { injectUserParams } from '../data/pagesData';
+import { injectUserParams } from '../utils/urlHelpers';
 import { useSearch, type SearchResult } from '../hooks/ui/useSearch';
 import { SearchResultItem } from './Search/SearchResultItem';
 

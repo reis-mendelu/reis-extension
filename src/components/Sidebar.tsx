@@ -13,6 +13,7 @@ import { getMainMenuItems, type MenuItem } from './menuConfig';
 import { getUserAssociation } from '../services/spolky';
 import { NavItem } from './Sidebar/NavItem';
 import { ProfilePopup } from './Sidebar/ProfilePopup';
+import { isDevFeaturesEnabled } from '../utils/devFeatures';
 
 export type AppView = 'calendar' | 'exams';
 
@@ -156,8 +157,10 @@ export const Sidebar = ({ onViewChange, onOpenSettingsRef }: SidebarProps) => {
 
         {/* Bottom Actions */}
         <div className="flex flex-col gap-2 px-2 w-full mt-auto">
-          {/* Spolek Button - Dynamic based on faculty */}
+          {/* Spolek Button - Dynamic based on faculty (Hidden behind Dev Flag) */}
           {(() => {
+            if (!isDevFeaturesEnabled()) return null; // Feature Flag Check
+
             const facultyId = getFacultySync() || '2';
             const association = getUserAssociation(facultyId);
             if (!association) return null;

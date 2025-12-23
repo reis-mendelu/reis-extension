@@ -8,7 +8,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { searchGlobal } from '../api/search';
-import { pagesData, injectUserParams } from '../data/pagesData';
+import { pagesData } from '../data/pagesData';
+import { injectUserParams } from '../utils/urlHelpers';
 import { fuzzyIncludes } from '../utils/searchUtils';
 import { getFacultySync } from '../utils/userParams';
 

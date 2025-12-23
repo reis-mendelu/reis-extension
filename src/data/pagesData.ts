@@ -1,5 +1,3 @@
-import { getStudiumSync, getFacultySync } from '../utils/userParams';
-
 // Page item represents a single link/page
 interface PageItem {
     id: string;
@@ -14,33 +12,6 @@ interface PageCategory {
     icon: string;
     expandable: boolean;
     children: PageItem[];
-}
-
-/**
- * Inject user's studium and facultyId into a page URL.
- * Replaces the placeholder studium/fakulta with the current user's actual IDs.
- */
-export function injectUserParams(url: string): string {
-    const studium = getStudiumSync();
-    const facultyId = getFacultySync();
-    
-    let processedUrl = url;
-
-    // 1. Inject Studium
-    if (studium) {
-        processedUrl = processedUrl.replace(/studium=\d+/g, `studium=${studium}`);
-    } else {
-        processedUrl = processedUrl
-            .replace(/studium=\d+[;,&]?/g, '')
-            .replace(/[;,&]?studium=\d+/g, '');
-    }
-
-    // 2. Inject Faculty ID (fakulta=)
-    if (facultyId) {
-        processedUrl = processedUrl.replace(/fakulta=\d+/g, `fakulta=${facultyId}`);
-    }
-
-    return processedUrl;
 }
 
 export const pagesData: PageCategory[] = [

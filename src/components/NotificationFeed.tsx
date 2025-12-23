@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell, Users, X } from 'lucide-react';
 import type { SpolekNotification } from '../services/spolky';
 import { fetchNotifications, trackNotificationsViewed, trackNotificationClick } from '../services/spolky';
+import { isDevFeaturesEnabled } from '../utils/devFeatures';
 
 interface NotificationFeedProps {
   className?: string;
@@ -60,7 +61,8 @@ export function NotificationFeed({ className = '' }: NotificationFeedProps) {
     }
   }, [isOpen]);
 
-  const unreadCount = notifications.length;
+  // Dev Feature Flag: Hide notifications unless enabled
+  if (!isDevFeaturesEnabled()) return null;
 
   return (
     <div className={`relative ${className}`}>
