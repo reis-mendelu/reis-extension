@@ -11,7 +11,7 @@ import type { SubjectSuccessRate, SuccessRateData } from "../types/documents";
 // JSDelivr CDN for GitHub-hosted data
 // In development, you can run a local server: npx serve server/dist-data -l 8080
 // and set CDN_BASE_URL = "http://localhost:8080"
-const CDN_BASE_URL = "https://cdn.jsdelivr.net/gh/darksoothingshadow/reis-data@main/data";
+const CDN_BASE_URL = "https://raw.githubusercontent.com/darksoothingshadow/reis-data/main";
 const CACHE_EXPIRY = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 /**

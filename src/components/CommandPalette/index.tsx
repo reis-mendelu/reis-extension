@@ -36,6 +36,13 @@ export default function CommandPalette({ items }: CommandPaletteProps) {
         }
     }, [isOpen]);
 
+    // External Trigger Listener (from Onboarding)
+    useEffect(() => {
+        const handleOpen = () => open();
+        document.addEventListener('reis-open-command-palette', handleOpen);
+        return () => document.removeEventListener('reis-open-command-palette', handleOpen);
+    }, [open]);
+
     const getIcon = (type: CommandItem['type']) => {
         switch (type) {
             case 'subject':
@@ -59,7 +66,7 @@ export default function CommandPalette({ items }: CommandPaletteProps) {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.15 }}
-                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10050]"
                         onClick={close}
                     />
 
@@ -69,7 +76,7 @@ export default function CommandPalette({ items }: CommandPaletteProps) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -20 }}
                         transition={{ duration: 0.15, ease: 'easeOut' }}
-                        className="fixed top-[20%] left-1/2 -translate-x-1/2 w-full max-w-lg bg-base-100 rounded-xl shadow-2xl border border-base-300 z-50 overflow-hidden"
+                        className="fixed top-[20%] left-1/2 -translate-x-1/2 w-full max-w-lg bg-base-100 rounded-xl shadow-2xl border border-base-300 z-[10050] overflow-hidden"
                     >
                         {/* Search Input */}
                         <div className="flex items-center gap-3 p-4 border-b border-base-300">

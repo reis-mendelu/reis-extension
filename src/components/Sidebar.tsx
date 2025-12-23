@@ -30,17 +30,26 @@ export const Sidebar = ({ onViewChange, onOpenSettingsRef }: SidebarProps) => {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profilTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Expose function to open settings popup
+  // Expose function to open settings popup and listen for custom events
   useEffect(() => {
+    const handleOpenSettings = () => {
+      setProfilHovered(true);
+      // Auto-close after 5 seconds if no interaction
+      if (profilTimeoutRef.current) clearTimeout(profilTimeoutRef.current);
+      profilTimeoutRef.current = setTimeout(() => setProfilHovered(false), 5000);
+    };
+
     if (onOpenSettingsRef) {
-      onOpenSettingsRef.current = () => {
-        setProfilHovered(true);
-      };
+      onOpenSettingsRef.current = handleOpenSettings;
     }
+
+    document.addEventListener('reis-open-settings', handleOpenSettings);
+    
     return () => {
       if (onOpenSettingsRef) {
         onOpenSettingsRef.current = null;
       }
+      document.removeEventListener('reis-open-settings', handleOpenSettings);
     };
   }, [onOpenSettingsRef]);
 
@@ -197,6 +206,19 @@ export const Sidebar = ({ onViewChange, onOpenSettingsRef }: SidebarProps) => {
             {/* Profil Popup */}
             <ProfilePopup isOpen={profilHovered} />
           </div>
+
+          {/* Divider */}
+          <div className="h-px bg-base-300 mx-2 my-1" />
+
+          {/* Legacy IS Link */}
+          <a
+            href="https://is.mendelu.cz/auth/?lang=cz"
+            className="w-12 h-12 rounded-xl flex flex-col items-center justify-center text-base-content/30 hover:bg-error/10 hover:text-error hover:shadow-sm transition-all mx-auto group"
+            title="Přejít do starého IS"
+          >
+            <span className="text-[10px] font-bold">Starý</span>
+            <span className="text-[10px] font-bold">IS</span>
+          </a>
         </div>
       </aside>
     </>

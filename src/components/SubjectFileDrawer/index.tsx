@@ -20,7 +20,6 @@ import { FileList, FileListSkeleton } from './FileList';
 import { DragHint, SelectionBox } from './DragHint';
 import { useDragSelection } from './useDragSelection';
 import type { FileGroup } from './types';
-
 const DRAG_HINT_STORAGE_KEY = 'reis_drag_hint_shown';
 
 interface SubjectFileDrawerProps {

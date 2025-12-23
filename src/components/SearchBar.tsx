@@ -11,7 +11,7 @@ interface SearchBarProps {
   onSelect?: (result: SearchResult) => void;
 }
 
-export function SearchBar({ placeholder = "Prohledej reIS", onSearch, onOpenExamDrawer, onSelect }: SearchBarProps) {
+export function SearchBar({ placeholder = "Najdi cokoliv – předměty, učitele, odkazy (Ctrl + K)", onSearch, onOpenExamDrawer, onSelect }: SearchBarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 

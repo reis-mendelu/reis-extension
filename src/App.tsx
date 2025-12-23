@@ -117,6 +117,7 @@ function App() {
         onSetup={() => openSettingsRef.current?.()}
       />
 
+
       <CommandPalette items={commandItems} />
     </div>
   )

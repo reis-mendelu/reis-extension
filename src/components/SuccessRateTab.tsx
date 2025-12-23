@@ -65,7 +65,8 @@ export function SuccessRateTab({ courseCode }: SuccessRateTabProps) {
     // Get max value for RELATIVE scaling (only within current semester)
     const gradeData = GRADE_ORDER.map(g => activeGrades[g] || 0);
     const maxGrade = Math.max(...gradeData, 1);
-    const MAX_BAR_HEIGHT = 160; // Fixed pixel height for context
+    const CONTAINER_HEIGHT = 160; // Total area for chart + labels
+    const MAX_BAR_HEIGHT = 110;   // Max height of the bar itself (leaves ~50px for labels)
 
     // Format year label: "ZS 21/22" style
     const formatYearLabel = (year: number, semesterName: string) => {
@@ -79,7 +80,7 @@ export function SuccessRateTab({ courseCode }: SuccessRateTabProps) {
     return (
         <div className="flex flex-col h-full px-4 py-3 select-none font-inter" data-testid="success-rate-tab">
             {/* 1. Student count at top with source link */}
-            <div className="text-center mb-6 flex items-center justify-center gap-2">
+            <div className="text-center mb-6 flex items-center justify-center gap-2 relative z-10">
                 <span className="text-sm text-base-content/50 font-bold uppercase tracking-wider">
                     {totalStudents} studentů
                 </span>
@@ -98,7 +99,7 @@ export function SuccessRateTab({ courseCode }: SuccessRateTabProps) {
             </div>
 
             {/* 2. Bar Chart - RELATIVE scaling with fixed max height */}
-            <div className="flex items-end gap-3 px-1 mb-8" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
+            <div className="flex items-end gap-3 px-1 mb-8 relative z-0" style={{ height: `${CONTAINER_HEIGHT}px` }}>
                 {GRADE_ORDER.map((grade, i) => {
                     const value = gradeData[i];
                     // Using fixed pixel height to ensure relative scaling works in flex layout
