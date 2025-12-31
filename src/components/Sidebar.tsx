@@ -91,13 +91,15 @@ export const Sidebar = ({ onViewChange, onOpenSettingsRef }: SidebarProps) => {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-22 h-screen bg-base-200 border-r border-base-300 fixed left-0 top-0 z-40 items-center py-6">
         {/* Logo - click to return to calendar */}
-        <div 
+        <button
+          type="button"
           onClick={() => onViewChange('calendar')}
-          className="mb-8 w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center overflow-hidden cursor-pointer hover:shadow-md transition-shadow border border-base-300/50"
+          className="mb-8 w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center overflow-hidden hover:shadow-md transition-shadow border border-base-300/50"
+          aria-label="Zpět na rozvrh"
           title="Zpět na rozvrh"
         >
           <img src={MENDELU_LOGO_PATH} alt="Mendelu Logo" className="w-8 h-8 object-contain" />
-        </div>
+        </button>
 
         {/* Navigation Items */}
         <nav className="flex-1 flex flex-col w-full px-2 gap-2">

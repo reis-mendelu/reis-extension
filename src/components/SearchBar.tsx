@@ -1,4 +1,4 @@
-import { Search, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { Search, X, ChevronUp, ChevronDown, SearchX } from 'lucide-react';
 import { useRef, useEffect } from 'react';
 import { injectUserParams } from '../utils/urlHelpers';
 import { useSearch, type SearchResult } from '../hooks/ui/useSearch';
@@ -139,7 +139,10 @@ export function SearchBar({ placeholder = "Najdi cokoliv – předměty, učitel
                     ) : query.trim() === '' ? (
                       <span>Začněte psát pro vyhledávání...</span>
                     ) : (
-                      'Nic nenalezeno'
+                      <div className="flex flex-col items-center gap-2 text-base-content/50">
+                        <SearchX className="w-8 h-8 opacity-50" />
+                        <span>Nic nenalezeno</span>
+                      </div>
                     )}
                   </div>
                 )}
