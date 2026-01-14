@@ -1,14 +1,15 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import './App.css'
 import { Sidebar } from './components/Sidebar'
-import { SearchBar } from './components/SearchBar'
 import { WeeklyCalendar } from './components/WeeklyCalendar'
 import { OutlookSyncHint } from './components/OutlookSyncHint'
+import { AppHeader } from './components/AppHeader'
 import { Toaster } from './components/ui/sonner'
 
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+
 import { getSmartWeekRange } from './utils/calendarUtils'
 import { ExamPanel } from './components/ExamPanel'
+import { SubjectFileDrawer } from './components/SubjectFileDrawer'
 import { type AppView } from './components/Sidebar'
 import { signalReady, requestData, isInIframe } from './api/proxyClient'
 import type { SyncedData } from './types/messages'
@@ -107,6 +108,14 @@ function App() {
     console.debug('[App] Initializing view from storage:', stored);
     return (stored === 'exams' ? 'exams' : 'calendar') as AppView;
   });
+  
+  // Drawer state
+  const [selectedSubject, setSelectedSubject] = useState<any>(null);
+
+  const handleSelectSubject = (subj: any) => {
+    console.log('[App] Selected subject:', subj);
+    setSelectedSubject(subj);
+  };
   
   // Persist view changes
   useEffect(() => {
@@ -254,35 +263,14 @@ function App() {
         onOpenSettingsRef={openSettingsRef}
       />
       <main className="flex-1 flex flex-col ml-0 md:ml-20 transition-all duration-300 overflow-hidden">
-        <div className="flex-shrink-0 z-30 bg-base-200/90 backdrop-blur-md border-b border-base-300 px-4 py-2">
-          <div className="flex items-center justify-between gap-4 w-full">
-            {/* Navigation Controls - only show on calendar view */}
-            {currentView === 'calendar' && (
-              <div className="flex items-center gap-4 flex-shrink-0">
-                <div className="flex items-center bg-base-300 rounded-lg p-1">
-                  <button onClick={handlePrevWeek} className="p-1 hover:bg-base-100 rounded-md shadow-sm transition-all text-base-content/70 hover:text-primary">
-                    <ChevronLeft size={20} />
-                  </button>
-                  <button onClick={handleNextWeek} className="p-1 hover:bg-base-100 rounded-md shadow-sm transition-all text-base-content/70 hover:text-primary">
-                    <ChevronRight size={20} />
-                  </button>
-                </div>
-                <button
-                  onClick={handleToday}
-                  className="btn btn-primary btn-sm border-none shadow-sm"
-                >
-                  Dnes
-                </button>
-                <span className="text-lg font-semibold text-base-content whitespace-nowrap">{getDateRangeLabel()}</span>
-              </div>
-            )}
-
-            {/* SearchBar - always far right */}
-            <div className="flex-shrink-0 w-[480px] mr-2 ml-auto">
-              <SearchBar onOpenExamDrawer={() => setCurrentView('exams')} />
-            </div>
-          </div>
-        </div>
+        <AppHeader 
+          currentView={currentView}
+          dateRangeLabel={getDateRangeLabel()}
+          onPrevWeek={handlePrevWeek}
+          onNextWeek={handleNextWeek}
+          onToday={handleToday}
+          onOpenExams={() => setCurrentView('exams')}
+        />
 
         <div className="flex-1 pt-3 px-4 pb-1 overflow-hidden flex flex-col">
           <div className="flex-1 bg-base-100 rounded-lg shadow-sm border border-base-300 overflow-hidden">
@@ -292,13 +280,20 @@ function App() {
                 initialDate={currentDate}
               />
             ) : (
-              <ExamPanel onClose={() => setCurrentView('calendar')} />
+              <ExamPanel 
+                onSelectSubject={handleSelectSubject}
+              />
             )}
           </div>
         </div>
       </main>
 
       {/* ExamDrawer removed - replaced by ExamPanel view */}
+      <SubjectFileDrawer
+        lesson={selectedSubject}
+        isOpen={!!selectedSubject}
+        onClose={() => setSelectedSubject(null)}
+      />
       
       {/* Outlook Sync Tutorial Hint */}
       <OutlookSyncHint

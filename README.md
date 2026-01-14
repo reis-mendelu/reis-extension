@@ -38,7 +38,6 @@ REIS.mendelu je rozšíření prohlížeče, které zpřehledňuje a personalizu
 | Jméno | Role |
 |-------|------|
 | Dominik Holek | Vedoucí projektu, datová analýza |
-| Tomáš Vymazal | Technický vedoucí, designér |
 | Antonín Dědeček | Produktový a komunitní manažer |
 | Kryštof Janda | Výzkum a inovace |
 
@@ -49,8 +48,8 @@ REIS.mendelu je rozšíření prohlížeče, které zpřehledňuje a personalizu
 | Fáze | Období | Status |
 |------|--------|--------|
 | Vývoj a interní testování | ZS 2025/2026 | 🔄 Probíhá |
-| Sběr a analýza zpětné vazby | ZS 2025/2026 | ⏳ Plánováno |
-| Finální úpravy a veřejné vydání | LS 2025/2026 | ⏳ Plánováno |
+| Sběr a analýza zpětné vazby | ZS 2025/2026 | 🔄 Probíhá |
+| Finální úpravy a veřejné vydání | LS 2025/2026 | 🔄 Probíhá |
 
 ---
 

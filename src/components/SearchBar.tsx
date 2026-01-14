@@ -221,16 +221,8 @@ export function SearchBar({ placeholder = "Prohledej reIS", onSearch, onOpenExam
     console.log('Selected:', result);
     saveToHistory(result);
 
-    // Check for exam registration pages
-    if (['zapisy-zkousky', 'prihlasovani-zkouskam'].includes(result.id)) {
-      if (onOpenExamDrawer) {
-        onOpenExamDrawer();
-        setQuery('');
-        setIsOpen(false);
-        setSelectedIndex(-1);
-        return;
-      }
-    }
+    // Check for exam registration pages - REMOVED to allow external redirect
+    // Use default behavior below
 
     // For keyboard navigation, open the link programmatically
     if (result.link) {

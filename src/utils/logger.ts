@@ -173,6 +173,7 @@ export const loggers = {
     files: createLogger('Files'),
     ui: createLogger('UI'),
     auth: createLogger('Auth'),
+    system: createLogger('System'),
 };
 
 /**

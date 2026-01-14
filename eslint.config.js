@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'inspiration', 'server/dist']),
+  globalIgnores(['dist']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -50,14 +50,6 @@ export default defineConfig([
     ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
-    },
-  },
-  // Playwright fixtures use 'use()' which ESLint misidentifies as a hook
-  {
-    files: ['e2e/**/*.ts'],
-    rules: {
-      'react-hooks/rules-of-hooks': 'off',
-      'no-empty-pattern': 'off',
     },
   },
 ])

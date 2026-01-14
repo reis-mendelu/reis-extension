@@ -32,6 +32,10 @@ const chromeMock = {
             get: vi.fn(),
             set: vi.fn(),
         },
+        sync: {
+            get: vi.fn(),
+            set: vi.fn(),
+        },
     },
 };
 Object.defineProperty(globalThis, 'chrome', { value: chromeMock, writable: true });

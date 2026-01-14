@@ -12,6 +12,10 @@ import { STORAGE_KEYS } from "../services/storage/keys";
 export interface UserParams {
     studium: string;
     obdobi: string;
+    facultyId: string;
+    username: string;
+    studentId: string;
+    fullName: string;
 }
 
 /**
@@ -24,33 +28,83 @@ export async function getUserParams(): Promise<UserParams | null> {
     // Try to get from storage
     const cached = StorageService.get<UserParams>(STORAGE_KEYS.USER_PARAMS);
 
-    if (cached && cached.studium && cached.obdobi) {
+    if (cached && cached.studium && cached.obdobi && cached.facultyId && cached.username && cached.studentId && cached.fullName) {
         console.debug('[getUserParams] Returning stored params:', cached);
         return cached;
     }
 
-    console.debug('[getUserParams] Not in storage, fetching from IS...');
+    console.debug('[getUserParams] Not in storage or incomplete, fetching from IS...');
 
-    // Fetch from IS (only if not in storage)
+    // Fetch from IS
     try {
-        const response = await fetchWithAuth(`${BASE_URL}/auth/student/studium.pl`);
-        const html = await response.text();
+        // 1. Get Studium and Obdobi from studium.pl
+        const studResponse = await fetchWithAuth(`${BASE_URL}/auth/student/studium.pl`);
+        const studHtml = await studResponse.text();
 
-        const regex = /studium=(\d+);obdobi=(\d+)/;
-        const match = html.match(regex);
+        const paramRegex = /studium=(\d+);obdobi=(\d+)/;
+        const paramMatch = studHtml.match(paramRegex);
 
-        if (match && match[1] && match[2]) {
-            const params: UserParams = {
-                studium: match[1],
-                obdobi: match[2]
-            };
-
-            console.debug('[getUserParams] Parsed and stored params:', params);
-            StorageService.set(STORAGE_KEYS.USER_PARAMS, params);
-            return params;
+        if (!paramMatch) {
+            console.debug('[getUserParams] No studium/obdobi found');
+            return null;
         }
 
-        console.debug('[getUserParams] No params found in HTML response');
+        const studium = paramMatch[1];
+        const obdobi = paramMatch[2];
+
+        // 1.1 Get Numeric Student ID from studium.pl
+        // Pattern: Identifikační číslo uživatele: </td><td class="odsazena" align="left">(\d+)
+        const idRegex = /Identifikační\s+číslo\s+uživatele:\s*<\/td>\s*<td[^>]*>\s*(\d+)/i;
+        const idMatch = studHtml.match(idRegex);
+        const studentId = idMatch ? idMatch[1] : '';
+
+        if (!studentId) {
+            console.warn('[getUserParams] Numeric Student ID not found in studium.pl');
+        }
+
+        // 1.2 Get Full Name from studium.pl (Header area)
+        const nameRegex = /id="prihlasen"[^>]*>\s*Přihlášen:&nbsp;([^&]+)/i;
+        const nameMatch = studHtml.match(nameRegex);
+        const fullName = nameMatch ? nameMatch[1].trim() : '';
+
+        // 2. Get Faculty ID from moje_studium.pl
+        const mojeResponse = await fetchWithAuth(`${BASE_URL}/auth/student/moje_studium.pl?lang=cz`);
+        const mojeHtml = await mojeResponse.text();
+
+        // Extract facultyId from links, prioritizing Harmonogram or Kontakt
+        // Pattern: look for fakulta=(\d+) in link HREFs
+        const facultyRegex = /fakulta=(\d+)/;
+        const facultyMatch = mojeHtml.match(facultyRegex);
+        
+        const facultyId = facultyMatch ? facultyMatch[1] : '2'; // Default to PEF (2) if not found
+        
+        if (!facultyMatch) {
+            console.warn('[getUserParams] Faculty ID not found in moje_studium.pl, defaulting to 2 (PEF)');
+        }
+
+        // 3. Get Username from certifikat.pl (suggested by user as robust source)
+        const certResponse = await fetchWithAuth(`${BASE_URL}/auth/wifi/certifikat.pl?_m=177`);
+        const certHtml = await certResponse.text();
+        const usernameMatch = certHtml.match(/pro uživatele <b>([^<]+)<\/b>/i) || certHtml.match(/for user <b>([^<]+)<\/b>/i);
+        const username = usernameMatch ? usernameMatch[1] : '';
+
+        if (!username) {
+            console.warn('[getUserParams] Username not found in certifikat.pl');
+        }
+
+        const params: UserParams = {
+            studium,
+            obdobi,
+            facultyId,
+            username,
+            studentId,
+            fullName
+        };
+
+        console.debug('[getUserParams] Parsed and stored params:', params);
+        StorageService.set(STORAGE_KEYS.USER_PARAMS, params);
+        return params;
+
     } catch (error) {
         console.error("[getUserParams] Failed to fetch user params:", error);
     }
@@ -66,5 +120,10 @@ export async function getUserParams(): Promise<UserParams | null> {
 export function getStudiumSync(): string | null {
     const cached = StorageService.get<UserParams>(STORAGE_KEYS.USER_PARAMS);
     return cached?.studium ?? null;
+}
+
+export function getFacultySync(): string | null {
+    const cached = StorageService.get<UserParams>(STORAGE_KEYS.USER_PARAMS);
+    return cached?.facultyId ?? null;
 }
 
