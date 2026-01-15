@@ -1,7 +1,7 @@
 /**
  * useTheme - Hook for managing dark/light theme preference.
  * 
- * Stores preference in chrome.storage.local and applies data-theme to shadow root.
+ * Stores preference in chrome.storage.local and applies data-theme to iframe's document root.
  */
 
 import { useState, useEffect, useCallback } from "react";

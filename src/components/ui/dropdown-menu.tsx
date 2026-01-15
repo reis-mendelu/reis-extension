@@ -6,7 +6,7 @@ import { cn } from "./utils";
 
 /**
  * DropdownMenu component using daisyUI
- * CSS-only dropdown - no React Portals, works inside Shadow DOM
+ * CSS-only dropdown - no React Portals needed
  */
 
 interface DropdownContextValue {
