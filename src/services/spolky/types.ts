@@ -4,7 +4,7 @@
 
 export interface SpolekNotification {
   id: string;
-  associationId: string; // 'supef' | 'au_frrms' | 'agro' | ...
+  associationId?: string; // 'supef' | 'au_frrms' | 'agro' | ...
   title: string;
   body: string;
   link?: string;

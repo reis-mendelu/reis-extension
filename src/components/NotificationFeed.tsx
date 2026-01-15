@@ -30,7 +30,7 @@ export function NotificationFeed({ className = '' }: NotificationFeedProps) {
       if (data.length > 0 && !hasTrackedViews.current) {
         hasTrackedViews.current = true;
         // Filter to only track spolky notifications (not academic ones that start with 'academic_')
-        const spolkyNotifications = data.filter(n => !n.associationId.startsWith('academic_'));
+        const spolkyNotifications = data.filter(n => !n.associationId?.startsWith('academic_'));
         if (spolkyNotifications.length > 0) {
           trackNotificationsViewed(spolkyNotifications.map(n => n.id));
         }
@@ -44,7 +44,7 @@ export function NotificationFeed({ className = '' }: NotificationFeedProps) {
 
   const handleNotificationClick = (notification: SpolekNotification) => {
     // Track click for spolky notifications
-    if (!notification.associationId.startsWith('academic_')) {
+    if (!notification.associationId?.startsWith('academic_')) {
       trackNotificationClick(notification.id);
     }
     
@@ -141,12 +141,12 @@ interface NotificationItemProps {
 
 function NotificationItem({ notification, onClick }: NotificationItemProps) {
   // Use spolky icon for non-academic notifications
-  const isAcademic = notification.associationId.startsWith('academic_');
+  const isAcademic = notification.associationId?.startsWith('academic_') ?? false;
 
   // Get icon URL for spolky
   const iconUrl = isAcademic 
     ? null 
-    : `https://reismendelu.app/static/spolky/${notification.associationId}.jpg`;
+    : `https://reismendelu.app/static/spolky/${notification.associationId || 'admin'}.jpg`;
 
   const formatDate = (isoString: string) => {
     const date = new Date(isoString);
