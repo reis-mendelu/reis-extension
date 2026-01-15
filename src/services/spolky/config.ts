@@ -56,4 +56,4 @@ export const ASSOCIATION_PROFILES: Record<string, AssociationProfile> = {
 /**
  * API endpoint for spolky notifications
  */
-export const API_BASE_URL = 'https://reismendelu.app';
+export const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbyp3oXBJ8Nm6hSJcK1d6anoQq-jkzuUmvy1HkLwDPqfLn7S2zFL96eneIGxrNPHzOE9/exec';

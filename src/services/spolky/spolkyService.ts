@@ -6,7 +6,7 @@ import { FACULTY_TO_ASSOCIATION, ASSOCIATION_PROFILES, API_BASE_URL } from './co
  */
 export async function fetchNotifications(): Promise<SpolekNotification[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/notifications`);
+    const response = await fetch(`${API_BASE_URL}?action=get_notifications`);
     if (!response.ok) {
       throw new Error(`Failed to fetch notifications: ${response.statusText}`);
     }
@@ -60,9 +60,10 @@ export function filterNotificationsByFaculty(
 export async function trackNotificationsViewed(notificationIds: string[]): Promise<void> {
   try {
     await Promise.all(
-      notificationIds.map((id) =>
-        fetch(`${API_BASE_URL}/api/notifications/${id}/view`, { method: 'POST' })
-      )
+      // Tracking disabled for Serverless Sheets backend
+      // notificationIds.map((id) =>
+      //   fetch(`${API_BASE_URL}/api/notifications/${id}/view`, { method: 'POST' })
+      // )
     );
   } catch (error) {
     console.error('[SpolkyService] Failed to track views:', error);
@@ -75,7 +76,8 @@ export async function trackNotificationsViewed(notificationIds: string[]): Promi
  */
 export async function trackNotificationClick(notificationId: string): Promise<void> {
   try {
-    await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/click`, { method: 'POST' });
+    // Tracking disabled for Serverless Sheets backend
+    // await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/click`, { method: 'POST' });
   } catch (error) {
     console.error('[SpolkyService] Failed to track click:', error);
   }

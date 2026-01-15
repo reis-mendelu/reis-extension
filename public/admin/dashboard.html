@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>reIS Admin - Dashboard</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <div class="logo">
+        <h1 style="font-size: 1.5rem;">reIS Admin (Sheets)</h1>
+      </div>
+      <div class="nav-user">
+        <span id="username-display">Admin</span>
+        <button class="btn btn-outline" id="logout-btn">Odhlásit</button>
+      </div>
+    </nav>
+
+    <div id="success-alert" class="alert alert-success hidden"></div>
+    <div id="error-alert" class="alert alert-error hidden"></div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="value" id="stat-active">-</div>
+        <div class="label">Aktivní</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-total">-</div>
+        <div class="label">Celkem</div>
+      </div>
+    </div>
+
+    <!-- Create notification form -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Nová notifikace</h2>
+        <p>Vytvořte zprávu pro studenty (max 1x za 7 dní)</p>
+      </div>
+
+      <form id="notification-form">
+        <div class="form-group">
+          <label for="title">Text notifikace *</label>
+          <input type="text" id="title" name="title" required maxlength="100">
+          <div class="char-count"><span id="title-count">0</span>/100</div>
+        </div>
+
+        <div class="form-group">
+          <label for="link">Odkaz (volitelné)</label>
+          <input type="url" id="link" name="link">
+          <div class="hint">URL, na kterou bude student přesměrován po kliknutí</div>
+        </div>
+
+        <div class="form-group">
+          <label for="expiresAt">Platnost do *</label>
+          <input type="date" id="expiresAt" name="expiresAt" required>
+          <div class="hint">Notifikace zmizí po tomto datu</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submit-btn">
+          Publikovat
+        </button>
+      </form>
+    </div>
+
+    <!-- My notifications -->
+    <div class="card" style="margin-top: 1.5rem;">
+      <div class="card-header">
+        <h2><i data-lucide="bell" class="icon"></i> Aktivní notifikace</h2>
+        <p>Seznam všech aktivních zpráv</p>
+      </div>
+
+      <div id="notifications-list" class="notification-list">
+        <p style="color: var(--text-muted); text-align: center;">Načítání...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // THE GOOGLE APPS SCRIPT URL
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyp3oXBJ8Nm6hSJcK1d6anoQq-jkzuUmvy1HkLwDPqfLn7S2zFL96eneIGxrNPHzOE9/exec';
+    
+    let token = localStorage.getItem('reis_token');
+
+    if (!token) {
+      window.location.href = 'index.html';
+    }
+
+    // Logout
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('reis_token');
+      window.location.href = 'index.html';
+    });
+
+    // Set dates
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('expiresAt').min = tomorrow.toISOString().split('T')[0];
+    document.getElementById('expiresAt').value = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Char counter
+    document.getElementById('title').addEventListener('input', (e) => {
+      const count = e.target.value.length;
+      document.getElementById('title-count').textContent = count;
+    });
+
+    // Load Data
+    async function loadData() {
+      try {
+        // Fetch from GAS
+        const response = await fetch(`${API_URL}?action=get_notifications`);
+        const notifications = await response.json();
+        
+        // Update Stats
+        document.getElementById('stat-active').textContent = notifications.length;
+        document.getElementById('stat-total').textContent = notifications.length; // Simple stat for now
+
+        // Render List
+        const listEl = document.getElementById('notifications-list');
+        if (notifications.length === 0) {
+          listEl.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Žádné aktivní notifikace</p>';
+          return;
+        }
+
+        listEl.innerHTML = notifications.map(n => `
+          <div class="notification-item">
+            <div class="header">
+              <span class="title">${'${escapeHtml(n.title)}'}</span>
+              <span class="badge badge-approved">Aktivní</span>
+            </div>
+            <div class="meta-row">
+              <div class="meta">
+                <span><i data-lucide="calendar" class="icon-sm"></i> ${'${formatDate(n.createdAt)}'}</span>
+                ${'${n.link ? `<span><i data-lucide="link" class="icon-sm"></i> <a href="${escapeHtml(n.link)}" target="_blank">Odkaz</a></span>` : ""'}
+                 <span>Exp: ${'${formatDate(n.expiresAt)}'}</span>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="deleteNotification('${'${n.id}'}')">
+                <i data-lucide="trash-2"></i> Smazat
+              </button>
+            </div>
+          </div>
+        `).join('');
+        lucide.createIcons();
+
+      } catch (error) {
+        console.error('Load failed:', error);
+        document.getElementById('error-alert').textContent = 'Chyba načítání dat z Google Sheets';
+        document.getElementById('error-alert').classList.remove('hidden');
+      }
+    }
+
+    // Submit
+    document.getElementById('notification-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Odesílání...';
+
+      const payload = {
+        title: document.getElementById('title').value,
+        body: document.getElementById('title').value, // Simple mode: body = title
+        link: document.getElementById('link').value,
+        expiresAt: new Date(document.getElementById('expiresAt').value).toISOString(),
+        author: 'admin'
+      };
+
+      try {
+        // GAS requires POST data as stringified JSON in body, handled by the doPost(e) logic we wrote
+        // We need to send it as form data or raw blob depending on how we want to parse. 
+        // Our GAS script uses e.postData.contents
+        
+        const response = await fetch(`${API_URL}?action=create&token=${'${encodeURIComponent(token)}'}`, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        if (result.error) throw new Error(result.error);
+
+        document.getElementById('success-alert').textContent = '✅ Notifikace uložena do Google Sheetu';
+        document.getElementById('success-alert').classList.remove('hidden');
+        document.getElementById('notification-form').reset();
+        loadData();
+
+      } catch (error) {
+        alert('Chyba: ' + error.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Publikovat';
+      }
+    });
+
+    // Delete
+    window.deleteNotification = async (id) => {
+      if (!confirm('Opravdu smazat?')) return;
+      
+      try {
+        const response = await fetch(`${API_URL}?action=delete&id=${'${id}'}&token=${'${encodeURIComponent(token)}'}`, {
+          method: 'POST'
+        });
+        const result = await response.json();
+        if (result.error) throw new Error(result.error);
+        
+        loadData();
+      } catch (error) {
+        alert('Chyba mazání: ' + error.message);
+      }
+    };
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      return new Date(iso).toLocaleDateString('cs-CZ');
+    }
+
+    // Init
+    loadData();
+    lucide.createIcons();
+  </script>
+</body>
+</html>
