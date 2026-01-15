@@ -8,33 +8,30 @@ interface NotificationFeedProps {
   className?: string;
 }
 
+interface NotificationFeedProps {
+  className?: string;
+}
+
 export function NotificationFeed({ className = '' }: NotificationFeedProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<SpolekNotification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [readIds, setReadIds] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('reis_read_notifications');
+    return new Set(saved ? JSON.parse(saved) : []);
+  });
   const hasTrackedViews = useRef(false);
 
+  // Load notifications ONCE on mount
   useEffect(() => {
-    if (isOpen) {
-      loadNotifications();
-    }
-  }, [isOpen]);
+    loadNotifications();
+  }, []);
 
   const loadNotifications = async () => {
     setLoading(true);
     try {
       const data = await fetchNotifications();
       setNotifications(data);
-      
-      // Track views when notifications are loaded (only once per open)
-      if (data.length > 0 && !hasTrackedViews.current) {
-        hasTrackedViews.current = true;
-        // Filter to only track spolky notifications (not academic ones that start with 'academic_')
-        const spolkyNotifications = data.filter(n => !n.associationId?.startsWith('academic_'));
-        if (spolkyNotifications.length > 0) {
-          trackNotificationsViewed(spolkyNotifications.map(n => n.id));
-        }
-      }
     } catch (error) {
       console.error('[NotificationFeed] Failed to load notifications:', error);
     } finally {
@@ -42,8 +39,29 @@ export function NotificationFeed({ className = '' }: NotificationFeedProps) {
     }
   };
 
+  const handleOpen = () => {
+    const newIsOpen = !isOpen;
+    setIsOpen(newIsOpen);
+    
+    if (newIsOpen && notifications.length > 0) {
+      // Mark all current as read locally
+      const newReadIds = new Set(readIds);
+      notifications.forEach(n => newReadIds.add(n.id));
+      setReadIds(newReadIds);
+      localStorage.setItem('reis_read_notifications', JSON.stringify(Array.from(newReadIds)));
+
+      // Track views (analytics)
+      if (!hasTrackedViews.current) {
+         hasTrackedViews.current = true;
+         const spolkyNotifications = notifications.filter(n => !n.associationId?.startsWith('academic_'));
+         if (spolkyNotifications.length > 0) {
+           trackNotificationsViewed(spolkyNotifications.map(n => n.id));
+         }
+      }
+    }
+  };
+
   const handleNotificationClick = (notification: SpolekNotification) => {
-    // Track click for spolky notifications
     if (!notification.associationId?.startsWith('academic_')) {
       trackNotificationClick(notification.id);
     }
@@ -54,23 +72,16 @@ export function NotificationFeed({ className = '' }: NotificationFeedProps) {
     setIsOpen(false);
   };
 
-  // Reset tracking flag when popover closes
-  useEffect(() => {
-    if (!isOpen) {
-      hasTrackedViews.current = false;
-    }
-  }, [isOpen]);
-
   // Dev Feature Flag: Hide notifications unless enabled
   if (!isNotificationsEnabled()) return null;
 
-  const unreadCount = notifications.length;
+  const unreadCount = notifications.filter(n => !readIds.has(n.id)).length;
 
   return (
     <div className={`relative ${className}`}>
       {/* Bell Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleOpen}
         className="relative p-2 hover:bg-base-300 rounded-lg transition-colors"
         aria-label="Notifications"
       >
@@ -106,7 +117,7 @@ export function NotificationFeed({ className = '' }: NotificationFeedProps) {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
-              {loading ? (
+              {loading && notifications.length === 0 ? (
                 <div className="p-4 text-center text-base-content/60">
                   Načítá se...
                 </div>
@@ -141,12 +152,15 @@ interface NotificationItemProps {
 
 function NotificationItem({ notification, onClick }: NotificationItemProps) {
   // Use spolky icon for non-academic notifications
-  const isAcademic = notification.associationId?.startsWith('academic_') ?? false;
+  const assocId = notification.associationId || 'admin';
+  const isAcademic = assocId.startsWith('academic_');
+  const isAdmin = assocId === 'admin';
 
   // Get icon URL for spolky
-  const iconUrl = isAcademic 
+  // If admin, we don't want to try fetching a 404 image
+  const iconUrl = (isAcademic || isAdmin)
     ? null 
-    : `https://reismendelu.app/static/spolky/${notification.associationId || 'admin'}.jpg`;
+    : `https://reismendelu.app/static/spolky/${assocId}.jpg`;
 
   const formatDate = (isoString: string) => {
     const date = new Date(isoString);
@@ -171,7 +185,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
         {iconUrl ? (
           <img 
             src={iconUrl} 
-            alt={notification.associationId} 
+            alt={assocId} 
             className="w-10 h-10 rounded-full object-cover"
             onError={(e) => {
               // Fallback to Users icon if image fails
@@ -180,15 +194,30 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
             }}
           />
         ) : null}
-        <Users size={24} className={`text-primary ${iconUrl ? 'hidden' : ''}`} />
+        
+        {/* Fallback Icons */}
+        <div className={iconUrl ? 'hidden' : ''}>
+           {isAdmin ? (
+             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+               <Bell size={20} />
+             </div>
+           ) : (
+             <Users size={24} className="text-primary" />
+           )}
+        </div>
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-medium text-base-content line-clamp-1">
           {notification.title}
         </div>
-        <div className="text-sm text-base-content/70 line-clamp-2 mt-1">
-          {notification.body}
-        </div>
+        
+        {/* Only show body if it differs from title */}
+        {notification.body && notification.body !== notification.title && (
+          <div className="text-sm text-base-content/70 line-clamp-2 mt-1">
+            {notification.body}
+          </div>
+        )}
+        
         <div className="text-xs text-base-content/50 mt-2">
           {formatDate(notification.createdAt)}
         </div>
