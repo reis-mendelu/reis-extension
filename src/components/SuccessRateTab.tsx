@@ -45,30 +45,52 @@ export function SuccessRateTab({ courseCode }: SuccessRateTabProps) {
     // Ensure activeIndex is within bounds (if data changes)
     const safeIndex = Math.min(activeIndex, sortedStats.length - 1);
     const activeSemester = sortedStats[safeIndex];
-    const totalStudents = activeSemester.totalPass + activeSemester.totalFail;
+    // Determine evaluation type and grade set for the current semester
+    const isCredit = activeSemester.type === 'credit';
+    
+    const CURRENT_GRADE_ORDER: string[] = isCredit
+        ? ['zap', 'nezap']
+        : ['A', 'B', 'C', 'D', 'E', 'F', 'FN'];
 
-    // Aggregate grades from all terms
+    const CURRENT_GRADE_COLORS: Record<string, string> = isCredit
+        ? {
+            zap: 'var(--color-success)',
+            nezap: 'var(--color-error)'
+          }
+        : GRADE_COLORS;
+
+    // Aggregate grades
     const activeGrades = activeSemester.terms.reduce((acc, term) => {
-        Object.entries(term.grades).forEach(([grade, count]) => {
-            const g = grade as keyof GradeStats;
-            acc[g] = (acc[g] || 0) + count;
-        });
+        if (isCredit && term.creditGrades) {
+            // Merge credit grades
+            acc['zap'] = (acc['zap'] || 0) + (term.creditGrades.zap || 0);
+            
+            // Merge failures (nezap + zapNedost) into a single 'nezap' bucket for simplicity in UI, 
+            // or keep them separate? The Python script grouped them into totalFail.
+            // Let's just group raw failures.
+            const failCount = (term.creditGrades.nezap || 0) + (term.creditGrades.zapNedost || 0);
+            acc['nezap'] = (acc['nezap'] || 0) + failCount;
+        } else {
+            // Exam grades
+            Object.entries(term.grades).forEach(([grade, count]) => {
+                const g = grade as keyof GradeStats;
+                acc[g] = (acc[g] || 0) + count;
+            });
+        }
         return acc;
-    }, {} as GradeStats);
+    }, {} as Record<string, number>);
 
-    // Get max value for RELATIVE scaling (only within current semester)
-    const gradeData = GRADE_ORDER.map(g => activeGrades[g] || 0);
-    const maxGrade = Math.max(...gradeData, 1);
-    const CONTAINER_HEIGHT = 160; // Total area for chart + labels
-    const MAX_BAR_HEIGHT = 110;   // Max height of the bar itself (leaves ~50px for labels)
+    // Get max value for RELATIVE scaling
+    const gradeCounts = CURRENT_GRADE_ORDER.map(g => activeGrades[g] || 0);
+    const maxGrade = Math.max(...gradeCounts, 1);
+    const CONTAINER_HEIGHT = 160; 
+    const MAX_BAR_HEIGHT = 110;   
 
-    // Format year label: "ZS 24/25" or "LS 24/25" style
-    // The `year` field represents the academic year START (e.g., 2024 for both ZS 2024/2025 and LS 2024/2025)
+    // Format year label
     const formatYearLabel = (year: number, semesterName: string) => {
         const yearShort = year % 100;
         const isWinter = semesterName.startsWith('ZS');
         const semesterPrefix = isWinter ? 'ZS' : 'LS';
-        // Academic year is always START_YEAR/START_YEAR+1, regardless of semester type
         const yearRange = `${yearShort}/${yearShort + 1}`;
         return `${semesterPrefix} ${yearRange}`;
     };
@@ -79,6 +101,7 @@ export function SuccessRateTab({ courseCode }: SuccessRateTabProps) {
             <div className="text-center mb-6 flex items-center justify-center gap-2 relative z-10">
                 <span className="text-sm text-base-content/50 font-bold uppercase tracking-wider">
                     {totalStudents} studentů
+                    {isCredit && <span className="ml-2 badge badge-xs badge-ghost">Zápočet</span>}
                 </span>
                 {activeSemester.sourceUrl && (
                     <a 
@@ -94,11 +117,10 @@ export function SuccessRateTab({ courseCode }: SuccessRateTabProps) {
                 )}
             </div>
 
-            {/* 2. Bar Chart - RELATIVE scaling with fixed max height */}
+            {/* 2. Bar Chart */}
             <div className="flex items-end gap-3 px-1 mb-8 relative z-0" style={{ height: `${CONTAINER_HEIGHT}px` }}>
-                {GRADE_ORDER.map((grade, i) => {
-                    const value = gradeData[i];
-                    // Using fixed pixel height to ensure relative scaling works in flex layout
+                {CURRENT_GRADE_ORDER.map((grade, i) => {
+                    const value = activeGrades[grade] || 0;
                     const barHeight = (value / maxGrade) * MAX_BAR_HEIGHT;
                     
                     return (
@@ -112,7 +134,7 @@ export function SuccessRateTab({ courseCode }: SuccessRateTabProps) {
                                 className="w-full rounded-t-md transition-all duration-300 shadow-sm"
                                 style={{
                                     height: `${Math.max(barHeight, 4)}px`,
-                                    backgroundColor: value > 0 ? GRADE_COLORS[grade] : 'var(--color-base-content)',
+                                    backgroundColor: value > 0 ? CURRENT_GRADE_COLORS[grade] : 'var(--color-base-content)',
                                     opacity: value > 0 ? 1 : 0.05
                                 }}
                             />

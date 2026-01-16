@@ -17,7 +17,7 @@ interface ExamSectionCardProps {
     onToggleExpand: (sectionId: string) => void;
     onRegister: (section: ExamSection, termId: string) => void;
     onUnregister: (section: ExamSection) => void;
-    onSelectSubject: (subj: { code: string; name: string; sectionName?: string; date?: string; time?: string; room?: string }) => void;
+    onSelectSubject: (subj: { code: string; name: string; sectionName?: string; date?: string; time?: string; room?: string; courseCode?: string; courseName?: string; isExam?: boolean }) => void;
 }
 
 export function ExamSectionCard({

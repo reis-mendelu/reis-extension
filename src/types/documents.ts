@@ -31,9 +31,16 @@ export interface GradeStats {
     A: number; B: number; C: number; D: number; E: number; F: number; FN: number;
 }
 
+export interface CreditStats {
+    zap: number;
+    nezap: number;
+    zapNedost: number;
+}
+
 export interface TermStats {
     term: string;
     grades: GradeStats;
+    creditGrades?: CreditStats;
     pass: number;
     fail: number;
 }
@@ -45,6 +52,7 @@ export interface SemesterStats {
     totalPass: number;
     totalFail: number;
     sourceUrl?: string; // Original IS MENDELU URL
+    type: 'exam' | 'credit';
     terms: TermStats[];
 }
 
