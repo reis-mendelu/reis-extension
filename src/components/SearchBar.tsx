@@ -8,7 +8,6 @@ import { fuzzyIncludes } from '../utils/searchUtils';
 interface SearchBarProps {
   placeholder?: string;
   onSearch?: (query: string) => void;
-  onOpenExamDrawer?: () => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string) => void;
 }
 
@@ -28,7 +27,7 @@ interface SearchResult {
 const MAX_RECENT_SEARCHES = 5;
 const STORAGE_KEY = 'reis_recent_searches';
 
-export function SearchBar({ placeholder = "Hledej předměty, lidi, stránky...", onSearch, onOpenExamDrawer, onOpenSubject }: SearchBarProps) {
+export function SearchBar({ placeholder = "Hledej předměty, lidi, stránky...", onSearch, onOpenSubject }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);

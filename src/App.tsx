@@ -246,7 +246,6 @@ function App() {
           onPrevWeek={handlePrevWeek}
           onNextWeek={handleNextWeek}
           onToday={handleToday}
-          onOpenExams={() => setCurrentView('exams')}
           onOpenSubject={handleOpenSubjectFromSearch}
         />
 

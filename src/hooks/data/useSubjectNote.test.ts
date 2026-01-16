@@ -116,7 +116,9 @@ describe('useSubjectNote', () => {
             const { result } = renderHook(() => useSubjectNote('TZI'));
 
             // Wait for initial load with fake timers
-            await vi.runAllTimersAsync();
+            await act(async () => {
+                await vi.runAllTimersAsync();
+            });
 
             act(() => {
                 result.current.setNote('First');
@@ -129,7 +131,9 @@ describe('useSubjectNote', () => {
         it('should save after 800ms debounce', async () => {
             const { result } = renderHook(() => useSubjectNote('TZI'));
 
-            await vi.runAllTimersAsync();
+            await act(async () => {
+                await vi.runAllTimersAsync();
+            });
 
             act(() => {
                 result.current.setNote('Test note');
@@ -150,7 +154,9 @@ describe('useSubjectNote', () => {
         it('should flush pending save on unmount', async () => {
             const { result, unmount } = renderHook(() => useSubjectNote('TZI'));
 
-            await vi.runAllTimersAsync();
+            await act(async () => {
+                await vi.runAllTimersAsync();
+            });
 
             act(() => {
                 result.current.setNote('Unmount note');

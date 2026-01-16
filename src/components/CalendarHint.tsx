@@ -27,7 +27,24 @@ export function CalendarHint({ show, firstEventPosition }: CalendarHintProps) {
     
     // Position tooltip below the cursor
     const tooltipTop = `calc(${position.top}% + 70px)`;
-    const tooltipLeft = `calc(${position.left}% + ${position.width / 2}%)`;
+    
+    // Calculate horizontal alignment based on column position relative to grid
+    // Left edge (Mon): Align left
+    // Right edge (Fri): Align right
+    // Middle: Center
+    const isLeftEdge = position.left < 5;
+    const isRightEdge = position.left > 80;
+
+    let tooltipLeft = `calc(${position.left}% + ${position.width / 2}%)`;
+    let tooltipTransform = 'translateX(-50%)';
+
+    if (isLeftEdge) {
+        tooltipLeft = `calc(${position.left}% + 16px)`;
+        tooltipTransform = 'none';
+    } else if (isRightEdge) {
+        tooltipLeft = `calc(${position.left}% + ${position.width}% - 16px)`;
+        tooltipTransform = 'translateX(-100%)';
+    }
 
     return (
         <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
@@ -45,18 +62,25 @@ export function CalendarHint({ show, firstEventPosition }: CalendarHintProps) {
                 </div>
             </div>
 
-            {/* Tooltip */}
+            {/* Tooltip Wrapper - Handles positioning */}
             <div 
-                className="absolute bg-neutral text-neutral-content text-sm px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 whitespace-nowrap"
+                className="absolute"
                 style={{
-                    animation: 'calendarHintFade 4s ease-in-out forwards',
                     top: tooltipTop,
                     left: tooltipLeft,
-                    transform: 'translateX(-50%)',
+                    transform: tooltipTransform,
                 }}
             >
-                <MousePointerClick size={16} className="text-primary flex-shrink-0" />
-                <span>Klikněte na předmět pro zobrazení materiálů</span>
+                {/* Tooltip Content - Handles animation */}
+                <div 
+                    className="bg-neutral text-neutral-content text-sm px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 whitespace-nowrap"
+                    style={{
+                        animation: 'calendarHintFade 4s ease-in-out forwards',
+                    }}
+                >
+                    <MousePointerClick size={16} className="text-primary flex-shrink-0" />
+                    <span>Klikněte na předmět pro zobrazení materiálů</span>
+                </div>
             </div>
 
             <style>{`
@@ -65,10 +89,10 @@ export function CalendarHint({ show, firstEventPosition }: CalendarHintProps) {
                     50% { transform: scale(1.2); opacity: 1; }
                 }
                 @keyframes calendarHintFade {
-                    0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
-                    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
-                    85% { opacity: 1; transform: translateX(-50%) translateY(0); }
-                    100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+                    0% { opacity: 0; transform: translateY(10px); }
+                    15% { opacity: 1; transform: translateY(0); }
+                    85% { opacity: 1; transform: translateY(0); }
+                    100% { opacity: 0; transform: translateY(-10px); }
                 }
             `}</style>
         </div>
