@@ -9,16 +9,18 @@ import { supabase } from './supabaseClient';
  * @param notificationIds - IDs of notifications that were viewed
  */
 export async function trackNotificationsViewed(notificationIds: string[]): Promise<void> {
+  if (!notificationIds || notificationIds.length === 0) return;
+
   try {
-    // Call Supabase RPC to increment view counts
-    // Note: Requires 'increment_view_count' function in Supabase
+    // Call Supabase RPC to increment view counts for each notification
+    // We use Promise.all to run them in parallel
     await Promise.all(
       notificationIds.map((id) =>
         supabase.rpc('increment_view_count', { notification_id: id })
       )
     );
   } catch (error) {
-    // Fail silently if analytics fail (or if RPC function is missing)
+    // Fail silently if analytics fail (privacy-first, loose coupling)
     console.error('[SpolkyService] Failed to track views:', error);
   }
 }
@@ -28,9 +30,10 @@ export async function trackNotificationsViewed(notificationIds: string[]): Promi
  * @param notificationId - ID of the notification that was clicked
  */
 export async function trackNotificationClick(notificationId: string): Promise<void> {
+  if (!notificationId) return;
+
   try {
     // Call Supabase RPC to increment click count
-    // Note: Requires 'increment_click_count' function in Supabase
     await supabase.rpc('increment_click_count', { notification_id: notificationId });
   } catch (error) {
     console.error('[SpolkyService] Failed to track click:', error);
