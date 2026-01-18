@@ -16,7 +16,7 @@ interface ProfilePopupProps {
 export function ProfilePopup({ isOpen, onOpenFeedback }: ProfilePopupProps) {
   const { isEnabled: outlookSyncEnabled, isLoading: outlookSyncLoading, toggle: toggleOutlookSync } = useOutlookSync();
   const { isDark, isLoading: themeLoading, toggle: toggleTheme } = useTheme();
-  const { isOptedIn, toggleAssociation } = useSpolkySettings();
+  const { isSubscribed, toggleAssociation } = useSpolkySettings();
   const [showSyncInfo, setShowSyncInfo] = useState(false);
   const [isSpolkyExpanded, setIsSpolkyExpanded] = useState(false);
 
@@ -123,18 +123,13 @@ export function ProfilePopup({ isOpen, onOpenFeedback }: ProfilePopupProps) {
                  >
                    <div className="space-y-1 mb-2 px-1 max-h-40 overflow-y-auto custom-scrollbar">
                       {Object.values(ASSOCIATION_PROFILES).map((profile) => {
-                        const homeAssoc = getUserAssociation(getFacultySync());
-                        const isHome = homeAssoc?.id === profile.id;
-                        const isEsn = profile.id === 'esn';
-                        
                         return (
                           <label key={profile.id} className="flex items-center justify-between px-2 py-1.5 hover:bg-base-200 rounded-md cursor-pointer transition-colors">
                             <span className="text-xs text-base-content opacity-90">{profile.name}</span>
                             <input 
                               type="checkbox" 
                               className="checkbox checkbox-xs checkbox-primary rounded-sm"
-                              checked={isHome || isOptedIn(profile.id) || (isEsn && getErasmusSync())}
-                              disabled={isHome || (isEsn && getErasmusSync())}
+                              checked={isSubscribed(profile.id)}
                               onChange={() => toggleAssociation(profile.id)}
                             />
                           </label>

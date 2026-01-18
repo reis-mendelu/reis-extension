@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell, Users, X } from 'lucide-react';
 import type { SpolekNotification } from '../services/spolky';
 import { fetchNotifications, trackNotificationsViewed, trackNotificationClick, filterNotificationsByFaculty } from '../services/spolky';
-import { getFacultySync, getErasmusSync } from '../utils/userParams';
 import { useSpolkySettings } from '../hooks/useSpolkySettings';
 
 interface NotificationFeedProps {
@@ -20,7 +19,7 @@ export function NotificationFeed({ className = '', isSidebarCollapsed = false }:
   });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const hasTrackedViews = useRef(false);
-  const { optedInAssociations } = useSpolkySettings();
+  const { subscribedAssociations } = useSpolkySettings();
 
   const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -34,7 +33,7 @@ export function NotificationFeed({ className = '', isSidebarCollapsed = false }:
     }, REFRESH_INTERVAL);
     
     return () => clearInterval(intervalId);
-  }, [optedInAssociations]); // Reload when opt-ins change
+  }, [subscribedAssociations]); // Reload when subscriptions change
 
   // Refresh when tab becomes visible
   useEffect(() => {
@@ -46,7 +45,7 @@ export function NotificationFeed({ className = '', isSidebarCollapsed = false }:
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [optedInAssociations]);
+  }, [subscribedAssociations]);
 
   const loadNotifications = async () => {
     // Only show loading if we don't have cached data
@@ -56,15 +55,11 @@ export function NotificationFeed({ className = '', isSidebarCollapsed = false }:
     
     try {
       const allNotifications = await fetchNotifications();
-      const facultyId = getFacultySync();
-      const isErasmus = getErasmusSync();
       
-      // Filter by faculty, Erasmus status, and manual opt-ins
+      // Filter by subscribed associations (includes home faculty and ESN by default)
       const filteredData = filterNotificationsByFaculty(
         allNotifications, 
-        facultyId, 
-        isErasmus,
-        optedInAssociations
+        subscribedAssociations
       );
       setNotifications(filteredData);
       

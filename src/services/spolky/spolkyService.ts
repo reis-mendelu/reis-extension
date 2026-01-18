@@ -93,28 +93,16 @@ export function getUserAssociation(facultyId: string | null): AssociationProfile
  */
 export function filterNotificationsByFaculty(
   notifications: SpolekNotification[],
-  facultyId: string | null,
-  isErasmus: boolean = false,
-  optedInAssociations: string[] = []
+  subscribedAssociations: string[] = []
 ): SpolekNotification[] {
-  // If no faculty ID and no opt-ins, return empty (unless e.g. public notifications exist, but logic implies affiliation)
-  if (!facultyId && optedInAssociations.length === 0) return [];
-  
-  const homeAssociationId = facultyId ? FACULTY_TO_ASSOCIATION[facultyId] : null;
-  
   return notifications.filter((n) => {
     const assocId = n.associationId;
 
-    // 1. Home Faculty (Always show)
-    if (homeAssociationId && assocId === homeAssociationId) return true;
+    // 1. Always show Admin / Academic notifications
+    if (!assocId || assocId === 'admin' || assocId.startsWith('academic_')) return true;
 
-    // 2. Opted-in Associations (Always show)
-    if (optedInAssociations.includes(assocId)) return true;
-
-    // 3. ESN (Show if Erasmus OR manually opted in - covered by #2)
-    if (assocId === 'esn' && isErasmus) return true;
-    
-    return false;
+    // 2. Show if subscribed (handled by useSpolkySettings defaults + user choice)
+    return subscribedAssociations.includes(assocId);
   });
 }
 
