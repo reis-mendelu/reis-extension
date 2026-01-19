@@ -21,8 +21,6 @@ html, body, #root {
 /* Safelist for calendar day highlight (dynamically constructed classes) */
 @source inline("bg-accent/5 bg-accent/10 text-accent");
 
-/* Safelist for timeline temporal urgency colors (dynamic class construction) */
-@source inline("text-error text-warning text-success text-primary animate-pulse");
 
 /* Custom Mendelu light theme for REIS extension */
 @plugin "daisyui/theme" {
@@ -171,4 +169,26 @@ html, body, #root {
 .clickable-link:hover {
   color: #059669; /* emerald-600 */
   text-decoration: underline;
+}
+
+/* Toast notification fixes - ensure background properly contains text */
+[data-sonner-toast] {
+  min-height: fit-content !important;
+  padding: 16px !important;
+  width: auto !important;
+  max-width: 400px !important;
+}
+
+[data-sonner-toast] [data-content] {
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  display: block !important;
+  width: 100% !important;
+}
+
+[data-sonner-toast] [data-icon] {
+  flex-shrink: 0 !important;
+  align-self: flex-start !important;
+  margin-top: 2px !important;
 }

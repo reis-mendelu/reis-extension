@@ -34,12 +34,10 @@ export function OutlookSyncHint({ navigationCount, isSyncEnabled, onSetup }: Out
         // 1. Navigation count >= threshold
         // 2. Sync is NOT enabled (false, not null/loading)
         // 3. Not dismissed this session
-        // 4. Calendar click hint has been shown (prevent overlap)
         const shouldShow = 
             navigationCount >= OUTLOOK_HINT_NAV_THRESHOLD &&
             isSyncEnabled === false &&
-            !hasBeenDismissed &&
-            localStorage.getItem('reis_calendar_click_hint_shown');
+            !hasBeenDismissed;
 
         if (shouldShow && !isVisible) {
             // Delay slightly for smoother appearance
@@ -84,22 +82,22 @@ export function OutlookSyncHint({ navigationCount, isSyncEnabled, onSetup }: Out
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 20, scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className="fixed bottom-6 left-24 z-[100]" // Positioned next to sidebar
+                    className="fixed bottom-6 left-24 z-[100] max-w-sm" // Positioned next to sidebar
                 >
-                    <div className="flex items-center gap-3 bg-base-100/80 backdrop-blur-md border border-base-200 p-3 pr-4 rounded-xl shadow-lg ring-1 ring-black/5 hover:shadow-xl transition-shadow w-auto max-w-sm">
+                    <div className="flex items-stretch gap-3 bg-base-100 backdrop-blur-md border border-base-200 p-4 rounded-xl shadow-lg ring-1 ring-black/5 hover:shadow-xl transition-shadow">
                         {/* Icon Container */}
                         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center shrink-0">
                             <Calendar className="w-5 h-5 text-primary" />
                         </div>
                         
                         {/* Text Content */}
-                        <div className="flex flex-col gap-0.5">
-                            <span className="text-sm font-semibold text-base-content">Zapnout synchronizaci?</span>
-                            <span className="text-xs text-base-content/60">Měj termíny a rozvrh v Outlooku</span>
+                        <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                            <span className="text-sm font-semibold text-base-content whitespace-normal">Zapnout synchronizaci?</span>
+                            <span className="text-xs text-base-content/60 whitespace-normal">Měj termíny a rozvrh v Outlooku</span>
                         </div>
                         
                         {/* Actions */}
-                        <div className="flex items-center gap-2 ml-2 pl-3 border-l border-base-200">
+                        <div className="flex items-center gap-2 pl-3 border-l border-base-200 shrink-0">
                             <button
                                 onClick={handleSetup}
                                 className="btn btn-primary btn-xs btn-circle"

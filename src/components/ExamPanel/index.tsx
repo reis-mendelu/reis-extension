@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useExams } from '../../hooks/data';
-import { ExamTimeline } from '../ExamTimeline';
 import { StorageService } from '../../services/storage';
 import type { ExamSubject, ExamSection, ExamFilterState } from '../../types/exams';
 
@@ -160,19 +159,6 @@ export function ExamPanel({ onSelectSubject }: ExamPanelProps) {
         <>
             <div className="flex flex-col h-full bg-base-100 rounded-lg border border-base-300 overflow-hidden">
                 <ExamPanelHeader />
-                
-                {/* Timeline */}
-                <div className="px-4 pt-2 pb-0 border-b border-base-200">
-                    <ExamTimeline 
-                        exams={exams} 
-                        onSelectExam={(exam) => onSelectSubject({
-                            ...exam,
-                            courseCode: exam.code,
-                            courseName: exam.name,
-                            isExam: true
-                        })}
-                    />
-                </div>
 
                 <ExamFilterBar
                     statusFilter={statusFilter}

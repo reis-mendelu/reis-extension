@@ -19,7 +19,7 @@ import { syncService, outlookSyncService } from './services/sync'
 import { useOutlookSync } from './hooks/data'
 
 import { FeedbackModal } from './components/Feedback/FeedbackModal'
-import { TutorialList, TutorialModal } from './components/Tutorials'
+import { TutorialModal } from './components/Tutorials'
 import { fetchTutorials } from './services/tutorials'
 import type { Tutorial } from './services/tutorials'
 import { useSpolkySettings } from './hooks/useSpolkySettings'
@@ -106,30 +106,32 @@ function App() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   // Tutorial state
-  const [isTutorialListOpen, setIsTutorialListOpen] = useState(false);
   const [selectedTutorial, setSelectedTutorial] = useState<Tutorial | null>(null);
   const [tutorials, setTutorials] = useState<Tutorial[]>([]);
-  const [isTutorialsLoading, setIsTutorialsLoading] = useState(false);
+  // const [isTutorialsLoading, setIsTutorialsLoading] = useState(false); // Unused if fetching on load
   const { subscribedAssociations } = useSpolkySettings();
 
-  // Fetch tutorials when list is opened
-  const handleOpenTutorials = async () => {
-    setIsTutorialListOpen(true);
-    setIsTutorialsLoading(true);
-    try {
-      console.log('[App] Fetching tutorials for associations:', subscribedAssociations);
-      const data = await fetchTutorials(subscribedAssociations);
-      console.log('[App] Received tutorials:', data);
-      setTutorials(data);
-    } catch (error) {
-      console.error('[App] Failed to fetch tutorials:', error);
-    } finally {
-      setIsTutorialsLoading(false);
-    }
-  };
+  // Fetch tutorials on app load
+  useEffect(() => {
+    const loadTutorials = async () => {
+      // setIsTutorialsLoading(true);
+      try {
+        console.log('[App] Auto-fetching tutorials for associations:', subscribedAssociations);
+        const data = await fetchTutorials(subscribedAssociations);
+        console.log('[App] Received tutorials:', data);
+        setTutorials(data);
+      } catch (error) {
+        console.error('[App] Failed to fetch tutorials:', error);
+      } finally {
+        // setIsTutorialsLoading(false);
+      }
+    };
+    
+    // Initial fetch
+    loadTutorials();
+  }, [subscribedAssociations]);
 
   const handleSelectTutorial = (tutorial: Tutorial) => {
-    setIsTutorialListOpen(false);
     setSelectedTutorial(tutorial);
   };
 
@@ -274,7 +276,8 @@ function App() {
         onViewChange={setCurrentView}
         onOpenSettingsRef={openSettingsRef}
         onOpenFeedback={() => setIsFeedbackOpen(true)}
-        onOpenTutorials={handleOpenTutorials}
+        tutorials={tutorials}
+        onSelectTutorial={handleSelectTutorial}
       />
       <main className="flex-1 flex flex-col ml-0 md:ml-20 transition-all duration-300 overflow-hidden">
         <AppHeader 
@@ -324,15 +327,6 @@ function App() {
       <FeedbackModal 
         isOpen={isFeedbackOpen}
         onClose={() => setIsFeedbackOpen(false)}
-      />
-
-      {/* Tutorial List Modal */}
-      <TutorialList
-        tutorials={tutorials}
-        isOpen={isTutorialListOpen}
-        isLoading={isTutorialsLoading}
-        onClose={() => setIsTutorialListOpen(false)}
-        onSelectTutorial={handleSelectTutorial}
       />
 
       {/* Tutorial Viewer Modal */}

@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, ExternalLink } from 'lucide-react';
 import type { MenuItem } from '../menuConfig';
 import type { AppView } from '../Sidebar';
+import type { Tutorial } from '../../services/tutorials/types';
 
 interface NavItemProps {
   item: MenuItem;
@@ -11,9 +12,10 @@ interface NavItemProps {
   onMouseLeave: () => void;
   onClick: () => void;
   onViewChange: (view: AppView) => void;
+  onSelectTutorial?: (tutorial: Tutorial) => void;
 }
 
-export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave, onClick, onViewChange }: NavItemProps) {
+export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave, onClick, onViewChange, onSelectTutorial }: NavItemProps) {
   return (
     <div
       className="relative group"
@@ -44,9 +46,6 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
             transition={{ duration: 0.15, ease: "easeOut" }}
             className="absolute left-14 -top-4 w-64 bg-base-100 rounded-xl shadow-popover-heavy border border-base-300 p-2 z-50"
           >
-            <div className="px-3 py-2 border-b border-base-200 mb-1">
-              <h3 className="font-semibold text-base-content">{item.label}</h3>
-            </div>
             <div className="flex flex-col gap-0.5">
               {item.children?.map((child) => (
                 <a
@@ -58,6 +57,9 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
                     if (child.id === 'zapisy-zkousky') {
                       e.preventDefault();
                       onViewChange('exams');
+                    } else if (child.isTutorial && child.tutorial) {
+                      e.preventDefault();
+                      onSelectTutorial?.(child.tutorial);
                     }
                   }}
                   className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/70 hover:bg-base-200 hover:text-primary transition-colors group/item cursor-pointer"
@@ -65,8 +67,13 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
                   <span className="text-base-content/50 group-hover/item:text-primary transition-colors">
                     {child.icon || <ChevronRight className="w-4 h-4" />}
                   </span>
-                  <span className="flex-1">{child.label}</span>
-                  {!child.isFeature && (
+                  <div className="flex-1 flex flex-col min-w-0">
+                    <span className="font-medium truncate">{child.label}</span>
+                    {child.subtitle && (
+                      <span className="text-[10px] text-base-content/40 truncate">{child.subtitle}</span>
+                    )}
+                  </div>
+                  {!child.isFeature && !child.isTutorial && (
                     <ExternalLink className="w-3 h-3 text-base-content/30 group-hover/item:text-base-content/50" />
                   )}
                 </a>

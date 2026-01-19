@@ -3,7 +3,6 @@
  * 
  * Extracted from ExamDrawer for shared usage across:
  * - ExamPanel
- * - ExamTimeline
  * - useExams hook
  * - DatePickerPopup
  */
@@ -45,19 +44,6 @@ export interface ExamSubject {
     name: string;         // Full subject name
     code: string;         // e.g., "EBC-ALG"
     sections: ExamSection[];
-}
-
-/**
- * Registered exam for timeline display.
- * Simplified structure with only essential info.
- */
-export interface RegisteredExam {
-    code: string;
-    name: string;
-    sectionName: string;
-    date: string;
-    time: string;
-    room?: string;
 }
 
 /**

@@ -5,7 +5,7 @@
  * Similar to WelcomeModal but with multi-slide support.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import type { Tutorial } from '../../services/tutorials/types';
@@ -19,11 +19,23 @@ interface TutorialModalProps {
 
 export function TutorialModal({ tutorial, isOpen, onClose }: TutorialModalProps) {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const modalRef = useRef<HTMLDivElement>(null);
   
   const totalSlides = tutorial.slides.length;
   const currentSlide = tutorial.slides[currentSlideIndex];
   const isFirstSlide = currentSlideIndex === 0;
   const isLastSlide = currentSlideIndex === totalSlides - 1;
+
+  // Auto-focus the modal when it opens to enable immediate keyboard navigation
+  useEffect(() => {
+    if (isOpen) {
+      // Small timeout to ensure the modal is in the DOM and visible
+      const timer = setTimeout(() => {
+        modalRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const goToPrevious = useCallback(() => {
     if (!isFirstSlide) {
@@ -34,10 +46,8 @@ export function TutorialModal({ tutorial, isOpen, onClose }: TutorialModalProps)
   const goToNext = useCallback(() => {
     if (!isLastSlide) {
       setCurrentSlideIndex(prev => prev + 1);
-    } else {
-      onClose();
     }
-  }, [isLastSlide, onClose]);
+  }, [isLastSlide]);
 
   const goToSlide = useCallback((index: number) => {
     setCurrentSlideIndex(index);
@@ -66,18 +76,19 @@ export function TutorialModal({ tutorial, isOpen, onClose }: TutorialModalProps)
           
           {/* Modal Container */}
           <motion.div
+            ref={modalRef}
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] w-[90%] max-w-4xl h-[85vh] flex flex-col"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] w-[90%] max-w-4xl aspect-[4/3] max-h-[90vh] flex flex-col outline-none overflow-hidden"
             onKeyDown={handleKeyDown}
             tabIndex={0}
           >
             <div className="bg-base-100 rounded-3xl shadow-2xl border border-base-300 flex flex-col h-full overflow-hidden">
               
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-base-300 bg-base-100/80 backdrop-blur shrink-0">
+              <div className="flex items-center justify-between px-6 pt-4 pb-2 border-b border-white/40 bg-base-100/80 backdrop-blur shrink-0 mb-5">
                 <div>
                   <h2 className="text-xl font-bold text-base-content">
                     {tutorial.title}
@@ -99,7 +110,7 @@ export function TutorialModal({ tutorial, isOpen, onClose }: TutorialModalProps)
               </div>
               
               {/* Slide Content */}
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto flex flex-col">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentSlideIndex}
@@ -107,6 +118,7 @@ export function TutorialModal({ tutorial, isOpen, onClose }: TutorialModalProps)
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.2 }}
+                    className="flex-1 flex flex-col min-h-0"
                   >
                     {currentSlide && <TutorialSlide slide={currentSlide} />}
                   </motion.div>
@@ -126,26 +138,34 @@ export function TutorialModal({ tutorial, isOpen, onClose }: TutorialModalProps)
                   <span className="hidden sm:inline">Zpět</span>
                 </button>
                 
-                {/* Progress Dots */}
-                <div className="flex items-center gap-2">
-                  {tutorial.slides.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => goToSlide(index)}
-                      className={`w-2.5 h-2.5 rounded-full transition-all ${
-                        index === currentSlideIndex
-                          ? 'bg-primary w-6'
-                          : 'bg-base-300 hover:bg-base-content/30'
-                      }`}
-                      aria-label={`Slide ${index + 1}`}
-                    />
-                  ))}
+                {/* Progress Indicators */}
+                <div className="flex flex-col items-center gap-1.5">
+                  {/* Dots */}
+                  <div className="flex items-center gap-2">
+                    {tutorial.slides.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => goToSlide(index)}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          index === currentSlideIndex
+                            ? 'bg-primary w-3'
+                            : 'bg-base-content/20 hover:bg-base-content/40'
+                        }`}
+                        aria-label={`Snímek ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                  
+                  {/* Step Label */}
+                  <span className="text-xs font-medium text-base-content/50 uppercase tracking-wider">
+                    Snímek {currentSlideIndex + 1} z {totalSlides}
+                  </span>
                 </div>
                 
                 {/* Next/Finish Button */}
                 <button
-                  onClick={goToNext}
-                  className="btn btn-primary gap-2"
+                  onClick={isLastSlide ? onClose : goToNext}
+                  className="btn btn-primary gap-2 min-w-[120px]"
                 >
                   <span>{isLastSlide ? 'Dokončit' : 'Další'}</span>
                   {!isLastSlide && <ChevronRight className="w-5 h-5" />}

@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   Settings,
+  Layers
 } from 'lucide-react';
 import { MENDELU_LOGO_PATH, OUTLOOK_ICON_PATH, TEAMS_ICON_PATH } from '../constants/icons';
 import { getMainMenuItems } from './menuConfig';
 import { NavItem } from './Sidebar/NavItem';
 import { ProfilePopup } from './Sidebar/ProfilePopup';
+import type { Tutorial } from '../services/tutorials/types';
 
 export type AppView = 'calendar' | 'exams';
 
@@ -16,10 +18,18 @@ interface SidebarProps {
   onOpenSettingsRef?: React.MutableRefObject<(() => void) | null>;
   onOpenReservation?: () => void;
   onOpenFeedback: () => void;
-  onOpenTutorials?: () => void;
+  tutorials?: Tutorial[];
+  onSelectTutorial?: (tutorial: Tutorial) => void;
 }
 
-export const Sidebar = ({ currentView, onViewChange, onOpenSettingsRef, onOpenFeedback, onOpenTutorials }: SidebarProps) => {
+export const Sidebar = ({ 
+  currentView, 
+  onViewChange, 
+  onOpenSettingsRef, 
+  onOpenFeedback, 
+  tutorials = [], 
+  onSelectTutorial 
+}: SidebarProps) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -96,28 +106,45 @@ export const Sidebar = ({ currentView, onViewChange, onOpenSettingsRef, onOpenFe
 
         {/* Navigation Items */}
         <div className="flex flex-col gap-3 w-full px-2">
-          {mainMenuItems.map((item) => (
-            <NavItem
-              key={item.id}
-              item={item}
-              isActive={currentView === 'exams' && item.id === 'exams' || currentView === 'calendar' && item.id === 'dashboard'}
-              isHovered={hoveredItem === item.id}
-              onMouseEnter={() => handleMouseEnter(item.id)}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => {
-                if (item.id === 'dashboard') {
-                  onViewChange('calendar');
-                } else if (item.id === 'exams') {
-                  onViewChange('exams');
-                } else if (item.id === 'tutorials') {
-                  onOpenTutorials?.();
-                } else if (item.href) {
-                  window.open(item.href, '_blank');
-                }
-              }}
-              onViewChange={onViewChange}
-            />
-          ))}
+          {mainMenuItems.map((item) => {
+            // Inject tutorials into the tutorials menu item
+            const processedItem = { ...item };
+            if (item.id === 'tutorials' && tutorials.length > 0) {
+              processedItem.expandable = true;
+              processedItem.children = tutorials.map(t => ({
+                id: `tutorial-${t.id}`,
+                label: t.title,
+                subtitle: `${t.slides.length} snímků`,
+                icon: <Layers className="w-4 h-4" />,
+                isTutorial: true,
+                tutorial: t
+              }));
+            }
+
+            return (
+              <NavItem
+                key={item.id}
+                item={processedItem}
+                isActive={currentView === 'exams' && item.id === 'exams' || currentView === 'calendar' && item.id === 'dashboard'}
+                isHovered={hoveredItem === item.id}
+                onMouseEnter={() => handleMouseEnter(item.id)}
+                onMouseLeave={handleMouseLeave}
+                onClick={() => {
+                  if (item.id === 'dashboard') {
+                    onViewChange('calendar');
+                  } else if (item.id === 'exams') {
+                    onViewChange('exams');
+                  } else if (item.id === 'tutorials') {
+                    // No action on main click, relies on hover for popover
+                  } else if (item.href) {
+                    window.open(item.href, '_blank');
+                  }
+                }}
+                onViewChange={onViewChange}
+                onSelectTutorial={onSelectTutorial}
+              />
+            );
+          })}
         </div>
 
         {/* Spacer */}

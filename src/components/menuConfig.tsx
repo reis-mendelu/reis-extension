@@ -18,6 +18,7 @@ import {
     CalendarCheck,
     Compass
 } from 'lucide-react';
+import type { Tutorial } from '../services/tutorials/types';
 
 export interface MenuItem {
     id: string;
@@ -29,9 +30,12 @@ export interface MenuItem {
     children?: {
         label: string;
         id: string;
+        subtitle?: string; // Small text below label
         icon?: React.ReactNode;
         href?: string;
         isFeature?: boolean; // true = built-in feature, false/undefined = redirect to old IS
+        isTutorial?: boolean; // true = this is a tutorial entry
+        tutorial?: Tutorial; // The actual tutorial object
     }[];
     danger?: boolean;
     onClick?: () => void;
