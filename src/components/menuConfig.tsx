@@ -15,7 +15,8 @@ import {
     FileText,
     PenTool,
     Book,
-    CalendarCheck
+    CalendarCheck,
+    Compass
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -131,6 +132,11 @@ export const getMainMenuItems = (studiumId: string = '', obdobiId: string = ''):
                 href: 'https://is.mendelu.cz/auth/kc/kc.pl?_m=17022'
             }
         ]
+    },
+    {
+        id: 'tutorials',
+        label: 'Průvodce',
+        icon: <Compass className="w-5 h-5" />,
     }
 ];
 

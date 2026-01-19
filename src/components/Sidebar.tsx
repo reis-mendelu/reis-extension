@@ -16,9 +16,10 @@ interface SidebarProps {
   onOpenSettingsRef?: React.MutableRefObject<(() => void) | null>;
   onOpenReservation?: () => void;
   onOpenFeedback: () => void;
+  onOpenTutorials?: () => void;
 }
 
-export const Sidebar = ({ currentView, onViewChange, onOpenSettingsRef, onOpenFeedback }: SidebarProps) => {
+export const Sidebar = ({ currentView, onViewChange, onOpenSettingsRef, onOpenFeedback, onOpenTutorials }: SidebarProps) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -108,6 +109,8 @@ export const Sidebar = ({ currentView, onViewChange, onOpenSettingsRef, onOpenFe
                   onViewChange('calendar');
                 } else if (item.id === 'exams') {
                   onViewChange('exams');
+                } else if (item.id === 'tutorials') {
+                  onOpenTutorials?.();
                 } else if (item.href) {
                   window.open(item.href, '_blank');
                 }
