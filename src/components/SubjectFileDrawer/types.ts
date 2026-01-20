@@ -12,10 +12,10 @@ export interface DrawerHeaderProps {
     courseId: string;
     selectedCount: number;
     isDownloading: boolean;
-    activeTab: 'files' | 'stats' | 'assessments';
+    activeTab: 'files' | 'stats' | 'assessments' | 'syllabus';
     onClose: () => void;
     onDownload: () => void;
-    onTabChange: (tab: 'files' | 'stats' | 'assessments') => void;
+    onTabChange: (tab: 'files' | 'stats' | 'assessments' | 'syllabus') => void;
 }
 
 export interface FileGroup {

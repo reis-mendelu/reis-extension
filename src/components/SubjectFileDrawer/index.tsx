@@ -18,6 +18,7 @@ import type { ParsedFile } from '../../types/documents';
 import { DrawerHeader } from './DrawerHeader';
 import { FileList, FileListSkeleton } from './FileList';
 import { AssessmentTab } from './AssessmentTab';
+import { SyllabusTab } from './SyllabusTab';
 import { DragHint, SelectionBox } from './DragHint';
 import { useDragSelection } from './useDragSelection';
 import type { FileGroup } from './types';
@@ -37,7 +38,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
 
     // State
     // Default to 'stats' tab when opened from exams view (zkousky page)
-    const [activeTab, setActiveTab] = useState<'files' | 'stats' | 'assessments'>(lesson?.isExam ? 'stats' : 'files');
+    const [activeTab, setActiveTab] = useState<'files' | 'stats' | 'assessments' | 'syllabus'>(lesson?.isExam ? 'stats' : 'files');
     const { files } = useFiles(isOpen ? lesson?.courseCode : undefined);
     const [showDragHint, setShowDragHint] = useState(false);
 
@@ -229,6 +230,8 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                                 )
                             ) : activeTab === 'assessments' ? (
                                 <AssessmentTab courseCode={lesson?.courseCode || ''} />
+                            ) : activeTab === 'syllabus' ? (
+                                <SyllabusTab courseCode={lesson?.courseCode || ''} />
                             ) : (
                                 <SuccessRateTab courseCode={lesson?.courseCode || ''} />
                             )}
