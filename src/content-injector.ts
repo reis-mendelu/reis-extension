@@ -32,9 +32,10 @@ import { fetchExamData } from "./api/exams";
 import { fetchSubjects } from "./api/subjects";
 import { fetchFilesFromFolder } from "./api/documents";
 import { fetchAssessments } from "./api/assessments";
+import { fetchSyllabus } from "./api/syllabus";
 import { registerExam, unregisterExam } from "./api/exams";
 import { getUserParams } from "./utils/userParams";
-import type { SubjectsData, Assessment } from "./types/documents";
+import type { SubjectsData, Assessment, SyllabusRequirements } from "./types/documents";
 import type { ParsedFile } from "./types/documents";
 
 // =============================================================================
@@ -336,6 +337,7 @@ async function syncAllData() {
             const subjectsData = subjects.value as SubjectsData;
             const files: Record<string, ParsedFile[]> = {};
             const assessments: Record<string, Assessment[]> = {};
+            const syllabuses: Record<string, SyllabusRequirements> = {};
             const subjectEntries = Object.entries(subjectsData.data);
 
             // Get user params for assessment sync
@@ -383,10 +385,25 @@ async function syncAllData() {
                 } else {
                     console.debug(`[REIS Content] Skipping assessments for ${courseCode}: studium=${!!studium}, obdobi=${!!obdobi}, subjectId=${!!subject.subjectId}`);
                 }
+                
+                // Fetch syllabus
+                if (subject.subjectId) {
+                    try {
+                        console.log(`[REIS Content] Fetching syllabus for ${courseCode}...`);
+                        const subjectSyllabus = await fetchSyllabus(subject.subjectId);
+                        console.log(`[REIS Content] Syllabus for ${courseCode}: text=${subjectSyllabus.requirementsText.length} chars, table=${subjectSyllabus.requirementsTable.length} rows`);
+                        syllabuses[courseCode] = subjectSyllabus;
+                    } catch (e) {
+                        console.warn(`[REIS Content] Failed to fetch syllabus for ${courseCode}:`, e);
+                    }
+                } else {
+                    console.debug(`[REIS Content] Skipping syllabus for ${courseCode}: no subjectId`);
+                }
             }
 
             cachedData.files = files;
             cachedData.assessments = assessments;
+            cachedData.syllabuses = syllabuses;
             cachedData.lastSync = Date.now();
             sendToIframe(Messages.syncUpdate(cachedData));
         }

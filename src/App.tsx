@@ -191,6 +191,15 @@ function App() {
             }
             console.log('[App] Wrote assessments for', Object.keys(assessmentsMap).length, 'subjects to localStorage');
           }
+          if (receivedData.syllabuses && typeof receivedData.syllabuses === 'object') {
+            // Write syllabus for each subject with prefix key
+            const syllabusesMap = receivedData.syllabuses as Record<string, unknown>;
+            for (const [courseCode, syllabus] of Object.entries(syllabusesMap)) {
+              const key = `${STORAGE_KEYS.SUBJECT_SYLLABUS_PREFIX}${courseCode}`;
+              StorageService.set(key, syllabus);
+            }
+            console.log('[App] Wrote syllabuses for', Object.keys(syllabusesMap).length, 'subjects to localStorage');
+          }
           if (receivedData.lastSync) {
             StorageService.set(STORAGE_KEYS.LAST_SYNC, receivedData.lastSync);
           }

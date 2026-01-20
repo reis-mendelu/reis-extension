@@ -27,6 +27,7 @@ export interface SyncedData {
     subjects?: unknown;
     files?: unknown;
     assessments?: unknown; // Map of courseCode -> Assessment[]
+    syllabuses?: unknown; // Map of courseCode -> SyllabusRequirements
     lastSync: number;
     error?: string;
 }

@@ -76,3 +76,8 @@ export interface Assessment {
     teacher: string;
     detailUrl?: string; // Relative URL for details
 }
+
+export interface SyllabusRequirements {
+    requirementsText: string; // Textual description of requirements
+    requirementsTable: string[][]; // Grading breakdown table (rows of cells)
+}
