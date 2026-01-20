@@ -5,8 +5,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { StorageService, STORAGE_KEYS } from '../../services/storage';
 import { syncService } from '../../services/sync';
+import { StorageService, STORAGE_KEYS } from '../../services/storage';
 import type { SyllabusRequirements } from '../../types/documents';
 
 export interface UseSyllabusResult {
@@ -25,12 +25,10 @@ export function useSyllabus(courseCode: string | undefined): UseSyllabusResult {
             return;
         }
 
-        const loadFromStorage = () => {
-            const key = `${STORAGE_KEYS.SUBJECT_SYLLABUS_PREFIX}${courseCode}`;
-            const storedSyllabus = StorageService.get<SyllabusRequirements>(key);
-            
+        const loadFromStorage = async () => {
+             const key = `${STORAGE_KEYS.SUBJECT_SYLLABUS_PREFIX}${courseCode}`;
+            const storedSyllabus = await StorageService.getAsync<SyllabusRequirements>(key);
             setSyllabus(storedSyllabus);
-            // Consistent with other hooks: if we checked storage, we are done "loading"
             setIsLoading(false);
         };
 

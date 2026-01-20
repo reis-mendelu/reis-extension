@@ -35,8 +35,10 @@ import { fetchAssessments } from "./api/assessments";
 import { fetchSyllabus } from "./api/syllabus";
 import { registerExam, unregisterExam } from "./api/exams";
 import { getUserParams } from "./utils/userParams";
-import type { SubjectsData, Assessment, SyllabusRequirements } from "./types/documents";
-import type { ParsedFile } from "./types/documents";
+import { StorageService, STORAGE_KEYS } from "./services/storage";
+import pLimit from "p-limit";
+
+import type { SubjectsData } from "./types/documents";
 
 // =============================================================================
 // State
@@ -45,6 +47,9 @@ import type { ParsedFile } from "./types/documents";
 let iframeElement: HTMLIFrameElement | null = null;
 let syncIntervalId: ReturnType<typeof setInterval> | null = null;
 let cachedData: SyncedData = { lastSync: 0 };
+
+// Create a limiter for network operations (limit 3)
+const limit = pLimit(3);
 
 // =============================================================================
 // DOM Sniper Pattern - Earliest Possible Iframe Injection
@@ -327,17 +332,15 @@ async function syncAllData() {
             schedule: schedule.status === "fulfilled" ? schedule.value : null,
             exams: exams.status === "fulfilled" ? exams.value : null,
             subjects: subjects.status === "fulfilled" ? subjects.value : null,
-            files: {},
+            files: {}, // Details stored in IndexedDB
             lastSync: Date.now(),
         };
 
+        // Notify iframe about basic data immediately
         sendToIframe(Messages.syncUpdate(cachedData));
 
         if (subjects.status === "fulfilled" && subjects.value) {
             const subjectsData = subjects.value as SubjectsData;
-            const files: Record<string, ParsedFile[]> = {};
-            const assessments: Record<string, Assessment[]> = {};
-            const syllabuses: Record<string, SyllabusRequirements> = {};
             const subjectEntries = Object.entries(subjectsData.data);
 
             // Get user params for assessment sync
@@ -350,60 +353,69 @@ async function syncAllData() {
                 console.log('[REIS Content] Incomplete user params, trying fallback from schedule data...');
                 const scheduleArray = (schedule.status === "fulfilled" && Array.isArray(schedule.value)) ? schedule.value : null;
                 if (scheduleArray && scheduleArray.length > 0) {
-                    const firstEvent = scheduleArray[0];
-                    studium = studium || (firstEvent as any).studyId;
-                    obdobi = obdobi || (firstEvent as any).periodId;
+                    const firstEvent = scheduleArray[0] as any;
+                    studium = studium || (firstEvent.studyId);
+                    obdobi = obdobi || (firstEvent.periodId);
                     console.log(`[REIS Content] Fallback successful: studium=${studium}, obdobi=${obdobi}`);
                 }
             }
             
-            console.log(`[REIS Content] Starting loop for ${subjectEntries.length} subjects. Params: studium=${studium}, obdobi=${obdobi}`);
+            console.log(`[REIS Content] Starting batched sync for ${subjectEntries.length} subjects. Concurrency=3`);
 
-            for (const [courseCode, subject] of subjectEntries) {
-                console.log(`[REIS Content] Processing ${courseCode}: subjectId=${subject.subjectId}, folderUrl=${!!subject.folderUrl}`);
-                
-                // Fetch files
-                if (subject.folderUrl) {
-                    try {
-                        const subjectFiles = await fetchFilesFromFolder(subject.folderUrl);
-                        files[courseCode] = subjectFiles;
-                    } catch (e) {
-                        console.warn(`[REIS Content] Failed to fetch files for ${courseCode}:`, e);
-                    }
-                }
+            const subjectTasks = subjectEntries.map(([courseCode, subject]) => {
+                return limit(async () => {
+                    console.log(`[REIS Content] Processing ${courseCode}: subjectId=${subject.subjectId}`);
+                    
+                    const subTasks = [];
 
-                // Fetch assessments
-                if (studium && obdobi && subject.subjectId) {
-                    try {
-                        console.log(`[REIS Content] Fetching assessments for ${courseCode}...`);
-                        const subjectAssessments = await fetchAssessments(studium, obdobi, subject.subjectId);
-                        console.log(`[REIS Content] Result for ${courseCode}: ${subjectAssessments.length} assessments`);
-                        assessments[courseCode] = subjectAssessments;
-                    } catch (e) {
-                        console.warn(`[REIS Content] Failed to fetch assessments for ${courseCode}:`, e);
+                    // Fetch files
+                    if (subject.folderUrl) {
+                        subTasks.push((async () => {
+                            try {
+                                const subjectFiles = await fetchFilesFromFolder(subject.folderUrl);
+                                const key = `${STORAGE_KEYS.SUBJECT_FILES_PREFIX}${courseCode}`;
+                                await StorageService.setAsync(key, subjectFiles);
+                            } catch (e) {
+                                console.warn(`[REIS Content] Failed to fetch files for ${courseCode}:`, e);
+                            }
+                        })());
                     }
-                } else {
-                    console.debug(`[REIS Content] Skipping assessments for ${courseCode}: studium=${!!studium}, obdobi=${!!obdobi}, subjectId=${!!subject.subjectId}`);
-                }
-                
-                // Fetch syllabus
-                if (subject.subjectId) {
-                    try {
-                        console.log(`[REIS Content] Fetching syllabus for ${courseCode}...`);
-                        const subjectSyllabus = await fetchSyllabus(subject.subjectId);
-                        console.log(`[REIS Content] Syllabus for ${courseCode}: text=${subjectSyllabus.requirementsText.length} chars, table=${subjectSyllabus.requirementsTable.length} rows`);
-                        syllabuses[courseCode] = subjectSyllabus;
-                    } catch (e) {
-                        console.warn(`[REIS Content] Failed to fetch syllabus for ${courseCode}:`, e);
-                    }
-                } else {
-                    console.debug(`[REIS Content] Skipping syllabus for ${courseCode}: no subjectId`);
-                }
-            }
 
-            cachedData.files = files;
-            cachedData.assessments = assessments;
-            cachedData.syllabuses = syllabuses;
+                    // Fetch assessments
+                    if (studium && obdobi && subject.subjectId) {
+                        subTasks.push((async () => {
+                            try {
+                                const subjectAssessments = await fetchAssessments(studium, obdobi, subject.subjectId as string);
+                                const key = `${STORAGE_KEYS.SUBJECT_ASSESSMENTS_PREFIX}${courseCode}`;
+                                await StorageService.setAsync(key, subjectAssessments);
+                            } catch (e) {
+                                console.warn(`[REIS Content] Failed to fetch assessments for ${courseCode}:`, e);
+                            }
+                        })());
+                    }
+                    
+                    // Fetch syllabus
+                    if (subject.subjectId) {
+                        subTasks.push((async () => {
+                            try {
+                                const subjectSyllabus = await fetchSyllabus(subject.subjectId as string);
+                                const key = `${STORAGE_KEYS.SUBJECT_SYLLABUS_PREFIX}${courseCode}`;
+                                await StorageService.setAsync(key, subjectSyllabus);
+                            } catch (e) {
+                                console.warn(`[REIS Content] Failed to fetch syllabus for ${courseCode}:`, e);
+                            }
+                        })());
+                    }
+
+                    await Promise.all(subTasks);
+                });
+            });
+
+            await Promise.all(subjectTasks);
+            
+            console.log("[REIS Content] ✅ All subject details synced to IndexedDB");
+            
+            // Final update
             cachedData.lastSync = Date.now();
             sendToIframe(Messages.syncUpdate(cachedData));
         }

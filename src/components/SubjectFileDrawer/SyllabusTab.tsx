@@ -1,4 +1,5 @@
 import { useSyllabus } from '../../hooks/data';
+import { useUserParams } from '../../hooks/useUserParams';
 import { BookOpen, Info } from 'lucide-react';
 
 interface SyllabusTabProps {
@@ -7,6 +8,8 @@ interface SyllabusTabProps {
 
 export function SyllabusTab({ courseCode }: SyllabusTabProps) {
     const { syllabus, isLoading } = useSyllabus(courseCode);
+    const { params } = useUserParams();
+    const studyForm = params?.studyForm; // 'prez' or 'komb'
 
     // Initial loading or missing data
     if (isLoading) {
@@ -77,9 +80,9 @@ export function SyllabusTab({ courseCode }: SyllabusTabProps) {
                             if (trimmed.match(/^[A-F] \(/)) {
                                 const grades = trimmed.split(/, ?(?=[A-F] \()/);
                                 return (
-                                    <div key={i} className="flex flex-wrap gap-2 my-4">
+                                    <div key={i} className="flex flex-wrap gap-2 my-2">
                                         {grades.map((grade, g) => (
-                                            <span key={g} className="badge badge-lg badge-ghost border-base-300 bg-base-100 text-base-content/90 font-medium">
+                                            <span key={g} className="badge badge-ghost py-3 h-auto border-base-300 bg-base-100 text-base-content/90 font-medium text-xs">
                                                 {grade.trim()}
                                             </span>
                                         ))}
@@ -108,37 +111,69 @@ export function SyllabusTab({ courseCode }: SyllabusTabProps) {
             )}
 
             {/* 2. Grading Table */}
-            {syllabus.requirementsTable.length > 0 && (
-                <div>
-                    <h3 className="text-base font-bold text-base-content mb-3">Bodové rozdělení</h3>
-                    <div className="overflow-x-auto border border-base-200 rounded-lg">
-                        <table className="table table-sm w-full">
-                            <thead>
-                                <tr className="bg-base-200 text-base-content">
-                                    {syllabus.requirementsTable[0].map((header, i) => (
-                                        <th key={i} className="font-semibold">{header}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {syllabus.requirementsTable.slice(1).map((row, i) => (
-                                    <tr key={i} className="border-b border-base-200 last:border-0 hover:bg-base-200/30">
-                                        {row.map((cell, j) => (
-                                            <td key={j} className={j > 0 ? 'text-right font-mono' : ''}>
-                                                {cell}
-                                            </td>
-                                        ))}
+            {syllabus.requirementsTable.length > 0 && (() => {
+                const headers = syllabus.requirementsTable[0];
+                
+                // Determine logic for column filtering
+                // We want to hide "Kombinované" if user is "prez", and vice versa.
+                let filteredColumnIndices = headers.map((_, i) => i);
+                
+                if (studyForm === 'prez') {
+                    // Hide columns that look like combined study
+                    filteredColumnIndices = filteredColumnIndices.filter(i => 
+                        !headers[i].toLowerCase().includes('kombinovan')
+                    );
+                } else if (studyForm === 'komb') {
+                    // Hide columns that look like full-time study
+                    filteredColumnIndices = filteredColumnIndices.filter(i => 
+                        !headers[i].toLowerCase().includes('prezenčn')
+                    );
+                }
+
+                // If we filtered out all study columns by mistake, fallback to all
+                if (filteredColumnIndices.length <= 1) {
+                    filteredColumnIndices = headers.map((_, i) => i);
+                }
+
+                return (
+                    <div>
+                        <h3 className="text-base font-bold text-base-content mb-3">Bodové rozdělení</h3>
+                        <div className="overflow-x-auto border border-base-200 rounded-lg">
+                            <table className="table table-sm w-full">
+                                <thead>
+                                    <tr className="bg-base-200 text-base-content">
+                                        {filteredColumnIndices.map(i => {
+                                            let headerLabel = headers[i];
+                                            // Rename study form to more generic/compact "Váha" if filtered
+                                            if (i > 0 && (headerLabel.toLowerCase().includes('prezenč') || headerLabel.toLowerCase().includes('kombinovan'))) {
+                                                headerLabel = 'Váha';
+                                            }
+                                            return (
+                                                <th key={i} className={`font-semibold ${i > 0 ? 'text-center' : ''}`}>
+                                                    {headerLabel}
+                                                </th>
+                                            );
+                                        })}
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {syllabus.requirementsTable.slice(1).map((row, rowIndex) => (
+                                        <tr key={rowIndex} className="border-b border-base-200 last:border-0 hover:bg-base-200/30">
+                                            {filteredColumnIndices.map(colIndex => (
+                                                <td key={colIndex} className={colIndex > 0 ? 'text-center font-mono' : ''}>
+                                                    {row[colIndex]}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
             
-            <div className="text-xs text-base-content/30 italic text-center pt-8 pb-4">
-                Data stažena z IS MENDELU • {courseCode}
-            </div>
+
         </div>
     );
 }

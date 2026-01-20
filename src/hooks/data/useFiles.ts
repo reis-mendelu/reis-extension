@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { syncService } from '../../services/sync';
-import { getFilesForSubject } from '../../utils/apiUtils';
+import { StorageService, STORAGE_KEYS } from '../../services/storage';
 import type { ParsedFile } from '../../types/documents';
 
 export interface UseFilesResult {
@@ -25,9 +25,10 @@ export function useFiles(courseCode: string | undefined): UseFilesResult {
             return;
         }
 
-        const loadFromStorage = () => {
-            const storedFiles = getFilesForSubject(courseCode);
-            setFiles(storedFiles as ParsedFile[] | null);
+        const loadFromStorage = async () => {
+            const key = `${STORAGE_KEYS.SUBJECT_FILES_PREFIX}${courseCode}`;
+            const storedFiles = await StorageService.getAsync<ParsedFile[]>(key);
+            setFiles(storedFiles);
             setIsLoading(false);
         };
 

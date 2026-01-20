@@ -18,22 +18,22 @@ const CACHE_EXPIRY = 30 * 24 * 60 * 60 * 1000; // 30 days
 /**
  * Retrieves success rates from local storage.
  */
-export function getStoredSuccessRates(): SuccessRateData | null {
-    return StorageService.get<SuccessRateData>(STORAGE_KEYS.SUCCESS_RATES_DATA);
+export async function getStoredSuccessRates(): Promise<SuccessRateData | null> {
+    return await StorageService.getAsync<SuccessRateData>(STORAGE_KEYS.SUCCESS_RATES_DATA);
 }
 
 /**
  * Saves success rates to local storage.
  */
-export function saveSuccessRates(data: SuccessRateData): void {
-    StorageService.set(STORAGE_KEYS.SUCCESS_RATES_DATA, data);
+export async function saveSuccessRates(data: SuccessRateData): Promise<void> {
+    await StorageService.setAsync(STORAGE_KEYS.SUCCESS_RATES_DATA, data);
 }
 
 /**
  * Check if cache is still valid for a given course code.
  */
-function isCacheValid(courseCode: string): boolean {
-    const lastSync = StorageService.get<Record<string, number>>(STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC) || {};
+async function isCacheValid(courseCode: string): Promise<boolean> {
+    const lastSync = await StorageService.getAsync<Record<string, number>>(STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC) || {};
     const lastSyncTime = lastSync[courseCode];
     if (!lastSyncTime) return false;
     return (Date.now() - lastSyncTime) < CACHE_EXPIRY;
@@ -42,13 +42,13 @@ function isCacheValid(courseCode: string): boolean {
 /**
  * Mark a course code as synced.
  */
-function markAsSynced(courseCodes: string[]): void {
-    const lastSync = StorageService.get<Record<string, number>>(STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC) || {};
+async function markAsSynced(courseCodes: string[]): Promise<void> {
+    const lastSync = await StorageService.getAsync<Record<string, number>>(STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC) || {};
     const now = Date.now();
     for (const code of courseCodes) {
         lastSync[code] = now;
     }
-    StorageService.set(STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC, lastSync);
+    await StorageService.setAsync(STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC, lastSync);
 }
 
 /**
@@ -60,13 +60,14 @@ export async function fetchSubjectSuccessRates(targetCodes: string[]): Promise<S
     loggers.api.info('[SuccessRate] Fetching from CDN...', targetCodes.length);
     
     // 1. Check cache for each code
-    const existing = getStoredSuccessRates();
+    const existing = await getStoredSuccessRates();
     const results: Record<string, SubjectSuccessRate> = { ...(existing?.data || {}) };
     
-    const codesToFetch = targetCodes.filter(code => {
+    // We need to resolve which codes to fetch, handling async isCacheValid
+    const fetchDecisions = await Promise.all(targetCodes.map(async (code) => {
         const cached = results[code];
         const hasCached = cached && cached.stats && cached.stats.length > 0;
-        const cacheValid = isCacheValid(code);
+        const cacheValid = await isCacheValid(code);
         
         // Force re-fetch if data is legacy or missing new schema fields
         const isLegacy = hasCached && (
@@ -76,8 +77,10 @@ export async function fetchSubjectSuccessRates(targetCodes: string[]): Promise<S
             cached.stats.some(s => !s.type)
         );
         
-        return !hasCached || !cacheValid || isLegacy;
-    });
+        return (!hasCached || !cacheValid || isLegacy) ? code : null;
+    }));
+
+    const codesToFetch = fetchDecisions.filter((c): c is string => c !== null);
 
     if (codesToFetch.length === 0) {
         loggers.api.info('[SuccessRate] All codes found in valid cache');
@@ -118,7 +121,7 @@ export async function fetchSubjectSuccessRates(targetCodes: string[]): Promise<S
 
     // 4. Mark fetched codes as synced
     if (successfulCodes.length > 0) {
-        markAsSynced(successfulCodes);
+        await markAsSynced(successfulCodes);
     }
 
     const finalResult: SuccessRateData = {
@@ -127,7 +130,7 @@ export async function fetchSubjectSuccessRates(targetCodes: string[]): Promise<S
     };
 
     // 5. Save to storage
-    saveSuccessRates(finalResult);
+    await saveSuccessRates(finalResult);
     loggers.api.info('[SuccessRate] Cached courses from CDN:', successfulCodes.length, '/', codesToFetch.length);
 
     return finalResult;
@@ -139,5 +142,5 @@ export async function fetchSubjectSuccessRates(targetCodes: string[]): Promise<S
 export async function fetchGlobalSuccessRates(): Promise<SuccessRateData | null> {
     // This is now a no-op since we fetch on-demand per course
     // Kept for backwards compatibility
-    return getStoredSuccessRates();
+    return await getStoredSuccessRates();
 }

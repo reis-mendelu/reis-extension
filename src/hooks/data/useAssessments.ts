@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { syncService } from '../../services/sync';
-import { getAssessmentsForSubject } from '../../utils/apiUtils';
+import { StorageService, STORAGE_KEYS } from '../../services/storage';
 import type { Assessment } from '../../types/documents';
 
 export interface UseAssessmentsResult {
@@ -25,15 +25,10 @@ export function useAssessments(courseCode: string | undefined): UseAssessmentsRe
             return;
         }
 
-        const loadFromStorage = () => {
-            const storedAssessments = getAssessmentsForSubject(courseCode);
+        const loadFromStorage = async () => {
+             const key = `${STORAGE_KEYS.SUBJECT_ASSESSMENTS_PREFIX}${courseCode}`;
+            const storedAssessments = await StorageService.getAsync<Assessment[]>(key);
             setAssessments(storedAssessments);
-            // If we have data, we are not loading. 
-            // If we don't have data (null), we are still "loading" in the sense that we don't know yet.
-            // However, useAssessments primarily just reads storage.
-            // The determining factor for "loading" vs "empty" is often handled by the caller checking if sync is in progress,
-            // or if we decide to store [] for empty assessments (which we should).
-            // For now, we mimic useFiles:
             setIsLoading(false);
         };
 

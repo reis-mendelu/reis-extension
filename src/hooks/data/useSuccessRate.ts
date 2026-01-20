@@ -20,19 +20,31 @@ export interface UseSuccessRateResult {
  * Reads from storage, fetches from API if not cached or expired.
  */
 export function useSuccessRate(courseCode: string | undefined): UseSuccessRateResult {
+    const [stats, setStats] = useState<SubjectSuccessRate | null>(null);
     const [loading, setLoading] = useState(false);
     const [hasFetched, setHasFetched] = useState(false);
+    const [isGlobalLoaded, setIsGlobalLoaded] = useState(false);
 
-    // Read from storage
-    const stats = courseCode 
-        ? getStoredSuccessRates()?.data[courseCode] || null 
-        : null;
+    const loadFromStorage = useCallback(async () => {
+        const stored = await getStoredSuccessRates();
+        setIsGlobalLoaded(!!stored);
+        
+        if (courseCode && stored?.data[courseCode]) {
+            setStats(stored.data[courseCode]);
+            setHasFetched(true);
+            return true;
+        }
+        return false;
+    }, [courseCode]);
 
     const doFetch = useCallback(async (code: string) => {
         setLoading(true);
         try {
             loggers.ui.info('[useSuccessRate] Fetching stats for:', code);
-            await fetchSubjectSuccessRates([code]);
+            const result = await fetchSubjectSuccessRates([code]);
+            if (result.data[code]) {
+                setStats(result.data[code]);
+            }
             setHasFetched(true);
         } catch (err) {
             loggers.ui.error('[useSuccessRate] Fetch failed:', err);
@@ -41,26 +53,30 @@ export function useSuccessRate(courseCode: string | undefined): UseSuccessRateRe
         }
     }, []);
 
-    // Fetch if no cached data
+    // Initial load and fetch if needed
     useEffect(() => {
-        if (!courseCode) return;
-        if (stats) {
-            loggers.ui.debug('[useSuccessRate] Using cached data for', courseCode);
-            setHasFetched(true);
-            return;
+        async function init() {
+            if (!courseCode) {
+                setStats(null);
+                setHasFetched(false);
+                return;
+            }
+
+            const wasCached = await loadFromStorage();
+            if (!wasCached && !hasFetched && !loading) {
+                loggers.ui.info('[useSuccessRate] No cached data, fetching from API', courseCode);
+                await doFetch(courseCode);
+            }
         }
-        if (hasFetched) return; // Already tried
-        
-        loggers.ui.info('[useSuccessRate] No cached data, fetching from API', courseCode);
-        doFetch(courseCode);
-    }, [courseCode, stats, hasFetched, doFetch]);
+
+        init();
+    }, [courseCode, loadFromStorage, hasFetched, loading, doFetch]);
 
     const refresh = useCallback(async () => {
-        if (!courseCode) return;
-        await doFetch(courseCode);
+        if (courseCode) {
+            await doFetch(courseCode);
+        }
     }, [courseCode, doFetch]);
-
-    const isGlobalLoaded = !!getStoredSuccessRates();
 
     return { stats, loading, hasFetched: hasFetched || !!stats, isGlobalLoaded, refresh };
 }

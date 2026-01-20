@@ -36,6 +36,10 @@ export const STORAGE_KEYS = {
     // Syllabus data (keyed by course code)
     // Usage: SUBJECT_SYLLABUS_PREFIX + courseCode
     SUBJECT_SYLLABUS_PREFIX: 'reis_syllabus_',
+
+    // Success rate data
+    SUCCESS_RATES_DATA: 'reis_success_rates',
+    GLOBAL_STATS_LAST_SYNC: 'reis_global_stats_sync',
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];
