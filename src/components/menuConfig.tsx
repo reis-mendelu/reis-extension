@@ -15,8 +15,8 @@ import {
     FileText,
     PenTool,
     Book,
-    CalendarCheck,
-    Compass
+    CalendarCheck
+    // Compass
 } from 'lucide-react';
 import type { Tutorial } from '../services/tutorials/types';
 
@@ -137,11 +137,11 @@ export const getMainMenuItems = (studiumId: string = '', obdobiId: string = ''):
             }
         ]
     },
-    {
-        id: 'tutorials',
-        label: 'Průvodce',
-        icon: <Compass className="w-5 h-5" />,
-    }
+// {
+    //     id: 'tutorials',
+    //     label: 'Průvodce',
+    //     icon: <Compass className="w-5 h-5" />,
+    // }
 ];
 
 export const getSettingsMenuItems = (handleLogout: () => void): MenuItem[] => [
