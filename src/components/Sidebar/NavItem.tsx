@@ -54,12 +54,22 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => {
+                    console.log(`[NavItem] Child clicked: ${child.label} (ID: ${child.id})`);
                     if (child.id === 'zapisy-zkousky') {
                       e.preventDefault();
+                      console.log('[NavItem] Triggering view change: exams');
                       onViewChange('exams');
+                    } else if (child.id === 'studijni-plany') {
+                      e.preventDefault();
+                      console.log('[NavItem] Triggering view change: study-program');
+                      onViewChange('study-program');
                     } else if (child.isTutorial && child.tutorial) {
                       e.preventDefault();
+                      console.log(`[NavItem] Triggering tutorial: ${child.tutorial.title}`);
                       onSelectTutorial?.(child.tutorial);
+                    } else if (child.isFeature) {
+                       console.log(`[NavItem] Feature clicked but no specific handler: ${child.id}`);
+                       e.preventDefault();
                     }
                   }}
                   className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/70 hover:bg-base-200 hover:text-primary transition-colors group/item cursor-pointer"

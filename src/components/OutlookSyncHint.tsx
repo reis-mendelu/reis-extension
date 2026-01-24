@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar, X, ChevronRight } from 'lucide-react';
+import { IndexedDBService } from '../services/storage';
 
 const OUTLOOK_HINT_STORAGE_KEY = 'reis_outlook_hint_shown';
 const OUTLOOK_HINT_NAV_THRESHOLD = 2;
@@ -21,22 +22,37 @@ interface OutlookSyncHintProps {
 export function OutlookSyncHint({ navigationCount, isSyncEnabled, onSetup }: OutlookSyncHintProps) {
     const [isVisible, setIsVisible] = useState(false);
     const [hasBeenDismissed, setHasBeenDismissed] = useState(false);
+    const [hasSeenHint, setHasSeenHint] = useState<boolean | null>(null);
 
     useEffect(() => {
-        // Check if already seen
-        const hasSeenHint = localStorage.getItem(OUTLOOK_HINT_STORAGE_KEY);
-        if (hasSeenHint) {
-            setHasBeenDismissed(true);
-            return;
+        // Check if already seen in IndexedDB
+        async function checkHintStatus() {
+            try {
+                const seen = await IndexedDBService.get('meta', OUTLOOK_HINT_STORAGE_KEY);
+                setHasSeenHint(!!seen);
+                if (seen) {
+                    setHasBeenDismissed(true);
+                }
+            } catch (err) {
+                console.error('[OutlookSyncHint] Storage error:', err);
+                setHasSeenHint(false);
+            }
         }
+        checkHintStatus();
+    }, []);
+
+    useEffect(() => {
+        if (hasSeenHint === null) return;
+        if (hasBeenDismissed) return;
 
         // Show conditions:
         // 1. Navigation count >= threshold
         // 2. Sync is NOT enabled (false, not null/loading)
-        // 3. Not dismissed this session
+        // 3. Not dismissed this session/previously
         const shouldShow = 
             navigationCount >= OUTLOOK_HINT_NAV_THRESHOLD &&
             isSyncEnabled === false &&
+            !hasSeenHint &&
             !hasBeenDismissed;
 
         if (shouldShow && !isVisible) {
@@ -44,7 +60,7 @@ export function OutlookSyncHint({ navigationCount, isSyncEnabled, onSetup }: Out
             const timer = setTimeout(() => setIsVisible(true), 1000);
             return () => clearTimeout(timer);
         }
-    }, [navigationCount, isSyncEnabled, hasBeenDismissed, isVisible]);
+    }, [navigationCount, isSyncEnabled, hasBeenDismissed, isVisible, hasSeenHint]);
 
     // Auto-dismiss after 15 seconds
     useEffect(() => {
@@ -66,7 +82,7 @@ export function OutlookSyncHint({ navigationCount, isSyncEnabled, onSetup }: Out
     const handleDismiss = () => {
         setIsVisible(false);
         setHasBeenDismissed(true);
-        localStorage.setItem(OUTLOOK_HINT_STORAGE_KEY, 'true');
+        IndexedDBService.set('meta', OUTLOOK_HINT_STORAGE_KEY, true).catch(console.error);
     };
 
     const handleSetup = () => {

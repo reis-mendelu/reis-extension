@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useExams } from '../../hooks/data';
-import { StorageService } from '../../services/storage';
+import { IndexedDBService } from '../../services/storage';
 import type { ExamSubject, ExamSection, ExamFilterState } from '../../types/exams';
 
 import { ExamFilterBar, type StatusFilter } from './ExamFilterBar';
@@ -48,19 +48,25 @@ export function ExamPanel({ onSelectSubject }: ExamPanelProps) {
         handleConfirmAction,
     } = useExamActions({ exams, setExams, setExpandedSectionId });
 
-    // Filter state with localStorage persistence
-    const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => {
-        const stored = StorageService.get<ExamFilterState>(FILTER_STORAGE_KEY);
-        return (stored?.statusFilter as StatusFilter) ?? 'available';
-    });
-    const [selectedSubjects, setSelectedSubjects] = useState<string[]>(() => {
-        const stored = StorageService.get<ExamFilterState>(FILTER_STORAGE_KEY);
-        return stored?.selectedSubjects ?? [];
-    });
+    // Filter state
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('available');
+    const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+    
+    // Load filters
+    useEffect(() => {
+        const loadFilters = async () => {
+             const stored = await IndexedDBService.get('meta', FILTER_STORAGE_KEY) as ExamFilterState;
+             if (stored) {
+                 if (stored.statusFilter) setStatusFilter(stored.statusFilter as StatusFilter);
+                 if (stored.selectedSubjects) setSelectedSubjects(stored.selectedSubjects);
+             }
+        };
+        loadFilters();
+    }, []);
 
     // Persist filter state
     useEffect(() => {
-        StorageService.set(FILTER_STORAGE_KEY, { statusFilter, selectedSubjects });
+        IndexedDBService.set('meta', FILTER_STORAGE_KEY, { statusFilter, selectedSubjects });
     }, [statusFilter, selectedSubjects]);
 
     // Escape key handler

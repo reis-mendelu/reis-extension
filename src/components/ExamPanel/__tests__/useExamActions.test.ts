@@ -8,12 +8,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useExamActions } from '../useExamActions';
 import * as examsAPI from '../../../api/exams';
-import { StorageService, STORAGE_KEYS } from '../../../services/storage';
+import { IndexedDBService, STORAGE_KEYS } from '../../../services/storage';
 import type { ExamSubject, ExamSection } from '../../../types/exams';
 
 // Mock dependencies
 vi.mock('../../../api/exams');
-vi.mock('../../../services/storage');
+vi.mock('../../../services/storage', () => ({
+  StorageService: {
+    set: vi.fn(),
+  },
+  IndexedDBService: {
+    set: vi.fn().mockResolvedValue(undefined),
+    get: vi.fn().mockResolvedValue(null),
+  },
+  STORAGE_KEYS: {
+    EXAMS_DATA: 'exams_data',
+    EXAMS_LAST_MODIFIED: 'exams_last_modified',
+  }
+}));
 vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
@@ -151,8 +163,9 @@ describe('useExamActions - Optimistic Updates', () => {
       });
 
       await waitFor(() => {
-        expect(StorageService.set).toHaveBeenCalledWith(
-          STORAGE_KEYS.EXAMS_DATA,
+        expect(IndexedDBService.set).toHaveBeenCalledWith(
+          'exams',
+          'current',
           expect.arrayContaining([
             expect.objectContaining({
               sections: expect.arrayContaining([
@@ -164,8 +177,9 @@ describe('useExamActions - Optimistic Updates', () => {
       });
 
       // Verify timestamp update
-      expect(StorageService.set).toHaveBeenCalledWith(
-        STORAGE_KEYS.EXAMS_LAST_MODIFIED,
+      expect(IndexedDBService.set).toHaveBeenCalledWith(
+        'meta',
+        'exams_modified',
         expect.any(Number)
       );
     });

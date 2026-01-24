@@ -2,9 +2,8 @@
  * Sync files for all subjects from IS Mendelu to storage.
  */
 
-import { StorageService, STORAGE_KEYS } from '../storage';
+import { IndexedDBService } from '../storage';
 import { fetchFilesFromFolder } from '../../api/documents';
-import type { SubjectsData } from '../../types/documents';
 
 function getIdFromUrl(url: string): string | null {
     const match = url.match(/[?&;]id=(\d+)/);
@@ -14,7 +13,7 @@ function getIdFromUrl(url: string): string | null {
 export async function syncFiles(): Promise<void> {
     console.log('[syncFiles] Starting files sync...');
 
-    const subjectsData = StorageService.get<SubjectsData>(STORAGE_KEYS.SUBJECTS_DATA);
+    const subjectsData = await IndexedDBService.get('subjects', 'current');
 
     if (!subjectsData || !subjectsData.data) {
         console.log('[syncFiles] No subjects data available, skipping file sync');
@@ -41,9 +40,7 @@ export async function syncFiles(): Promise<void> {
             if (files) {
                 // files can be [] if folder is empty, or [...] if has files. 
                 // We want to store it even if empty, so UI knows it's "0 files" vs "loading"
-                const storageKey = `${STORAGE_KEYS.SUBJECT_FILES_PREFIX}${courseCode}`;
-                StorageService.set(storageKey, files);
-                await StorageService.setAsync(storageKey, files);
+                await IndexedDBService.set('files', courseCode, files);
                 successCount++;
             }
         } catch (error) {

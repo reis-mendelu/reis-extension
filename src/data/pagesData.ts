@@ -1,4 +1,3 @@
-import { getStudiumSync } from '../utils/userParams';
 
 // Pages data for search functionality
 export interface PageItem {
@@ -19,16 +18,18 @@ export interface PageCategory {
  * Inject user's studium into a page URL.
  * Replaces the placeholder studium with the current user's actual ID.
  */
-export function injectUserParams(url: string): string {
-    const studium = getStudiumSync();
-    if (!studium) {
+// This function requires asynchronous data fetching now. 
+// However, to keep it simple, we will return the URL as is if no studium is provided, 
+// and let the caller handle the async fetching of parameters.
+export function injectUserParams(url: string, studiumId?: string): string {
+    if (!studiumId) {
         // Remove studium param entirely if we don't have one
         return url
             .replace(/studium=\d+[;,&]?/g, '')
             .replace(/[;,&]?studium=\d+/g, '');
     }
     // Replace any existing studium with the user's value
-    return url.replace(/studium=\d+/g, `studium=${studium}`);
+    return url.replace(/studium=\d+/g, `studium=${studiumId}`);
 }
 
 export const pagesData: PageCategory[] = [

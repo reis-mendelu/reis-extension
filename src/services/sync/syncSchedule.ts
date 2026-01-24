@@ -1,9 +1,8 @@
 /**
- * Sync schedule data from IS Mendelu to localStorage.
- * Fetches the ENTIRE semester (Sep 1 - Feb 28) to enable offline viewing of any week.
+ * Sync schedule data from IS Mendelu to IndexedDB.
  */
 
-import { StorageService, STORAGE_KEYS } from '../storage';
+import { IndexedDBService } from '../storage';
 import { fetchWeekSchedule } from '../../api/schedule';
 
 export async function syncSchedule(): Promise<void> {
@@ -38,8 +37,8 @@ export async function syncSchedule(): Promise<void> {
     const data = await fetchWeekSchedule({ start, end });
 
     if (data && data.length > 0) {
-        StorageService.set(STORAGE_KEYS.SCHEDULE_DATA, data);
-        StorageService.set(STORAGE_KEYS.SCHEDULE_WEEK_START, start.toISOString());
+        await IndexedDBService.set('schedule', 'current', data);
+        await IndexedDBService.set('meta', 'schedule_week_start', start.toISOString());
         console.log(`[syncSchedule] Stored ${data.length} lessons for semester`);
     } else {
         console.log('[syncSchedule] No schedule data to store');

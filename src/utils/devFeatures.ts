@@ -6,32 +6,34 @@
  */
 
 import { loggers } from './logger';
+import { IndexedDBService } from '../services/storage';
 
-export const DEV_FEATURES_KEY = 'reis_dev_features';
+export const DEV_FEATURES_KEY = 'reis_dev_features'; // Deprecated, kept for cleanup if needed
 
-export const isDevFeaturesEnabled = () => {
+
+
+export const isDevFeaturesEnabled = async () => {
     try {
-        // 1. URL Parameter (highest priority, persistent via browser history/reload if kept in URL)
+        // 1. URL Parameter (highest priority)
         if (typeof window !== 'undefined' && window.location.search.includes('reis_dev=1')) {
             return true;
         }
-        // 2. localStorage
-        return localStorage.getItem(DEV_FEATURES_KEY) === 'true';
+        // 2. IndexedDB
+        return await IndexedDBService.get('meta', 'dev_features_enabled') === true;
     } catch {
         return false;
     }
 };
 
-
-export const toggleDevFeatures = (enable?: boolean) => {
-    const newState = enable ?? !isDevFeaturesEnabled();
-    localStorage.setItem(DEV_FEATURES_KEY, String(newState));
+export const toggleDevFeatures = async (enable?: boolean) => {
+    const newState = enable ?? ! await isDevFeaturesEnabled();
+    await IndexedDBService.set('meta', 'dev_features_enabled', newState);
     loggers.system.info('[REIS] Dev features changed. Reloading...', newState ? 'ENABLED' : 'DISABLED');
     
-    // Small delay to ensure localStorage is written before reload in some browsers
+    // Small delay to ensure DB write before reload
     setTimeout(() => {
         window.location.reload();
-    }, 100);
+    }, 200);
 };
 
 
@@ -65,10 +67,12 @@ if (typeof window !== 'undefined') {
         }
     });
     
-    // Log help message on first load
-    const HELP_KEY = 'reis_dev_help_shown_v4';
-    if (!localStorage.getItem(HELP_KEY)) {
-        loggers.system.info('[REIS] Dev Tools Loaded. Use window.toggleDevFeatures() or postMessage to toggle.');
-        localStorage.setItem(HELP_KEY, 'true');
-    }
+// Help log on first load
+    (async () => {
+        const hasSeenHelp = await IndexedDBService.get('meta', 'dev_help_shown_v4');
+        if (!hasSeenHelp) {
+            loggers.system.info('[REIS] Dev Tools Loaded. Use window.toggleDevFeatures() or postMessage to toggle.');
+            IndexedDBService.set('meta', 'dev_help_shown_v4', true).catch(console.error);
+        }
+    })();
 }

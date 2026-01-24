@@ -44,6 +44,6 @@ describe('injectUserParams', () => {
         // Should import injectUserParams
         expect(content).toContain('injectUserParams');
         // Should use it when opening links
-        expect(content).toContain('injectUserParams(result.link)');
+        expect(content).toContain('injectUserParams(result.link, studiumId)');
     });
 });

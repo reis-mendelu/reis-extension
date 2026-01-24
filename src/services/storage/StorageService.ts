@@ -11,7 +11,8 @@
 
 export const StorageService = {
     // ==========================================
-    // SYNC METHODS (localStorage)
+    // SYNC METHODS (localStorage) - DEPRECATED
+    // @deprecated Use IndexedDBService instead. See STORAGE_POLICY.md
     // ==========================================
 
     /**
@@ -105,7 +106,6 @@ export const StorageService = {
      */
     async getAsync<T>(key: string): Promise<T | null> {
         if (!this.isChromeStorageAvailable()) {
-            console.debug('[StorageService] chrome.storage unavailable, falling back to localStorage');
             return this.get<T>(key);
         }
 
@@ -123,7 +123,6 @@ export const StorageService = {
      */
     async setAsync<T>(key: string, value: T): Promise<void> {
         if (!this.isChromeStorageAvailable()) {
-            console.debug('[StorageService] chrome.storage unavailable, falling back to localStorage');
             this.set(key, value);
             return;
         }

@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { StorageService, STORAGE_KEYS } from '../../services/storage';
+import { IndexedDBService } from '../../services/storage';
 import { syncService } from '../../services/sync';
 import type { SubjectsData, SubjectInfo } from '../../types/documents';
 
@@ -21,18 +21,20 @@ export function useSubjects(): UseSubjectsResult {
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
-        // 1. Immediately load from storage
-        const loadFromStorage = () => {
-            const storedData = StorageService.get<SubjectsData>(STORAGE_KEYS.SUBJECTS_DATA);
-            if (storedData) {
-                setSubjects(storedData);
+        const loadFromStorage = async () => {
+             // Load from IndexedDB
+             const data = await IndexedDBService.get('subjects', 'current');
+
+            if (data) {
+                setSubjects(data);
             }
             setIsLoaded(true);
         };
 
+        // Initial load
         loadFromStorage();
 
-        // 2. Subscribe to sync updates
+        // Subscribe to sync updates
         const unsubscribe = syncService.subscribe(() => {
             loadFromStorage();
         });

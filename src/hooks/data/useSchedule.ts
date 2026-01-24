@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { StorageService, STORAGE_KEYS } from '../../services/storage';
+import { IndexedDBService } from '../../services/storage';
 import { syncService } from '../../services/sync';
 import type { BlockLesson } from '../../types/calendarTypes';
 
@@ -22,24 +22,24 @@ export function useSchedule(): UseScheduleResult {
     const [weekStart, setWeekStart] = useState<Date | null>(null);
 
     useEffect(() => {
-        // 1. Immediately load from storage
-        const loadFromStorage = () => {
-            const storedData = StorageService.get<BlockLesson[]>(STORAGE_KEYS.SCHEDULE_DATA);
-            const storedWeekStart = StorageService.get<string>(STORAGE_KEYS.SCHEDULE_WEEK_START);
+        const loadFromStorage = async () => {
+             // 1. Try IndexedDB
+             const data = await IndexedDBService.get('schedule', 'current');
+             const storedWeekStart = await IndexedDBService.get('meta', 'schedule_week_start');
 
-            if (storedData) {
-                setSchedule(storedData);
-                setIsLoaded(true);
+            if (data) {
+                setSchedule(data);
             }
-
             if (storedWeekStart) {
                 setWeekStart(new Date(storedWeekStart));
             }
+            setIsLoaded(true);
         };
 
+        // Initial load
         loadFromStorage();
 
-        // 2. Subscribe to sync updates
+        // Subscribe to sync updates
         const unsubscribe = syncService.subscribe(() => {
             loadFromStorage();
         });

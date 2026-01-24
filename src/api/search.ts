@@ -29,14 +29,12 @@ export interface Subject {
  * @returns {Array<Person>} An array of person objects.
  */
 export function parseMendeluResults(htmlString: string): Person[] {
-    console.debug('[parseMendeluResults] Starting parse, HTML length:', htmlString.length);
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, 'text/html');
     const baseUrl = "https://is.mendelu.cz/auth/lide/";
 
     // --- Case 1: Check for the multi-result list page ---
     const personLinks = doc.querySelectorAll("a[href*='clovek.pl?zpet=']");
-    console.debug('[parseMendeluResults] Case 1 check: found', personLinks.length, 'person links');
     if (personLinks.length > 0) {
         return Array.from(personLinks).map(link => {
             const name = link.textContent?.trim() ?? 'Unknown Name';
@@ -132,7 +130,6 @@ export function parseMendeluResults(htmlString: string): Person[] {
     // --- Case 2: Check for a single-person profile page (using your helpful snippet) ---
     // We look for a unique element on that page, like the name in the big font.
     const nameElement = doc.querySelector('td.odsazena b font[size="+1"]');
-    console.debug('[parseMendeluResults] Case 2 check: found name element?', !!nameElement);
     if (nameElement) {
         const name = nameElement.textContent?.trim() ?? 'Unknown Name';
         let id: string | null = null;
@@ -244,7 +241,6 @@ export function parseMendeluResults(htmlString: string): Person[] {
     }
 
     // --- Case 3: No results found on either page type ---
-    console.debug('[parseMendeluResults] No results found (Case 3)');
     return [];
 }
 
@@ -281,7 +277,6 @@ export async function searchPeople(personName: string): Promise<Person[]> {
  * Sidebar links have format: "Teoretické základy informatiky" (name only)
  */
 export function parseSubjectResults(htmlString: string): Subject[] {
-    console.log('[parseSubjectResults] Starting parse, HTML length:', htmlString.length);
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, 'text/html');
     const baseUrl = "https://is.mendelu.cz/auth/";
@@ -293,7 +288,6 @@ export function parseSubjectResults(htmlString: string): Subject[] {
     // Search results use relative paths like "../katalog/syllabus.pl"
     // Sidebar uses absolute paths like "/auth/katalog/syllabus.pl"
     const subjectLinks = doc.querySelectorAll('a[href*="katalog/syllabus.pl"]');
-    console.log('[parseSubjectResults] Found', subjectLinks.length, 'total syllabus links');
 
     // Pattern for subject code: uppercase letters, optionally with numbers, followed by dash
     // Examples: EBC-TZI, ASVP, D-BINFO, EDA-AJI
@@ -310,18 +304,15 @@ export function parseSubjectResults(htmlString: string): Subject[] {
         const id = idMatch ? idMatch[1] : '';
 
         if (!id) {
-            console.log(`[parseSubjectResults] Link ${index}: Skipping - no predmet ID`);
             return;
         }
         if (!fullText) {
-            console.log(`[parseSubjectResults] Link ${index}: Skipping - no text content`);
             return;
         }
         
         // Check if this looks like a search result (has code prefix)
         const codeMatch = fullText.match(codePattern);
         if (!codeMatch) {
-            console.log(`[parseSubjectResults] Link ${index}: Skipping - no code prefix (likely sidebar)`);
             return;
         }
         
@@ -330,7 +321,6 @@ export function parseSubjectResults(htmlString: string): Subject[] {
         
         // Skip duplicates
         if (seenIds.has(id)) {
-            console.log(`[parseSubjectResults] Link ${index}: Skipping - duplicate ID ${id}`);
             return;
         }
         seenIds.add(id);
@@ -338,7 +328,6 @@ export function parseSubjectResults(htmlString: string): Subject[] {
         // Extract faculty and semester from the text after the link
         // Format: " - ZS 2025/2026 - PEF" or " - LS 2024/2025 - AF"
         const nextText = link.nextSibling?.textContent ?? '';
-        console.log(`[parseSubjectResults] Link ${index}: nextText="${nextText.substring(0, 50)}"`);
         
         // Match semester (e.g., "ZS 2025/2026" or "LS 2024/2025")
         const semesterMatch = nextText.match(/(ZS|LS)\s+\d{4}\/\d{4}/);
@@ -374,7 +363,6 @@ export function parseSubjectResults(htmlString: string): Subject[] {
         });
     });
 
-    console.log('[parseSubjectResults] Final result:', subjects.length, 'unique subjects');
     return subjects;
 }
 
@@ -383,7 +371,6 @@ export function parseSubjectResults(htmlString: string): Subject[] {
  * Different from parseMendeluResults as it uses different link patterns.
  */
 export function parseGlobalPeopleResults(htmlString: string): Person[] {
-    console.log('[parseGlobalPeopleResults] Starting parse');
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, 'text/html');
     const baseUrl = "https://is.mendelu.cz/auth/lide/";
@@ -391,7 +378,6 @@ export function parseGlobalPeopleResults(htmlString: string): Person[] {
     // Global search uses links like "../lide/clovek.pl?id=70606;lang=cz"
     // Need to match both ../lide/clovek.pl and /auth/lide/clovek.pl patterns
     const personLinks = doc.querySelectorAll('a[href*="lide/clovek.pl"]');
-    console.log('[parseGlobalPeopleResults] Found', personLinks.length, 'person links');
     
     if (personLinks.length === 0) {
         return [];
@@ -463,8 +449,6 @@ export function parseGlobalPeopleResults(htmlString: string): Person[] {
         const sanitizedName = sanitizeString(name, 200);
         if (!sanitizedName) return null;
 
-        console.log(`[parseGlobalPeopleResults] Adding: ${sanitizedName} (${type})`);
-
         return {
             id,
             name: sanitizedName,
@@ -495,7 +479,6 @@ export async function searchGlobal(query: string): Promise<{ people: Person[]; s
     formData.append('pocet', '50');
 
     try {
-        console.log('[searchGlobal] Fetching from /auth/hledani/index.pl with query:', query);
         const response = await fetch('https://is.mendelu.cz/auth/hledani/index.pl', {
             method: 'POST',
             headers: {
@@ -505,18 +488,9 @@ export async function searchGlobal(query: string): Promise<{ people: Person[]; s
             credentials: 'include',
         });
 
-        console.log('[searchGlobal] Response status:', response.status);
         const html = await response.text();
-        console.log('[searchGlobal] HTML length:', html.length);
-        console.log('[searchGlobal] HTML contains predmety?', html.includes('predmety'));
-        console.log('[searchGlobal] HTML contains katalog/syllabus?', html.includes('katalog/syllabus.pl'));
-        console.log('[searchGlobal] First 500 chars of HTML:', html.substring(0, 500));
-        
         const people = parseGlobalPeopleResults(html);
-        console.log('[searchGlobal] Parsed people:', people.length);
-        
         const subjects = parseSubjectResults(html);
-        console.log('[searchGlobal] Parsed subjects:', subjects.length);
 
         return { people, subjects };
     } catch (error) {

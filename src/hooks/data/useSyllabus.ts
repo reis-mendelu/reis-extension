@@ -6,7 +6,8 @@
 
 import { useState, useEffect } from 'react';
 import { syncService } from '../../services/sync';
-import { StorageService, STORAGE_KEYS } from '../../services/storage';
+import { IndexedDBService } from '../../services/storage';
+import { fetchSyllabus, findSubjectId } from '../../api/syllabus';
 import type { SyllabusRequirements } from '../../types/documents';
 
 export interface UseSyllabusResult {
@@ -14,7 +15,7 @@ export interface UseSyllabusResult {
     isLoading: boolean;
 }
 
-export function useSyllabus(courseCode: string | undefined): UseSyllabusResult {
+export function useSyllabus(courseCode: string | undefined, courseId?: string, subjectName?: string): UseSyllabusResult {
     const [syllabus, setSyllabus] = useState<SyllabusRequirements | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -25,23 +26,75 @@ export function useSyllabus(courseCode: string | undefined): UseSyllabusResult {
             return;
         }
 
-        const loadFromStorage = async () => {
-             const key = `${STORAGE_KEYS.SUBJECT_SYLLABUS_PREFIX}${courseCode}`;
-            const storedSyllabus = await StorageService.getAsync<SyllabusRequirements>(key);
-            setSyllabus(storedSyllabus);
-            setIsLoading(false);
+        const loadData = async () => {
+             setIsLoading(true);
+             try {
+                 // 1. Load from IndexedDB
+                 let data = await IndexedDBService.get('syllabuses', courseCode);
+                 
+                 // 2. Determine ID to use (prop or lookup)
+                 let activeCourseId = courseId;
+
+                 // 3. Trigger fetch if data missing
+                 if (!data) {
+                    // If no courseId provided, try to find it via search fallback
+                    if (!activeCourseId) {
+                        try {
+                            const foundId = await findSubjectId(courseCode, subjectName);
+                            if (foundId) {
+                                activeCourseId = foundId;
+                                
+                                // OPTIMIZATION: Set partial syllabus immediately so the ID is available to the UI
+                                // This allows the "External Link" to appear while we fetch the rest
+                                setSyllabus(prev => ({
+                                    ...prev,
+                                    courseId: foundId,
+                                    requirementsText: prev?.requirementsText || '',
+                                    requirementsTable: prev?.requirementsTable || []
+                                }));
+                                
+                                console.debug(`[useSyllabus] Found missing ID for ${courseCode}: ${foundId}`);
+                            }
+                        } catch (err) {
+                            console.warn('[useSyllabus] ID lookup failed:', err);
+                        }
+                    }
+
+                    // Proceed if we have an ID (either provided or found)
+                    if (activeCourseId) {
+                        console.debug(`[useSyllabus] Fetching syllabus for ${courseCode} (ID: ${activeCourseId})`);
+                        try {
+                            const fetchedData = await fetchSyllabus(activeCourseId);
+                            if (fetchedData && (fetchedData.requirementsText || fetchedData.requirementsTable.length > 0)) {
+                                await IndexedDBService.set('syllabuses', courseCode, fetchedData);
+                                data = fetchedData;
+                            }
+                        } catch (err) {
+                            console.error('[useSyllabus] Fetch failed:', err);
+                        }
+                    } else {
+                        console.debug(`[useSyllabus] Cannot fetch syllabus for ${courseCode} - No ID available`);
+                    }
+                 }
+
+                 setSyllabus(data || null);
+             } catch (error) {
+                 console.error('[useSyllabus] Failed to load data:', error);
+                 setSyllabus(null); 
+             } finally {
+                 setIsLoading(false);
+             }
         };
 
-        // 1. Initial load
-        loadFromStorage();
+        loadData();
 
-        // 2. Subscribe to sync updates
+        // Subscribe to sync updates
         const unsubscribe = syncService.subscribe(() => {
-            loadFromStorage();
+            loadData();
         });
 
         return unsubscribe;
-    }, [courseCode]);
+    }, [courseCode, courseId]);
 
     return { syllabus, isLoading };
 }

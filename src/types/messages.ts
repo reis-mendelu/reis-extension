@@ -18,7 +18,8 @@ export type ActionType =
     | 'register_exam'
     | 'unregister_exam'
     | 'toggle_outlook_sync'
-    | 'download_file';
+    | 'download_file'
+    | 'trigger_sync';
 
 /** Synced data structure pushed from Content Script */
 export interface SyncedData {
@@ -28,6 +29,7 @@ export interface SyncedData {
     files?: unknown;
     assessments?: unknown; // Map of courseCode -> Assessment[]
     syllabuses?: unknown; // Map of courseCode -> SyllabusRequirements
+    studyProgram?: unknown; // StudyProgramData
     lastSync: number;
     error?: string;
 }

@@ -6,7 +6,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { syncService } from '../../services/sync';
-import { StorageService, STORAGE_KEYS } from '../../services/storage';
+import { IndexedDBService, STORAGE_KEYS } from '../../services/storage';
 
 // Mock the sync functions
 vi.mock('./syncExams', () => ({
@@ -26,6 +26,11 @@ vi.mock('../../services/storage', () => ({
         get: vi.fn(),
         set: vi.fn(),
         remove: vi.fn(),
+    },
+    IndexedDBService: {
+        get: vi.fn(),
+        set: vi.fn(),
+        delete: vi.fn(),
     },
     STORAGE_KEYS: {
         SYNC_IN_PROGRESS: 'sync_in_progress',
@@ -66,14 +71,14 @@ describe('SyncService', () => {
     });
 
     describe('getStatus', () => {
-        it('should return current sync status', () => {
-            vi.mocked(StorageService.get).mockImplementation((key) => {
-                if (key === STORAGE_KEYS.LAST_SYNC) return 1234567890;
-                if (key === STORAGE_KEYS.SYNC_ERROR) return null;
+        it('should return current sync status', async () => {
+            vi.mocked(IndexedDBService.get).mockImplementation(async (store, key) => {
+                if (key === 'last_sync') return 1234567890;
+                if (key === 'sync_error') return null;
                 return null;
             });
 
-            const status = syncService.getStatus();
+            const status = await syncService.getStatus();
 
             expect(status).toHaveProperty('isSyncing');
             expect(status).toHaveProperty('lastSync');

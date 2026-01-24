@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NotificationFeed } from './NotificationFeed';
+import { IndexedDBService } from '../services/storage';
 import * as spolkyService from '../services/spolky';
 
 // Mock the services
@@ -89,15 +90,26 @@ describe('NotificationFeed', () => {
     }
   ];
 
+// Mock IndexedDBService
+vi.mock('../services/storage', () => ({
+  IndexedDBService: {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
   beforeEach(() => {
     vi.clearAllMocks();
     (spolkyService.fetchNotifications as any).mockResolvedValue(mockNotifications);
-    localStorage.clear();
+    (IndexedDBService.get as any).mockResolvedValue(null);
   });
 
   it('should track views when notification becomes visible', async () => {
-    // Clear viewed IDs mock for this test
-    localStorage.removeItem('reis_viewed_notifications_analytics');
+    // Mock user has NOT viewed anything yet
+    (IndexedDBService.get as any).mockImplementation((store: string, key: string) => {
+        if (key === 'viewed_notifications_analytics') return Promise.resolve(null);
+        return Promise.resolve(null);
+    });
     
     render(<NotificationFeed />);
     
@@ -126,8 +138,11 @@ describe('NotificationFeed', () => {
   });
 
   it('should NOT track views again if notifications are locally marked as VIEWED (analytics)', async () => {
-    // Setup local storage as viewed
-    localStorage.setItem('reis_viewed_notifications_analytics', JSON.stringify(['1']));
+    // Setup IDB as viewed
+    (IndexedDBService.get as any).mockImplementation((store: string, key: string) => {
+        if (key === 'viewed_notifications_analytics') return Promise.resolve(['1']);
+        return Promise.resolve(null);
+    });
     
     render(<NotificationFeed />);
     

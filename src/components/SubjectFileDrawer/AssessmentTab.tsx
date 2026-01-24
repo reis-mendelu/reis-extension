@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { ExternalLink, Trophy, Pencil, Check, X } from 'lucide-react';
-import { useAssessments } from '../../hooks/data';
+import { useAssessments, useSyncStatus } from '../../hooks/data';
+import { IndexedDBService } from '../../services/storage';
 import { AssessmentSkeleton } from './AssessmentSkeleton';
 
 interface AssessmentTabProps {
@@ -9,6 +10,7 @@ interface AssessmentTabProps {
 
 export function AssessmentTab({ courseCode }: AssessmentTabProps) {
     const { assessments, isLoading } = useAssessments(courseCode);
+    const { isSyncing } = useSyncStatus();
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editMax, setEditMax] = useState('');
     const [originalScore, setOriginalScore] = useState(0);
@@ -20,21 +22,27 @@ export function AssessmentTab({ courseCode }: AssessmentTabProps) {
     // Store bonus points: { id: { name, points } }
     const [bonusPoints, setBonusPoints] = useState<Record<string, { name: string; points: number }>>({});
 
-    // Load adjustments from localStorage on mount
+    // Load adjustments from IndexedDB on mount
     useEffect(() => {
-        try {
-            const savedAdj = localStorage.getItem(`assessment-adjustments-${courseCode}`);
-            if (savedAdj) {
-                setAdjustments(JSON.parse(savedAdj));
+        const loadPersistedData = async () => {
+            try {
+                const [savedAdj, savedBonus] = await Promise.all([
+                    IndexedDBService.get('meta', `assessment_adjustments_${courseCode}`),
+                    IndexedDBService.get('meta', `bonus_points_${courseCode}`)
+                ]);
+
+                if (savedAdj) {
+                    setAdjustments(savedAdj);
+                }
+                
+                if (savedBonus) {
+                    setBonusPoints(savedBonus);
+                }
+            } catch (error) {
+                console.error('[AssessmentTab] Failed to load data:', error);
             }
-            
-            const savedBonus = localStorage.getItem(`bonus-points-${courseCode}`);
-            if (savedBonus) {
-                setBonusPoints(JSON.parse(savedBonus));
-            }
-        } catch (error) {
-            console.error('[AssessmentTab] Failed to load data:', error);
-        }
+        };
+        loadPersistedData();
     }, [courseCode]);
 
     // Derived state for sorted assessments
@@ -115,11 +123,9 @@ export function AssessmentTab({ courseCode }: AssessmentTabProps) {
             [id]: { name: 'Bonus', points: 0 }
         };
         setBonusPoints(newBonus);
-        try {
-            localStorage.setItem(`bonus-points-${courseCode}`, JSON.stringify(newBonus));
-        } catch (error) {
-            console.error('[AssessmentTab] Failed to save bonus:', error);
-        }
+        IndexedDBService.set('meta', `bonus_points_${courseCode}`, newBonus).catch((err: unknown) => 
+            console.error('[AssessmentTab] Failed to save bonus:', err)
+        );
     };
 
     const updateBonusPoint = (id: string, name: string, points: number) => {
@@ -128,30 +134,30 @@ export function AssessmentTab({ courseCode }: AssessmentTabProps) {
             [id]: { name, points }
         };
         setBonusPoints(newBonus);
-        try {
-            localStorage.setItem(`bonus-points-${courseCode}`, JSON.stringify(newBonus));
-        } catch (error) {
-            console.error('[AssessmentTab] Failed to update bonus:', error);
-        }
+        IndexedDBService.set('meta', `bonus_points_${courseCode}`, newBonus).catch((err: unknown) => 
+            console.error('[AssessmentTab] Failed to update bonus:', err)
+        );
     };
 
     const removeBonusPoint = (id: string) => {
         const newBonus = { ...bonusPoints };
         delete newBonus[id];
         setBonusPoints(newBonus);
-        try {
-            localStorage.setItem(`bonus-points-${courseCode}`, JSON.stringify(newBonus));
-        } catch (error) {
-            console.error('[AssessmentTab] Failed to remove bonus:', error);
-        }
+        IndexedDBService.set('meta', `bonus_points_${courseCode}`, newBonus).catch((err: unknown) => 
+            console.error('[AssessmentTab] Failed to remove bonus:', err)
+        );
     };
 
-    // Show loading if hook says loading OR if assessments is null (initial state before sync)
-    if (isLoading || assessments === null) {
+    // Show loading if hook says loading (storage check)
+    // OR if we have no data but a global sync is in progress
+    const isDataUnknown = assessments === null;
+    const showSkeleton = isLoading || (isSyncing && isDataUnknown);
+
+    if (showSkeleton) {
         return <AssessmentSkeleton />;
     }
 
-    if (assessments.length === 0) {
+    if (isDataUnknown || assessments.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center h-full p-6 text-center text-base-content/40">
                 <Trophy className="w-12 h-12 opacity-20 mb-3" />
@@ -188,18 +194,16 @@ export function AssessmentTab({ courseCode }: AssessmentTabProps) {
         const percentage = originalScore / originalMax;
         const newScore = percentage * newMax;
 
-        // Save to state and localStorage
+        // Save to state and IDB
         const newAdjustments = {
             ...adjustments,
             [test.name]: { adjustedMax: newMax, adjustedScore: newScore }
         };
         setAdjustments(newAdjustments);
         
-        try {
-            localStorage.setItem(`assessment-adjustments-${courseCode}`, JSON.stringify(newAdjustments));
-        } catch (error) {
-            console.error('[AssessmentTab] Failed to save adjustments:', error);
-        }
+        IndexedDBService.set('meta', `assessment_adjustments_${courseCode}`, newAdjustments).catch((err: unknown) => 
+            console.error('[AssessmentTab] Failed to save adjustments:', err)
+        );
 
         cancelEditing();
     };

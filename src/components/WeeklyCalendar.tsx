@@ -10,6 +10,7 @@ import { CalendarEventCard } from './CalendarEventCard';
 import { CalendarHint } from './CalendarHint';
 import { SubjectFileDrawer } from './SubjectFileDrawer';
 import { useSchedule, useExams } from '../hooks/data';
+import { IndexedDBService } from '../services/storage';
 import { getCzechHoliday } from '../utils/holidays';
 import { parseDate } from '../utils/date';
 import type { BlockLesson, LessonWithRow, OrganizedLessons, DateInfo } from '../types/calendarTypes';
@@ -24,7 +25,6 @@ const DAYS = [
 
 const HOURS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 const TOTAL_HOURS = 13; // 7:00 to 20:00 (13 hour slots)
-const CALENDAR_HINT_KEY = 'reis_calendar_click_hint_shown';
 
 // Convert time string to percentage from top (7:00 = 0%, 20:00 = 100%)
 function timeToPercent(time: string): number {
@@ -290,18 +290,26 @@ export function WeeklyCalendar({ initialDate = new Date() }: WeeklyCalendarProps
     useEffect(() => {
         if (showSkeleton || scheduleData.length === 0) return;
         
-        const hasSeenHint = localStorage.getItem(CALENDAR_HINT_KEY);
-        if (hasSeenHint) return;
-        
-        localStorage.setItem(CALENDAR_HINT_KEY, 'true');
-        
-        const showTimer = setTimeout(() => setShowCalendarHint(true), 1000);
-        const hideTimer = setTimeout(() => setShowCalendarHint(false), 5000);
-        
-        return () => {
-            clearTimeout(showTimer);
-            clearTimeout(hideTimer);
-        };
+        async function checkHint() {
+            try {
+                const hasSeenHint = await IndexedDBService.get('meta', 'calendar_click_hint_shown');
+                if (hasSeenHint) return;
+                
+                await IndexedDBService.set('meta', 'calendar_click_hint_shown', true);
+                
+                const showTimer = setTimeout(() => setShowCalendarHint(true), 1000);
+                const hideTimer = setTimeout(() => setShowCalendarHint(false), 5000);
+                
+                return () => {
+                    clearTimeout(showTimer);
+                    clearTimeout(hideTimer);
+                };
+            } catch (err) {
+                console.error('[WeeklyCalendar] Failed to check hint status:', err);
+            }
+        }
+
+        checkHint();
     }, [showSkeleton, scheduleData.length]);
 
     return (

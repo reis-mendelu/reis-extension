@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { registerExam, unregisterExam } from '../../api/exams';
-import { StorageService, STORAGE_KEYS } from '../../services/storage';
+import { IndexedDBService } from '../../services/storage';
 import type { ExamSubject, ExamSection } from '../../types/exams';
 
 interface UseExamActionsProps {
@@ -88,11 +88,12 @@ export function useExamActions({ exams, setExams, setExpandedSectionId }: UseExa
                 // Step 4: Update parent state immediately
                 setExams(updatedExams);
                 
-                // Step 5: Persist to localStorage
-                StorageService.set(STORAGE_KEYS.EXAMS_DATA, updatedExams);
+                // Step 5: Persist to Storage
+                IndexedDBService.set('exams', 'current', updatedExams)
+                  .catch(err => console.error('[useExamActions] Failed to persist optimistic update:', err));
                 
                 // Step 6: Update last modified timestamp for merge strategy
-                StorageService.set(STORAGE_KEYS.EXAMS_LAST_MODIFIED, Date.now());
+                IndexedDBService.set('meta', 'exams_modified', Date.now());
                 
                 setExpandedSectionId(null);
             } else {
@@ -131,8 +132,9 @@ export function useExamActions({ exams, setExams, setExpandedSectionId }: UseExa
                 );
                 
                 setExams(updatedExams);
-                StorageService.set(STORAGE_KEYS.EXAMS_DATA, updatedExams);
-                StorageService.set(STORAGE_KEYS.EXAMS_LAST_MODIFIED, Date.now());
+                IndexedDBService.set('exams', 'current', updatedExams)
+                  .catch(err => console.error('[useExamActions] Failed to persist unregister update:', err));
+                IndexedDBService.set('meta', 'exams_modified', Date.now());
             } else {
                 toast.error(result.error || 'Odhlášení selhalo.');
             }

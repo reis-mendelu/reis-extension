@@ -7,7 +7,7 @@
  */
 
 import { checkOutlookSyncStatus, setOutlookSyncStatus } from '../../api/outlookSync';
-import { StorageService } from '../storage';
+import { IndexedDBService } from '../storage';
 import { STORAGE_KEYS } from '../storage/keys';
 import { createLogger } from '../../utils/logger';
 
@@ -28,8 +28,8 @@ class OutlookSyncServiceClass {
         logger.info('Initializing Outlook Sync Service...');
 
         // Load cached status first for instant UI
-        const cached = StorageService.get<boolean>(STORAGE_KEYS.OUTLOOK_SYNC);
-        if (cached !== null) {
+        const cached = await IndexedDBService.get('meta', STORAGE_KEYS.OUTLOOK_SYNC);
+        if (cached !== null && cached !== undefined) {
             logger.debug(`Loaded cached status: ${cached ? 'ENABLED' : 'DISABLED'}`);
             this.currentStatus = cached;
             this.notifyListeners();
@@ -53,7 +53,7 @@ class OutlookSyncServiceClass {
         try {
             const status = await checkOutlookSyncStatus();
             this.currentStatus = status;
-            StorageService.set(STORAGE_KEYS.OUTLOOK_SYNC, status);
+            await IndexedDBService.set('meta', STORAGE_KEYS.OUTLOOK_SYNC, status);
             logger.info(`Status refreshed: ${status ? 'ENABLED' : 'DISABLED'}`);
             this.notifyListeners();
         } catch (error) {
@@ -77,7 +77,7 @@ class OutlookSyncServiceClass {
 
         // Optimistic update
         this.currentStatus = enabled;
-        StorageService.set(STORAGE_KEYS.OUTLOOK_SYNC, enabled);
+        await IndexedDBService.set('meta', STORAGE_KEYS.OUTLOOK_SYNC, enabled);
         this.notifyListeners();
 
         // Apply to server
@@ -87,7 +87,7 @@ class OutlookSyncServiceClass {
             logger.warn('Server update failed, reverting optimistic update');
             // Revert on failure
             this.currentStatus = !enabled;
-            StorageService.set(STORAGE_KEYS.OUTLOOK_SYNC, !enabled);
+            await IndexedDBService.set('meta', STORAGE_KEYS.OUTLOOK_SYNC, !enabled);
             this.notifyListeners();
         }
     }

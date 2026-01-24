@@ -3,6 +3,7 @@ import { Bell, Users, X } from 'lucide-react';
 import type { SpolekNotification } from '../services/spolky';
 import { fetchNotifications, trackNotificationsViewed, trackNotificationClick, filterNotificationsByFaculty } from '../services/spolky';
 import { useSpolkySettings } from '../hooks/useSpolkySettings';
+import { IndexedDBService } from '../services/storage';
 
 interface NotificationFeedProps {
   className?: string;
@@ -13,41 +14,43 @@ export function NotificationFeed({ className = '' }: NotificationFeedProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<SpolekNotification[]>([]);
   const [loading, setLoading] = useState(false);
-  const [readIds, setReadIds] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('reis_read_notifications');
-    return new Set(saved ? JSON.parse(saved) : []);
-  });
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [viewedIds, setViewedIds] = useState<Set<string>>(new Set());
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { subscribedAssociations } = useSpolkySettings();
+  const { subscribedAssociations, isLoading: settingsLoading } = useSpolkySettings();
 
   const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
-  // Load notifications on mount and when dependencies change
+  // Load persisted state (read/viewed IDs and cached notifications) on mount
   useEffect(() => {
-    loadNotifications();
-    
-    // Auto-refresh every 5 minutes
-    const intervalId = setInterval(() => {
-      loadNotifications();
-    }, REFRESH_INTERVAL);
-    
-    return () => clearInterval(intervalId);
-  }, [subscribedAssociations]); // Reload when subscriptions change
+    const loadState = async () => {
+      try {
+        const [savedReadIds, savedViewedIds, cachedNotifications] = await Promise.all([
+          IndexedDBService.get('meta', 'read_notifications'),
+          IndexedDBService.get('meta', 'viewed_notifications_analytics'),
+          IndexedDBService.get('meta', 'notifications_cache')
+        ]);
 
-  // Refresh when tab becomes visible
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        loadNotifications();
+        if (savedReadIds) {
+           setReadIds(new Set(savedReadIds));
+        }
+        if (savedViewedIds) {
+           setViewedIds(new Set(savedViewedIds));
+        }
+        // Only set notifications from cache if we haven't already fetched from network
+        if (cachedNotifications && notifications.length === 0) {
+           setNotifications(cachedNotifications);
+        }
+      } catch (err) {
+        console.error('[NotificationFeed] Failed to load persisted state:', err);
       }
     };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [subscribedAssociations]);
+    loadState();
+  }, []);
 
-  const loadNotifications = async () => {
-    // Only show loading if we don't have cached data
+  const loadNotifications = async (isInitialWithSettings = false) => {
+    // Only show loading if we don't have existing data
     if (notifications.length === 0) {
       setLoading(true);
     }
@@ -55,21 +58,50 @@ export function NotificationFeed({ className = '' }: NotificationFeedProps) {
     try {
       const allNotifications = await fetchNotifications();
       
-      // Filter by subscribed associations (includes home faculty and ESN by default)
+      // If we are calling this with real settings, we can filter and cache
       const filteredData = filterNotificationsByFaculty(
         allNotifications, 
         subscribedAssociations
       );
+      
       setNotifications(filteredData);
       
-      // Cache in localStorage for instant loading next time
-      localStorage.setItem('reis_notifications_cache', JSON.stringify(filteredData));
+      // Only cache if we actually have settings loaded (to avoid caching an empty list due to race)
+      if (isInitialWithSettings || subscribedAssociations.length > 0) {
+         IndexedDBService.set('meta', 'notifications_cache', filteredData).catch(console.error);
+      }
     } catch (error) {
       console.error('[NotificationFeed] Failed to load notifications:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Load notifications when settings change and they are not loading
+  useEffect(() => {
+    if (settingsLoading) return;
+    
+    loadNotifications(true);
+    
+    // Auto-refresh every 5 minutes
+    const intervalId = setInterval(() => {
+      loadNotifications();
+    }, REFRESH_INTERVAL);
+    
+    return () => clearInterval(intervalId);
+  }, [subscribedAssociations, settingsLoading]); 
+
+  // Refresh when tab becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && !settingsLoading) {
+        loadNotifications();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [subscribedAssociations, settingsLoading]);
 
   // Handle Escape key and Click Outside
   useEffect(() => {
@@ -103,18 +135,13 @@ export function NotificationFeed({ className = '' }: NotificationFeedProps) {
     };
   }, [isOpen]);
 
-  const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('reis_viewed_notifications_analytics');
-    return new Set(saved ? JSON.parse(saved) : []);
-  });
-
   const handleNotificationVisible = (id: string) => {
     if (!viewedIds.has(id)) {
       trackNotificationsViewed([id]);
       setViewedIds(prev => {
         const newSet = new Set(prev);
         newSet.add(id);
-        localStorage.setItem('reis_viewed_notifications_analytics', JSON.stringify(Array.from(newSet)));
+        IndexedDBService.set('meta', 'viewed_notifications_analytics', Array.from(newSet)).catch(console.error);
         return newSet;
       });
     }
@@ -129,7 +156,7 @@ export function NotificationFeed({ className = '' }: NotificationFeedProps) {
       const newReadIds = new Set(readIds);
       notifications.forEach(n => newReadIds.add(n.id));
       setReadIds(newReadIds);
-      localStorage.setItem('reis_read_notifications', JSON.stringify(Array.from(newReadIds)));
+      IndexedDBService.set('meta', 'read_notifications', Array.from(newReadIds)).catch(console.error);
     }
   };
 

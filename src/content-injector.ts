@@ -35,7 +35,7 @@ import { fetchAssessments } from "./api/assessments";
 import { fetchSyllabus } from "./api/syllabus";
 import { registerExam, unregisterExam } from "./api/exams";
 import { getUserParams } from "./utils/userParams";
-import { StorageService, STORAGE_KEYS } from "./services/storage";
+import { fetchStudyProgram } from "./api/studyProgram";
 import pLimit from "p-limit";
 
 import type { SubjectsData } from "./types/documents";
@@ -288,6 +288,11 @@ async function handleAction(id: string, action: string, payload: unknown) {
                 result = { success };
                 break;
             }
+            case "trigger_sync": {
+                await syncAllData();
+                result = { success: true };
+                break;
+            }
             default:
                 throw new Error(`Unknown action: ${action}`);
         }
@@ -329,10 +334,11 @@ async function syncAllData() {
         ]);
 
         cachedData = {
-            schedule: schedule.status === "fulfilled" ? schedule.value : null,
-            exams: exams.status === "fulfilled" ? exams.value : null,
-            subjects: subjects.status === "fulfilled" ? subjects.value : null,
-            files: {}, // Details stored in IndexedDB
+            ...cachedData,
+            schedule: schedule.status === "fulfilled" ? schedule.value : cachedData.schedule,
+            exams: exams.status === "fulfilled" ? exams.value : cachedData.exams,
+            subjects: subjects.status === "fulfilled" ? subjects.value : cachedData.subjects,
+            files: cachedData.files || {},
             lastSync: Date.now(),
         };
 
@@ -373,8 +379,10 @@ async function syncAllData() {
                         subTasks.push((async () => {
                             try {
                                 const subjectFiles = await fetchFilesFromFolder(subject.folderUrl);
-                                const key = `${STORAGE_KEYS.SUBJECT_FILES_PREFIX}${courseCode}`;
-                                await StorageService.setAsync(key, subjectFiles);
+                                // Update cachedData
+                                if (!cachedData.files) cachedData.files = {};
+                                const filesMap = cachedData.files as Record<string, any>;
+                                filesMap[courseCode] = subjectFiles;
                             } catch (e) {
                                 console.warn(`[REIS Content] Failed to fetch files for ${courseCode}:`, e);
                             }
@@ -386,8 +394,10 @@ async function syncAllData() {
                         subTasks.push((async () => {
                             try {
                                 const subjectAssessments = await fetchAssessments(studium, obdobi, subject.subjectId as string);
-                                const key = `${STORAGE_KEYS.SUBJECT_ASSESSMENTS_PREFIX}${courseCode}`;
-                                await StorageService.setAsync(key, subjectAssessments);
+                                // Update cachedData
+                                if (!cachedData.assessments) cachedData.assessments = {};
+                                const assessmentsMap = cachedData.assessments as Record<string, any>;
+                                assessmentsMap[courseCode] = subjectAssessments;
                             } catch (e) {
                                 console.warn(`[REIS Content] Failed to fetch assessments for ${courseCode}:`, e);
                             }
@@ -399,8 +409,10 @@ async function syncAllData() {
                         subTasks.push((async () => {
                             try {
                                 const subjectSyllabus = await fetchSyllabus(subject.subjectId as string);
-                                const key = `${STORAGE_KEYS.SUBJECT_SYLLABUS_PREFIX}${courseCode}`;
-                                await StorageService.setAsync(key, subjectSyllabus);
+                                // Update cachedData
+                                if (!cachedData.syllabuses) cachedData.syllabuses = {};
+                                const syllabusesMap = cachedData.syllabuses as Record<string, any>;
+                                syllabusesMap[courseCode] = subjectSyllabus;
                             } catch (e) {
                                 console.warn(`[REIS Content] Failed to fetch syllabus for ${courseCode}:`, e);
                             }
@@ -411,12 +423,36 @@ async function syncAllData() {
                 });
             });
 
+            // Sync Study Program (Independent / Parallel)
+            limit(async () => {
+                try {
+                    console.log("[REIS Content] 🔍 Starting Study Program fetch (Independent)...");
+                    const programData = await fetchStudyProgram();
+                    
+                    if (programData) {
+                        console.log(`[REIS Content] ✅ Study Program fetched. Programs: ${programData.programs.length}, Rows: ${programData.finalTable.length}`);
+                        // Update cache
+                        cachedData.studyProgram = programData;
+                        // Send IMMEDIATE update for this specific data
+                        sendToIframe(Messages.syncUpdate({
+                            studyProgram: programData,
+                            lastSync: Date.now()
+                        }));
+                    } else {
+                        console.warn("[REIS Content] ⚠️ fetchStudyProgram returned null");
+                    }
+                } catch (e) {
+                    console.error("[REIS Content] ❌ Failed to sync study program:", e);
+                }
+            });
+
             await Promise.all(subjectTasks);
             
-            console.log("[REIS Content] ✅ All subject details synced to IndexedDB");
+            console.log("[REIS Content] ✅ All subject details synced (ready to send)");
             
             // Final update
             cachedData.lastSync = Date.now();
+            console.log("[REIS Content] 📤 Sending sync update to iframe. Has studyProgram?", !!cachedData.studyProgram);
             sendToIframe(Messages.syncUpdate(cachedData));
         }
     } catch (error) {

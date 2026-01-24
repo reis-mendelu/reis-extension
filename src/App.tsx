@@ -10,11 +10,11 @@ import { Toaster } from './components/ui/sonner'
 
 import { getSmartWeekRange } from './utils/calendarUtils'
 import { ExamPanel } from './components/ExamPanel'
+import StudyProgramPanel from './components/StudyProgramPanel'
 import { SubjectFileDrawer } from './components/SubjectFileDrawer'
 import { type AppView } from './components/Sidebar'
 import { signalReady, requestData, isInIframe } from './api/proxyClient'
-import type { SyncedData } from './types/messages'
-import { StorageService, STORAGE_KEYS } from './services/storage'
+import { IndexedDBService } from './services/storage'
 import { syncService, outlookSyncService } from './services/sync'
 import { useOutlookSync } from './hooks/data'
 
@@ -30,46 +30,54 @@ function App() {
     outlookSyncService.init();
   }, []);
   
-  const [currentDate, setCurrentDate] = useState(() => {
-    // Try to restore previously selected week from localStorage
-    const DATE_STORAGE_KEY = 'reis_current_week';
-    const stored = localStorage.getItem(DATE_STORAGE_KEY);
-    if (stored) {
-      const parsed = new Date(stored);
-      if (!isNaN(parsed.getTime())) {
-        console.debug('[App] Restoring week from storage:', stored);
-        return parsed;
-      }
-    }
-    // Fallback to smart week (current/next week based on day)
-    const { start } = getSmartWeekRange();
-    return start;
+  const [currentDate, setCurrentDate] = useState<Date>(() => {
+      const { start } = getSmartWeekRange();
+      return start;
   });
-
-  // Persist selected week to localStorage
+  
+  // Load week from basic storage
   useEffect(() => {
-    const DATE_STORAGE_KEY = 'reis_current_week';
-    localStorage.setItem(DATE_STORAGE_KEY, currentDate.toISOString());
+     IndexedDBService.get('meta', 'reis_current_week').then(stored => {
+         if (stored && typeof stored === 'string') {
+             const parsed = new Date(stored);
+             if (!isNaN(parsed.getTime())) {
+                 setCurrentDate(parsed);
+             }
+         }
+     });
+  }, []);
+
+  // Persist selected week
+  useEffect(() => {
+    IndexedDBService.set('meta', 'reis_current_week', currentDate.toISOString());
   }, [currentDate]);
 
-  // View state for main content area (persisted to localStorage)
+  // View state for main content area
   const VIEW_STORAGE_KEY = 'reis_current_view';
-  const [currentView, setCurrentView] = useState<AppView>(() => {
-    const stored = localStorage.getItem(VIEW_STORAGE_KEY);
-    console.debug('[App] Initializing view from storage:', stored);
-    return (stored === 'exams' ? 'exams' : 'calendar') as AppView;
-  });
+  const [currentView, setCurrentView] = useState<AppView>('calendar'); 
+
+  // Load view
+  useEffect(() => {
+      IndexedDBService.get('meta', VIEW_STORAGE_KEY).then(stored => {
+          if (stored) {
+              setCurrentView(stored as AppView);
+          }
+      });
+  }, []);
+
+  // View state change handling
+  useEffect(() => {
+    // Hidden logging or track analytics here if needed
+  }, [currentView]);
   
   // Drawer state
   const [selectedSubject, setSelectedSubject] = useState<any>(null);
 
   const handleSelectSubject = (subj: any) => {
-    console.log('[App] Selected subject:', subj);
     setSelectedSubject(subj);
   };
 
   const handleOpenSubjectFromSearch = (courseCode: string, courseName?: string, courseId?: string) => {
-    console.log('[App] Opening subject from search:', courseCode, 'courseId:', courseId);
     // Create a minimal lesson-like object for the drawer
     const lessonObj = {
       courseCode,
@@ -89,8 +97,7 @@ function App() {
   
   // Persist view changes
   useEffect(() => {
-    console.debug('[App] Persisting view to storage:', currentView);
-    localStorage.setItem(VIEW_STORAGE_KEY, currentView);
+    IndexedDBService.set('meta', VIEW_STORAGE_KEY, currentView);
   }, [currentView]);
   
   // Navigation count for Outlook sync hint trigger
@@ -102,7 +109,6 @@ function App() {
   // Ref to trigger opening settings popup in Sidebar
   const openSettingsRef = useRef<(() => void) | null>(null);
 
-  const [syncData, setSyncData] = useState<SyncedData | null>(null);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   // Tutorial state
@@ -116,9 +122,7 @@ function App() {
     const loadTutorials = async () => {
       // setIsTutorialsLoading(true);
       try {
-        console.log('[App] Auto-fetching tutorials for associations:', subscribedAssociations);
         const data = await fetchTutorials(subscribedAssociations);
-        console.log('[App] Received tutorials:', data);
         setTutorials(data);
       } catch (error) {
         console.error('[App] Failed to fetch tutorials:', error);
@@ -152,62 +156,57 @@ function App() {
         const data = event.data;
         if (!data || typeof data !== 'object') return;
 
-        console.log('[App] Received message:', data.type);
-
         if (data.type === 'REIS_DATA' || data.type === 'REIS_SYNC_UPDATE') {
           const receivedData = data.data || data;
-          setSyncData(receivedData);
-
-          // Write data to localStorage so child components can read it
-          // This bridges the gap between postMessage and StorageService
           if (receivedData.schedule) {
-            StorageService.set(STORAGE_KEYS.SCHEDULE_DATA, receivedData.schedule);
-            console.log('[App] Wrote schedule to localStorage:', Array.isArray(receivedData.schedule) ? receivedData.schedule.length : 'non-array');
+            IndexedDBService.set('schedule', 'current', receivedData.schedule)
+              .catch(err => console.error('[App] Failed to write schedule to IDB:', err));
           }
           if (receivedData.exams) {
-            StorageService.set(STORAGE_KEYS.EXAMS_DATA, receivedData.exams);
-            console.log('[App] Wrote exams to localStorage:', Array.isArray(receivedData.exams) ? receivedData.exams.length : 'non-array');
+            IndexedDBService.set('exams', 'current', receivedData.exams)
+              .catch(err => console.error('[App] Failed to write exams to IDB:', err));
           }
           if (receivedData.subjects) {
-            StorageService.set(STORAGE_KEYS.SUBJECTS_DATA, receivedData.subjects);
-            console.log('[App] Wrote subjects to localStorage');
+            IndexedDBService.set('subjects', 'current', receivedData.subjects)
+              .catch(err => console.error('[App] Failed to write subjects to IDB:', err));
           }
           if (receivedData.files && typeof receivedData.files === 'object') {
-            // Write files for each subject with prefix key
-            const filesData = receivedData.files as Record<string, unknown>;
-            const subjectCount = Object.keys(filesData).length;
+            const filesData = receivedData.files as Record<string, any>;
             for (const [courseCode, files] of Object.entries(filesData)) {
-              const key = `${STORAGE_KEYS.SUBJECT_FILES_PREFIX}${courseCode}`;
-              StorageService.set(key, files);
+              IndexedDBService.set('files', courseCode, files)
+                .catch(err => console.error(`[App] Failed to write files for ${courseCode} to IDB:`, err));
             }
-            console.log('[App] Wrote files for', subjectCount, 'subjects to localStorage');
           }
           if (receivedData.assessments && typeof receivedData.assessments === 'object') {
-            // Write assessments for each subject with prefix key
-            const assessmentsMap = receivedData.assessments as Record<string, unknown>;
+            const assessmentsMap = receivedData.assessments as Record<string, any>;
             for (const [courseCode, assessments] of Object.entries(assessmentsMap)) {
-              const key = `${STORAGE_KEYS.SUBJECT_ASSESSMENTS_PREFIX}${courseCode}`;
-              StorageService.set(key, assessments);
+               IndexedDBService.set('assessments', courseCode, assessments)
+                 .catch(err => console.error(`[App] Failed to write assessments for ${courseCode} to IDB:`, err));
             }
-            console.log('[App] Wrote assessments for', Object.keys(assessmentsMap).length, 'subjects to localStorage');
           }
           if (receivedData.syllabuses && typeof receivedData.syllabuses === 'object') {
-            // Write syllabus for each subject with prefix key
-            const syllabusesMap = receivedData.syllabuses as Record<string, unknown>;
+            const syllabusesMap = receivedData.syllabuses as Record<string, any>;
             for (const [courseCode, syllabus] of Object.entries(syllabusesMap)) {
-              const key = `${STORAGE_KEYS.SUBJECT_SYLLABUS_PREFIX}${courseCode}`;
-              StorageService.set(key, syllabus);
+              IndexedDBService.set('syllabuses', courseCode, syllabus)
+                .catch(err => console.error(`[App] Failed to write syllabus for ${courseCode} to IDB:`, err));
             }
-            console.log('[App] Wrote syllabuses for', Object.keys(syllabusesMap).length, 'subjects to localStorage');
+          }
+           if (receivedData.studyProgram) {
+             IndexedDBService.set('study_program', 'current', receivedData.studyProgram as any)
+                 .then(() => {
+                     // Trigger update for hooks that rely on this
+                     syncService.triggerRefresh('STUDY_PROGRAM_UPDATE'); 
+                 })
+                 .catch(err => console.error('[App] Failed to write Study Program to IDB:', err));
           }
           if (receivedData.lastSync) {
-            StorageService.set(STORAGE_KEYS.LAST_SYNC, receivedData.lastSync);
+            IndexedDBService.set('meta', 'last_sync', receivedData.lastSync);
           }
 
           // Trigger hooks to re-read from localStorage
           syncService.triggerRefresh();
 
-          console.log('[App] Data received, written to localStorage, loading complete');
+          console.log('[App] Data processing complete');
         }
       };
 
@@ -266,17 +265,7 @@ function App() {
 
 
 
-  // Log sync data for debugging
-  if (syncData) {
-    console.log('[App] Current sync data:', {
-      hasSchedule: !!syncData.schedule,
-      hasExams: !!syncData.exams,
-      hasSubjects: !!syncData.subjects,
-      hasAssessments: !!syncData.assessments || Object.keys(localStorage).some(k => k.startsWith(STORAGE_KEYS.SUBJECT_ASSESSMENTS_PREFIX)),
-      lastSync: syncData.lastSync
-    });
-  }
-
+  // Render main layout
   return (
     <div className="flex h-screen overflow-hidden bg-base-200 font-sans text-base-content">
       <Toaster position="top-center" />
@@ -300,13 +289,19 @@ function App() {
 
         <div className="flex-1 pt-3 px-4 pb-1 overflow-hidden flex flex-col">
           <div className="flex-1 bg-base-100 rounded-lg shadow-sm border border-base-300 overflow-hidden">
-            {currentView === 'calendar' ? (
+            {currentView === 'calendar' && (
               <WeeklyCalendar
                 key={currentDate.toISOString()}
                 initialDate={currentDate}
               />
-            ) : (
+            )}
+            {currentView === 'exams' && (
               <ExamPanel 
+                onSelectSubject={handleSelectSubject}
+              />
+            )}
+            {currentView === 'study-program' && (
+              <StudyProgramPanel 
                 onSelectSubject={handleSelectSubject}
               />
             )}

@@ -5,7 +5,7 @@
  * No more local DOM scraping - server handles everything.
  */
 
-import { StorageService, STORAGE_KEYS } from "../services/storage";
+import { STORAGE_KEYS, IndexedDBService } from "../services/storage";
 import { loggers } from "../utils/logger";
 import type { SubjectSuccessRate, SuccessRateData } from "../types/documents";
 
@@ -19,21 +19,23 @@ const CACHE_EXPIRY = 30 * 24 * 60 * 60 * 1000; // 30 days
  * Retrieves success rates from local storage.
  */
 export async function getStoredSuccessRates(): Promise<SuccessRateData | null> {
-    return await StorageService.getAsync<SuccessRateData>(STORAGE_KEYS.SUCCESS_RATES_DATA);
+    const idbData = await IndexedDBService.get('success_rates', 'current');
+    return idbData || null;
 }
 
 /**
  * Saves success rates to local storage.
  */
 export async function saveSuccessRates(data: SuccessRateData): Promise<void> {
-    await StorageService.setAsync(STORAGE_KEYS.SUCCESS_RATES_DATA, data);
+    await IndexedDBService.set('success_rates', 'current', data)
+        .catch(err => loggers.api.error('[SuccessRate] IDB save failed:', err));
 }
 
 /**
  * Check if cache is still valid for a given course code.
  */
 async function isCacheValid(courseCode: string): Promise<boolean> {
-    const lastSync = await StorageService.getAsync<Record<string, number>>(STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC) || {};
+    const lastSync = await IndexedDBService.get('meta', STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC) as Record<string, number> || {};
     const lastSyncTime = lastSync[courseCode];
     if (!lastSyncTime) return false;
     return (Date.now() - lastSyncTime) < CACHE_EXPIRY;
@@ -43,12 +45,12 @@ async function isCacheValid(courseCode: string): Promise<boolean> {
  * Mark a course code as synced.
  */
 async function markAsSynced(courseCodes: string[]): Promise<void> {
-    const lastSync = await StorageService.getAsync<Record<string, number>>(STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC) || {};
+    const lastSync = await IndexedDBService.get('meta', STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC) as Record<string, number> || {};
     const now = Date.now();
     for (const code of courseCodes) {
         lastSync[code] = now;
     }
-    await StorageService.setAsync(STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC, lastSync);
+    await IndexedDBService.set('meta', STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC, lastSync);
 }
 
 /**

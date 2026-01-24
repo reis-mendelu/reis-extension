@@ -63,6 +63,18 @@ Object.defineProperty(window, 'ResizeObserver', {
     value: MockResizeObserver,
 });
 
+// Mock idb globally
+vi.mock('idb', () => ({
+    openDB: vi.fn().mockReturnValue(Promise.resolve({
+        get: vi.fn(),
+        put: vi.fn(),
+        delete: vi.fn(),
+        clear: vi.fn(),
+        getAll: vi.fn(),
+        getAllKeys: vi.fn(),
+    })),
+}));
+
 // Reset mocks after each test
 afterEach(() => {
     vi.clearAllMocks();

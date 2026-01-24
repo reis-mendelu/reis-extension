@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { StorageService, STORAGE_KEYS } from '../../services/storage';
+import { IndexedDBService } from '../../services/storage';
 import { syncService } from '../../services/sync';
 import type { ExamSubject } from '../../types/exams';
 
@@ -25,18 +25,21 @@ export function useExams(): UseExamsResult {
     const [error, setError] = useState<string | null>(null);
     const [lastSync, setLastSync] = useState<number | null>(null);
 
-    const loadFromStorage = useCallback(() => {
+    const loadFromStorage = useCallback(async () => {
         try {
-            const storedData = StorageService.get<ExamSubject[]>(STORAGE_KEYS.EXAMS_DATA);
-            const storedLastSync = StorageService.get<number>(STORAGE_KEYS.LAST_SYNC);
+            // Load exams from IndexedDB (Async)
+            const storedData = await IndexedDBService.get('exams', 'current');
+            
+            // Load last sync from IndexedDB metadata
+            const storedLastSync = await IndexedDBService.get('meta', 'last_sync');
 
-            if (storedData && storedData.length > 0) {
+            if (storedData && Array.isArray(storedData) && storedData.length > 0) {
                 setExams(storedData);
                 setError(null);
             } else {
-                // No data yet - not an error, just empty
                 setExams([]);
             }
+            
             setLastSync(storedLastSync);
             setIsLoaded(true);
         } catch (err) {
@@ -49,15 +52,15 @@ export function useExams(): UseExamsResult {
     const retry = useCallback(() => {
         setIsLoaded(false);
         setError(null);
-        loadFromStorage();
+        void loadFromStorage();
     }, [loadFromStorage]);
 
     useEffect(() => {
-        loadFromStorage();
+        void loadFromStorage();
 
         // Subscribe to sync updates
         const unsubscribe = syncService.subscribe(() => {
-            loadFromStorage();
+            void loadFromStorage();
         });
 
         return unsubscribe;

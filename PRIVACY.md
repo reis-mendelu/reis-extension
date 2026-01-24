@@ -14,7 +14,7 @@ We fetch and store the following information directly from the IS Mendelu websit
 - **Academic Data**: Schedules, grades, exam dates, success rates, and course materials.
 - **Authentication Data**: Session cookies required to make authenticated requests to IS Mendelu on your behalf.
 
-This data is stored **locally on your device** using the Chrome Storage API and is **never** transmitted to our servers.
+This data is stored **locally on your device** using highly efficient storage (IndexedDB) and is **never** transmitted to our servers.
 
 ### 2. Anonymous Usage Analytics
 We collect anonymous usage data to improve the extension:

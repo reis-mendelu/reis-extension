@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { syncService } from '../../services/sync';
-import { StorageService, STORAGE_KEYS } from '../../services/storage';
+import { IndexedDBService } from '../../services/storage';
 import type { Assessment } from '../../types/documents';
 
 export interface UseAssessmentsResult {
@@ -25,19 +25,27 @@ export function useAssessments(courseCode: string | undefined): UseAssessmentsRe
             return;
         }
 
-        const loadFromStorage = async () => {
-             const key = `${STORAGE_KEYS.SUBJECT_ASSESSMENTS_PREFIX}${courseCode}`;
-            const storedAssessments = await StorageService.getAsync<Assessment[]>(key);
-            setAssessments(storedAssessments);
-            setIsLoading(false);
+        const loadData = async () => {
+             setIsLoading(true);
+             try {
+                 // Load from IndexedDB
+                 const data = await IndexedDBService.get('assessments', courseCode);
+                 
+                 setAssessments(data || []);
+             } catch (error) {
+                 console.error('[useAssessments] Failed to load data:', error);
+                 setAssessments(null); // Keep as null on error
+             } finally {
+                 setIsLoading(false);
+             }
         };
 
-        // 1. Initial load
-        loadFromStorage();
+        // Initial load
+        loadData();
 
-        // 2. Subscribe to sync updates
+        // Subscribe to sync updates
         const unsubscribe = syncService.subscribe(() => {
-            loadFromStorage();
+            loadData();
         });
 
         return unsubscribe;

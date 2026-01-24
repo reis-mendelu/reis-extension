@@ -1,10 +1,6 @@
-/**
- * useTheme - Hook for managing dark/light theme preference.
- * 
- * Stores preference in chrome.storage.local and applies data-theme to iframe's document root.
- */
-
 import { useState, useEffect, useCallback } from "react";
+import { IndexedDBService } from "../services/storage";
+import { syncService } from "../services/sync";
 
 export type Theme = "mendelu" | "mendelu-dark";
 
@@ -28,61 +24,71 @@ export function useTheme(): UseThemeResult {
   const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME);
   const [isLoading, setIsLoading] = useState(true);
 
+  const loadTheme = useCallback(async () => {
+    try {
+      const storedTheme = await IndexedDBService.get("meta", STORAGE_KEY) as Theme | undefined;
+      if (storedTheme && (storedTheme === "mendelu" || storedTheme === "mendelu-dark")) {
+        setThemeState(storedTheme);
+        applyTheme(storedTheme);
+      } else {
+        applyTheme(DEFAULT_THEME);
+      }
+    } catch (e) {
+      console.error("[useTheme] Failed to load theme:", e);
+      applyTheme(DEFAULT_THEME);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   // Load theme from storage on mount
   useEffect(() => {
-    const loadTheme = async () => {
-      try {
-        const result = await chrome.storage.local.get([STORAGE_KEY]);
-        const storedTheme = result[STORAGE_KEY] as Theme | undefined;
-        if (storedTheme && (storedTheme === "mendelu" || storedTheme === "mendelu-dark")) {
-          setThemeState(storedTheme);
-          applyTheme(storedTheme);
-        } else {
-          applyTheme(DEFAULT_THEME);
-        }
-      } catch (e) {
-        console.error("[useTheme] Failed to load theme:", e);
-        applyTheme(DEFAULT_THEME);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadTheme();
-  }, []);
+  }, [loadTheme]);
 
-  // Listen for storage changes (sync across tabs)
+  // Listen for storage changes via syncService (sync across tabs/contexts)
   useEffect(() => {
-    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
-      if (changes[STORAGE_KEY]) {
-        const newTheme = changes[STORAGE_KEY].newValue as Theme;
-        if (newTheme) {
-          setThemeState(newTheme);
-          applyTheme(newTheme);
-        }
+    const unsubscribe = syncService.subscribe((type) => {
+      if (type === 'THEME_UPDATE') {
+        loadTheme();
       }
-    };
-
-    chrome.storage.local.onChanged.addListener(handleStorageChange);
-    return () => {
-      chrome.storage.local.onChanged.removeListener(handleStorageChange);
-    };
-  }, []);
+    });
+    return unsubscribe;
+  }, [loadTheme]);
 
   const applyTheme = (newTheme: Theme) => {
     // Set data-theme on <html> element (works in iframe)
     document.documentElement.setAttribute("data-theme", newTheme);
-    console.log("[useTheme] Applied theme:", newTheme);
+    // console.log("[useTheme] Applied theme:", newTheme);
   };
 
   const setTheme = useCallback(async (newTheme: Theme) => {
     try {
-      await chrome.storage.local.set({ [STORAGE_KEY]: newTheme });
+      await IndexedDBService.set("meta", STORAGE_KEY, newTheme);
       setThemeState(newTheme);
       applyTheme(newTheme);
+      syncService.triggerRefresh('THEME_UPDATE');
+      
+      // Use BroadcastChannel to notify other tabs/contexts
+      const bc = new BroadcastChannel('reis_theme_sync');
+      bc.postMessage(newTheme);
+      bc.close();
     } catch (e) {
       console.error("[useTheme] Failed to save theme:", e);
     }
+  }, []);
+
+  // Set up BroadcastChannel listener for cross-tab sync
+  useEffect(() => {
+    const bc = new BroadcastChannel('reis_theme_sync');
+    bc.onmessage = (event) => {
+      const newTheme = event.data as Theme;
+      if (newTheme === "mendelu" || newTheme === "mendelu-dark") {
+        setThemeState(newTheme);
+        applyTheme(newTheme);
+      }
+    };
+    return () => bc.close();
   }, []);
 
   const toggle = useCallback(() => {

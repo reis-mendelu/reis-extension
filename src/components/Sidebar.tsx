@@ -9,7 +9,7 @@ import { NavItem } from './Sidebar/NavItem';
 import { ProfilePopup } from './Sidebar/ProfilePopup';
 import type { Tutorial } from '../services/tutorials/types';
 
-export type AppView = 'calendar' | 'exams';
+export type AppView = 'calendar' | 'exams' | 'study-program';
 
 interface SidebarProps {
   currentView: AppView;
@@ -125,15 +125,23 @@ export const Sidebar = ({
               <NavItem
                 key={item.id}
                 item={processedItem}
-                isActive={currentView === 'exams' && item.id === 'exams' || currentView === 'calendar' && item.id === 'dashboard'}
+                isActive={
+                  (currentView === 'exams' && item.id === 'exams') || 
+                  (currentView === 'calendar' && item.id === 'dashboard') || 
+                  (currentView === 'study-program' && item.id === 'studijni-plany') || 
+                  (currentView === 'study-program' && item.id === 'o-studiu' && false) // Studium no longer owns study-program view
+                }
                 isHovered={hoveredItem === item.id}
                 onMouseEnter={() => handleMouseEnter(item.id)}
                 onMouseLeave={handleMouseLeave}
                 onClick={() => {
+                  console.log(`[Sidebar] Main item clicked: ${item.id}`);
                   if (item.id === 'dashboard') {
                     onViewChange('calendar');
                   } else if (item.id === 'exams') {
                     onViewChange('exams');
+                  } else if (item.id === 'studijni-plany') {
+                    onViewChange('study-program');
                   } else if (item.id === 'tutorials') {
                     // No action on main click, relies on hover for popover
                   } else if (item.href) {

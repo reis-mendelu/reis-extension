@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useSubjects } from '../../hooks/data/useSubjects';
-import { StorageService, STORAGE_KEYS } from '../../services/storage';
+import { IndexedDBService, STORAGE_KEYS } from '../../services/storage';
 import { syncService } from '../../services/sync';
 
 // Mock dependencies
@@ -16,6 +16,11 @@ vi.mock('../../services/storage', () => ({
         get: vi.fn(),
         set: vi.fn(),
         remove: vi.fn(),
+    },
+    IndexedDBService: {
+        get: vi.fn(),
+        set: vi.fn(),
+        delete: vi.fn(),
     },
     STORAGE_KEYS: {
         SUBJECTS_DATA: 'subjects_data',
@@ -49,7 +54,7 @@ describe('useSubjects', () => {
     });
 
     it('should load subjects from storage on mount', async () => {
-        vi.mocked(StorageService.get).mockReturnValue(mockSubjectsData);
+        vi.mocked(IndexedDBService.get).mockResolvedValue(mockSubjectsData);
 
         const { result } = renderHook(() => useSubjects());
 
@@ -58,11 +63,11 @@ describe('useSubjects', () => {
         });
 
         expect(result.current.subjects).toEqual(mockSubjectsData);
-        expect(StorageService.get).toHaveBeenCalledWith(STORAGE_KEYS.SUBJECTS_DATA);
+        expect(IndexedDBService.get).toHaveBeenCalledWith('subjects', 'current');
     });
 
     it('should return null when subject not found', async () => {
-        vi.mocked(StorageService.get).mockReturnValue(mockSubjectsData);
+        vi.mocked(IndexedDBService.get).mockResolvedValue(mockSubjectsData);
 
         const { result } = renderHook(() => useSubjects());
 
@@ -75,7 +80,7 @@ describe('useSubjects', () => {
     });
 
     it('should return correct subject by course code', async () => {
-        vi.mocked(StorageService.get).mockReturnValue(mockSubjectsData);
+        vi.mocked(IndexedDBService.get).mockResolvedValue(mockSubjectsData);
 
         const { result } = renderHook(() => useSubjects());
 
@@ -105,7 +110,7 @@ describe('useSubjects', () => {
     });
 
     it('getSubject should have stable reference (memoization test)', async () => {
-        vi.mocked(StorageService.get).mockReturnValue(mockSubjectsData);
+        vi.mocked(IndexedDBService.get).mockResolvedValue(mockSubjectsData);
 
         const { result, rerender } = renderHook(() => useSubjects());
 

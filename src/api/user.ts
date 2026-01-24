@@ -1,4 +1,5 @@
 import { fetchWithAuth, BASE_URL } from "./client";
+import { IndexedDBService } from "../services/storage";
 
 const ID_URL = `${BASE_URL}/auth/student/studium.pl`;
 
@@ -27,15 +28,17 @@ export async function fetchUserId(): Promise<string | null> {
 }
 
 export async function getUserId(): Promise<string | null> {
-    const storage = window.localStorage;
-    const id = storage.getItem("user_id");
+    try {
+        const id = await IndexedDBService.get('meta', "user_id");
+        if (id) return id;
 
-    if (id) return id;
-
-    const fetchedId = await fetchUserId();
-    if (fetchedId) {
-        storage.setItem("user_id", fetchedId);
-        return fetchedId;
+        const fetchedId = await fetchUserId();
+        if (fetchedId) {
+            await IndexedDBService.set('meta', "user_id", fetchedId);
+            return fetchedId;
+        }
+    } catch (err) {
+        console.error("[api/user] Failed to get user ID:", err);
     }
 
     return null;

@@ -40,6 +40,7 @@ export interface MenuItem {
     danger?: boolean;
     onClick?: () => void;
     href?: string;
+    isFeature?: boolean;
 }
 
 export const getMainMenuItems = (studiumId: string = '', obdobiId: string = ''): MenuItem[] => [
@@ -54,6 +55,14 @@ export const getMainMenuItems = (studiumId: string = '', obdobiId: string = ''):
         label: 'Zkoušky',
         icon: <CalendarCheck className="w-5 h-5" />,
     },
+
+    {
+        id: 'studijni-plany',
+        label: 'Plán',
+        icon: <BookMarked className="w-5 h-5" />,
+        isFeature: true
+    },
+
     {
         id: 'portal',
         label: 'Student',
@@ -112,17 +121,20 @@ export const getMainMenuItems = (studiumId: string = '', obdobiId: string = ''):
         expandable: true,
         children: [
             {
+                id: 'studijni-plany-ut',
+                label: 'Přehled studijních plánů',
+                icon: <BookOpen className="w-4 h-4" />,
+                href: `https://is.mendelu.cz/auth/katalog/plany.pl?fakulta=${2};obdobi=${obdobiId};studium=${studiumId};lang=cz`,
+                isFeature: false
+            },
+            {
                 id: 'hodnoceni-uspesnosti',
                 label: 'Hodnocení úspěšnosti předmětů',
                 icon: <Award className="w-4 h-4" />,
                 href: 'https://is.mendelu.cz/auth/student/hodnoceni.pl?_m=3167'
             },
-            {
-                id: 'studijni-plany',
-                label: 'Studijní plány',
-                icon: <BookMarked className="w-4 h-4" />,
-                href: 'https://is.mendelu.cz/auth/katalog/plany.pl'
-            },
+
+
             {
                 id: 'wifi',
                 label: 'Nastavení Wi-Fi',

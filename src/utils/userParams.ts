@@ -6,7 +6,7 @@
  */
 
 import { fetchWithAuth, BASE_URL } from "../api/client";
-import { StorageService } from "../services/storage";
+import { IndexedDBService } from "../services/storage";
 import { STORAGE_KEYS } from "../services/storage/keys";
 
 // ... (imports remain the same)
@@ -38,7 +38,7 @@ export async function getUserParams(): Promise<UserParams | null> {
     console.debug('[getUserParams] Getting user params');
 
     // Try to get from storage
-    const cached = StorageService.get<UserParams>(STORAGE_KEYS.USER_PARAMS);
+    const cached = await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS);
 
     if (cached && cached.studium && cached.obdobi && cached.facultyId && cached.username && cached.studentId && cached.fullName && cached.studyCode) {
         console.debug('[getUserParams] Returning stored params:', cached);
@@ -164,7 +164,7 @@ export async function getUserParams(): Promise<UserParams | null> {
         };
 
         console.debug('[getUserParams] Parsed and stored params:', params);
-        StorageService.set(STORAGE_KEYS.USER_PARAMS, params);
+        await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, params);
         return params;
 
     } catch (error) {
@@ -177,22 +177,19 @@ export async function getUserParams(): Promise<UserParams | null> {
 // ... (exports remain the same)
 
 /**
- * Synchronous getter for studium from storage.
- * Returns null if not cached (caller should handle gracefully).
- * Use this for URL injection where async isn't practical.
+ * Get studium from storage.
  */
-export function getStudiumSync(): string | null {
-    const cached = StorageService.get<UserParams>(STORAGE_KEYS.USER_PARAMS);
+export async function getStudium(): Promise<string | null> {
+    const cached = await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS);
     return cached?.studium ?? null;
 }
 
-export function getFacultySync(): string | null {
-    const cached = StorageService.get<UserParams>(STORAGE_KEYS.USER_PARAMS);
+export async function getFaculty(): Promise<string | null> {
+    const cached = await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS);
     return cached?.facultyId ?? null;
 }
 
-export function getErasmusSync(): boolean {
-    const cached = StorageService.get<UserParams>(STORAGE_KEYS.USER_PARAMS);
+export async function getErasmus(): Promise<boolean> {
+    const cached = await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS);
     return cached?.isErasmus ?? false;
 }
-

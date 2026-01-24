@@ -40,6 +40,9 @@ export const STORAGE_KEYS = {
     // Success rate data
     SUCCESS_RATES_DATA: 'reis_success_rates',
     GLOBAL_STATS_LAST_SYNC: 'reis_global_stats_sync',
+
+    // Study Program Data
+    STUDY_PROGRAM_DATA: 'reis_study_program',
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];

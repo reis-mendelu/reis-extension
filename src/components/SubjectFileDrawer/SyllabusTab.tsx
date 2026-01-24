@@ -1,13 +1,17 @@
-import { useSyllabus } from '../../hooks/data';
+import { useSyllabus, type UseSyllabusResult } from '../../hooks/data';
 import { useUserParams } from '../../hooks/useUserParams';
 import { BookOpen, Info } from 'lucide-react';
 
 interface SyllabusTabProps {
     courseCode: string;
+    courseId?: string;
+    courseName?: string;
+    prefetchedResult?: UseSyllabusResult;
 }
 
-export function SyllabusTab({ courseCode }: SyllabusTabProps) {
-    const { syllabus, isLoading } = useSyllabus(courseCode);
+export function SyllabusTab({ courseCode, courseId, courseName, prefetchedResult }: SyllabusTabProps) {
+    const hookResult = useSyllabus(courseCode, courseId, courseName);
+    const { syllabus, isLoading } = prefetchedResult || hookResult;
     const { params } = useUserParams();
     const studyForm = params?.studyForm; // 'prez' or 'komb'
 

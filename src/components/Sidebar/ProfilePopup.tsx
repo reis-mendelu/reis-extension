@@ -4,8 +4,6 @@ import { useState } from 'react';
 import { useOutlookSync } from '../../hooks/data';
 import { useTheme } from '../../hooks/useTheme';
 import { ASSOCIATION_PROFILES } from '../../services/spolky/config';
-import { getUserAssociation } from '../../services/spolky';
-import { getFacultySync, getErasmusSync } from '../../utils/userParams';
 import { useSpolkySettings } from '../../hooks/useSpolkySettings';
 
 interface ProfilePopupProps {
@@ -47,53 +45,6 @@ export function ProfilePopup({ isOpen, onOpenFeedback }: ProfilePopupProps) {
               </div>
             </button>
           )}
-
-          {/* Outlook Sync Toggle */}
-          <div 
-            className="flex items-center justify-between gap-3 px-1 py-2 rounded-lg transition-colors hover:bg-base-200 cursor-pointer"
-            onClick={() => !outlookSyncLoading && toggleOutlookSync()}
-          >
-            <div className="flex items-center gap-2 flex-1">
-              <Calendar className="w-4 h-4 text-base-content/50 shrink-0" />
-              <span className="text-xs text-base-content/70">Synchronizace rozvrhu do Outlooku</span>
-            </div>
-            
-            {/* Info Icon with Tooltip */}
-            <div className="relative flex items-center gap-2">
-              <div 
-                className="relative"
-                onClick={(e) => e.stopPropagation()}
-                onMouseEnter={() => setShowSyncInfo(true)}
-                onMouseLeave={() => setShowSyncInfo(false)}
-              >
-                <Info className="w-3.5 h-3.5 text-base-content/40 cursor-help hover:text-primary transition-colors" />
-                
-                <AnimatePresence>
-                  {showSyncInfo && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 5, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute bottom-full right-0 mb-2 w-64 bg-base-200 text-base-content rounded-lg shadow-lg border border-base-300 p-3 z-[100] pointer-events-none"
-                    >
-                      <p className="text-xs leading-relaxed">
-                        Synchronizuje rozvrh a termíny zkoušek do Outlooku. Všechno pak uvidíš přímo v kalendáři.
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-              
-              <input
-                type="checkbox"
-                className="toggle toggle-primary toggle-sm pointer-events-none" 
-                checked={outlookSyncEnabled ?? false}
-                disabled={outlookSyncLoading || outlookSyncEnabled === null}
-                readOnly
-              />
-            </div>
-          </div>
 
           {/* Spolky Opt-in Section (Collapsible) */}
           <div className="mt-2 border-t border-base-200">
@@ -141,8 +92,57 @@ export function ProfilePopup({ isOpen, onOpenFeedback }: ProfilePopupProps) {
              </AnimatePresence>
           </div>
 
-          {/* Dark Theme Toggle */}
+          {/* Outlook Sync Toggle */}
           <div className="border-t border-base-200 pt-1">
+            <div 
+              className="flex items-center justify-between gap-3 px-1 py-2 rounded-lg transition-colors hover:bg-base-200 cursor-pointer"
+              onClick={() => !outlookSyncLoading && toggleOutlookSync()}
+            >
+              <div className="flex items-center gap-2 flex-1">
+                <Calendar className="w-4 h-4 text-base-content/50 shrink-0" />
+                <span className="text-xs text-base-content/70">Synchronizace rozvrhu do Outlooku</span>
+              </div>
+              
+              {/* Info Icon with Tooltip */}
+              <div className="relative flex items-center gap-2">
+                <div 
+                  className="relative"
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseEnter={() => setShowSyncInfo(true)}
+                  onMouseLeave={() => setShowSyncInfo(false)}
+                >
+                  <Info className="w-3.5 h-3.5 text-base-content/40 cursor-help hover:text-primary transition-colors" />
+                  
+                  <AnimatePresence>
+                    {showSyncInfo && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute bottom-full right-0 mb-2 w-64 bg-base-200 text-base-content rounded-lg shadow-lg border border-base-300 p-3 z-[100] pointer-events-none"
+                      >
+                        <p className="text-xs leading-relaxed">
+                          Synchronizuje rozvrh a termíny zkoušek do Outlooku. Všechno pak uvidíš přímo v kalendáři.
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                
+                <input
+                  type="checkbox"
+                  className="toggle toggle-primary toggle-sm pointer-events-none" 
+                  checked={outlookSyncEnabled ?? false}
+                  disabled={outlookSyncLoading || outlookSyncEnabled === null}
+                  readOnly
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Dark Theme Toggle */}
+          <div>
              <label className="flex items-center justify-between gap-3 px-1 py-2 cursor-pointer hover:bg-base-200 rounded-lg transition-colors">
                <div className="flex items-center gap-2 flex-1">
                  <Moon className="w-4 h-4 text-base-content/50 shrink-0" />

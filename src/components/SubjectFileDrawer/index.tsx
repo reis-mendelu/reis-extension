@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { FileText } from 'lucide-react';
 import { loggers } from '../../utils/logger';
-import { useSchedule, useFiles } from '../../hooks/data';
+import { useSchedule, useFiles, useSyncStatus, useSyllabus } from '../../hooks/data';
 import { cleanFolderName } from '../../utils/fileUrl';
 import { useFileActions } from '../../hooks/ui/useFileActions';
 import { SuccessRateTab } from '../SuccessRateTab';
@@ -21,8 +21,8 @@ import { AssessmentTab } from './AssessmentTab';
 import { SyllabusTab } from './SyllabusTab';
 import { DragHint, SelectionBox } from './DragHint';
 import { useDragSelection } from './useDragSelection';
+import { IndexedDBService } from '../../services/storage';
 import type { FileGroup } from './types';
-const DRAG_HINT_STORAGE_KEY = 'reis_drag_hint_shown';
 
 interface SubjectFileDrawerProps {
     lesson: BlockLesson | null;
@@ -39,8 +39,25 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
     // State
     // Default to 'stats' tab when opened from exams view (zkousky page)
     const [activeTab, setActiveTab] = useState<'files' | 'stats' | 'assessments' | 'syllabus'>(lesson?.isExam ? 'stats' : 'files');
-    const { files } = useFiles(isOpen ? lesson?.courseCode : undefined);
+    const { files, isLoading: isFilesLoading } = useFiles(isOpen ? lesson?.courseCode : undefined);
+    const { isSyncing } = useSyncStatus();
     const [showDragHint, setShowDragHint] = useState(false);
+    
+    // Resolve courseId from schedule if not present
+    const resolvedCourseId = useMemo(() => {
+        if (lesson?.courseId) return lesson.courseId;
+        if (!lesson?.courseCode || !schedule?.length) return '';
+        
+        const matchingLesson = schedule.find(s => s.courseCode === lesson.courseCode && s.courseId);
+        return matchingLesson?.courseId || '';
+    }, [lesson, schedule]);
+
+    // Pre-fetch syllabus as soon as drawer opens
+    const syllabusResult = useSyllabus(
+        isOpen ? lesson?.courseCode : undefined,
+        isOpen ? resolvedCourseId : undefined,
+        isOpen ? (lesson as any)?.courseName : undefined
+    );
 
     // Refs
     const containerRef = useRef<HTMLDivElement>(null);
@@ -81,18 +98,27 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
     useEffect(() => {
         if (!isOpen || !files || files.length === 0) return;
         
-        const hasSeenHint = localStorage.getItem(DRAG_HINT_STORAGE_KEY);
-        if (hasSeenHint) return;
+        async function checkHint() {
+            try {
+                const hasSeenHint = await IndexedDBService.get('meta', 'drag_hint_shown');
+                if (hasSeenHint) return;
+                
+                await IndexedDBService.set('meta', 'drag_hint_shown', true);
+                
+                setTimeout(() => setShowDragHint(true), 800);
+                setTimeout(() => setShowDragHint(false), 4800);
+
+                // No cleanup returned here because timers are local to this check closure scope 
+                // but if component unmounts we can't easily clear them from outside.
+                // Ideally we use a ref or standard useEffect cleanup, but for now this async wrapper 
+                // makes standard cleanup return tricky. 
+                // Given the short duration, it's acceptable, or we could refactor to use a valid state check.
+            } catch (err) {
+               console.error('[SubjectFileDrawer] Failed to check drag hint:', err);
+            }
+        }
         
-        localStorage.setItem(DRAG_HINT_STORAGE_KEY, 'true');
-        
-        const showTimer = setTimeout(() => setShowDragHint(true), 800);
-        const hideTimer = setTimeout(() => setShowDragHint(false), 4800);
-        
-        return () => {
-            clearTimeout(showTimer);
-            clearTimeout(hideTimer);
-        };
+        checkHint();
     }, [isOpen, files]);
 
     // Handle Escape key
@@ -111,15 +137,6 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
         document.addEventListener('keydown', handleEscape, true);
         return () => document.removeEventListener('keydown', handleEscape, true);
     }, [isOpen, onClose]);
-
-    // Resolve courseId from schedule if not present
-    const resolvedCourseId = useMemo(() => {
-        if (lesson?.courseId) return lesson.courseId;
-        if (!lesson?.courseCode || !schedule?.length) return '';
-        
-        const matchingLesson = schedule.find(s => s.courseCode === lesson.courseCode && s.courseId);
-        return matchingLesson?.courseId || '';
-    }, [lesson, schedule]);
 
     // Group and sort files
     const groupedFiles: FileGroup[] = useMemo(() => {
@@ -181,7 +198,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                     
                     <DrawerHeader
                         lesson={lesson}
-                        courseId={resolvedCourseId}
+                        courseId={resolvedCourseId || syllabusResult.syllabus?.courseId || ''}
                         selectedCount={selectedIds.length}
                         isDownloading={isDownloading}
                         activeTab={activeTab}
@@ -203,20 +220,40 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                             {activeTab === 'files' && <DragHint show={showDragHint} />}
 
                             {activeTab === 'files' ? (
-                                // Show skeleton if files are null (initial load/unknown state)
-                                // We rely on syncFiles setting [] for empty folders to distinguish "empty" from "loading"
-                                files === null ? (
+                                // Show skeleton if files are null (unknown state) AND we are syncing
+                                (isFilesLoading || (isSyncing && files === null)) ? (
                                     <FileListSkeleton />
-                                ) : files.length === 0 ? (
-                                    // Empty state when no files available (files is valid empty array)
+                                ) : (!files || files.length === 0) ? (
+                                    // Empty state when no files available (either known empty [] or unknown null but not syncing)
                                     <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-                                        <FileText className="w-12 h-12 text-base-content/20 mb-3" />
-                                        <p className="text-sm text-base-content/60">
-                                            {lesson?.isFromSearch 
-                                                ? "Soubory jsou dostupné pouze pro předměty ve vašem rozvrhu"
-                                                : "Žádné soubory nejsou k dispozici"
-                                            }
-                                        </p>
+                                        {lesson?.isFromSearch ? (
+                                            <div className="flex flex-col items-center">
+                                                <FileText className="w-12 h-12 text-base-content/20 mb-3" />
+                                                <p className="text-sm text-base-content/60">
+                                                    Soubory jsou dostupné pouze pro předměty ve vašem rozvrhu
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center">
+                                                <p className="text-sm text-base-content/60 flex items-center justify-center gap-1">
+                                                    Žádné soubory nejsou k dispozici. Možná je najdeš v
+                                                    <a 
+                                                        href="https://teams.microsoft.com/v2/" 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 text-[#5059C9] font-bold hover:underline"
+                                                    >
+                                                        Teamsech
+                                                        <img 
+                                                            src={chrome.runtime.getURL("teams_icon_48.png")} 
+                                                            alt="Teams" 
+                                                            className="w-8 h-8 object-contain" 
+                                                        />
+                                                    </a>
+                                                    ?
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <FileList
@@ -231,7 +268,12 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                             ) : activeTab === 'assessments' ? (
                                 <AssessmentTab courseCode={lesson?.courseCode || ''} />
                             ) : activeTab === 'syllabus' ? (
-                                <SyllabusTab courseCode={lesson?.courseCode || ''} />
+                                <SyllabusTab 
+                                    courseCode={lesson?.courseCode || ''} 
+                                    courseId={resolvedCourseId}
+                                    courseName={(lesson as any)?.courseName}
+                                    prefetchedResult={syllabusResult}
+                                />
                             ) : (
                                 <SuccessRateTab courseCode={lesson?.courseCode || ''} />
                             )}

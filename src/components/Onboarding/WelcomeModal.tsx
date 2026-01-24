@@ -2,31 +2,38 @@
  * Welcome Modal Component
  * 
  * One-time centered popup welcoming new users to reIS.
- * Shows once, dismisses permanently via localStorage.
+ * Shows once, dismisses permanently via IndexedDB.
  */
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MENDELU_LOGO_PATH } from '../../constants/icons';
+import { IndexedDBService } from '../../services/storage';
 
-const WELCOME_STORAGE_KEY = 'reis_welcome_dismissed';
 
 export function WelcomeModal() {
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
-        // Only show if not previously dismissed
-        const dismissed = localStorage.getItem(WELCOME_STORAGE_KEY);
-        if (!dismissed) {
-            // Small delay for smoother appearance after page load
-            const timer = setTimeout(() => setIsVisible(true), 800);
-            return () => clearTimeout(timer);
+        async function checkWelcome() {
+            try {
+                // Only show if not previously dismissed
+                const dismissed = await IndexedDBService.get('meta', 'welcome_dismissed');
+                if (!dismissed) {
+                    // Small delay for smoother appearance after page load
+                    const timer = setTimeout(() => setIsVisible(true), 800);
+                    return () => clearTimeout(timer);
+                }
+            } catch (err) {
+                console.error('[WelcomeModal] Failed to check status:', err);
+            }
         }
+        checkWelcome();
     }, []);
 
     const handleDismiss = () => {
         setIsVisible(false);
-        localStorage.setItem(WELCOME_STORAGE_KEY, 'true');
+        IndexedDBService.set('meta', 'welcome_dismissed', true).catch(console.error);
     };
 
     return (

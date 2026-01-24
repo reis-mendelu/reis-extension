@@ -3,9 +3,8 @@
  * Sync assessments for all subjects from IS Mendelu to storage.
  */
 
-import { StorageService, STORAGE_KEYS } from '../storage';
+import { IndexedDBService } from '../storage';
 import { fetchAssessments } from '../../api/assessments';
-import type { SubjectsData } from '../../types/documents';
 import { getUserParams } from '../../utils/userParams';
 
 export async function syncAssessments(): Promise<void> {
@@ -22,7 +21,7 @@ export async function syncAssessments(): Promise<void> {
     } else {
         console.warn('[syncAssessments] UserParams incomplete, attempting fallback to schedule data');
         // Fallback to schedule (which is known to be robust)
-        const schedule = StorageService.get<any[]>(STORAGE_KEYS.SCHEDULE_DATA);
+        const schedule = await IndexedDBService.get('schedule', 'current');
         if (schedule && schedule.length > 0 && schedule[0].studyId && schedule[0].periodId) {
              studium = schedule[0].studyId;
              obdobi = schedule[0].periodId;
@@ -36,7 +35,7 @@ export async function syncAssessments(): Promise<void> {
     }
 
     // 2. Get subjects
-    const subjectsData = StorageService.get<SubjectsData>(STORAGE_KEYS.SUBJECTS_DATA);
+    const subjectsData = await IndexedDBService.get('subjects', 'current');
     if (!subjectsData || !subjectsData.data) {
         console.log('[syncAssessments] No subjects data available, skipping assessment sync');
         return;
@@ -65,9 +64,7 @@ export async function syncAssessments(): Promise<void> {
             
             const assessments = await fetchAssessments(studium, obdobi, predmetId);
 
-            const storageKey = `${STORAGE_KEYS.SUBJECT_ASSESSMENTS_PREFIX}${courseCode}`;
-            StorageService.set(storageKey, assessments);
-            await StorageService.setAsync(storageKey, assessments);
+            await IndexedDBService.set('assessments', courseCode, assessments);
             
             if (assessments.length > 0) {
                 console.debug(`[syncAssessments] Found ${assessments.length} assessments for ${courseCode}`);

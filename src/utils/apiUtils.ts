@@ -6,15 +6,15 @@
  */
 
 import type { FileObject, StoredSubject } from "../types/calendarTypes";
-import { StorageService, STORAGE_KEYS } from "../services/storage";
+import { IndexedDBService } from "../services/storage";
 import type { SubjectsData, Assessment } from "../types/documents";
 
 /**
  * Get a stored subject by course code.
  * Reads directly from storage (populated by syncSubjects).
  */
-export function getStoredSubject(courseCode: string): StoredSubject | null {
-    const subjectsData = StorageService.get<SubjectsData>(STORAGE_KEYS.SUBJECTS_DATA);
+export async function getStoredSubject(courseCode: string): Promise<StoredSubject | null> {
+    const subjectsData = await IndexedDBService.get('subjects', 'current');
 
     if (!subjectsData || !subjectsData.data) {
         console.debug('[getStoredSubject] No subjects data in storage');
@@ -38,9 +38,8 @@ export function getStoredSubject(courseCode: string): StoredSubject | null {
  * Get files for a subject by course code.
  * Reads directly from storage (populated by syncFiles).
  */
-export function getFilesForSubject(courseCode: string): FileObject[] | null {
-    const storageKey = `${STORAGE_KEYS.SUBJECT_FILES_PREFIX}${courseCode}`;
-    const files = StorageService.get<FileObject[]>(storageKey);
+export async function getFilesForSubject(courseCode: string): Promise<FileObject[] | null> {
+    const files = await IndexedDBService.get('files', courseCode);
 
     if (!files) {
         console.debug(`[getFilesForSubject] No files in storage for ${courseCode}`);
@@ -59,7 +58,7 @@ export async function getFilesFromId(folderId: string | null): Promise<FileObjec
     if (!folderId) return null;
 
     // Try to find the course code by folder ID
-    const subjectsData = StorageService.get<SubjectsData>(STORAGE_KEYS.SUBJECTS_DATA);
+    const subjectsData = await IndexedDBService.get('subjects', 'current');
 
     if (!subjectsData || !subjectsData.data) {
         console.debug('[getFilesFromId] No subjects data in storage');
@@ -81,9 +80,8 @@ export async function getFilesFromId(folderId: string | null): Promise<FileObjec
  * Get assessments for a subject by course code.
  * Reads directly from storage (populated by syncAssessments).
  */
-export function getAssessmentsForSubject(courseCode: string): Assessment[] | null {
-    const storageKey = `${STORAGE_KEYS.SUBJECT_ASSESSMENTS_PREFIX}${courseCode}`;
-    const assessments = StorageService.get<Assessment[]>(storageKey);
+export async function getAssessmentsForSubject(courseCode: string): Promise<Assessment[] | null> {
+    const assessments = await IndexedDBService.get('assessments', courseCode);
 
     if (!assessments) {
         console.debug(`[getAssessmentsForSubject] No assessments in storage for ${courseCode}`);

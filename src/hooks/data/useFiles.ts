@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { syncService } from '../../services/sync';
-import { StorageService, STORAGE_KEYS } from '../../services/storage';
+import { IndexedDBService } from '../../services/storage';
 import type { ParsedFile } from '../../types/documents';
 
 export interface UseFilesResult {
@@ -25,19 +25,27 @@ export function useFiles(courseCode: string | undefined): UseFilesResult {
             return;
         }
 
-        const loadFromStorage = async () => {
-            const key = `${STORAGE_KEYS.SUBJECT_FILES_PREFIX}${courseCode}`;
-            const storedFiles = await StorageService.getAsync<ParsedFile[]>(key);
-            setFiles(storedFiles);
-            setIsLoading(false);
+        const loadData = async () => {
+             setIsLoading(true);
+             try {
+                 // Load from IndexedDB
+                 const data = await IndexedDBService.get('files', courseCode);
+                 
+                 setFiles(data || []);
+             } catch (error) {
+                 console.error('[useFiles] Failed to load files:', error);
+                 setFiles(null); 
+             } finally {
+                 setIsLoading(false);
+             }
         };
 
-        // 1. Initial load
-        loadFromStorage();
+        // Initial load
+        loadData();
 
-        // 2. Subscribe to sync updates
+        // Subscribe to sync updates
         const unsubscribe = syncService.subscribe(() => {
-            loadFromStorage();
+            loadData();
         });
 
         return unsubscribe;

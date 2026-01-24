@@ -40,9 +40,21 @@ export function SearchBar({ placeholder = "Hledej předměty, lidi, stránky..."
 
 
   const [recentSearches, setRecentSearches] = useState<SearchResult[]>([]);
+  const [studiumId, setStudiumId] = useState<string | undefined>(undefined);
 
-  // Load recent searches on mount (from sessionStorage for better privacy)
   useEffect(() => {
+    // Fetch user params purely from IDB or API to get studium ID
+    import('../utils/userParams').then(async ({ getUserParams }) => {
+        try {
+            const params = await getUserParams();
+            if (params && params.studium) {
+                setStudiumId(String(params.studium));
+            }
+        } catch (e) {
+            console.error("Failed to load user params for SearchBar", e);
+        }
+    });
+
     try {
       const stored = sessionStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -225,7 +237,7 @@ export function SearchBar({ placeholder = "Hledej předměty, lidi, stránky..."
 
     // For keyboard navigation, open the link programmatically
     if (result.link) {
-      window.open(injectUserParams(result.link), '_blank');
+      window.open(injectUserParams(result.link, studiumId), '_blank');
     }
     if (onSearch) {
       onSearch(result.title);

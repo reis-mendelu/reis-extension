@@ -1,8 +1,8 @@
 /**
- * Sync exam data from IS Mendelu to localStorage.
+ * Sync exam data from IS Mendelu to IndexedDB.
  */
 
-import { StorageService, STORAGE_KEYS } from '../storage';
+import { IndexedDBService } from '../storage';
 import { fetchExamData } from '../../api/exams';
 
 export async function syncExams(): Promise<void> {
@@ -11,7 +11,7 @@ export async function syncExams(): Promise<void> {
     const data = await fetchExamData();
 
     if (data && data.length > 0) {
-        StorageService.set(STORAGE_KEYS.EXAMS_DATA, data);
+        await IndexedDBService.set('exams', 'current', data);
         console.log(`[syncExams] Stored ${data.length} subjects with exams`);
     } else {
         console.log('[syncExams] No exam data to store');

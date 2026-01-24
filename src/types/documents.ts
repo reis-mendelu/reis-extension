@@ -78,6 +78,7 @@ export interface Assessment {
 }
 
 export interface SyllabusRequirements {
+    courseId?: string; // Resolved IS Subject ID
     requirementsText: string; // Textual description of requirements
     requirementsTable: string[][]; // Grading breakdown table (rows of cells)
 }
