@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { ChromeSyncService } from '../../services/storage';
 
 interface SubjectNoteData {
     note: string;
@@ -34,18 +35,13 @@ export function useSubjectNote(subjectCode: string | undefined) {
 
     // Save note to storage (debounced)
     const saveToStorage = useCallback((value: string, code: string) => {
-        if (typeof chrome === 'undefined' || !chrome.storage?.sync) {
-            console.debug('[useSubjectNote] chrome.storage.sync unavailable for save');
-            return;
-        }
-
         const key = `${NOTE_KEY_PREFIX}${code}`;
         const data: SubjectNoteData = {
             note: value,
             updatedAt: Date.now(),
         };
 
-        chrome.storage.sync.set({ [key]: data })
+        ChromeSyncService.set(key, data)
             .then(() => {
                 console.debug('[useSubjectNote] Note saved:', { key, length: value.length });
                 hasChangesRef.current = false;
@@ -71,21 +67,11 @@ export function useSubjectNote(subjectCode: string | undefined) {
         const key = `${NOTE_KEY_PREFIX}${subjectCode}`;
         setIsLoading(true);
 
-        // Check if chrome.storage.sync is available
-        if (typeof chrome === 'undefined' || !chrome.storage?.sync) {
-            console.debug('[useSubjectNote] chrome.storage.sync unavailable');
-            setNoteState('');
-            noteRef.current = '';
-            setIsLoading(false);
-            return;
-        }
-
-        chrome.storage.sync.get(key)
-            .then((result) => {
+        ChromeSyncService.get<SubjectNoteData>(key)
+            .then((data) => {
                 // Prevent stale update if subject changed during async load
                 if (currentSubjectRef.current !== subjectCode) return;
 
-                const data = result[key] as SubjectNoteData | undefined;
                 const loadedNote = data?.note ?? '';
                 setNoteState(loadedNote);
                 noteRef.current = loadedNote;

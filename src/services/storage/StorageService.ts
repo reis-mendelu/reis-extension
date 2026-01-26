@@ -1,12 +1,13 @@
 /**
- * StorageService - Abstraction over localStorage and chrome.storage for type-safe data persistence.
+ * StorageService - Abstraction over chrome.storage.local for shared extension state.
  * 
- * Pattern: Stale-while-revalidate
- * - Read from storage immediately (instant UI)
- * - Sync updates in background every 5 minutes
+ * use Async methods (getAsync/setAsync) for data that must be shared across extension
+ * contexts (e.g. Content Script <-> Popup <-> Background) and survive page reloads.
  * 
- * Use sync methods (get/set) for simple data.
- * Use async methods (getAsync/setAsync) for extension-persistent data (survives page reload).
+ * For main application data persistence, use IndexedDBService.
+ * For cloud-synced user data, use ChromeSyncService.
+ * 
+ * @deprecated Synchronous localStorage methods are deprecated. Use IndexedDBService or Zustand.
  */
 
 export const StorageService = {
@@ -16,6 +17,7 @@ export const StorageService = {
     // ==========================================
 
     /**
+     * @deprecated Use IndexedDBService instead. See STORAGE_POLICY.md
      * Get a value from localStorage, parsed as JSON.
      * Returns null if key doesn't exist or parsing fails.
      */
@@ -31,6 +33,7 @@ export const StorageService = {
     },
 
     /**
+     * @deprecated Use IndexedDBService instead. See STORAGE_POLICY.md
      * Set a value in localStorage as JSON.
      */
     set<T>(key: string, value: T): void {
@@ -46,6 +49,7 @@ export const StorageService = {
     },
 
     /**
+     * @deprecated Use IndexedDBService instead. See STORAGE_POLICY.md
      * Remove a key from localStorage.
      */
     remove(key: string): void {
@@ -57,6 +61,7 @@ export const StorageService = {
     },
 
     /**
+     * @deprecated Use IndexedDBService instead. See STORAGE_POLICY.md
      * Check if a key exists in localStorage.
      */
     has(key: string): boolean {
@@ -64,6 +69,7 @@ export const StorageService = {
     },
 
     /**
+     * @deprecated Use IndexedDBService instead. See STORAGE_POLICY.md
      * Get all keys matching a prefix.
      * Useful for iterating over subject files.
      */

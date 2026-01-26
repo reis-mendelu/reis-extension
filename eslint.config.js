@@ -20,7 +20,12 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      // Enforce using StorageService instead of direct chrome.storage
+      // Enforce using StorageService or IndexedDBService instead of direct storage APIs
+      'no-restricted-globals': [
+        'error',
+        { name: 'localStorage', message: 'Use IndexedDBService or Zustand instead of localStorage.' },
+        { name: 'sessionStorage', message: 'Use IndexedDBService or Zustand instead of sessionStorage.' },
+      ],
       'no-restricted-syntax': [
         'warn',
         {
@@ -32,10 +37,11 @@ export default defineConfig([
       'react/no-danger': 'off', // Using custom rule instead
     },
   },
-  // Allow chrome.storage in StorageService only
+  // Allow storage APIs in StorageService and specific utilities only
   {
-    files: ['**/services/storage/**/*.ts'],
+    files: ['**/services/storage/**/*.ts', '**/components/SearchBar.tsx'],
     rules: {
+      'no-restricted-globals': 'off',
       'no-restricted-syntax': 'off',
     },
   },

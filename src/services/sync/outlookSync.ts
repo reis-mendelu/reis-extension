@@ -2,7 +2,7 @@
  * Outlook Sync Service - Manages calendar sync state.
  * 
  * - Checks status once on init (called at app startup)
- * - Caches result in localStorage
+ * - Caches result in IndexedDBService
  * - Provides toggle method for UI
  */
 
