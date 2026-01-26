@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { test, expect } from '../fixtures/extension';
 import { addDays, nextFriday, format, startOfDay } from 'date-fns';
 

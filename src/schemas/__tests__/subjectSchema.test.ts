@@ -30,7 +30,9 @@ describe('SubjectSchema', () => {
     });
 
     it('rejects subjects data missing version', () => {
-        const { version: _, ...badData } = goldStandardData;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const badData = { ...goldStandardData } as any;
+        delete badData.version;
         const result = SubjectsDataSchema.safeParse(badData);
         expect(result.success).toBe(false);
     });

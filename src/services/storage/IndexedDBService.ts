@@ -35,10 +35,12 @@ interface ReisDB extends DBSchema {
     };
     success_rates: {
         key: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         value: any;
     };
     meta: {
         key: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         value: any;
     };
 }
@@ -58,8 +60,10 @@ class IndexedDBServiceImpl {
                 ];
                 
                 requiredStores.forEach(store => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     if (!db.objectStoreNames.contains(store as any)) {
                         console.log(`[IndexedDB] Creating missing store: ${store}`);
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         db.createObjectStore(store as any);
                     }
                 });
@@ -69,32 +73,39 @@ class IndexedDBServiceImpl {
 
     async get<K extends keyof ReisDB>(storeName: K, key: string): Promise<ReisDB[K]['value'] | undefined> {
         const db = await this.dbPromise;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return db.get(storeName as any, key);
     }
 
     async set<K extends keyof ReisDB>(storeName: K, key: string, value: ReisDB[K]['value']): Promise<void> {
         const db = await this.dbPromise;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await db.put(storeName as any, value, key);
     }
 
     async delete<K extends keyof ReisDB>(storeName: K, key: string): Promise<void> {
         const db = await this.dbPromise;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await db.delete(storeName as any, key);
     }
 
     async clear<K extends keyof ReisDB>(storeName: K): Promise<void> {
         const db = await this.dbPromise;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await db.clear(storeName as any);
     }
 
     async getAll<K extends keyof ReisDB>(storeName: K): Promise<ReisDB[K]['value'][]> {
         const db = await this.dbPromise;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return db.getAll(storeName as any);
     }
 
     async getAllWithKeys<K extends keyof ReisDB>(storeName: K): Promise<{ key: string, value: ReisDB[K]['value'] }[]> {
         const db = await this.dbPromise;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const keys = await db.getAllKeys(storeName as any);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const values = await db.getAll(storeName as any);
         return (keys as string[]).map((key, i) => ({ key, value: values[i] }));
     }

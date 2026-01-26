@@ -323,7 +323,7 @@ export function AssessmentTab({ courseCode }: AssessmentTabProps) {
             </div>
 
             {/* Bonus Points Section */}
-            {(Object.keys(bonusPoints).length > 0 || true) && (
+            {Object.keys(bonusPoints).length > 0 && (
                 <div className="flex-shrink-0 border-t border-base-300 bg-base-100 p-3">
                     <div className="text-xs font-semibold text-base-content/60 mb-2">Bonusové body</div>
                     <div className="space-y-2">

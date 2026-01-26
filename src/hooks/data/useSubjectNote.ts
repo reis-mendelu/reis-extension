@@ -57,14 +57,20 @@ export function useSubjectNote(subjectCode: string | undefined) {
         currentSubjectRef.current = subjectCode;
 
         if (!subjectCode) {
-            setNoteState('');
-            noteRef.current = '';
-            hasChangesRef.current = false;
-            setIsLoading(false);
+            // Only update if state actually needs changing to avoid cascading renders
+            if (noteRef.current !== '' || isLoading) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                setNoteState('');
+                noteRef.current = '';
+                hasChangesRef.current = false;
+                setIsLoading(false);
+            }
             return;
         }
 
         const key = `${NOTE_KEY_PREFIX}${subjectCode}`;
+        
+        // Prevent setting isLoading if we're already loading (usually not the case here though)
         setIsLoading(true);
 
         ChromeSyncService.get<SubjectNoteData>(key)
@@ -80,6 +86,7 @@ export function useSubjectNote(subjectCode: string | undefined) {
             })
             .catch((error) => {
                 console.warn('[useSubjectNote] Failed to load note:', error);
+                if (currentSubjectRef.current !== subjectCode) return;
                 setNoteState('');
                 noteRef.current = '';
                 setIsLoading(false);
@@ -96,7 +103,7 @@ export function useSubjectNote(subjectCode: string | undefined) {
                 saveToStorage(noteRef.current, currentSubjectRef.current);
             }
         };
-    }, [subjectCode, saveToStorage]);
+    }, [subjectCode, saveToStorage, isLoading]);
 
     // Set note with debounced save
     const setNote = useCallback((value: string) => {

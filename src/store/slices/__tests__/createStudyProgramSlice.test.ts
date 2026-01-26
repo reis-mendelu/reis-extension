@@ -11,9 +11,9 @@ vi.mock('../../../services/storage', () => ({
 }));
 
 describe('createStudyProgramSlice', () => {
-    let set: any;
-    let get: any;
-    let slice: any;
+    let set: ReturnType<typeof vi.fn>;
+    let get: ReturnType<typeof vi.fn>;
+    let slice: ReturnType<typeof createStudyProgramSlice>;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -22,7 +22,8 @@ describe('createStudyProgramSlice', () => {
             Object.assign(slice, result);
         });
         get = vi.fn(() => slice);
-        slice = createStudyProgramSlice(set, get, {} as any);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        slice = createStudyProgramSlice(set, get, {} as unknown as any);
     });
 
     it('should initialize with default state', () => {

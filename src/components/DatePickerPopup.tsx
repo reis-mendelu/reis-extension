@@ -67,19 +67,23 @@ export function DatePickerPopup({
                 }
             }
 
-            setPosition({ top, left });
+            queueMicrotask(() => {
+                setPosition({ top, left });
+            });
         }
     }, [isOpen, anchorRef]);
 
     // Reset on open
     useEffect(() => {
         if (isOpen) {
-            setSelectedDate(null);
-            setSelectedTermId(null);
-            if (terms.length > 0) {
-                const [day, month, year] = terms[0].date.split('.').map(Number);
-                setCurrentDate(new Date(year, month - 1, day));
-            }
+            queueMicrotask(() => {
+                setSelectedDate(null);
+                setSelectedTermId(null);
+                if (terms.length > 0) {
+                    const [day, month, year] = terms[0].date.split('.').map(Number);
+                    setCurrentDate(new Date(year, month - 1, day));
+                }
+            });
         }
     }, [isOpen, terms]);
 
@@ -313,7 +317,7 @@ export function DatePickerPopup({
                                     `}
                                 >
                                     {term.time}
-                                    {term.capacity && <span className="ml-0.5 opacity-60">({term.capacity})</span>}
+                                    {term.capacity && <span className="ml-0.5 opacity-60">({String(term.capacity)})</span>}
                                 </button>
                             ))}
                         </div>

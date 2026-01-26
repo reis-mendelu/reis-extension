@@ -328,8 +328,8 @@ describe('syllabusParser', () => {
     });
 
     it('should handle null/undefined input gracefully', () => {
-        const result1 = parseSyllabusOffline(null as any);
-        const result2 = parseSyllabusOffline(undefined as any);
+        const result1 = parseSyllabusOffline(null as unknown as string);
+        const result2 = parseSyllabusOffline(undefined as unknown as string);
         
         expect(result1.requirementsText).toBe('Error: Section not found');
         expect(result1.requirementsTable).toEqual([]);

@@ -50,10 +50,10 @@ export function SyllabusTab({ courseCode, courseId, courseName, prefetchedResult
                             
                             // Helper to highlight important numbers and terms
                             const highlightText = (text: string) => {
-                                const parts = text.split(/((?:min\.|max\.)?\s*\d+(?:[\.,]\d+)?\s*(?:bodů|bodu|body|b\.|%)|(?:A|B|C|D|E|F)\s*\([^)]+\)|Zkouška|Zápočet)/g);
+                                const parts = text.split(/((?:min\.|max\.)?\s*\d+(?:[.,]\d+)?\s*(?:bodů|bodu|body|b\.|%)|(?:A|B|C|D|E|F)\s*\([^)]+\)|Zkouška|Zápočet)/g);
                                 return parts.map((part, index) => {
                                     // Highlight numbers/points/percentages
-                                    if (part.match(/(?:min\.|max\.)?\s*\d+(?:[\.,]\d+)?\s*(?:bodů|bodu|body|b\.|%)/)) {
+                                    if (part.match(/(?:min\.|max\.)?\s*\d+(?:[.,]\d+)?\s*(?:bodů|bodu|body|b\.|%)/)) {
                                         return <span key={index} className="font-bold text-primary">{part}</span>;
                                     }
                                     // Highlight Grades logic if inside text

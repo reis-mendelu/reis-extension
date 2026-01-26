@@ -55,7 +55,9 @@ describe('ExamSubjectSchema', () => {
     });
 
     it('rejects data missing version field', () => {
-        const { version: _, ...badData } = goldStandardSubject;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const badData = { ...goldStandardSubject } as any;
+        delete badData.version;
         const result = ExamSubjectSchema.safeParse(badData);
         expect(result.success).toBe(false);
     });

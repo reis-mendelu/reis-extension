@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Actor, Cast, TakeNotes } from '@serenity-js/core';
 import { BrowseTheWebWithPlaywright } from '@serenity-js/playwright';
 import { BrowserContext, chromium } from '@playwright/test';

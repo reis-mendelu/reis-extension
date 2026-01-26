@@ -8,9 +8,6 @@ interface SuccessRateTabProps {
     courseCode: string;
 }
 
-// Grade order for consistent styling
-const GRADE_ORDER: (keyof GradeStats)[] = ['A', 'B', 'C', 'D', 'E', 'F', 'FN'];
-
 // Grade colors - using theme tokens from index.css
 const GRADE_COLORS: Record<keyof GradeStats, string> = {
     A: 'var(--color-grade-a)',
@@ -125,7 +122,7 @@ export function SuccessRateTab({ courseCode }: SuccessRateTabProps) {
 
             {/* 2. Bar Chart */}
             <div className="flex items-end gap-3 px-1 mb-8 relative z-0" style={{ height: `${CONTAINER_HEIGHT}px` }}>
-                {CURRENT_GRADE_ORDER.map((grade, i) => {
+                {CURRENT_GRADE_ORDER.map((grade) => {
                     const value = activeGrades[grade] || 0;
                     const barHeight = (value / maxGrade) * MAX_BAR_HEIGHT;
                     

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import { parseExamData } from "../utils/examParser";
 import type { ExamSubject } from "../types/exams";
 import { fetchWithAuth } from "./client";

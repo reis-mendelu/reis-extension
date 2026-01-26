@@ -1,7 +1,7 @@
 import { X, ChevronDown } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionHeader, AccordionContent, AccordionTrigger } from './ui/accordion';
 import { Button } from './ui/button';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { registerExam, unregisterExam } from '../api/exams';
 import { useExams } from '../hooks/data';
 import { useAppStore } from '../store/useAppStore';
@@ -24,8 +24,6 @@ function getDayOfWeek(dateString: string): string {
 }
 
 export function ExamDrawer({ isOpen, onClose }: ExamDrawerProps) {
-    if (!isOpen) return null;
-
     // Get stored exam data from hook (stale-while-revalidate)
     const { exams, isLoaded, error } = useExams();
     const fetchExams = useAppStore(state => state.fetchExams);
@@ -35,75 +33,18 @@ export function ExamDrawer({ isOpen, onClose }: ExamDrawerProps) {
     const [popupSection, setPopupSection] = useState<ExamSection | null>(null);
     const [popupAnchor, setPopupAnchor] = useState<HTMLButtonElement | null>(null);
     const popupAnchorRef = useRef<HTMLButtonElement | null>(null);
-    popupAnchorRef.current = popupAnchor;
+    
+    // Update ref in effect, not in render body to avoid pure component issues
+    useEffect(() => {
+        popupAnchorRef.current = popupAnchor;
+    }, [popupAnchor]);
 
     const [processingSectionId, setProcessingSectionId] = useState<string | null>(null);
     const [autoBookingTermId, setAutoBookingTermId] = useState<string | null>(null);
 
     const isLoading = !isLoaded && exams.length === 0;
 
-    useEffect(() => {
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                if (popupSection) {
-                    setPopupSection(null);
-                } else {
-                    onClose();
-                }
-            }
-        };
-
-        if (isOpen) {
-            document.addEventListener('keydown', handleEscape);
-        }
-
-        return () => {
-            document.removeEventListener('keydown', handleEscape);
-        };
-    }, [isOpen, onClose, popupSection]);
-
-    const parseDate = (dateStr: string): Date => {
-        const [datePart, timePart] = dateStr.split(' ');
-        const [day, month, year] = datePart.split('.').map(Number);
-        const [hours, minutes] = timePart.split(':').map(Number);
-        return new Date(year, month - 1, day, hours, minutes);
-    };
-
-    // Auto-booking effect
-    useEffect(() => {
-        if (!autoBookingTermId) return;
-
-        const interval = setInterval(() => {
-            let foundTerm: ExamTerm | undefined;
-            let foundSection: ExamSection | undefined;
-
-            for (const subject of exams) {
-                for (const section of subject.sections) {
-                    const term = section.terms.find(t => t.id === autoBookingTermId);
-                    if (term) {
-                        foundTerm = term;
-                        foundSection = section;
-                        break;
-                    }
-                }
-                if (foundTerm) break;
-            }
-
-            if (foundTerm && foundSection && foundTerm.registrationStart) {
-                const start = parseDate(foundTerm.registrationStart);
-                if (new Date() >= start) {
-                    void handleRegister(foundSection, foundTerm.id);
-                    setAutoBookingTermId(null);
-                }
-            } else {
-                setAutoBookingTermId(null);
-            }
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [autoBookingTermId, exams]);
-
-    const handleRegister = async (section: ExamSection, termId: string) => {
+    const handleRegister = useCallback(async (section: ExamSection, termId: string) => {
         setProcessingSectionId(section.id);
 
         try {
@@ -133,7 +74,70 @@ export function ExamDrawer({ isOpen, onClose }: ExamDrawerProps) {
         } finally {
             setProcessingSectionId(null);
         }
-    };
+    }, [fetchExams]);
+
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (popupSection) {
+                    setPopupSection(null);
+                } else if (isOpen) {
+                    onClose();
+                }
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('keydown', handleEscape);
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [isOpen, onClose, popupSection]);
+
+    // Auto-booking effect
+    useEffect(() => {
+        if (!autoBookingTermId || !isOpen) return;
+
+        const interval = setInterval(() => {
+            let foundTerm: ExamTerm | undefined;
+            let foundSection: ExamSection | undefined;
+
+            for (const subject of exams) {
+                for (const section of subject.sections) {
+                    const term = section.terms.find(t => t.id === autoBookingTermId);
+                    if (term) {
+                        foundTerm = term;
+                        foundSection = section;
+                        break;
+                    }
+                }
+                if (foundTerm) break;
+            }
+
+            if (foundTerm && foundSection && foundTerm.registrationStart) {
+                const parseDate = (d: string): Date => {
+                    const [datePart, timePart] = d.split(' ');
+                    const [day, month, year] = datePart.split('.').map(Number);
+                    const [hours, minutes] = timePart.split(':').map(Number);
+                    return new Date(year, month - 1, day, hours, minutes);
+                };
+
+                const start = parseDate(foundTerm.registrationStart);
+                if (new Date() >= start) {
+                    void handleRegister(foundSection, foundTerm.id);
+                    setAutoBookingTermId(null);
+                }
+            } else {
+                setAutoBookingTermId(null);
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [autoBookingTermId, exams, isOpen, handleRegister]);
+
+    if (!isOpen) return null;
 
     const openDatePicker = (section: ExamSection, button: HTMLButtonElement) => {
         setPopupSection(section);

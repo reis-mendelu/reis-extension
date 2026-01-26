@@ -62,23 +62,6 @@ export function OutlookSyncHint({ navigationCount, isSyncEnabled, onSetup }: Out
         }
     }, [navigationCount, isSyncEnabled, hasBeenDismissed, isVisible, hasSeenHint]);
 
-    // Auto-dismiss after 15 seconds
-    useEffect(() => {
-        if (isVisible) {
-            const timer = setTimeout(() => {
-                handleDismiss();
-            }, 15000);
-            return () => clearTimeout(timer);
-        }
-    }, [isVisible]);
-
-    // Hide if sync gets enabled
-    useEffect(() => {
-        if (isSyncEnabled === true && isVisible) {
-            setIsVisible(false);
-        }
-    }, [isSyncEnabled, isVisible]);
-
     const handleDismiss = () => {
         setIsVisible(false);
         setHasBeenDismissed(true);
@@ -89,6 +72,16 @@ export function OutlookSyncHint({ navigationCount, isSyncEnabled, onSetup }: Out
         handleDismiss();
         onSetup();
     };
+
+    // Auto-dismiss after 15 seconds
+    useEffect(() => {
+        if (isVisible) {
+            const timer = setTimeout(() => {
+                handleDismiss();
+            }, 15000);
+            return () => clearTimeout(timer);
+        }
+    }, [isVisible]);
 
     return (
         <AnimatePresence>

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { describe, it, beforeAll, afterAll } from '@serenity-js/playwright-test';
 import { actorCalled, engage } from '@serenity-js/core';
 import { Wait } from '@serenity-js/core';

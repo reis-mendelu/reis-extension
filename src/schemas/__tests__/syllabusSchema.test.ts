@@ -27,7 +27,9 @@ describe('SyllabusSchema', () => {
     });
 
     it('rejects data missing version', () => {
-        const { version: _, ...badData } = goldStandardSyllabus;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const badData = { ...goldStandardSyllabus } as any;
+        delete badData.version;
         const result = SyllabusRequirementsSchema.safeParse(badData);
         expect(result.success).toBe(false);
     });

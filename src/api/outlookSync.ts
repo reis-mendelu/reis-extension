@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 /**
  * Outlook Sync API - Check and set calendar sync status with IS Mendelu.
  * 

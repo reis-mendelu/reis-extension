@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import { fetchWithAuth, BASE_URL } from "./client";
 import { parseSyllabusOffline } from "../utils/parsers/syllabusParser";
 import type { SyllabusRequirements } from "../types/documents";

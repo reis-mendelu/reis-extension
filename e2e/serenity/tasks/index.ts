@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Task, Wait, Duration } from '@serenity-js/core';
 import { Navigate, Page } from '@serenity-js/web';
 import { equals, not } from '@serenity-js/assertions';

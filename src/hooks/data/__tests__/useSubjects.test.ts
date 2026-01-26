@@ -24,6 +24,7 @@ describe('useSubjects', () => {
     });
 
     it('should return subjects from store', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useAppStore).mockImplementation((selector: any) => {
             const state = {
                 subjects: mockSubjectsData,
@@ -40,6 +41,7 @@ describe('useSubjects', () => {
     });
 
     it('should reflect loading state when store is loading or syncing', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useAppStore).mockImplementation((selector: any) => {
             const state = {
                 subjects: null,
@@ -52,6 +54,7 @@ describe('useSubjects', () => {
         const { result } = renderHook(() => useSubjects());
         expect(result.current.isLoaded).toBe(false);
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useAppStore).mockImplementation((selector: any) => {
             const state = {
                 subjects: null,
@@ -66,6 +69,7 @@ describe('useSubjects', () => {
     });
 
     it('should return correct subject by course code', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useAppStore).mockImplementation((selector: any) => {
             const state = {
                 subjects: mockSubjectsData,
@@ -81,6 +85,7 @@ describe('useSubjects', () => {
     });
 
     it('getSubject should return null when subject not found or store empty', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useAppStore).mockImplementation((selector: any) => {
             const state = {
                 subjects: null,

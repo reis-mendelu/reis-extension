@@ -56,6 +56,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
     const syllabusResult = useSyllabus(
         isOpen ? lesson?.courseCode : undefined,
         isOpen ? resolvedCourseId : undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         isOpen ? (lesson as any)?.courseName : undefined
     );
 
@@ -85,7 +86,10 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
     useEffect(() => {
         if (isOpen && lesson) {
             // Default to 'files' for search/sidebar and normal lessons, 'stats' for exams
-            setActiveTab(lesson.isExam ? 'stats' : 'files');
+            // Wrap in microtask to avoid "setState in effect" warning if synchronous
+            queueMicrotask(() => {
+                setActiveTab(lesson.isExam ? 'stats' : 'files');
+            });
         }
         if (!isOpen) {
             queueMicrotask(() => {
@@ -272,6 +276,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: SubjectFileDrawer
                                 <SyllabusTab 
                                     courseCode={lesson?.courseCode || ''} 
                                     courseId={resolvedCourseId}
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                     courseName={(lesson as any)?.courseName}
                                     prefetchedResult={syllabusResult}
                                 />

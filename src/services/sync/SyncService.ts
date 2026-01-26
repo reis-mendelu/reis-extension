@@ -68,7 +68,7 @@ class SyncServiceClass {
 
             // 1. Migrate localStorage
             for (const key of allLsKeys) {
-                const value = StorageService.get<any>(key);
+                const value = StorageService.get<unknown>(key);
                 if (value !== null) {
                     await this.migrateKey(key, value);
                 }
@@ -109,28 +109,35 @@ class SyncServiceClass {
         }
     }
 
-    private async migrateKey(key: string, value: any): Promise<void> {
+    private async migrateKey(key: string, value: unknown): Promise<void> {
         // Map keys to IDB stores
         try {
-            if (key === STORAGE_KEYS.SCHEDULE_DATA) await IndexedDBService.set('schedule', 'current', value);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            if (key === STORAGE_KEYS.SCHEDULE_DATA) await IndexedDBService.set('schedule', 'current', value as any);
             else if (key === STORAGE_KEYS.SCHEDULE_WEEK_START) await IndexedDBService.set('meta', 'schedule_week_start', value);
-            else if (key === STORAGE_KEYS.EXAMS_DATA) await IndexedDBService.set('exams', 'current', value);
-            else if (key === STORAGE_KEYS.SUBJECTS_DATA) await IndexedDBService.set('subjects', 'current', value);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            else if (key === STORAGE_KEYS.EXAMS_DATA) await IndexedDBService.set('exams', 'current', value as any);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            else if (key === STORAGE_KEYS.SUBJECTS_DATA) await IndexedDBService.set('subjects', 'current', value as any);
             else if (key === STORAGE_KEYS.USER_PARAMS) await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, value);
-            else if (key === STORAGE_KEYS.STUDY_PROGRAM_DATA) await IndexedDBService.set('study_program', 'current', value);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            else if (key === STORAGE_KEYS.STUDY_PROGRAM_DATA) await IndexedDBService.set('study_program', 'current', value as any);
             else if (key === STORAGE_KEYS.LAST_SYNC) await IndexedDBService.set('meta', 'last_sync', value);
             else if (key === STORAGE_KEYS.SYNC_ERROR) await IndexedDBService.set('meta', 'sync_error', value);
             else if (key.startsWith(STORAGE_KEYS.SUBJECT_FILES_PREFIX)) {
                 const id = key.replace(STORAGE_KEYS.SUBJECT_FILES_PREFIX, '');
-                await IndexedDBService.set('files', id, value);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await IndexedDBService.set('files', id, value as any);
             }
             else if (key.startsWith(STORAGE_KEYS.SUBJECT_ASSESSMENTS_PREFIX)) {
                 const id = key.replace(STORAGE_KEYS.SUBJECT_ASSESSMENTS_PREFIX, '');
-                await IndexedDBService.set('assessments', id, value);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await IndexedDBService.set('assessments', id, value as any);
             }
             else if (key.startsWith(STORAGE_KEYS.SUBJECT_SYLLABUS_PREFIX)) {
                 const id = key.replace(STORAGE_KEYS.SUBJECT_SYLLABUS_PREFIX, '');
-                await IndexedDBService.set('syllabuses', id, value);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await IndexedDBService.set('syllabuses', id, value as any);
             }
             else if (key === STORAGE_KEYS.SUCCESS_RATES_DATA) await IndexedDBService.set('success_rates', 'current', value);
             

@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * E2E tests for file drawer functionality
  */

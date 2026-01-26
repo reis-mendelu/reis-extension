@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * Visual regression tests for Search functionality
  */

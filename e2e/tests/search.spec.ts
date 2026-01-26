@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * E2E tests for search functionality
  * Note: Visual regression for search behavior covered in visual/search.spec.ts

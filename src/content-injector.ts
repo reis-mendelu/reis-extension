@@ -372,6 +372,7 @@ async function syncAllData() {
             if (!studium || !obdobi) {
                 const scheduleArray = (schedule.status === "fulfilled" && Array.isArray(schedule.value)) ? schedule.value : null;
                 if (scheduleArray && scheduleArray.length > 0) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const firstEvent = scheduleArray[0] as any;
                     studium = studium || (firstEvent.studyId);
                     obdobi = obdobi || (firstEvent.periodId);
@@ -389,6 +390,7 @@ async function syncAllData() {
                             try {
                                 const subjectFiles = await fetchFilesFromFolder(subject.folderUrl);
                                 if (!cachedData.files) cachedData.files = {};
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 (cachedData.files as Record<string, any>)[courseCode] = subjectFiles;
                             } catch (e) {
                                 console.warn(`[REIS Content] Failed to fetch files for ${courseCode}:`, e);
@@ -401,6 +403,7 @@ async function syncAllData() {
                             try {
                                 const subjectAssessments = await fetchAssessments(studium, obdobi, subject.subjectId as string);
                                 if (!cachedData.assessments) cachedData.assessments = {};
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 (cachedData.assessments as Record<string, any>)[courseCode] = subjectAssessments;
                             } catch (e) {
                                 console.warn(`[REIS Content] Failed to fetch assessments for ${courseCode}:`, e);
@@ -413,6 +416,7 @@ async function syncAllData() {
                             try {
                                 const subjectSyllabus = await fetchSyllabus(subject.subjectId as string);
                                 if (!cachedData.syllabuses) cachedData.syllabuses = {};
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 (cachedData.syllabuses as Record<string, any>)[courseCode] = subjectSyllabus;
                             } catch (e) {
                                 console.warn(`[REIS Content] Failed to fetch syllabus for ${courseCode}:`, e);

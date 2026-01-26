@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * E2E tests for content script injection on is.mendelu.cz
  */

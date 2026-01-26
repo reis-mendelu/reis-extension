@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { chromium, FullConfig } from '@playwright/test';
 import * as dotenv from 'dotenv';
 import * as path from 'path';

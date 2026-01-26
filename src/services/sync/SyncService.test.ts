@@ -6,7 +6,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { syncService } from '../../services/sync';
-import { IndexedDBService, STORAGE_KEYS } from '../../services/storage';
+import { IndexedDBService } from '../../services/storage';
 
 // Mock the sync functions
 vi.mock('./syncExams', () => ({
@@ -72,7 +72,7 @@ describe('SyncService', () => {
 
     describe('getStatus', () => {
         it('should return current sync status', async () => {
-            vi.mocked(IndexedDBService.get).mockImplementation(async (store, key) => {
+            vi.mocked(IndexedDBService.get).mockImplementation(async (_store, key) => {
                 if (key === 'last_sync') return 1234567890;
                 if (key === 'sync_error') return null;
                 return null;

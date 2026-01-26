@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Bell, Users, X } from 'lucide-react';
 import type { SpolekNotification } from '../services/spolky';
 import { fetchNotifications, trackNotificationsViewed, trackNotificationClick, filterNotificationsByFaculty } from '../services/spolky';
@@ -47,9 +47,9 @@ export function NotificationFeed({ className = '' }: NotificationFeedProps) {
       }
     };
     loadState();
-  }, []);
+  }, [notifications.length]);
 
-  const loadNotifications = async (isInitialWithSettings = false) => {
+  const loadNotifications = useCallback(async (isInitialWithSettings = false) => {
     // Only show loading if we don't have existing data
     if (notifications.length === 0) {
       setLoading(true);
@@ -75,7 +75,7 @@ export function NotificationFeed({ className = '' }: NotificationFeedProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [notifications, subscribedAssociations]);
 
   // Load notifications when settings change and they are not loading
   useEffect(() => {
@@ -89,7 +89,7 @@ export function NotificationFeed({ className = '' }: NotificationFeedProps) {
     }, REFRESH_INTERVAL);
     
     return () => clearInterval(intervalId);
-  }, [subscribedAssociations, settingsLoading]); 
+  }, [loadNotifications, settingsLoading, REFRESH_INTERVAL]); 
 
   // Refresh when tab becomes visible
   useEffect(() => {
@@ -101,7 +101,7 @@ export function NotificationFeed({ className = '' }: NotificationFeedProps) {
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [subscribedAssociations, settingsLoading]);
+  }, [loadNotifications, settingsLoading]);
 
   // Handle Escape key and Click Outside
   useEffect(() => {
@@ -307,7 +307,8 @@ function NotificationItem({ notification, onClick, onVisible }: NotificationItem
             src={iconUrl} 
             alt={assocId} 
             className="w-10 h-10 rounded-full object-cover"
-            onError={(e) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onError={(e: any) => {
               // Fallback to Users icon if image fails
               e.currentTarget.style.display = 'none';
               e.currentTarget.nextElementSibling?.classList.remove('hidden');

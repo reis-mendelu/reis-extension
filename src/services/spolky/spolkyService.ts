@@ -57,7 +57,18 @@ export async function fetchNotifications(): Promise<SpolekNotification[]> {
       return [];
     }
 
-    return (data || []).map((n: any) => ({
+interface SupabaseNotification {
+  id: string;
+  association_id: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  created_at: string;
+  expires_at: string;
+  priority: string;
+}
+
+    return (data || []).map((n: SupabaseNotification) => ({
       id: n.id,
       associationId: n.association_id,
       title: n.title,

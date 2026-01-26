@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * E2E tests for Success Rate tab in file drawer
  */

@@ -7,8 +7,6 @@
 import { X, Download, Loader2, ExternalLink, User, Map as MapIcon, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import type { DrawerHeaderProps } from './types';
-import { SubjectNote } from './SubjectNote';
-
 // Helper: Format date string (YYYYMMDD) to readable format
 function formatDate(dateStr: string): string {
     if (!dateStr || dateStr.length !== 8) return '';

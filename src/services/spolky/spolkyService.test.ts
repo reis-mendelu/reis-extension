@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { trackNotificationsViewed, trackNotificationClick } from './spolkyService';
 import { supabase } from './supabaseClient';
 
@@ -31,6 +31,7 @@ describe('spolkyService', () => {
 
     it('should handle RPC errors gracefully', async () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.rpc as any).mockRejectedValueOnce(new Error('RPC Error'));
 
         await trackNotificationsViewed(['id1']);
@@ -56,6 +57,7 @@ describe('spolkyService', () => {
     });
      it('should handle RPC errors gracefully', async () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.rpc as any).mockRejectedValueOnce(new Error('RPC Error'));
 
         await trackNotificationClick('id1');
