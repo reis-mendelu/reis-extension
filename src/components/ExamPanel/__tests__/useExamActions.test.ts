@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useExamActions } from '../useExamActions';
 import * as examsAPI from '../../../api/exams';
-import { IndexedDBService, STORAGE_KEYS } from '../../../services/storage';
+import { IndexedDBService } from '../../../services/storage';
 import type { ExamSubject, ExamSection } from '../../../types/exams';
 
 // Mock dependencies
@@ -31,6 +31,19 @@ vi.mock('sonner', () => ({
     success: vi.fn(),
     error: vi.fn(),
   },
+}));
+
+const mockSetExams = vi.fn();
+const mockFetchExams = vi.fn();
+
+vi.mock('../../../store/useAppStore', () => ({
+  useAppStore: vi.fn((selector) => {
+    const mockState = {
+      setExams: mockSetExams,
+      fetchExams: mockFetchExams,
+    };
+    return selector(mockState);
+  }),
 }));
 
 // Test helpers
@@ -79,13 +92,11 @@ function createMockExams(subjectOverrides: Partial<ExamSubject> = {}, sectionOve
 }
 
 describe('useExamActions - Optimistic Updates', () => {
-  let mockSetExams: ReturnType<typeof vi.fn>;
   let mockSetExpandedSectionId: ReturnType<typeof vi.fn>;
   let mockExams: ExamSubject[];
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSetExams = vi.fn();
     mockSetExpandedSectionId = vi.fn();
     mockExams = createMockExams();
 
@@ -100,7 +111,6 @@ describe('useExamActions - Optimistic Updates', () => {
       const { result } = renderHook(() =>
         useExamActions({
           exams: mockExams,
-          setExams: mockSetExams,
           setExpandedSectionId: mockSetExpandedSectionId,
         })
       );
@@ -142,7 +152,6 @@ describe('useExamActions - Optimistic Updates', () => {
       const { result } = renderHook(() =>
         useExamActions({
           exams: mockExams,
-          setExams: mockSetExams,
           setExpandedSectionId: mockSetExpandedSectionId,
         })
       );
@@ -199,7 +208,6 @@ describe('useExamActions - Optimistic Updates', () => {
       const { result } = renderHook(() =>
         useExamActions({
           exams: registeredExams,
-          setExams: mockSetExams,
           setExpandedSectionId: mockSetExpandedSectionId,
         })
       );
@@ -245,7 +253,6 @@ describe('useExamActions - Optimistic Updates', () => {
       const { result } = renderHook(() =>
         useExamActions({
           exams: registeredExams,
-          setExams: mockSetExams,
           setExpandedSectionId: mockSetExpandedSectionId,
         })
       );
@@ -288,7 +295,6 @@ describe('useExamActions - Optimistic Updates', () => {
       const { result } = renderHook(() =>
         useExamActions({
           exams: mockExams,
-          setExams: mockSetExams,
           setExpandedSectionId: mockSetExpandedSectionId,
         })
       );

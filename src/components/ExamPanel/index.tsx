@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useExams } from '../../hooks/data';
 import { IndexedDBService } from '../../services/storage';
 import type { ExamSubject, ExamSection, ExamFilterState } from '../../types/exams';
 
@@ -9,31 +8,20 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { useExamActions } from './useExamActions';
 
 import { ExamPanelHeader } from './ExamPanelHeader';
-
 interface ExamPanelProps {
     onSelectSubject: (subj: { code: string; name: string; courseCode?: string; courseName?: string; isExam?: boolean; sectionName?: string; date?: string; time?: string; room?: string }) => void;
 }
 
 const FILTER_STORAGE_KEY = 'exam_panel_filters';
 
+import { useAppStore } from '../../store/useAppStore';
+
 export function ExamPanel({ onSelectSubject }: ExamPanelProps) {
-    const { exams: storedExams, isLoaded } = useExams();
+    const exams = useAppStore(state => state.exams.data);
+    const status = useAppStore(state => state.exams.status);
 
-    // Local state
-    const [exams, setExams] = useState<ExamSubject[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    // Sync stored exams to local state
-    useEffect(() => {
-        if (storedExams && storedExams.length > 0) {
-            queueMicrotask(() => {
-                setExams(storedExams);
-                setIsLoading(false);
-            });
-        } else if (isLoaded) {
-            queueMicrotask(() => setIsLoading(false));
-        }
-    }, [storedExams, isLoaded]);
+    // Filter counts...
+    const isLoading = status === 'loading' || status === 'idle';
 
     // UI state
     const [expandedSectionId, setExpandedSectionId] = useState<string | null>(null);
@@ -46,7 +34,7 @@ export function ExamPanel({ onSelectSubject }: ExamPanelProps) {
         handleRegisterRequest,
         handleUnregisterRequest,
         handleConfirmAction,
-    } = useExamActions({ exams, setExams, setExpandedSectionId });
+    } = useExamActions({ exams, setExpandedSectionId });
 
     // Filter state
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('available');

@@ -2,17 +2,16 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { registerExam, unregisterExam } from '../../api/exams';
 import { IndexedDBService } from '../../services/storage';
+import { useAppStore } from '../../store/useAppStore';
 import type { ExamSubject, ExamSection } from '../../types/exams';
 
 interface UseExamActionsProps {
-    exams: ExamSubject[]; // Current exam state
-    setExams: (exams: ExamSubject[]) => void;
+    exams: ExamSubject[]; // Current exam state from store
     setExpandedSectionId: (id: string | null) => void;
 }
 
 /**
  * Update exam data optimistically without refetching from server.
- * This prevents the "registration disappears" bug caused by stale server data.
  */
 function updateExamOptimistically(
     currentExams: ExamSubject[],
@@ -29,13 +28,16 @@ function updateExamOptimistically(
     }));
 }
 
-export function useExamActions({ exams, setExams, setExpandedSectionId }: UseExamActionsProps) {
+export function useExamActions({ exams, setExpandedSectionId }: UseExamActionsProps) {
     const [processingSectionId, setProcessingSectionId] = useState<string | null>(null);
     const [pendingAction, setPendingAction] = useState<{
         type: 'register' | 'unregister';
         section: ExamSection;
         termId?: string;
     } | null>(null);
+
+    const setExams = useAppStore(state => state.setExams);
+    const fetchExams = useAppStore(state => state.fetchExams);
 
     const handleRegisterRequest = (section: ExamSection, termId: string) => {
         setPendingAction({ type: 'register', section, termId });
@@ -66,7 +68,7 @@ export function useExamActions({ exams, setExams, setExpandedSectionId }: UseExa
             if (regResult.success) {
                 toast.success('Úspěšně přihlášeno na termín!');
                 
-                // Step 3: OPTIMISTIC UPDATE - immediately update local state
+                // Step 3: OPTIMISTIC UPDATE
                 const selectedTerm = section.terms.find(t => t.id === termId);
                 const updatedExams = updateExamOptimistically(
                     exams,
@@ -85,17 +87,20 @@ export function useExamActions({ exams, setExams, setExpandedSectionId }: UseExa
                     }
                 );
                 
-                // Step 4: Update parent state immediately
+                // Step 4: Update store immediately
                 setExams(updatedExams);
                 
                 // Step 5: Persist to Storage
                 IndexedDBService.set('exams', 'current', updatedExams)
                   .catch(err => console.error('[useExamActions] Failed to persist optimistic update:', err));
                 
-                // Step 6: Update last modified timestamp for merge strategy
+                // Step 6: Update last modified timestamp
                 IndexedDBService.set('meta', 'exams_modified', Date.now());
                 
                 setExpandedSectionId(null);
+                
+                // Optional: trigger background fetch to ensure consistency
+                void fetchExams();
             } else {
                 toast.error(regResult.error || 'Registrace selhala.');
             }
@@ -121,7 +126,7 @@ export function useExamActions({ exams, setExams, setExpandedSectionId }: UseExa
             if (result.success) {
                 toast.success('Úspěšně odhlášeno z termínu.');
                 
-                // OPTIMISTIC UPDATE - immediately update local state
+                // OPTIMISTIC UPDATE
                 const updatedExams = updateExamOptimistically(
                     exams,
                     section.id,
@@ -135,6 +140,8 @@ export function useExamActions({ exams, setExams, setExpandedSectionId }: UseExa
                 IndexedDBService.set('exams', 'current', updatedExams)
                   .catch(err => console.error('[useExamActions] Failed to persist unregister update:', err));
                 IndexedDBService.set('meta', 'exams_modified', Date.now());
+                
+                void fetchExams();
             } else {
                 toast.error(result.error || 'Odhlášení selhalo.');
             }
@@ -149,9 +156,9 @@ export function useExamActions({ exams, setExams, setExpandedSectionId }: UseExa
         if (!pendingAction) return;
         
         if (pendingAction.type === 'register' && pendingAction.termId) {
-            handleRegister(pendingAction.section, pendingAction.termId);
+            void handleRegister(pendingAction.section, pendingAction.termId);
         } else if (pendingAction.type === 'unregister') {
-            handleUnregister(pendingAction.section);
+            void handleUnregister(pendingAction.section);
         }
     };
 

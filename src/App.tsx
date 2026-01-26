@@ -23,12 +23,21 @@ import { TutorialModal } from './components/Tutorials'
 import { fetchTutorials } from './services/tutorials'
 import type { Tutorial } from './services/tutorials'
 import { useSpolkySettings } from './hooks/useSpolkySettings'
+import { initializeStore } from './store/useAppStore';
+import { useSchedule } from './hooks/data';
 
 function App() {
   // Initialize Outlook sync service on startup
   useEffect(() => {
     outlookSyncService.init();
   }, []);
+
+  useEffect(() => {
+      const unsubscribe = initializeStore();
+      return () => unsubscribe();
+  }, []);
+
+  useSchedule();
   
   const [currentDate, setCurrentDate] = useState<Date>(() => {
       const { start } = getSmartWeekRange();

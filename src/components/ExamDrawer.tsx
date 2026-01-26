@@ -2,13 +2,14 @@ import { X, ChevronDown } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionHeader, AccordionContent, AccordionTrigger } from './ui/accordion';
 import { Button } from './ui/button';
 import { useState, useEffect, useRef } from 'react';
-import { fetchExamData, registerExam, unregisterExam } from '../api/exams';
+import { registerExam, unregisterExam } from '../api/exams';
 import { useExams } from '../hooks/data';
+import { useAppStore } from '../store/useAppStore';
 import { DatePickerPopup } from './DatePickerPopup';
 
 // Re-export types from centralized types file
 export type { ExamTerm, ExamSection, ExamSubject } from '../types/exams';
-import type { ExamTerm, ExamSection, ExamSubject } from '../types/exams';
+import type { ExamTerm, ExamSection } from '../types/exams';
 
 interface ExamDrawerProps {
     isOpen: boolean;
@@ -26,42 +27,20 @@ export function ExamDrawer({ isOpen, onClose }: ExamDrawerProps) {
     if (!isOpen) return null;
 
     // Get stored exam data from hook (stale-while-revalidate)
-    const { exams: storedExams, isLoaded } = useExams();
+    const { exams, isLoaded, error } = useExams();
+    const fetchExams = useAppStore(state => state.fetchExams);
 
-    // Local state for exams (allows updates after registration actions)
-    const [exams, setExams] = useState<ExamSubject[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, _setError] = useState<string | null>(null);
-
-    // Sync stored exams to local state
-    useEffect(() => {
-        if (storedExams && storedExams.length > 0) {
-            setExams(storedExams);
-            setIsLoading(false);
-        } else if (isLoaded) {
-            setIsLoading(false);
-        }
-    }, [storedExams, isLoaded]);
-
-    // Accordion Control
+    // Local UI state
     const [expandedSubjectId, setExpandedSubjectId] = useState<string>("");
-
-    // Popup state - now stores anchor ref too
     const [popupSection, setPopupSection] = useState<ExamSection | null>(null);
     const [popupAnchor, setPopupAnchor] = useState<HTMLButtonElement | null>(null);
     const popupAnchorRef = useRef<HTMLButtonElement | null>(null);
     popupAnchorRef.current = popupAnchor;
 
     const [processingSectionId, setProcessingSectionId] = useState<string | null>(null);
-
-    // Auto-booking state
     const [autoBookingTermId, setAutoBookingTermId] = useState<string | null>(null);
-    // const [now, setNow] = useState(new Date());
 
-    // useEffect(() => {
-    //     const interval = setInterval(() => setNow(new Date()), 1000);
-    //     return () => clearInterval(interval);
-    // }, []);
+    const isLoading = !isLoaded && exams.length === 0;
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -113,7 +92,7 @@ export function ExamDrawer({ isOpen, onClose }: ExamDrawerProps) {
             if (foundTerm && foundSection && foundTerm.registrationStart) {
                 const start = parseDate(foundTerm.registrationStart);
                 if (new Date() >= start) {
-                    handleRegister(foundSection, foundTerm.id);
+                    void handleRegister(foundSection, foundTerm.id);
                     setAutoBookingTermId(null);
                 }
             } else {
@@ -141,9 +120,8 @@ export function ExamDrawer({ isOpen, onClose }: ExamDrawerProps) {
             // Register for new term
             const successReg = await registerExam(termId);
             if (successReg) {
-                // Refresh data
-                const data = await fetchExamData();
-                setExams(data);
+                // Refresh data using the store action
+                await fetchExams();
                 // Close popup
                 setPopupSection(null);
             } else {
