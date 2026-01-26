@@ -72,12 +72,12 @@ export function DrawerHeader({
                         /* Search/Sidebar Context: Metadata badges */
                         <div className="flex items-center gap-2">
                              {courseInfo?.status && (
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-base-200 text-base-content/60 uppercase tracking-tight">
+                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-base-200 text-base-content/60 uppercase tracking-tight">
                                     {courseInfo.status}
                                 </span>
                              )}
                              {courseInfo?.credits && (
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase tracking-tight">
+                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-primary/10 text-primary uppercase tracking-tight">
                                     {courseInfo.credits}
                                 </span>
                              )}
@@ -170,19 +170,28 @@ export function DrawerHeader({
                     </>
                 ) : (
                     /* Search/Sidebar Context: General Metadata */
-                    <>
+                    <div className="flex flex-col gap-1 w-full">
                         {courseInfo?.garant && (
-                            <span className="flex items-center gap-1" title="Garant předmětu">
-                                <User size={14} className="flex-shrink-0" />
-                                <span>Garant: <span className="font-medium">{courseInfo.garant}</span></span>
-                            </span>
+                            <div className="flex items-center gap-1.5" title="Garant předmětu">
+                                <User size={14} className="flex-shrink-0 opacity-40" />
+                                <span className="text-[13px]">Garant: <span className="font-bold text-base-content/80 ml-0.5">{courseInfo.garant}</span></span>
+                            </div>
                         )}
                         {courseInfo?.teachers && courseInfo.teachers.length > 0 && (
-                            <span className="flex items-center gap-1 text-[12px] opacity-75">
-                                <span>Vyučující: {courseInfo.teachers.map(t => t.name).slice(0, 3).join(', ')}{courseInfo.teachers.length > 3 ? '...' : ''}</span>
-                            </span>
+                            <div className="flex items-start gap-1.5 mt-0.5">
+                                <span className="text-[13px] whitespace-nowrap opacity-40">Vyučující:</span>
+                                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                    {courseInfo.teachers.map((t, idx) => (
+                                        <div key={idx} className="inline-flex items-baseline gap-1 text-[13px]">
+                                            <span className="font-bold text-base-content/80 whitespace-nowrap">{t.name}</span>
+                                            {t.roles && <span className="text-[11px] opacity-50 whitespace-nowrap">({t.roles})</span>}
+                                            {idx < courseInfo.teachers.length - 1 && <span className="opacity-20 ml-[-4px]">,</span>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         )}
-                    </>
+                    </div>
                 )}
             </div>
 
