@@ -8,6 +8,7 @@ import { getMainMenuItems } from './menuConfig';
 import { NavItem } from './Sidebar/NavItem';
 import { ProfilePopup } from './Sidebar/ProfilePopup';
 import type { Tutorial } from '../services/tutorials/types';
+import { useSubjects } from '../hooks/data/useSubjects';
 
 export type AppView = 'calendar' | 'exams' | 'study-program';
 
@@ -20,6 +21,7 @@ interface SidebarProps {
   onOpenFeedback: () => void;
   tutorials?: Tutorial[];
   onSelectTutorial?: (tutorial: Tutorial) => void;
+  onOpenSubject?: (courseCode: string, courseName?: string) => void;
 }
 
 export const Sidebar = ({ 
@@ -28,7 +30,8 @@ export const Sidebar = ({
   onOpenSettingsRef, 
   onOpenFeedback, 
   tutorials = [], 
-  onSelectTutorial 
+  onSelectTutorial,
+  onOpenSubject
 }: SidebarProps) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -36,6 +39,7 @@ export const Sidebar = ({
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const profileTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { subjects } = useSubjects();
 
   // Expose open function to parent via ref
   useEffect(() => {
@@ -121,6 +125,18 @@ export const Sidebar = ({
               }));
             }
 
+            if (item.id === 'subjects' && subjects) {
+              processedItem.expandable = true;
+              processedItem.children = Object.values(subjects.data).map(s => ({
+                id: `subject-${s.subjectCode}`,
+                label: s.displayName,
+                subtitle: s.subjectCode,
+                icon: <Layers className="w-4 h-4" />,
+                isSubject: true,
+                courseCode: s.subjectCode
+              }));
+            }
+
             return (
               <NavItem
                 key={item.id}
@@ -150,6 +166,7 @@ export const Sidebar = ({
                 }}
                 onViewChange={onViewChange}
                 onSelectTutorial={onSelectTutorial}
+                onOpenSubject={onOpenSubject}
               />
             );
           })}

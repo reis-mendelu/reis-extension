@@ -36,6 +36,8 @@ export interface MenuItem {
         isFeature?: boolean; // true = built-in feature, false/undefined = redirect to old IS
         isTutorial?: boolean; // true = this is a tutorial entry
         tutorial?: Tutorial; // The actual tutorial object
+        isSubject?: boolean; // true = this is a subject entry
+        courseCode?: string; // The course code for subjects
     }[];
     danger?: boolean;
     onClick?: () => void;
@@ -61,6 +63,12 @@ export const getMainMenuItems = (studiumId: string = '', obdobiId: string = ''):
         label: 'Plán',
         icon: <BookMarked className="w-5 h-5" />,
         isFeature: true
+    },
+    {
+        id: 'subjects',
+        label: 'Předměty',
+        icon: <Book className="w-5 h-5" />, // Using Book as it's already imported, or I can import Library/BookKey
+        expandable: true
     },
 
     {

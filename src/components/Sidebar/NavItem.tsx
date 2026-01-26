@@ -13,9 +13,10 @@ interface NavItemProps {
   onClick: () => void;
   onViewChange: (view: AppView) => void;
   onSelectTutorial?: (tutorial: Tutorial) => void;
+  onOpenSubject?: (courseCode: string, courseName?: string) => void;
 }
 
-export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave, onClick, onViewChange, onSelectTutorial }: NavItemProps) {
+export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave, onClick, onViewChange, onSelectTutorial, onOpenSubject }: NavItemProps) {
   return (
     <div
       className="relative group"
@@ -44,9 +45,13 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 10, scale: 0.95 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute left-14 -top-4 w-64 bg-base-100 rounded-xl shadow-popover-heavy border border-base-300 p-2 z-50"
+            className={`absolute left-14 -top-4 bg-base-100 rounded-xl shadow-popover-heavy border border-base-300 p-2 z-50 ${
+                item.id === 'subjects' && item.children && item.children.length > 4 ? 'w-[500px]' : 'w-64'
+            }`}
           >
-            <div className="flex flex-col gap-0.5">
+            <div className={`gap-0.5 ${
+                item.id === 'subjects' && item.children && item.children.length > 4 ? 'grid grid-cols-2' : 'flex flex-col'
+            }`}>
               {item.children?.map((child) => (
                 <a
                   key={child.id}
@@ -67,6 +72,10 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
                       e.preventDefault();
                       console.log(`[NavItem] Triggering tutorial: ${child.tutorial.title}`);
                       onSelectTutorial?.(child.tutorial);
+                    } else if (child.isSubject && child.courseCode) {
+                      e.preventDefault();
+                      console.log(`[NavItem] Opening subject drawer: ${child.courseCode}`);
+                      onOpenSubject?.(child.courseCode, child.label);
                     } else if (child.isFeature) {
                        console.log(`[NavItem] Feature clicked but no specific handler: ${child.id}`);
                        e.preventDefault();

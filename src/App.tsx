@@ -276,6 +276,7 @@ function App() {
         onOpenFeedback={() => setIsFeedbackOpen(true)}
         tutorials={tutorials}
         onSelectTutorial={handleSelectTutorial}
+        onOpenSubject={handleOpenSubjectFromSearch}
       />
       <main className="flex-1 flex flex-col ml-0 md:ml-20 transition-all duration-300 overflow-hidden">
         <AppHeader 
