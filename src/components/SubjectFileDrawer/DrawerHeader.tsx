@@ -72,13 +72,13 @@ export function DrawerHeader({
                         /* Search/Sidebar Context: Metadata badges */
                         <div className="flex items-center gap-2">
                              {courseInfo?.status && (
-                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-base-300 text-base-content/80 tracking-tight">
-                                    {courseInfo.status}
+                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-base-300 text-base-content/70 tracking-tight capitalize">
+                                    {courseInfo.status.toLowerCase()}
                                 </span>
                              )}
                              {courseInfo?.credits && (
-                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-primary/10 text-primary tracking-tight">
-                                    {courseInfo.credits}
+                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-primary/10 text-primary tracking-tight capitalize">
+                                    {courseInfo.credits.toLowerCase()}
                                 </span>
                              )}
                         </div>
@@ -170,22 +170,21 @@ export function DrawerHeader({
                     </>
                 ) : (
                     /* Search/Sidebar Context: General Metadata */
-                    <div className="flex flex-col gap-1 w-full">
+                    <div className="flex flex-col gap-2 w-full mt-1">
                         {courseInfo?.garant && (
-                            <div className="flex items-center gap-1.5" title="Garant předmětu">
-                                <User size={14} className="flex-shrink-0 text-base-content/40" />
-                                <span className="text-[13px] text-base-content/60 italic font-bold">Garant: <span className="font-bold text-base-content/90 ml-0.5 not-italic">{courseInfo.garant}</span></span>
+                            <div className="flex items-center gap-2" title="Garant předmětu">
+                                <User size={14} className="flex-shrink-0 text-base-content/30" />
+                                <span className="text-[13px] text-base-content/40 italic font-bold">Garant: <span className="font-bold text-base-content/70 ml-1 not-italic">{courseInfo.garant}</span></span>
                             </div>
                         )}
                         {courseInfo?.teachers && courseInfo.teachers.length > 0 && (
-                            <div className="flex items-start gap-1.5 mt-0.5">
-                                <span className="text-[13px] whitespace-nowrap text-base-content/60 italic font-bold">Vyučující:</span>
-                                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                            <div className="flex items-start gap-2">
+                                <span className="text-[13px] whitespace-nowrap text-base-content/40 italic font-bold">Vyučující:</span>
+                                <div className="flex flex-col gap-1.5 flex-1">
                                     {courseInfo.teachers.map((t, idx) => (
-                                        <div key={idx} className="inline-flex items-baseline gap-1 text-[13px]">
-                                            <span className="font-bold text-base-content/90 whitespace-nowrap">{t.name}</span>
-                                            {t.roles && <span className="text-[11px] text-base-content/60 whitespace-nowrap">({t.roles})</span>}
-                                            {idx < courseInfo.teachers.length - 1 && <span className="text-base-content/40 ml-[-4px]">,</span>}
+                                        <div key={idx} className="flex flex-col gap-0.5">
+                                            <span className="text-[13px] font-bold text-base-content/70 leading-none">{t.name}</span>
+                                            {t.roles && <span className="text-[11px] text-base-content/40 font-medium lowercase">({t.roles})</span>}
                                         </div>
                                     ))}
                                 </div>
