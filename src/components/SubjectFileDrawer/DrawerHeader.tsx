@@ -1,247 +1,42 @@
-/**
- * Drawer Header Component
- * 
- * Renders the header section with course info, meta, and tabs.
- */
-
-import { X, Download, Loader2, ExternalLink, User, Map as MapIcon, Clock, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
+import { ExternalLink } from 'lucide-react';
 import type { DrawerHeaderProps } from './types';
-// Helper: Format date string (YYYYMMDD) to readable format
-function formatDate(dateStr: string): string {
-    if (!dateStr || dateStr.length !== 8) return '';
-    const year = parseInt(dateStr.substring(0, 4));
-    const month = parseInt(dateStr.substring(4, 6)) - 1;
-    const day = parseInt(dateStr.substring(6, 8));
-    const date = new Date(year, month, day);
-    const weekdays = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'];
-    return `${weekdays[date.getDay()]} ${day}.${month + 1}.`;
+import { HeaderActions } from './Header/HeaderActions';
+import { CourseMeta } from './Header/CourseMeta';
+import { HeaderTabs } from './Header/HeaderTabs';
+
+function formatDate(ds: string) {
+    if (!ds || ds.length !== 8) return '';
+    const d = new Date(parseInt(ds.substring(0, 4)), parseInt(ds.substring(4, 6)) - 1, parseInt(ds.substring(6, 8)));
+    return `${['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'][d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.`;
 }
 
-// Helper: Get event type label and color
-function getEventType(lesson: { isExam?: boolean; isSeminar?: string; sectionName?: string; courseName?: string } | null): { label: string; bgColor: string; textColor: string } {
-    if (!lesson) return { label: '', bgColor: '', textColor: '' };
-    if (lesson.isExam) {
-        const name = (lesson.courseName || '').toLowerCase();
-        const section = lesson.sectionName?.toLowerCase() || '';
-        if (name.includes('test') || section.includes('test')) {
-            return { label: 'Test', bgColor: 'bg-orange-100', textColor: 'text-orange-700' };
-        }
-        return { label: 'Zkouška', bgColor: 'bg-red-100', textColor: 'text-red-700' };
+function getBadge(l: any) {
+    if (!l) return null;
+    if (l.isExam) {
+        const test = (l.courseName || '').toLowerCase().includes('test') || (l.sectionName || '').toLowerCase().includes('test');
+        return { label: test ? 'Test' : 'Zkouška', cls: test ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700' };
     }
-    if (lesson.isSeminar === 'true') return { label: 'Cvičení', bgColor: 'bg-emerald-100', textColor: 'text-emerald-700' };
-    return { label: 'Přednáška', bgColor: 'bg-blue-100', textColor: 'text-blue-700' };
+    return l.isSeminar === 'true' ? { label: 'Cvičení', cls: 'bg-emerald-100 text-emerald-700' } : { label: 'Přednáška', cls: 'bg-blue-100 text-blue-700' };
 }
 
-export function DrawerHeader({
-    lesson,
-    courseId,
-    courseInfo,
-    selectedCount,
-    isDownloading,
-    activeTab,
-    onClose,
-    onDownload,
-    onTabChange
-}: DrawerHeaderProps) {
-    const [isTeachersExpanded, setIsTeachersExpanded] = useState(false);
-    const eventType = getEventType(lesson);
-    const isSearchContext = lesson?.isFromSearch;
-
-    const displayedTeachers = isTeachersExpanded 
-        ? courseInfo?.teachers 
-        : courseInfo?.teachers?.slice(0, 3);
-    const hasMoreTeachers = (courseInfo?.teachers?.length || 0) > 3;
+export function DrawerHeader({ lesson, courseId, courseInfo, selectedCount, isDownloading, activeTab, onClose, onDownload, onTabChange }: DrawerHeaderProps) {
+    const badge = getBadge(lesson), isSearch = lesson?.isFromSearch;
 
     return (
         <div className="px-6 py-4 border-b border-base-300 bg-base-100 z-20">
-            {/* Top row: Badge + Date + Actions */}
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                    {!isSearchContext ? (
-                        <>
-                            {/* Event Type Badge */}
-                            {eventType.label && (
-                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${eventType.bgColor} ${eventType.textColor}`}>
-                                    {eventType.label}
-                                </span>
-                            )}
-                            {/* Date */}
-                            {lesson?.date && (
-                                <span className="text-sm text-base-content/60">
-                                    {formatDate(lesson.date)}
-                                </span>
-                            )}
-                        </>
-                    ) : (
-                        /* Search/Sidebar Context: Metadata badges */
-                        <div className="flex items-center gap-2">
-                             {courseInfo?.status && (
-                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-base-300 text-base-content/70 tracking-tight capitalize">
-                                    {courseInfo.status.toLowerCase()}
-                                </span>
-                             )}
-                             {courseInfo?.credits && (
-                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-primary/10 text-primary tracking-tight capitalize">
-                                    {courseInfo.credits.toLowerCase()}
-                                </span>
-                             )}
-                        </div>
-                    )}
+                    {!isSearch ? (<>{badge && <span className={`px-2 py-0.5 rounded text-xs font-medium ${badge.cls}`}>{badge.label}</span>}{lesson?.date && <span className="text-sm text-base-content/60">{formatDate(lesson.date)}</span>}</>)
+                    : (<div className="flex items-center gap-2">{courseInfo?.status && <span className="px-2 py-0.5 rounded text-xs font-bold bg-base-300 text-base-content/70 capitalize">{courseInfo.status.toLowerCase()}</span>}{courseInfo?.credits && <span className="px-2 py-0.5 rounded text-xs font-bold bg-primary/10 text-primary capitalize">{courseInfo.credits.toLowerCase()}</span>}</div>)}
                 </div>
-                <div className="flex items-center gap-2">
-                    {selectedCount > 0 && (
-                        <button 
-                            onClick={onDownload}
-                            disabled={isDownloading}
-                            className="btn btn-sm btn-primary gap-2 interactive disabled:opacity-75 disabled:cursor-not-allowed bg-emerald-600 hover:bg-emerald-700 border-emerald-600 hover:border-emerald-700 text-white"
-                        >
-                            {isDownloading ? (
-                                <Loader2 size={16} className="animate-spin" />
-                            ) : (
-                                <Download size={16} />
-                            )}
-                            {isDownloading ? 'Stahování...' : `Stáhnout (${selectedCount})`}
-                        </button>
-                    )}
-                    <button onClick={onClose} className="btn btn-ghost btn-circle btn-sm interactive">
-                        <X size={20} className="text-base-content/40" />
-                    </button>
-                </div>
+                <HeaderActions selectedCount={selectedCount} isDownloading={isDownloading} onDownload={onDownload} onClose={onClose} />
             </div>
-            
-            {/* Course Name */}
             <div className="mb-2">
-                {courseId ? (
-                    <a 
-                        href={`https://is.mendelu.cz/auth/katalog/syllabus.pl?predmet=${courseId};lang=cz`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="clickable-link text-xl font-bold text-base-content flex items-center gap-1"
-                    >
-                        <span>{lesson?.courseName}</span>
-                        <ExternalLink size={14} className="opacity-50 flex-shrink-0" />
-                    </a>
-                ) : (
-                    <span className="text-xl font-bold text-base-content">
-                        {lesson?.courseName}
-                    </span>
-                )}
+                {courseId ? <a href={`https://is.mendelu.cz/auth/katalog/syllabus.pl?predmet=${courseId};lang=cz`} target="_blank" rel="noopener noreferrer" className="clickable-link text-xl font-bold flex items-center gap-1"><span>{lesson?.courseName}</span><ExternalLink size={14} className="opacity-50" /></a>
+                : <span className="text-xl font-bold text-base-content">{lesson?.courseName}</span>}
             </div>
-            
-            {/* Meta row: Teacher + Room + Time */}
-            <div className="flex items-center gap-4 text-sm text-base-content/60 flex-wrap">
-                {!isSearchContext ? (
-                    <>
-                        {/* Teacher */}
-                        {lesson?.teachers && lesson.teachers.length > 0 && (
-                            lesson.teachers[0].id ? (
-                                <a
-                                    href={`https://is.mendelu.cz/auth/lide/clovek.pl?;id=${lesson.teachers[0].id};lang=cz`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="clickable-link flex items-center gap-1"
-                                >
-                                    <User size={14} className="flex-shrink-0" />
-                                    <span>{lesson.teachers[0].fullName}</span>
-                                </a>
-                            ) : (
-                                <span className="flex items-center gap-1">
-                                    <User size={14} className="flex-shrink-0" />
-                                    <span>{lesson.teachers.map(t => t.fullName).join(', ')}</span>
-                                </span>
-                            )
-                        )}
-                        
-                        {/* Room (Q-buildings only, with map) */}
-                        {lesson?.room?.startsWith('Q') && (
-                            <button
-                                onClick={() => window.open(`https://mm.mendelu.cz/mapwidget/embed?placeName=${lesson.room}`, '_blank')}
-                                className="flex items-center gap-1 hover:text-emerald-600 transition-colors"
-                                title="Zobrazit na mapě"
-                            >
-                                <MapIcon size={14} />
-                                <span>{lesson.room}</span>
-                            </button>
-                        )}
-                        
-                        {/* Time */}
-                        {lesson?.startTime && lesson?.endTime && (
-                            <span className="flex items-center gap-1">
-                                <Clock size={14} />
-                                <span>{lesson.startTime} - {lesson.endTime}</span>
-                            </span>
-                        )}
-                    </>
-                ) : (
-                    /* Search/Sidebar Context: General Metadata */
-                    <div className="flex flex-col gap-2 w-full mt-1">
-                        {courseInfo?.garant && (
-                            <div className="flex items-center gap-2" title="Garant předmětu">
-                                <User size={14} className="flex-shrink-0 text-base-content/30" />
-                                <span className="text-[13px] text-base-content/40 italic font-bold">Garant: <span className="font-bold text-base-content/70 ml-1 not-italic">{courseInfo.garant}</span></span>
-                            </div>
-                        )}
-                        {courseInfo?.teachers && courseInfo.teachers.length > 0 && (
-                            <div className="flex items-start gap-2">
-                                <span className="text-[13px] whitespace-nowrap text-base-content/40 italic font-bold mt-0.5">Vyučující:</span>
-                                <div className="flex flex-col gap-1.5 flex-1">
-                                    {displayedTeachers?.map((t, idx) => (
-                                        <div key={idx} className="flex items-center gap-2 leading-none">
-                                            <span className="text-[13px] font-bold text-base-content/70">{t.name}</span>
-                                            {t.roles && <span className="text-[11px] text-base-content/40 font-medium">({t.roles.toLowerCase()})</span>}
-                                        </div>
-                                    ))}
-                                    {hasMoreTeachers && (
-                                        <button 
-                                            onClick={() => setIsTeachersExpanded(!isTeachersExpanded)}
-                                            className="flex items-center gap-1 text-[11px] font-bold text-primary hover:text-primary-focus transition-colors mt-0.5"
-                                        >
-                                            {isTeachersExpanded ? (
-                                                <><span>Zobrazit méně</span><ChevronUp size={12} /></>
-                                            ) : (
-                                                <><span>Zobrazit více ({courseInfo.teachers.length - 3})</span><ChevronDown size={12} /></>
-                                            )}
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-
-            {/* Subject Note */}
-            {/* <SubjectNote subjectCode={courseId} /> */}
-
-            {/* Tabs */}
-            <div className="flex items-center gap-8 mt-4">
-                <button 
-                    onClick={() => onTabChange('files')}
-                    className={`text-sm font-bold pb-2 border-b-2 transition-all px-1 ${activeTab === 'files' ? 'border-primary text-primary' : 'border-transparent text-base-content/40 hover:text-base-content/60'}`}
-                >
-                    Soubory
-                </button>
-                {/* <button 
-                    onClick={() => onTabChange('assessments')}
-                    className={`text-sm font-bold pb-2 border-b-2 transition-all px-1 ${activeTab === 'assessments' ? 'border-primary text-primary' : 'border-transparent text-base-content/40 hover:text-base-content/60'}`}
-                >
-                    Hodnocení
-                </button> */}
-                <button 
-                    onClick={() => onTabChange('syllabus')}
-                    className={`text-sm font-bold pb-2 border-b-2 transition-all px-1 ${activeTab === 'syllabus' ? 'border-primary text-primary' : 'border-transparent text-base-content/40 hover:text-base-content/60'}`}
-                >
-                    Požadavky
-                </button>
-                <button 
-                    onClick={() => onTabChange('stats')}
-                    className={`text-sm font-bold pb-2 border-b-2 transition-all px-1 ${activeTab === 'stats' ? 'border-primary text-primary' : 'border-transparent text-base-content/40 hover:text-base-content/60'}`}
-                    data-testid="tab-stats"
-                >
-                    Úspěšnost
-                </button>
-            </div>
+            <CourseMeta lesson={lesson} courseInfo={courseInfo} isSearchContext={isSearch} />
+            <HeaderTabs activeTab={activeTab} onTabChange={onTabChange} />
         </div>
     );
 }

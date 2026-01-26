@@ -36,7 +36,7 @@ describe('No Hardcoded User IDs', () => {
 
 describe('injectUserParams', () => {
     it('should be used when navigating to pages', () => {
-        const content = fs.readFileSync(path.resolve(__dirname, '../../components/SearchBar.tsx'), 'utf-8');
+        const content = fs.readFileSync(path.resolve(__dirname, '../../components/SearchBar/index.tsx'), 'utf-8');
         // Should import injectUserParams
         expect(content).toContain('injectUserParams');
         // Should use it when opening links

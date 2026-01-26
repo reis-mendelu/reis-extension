@@ -1,210 +1,27 @@
-import { useState, useEffect, useMemo } from 'react';
-import { IndexedDBService } from '../../services/storage';
-import type { ExamSubject, ExamSection, ExamFilterState } from '../../types/exams';
-
-import { ExamFilterBar, type StatusFilter } from './ExamFilterBar';
+import { useState, useEffect } from 'react';
+import { ExamFilterBar } from './ExamFilterBar';
 import { ExamSectionCard } from './ExamSectionCard';
 import { ConfirmationModal } from './ConfirmationModal';
 import { useExamActions } from './useExamActions';
-
 import { ExamPanelHeader } from './ExamPanelHeader';
-interface ExamPanelProps {
-    onSelectSubject: (subj: { code: string; name: string; courseCode?: string; courseName?: string; isExam?: boolean; sectionName?: string; date?: string; time?: string; room?: string }) => void;
-}
+import { useExamsData } from './useExamsData';
 
-const FILTER_STORAGE_KEY = 'exam_panel_filters';
+export function ExamPanel({ onSelectSubject }: any) {
+    const { exams, isLoading, statusFilter, setStatusFilter, selectedSubjects, setSelectedSubjects, filterCounts, filteredSubjects, subjectOptions } = useExamsData();
+    const [expandedId, setExpandedId] = useState<string | null>(null);
+    const { processingSectionId, pendingAction, setPendingAction, handleRegisterRequest, handleUnregisterRequest, handleConfirmAction } = useExamActions({ exams, setExpandedSectionId: setExpandedId });
 
-import { useAppStore } from '../../store/useAppStore';
-
-export function ExamPanel({ onSelectSubject }: ExamPanelProps) {
-    const exams = useAppStore(state => state.exams.data);
-    const status = useAppStore(state => state.exams.status);
-
-    // Filter counts...
-    const isLoading = status === 'loading' || status === 'idle';
-
-    // UI state
-    const [expandedSectionId, setExpandedSectionId] = useState<string | null>(null);
-
-    // Extract action logic to hook
-    const {
-        processingSectionId,
-        pendingAction,
-        setPendingAction,
-        handleRegisterRequest,
-        handleUnregisterRequest,
-        handleConfirmAction,
-    } = useExamActions({ exams, setExpandedSectionId });
-
-    // Filter state
-    const [statusFilter, setStatusFilter] = useState<StatusFilter>('available');
-    const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-    
-    // Load filters
     useEffect(() => {
-        const loadFilters = async () => {
-             const stored = await IndexedDBService.get('meta', FILTER_STORAGE_KEY) as ExamFilterState;
-             if (stored) {
-                 if (stored.statusFilter) setStatusFilter(stored.statusFilter as StatusFilter);
-                 if (stored.selectedSubjects) setSelectedSubjects(stored.selectedSubjects);
-             }
-        };
-        loadFilters();
-    }, []);
-
-    // Persist filter state
-    useEffect(() => {
-        IndexedDBService.set('meta', FILTER_STORAGE_KEY, { statusFilter, selectedSubjects });
-    }, [statusFilter, selectedSubjects]);
-
-    // Escape key handler
-    useEffect(() => {
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                // Ignore if any dialog/modal is open (e.g. SubjectFileDrawer, ConfirmationModal)
-                if (document.querySelector('[role="dialog"]')) return;
-
-                if (expandedSectionId) {
-                    setExpandedSectionId(null);
-                } 
-                // Do NOT close the panel (navigate home) on Escape
-                // The user wants to stay in the Exam View
-            }
-        };
-        document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
-    }, [expandedSectionId]);
-
-    // Computed values
-    const filterCounts = useMemo(() => {
-        const counts = { registered: 0, available: 0, opening: 0 };
-
-        exams.forEach(subject => {
-            subject.sections.forEach(section => {
-                if (section.status === 'registered') {
-                    counts.registered++;
-                } else {
-                    const hasAvailable = section.terms.some(term =>
-                        !term.full && term.canRegisterNow === true
-                    );
-                    const hasOpeningSoon = section.terms.some(term =>
-                        !term.full && term.canRegisterNow !== true
-                    );
-
-                    if (hasAvailable) counts.available++;
-                    if (hasOpeningSoon) counts.opening++;
-                }
-            });
-        });
-
-        return counts;
-    }, [exams]);
-
-    const subjectOptions = useMemo(() =>
-        exams.map(e => ({ code: e.code, name: e.name }))
-            .filter((v, i, a) => a.findIndex(t => t.code === v.code) === i)
-            .sort((a, b) => a.name.localeCompare(b.name)),
-        [exams]);
-
-    const filteredSections = useMemo(() => {
-        const results: Array<{ subject: ExamSubject; section: ExamSection }> = [];
-
-        exams.forEach(subject => {
-            if (selectedSubjects.length > 0 && !selectedSubjects.includes(subject.code)) return;
-
-            subject.sections.forEach(section => {
-                if (statusFilter === 'registered') {
-                    if (section.status !== 'registered') return;
-                    results.push({ subject, section });
-                } else if (statusFilter === 'available') {
-                    if (section.status === 'registered') return;
-                    const availableTerms = section.terms.filter(term =>
-                        !term.full && term.canRegisterNow === true
-                    );
-                    if (availableTerms.length === 0) return;
-                    results.push({ subject, section: { ...section, terms: availableTerms } });
-                } else if (statusFilter === 'opening') {
-                    if (section.status === 'registered') return;
-                    const openingTerms = section.terms.filter(term =>
-                        !term.full && term.canRegisterNow !== true
-                    );
-                    if (openingTerms.length === 0) return;
-                    results.push({ subject, section: { ...section, terms: openingTerms } });
-                } else {
-                    results.push({ subject, section });
-                }
-            });
-        });
-
-        return results;
-    }, [exams, statusFilter, selectedSubjects]);
-
-    const toggleExpand = (sectionId: string) => {
-        setExpandedSectionId(prev => prev === sectionId ? null : sectionId);
-    };
-
-    const toggleSubjectFilter = (code: string) => {
-        setSelectedSubjects(prev =>
-            prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
-        );
-    };
+        const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('[role="dialog"]') && expandedId) setExpandedId(null); };
+        document.addEventListener('keydown', h); return () => document.removeEventListener('keydown', h);
+    }, [expandedId]);
 
     return (
-        <>
-            <div className="flex flex-col h-full bg-base-100 rounded-lg border border-base-300 overflow-hidden">
-                <ExamPanelHeader />
-
-                <ExamFilterBar
-                    statusFilter={statusFilter}
-                    selectedSubjects={selectedSubjects}
-                    filterCounts={filterCounts}
-                    subjectOptions={subjectOptions}
-                    onStatusChange={setStatusFilter}
-                    onToggleSubject={toggleSubjectFilter}
-                    onClearFilters={() => setSelectedSubjects([])}
-                />
-
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {isLoading ? (
-                        <div className="flex items-center justify-center h-32 text-base-content/50">
-                            <span className="loading loading-spinner loading-md mr-2"></span>
-                            Načítání zkoušek...
-                        </div>
-                    ) : filteredSections.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-32 text-base-content/50">
-                            <span className="text-4xl mb-2">📭</span>
-                            <span>Žádné zkoušky pro vybrané filtry</span>
-                        </div>
-                    ) : (
-                        filteredSections.map(({ subject, section }) => (
-                            <ExamSectionCard
-                                key={section.id}
-                                subject={subject}
-                                section={section}
-                                isExpanded={expandedSectionId === section.id}
-                                isProcessing={processingSectionId === section.id}
-                                onToggleExpand={toggleExpand}
-                                onRegister={handleRegisterRequest}
-                                onUnregister={handleUnregisterRequest}
-                                onSelectSubject={onSelectSubject}
-                            />
-                        ))
-                    )}
-                </div>
-            </div>
-
-            {/* Confirmation Modal */}
-            <ConfirmationModal
-                isOpen={!!pendingAction}
-                actionType={pendingAction?.type ?? 'register'}
-                sectionName={pendingAction?.section.name ?? ''}
-                termInfo={pendingAction?.type === 'register' 
-                    ? pendingAction.section.terms.find(t => t.id === pendingAction.termId)
-                    : pendingAction?.section.registeredTerm}
-                onConfirm={handleConfirmAction}
-                onCancel={() => setPendingAction(null)}
-            />
-        </>
+        <><div className="flex flex-col h-full bg-base-100 rounded-lg border border-base-300 overflow-hidden">
+            <ExamPanelHeader /><ExamFilterBar statusFilter={statusFilter} selectedSubjects={selectedSubjects} filterCounts={filterCounts} subjectOptions={subjectOptions} onStatusChange={setStatusFilter} onToggleSubject={(c: string) => setSelectedSubjects((p: any) => p.includes(c) ? p.filter((x: any) => x !== c) : [...p, c])} onClearFilters={() => setSelectedSubjects([])} />
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">{isLoading ? <div className="flex items-center justify-center h-32 opacity-50"><span className="loading loading-spinner mr-2" /> Načítání zkoušek...</div> : !filteredSubjects.length ? <div className="flex flex-col items-center justify-center h-32 opacity-50"><span>📭 Žádné zkoušky</span></div>
+                : filteredSubjects.map(({ subject, section }) => <ExamSectionCard key={section.id} subject={subject} section={section} isExpanded={expandedId === section.id} isProcessing={processingSectionId === section.id} onToggleExpand={(id: any) => setExpandedId(p => p === id ? null : id)} onRegister={handleRegisterRequest} onUnregister={handleUnregisterRequest} onSelectSubject={onSelectSubject} />)}</div>
+        </div>
+        <ConfirmationModal isOpen={!!pendingAction} actionType={pendingAction?.type ?? 'register'} sectionName={pendingAction?.section.name ?? ''} termInfo={pendingAction?.type === 'register' ? pendingAction.section.terms.find((t: any) => t.id === pendingAction.termId) : pendingAction?.section.registeredTerm} onConfirm={handleConfirmAction} onCancel={() => setPendingAction(null)} /></>
     );
 }

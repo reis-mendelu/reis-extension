@@ -1,205 +1,31 @@
- 
- 
-/**
- * Proxy Client for Iframe → Content Script Communication
- * 
- * This module provides fetch-like APIs that work inside the iframe by
- * proxying requests through the Content Script (which has cookie access).
- * 
- * Usage:
- *   import { fetchViaProxy } from './proxyClient';
- *   const html = await fetchViaProxy('https://is.mendelu.cz/auth/...');
- */
+import { Messages, ActionType } from '../types/messages';
+import { pendingFetches, pendingActions, REQUEST_TIMEOUT } from './proxy/pendingRequests';
+import { initProxyListener } from './proxy/messageListener';
 
-import type { FetchResultMessage, ActionResultMessage, ActionType } from '../types/messages';
-import { Messages } from '../types/messages';
-
-// =============================================================================
-// Pending Request Tracking
-// =============================================================================
-
-interface PendingRequest<T = unknown> {
-    resolve: (value: T) => void;
-    reject: (error: Error) => void;
-    timeout: ReturnType<typeof setTimeout>;
-}
-
-const pendingFetches = new Map<string, PendingRequest<string>>();
-const pendingActions = new Map<string, PendingRequest<unknown>>();
-
-const REQUEST_TIMEOUT = 30000; // 30 seconds
-
-// =============================================================================
-// Message Listener (set up once)
-// =============================================================================
-
-let listenerInitialized = false;
-
-function initMessageListener() {
-    if (listenerInitialized) return;
-    listenerInitialized = true;
-
-    window.addEventListener('message', (event: MessageEvent) => {
-        // Only process messages from parent (Content Script)
-        if (event.source !== window.parent) return;
-
-        const data = event.data;
-        if (!data || typeof data !== 'object') return;
-
-        // Handle fetch results
-        if (data.type === 'REIS_FETCH_RESULT') {
-            const msg = data as FetchResultMessage;
-            const pending = pendingFetches.get(msg.id);
-
-            if (pending) {
-                clearTimeout(pending.timeout);
-                pendingFetches.delete(msg.id);
-
-                if (msg.success && msg.data !== undefined) {
-                    pending.resolve(msg.data);
-                } else {
-                    console.error('[ProxyClient] Fetch failed:', msg.error);
-                    pending.reject(new Error(msg.error || 'Fetch failed'));
-                }
-            }
-        }
-
-        // Handle action results
-        if (data.type === 'REIS_ACTION_RESULT') {
-            const msg = data as ActionResultMessage;
-            const pending = pendingActions.get(msg.id);
-
-            if (pending) {
-                clearTimeout(pending.timeout);
-                pendingActions.delete(msg.id);
-
-                if (msg.success) {
-                    pending.resolve(msg.data);
-                } else {
-                    console.error('[ProxyClient] Action failed:', msg.error);
-                    pending.reject(new Error(msg.error || 'Action failed'));
-                }
-            }
-        }
-    });
-
-    console.log('[ProxyClient] Message listener initialized');
-}
-
-// =============================================================================
-// Public API
-// =============================================================================
-
-/**
- * Fetch a URL through the Content Script proxy.
- * Returns the response body as a string.
- */
-export async function fetchViaProxy(
-    url: string,
-    options?: {
-        method?: string;
-        headers?: Record<string, string>;
-        body?: string;
-    }
-): Promise<string> {
-    initMessageListener();
-
-    const message = Messages.fetch(url, options);
-
+export async function fetchViaProxy(url: string, opts?: any): Promise<string> {
+    initProxyListener();
+    const msg = Messages.fetch(url, opts);
     return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-            pendingFetches.delete(message.id);
-            console.error('[ProxyClient] Request timeout:', url);
-            reject(new Error(`Request timeout: ${url}`));
-        }, REQUEST_TIMEOUT);
-
-        pendingFetches.set(message.id, { resolve, reject, timeout });
-
-        // Send to Content Script
-        window.parent.postMessage(message, '*');
-
-        console.debug('[ProxyClient] Fetch request sent:', message.id, url);
+        const timeout = setTimeout(() => { pendingFetches.delete(msg.id); reject(new Error(`Timeout: ${url}`)); }, REQUEST_TIMEOUT);
+        pendingFetches.set(msg.id, { resolve, reject, timeout });
+        window.parent.postMessage(msg, '*');
     });
 }
 
-/**
- * Fetch JSON through the Content Script proxy.
- */
-export async function fetchJsonViaProxy<T>(
-    url: string,
-    options?: {
-        method?: string;
-        headers?: Record<string, string>;
-        body?: string;
-    }
-): Promise<T> {
-    const text = await fetchViaProxy(url, options);
-    try {
-        return JSON.parse(text) as T;
-    } catch (e) {
-        console.error('[ProxyClient] JSON parse error:', e);
-        throw new Error('Invalid JSON response');
-    }
+export async function fetchJsonViaProxy<T>(url: string, opts?: any): Promise<T> {
+    return JSON.parse(await fetchViaProxy(url, opts));
 }
 
-/**
- * Execute an action through the Content Script.
- */
-export async function executeAction<T = unknown>(
-    action: ActionType,
-    payload: unknown
-): Promise<T> {
-    initMessageListener();
-
-    const message = Messages.action(action, payload);
-
+export async function executeAction<T = any>(action: ActionType, payload: any): Promise<T> {
+    initProxyListener();
+    const msg = Messages.action(action, payload);
     return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-            pendingActions.delete(message.id);
-            console.error('[ProxyClient] Action timeout:', action);
-            reject(new Error(`Action timeout: ${action}`));
-        }, REQUEST_TIMEOUT);
-
-        pendingActions.set(message.id, {
-            resolve: resolve as (value: unknown) => void,
-            reject,
-            timeout
-        });
-
-        // Send to Content Script
-        window.parent.postMessage(message, '*');
-
-        console.debug('[ProxyClient] Action request sent:', message.id, action);
+        const timeout = setTimeout(() => { pendingActions.delete(msg.id); reject(new Error(`Timeout: ${action}`)); }, REQUEST_TIMEOUT);
+        pendingActions.set(msg.id, { resolve, reject, timeout });
+        window.parent.postMessage(msg, '*');
     });
 }
 
-/**
- * Request initial data from Content Script.
- */
-export function requestData(dataType: 'schedule' | 'exams' | 'subjects' | 'files' | 'all'): void {
-    const message = Messages.requestData(dataType);
-    window.parent.postMessage(message, '*');
-    console.debug('[ProxyClient] Data request sent:', dataType);
-}
-
-/**
- * Signal to Content Script that iframe is ready.
- */
-export function signalReady(): void {
-    const message = Messages.ready();
-    window.parent.postMessage(message, '*');
-    console.log('[ProxyClient] Ready signal sent');
-}
-
-// =============================================================================
-// Utility: Check if we're in an iframe
-// =============================================================================
-
-export function isInIframe(): boolean {
-    try {
-        return window.self !== window.parent;
-    } catch {
-        // Cross-origin error means we're in an iframe
-        return true;
-    }
-}
+export function requestData(t: string) { window.parent.postMessage(Messages.requestData(t as any), '*'); }
+export function signalReady() { window.parent.postMessage(Messages.ready(), '*'); }
+export function isInIframe(): boolean { try { return window.self !== window.parent; } catch { return true; } }

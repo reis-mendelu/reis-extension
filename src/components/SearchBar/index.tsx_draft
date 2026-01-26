@@ -1,0 +1,12 @@
+import { Search, X } from 'lucide-react';
+import { useRef, useEffect } from 'react';
+import { injectUserParams } from '../../data/pagesData';
+import { useSearch } from './useSearch';
+import { SearchResultItem } from './SearchResultItem';
+import { SearchFooter } from './SearchFooter';
+import type { SearchBarProps, SearchResult } from './types';
+
+export function SearchBar({ placeholder = "Hledej předměty, lidi, stránky...", onSearch, onOpenSubject }: SearchBarProps) {
+  const [query, setQuery] = [useState(''), (q: string) => {}]; // Simplified for reference, will fix implementation
+  // Actually I need to use state here
+}

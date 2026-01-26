@@ -103,7 +103,7 @@ export function useSubjectNote(subjectCode: string | undefined) {
                 saveToStorage(noteRef.current, currentSubjectRef.current);
             }
         };
-    }, [subjectCode, saveToStorage, isLoading]);
+    }, [subjectCode, saveToStorage]);
 
     // Set note with debounced save
     const setNote = useCallback((value: string) => {

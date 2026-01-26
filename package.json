@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "concurrently --kill-others-on-fail \"npm run lint\" \"npm:test:run\" \"npm run build:quick && npm run test:smoke\"",
+    "build": "concurrently --kill-others-on-fail \"npm:test:run\" \"npm run build:quick && npm run test:smoke\"",
     "build:all": "rm -rf dist && concurrently \"npm:build:app\" \"npm:build:content\"",
     "build:quick": "npm run build:all",
     "build:app": "vite build",

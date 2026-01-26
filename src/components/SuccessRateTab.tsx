@@ -2,201 +2,39 @@ import { useState } from 'react';
 import { useSuccessRate } from '../hooks/data/useSuccessRate';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { sortSemesters } from '../utils/semesterSort';
-import type { GradeStats } from '../types/documents';
+import { GradeBarChart } from './SuccessRate/GradeBarChart';
+import { SemesterSelector } from './SuccessRate/SemesterSelector';
 
-interface SuccessRateTabProps {
-    courseCode: string;
-}
+const COLORS: Record<string, string> = { A: 'var(--color-grade-a)', B: 'var(--color-grade-b)', C: 'var(--color-grade-c)', D: 'var(--color-grade-d)', E: 'var(--color-grade-e)', F: 'var(--color-grade-f)', FN: 'var(--color-grade-fn)' };
 
-// Grade colors - using theme tokens from index.css
-const GRADE_COLORS: Record<keyof GradeStats, string> = {
-    A: 'var(--color-grade-a)',
-    B: 'var(--color-grade-b)',
-    C: 'var(--color-grade-c)',
-    D: 'var(--color-grade-d)',
-    E: 'var(--color-grade-e)',
-    F: 'var(--color-grade-f)',
-    FN: 'var(--color-grade-fn)',
-};
-
-export function SuccessRateTab({ courseCode }: SuccessRateTabProps) {
+export function SuccessRateTab({ courseCode }: { courseCode: string }) {
     const { stats: data, loading } = useSuccessRate(courseCode);
-    const [activeIndex, setActiveIndex] = useState(0);
+    const [idx, setIdx] = useState(0);
 
-    if (loading) return (
-        <div className="flex items-center justify-center h-full">
-            <span className="loading loading-spinner loading-md text-primary"></span>
-        </div>
-    );
+    if (loading) return <div className="flex items-center justify-center h-full"><span className="loading loading-spinner text-primary" /></div>;
+    if (!data?.stats?.length) return <div className="flex flex-col items-center justify-center h-full"><AlertTriangle className="w-8 h-8 opacity-40 mb-3" /><p className="text-sm opacity-60">Data nejsou k dispozici</p></div>;
 
-    if (!data || !data.stats.length) return (
-        <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-            <AlertTriangle className="w-8 h-8 text-warning mb-3 opacity-40" />
-            <p className="text-sm opacity-60">Data nejsou k dispozici</p>
-        </div>
-    );
+    const stats = sortSemesters(data.stats).slice(0, 5), sIdx = Math.min(idx, stats.length - 1), current = stats[sIdx];
+    const isCredit = current.type === 'credit', total = current.totalPass + current.totalFail;
+    const order = isCredit ? ['zap', 'nezap'] : ['A', 'B', 'C', 'D', 'E', 'F', 'FN'];
+    const colors = isCredit ? { zap: 'var(--color-success)', nezap: 'var(--color-error)' } : COLORS;
 
-    // Sort semesters chronologically (newest first) and limit to 5
-    const sortedStats = sortSemesters(data.stats).slice(0, 5);
-
-    // Ensure activeIndex is within bounds (if data changes)
-    const safeIndex = Math.min(activeIndex, sortedStats.length - 1);
-    const activeSemester = sortedStats[safeIndex];
-    const totalStudents = activeSemester.totalPass + activeSemester.totalFail;
-
-    // Determine evaluation type and grade set for the current semester
-    const isCredit = activeSemester.type === 'credit';
-    
-    const CURRENT_GRADE_ORDER: string[] = isCredit
-        ? ['zap', 'nezap']
-        : ['A', 'B', 'C', 'D', 'E', 'F', 'FN'];
-
-    const CURRENT_GRADE_COLORS: Record<string, string> = isCredit
-        ? {
-            zap: 'var(--color-success)',
-            nezap: 'var(--color-error)'
-          }
-        : GRADE_COLORS;
-
-    // Aggregate grades
-    const activeGrades = activeSemester.terms.reduce((acc, term) => {
-        if (isCredit && term.creditGrades) {
-            // Merge credit grades
-            acc['zap'] = (acc['zap'] || 0) + (term.creditGrades.zap || 0);
-            
-            // Merge failures (nezap + zapNedost) into a single 'nezap' bucket for simplicity in UI, 
-            // or keep them separate? The Python script grouped them into totalFail.
-            // Let's just group raw failures.
-            const failCount = (term.creditGrades.nezap || 0) + (term.creditGrades.zapNedost || 0);
-            acc['nezap'] = (acc['nezap'] || 0) + failCount;
-        } else {
-            // Exam grades
-            Object.entries(term.grades).forEach(([grade, count]) => {
-                const g = grade as keyof GradeStats;
-                acc[g] = (acc[g] || 0) + count;
-            });
-        }
+    const grades = current.terms.reduce((acc: any, t: any) => {
+        if (isCredit && t.creditGrades) { acc.zap = (acc.zap || 0) + (t.creditGrades.zap || 0); acc.nezap = (acc.nezap || 0) + (t.creditGrades.nezap || 0) + (t.creditGrades.zapNedost || 0); }
+        else Object.entries(t.grades || {}).forEach(([g, c]: any) => acc[g] = (acc[g] || 0) + c);
         return acc;
-    }, {} as Record<string, number>);
+    }, {});
 
-    // Get max value for RELATIVE scaling
-    const gradeCounts = CURRENT_GRADE_ORDER.map(g => activeGrades[g] || 0);
-    const maxGrade = Math.max(...gradeCounts, 1);
-    const CONTAINER_HEIGHT = 160; 
-    const MAX_BAR_HEIGHT = 110;   
-
-    // Format year label
-    const formatYearLabel = (year: number, semesterName: string) => {
-        const yearShort = year % 100;
-        const isWinter = semesterName.startsWith('ZS');
-        const semesterPrefix = isWinter ? 'ZS' : 'LS';
-        const yearRange = `${yearShort}/${yearShort + 1}`;
-        return `${semesterPrefix} ${yearRange}`;
-    };
+    const max = Math.max(...order.map(g => grades[g] || 0), 1);
 
     return (
-        <div className="flex flex-col h-full px-4 py-3 select-none font-inter" data-testid="success-rate-tab">
-            {/* 1. Student count at top with source link */}
-            <div className="text-center mb-6 flex items-center justify-center gap-2 relative z-10">
-                <span className="text-sm text-base-content/50 font-bold uppercase tracking-wider">
-                    {totalStudents} studentů
-                    {isCredit ? (
-                        <span className="ml-2 badge badge-xs badge-ghost">Zápočet</span>
-                    ) : (
-                        <span className="ml-2 badge badge-xs badge-ghost">Zkouška</span>
-                    )}
-                </span>
-                {activeSemester.sourceUrl && (
-                    <a 
-                        href={activeSemester.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary/50 hover:text-primary transition-colors"
-                        title="Ověřit data v IS MENDELU"
-                        data-testid="source-url-link"
-                    >
-                        <ExternalLink className="w-4 h-4" />
-                    </a>
-                )}
+        <div className="flex flex-col h-full px-4 py-3 select-none font-inter">
+            <div className="text-center mb-6 flex items-center justify-center gap-2">
+                <span className="text-sm opacity-50 font-bold uppercase tracking-wider">{total} studentů {isCredit ? ' (Zápočet)' : ' (Zkouška)'}</span>
+                {current.sourceUrl && <a href={current.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-primary/50 hover:text-primary"><ExternalLink size={16} /></a>}
             </div>
-
-            {/* 2. Bar Chart */}
-            <div className="flex items-end gap-3 px-1 mb-8 relative z-0" style={{ height: `${CONTAINER_HEIGHT}px` }}>
-                {CURRENT_GRADE_ORDER.map((grade) => {
-                    const value = activeGrades[grade] || 0;
-                    const barHeight = (value / maxGrade) * MAX_BAR_HEIGHT;
-                    
-                    return (
-                        <div key={grade} className="flex-1 flex flex-col items-center gap-1 group">
-                            {/* Value label */}
-                            <span className={`text-2xs font-bold transition-opacity ${value > 0 ? 'text-base-content/40 group-hover:text-base-content/100' : 'opacity-0'}`}>
-                                {value}
-                            </span>
-                            {/* Bar */}
-                            <div 
-                                className="w-full rounded-t-md transition-all duration-300 shadow-sm"
-                                style={{
-                                    height: `${Math.max(barHeight, 4)}px`,
-                                    backgroundColor: value > 0 ? CURRENT_GRADE_COLORS[grade] : 'var(--color-base-content)',
-                                    opacity: value > 0 ? 1 : 0.05
-                                }}
-                            />
-                            {/* Grade label */}
-                            <span className="text-2xs font-black text-base-content/30 mt-1 uppercase">
-                                {grade === 'FN' ? '-' : grade}
-                            </span>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* 3. Unified Year Selector with Success Rates (Bigger circles) */}
-            <div className="flex justify-center gap-4 mt-auto">
-                {sortedStats.map((s, i) => {
-                    const total = s.totalPass + s.totalFail;
-                    const rate = Math.round((s.totalPass / total) * 100) || 0;
-                    const isActive = i === safeIndex;
-                    const label = formatYearLabel(s.year, s.semesterName);
-                    
-                    return (
-                        <button
-                            key={`year-${s.year}-${s.semesterName}`}
-                            onClick={() => setActiveIndex(i)}
-                            className={`flex flex-col items-center gap-2 px-3 py-2 rounded-xl transition-all ${
-                                isActive
-                                    ? 'bg-primary/10 ring-1 ring-primary/30'
-                                    : 'text-base-content/40 hover:text-base-content/100 hover:bg-base-200'
-                            }`}
-                        >
-                            {/* Success rate circle - BIGGER as requested */}
-                            <div className="relative w-12 h-12 flex items-center justify-center">
-                                <svg className="w-full h-full -rotate-90" viewBox="0 0 32 32">
-                                    <circle
-                                        cx="16" cy="16" r="13"
-                                        className="fill-none stroke-base-content/10"
-                                        strokeWidth="3"
-                                    />
-                                    <circle
-                                        cx="16" cy="16" r="13"
-                                        className={`fill-none transition-all ${isActive ? 'stroke-success' : 'stroke-success/40'}`}
-                                        strokeWidth="3"
-                                        strokeDasharray={2 * Math.PI * 13}
-                                        strokeDashoffset={2 * Math.PI * 13 * (1 - rate / 100)}
-                                        strokeLinecap="round"
-                                    />
-                                </svg>
-                                <span className="absolute text-2xs font-black">
-                                    {rate}%
-                                </span>
-                            </div>
-                            {/* Year label */}
-                            <span className={`text-2xs font-black ${isActive ? 'text-primary' : ''}`}>
-                                {label}
-                            </span>
-                        </button>
-                    );
-                })}
-            </div>
+            <GradeBarChart grades={grades} order={order} colors={colors} max={max} />
+            <SemesterSelector stats={stats} activeIndex={sIdx} onSelect={setIdx} />
         </div>
     );
 }
