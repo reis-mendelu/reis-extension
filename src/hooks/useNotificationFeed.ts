@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { SpolekNotification } from '../services/spolky';
-import { fetchNotifications, trackNotificationsViewed, trackNotificationClick, filterNotificationsByFaculty } from '../services/spolky';
+import { fetchNotifications, trackNotificationsViewed, filterNotificationsByFaculty } from '../services/spolky';
 import { useSpolkySettings } from '../hooks/useSpolkySettings';
 import { IndexedDBService } from '../services/storage';
 

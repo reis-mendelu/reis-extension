@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useDatePickerPosition } from '../hooks/useDatePickerPosition';
 import { useDatePickerData } from '../hooks/useDatePickerData';
 import { DatePickerCalendar } from './DatePicker/DatePickerCalendar';
 import { DatePickerSelectors } from './DatePicker/DatePickerSelectors';
-import type { ExamTerm, ExamSubject } from '../types/exams';
 
 export function DatePickerPopup({ isOpen, onClose, onConfirm, terms, anchorRef, allExams = [] }: any) {
     const [currentDate, setCurrentDate] = useState(new Date());

@@ -1,12 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Layers } from 'lucide-react';
 import { MENDELU_LOGO_PATH } from '../constants/icons';
 import { getMainMenuItems } from './menuConfig';
+import type { AppView } from '../types/app';
 import { NavItem } from './Sidebar/NavItem';
 import { BottomActions } from './Sidebar/BottomActions';
 import { useSubjects } from '../hooks/data/useSubjects';
 
-export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, tutorials = [], onSelectTutorial, onOpenSubject }: any) => {
+export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, tutorials = [], onSelectTutorial, onOpenSubject }: { currentView: AppView, onViewChange: (v: AppView) => void, onOpenFeedback?: () => void, tutorials?: any[], onSelectTutorial?: any, onOpenSubject?: any }) => {
   const [hovered, setHovered] = useState<string | null>(null);
   const timeout = useRef<any>(null);
   const { subjects } = useSubjects();

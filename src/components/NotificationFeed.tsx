@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { useNotificationFeed } from '../hooks/useNotificationFeed';
 import { NotificationDropdown } from './Notifications/NotificationDropdown';

@@ -3,7 +3,7 @@ import { Settings } from 'lucide-react';
 import { OUTLOOK_ICON_PATH, TEAMS_ICON_PATH } from '../../constants/icons';
 import { ProfilePopup } from './ProfilePopup';
 
-export function BottomActions({ onOpenFeedback }: { onOpenFeedback: () => void }) {
+export function BottomActions({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
     const [isOpen, setIsOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
     const timeout = useRef<any>(null);
@@ -27,7 +27,7 @@ export function BottomActions({ onOpenFeedback }: { onOpenFeedback: () => void }
             <div className="h-px bg-base-300 w-full my-1" />
             <div className="relative" onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
                 <button className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center transition-all ${isOpen ? 'bg-primary text-primary-content shadow-md' : 'text-base-content/50 hover:bg-base-100 hover:text-base-content'}`}><Settings className="w-5 h-5" /><span className="text-[10px] mt-1 font-medium">Profil</span></button>
-                <div onMouseEnter={handleEnter} onMouseLeave={handleLeave}><ProfilePopup isOpen={isOpen} onOpenFeedback={() => { setIsOpen(false); onOpenFeedback(); }} /></div>
+                <div onMouseEnter={handleEnter} onMouseLeave={handleLeave}><ProfilePopup isOpen={isOpen} onOpenFeedback={() => { setIsOpen(false); onOpenFeedback?.(); }} /></div>
             </div>
         </div>
     );

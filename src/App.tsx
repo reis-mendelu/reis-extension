@@ -23,7 +23,7 @@ function App() {
   return (
     <div className="flex h-screen overflow-hidden bg-base-200 font-sans text-base-content">
       <Toaster position="top-center" />
-      <Sidebar currentView={s.currentView} onViewChange={s.setCurrentView} onOpenSettingsRef={s.openSettingsRef}
+      <Sidebar currentView={s.currentView} onViewChange={s.setCurrentView}
                onOpenFeedback={() => s.setIsFeedbackOpen(true)} tutorials={s.tutorials} onSelectTutorial={s.setSelectedTutorial}
                onOpenSubject={s.handleOpenSubjectFromSearch} />
       

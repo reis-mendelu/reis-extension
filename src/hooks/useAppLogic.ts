@@ -8,7 +8,7 @@ import type { Tutorial } from '../services/tutorials';
 import { useSpolkySettings } from './useSpolkySettings';
 import { useAppStore, initializeStore } from '../store/useAppStore';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
-import type { AppView } from '../components/Sidebar';
+import type { AppView } from '../types/app';
 
 export function useAppLogic() {
   const [currentDate, setCurrentDate] = useState<Date>(() => getSmartWeekRange().start);
@@ -25,7 +25,7 @@ export function useAppLogic() {
   useEffect(() => {
     outlookSyncService.init();
     const unsub = initializeStore();
-    return () => unsub();
+    return () => { unsub(); };
   }, []);
 
   useEffect(() => {
@@ -50,9 +50,9 @@ export function useAppLogic() {
         if (r.schedule) IndexedDBService.set('schedule', 'current', r.schedule);
         if (r.exams) IndexedDBService.set('exams', 'current', r.exams);
         if (r.subjects) IndexedDBService.set('subjects', 'current', r.subjects);
-        if (r.files) Object.entries(r.files).forEach(([c, f]) => IndexedDBService.set('files', c, f));
-        if (r.assessments) Object.entries(r.assessments).forEach(([c, a]) => IndexedDBService.set('assessments', c, a));
-        if (r.syllabuses) Object.entries(r.syllabuses).forEach(([c, s]) => IndexedDBService.set('syllabuses', c, s));
+        if (r.files) Object.entries(r.files).forEach(([c, f]) => IndexedDBService.set('files', c, f as any));
+        if (r.assessments) Object.entries(r.assessments).forEach(([c, a]) => IndexedDBService.set('assessments', c, a as any));
+        if (r.syllabuses) Object.entries(r.syllabuses).forEach(([c, s]) => IndexedDBService.set('syllabuses', c, s as any));
         if (r.studyProgram) IndexedDBService.set('study_program', 'current', r.studyProgram).then(() => syncService.triggerRefresh('STUDY_PROGRAM_UPDATE'));
         if (r.lastSync) IndexedDBService.set('meta', 'last_sync', r.lastSync);
         if (typeof r.isSyncing === 'boolean') useAppStore.getState().setSyncStatus({ isSyncing: r.isSyncing });
