@@ -9,4 +9,4 @@ export * from './data';
 export * from './ui';
 
 // Standalone hooks
-export { useUserParams } from './useUserParams';
+

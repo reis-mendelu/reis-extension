@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const EXTENSION_PATH = path.resolve(__dirname, '../../dist');
+const EXTENSION_PATH = path.resolve(__dirname, '../../.output/chrome-mv3');
 const USER_DATA_DIR = path.resolve(__dirname, '../../.playwright-user-data');
 const STORAGE_STATE_PATH = path.resolve(__dirname, '../../storageState.json');
 
@@ -40,7 +40,7 @@ export class ExtensionCast implements Cast {
 export async function createExtensionContext(): Promise<BrowserContext> {
     if (!fs.existsSync(path.join(EXTENSION_PATH, 'manifest.json'))) {
       throw new Error(
-        `Extension not found at ${EXTENSION_PATH}. Run "npm run build:quick" first.`
+        `Extension not found at ${EXTENSION_PATH}. Run "npm run build" first.`
       );
     }
 

@@ -1,7 +1,6 @@
-import './App.css'
 import { Sidebar } from './components/Sidebar'
 import { Toaster } from './components/ui/sonner'
-import { getSmartWeekRange } from './utils/calendarUtils'
+import { getSmartWeekRange } from '@/utils/calendar'
 import { useAppLogic } from './hooks/useAppLogic'
 import { AppMain } from './components/AppMain'
 import { AppOverlays } from './components/AppOverlays'

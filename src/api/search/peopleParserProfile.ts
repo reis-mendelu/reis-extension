@@ -1,4 +1,4 @@
-import { sanitizeString, validateUrl } from '../../utils/validation';
+import { sanitizeString, validateUrl } from '../../utils/validation/index';
 import type { Person } from './types';
 
 export function parseMendeluProfileResult(doc: Document, baseUrl: string): Person[] {

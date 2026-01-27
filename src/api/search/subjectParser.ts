@@ -1,4 +1,4 @@
-import { sanitizeString } from '../../utils/validation';
+import { sanitizeString } from '../../utils/validation/index';
 import type { Subject } from './types';
 
 /**

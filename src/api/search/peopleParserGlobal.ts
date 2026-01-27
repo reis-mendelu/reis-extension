@@ -1,4 +1,4 @@
-import { sanitizeString } from '../../utils/validation';
+import { sanitizeString } from '../../utils/validation/index';
 import type { Person } from './types';
 
 export function parseGlobalPeopleResults(htmlString: string): Person[] {

@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Path to built extension
-const EXTENSION_PATH = path.join(__dirname, '..', '..', 'dist');
+const EXTENSION_PATH = path.join(__dirname, '..', '..', '.output', 'chrome-mv3');
 
 // Temporary user data directory
 const USER_DATA_DIR = path.join(__dirname, '..', '..', '.playwright-user-data');
@@ -30,7 +30,7 @@ export const test = base.extend<ExtensionFixtures>({
     // Verify extension exists
     if (!fs.existsSync(path.join(EXTENSION_PATH, 'manifest.json'))) {
       throw new Error(
-        `Extension not found at ${EXTENSION_PATH}. Run "npm run build:quick" first.`
+        `Extension not found at ${EXTENSION_PATH}. Run "npm run build" first.`
       );
     }
 
@@ -60,7 +60,7 @@ export const test = base.extend<ExtensionFixtures>({
   },
   // Extension ID
   extensionId: async ({}, use) => {
-    const manifestPath = path.join(__dirname, '..', '..', 'public', 'manifest.json');
+    const manifestPath = path.join(EXTENSION_PATH, 'manifest.json');
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
     
     if (!manifest.key) {
@@ -103,8 +103,8 @@ export const test = base.extend<ExtensionFixtures>({
       pageErrors.push(err.message);
     });
     
-    // Navigate to extension popup
-    await page.goto(`chrome-extension://${extensionId}/index.html`, {
+    // Navigate to extension popup (WXT defaults to naming the entrypoint main.html if configured so)
+    await page.goto(`chrome-extension://${extensionId}/main.html`, {
       waitUntil: 'domcontentloaded',
       timeout: 10000,
     });

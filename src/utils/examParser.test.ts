@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseExamData } from './examParser';
+import { parseExamData } from './parsers/exams';
 
 describe('examParser', () => {
     it('parses deregistration deadline with standard <br> tags', () => {

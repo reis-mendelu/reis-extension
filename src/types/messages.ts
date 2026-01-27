@@ -1,6 +1,7 @@
 import * as T from './messages/base';
 
 export * from './messages/base';
+export type { ActionType, DataRequestType } from './messages/base';
 
 export function isIframeMessage(d: any): d is T.IframeToContentMessage { return ['REIS_READY', 'REIS_REQUEST_DATA', 'REIS_FETCH', 'REIS_ACTION'].includes(d?.type); }
 export function isContentMessage(d: any): d is T.ContentToIframeMessage { return ['REIS_DATA', 'REIS_FETCH_RESULT', 'REIS_ACTION_RESULT', 'REIS_SYNC_UPDATE'].includes(d?.type); }

@@ -1,6 +1,6 @@
  
  
-import { parseExamData } from "../utils/examParser";
+import { parseExamData } from "../utils/parsers/exams";
 import type { ExamSubject } from "../types/exams";
 import { fetchWithAuth } from "./client";
 import { getUserParams } from "../utils/userParams";

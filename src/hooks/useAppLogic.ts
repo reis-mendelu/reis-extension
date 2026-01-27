@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getSmartWeekRange } from '../utils/calendarUtils';
+import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
 import { syncService, outlookSyncService } from '../services/sync';
 import { useOutlookSync } from '../hooks/data';

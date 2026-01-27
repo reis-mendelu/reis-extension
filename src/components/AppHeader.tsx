@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { SearchBar } from './SearchBar';
+import { SearchBar } from './SearchBar/index';
 
 import { NotificationFeed } from './NotificationFeed';
 

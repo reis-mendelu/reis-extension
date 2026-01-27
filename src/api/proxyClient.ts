@@ -1,4 +1,5 @@
-import { Messages, ActionType } from '../types/messages';
+import { Messages } from '../types/messages';
+import type { ActionType } from '../types/messages';
 import { pendingFetches, pendingActions, REQUEST_TIMEOUT } from './proxy/pendingRequests';
 import { initProxyListener } from './proxy/messageListener';
 

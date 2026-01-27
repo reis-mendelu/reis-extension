@@ -1,4 +1,4 @@
-import { sanitizeString, validateFileName, validateUrl } from "../../utils/validation";
+import { sanitizeString, validateFileName, validateUrl } from "../../utils/validation/index";
 import type { ParsedFile, FileAttachment } from "../../types/documents";
 
 export function parseServerFiles(html: string): { files: ParsedFile[], paginationLinks: string[] } {

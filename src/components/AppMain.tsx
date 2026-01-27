@@ -1,5 +1,5 @@
 import { AppHeader } from './AppHeader'
-import { WeeklyCalendar } from './WeeklyCalendar'
+import { WeeklyCalendar } from './WeeklyCalendar/index'
 import { ExamPanel } from './ExamPanel'
 import StudyProgramPanel from './StudyProgramPanel'
 

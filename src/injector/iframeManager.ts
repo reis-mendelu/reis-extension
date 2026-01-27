@@ -20,7 +20,7 @@ export function injectIframe() {
 
     iframeElement = document.createElement("iframe");
     iframeElement.id = IFRAME_ID;
-    iframeElement.src = chrome.runtime.getURL("index.html");
+    iframeElement.src = chrome.runtime.getURL("main.html");
 
     Object.assign(iframeElement.style, {
         position: "fixed", top: "0", left: "0", width: "100vw", height: "100vh",

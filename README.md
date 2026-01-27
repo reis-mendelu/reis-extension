@@ -69,7 +69,7 @@ npm run test              # Watch mode
 npm run test:run          # Single run
 
 # E2E tests (requires Xvfb on Linux)
-npm run build:quick       # Build extension first
+npm run build             # Build extension first
 npm run test:e2e          # Run all E2E tests
 
 # Visual proof screenshots
