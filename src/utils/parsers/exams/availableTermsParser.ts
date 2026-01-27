@@ -4,7 +4,7 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
     const table2 = doc.querySelector('#table_2');
     if (!table2) return;
 
-    table2.querySelectorAll('tbody tr').forEach((row, rowIndex) => {
+    table2.querySelectorAll('tbody tr').forEach((row) => {
         const cols = row.querySelectorAll('td');
         if (cols.length < 8) return;
 

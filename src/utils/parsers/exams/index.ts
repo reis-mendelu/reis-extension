@@ -36,5 +36,5 @@ export function parseExamData(html: string): ExamSubject[] {
         const result = ExamSubjectSchema.safeParse(subject);
         if (!result.success) console.error(`[parseExamData] ❌ Validation failed for ${subject.code}:`, result.error.issues);
         return result.success ? result.data : null;
-    }).filter((s): s is ExamSubject => s !== null);
+    }).filter((s) => s !== null) as ExamSubject[];
 }

@@ -1,20 +1,39 @@
-import { LocalSyncStorage } from './LocalSyncStorage';
-import { ChromeAsyncStorage } from './ChromeAsyncStorage';
+import { IndexedDBService } from './IndexedDBService';
 
+/**
+ * StorageService - Refactored to use IndexedDB 'meta' store.
+ * Enforces async usage and removes localStorage dependency.
+ */
 export const StorageService = {
-    get: LocalSyncStorage.get,
-    set: LocalSyncStorage.set,
-    remove: LocalSyncStorage.remove,
-    getKeysWithPrefix: LocalSyncStorage.getKeys,
-    clearAll() { LocalSyncStorage.getKeys('reis_').forEach(k => LocalSyncStorage.remove(k)); },
+    // Deprecated sync methods - throwing to catch legacy usage
+    get<T>(key: string): T | null {
+        console.error(`[StorageService] Synchronous get('${key}') is deprecated and unsafe. Use getAsync instead.`);
+        throw new Error('StorageService.get is deprecated. Use getAsync.');
+    },
+    set<T>(key: string, val: T): void {
+        console.error(`[StorageService] Synchronous set('${key}') is deprecated. Use setAsync instead.`);
+        throw new Error('StorageService.set is deprecated. Use setAsync.');
+    },
+    remove(key: string): void {
+        console.error(`[StorageService] Synchronous remove('${key}') is deprecated. Use removeAsync instead.`);
+        throw new Error('StorageService.remove is deprecated. Use removeAsync.');
+    },
+    getKeysWithPrefix(prefix: string): string[] {
+         console.warn(`[StorageService] getKeysWithPrefix('${prefix}') is simplified/deprecated.`);
+         return []; 
+    },
+    clearAll() { 
+        console.warn('[StorageService] clearAll() called - clearing meta store');
+        IndexedDBService.clear('meta').catch(e => console.error(e));
+    },
     
     async getAsync<T>(key: string): Promise<T | null> {
-        return ChromeAsyncStorage.available() ? ChromeAsyncStorage.get<T>(key) : LocalSyncStorage.get<T>(key);
+        return (await IndexedDBService.get('meta', key)) as T || null;
     },
     async setAsync<T>(key: string, val: T): Promise<void> {
-        if (ChromeAsyncStorage.available()) await ChromeAsyncStorage.set(key, val); else LocalSyncStorage.set(key, val);
+        await IndexedDBService.set('meta', key, val);
     },
     async removeAsync(key: string): Promise<void> {
-        if (ChromeAsyncStorage.available()) await ChromeAsyncStorage.remove(key); else LocalSyncStorage.remove(key);
+        await IndexedDBService.delete('meta', key);
     }
 };

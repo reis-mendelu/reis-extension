@@ -8,7 +8,7 @@ export interface ScrapedExamSection {
 }
 
 export interface ScrapedExamSubject {
-    version: number;
+    version: 1;
     id: string;
     name: string;
     code: string;

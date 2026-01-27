@@ -6,7 +6,6 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChromeSyncService } from '../../services/storage';
 
 interface SubjectNoteData {
     note: string;
@@ -35,13 +34,18 @@ export function useSubjectNote(subjectCode: string | undefined) {
 
     // Save note to storage (debounced)
     const saveToStorage = useCallback((value: string, code: string) => {
+        if (typeof chrome === 'undefined' || !chrome.storage?.sync) {
+            console.warn('[useSubjectNote] chrome.storage.sync not available');
+            return;
+        }
+
         const key = `${NOTE_KEY_PREFIX}${code}`;
         const data: SubjectNoteData = {
             note: value,
             updatedAt: Date.now(),
         };
 
-        ChromeSyncService.set(key, data)
+        chrome.storage.sync.set({ [key]: data })
             .then(() => {
                 console.debug('[useSubjectNote] Note saved:', { key, length: value.length });
                 hasChangesRef.current = false;
@@ -73,11 +77,18 @@ export function useSubjectNote(subjectCode: string | undefined) {
         // Prevent setting isLoading if we're already loading (usually not the case here though)
         setIsLoading(true);
 
-        ChromeSyncService.get<SubjectNoteData>(key)
-            .then((data) => {
+        if (typeof chrome === 'undefined' || !chrome.storage?.sync) {
+            console.warn('[useSubjectNote] chrome.storage.sync not available');
+            setIsLoading(false);
+            return;
+        }
+
+        chrome.storage.sync.get(key)
+            .then((result) => {
                 // Prevent stale update if subject changed during async load
                 if (currentSubjectRef.current !== subjectCode) return;
 
+                const data = result[key] as SubjectNoteData | undefined;
                 const loadedNote = data?.note ?? '';
                 setNoteState(loadedNote);
                 noteRef.current = loadedNote;

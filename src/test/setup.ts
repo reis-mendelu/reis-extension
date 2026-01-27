@@ -1,83 +1,39 @@
-/**
- * Vitest test setup file
- * Configures Testing Library matchers and global mocks
- */
+import { vi } from 'vitest';
 
-import { vi, afterEach } from 'vitest';
-import '@testing-library/jest-dom';
-
-// Mock localStorage for tests
-const localStorageMock = {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
+// Partial mock of chrome.storage
+const storageMock = {
+  local: {
+    get: vi.fn(),
+    set: vi.fn(),
+    remove: vi.fn(),
     clear: vi.fn(),
-    length: 0,
-    key: vi.fn(),
+  },
+  sync: { // Keep sync mocked even if we don't use it, to prevent crashes
+    get: vi.fn(),
+    set: vi.fn(),
+    remove: vi.fn(),
+    clear: vi.fn(),
+  },
+  onChanged: {
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+  }
 };
-Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
-// Mock chrome API for extension environment
-const chromeMock = {
-    runtime: {
-        id: 'test-extension-id',
-        sendMessage: vi.fn(),
-        onMessage: {
-            addListener: vi.fn(),
-            removeListener: vi.fn(),
-        },
-    },
-    storage: {
-        local: {
-            get: vi.fn(),
-            set: vi.fn(),
-        },
-        sync: {
-            get: vi.fn(),
-            set: vi.fn(),
-        },
-    },
+// Partial mock of chrome.runtime
+const runtimeMock = {
+  id: 'test-extension-id',
+  getManifest: vi.fn(() => ({ version: '1.0.0' })),
+  getURL: vi.fn((path: string) => `chrome-extension://test-extension-id/${path}`),
 };
-Object.defineProperty(globalThis, 'chrome', { value: chromeMock, writable: true });
 
-// Mock fetch for API tests
-globalThis.fetch = vi.fn();
-
-// Mock IntersectionObserver
-class MockIntersectionObserver {
-    observe = vi.fn();
-    unobserve = vi.fn();
-    disconnect = vi.fn();
-}
-Object.defineProperty(window, 'IntersectionObserver', {
-    value: MockIntersectionObserver,
+// Stub the global chrome object
+vi.stubGlobal('chrome', {
+  storage: storageMock,
+  runtime: runtimeMock,
 });
 
-// Mock ResizeObserver
-class MockResizeObserver {
-    observe = vi.fn();
-    unobserve = vi.fn();
-    disconnect = vi.fn();
-}
-Object.defineProperty(window, 'ResizeObserver', {
-    value: MockResizeObserver,
-});
-
-// Mock idb globally
-vi.mock('idb', () => ({
-    openDB: vi.fn().mockReturnValue(Promise.resolve({
-        get: vi.fn(),
-        put: vi.fn(),
-        delete: vi.fn(),
-        clear: vi.fn(),
-        getAll: vi.fn(),
-        getAllKeys: vi.fn(),
-    })),
-}));
-
-// Reset mocks after each test
-afterEach(() => {
-    vi.clearAllMocks();
-    localStorageMock.getItem.mockReset();
-    localStorageMock.setItem.mockReset();
-});
+// Clean up mocks after each test if needed (optional, depending on preference)
+// beforeEach(() => {
+//   vi.clearAllMocks();
+// });

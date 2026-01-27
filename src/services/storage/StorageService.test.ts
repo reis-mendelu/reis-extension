@@ -1,67 +1,77 @@
 /**
  * Tests for StorageService
  * 
- * Tests localStorage wrapper with type safety
+ * Tests the new async-first implementation backed by IndexedDB
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { StorageService, STORAGE_KEYS } from './index';
+import { StorageService } from './StorageService';
+import { IndexedDBService } from './IndexedDBService';
+
+// Mock IndexedDBService
+vi.mock('./IndexedDBService', () => ({
+    IndexedDBService: {
+        get: vi.fn(),
+        set: vi.fn(),
+        delete: vi.fn(),
+        clear: vi.fn(),
+    }
+}));
 
 describe('StorageService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        // Reset mock implementation
-        vi.mocked(localStorage.getItem).mockReturnValue(null);
     });
 
-    describe('get', () => {
-        it('should return null for non-existent key', () => {
-            vi.mocked(localStorage.getItem).mockReturnValue(null);
+    describe('Deprecated Synchronous Methods', () => {
+        it('get() should throw error', () => {
+            expect(() => StorageService.get('key')).toThrow(/deprecated/);
+        });
 
-            const result = StorageService.get('nonexistent');
+        it('set() should throw error', () => {
+            expect(() => StorageService.set('key', 'value')).toThrow(/deprecated/);
+        });
+
+        it('remove() should throw error', () => {
+            expect(() => StorageService.remove('key')).toThrow(/deprecated/);
+        });
+    });
+
+    describe('getAsync', () => {
+        it('should call IndexedDBService.get with "meta" store', async () => {
+            const mockValue = { foo: 'bar' };
+            vi.mocked(IndexedDBService.get).mockResolvedValue(mockValue);
+
+            const result = await StorageService.getAsync('test_key');
+            
+            expect(IndexedDBService.get).toHaveBeenCalledWith('meta', 'test_key');
+            expect(result).toEqual(mockValue);
+        });
+
+        it('should return null if IndexedDB returns undefined', async () => {
+            vi.mocked(IndexedDBService.get).mockResolvedValue(undefined);
+
+            const result = await StorageService.getAsync('missing_key');
+            
             expect(result).toBeNull();
         });
+    });
 
-        it('should parse and return stored JSON data', () => {
-            const testData = { foo: 'bar', count: 42 };
-            vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(testData));
+    describe('setAsync', () => {
+        it('should call IndexedDBService.set with "meta" store', async () => {
+            const testData = { config: true };
+            
+            await StorageService.setAsync('config_key', testData);
 
-            const result = StorageService.get<typeof testData>('test_key');
-            expect(result).toEqual(testData);
-        });
-
-        it('should return null for invalid JSON', () => {
-            vi.mocked(localStorage.getItem).mockReturnValue('not valid json {');
-
-            const result = StorageService.get('bad_json');
-            expect(result).toBeNull();
+            expect(IndexedDBService.set).toHaveBeenCalledWith('meta', 'config_key', testData);
         });
     });
 
-    describe('set', () => {
-        it('should store JSON-serialized data', () => {
-            const testData = { subjects: ['math', 'physics'] };
+    describe('removeAsync', () => {
+        it('should call IndexedDBService.delete with "meta" store', async () => {
+            await StorageService.removeAsync('old_key');
 
-            StorageService.set('my_key', testData);
-
-            expect(localStorage.setItem).toHaveBeenCalledWith('my_key', JSON.stringify(testData));
-        });
-    });
-
-    describe('remove', () => {
-        it('should call removeItem on storage', () => {
-            StorageService.remove('to_remove');
-
-            expect(localStorage.removeItem).toHaveBeenCalledWith('to_remove');
-        });
-    });
-
-    describe('STORAGE_KEYS', () => {
-        it('should have all required keys defined', () => {
-            expect(STORAGE_KEYS.SUBJECTS_DATA).toBeDefined();
-            expect(STORAGE_KEYS.EXAMS_DATA).toBeDefined();
-            expect(STORAGE_KEYS.SCHEDULE_DATA).toBeDefined();
-            expect(STORAGE_KEYS.LAST_SYNC).toBeDefined();
+            expect(IndexedDBService.delete).toHaveBeenCalledWith('meta', 'old_key');
         });
     });
 });

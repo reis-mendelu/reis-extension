@@ -4,7 +4,7 @@ export function parseRegisteredTerms(doc: Document, getOrCreateSubject: (c: stri
     const table1 = doc.querySelector('#table_1');
     if (!table1) return;
 
-    table1.querySelectorAll('tbody tr').forEach((row, rowIndex) => {
+    table1.querySelectorAll('tbody tr').forEach((row) => {
         const cols = row.querySelectorAll('td');
         if (cols.length < 6) return;
 

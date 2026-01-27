@@ -3,6 +3,7 @@ import type { StudyProgramData } from '../../api/studyProgram';
 import type { SubjectsData, Assessment, SyllabusRequirements, ParsedFile } from '../../types/documents';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ExamSubject } from '../../types/exams';
+import { StoreSchemas, type StoreName } from '../../types/storage';
 
 interface ReisDB extends DBSchema {
     study_program: {
@@ -46,7 +47,7 @@ interface ReisDB extends DBSchema {
 }
 
 const DB_NAME = 'reis_db';
-const DB_VERSION = 3; // Bumped to force repair of missing stores
+const DB_VERSION = 3; 
 
 class IndexedDBServiceImpl {
     private dbPromise: Promise<IDBPDatabase<ReisDB>>;
@@ -71,16 +72,36 @@ class IndexedDBServiceImpl {
         });
     }
 
-    async get<K extends keyof ReisDB>(storeName: K, key: string): Promise<ReisDB[K]['value'] | undefined> {
-        const db = await this.dbPromise;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return db.get(storeName as any, key);
+    private validate<K extends StoreName>(storeName: K, value: unknown): ReisDB[K]['value'] | undefined {
+        const schema = StoreSchemas[storeName];
+        if (!schema) return value as ReisDB[K]['value'];
+
+        const result = schema.safeParse(value);
+        if (!result.success) {
+            console.error(`[IndexedDB] Validation failed for store "${storeName}":`, result.error);
+            return undefined;
+        }
+        return result.data;
     }
 
-    async set<K extends keyof ReisDB>(storeName: K, key: string, value: ReisDB[K]['value']): Promise<void> {
+    async get<K extends StoreName>(storeName: K, key: string): Promise<ReisDB[K]['value'] | undefined> {
         const db = await this.dbPromise;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await db.put(storeName as any, value, key);
+        const value = await db.get(storeName as any, key);
+        return value ? this.validate(storeName, value) : undefined;
+    }
+
+    async set<K extends StoreName>(storeName: K, key: string, value: ReisDB[K]['value']): Promise<void> {
+        // Validate before saving to prevent corrupt data ingress
+        const validated = this.validate(storeName, value);
+        if (validated === undefined && value !== undefined) {
+             console.warn(`[IndexedDB] Skipping save to "${storeName}" due to validation error.`);
+             return;
+        }
+
+        const db = await this.dbPromise;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await db.put(storeName as any, validated, key);
     }
 
     async delete<K extends keyof ReisDB>(storeName: K, key: string): Promise<void> {
@@ -95,19 +116,24 @@ class IndexedDBServiceImpl {
         await db.clear(storeName as any);
     }
 
-    async getAll<K extends keyof ReisDB>(storeName: K): Promise<ReisDB[K]['value'][]> {
+    async getAll<K extends StoreName>(storeName: K): Promise<ReisDB[K]['value'][]> {
         const db = await this.dbPromise;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return db.getAll(storeName as any);
+        const values = await db.getAll(storeName as any);
+        return values.map(v => this.validate(storeName, v)).filter((v): v is ReisDB[K]['value'] => v !== undefined);
     }
 
-    async getAllWithKeys<K extends keyof ReisDB>(storeName: K): Promise<{ key: string, value: ReisDB[K]['value'] }[]> {
+    async getAllWithKeys<K extends StoreName>(storeName: K): Promise<{ key: string, value: ReisDB[K]['value'] }[]> {
         const db = await this.dbPromise;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const keys = await db.getAllKeys(storeName as any);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const values = await db.getAll(storeName as any);
-        return (keys as string[]).map((key, i) => ({ key, value: values[i] }));
+        
+        return (keys as string[]).map((key, i) => {
+            const value = this.validate(storeName, values[i]);
+            return value !== undefined ? { key, value } : null;
+        }).filter((item): item is { key: string, value: ReisDB[K]['value'] } => item !== null);
     }
 }
 

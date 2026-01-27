@@ -12,15 +12,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useSubjectNote } from '../useSubjectNote';
-import { ChromeSyncService } from '../../../services/storage';
-
-// Mock the storage service
-vi.mock('../../../services/storage', () => ({
-    ChromeSyncService: {
-        get: vi.fn(),
-        set: vi.fn(),
-    },
-}));
 
 describe('useSubjectNote', () => {
     const mockStorage: Record<string, any> = {};
@@ -30,13 +21,28 @@ describe('useSubjectNote', () => {
         // Clear mock storage
         Object.keys(mockStorage).forEach(key => delete mockStorage[key]);
         
-        // Configure mock implementations
-        vi.mocked(ChromeSyncService.get).mockImplementation(async (key: string) => {
-             return mockStorage[key];
+        // Mock global chrome.storage.sync
+        const storageMock = {
+            get: vi.fn().mockImplementation(async (key: string | null) => {
+                if (key === null) return { ...mockStorage };
+                if (typeof key === 'string') return { [key]: mockStorage[key] };
+                // Handle array/object if needed, but simple string key is enough for this hook
+                return {}; 
+            }),
+            set: vi.fn().mockImplementation(async (items: Record<string, any>) => {
+                Object.assign(mockStorage, items);
+            }),
+        };
+
+        vi.stubGlobal('chrome', {
+            storage: {
+                sync: storageMock
+            }
         });
-        vi.mocked(ChromeSyncService.set).mockImplementation(async (key: string, value: any) => {
-            mockStorage[key] = value;
-        });
+    });
+    
+    afterEach(() => {
+        vi.unstubAllGlobals();
     });
 
     describe('initialization', () => {
@@ -70,7 +76,7 @@ describe('useSubjectNote', () => {
             });
 
             expect(result.current.note).toBe('');
-            expect(ChromeSyncService.get).not.toHaveBeenCalled();
+            expect(chrome.storage.sync.get).not.toHaveBeenCalled();
         });
     });
 
@@ -117,10 +123,8 @@ describe('useSubjectNote', () => {
         });
 
         it('should not save immediately', async () => {
-            // Setup sync mock before using fake timers
             const { result } = renderHook(() => useSubjectNote('TZI'));
 
-            // Wait for initial load with fake timers
             await act(async () => {
                 await vi.runAllTimersAsync();
             });
@@ -130,7 +134,7 @@ describe('useSubjectNote', () => {
             });
 
             // Should not save immediately
-            expect(ChromeSyncService.set).not.toHaveBeenCalled();
+            expect(chrome.storage.sync.set).not.toHaveBeenCalled();
         });
 
         it('should save after 800ms debounce', async () => {
@@ -149,10 +153,11 @@ describe('useSubjectNote', () => {
                 await vi.advanceTimersByTimeAsync(800);
             });
 
-            expect(ChromeSyncService.set).toHaveBeenCalledWith(
-                'note:TZI',
+            expect(chrome.storage.sync.set).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    note: 'Test note',
+                    'note:TZI': expect.objectContaining({
+                        note: 'Test note',
+                    })
                 })
             );
         });
@@ -172,10 +177,11 @@ describe('useSubjectNote', () => {
             unmount();
 
             // Should have saved immediately on unmount
-            expect(ChromeSyncService.set).toHaveBeenCalledWith(
-                'note:TZI',
+            expect(chrome.storage.sync.set).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    note: 'Unmount note',
+                    'note:TZI': expect.objectContaining({
+                        note: 'Unmount note',
+                    })
                 })
             );
         });
@@ -205,7 +211,7 @@ describe('useSubjectNote', () => {
 
     describe('error handling', () => {
         it('should handle storage read errors gracefully', async () => {
-            vi.mocked(ChromeSyncService.get).mockRejectedValueOnce(new Error('Storage error'));
+            vi.mocked(chrome.storage.sync.get).mockRejectedValueOnce(new Error('Storage error'));
 
             const { result } = renderHook(() => useSubjectNote('TZI'));
 

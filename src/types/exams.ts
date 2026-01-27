@@ -46,7 +46,7 @@ export interface ExamSection {
 }
 
 export interface ExamSubject {
-    version: number;
+    version: 1;
     id: string;
     name: string;         // Full subject name
     code: string;         // e.g., "EBC-ALG"

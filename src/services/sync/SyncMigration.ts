@@ -1,29 +1,61 @@
-import { IndexedDBService, StorageService, STORAGE_KEYS } from '../storage';
+import { IndexedDBService, STORAGE_KEYS } from '../storage';
 
 export async function migrateAndCleanup(): Promise<void> {
     try {
         const lsPrefixes = ['reis_', 'assessment-adjustments-', 'bonus-points-', 'user_id'];
-        let allLsKeys: string[] = [];
-        lsPrefixes.forEach(p => allLsKeys = [...allLsKeys, ...StorageService.getKeysWithPrefix(p)]);
+        
+        // Direct access to localStorage for migration purposes ONLY
+        const getKeys = (prefix: string) => {
+             const keys: string[] = [];
+             for (let i = 0; i < localStorage.length; i++) {
+                 const k = localStorage.key(i);
+                 if (k?.startsWith(prefix)) keys.push(k);
+             }
+             return keys;
+        };
 
-        if (allLsKeys.length === 0 && !StorageService.isChromeStorageAvailable()) return;
+        let allLsKeys: string[] = [];
+        lsPrefixes.forEach(p => allLsKeys = [...allLsKeys, ...getKeys(p)]);
+
+        const hasChromeStorage = typeof chrome !== 'undefined' && !!chrome.storage?.local;
+
+        if (allLsKeys.length === 0 && !hasChromeStorage) return;
 
         for (const key of allLsKeys) {
-            const val = StorageService.get(key);
-            if (val !== null) await migrateKey(key, val);
+            const raw = localStorage.getItem(key);
+            if (raw !== null) {
+                try {
+                    const val = JSON.parse(raw);
+                    await migrateKey(key, val);
+                } catch {
+                    // Ignore parse errors
+                }
+            }
         }
 
-        if (StorageService.isChromeStorageAvailable()) {
-            const all = await chrome.storage.local.get(null);
-            const keys = Object.keys(all).filter(k => k.startsWith('reis_'));
-            for (const key of keys) await migrateKey(key, all[key]);
+        if (hasChromeStorage) {
+            try {
+                const all = await chrome.storage.local.get(null);
+                const keys = Object.keys(all).filter(k => k.startsWith('reis_'));
+                for (const key of keys) await migrateKey(key, all[key]);
+            } catch (e) {
+                console.warn('[SyncMigration] Failed to read chrome.storage.local', e);
+            }
         }
 
-        lsPrefixes.forEach(p => StorageService.getKeysWithPrefix(p).forEach(k => StorageService.remove(k)));
-        if (StorageService.isChromeStorageAvailable()) {
-            const all = await chrome.storage.local.get(null);
-            const keys = Object.keys(all).filter(k => lsPrefixes.some(p => k.startsWith(p)));
-            if (keys.length > 0) await chrome.storage.local.remove(keys);
+        // Cleanup
+        for (const key of allLsKeys) {
+            localStorage.removeItem(key);
+        }
+
+        if (hasChromeStorage) {
+            try {
+                const all = await chrome.storage.local.get(null);
+                const keys = Object.keys(all).filter(k => lsPrefixes.some(p => k.startsWith(p)));
+                if (keys.length > 0) await chrome.storage.local.remove(keys);
+            } catch (e) {
+                console.warn('[SyncMigration] Failed to clean chrome.storage.local', e);
+            }
         }
     } catch (e) { console.error('[SyncService] Migration failed:', e); }
 }
