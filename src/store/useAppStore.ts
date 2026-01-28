@@ -3,7 +3,6 @@ import type { AppState } from './types';
 import { createScheduleSlice } from './slices/createScheduleSlice';
 import { createExamSlice } from './slices/createExamSlice';
 import { createSyllabusSlice } from './slices/createSyllabusSlice';
-import { createStudyProgramSlice } from './slices/createStudyProgramSlice';
 import { createFilesSlice } from './slices/createFilesSlice';
 import { createAssessmentsSlice } from './slices/createAssessmentsSlice';
 import { createSubjectsSlice } from './slices/createSubjectsSlice';
@@ -15,7 +14,6 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createScheduleSlice(...a),
   ...createExamSlice(...a),
   ...createSyllabusSlice(...a),
-  ...createStudyProgramSlice(...a),
   ...createFilesSlice(...a),
   ...createAssessmentsSlice(...a),
   ...createSubjectsSlice(...a),
@@ -28,7 +26,6 @@ export const initializeStore = () => {
     // Initial fetch
     useAppStore.getState().fetchSchedule();
     useAppStore.getState().fetchExams();
-    useAppStore.getState().fetchStudyProgram();
     useAppStore.getState().fetchSubjects();
     useAppStore.getState().fetchSyncStatus();
     useAppStore.getState().loadTheme();
@@ -37,7 +34,6 @@ export const initializeStore = () => {
     const unsubscribe = syncService.subscribe((type) => {
         useAppStore.getState().fetchSchedule();
         useAppStore.getState().fetchExams();
-        useAppStore.getState().fetchStudyProgram();
         useAppStore.getState().fetchSubjects();
         useAppStore.getState().fetchSyncStatus();
 

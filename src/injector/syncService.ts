@@ -6,7 +6,6 @@ import { fetchFilesFromFolder } from "../api/documents";
 import { fetchAssessments } from "../api/assessments";
 import { fetchSyllabus } from "../api/syllabus";
 import { getUserParams } from "../utils/userParams";
-import { fetchStudyProgram } from "../api/studyProgram";
 import { fetchScheduleData } from "./dataFetchers";
 import { sendToIframe } from "./iframeManager";
 import { SYNC_INTERVAL } from "./config";
@@ -70,8 +69,7 @@ async function syncSubjectDetails(subjectsValue: any, scheduleValue: any) {
         await Promise.all(subTasks);
     }));
 
-    const programTask = fetchStudyProgram().then(p => { if (p) { cachedData.studyProgram = p; sendToIframe(Messages.syncUpdate({ studyProgram: p, isSyncing: true, lastSync: Date.now() })); } }).catch(() => {});
-    await Promise.all([...tasks, programTask]);
+    await Promise.all(tasks);
 }
 
 export function startSyncService() {

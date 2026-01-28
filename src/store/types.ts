@@ -2,7 +2,6 @@ import type { StateCreator } from 'zustand';
 import type { BlockLesson } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
 import type { SyllabusRequirements, ParsedFile, Assessment, SubjectsData } from '../types/documents';
-import type { StudyProgramData } from '../api/studyProgram';
 import type { SyncStatus } from '../services/sync';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
@@ -36,11 +35,7 @@ export interface SyllabusSlice {
   fetchSyllabus: (courseCode: string, courseId?: string, subjectName?: string) => Promise<void>;
 }
 
-export interface StudyProgramSlice {
-    studyProgram: StudyProgramData | null;
-    studyProgramLoading: boolean;
-    fetchStudyProgram: () => Promise<void>;
-}
+
 
 export interface FilesSlice {
     files: Record<string, ParsedFile[]>;
@@ -81,6 +76,6 @@ export interface UseThemeResult {
   setTheme: (theme: Theme) => void;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & StudyProgramSlice & FilesSlice & AssessmentsSlice & SubjectsSlice & SyncSlice & ThemeSlice;
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & SubjectsSlice & SyncSlice & ThemeSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

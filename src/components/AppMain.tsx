@@ -1,7 +1,6 @@
 import { AppHeader } from './AppHeader'
 import { WeeklyCalendar } from './WeeklyCalendar/index'
 import { ExamPanel } from './ExamPanel'
-import StudyProgramPanel from './StudyProgramPanel'
 
 export function AppMain({ 
     currentView, currentDate, handlePrevWeek, handleNextWeek, handleToday, 
@@ -14,7 +13,6 @@ export function AppMain({
                 <div className="flex-1 bg-base-100 rounded-lg shadow-sm border border-base-300 overflow-hidden">
                     {currentView === 'calendar' && <WeeklyCalendar key={currentDate.toISOString()} initialDate={currentDate} />}
                     {currentView === 'exams' && <ExamPanel onSelectSubject={setSelectedSubject} />}
-                    {currentView === 'study-program' && <StudyProgramPanel onSelectSubject={setSelectedSubject} />}
                 </div>
             </div>
         </main>

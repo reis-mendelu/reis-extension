@@ -1,10 +1,9 @@
-import { Home, User, GraduationCap, BookMarked, Book, LayoutDashboard, FileText, PenTool, FileQuestion, Upload, BookOpen, Wifi, ClipboardList, CalendarCheck } from 'lucide-react';
-import type { MenuItem } from './menuConfig';
+import { Home, User, GraduationCap, Book, LayoutDashboard, FileText, PenTool, FileQuestion, Upload, BookOpen, Wifi, ClipboardList, CalendarCheck } from 'lucide-react';
+import type { MenuItem } from '../menuConfig';
 
 export const mainItems = (sid: string, oid: string): MenuItem[] => [
     { id: 'dashboard', label: 'Domů', icon: <Home className="w-5 h-5" />, href: 'https://is.mendelu.cz/auth/' },
     { id: 'exams', label: 'Zkoušky', icon: <CalendarCheck className="w-5 h-5" /> },
-    { id: 'studijni-plany', label: 'Plán', icon: <BookMarked className="w-5 h-5" />, isFeature: true },
     { id: 'subjects', label: 'Předměty', icon: <Book className="w-5 h-5" />, expandable: true },
     { id: 'portal', label: 'Student', icon: <User className="w-5 h-5" />, expandable: true, children: [
         { id: 'portal-studenta', label: 'Portál studenta', icon: <LayoutDashboard className="w-4 h-4" />, href: 'https://is.mendelu.cz/auth/student/moje_studium.pl?lang=cz' },

@@ -1,15 +1,10 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { StudyProgramData } from '../../api/studyProgram';
 import type { SubjectsData, Assessment, SyllabusRequirements, ParsedFile } from '../../types/documents';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ExamSubject } from '../../types/exams';
 import { StoreSchemas, type StoreName } from '../../types/storage';
 
 interface ReisDB extends DBSchema {
-    study_program: {
-        key: string; // 'current' or specific ID
-        value: StudyProgramData;
-    };
     files: {
         key: string;
         value: ParsedFile[]; // Key is courseCode
@@ -56,7 +51,7 @@ class IndexedDBServiceImpl {
         this.dbPromise = openDB<ReisDB>(DB_NAME, DB_VERSION, {
             upgrade(db) {
                 const requiredStores: (keyof ReisDB)[] = [
-                    'study_program', 'files', 'assessments', 'syllabuses', 
+                    'files', 'assessments', 'syllabuses', 
                     'exams', 'schedule', 'subjects', 'success_rates', 'meta'
                 ];
                 

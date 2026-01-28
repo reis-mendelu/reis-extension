@@ -1,7 +1,7 @@
 export type DataRequestType = 'schedule' | 'exams' | 'subjects' | 'files' | 'assessments' | 'all';
 export type ActionType = 'register_exam' | 'unregister_exam' | 'toggle_outlook_sync' | 'download_file' | 'trigger_sync';
 
-export interface SyncedData { schedule?: any; exams?: any; subjects?: any; files?: any; assessments?: any; syllabuses?: any; studyProgram?: any; isSyncing?: boolean; lastSync: number; error?: string; }
+export interface SyncedData { schedule?: any; exams?: any; subjects?: any; files?: any; assessments?: any; syllabuses?: any; isSyncing?: boolean; lastSync: number; error?: string; }
 
 export interface ReadyMessage { type: 'REIS_READY'; }
 export interface RequestDataMessage { type: 'REIS_REQUEST_DATA'; dataType: DataRequestType; }

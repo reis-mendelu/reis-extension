@@ -53,7 +53,7 @@ export function useAppLogic() {
         if (r.files) Object.entries(r.files).forEach(([c, f]) => IndexedDBService.set('files', c, f as any));
         if (r.assessments) Object.entries(r.assessments).forEach(([c, a]) => IndexedDBService.set('assessments', c, a as any));
         if (r.syllabuses) Object.entries(r.syllabuses).forEach(([c, s]) => IndexedDBService.set('syllabuses', c, s as any));
-        if (r.studyProgram) IndexedDBService.set('study_program', 'current', r.studyProgram).then(() => syncService.triggerRefresh('STUDY_PROGRAM_UPDATE'));
+
         if (r.lastSync) IndexedDBService.set('meta', 'last_sync', r.lastSync);
         if (typeof r.isSyncing === 'boolean') useAppStore.getState().setSyncStatus({ isSyncing: r.isSyncing });
         syncService.triggerRefresh();

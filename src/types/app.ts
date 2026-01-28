@@ -1,1 +1,1 @@
-export type AppView = 'calendar' | 'exams' | 'study-program' | 'settings';
+export type AppView = 'calendar' | 'exams' | 'settings';
