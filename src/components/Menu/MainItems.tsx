@@ -12,6 +12,7 @@ export const mainItems = (sid: string, oid: string): MenuItem[] => [
         { id: 'e-index', label: 'E-index', icon: <Book className="w-4 h-4" />, href: `https://is.mendelu.cz/auth/student/pruchod_studiem.pl?studium=${sid};obdobi=${oid};lang=cz` },
         { id: 'cvicne-testy', label: 'Cvičné testy', icon: <FileQuestion className="w-4 h-4" />, href: `https://is.mendelu.cz/auth/elis/student/seznam_osnov.pl?studium=${sid};obdobi=${oid};lang=cz` },
         { id: 'odevzdavarna', label: 'Odevzdávárna', icon: <Upload className="w-4 h-4" />, href: `https://is.mendelu.cz/auth/student/odevzdavarny.pl?studium=${sid};obdobi=${oid};lang=cz` },
+        { id: 'kontrola-planu', label: 'Kontrola plánu', icon: <ClipboardList className="w-4 h-4" />, href: `https://is.mendelu.cz/auth/studijni/studijni_povinnosti.pl?studium=${sid};obdobi=${oid};lang=cz` },
         { id: 'zapisy-predmetu', label: 'Zápisy předmětů', icon: <BookOpen className="w-4 h-4" />, href: `https://is.mendelu.cz/auth/student/registrace.pl?studium=${sid};obdobi=${oid};lang=cz` }
     ]},
     { id: 'o-studiu', label: 'Studium', icon: <GraduationCap className="w-5 h-5" />, expandable: true, children: [
