@@ -34,13 +34,22 @@ export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, tutorials =
         if (aHasFiles && !bHasFiles) return -1;
         if (!aHasFiles && bHasFiles) return 1;
 
-        // If both have files or both don't, sort alphabetically by display name (without code)
         const aName = a.displayName.replace(a.subjectCode, '').trim();
         const bName = b.displayName.replace(b.subjectCode, '').trim();
         return aName.localeCompare(bName);
       });
 
-      p.children = sortedSubjects.map((s: any) => ({ 
+      // Interleave for column-major display in 2-column grid
+      const numRows = Math.ceil(sortedSubjects.length / 2);
+      const columnMajorSubjects = [];
+      for (let i = 0; i < numRows; i++) {
+        columnMajorSubjects.push(sortedSubjects[i]);
+        if (i + numRows < sortedSubjects.length) {
+          columnMajorSubjects.push(sortedSubjects[i + numRows]);
+        }
+      }
+
+      p.children = columnMajorSubjects.map((s: any) => ({ 
         id: `subject-${s.subjectCode}`, 
         label: s.displayName.replace(s.subjectCode, '').trim(), 
         icon: <Layers className="w-4 h-4" />, 
