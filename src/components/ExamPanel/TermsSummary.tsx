@@ -1,7 +1,4 @@
-import { Timer } from 'lucide-react';
-
 export function TermsSummary({ terms }: any) {
-    const opening = terms.find((t: any) => t.canRegisterNow !== true && t.registrationStart);
     return (
         <div className="flex flex-col gap-2 mt-2.5">
             <div className="flex items-center gap-3">
@@ -11,7 +8,6 @@ export function TermsSummary({ terms }: any) {
                     {terms.length > 3 && <span className="text-[10px] font-bold text-base-content/30">+{terms.length - 3}</span>}
                 </div>
             </div>
-            {opening && <div className="flex items-center gap-1.5 text-[10px] font-bold text-warning/80"><Timer size={12} className="text-warning/60" /><span className="uppercase tracking-tight">Otevírá se: {opening.registrationStart}</span></div>}
         </div>
     );
 }

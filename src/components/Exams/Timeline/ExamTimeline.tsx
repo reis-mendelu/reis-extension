@@ -3,12 +3,13 @@ import ExamItem from './ExamItem';
 import type { ExamTerm } from '../../../types/exams';
 
 interface ExamTimelineProps {
-  exams: { term: ExamTerm; subjectName: string }[];
+  exams: { term: ExamTerm; subjectName: string; [key: string]: any }[];
   orientation?: 'vertical' | 'horizontal';
   className?: string;
+  onSelectItem?: (item: any) => void;
 }
 
-const ExamTimeline: React.FC<ExamTimelineProps> = ({ exams, orientation = 'vertical', className = '' }) => {
+const ExamTimeline: React.FC<ExamTimelineProps> = ({ exams, orientation = 'vertical', className = '', onSelectItem }) => {
   const parseDateTime = (d: string, t: string) => {
     // Robust parsing for "D. M. YYYY" or "D.M.YYYY"
     const parts = d.split('.').map(p => p.trim()).filter(p => p.length > 0);
@@ -42,18 +43,33 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({ exams, orientation = 'verti
         </div>
       )}
 
-      <ul className={`timeline timeline-snap-icon max-md:timeline-compact ${isHorizontal ? 'timeline-horizontal w-full overflow-x-auto pt-1 pb-0 px-4 custom-scrollbar h-fit mb-[-2.25rem]' : 'timeline-vertical'}`}>
-        {timelineNodes.map((item, index) => (
-          <ExamItem
-            key={item.term.id || `${item.subjectName}-${index}`}
-            term={item.term}
-            subjectName={item.subjectName}
-            orientation={orientation}
-            isFirst={index === 0}
-            isLast={index === timelineNodes.length - 1}
-          />
-        ))}
-      </ul>
+      {isHorizontal ? (
+        <div className={`flex flex-row overflow-x-auto gap-3 py-1.5 custom-scrollbar w-full h-fit ${className}`}>
+          {timelineNodes.map((item, index) => (
+            <ExamItem
+              key={item.term.id || `${item.subjectName}-${index}`}
+              term={item.term}
+              subjectName={item.subjectName}
+              orientation={orientation}
+              onClick={() => onSelectItem?.(item)}
+            />
+          ))}
+        </div>
+      ) : (
+        <ul className={`timeline timeline-snap-icon max-md:timeline-compact timeline-vertical ${className}`}>
+          {timelineNodes.map((item, index) => (
+            <ExamItem
+              key={item.term.id || `${item.subjectName}-${index}`}
+              term={item.term}
+              subjectName={item.subjectName}
+              orientation={orientation}
+              isFirst={index === 0}
+              isLast={index === timelineNodes.length - 1}
+              onClick={() => onSelectItem?.(item)}
+            />
+          ))}
+        </ul>
+      )}
       
       {filteredExams.length === 0 && !isHorizontal && (
         <div className="text-center py-20 opacity-40">

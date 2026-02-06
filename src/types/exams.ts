@@ -58,6 +58,6 @@ export interface ExamSubject {
  * Persisted in localStorage.
  */
 export interface ExamFilterState {
-    statusFilter: 'registered' | 'available' | 'opening';
+    statusFilter: ('registered' | 'available' | 'opening')[];
     selectedSubjects: string[];
 }

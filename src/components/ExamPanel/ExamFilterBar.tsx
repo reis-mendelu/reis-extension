@@ -1,8 +1,4 @@
-/**
- * ExamPanel Filter Bar Component
- */
-
-import { CheckCircle2, CalendarDays, Timer, Check, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 
 export type StatusFilter = 'registered' | 'available' | 'opening';
 
@@ -18,11 +14,11 @@ interface SubjectOption {
 }
 
 interface ExamFilterBarProps {
-    statusFilter: StatusFilter;
+    statusFilter: StatusFilter[];
     selectedSubjects: string[];
     filterCounts: FilterCounts;
     subjectOptions: SubjectOption[];
-    onStatusChange: (status: StatusFilter) => void;
+    onToggleStatus: (status: StatusFilter) => void;
     onToggleSubject: (code: string) => void;
     onClearFilters: () => void;
 }
@@ -32,66 +28,56 @@ export function ExamFilterBar({
     selectedSubjects,
     filterCounts,
     subjectOptions,
-    onStatusChange,
+    onToggleStatus,
     onToggleSubject,
     onClearFilters
 }: ExamFilterBarProps) {
+    const hasActiveFilters = statusFilter.length > 0 || selectedSubjects.length > 0;
+
     return (
-        <div className="px-6 py-2 border-b border-base-200 space-y-2">
-            {/* Status Segmented Control */}
-            <div className="flex gap-2">
-                <StatusButton
-                    active={statusFilter === 'registered'}
-                    onClick={() => onStatusChange('registered')}
-                    icon={<CheckCircle2 size={18} />}
+        <div className="px-6 py-1.5 border-b border-base-200 space-y-1.5 bg-base-50/30">
+            {/* Status Filters */}
+            <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/40 mr-1">Status:</span>
+                <FilterChip
+                    active={statusFilter.includes('registered')}
+                    onClick={() => onToggleStatus('registered')}
                     label="Přihlášen"
                     count={filterCounts.registered}
-                    colorClass="success"
                 />
-                <StatusButton
-                    active={statusFilter === 'available'}
-                    onClick={() => onStatusChange('available')}
-                    icon={<CalendarDays size={18} />}
+                <FilterChip
+                    active={statusFilter.includes('available')}
+                    onClick={() => onToggleStatus('available')}
                     label="Volné"
                     count={filterCounts.available}
-                    colorClass="primary"
                 />
-                <StatusButton
-                    active={statusFilter === 'opening'}
-                    onClick={() => onStatusChange('opening')}
-                    icon={<Timer size={18} />}
+                <FilterChip
+                    active={statusFilter.includes('opening')}
+                    onClick={() => onToggleStatus('opening')}
                     label="Otevírá se"
                     count={filterCounts.opening}
-                    colorClass="warning"
                 />
             </div>
 
-            {/* Subject Chips */}
+            {/* Subject Filters */}
             <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-base-content/60 mr-1">Předmět:</span>
-                {subjectOptions.map(({ code, name }) => {
-                    const isSelected = selectedSubjects.includes(code);
-                    return (
-                        <button
-                            key={code}
-                            onClick={() => onToggleSubject(code)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${isSelected
-                                ? 'bg-primary text-primary-content'
-                                : 'bg-base-200 text-base-content/70 hover:bg-base-300'
-                            }`}
-                        >
-                            {isSelected && <Check size={14} />}
-                            {name}
-                        </button>
-                    );
-                })}
-                {selectedSubjects.length > 0 && (
+                <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/40 mr-1">Předmět:</span>
+                {subjectOptions.map(({ code, name }) => (
+                    <FilterChip
+                        key={code}
+                        active={selectedSubjects.includes(code)}
+                        onClick={() => onToggleSubject(code)}
+                        label={name}
+                    />
+                ))}
+                
+                {hasActiveFilters && (
                     <button
                         onClick={onClearFilters}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm text-error/80 hover:text-error hover:bg-error/10 transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-error/70 hover:text-error hover:bg-error/5 transition-colors ml-1"
                     >
                         <X size={14} />
-                        Vymazat
+                        Vymazat vše
                     </button>
                 )}
             </div>
@@ -100,43 +86,40 @@ export function ExamFilterBar({
 }
 
 /**
- * Status filter button
+ * Reusable Minimalist Filter Chip
  */
-interface StatusButtonProps {
+interface FilterChipProps {
     active: boolean;
     onClick: () => void;
-    icon: React.ReactNode;
     label: string;
-    count: number;
-    colorClass: 'success' | 'primary' | 'warning';
+    count?: number;
 }
 
-function StatusButton({ active, onClick, icon, label, count, colorClass }: StatusButtonProps) {
-    const activeClasses = {
-        success: 'bg-success/15 text-success border-2 border-success',
-        primary: 'bg-primary/15 text-primary border-2 border-primary',
-        warning: 'bg-warning/15 text-warning border-2 border-warning'
-    };
-
-    const badgeClasses = {
-        success: 'badge-success',
-        primary: 'badge-primary',
-        warning: 'badge-warning'
-    };
-
+function FilterChip({ active, onClick, label, count }: FilterChipProps) {
     return (
         <button
+            type="button"
             onClick={onClick}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-medium transition-all ${active
-                ? activeClasses[colorClass]
-                : 'bg-base-200 text-base-content/70 border-2 border-transparent hover:bg-base-300'
-            }`}
+            className={`
+                inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer
+                ${active 
+                    ? 'bg-primary text-primary-content shadow-sm' 
+                    : 'bg-base-200/50 text-base-content/60 hover:bg-base-200 hover:text-base-content'
+                }
+            `}
         >
-            {icon}
-            <span>{label}</span>
-            <span className={`badge badge-sm ${active ? badgeClasses[colorClass] : 'badge-ghost'}`}>
-                {count}
-            </span>
+            <div className="flex items-center gap-1.5 pointer-events-none">
+                {active && <Check size={14} className="animate-in zoom-in duration-300" />}
+                <span>{label}</span>
+                {count !== undefined && (
+                    <span className={`
+                        ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-bold
+                        ${active ? 'bg-primary-content/20 text-primary-content' : 'bg-base-300/50 text-base-content/40'}
+                    `}>
+                        {count}
+                    </span>
+                )}
+            </div>
         </button>
     );
 }

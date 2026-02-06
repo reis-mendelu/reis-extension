@@ -7,6 +7,7 @@ interface ExamItemProps {
   isFirst?: boolean;
   isLast?: boolean;
   orientation?: 'vertical' | 'horizontal';
+  onClick?: () => void;
 }
 
 const ExamItem: React.FC<ExamItemProps> = ({
@@ -15,6 +16,7 @@ const ExamItem: React.FC<ExamItemProps> = ({
   isFirst,
   isLast,
   orientation = 'vertical',
+  onClick,
 }) => {
   const isHorizontal = orientation === 'horizontal';
 
@@ -24,9 +26,17 @@ const ExamItem: React.FC<ExamItemProps> = ({
 
   // Box content (Deep Shadow Card)
   const ContentBox = () => (
-    <div className="timeline-box shadow-2xl border-none p-4 min-w-[200px] bg-base-100">
+    <div 
+      className={`
+        shadow-[0_0_20px_rgba(0,0,0,0.3)] border border-base-content/5 p-3 min-w-[200px] bg-base-100 rounded-lg
+        transition-all duration-200
+        ${!isHorizontal ? 'timeline-box' : ''}
+        ${onClick ? 'cursor-pointer hover:bg-base-200/50 active:scale-[0.98]' : ''}
+      `}
+      onClick={onClick}
+    >
       <div className="flex items-start justify-between gap-4 mb-1">
-        <div className="font-black tracking-tight text-base-content text-base leading-tight">
+        <div className="font-black tracking-tight text-base-content text-sm leading-tight">
           {subjectName}
         </div>
         <div className="text-[12px] font-bold text-primary flex items-center gap-1 mt-0.5 whitespace-nowrap">
@@ -42,12 +52,20 @@ const ExamItem: React.FC<ExamItemProps> = ({
     </div>
   );
 
+  if (isHorizontal) {
+    return (
+      <div className="flex-shrink-0">
+        <ContentBox />
+      </div>
+    );
+  }
+
   return (
     <li>
       {!isFirst && <hr className={hrClass} />}
       
       {/* All boxes in timeline-start for 2-row compact layout */}
-      <div className={`timeline-start ${isHorizontal ? 'mb-1' : 'md:text-end mb-10 px-4'}`}>
+      <div className="timeline-start md:text-end mb-10 px-4">
         <ContentBox />
       </div>
 
