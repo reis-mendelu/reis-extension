@@ -5,11 +5,11 @@
 /**
  * Get day of week abbreviation from date string.
  */
-export function getDayOfWeek(dateString: string): string {
+export function getDayOfWeek(dateString: string, t: (k: string) => string): string {
     const [day, month, year] = dateString.split('.').map(Number);
     const date = new Date(year, month - 1, day);
-    const days = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
-    return days[date.getDay()];
+    const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return t(`days.${dayKeys[date.getDay()]}`).substring(0, 2);
 }
 
 /**
@@ -25,18 +25,18 @@ export function capacityToPercent(capacity?: string): number {
 /**
  * Format timestamp to relative time string.
  */
-export function formatRelativeTime(timestamp: number | null): string {
-    if (!timestamp) return 'Neznámý čas';
+export function formatRelativeTime(timestamp: number | null, t: (k: string) => string, lang: string): string {
+    if (!timestamp) return t('common.loading');
 
     const now = Date.now();
     const diffMs = now - timestamp;
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMinutes / 60);
 
-    if (diffMinutes < 1) return 'Právě teď';
-    if (diffMinutes < 60) return `Před ${diffMinutes} min`;
-    if (diffHours < 24) return `Před ${diffHours} h`;
+    if (diffMinutes < 1) return lang === 'cs' ? 'Právě teď' : 'Just now';
+    if (diffMinutes < 60) return lang === 'cs' ? `Před ${diffMinutes} min` : `${diffMinutes} min ago`;
+    if (diffHours < 24) return lang === 'cs' ? `Před ${diffHours} h` : `${diffHours} h ago`;
 
     const date = new Date(timestamp);
-    return date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' });
+    return date.toLocaleDateString(lang === 'cs' ? 'cs-CZ' : 'en-US', { day: 'numeric', month: 'numeric' });
 }

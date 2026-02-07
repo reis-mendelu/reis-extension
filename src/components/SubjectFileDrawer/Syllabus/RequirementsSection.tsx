@@ -1,16 +1,18 @@
 import { Info } from 'lucide-react';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 export function RequirementsSection({ text }: { text: string }) {
-    const highlight = (t: string) => t.split(/((?:min\.|max\.)?\s*\d+(?:[.,]\d+)?\s*(?:bodů|bodu|body|b\.|%)|(?:A|B|C|D|E|F)\s*\([^)]+\)|Zkouška|Zápočet)/g).map((p, i) => {
+    const { t } = useTranslation();
+    const highlight = (tStr: string) => tStr.split(/((?:min\.|max\.)?\s*\d+(?:[.,]\d+)?\s*(?:bodů|bodu|body|b\.|%)|(?:A|B|C|D|E|F)\s*\([^)]+\)|Zkouška|Zápočet)/g).map((p, i) => {
         if (p.match(/(?:min\.|max\.)?\s*\d+(?:[.,]\d+)?\s*(?:bodů|bodu|body|b\.|%)/)) return <span key={i} className="font-bold text-primary">{p}</span>;
         if (p.match(/^(?:A|B|C|D|E|F)\s*\([^)]+\)/)) return <span key={i} className="font-bold text-base-content">{p}</span>;
-        if (p === 'Zkouška' || p === 'Zápočet') return <span key={i} className="font-semibold underline decoration-primary/30 decoration-2 underline-offset-2">{p}</span>;
+        if (p === 'Zkouška' || p === 'Zápočet') return <span key={i} className="font-semibold underline decoration-primary/30 decoration-2 underline-offset-2">{p === 'Zkouška' ? t('successRate.exam') : t('successRate.credit')}</span>;
         return p;
     });
 
     return (
         <div className="prose prose-sm max-w-none">
-            <h3 className="text-base font-bold mb-4 flex items-center gap-2"><Info size={18} className="text-primary" /> Podmínky ukončení</h3>
+            <h3 className="text-base font-bold mb-4 flex items-center gap-2"><Info size={18} className="text-primary" /> {t('syllabus.conditions')}</h3>
             <div className="bg-base-200/30 rounded-xl p-5 border border-base-200">
                 {text.split('\n').filter(l => l.trim()).map((l, i) => {
                     const trimmed = l.trim();

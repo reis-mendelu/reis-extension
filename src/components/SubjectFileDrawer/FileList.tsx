@@ -6,6 +6,7 @@
 
 import { Folder, FileText, Check } from 'lucide-react';
 import type { FileListProps } from './types';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function FileList({
     groups,
@@ -15,10 +16,11 @@ export function FileList({
     onToggleSelect,
     onOpenFile
 }: FileListProps) {
+    const { t } = useTranslation();
     if (groups.length === 0) {
         return (
             <div className="text-center py-12 text-slate-400 italic">
-                Žádné soubory
+                {t('course.footer.noFiles')}
             </div>
         );
     }

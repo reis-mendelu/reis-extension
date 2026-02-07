@@ -14,7 +14,7 @@ export const loggers = {
 };
 
 export function configureLogger(o: any) { Object.assign(config, o); }
-export function disableLogging() { config.level = LogLevel.ERROR + 1; }
+export function disableLogging() { config.level = LogLevel.OFF; }
 export function enableVerboseLogging() { config.level = LogLevel.DEBUG; }
 
 /**

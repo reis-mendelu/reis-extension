@@ -1,5 +1,6 @@
 import type { DateInfo } from '../../types/calendarTypes';
 import { DAYS } from './utils';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface WeeklyCalendarHeaderProps {
     weekDates: DateInfo[];
@@ -8,10 +9,12 @@ interface WeeklyCalendarHeaderProps {
 }
 
 export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay }: WeeklyCalendarHeaderProps) {
+    const { t } = useTranslation();
+    const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
     return (
         <div className="flex border-b border-base-300 bg-base-100 flex-shrink-0 h-[48px]">
             <div className="w-12 border-r border-base-300 bg-base-200"></div>
-            {DAYS.map((day, index) => {
+            {DAYS.map((_, index) => {
                 const dateInfo = weekDates[index];
                 const isToday = index === todayIndex;
                 const holiday = holidaysByDay[index];
@@ -27,7 +30,7 @@ export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay }: W
                                 {dateInfo?.day}
                             </div>
                             <div className={`text-[13px] leading-tight ${holiday ? 'text-error' : 'text-base-content'}`}>
-                                {day.full}
+                                {t(`days.${dayKeys[index]}`)}
                             </div>
                         </div>
                     </div>

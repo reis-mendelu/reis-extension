@@ -1,4 +1,4 @@
-export const LogLevel = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 } as const;
+export const LogLevel = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3, OFF: 4 } as const;
 export type LogLevel = typeof LogLevel[keyof typeof LogLevel];
 
 export interface LoggerConfig { level: LogLevel; showTimestamp: boolean; enabledContexts: Set<string> | 'all'; }
@@ -7,7 +7,10 @@ export const config: LoggerConfig = { level: LogLevel.DEBUG, showTimestamp: true
 const COLORS = { debug: 'color: gray', info: 'color: blue', warn: 'color: orange; font-weight: bold', error: 'color: red; font-weight: bold', context: 'color: purple; font-weight: bold', timestamp: 'color: gray; font-style: italic' };
 
 export class Logger {
-    constructor(private context: string) {}
+    private context: string;
+    constructor(context: string) {
+        this.context = context;
+    }
     private log(lvl: LogLevel, name: string, col: string, msg: string, ...a: any[]) {
         if (lvl < config.level || (config.enabledContexts !== 'all' && !config.enabledContexts.has(this.context))) return;
         const pts = [], sts = [];

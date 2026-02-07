@@ -5,6 +5,7 @@ import { SyllabusTab } from './SyllabusTab';
 import { SuccessRateTab } from '../SuccessRateTab';
 import { SelectionBox, DragHint } from './DragHint';
 import type { FileGroup } from './types';
+import { useTranslation } from '../../hooks/useTranslation';
 import type { BlockLesson } from '../../types/calendarTypes';
 
 interface SubjectFileDrawerContentProps {
@@ -30,6 +31,7 @@ export function SubjectFileDrawerContent({
     activeTab, lesson, files, isFilesLoading, isSyncing, isDragging, selectionBoxStyle, showDragHint,
     groupedFiles, selectedIds, fileRefs, ignoreClickRef, toggleSelect, openFile, resolvedCourseId, syllabusResult
 }: SubjectFileDrawerContentProps) {
+    const { t } = useTranslation();
     if (activeTab === 'files') {
         return (
             <>
@@ -40,8 +42,8 @@ export function SubjectFileDrawerContent({
                     <div className="flex flex-col items-center justify-center h-full p-6 text-center">
                         <FileText className="w-12 h-12 text-base-content/20 mb-3" />
                         <p className="text-sm text-base-content/60">
-                            {lesson?.isFromSearch ? "Soubory jsou dostupné pouze pro předměty ve vašem rozvrhu" : 
-                            "Žádné soubory nejsou k dispozici."}
+                            {lesson?.isFromSearch ? t('course.footer.searchOnlyInSchedule') : 
+                            t('course.footer.noFilesAvailable')}
                         </p>
                     </div>
                  ) : (

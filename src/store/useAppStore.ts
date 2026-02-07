@@ -8,6 +8,7 @@ import { createAssessmentsSlice } from './slices/createAssessmentsSlice';
 import { createSubjectsSlice } from './slices/createSubjectsSlice';
 import { createSyncSlice } from './slices/createSyncSlice';
 import { createThemeSlice } from './slices/createThemeSlice';
+import { createI18nSlice } from './slices/createI18nSlice';
 import { syncService } from '../services/sync';
 
 export const useAppStore = create<AppState>()((...a) => ({
@@ -19,6 +20,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createSubjectsSlice(...a),
   ...createSyncSlice(...a),
   ...createThemeSlice(...a),
+  ...createI18nSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
@@ -30,6 +32,7 @@ export const initializeStore = () => {
     useAppStore.getState().fetchAllFiles();
     useAppStore.getState().fetchSyncStatus();
     useAppStore.getState().loadTheme();
+    useAppStore.getState().loadLanguage();
 
     // Subscribe to sync service
     const unsubscribe = syncService.subscribe((type) => {
@@ -41,11 +44,14 @@ export const initializeStore = () => {
         if (type === 'THEME_UPDATE') {
             useAppStore.getState().loadTheme();
         }
+        if (type === 'LANGUAGE_UPDATE') {
+            useAppStore.getState().loadLanguage();
+        }
     });
 
     // Cross-tab theme listener
-    const bc = new BroadcastChannel('reis_theme_sync');
-    bc.onmessage = (event) => {
+    const bcTheme = new BroadcastChannel('reis_theme_sync');
+    bcTheme.onmessage = (event) => {
         const newTheme = event.data;
         if (newTheme === "mendelu" || newTheme === "mendelu-dark") {
             useAppStore.setState({ theme: newTheme });
@@ -53,5 +59,18 @@ export const initializeStore = () => {
         }
     };
 
-    return unsubscribe;
+    // Cross-tab language listener
+    const bcLang = new BroadcastChannel('reis_language_sync');
+    bcLang.onmessage = (event) => {
+        const newLang = event.data;
+        if (newLang === "cs" || newLang === "en") {
+            useAppStore.setState({ language: newLang });
+        }
+    };
+
+    return () => {
+        unsubscribe();
+        bcTheme.close();
+        bcLang.close();
+    };
 };

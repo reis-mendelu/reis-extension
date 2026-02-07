@@ -6,6 +6,7 @@ import type { SyncStatus } from '../services/sync';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type Theme = "mendelu" | "mendelu-dark";
+export type Language = "cs" | "en";
 
 export interface ScheduleSlice {
   schedule: {
@@ -69,6 +70,13 @@ export interface ThemeSlice {
     loadTheme: () => Promise<void>;
 }
 
+export interface I18nSlice {
+    language: Language;
+    isLanguageLoading: boolean;
+    setLanguage: (lang: Language) => Promise<void>;
+    loadLanguage: () => Promise<void>;
+}
+
 export interface UseThemeResult {
   theme: Theme;
   isDark: boolean;
@@ -77,6 +85,6 @@ export interface UseThemeResult {
   setTheme: (theme: Theme) => void;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & SubjectsSlice & SyncSlice & ThemeSlice;
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

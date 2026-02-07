@@ -1,0 +1,183 @@
+{
+  "settings": {
+    "title": "Settings",
+    "reportBug": "Report Bug / Idea",
+    "darkMode": "Dark Mode",
+    "language": "Language",
+    "czech": "Čeština",
+    "english": "English"
+  },
+  "sidebar": {
+    "profile": "Profile",
+    "calendar": "Schedule",
+    "exams": "Exams",
+    "dashboard": "Home",
+    "subjects": "Subjects",
+    "student": "Student",
+    "study": "Study",
+    "portal": "Student Portal",
+    "teacherList": "Teacher's Record List",
+    "tests": "Tests",
+    "eIndex": "E-index",
+    "practiceTests": "Practice Tests",
+    "assignments": "Assignments / Dropbox",
+    "planControl": "Plan Control",
+    "registrations": "Subject Registrations",
+    "studyPlans": "Study Plans Overview",
+    "successRating": "Success Rating",
+    "wifi": "Wi-Fi",
+    "contactCenter": "Contact Center"
+  },
+    "exams": {
+        "title": "My Exams",
+        "noExams": "No registered exam terms found yet.",
+        "registrationTitle": "Exam Registration",
+        "loading": "Loading exams...",
+        "empty": "📭 No exams",
+        "autoBooking": "Auto-booking active. Do not close this page!",
+        "statusLabel": "Status:",
+        "subjectLabel": "Subject:",
+        "registered": "Registered",
+    "register": "Register",
+    "available": "Available",
+        "opening": "Opening",
+        "clearAll": "Clear all",
+        "unregister": "Unregister",
+        "changeTerm": "Change term",
+        "select": "Select",
+        "clickToRegister": "Click to register:",
+        "unregisterDeadline": "Unregister by:",
+        "term": "term",
+        "terms24": "terms",
+        "terms5plus": "terms",
+        "full": "FULL",
+        "closed": "CLOSED",
+        "countdown": "In",
+        "confirmation": {
+            "registerTitle": "Confirm Registration",
+            "unregisterTitle": "Confirm Unregistration",
+            "registerBody": "Do you really want to register for this exam term?",
+            "unregisterBody": "Do you really want to unregister from this exam?"
+        }
+    },
+    "feedback": {
+        "title": "Report Bug / Idea",
+        "typeLabel": "Message Type",
+        "bug": "Bug 🐞",
+        "idea": "Idea 💡",
+        "other": "Other 📝",
+        "subject": "Subject",
+        "subjectPlaceholder": "Briefly describe the issue...",
+        "description": "Detailed description",
+        "descriptionPlaceholder": "What happened? Where? How to reproduce?",
+        "contact": "Contact (optional)",
+        "contactPlaceholder": "Email / Discord",
+        "submit": "Submit feedback",
+        "sending": "Sending...",
+        "successTitle": "Great, sent!",
+        "successText": "Thanks for your help. Your feedback has been successfully received.",
+        "close": "Close",
+        "footer": "We automatically send technical info (version, browser) for faster resolution.",
+        "toastSuccess": "Thanks for your feedback!",
+        "toastError": "Failed to send feedback."
+    },
+    "common": {
+        "loading": "Loading...",
+        "today": "Today",
+        "close": "Close",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "save": "Save"
+    },
+    "search": {
+        "placeholder": "Search subjects, people, pages...",
+        "results": "Results",
+        "recent": "Recent Searches",
+        "loading": "Loading results...",
+        "empty": "Nothing found",
+        "recentHint": "Search for subjects, teachers or IS pages...",
+        "recentlySearched": "Recently searched",
+        "student": "Student",
+        "teacher": "Teacher",
+        "employee": "Employee"
+    },
+    "course": {
+        "garant": "Guarantor:",
+        "teachers": "Teachers:",
+        "showMore": "Show more",
+        "showLess": "Show less",
+        "tabs": {
+            "files": "Files",
+            "requirements": "Requirements",
+            "successRate": "Success Rate",
+            "assessment": "Assessment"
+        },
+        "footer": {
+            "other": "Other",
+            "noFiles": "No files",
+            "searchOnlyInSchedule": "Files are available only for subjects in your schedule",
+            "noFilesAvailable": "No files are available."
+        },
+        "dragHint": "Drag to select multiple files",
+        "badge": {
+            "lecture": "Lecture",
+            "seminar": "Seminar",
+            "exam": "Exam",
+            "test": "Test"
+        },
+        "status": {
+            "povinný": "Compulsory",
+            "povinně volitelný": "Elective-compulsory",
+            "volitelný": "Elective"
+        }
+    },
+    "syllabus": {
+        "conditions": "Completion requirements",
+        "grading": "Point distribution",
+        "weight": "Weight",
+        "noData": "Requirements are not available for this course."
+    },
+    "successRate": {
+        "noData": "Data not available",
+        "students": "students",
+        "credit": "Credit",
+        "exam": "Exam"
+    },
+    "assessment": {
+        "noData": "No assessment yet",
+        "bonusDefault": "Bonus",
+        "bonusTitle": "Bonus points",
+        "bonusNamePlaceholder": "Name",
+        "points": "points",
+        "bonuses": "Bonuses",
+        "addBonus": "Add bonus",
+        "finalTitle": "Total assessment:",
+        "warning": "⚠️ This assessment may be inaccurate - adjusted weights are for orientation only"
+    },
+    "days": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+  },
+  "notifications": {
+    "title": "News",
+    "loading": "Loading...",
+    "empty": "No new news",
+    "yesterday": "Yesterday"
+  },
+  "sync": {
+    "schedule": "Schedule synchronization",
+    "tooltip": "Synchronizes schedule and exam terms to Outlook.",
+    "spolky": "Subscribed societies"
+  },
+  "fileCategories": {
+    "informace_k_vyuce": "Teaching Information",
+    "studijni_texty": "Study Texts",
+    "materialy_z_prednasek": "Lecture Materials",
+    "pruvodce_studiem": "Subject Study Guide"
+  }
+}

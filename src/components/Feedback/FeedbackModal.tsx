@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, Loader2, CheckCircle2 } from 'lucide-react';
 import { DISCORD_WEBHOOK_URL } from '../../constants/config';
 import { toast } from 'sonner';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   const [contact, setContact] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const { t } = useTranslation();
 
   const handleSubmit = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
@@ -46,13 +48,13 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 
       if (response.ok) {
         setIsSuccess(true);
-        toast.success("Díky za zpětnou vazbu!");
+        toast.success(t('feedback.toastSuccess'));
       } else {
         throw new Error('Failed to send');
       }
     } catch (error) {
       console.error('Feedback error:', error);
-      toast.error("Nepodařilo se odeslat zpětnou vazbu.");
+      toast.error(t('feedback.toastError'));
     } finally {
       setIsSending(false);
     }
@@ -90,7 +92,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-              <h3 className="font-semibold text-lg text-white">Nahlásit chybu / Nápad</h3>
+              <h3 className="font-semibold text-lg text-white">{t('feedback.title')}</h3>
               <button 
                 onClick={handleClose}
                 className="btn btn-sm btn-ghost btn-circle text-gray-400 hover:text-white"
@@ -106,15 +108,15 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 mb-2">
                        <CheckCircle2 className="w-8 h-8" />
                     </div>
-                    <h3 className="text-xl font-bold text-white">Super, odesláno!</h3>
+                    <h3 className="text-xl font-bold text-white">{t('feedback.successTitle')}</h3>
                     <p className="text-gray-400 max-w-xs">
-                      Díky za pomoc. Tvou zpětnou vazbu jsme úspěšně přijali.
+                      {t('feedback.successText')}
                     </p>
                     <button 
                       onClick={handleClose}
                       className="btn btn-primary w-full mt-4"
                     >
-                      Zavřít
+                      {t('feedback.close')}
                     </button>
                   </div>
                 ) : (
@@ -122,28 +124,28 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     
                     {/* Type Selection */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-gray-400 ml-1">Typ zprávy</label>
+                      <label className="text-sm font-medium text-gray-400 ml-1">{t('feedback.typeLabel')}</label>
                       <div className="grid grid-cols-3 gap-2">
                          <button
                            type="button"
                            onClick={() => setType('bug')}
                            className={`btn btn-sm border-0 ${type === 'bug' ? 'bg-error/20 text-error hover:bg-error/30' : 'bg-base-200 text-gray-400 hover:bg-base-300 hover:text-white'}`}
                          >
-                           Chyba 🐞
+                           {t('feedback.bug')}
                          </button>
                          <button
                            type="button"
                            onClick={() => setType('idea')}
                            className={`btn btn-sm border-0 ${type === 'idea' ? 'bg-warning/20 text-warning hover:bg-warning/30' : 'bg-base-200 text-gray-400 hover:bg-base-300 hover:text-white'}`}
                          >
-                           Nápad 💡
+                           {t('feedback.idea')}
                          </button>
                          <button
                            type="button"
                            onClick={() => setType('other')}
                            className={`btn btn-sm border-0 ${type === 'other' ? 'bg-neutral text-white hover:bg-neutral-focus' : 'bg-base-200 text-gray-400 hover:bg-base-300 hover:text-white'}`}
                          >
-                           Jiné 📝
+                           {t('feedback.other')}
                          </button>
                       </div>
                     </div>
@@ -151,13 +153,13 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     {/* Title */}
                     <div className="form-control">
                       <label className="label pt-0 pb-1">
-                        <span className="text-sm font-medium text-gray-400">Předmět</span>
+                        <span className="text-sm font-medium text-gray-400">{t('feedback.subject')}</span>
                       </label>
                       <input 
                         type="text" 
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        placeholder="Stručně popište problém..."
+                        placeholder={t('feedback.subjectPlaceholder')}
                         className="input input-bordered w-full bg-[#0d1117] border-white/10 focus:border-primary focus:outline-none focus:bg-[#0d1117] text-white transition-colors" 
                         required
                         autoFocus
@@ -168,12 +170,12 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     {/* Message */}
                     <div className="form-control">
                       <label className="label pt-0 pb-1">
-                        <span className="text-sm font-medium text-gray-400">Detailní popis</span>
+                        <span className="text-sm font-medium text-gray-400">{t('feedback.description')}</span>
                       </label>
                       <textarea 
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
-                        placeholder="Co se stalo? Kde? Jak to zopakovat?"
+                        placeholder={t('feedback.descriptionPlaceholder')}
                         className="textarea textarea-bordered h-32 w-full bg-[#0d1117] border-white/10 focus:border-primary focus:outline-none focus:bg-[#0d1117] text-white transition-colors leading-relaxed resize-none" 
                         required
                       />
@@ -182,13 +184,13 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     {/* Contact (Optional) */}
                     <div className="form-control">
                       <label className="label pt-0 pb-1">
-                        <span className="text-sm font-medium text-gray-400">Kontakt (nepovinné)</span>
+                        <span className="text-sm font-medium text-gray-400">{t('feedback.contact')}</span>
                       </label>
                       <input 
                         type="text" 
                         value={contact}
                         onChange={(e) => setContact(e.target.value)}
-                        placeholder="Email / Discord"
+                        placeholder={t('feedback.contactPlaceholder')}
                         className="input input-bordered w-full bg-[#0d1117] border-white/10 focus:border-primary focus:outline-none focus:bg-[#0d1117] text-white transition-colors" 
                         onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                       />
@@ -205,19 +207,19 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                         {isSending ? (
                           <>
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            Odesílání...
+                            {t('feedback.sending')}
                           </>
                         ) : (
                           <>
                             <Send className="w-5 h-5" />
-                            Odeslat zpětnou vazbu
+                            {t('feedback.submit')}
                           </>
                         )}
                       </button>
                     </div>
                     
                     <p className="text-[10px] text-center text-gray-500 mt-2">
-                      Automaticky odesíláme technické info (verze, prohlížeč) pro rychlejší opravu.
+                      {t('feedback.footer')}
                     </p>
 
                   </div>

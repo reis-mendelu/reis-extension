@@ -1,4 +1,5 @@
 import { Check, X } from 'lucide-react';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export type StatusFilter = 'registered' | 'available' | 'opening';
 
@@ -32,36 +33,37 @@ export function ExamFilterBar({
     onToggleSubject,
     onClearFilters
 }: ExamFilterBarProps) {
+    const { t } = useTranslation();
     const hasActiveFilters = statusFilter.length > 0 || selectedSubjects.length > 0;
 
     return (
         <div className="px-6 py-1.5 border-b border-base-200 space-y-1.5 bg-base-50/30">
             {/* Status Filters */}
             <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/40 mr-1">Status:</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/40 mr-1">{t('exams.statusLabel')}</span>
                 <FilterChip
                     active={statusFilter.includes('registered')}
                     onClick={() => onToggleStatus('registered')}
-                    label="Přihlášen"
+                    label={t('exams.registered')}
                     count={filterCounts.registered}
                 />
                 <FilterChip
                     active={statusFilter.includes('available')}
                     onClick={() => onToggleStatus('available')}
-                    label="Volné"
+                    label={t('exams.available')}
                     count={filterCounts.available}
                 />
                 <FilterChip
                     active={statusFilter.includes('opening')}
                     onClick={() => onToggleStatus('opening')}
-                    label="Otevírá se"
+                    label={t('exams.opening')}
                     count={filterCounts.opening}
                 />
             </div>
 
             {/* Subject Filters */}
             <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/40 mr-1">Předmět:</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/40 mr-1">{t('exams.subjectLabel')}</span>
                 {subjectOptions.map(({ code, name }) => (
                     <FilterChip
                         key={code}
@@ -77,7 +79,7 @@ export function ExamFilterBar({
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-error/70 hover:text-error hover:bg-error/5 transition-colors ml-1"
                     >
                         <X size={14} />
-                        Vymazat vše
+                        {t('exams.clearAll')}
                     </button>
                 )}
             </div>

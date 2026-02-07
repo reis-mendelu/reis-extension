@@ -1,0 +1,183 @@
+{
+  "settings": {
+    "title": "Nastavení",
+    "reportBug": "Nahlásit chybu / Nápad",
+    "darkMode": "Tmavý režim",
+    "language": "Jazyk",
+    "czech": "Čeština",
+    "english": "English"
+  },
+  "sidebar": {
+    "profile": "Profil",
+    "calendar": "Rozvrh",
+    "exams": "Zkoušky",
+    "dashboard": "Domů",
+    "subjects": "Předměty",
+    "student": "Student",
+    "study": "Studium",
+    "portal": "Portál studenta",
+    "teacherList": "List záznamníku učitele",
+    "tests": "Testy",
+    "eIndex": "E-index",
+    "practiceTests": "Cvičné testy",
+    "assignments": "Odevzdávárna",
+    "planControl": "Kontrola plánu",
+    "registrations": "Zápisy předmětů",
+    "studyPlans": "Přehled studijních plánů",
+    "successRating": "Hodnocení úspěšnosti",
+    "wifi": "Wi-Fi",
+    "contactCenter": "Kontaktní centrum"
+  },
+  "common": {
+    "loading": "Načítání...",
+    "today": "Dnes",
+    "close": "Zavřít",
+    "cancel": "Zrušit",
+    "confirm": "Potvrdit",
+    "save": "Uložit"
+  },
+  "search": {
+    "placeholder": "Hledej předměty, lidi, stránky...",
+    "results": "Výsledky",
+    "recent": "Nedávná vyhledávání",
+    "loading": "Načítání výsledků...",
+    "empty": "Nic nenalezeno",
+    "recentHint": "Hledejte předměty, vyučující nebo stránky IS...",
+    "recentlySearched": "Nedávno hledáno",
+    "student": "Student",
+    "teacher": "Vyučující",
+    "employee": "Zaměstnanec"
+  },
+  "exams": {
+    "title": "Moje zkoušky",
+    "noExams": "Zatím nemáš žádné registrované termíny.",
+    "registrationTitle": "Zápisy na zkoušky",
+    "loading": "Načítání zkoušek...",
+    "empty": "📭 Žádné zkoušky",
+    "autoBooking": "Auto-rezervace aktivní. Nezavírejte tuto stránku!",
+    "statusLabel": "Status:",
+    "subjectLabel": "Předmět:",
+    "registered": "Přihlášen",
+    "register": "Přihlásit se",
+    "available": "Volné",
+    "opening": "Otevírá se",
+    "clearAll": "Vymazat vše",
+    "unregister": "Odhlásit se",
+    "changeTerm": "Změnit termín",
+    "select": "Vybrat",
+    "clickToRegister": "Klikněte pro přihlášení:",
+    "unregisterDeadline": "Odhlášení do:",
+    "term": "termín",
+    "terms24": "termíny",
+    "terms5plus": "termínů",
+    "full": "PLNÝ",
+    "closed": "UZAVŘENO",
+    "countdown": "Za",
+    "confirmation": {
+      "registerTitle": "Potvrdit přihlášení",
+      "unregisterTitle": "Potvrdit odhlášení",
+      "registerBody": "Opravdu se chcete přihlásit na tento termín zkoušky?",
+      "unregisterBody": "Opravdu se chcete odhlásit z této zkoušky?"
+    }
+  },
+  "feedback": {
+    "title": "Nahlásit chybu / Nápad",
+    "typeLabel": "Typ zprávy",
+    "bug": "Chyba 🐞",
+    "idea": "Nápad 💡",
+    "other": "Jiné 📝",
+    "subject": "Předmět",
+    "subjectPlaceholder": "Stručně popište problém...",
+    "description": "Detailní popis",
+    "descriptionPlaceholder": "Co se stalo? Kde? Jak to zopakovat?",
+    "contact": "Kontakt (nepovinné)",
+    "contactPlaceholder": "Email / Discord",
+    "submit": "Odeslat zpětnou vazbu",
+    "sending": "Odesílání...",
+    "successTitle": "Super, odesláno!",
+    "successText": "Díky za pomoc. Tvou zpětnou vazbu jsme úspěšně přijali.",
+    "close": "Zavřít",
+    "footer": "Automaticky odesíláme technické info (verze, prohlížeč) pro rychlejší opravu.",
+    "toastSuccess": "Díky za zpětnou vazbu!",
+    "toastError": "Nepodařilo se odeslat zpětnou vazbu."
+  },
+  "course": {
+    "garant": "Garant:",
+    "teachers": "Vyučující:",
+    "showMore": "Zobrazit více",
+    "showLess": "Zobrazit méně",
+    "tabs": {
+      "files": "Soubory",
+      "requirements": "Požadavky",
+      "successRate": "Úspěšnost",
+      "assessment": "Klasifikace"
+    },
+    "footer": {
+      "other": "Ostatní",
+      "noFiles": "Žádné soubory",
+      "searchOnlyInSchedule": "Soubory jsou dostupné pouze pro předměty ve vašem rozvrhu",
+      "noFilesAvailable": "Žádné soubory nejsou k dispozici."
+    },
+    "dragHint": "Tažením vyberete více souborů",
+    "badge": {
+      "lecture": "Přednáška",
+      "seminar": "Cvičení",
+      "exam": "Zkouška",
+      "test": "Test"
+    },
+    "status": {
+      "povinný": "Povinný",
+      "povinně volitelný": "Povinně volitelný",
+      "volitelný": "Volitelný"
+    }
+  },
+  "syllabus": {
+    "conditions": "Podmínky ukončení",
+    "grading": "Bodové rozdělení",
+    "weight": "Váha",
+    "noData": "Pro tento předmět nejsou dostupné požadavky."
+  },
+  "successRate": {
+    "noData": "Data nejsou k dispozici",
+    "students": "studentů",
+    "credit": "Zápočet",
+    "exam": "Zkouška"
+  },
+  "assessment": {
+    "noData": "Zatím žádné hodnocení",
+    "bonusDefault": "Bonus",
+    "bonusTitle": "Bonusové body",
+    "bonusNamePlaceholder": "Název",
+    "points": "bodů",
+    "bonuses": "Bonusy",
+    "addBonus": "Přidat bonus",
+    "finalTitle": "Celkové hodnocení:",
+    "warning": "⚠️ Toto hodnocení může být nepřesné - upravené váhy slouží pouze pro orientaci"
+  },
+  "days": {
+    "monday": "Pondělí",
+    "tuesday": "Úterý",
+    "wednesday": "Středa",
+    "thursday": "Čtvrtek",
+    "friday": "Pátek",
+    "saturday": "Sobota",
+    "sunday": "Neděle"
+  },
+  "notifications": {
+    "title": "Novinky",
+    "loading": "Načítá se...",
+    "empty": "Žádné nové novinky",
+    "yesterday": "Včera"
+  },
+  "sync": {
+    "schedule": "Synchronizace rozvrhu",
+    "tooltip": "Synchronizuje rozvrh a termíny zkoušek do Outlooku.",
+    "spolky": "Odebírané spolky"
+  },
+  "fileCategories": {
+    "informace_k_vyuce": "Informace k výuce",
+    "studijni_texty": "Studijní texty",
+    "materialy_z_prednasek": "Materiály z přednášek",
+    "pruvodce_studiem": "Průvodce studiem předmětu"
+  }
+}

@@ -1,6 +1,7 @@
 import React from 'react';
 import ExamItem from './ExamItem';
 import type { ExamTerm } from '../../../types/exams';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface ExamTimelineProps {
   exams: { term: ExamTerm; subjectName: string; [key: string]: any }[];
@@ -10,13 +11,14 @@ interface ExamTimelineProps {
 }
 
 const ExamTimeline: React.FC<ExamTimelineProps> = ({ exams, orientation = 'vertical', className = '', onSelectItem }) => {
-  const parseDateTime = (d: string, t: string) => {
+  const { t } = useTranslation();
+  const parseDateTime = (d: string, tStr: string) => {
     // Robust parsing for "D. M. YYYY" or "D.M.YYYY"
     const parts = d.split('.').map(p => p.trim()).filter(p => p.length > 0);
     const day = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10);
     const year = parseInt(parts[2], 10);
-    const [hours, minutes] = t.split(':').map(Number);
+    const [hours, minutes] = tStr.split(':').map(Number);
     return new Date(year, month - 1, day, hours, minutes);
   };
 
@@ -38,7 +40,7 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({ exams, orientation = 'verti
     <div className={`${isHorizontal ? '' : 'p-8 max-w-2xl mx-auto bg-base-100 rounded-box shadow-sm border border-base-200'} ${className}`}>
       {!isHorizontal && (
         <div className="flex items-center justify-between mb-12">
-          <h2 className="text-2xl font-black tracking-tighter">Exam Schedule</h2>
+          <h2 className="text-2xl font-black tracking-tighter">{t('exams.title')}</h2>
           <div className="badge badge-primary badge-outline font-bold">S2 2026</div>
         </div>
       )}
@@ -74,7 +76,7 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({ exams, orientation = 'verti
       {filteredExams.length === 0 && !isHorizontal && (
         <div className="text-center py-20 opacity-40">
           <div className="text-4xl mb-4">🎉</div>
-          <p className="font-bold">No upcoming exams found.</p>
+          <p className="font-bold">{t('exams.noExams')}</p>
         </div>
       )}
     </div>

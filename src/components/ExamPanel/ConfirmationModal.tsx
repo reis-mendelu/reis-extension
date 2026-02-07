@@ -5,6 +5,7 @@
  */
 
 import { CheckCircle, XCircle, Calendar, Clock, MapPin } from 'lucide-react';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface TermInfo {
     date?: string;
@@ -29,6 +30,7 @@ export function ConfirmationModal({
     onConfirm,
     onCancel
 }: ConfirmationModalProps) {
+    const { t } = useTranslation();
     const isRegister = actionType === 'register';
 
     return (
@@ -38,12 +40,12 @@ export function ConfirmationModal({
                     {isRegister ? (
                         <>
                             <CheckCircle className="text-success" size={24} />
-                            Potvrdit přihlášení
+                            {t('exams.confirmation.registerTitle')}
                         </>
                     ) : (
                         <>
                             <XCircle className="text-error" size={24} />
-                            Potvrdit odhlášení
+                            {t('exams.confirmation.unregisterTitle')}
                         </>
                     )}
                 </h3>
@@ -51,8 +53,8 @@ export function ConfirmationModal({
                 <div className="py-4">
                     <p className="text-base-content/70 mb-4">
                         {isRegister 
-                            ? 'Opravdu se chcete přihlásit na tento termín zkoušky?' 
-                            : 'Opravdu se chcete odhlásit z této zkoušky?'}
+                            ? t('exams.confirmation.registerBody')
+                            : t('exams.confirmation.unregisterBody')}
                     </p>
                     
                     <div className="bg-base-200 rounded-lg p-4">
@@ -87,13 +89,13 @@ export function ConfirmationModal({
 
                 <div className="modal-action">
                     <button className="btn btn-ghost" onClick={onCancel}>
-                        Zrušit
+                        {t('common.cancel')}
                     </button>
                     <button 
                         className={isRegister ? "btn btn-success" : "btn btn-error"}
                         onClick={onConfirm}
                     >
-                        {isRegister ? 'Přihlásit se' : 'Odhlásit se'}
+                        {isRegister ? t('exams.register') : t('exams.unregister')}
                     </button>
                 </div>
             </div>

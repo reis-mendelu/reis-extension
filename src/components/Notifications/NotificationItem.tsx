@@ -1,8 +1,10 @@
 import { useRef, useEffect } from 'react';
 import { Bell, Users } from 'lucide-react';
 import type { SpolekNotification } from '../../services/spolky';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function NotificationItem({ notification, onClick, onVisible }: { notification: SpolekNotification; onClick: () => void; onVisible?: () => void }) {
+  const { t } = useTranslation();
   const ref = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!onVisible || !ref.current) return;
@@ -16,7 +18,7 @@ export function NotificationItem({ notification, onClick, onVisible }: { notific
 
   const formatDate = (iso: string) => {
     const d = new Date(iso), n = new Date(), h = (n.getTime() - d.getTime()) / 3600000;
-    return h < 24 ? 'Dnes' : h < 48 ? 'Včera' : `${d.getDate()}.${d.getMonth() + 1}.`;
+    return h < 24 ? t('common.today') : h < 48 ? t('notifications.yesterday') : `${d.getDate()}.${d.getMonth() + 1}.`;
   };
 
   return (

@@ -3,11 +3,13 @@ import { searchGlobal } from '../../api/search';
 import { pagesData } from '../../data/pagesData';
 import { fuzzyIncludes } from '../../utils/searchUtils';
 import type { SearchResult } from './types';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const MAX_RECENT_SEARCHES = 5;
 const STORAGE_KEY = 'reis_recent_searches';
 
 export function useSearch(query: string, setQuery: (q: string) => void) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [filteredResults, setFilteredResults] = useState<SearchResult[]>([]);
@@ -30,7 +32,7 @@ export function useSearch(query: string, setQuery: (q: string) => void) {
   }, []);
 
   const saveToHistory = (result: SearchResult) => {
-    const newItem = { ...result, detail: 'Nedávno hledáno' };
+    const newItem = { ...result, detail: t('search.recentlySearched') };
     setRecentSearches(prev => {
       const filtered = prev.filter(item => item.title !== result.title);
       const updated = [newItem, ...filtered].slice(0, MAX_RECENT_SEARCHES);
@@ -55,7 +57,7 @@ export function useSearch(query: string, setQuery: (q: string) => void) {
         
         const personResults: SearchResult[] = people.map((p, i) => ({
           id: p.id || `unknown-${i}`, title: p.name, type: 'person',
-          detail: p.type === 'student' ? 'Student' : p.type === 'teacher' ? 'Vyučující' : 'Zaměstnanec',
+          detail: p.type === 'student' ? t('search.student') : p.type === 'teacher' ? t('search.teacher') : t('search.employee'),
           link: p.link, personType: p.type
         }));
 

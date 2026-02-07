@@ -7,11 +7,13 @@ import { useSubjectFileDrawerState } from './useSubjectFileDrawerState';
 import { SubjectFileDrawerContent } from './SubjectFileDrawerContent';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ParsedFile } from '../../types/documents';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLesson | null; isOpen: boolean; onClose: () => void }) {
     const state = useSubjectFileDrawerState(lesson, isOpen);
     const { isDownloading, downloadProgress, openFile, downloadZip } = useFileActions();
     const [showDragHint, setShowDragHint] = useState(false);
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (isOpen && state.files?.length) {
@@ -27,18 +29,19 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
 
     const groupedFiles = useMemo(() => {
         if (!state.files) return [];
+        const otherFolder = t('course.footer.other');
         const groups = new Map<string, ParsedFile[]>();
         state.files.forEach(f => {
-            const sub = f.subfolder?.trim() || 'Ostatní';
+            const sub = f.subfolder?.trim() || otherFolder;
             if (!groups.has(sub)) groups.set(sub, []);
             groups.get(sub)?.push(f);
         });
-        return Array.from(groups.keys()).sort((a, b) => a === 'Ostatní' ? 1 : b === 'Ostatní' ? -1 : a.localeCompare(b, 'cs'))
+        return Array.from(groups.keys()).sort((a, b) => a === otherFolder ? 1 : b === otherFolder ? -1 : a.localeCompare(b, 'cs'))
             .map(key => ({
-                name: key, displayName: key === 'Ostatní' ? 'Ostatní' : cleanFolderName(key, lesson?.courseCode),
+                name: key, displayName: key === otherFolder ? otherFolder : cleanFolderName(key, lesson?.courseCode),
                 files: groups.get(key)!.sort((a, b) => (a.file_comment || a.file_name).localeCompare(b.file_comment || b.file_name, 'cs', { numeric: true }))
             }));
-    }, [state.files, lesson]);
+    }, [state.files, lesson, t]);
 
     if (!isOpen) return null;
     return (

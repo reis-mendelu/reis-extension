@@ -1,7 +1,7 @@
 import { ExternalLink, Pencil, Check, X } from 'lucide-react';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface AssessmentItemProps {
-    index: number;
     test: any;
     isEditing: boolean;
     editMax: string;
@@ -12,7 +12,8 @@ interface AssessmentItemProps {
     values: { score: number; maxScore: number; isAdjusted: boolean };
 }
 
-export function AssessmentItem({ index, test, isEditing, editMax, onStartEdit, onCancelEdit, onSaveEdit, onEditMaxChange, values }: AssessmentItemProps) {
+export function AssessmentItem({ test, isEditing, editMax, onStartEdit, onCancelEdit, onSaveEdit, onEditMaxChange, values }: AssessmentItemProps) {
+    const { language } = useTranslation();
     return (
         <div className="px-4 py-3 hover:bg-base-200/30 transition-colors flex items-center gap-3">
             <div className="flex-1 min-w-0">
@@ -23,7 +24,7 @@ export function AssessmentItem({ index, test, isEditing, editMax, onStartEdit, o
                 {isEditing ? (
                     <div className="flex items-center gap-1.5">
                         <div className="font-mono text-sm text-base-content/70 min-w-[50px] text-right">
-                            {((test.score / test.maxScore) * (parseFloat(editMax) || test.maxScore)).toFixed(2).replace('.', ',')}
+                            {language === 'cs' ? ((test.score / test.maxScore) * (parseFloat(editMax) || test.maxScore)).toFixed(2).replace('.', ',') : ((test.score / test.maxScore) * (parseFloat(editMax) || test.maxScore)).toFixed(2)}
                         </div>
                         <span className="text-base-content/60">/</span>
                         <input type="text" inputMode="numeric" className="input input-xs input-bordered w-16 text-right" value={editMax} onChange={e => onEditMaxChange(e.target.value.replace(/[^0-9.]/g, ''))} autoFocus />
@@ -33,7 +34,7 @@ export function AssessmentItem({ index, test, isEditing, editMax, onStartEdit, o
                 ) : (
                     <>
                         <div className={`font-mono font-semibold ${values.isAdjusted ? 'text-success' : 'text-base-content'}`}>
-                            {values.score.toFixed(2).replace('.', ',')}<span className="text-base-content/40 text-sm font-normal"> / {values.maxScore}</span>
+                            {language === 'cs' ? values.score.toFixed(2).replace('.', ',') : values.score.toFixed(2)}<span className="text-base-content/40 text-sm font-normal"> / {values.maxScore}</span>
                         </div>
                         <button onClick={onStartEdit} className="btn btn-ghost btn-xs opacity-50 hover:opacity-100"><Pencil size={14} /></button>
                     </>

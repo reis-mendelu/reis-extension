@@ -1,6 +1,11 @@
-export function getDayOfWeek(dateStr: string): string {
-    const [d, m, y] = dateStr.split('.').map(Number);
-    return ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'][new Date(y, m - 1, d).getDay()];
+/**
+ * Get day of week abbreviation from date string (DD.MM.YYYY).
+ */
+export function getDayOfWeek(dateString: string, t: (k: string) => string): string {
+    const [day, month, year] = dateString.split('.').map(Number);
+    const date = new Date(year, month - 1, day);
+    const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return t(`days.${dayKeys[date.getDay()]}`).substring(0, 2);
 }
 
 export function parseRegistrationStart(str: string): Date | null {

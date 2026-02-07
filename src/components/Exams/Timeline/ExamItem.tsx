@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ExamTerm } from '../../../types/exams';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface ExamItemProps {
   term: ExamTerm;
@@ -18,6 +19,7 @@ const ExamItem: React.FC<ExamItemProps> = ({
   orientation = 'vertical',
   onClick,
 }) => {
+  const { t } = useTranslation();
   const isHorizontal = orientation === 'horizontal';
 
   // Neutral Track and Dot coloring
@@ -43,7 +45,7 @@ const ExamItem: React.FC<ExamItemProps> = ({
           <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
           </svg>
-          {term.room || 'TBD'}
+          {term.room || t('common.loading')}
         </div>
       </div>
       <div className="text-[11px] font-mono font-extrabold tracking-widest uppercase text-primary">

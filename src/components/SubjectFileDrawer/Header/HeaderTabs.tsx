@@ -1,5 +1,8 @@
+import { useTranslation } from '../../../hooks/useTranslation';
+
 export function HeaderTabs({ activeTab, onTabChange }: any) {
-    const tabs = [{ id: 'files', label: 'Soubory' }, { id: 'syllabus', label: 'Požadavky' }, { id: 'stats', label: 'Úspěšnost' }];
+    const { t } = useTranslation();
+    const tabs = [{ id: 'files', label: t('course.tabs.files') }, { id: 'syllabus', label: t('course.tabs.requirements') }, { id: 'stats', label: t('course.tabs.successRate') }];
     return (
         <div className="flex items-center gap-8 mt-4">
             {tabs.map(tab => (

@@ -1,4 +1,5 @@
 import { Trophy } from 'lucide-react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { IndexedDBService } from '../../services/storage';
 import { AssessmentSkeleton } from './AssessmentSkeleton';
 import { useAssessmentState } from './Assessment/useAssessmentState';
@@ -8,10 +9,11 @@ import { FinalGradeDisplay } from './Assessment/FinalGradeDisplay';
 
 export function AssessmentTab({ courseCode }: { courseCode: string }) {
     const s = useAssessmentState(courseCode);
+    const { t } = useTranslation();
     if (s.isLoading || (s.isSyncing && s.assessments === null)) return <AssessmentSkeleton />;
     if (s.assessments === null || s.assessments.length === 0) return (
         <div className="flex flex-col items-center justify-center h-full p-6 text-center text-base-content/40">
-            <Trophy className="w-12 h-12 opacity-20 mb-3" /><p className="text-sm">Zatím žádné hodnocení</p>
+            <Trophy className="w-12 h-12 opacity-20 mb-3" /><p className="text-sm">{t('assessment.noData')}</p>
         </div>
     );
 
@@ -39,7 +41,7 @@ export function AssessmentTab({ courseCode }: { courseCode: string }) {
                     );
                 })}
             </div>
-            <BonusPointsSection bonusPoints={s.bonusPoints} onAdd={() => { const id = Date.now().toString(); const nb = { ...s.bonusPoints, [id]: { name: 'Bonus', points: 0 } }; s.setBonusPoints(nb); saveBonus(nb); }}
+            <BonusPointsSection bonusPoints={s.bonusPoints} onAdd={() => { const id = Date.now().toString(); const nb = { ...s.bonusPoints, [id]: { name: t('assessment.bonusDefault'), points: 0 } }; s.setBonusPoints(nb); saveBonus(nb); }}
                 onRemove={id => { const nb = { ...s.bonusPoints }; delete nb[id]; s.setBonusPoints(nb); saveBonus(nb); }}
                 onUpdate={(id, name, points) => { const nb = { ...s.bonusPoints, [id]: { name, points } }; s.setBonusPoints(nb); saveBonus(nb); }} />
             <FinalGradeDisplay finalGrade={s.finalGrade} />

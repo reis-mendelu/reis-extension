@@ -7,8 +7,10 @@ import { useExamActions } from './useExamActions';
 import { ExamPanelHeader } from './ExamPanelHeader';
 import { useExamsData } from './useExamsData';
 import ExamTimeline from '../Exams/Timeline/ExamTimeline';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function ExamPanel({ onSelectSubject }: any) {
+    const { t } = useTranslation();
     const { 
         exams, 
         isLoading, 
@@ -82,7 +84,7 @@ export function ExamPanel({ onSelectSubject }: any) {
                 onToggleSubject={(c: string) => setSelectedSubjects((p: any) => p.includes(c) ? p.filter((x: any) => x !== c) : [...p, c])} 
                 onClearFilters={clearAllFilters} 
             />
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">{isLoading ? <div className="flex items-center justify-center h-32 opacity-50"><span className="loading loading-spinner mr-2" /> Načítání zkoušek...</div> : !filteredSubjects.length ? <div className="flex flex-col items-center justify-center h-32 opacity-50"><span>📭 Žádné zkoušky</span></div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">{isLoading ? <div className="flex items-center justify-center h-32 opacity-50"><span className="loading loading-spinner mr-2" /> {t('exams.loading')}</div> : !filteredSubjects.length ? <div className="flex flex-col items-center justify-center h-32 opacity-50"><span>{t('exams.empty')}</span></div>
                 : filteredSubjects.map(({ subject, section }: { subject: ExamSubject, section: ExamSection }) => <ExamSectionCard key={section.id} subject={subject} section={section} isExpanded={expandedId === section.id} isProcessing={processingSectionId === section.id} onToggleExpand={(id: any) => setExpandedId(p => p === id ? null : id)} onRegister={handleRegisterRequest} onUnregister={handleUnregisterRequest} onSelectSubject={onSelectSubject} />)}</div>
         </div>
         <ConfirmationModal isOpen={!!pendingAction} actionType={pendingAction?.type ?? 'register'} sectionName={pendingAction?.section.name ?? ''} termInfo={pendingAction?.type === 'register' ? pendingAction.section.terms.find((t: any) => t.id === pendingAction.termId) : pendingAction?.section.registeredTerm} onConfirm={handleConfirmAction} onCancel={() => setPendingAction(null)} /></>

@@ -8,6 +8,7 @@ import { BottomActions } from './Sidebar/BottomActions';
 import { useSubjects } from '../hooks/data/useSubjects';
 import { useUserParams } from '../hooks/useUserParams';
 import { useAppStore } from '../store/useAppStore';
+import { useTranslation } from '../hooks/useTranslation';
 
 export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, tutorials = [], onSelectTutorial, onOpenSubject }: { currentView: AppView, onViewChange: (v: AppView) => void, onOpenFeedback?: () => void, tutorials?: any[], onSelectTutorial?: any, onOpenSubject?: any }) => {
   const [hovered, setHovered] = useState<string | null>(null);
@@ -15,11 +16,12 @@ export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, tutorials =
   const { subjects } = useSubjects();
   const { params } = useUserParams();
   const files = useAppStore(state => state.files);
+  const { t } = useTranslation();
 
   const handleEnter = (id: string) => { if (timeout.current) clearTimeout(timeout.current); setHovered(id); };
   const handleLeave = () => { timeout.current = setTimeout(() => setHovered(null), 300); };
 
-  const menuItems = getMainMenuItems(params?.studium ?? '', params?.obdobi ?? '').map(item => {
+  const menuItems = getMainMenuItems(params?.studium ?? '', params?.obdobi ?? '', t).map(item => {
     const p = { ...item };
     if (item.id === 'tutorials' && tutorials.length > 0) {
       p.expandable = true;

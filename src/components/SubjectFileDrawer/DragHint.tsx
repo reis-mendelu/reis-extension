@@ -11,6 +11,7 @@ interface DragHintProps {
 }
 
 export function DragHint({ show }: DragHintProps) {
+    const { t } = useTranslation();
     if (!show) return null;
 
     return (
@@ -37,7 +38,7 @@ export function DragHint({ show }: DragHintProps) {
                 }}
             >
                 <MousePointer2 size={16} className="text-primary" />
-                Tažením vyberete více souborů
+                {t('course.dragHint')}
             </div>
 
             <style>{`

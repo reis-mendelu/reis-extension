@@ -1,4 +1,7 @@
+import { useTranslation } from '../../../hooks/useTranslation';
+
 export function GradingTable({ table, studyForm }: { table: string[][], studyForm: string }) {
+    const { t } = useTranslation();
     if (!table.length) return null;
     const headers = table[0];
     let indices = headers.map((_, i) => i);
@@ -8,12 +11,12 @@ export function GradingTable({ table, studyForm }: { table: string[][], studyFor
 
     return (
         <div>
-            <h3 className="text-base font-bold mb-3">Bodové rozdělení</h3>
+            <h3 className="text-base font-bold mb-3">{t('syllabus.grading')}</h3>
             <div className="overflow-x-auto border border-base-200 rounded-lg">
                 <table className="table table-sm w-full">
                     <thead>
                         <tr className="bg-base-200 text-base-content">
-                            {indices.map(i => <th key={i} className={i > 0 ? 'text-center' : ''}>{i > 0 && (headers[i].toLowerCase().includes('prezenč') || headers[i].toLowerCase().includes('kombinovan')) ? 'Váha' : headers[i]}</th>)}
+                            {indices.map(i => <th key={i} className={i > 0 ? 'text-center' : ''}>{i > 0 && (headers[i].toLowerCase().includes('prezenč') || headers[i].toLowerCase().includes('kombinovan')) ? t('syllabus.weight') : headers[i]}</th>)}
                         </tr>
                     </thead>
                     <tbody>
