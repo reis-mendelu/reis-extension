@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import type { ExamTerm, ExamSubject } from '../types/exams';
 
 export function useDatePickerData(terms: ExamTerm[], allExams: ExamSubject[], currentDate: Date) {

@@ -27,7 +27,7 @@ export function parseServerFiles(html: string): { files: ParsedFile[], paginatio
     }
 
     // Case 2: Folder list
-    let rows: any = doc.querySelectorAll('tr.uis-hl-table.lbn');
+    let rows: NodeListOf<Element> | Element[] = doc.querySelectorAll('tr.uis-hl-table.lbn');
     if (rows.length === 0) rows = Array.from(doc.querySelectorAll('table tr')).filter(r => r.querySelectorAll('td').length >= 5);
 
     doc.querySelectorAll('a').forEach(a => {
@@ -47,7 +47,7 @@ export function parseServerFiles(html: string): { files: ParsedFile[], paginatio
         const file_name = validateFileName(nameCell?.textContent || '');
         if (!file_name) return;
 
-        let link = nameCell?.querySelector('a') || Array.from(cells).find(c => c.querySelector('a'))?.querySelector('a');
+        const link = nameCell?.querySelector('a') || Array.from(cells).find(c => c.querySelector('a'))?.querySelector('a');
         if (!link) return;
 
         const author = sanitizeString(cells[3 + adder]?.textContent || '', 200);

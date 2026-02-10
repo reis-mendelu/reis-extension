@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import type { Position, UseDragSelectionOptions } from './useDragSelection/types';
 import { useSelectionProcessor } from './useDragSelection/useSelectionProcessor';
 import { useAutoScroll } from './useDragSelection/useAutoScroll';
@@ -31,10 +31,9 @@ export function useDragSelection(options: UseDragSelectionOptions = {}) {
 
     const onMouseUp = useCallback(() => {
         autoScroll.clear();
-        window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp);
         if (isDraggingRef.current) { ignoreClickRef.current = true; setTimeout(() => ignoreClickRef.current = false, 100); setIsDragging(false); isDraggingRef.current = false; }
         setSelectionStart(null); setSelectionEnd(null); selectionStartRef.current = null;
-    }, [autoScroll, onMouseMove]);
+    }, [autoScroll]);
 
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
         if (e.button !== 0 || (e.target as HTMLElement).closest('button, a, input, [data-no-drag]')) return;
@@ -42,8 +41,18 @@ export function useDragSelection(options: UseDragSelectionOptions = {}) {
         const rect = containerRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left + containerRef.current.scrollLeft, y = e.clientY - rect.top + containerRef.current.scrollTop;
         selectionStartRef.current = { x, y }; setSelectionStart({ x, y }); initialSelectedIds.current = [...selectedIds];
-        window.addEventListener('mousemove', onMouseMove); window.addEventListener('mouseup', onMouseUp);
-    }, [selectedIds, onMouseMove, onMouseUp]);
+    }, [selectedIds]);
+
+    useEffect(() => {
+        if (selectionStart) {
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+            return () => {
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+            };
+        }
+    }, [selectionStart, onMouseMove, onMouseUp]);
 
     return { selectedIds, setSelectedIds, isDragging, selectionStart, selectionEnd, containerRef, contentRef, itemRefs, handleMouseDown, ignoreClickRef,
              handleBackdropClick: (e: React.MouseEvent, cb: () => void) => !ignoreClickRef.current && e.target === e.currentTarget && cb(),

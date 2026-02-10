@@ -24,12 +24,26 @@ export function useDragSelection({ isOpen, containerRef, contentRef, fileRefs }:
     }, [containerRef, auto, process]);
 
     const onUp = useCallback(() => {
-        auto.clear(); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
+        auto.clear();
+        window.removeEventListener('mousemove', onMove);
+        // We can't easily remove 'onUp' inside 'onUp' if it's not declared yet in the scope of useCallback's body
+        // But if we move this to useEffect, we don't need to manually remove it here as much,
+        // though it's good practice for "one-shot" listeners.
+        // Actually, we can just use a named function or a ref.
         if (draggingRef.current) { ignoreRef.current = true; setTimeout(() => ignoreRef.current = false, 100); setDragging(false); draggingRef.current = false; }
         setStart(null); setEnd(null); startRef.current = null;
     }, [auto, onMove]);
 
-    if (start && isOpen) { window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp); }
+    useEffect(() => {
+        if (start && isOpen) {
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+            return () => {
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('mouseup', onUp);
+            };
+        }
+    }, [start, isOpen, onMove, onUp]);
 
     return { selectedIds: ids, isDragging: dragging, ignoreClickRef: ignoreRef, setSelectedIds: setIds, clearSelection: () => setIds([]),
         selectionBoxStyle: useMemo(() => (!start || !end) ? null : { left: Math.min(start.x, end.x), top: Math.min(start.y, end.y), width: Math.abs(end.x - start.x), height: Math.abs(end.y - start.y) }, [start, end]),

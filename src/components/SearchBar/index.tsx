@@ -12,7 +12,7 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject }: SearchBarPro
   const defaultPlaceholder = t('search.placeholder');
   const finalPlaceholder = placeholder || defaultPlaceholder;
   const [query, setQuery] = useState('');
-  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query, setQuery);
+  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 

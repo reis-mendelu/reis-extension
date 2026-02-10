@@ -3,7 +3,9 @@ import { parseRequirementsText, parseAssessmentMethods } from './syllabus/requir
 import { parseRequirementsTable, parseAssessmentCriteria } from './syllabus/gradingParser';
 import { parseCourseMetadata } from './syllabus/metadataParser';
 
-export function parseSyllabusOffline(html: string, lang: string = 'cz'): any {
+import type { SyllabusRequirements } from '../../schemas/syllabusSchema';
+
+export function parseSyllabusOffline(html: string, lang: string = 'cz'): SyllabusRequirements {
     if (!html || typeof html !== 'string') return { requirementsText: 'Error: Section not found', requirementsTable: [] };
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const res = { 

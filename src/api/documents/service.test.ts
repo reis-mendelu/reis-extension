@@ -2,16 +2,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fetchFilesFromFolder } from './service';
 import { fetchWithAuth } from '../client';
 import { parseServerFiles } from './parser';
-import { validateUrl } from "../../utils/validation/index";
 
 // Mock dependencies
 vi.mock('../client');
 vi.mock('./parser');
-vi.mock('../../utils/validation/index', () => ({
-    validateUrl: vi.fn((url: string) => url.startsWith('http') ? url : `https://is.mendelu.cz${url.startsWith('/') ? '' : '/'}${url}`),
-    sanitizeString: vi.fn(s => s),
-    validateFileName: vi.fn(s => s)
-}));
+vi.mock('../../utils/validation/index', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../utils/validation/index')>();
+    return {
+        ...actual,
+        sanitizeString: vi.fn(s => s),
+        validateFileName: vi.fn(s => s),
+        validateUrl: vi.fn(s => s)
+    };
+});
 vi.mock('../../utils/requestQueue', () => ({
     requestQueue: { add: vi.fn(fn => fn()) },
     processWithDelay: vi.fn((items, processor) => Promise.all(items.map(processor)))

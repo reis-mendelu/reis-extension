@@ -13,7 +13,7 @@ interface WeeklyCalendarDayProps {
 }
 
 export function WeeklyCalendarDay({ 
-    dayIndex, lessons, holiday, isToday, showSkeleton, onEventClick, language 
+    lessons, holiday, isToday, showSkeleton, onEventClick, language 
 }: WeeklyCalendarDayProps) {
     const { lessons: organizedLessons, totalRows } = organizeLessons(lessons);
 

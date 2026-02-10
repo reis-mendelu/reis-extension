@@ -8,12 +8,13 @@ import type { Tutorial } from '../services/tutorials';
 import { useSpolkySettings } from './useSpolkySettings';
 import { useAppStore, initializeStore } from '../store/useAppStore';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
-import type { AppView } from '../types/app';
+import type { AppView, SelectedSubject } from '../types/app';
+import { isContentMessage } from '../types/messages';
 
 export function useAppLogic() {
   const [currentDate, setCurrentDate] = useState<Date>(() => getSmartWeekRange().start);
   const [currentView, setCurrentView] = useState<AppView>('calendar');
-  const [selectedSubject, setSelectedSubject] = useState<any>(null);
+  const [selectedSubject, setSelectedSubject] = useState<SelectedSubject | null>(null);
   const [weekNavCount, setWeekNavCount] = useState(0);
   const [tutorials, setTutorials] = useState<Tutorial[]>([]);
   const [selectedTutorial, setSelectedTutorial] = useState<Tutorial | null>(null);
@@ -54,8 +55,11 @@ export function useAppLogic() {
     const handle = async (e: MessageEvent) => {
         if (e.source !== window.parent) return;
         const d = e.data;
-        if (!d || (d.type !== 'REIS_DATA' && d.type !== 'REIS_SYNC_UPDATE')) return;
-        const r = d.data || d;
+        if (!isContentMessage(d)) return;
+        
+        const r = d.type === 'REIS_SYNC_UPDATE' ? d.data : d.dataType === 'all' ? (d.data as any) : null;
+        if (!r) return;
+
         if (r.schedule) await IndexedDBService.set('schedule', 'current', r.schedule);
         if (r.exams) await IndexedDBService.set('exams', 'current', r.exams);
         if (r.subjects) {
@@ -78,8 +82,8 @@ export function useAppLogic() {
             for (const [c, f] of Object.entries(r.files)) {
                 const existing = await IndexedDBService.get('files', c);
                 // Only overwrite if incoming has more content or existing is not dual-language
-                if (!existing || (f as any).cz || !(existing as any).cz) {
-                     await IndexedDBService.set('files', c, f as any);
+                if (!existing || (f as Record<string, unknown>).cz || !(existing as Record<string, unknown>).cz) {
+                     await IndexedDBService.set('files', c, f);
                 }
             }
         }
@@ -87,8 +91,8 @@ export function useAppLogic() {
         if (r.syllabuses) {
             for (const [c, s] of Object.entries(r.syllabuses)) {
                 const existing = await IndexedDBService.get('syllabuses', c);
-                if (!existing || (s as any).cz || !(existing as any).cz) {
-                    await IndexedDBService.set('syllabuses', c, s as any);
+                if (!existing || (s as Record<string, unknown>).cz || !(existing as Record<string, unknown>).cz) {
+                    await IndexedDBService.set('syllabuses', c, s);
                 }
             }
         }

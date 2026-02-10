@@ -9,10 +9,22 @@ import { useSubjects } from '../hooks/data/useSubjects';
 import { useUserParams } from '../hooks/useUserParams';
 import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from '../hooks/useTranslation';
+import type { Tutorial } from '../services/tutorials';
+import type { SelectedSubject } from '../types/app';
+import type { SubjectInfo } from '../types/documents';
 
-export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, tutorials = [], onSelectTutorial, onOpenSubject }: { currentView: AppView, onViewChange: (v: AppView) => void, onOpenFeedback?: () => void, tutorials?: any[], onSelectTutorial?: any, onOpenSubject?: any }) => {
+interface SidebarProps {
+  currentView: AppView;
+  onViewChange: (v: AppView) => void;
+  onOpenFeedback?: () => void;
+  tutorials?: Tutorial[];
+  onSelectTutorial?: (t: Tutorial) => void;
+  onOpenSubject?: (s: SelectedSubject) => void;
+}
+
+export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, tutorials = [], onSelectTutorial, onOpenSubject }: SidebarProps) => {
   const [hovered, setHovered] = useState<string | null>(null);
-  const timeout = useRef<any>(null);
+  const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { subjects } = useSubjects();
   const { params } = useUserParams();
   const files = useAppStore(state => state.files);
@@ -31,7 +43,7 @@ export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, tutorials =
     }
     if (item.id === 'subjects' && subjects) {
       p.expandable = true;
-      const sortedSubjects = Object.values(subjects.data).sort((a: any, b: any) => {
+      const sortedSubjects = Object.values(subjects.data).sort((a: SubjectInfo, b: SubjectInfo) => {
         const aHasFiles = (files[a.subjectCode]?.length ?? 0) > 0;
         const bHasFiles = (files[b.subjectCode]?.length ?? 0) > 0;
 
@@ -53,7 +65,7 @@ export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, tutorials =
         }
       }
 
-      p.children = columnMajorSubjects.map((s: any) => {
+      p.children = columnMajorSubjects.map((s: SubjectInfo) => {
         // Try to get course name from syllabus (language-aware)
         const syllabus = syllabuses[s.subjectCode];
         

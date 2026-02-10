@@ -1,4 +1,4 @@
-import { Clock, FileText, BookOpen, GraduationCap, Briefcase } from 'lucide-react';
+import { Clock, FileText, BookOpen, Briefcase } from 'lucide-react';
 import type { SearchResult } from './types';
 
 interface SearchResultItemProps {
@@ -23,7 +23,7 @@ export function SearchResultItem({ result, isRecent, isSelected, onMouseEnter, o
           <BookOpen className="w-3.5 h-3.5 text-violet-600" />
         </div>
       );
-      case 'person': 
+      case 'person': {
         const bg = result.personType === 'student' ? 'bg-info/20' : result.personType === 'teacher' ? 'bg-secondary/20' : 'bg-base-200';
         const color = result.personType === 'student' ? 'text-info' : result.personType === 'teacher' ? 'text-secondary' : 'text-base-content/60';
         return (
@@ -31,6 +31,7 @@ export function SearchResultItem({ result, isRecent, isSelected, onMouseEnter, o
             <Briefcase className={`w-3.5 h-3.5 ${color}`} />
           </div>
         );
+      }
       default: return (
         <div className="w-6 h-6 rounded bg-base-200 flex items-center justify-center">
           <FileText className="w-3.5 h-3.5 text-base-content/60" />

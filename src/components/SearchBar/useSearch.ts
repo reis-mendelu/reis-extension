@@ -4,11 +4,11 @@ import { pagesData } from '../../data/pagesData';
 import { fuzzyIncludes } from '../../utils/searchUtils';
 import type { SearchResult } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
+import { IndexedDBService } from '../../services/storage';
 
 const MAX_RECENT_SEARCHES = 5;
-const STORAGE_KEY = 'reis_recent_searches';
 
-export function useSearch(query: string, setQuery: (q: string) => void) {
+export function useSearch(query: string) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -23,22 +23,28 @@ export function useSearch(query: string, setQuery: (q: string) => void) {
         try {
             const params = await getUserParams();
             if (params?.studium) setStudiumId(String(params.studium));
-        } catch (e) { console.error("Failed to load user params", e); }
+        } catch (err) { console.error("Failed to load user params", err); }
     });
-    try {
-      const stored = sessionStorage.getItem(STORAGE_KEY);
-      if (stored) setRecentSearches(JSON.parse(stored));
-    } catch (e) { console.error('Failed to load recent searches', e); }
+    
+    const loadRecent = async () => {
+        try {
+            const stored = await IndexedDBService.get('meta', 'recent_searches');
+            if (stored) setRecentSearches(stored);
+        } catch { console.error('Failed to load recent searches'); }
+    };
+    loadRecent();
   }, []);
 
-  const saveToHistory = (result: SearchResult) => {
+  const saveToHistory = async (result: SearchResult) => {
     const newItem = { ...result, detail: t('search.recentlySearched') };
-    setRecentSearches(prev => {
-      const filtered = prev.filter(item => item.title !== result.title);
-      const updated = [newItem, ...filtered].slice(0, MAX_RECENT_SEARCHES);
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      return updated;
-    });
+    const filtered = recentSearches.filter(item => item.title !== result.title);
+    const updated = [newItem, ...filtered].slice(0, MAX_RECENT_SEARCHES);
+    setRecentSearches(updated);
+    try {
+        await IndexedDBService.set('meta', 'recent_searches', updated);
+    } catch {
+        console.error('Failed to save recent searches');
+    }
   };
 
   useEffect(() => {
@@ -75,13 +81,13 @@ export function useSearch(query: string, setQuery: (q: string) => void) {
         }));
 
         const getScore = (r: SearchResult): number => {
-          const t = r.title.toLowerCase();
-          const c = r.subjectCode?.toLowerCase() ?? '';
-          let b = r.type === 'subject' ? 1000 : r.type === 'page' ? 500 : 100;
-          if (t === searchQuery) return b + 100;
-          if (t.startsWith(searchQuery)) return b + 90;
-          if (c === searchQuery) return b + 85;
-          return b + 10;
+          const titleLower = r.title.toLowerCase();
+          const codeLower = r.subjectCode?.toLowerCase() ?? '';
+          const base = r.type === 'subject' ? 1000 : r.type === 'page' ? 500 : 100;
+          if (titleLower === searchQuery) return base + 100;
+          if (titleLower.startsWith(searchQuery)) return base + 90;
+          if (codeLower === searchQuery) return base + 85;
+          return base + 10;
         };
 
         const all = [...subjectResults, ...pageResults, ...personResults].sort((a, b) => {
@@ -89,10 +95,10 @@ export function useSearch(query: string, setQuery: (q: string) => void) {
           return sB !== sA ? sB - sA : a.title.localeCompare(b.title);
         });
         setFilteredResults(all);
-      } catch (e) { setFilteredResults([]); } finally { setIsLoading(false); }
+      } catch { setFilteredResults([]); } finally { setIsLoading(false); }
     }, 500);
     return () => { if (debounceTimeout.current) clearTimeout(debounceTimeout.current); };
-  }, [query]);
+  }, [query, t]);
 
   return { isOpen, setIsOpen, selectedIndex, setSelectedIndex, filteredResults, isLoading, recentSearches, studiumId, saveToHistory };
 }

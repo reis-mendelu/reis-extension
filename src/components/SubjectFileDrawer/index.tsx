@@ -43,21 +43,33 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
             }));
     }, [state.files, lesson, t]);
 
+    const {
+        activeTab, setActiveTab, files, isFilesLoading, isSyncing, resolvedCourseId, syllabusResult,
+        containerRef, contentRef, fileRefs, selectedIds, isDragging, ignoreClickRef,
+        handleMouseDown, toggleSelect, selectionBoxStyle
+    } = state;
+
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-50 flex justify-end items-stretch p-4 isolate">
             <div className="absolute inset-0 bg-black/15 animate-in fade-in" onClick={onClose} />
             <div className="w-full flex justify-end items-start h-full pt-10 pb-10 relative z-10 pointer-events-none">
                 <div role="dialog" className="w-[600px] bg-base-100 shadow-2xl rounded-2xl flex flex-col h-full animate-in slide-in-from-right pointer-events-auto border border-base-300">
-                    <DrawerHeader lesson={lesson} courseId={state.resolvedCourseId || state.syllabusResult.syllabus?.courseId || ''}
-                        courseInfo={state.syllabusResult.syllabus?.courseInfo} selectedCount={state.selectedIds.length}
-                        isDownloading={isDownloading} downloadProgress={downloadProgress} activeTab={state.activeTab} onTabChange={state.setActiveTab}
-                        onClose={onClose} onDownload={() => downloadZip(state.selectedIds, `${lesson?.courseCode}_files.zip`)} />
-                    <div ref={state.containerRef} className="flex-1 overflow-y-auto relative select-none"
-                        onMouseDown={state.activeTab === 'files' ? state.handleMouseDown : undefined}
-                        style={{ cursor: state.activeTab === 'files' ? 'crosshair' : 'default' }}>
-                        <div ref={state.contentRef} className="min-h-full pb-20 relative">
-                            <SubjectFileDrawerContent {...state} lesson={lesson} showDragHint={showDragHint} groupedFiles={groupedFiles} openFile={openFile} />
+                    <DrawerHeader lesson={lesson} courseId={resolvedCourseId || syllabusResult.syllabus?.courseId || ''}
+                        courseInfo={syllabusResult.syllabus?.courseInfo} selectedCount={selectedIds.length}
+                        isDownloading={isDownloading} downloadProgress={downloadProgress} activeTab={activeTab} onTabChange={setActiveTab}
+                        onClose={onClose} onDownload={() => downloadZip(selectedIds, `${lesson?.courseCode}_files.zip`)} />
+                    <div ref={containerRef} className="flex-1 overflow-y-auto relative select-none"
+                        onMouseDown={activeTab === 'files' ? handleMouseDown : undefined}
+                        style={{ cursor: activeTab === 'files' ? 'crosshair' : 'default' }}>
+                        <div ref={contentRef} className="min-h-full pb-20 relative">
+                            <SubjectFileDrawerContent 
+                                activeTab={activeTab} lesson={lesson} files={files} isFilesLoading={isFilesLoading}
+                                isSyncing={isSyncing} isDragging={isDragging} selectionBoxStyle={selectionBoxStyle}
+                                showDragHint={showDragHint} groupedFiles={groupedFiles} selectedIds={selectedIds}
+                                fileRefs={fileRefs} ignoreClickRef={ignoreClickRef} toggleSelect={toggleSelect}
+                                openFile={openFile} resolvedCourseId={resolvedCourseId} syllabusResult={syllabusResult}
+                            />
                         </div>
                     </div>
                 </div>

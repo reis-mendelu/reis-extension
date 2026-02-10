@@ -1,5 +1,16 @@
-export function parseCourseMetadata(doc: Document, lang: string = 'cs') {
-    const info: any = { 
+import type { CourseMetadata } from "../../../schemas/syllabusSchema";
+
+export function parseCourseMetadata(doc: Document, lang: string = 'cs'): CourseMetadata {
+    const isValidName = (name: string | null) => {
+        if (!name) return false;
+        const n = name.toLowerCase().trim();
+        // Match placeholders like -- text -- or — text —
+        return !n.match(/^[-–—].*[-–—]$/) && 
+               !n.includes('not defined') && 
+               !n.includes('nebyla zadána');
+    };
+
+    const info: CourseMetadata = { 
         courseName: null,      // Deprecated: for backward compatibility
         courseNameCs: null,    // Czech name
         courseNameEn: null,    // English name
@@ -9,30 +20,16 @@ export function parseCourseMetadata(doc: Document, lang: string = 'cs') {
         status: null 
     };
 
-    const isValidName = (name: string | null) => {
-        if (!name) return false;
-        const n = name.toLowerCase().trim();
-        // Match -- anything -- as placeholder, or specific English/Czech strings
-        return !n.match(/^[-–—]{2}.*[-–—]{2}$/) && 
-               !n.includes('not defined') && 
-               !n.includes('nebyla zadána');
-    };
-
     doc.querySelectorAll('table tbody tr').forEach(r => {
         const c = r.querySelectorAll('td'); if (c.length < 2) return;
         const l = (c[0].textContent || '').toLowerCase().trim().replace(/:$/, ''), v = c[1];
         const v_txt = v.textContent?.trim() || null;
         
         // Extract BOTH Czech and English names
-        if (l === 'název předmětu' && isValidName(v_txt)) {
+        if ((l === 'název předmětu' || l === 'course title in czech') && isValidName(v_txt)) {
             info.courseNameCs = v_txt;
         } else if ((l === 'název předmětu anglicky' || l === 'course title in english' || l === 'course title') && isValidName(v_txt)) {
             info.courseNameEn = v_txt;
-        }
-
-        // Set deprecated courseName based on lang for backward compatibility
-        if (!info.courseName) {
-            info.courseName = lang === 'en' ? info.courseNameEn : info.courseNameCs;
         }
 
         // Match Czech and English labels strictly
@@ -54,6 +51,10 @@ export function parseCourseMetadata(doc: Document, lang: string = 'cs') {
             });
         }
     });
+
+    // Set deprecated courseName with full fallback path
+    info.courseName = (lang === 'en' ? info.courseNameEn : info.courseNameCs) || info.courseNameCs || info.courseNameEn;
+
     return info;
 }
 

@@ -16,7 +16,7 @@ export function useNotificationFeed() {
     IndexedDBService.get('meta', 'read_notifications').then(s => s && setReadIds(new Set(s)));
     IndexedDBService.get('meta', 'viewed_notifications_analytics').then(s => s && setViewedIds(new Set(s)));
     IndexedDBService.get('meta', 'notifications_cache').then(c => c && notifications.length === 0 && setNotifications(c));
-  }, []);
+  }, [notifications.length]);
 
   const load = useCallback(async (isInit = false) => {
     if (notifications.length === 0) setLoading(true);

@@ -23,7 +23,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
         }));
 
         try {
-            let data = await IndexedDBService.get('files', courseCode);
+            const data = await IndexedDBService.get('files', courseCode);
             let languageMatches = false;
 
             // Handle dual-language structure vs legacy array

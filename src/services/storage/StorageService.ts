@@ -10,7 +10,7 @@ export const StorageService = {
         console.error(`[StorageService] Synchronous get('${key}') is deprecated and unsafe. Use getAsync instead.`);
         throw new Error('StorageService.get is deprecated. Use getAsync.');
     },
-    set<T>(key: string, val: T): void {
+    set<T>(key: string, _: T): void {
         console.error(`[StorageService] Synchronous set('${key}') is deprecated. Use setAsync instead.`);
         throw new Error('StorageService.set is deprecated. Use setAsync.');
     },
@@ -35,5 +35,30 @@ export const StorageService = {
     },
     async removeAsync(key: string): Promise<void> {
         await IndexedDBService.delete('meta', key);
+    },
+
+    // Cross-device sync (chrome.storage.sync)
+    sync: {
+        async get<T>(key: string): Promise<T | null> {
+            try {
+                if (typeof chrome === 'undefined' || !chrome.storage?.sync) return null;
+                const res = await chrome.storage.sync.get(key);
+                return (res[key] as T) ?? null;
+            } catch {
+                return null;
+            }
+        },
+        async set<T>(key: string, val: T): Promise<void> {
+            try {
+                if (typeof chrome === 'undefined' || !chrome.storage?.sync) return;
+                await chrome.storage.sync.set({ [key]: val });
+            } catch {}
+        },
+        async remove(key: string): Promise<void> {
+            try {
+                if (typeof chrome === 'undefined' || !chrome.storage?.sync) return;
+                await chrome.storage.sync.remove(key);
+            } catch {}
+        }
     }
 };

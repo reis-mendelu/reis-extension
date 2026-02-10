@@ -6,14 +6,18 @@ import { useExamDrawerLogic } from '../hooks/useExamDrawerLogic';
 import { ExamSubjectItem } from './Exams/ExamSubjectItem';
 
 export function ExamDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-    const s = useExamDrawerLogic(isOpen, onClose);
+    const { 
+        exams, isLoading, error, expandedSubjectId, setExpandedSubjectId, 
+        popupSection, setPopupSection, popupAnchorRef, setPopupAnchor, 
+        processingId, autoBookingId, handleRegister 
+    } = useExamDrawerLogic(isOpen);
     
     useEffect(() => {
         if (!isOpen) return;
-        const esc = (e: KeyboardEvent) => e.key === 'Escape' && (s.popupSection ? s.setPopupSection(null) : onClose());
+        const esc = (e: KeyboardEvent) => e.key === 'Escape' && (popupSection ? setPopupSection(null) : onClose());
         document.addEventListener('keydown', esc);
         return () => document.removeEventListener('keydown', esc);
-    }, [isOpen, onClose, s.popupSection]);
+    }, [isOpen, onClose, popupSection, setPopupSection]);
 
     if (!isOpen) return null;
 
@@ -27,12 +31,12 @@ export function ExamDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                             <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Zkoušky</h2>
                             <button onClick={onClose} className="btn btn-ghost btn-circle btn-sm -mr-2 text-slate-400 hover:text-slate-600"><X size={20} /></button>
                         </div>
-                        {s.autoBookingId && <div className="bg-amber-50 border-b border-amber-100 px-6 py-3 flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" /><span className="text-sm text-amber-800 font-medium">Auto-rezervace aktivní. Nezavírejte tuto záložku!</span></div>}
+                        {autoBookingId && <div className="bg-amber-50 border-b border-amber-100 px-6 py-3 flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" /><span className="text-sm text-amber-800 font-medium">Auto-rezervace aktivní. Nezavírejte tuto záložku!</span></div>}
                         <div className="flex-1 overflow-y-auto">
-                            {s.isLoading ? <div className="flex items-center justify-center h-full text-slate-400">Načítání zkoušek...</div> :
-                             s.error ? <div className="flex items-center justify-center h-full text-error">{s.error}</div> :
-                             <Accordion type="single" collapsible value={s.expandedSubjectId} onValueChange={s.setExpandedSubjectId}>
-                                {s.exams.map(sub => <ExamSubjectItem key={sub.id} subject={sub} processingId={s.processingId} onOpenPicker={(sec: any, b: any) => { s.setPopupSection(sec); s.setPopupAnchor(b); }} />)}
+                            {isLoading ? <div className="flex items-center justify-center h-full text-slate-400">Načítání zkoušek...</div> :
+                             error ? <div className="flex items-center justify-center h-full text-error">{error}</div> :
+                             <Accordion type="single" collapsible value={expandedSubjectId} onValueChange={setExpandedSubjectId}>
+                                {exams.map(sub => <ExamSubjectItem key={sub.id} subject={sub} processingId={processingId} onOpenPicker={(sec, b) => { setPopupSection(sec); setPopupAnchor(b); }} />)}
                              </Accordion>
                             }
                         </div>
@@ -40,7 +44,7 @@ export function ExamDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                     </div>
                 </div>
             </div>
-            <DatePickerPopup isOpen={!!s.popupSection} onClose={() => s.setPopupSection(null)} onConfirm={(tid: string) => s.popupSection && s.handleRegister(s.popupSection, tid)} terms={s.popupSection?.terms ?? []} anchorRef={s.popupAnchorRef} allExams={s.exams} />
+            <DatePickerPopup isOpen={!!popupSection} onClose={() => setPopupSection(null)} onConfirm={(tid: string) => popupSection && handleRegister(popupSection, tid)} terms={popupSection?.terms ?? []} anchorRef={popupAnchorRef} allExams={exams} />
         </>
     );
 }

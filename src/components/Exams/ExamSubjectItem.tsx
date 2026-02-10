@@ -2,8 +2,16 @@ import { ChevronDown } from 'lucide-react';
 import { AccordionItem, AccordionHeader, AccordionTrigger, AccordionContent } from '../ui/accordion';
 import { ExamSectionItem } from './ExamSectionItem';
 
-export function ExamSubjectItem({ subject, processingId, onOpenPicker }: any) {
-    const isReg = subject.sections.some((s: any) => s.status === 'registered');
+import type { ExamSubject, ExamSection } from '../../types/exams';
+
+interface ExamSubjectItemProps {
+    subject: ExamSubject;
+    processingId: string | null;
+    onOpenPicker: (sec: ExamSection, b: HTMLButtonElement) => void;
+}
+
+export function ExamSubjectItem({ subject, processingId, onOpenPicker }: ExamSubjectItemProps) {
+    const isReg = subject.sections.some((s: ExamSection) => s.status === 'registered');
     return (
         <AccordionItem value={subject.id} className="border-b border-slate-100 last:border-0">
             <AccordionHeader className="flex">
@@ -20,7 +28,7 @@ export function ExamSubjectItem({ subject, processingId, onOpenPicker }: any) {
             </AccordionHeader>
             <AccordionContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
                 <div className="px-6 py-4 bg-slate-50/50 space-y-2">
-                    {subject.sections.map((sec: any) => (
+                    {subject.sections.map((sec: ExamSection) => (
                         <ExamSectionItem key={sec.id} section={sec} isProcessing={processingId === sec.id} onOpenPicker={onOpenPicker} />
                     ))}
                 </div>

@@ -1,3 +1,6 @@
+/* eslint-disable no-restricted-globals */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable no-restricted-syntax */
 import { IndexedDBService, STORAGE_KEYS } from '../storage';
 
 export async function migrateAndCleanup(): Promise<void> {
@@ -67,7 +70,7 @@ async function migrateKey(key: string, value: any): Promise<void> {
         else if (key === STORAGE_KEYS.EXAMS_DATA) await IndexedDBService.set('exams', 'current', value);
         else if (key === STORAGE_KEYS.SUBJECTS_DATA) await IndexedDBService.set('subjects', 'current', value);
         else if (key === STORAGE_KEYS.USER_PARAMS) await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, value);
-        else if (key === STORAGE_KEYS.STUDY_PROGRAM_DATA) await IndexedDBService.set('study_program', 'current', value);
+        else if (key === STORAGE_KEYS.STUDY_PROGRAM_DATA) await IndexedDBService.set('meta', 'study_program', value);
         else if (key === STORAGE_KEYS.LAST_SYNC) await IndexedDBService.set('meta', 'last_sync', value);
         else if (key === STORAGE_KEYS.SYNC_ERROR) await IndexedDBService.set('meta', 'sync_error', value);
         else if (key.startsWith(STORAGE_KEYS.SUBJECT_FILES_PREFIX)) await IndexedDBService.set('files', key.replace(STORAGE_KEYS.SUBJECT_FILES_PREFIX, ''), value);

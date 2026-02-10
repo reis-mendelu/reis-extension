@@ -24,7 +24,7 @@ export async function fetchFilesFromFolder(folderUrl: string, lang: string = 'cz
         const response = await fetchWithAuth(url);
         const respText = await response.text();
         const { files: initialFiles, paginationLinks } = parseServerFiles(respText);
-        let allFiles = [...initialFiles];
+        const allFiles = [...initialFiles];
 
         console.log(`[fetchFilesFromFolder] ${folderUrl} - Page 1: Found ${initialFiles.length} files, ${paginationLinks.length} pagination links`);
 

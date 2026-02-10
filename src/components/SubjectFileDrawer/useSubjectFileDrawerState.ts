@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useSchedule, useFiles, useSyncStatus, useSyllabus } from '../../hooks/data';
 import { useDragSelection } from './useDragSelection';
 import type { BlockLesson } from '../../types/calendarTypes';
-import type { ParsedFile } from '../../types/documents';
+
 
 export function useSubjectFileDrawerState(lesson: BlockLesson | null, isOpen: boolean) {
     const { schedule } = useSchedule();
@@ -23,9 +23,14 @@ export function useSubjectFileDrawerState(lesson: BlockLesson | null, isOpen: bo
 
     const drag = useDragSelection({ isOpen, containerRef, contentRef, fileRefs });
 
-    useEffect(() => {
-        if (isOpen && lesson) setActiveTab(lesson.isExam ? 'stats' : 'files');
-    }, [isOpen, lesson]);
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+    if (isOpen !== prevIsOpen) {
+        setPrevIsOpen(isOpen);
+        if (isOpen && lesson) {
+            setActiveTab(lesson.isExam ? 'stats' : 'files');
+        }
+    }
 
     return { activeTab, setActiveTab, files, isFilesLoading, isSyncing, resolvedCourseId, syllabusResult, containerRef, contentRef, fileRefs, ...drag };
 }

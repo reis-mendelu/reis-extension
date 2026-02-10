@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 export const CourseMetadataSchema = z.object({
     courseName: z.string().nullable().optional(),
+    courseNameCs: z.string().nullable().optional(),
+    courseNameEn: z.string().nullable().optional(),
     credits: z.string().nullable(),
     garant: z.string().nullable(),
     teachers: z.array(z.object({
@@ -12,7 +14,7 @@ export const CourseMetadataSchema = z.object({
 });
 
 export const SyllabusRequirementsSchema = z.object({
-    version: z.literal(1),
+    version: z.union([z.literal(1), z.literal(2)]),
     courseId: z.string().optional(),
     requirementsText: z.string(),
     requirementsTable: z.array(z.array(z.string())),

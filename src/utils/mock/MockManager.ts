@@ -54,7 +54,7 @@ class MockManagerImpl {
     }
   }
 
-  private validate(data: any, storeName: StoreName) {
+  private validate(data: unknown, storeName: StoreName) {
     const schema = StoreSchemas[storeName];
     if (!schema) return;
 

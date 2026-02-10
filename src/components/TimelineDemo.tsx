@@ -7,36 +7,6 @@ interface TimelineDemoProps {
 }
 
 export const TimelineDemo: React.FC<TimelineDemoProps> = ({ onViewChange }) => {
-    const mockExams = [
-        {
-            term: {
-                id: '1',
-                date: '10.05.2026',
-                time: '09:00',
-                room: 'Q21',
-            } as ExamTerm,
-            subjectName: 'Algoritmizace',
-        },
-        {
-            term: {
-                id: '2',
-                date: '15.05.2026',
-                time: '13:00',
-                room: 'B02',
-            } as ExamTerm,
-            subjectName: 'Databáze',
-        },
-        {
-            term: {
-                id: '3',
-                date: '20.05.2026',
-                time: '14:00',
-                room: 'C12',
-            } as any,
-            subjectName: 'Webové technologie',
-        }
-    ];
-
     // Adjust dates to be relative to "now" for better demo
     const now = new Date();
     const formatDate = (date: Date) => {

@@ -11,15 +11,19 @@ export function DatePickerPopup({ isOpen, onClose, onConfirm, terms, anchorRef, 
     const pos = useDatePickerPosition(isOpen, anchorRef);
     const data = useDatePickerData(terms, allExams, currentDate);
 
-    useEffect(() => {
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+    if (isOpen !== prevIsOpen) {
+        setPrevIsOpen(isOpen);
         if (isOpen) {
-            setSelectedDate(null); setSelectedTermId(null);
+            setSelectedDate(null);
+            setSelectedTermId(null);
             if (terms.length > 0) {
                 const [d, m, y] = terms[0].date.split('.').map(Number);
                 setCurrentDate(new Date(y, m - 1, d));
             }
         }
-    }, [isOpen, terms]);
+    }
 
     useEffect(() => {
         if (!isOpen) return;

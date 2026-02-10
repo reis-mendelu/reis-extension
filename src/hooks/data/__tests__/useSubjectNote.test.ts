@@ -12,6 +12,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useSubjectNote } from '../useSubjectNote';
+import { StorageService } from '../../../services/storage/StorageService';
+
+// Mock StorageService
+vi.mock('../../../services/storage/StorageService', () => ({
+    StorageService: {
+        sync: {
+            get: vi.fn(),
+            set: vi.fn(),
+            remove: vi.fn(),
+        }
+    }
+}));
 
 describe('useSubjectNote', () => {
     const mockStorage: Record<string, any> = {};
@@ -26,7 +38,6 @@ describe('useSubjectNote', () => {
             get: vi.fn().mockImplementation(async (key: string | null) => {
                 if (key === null) return { ...mockStorage };
                 if (typeof key === 'string') return { [key]: mockStorage[key] };
-                // Handle array/object if needed, but simple string key is enough for this hook
                 return {}; 
             }),
             set: vi.fn().mockImplementation(async (items: Record<string, any>) => {
@@ -38,6 +49,15 @@ describe('useSubjectNote', () => {
             storage: {
                 sync: storageMock
             }
+        });
+
+        // Wire StorageService.sync mocks to use the same logic/state for consistency
+        vi.mocked(StorageService.sync.get).mockImplementation(async (key: string) => {
+            return mockStorage[key] ?? null;
+        });
+
+        vi.mocked(StorageService.sync.set).mockImplementation(async (key: string, val: any) => {
+            mockStorage[key] = val;
         });
     });
     
@@ -76,7 +96,7 @@ describe('useSubjectNote', () => {
             });
 
             expect(result.current.note).toBe('');
-            expect(chrome.storage.sync.get).not.toHaveBeenCalled();
+            expect(StorageService.sync.get).not.toHaveBeenCalled();
         });
     });
 
@@ -134,7 +154,7 @@ describe('useSubjectNote', () => {
             });
 
             // Should not save immediately
-            expect(chrome.storage.sync.set).not.toHaveBeenCalled();
+            expect(StorageService.sync.set).not.toHaveBeenCalled();
         });
 
         it('should save after 800ms debounce', async () => {
@@ -153,11 +173,10 @@ describe('useSubjectNote', () => {
                 await vi.advanceTimersByTimeAsync(800);
             });
 
-            expect(chrome.storage.sync.set).toHaveBeenCalledWith(
+            expect(StorageService.sync.set).toHaveBeenCalledWith(
+                expect.stringContaining('note:TZI'),
                 expect.objectContaining({
-                    'note:TZI': expect.objectContaining({
-                        note: 'Test note',
-                    })
+                    note: 'Test note',
                 })
             );
         });
@@ -177,11 +196,10 @@ describe('useSubjectNote', () => {
             unmount();
 
             // Should have saved immediately on unmount
-            expect(chrome.storage.sync.set).toHaveBeenCalledWith(
+            expect(StorageService.sync.set).toHaveBeenCalledWith(
+                expect.stringContaining('note:TZI'),
                 expect.objectContaining({
-                    'note:TZI': expect.objectContaining({
-                        note: 'Unmount note',
-                    })
+                    note: 'Unmount note',
                 })
             );
         });
@@ -211,7 +229,7 @@ describe('useSubjectNote', () => {
 
     describe('error handling', () => {
         it('should handle storage read errors gracefully', async () => {
-            vi.mocked(chrome.storage.sync.get).mockRejectedValueOnce(new Error('Storage error'));
+            vi.mocked(StorageService.sync.get).mockRejectedValueOnce(new Error('Storage error'));
 
             const { result } = renderHook(() => useSubjectNote('TZI'));
 

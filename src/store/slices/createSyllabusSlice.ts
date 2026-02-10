@@ -1,6 +1,7 @@
 import type { SyllabusSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import { fetchSyllabus, findSubjectId } from '../../api/syllabus';
+import type { SyllabusRequirements } from '../../types/documents';
 
 export const createSyllabusSlice: AppSlice<SyllabusSlice> = (set, get) => ({
   syllabuses: {
@@ -25,18 +26,20 @@ export const createSyllabusSlice: AppSlice<SyllabusSlice> = (set, get) => ({
 
     try {
       const SYLLABUS_VERSION = 2;
-      let data = await IndexedDBService.get('syllabuses', courseCode);
-      let activeSyllabus: any = undefined;
+      const data = await IndexedDBService.get('syllabuses', courseCode);
+      let activeSyllabus: SyllabusRequirements | undefined = undefined;
       let needsFetch = false;
 
       if (data && 'cz' in data && 'en' in data) {
           activeSyllabus = currentLang === 'en' ? data.en : data.cz;
           if (!activeSyllabus || activeSyllabus.version !== SYLLABUS_VERSION) needsFetch = true;
-      } else {
-          activeSyllabus = data;
-          if (!data || (data as any).language !== currentLang || (data as any).version !== SYLLABUS_VERSION) {
+      } else if (data) {
+          activeSyllabus = data as SyllabusRequirements;
+          if (activeSyllabus.language !== currentLang || activeSyllabus.version !== SYLLABUS_VERSION) {
               needsFetch = true;
           }
+      } else {
+          needsFetch = true;
       }
 
       if (needsFetch) {

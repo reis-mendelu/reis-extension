@@ -4,7 +4,7 @@ import { useExams } from '../hooks/data';
 import { useAppStore } from '../store/useAppStore';
 import type { ExamSection, ExamTerm } from '../types/exams';
 
-export function useExamDrawerLogic(isOpen: boolean, onClose: () => void) {
+export function useExamDrawerLogic(isOpen: boolean) {
     const { exams, isLoaded, error } = useExams();
     const fetchExams = useAppStore(state => state.fetchExams);
     const [expandedSubjectId, setExpandedSubjectId] = useState("");

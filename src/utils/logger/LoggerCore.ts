@@ -11,7 +11,7 @@ export class Logger {
     constructor(context: string) {
         this.context = context;
     }
-    private log(lvl: LogLevel, name: string, col: string, msg: string, ...a: any[]) {
+    private log(lvl: LogLevel, name: string, col: string, msg: string, ...a: unknown[]) {
         if (lvl < config.level || (config.enabledContexts !== 'all' && !config.enabledContexts.has(this.context))) return;
         const pts = [], sts = [];
         if (config.showTimestamp) { pts.push(`%c${new Date().toLocaleTimeString()}.${new Date().getMilliseconds().toString().padStart(3, '0')}`); sts.push(COLORS.timestamp); }
@@ -20,9 +20,9 @@ export class Logger {
         pts.push(`%c${msg}`); sts.push('color: inherit');
         console.log(pts.join(' '), ...sts, ...a);
     }
-    debug(m: string, ...a: any[]) { this.log(LogLevel.DEBUG, 'DEBUG', COLORS.debug, m, ...a); }
-    info(m: string, ...a: any[]) { this.log(LogLevel.INFO, 'INFO', COLORS.info, m, ...a); }
-    warn(m: string, ...a: any[]) { this.log(LogLevel.WARN, 'WARN', COLORS.warn, m, ...a); }
-    error(m: string, ...a: any[]) { this.log(LogLevel.ERROR, 'ERROR', COLORS.error, m, ...a); }
+    debug(m: string, ...a: unknown[]) { this.log(LogLevel.DEBUG, 'DEBUG', COLORS.debug, m, ...a); }
+    info(m: string, ...a: unknown[]) { this.log(LogLevel.INFO, 'INFO', COLORS.info, m, ...a); }
+    warn(m: string, ...a: unknown[]) { this.log(LogLevel.WARN, 'WARN', COLORS.warn, m, ...a); }
+    error(m: string, ...a: unknown[]) { this.log(LogLevel.ERROR, 'ERROR', COLORS.error, m, ...a); }
     child(c: string) { return new Logger(`${this.context}:${c}`); }
 }

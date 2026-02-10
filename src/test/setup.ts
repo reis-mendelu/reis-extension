@@ -1,4 +1,7 @@
-import { vi } from 'vitest';
+import { vi, expect } from 'vitest';
+import * as matchers from '@testing-library/jest-dom/matchers';
+
+expect.extend(matchers);
 
 // Partial mock of chrome.storage
 const storageMock = {
