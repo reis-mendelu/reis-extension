@@ -1,6 +1,7 @@
 import type { ScrapedExamSubject, ScrapedExamSection } from './types';
 
-export function parseRegisteredTerms(doc: Document, getOrCreateSubject: (c: string, n: string) => ScrapedExamSubject, getOrCreateSection: (s: ScrapedExamSubject, n: string) => ScrapedExamSection) {
+export function parseRegisteredTerms(doc: Document, getOrCreateSubject: (c: string, n: string) => ScrapedExamSubject, getOrCreateSection: (s: ScrapedExamSubject, n: string) => ScrapedExamSection, lang: string = 'cs') {
+    const isEn = lang === 'en';
     const table1 = doc.querySelector('#table_1');
     if (!table1) return;
 
@@ -46,6 +47,16 @@ export function parseRegisteredTerms(doc: Document, getOrCreateSubject: (c: stri
         const subject = getOrCreateSubject(code, name);
         const section = getOrCreateSection(subject, sectionName);
         section.status = 'registered';
-        section.registeredTerm = { id: termId, date, time, room, teacher, teacherId, deregistrationDeadline };
+        section.registeredTerm = { 
+            id: termId, 
+            date, 
+            time, 
+            room, 
+            teacher, 
+            teacherId, 
+            deregistrationDeadline,
+            roomCs: isEn ? undefined : room,
+            roomEn: isEn ? room : undefined
+        };
     });
 }

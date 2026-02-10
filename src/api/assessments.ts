@@ -14,10 +14,11 @@ import type { Assessment } from "../types/documents";
 export async function fetchAssessments(
     studium: string, 
     obdobi: string, 
-    predmetId: string
+    predmetId: string,
+    lang: string = 'cs'
 ): Promise<Assessment[]> {
     try {
-        const url = `${BASE_URL}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${predmetId};test=1;lang=cz`;
+        const url = `${BASE_URL}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${predmetId};test=1;lang=${lang}`;
         const response = await fetchWithAuth(url);
         const html = await response.text();
         return parseAssessmentTable(html);

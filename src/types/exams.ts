@@ -22,6 +22,8 @@ export interface ExamTerm {
     room?: string;
     teacher?: string;
     teacherId?: string;   // Teacher's MENDELU ID for linking
+    roomCs?: string;      // Localized room name (Czech)
+    roomEn?: string;      // Localized room name (English)
     registrationStart?: string;  // When registration opens
     registrationEnd?: string;    // When registration closes
     attemptType?: 'regular' | 'retake1' | 'retake2' | 'retake3';  // Exam attempt type
@@ -31,6 +33,8 @@ export interface ExamTerm {
 export interface ExamSection {
     id: string;
     name: string;         // Section name (e.g., "zkouška")
+    nameCs?: string;      // Localized section name (Czech)
+    nameEn?: string;      // Localized section name (English)
     type: string;         // Exam type
     status: 'registered' | 'available' | 'open';  // open = not yet registered for
     registeredTerm?: {
@@ -40,6 +44,8 @@ export interface ExamSection {
         room?: string;
         teacher?: string;
         teacherId?: string;  // Teacher's MENDELU ID for linking
+        roomCs?: string;     // Localized room name (Czech)
+        roomEn?: string;     // Localized room name (English)
         deregistrationDeadline?: string;  // When deregistration closes (format: "DD.MM.YYYY HH:MM")
     };
     terms: ExamTerm[];
@@ -49,6 +55,8 @@ export interface ExamSubject {
     version: 1;
     id: string;
     name: string;         // Full subject name
+    nameCs?: string;      // Localized subject name (Czech)
+    nameEn?: string;      // Localized subject name (English)
     code: string;         // e.g., "EBC-ALG"
     sections: ExamSection[];
 }

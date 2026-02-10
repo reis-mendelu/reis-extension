@@ -8,6 +8,7 @@ const STORAGE_KEY = 'exam_panel_filters';
 export function useExamsData() {
     const storeExams = useAppStore(s => s.exams.data);
     const status = useAppStore(s => s.exams.status);
+    const language = useAppStore(s => s.language);
     
     const exams = useMemo(() => {
         return storeExams;
@@ -88,6 +89,9 @@ export function useExamsData() {
         clearAllFilters,
         filterCounts, 
         filteredSubjects: filtered, 
-        subjectOptions: useMemo(() => exams.map(e => ({ code: e.code, name: e.name })).filter((v, i, a) => a.findIndex(t => t.code === v.code) === i).sort((a, b) => a.name.localeCompare(b.name)), [exams]) 
+        subjectOptions: useMemo(() => exams.map(e => {
+            const name = (language === 'en' && e.nameEn) ? e.nameEn : (e.nameCs || e.name);
+            return { code: e.code, name };
+        }).filter((v, i, a) => a.findIndex(t => t.code === v.code) === i).sort((a, b) => a.name.localeCompare(b.name)), [exams, language]) 
     };
 }

@@ -1,6 +1,7 @@
 import type { ScrapedExamSubject, ScrapedExamSection } from './types';
 
-export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: string, n: string) => ScrapedExamSubject, getOrCreateSection: (s: ScrapedExamSubject, n: string) => ScrapedExamSection) {
+export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: string, n: string) => ScrapedExamSubject, getOrCreateSection: (s: ScrapedExamSubject, n: string) => ScrapedExamSection, lang: string = 'cs') {
+    const isEn = lang === 'en';
     const table2 = doc.querySelector('#table_2');
     if (!table2) return;
 
@@ -45,18 +46,33 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
             }
         }
 
-        let attemptType: any;
+        let attemptType: 'regular' | 'retake1' | 'retake2' | 'retake3' | undefined;
         for (let i = 0; i < cols.length; i++) {
             const text = (cols[i].innerHTML + (cols[i].querySelector('img')?.getAttribute('alt') || '') + (cols[i].querySelector('img')?.getAttribute('title') || '')).toLowerCase();
-            if (text.includes('opravný 3')) attemptType = 'retake3';
-            else if (text.includes('opravný 2')) attemptType = 'retake2';
-            else if (text.includes('opravný 1') || text.includes('opravný')) attemptType = 'retake1';
-            else if (text.includes('řádný')) attemptType = 'regular';
+            if (text.includes('opravný 3') || text.includes('3rd resit')) attemptType = 'retake3';
+            else if (text.includes('opravný 2') || text.includes('2nd resit')) attemptType = 'retake2';
+            else if (text.includes('opravný 1') || text.includes('opravný') || text.includes('resit')) attemptType = 'retake1';
+            else if (text.includes('řádný') || text.includes('first sit')) attemptType = 'regular';
             if (attemptType) break;
         }
 
         const subject = getOrCreateSubject(code, name);
         const section = getOrCreateSection(subject, sectionName);
-        section.terms.push({ id: termId, date: datePart, time: timePart, capacity: capacityStr, full: isFull, room, teacher, teacherId, registrationStart, registrationEnd, attemptType, canRegisterNow: !!row.querySelector('a[href*="prihlasit_ihned=1"]') && !isFull });
+        section.terms.push({ 
+            id: termId, 
+            date: datePart, 
+            time: timePart, 
+            capacity: capacityStr, 
+            full: isFull, 
+            room, 
+            teacher, 
+            teacherId, 
+            registrationStart, 
+            registrationEnd, 
+            attemptType, 
+            canRegisterNow: !!row.querySelector('a[href*="prihlasit_ihned=1"]') && !isFull,
+            roomCs: isEn ? undefined : room,
+            roomEn: isEn ? room : undefined
+        });
     });
 }

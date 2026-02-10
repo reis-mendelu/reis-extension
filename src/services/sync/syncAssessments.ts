@@ -7,8 +7,8 @@ import { IndexedDBService } from '../storage';
 import { fetchAssessments } from '../../api/assessments';
 import { getUserParams } from '../../utils/userParams';
 
-export async function syncAssessments(studiumIn?: string, lang: string = 'cs'): Promise<void> {
-    console.log('[syncAssessments] Starting assessments sync...');
+export async function syncAssessments(studiumIn?: string): Promise<void> {
+    console.log('[syncAssessments] Starting dual-language assessments sync...');
 
     // 1. Get required user parameters
     let studium = studiumIn || '';
@@ -62,12 +62,19 @@ export async function syncAssessments(studiumIn?: string, lang: string = 'cs'): 
                 continue;
             }
             
-            const assessments = await fetchAssessments(studium, obdobi, predmetId);
-
-            await IndexedDBService.set('assessments', courseCode, assessments);
+            // Fetch both languages in parallel
+            const [czAssessments, enAssessments] = await Promise.all([
+                fetchAssessments(studium, obdobi, predmetId, 'cs'),
+                fetchAssessments(studium, obdobi, predmetId, 'en')
+            ]);
             
-            if (assessments.length > 0) {
-                console.debug(`[syncAssessments] Found ${assessments.length} assessments for ${courseCode}`);
+            await IndexedDBService.set('assessments', courseCode, {
+                cz: czAssessments,
+                en: enAssessments
+            });
+            
+            if (czAssessments.length > 0 || enAssessments.length > 0) {
+                console.debug(`[syncAssessments] Found ${czAssessments.length} CZ and ${enAssessments.length} EN assessments for ${courseCode}`);
             }
             successCount++;
 

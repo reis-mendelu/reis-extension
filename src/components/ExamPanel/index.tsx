@@ -10,7 +10,7 @@ import ExamTimeline from '../Exams/Timeline/ExamTimeline';
 import { useTranslation } from '../../hooks/useTranslation';
 
 export function ExamPanel({ onSelectSubject }: any) {
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
     const { 
         exams, 
         isLoading, 
@@ -32,15 +32,16 @@ export function ExamPanel({ onSelectSubject }: any) {
         exams.forEach((sub: ExamSubject) => {
             sub.sections.forEach((sec: ExamSection) => {
                 if (sec.status === 'registered' && sec.registeredTerm) {
+                    const subjectName = (language === 'en' && sub.nameEn) ? sub.nameEn : (sub.nameCs || sub.name);
                     registered.push({
-                        subjectName: sub.name,
+                        subjectName,
                         subject: sub,
                         section: sec,
                         term: {
                             id: sec.registeredTerm.id || `${sub.code}-${sec.id}`,
                             date: sec.registeredTerm.date,
                             time: sec.registeredTerm.time,
-                            room: sec.registeredTerm.room
+                            room: (language === 'en' && sec.registeredTerm.roomEn) ? sec.registeredTerm.roomEn : (sec.registeredTerm.roomCs || sec.registeredTerm.room)
                         }
                     });
                 }
@@ -64,13 +65,17 @@ export function ExamPanel({ onSelectSubject }: any) {
                     <ExamTimeline 
                         exams={realExams} 
                         orientation="horizontal" 
-                        onSelectItem={(item: any) => onSelectSubject({ 
-                            ...item.subject, 
-                            courseCode: item.subject.code, 
-                            courseName: item.subject.name, 
-                            sectionName: item.section.name, 
-                            isExam: true 
-                        })} 
+                        onSelectItem={(item: any) => {
+                            const subName = (language === 'en' && item.subject.nameEn) ? item.subject.nameEn : (item.subject.nameCs || item.subject.name);
+                            const secName = (language === 'en' && item.section.nameEn) ? item.section.nameEn : (item.section.nameCs || item.section.name);
+                            onSelectSubject({ 
+                                ...item.subject, 
+                                courseCode: item.subject.code, 
+                                courseName: subName, 
+                                sectionName: secName, 
+                                isExam: true 
+                            });
+                        }} 
                     />
                 </div>
             )}

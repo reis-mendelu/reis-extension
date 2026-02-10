@@ -17,8 +17,13 @@ interface ExamSectionCardProps {
 }
 
 export function ExamSectionCard({ subject, section, isExpanded, isProcessing, onToggleExpand, onRegister, onUnregister, onSelectSubject }: ExamSectionCardProps) {
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
     const isReg = section.status === 'registered';
+    
+    // Localized names
+    const subjectName = (language === 'en' && subject.nameEn) ? subject.nameEn : (subject.nameCs || subject.name);
+    const sectionName = (language === 'en' && section.nameEn) ? section.nameEn : (section.nameCs || section.name);
+
     return (
         <div className="card bg-base-100 shadow-sm border border-base-200 hover:shadow-md transition-shadow">
             <div className="p-2">
@@ -26,10 +31,10 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                     <div className="flex-1 min-w-[200px]">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
                             <span className="badge badge-sm font-bold bg-primary/10 text-primary cursor-pointer hover:bg-primary/20 transition-all py-1 h-auto whitespace-normal" 
-                                  onClick={() => onSelectSubject({ ...subject, courseCode: subject.code, courseName: subject.name, sectionName: section.name, isExam: true })}>
-                                {subject.name}
+                                  onClick={() => onSelectSubject({ ...subject, courseCode: subject.code, courseName: subjectName, sectionName: sectionName, isExam: true })}>
+                                {subjectName}
                             </span>
-                            <span className="text-sm font-bold opacity-80">{section.name}</span>
+                            <span className="text-sm font-bold opacity-80">{sectionName}</span>
                             {isReg && <span className="badge badge-success badge-outline badge-sm font-semibold">{t('exams.registered')}</span>}
                         </div>
                         {isReg && section.registeredTerm ? <RegisteredTermDetails section={section} /> : (section.terms.length > 0 && !isExpanded && <TermsSummary terms={section.terms} />)}

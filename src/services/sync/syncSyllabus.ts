@@ -5,7 +5,7 @@
 import { IndexedDBService } from '../storage';
 import { fetchSyllabus } from '../../api/syllabus';
 
-export async function syncSyllabus(_lang: string = 'cs'): Promise<void> {
+export async function syncSyllabus(): Promise<void> {
     console.log('[syncSyllabus] Starting dual-language syllabus sync...');
 
     // 1. Get subjects

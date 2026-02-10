@@ -3,10 +3,10 @@
  */
 
 import { IndexedDBService } from '../storage';
-import { fetchWeekSchedule } from '../../api/schedule';
+import { fetchDualLanguageSchedule } from '../../api/schedule';
 
-export async function syncSchedule(lang: string = 'cs'): Promise<void> {
-    console.log('[syncSchedule] 🔄 Starting schedule sync with language:', lang);
+export async function syncSchedule(): Promise<void> {
+    console.log('[syncSchedule] 🔄 Starting localized schedule sync...');
 
     // Determine semester boundaries
     // Winter semester: September 1 - February 28
@@ -32,9 +32,9 @@ export async function syncSchedule(lang: string = 'cs'): Promise<void> {
         end = new Date(currentYear, 7, 31); // Aug 31
     }
 
-    console.log(`[syncSchedule] 📅 Fetching from ${start.toDateString()} to ${end.toDateString()} with lang: ${lang}`);
+    console.log(`[syncSchedule] 📅 Fetching from ${start.toDateString()} to ${end.toDateString()}`);
 
-    const data = await fetchWeekSchedule({ start, end }, lang);
+    const data = await fetchDualLanguageSchedule({ start, end });
 
     if (data && data.length > 0) {
         console.log(`[syncSchedule] ✅ Received ${data.length} lessons`);

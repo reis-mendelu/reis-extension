@@ -49,14 +49,70 @@ function verifyRegistrationSuccess(html: string, termId: string): boolean {
 export async function fetchExamData(lang: string = 'cs'): Promise<ExamSubject[]> {
     try {
         const url = await getExamListUrl(lang);
-        console.log('[exams] Fetching from:', url);
+        console.log(`[exams] Fetching ${lang === 'en' ? 'EN' : 'CZ'} from:`, url);
         const response = await fetchWithAuth(url);
         const html = await response.text();
-        const data = parseExamData(html);
+        const data = parseExamData(html, lang);
         return data;
     } catch (error) {
         console.error("Error fetching exam data:", error);
         return [];
+    }
+}
+
+/**
+ * Fetch exam data in both Czech and English in parallel and merge them.
+ * Enables instant language switching in the UI.
+ */
+export async function fetchDualLanguageExams(): Promise<ExamSubject[]> {
+    console.debug('[fetchDualLanguageExams] 🌐 Fetching exams in both CZ and EN...');
+    try {
+        const [czData, enData] = await Promise.all([
+            fetchExamData('cs'),
+            fetchExamData('en')
+        ]);
+        console.debug(`[fetchDualLanguageExams] ✅ Fetched CZ: ${czData.length} subjects, EN: ${enData.length} subjects`);
+
+        const merged: ExamSubject[] = [...czData];
+
+        enData.forEach(enSubject => {
+            const czSubject = merged.find(s => s.code === enSubject.code);
+            if (czSubject) {
+                // Merge localized name
+                czSubject.nameEn = enSubject.nameEn;
+                
+                // Merge sections
+                enSubject.sections.forEach(enSection => {
+                    const czSection = czSubject.sections.find(s => s.name === enSection.name || s.id === enSection.id);
+                    if (czSection) {
+                        czSection.nameEn = enSection.nameEn;
+                        
+                        // Merge terms
+                        enSection.terms.forEach(enTerm => {
+                            const czTerm = czSection.terms.find(t => t.id === enTerm.id);
+                            if (czTerm) {
+                                czTerm.roomEn = enTerm.roomEn;
+                            }
+                        });
+
+                        // Merge registered term if it exists
+                        if (enSection.registeredTerm && czSection.registeredTerm) {
+                            czSection.registeredTerm.roomEn = enSection.registeredTerm.roomEn;
+                        }
+                    } else {
+                        // Section only exists in EN? (Unlikely but safe to add)
+                        czSubject.sections.push(enSection);
+                    }
+                });
+            } else {
+                merged.push(enSubject);
+            }
+        });
+
+        return merged;
+    } catch (error) {
+        console.error('[exams] Error fetching dual language exams:', error);
+        return fetchExamData('cs'); // Fallback to CZ
     }
 }
 

@@ -22,6 +22,8 @@ export const ExamTermSchema = z.object({
     room: z.string().optional(),
     teacher: z.string().optional(),
     teacherId: z.string().optional(),
+    roomCs: z.string().optional(),
+    roomEn: z.string().optional(),
     registrationStart: z.string().optional(),
     registrationEnd: z.string().optional(),
     attemptType: z.enum(['regular', 'retake1', 'retake2', 'retake3']).optional(),
@@ -31,6 +33,8 @@ export const ExamTermSchema = z.object({
 export const ExamSectionSchema = z.object({
     id: z.string(),
     name: z.string(),
+    nameCs: z.string().optional(),
+    nameEn: z.string().optional(),
     type: z.string(),
     status: z.enum(['registered', 'available', 'open']),
     registeredTerm: z.object({
@@ -40,6 +44,8 @@ export const ExamSectionSchema = z.object({
         room: z.string().optional(),
         teacher: z.string().optional(),
         teacherId: z.string().optional(),
+        roomCs: z.string().optional(),
+        roomEn: z.string().optional(),
         deregistrationDeadline: z.string().optional(),
     }).optional(),
     terms: z.array(ExamTermSchema),
@@ -53,6 +59,8 @@ export const ExamSubjectSchema = z.object({
     version: z.literal(1),
     id: z.string(),
     name: z.string(),
+    nameCs: z.string().optional(),
+    nameEn: z.string().optional(),
     code: z.string(),
     sections: z.array(ExamSectionSchema),
 }).brand<'Exam'>();

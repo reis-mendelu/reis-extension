@@ -11,18 +11,9 @@ const SYNC_INTERVAL = 300000;
 export type SyncStatus = { isSyncing: boolean; lastSync: number | null; error: string | null; };
 
 class SyncServiceClass {
-    private intervalId: any = null;
+    private intervalId: ReturnType<typeof setInterval> | null = null;
     private listeners = new Set<(action?: string) => void>();
     private isSyncing = false;
-
-    /**
-     * Get current language from IndexedDB.
-     * Used by sync functions running outside React context.
-     */
-    private async getLanguage(): Promise<string> {
-        const lang = await IndexedDBService.get('meta', 'reis_language');
-        return (lang === 'cs' || lang === 'en') ? lang : 'cs';
-    }
 
     async start() {
         if (this.intervalId) return;
@@ -36,16 +27,15 @@ class SyncServiceClass {
     async syncAll() {
         if (this.isSyncing) return;
         this.isSyncing = true;
-        const lang = await this.getLanguage();
         const studium = await IndexedDBService.get('meta', 'user_id'); // Assuming user_id is the studium ID based on api/user.ts
         await IndexedDBService.set('meta', 'sync_in_progress', true);
         try {
-            await Promise.allSettled([syncSchedule(lang), syncExams(lang), syncSubjects(studium)]);
-            await Promise.allSettled([syncAssessments(studium, lang), syncSyllabus(lang), syncFiles(lang)]);
+            await Promise.allSettled([syncSchedule(), syncExams(), syncSubjects(studium)]);
+            await Promise.allSettled([syncAssessments(studium), syncSyllabus(), syncFiles()]);
             await IndexedDBService.set('meta', 'last_sync', Date.now());
             await IndexedDBService.delete('meta', 'sync_error');
             this.notifyListeners();
-        } catch (e) {
+        } catch (e: unknown) {
             console.error(e);
             await IndexedDBService.set('meta', 'sync_error', e instanceof Error ? e.message : 'Unknown error');
         } finally {

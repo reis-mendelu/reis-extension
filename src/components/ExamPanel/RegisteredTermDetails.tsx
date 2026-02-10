@@ -3,7 +3,7 @@ import { getDayOfWeek } from './utils';
 import { useTranslation } from '../../hooks/useTranslation';
 
 export function RegisteredTermDetails({ section }: any) {
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
     const term = section.registeredTerm;
     if (!term) return null;
     return (
@@ -11,7 +11,7 @@ export function RegisteredTermDetails({ section }: any) {
             <div className="flex items-center gap-2 flex-wrap">
                 <span className="flex items-center gap-1.5"><Calendar size={13} className="text-base-content/40" /><span className="text-base-content/80 font-medium">{term.date}</span><span className="text-base-content/40">({getDayOfWeek(term.date, t)})</span></span>
                 <span className="flex items-center gap-1.5"><Clock size={13} className="text-base-content/40" /><span className="text-base-content/80 font-medium">{term.time}</span></span>
-                {term.room && <span className="flex items-center gap-1.5 ml-0.5"><MapPin size={13} className="text-base-content/40" /><span className="text-base-content/80 font-medium">{term.room}</span></span>}
+                {term.room && <span className="flex items-center gap-1.5 ml-0.5"><MapPin size={13} className="text-base-content/40" /><span className="text-base-content/80 font-medium">{ (language === 'en' && term.roomEn) ? term.roomEn : (term.roomCs || term.room) }</span></span>}
             </div>
             {term.deregistrationDeadline && <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-warning/80 mt-1"><AlertCircle size={10} /><span>{t('exams.unregisterDeadline')} {term.deregistrationDeadline}</span></div>}
         </div>

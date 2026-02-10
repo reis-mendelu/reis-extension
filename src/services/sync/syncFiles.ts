@@ -10,7 +10,7 @@ function getIdFromUrl(url: string): string | null {
     return match ? match[1] : null;
 }
 
-export async function syncFiles(_lang: string = 'cs'): Promise<void> {
+export async function syncFiles(): Promise<void> {
     console.log('[syncFiles] Starting dual-language files sync...');
 
     const subjectsData = await IndexedDBService.get('subjects', 'current');

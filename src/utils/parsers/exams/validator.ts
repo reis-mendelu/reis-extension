@@ -9,9 +9,14 @@ export function validateHtmlStructure(doc: Document): void {
 
     if (table2) {
         const headers = Array.from(table2.querySelectorAll('thead th')).map(h => h.textContent?.trim() || '');
-        const expectedHeaders = ['Datum', 'Místnost', 'Zkouška'];
-        const missing = expectedHeaders.filter(eh => !headers.some(ht => ht.toLowerCase().includes(eh.toLowerCase())));
-        if (missing.length > 0) warnings.push(`Missing expected headers: ${missing.join(', ')}`);
+        const missing = ['Datum/Date', 'Místnost/Where', 'Zkouška/Type'].filter(eh => {
+            const [cz, en] = eh.split('/');
+            return !headers.some(ht => ht.toLowerCase().includes(cz.toLowerCase()) || ht.toLowerCase().includes(en.toLowerCase()));
+        });
+        if (missing.length > 0) {
+            warnings.push(`Missing expected headers: ${missing.join(', ')}`);
+            warnings.push(`Actual headers found: [${headers.join(', ')}]`);
+        }
     }
 
     if (warnings.length > 0) {
