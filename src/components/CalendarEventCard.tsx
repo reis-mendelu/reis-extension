@@ -13,6 +13,31 @@ import type { BlockLesson } from '../types/calendarTypes';
 interface CalendarEventCardProps {
     lesson: BlockLesson;
     onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
+    language?: string; // Language for localization
+}
+
+// Helper function to get localized course name
+function getLocalizedCourseName(lesson: BlockLesson, lang: string): string {
+    if (lang === 'en' && lesson.courseNameEn) {
+        return lesson.courseNameEn;
+    }
+    if (lang === 'cs' && lesson.courseNameCs) {
+        return lesson.courseNameCs;
+    }
+    // Fallback to original courseName
+    return lesson.courseName;
+}
+
+// Helper function to get localized room name
+function getLocalizedRoom(lesson: BlockLesson, lang: string): string {
+    if (lang === 'en' && lesson.roomEn) {
+        return lesson.roomEn;
+    }
+    if (lang === 'cs' && lesson.roomCs) {
+        return lesson.roomCs;
+    }
+    // Fallback to original room
+    return lesson.room;
 }
 
 // Calculate duration in minutes from time strings
@@ -33,9 +58,13 @@ function getExamSectionName(courseName: string): string {
     return courseName;
 }
 
-export function CalendarEventCard({ lesson, onClick }: CalendarEventCardProps) {
+export function CalendarEventCard({ lesson, onClick, language = 'cs' }: CalendarEventCardProps) {
     const duration = calculateDuration(lesson.startTime, lesson.endTime);
     const isLongEnough = duration >= 60; // Only show location if event is 1 hour+
+
+    // Get localized names
+    const courseName = getLocalizedCourseName(lesson, language);
+    const room = getLocalizedRoom(lesson, language);
 
     // Determine event type and colors using workspace tokens
     const getEventStyles = () => {
@@ -67,15 +96,15 @@ export function CalendarEventCard({ lesson, onClick }: CalendarEventCardProps) {
     // For exams: show the section name (e.g. "Průběžný test 2")
     // For others: show the full course name
     const courseTitle = lesson.isExam
-        ? getExamSectionName(lesson.courseName)
-        : lesson.courseName;
+        ? getExamSectionName(courseName)
+        : courseName;
 
     return (
         <div
             className={`h-full mx-1 rounded overflow-hidden cursor-pointer 
                         ${styles.bg} border-l-4 ${styles.border}`}
             onClick={onClick}
-            title={`${courseTitle}\n${lesson.startTime} - ${lesson.endTime}\n${lesson.room}\n${lesson.teachers[0]?.shortName || ''}`}
+            title={`${courseTitle}\n${lesson.startTime} - ${lesson.endTime}\n${room}\n${lesson.teachers[0]?.shortName || ''}`}
         >
             <div className="p-2 h-full flex flex-col text-sm overflow-hidden font-inter">
                 {/* Course title - always visible */}
@@ -86,17 +115,17 @@ export function CalendarEventCard({ lesson, onClick }: CalendarEventCardProps) {
                 {/* Additional course info - only for longer events */}
                 {isLongEnough && lesson.isExam && (
                     <div className="text-exam-text font-medium text-xs flex-shrink-0">
-                        {lesson.courseName.split(' - ')[0]}
+                        {courseName.split(' - ')[0]}
                     </div>
                 )}
 
                 {/* Bottom row - Location and Time, pushed to bottom */}
                 {isLongEnough && (
                     <div className="text-gray-600 text-sm mt-auto flex-shrink-0 flex items-center justify-between gap-2">
-                        {lesson.room && (
+                        {room && (
                             <div className="flex items-center gap-1 min-w-0 flex-1">
                                 <MapPin size={12} className="flex-shrink-0" />
-                                <span className="truncate">{lesson.room}</span>
+                                <span className="truncate">{room}</span>
                             </div>
                         )}
                         <div className="text-gray-500 whitespace-nowrap flex-shrink-0">

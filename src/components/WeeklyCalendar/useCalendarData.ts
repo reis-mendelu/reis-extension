@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
 import { useSchedule, useExams } from '../../hooks/data';
+import { useAppStore } from '../../store/useAppStore';
 import { getCzechHoliday } from '../../utils/holidays';
 import { parseDate } from '../../utils/date';
-import { DAYS } from './utils';
 import type { BlockLesson, DateInfo } from '../../types/calendarTypes';
 
 export function useCalendarData(initialDate: Date) {
     const { schedule: storedSchedule, isLoaded: isScheduleLoaded } = useSchedule();
     const { exams: storedExams, isLoaded: isExamsLoaded } = useExams();
+    const language = useAppStore((state) => state.language);
 
     const weekDates = useMemo((): DateInfo[] => {
         const startOfWeek = new Date(initialDate);
@@ -15,20 +16,22 @@ export function useCalendarData(initialDate: Date) {
         if (day !== 1) startOfWeek.setHours(-24 * (day - 1));
         startOfWeek.setHours(0, 0, 0, 0);
 
+        const locale = language === 'en' ? 'en-US' : 'cs-CZ';
+
         const dates: DateInfo[] = [];
         for (let i = 0; i < 5; i++) {
             const d = new Date(startOfWeek);
             d.setDate(startOfWeek.getDate() + i);
             dates.push({
-                weekday: DAYS[i].short,
+                weekday: d.toLocaleDateString(locale, { weekday: 'short' }),
                 day: String(d.getDate()),
                 month: String(d.getMonth() + 1),
                 year: String(d.getFullYear()),
-                full: d.toLocaleDateString('cs-CZ')
+                full: d.toLocaleDateString(locale)
             });
         }
         return dates;
-    }, [initialDate]);
+    }, [initialDate, language]);
 
     const weekDateStrings = useMemo(() => {
         return weekDates.map(d => `${d.year}${d.month.padStart(2, '0')}${d.day.padStart(2, '0')}`);
@@ -95,8 +98,8 @@ export function useCalendarData(initialDate: Date) {
     }, [scheduleData]);
 
     const holidaysByDay = useMemo(() => {
-        return weekDates.map((d, i) => getCzechHoliday(new Date(parseInt(d.year), parseInt(d.month) - 1, parseInt(d.day))));
-    }, [weekDates]);
+        return weekDates.map((d) => getCzechHoliday(new Date(parseInt(d.year), parseInt(d.month) - 1, parseInt(d.day)), language));
+    }, [weekDates, language]);
 
     const todayIndex = useMemo(() => {
         const today = new Date();

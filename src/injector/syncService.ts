@@ -17,7 +17,13 @@ let isSyncing = false;
 let syncIntervalId: any = null;
 
 export async function syncAllData() {
-    if (isSyncing) return;
+    console.log('[syncAllData] 🔄 Sync requested, isSyncing:', isSyncing);
+    
+    if (isSyncing) {
+        console.log('[syncAllData] ⏳ Sync already in progress, skipping...');
+        return;
+    }
+    
     isSyncing = true;
     sendToIframe(Messages.syncUpdate({ isSyncing: true, lastSync: cachedData.lastSync }));
 
@@ -26,7 +32,8 @@ export async function syncAllData() {
         const studium = userParams?.studium;
 
         const [schedule, exams, subjects] = await Promise.allSettled([
-            fetchScheduleData(), 
+            fetchScheduleData(),
+ 
             fetchExamData(), 
             fetchDualLanguageSubjects(studium || undefined),
         ]);
@@ -51,7 +58,9 @@ export async function syncAllData() {
     } catch (e) {
         console.error("[REIS Content] Sync failed:", e);
         sendToIframe(Messages.syncUpdate({ isSyncing: false, error: String(e), lastSync: cachedData.lastSync }));
-    } finally { isSyncing = false; }
+    } finally { 
+        isSyncing = false;
+    }
 }
 
 async function syncSubjectDetails(subjectsValue: any, scheduleValue: any) {

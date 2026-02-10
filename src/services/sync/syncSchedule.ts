@@ -5,8 +5,8 @@
 import { IndexedDBService } from '../storage';
 import { fetchWeekSchedule } from '../../api/schedule';
 
-export async function syncSchedule(): Promise<void> {
-    console.log('[syncSchedule] Fetching semester schedule data...');
+export async function syncSchedule(lang: string = 'cs'): Promise<void> {
+    console.log('[syncSchedule] 🔄 Starting schedule sync with language:', lang);
 
     // Determine semester boundaries
     // Winter semester: September 1 - February 28
@@ -21,27 +21,31 @@ export async function syncSchedule(): Promise<void> {
     if (currentMonth >= 8) {
         // September (8) onwards = Winter semester of this academic year
         start = new Date(currentYear, 8, 1); // Sep 1
-        end = new Date(currentYear + 1, 1, 28); // Feb 28 next year
+        end = new Date(currentYear + 1, 7, 31); // Aug 31 next year (fetch both)
     } else if (currentMonth <= 1) {
-        // January/February = Winter semester from previous year
+        // January/February = Transition period
         start = new Date(currentYear - 1, 8, 1); // Sep 1 previous year
-        end = new Date(currentYear, 1, 28); // Feb 28 this year
+        end = new Date(currentYear, 7, 31); // Aug 31 this year (fetch both)
     } else {
         // March-August = Summer semester
         start = new Date(currentYear, 1, 1); // Feb 1
         end = new Date(currentYear, 7, 31); // Aug 31
     }
 
-    console.log(`[syncSchedule] Fetching from ${start.toDateString()} to ${end.toDateString()}`);
+    console.log(`[syncSchedule] 📅 Fetching from ${start.toDateString()} to ${end.toDateString()} with lang: ${lang}`);
 
-    const data = await fetchWeekSchedule({ start, end });
+    const data = await fetchWeekSchedule({ start, end }, lang);
 
     if (data && data.length > 0) {
+        console.log(`[syncSchedule] ✅ Received ${data.length} lessons`);
+        if (data.length > 0) {
+            console.log(`[syncSchedule] 📝 Sample lesson: ${data[0].courseName} (${data[0].courseCode})`);
+        }
         await IndexedDBService.set('schedule', 'current', data);
         await IndexedDBService.set('meta', 'schedule_week_start', start.toISOString());
-        console.log(`[syncSchedule] Stored ${data.length} lessons for semester`);
+        console.log(`[syncSchedule] 💾 Stored ${data.length} lessons for semester`);
     } else {
-        console.log('[syncSchedule] No schedule data found, clearing stale data');
+        console.log('[syncSchedule] ⚠️ No schedule data found, clearing stale data');
         await IndexedDBService.delete('schedule', 'current');
     }
 }

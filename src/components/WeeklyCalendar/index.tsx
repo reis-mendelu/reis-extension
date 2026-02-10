@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { CalendarHint } from '../CalendarHint';
 import { SubjectFileDrawer } from '../SubjectFileDrawer';
 import { IndexedDBService } from '../../services/storage';
+import { syncService } from '../../services/sync/SyncService';
 import { HOURS } from './utils';
 import { useCalendarData } from './useCalendarData';
 import { WeeklyCalendarHeader } from './WeeklyCalendarHeader';
@@ -15,6 +16,24 @@ export function WeeklyCalendar({ initialDate = new Date() }: { initialDate?: Dat
     const { weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton, scheduleData } = useCalendarData(initialDate);
     const [selected, setSelected] = useState<BlockLesson | null>(null);
     const [showCalendarHint, setShowCalendarHint] = useState(false);
+    const [language, setLanguage] = useState<string>('cs');
+
+    // Load initial language and subscribe to language changes
+    useEffect(() => {
+        IndexedDBService.get('meta', 'reis_language').then(lang => {
+            if (lang) setLanguage(lang);
+        });
+
+        const unsubscribe = syncService.subscribe((action) => {
+            if (action === 'LANGUAGE_UPDATE') {
+                IndexedDBService.get('meta', 'reis_language').then(lang => {
+                    if (lang) setLanguage(lang);
+                });
+            }
+        });
+
+        return () => { unsubscribe(); };
+    }, []);
 
     const firstEventPosition = useMemo(() => {
         for (let i = 0; i < 5; i++) {
@@ -54,12 +73,13 @@ export function WeeklyCalendar({ initialDate = new Date() }: { initialDate?: Dat
                         ))}
                     </div>
                     <div className="flex-1 relative flex">
-                        <CalendarHint show={showCalendarHint} firstEventPosition={firstEventPosition ? { ...firstEventPosition, isPercentage: true } : undefined} />
+                        <CalendarHint show={showCalendarHint} firstEventPosition={firstEventPosition || undefined} />
                         <WeeklyCalendarGrid />
                         {[0, 1, 2, 3, 4].map(i => (
                             <WeeklyCalendarDay key={i} dayIndex={i} lessons={lessonsByDay[i] || []}
                                                holiday={holidaysByDay[i]} isToday={i === todayIndex}
-                                               showSkeleton={showSkeleton} onEventClick={setSelected} />
+                                               showSkeleton={showSkeleton} onEventClick={setSelected}
+                                               language={language} />
                         ))}
                     </div>
                 </div>

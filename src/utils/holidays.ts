@@ -1,20 +1,21 @@
-export const getCzechHoliday = (date: Date): string | null => {
+export const getCzechHoliday = (date: Date, lang: 'cs' | 'en' = 'cs'): string | null => {
+    const isEn = lang === 'en';
     const day = date.getDate();
     const month = date.getMonth() + 1; // 0-indexed
     const year = date.getFullYear();
 
     // Fixed holidays
-    if (day === 1 && month === 1) return "Den obnovy samostatného českého státu";
-    if (day === 1 && month === 5) return "Svátek práce";
-    if (day === 8 && month === 5) return "Den vítězství";
-    if (day === 5 && month === 7) return "Den slovanských věrozvěstů Cyrila a Metoděje";
-    if (day === 6 && month === 7) return "Den upálení mistra Jana Husa";
-    if (day === 28 && month === 9) return "Den české státnosti";
-    if (day === 28 && month === 10) return "Den vzniku samostatného československého státu";
-    if (day === 17 && month === 11) return "Den boje za svobodu a demokracii";
-    if (day === 24 && month === 12) return "Štědrý den";
-    if (day === 25 && month === 12) return "1. svátek vánoční";
-    if (day === 26 && month === 12) return "2. svátek vánoční";
+    if (day === 1 && month === 1) return isEn ? "Restoration Day of the Independent Czech State" : "Den obnovy samostatného českého státu";
+    if (day === 1 && month === 5) return isEn ? "Labour Day" : "Svátek práce";
+    if (day === 8 && month === 5) return isEn ? "Victory in Europe Day" : "Den vítězství";
+    if (day === 5 && month === 7) return isEn ? "Saints Cyril and Methodius Day" : "Den slovanských věrozvěstů Cyrila a Metoděje";
+    if (day === 6 && month === 7) return isEn ? "Jan Hus Day" : "Den upálení mistra Jana Husa";
+    if (day === 28 && month === 9) return isEn ? "St. Wenceslas Day (Czech Statehood Day)" : "Den české státnosti";
+    if (day === 28 && month === 10) return isEn ? "Independent Czechoslovak State Day" : "Den vzniku samostatného československého státu";
+    if (day === 17 && month === 11) return isEn ? "Struggle for Freedom and Democracy Day" : "Den boje za svobodu a demokracii";
+    if (day === 24 && month === 12) return isEn ? "Christmas Eve" : "Štědrý den";
+    if (day === 25 && month === 12) return isEn ? "Christmas Day" : "1. svátek vánoční";
+    if (day === 26 && month === 12) return isEn ? "St. Stephen's Day" : "2. svátek vánoční";
 
     // Easter calculation (Meeus/Jones/Butcher's algorithm)
     const a = year % 19;
@@ -43,8 +44,8 @@ export const getCzechHoliday = (date: Date): string | null => {
     const easterMonday = new Date(easterSunday);
     easterMonday.setDate(easterSunday.getDate() + 1);
 
-    if (date.getDate() === goodFriday.getDate() && date.getMonth() === goodFriday.getMonth()) return "Velký pátek";
-    if (date.getDate() === easterMonday.getDate() && date.getMonth() === easterMonday.getMonth()) return "Velikonoční pondělí";
+    if (date.getDate() === goodFriday.getDate() && date.getMonth() === goodFriday.getMonth()) return isEn ? "Good Friday" : "Velký pátek";
+    if (date.getDate() === easterMonday.getDate() && date.getMonth() === easterMonday.getMonth()) return isEn ? "Easter Monday" : "Velikonoční pondělí";
 
     return null;
 };

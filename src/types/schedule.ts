@@ -27,6 +27,11 @@ export interface BlockLesson {
     teachers: Teacher[];
     courseCode: string;
     periodId: string;
+    // Dual-language support
+    courseNameCs?: string;
+    courseNameEn?: string;
+    roomCs?: string;
+    roomEn?: string;
 }
 
 export interface ScheduleData {

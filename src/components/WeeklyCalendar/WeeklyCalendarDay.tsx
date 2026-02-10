@@ -9,10 +9,11 @@ interface WeeklyCalendarDayProps {
     isToday: boolean;
     showSkeleton: boolean;
     onEventClick: (lesson: BlockLesson) => void;
+    language: string; // Current UI language
 }
 
 export function WeeklyCalendarDay({ 
-    dayIndex, lessons, holiday, isToday, showSkeleton, onEventClick 
+    dayIndex, lessons, holiday, isToday, showSkeleton, onEventClick, language 
 }: WeeklyCalendarDayProps) {
     const { lessons: organizedLessons, totalRows } = organizeLessons(lessons);
 
@@ -52,7 +53,7 @@ export function WeeklyCalendarDay({
                             width: hasOverlap ? `${100 / totalRows}%` : '100%',
                         }}
                     >
-                        <CalendarEventCard lesson={lesson} onClick={() => onEventClick(lesson)} />
+                        <CalendarEventCard lesson={lesson} onClick={() => onEventClick(lesson)} language={language} />
                     </div>
                 );
             })}

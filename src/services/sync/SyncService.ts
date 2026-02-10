@@ -40,7 +40,7 @@ class SyncServiceClass {
         const studium = await IndexedDBService.get('meta', 'user_id'); // Assuming user_id is the studium ID based on api/user.ts
         await IndexedDBService.set('meta', 'sync_in_progress', true);
         try {
-            await Promise.allSettled([syncSchedule(), syncExams(lang), syncSubjects(studium)]);
+            await Promise.allSettled([syncSchedule(lang), syncExams(lang), syncSubjects(studium)]);
             await Promise.allSettled([syncAssessments(studium, lang), syncSyllabus(lang), syncFiles(lang)]);
             await IndexedDBService.set('meta', 'last_sync', Date.now());
             await IndexedDBService.delete('meta', 'sync_error');
@@ -57,7 +57,7 @@ class SyncServiceClass {
     subscribe(cb: (a?: string) => void) { this.listeners.add(cb); return () => this.listeners.delete(cb); }
     async getStatus(): Promise<SyncStatus> { return { isSyncing: this.isSyncing, lastSync: await IndexedDBService.get('meta', 'last_sync'), error: await IndexedDBService.get('meta', 'sync_error') }; }
     setIsSyncing(v: boolean) { this.isSyncing = v; this.notifyListeners(); }
-    triggerSync() { window.parent.postMessage({ type: 'REIS_ACTION', id: crypto.randomUUID(), action: 'trigger_sync', payload: {} }, '*'); }
+    triggerSync(payload?: any) { window.parent.postMessage({ type: 'REIS_ACTION', id: crypto.randomUUID(), action: 'trigger_sync', payload: payload || {} }, '*'); }
     triggerRefresh(a?: string) { this.notifyListeners(a); }
     private notifyListeners(a?: string) { this.listeners.forEach(cb => { try { cb(a); } catch (e) { console.error(e); } }); }
 }

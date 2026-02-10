@@ -30,16 +30,20 @@ export const createI18nSlice: AppSlice<I18nSlice> = (set) => ({
     },
     setLanguage: async (newLang: Language) => {
         try {
+            console.log('[I18nSlice] 🌍 Language change requested:', newLang);
             await IndexedDBService.set("meta", STORAGE_KEY, newLang);
             set({ language: newLang });
+            console.log('[I18nSlice] 💾 Language saved to IndexedDB:', newLang);
             
             // Trigger global refresh for other components/tabs
+            console.log('[I18nSlice] 🔔 Triggering refresh event: LANGUAGE_UPDATE');
             syncService.triggerRefresh('LANGUAGE_UPDATE');
             
             // Cross-context sync (optional but good for consistency across tabs)
             const bc = new BroadcastChannel('reis_language_sync');
             bc.postMessage(newLang);
             bc.close();
+            console.log('[I18nSlice] ✅ Language change complete');
         } catch (e) {
             console.error("[I18nSlice] Failed to set language:", e);
         }
