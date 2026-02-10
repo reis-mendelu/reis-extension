@@ -1,5 +1,5 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
-import { Position, UseDragSelectionOptions } from './useDragSelection/types';
+import { useRef, useState, useCallback } from 'react';
+import type { Position, UseDragSelectionOptions } from './useDragSelection/types';
 import { useSelectionProcessor } from './useDragSelection/useSelectionProcessor';
 import { useAutoScroll } from './useDragSelection/useAutoScroll';
 
@@ -45,7 +45,7 @@ export function useDragSelection(options: UseDragSelectionOptions = {}) {
         window.addEventListener('mousemove', onMouseMove); window.addEventListener('mouseup', onMouseUp);
     }, [selectedIds, onMouseMove, onMouseUp]);
 
-    return { selectedIds, setSelectedIds, isDragging, selectionStart, selectionEnd, containerRef, contentRef, itemRefs, handleMouseDown,
+    return { selectedIds, setSelectedIds, isDragging, selectionStart, selectionEnd, containerRef, contentRef, itemRefs, handleMouseDown, ignoreClickRef,
              handleBackdropClick: (e: React.MouseEvent, cb: () => void) => !ignoreClickRef.current && e.target === e.currentTarget && cb(),
              toggleSelection: (id: string) => onItemClick ? onItemClick(id) : setSelectedIds(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]),
              handleSelectAll: (ids: string[]) => setSelectedIds(p => ids.every(x => p.includes(x)) ? p.filter(x => !ids.includes(x)) : [...new Set([...p, ...ids])]),

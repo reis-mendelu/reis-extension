@@ -10,6 +10,7 @@ import { createSyncSlice } from './slices/createSyncSlice';
 import { createThemeSlice } from './slices/createThemeSlice';
 import { createI18nSlice } from './slices/createI18nSlice';
 import { syncService } from '../services/sync';
+import { initMockData } from '../utils/initMockData';
 
 export const useAppStore = create<AppState>()((...a) => ({
   ...createScheduleSlice(...a),
@@ -24,7 +25,13 @@ export const useAppStore = create<AppState>()((...a) => ({
 }));
 
 // Initialize store and subscribe to sync updates
-export const initializeStore = () => {
+export const initializeStore = async () => {
+    // Initialize mock data for demo if enabled
+    // Set USE_MOCK_DATA=true in your .env file to enable
+    if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+        await initMockData();
+    }
+
     // Initial fetch
     useAppStore.getState().fetchSchedule();
     useAppStore.getState().fetchExams();

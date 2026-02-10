@@ -24,8 +24,11 @@ export function useAppLogic() {
 
   useEffect(() => {
     outlookSyncService.init();
-    const unsub = initializeStore();
-    return () => { unsub(); };
+    let unsub: (() => void) | undefined;
+    initializeStore().then(unsubscribe => {
+      unsub = unsubscribe;
+    });
+    return () => { unsub?.(); };
   }, []);
 
   useEffect(() => {
@@ -41,6 +44,12 @@ export function useAppLogic() {
   }, [subscribedAssociations]);
 
   useEffect(() => {
+    // Skip iframe data sync when using mock data
+    if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+      console.log('[App] Mock data enabled - skipping iframe data sync');
+      return;
+    }
+
     if (!isInIframe()) return;
     const handle = async (e: MessageEvent) => {
         if (e.source !== window.parent) return;
