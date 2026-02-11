@@ -19,6 +19,16 @@ export function startInjection() {
 
 function injectAndInitialize() {
     if (document.getElementById(IFRAME_ID)) return;
+
+    const path = window.location.pathname;
+    const isLandingPage = path === "/" || path === "" || path === "/index.pl";
+    const isDashboard = path === "/auth/" || path === "/auth/index.pl";
+
+    if (!isLandingPage && !isDashboard) {
+        document.documentElement.style.visibility = "visible";
+        return;
+    }
+
     if (document.body?.innerHTML.includes("/system/login.pl")) {
         document.documentElement.style.visibility = "visible";
         return;
