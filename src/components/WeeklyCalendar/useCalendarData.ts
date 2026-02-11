@@ -39,9 +39,9 @@ export function useCalendarData(initialDate: Date) {
 
     const examLessons = useMemo((): BlockLesson[] => {
         if (!storedExams) return [];
-        const allExams: any[] = [];
+        const allExams: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
         storedExams.forEach(subject => {
-            subject.sections.forEach((section: any) => {
+            subject.sections.forEach((section) => {
                 if (section.status === 'registered' && section.registeredTerm) {
                     allExams.push({
                         id: section.id,

@@ -3,7 +3,7 @@ import ExamTimeline from './Exams/Timeline/ExamTimeline';
 import type { ExamTerm } from '../types/exams';
 
 interface TimelineDemoProps {
-    onViewChange?: (view: any) => void;
+    onViewChange?: (view: string) => void;
 }
 
 export const TimelineDemo: React.FC<TimelineDemoProps> = ({ onViewChange }) => {

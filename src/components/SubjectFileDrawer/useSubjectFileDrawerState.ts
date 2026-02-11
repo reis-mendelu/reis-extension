@@ -15,7 +15,7 @@ export function useSubjectFileDrawerState(lesson: BlockLesson | null, isOpen: bo
         return schedule?.find(s => s.courseCode === lesson?.courseCode && s.courseId)?.courseId || '';
     }, [lesson, schedule]);
 
-    const syllabusResult = useSyllabus(isOpen ? lesson?.courseCode : undefined, isOpen ? resolvedCourseId : undefined, isOpen ? (lesson as any)?.courseName : undefined);
+    const syllabusResult = useSyllabus(isOpen ? lesson?.courseCode : undefined, isOpen ? resolvedCourseId : undefined, isOpen ? lesson?.courseName : undefined);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);

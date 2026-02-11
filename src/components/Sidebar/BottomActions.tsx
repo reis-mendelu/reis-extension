@@ -6,7 +6,7 @@ import { ProfilePopup } from './ProfilePopup';
 export function BottomActions({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
     const [isOpen, setIsOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
-    const timeout = useRef<any>(null);
+    const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const handleEnter = () => { if (timeout.current) clearTimeout(timeout.current); setIsOpen(true); };
     const handleLeave = () => { timeout.current = setTimeout(() => setIsOpen(false), 300); };

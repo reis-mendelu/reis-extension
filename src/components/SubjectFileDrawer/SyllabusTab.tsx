@@ -3,9 +3,17 @@ import { useUserParams } from '../../hooks/useUserParams';
 import { BookOpen } from 'lucide-react';
 import { RequirementsSection } from './Syllabus/RequirementsSection';
 import { GradingTable } from './Syllabus/GradingTable';
+import type { SyllabusRequirements } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
 
-export function SyllabusTab({ courseCode, courseId, courseName, prefetchedResult }: any) {
+interface SyllabusTabProps {
+    courseCode: string;
+    courseId?: string;
+    courseName?: string;
+    prefetchedResult?: { syllabus: SyllabusRequirements | null; isLoading: boolean };
+}
+
+export function SyllabusTab({ courseCode, courseId, courseName, prefetchedResult }: SyllabusTabProps) {
     const hookRes = useSyllabus(courseCode, courseId, courseName);
     const { syllabus, isLoading } = prefetchedResult || hookRes;
     const { params } = useUserParams();

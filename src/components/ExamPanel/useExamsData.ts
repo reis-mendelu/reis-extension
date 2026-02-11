@@ -10,21 +10,19 @@ export function useExamsData() {
     const status = useAppStore(s => s.exams.status);
     const language = useAppStore(s => s.language);
     
-    const exams = useMemo(() => {
-        return storeExams;
-    }, [storeExams]);
-    const [statusFilter, setStatusFilter] = useState<any[]>(['available']), [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+    const exams = useMemo(() => storeExams, [storeExams]);
+    const [statusFilter, setStatusFilter] = useState<('registered' | 'available' | 'opening')[]>(['available']), [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
     
     useEffect(() => { 
-        IndexedDBService.get('meta', STORAGE_KEY).then((s: any) => { 
-            if (s?.statusFilter) setStatusFilter(Array.isArray(s.statusFilter) ? s.statusFilter : [s.statusFilter]); 
-            if (s?.selectedSubjects) setSelectedSubjects(s.selectedSubjects); 
+        IndexedDBService.get('meta', STORAGE_KEY).then((s: Record<string, unknown> | null) => { 
+            if (s?.statusFilter) setStatusFilter(Array.isArray(s.statusFilter) ? s.statusFilter as ('registered' | 'available' | 'opening')[] : [s.statusFilter as 'registered' | 'available' | 'opening']); 
+            if (s?.selectedSubjects) setSelectedSubjects(s.selectedSubjects as string[]); 
         }); 
     }, []);
     
     useEffect(() => { IndexedDBService.set('meta', STORAGE_KEY, { statusFilter, selectedSubjects }); }, [statusFilter, selectedSubjects]);
 
-    const onToggleStatus = useCallback((status: any) => {
+    const onToggleStatus = useCallback((status: 'registered' | 'available' | 'opening') => {
         setStatusFilter(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]);
     }, []);
 
@@ -46,11 +44,11 @@ export function useExamsData() {
     }, [exams]);
 
     const filtered = useMemo(() => {
-        const res: any[] = [];
+        const res: { subject: ExamSubject; section: ExamSection }[] = [];
         exams.forEach((sub: ExamSubject) => {
             if (selectedSubjects.length && !selectedSubjects.includes(sub.code)) return;
             sub.sections.forEach((sec: ExamSection) => {
-                const matchesStatus = (stat: any) => {
+                const matchesStatus = (stat: string) => {
                     if (stat === 'registered') return sec.status === 'registered';
                     if (stat === 'available') return sec.status !== 'registered' && sec.terms.some((t: ExamTerm) => !t.full && t.canRegisterNow === true);
                     if (stat === 'opening') return sec.status !== 'registered' && sec.terms.some((t: ExamTerm) => !t.full && t.canRegisterNow !== true);

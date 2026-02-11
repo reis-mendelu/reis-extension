@@ -1,8 +1,19 @@
 import { format, isSameMonth, isSameDay, isToday } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import type { AvailableDate, RegisteredDate } from '../../hooks/useDatePickerData';
 
-export function DatePickerCalendar({ currentDate, setCurrentDate, weeks, availableDates, otherRegisteredDates, selectedDate, onSelectDate }: any) {
+interface DatePickerCalendarProps {
+    currentDate: Date;
+    setCurrentDate: (d: Date) => void;
+    weeks: Date[][];
+    availableDates: AvailableDate[];
+    otherRegisteredDates: RegisteredDate[];
+    selectedDate: string | null;
+    onSelectDate: (d: string) => void;
+}
+
+export function DatePickerCalendar({ currentDate, setCurrentDate, weeks, availableDates, otherRegisteredDates, selectedDate, onSelectDate }: DatePickerCalendarProps) {
     const daysOfWeek = ['po', 'út', 'st', 'čt', 'pá', 'so', 'ne'];
     return (
         <div className="p-3">
@@ -15,13 +26,13 @@ export function DatePickerCalendar({ currentDate, setCurrentDate, weeks, availab
             </div>
             <div className="grid grid-cols-7 gap-0">{daysOfWeek.map((d, i) => <div key={i} className="h-6 flex items-center justify-center text-[10px] font-medium text-slate-400 uppercase">{d}</div>)}</div>
             <div className="flex flex-col">
-                {weeks.map((week: any, wi: number) => (
+                {weeks.map((week, wi) => (
                     <div key={wi} className="grid grid-cols-7">
-                        {week.map((day: Date) => {
-                            const dateInfo = availableDates.find((d: any) => isSameDay(d.date, day));
+                        {week.map((day) => {
+                            const dateInfo = availableDates.find((d) => isSameDay(d.date, day));
                             const hasAvailable = !!dateInfo && !dateInfo.isFull;
                             const isSel = dateInfo && selectedDate === dateInfo.dateStr;
-                            const other = otherRegisteredDates.find((d: any) => isSameDay(d.date, day));
+                            const other = otherRegisteredDates.find((d) => isSameDay(d.date, day));
                             return (
                                 <div key={day.toString()} className={`flex flex-col items-center justify-start relative ${other ? 'h-12' : 'h-8'}`}>
                                     <button onClick={() => hasAvailable && onSelectDate(dateInfo.dateStr)} disabled={!hasAvailable}

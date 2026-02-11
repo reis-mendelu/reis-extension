@@ -2,7 +2,14 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useSelectionProcessor } from './useDragSelection/useSelectionProcessor';
 import { useAutoScroll } from './useDragSelection/useAutoScroll';
 
-export function useDragSelection({ isOpen, containerRef, contentRef, fileRefs }: any) {
+interface DragSelectionProps {
+    isOpen: boolean;
+    containerRef: React.RefObject<HTMLDivElement | null>;
+    contentRef: React.RefObject<HTMLDivElement | null>;
+    fileRefs: React.RefObject<Map<string, HTMLDivElement>>;
+}
+
+export function useDragSelection({ isOpen, containerRef, contentRef, fileRefs }: DragSelectionProps) {
     const [ids, setIds] = useState<string[]>([]), [dragging, setDragging] = useState(false);
     const [start, setStart] = useState<{ x: number, y: number } | null>(null), [end, setEnd] = useState<{ x: number, y: number } | null>(null);
     const draggingRef = useRef(false), startRef = useRef<{ x: number, y: number } | null>(null), initialIds = useRef<string[]>([]), ignoreRef = useRef(false);

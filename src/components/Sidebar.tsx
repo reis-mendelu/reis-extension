@@ -10,7 +10,6 @@ import { useUserParams } from '../hooks/useUserParams';
 import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from '../hooks/useTranslation';
 import type { Tutorial } from '../services/tutorials';
-import type { SelectedSubject } from '../types/app';
 import type { SubjectInfo } from '../types/documents';
 
 interface SidebarProps {
@@ -19,7 +18,7 @@ interface SidebarProps {
   onOpenFeedback?: () => void;
   tutorials?: Tutorial[];
   onSelectTutorial?: (t: Tutorial) => void;
-  onOpenSubject?: (s: SelectedSubject) => void;
+  onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string) => void;
 }
 
 export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, tutorials = [], onSelectTutorial, onOpenSubject }: SidebarProps) => {

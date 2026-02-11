@@ -1,13 +1,18 @@
 import React from 'react';
 import ExamItem from './ExamItem';
-import type { ExamTerm } from '../../../types/exams';
 import { useTranslation } from '../../../hooks/useTranslation';
 
+export interface TimelineExam {
+  term: { id: string; date: string; time: string; [key: string]: unknown };
+  subjectName: string;
+  [key: string]: unknown;
+}
+
 interface ExamTimelineProps {
-  exams: { term: ExamTerm; subjectName: string; [key: string]: any }[];
+  exams: TimelineExam[];
   orientation?: 'vertical' | 'horizontal';
   className?: string;
-  onSelectItem?: (item: any) => void;
+  onSelectItem?: (item: TimelineExam) => void;
 }
 
 const ExamTimeline: React.FC<ExamTimelineProps> = ({ exams, orientation = 'vertical', className = '', onSelectItem }) => {

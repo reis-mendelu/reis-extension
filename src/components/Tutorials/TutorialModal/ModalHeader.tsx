@@ -1,6 +1,12 @@
 import { X } from 'lucide-react';
 
-export function ModalHeader({ title, description, onClose }: any) {
+interface ModalHeaderProps {
+    title: string;
+    description: string;
+    onClose: () => void;
+}
+
+export function ModalHeader({ title, description, onClose }: ModalHeaderProps) {
     return (
         <div className="flex items-center justify-between px-6 pt-4 pb-2 border-b border-white/40 bg-base-100/80 backdrop-blur shrink-0 mb-5">
             <div>

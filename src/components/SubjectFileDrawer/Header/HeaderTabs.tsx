@@ -1,6 +1,11 @@
 import { useTranslation } from '../../../hooks/useTranslation';
 
-export function HeaderTabs({ activeTab, onTabChange }: any) {
+interface HeaderTabsProps {
+    activeTab: string;
+    onTabChange: (id: string) => void;
+}
+
+export function HeaderTabs({ activeTab, onTabChange }: HeaderTabsProps) {
     const { t } = useTranslation();
     const tabs = [{ id: 'files', label: t('course.tabs.files') }, { id: 'syllabus', label: t('course.tabs.requirements') }, { id: 'stats', label: t('course.tabs.successRate') }];
     return (

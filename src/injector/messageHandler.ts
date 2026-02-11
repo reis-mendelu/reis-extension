@@ -46,7 +46,7 @@ async function handleDataRequest(dataType: DataRequestType) {
     } catch (e) { sendToIframe(Messages.data(dataType, null, String(e))); }
 }
 
-async function handleFetchRequest(id: string, url: string, options?: any) {
+async function handleFetchRequest(id: string, url: string, options?: { method?: string; headers?: Record<string, string>; body?: string }) {
     try {
         const response = await fetch(url, {
             method: options?.method ?? "GET", headers: options?.headers,
@@ -58,13 +58,14 @@ async function handleFetchRequest(id: string, url: string, options?: any) {
     } catch (e) { sendToIframe(Messages.fetchResult(id, false, undefined, String(e))); }
 }
 
-async function handleAction(id: string, action: string, payload: any) {
+async function handleAction(id: string, action: string, payload: unknown) {
     console.log('[handleAction] 🎯 Processing action:', action);
     try {
-        let result: any = null;
+        let result: unknown = null;
+        const p = payload as Record<string, string>;
         switch (action) {
-            case "register_exam": result = { success: await registerExam(payload.termId) }; break;
-            case "unregister_exam": result = { success: await unregisterExam(payload.termId) }; break;
+            case "register_exam": result = { success: await registerExam(p.termId) }; break;
+            case "unregister_exam": result = { success: await unregisterExam(p.termId) }; break;
             case "trigger_sync": 
                 console.log('[handleAction] 🔄 Triggering sync...');
                 await syncAllData(); 

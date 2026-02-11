@@ -21,9 +21,13 @@ export function SuccessRateTab({ courseCode }: { courseCode: string }) {
     const order = isCredit ? ['zap', 'nezap'] : ['A', 'B', 'C', 'D', 'E', 'F', 'FN'];
     const colors = isCredit ? { zap: 'var(--color-success)', nezap: 'var(--color-error)' } : COLORS;
 
-    const grades = current.terms.reduce((acc: any, tRes: any) => {
-        if (isCredit && tRes.creditGrades) { acc.zap = (acc.zap || 0) + (tRes.creditGrades.zap || 0); acc.nezap = (acc.nezap || 0) + (tRes.creditGrades.nezap || 0) + (tRes.creditGrades.zapNedost || 0); }
-        else Object.entries(tRes.grades || {}).forEach(([g, c]: any) => acc[g] = (acc[g] || 0) + c);
+    const grades = current.terms.reduce((acc: Record<string, number>, tRes) => {
+        if (isCredit && tRes.creditGrades) { 
+            acc.zap = (acc.zap || 0) + (tRes.creditGrades.zap || 0); 
+            acc.nezap = (acc.nezap || 0) + (tRes.creditGrades.nezap || 0) + (tRes.creditGrades.zapNedost || 0); 
+        } else if (tRes.grades) {
+            Object.entries(tRes.grades).forEach(([g, c]) => acc[g] = (acc[g] || 0) + c);
+        }
         return acc;
     }, {});
 

@@ -47,7 +47,7 @@ class SyncServiceClass {
     subscribe(cb: (a?: string) => void) { this.listeners.add(cb); return () => this.listeners.delete(cb); }
     async getStatus(): Promise<SyncStatus> { return { isSyncing: this.isSyncing, lastSync: await IndexedDBService.get('meta', 'last_sync'), error: await IndexedDBService.get('meta', 'sync_error') }; }
     setIsSyncing(v: boolean) { this.isSyncing = v; this.notifyListeners(); }
-    triggerSync(payload?: any) { window.parent.postMessage({ type: 'REIS_ACTION', id: crypto.randomUUID(), action: 'trigger_sync', payload: payload || {} }, '*'); }
+    triggerSync(payload?: unknown) { window.parent.postMessage({ type: 'REIS_ACTION', id: crypto.randomUUID(), action: 'trigger_sync', payload: payload || {} }, '*'); }
     triggerRefresh(a?: string) { this.notifyListeners(a); }
     private notifyListeners(a?: string) { this.listeners.forEach(cb => { try { cb(a); } catch (e) { console.error(e); } }); }
 }

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fetchFilesFromFolder } from './service';
 import { fetchWithAuth } from '../client';
 import { parseServerFiles } from './parser';
+import type { ParsedFile } from '../../types/documents';
 
 // Mock dependencies
 vi.mock('../client');
@@ -33,7 +34,7 @@ describe('fetchFilesFromFolder', () => {
 
     it('should fetch files from a single folder', async () => {
         vi.mocked(parseServerFiles).mockReturnValue({
-            files: [{ file_name: 'test.pdf', link: 'http://test.com/test.pdf', files: [{ name: 'test.pdf', link: 'http://test.com/test.pdf', type: 'pdf' }] } as any],
+            files: [{ file_name: 'test.pdf', link: 'http://test.com/test.pdf', files: [{ name: 'test.pdf', link: 'http://test.com/test.pdf', type: 'pdf' }] } as unknown as ParsedFile],
             paginationLinks: []
         });
 
@@ -60,7 +61,7 @@ describe('fetchFilesFromFolder', () => {
             files: [{ 
                 file_name: 'Subfolder', 
                 files: [{ link: 'slozka.pl?id=123', name: 'Subfolder' }] 
-            } as any],
+            } as unknown as ParsedFile],
             paginationLinks: []
         });
 
@@ -81,7 +82,7 @@ describe('fetchFilesFromFolder', () => {
         } as Response);
 
         vi.mocked(parseServerFiles).mockReturnValueOnce({
-            files: [{ file_name: 'File 1', files: [{ name: 'File 1', type: 'pdf', link: 'download?id=1' }] } as any],
+            files: [{ file_name: 'File 1', files: [{ name: 'File 1', type: 'pdf', link: 'download?id=1' }] } as unknown as ParsedFile],
             paginationLinks: ['on=1']
         });
 
@@ -91,7 +92,7 @@ describe('fetchFilesFromFolder', () => {
         } as Response);
 
         vi.mocked(parseServerFiles).mockReturnValueOnce({
-            files: [{ file_name: 'File 2', files: [{ name: 'File 2', type: 'pdf', link: 'download?id=2' }] } as any],
+            files: [{ file_name: 'File 2', files: [{ name: 'File 2', type: 'pdf', link: 'download?id=2' }] } as unknown as ParsedFile],
             paginationLinks: []
         });
 

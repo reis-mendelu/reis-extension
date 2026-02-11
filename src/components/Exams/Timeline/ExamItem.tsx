@@ -16,7 +16,7 @@ interface ContentBoxProps {
   term: ExamTerm;
   isHorizontal: boolean;
   onClick?: () => void;
-  t: (key: string) => any;
+  t: { (key: string): string; language: string };
 }
 
 const ContentBox: React.FC<ContentBoxProps> = ({
@@ -43,7 +43,7 @@ const ContentBox: React.FC<ContentBoxProps> = ({
         <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
           <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
         </svg>
-        {(t as any).language === 'en' && (term as any).roomEn ? (term as any).roomEn : ((term as any).roomCs || term.room) || t('common.loading')}
+        {t.language === 'en' && term.roomEn ? term.roomEn : (term.roomCs || term.room) || t('common.loading')}
       </div>
     </div>
     <div className="text-[11px] font-mono font-extrabold tracking-widest uppercase text-primary">

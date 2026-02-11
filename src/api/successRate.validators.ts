@@ -11,6 +11,6 @@ export async function auditSubject(code: string) {
     if (cdn.status !== 'ok') return { cdnStatus: cdn };
     try {
         const data = await (await fetch(`${CDN_BASE_URL}/subjects/${code}.json`)).json();
-        return { cdnStatus: cdn, dataShape: validateDataShape(data), semesters: Array.isArray(data.stats) ? data.stats.map((s: any) => parseSemesterName(s.semesterName)) : [] };
+        return { cdnStatus: cdn, dataShape: validateDataShape(data), semesters: Array.isArray(data.stats) ? data.stats.map((s: { semesterName: string }) => parseSemesterName(s.semesterName)) : [] };
     } catch (e) { return { cdnStatus: cdn, dataShape: { code, status: 'error', message: `Parse error: ${e}` } }; }
 }

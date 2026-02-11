@@ -31,7 +31,7 @@ describe('SyllabusSlice', () => {
     get = vi.fn(() => slice);
     slice = {
       language: 'cz',
-      ...createSyllabusSlice(set, get, {} as any),
+      ...createSyllabusSlice(set, get, {} as SyllabusSlice),
     } as SyllabusSlice & { language: string };
   });
 

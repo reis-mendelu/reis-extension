@@ -1,18 +1,20 @@
-export function validateDataShape(data: any): any {
+export function validateDataShape(data: unknown): { status: 'ok' | 'invalid' | 'error'; message: string } {
     if (!data || typeof data !== 'object') return { status: 'invalid', message: 'Data is null or not an object' };
-    if (!data.courseCode || typeof data.courseCode !== 'string') return { status: 'invalid', message: 'Missing or invalid courseCode' };
-    if (!Array.isArray(data.stats)) return { status: 'invalid', message: 'Missing stats array' };
-    if (data.stats.length === 0) return { status: 'invalid', message: 'Empty stats array' };
-    const first = data.stats[0];
+    const d = data as Record<string, unknown>;
+    if (!d.courseCode || typeof d.courseCode !== 'string') return { status: 'invalid', message: 'Missing or invalid courseCode' };
+    if (!Array.isArray(d.stats)) return { status: 'invalid', message: 'Missing stats array' };
+    if (d.stats.length === 0) return { status: 'invalid', message: 'Empty stats array' };
+    const first = d.stats[0] as Record<string, unknown>;
     if (!first.semesterName || !first.year) return { status: 'invalid', message: 'First stat missing semesterName or year' };
-    for (const s of data.stats) {
-        const total = (s.totalPass || 0) + (s.totalFail || 0);
-        if (total === 0 && !s.terms?.length) return { status: 'invalid', message: `Zero student count in ${s.semesterName}` };
+    for (const s of d.stats as Record<string, unknown>[]) {
+        const total = ((s.totalPass as number) || 0) + ((s.totalFail as number) || 0);
+        if (total === 0 && !(s.terms as unknown[])?.length) return { status: 'invalid', message: `Zero student count in ${s.semesterName}` };
         if (total > 5000) return { status: 'invalid', message: `Unrealistically high student count (${total}) in ${s.semesterName}` };
-        for (const t of s.terms || []) {
-            const sum = Object.values(t.grades || {}).reduce((a: any, b: any) => a + b, 0) as number;
-            if (sum !== (t.pass + t.fail)) return { status: 'invalid', message: `Grade sum mismatch in ${s.semesterName}: ${sum} != ${t.pass + t.fail}` };
+        for (const t of (s.terms || []) as Record<string, unknown>[]) {
+            const term = t as Record<string, number>;
+            const sum = Object.values((term.grades || {}) as Record<string, number>).reduce((a: number, b: number) => a + b, 0);
+            if (sum !== (term.pass + term.fail)) return { status: 'invalid', message: `Grade sum mismatch in ${s.semesterName}: ${sum} != ${term.pass + term.fail}` };
         }
     }
-    return { status: 'ok', message: `✅ Valid: ${data.stats.length} semesters` };
+    return { status: 'ok', message: `✅ Valid: ${d.stats.length} semesters` };
 }

@@ -5,26 +5,27 @@ import { SyllabusTab } from './SyllabusTab';
 import { SuccessRateTab } from '../SuccessRateTab';
 import { SelectionBox, DragHint } from './DragHint';
 import type { FileGroup } from './types';
+import type { SyllabusRequirements } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { BlockLesson } from '../../types/calendarTypes';
 
 interface SubjectFileDrawerContentProps {
     activeTab: 'files' | 'stats' | 'assessments' | 'syllabus';
     lesson: BlockLesson | null;
-    files: any[] | null;
+    files: unknown[] | null;
     isFilesLoading: boolean;
     isSyncing: boolean;
     isDragging: boolean;
-    selectionBoxStyle: any;
+    selectionBoxStyle: { left: number; top: number; width: number; height: number; };
     showDragHint: boolean;
     groupedFiles: FileGroup[];
     selectedIds: string[];
-    fileRefs: any;
-    ignoreClickRef: any;
+    fileRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
+    ignoreClickRef: React.RefObject<boolean>;
     toggleSelect: (id: string, e: React.MouseEvent) => void;
-    openFile: (file: any) => void;
+    openFile: (link: string) => void;
     resolvedCourseId: string;
-    syllabusResult: any;
+    syllabusResult: { syllabus: SyllabusRequirements | null; isLoading: boolean };
 }
 
 export function SubjectFileDrawerContent({
@@ -54,6 +55,6 @@ export function SubjectFileDrawerContent({
         );
     }
     if (activeTab === 'assessments') return <AssessmentTab courseCode={lesson?.courseCode || ''} />;
-    if (activeTab === 'syllabus') return <SyllabusTab courseCode={lesson?.courseCode || ''} courseId={resolvedCourseId} courseName={(lesson as any)?.courseName} prefetchedResult={syllabusResult} />;
+    if (activeTab === 'syllabus') return <SyllabusTab courseCode={lesson?.courseCode || ''} courseId={resolvedCourseId} courseName={lesson?.courseName ?? ''} prefetchedResult={syllabusResult} />;
     return <SuccessRateTab courseCode={lesson?.courseCode || ''} />;
 }

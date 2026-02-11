@@ -1,8 +1,16 @@
-export function SemesterSelector({ stats, activeIndex, onSelect }: any) {
+import type { SemesterStats } from '../../types/documents';
+
+interface SemesterSelectorProps {
+    stats: SemesterStats[];
+    activeIndex: number;
+    onSelect: (index: number) => void;
+}
+
+export function SemesterSelector({ stats, activeIndex, onSelect }: SemesterSelectorProps) {
     const format = (y: number, s: string) => `${s.startsWith('ZS') ? 'ZS' : 'LS'} ${y % 100}/${(y % 100) + 1}`;
     return (
         <div className="flex justify-center gap-4 mt-auto">
-            {stats.map((s: any, i: number) => {
+            {stats.map((s, i) => {
                 const total = s.totalPass + s.totalFail, rate = Math.round((s.totalPass / total) * 100) || 0, active = i === activeIndex;
                 return (
                     <button key={`${s.year}-${s.semesterName}`} onClick={() => onSelect(i)}

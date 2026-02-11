@@ -4,7 +4,18 @@ import { useDatePickerData } from '../hooks/useDatePickerData';
 import { DatePickerCalendar } from './DatePicker/DatePickerCalendar';
 import { DatePickerSelectors } from './DatePicker/DatePickerSelectors';
 
-export function DatePickerPopup({ isOpen, onClose, onConfirm, terms, anchorRef, allExams = [] }: any) {
+import type { ExamTerm, ExamSubject } from '../types/exams';
+
+interface DatePickerPopupProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: (id: string) => void;
+    terms: ExamTerm[];
+    anchorRef: React.RefObject<HTMLElement>;
+    allExams?: ExamSubject[];
+}
+
+export function DatePickerPopup({ isOpen, onClose, onConfirm, terms, anchorRef, allExams = [] }: DatePickerPopupProps) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [selectedTermId, setSelectedTermId] = useState<string | null>(null);
@@ -36,8 +47,8 @@ export function DatePickerPopup({ isOpen, onClose, onConfirm, terms, anchorRef, 
     return (
         <div className="fixed inset-0 z-[100]" onClick={e => e.target === e.currentTarget && onClose()}>
             <div className="absolute bg-white rounded-xl shadow-popover-heavy border border-slate-200 w-[260px]" style={{ top: pos.top, left: pos.left }} onClick={e => e.stopPropagation()}>
-                <DatePickerCalendar currentDate={currentDate} setCurrentDate={setCurrentDate} weeks={data.weeks} availableDates={data.availableDates} otherRegisteredDates={data.otherRegisteredDates} selectedDate={selectedDate} onSelectDate={(d: any) => { setSelectedDate(d); setSelectedTermId(null); }} />
-                <DatePickerSelectors selectedDate={selectedDate} termsForDate={terms.filter((t: any) => t.date === selectedDate)} selectedTermId={selectedTermId} onSelectTerm={setSelectedTermId} onConfirm={onConfirm} />
+                <DatePickerCalendar currentDate={currentDate} setCurrentDate={setCurrentDate} weeks={data.weeks} availableDates={data.availableDates} otherRegisteredDates={data.otherRegisteredDates} selectedDate={selectedDate} onSelectDate={(d: string | null) => { setSelectedDate(d); setSelectedTermId(null); }} />
+                <DatePickerSelectors selectedDate={selectedDate} termsForDate={terms.filter((t: ExamTerm) => t.date === selectedDate)} selectedTermId={selectedTermId} onSelectTerm={setSelectedTermId} onConfirm={onConfirm} />
             </div>
         </div>
     );

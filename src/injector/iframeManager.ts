@@ -38,7 +38,7 @@ export function injectIframe() {
     console.log("[REIS Content] Iframe injected successfully");
 }
 
-export function sendToIframe(message: any) {
+export function sendToIframe(message: unknown) {
     if (!iframeElement?.contentWindow) return;
     iframeElement.contentWindow.postMessage(message, "*");
 }

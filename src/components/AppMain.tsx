@@ -1,6 +1,7 @@
 import type { AppView } from '../types/app'
 import { AppHeader } from './AppHeader'
 import { WeeklyCalendar } from './WeeklyCalendar/index'
+import type { ExamSubject } from '../types/exams';
 import { ExamPanel } from './ExamPanel'
 
 interface AppMainProps {
@@ -9,8 +10,8 @@ interface AppMainProps {
     handlePrevWeek: () => void;
     handleNextWeek: () => void;
     handleToday: () => void;
-    handleOpenSubjectFromSearch: (subject: any) => void;
-    setSelectedSubject: (subject: any) => void;
+    handleOpenSubjectFromSearch: (courseCode: string, courseName?: string, courseId?: string) => void;
+    setSelectedSubject: (subject: ExamSubject & { courseCode: string; courseName: string; sectionName: string; isExam: true }) => void;
     dateRangeLabel: string;
 }
 

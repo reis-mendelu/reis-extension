@@ -1,10 +1,21 @@
 import { useMemo } from 'react';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
-import type { ExamTerm, ExamSubject } from '../types/exams';
+import type { ExamTerm, ExamSubject, ExamSection } from '../types/exams';
+
+export interface AvailableDate {
+    date: Date;
+    dateStr: string;
+    isFull: boolean;
+}
+
+export interface RegisteredDate {
+    date: Date;
+    label: string;
+}
 
 export function useDatePickerData(terms: ExamTerm[], allExams: ExamSubject[], currentDate: Date) {
     const availableDates = useMemo(() => {
-        const dates: any[] = [];
+        const dates: AvailableDate[] = [];
         const seen = new Set<string>();
         terms.forEach(t => {
             if (!seen.has(t.date)) {
@@ -17,8 +28,8 @@ export function useDatePickerData(terms: ExamTerm[], allExams: ExamSubject[], cu
     }, [terms]);
 
     const otherRegisteredDates = useMemo(() => {
-        const dates: any[] = [];
-        allExams.forEach(s => s.sections.forEach(sec => {
+        const dates: RegisteredDate[] = [];
+        allExams.forEach(s => s.sections.forEach((sec: ExamSection) => {
             if (sec.status === 'registered' && sec.registeredTerm?.date) {
                 const [d, m, y] = sec.registeredTerm.date.split('.').map(Number);
                 dates.push({ date: new Date(y, m - 1, d), label: s.name });

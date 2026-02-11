@@ -1,6 +1,14 @@
 import { X, Download, Loader2 } from 'lucide-react';
 
-export function HeaderActions({ selectedCount, isDownloading, downloadProgress, onDownload, onClose }: any) {
+interface HeaderActionsProps {
+    selectedCount: number;
+    isDownloading: boolean;
+    downloadProgress: { completed: number; total: number } | null;
+    onDownload: () => void;
+    onClose: () => void;
+}
+
+export function HeaderActions({ selectedCount, isDownloading, downloadProgress, onDownload, onClose }: HeaderActionsProps) {
     const downloadLabel = downloadProgress 
         ? `Stahování (${downloadProgress.completed}/${downloadProgress.total})...` 
         : (isDownloading ? 'Stahování...' : `Stáhnout (${selectedCount})`);

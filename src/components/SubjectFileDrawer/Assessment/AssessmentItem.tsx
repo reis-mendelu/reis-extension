@@ -1,8 +1,9 @@
 import { ExternalLink, Pencil, Check, X } from 'lucide-react';
+import type { Assessment } from '../../../types/documents';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface AssessmentItemProps {
-    test: any;
+    test: Assessment;
     isEditing: boolean;
     editMax: string;
     onStartEdit: () => void;

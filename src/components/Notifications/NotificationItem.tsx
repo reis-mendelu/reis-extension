@@ -24,7 +24,7 @@ export function NotificationItem({ notification, onClick, onVisible }: { notific
   return (
     <button ref={ref} onClick={onClick} className="w-full p-4 hover:bg-base-200 transition-colors text-left flex items-center gap-3">
       <div className="flex-shrink-0">
-        {iconUrl ? <img src={iconUrl} alt={assocId} className="w-10 h-10 rounded-full object-cover" onError={(e: any) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} /> : null}
+        {iconUrl ? <img src={iconUrl} alt={assocId} className="w-10 h-10 rounded-full object-cover" onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} /> : null}
         <div className={iconUrl ? 'hidden' : ''}>{assocId === 'admin' ? <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary"><Bell size={20} /></div> : <Users size={24} className="text-primary" />}</div>
       </div>
       <div className="flex-1 min-w-0">

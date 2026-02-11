@@ -2,7 +2,9 @@ import { Calendar, Clock, MapPin, AlertCircle } from 'lucide-react';
 import { getDayOfWeek } from './utils';
 import { useTranslation } from '../../hooks/useTranslation';
 
-export function RegisteredTermDetails({ section }: any) {
+import type { ExamSection } from '../../types/exams';
+
+export function RegisteredTermDetails({ section }: { section: ExamSection }) {
     const { t, language } = useTranslation();
     const term = section.registeredTerm;
     if (!term) return null;

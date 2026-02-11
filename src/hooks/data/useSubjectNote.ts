@@ -102,7 +102,7 @@ export function useSubjectNote(subjectCode: string | undefined) {
                 saveToStorage(noteRef.current, currentSubjectRef.current);
             }
         };
-    }, [subjectCode, saveToStorage]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [subjectCode, saveToStorage, isLoading]);
 
     // Set note with debounced save
     const setNote = useCallback((value: string) => {
@@ -125,7 +125,7 @@ export function useSubjectNote(subjectCode: string | undefined) {
         debounceRef.current = setTimeout(() => {
             saveToStorage(truncated, subjectCode);
         }, DEBOUNCE_MS);
-    }, [subjectCode, saveToStorage]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [subjectCode, saveToStorage]);
 
     return { note, setNote, isLoading };
 }

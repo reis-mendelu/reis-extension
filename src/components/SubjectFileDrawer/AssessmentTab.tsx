@@ -17,8 +17,8 @@ export function AssessmentTab({ courseCode }: { courseCode: string }) {
         </div>
     );
 
-    const saveAdj = (adj: any) => IndexedDBService.set('meta', `assessment_adjustments_${courseCode}`, adj).catch(e => console.error(e));
-    const saveBonus = (b: any) => IndexedDBService.set('meta', `bonus_points_${courseCode}`, b).catch(e => console.error(e));
+    const saveAdj = (adj: Record<string, { adjustedMax: number; adjustedScore: number }>) => IndexedDBService.set('meta', `assessment_adjustments_${courseCode}`, adj).catch(e => console.error(e));
+    const saveBonus = (b: Record<string, { name: string; points: number }>) => IndexedDBService.set('meta', `bonus_points_${courseCode}`, b).catch(e => console.error(e));
 
     return (
         <div className="flex flex-col h-full bg-base-100">
@@ -27,7 +27,7 @@ export function AssessmentTab({ courseCode }: { courseCode: string }) {
                     const adj = s.adjustments[test.name];
                     const values = adj ? { score: adj.adjustedScore, maxScore: adj.adjustedMax, isAdjusted: true } : { score: test.score, maxScore: test.maxScore, isAdjusted: false };
                     return (
-                        <AssessmentItem key={i} index={i} test={test} isEditing={s.editingId === i} editMax={s.editMax}
+                        <AssessmentItem key={i} test={test} isEditing={s.editingId === i} editMax={s.editMax}
                             onStartEdit={() => { s.setEditingId(i); s.setOriginalScore(test.score); s.setOriginalMax(test.maxScore); s.setEditMax(test.maxScore.toString()); }}
                             onCancelEdit={() => s.setEditingId(null)} onEditMaxChange={s.setEditMax} values={values}
                             onSaveEdit={() => {

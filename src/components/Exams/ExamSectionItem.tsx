@@ -1,6 +1,7 @@
+import type { ExamSection } from '../../types/exams';
 import { Button } from '../ui/button';
 
-export function ExamSectionItem({ section, isProcessing, onOpenPicker }: any) {
+export function ExamSectionItem({ section, isProcessing, onOpenPicker }: { section: ExamSection; isProcessing: boolean; onOpenPicker: (section: ExamSection, target: HTMLElement) => void }) {
     const getDOW = (d: string) => {
         const [day, m, y] = d.split('.').map(Number);
         return ['ne', 'po', 'út', 'st', 'čt', 'pá', 'so'][new Date(y, m - 1, day).getDay()];

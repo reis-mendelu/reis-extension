@@ -12,7 +12,7 @@ function formatDate(ds: string, t: (k: string) => string) {
     return `${dayNames[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.`;
 }
 
-function getBadge(l: any, t: (k: string) => string) {
+function getBadge(l: { isExam?: boolean; courseName?: string; sectionName?: string; isSeminar?: string } | null, t: (k: string) => string) {
     if (!l) return null;
     if (l.isExam) {
         const test = (l.courseName || '').toLowerCase().includes('test') || (l.sectionName || '').toLowerCase().includes('test');
@@ -60,7 +60,7 @@ export function DrawerHeader({ lesson, courseId, courseInfo, selectedCount, isDo
                         : <span className="text-xl font-bold text-base-content">{displayName}</span>;
                 })()}
             </div>
-            <CourseMeta lesson={lesson} courseInfo={courseInfo} isSearchContext={isSearch} />
+            <CourseMeta lesson={lesson} courseInfo={courseInfo} isSearchContext={!!isSearch} />
             <HeaderTabs activeTab={activeTab} onTabChange={onTabChange} />
         </div>
     );

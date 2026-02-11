@@ -11,6 +11,16 @@ import { signalReady, requestData, isInIframe } from '../api/proxyClient';
 import type { AppView, SelectedSubject } from '../types/app';
 import { isContentMessage } from '../types/messages';
 
+interface SyncedData {
+  schedule?: unknown;
+  exams?: unknown;
+  subjects?: { data: Record<string, { nameCs?: string; nameEn?: string }> };
+  files?: Record<string, unknown>;
+  syllabuses?: Record<string, unknown>;
+  lastSync?: string;
+  isSyncing?: boolean;
+}
+
 export function useAppLogic() {
   const [currentDate, setCurrentDate] = useState<Date>(() => getSmartWeekRange().start);
   const [currentView, setCurrentView] = useState<AppView>('calendar');
@@ -57,17 +67,17 @@ export function useAppLogic() {
         const d = e.data;
         if (!isContentMessage(d)) return;
         
-        const r = d.type === 'REIS_SYNC_UPDATE' ? d.data : d.dataType === 'all' ? (d.data as any) : null;
+        const r = d.type === 'REIS_SYNC_UPDATE' ? (d.data as SyncedData) : d.dataType === 'all' ? (d.data as SyncedData) : null;
         if (!r) return;
 
         if (r.schedule) await IndexedDBService.set('schedule', 'current', r.schedule);
         if (r.exams) await IndexedDBService.set('exams', 'current', r.exams);
-        if (r.subjects) {
-            const existing = await IndexedDBService.get('subjects', 'current');
-            if (existing && existing.data) {
+        if (r.subjects?.data) {
+            const existing = await IndexedDBService.get('subjects', 'current') as { data: Record<string, { nameCs?: string; nameEn?: string }> } | null;
+            if (existing?.data) {
                 // Merge dual-language names into incoming data if incoming is missing them
                 Object.keys(r.subjects.data).forEach(code => {
-                    const incomingSub = r.subjects.data[code];
+                    const incomingSub = r.subjects!.data[code];
                     const existingSub = existing.data[code];
                     if (existingSub) {
                         if (!incomingSub.nameCs && existingSub.nameCs) incomingSub.nameCs = existingSub.nameCs;

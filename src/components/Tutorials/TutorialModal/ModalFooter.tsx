@@ -1,6 +1,17 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-export function ModalFooter({ curr, total, isFirst, isLast, onPrev, onNext, onGo, onClose }: any) {
+interface ModalFooterProps {
+    curr: number;
+    total: number;
+    isFirst: boolean;
+    isLast: boolean;
+    onPrev: () => void;
+    onNext: () => void;
+    onGo: (idx: number) => void;
+    onClose: () => void;
+}
+
+export function ModalFooter({ curr, total, isFirst, isLast, onPrev, onNext, onGo, onClose }: ModalFooterProps) {
     return (
         <div className="flex items-center justify-between px-6 py-4 border-t border-base-300 bg-base-100/80 backdrop-blur shrink-0">
             <button onClick={onPrev} disabled={isFirst} className="btn btn-ghost gap-2 opacity-30 disabled:opacity-30"><ChevronLeft size={20} /><span className="hidden sm:inline">Zpět</span></button>

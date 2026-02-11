@@ -2,8 +2,17 @@ import { Bell, X } from 'lucide-react';
 import { NotificationItem } from './NotificationItem';
 import { trackNotificationClick } from '../../services/spolky';
 import { useTranslation } from '../../hooks/useTranslation';
+import type { SpolekNotification } from '../../services/spolky';
 
-export function NotificationDropdown({ notifications, loading, onClose, onVisible, dropdownRef }: any) {
+interface NotificationDropdownProps {
+  notifications: SpolekNotification[];
+  loading: boolean;
+  onClose: () => void;
+  onVisible: (id: string) => void;
+  dropdownRef: React.RefObject<HTMLDivElement>;
+}
+
+export function NotificationDropdown({ notifications, loading, onClose, onVisible, dropdownRef }: NotificationDropdownProps) {
   const { t } = useTranslation();
   return (
     <div ref={dropdownRef} className="absolute right-0 top-12 z-50 w-96 bg-base-100 border border-base-300 rounded-lg shadow-xl max-h-[320px] overflow-hidden flex flex-col">
@@ -15,7 +24,7 @@ export function NotificationDropdown({ notifications, loading, onClose, onVisibl
         {(loading && !notifications.length) ? <div className="p-4 text-center text-base-content/60">{t('notifications.loading')}</div> :
          !notifications.length ? <div className="p-8 text-center text-base-content/60"><Bell size={48} className="mx-auto mb-2 opacity-40" /><p>{t('notifications.empty')}</p></div> :
           <div className="divide-y divide-base-300">
-            {notifications.map((n: any) => (
+            {notifications.map((n) => (
               <NotificationItem key={n.id} notification={n} onVisible={() => onVisible(n.id)}
                 onClick={() => {
                   if (!n.associationId?.startsWith('academic_')) trackNotificationClick(n.id);

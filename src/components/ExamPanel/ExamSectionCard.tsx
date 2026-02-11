@@ -13,7 +13,7 @@ interface ExamSectionCardProps {
     onToggleExpand: (id: string) => void;
     onRegister: (section: ExamSection, termId: string) => void;
     onUnregister: (section: ExamSection) => void;
-    onSelectSubject: (subject: any) => void;
+    onSelectSubject: (subject: ExamSubject & { courseCode: string; courseName: string; sectionName: string; isExam: true }) => void;
 }
 
 export function ExamSectionCard({ subject, section, isExpanded, isProcessing, onToggleExpand, onRegister, onUnregister, onSelectSubject }: ExamSectionCardProps) {
@@ -49,7 +49,7 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                     </div>
                 </div>
                 {isExpanded && section.terms.length > 0 && (
-                    <div className="mt-4 pt-3 border-t border-base-200"><div className="text-xs opacity-50 mb-2">{t('exams.clickToRegister')}</div><div className="flex flex-col gap-2">{section.terms.map((t: any) => <TermTile key={t.id} term={t} onSelect={() => onRegister(section, t.id)} isProcessing={isProcessing} />)}</div></div>
+                    <div className="mt-4 pt-3 border-t border-base-200"><div className="text-xs opacity-50 mb-2">{t('exams.clickToRegister')}</div><div className="flex flex-col gap-2">{section.terms.map(t => <TermTile key={t.id} term={t} onSelect={() => onRegister(section, t.id)} isProcessing={isProcessing} />)}</div></div>
                 )}
             </div>
         </div>

@@ -1,5 +1,6 @@
 import { Messages } from '../types/messages';
 import * as MsgTypes from '../types/messages/base';
+import type { DataRequestType } from '../types/messages/base';
 import type { ActionType } from '../types/messages';
 import { pendingFetches, pendingActions, REQUEST_TIMEOUT } from './proxy/pendingRequests';
 import { initProxyListener } from './proxy/messageListener';
@@ -23,11 +24,11 @@ export async function executeAction<T = unknown>(action: ActionType, payload: un
     const msg = Messages.action(action, payload);
     return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => { pendingActions.delete(msg.id); reject(new Error(`Timeout: ${action}`)); }, REQUEST_TIMEOUT);
-        pendingActions.set(msg.id, { resolve, reject, timeout });
+        pendingActions.set(msg.id, { resolve: resolve as (val: unknown) => void, reject, timeout });
         window.parent.postMessage(msg, '*');
     });
 }
 
-export function requestData(t: string) { window.parent.postMessage(Messages.requestData(t as any), '*'); }
+export function requestData(t: string) { window.parent.postMessage(Messages.requestData(t as DataRequestType), '*'); }
 export function signalReady() { window.parent.postMessage(Messages.ready(), '*'); }
 export function isInIframe(): boolean { try { return window.self !== window.parent; } catch { return true; } }

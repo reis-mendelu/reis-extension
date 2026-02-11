@@ -1,4 +1,11 @@
-export function GradeBarChart({ grades, order, colors, max }: any) {
+interface GradeBarChartProps {
+    grades: Record<string, number>;
+    order: string[];
+    colors: Record<string, string>;
+    max: number;
+}
+
+export function GradeBarChart({ grades, order, colors, max }: GradeBarChartProps) {
     const H = 160, MAX_B = 110;
     return (
         <div className="flex items-end gap-3 px-1 mb-8 relative" style={{ height: `${H}px` }}>

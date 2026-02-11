@@ -1,11 +1,17 @@
-import type { Tutorial, TutorialSummary } from './types';
+import type { Tutorial, TutorialSummary, SlideLayout } from './types';
 import { supabase } from '../spolky/supabaseClient';
 import { MOCK_TUTORIALS } from './mockData';
 
 const USE_MOCK_DATA = false;
 
-const mapSlide = (s: any) => ({
-    id: s.id, tutorialId: s.tutorial_id, order: s.order, layout: s.layout,
+interface SupabaseSlide {
+    id: string; tutorial_id: string; order: number; layout: string;
+    left_icon?: string; left_title?: string; left_content?: string; left_image_url?: string;
+    right_icon?: string; right_title?: string; right_content?: string; right_image_url?: string;
+}
+
+const mapSlide = (s: SupabaseSlide) => ({
+    id: s.id, tutorialId: s.tutorial_id, order: s.order, layout: s.layout as SlideLayout,
     leftIcon: s.left_icon, leftTitle: s.left_title, leftContent: s.left_content, leftImageUrl: s.left_image_url,
     rightIcon: s.right_icon, rightTitle: s.right_title, rightContent: s.right_content, rightImageUrl: s.right_image_url
 });
