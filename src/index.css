@@ -111,13 +111,13 @@ html, body, #root {
   --color-exam-bg: #FEF2F2;
   --color-exam-text: #991b1b;
 
-  --color-lecture-border: #00548f;
-  --color-lecture-bg: #F0F7FF;
-  --color-lecture-text: #1e3a8a;
+  --color-lecture-border: #79be15;
+  --color-lecture-bg: #F3FAEA;
+  --color-lecture-text: #365314;
 
-  --color-seminar-border: #79be15;
-  --color-seminar-bg: #F3FAEA;
-  --color-seminar-text: #365314;
+  --color-seminar-border: #00548f;
+  --color-seminar-bg: #F0F7FF;
+  --color-seminar-text: #1e3a8a;
 
   /* Surface Colors */
   --color-surface-primary: #ffffff;

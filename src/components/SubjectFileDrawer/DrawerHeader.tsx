@@ -16,9 +16,9 @@ function getBadge(l: { isExam?: boolean; courseName?: string; sectionName?: stri
     if (!l) return null;
     if (l.isExam) {
         const test = (l.courseName || '').toLowerCase().includes('test') || (l.sectionName || '').toLowerCase().includes('test');
-        return { label: test ? t('course.badge.test') : t('course.badge.exam'), cls: test ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700' };
+        return { label: test ? t('course.badge.test') : t('course.badge.exam'), cls: 'bg-error/10 text-error' };
     }
-    return l.isSeminar === 'true' ? { label: t('course.badge.seminar'), cls: 'bg-emerald-100 text-emerald-700' } : { label: t('course.badge.lecture'), cls: 'bg-blue-100 text-blue-700' };
+    return l.isSeminar === 'true' ? { label: t('course.badge.seminar'), cls: 'bg-info/10 text-info' } : { label: t('course.badge.lecture'), cls: 'bg-primary/10 text-primary' };
 }
 
 export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, selectedCount, isDownloading, downloadProgress, activeTab, onClose, onDownload, onTabChange }: DrawerHeaderProps) {
@@ -29,13 +29,16 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
         <div className="px-6 py-4 border-b border-base-300 bg-base-100 z-20">
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                    {!isSearch ? (<>{badge && <span className={`px-2 py-0.5 rounded text-xs font-medium ${badge.cls}`}>{badge.label}</span>}{lesson?.date && <span className="text-sm text-base-content/60">{formatDate(lesson.date, t)}</span>}</>)
+                    {!isSearch ? (<>
+                        {badge && <span className={`px-2 py-0.5 rounded text-xs font-bold ${badge.cls}`}>{badge.label}</span>}
+                        {lesson?.date && <span className="px-2 py-0.5 rounded text-xs font-bold bg-base-300 text-base-content/70">{formatDate(lesson.date, t)}</span>}
+                    </>)
                     : (<div className="flex items-center gap-2">
                         {courseInfo?.status && <span className="px-2 py-0.5 rounded text-xs font-bold bg-base-300 text-base-content/70 capitalize">
                             {courseInfo.status.toLowerCase().includes('povinný') ? t('course.status.povinný') : 
                              courseInfo.status.toLowerCase().includes('volitelný') ? t('course.status.volitelný') : 
                              courseInfo.status.toLowerCase().includes('povinně volitelný') ? t('course.status.povinně volitelný') : 
-                             courseInfo.status}
+                            courseInfo.status}
                         </span>}
                         {courseInfo?.credits && <span className="px-2 py-0.5 rounded text-xs font-bold bg-primary/10 text-primary capitalize">
                             {courseInfo.credits.toLowerCase().replace('kreditů', language === 'cs' ? 'kreditů' : 'credits' ).replace('kredity', language === 'cs' ? 'kredity' : 'credits').replace('kredit', language === 'cs' ? 'kredit' : 'credit')}

@@ -75,17 +75,15 @@ export function CalendarEventCard({ lesson, onClick, language = 'cs' }: Calendar
                 text: 'text-gray-900',
             };
         } else if (lesson.isSeminar === 'true') {
-            // Seminars/exercises use lecture colors (blue)
-            return {
-                bg: 'bg-lecture-bg/85',
-                border: 'border-l-lecture-border',
-                text: 'text-gray-900',
-            };
-        } else {
-            // Lectures use seminar colors (green)
             return {
                 bg: 'bg-seminar-bg/85',
                 border: 'border-l-seminar-border',
+                text: 'text-gray-900',
+            };
+        } else {
+            return {
+                bg: 'bg-lecture-bg/85',
+                border: 'border-l-lecture-border',
                 text: 'text-gray-900',
             };
         }
