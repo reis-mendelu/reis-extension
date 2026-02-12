@@ -43,10 +43,9 @@ export function ProfilePopup({ isOpen, onOpenFeedback }: { isOpen: boolean; onOp
                 </div>
             )}
         </div>
-        {onOpenFeedback && <button onClick={onOpenFeedback} className="w-full flex items-center gap-3 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors mb-2"><MessageSquarePlus size={16} className="text-primary" /><span className="text-xs font-medium">{t('settings.reportBug')}</span></button>}
-        <SpolkySection expanded={spolkyOpen} onToggle={() => setSpolkyOpen(!spolkyOpen)} isSub={isSubscribed} onToggleAssoc={toggleAssociation} />
-        <div className="py-1">
-            <div className="flex items-center justify-between gap-3 px-1 py-2 hover:bg-base-200 rounded-lg group transition-colors">
+        {/* Preferences Section */}
+        <div className="py-2 border-b border-base-200">
+            <div className="flex items-center justify-between gap-3 px-1 py-1.5 hover:bg-base-200 rounded-lg group transition-colors">
                 <div className="flex items-center gap-2 flex-1">
                     <Languages size={16} className="text-base-content/50" />
                     <span className="text-xs opacity-70">{t('settings.language')}</span>
@@ -66,9 +65,30 @@ export function ProfilePopup({ isOpen, onOpenFeedback }: { isOpen: boolean; onOp
                     </button>
                 </div>
             </div>
+            <label className="flex items-center justify-between gap-3 px-1 py-1.5 cursor-pointer hover:bg-base-200 rounded-lg mt-0.5">
+                <div className="flex items-center gap-2 flex-1">
+                    <Moon size={16} className="text-base-content/50" />
+                    <span className="text-xs opacity-70">{t('settings.darkMode')}</span>
+                </div>
+                <input type="checkbox" className="toggle toggle-primary toggle-sm" checked={isDark} disabled={tLoading} onChange={tTheme} />
+            </label>
         </div>
-        <OutlookSyncToggle enabled={isEnabled} loading={syncLoading} onToggle={tSync} />
-        <div><label className="flex items-center justify-between gap-3 px-1 py-2 cursor-pointer hover:bg-base-200 rounded-lg"><div className="flex items-center gap-2 flex-1"><Moon size={16} className="text-base-content/50" /><span className="text-xs opacity-70">{t('settings.darkMode')}</span></div><input type="checkbox" className="toggle toggle-primary toggle-sm" checked={isDark} disabled={tLoading} onChange={tTheme} /></label></div>
+
+        {/* Services Section */}
+        <div className="py-2 border-b border-base-200">
+            <SpolkySection expanded={spolkyOpen} onToggle={() => setSpolkyOpen(!spolkyOpen)} isSub={isSubscribed} onToggleAssoc={toggleAssociation} />
+            <OutlookSyncToggle enabled={isEnabled} loading={syncLoading} onToggle={tSync} />
+        </div>
+
+        {/* Support Section */}
+        <div className="pt-2">
+            {onOpenFeedback && (
+                <button onClick={onOpenFeedback} className="w-full flex items-center gap-3 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors">
+                    <MessageSquarePlus size={16} className="text-primary" />
+                    <span className="text-xs font-medium">{t('settings.reportBug')}</span>
+                </button>
+            )}
+        </div>
     </motion.div></AnimatePresence>
   );
 }
