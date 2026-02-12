@@ -1,4 +1,5 @@
 import type { ScrapedExamSubject, ScrapedExamSection } from './types';
+import { normalizeDateString } from './utils';
 
 export function parseRegisteredTerms(doc: Document, getOrCreateSubject: (c: string, n: string) => ScrapedExamSubject, getOrCreateSection: (s: ScrapedExamSubject, n: string) => ScrapedExamSection, lang: string = 'cz') {
     const isEn = lang === 'en';
@@ -11,7 +12,7 @@ export function parseRegisteredTerms(doc: Document, getOrCreateSubject: (c: stri
 
         let dateIndex = -1;
         for (let i = 0; i < cols.length; i++) {
-            if (cols[i].textContent?.match(/\d{2}\.\d{2}\.\d{4}/)) {
+            if (cols[i].textContent?.match(/\d{2}[\./]\d{2}[\./]\d{4}/)) {
                 dateIndex = i;
                 break;
             }
@@ -28,7 +29,8 @@ export function parseRegisteredTerms(doc: Document, getOrCreateSubject: (c: stri
         const teacherLink = cols[dateIndex + 3]?.querySelector('a[href*="clovek.pl"]');
         const teacherId = teacherLink?.getAttribute('href')?.match(/id=(\d+)/)?.[1] || '';
         const sectionName = sectionNameRaw.split('(')[0].trim();
-        const [date, time] = dateStr.split(' ');
+        const normalizedDateStr = normalizeDateString(dateStr, isEn);
+        const [date, time] = normalizedDateStr.split(' ');
 
         const termId = row.querySelector('a[href*="odhlasit_ihned=1"]')?.getAttribute('href')?.match(/termin=(\d+)/)?.[1] || '';
 
@@ -37,8 +39,8 @@ export function parseRegisteredTerms(doc: Document, getOrCreateSubject: (c: stri
             const parts = cols[i].innerHTML.split(/<br\s*\/?>/i);
             if (parts.length >= 3) {
                 const deadlineRaw = parts[2].replace(/<[^>]*>/g, '').trim();
-                if (deadlineRaw !== '--' && deadlineRaw.match(/\d{2}\.\d{2}\.\d{4}/)) {
-                    deregistrationDeadline = deadlineRaw;
+                if (deadlineRaw !== '--' && deadlineRaw.match(/\d{2}[\./]\d{2}[\./]\d{4}/)) {
+                    deregistrationDeadline = normalizeDateString(deadlineRaw, isEn);
                     break;
                 }
             }

@@ -1,6 +1,6 @@
 import pLimit from "p-limit";
 import { Messages } from "../types/messages";
-import { fetchExamData } from "../api/exams";
+import { fetchDualLanguageExams } from "../api/exams";
 import { fetchDualLanguageSubjects } from "../api/subjects";
 import { fetchFilesFromFolder } from "../api/documents";
 import { fetchAssessments } from "../api/assessments";
@@ -34,7 +34,7 @@ export async function syncAllData() {
         const [schedule, exams, subjects] = await Promise.allSettled([
             fetchScheduleData(),
  
-            fetchExamData(), 
+            fetchDualLanguageExams(), 
             fetchDualLanguageSubjects(studium || undefined),
         ]);
 

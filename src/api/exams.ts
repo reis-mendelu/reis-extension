@@ -83,7 +83,14 @@ export async function fetchDualLanguageExams(): Promise<ExamSubject[]> {
                 
                 // Merge sections
                 enSubject.sections.forEach(enSection => {
-                    const czSection = czSubject.sections.find(s => s.name === enSection.name || s.id === enSection.id);
+                    const czSection = czSubject.sections.find(s => 
+                        s.id === enSection.id || 
+                        s.name === enSection.name ||
+                        // Fallback: match by term IDs if names/IDs differ due to localization
+                        s.terms.some(t => enSection.terms.some(et => et.id === t.id)) ||
+                        (s.registeredTerm?.id && s.registeredTerm.id === enSection.registeredTerm?.id)
+                    );
+                    
                     if (czSection) {
                         czSection.nameEn = enSection.nameEn;
                         
