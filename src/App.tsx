@@ -32,8 +32,7 @@ function App() {
                onViewChange={s.setCurrentView} />
 
       <AppOverlays selectedSubject={s.selectedSubject} setSelectedSubject={s.setSelectedSubject}
-                   weekNavCount={s.weekNavCount} outlookSyncEnabled={s.outlookSyncEnabled}
-                   openSettingsRef={s.openSettingsRef} isFeedbackOpen={s.isFeedbackOpen}
+                   isFeedbackOpen={s.isFeedbackOpen}
                    setIsFeedbackOpen={s.setIsFeedbackOpen} selectedTutorial={s.selectedTutorial}
                    setSelectedTutorial={s.setSelectedTutorial} />
     </div>

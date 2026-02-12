@@ -8,8 +8,9 @@ import { SubjectFileDrawerContent } from './SubjectFileDrawerContent';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ParsedFile } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
+import type { SelectedSubject } from '../../types/app';
 
-export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLesson | null; isOpen: boolean; onClose: () => void }) {
+export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLesson | SelectedSubject | null; isOpen: boolean; onClose: () => void }) {
     const state = useSubjectFileDrawerState(lesson, isOpen);
     const { isDownloading, downloadProgress, openFile, downloadZip } = useFileActions();
     const [showDragHint, setShowDragHint] = useState(false);

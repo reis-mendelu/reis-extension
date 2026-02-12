@@ -186,6 +186,11 @@
   "onboarding": {
     "welcome": "Welcome to reIS!",
     "description": "Enhanced version of IS MENDELU.\nBuilt by students for students.",
-    "getStarted": "Get Started"
+    "getStarted": "Get Started",
+    "syncTitle": "Sync to Phone",
+    "syncDescription": "Your schedule in your pocket.",
+    "syncToggle": "Activate Sync",
+    "syncCoffeeBreak": "Sync takes about 15 minutes.",
+    "syncSocialProof": "Used by 80% of students."
   }
 }

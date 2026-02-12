@@ -186,6 +186,11 @@
   "onboarding": {
     "welcome": "Vítej v reISu!",
     "description": "Vylepšená verze IS MENDELU.\nVytvořeno studenty pro studenty.",
-    "getStarted": "Začít používat"
+    "getStarted": "Začít používat",
+    "syncTitle": "Sync do mobilu",
+    "syncDescription": "Tvůj rozvrh přímo v kalendáři.",
+    "syncToggle": "Aktivovat Sync",
+    "syncCoffeeBreak": "Sync trvá přibližně 15 minut.",
+    "syncSocialProof": "Používá 80 % studentů."
   }
 }

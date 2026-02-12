@@ -11,7 +11,7 @@ interface AppMainProps {
     handleNextWeek: () => void;
     handleToday: () => void;
     handleOpenSubjectFromSearch: (courseCode: string, courseName?: string, courseId?: string) => void;
-    setSelectedSubject: (subject: ExamSubject & { courseCode: string; courseName: string; sectionName: string; isExam: true }) => void;
+    setSelectedSubject: (subject: any) => void;
     dateRangeLabel: string;
 }
 

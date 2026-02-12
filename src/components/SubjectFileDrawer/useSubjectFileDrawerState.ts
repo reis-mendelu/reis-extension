@@ -2,12 +2,14 @@ import { useState, useRef, useMemo } from 'react';
 import { useSchedule, useFiles, useSyncStatus, useSyllabus, useSubjects } from '../../hooks/data';
 import { useDragSelection } from './useDragSelection';
 import type { BlockLesson } from '../../types/calendarTypes';
+import type { SelectedSubject } from '../../types/app';
 
 
-export function useSubjectFileDrawerState(lesson: BlockLesson | null, isOpen: boolean) {
+export function useSubjectFileDrawerState(lesson: BlockLesson | SelectedSubject | null, isOpen: boolean) {
     const { schedule } = useSchedule();
     const { getSubject } = useSubjects();
-    const [activeTab, setActiveTab] = useState<'files' | 'stats' | 'assessments' | 'syllabus'>(lesson?.isExam ? 'stats' : 'files');
+    const isExam = lesson && 'isExam' in lesson ? lesson.isExam : false;
+    const [activeTab, setActiveTab] = useState<'files' | 'stats' | 'assessments' | 'syllabus'>(isExam ? 'stats' : 'files');
     const { files, isLoading: isFilesLoading } = useFiles(isOpen ? lesson?.courseCode : undefined);
     const { isSyncing } = useSyncStatus();
 
@@ -34,7 +36,8 @@ export function useSubjectFileDrawerState(lesson: BlockLesson | null, isOpen: bo
     if (isOpen !== prevIsOpen) {
         setPrevIsOpen(isOpen);
         if (isOpen && lesson) {
-            setActiveTab(lesson.isExam ? 'stats' : 'files');
+            const isExamNow = 'isExam' in lesson ? lesson.isExam : false;
+            setActiveTab(isExamNow ? 'stats' : 'files');
         }
     }
 
