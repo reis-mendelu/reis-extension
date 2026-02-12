@@ -92,7 +92,7 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
                       <span className="text-[10px] text-base-content/40 truncate">{child.subtitle}</span>
                     )}
                   </div>
-                  {!child.isFeature && !child.isTutorial && (
+                  {!child.isFeature && !child.isTutorial && !child.isSubject && (
                     <ExternalLink className="w-3 h-3 text-base-content/30 group-hover/item:text-base-content/50" />
                   )}
                 </a>
