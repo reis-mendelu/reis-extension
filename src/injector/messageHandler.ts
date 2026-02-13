@@ -1,6 +1,6 @@
 import { Messages, isIframeMessage } from "../types/messages";
 import { iframeElement, sendToIframe } from "./iframeManager";
-import { cachedData, syncAllData } from "./syncService";
+import { cachedData, syncAllData, isSyncing } from "./syncService";
 import { fetchScheduleData } from "./dataFetchers";
 import { fetchExamData, registerExam, unregisterExam } from "../api/exams";
 import { fetchSubjects } from "../api/subjects";
@@ -13,7 +13,7 @@ export async function handleMessage(event: MessageEvent) {
 
     switch (data.type) {
         case "REIS_READY":
-            if (cachedData.lastSync > 0) sendToIframe(Messages.syncUpdate(cachedData));
+            sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing }));
             break;
         case "REIS_REQUEST_DATA":
             await handleDataRequest(data.dataType);
@@ -32,7 +32,7 @@ async function handleDataRequest(dataType: DataRequestType) {
     try {
         if (dataType === "all") {
             if (cachedData.lastSync === 0) await syncAllData();
-            sendToIframe(Messages.data("all", cachedData));
+            sendToIframe(Messages.data("all", { ...cachedData, isSyncing }));
         } else {
             let data: unknown = null;
             switch (dataType) {

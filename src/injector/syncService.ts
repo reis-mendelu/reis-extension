@@ -13,7 +13,7 @@ import type { SyncedData } from "../types/messages";
 
 const limit = pLimit(3);
 export let cachedData: SyncedData = { lastSync: 0 };
-let isSyncing = false;
+export let isSyncing = false;
 let syncIntervalId: ReturnType<typeof setInterval> | null = null;
 
 export async function syncAllData() {
