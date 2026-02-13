@@ -1,6 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { useSyncStatus } from './useSyncStatus';
 import type { ParsedFile } from '../../types/documents';
 
 export interface UseFilesResult {
@@ -15,30 +14,30 @@ export interface UseFilesResult {
  * Combines local store loading with global sync status.
  * Re-fetches when language changes.
  */
-export function useFiles(courseCode: string | undefined): UseFilesResult {
-    const filesMap = useAppStore((state) => state.files);
-    const loadingMap = useAppStore((state) => state.filesLoading);
-    const fetchFiles = useAppStore((state) => state.fetchFiles);
-    const { isSyncing } = useSyncStatus();
-
-    const subjectFiles = courseCode ? filesMap[courseCode] : undefined;
-    const isSubjectLoading = courseCode ? !!loadingMap[courseCode] : false;
+export function useFiles(courseCode?: string): UseFilesResult {
+    const [isSubjectLoading, setIsSubjectLoading] = useState(false);
+    const subjectFiles = useAppStore(state => courseCode ? state.files[courseCode] : undefined);
+    const isSyncing = useAppStore(state => (state as any).isSyncing); // Use cast if linter still complains, though AppState should have it
 
     useEffect(() => {
-        // Fetch if missing (undefined)
-        // If it's an empty array [], it means we've already fetched and found no files
-        const shouldFetch = courseCode && subjectFiles === undefined;
-        if (shouldFetch) {
-            fetchFiles(courseCode);
+        if (!courseCode) return;
+        if (subjectFiles === undefined) {
+            setIsSubjectLoading(true);
+            useAppStore.getState().fetchFiles(courseCode).finally(() => {
+                setIsSubjectLoading(false);
+            });
         }
-    }, [courseCode, fetchFiles, subjectFiles]);
+    }, [courseCode, subjectFiles]);
 
-    // Loading state: 
-    // 1. Explicitly loading this subject from IndexedDB
-    // 2. Global Sync is active AND we have no data yet (undefined or empty [])
-    const isLoading = isSubjectLoading || (isSyncing && (!subjectFiles || subjectFiles.length === 0));
+    // Robust loading state:
+    // 1. Explicitly fetching this subject (isSubjectLoading)
+    // 2. We don't have files in store at all (subjectFiles === undefined)
+    // 3. Global sync is active and we have no files yet (isSyncing && length === 0)
+    const isLoading = courseCode ? (isSubjectLoading || subjectFiles === undefined || (isSyncing && (!subjectFiles || subjectFiles.length === 0))) : false;
 
-    console.log(`[useFiles] ${courseCode}: files=${subjectFiles?.length ?? 'none'}, isLoading=${isLoading}, isSyncing=${isSyncing}`);
+    if (courseCode) {
+        console.log(`[useFiles] ${courseCode}: files=${subjectFiles?.length ?? 'none'}, isLoading=${isLoading}, isSyncing=${isSyncing}`);
+    }
 
     return {
         files: subjectFiles ?? null,

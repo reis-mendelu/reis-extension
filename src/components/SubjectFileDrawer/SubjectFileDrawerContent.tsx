@@ -38,7 +38,14 @@ export function SubjectFileDrawerContent({
     if (activeTab === 'files') {
         const isEmpty = !files || files.length === 0;
         const showSkeleton = isFilesLoading || (isSyncing && isEmpty);
-        console.log(`[SubjectFileDrawerContent] ${lesson?.courseCode}: isFilesLoading=${isFilesLoading}, isSyncing=${isSyncing}, files=${files?.length ?? 'null'}, showSkeleton=${showSkeleton}`);
+        
+        if (showSkeleton) {
+            console.log(`[SubjectFileDrawerContent] ${lesson?.courseCode}: ⏳ LOADING START (isSyncing=${isSyncing}, files=${files?.length ?? 'none'})`);
+        } else if (files && files.length > 0) {
+            console.log(`[SubjectFileDrawerContent] ${lesson?.courseCode}: ✅ LOADING END - FILES FOUND: ${files.length}`);
+        } else {
+            console.log(`[SubjectFileDrawerContent] ${lesson?.courseCode}: ⏹️ LOADING END - NO FILES AVAILABLE`);
+        }
         
         return (
             <>

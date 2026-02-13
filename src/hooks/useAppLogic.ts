@@ -108,7 +108,15 @@ export function useAppLogic() {
         }
 
         if (r.lastSync) IndexedDBService.set('meta', 'last_sync', r.lastSync);
-        if (typeof r.isSyncing === 'boolean') useAppStore.getState().setSyncStatus({ isSyncing: r.isSyncing });
+        if (typeof r.isSyncing === 'boolean') {
+            if (r.isSyncing) {
+                useAppStore.getState().setSyncStatus({ isSyncing: true });
+            } else {
+                // Background sync finished. Must re-populate store BEFORE we hide skeletons
+                await useAppStore.getState().fetchAllFiles();
+                useAppStore.getState().setSyncStatus({ isSyncing: false });
+            }
+        }
         syncService.triggerRefresh();
     };
     window.addEventListener('message', handle);
