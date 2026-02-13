@@ -35,8 +35,10 @@ export function useFiles(courseCode: string | undefined): UseFilesResult {
 
     // Loading state: 
     // 1. Explicitly loading this subject from IndexedDB
-    // 2. Global Sync is active AND we haven't even finished the initial local load (subjectFiles is undefined)
-    const isLoading = isSubjectLoading || (isSyncing && subjectFiles === undefined);
+    // 2. Global Sync is active AND we have no data yet (undefined or empty [])
+    const isLoading = isSubjectLoading || (isSyncing && (!subjectFiles || subjectFiles.length === 0));
+
+    console.log(`[useFiles] ${courseCode}: files=${subjectFiles?.length ?? 'none'}, isLoading=${isLoading}, isSyncing=${isSyncing}`);
 
     return {
         files: subjectFiles ?? null,

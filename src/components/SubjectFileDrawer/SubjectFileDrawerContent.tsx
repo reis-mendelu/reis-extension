@@ -37,11 +37,14 @@ export function SubjectFileDrawerContent({
     const { t, language } = useTranslation();
     if (activeTab === 'files') {
         const isEmpty = !files || files.length === 0;
+        const showSkeleton = isFilesLoading || (isSyncing && isEmpty);
+        console.log(`[SubjectFileDrawerContent] ${lesson?.courseCode}: isFilesLoading=${isFilesLoading}, isSyncing=${isSyncing}, files=${files?.length ?? 'null'}, showSkeleton=${showSkeleton}`);
+        
         return (
             <>
                 <SelectionBox isDragging={isDragging} style={selectionBoxStyle} />
                 <DragHint show={showDragHint} />
-                {(isFilesLoading || (isSyncing && files === null)) ? <FileListSkeleton /> :
+                {showSkeleton ? <FileListSkeleton /> :
                  isEmpty ? (
                     <div className="flex flex-col items-center justify-center h-full p-6 text-center">
                         <FileText className="w-12 h-12 text-base-content/20 mb-3" />
