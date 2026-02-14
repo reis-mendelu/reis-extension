@@ -8,7 +8,7 @@ import { useTranslation } from '../hooks/useTranslation';
 
 const COLORS: Record<string, string> = { A: 'var(--color-grade-a)', B: 'var(--color-grade-b)', C: 'var(--color-grade-c)', D: 'var(--color-grade-d)', E: 'var(--color-grade-e)', F: 'var(--color-grade-f)', FN: 'var(--color-grade-fn)' };
 
-export function SuccessRateTab({ courseCode }: { courseCode: string }) {
+export function SuccessRateTab({ courseCode, facultyCode }: { courseCode: string; facultyCode?: string }) {
     const { stats: data, loading } = useSuccessRate(courseCode);
     const [idx, setIdx] = useState(0);
     const { t } = useTranslation();
@@ -16,7 +16,9 @@ export function SuccessRateTab({ courseCode }: { courseCode: string }) {
     if (loading) return <div className="flex items-center justify-center h-full"><span className="loading loading-spinner text-primary" /></div>;
     if (!data?.stats?.length) return <div className="flex flex-col items-center justify-center h-full"><AlertTriangle className="w-8 h-8 opacity-40 mb-3" /><p className="text-sm opacity-60">{t('successRate.noData')}</p></div>;
 
-    const stats = sortSemesters(data.stats).slice(0, 5), sIdx = Math.min(idx, stats.length - 1), current = stats[sIdx];
+    const allStats = sortSemesters(data.stats);
+    const filtered = facultyCode ? allStats.filter(s => s.semesterName.split(' - ').at(-1) === facultyCode) : allStats;
+    const stats = (filtered.length > 0 ? filtered : allStats).slice(0, 5), sIdx = Math.min(idx, stats.length - 1), current = stats[sIdx];
     const isCredit = current.type === 'credit', total = current.totalPass + current.totalFail;
     const order = isCredit ? ['zap', 'nezap'] : ['A', 'B', 'C', 'D', 'E', 'F', 'FN'];
     const colors = isCredit ? { zap: 'var(--color-success)', nezap: 'var(--color-error)' } : COLORS;

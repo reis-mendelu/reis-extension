@@ -131,5 +131,5 @@ export function SubjectFileDrawerContent({
 
     if (activeTab === 'assessments') return <AssessmentTab courseCode={lesson?.courseCode || ''} />;
     if (activeTab === 'syllabus') return <SyllabusTab courseCode={lesson?.courseCode || ''} courseId={resolvedCourseId} courseName={lesson?.courseName ?? ''} prefetchedResult={syllabusResult} />;
-    return <SuccessRateTab courseCode={lesson?.courseCode || ''} />;
+    return <SuccessRateTab courseCode={lesson?.courseCode || ''} facultyCode={'facultyCode' in (lesson ?? {}) ? (lesson as { facultyCode?: string }).facultyCode : undefined} />;
 }
