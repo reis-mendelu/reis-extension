@@ -13,6 +13,7 @@ export interface ScheduleSlice {
     data: BlockLesson[];
     status: Status;
     weekStart: Date | null;
+    isPartial?: boolean;
   };
   fetchSchedule: () => Promise<void>;
   setSchedule: (data: BlockLesson[]) => void;

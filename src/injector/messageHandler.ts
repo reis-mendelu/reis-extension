@@ -1,7 +1,7 @@
 import { Messages, isIframeMessage } from "../types/messages";
 import { iframeElement, sendToIframe, markIframeReady } from "./iframeManager";
 import { cachedData, syncAllData, isSyncing } from "./syncService";
-import { fetchScheduleData } from "./dataFetchers";
+import { fetchFullSemesterSchedule } from "./dataFetchers";
 import { fetchExamData, registerExam, unregisterExam } from "../api/exams";
 import { fetchSubjects } from "../api/subjects";
 import type { DataRequestType } from "../types/messages";
@@ -39,7 +39,7 @@ async function handleDataRequest(dataType: DataRequestType) {
         } else {
             let data: unknown = null;
             switch (dataType) {
-                case "schedule": data = await fetchScheduleData(); break;
+                case "schedule": data = await fetchFullSemesterSchedule(); break;
                 case "exams": data = await fetchExamData(); break;
                 case "subjects": data = await fetchSubjects(); break;
                 case "files": data = cachedData.files; break;

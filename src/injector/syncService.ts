@@ -6,7 +6,7 @@ import { fetchFilesFromFolder } from "../api/documents";
 import { fetchAssessments } from "../api/assessments";
 import { fetchSyllabus } from "../api/syllabus";
 import { getUserParams } from "../utils/userParams";
-import { fetchScheduleData } from "./dataFetchers";
+import { fetchScheduleBite, fetchFullSemesterSchedule } from "./dataFetchers";
 import { sendToIframe } from "./iframeManager";
 import { SYNC_INTERVAL } from "./config";
 import type { SyncedData } from "../types/messages";
@@ -31,27 +31,40 @@ export async function syncAllData() {
         const userParams = await getUserParams();
         const studium = userParams?.studium;
 
-        const [schedule, exams, subjects] = await Promise.allSettled([
-            fetchScheduleData(),
- 
+        // Phase 1: Progressive "First Bite" - fetch (+/- 2 weeks) schedule first
+        console.log('[syncAllData] 🥯 Phase 1: Fetching schedule bite...');
+        const scheduleBite = await fetchScheduleBite();
+        if (scheduleBite) {
+            cachedData.schedule = scheduleBite;
+            // Send partial update immediately
+            sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing: true, isPartial: true }));
+        }
+
+        // Phase 2: Full Sync in background
+        console.log('[syncAllData] 🍕 Phase 2: Fetching full semester data...');
+        const [fullSchedule, exams, subjects] = await Promise.allSettled([
+            fetchFullSemesterSchedule(),
             fetchDualLanguageExams(), 
             fetchDualLanguageSubjects(studium || undefined),
         ]);
 
         cachedData = {
             ...cachedData,
-            schedule: schedule.status === "fulfilled" ? schedule.value : cachedData.schedule,
+            schedule: fullSchedule.status === "fulfilled" && fullSchedule.value ? fullSchedule.value : cachedData.schedule,
             exams: exams.status === "fulfilled" ? exams.value : cachedData.exams,
             subjects: subjects.status === "fulfilled" ? subjects.value : cachedData.subjects,
             files: cachedData.files || {},
             lastSync: Date.now(),
         };
 
-        sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing: true }));
+        // Send full update with isPartial: false
+        sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing: true, isPartial: false }));
+
 
         if (subjects.status === "fulfilled" && subjects.value) {
-            await syncSubjectDetails(subjects.value, schedule.status === "fulfilled" ? schedule.value : null);
+            await syncSubjectDetails(subjects.value, fullSchedule.status === "fulfilled" ? fullSchedule.value : null);
         }
+
         
         cachedData.lastSync = Date.now();
         sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing: false }));

@@ -6,7 +6,9 @@ import { parseDate } from '../../utils/date';
 import type { BlockLesson, DateInfo } from '../../types/calendarTypes';
 
 export function useCalendarData(initialDate: Date) {
-    const { schedule: storedSchedule, isLoaded: isScheduleLoaded } = useSchedule();
+    const { schedule: storedSchedule, isLoaded: isScheduleLoaded, isPartial, isSyncing } = useSchedule();
+
+
     const { exams: storedExams, isLoaded: isExamsLoaded } = useExams();
     const language = useAppStore((state) => state.language);
 
@@ -111,9 +113,11 @@ export function useCalendarData(initialDate: Date) {
         lessonsByDay, 
         holidaysByDay, 
         todayIndex, 
-        showSkeleton: scheduleData.length === 0 && (storedSchedule.length === 0 && !isScheduleLoaded), 
+        showSkeleton: scheduleData.length === 0 && (isPartial || isSyncing || (storedSchedule.length === 0 && !isScheduleLoaded)), 
         scheduleData,
+
         isScheduleLoaded,
         isExamsLoaded
     };
 }
+

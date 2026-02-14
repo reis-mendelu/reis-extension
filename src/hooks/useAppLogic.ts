@@ -19,7 +19,9 @@ interface SyncedData {
   syllabuses?: Record<string, unknown>;
   lastSync?: string;
   isSyncing?: boolean;
+  isPartial?: boolean;
 }
+
 
 export function useAppLogic() {
   const [currentDate, setCurrentDate] = useState<Date>(() => getSmartWeekRange().start);
@@ -70,10 +72,20 @@ export function useAppLogic() {
         const r = d.type === 'REIS_SYNC_UPDATE' ? (d.data as SyncedData) : d.dataType === 'all' ? (d.data as SyncedData) : null;
         if (!r) return;
 
-        // Persist synced data to IDB. Errors (e.g. quota exceeded) must not
-        // prevent the store refresh or sync status update that follows.
+        // Instantly update store for reactivity, then persist to IDB in background
+        if (r.schedule && typeof r.isPartial === 'boolean') {
+            useAppStore.getState().setSchedule(r.schedule as any, r.isPartial);
+        }
+
         try {
-            if (r.schedule) await IndexedDBService.set('schedule', 'current', r.schedule);
+            if (r.schedule) {
+                await IndexedDBService.set('schedule', 'current', r.schedule);
+                if (typeof r.isPartial === 'boolean') {
+                    await IndexedDBService.set('meta', 'schedule_is_partial', r.isPartial);
+                }
+            }
+
+
             if (r.exams) await IndexedDBService.set('exams', 'current', r.exams);
             if (r.subjects?.data) {
                 const existing = await IndexedDBService.get('subjects', 'current') as { data: Record<string, { nameCs?: string; nameEn?: string }> } | null;
