@@ -133,6 +133,12 @@
       "povinný": "Povinný",
       "povinně volitelný": "Povinně volitelný",
       "volitelný": "Volitelný"
+    },
+    "sync": {
+      "initializing": "Inicializace...",
+      "fetchingFirst": "Vyhledávání prvních souborů...",
+      "syncingRemaining": "Synchronizace zbývajících souborů ({count})...",
+      "failed": "Synchronizace selhala"
     }
   },
   "syllabus": {
