@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { useSyncStatus } from './useSyncStatus';
 import type { Assessment } from '../../types/documents';
 
 export interface UseAssessmentsResult {
@@ -10,30 +9,25 @@ export interface UseAssessmentsResult {
 
 /**
  * useAssessments - Hook to access assessment data from store.
- * 
- * Selects filtered assessments from central store.
- * Combines local store loading with global sync status.
+ *
+ * Reads assessments and loading state from the Zustand store.
+ * Triggers a store fetch when courseCode changes (store action is idempotent).
  */
 export function useAssessments(courseCode: string | undefined): UseAssessmentsResult {
-    const assessmentsMap = useAppStore(state => state.assessments);
-    const loadingMap = useAppStore(state => state.assessmentsLoading);
-    const fetchAssessments = useAppStore(state => state.fetchAssessments);
-    const { isSyncing } = useSyncStatus();
-
-    const subjectAssessments = courseCode ? assessmentsMap[courseCode] : null;
-    const isSubjectLoading = courseCode ? !!loadingMap[courseCode] : false;
+    const subjectAssessments = useAppStore(state => courseCode ? state.assessments[courseCode] : undefined);
+    const isSubjectLoading = useAppStore(state => courseCode ? !!state.assessmentsLoading[courseCode] : false);
+    const isSyncing = useAppStore(state => state.syncStatus.isSyncing);
 
     useEffect(() => {
         if (courseCode) {
-            fetchAssessments(courseCode);
+            useAppStore.getState().fetchAssessments(courseCode);
         }
-    }, [courseCode, fetchAssessments]);
+    }, [courseCode]);
 
-    // Final loading state: Store is fetching from IDB OR Global Sync is active (on first load)
     const isLoading = isSubjectLoading || (isSyncing && (!subjectAssessments || subjectAssessments.length === 0));
 
-    return { 
-        assessments: subjectAssessments || null, 
-        isLoading 
+    return {
+        assessments: subjectAssessments ?? null,
+        isLoading
     };
 }

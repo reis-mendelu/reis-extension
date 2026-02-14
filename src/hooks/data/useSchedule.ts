@@ -17,13 +17,15 @@ export interface UseScheduleResult {
 }
 
 export function useSchedule(): UseScheduleResult {
-    const { data, status, weekStart } = useAppStore(state => state.schedule);
-    
-    return { 
-        schedule: data, 
-        isLoaded: status !== 'loading' && status !== 'idle', 
+    const data = useAppStore(state => state.schedule.data);
+    const status = useAppStore(state => state.schedule.status);
+    const weekStart = useAppStore(state => state.schedule.weekStart);
+
+    return {
+        schedule: data,
+        isLoaded: status !== 'loading' && status !== 'idle',
         status,
-        error: null, // Schedule slice doesn't currently store error message, but we can add it later if needed
-        weekStart 
+        error: null,
+        weekStart
     };
 }

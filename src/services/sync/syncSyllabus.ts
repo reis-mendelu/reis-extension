@@ -3,7 +3,8 @@
  */
 
 import { IndexedDBService } from '../storage';
-import { fetchSyllabus } from '../../api/syllabus';
+import { fetchSyllabus, findSubjectId } from '../../api/syllabus';
+import type { SyllabusRequirements } from '../../types/documents';
 
 export async function syncSyllabus(): Promise<void> {
     console.log('[syncSyllabus] Starting dual-language syllabus sync...');
@@ -50,4 +51,37 @@ export async function syncSyllabus(): Promise<void> {
     }
 
     console.log(`[syncSyllabus] Completed: ${successCount} subjects synced, ${errorCount} errors`);
+}
+
+/**
+ * Fetch and cache a single subject's syllabus (dual-language) to IDB.
+ * Returns the syllabus for the requested language, or undefined on failure.
+ */
+export async function fetchAndCacheSingleSyllabus(
+    courseCode: string,
+    language: 'cz' | 'en',
+    courseId?: string,
+    subjectName?: string
+): Promise<SyllabusRequirements | undefined> {
+    let activeId = courseId;
+    if (!activeId) {
+        activeId = await findSubjectId(courseCode, subjectName) || undefined;
+    }
+
+    if (!activeId) {
+        console.warn(`[syncSyllabus] No subject ID found for ${courseCode}`);
+        return undefined;
+    }
+
+    const [czSyllabus, enSyllabus] = await Promise.all([
+        fetchSyllabus(activeId, 'cz'),
+        fetchSyllabus(activeId, 'en')
+    ]);
+
+    await IndexedDBService.set('syllabuses', courseCode, {
+        cz: czSyllabus,
+        en: enSyllabus
+    });
+
+    return language === 'en' ? enSyllabus : czSyllabus;
 }

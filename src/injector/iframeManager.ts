@@ -1,6 +1,8 @@
 import { IFRAME_ID } from './config';
 
 export let iframeElement: HTMLIFrameElement | null = null;
+let iframeReady = false;
+let messageQueue: unknown[] = [];
 
 export function injectIframe() {
     console.log("[REIS Content] Injecting iframe...");
@@ -38,7 +40,26 @@ export function injectIframe() {
     console.log("[REIS Content] Iframe injected successfully");
 }
 
+/**
+ * Mark the iframe as ready and flush any queued messages.
+ * Called when the iframe sends REIS_READY.
+ */
+export function markIframeReady() {
+    iframeReady = true;
+    if (messageQueue.length > 0 && iframeElement?.contentWindow) {
+        console.log(`[REIS Content] Flushing ${messageQueue.length} queued messages`);
+        for (const msg of messageQueue) {
+            iframeElement.contentWindow.postMessage(msg, "*");
+        }
+    }
+    messageQueue = [];
+}
+
 export function sendToIframe(message: unknown) {
     if (!iframeElement?.contentWindow) return;
+    if (!iframeReady) {
+        messageQueue.push(message);
+        return;
+    }
     iframeElement.contentWindow.postMessage(message, "*");
 }

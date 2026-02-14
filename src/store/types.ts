@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { BlockLesson } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
-import type { SyllabusRequirements, ParsedFile, Assessment, SubjectsData } from '../types/documents';
+import type { SyllabusRequirements, ParsedFile, Assessment, SubjectsData, SubjectSuccessRate } from '../types/documents';
 import type { SyncStatus } from '../services/sync';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
@@ -78,6 +78,13 @@ export interface I18nSlice {
     loadLanguage: () => Promise<void>;
 }
 
+export interface SuccessRateSlice {
+    successRates: Record<string, SubjectSuccessRate>;
+    successRatesLoading: Record<string, boolean>;
+    successRatesGlobalLoaded: boolean;
+    fetchSuccessRate: (courseCode: string) => Promise<void>;
+}
+
 export interface UseThemeResult {
   theme: Theme;
   isDark: boolean;
@@ -86,6 +93,6 @@ export interface UseThemeResult {
   setTheme: (theme: Theme) => void;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice;
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

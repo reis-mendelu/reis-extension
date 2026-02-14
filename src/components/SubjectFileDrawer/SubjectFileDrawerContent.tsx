@@ -39,14 +39,6 @@ export function SubjectFileDrawerContent({
         const isEmpty = !files || files.length === 0;
         const showSkeleton = isFilesLoading || (isSyncing && isEmpty);
         
-        if (showSkeleton) {
-            console.log(`[SubjectFileDrawerContent] ${lesson?.courseCode}: ⏳ LOADING START (isSyncing=${isSyncing}, files=${files?.length ?? 'none'})`);
-        } else if (files && files.length > 0) {
-            console.log(`[SubjectFileDrawerContent] ${lesson?.courseCode}: ✅ LOADING END - FILES FOUND: ${files.length}`);
-        } else {
-            console.log(`[SubjectFileDrawerContent] ${lesson?.courseCode}: ⏹️ LOADING END - NO FILES AVAILABLE`);
-        }
-        
         return (
             <>
                 <SelectionBox isDragging={isDragging} style={selectionBoxStyle} />

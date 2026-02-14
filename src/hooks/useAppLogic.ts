@@ -70,51 +70,58 @@ export function useAppLogic() {
         const r = d.type === 'REIS_SYNC_UPDATE' ? (d.data as SyncedData) : d.dataType === 'all' ? (d.data as SyncedData) : null;
         if (!r) return;
 
-        if (r.schedule) await IndexedDBService.set('schedule', 'current', r.schedule);
-        if (r.exams) await IndexedDBService.set('exams', 'current', r.exams);
-        if (r.subjects?.data) {
-            const existing = await IndexedDBService.get('subjects', 'current') as { data: Record<string, { nameCs?: string; nameEn?: string }> } | null;
-            if (existing?.data) {
-                // Merge dual-language names into incoming data if incoming is missing them
-                Object.keys(r.subjects.data).forEach(code => {
-                    const incomingSub = r.subjects!.data[code];
-                    const existingSub = existing.data[code];
-                    if (existingSub) {
-                        if (!incomingSub.nameCs && existingSub.nameCs) incomingSub.nameCs = existingSub.nameCs;
-                        if (!incomingSub.nameEn && existingSub.nameEn) incomingSub.nameEn = existingSub.nameEn;
+        // Persist synced data to IDB. Errors (e.g. quota exceeded) must not
+        // prevent the store refresh or sync status update that follows.
+        try {
+            if (r.schedule) await IndexedDBService.set('schedule', 'current', r.schedule);
+            if (r.exams) await IndexedDBService.set('exams', 'current', r.exams);
+            if (r.subjects?.data) {
+                const existing = await IndexedDBService.get('subjects', 'current') as { data: Record<string, { nameCs?: string; nameEn?: string }> } | null;
+                if (existing?.data) {
+                    Object.keys(r.subjects.data).forEach(code => {
+                        const incomingSub = r.subjects!.data[code];
+                        const existingSub = existing.data[code];
+                        if (existingSub) {
+                            if (!incomingSub.nameCs && existingSub.nameCs) incomingSub.nameCs = existingSub.nameCs;
+                            if (!incomingSub.nameEn && existingSub.nameEn) incomingSub.nameEn = existingSub.nameEn;
+                        }
+                    });
+                }
+                await IndexedDBService.set('subjects', 'current', r.subjects);
+            }
+
+            if (r.files) {
+                for (const [c, f] of Object.entries(r.files)) {
+                    const existing = await IndexedDBService.get('files', c);
+                    if (!existing || (f as Record<string, unknown>).cz || !(existing as Record<string, unknown>).cz) {
+                         await IndexedDBService.set('files', c, f);
                     }
-                });
-            }
-            await IndexedDBService.set('subjects', 'current', r.subjects);
-        }
-
-        if (r.files) {
-            for (const [c, f] of Object.entries(r.files)) {
-                const existing = await IndexedDBService.get('files', c);
-                // Only overwrite if incoming has more content or existing is not dual-language
-                if (!existing || (f as Record<string, unknown>).cz || !(existing as Record<string, unknown>).cz) {
-                     await IndexedDBService.set('files', c, f);
                 }
             }
-        }
 
-        if (r.syllabuses) {
-            for (const [c, s] of Object.entries(r.syllabuses)) {
-                const existing = await IndexedDBService.get('syllabuses', c);
-                if (!existing || (s as Record<string, unknown>).cz || !(existing as Record<string, unknown>).cz) {
-                    await IndexedDBService.set('syllabuses', c, s);
+            if (r.syllabuses) {
+                for (const [c, s] of Object.entries(r.syllabuses)) {
+                    const existing = await IndexedDBService.get('syllabuses', c);
+                    if (!existing || (s as Record<string, unknown>).cz || !(existing as Record<string, unknown>).cz) {
+                        await IndexedDBService.set('syllabuses', c, s);
+                    }
                 }
             }
+
+            if (r.lastSync) await IndexedDBService.set('meta', 'last_sync', r.lastSync);
+        } catch (idbError) {
+            console.error('[useAppLogic] IDB write failed (data may be stale):', idbError);
         }
 
-        if (r.lastSync) IndexedDBService.set('meta', 'last_sync', r.lastSync);
         if (typeof r.isSyncing === 'boolean') {
             if (r.isSyncing) {
                 useAppStore.getState().setSyncStatus({ isSyncing: true });
             } else {
-                // Background sync finished. Must re-populate store BEFORE we hide skeletons
-                await useAppStore.getState().fetchAllFiles();
-                useAppStore.getState().setSyncStatus({ isSyncing: false });
+                try {
+                    await useAppStore.getState().fetchAllFiles();
+                } finally {
+                    useAppStore.getState().setSyncStatus({ isSyncing: false });
+                }
             }
         }
         syncService.triggerRefresh();

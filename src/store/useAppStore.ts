@@ -9,6 +9,7 @@ import { createSubjectsSlice } from './slices/createSubjectsSlice';
 import { createSyncSlice } from './slices/createSyncSlice';
 import { createThemeSlice } from './slices/createThemeSlice';
 import { createI18nSlice } from './slices/createI18nSlice';
+import { createSuccessRateSlice } from './slices/createSuccessRateSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 
@@ -22,6 +23,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createSyncSlice(...a),
   ...createThemeSlice(...a),
   ...createI18nSlice(...a),
+  ...createSuccessRateSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
@@ -59,23 +61,17 @@ export const initializeStore = async () => {
         }
     });
 
-    // Cross-tab theme listener
+    // Cross-tab theme listener — use loadTheme() to also update DOM data-theme attribute
     const bcTheme = new BroadcastChannel('reis_theme_sync');
-    bcTheme.onmessage = (event) => {
-        const newTheme = event.data;
-        if (newTheme === "mendelu" || newTheme === "mendelu-dark") {
-            useAppStore.setState({ theme: newTheme });
-            document.documentElement.setAttribute("data-theme", newTheme);
-        }
+    bcTheme.onmessage = () => {
+        useAppStore.getState().loadTheme();
     };
 
-    // Cross-tab language listener
+    // Cross-tab language listener — use loadLanguage() and re-fetch files for the new language
     const bcLang = new BroadcastChannel('reis_language_sync');
-    bcLang.onmessage = (event) => {
-        const newLang = event.data;
-        if (newLang === "cz" || newLang === "en") {
-            useAppStore.setState({ language: newLang });
-        }
+    bcLang.onmessage = () => {
+        useAppStore.getState().loadLanguage();
+        useAppStore.getState().fetchAllFiles();
     };
 
     return () => {

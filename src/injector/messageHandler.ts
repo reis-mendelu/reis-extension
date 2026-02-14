@@ -1,5 +1,5 @@
 import { Messages, isIframeMessage } from "../types/messages";
-import { iframeElement, sendToIframe } from "./iframeManager";
+import { iframeElement, sendToIframe, markIframeReady } from "./iframeManager";
 import { cachedData, syncAllData, isSyncing } from "./syncService";
 import { fetchScheduleData } from "./dataFetchers";
 import { fetchExamData, registerExam, unregisterExam } from "../api/exams";
@@ -13,6 +13,9 @@ export async function handleMessage(event: MessageEvent) {
 
     switch (data.type) {
         case "REIS_READY":
+            // Flush any messages queued before the iframe was ready
+            markIframeReady();
+            // Send current state as a guarantee (may duplicate queued data, which is safe)
             sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing }));
             break;
         case "REIS_REQUEST_DATA":

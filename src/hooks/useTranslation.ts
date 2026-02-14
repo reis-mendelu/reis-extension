@@ -6,7 +6,7 @@ const locales: Record<string, Record<string, unknown>> = { cz: cs as Record<stri
 
 export function useTranslation() {
   const language = useAppStore((state) => state.language);
-  const currentLocale = locales[language] || locales.cs;
+  const currentLocale = locales[language] || locales.cz;
 
   const t = (key: string): string => {
     const keys = key.split('.');

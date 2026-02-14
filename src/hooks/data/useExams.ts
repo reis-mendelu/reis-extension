@@ -18,19 +18,21 @@ export interface UseExamsResult {
 }
 
 export function useExams(): UseExamsResult {
-    const { data, status, error } = useAppStore(state => state.exams);
+    const data = useAppStore(state => state.exams.data);
+    const status = useAppStore(state => state.exams.status);
+    const error = useAppStore(state => state.exams.error);
     const fetchExams = useAppStore(state => state.fetchExams);
 
     const retry = useCallback(() => {
         void fetchExams();
     }, [fetchExams]);
 
-    return { 
-        exams: data, 
-        isLoaded: status !== 'loading' && status !== 'idle', 
+    return {
+        exams: data,
+        isLoaded: status !== 'loading' && status !== 'idle',
         error,
-        lastSync: null, // lastSync metadata could be added to store if needed
-        retry 
+        lastSync: null,
+        retry
     };
 }
 

@@ -1,48 +1,20 @@
 import { IndexedDBService } from '../storage';
-import { syncExams } from './syncExams';
-import { syncSchedule } from './syncSchedule';
-import { syncSubjects } from './syncSubjects';
-import { syncFiles } from './syncFiles';
-import { syncAssessments } from './syncAssessments';
-import { syncSyllabus } from './syncSyllabus';
-import { migrateAndCleanup } from './SyncMigration';
 
-const SYNC_INTERVAL = 300000;
 export type SyncStatus = { isSyncing: boolean; lastSync: number | null; error: string | null; };
 
+/**
+ * SyncService — Event bus for the iframe app.
+ *
+ * The content script (injector/syncService.ts) owns data fetching.
+ * This class only manages listeners, status reads, and cross-context signaling.
+ * The start()/syncAll() methods were removed as dead code — they were never called.
+ */
 class SyncServiceClass {
     private intervalId: ReturnType<typeof setInterval> | null = null;
     private listeners = new Set<(action?: string) => void>();
     private isSyncing = false;
 
-    async start() {
-        if (this.intervalId) return;
-        await migrateAndCleanup();
-        this.syncAll();
-        this.intervalId = setInterval(() => this.syncAll(), SYNC_INTERVAL);
-    }
-
     stop() { if (this.intervalId) { clearInterval(this.intervalId); this.intervalId = null; } }
-
-    async syncAll() {
-        if (this.isSyncing) return;
-        this.isSyncing = true;
-        const studium = await IndexedDBService.get('meta', 'user_id'); // Assuming user_id is the studium ID based on api/user.ts
-        await IndexedDBService.set('meta', 'sync_in_progress', true);
-        try {
-            await Promise.allSettled([syncSchedule(), syncExams(), syncSubjects(studium)]);
-            await Promise.allSettled([syncAssessments(studium), syncSyllabus(), syncFiles()]);
-            await IndexedDBService.set('meta', 'last_sync', Date.now());
-            await IndexedDBService.delete('meta', 'sync_error');
-            this.notifyListeners();
-        } catch (e: unknown) {
-            console.error(e);
-            await IndexedDBService.set('meta', 'sync_error', e instanceof Error ? e.message : 'Unknown error');
-        } finally {
-            this.isSyncing = false;
-            await IndexedDBService.delete('meta', 'sync_in_progress');
-        }
-    }
 
     subscribe(cb: (a?: string) => void) { this.listeners.add(cb); return () => this.listeners.delete(cb); }
     async getStatus(): Promise<SyncStatus> { return { isSyncing: this.isSyncing, lastSync: await IndexedDBService.get('meta', 'last_sync'), error: await IndexedDBService.get('meta', 'sync_error') }; }

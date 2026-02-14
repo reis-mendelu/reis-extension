@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { CalendarEventCard } from '../CalendarEventCard';
 import { organizeLessons, getEventStyle } from './utils';
 import type { BlockLesson } from '../../types/calendarTypes';
@@ -12,10 +13,10 @@ interface WeeklyCalendarDayProps {
     language: string; // Current UI language
 }
 
-export function WeeklyCalendarDay({ 
-    lessons, holiday, isToday, showSkeleton, onEventClick, language 
+export function WeeklyCalendarDay({
+    lessons, holiday, isToday, showSkeleton, onEventClick, language
 }: WeeklyCalendarDayProps) {
-    const { lessons: organizedLessons } = organizeLessons(lessons);
+    const { lessons: organizedLessons } = useMemo(() => organizeLessons(lessons), [lessons]);
 
     return (
         <div className={`flex-1 relative ${isToday ? 'bg-current-day' : ''}`}>
