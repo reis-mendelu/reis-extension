@@ -9,6 +9,7 @@
     "studentId": "Student ID",
     "emailLabel": "Email",
     "balance": "Balance",
+    "isicBalance": "ISIC balance",
     "topUp": "Top up"
   },
   "sidebar": {

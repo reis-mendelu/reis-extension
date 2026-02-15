@@ -9,6 +9,7 @@
     "studentId": "ID studenta",
     "emailLabel": "E-mail",
     "balance": "Zůstatek",
+    "isicBalance": "ISIC kredit",
     "topUp": "Dobít"
   },
   "sidebar": {
