@@ -7,7 +7,9 @@
     "czech": "Čeština",
     "english": "English",
     "studentId": "Student ID",
-    "emailLabel": "Email"
+    "emailLabel": "Email",
+    "balance": "Balance",
+    "topUp": "Top up"
   },
   "sidebar": {
     "profile": "Profile",
@@ -182,7 +184,8 @@
   "sync": {
     "schedule": "Schedule synchronization",
     "tooltip": "Synchronizes schedule and exam terms to Outlook.",
-    "spolky": "Subscribed societies"
+    "spolky": "Subscribed societies",
+    "lastSync": "Last synced: {time}"
   },
   "fileCategories": {
     "informace_k_vyuce": "Teaching Information",

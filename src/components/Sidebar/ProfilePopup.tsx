@@ -10,6 +10,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
 import { User, Mail, Hash } from 'lucide-react';
+import { BalanceSection } from './Profile/BalanceSection';
 
 export function ProfilePopup({ isOpen, onOpenFeedback }: { isOpen: boolean; onOpenFeedback?: () => void }) {
   const { isEnabled, isLoading: syncLoading, toggle: tSync } = useOutlookSync(), { isDark, isLoading: tLoading, toggle: tTheme } = useTheme(), { isSubscribed, toggleAssociation } = useSpolkySettings(), [spolkyOpen, setSpolkyOpen] = useState(false);
@@ -20,7 +21,7 @@ export function ProfilePopup({ isOpen, onOpenFeedback }: { isOpen: boolean; onOp
   
   if (!isOpen) return null;
   return (
-    <AnimatePresence><motion.div initial={{ opacity: 0, x: 10, scale: 0.95 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.95 }} className="absolute left-14 bottom-0 w-72 bg-base-100 rounded-xl shadow-popover-heavy border border-base-300 p-3 z-50">
+    <AnimatePresence><motion.div initial={{ opacity: 0, x: 10, scale: 0.95 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.95 }} className="absolute left-14 bottom-0 w-80 bg-base-100 rounded-xl shadow-popover-heavy border border-base-300 p-3 z-50">
         <div className="px-1 pt-1 pb-3 border-b border-base-200">
             <h3 className="font-bold text-base mb-3 ">{t('sidebar.profile')}</h3>
             {params && (
@@ -38,8 +39,14 @@ export function ProfilePopup({ isOpen, onOpenFeedback }: { isOpen: boolean; onOp
                     <div className="flex items-center gap-3 text-base-content/60">
                         <Hash size={16} className="text-base-content/30" />
                         <span className="opacity-70">{t('settings.studentId')}</span>
-                        <span className="font-mono text-[10px] bg-base-300/50 px-2 py-0.5 rounded border border-base-300/50 select-all ml-auto">{params.studentId}</span>
+                        <span className="font-mono text-xs bg-base-300/50 px-2.5 py-1 rounded-lg border border-base-300/50 select-all ml-auto">{params.studentId}</span>
                     </div>
+                    <BalanceSection 
+                        balance="927" 
+                        lastSyncTime="15:32" 
+                        onTopUp={() => console.log('Top up clicked')}
+                        onRefresh={() => console.log('Refresh clicked')}
+                    />
                 </div>
             )}
         </div>
@@ -81,9 +88,9 @@ export function ProfilePopup({ isOpen, onOpenFeedback }: { isOpen: boolean; onOp
         </div>
 
         {/* Support Section */}
-        <div className="pt-1">
+        <div className="py-1">
             {onOpenFeedback && (
-                <button onClick={onOpenFeedback} className="w-full flex items-center gap-3 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors">
+                <button onClick={onOpenFeedback} className="w-full flex items-center gap-3 px-1 py-1.5 hover:bg-base-200 rounded-lg transition-colors">
                     <MessageSquarePlus size={16} className="text-base-content/50" />
                     <span className="text-xs font-medium opacity-70">{t('settings.reportBug')}</span>
                 </button>

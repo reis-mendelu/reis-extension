@@ -7,7 +7,9 @@
     "czech": "Čeština",
     "english": "English",
     "studentId": "ID studenta",
-    "emailLabel": "E-mail"
+    "emailLabel": "E-mail",
+    "balance": "Zůstatek",
+    "topUp": "Dobít"
   },
   "sidebar": {
     "profile": "Profil",
@@ -182,7 +184,8 @@
   "sync": {
     "schedule": "Synchronizace rozvrhu",
     "tooltip": "Synchronizuje rozvrh a termíny zkoušek do Outlooku.",
-    "spolky": "Odebírané spolky"
+    "spolky": "Odebírané spolky",
+    "lastSync": "Naposledy synchronizováno: {time}"
   },
   "fileCategories": {
     "informace_k_vyuce": "Informace k výuce",
