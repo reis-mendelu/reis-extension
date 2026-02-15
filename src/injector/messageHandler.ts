@@ -75,10 +75,14 @@ async function handleAction(id: string, action: string, payload: unknown) {
                 console.log('[handleAction] ✅ Sync completed');
                 result = { success: true };
                 break;
-            case "open_url":
-                window.open(p.url, '_blank', 'popup,width=520,height=680');
+            case "open_url": {
+                const w = 520, h = 680;
+                const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
+                const top = Math.round(window.screenY + (window.outerHeight - h) / 2);
+                window.open(p.url, '_blank', `popup,width=${w},height=${h},left=${left},top=${top}`);
                 result = { success: true };
                 break;
+            }
             default: throw new Error(`Unknown action: ${action}`);
         }
         sendToIframe(Messages.actionResult(id, true, result));
