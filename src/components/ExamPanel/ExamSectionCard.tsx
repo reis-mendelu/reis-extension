@@ -30,9 +30,18 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                 <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="flex-1 min-w-[200px]">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className="badge badge-sm font-bold bg-primary/10 text-primary py-1 h-auto whitespace-normal">
+                            <button 
+                                onClick={() => onSelectSubject({ 
+                                    ...subject, 
+                                    courseCode: subject.code, 
+                                    courseName: subject.name, 
+                                    sectionName: sectionName,
+                                    isExam: true 
+                                })}
+                                className="badge badge-sm font-bold bg-primary/10 text-primary py-1 h-auto whitespace-normal hover:bg-primary/20 transition-colors pointer-events-auto cursor-pointer border-none"
+                            >
                                 {subjectName}
-                            </span>
+                            </button>
                             <span className="text-sm font-bold opacity-80">{sectionName}</span>
                             {isReg && <span className="badge badge-success badge-outline badge-sm font-semibold">{t('exams.registered')}</span>}
                         </div>

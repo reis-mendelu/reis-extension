@@ -1,5 +1,5 @@
 import type { ClassmatesSlice, AppSlice } from '../types';
-import type { ClassmatesData } from '../../types/classmates';
+import type { ClassmatesData, Classmate } from '../../types/classmates';
 import { IndexedDBService } from '../../services/storage';
 
 export const createClassmatesSlice: AppSlice<ClassmatesSlice> = (set, get) => ({

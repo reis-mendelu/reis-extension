@@ -73,7 +73,11 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
                 })()}
             </div>
             <CourseMeta lesson={lesson} courseInfo={courseInfo} isSearchContext={!!isSearch} />
-            <HeaderTabs activeTab={activeTab} onTabChange={onTabChange} />
+            <HeaderTabs 
+                activeTab={activeTab} 
+                onTabChange={onTabChange} 
+                disabledTabs={!subjectInfo?.subjectId ? ['files', 'classmates'] : []}
+            />
         </div>
     );
 }

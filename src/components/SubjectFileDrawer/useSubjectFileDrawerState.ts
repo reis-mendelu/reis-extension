@@ -9,7 +9,8 @@ export function useSubjectFileDrawerState(lesson: BlockLesson | SelectedSubject 
     const { schedule } = useSchedule();
     const { getSubject } = useSubjects();
     const isExam = lesson && 'isExam' in lesson ? lesson.isExam : false;
-    const [activeTab, setActiveTab] = useState<'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates'>(isExam ? 'stats' : 'files');
+    const isEnrolled = !!(lesson?.courseCode && getSubject(lesson.courseCode)?.subjectId);
+    const [activeTab, setActiveTab] = useState<'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates'>(isExam ? 'stats' : (isEnrolled ? 'files' : 'syllabus'));
     const { files, isLoading: isFilesLoading, isPriorityLoading, progressStatus, totalCount } = useFiles(isOpen ? lesson?.courseCode : undefined);
     const { isSyncing } = useSyncStatus();
 
@@ -37,7 +38,8 @@ export function useSubjectFileDrawerState(lesson: BlockLesson | SelectedSubject 
         setPrevIsOpen(isOpen);
         if (isOpen && lesson) {
             const isExamNow = 'isExam' in lesson ? lesson.isExam : false;
-            setActiveTab(isExamNow ? 'stats' : 'files');
+            const isEnrolledNow = !!(lesson.courseCode && getSubject(lesson.courseCode)?.subjectId);
+            setActiveTab(isExamNow ? 'stats' : (isEnrolledNow ? 'files' : 'syllabus'));
         }
     }
 
