@@ -104,6 +104,46 @@ describe('fetchFilesFromFolder', () => {
     });
 
 
+    it('should not recurse into the same subfolder more than once when it appears on multiple pages', async () => {
+        const subfolderEntry = {
+            file_name: 'Shared Subfolder',
+            files: [{ link: 'https://is.mendelu.cz/auth/dok_server/slozka.pl?id=999', name: 'Shared Subfolder' }]
+        } as unknown as ParsedFile;
+
+        // Page 1: one real file + one subfolder entry
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce({ text: async () => 'page1' } as Response);
+        vi.mocked(parseServerFiles).mockReturnValueOnce({
+            files: [
+                { file_name: 'File 1', files: [{ name: 'File 1', type: 'pdf', link: 'download?id=1' }] } as unknown as ParsedFile,
+                subfolderEntry,
+            ],
+            paginationLinks: ['on=1']
+        });
+
+        // Page 2: same subfolder entry repeated (IS behaviour)
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce({ text: async () => 'page2' } as Response);
+        vi.mocked(parseServerFiles).mockReturnValueOnce({
+            files: [
+                { file_name: 'File 2', files: [{ name: 'File 2', type: 'pdf', link: 'download?id=2' }] } as unknown as ParsedFile,
+                subfolderEntry,
+            ],
+            paginationLinks: []
+        });
+
+        // Subfolder fetch (should only be called ONCE)
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce({ text: async () => 'subfolder' } as Response);
+        vi.mocked(parseServerFiles).mockReturnValueOnce({
+            files: [{ file_name: 'Sub File', files: [{ name: 'Sub File', type: 'pdf', link: 'download?id=sub' }] } as unknown as ParsedFile],
+            paginationLinks: []
+        });
+
+        const result = await fetchFilesFromFolder('http://test.com');
+
+        // fetchWithAuth: page1 + page2 + subfolder(x1) = 3 calls
+        expect(fetchWithAuth).toHaveBeenCalledTimes(3);
+        expect(result).toHaveLength(3); // File 1, File 2, Sub File
+    });
+
     it('should call onChunk callback with initial files', async () => {
         vi.mocked(parseServerFiles).mockReturnValueOnce({
             files: [{ file_name: 'File 1', files: [{ name: 'File 1', type: 'pdf', link: 'download?id=1' }] } as unknown as ParsedFile],

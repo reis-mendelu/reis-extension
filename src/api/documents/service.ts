@@ -81,11 +81,15 @@ export async function fetchFilesFromFolder(
         }
 
         if (recursive && currentDepth < maxDepth) {
-            const folders = allFiles.filter(f => f.files.some(fi => fi.link.includes('slozka.pl') && !fi.link.includes('download')))
-                .map(f => ({ 
-                    url: f.files[0].link, // Already absolute from parser
-                    name: f.file_name 
-                }));
+            // Deduplicate by URL — the same subfolder can appear on every paginated page
+            const folderMap = new Map<string, { url: string; name: string }>();
+            allFiles
+                .filter(f => f.files.some(fi => fi.link.includes('slozka.pl') && !fi.link.includes('download')))
+                .forEach(f => {
+                    const url = f.files[0].link;
+                    if (!folderMap.has(url)) folderMap.set(url, { url, name: f.file_name });
+                });
+            const folders = Array.from(folderMap.values());
 
             console.log(`[fetchFilesFromFolder] ${folderUrl} - Found ${folders.length} subfolders to recurse (Depth ${currentDepth})`);
 
