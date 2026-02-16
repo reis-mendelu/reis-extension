@@ -63,7 +63,6 @@ export function ClassmatesTab({ courseCode, skupinaId: propsSkupinaId }: Classma
                         <button
                             className={`join-item btn btn-xs sm:btn-sm border-none h-full ${filter === 'seminar' ? 'bg-base-100 shadow-sm text-primary' : 'bg-transparent text-base-content/60 hover:text-base-content/80'}`}
                             onClick={() => setFilter('seminar')}
-                            disabled={!skupinaId}
                         >
                             <School size={16} className="mr-2" />
                             {translate('classmates.seminar', 'Cvičení')}
