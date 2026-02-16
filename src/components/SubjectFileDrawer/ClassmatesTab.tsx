@@ -36,7 +36,8 @@ export function ClassmatesTab({ courseCode, skupinaId: propsSkupinaId }: Classma
     }, [classmates, searchQuery]);
     
     const isEmpty = !classmates || classmates.length === 0;
-    const showSkeleton = isPriorityLoading && isEmpty;
+    // Keep skeleton visible during priority loading OR if we're still loading and have no data
+    const showSkeleton = isPriorityLoading || (isEmpty && !classmates);
     
     // Create progress message for skeleton
     const getProgressMessage = () => {
