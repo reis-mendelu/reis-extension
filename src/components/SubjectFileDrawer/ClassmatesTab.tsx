@@ -37,6 +37,14 @@ export function ClassmatesTab({ courseCode, skupinaId: propsSkupinaId }: Classma
     
     const isEmpty = !classmates || classmates.length === 0;
     const showSkeleton = isPriorityLoading && isEmpty;
+    
+    // Create progress message for skeleton
+    const getProgressMessage = () => {
+        const filterText = filter === 'seminar' ? 
+            translate('classmates.loadingSeminar', 'Loading seminar classmates...') :
+            translate('classmates.loadingAll', 'Loading classmates...');
+        return filterText;
+    };
 
     return (
         <div className="flex flex-col h-full bg-base-100">
@@ -78,7 +86,7 @@ export function ClassmatesTab({ courseCode, skupinaId: propsSkupinaId }: Classma
 
             {/* List Content */}
             {showSkeleton ? (
-                <ClassmatesListSkeleton />
+                <ClassmatesListSkeleton message={getProgressMessage()} />
             ) : (
                 <div className="flex-1 overflow-y-auto p-4">
                     {isLoading ? (
