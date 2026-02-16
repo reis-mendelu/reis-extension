@@ -2,6 +2,7 @@ import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { SubjectsData, Assessment, SyllabusRequirements, ParsedFile } from '../../types/documents';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ExamSubject } from '../../types/exams';
+import type { Classmate } from '../../types/classmates';
 import { StoreSchemas, type StoreName } from '../../types/storage';
 
 interface ReisDB extends DBSchema {
@@ -16,6 +17,10 @@ interface ReisDB extends DBSchema {
     syllabuses: {
         key: string;
         value: SyllabusRequirements | { cz: SyllabusRequirements, en: SyllabusRequirements }; // Key is courseCode
+    };
+    classmates: {
+        key: string;
+        value: Classmate[]; // Key is courseCode
     };
     exams: {
         key: string;
@@ -42,7 +47,7 @@ interface ReisDB extends DBSchema {
 }
 
 const DB_NAME = 'reis_db';
-const DB_VERSION = 5; 
+const DB_VERSION = 6;
 
 class IndexedDBServiceImpl {
     private dbPromise: Promise<IDBPDatabase<ReisDB>>;
@@ -51,7 +56,7 @@ class IndexedDBServiceImpl {
         this.dbPromise = openDB<ReisDB>(DB_NAME, DB_VERSION, {
             upgrade(db) {
                 const requiredStores: (keyof ReisDB)[] = [
-                    'files', 'assessments', 'syllabuses', 
+                    'files', 'assessments', 'syllabuses', 'classmates',
                     'exams', 'schedule', 'subjects', 'success_rates', 'meta'
                 ];
                 

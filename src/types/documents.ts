@@ -5,6 +5,7 @@ export interface SubjectInfo {
     nameEn?: string;
     subjectCode: string;
     subjectId?: string; // Numeric ID (from predmet=...)
+    skupinaId?: string; // Seminar group ID for classmates
     folderUrl: string;
     fetchedAt: string;
 }

@@ -5,6 +5,7 @@ import { fetchDualLanguageSubjects } from "../api/subjects";
 import { fetchFilesFromFolder } from "../api/documents";
 import { fetchAssessments } from "../api/assessments";
 import { fetchSyllabus } from "../api/syllabus";
+import { fetchSeminarGroupIds, fetchClassmates } from "../api/classmates";
 import { getUserParams } from "../utils/userParams";
 import { fetchScheduleBite, fetchFullSemesterSchedule } from "./dataFetchers";
 import { sendToIframe } from "./iframeManager";
@@ -74,6 +75,21 @@ export async function syncAllData() {
 
 
         if (subjects.status === "fulfilled" && subjects.value) {
+            // Enrich subjects with seminar group IDs for classmates
+            if (studium && userParams?.obdobi) {
+                try {
+                    const groupIds = await fetchSeminarGroupIds(studium, userParams.obdobi);
+                    for (const [code, skupinaId] of Object.entries(groupIds)) {
+                        if (subjects.value.data[code]) {
+                            subjects.value.data[code].skupinaId = skupinaId;
+                        }
+                    }
+                    cachedData.subjects = subjects.value;
+                } catch (e) {
+                    console.warn('[syncAllData] Failed to fetch seminar group IDs:', e);
+                }
+            }
+
             await syncSubjectDetails(subjects.value, fullSchedule.status === "fulfilled" ? fullSchedule.value : null);
         }
 
@@ -88,7 +104,7 @@ export async function syncAllData() {
     }
 }
 
-async function syncSubjectDetails(subjectsValue: { data: Record<string, { folderUrl?: string; subjectId?: string }> }, scheduleValue: { studyId?: string; periodId?: string }[] | null) {
+async function syncSubjectDetails(subjectsValue: { data: Record<string, { folderUrl?: string; subjectId?: string; skupinaId?: string }> }, scheduleValue: { studyId?: string; periodId?: string }[] | null) {
     const subjectEntries = Object.entries(subjectsValue.data);
     const userParams = await getUserParams();
     let studium = userParams?.studium;
@@ -105,6 +121,7 @@ async function syncSubjectDetails(subjectsValue: { data: Record<string, { folder
         if (subject.folderUrl) subTasks.push(fetchFilesFromFolder(subject.folderUrl).then(f => { (cachedData.files as Record<string, unknown>)[code] = f; }).catch(() => {}));
         if (studium && obdobi && subject.subjectId) subTasks.push(fetchAssessments(studium, obdobi, subject.subjectId).then(a => { if(!cachedData.assessments) cachedData.assessments = {}; (cachedData.assessments as Record<string, unknown>)[code] = a; }).catch(() => {}));
         if (subject.subjectId) subTasks.push(fetchSyllabus(subject.subjectId).then(s => { if(!cachedData.syllabuses) cachedData.syllabuses = {}; (cachedData.syllabuses as Record<string, unknown>)[code] = s; }).catch(() => {}));
+        if (studium && obdobi && subject.subjectId && subject.skupinaId) subTasks.push(fetchClassmates(subject.subjectId, studium, obdobi, subject.skupinaId).then(c => { if(!cachedData.classmates) cachedData.classmates = {}; cachedData.classmates[code] = c; }).catch(() => {}));
         await Promise.all(subTasks);
     }));
 

@@ -10,6 +10,7 @@ import { useAppStore, initializeStore } from '../store/useAppStore';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
 import type { AppView, SelectedSubject } from '../types/app';
 import { isContentMessage } from '../types/messages';
+import type { Classmate } from '../types/classmates';
 
 interface SyncedData {
   schedule?: unknown;
@@ -17,6 +18,7 @@ interface SyncedData {
   subjects?: { data: Record<string, { nameCs?: string; nameEn?: string }> };
   files?: Record<string, unknown>;
   syllabuses?: Record<string, unknown>;
+  classmates?: Record<string, unknown>;
   lastSync?: string;
   isSyncing?: boolean;
   isPartial?: boolean;
@@ -118,6 +120,12 @@ export function useAppLogic() {
                     if (!existing || (s as Record<string, unknown>).cz || !(existing as Record<string, unknown>).cz) {
                         await IndexedDBService.set('syllabuses', c, s);
                     }
+                }
+            }
+
+            if (r.classmates) {
+                for (const [c, cl] of Object.entries(r.classmates)) {
+                    await IndexedDBService.set('classmates', c, cl as Classmate[]);
                 }
             }
 
