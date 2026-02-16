@@ -116,7 +116,8 @@
             "files": "Files",
             "requirements": "Requirements",
             "successRate": "Success Rate",
-            "assessment": "Assessment"
+            "assessment": "Assessment",
+            "classmates": "Classmates"
         },
         "footer": {
             "other": "Other",
@@ -203,5 +204,11 @@
     "syncToggle": "Activate Sync",
     "syncCoffeeBreak": "Sync takes about 15 minutes.",
     "syncSocialProof": "Used by 80% of students."
+  },
+  "classmates": {
+    "all": "All",
+    "seminar": "Seminar",
+    "search": "Search...",
+    "noneFound": "No classmates found"
   }
 }

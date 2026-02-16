@@ -2,6 +2,7 @@ import { FileText, ExternalLink, Check, Loader2 } from 'lucide-react';
 import { FileList, FileListSkeleton } from './FileList';
 import { AssessmentTab } from './AssessmentTab';
 import { SyllabusTab } from './SyllabusTab';
+import { ClassmatesTab } from './ClassmatesTab';
 import { SuccessRateTab } from '../SuccessRateTab';
 import { SelectionBox, DragHint } from './DragHint';
 import type { FileGroup } from './types';
@@ -59,7 +60,7 @@ function StatusTicks({ status, count }: { status?: string, count: number }) {
 
 
 interface SubjectFileDrawerContentProps {
-    activeTab: 'files' | 'stats' | 'assessments' | 'syllabus';
+    activeTab: 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates';
     lesson: BlockLesson | SelectedSubject | null;
     files: unknown[] | null;
     isFilesLoading: boolean;
@@ -131,5 +132,6 @@ export function SubjectFileDrawerContent({
 
     if (activeTab === 'assessments') return <AssessmentTab courseCode={lesson?.courseCode || ''} />;
     if (activeTab === 'syllabus') return <SyllabusTab courseCode={lesson?.courseCode || ''} courseId={resolvedCourseId} courseName={lesson?.courseName ?? ''} prefetchedResult={syllabusResult} />;
+    if (activeTab === 'classmates') return <ClassmatesTab courseCode={lesson?.courseCode || ''} skupinaId={lesson && 'skupinaId' in lesson ? (lesson as any).skupinaId : undefined} />;
     return <SuccessRateTab courseCode={lesson?.courseCode || ''} facultyCode={'facultyCode' in (lesson ?? {}) ? (lesson as { facultyCode?: string }).facultyCode : undefined} />;
 }

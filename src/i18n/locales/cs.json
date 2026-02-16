@@ -116,7 +116,8 @@
       "files": "Soubory",
       "requirements": "Požadavky",
       "successRate": "Úspěšnost",
-      "assessment": "Klasifikace"
+      "assessment": "Klasifikace",
+      "classmates": "Spolužáci"
     },
     "footer": {
       "other": "Ostatní",
@@ -203,5 +204,11 @@
     "syncToggle": "Aktivovat Sync",
     "syncCoffeeBreak": "Sync trvá přibližně 15 minut.",
     "syncSocialProof": "Používá 80 % studentů."
+  },
+  "classmates": {
+    "all": "Všichni",
+    "seminar": "Cvičení",
+    "search": "Vyhledat...",
+    "noneFound": "Žádní spolužáci nenalezeni"
   }
 }

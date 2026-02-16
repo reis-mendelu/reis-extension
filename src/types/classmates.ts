@@ -3,4 +3,5 @@ export interface Classmate {
     photoUrl: string;
     name: string;
     studyInfo: string;
+    email?: string;
 }

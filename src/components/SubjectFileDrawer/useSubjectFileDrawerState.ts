@@ -9,7 +9,7 @@ export function useSubjectFileDrawerState(lesson: BlockLesson | SelectedSubject 
     const { schedule } = useSchedule();
     const { getSubject } = useSubjects();
     const isExam = lesson && 'isExam' in lesson ? lesson.isExam : false;
-    const [activeTab, setActiveTab] = useState<'files' | 'stats' | 'assessments' | 'syllabus'>(isExam ? 'stats' : 'files');
+    const [activeTab, setActiveTab] = useState<'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates'>(isExam ? 'stats' : 'files');
     const { files, isLoading: isFilesLoading, isPriorityLoading, progressStatus } = useFiles(isOpen ? lesson?.courseCode : undefined);
     const { isSyncing } = useSyncStatus();
 

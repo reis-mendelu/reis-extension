@@ -76,9 +76,11 @@ export async function syncAllData() {
 
         if (subjects.status === "fulfilled" && subjects.value) {
             // Enrich subjects with seminar group IDs for classmates
+            console.log('[syncAllData] 👥 Classmates check:', { studium, obdobi: userParams?.obdobi });
             if (studium && userParams?.obdobi) {
                 try {
                     const groupIds = await fetchSeminarGroupIds(studium, userParams.obdobi);
+                    console.log('[syncAllData] 👥 Seminar group IDs:', groupIds);
                     for (const [code, skupinaId] of Object.entries(groupIds)) {
                         if (subjects.value.data[code]) {
                             subjects.value.data[code].skupinaId = skupinaId;

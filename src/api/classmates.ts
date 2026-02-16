@@ -19,7 +19,11 @@ export async function fetchSeminarGroupIds(
     const doc = parser.parseFromString(html, 'text/html');
 
     const table = doc.querySelector('#table_1');
-    if (!table) return {};
+    if (!table) {
+        console.warn('[fetchSeminarGroupIds] #table_1 not found. Available tables:',
+            Array.from(doc.querySelectorAll('table[id]')).map(t => t.id));
+        return {};
+    }
 
     const result: Record<string, string> = {};
     const rows = table.querySelectorAll('tr');
@@ -65,7 +69,11 @@ export async function fetchClassmates(
     const doc = parser.parseFromString(html, 'text/html');
 
     const table = doc.querySelector('#tmtab_1');
-    if (!table) return [];
+    if (!table) {
+        console.warn('[fetchClassmates] #tmtab_1 not found. Available tables:',
+            Array.from(doc.querySelectorAll('table[id]')).map(t => t.id));
+        return [];
+    }
 
     const classmates: Classmate[] = [];
     const rows = table.querySelectorAll('tr');

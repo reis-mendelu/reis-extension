@@ -7,7 +7,15 @@ interface HeaderTabsProps {
 
 export function HeaderTabs({ activeTab, onTabChange }: HeaderTabsProps) {
     const { t } = useTranslation();
-    const tabs = [{ id: 'files', label: t('course.tabs.files') }, { id: 'syllabus', label: t('course.tabs.requirements') }, { id: 'stats', label: t('course.tabs.successRate') }];
+    const label = t('course.tabs.classmates');
+    const displayLabel = label === 'course.tabs.classmates' ? 'Spolužáci' : label;
+
+    const tabs = [
+        { id: 'files', label: t('course.tabs.files') }, 
+        { id: 'syllabus', label: t('course.tabs.requirements') }, 
+        { id: 'stats', label: t('course.tabs.successRate') },
+        { id: 'classmates', label: displayLabel }
+    ];
     return (
         <div className="flex items-center gap-8 mt-4">
             {tabs.map(tab => (
