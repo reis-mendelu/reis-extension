@@ -3,6 +3,7 @@ import { Search, Mail, User, Users, School } from 'lucide-react';
 import { useClassmates } from '../../hooks/data/useClassmates';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
+import { ClassmatesListSkeleton } from './ClassmatesListSkeleton';
 
 interface ClassmatesTabProps {
     courseCode: string;
@@ -18,7 +19,7 @@ export function ClassmatesTab({ courseCode, skupinaId: propsSkupinaId }: Classma
     
     const [filter, setFilter] = useState<'all' | 'seminar'>(skupinaId ? 'seminar' : 'all');
     const [searchQuery, setSearchQuery] = useState('');
-    const { classmates, isLoading } = useClassmates(courseCode, filter);
+    const { classmates, isLoading, isPriorityLoading } = useClassmates(courseCode, filter);
 
     const translate = (key: string, fallback: string) => {
         const result = t(key);
@@ -33,6 +34,9 @@ export function ClassmatesTab({ courseCode, skupinaId: propsSkupinaId }: Classma
             (c.personId && c.personId.toString().includes(q))
         );
     }, [classmates, searchQuery]);
+    
+    const isEmpty = !classmates || classmates.length === 0;
+    const showSkeleton = isPriorityLoading && isEmpty;
 
     return (
         <div className="flex flex-col h-full bg-base-100">
@@ -73,17 +77,20 @@ export function ClassmatesTab({ courseCode, skupinaId: propsSkupinaId }: Classma
             </div>
 
             {/* List Content */}
-            <div className="flex-1 overflow-y-auto p-4">
-                {isLoading ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-base-content/40">
-                         <span className="loading loading-spinner loading-md"></span>
-                    </div>
-                ) : filteredClassmates.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-base-content/40">
-                        <Users size={48} className="mb-4 opacity-20" />
-                        <p>{translate('classmates.noneFound', 'Žádní spolužáci nenalezeni')}</p>
-                    </div>
-                ) : (
+            {showSkeleton ? (
+                <ClassmatesListSkeleton />
+            ) : (
+                <div className="flex-1 overflow-y-auto p-4">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-base-content/40">
+                             <span className="loading loading-spinner loading-md"></span>
+                        </div>
+                    ) : filteredClassmates.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-base-content/40">
+                            <Users size={48} className="mb-4 opacity-20" />
+                            <p>{translate('classmates.noneFound', 'Žádní spolužáci nenalezeni')}</p>
+                        </div>
+                    ) : (
                     <div className="grid grid-cols-1 gap-3">
                         {filteredClassmates.map((student) => (
                             <div key={student.personId} className="flex items-center justify-between p-3 rounded-xl border border-base-200 bg-base-100 hover:border-primary/20 hover:shadow-sm transition-all group">
@@ -149,6 +156,7 @@ export function ClassmatesTab({ courseCode, skupinaId: propsSkupinaId }: Classma
                     </div>
                 )}
             </div>
+            )}
         </div>
     );
 }

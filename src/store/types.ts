@@ -60,7 +60,10 @@ export interface AssessmentsSlice {
 export interface ClassmatesSlice {
     classmates: Record<string, ClassmatesData>;
     classmatesLoading: Record<string, boolean>;
+    classmatesPriorityLoading: Record<string, boolean>;
+    classmatesProgress: Record<string, string>;
     fetchClassmates: (courseCode: string) => Promise<void>;
+    fetchClassmatesPriority: (courseCode: string) => Promise<void>;
     invalidateClassmates: () => void;
 }
 
