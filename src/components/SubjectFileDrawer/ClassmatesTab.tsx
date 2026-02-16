@@ -1,65 +1,38 @@
 import { useState, useMemo } from 'react';
-import { Search, Mail, User, Info, Users, School } from 'lucide-react';
+import { Search, Mail, User, Users, School } from 'lucide-react';
 import { useClassmates } from '../../hooks/data/useClassmates';
 import { useTranslation } from '../../hooks/useTranslation';
-import type { Classmate } from '../../types/classmates';
+import { useAppStore } from '../../store/useAppStore';
 
 interface ClassmatesTabProps {
     courseCode: string;
     skupinaId?: string;
 }
 
-export function ClassmatesTab({ courseCode, skupinaId }: ClassmatesTabProps) {
+export function ClassmatesTab({ courseCode, skupinaId: propsSkupinaId }: ClassmatesTabProps) {
     const { t } = useTranslation();
-    const { classmates, isLoading } = useClassmates(courseCode);
-    const [filter, setFilter] = useState<'all' | 'seminar'>('seminar');
+    
+    // Try to get skupinaId from props first, then fall back to subjects store
+    const subjectInfo = useAppStore(state => state.subjects?.data?.[courseCode]);
+    const skupinaId = propsSkupinaId || subjectInfo?.skupinaId;
+    
+    const [filter, setFilter] = useState<'all' | 'seminar'>(skupinaId ? 'seminar' : 'all');
     const [searchQuery, setSearchQuery] = useState('');
-
-    // Mock data for UI development as requested
-    const mockClassmates: Classmate[] = [
-        {
-            personId: 12345,
-            name: 'Jan Novák',
-            studyInfo: 'PEF B-F prez [sem 2, roč 1]',
-            email: 'jan.novak@mendelu.cz'
-        },
-        {
-            personId: 67890,
-            name: 'Marie Svobodová',
-            studyInfo: 'PEF B-OI-ZBOI prez [sem 2, roč 1]',
-            email: 'marie.svobodova@mendelu.cz'
-        },
-        {
-            personId: 11223,
-            name: 'Petr Veselý',
-            studyInfo: 'PEF B-F prez [sem 2, roč 1]',
-            email: 'petr.vesely@mendelu.cz'
-        }
-    ];
-
-    // Use mock data if real data is empty or for testing UI
-    const displayClassmates = classmates.length > 0 ? classmates : mockClassmates;
+    const { classmates, isLoading } = useClassmates(courseCode, filter);
 
     const translate = (key: string, fallback: string) => {
         const result = t(key);
         return result === key ? fallback : result;
     };
 
-    // Filter classmates
     const filteredClassmates = useMemo(() => {
-        let result = displayClassmates;
-
-        if (searchQuery) {
-            const q = searchQuery.toLowerCase();
-            result = result.filter(c => 
-                c.name.toLowerCase().includes(q) || 
-                (c.personId && c.personId.toString().includes(q))
-            );
-        }
-
-        return result;
-    }, [displayClassmates, filter, searchQuery]);
-
+        if (!searchQuery) return classmates;
+        const q = searchQuery.toLowerCase();
+        return classmates.filter(c =>
+            c.name.toLowerCase().includes(q) ||
+            (c.personId && c.personId.toString().includes(q))
+        );
+    }, [classmates, searchQuery]);
 
     return (
         <div className="flex flex-col h-full bg-base-100">
@@ -68,16 +41,17 @@ export function ClassmatesTab({ courseCode, skupinaId }: ClassmatesTabProps) {
                 <div className="flex items-center justify-between gap-4">
                     {/* Filter Toggle */}
                     <div className="join bg-base-200 p-1 rounded-lg h-10 flex">
-                        <button 
+                        <button
                             className={`join-item btn btn-xs sm:btn-sm border-none h-full ${filter === 'all' ? 'bg-base-100 shadow-sm text-primary' : 'bg-transparent text-base-content/60 hover:text-base-content/80'}`}
                             onClick={() => setFilter('all')}
                         >
                             <Users size={16} className="mr-2" />
                             {translate('classmates.all', 'Všichni')}
                         </button>
-                        <button 
+                        <button
                             className={`join-item btn btn-xs sm:btn-sm border-none h-full ${filter === 'seminar' ? 'bg-base-100 shadow-sm text-primary' : 'bg-transparent text-base-content/60 hover:text-base-content/80'}`}
                             onClick={() => setFilter('seminar')}
+                            disabled={!skupinaId}
                         >
                             <School size={16} className="mr-2" />
                             {translate('classmates.seminar', 'Cvičení')}
@@ -86,10 +60,10 @@ export function ClassmatesTab({ courseCode, skupinaId }: ClassmatesTabProps) {
 
                     {/* Search Bar */}
                     <div className="relative flex-1 max-w-[240px]">
-                        <input 
-                            type="text" 
-                            placeholder={translate('classmates.search', 'Vyhledat...')} 
-                            className="input input-sm input-bordered w-full h-10 pl-9 rounded-lg bg-base-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" 
+                        <input
+                            type="text"
+                            placeholder={translate('classmates.search', 'Vyhledat...')}
+                            className="input input-sm input-bordered w-full h-10 pl-9 rounded-lg bg-base-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -126,12 +100,12 @@ export function ClassmatesTab({ courseCode, skupinaId }: ClassmatesTabProps) {
                                             )}
                                         </div>
                                     </div>
-                                    
+
                                     {/* Info */}
                                     <div className="flex flex-col">
                                         <div className="flex items-center gap-2">
                                             <span className="font-bold text-base-content leading-tight">
-                                                {student.name || 'Jméno neznámé'}
+                                                {student.name}
                                             </span>
                                             {student.studyInfo && (
                                                 <>
@@ -143,7 +117,7 @@ export function ClassmatesTab({ courseCode, skupinaId }: ClassmatesTabProps) {
                                             )}
                                         </div>
                                         <div className="flex flex-col gap-0.5 mt-0.5">
-                                             {student.personId !== undefined && student.personId !== 0 && (
+                                             {student.personId !== 0 && (
                                                 <span className="text-xs text-base-content/50 font-mono">
                                                     ID: {student.personId}
                                                 </span>
@@ -154,14 +128,21 @@ export function ClassmatesTab({ courseCode, skupinaId }: ClassmatesTabProps) {
 
                                 {/* Actions */}
                                 <div className="flex items-center gap-2">
-                                    <a 
-                                        href={`mailto:${student.email || ''}`}
-                                        className={`btn btn-circle btn-sm btn-ghost text-base-content/40 hover:text-primary hover:bg-primary/10 ${!student.email ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                        title={student.email ? `Email: ${student.email}` : 'Email nedostupný'}
-                                        onClick={(e) => !student.email && e.preventDefault()}
-                                    >
-                                        <Mail size={18} />
-                                    </a>
+                                    {student.messageUrl ? (
+                                        <a
+                                            href={`https://is.mendelu.cz${student.messageUrl}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="btn btn-circle btn-sm btn-ghost text-base-content/40 hover:text-primary hover:bg-primary/10"
+                                            title={student.name}
+                                        >
+                                            <Mail size={18} />
+                                        </a>
+                                    ) : (
+                                        <span className="btn btn-circle btn-sm btn-ghost text-base-content/20 cursor-not-allowed">
+                                            <Mail size={18} />
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         ))}
