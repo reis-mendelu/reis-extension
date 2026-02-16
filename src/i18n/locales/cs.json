@@ -14,7 +14,7 @@
   },
   "sidebar": {
     "profile": "Profil",
-    "calendar": "Rozvrh",
+    "calendar": "Kalendář",
     "exams": "Zkoušky",
     "dashboard": "Domů",
     "subjects": "Předměty",
@@ -185,7 +185,7 @@
     "yesterday": "Včera"
   },
   "sync": {
-    "schedule": "Synchronizace rozvrhu",
+    "schedule": "Synchronizace kalendáře",
     "tooltip": "Synchronizuje rozvrh a termíny zkoušek do Outlooku.",
     "spolky": "Odebírané spolky",
     "lastSync": "Naposledy synchronizováno: {time}"
@@ -200,11 +200,10 @@
     "welcome": "Vítej v reISu!",
     "description": "Vylepšená verze IS MENDELU.\nVytvořeno studenty pro studenty.",
     "getStarted": "Začít používat",
-    "syncTitle": "Sync do mobilu",
-    "syncDescription": "Tvůj rozvrh přímo v kalendáři.",
+    "syncTitle": "Sync do mobilu (Outlook)",
+    "syncDescription": "1. Otevři Outlook na mobilu\n2. Přejdi na záložku \"Kalendář\"",
     "syncToggle": "Aktivovat Sync",
-    "syncCoffeeBreak": "Sync trvá přibližně 15 minut.",
-    "syncSocialProof": "Používá 80 % studentů."
+    "syncCoffeeBreak": "Sync trvá přibližně 15 min."
   },
   "classmates": {
     "all": "Všichni",

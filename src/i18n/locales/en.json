@@ -14,7 +14,7 @@
   },
   "sidebar": {
     "profile": "Profile",
-    "calendar": "Schedule",
+    "calendar": "Calendar",
     "exams": "Exams",
     "dashboard": "Home",
     "subjects": "Subjects",
@@ -185,7 +185,7 @@
     "yesterday": "Yesterday"
   },
   "sync": {
-    "schedule": "Schedule synchronization",
+    "schedule": "Calendar synchronization",
     "tooltip": "Synchronizes schedule and exam terms to Outlook.",
     "spolky": "Subscribed societies",
     "lastSync": "Last synced: {time}"
@@ -200,11 +200,10 @@
     "welcome": "Welcome to reIS!",
     "description": "Enhanced version of IS MENDELU.\nBuilt by students for students.",
     "getStarted": "Get Started",
-    "syncTitle": "Sync to Phone",
-    "syncDescription": "Your schedule in your pocket.",
+    "syncTitle": "Sync to Phone (Outlook)",
+    "syncDescription": "1. Open Outlook on your phone\n2. Go to the \"Calendar\" tab",
     "syncToggle": "Activate Sync",
-    "syncCoffeeBreak": "Sync takes about 15 minutes.",
-    "syncSocialProof": "Used by 80% of students."
+    "syncCoffeeBreak": "Sync takes about 15 minutes."
   },
   "classmates": {
     "all": "All",

@@ -60,7 +60,7 @@ export function WelcomeModal() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 30 }}
                         transition={{ duration: 0.4, type: "spring", bounce: 0.3 }}
-                        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] w-full max-w-xs sm:max-w-sm"
+                        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] w-full max-w-sm sm:max-w-lg"
                     >
                         <div className="bg-base-100 rounded-2xl shadow-2xl border border-base-200 overflow-hidden p-6 flex flex-col gap-4">
                             <AnimatePresence mode="wait">
@@ -119,19 +119,18 @@ export function WelcomeModal() {
                                             <img 
                                                 src="/calendar_phone.png" 
                                                 alt="Phone Sync" 
-                                                className="w-48 h-auto rounded-2xl shadow-xl border border-base-content/10 relative z-10"
+                                                className="w-80 h-auto rounded-2xl shadow-xl border border-base-content/10 relative z-10"
                                             />
                                         </div>
                                         
                                         <div className="space-y-1">
                                             <h3 className="text-xl font-bold text-base-content tracking-tight">{t('onboarding.syncTitle')}</h3>
-                                            <p className="text-sm text-base-content/50">{t('onboarding.syncSocialProof')}</p>
+                                            <p className="text-sm text-base-content/70 font-semibold leading-tight px-4 whitespace-pre-line">{t('onboarding.syncDescription')}</p>
                                         </div>
 
                                         <div className="w-full flex items-center justify-between py-2.5 px-4 bg-base-200/50 rounded-2xl border border-transparent">
                                             <div className="flex flex-col items-start translate-y-0.5">
                                                 <span className="text-sm font-semibold">{t('onboarding.syncToggle')}</span>
-                                                <span className="text-xs text-base-content/40 font-medium">{t('onboarding.syncDescription')}</span>
                                             </div>
                                             <input 
                                                 type="checkbox" 
