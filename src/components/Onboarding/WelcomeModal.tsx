@@ -5,11 +5,13 @@ import { MENDELU_LOGO_PATH } from '../../constants/icons';
 import { IndexedDBService } from '../../services/storage';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useOutlookSync } from '../../hooks/data/useOutlookSync';
+import { useAppStore } from '../../store/useAppStore';
 
 export function WelcomeModal() {
     const [isVisible, setIsVisible] = useState(false);
     const [step, setStep] = useState<1 | 2>(1);
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
+    const setLanguage = useAppStore(state => state.setLanguage);
     const { isEnabled, toggle, isLoading } = useOutlookSync();
 
     useEffect(() => {
@@ -76,9 +78,27 @@ export function WelcomeModal() {
                                         <h2 className="text-xl font-bold text-base-content mb-2 tracking-tight">
                                             {t('onboarding.welcome')}
                                         </h2>
-                                        <p className="text-sm text-base-content/70 mb-6 leading-relaxed">
+                                        <p className="text-sm text-base-content/70 mb-5 leading-relaxed">
                                             {t('onboarding.description')}
                                         </p>
+
+                                        <div className="flex justify-center mb-6">
+                                            <div className="join bg-base-300/50 p-0.5 rounded-lg border border-base-300">
+                                                <button 
+                                                    onClick={() => setLanguage('cz')} 
+                                                    className={`join-item btn btn-xs border-none h-6 min-h-0 w-12 ${language === 'cz' ? 'btn-primary shadow-sm' : 'btn-ghost opacity-50 hover:opacity-100'}`}
+                                                >
+                                                    CZ
+                                                </button>
+                                                <button 
+                                                    onClick={() => setLanguage('en')} 
+                                                    className={`join-item btn btn-xs border-none h-6 min-h-0 w-12 ${language === 'en' ? 'btn-primary shadow-sm' : 'btn-ghost opacity-50 hover:opacity-100'}`}
+                                                >
+                                                    EN
+                                                </button>
+                                            </div>
+                                        </div>
+
                                         <button
                                             onClick={handleNext}
                                             className="btn btn-primary btn-md btn-wide rounded-xl shadow-md gap-2"
