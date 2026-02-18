@@ -1,7 +1,6 @@
 import type { AppView } from '../types/app'
 import { AppHeader } from './AppHeader'
 import { WeeklyCalendar } from './WeeklyCalendar/index'
-import type { ExamSubject } from '../types/exams';
 import { ExamPanel } from './ExamPanel'
 
 interface AppMainProps {
@@ -11,13 +10,12 @@ interface AppMainProps {
     handleNextWeek: () => void;
     handleToday: () => void;
     handleOpenSubjectFromSearch: (courseCode: string, courseName?: string, courseId?: string) => void;
-    setSelectedSubject: (subject: any) => void;
     dateRangeLabel: string;
 }
 
-export function AppMain({ 
-    currentView, currentDate, handlePrevWeek, handleNextWeek, handleToday, 
-    handleOpenSubjectFromSearch, setSelectedSubject, dateRangeLabel
+export function AppMain({
+    currentView, currentDate, handlePrevWeek, handleNextWeek, handleToday,
+    handleOpenSubjectFromSearch, dateRangeLabel
 }: AppMainProps) {
     return (
         <main className="flex-1 flex flex-col ml-0 md:ml-20 transition-all duration-300 overflow-hidden">
@@ -25,7 +23,7 @@ export function AppMain({
             <div className="flex-1 pt-3 px-4 pb-1 overflow-hidden flex flex-col">
                 <div className="flex-1 bg-base-100 rounded-lg shadow-sm border border-base-300 overflow-hidden">
                     {currentView === 'calendar' && <WeeklyCalendar key={currentDate.toISOString()} initialDate={currentDate} />}
-                    {currentView === 'exams' && <ExamPanel onSelectSubject={setSelectedSubject} />}
+                    {currentView === 'exams' && <ExamPanel />}
                 </div>
             </div>
         </main>

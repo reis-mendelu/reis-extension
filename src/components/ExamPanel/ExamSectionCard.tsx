@@ -13,10 +13,9 @@ interface ExamSectionCardProps {
     onToggleExpand: (id: string) => void;
     onRegister: (section: ExamSection, termId: string) => void;
     onUnregister: (section: ExamSection) => void;
-    onSelectSubject: (subject: ExamSubject & { courseCode: string; courseName: string; sectionName: string; isExam: true }) => void;
 }
 
-export function ExamSectionCard({ subject, section, isExpanded, isProcessing, onToggleExpand, onRegister, onUnregister, onSelectSubject }: ExamSectionCardProps) {
+export function ExamSectionCard({ subject, section, isExpanded, isProcessing, onToggleExpand, onRegister, onUnregister }: ExamSectionCardProps) {
     const { t, language } = useTranslation();
     const isReg = section.status === 'registered';
     
@@ -30,18 +29,9 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                 <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="flex-1 min-w-[200px]">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <button 
-                                onClick={() => onSelectSubject({ 
-                                    ...subject, 
-                                    courseCode: subject.code, 
-                                    courseName: subject.name, 
-                                    sectionName: sectionName,
-                                    isExam: true 
-                                })}
-                                className="badge badge-sm font-bold bg-primary/10 text-primary py-1 h-auto whitespace-normal hover:bg-primary/20 transition-colors pointer-events-auto cursor-pointer border-none"
-                            >
+                            <span className="badge badge-sm font-bold bg-primary/10 text-primary py-1 h-auto whitespace-normal border-none">
                                 {subjectName}
-                            </button>
+                            </span>
                             <span className="text-sm font-bold opacity-80">{sectionName}</span>
                             {isReg && <span className="badge badge-success badge-outline badge-sm font-semibold">{t('exams.registered')}</span>}
                         </div>
