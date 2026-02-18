@@ -10,7 +10,9 @@
     "emailLabel": "Email",
     "balance": "Balance",
     "isicBalance": "ISIC balance",
-    "topUp": "Top up"
+    "topUp": "Top up",
+    "dormAdmin": "Dormitory admin",
+    "open": "Open"
   },
   "sidebar": {
     "profile": "Profile",

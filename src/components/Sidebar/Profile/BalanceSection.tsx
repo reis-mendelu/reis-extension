@@ -19,7 +19,7 @@ export function BalanceSection({ onTopUp, isTopUpOpen }: BalanceSectionProps) {
       >
         {isTopUpOpen
           ? <span className="loading loading-spinner loading-xs" />
-          : t('settings.topUp')}
+          : `${t('settings.topUp')} →`}
       </button>
     </div>
   );

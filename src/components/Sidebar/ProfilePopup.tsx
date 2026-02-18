@@ -9,7 +9,7 @@ import { OutlookSyncToggle } from './Profile/OutlookSyncToggle';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
-import { User, Mail, Hash } from 'lucide-react';
+import { User, Mail, Hash, Building2 } from 'lucide-react';
 import { openPopup } from '../../api/proxyClient';
 import { BalanceSection } from './Profile/BalanceSection';
 
@@ -52,6 +52,16 @@ export function ProfilePopup({ isOpen, onOpenFeedback }: { isOpen: boolean; onOp
                         isTopUpOpen={isTopUpOpen}
                         onTopUp={() => openPopup('https://webiskam.mendelu.cz/Platby/NabitiKonta/0')}
                     />
+                    <div className="flex items-center gap-3 text-base-content/60">
+                        <Building2 size={16} className="text-base-content/30" />
+                        <span className="opacity-70">{t('settings.dormAdmin')}</span>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); openPopup('https://webiskam.mendelu.cz/InformaceOKlientovi'); }}
+                            className="font-mono text-xs bg-success/20 text-success px-2.5 py-1 rounded-lg border border-success/30 ml-auto hover:bg-success/30 transition-colors"
+                        >
+                            {isTopUpOpen ? <span className="loading loading-spinner loading-xs" /> : `${t('settings.open')} →`}
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

@@ -10,7 +10,9 @@
     "emailLabel": "E-mail",
     "balance": "Zůstatek",
     "isicBalance": "ISIC kredit",
-    "topUp": "Dobít"
+    "topUp": "Dobít",
+    "dormAdmin": "Kolejní administrativa",
+    "open": "Otevřít"
   },
   "sidebar": {
     "profile": "Profil",

@@ -83,7 +83,7 @@ async function handleAction(id: string, action: string, payload: unknown) {
                     result = { success: true };
                     break;
                 }
-                const w = 520, h = 680;
+                const w = 960, h = 780;
                 const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
                 const top = Math.round(window.screenY + (window.outerHeight - h) / 2);
                 topUpPopupRef = window.open(p.url, '_blank', `popup,width=${w},height=${h},left=${left},top=${top}`);
