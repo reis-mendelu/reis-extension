@@ -30,6 +30,7 @@ export function useSpolkySettings() {
                   
                   if (erasmus) {
                     defaults.push('esn');
+                    await IndexedDBService.set('meta', 'reis_erasmus_auto_subscribed', true);
                   }
                   
                   saved = defaults;
@@ -40,6 +41,19 @@ export function useSpolkySettings() {
           
           if (saved) {
               setSubscribedAssociations(saved);
+              
+              // NEW: Robust auto-subscription for existing users who haven't been auto-subscribed yet
+              const userParams = await getUserParams();
+              if (userParams?.isErasmus && !saved.includes('esn')) {
+                  const autoSubscribedFlag = await IndexedDBService.get('meta', 'reis_erasmus_auto_subscribed');
+                  if (!autoSubscribedFlag) {
+                      const updated = [...saved, 'esn'];
+                      setSubscribedAssociations(updated);
+                      await IndexedDBService.set('meta', STORAGE_KEY, updated);
+                      await IndexedDBService.set('meta', 'reis_erasmus_auto_subscribed', true);
+                      console.log('[useSpolkySettings] Auto-subscribed Erasmus/foreign student to ESN');
+                  }
+              }
           }
       } catch (err) {
           console.error('[useSpolkySettings] Failed to load settings:', err);
