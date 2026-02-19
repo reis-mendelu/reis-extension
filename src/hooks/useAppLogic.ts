@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
-import { syncService, outlookSyncService } from '../services/sync';
+import { syncService, outlookSyncService, syncGradeHistory } from '../services/sync';
 import { useOutlookSync } from '../hooks/data';
 import { fetchTutorials } from '../services/tutorials';
 import type { Tutorial } from '../services/tutorials';
@@ -39,6 +39,7 @@ export function useAppLogic() {
 
   useEffect(() => {
     outlookSyncService.init();
+    syncGradeHistory().catch(e => console.warn('[useAppLogic] grade history sync failed:', e));
     let unsub: (() => void) | undefined;
     initializeStore().then(unsubscribe => {
       unsub = unsubscribe;
@@ -141,6 +142,7 @@ export function useAppLogic() {
                 try {
                     await useAppStore.getState().fetchAllFiles();
                     useAppStore.getState().invalidateClassmates();
+                    syncGradeHistory().catch(e => console.warn('[useAppLogic] grade history sync failed:', e));
                 } finally {
                     useAppStore.getState().setSyncStatus({ isSyncing: false });
                 }

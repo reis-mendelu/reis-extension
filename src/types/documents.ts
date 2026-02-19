@@ -92,6 +92,23 @@ export interface Assessment {
     detailUrl?: string; // Relative URL for details
 }
 
+export interface CourseGrade {
+    period: string;        // "ZS 2025/2026 - PEF"
+    predmetId: string;     // "159410"
+    courseName: string;    // "Algoritmizace"
+    examType: string;      // "zk" | "záp" | "zak"
+    attempt: number | null;
+    gradeText: string;     // "dobře plus (D)"
+    gradeLetter: string;   // "D" — empty if not yet graded
+    credits: number | null;
+}
+
+export interface GradeHistory {
+    studium: string;
+    fetchedAt: string;
+    grades: CourseGrade[];
+}
+
 export interface SyllabusRequirements {
     version?: number;
     language?: string; // New: Origin language of the parsed syllabus
