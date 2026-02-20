@@ -1,73 +1,74 @@
-import { BookOpen } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { TutoringMatchCard } from './TutoringMatchCard';
+import { MENDELU_LOGO_PATH } from '../../constants/icons';
 
-export function StudyJamSuggestions() {
+export function StudyJamSuggestions({ onClose }: { onClose: () => void }) {
     const suggestions = useAppStore(s => s.studyJamSuggestions);
     const optIns = useAppStore(s => s.studyJamOptIns);
     const match = useAppStore(s => s.studyJamMatch);
-    const optInStudyJam = useAppStore(s => s.optInStudyJam);
-    const requestTutorMatch = useAppStore(s => s.requestTutorMatch);
     const cancelOptIn = useAppStore(s => s.cancelOptIn);
+    const setSelected = useAppStore(s => s.setSelectedStudyJamSuggestion);
+    const setIsStudyJamOpen = useAppStore(s => s.setIsStudyJamOpen);
 
     const optInEntries = Object.entries(optIns);
     const hasContent = suggestions.length > 0 || optInEntries.length > 0 || match !== null;
 
     if (!hasContent) return null;
 
+    const openModal = (suggestion: { courseCode: string; courseName: string; role: 'tutor' | 'tutee' }) => {
+        setSelected(suggestion);
+        setIsStudyJamOpen(true);
+        onClose();
+    };
+
     return (
-        <div className="border-b border-base-300 bg-base-200/40">
-            <div className="px-3 py-2">
-                <p className="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-2 flex items-center gap-1">
-                    <BookOpen size={11} />
-                    Study Jams
-                </p>
+        <>
+            {match && <TutoringMatchCard />}
 
-                {match && <TutoringMatchCard />}
-
-                {optInEntries.map(([courseCode, optIn]) => (
-                    <div key={courseCode} className="flex items-center justify-between py-1.5 text-sm">
-                        {optIn.role === 'tutor' ? (
-                            <span className="text-base-content/70">
-                                Čekáš na tutea pro <span className="font-medium">{courseCode}</span>
-                            </span>
-                        ) : (
-                            <span className="text-base-content/70 flex items-center gap-1.5">
-                                <span className="loading loading-spinner loading-xs text-primary"></span>
-                                Hledám tutora pro <span className="font-medium">{courseCode}</span>
-                            </span>
-                        )}
-                        <button
-                            onClick={() => cancelOptIn(courseCode)}
-                            className="text-xs text-base-content/40 hover:text-error ml-2 underline"
-                        >
-                            zrušit
-                        </button>
+            {optInEntries.map(([courseCode, optIn]) => (
+                <div key={courseCode} className="w-full p-4 flex items-center gap-3 border-b border-base-300">
+                    <ReisAvatar />
+                    <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm text-base-content line-clamp-1">
+                            {optIn.role === 'tutor'
+                                ? `Čekáš na tutea pro ${courseCode}`
+                                : `Čekáš na spárování pro ${courseCode}`}
+                        </div>
                     </div>
-                ))}
+                    <button
+                        onClick={() => cancelOptIn(courseCode)}
+                        className="text-xs text-base-content/40 hover:text-error shrink-0 underline"
+                    >
+                        zrušit
+                    </button>
+                </div>
+            ))}
 
-                {suggestions.map(s => (
-                    <div key={s.courseCode} className="flex items-center justify-between py-1.5 text-sm">
-                        {s.role === 'tutor' ? (
-                            <span className="text-base-content/70">
-                                Mohl bys tutorit <span className="font-medium">{s.courseName}</span>
-                            </span>
-                        ) : (
-                            <span className="text-base-content/70">
-                                Dostupný tutor pro <span className="font-medium">{s.courseName}</span>?
-                            </span>
-                        )}
-                        <button
-                            onClick={() => s.role === 'tutor'
-                                ? optInStudyJam(s.courseCode, s.courseName, 'tutor')
-                                : requestTutorMatch(s.courseCode, s.courseName)
-                            }
-                            className="btn btn-xs btn-primary ml-2 shrink-0"
-                        >
-                            {s.role === 'tutor' ? 'Chci tutorit' : 'Hledat tutora'}
-                        </button>
+            {suggestions.map(s => (
+                <button
+                    key={s.courseCode}
+                    onClick={() => openModal(s)}
+                    className="w-full p-4 hover:bg-base-200 transition-colors text-left flex items-center gap-3 border-b border-base-300"
+                >
+                    <ReisAvatar />
+                    <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm text-base-content line-clamp-1">
+                            {s.role === 'tutor'
+                                ? `Zvládl jsi ${s.courseName} levou zadní?`
+                                : `Chceš doučko z ${s.courseName}?`}
+                        </div>
                     </div>
-                ))}
+                </button>
+            ))}
+        </>
+    );
+}
+
+function ReisAvatar() {
+    return (
+        <div className="flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-black/5">
+                <img src={MENDELU_LOGO_PATH} alt="reIS" className="w-[1.6rem] h-[1.6rem] object-contain ml-0.5" />
             </div>
         </div>
     );

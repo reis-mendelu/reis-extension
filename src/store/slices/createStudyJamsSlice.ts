@@ -1,6 +1,6 @@
 import type { AppSlice, StudyJamsSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
-import { fetchKillerCourses, registerAvailability, findAndClaimTutor, deleteAvailability, fetchMyTutoringMatch } from '../../api/studyJams';
+import { fetchKillerCourses, registerAvailability, deleteAvailability, fetchMyTutoringMatch } from '../../api/studyJams';
 import { checkStudyJamEligibility } from '../../services/studyJams/studyJamEligibility';
 import { getUserParams } from '../../utils/userParams';
 
@@ -16,6 +16,8 @@ export const createStudyJamsSlice: AppSlice<StudyJamsSlice> = (set, get) => ({
     studyJamSuggestions: [],
     studyJamOptIns: {},
     studyJamMatch: null,
+    selectedStudyJamSuggestion: null,
+    setSelectedStudyJamSuggestion: (suggestion) => set({ selectedStudyJamSuggestion: suggestion }),
 
     loadStudyJamSuggestions: async () => {
         try {
@@ -50,7 +52,7 @@ export const createStudyJamsSlice: AppSlice<StudyJamsSlice> = (set, get) => ({
         }
     },
 
-    optInStudyJam: async (courseCode, courseName, role) => {
+    optInStudyJam: async (courseCode, _courseName, role) => {
         const userParams = await getUserParams();
         if (!userParams) return;
         const id = await registerAvailability(userParams.studium, courseCode, role, userParams.obdobi);
@@ -63,29 +65,6 @@ export const createStudyJamsSlice: AppSlice<StudyJamsSlice> = (set, get) => ({
         }));
     },
 
-    requestTutorMatch: async (courseCode, courseName) => {
-        const userParams = await getUserParams();
-        if (!userParams) return;
-        const tutorStudium = await findAndClaimTutor(courseCode, userParams.obdobi, userParams.studium);
-        if (tutorStudium) {
-            const optIns = { ...get().studyJamOptIns };
-            delete optIns[courseCode];
-            await IndexedDBService.set('meta', OPT_INS_KEY, optIns);
-            set({
-                studyJamMatch: { courseCode, courseName, otherPartyStudium: tutorStudium, myRole: 'tutee' },
-                studyJamOptIns: optIns,
-            });
-        } else {
-            const id = await registerAvailability(userParams.studium, courseCode, 'tutee', userParams.obdobi);
-            if (!id) return;
-            const optIns = { ...get().studyJamOptIns, [courseCode]: { id, role: 'tutee' as const } };
-            await IndexedDBService.set('meta', OPT_INS_KEY, optIns);
-            set(state => ({
-                studyJamOptIns: optIns,
-                studyJamSuggestions: state.studyJamSuggestions.filter(s => s.courseCode !== courseCode),
-            }));
-        }
-    },
 
     cancelOptIn: async (courseCode) => {
         const optIn = get().studyJamOptIns[courseCode];

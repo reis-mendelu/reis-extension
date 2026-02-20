@@ -49,12 +49,13 @@ export function TutoringMatchCard() {
                             <ExternalLink size={11} />
                             Napsat na Teams
                         </a>
-                        <button
+                        {/* TODO: Re-enable when feedback/scheduling view is ready */}
+                        {false && <button
                             onClick={() => setIsStudyJamOpen(true)}
                             className="btn btn-xs btn-outline gap-1"
                         >
                             Naplánovat schůzku →
-                        </button>
+                        </button>}
                     </div>
                     <div className="mt-2 space-y-1">
                         {checklistItems.map((label, i) => (

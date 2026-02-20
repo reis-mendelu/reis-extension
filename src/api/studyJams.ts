@@ -30,26 +30,6 @@ export async function registerAvailability(
     return (data as { id: string } | null)?.id ?? null;
 }
 
-export async function findAndClaimTutor(
-    course_code: string,
-    semester_id: string,
-    tutee_studium: string,
-): Promise<string | null> {
-    const { data: tutors, error } = await supabase
-        .from('study_jam_availability')
-        .select('id, studium')
-        .eq('course_code', course_code)
-        .eq('semester_id', semester_id)
-        .eq('role', 'tutor')
-        .neq('studium', tutee_studium)
-        .limit(1);
-    if (error || !tutors || tutors.length === 0) return null;
-    const tutor = tutors[0] as { id: string; studium: string };
-    await supabase.from('study_jam_availability').delete().eq('id', tutor.id);
-    await insertTutoringMatch(tutor.studium, tutee_studium, course_code, semester_id);
-    return tutor.studium;
-}
-
 export async function insertTutoringMatch(
     tutor_studium: string,
     tutee_studium: string,

@@ -4,8 +4,6 @@ import { trackNotificationClick } from '../../services/spolky';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { SpolekNotification } from '../../services/spolky';
 import { StudyJamSuggestions } from '../StudyJams/StudyJamSuggestions';
-import { useAppStore } from '../../store/useAppStore';
-import { MENDELU_LOGO_PATH } from '../../constants/icons';
 
 interface NotificationDropdownProps {
   notifications: SpolekNotification[];
@@ -24,26 +22,7 @@ export function NotificationDropdown({ notifications, loading, onClose, onVisibl
         <button onClick={onClose} className="p-1 hover:bg-base-300 rounded"><X size={16} /></button>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <button 
-          onClick={() => {
-            useAppStore.getState().setIsStudyJamOpen(true);
-            onClose();
-          }}
-          className="w-full p-4 hover:bg-base-200 transition-colors text-left flex items-center gap-3 border-b border-base-300"
-        >
-          <div className="flex-shrink-0">
-             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-black/5">
-                 <img src={MENDELU_LOGO_PATH} alt="reIS" className="w-[1.6rem] h-[1.6rem] object-contain ml-0.5" />
-             </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <div className="font-semibold text-sm text-base-content line-clamp-1 flex-1">Zvládl jsi algo levou zadní?</div>
-              <div className="text-sm text-base-content flex-shrink-0 opacity-60">Dnes</div>
-            </div>
-          </div>
-        </button>
-        <StudyJamSuggestions />
+        <StudyJamSuggestions onClose={onClose} />
         {(loading && !notifications.length) ? <div className="p-4 text-center text-base-content/60">{t('notifications.loading')}</div> :
          !notifications.length ? <div className="p-8 text-center text-base-content/60"><Bell size={48} className="mx-auto mb-2 opacity-40" /><p>{t('notifications.empty')}</p></div> :
           <div className="divide-y divide-base-300">
