@@ -46,7 +46,40 @@ export async function findAndClaimTutor(
     if (error || !tutors || tutors.length === 0) return null;
     const tutor = tutors[0] as { id: string; studium: string };
     await supabase.from('study_jam_availability').delete().eq('id', tutor.id);
+    await insertTutoringMatch(tutor.studium, tutee_studium, course_code, semester_id);
     return tutor.studium;
+}
+
+export async function insertTutoringMatch(
+    tutor_studium: string,
+    tutee_studium: string,
+    course_code: string,
+    semester_id: string,
+): Promise<void> {
+    const { error } = await supabase
+        .from('tutoring_matches')
+        .insert({ tutor_studium, tutee_studium, course_code, semester_id });
+    if (error) {
+        console.error('[studyJams] insertTutoringMatch error', error);
+    }
+}
+
+export async function fetchMyTutoringMatch(
+    studium: string,
+    semester_id: string,
+): Promise<{ tutor_studium: string; tutee_studium: string; course_code: string } | null> {
+    const { data, error } = await supabase
+        .from('tutoring_matches')
+        .select('tutor_studium, tutee_studium, course_code')
+        .eq('semester_id', semester_id)
+        .or(`tutor_studium.eq.${studium},tutee_studium.eq.${studium}`)
+        .limit(1)
+        .maybeSingle();
+    if (error) {
+        console.error('[studyJams] fetchMyTutoringMatch error', error);
+        return null;
+    }
+    return data as { tutor_studium: string; tutee_studium: string; course_code: string } | null;
 }
 
 export async function deleteAvailability(id: string): Promise<void> {

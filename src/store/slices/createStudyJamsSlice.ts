@@ -1,6 +1,6 @@
 import type { AppSlice, StudyJamsSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
-import { fetchKillerCourses, registerAvailability, findAndClaimTutor, deleteAvailability } from '../../api/studyJams';
+import { fetchKillerCourses, registerAvailability, findAndClaimTutor, deleteAvailability, fetchMyTutoringMatch } from '../../api/studyJams';
 import { checkStudyJamEligibility } from '../../services/studyJams/studyJamEligibility';
 import { getUserParams } from '../../utils/userParams';
 
@@ -19,10 +19,30 @@ export const createStudyJamsSlice: AppSlice<StudyJamsSlice> = (set, get) => ({
 
     loadStudyJamSuggestions: async () => {
         try {
-            const killerCourses = await fetchKillerCourses();
-            const suggestions = await checkStudyJamEligibility(killerCourses);
-            const storedOptIns = await IndexedDBService.get('meta', OPT_INS_KEY) as StudyJamsSlice['studyJamOptIns'] | null;
+            const userParams = await getUserParams();
+            const [killerCourses, storedOptIns] = await Promise.all([
+                fetchKillerCourses(),
+                IndexedDBService.get('meta', OPT_INS_KEY) as Promise<StudyJamsSlice['studyJamOptIns'] | null>,
+            ]);
             const optIns = storedOptIns ?? {};
+
+            if (userParams) {
+                const existingMatch = await fetchMyTutoringMatch(userParams.studium, userParams.obdobi);
+                if (existingMatch) {
+                    const myRole = existingMatch.tutor_studium === userParams.studium ? 'tutor' : 'tutee';
+                    const otherPartyStudium = myRole === 'tutor' ? existingMatch.tutee_studium : existingMatch.tutor_studium;
+                    const killerCourse = killerCourses.find(kc => kc.course_code === existingMatch.course_code);
+                    const courseName = killerCourse?.course_name ?? existingMatch.course_code;
+                    set({
+                        studyJamMatch: { courseCode: existingMatch.course_code, courseName, otherPartyStudium, myRole },
+                        studyJamOptIns: optIns,
+                        studyJamSuggestions: [],
+                    });
+                    return;
+                }
+            }
+
+            const suggestions = await checkStudyJamEligibility(killerCourses);
             const filtered = suggestions.filter(s => !optIns[s.courseCode]);
             set({ studyJamSuggestions: filtered, studyJamOptIns: optIns });
         } catch (e) {
@@ -52,7 +72,7 @@ export const createStudyJamsSlice: AppSlice<StudyJamsSlice> = (set, get) => ({
             delete optIns[courseCode];
             await IndexedDBService.set('meta', OPT_INS_KEY, optIns);
             set({
-                studyJamMatch: { courseCode, courseName },
+                studyJamMatch: { courseCode, courseName, otherPartyStudium: tutorStudium, myRole: 'tutee' },
                 studyJamOptIns: optIns,
             });
         } else {

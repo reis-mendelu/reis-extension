@@ -28,17 +28,14 @@ export async function checkStudyJamEligibility(
     const suggestions: StudyJamSuggestion[] = [];
     const suggested = new Set<string>();
 
-    // --- Tutor check: A/B/C grade in most recent period ---
+    // --- Tutor check: A/B grade in last 2 semesters ---
     const gradeHistory = await IndexedDBService.get('grade_history', 'all') as GradeHistory | null;
     if (gradeHistory?.grades?.length) {
-        let maxScore = -1;
+        const top2Scores = [...new Set(gradeHistory.grades.map(g => parsePeriodScore(g.period)))]
+            .sort((a, b) => b - a).slice(0, 2);
         for (const grade of gradeHistory.grades) {
-            const score = parsePeriodScore(grade.period);
-            if (score > maxScore) maxScore = score;
-        }
-        for (const grade of gradeHistory.grades) {
-            if (parsePeriodScore(grade.period) !== maxScore) continue;
-            if (!['A', 'B', 'C'].includes(grade.gradeLetter)) continue;
+            if (!top2Scores.includes(parsePeriodScore(grade.period))) continue;
+            if (!['A', 'B'].includes(grade.gradeLetter)) continue;
             if (!grade.courseCode) continue;
             const courseName = killerMap.get(grade.courseCode);
             if (!courseName) continue;

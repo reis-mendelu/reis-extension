@@ -1,5 +1,6 @@
-import { BookOpen, X } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { TutoringMatchCard } from './TutoringMatchCard';
 
 export function StudyJamSuggestions() {
     const suggestions = useAppStore(s => s.studyJamSuggestions);
@@ -8,7 +9,6 @@ export function StudyJamSuggestions() {
     const optInStudyJam = useAppStore(s => s.optInStudyJam);
     const requestTutorMatch = useAppStore(s => s.requestTutorMatch);
     const cancelOptIn = useAppStore(s => s.cancelOptIn);
-    const dismissStudyJamMatch = useAppStore(s => s.dismissStudyJamMatch);
 
     const optInEntries = Object.entries(optIns);
     const hasContent = suggestions.length > 0 || optInEntries.length > 0 || match !== null;
@@ -23,16 +23,7 @@ export function StudyJamSuggestions() {
                     Study Jams
                 </p>
 
-                {match && (
-                    <div className="flex items-center justify-between bg-success/15 border border-success/30 rounded-lg px-3 py-2 mb-2 text-sm">
-                        <span className="font-medium">
-                            Tutor nalezen pro <span className="font-bold">{match.courseName}</span>! Admin tě brzy spojí.
-                        </span>
-                        <button onClick={dismissStudyJamMatch} className="opacity-60 hover:opacity-100 ml-2">
-                            <X size={14} />
-                        </button>
-                    </div>
-                )}
+                {match && <TutoringMatchCard />}
 
                 {optInEntries.map(([courseCode, optIn]) => (
                     <div key={courseCode} className="flex items-center justify-between py-1.5 text-sm">
