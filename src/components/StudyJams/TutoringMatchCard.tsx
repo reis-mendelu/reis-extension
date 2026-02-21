@@ -22,7 +22,7 @@ export function TutoringMatchCard() {
     if (!match) return null;
 
     const isTutee = match.myRole === 'tutee';
-    const teamsUrl = `https://teams.microsoft.com/l/chat/0/0?users=${match.otherPartyStudium}@mendelu.cz`;
+    const teamsUrl = 'https://teams.microsoft.com';
     const displayName = resolvedName ?? match.otherPartyStudium;
 
     const checklistItems = isTutee
