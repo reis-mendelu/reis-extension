@@ -17,7 +17,6 @@ interface NotificationDropdownProps {
 export function NotificationDropdown({ notifications, loading, onClose, onVisible, dropdownRef }: NotificationDropdownProps) {
   const { t } = useTranslation();
   const hasStudyJamContent = useAppStore(s => s.studyJamSuggestions.length > 0 || Object.keys(s.studyJamOptIns).length > 0 || s.studyJamMatch !== null);
-  const loadStudyJamSuggestions = useAppStore(s => s.loadStudyJamSuggestions);
   return (
     <div ref={dropdownRef} className="absolute right-0 top-12 z-50 w-96 bg-base-100 border border-base-300 rounded-lg shadow-xl max-h-[320px] overflow-hidden flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 border-b border-base-300">
@@ -33,12 +32,8 @@ export function NotificationDropdown({ notifications, loading, onClose, onVisibl
               <NotificationItem key={n.id} notification={n} onVisible={() => onVisible(n.id)}
                 onClick={() => {
                   if (!n.associationId?.startsWith('academic_')) trackNotificationClick(n.id);
-                  if (n.link === 'study-jam-match') {
-                    loadStudyJamSuggestions();
-                  } else {
-                    if (n.link) window.open(n.link, '_blank');
-                    onClose();
-                  }
+                  if (n.link) window.open(n.link, '_blank');
+                  onClose();
                 }} />
             ))}
           </div>
