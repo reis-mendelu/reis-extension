@@ -11,7 +11,7 @@ interface NotificationDropdownProps {
   loading: boolean;
   onClose: () => void;
   onVisible: (id: string) => void;
-  dropdownRef: React.RefObject<HTMLDivElement>;
+  dropdownRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export function NotificationDropdown({ notifications, loading, onClose, onVisible, dropdownRef }: NotificationDropdownProps) {

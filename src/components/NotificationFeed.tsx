@@ -2,9 +2,15 @@ import { useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { useNotificationFeed } from '../hooks/useNotificationFeed';
 import { NotificationDropdown } from './Notifications/NotificationDropdown';
+import { useAppStore } from '../store/useAppStore';
 
 export function NotificationFeed({ className = '' }: { className?: string }) {
   const { isOpen, setIsOpen, notifications, loading, readIds, toggle, markVisible } = useNotificationFeed();
+  const loadStudyJamSuggestions = useAppStore(s => s.loadStudyJamSuggestions);
+
+  useEffect(() => {
+    if (isOpen) loadStudyJamSuggestions();
+  }, [isOpen]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
