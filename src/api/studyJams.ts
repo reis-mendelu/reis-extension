@@ -44,12 +44,11 @@ export async function insertTutoringMatch(
 
 export async function fetchMyTutoringMatch(
     studium: string,
-    semester_id: string,
+    _semester_id?: string,
 ): Promise<{ tutor_studium: string; tutee_studium: string; course_code: string } | null> {
     const { data, error } = await supabase
         .from('tutoring_matches')
         .select('tutor_studium, tutee_studium, course_code')
-        .eq('semester_id', semester_id)
         .or(`tutor_studium.eq.${studium},tutee_studium.eq.${studium}`)
         .limit(1)
         .maybeSingle();
