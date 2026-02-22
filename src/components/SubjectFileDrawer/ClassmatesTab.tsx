@@ -17,7 +17,15 @@ export function ClassmatesTab({ courseCode, skupinaId: propsSkupinaId }: Classma
     const subjectInfo = useAppStore(state => state.subjects?.data?.[courseCode]);
     const skupinaId = propsSkupinaId || subjectInfo?.skupinaId;
     
-    const [filter, setFilter] = useState<'all' | 'seminar'>(() => skupinaId ? 'seminar' : 'all');
+    // Derive default filter reactively so it updates when skupinaId loads asynchronously.
+    // Once the user manually clicks a tab, their choice takes precedence.
+    // Wait for Cvičení fetch to complete before auto-switching to avoid showing
+    // Všichni data briefly while Cvičení is still in flight.
+    const isSeminarReady = useAppStore(state =>
+        !!skupinaId && state.classmatesSeminarProgress[courseCode] === 'success'
+    );
+    const [userFilter, setUserFilter] = useState<'all' | 'seminar' | null>(null);
+    const filter = userFilter ?? (isSeminarReady ? 'seminar' : 'all');
     const [searchQuery, setSearchQuery] = useState('');
     const { classmates, isLoading } = useClassmates(courseCode, filter);
 
@@ -55,14 +63,14 @@ export function ClassmatesTab({ courseCode, skupinaId: propsSkupinaId }: Classma
                     <div className="join bg-base-200 p-1 rounded-lg h-10 flex">
                         <button
                             className={`join-item btn btn-xs sm:btn-sm border-none h-full ${filter === 'all' ? 'bg-base-100 shadow-sm text-primary' : 'bg-transparent text-base-content/60 hover:text-base-content/80'}`}
-                            onClick={() => setFilter('all')}
+                            onClick={() => setUserFilter('all')}
                         >
                             <Users size={16} className="mr-2" />
                             {translate('classmates.all', 'Všichni')}
                         </button>
                         <button
                             className={`join-item btn btn-xs sm:btn-sm border-none h-full ${filter === 'seminar' ? 'bg-base-100 shadow-sm text-primary' : 'bg-transparent text-base-content/60 hover:text-base-content/80'}`}
-                            onClick={() => setFilter('seminar')}
+                            onClick={() => setUserFilter('seminar')}
                         >
                             <UserRound size={16} className="mr-2" />
                             {translate('classmates.seminar', 'Cvičení')}
