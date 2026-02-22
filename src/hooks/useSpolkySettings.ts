@@ -21,11 +21,11 @@ export function useSpolkySettings() {
               
               if (userParams) {
                   const defaults: string[] = [];
-                  const facultyId = userParams.facultyId;
+                  const facultyLabel = userParams.facultyLabel;
                   const erasmus = userParams.isErasmus;
 
-                  if (facultyId && FACULTY_TO_ASSOCIATION[facultyId] && !erasmus) {
-                    defaults.push(FACULTY_TO_ASSOCIATION[facultyId]);
+                  if (facultyLabel && FACULTY_TO_ASSOCIATION[facultyLabel] && !erasmus) {
+                    defaults.push(FACULTY_TO_ASSOCIATION[facultyLabel]);
                   }
                   
                   if (erasmus) {

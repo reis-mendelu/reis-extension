@@ -12,4 +12,3 @@ export const mojeStudium: PageCategory = {
         ...mojeStudiumItemsPart2
     ]
 };
-

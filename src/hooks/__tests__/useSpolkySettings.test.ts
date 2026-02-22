@@ -20,18 +20,18 @@ vi.mock('../../services/storage', () => ({
 // FACULTY_TO_ASSOCIATION: '1'->af, '2'->supef, '3'->au_frrms, '4'->zf, '5'->ldf
 vi.mock('../../services/spolky/config', () => ({
   FACULTY_TO_ASSOCIATION: {
-    '1': 'af',
-    '2': 'supef',
-    '3': 'au_frrms',
-    '4': 'zf',
-    '5': 'ldf',
+    'AF': 'af',
+    'PEF': 'supef',
+    'FRRMS': 'au_frrms',
+    'ZF': 'zf',
+    'LDF': 'ldf',
   },
 }));
 
-function makeUser(facultyId: string | null, isErasmus: boolean) {
-  return facultyId
-    ? { studium: 's', obdobi: 'o', facultyId, username: 'u', studentId: 'id', fullName: 'Test', isErasmus }
-    : { studium: 's', obdobi: 'o', facultyId: '', username: 'u', studentId: 'id', fullName: 'Test', isErasmus };
+function makeUser(facultyLabel: string | null, isErasmus: boolean) {
+  return facultyLabel
+    ? { studium: 's', obdobi: 'o', facultyId: '', facultyLabel, username: 'u', studentId: 'id', fullName: 'Test', isErasmus }
+    : { studium: 's', obdobi: 'o', facultyId: '', facultyLabel: '', username: 'u', studentId: 'id', fullName: 'Test', isErasmus };
 }
 
 beforeEach(() => {
@@ -49,13 +49,13 @@ describe('fresh user — faculty auto-subscription', () => {
   });
 
   it.each([
-    ['AF',     '1', 'af'],
-    ['PEF',    '2', 'supef'],
-    ['AU/FRRMS', '3', 'au_frrms'],
-    ['ZF',     '4', 'zf'],
-    ['LDF',    '5', 'ldf'],
-  ])('%s faculty → subscribes to %s', async (_label, facultyId, expected) => {
-    mockGetUserParams.mockResolvedValue(makeUser(facultyId, false));
+    ['AF',     'AF',    'af'],
+    ['PEF',    'PEF',   'supef'],
+    ['AU/FRRMS', 'FRRMS', 'au_frrms'],
+    ['ZF',     'ZF',    'zf'],
+    ['LDF',    'LDF',   'ldf'],
+  ])('%s faculty → subscribes to %s', async (_label, facultyLabel, expected) => {
+    mockGetUserParams.mockResolvedValue(makeUser(facultyLabel, false));
 
     const { result } = renderHook(() => useSpolkySettings());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -64,7 +64,7 @@ describe('fresh user — faculty auto-subscription', () => {
   });
 
   it('Erasmus with a faculty ID → ESN only, no faculty association', async () => {
-    mockGetUserParams.mockResolvedValue(makeUser('1', true));
+    mockGetUserParams.mockResolvedValue(makeUser('AF', true));
 
     const { result } = renderHook(() => useSpolkySettings());
     await waitFor(() => expect(result.current.isLoading).toBe(false));

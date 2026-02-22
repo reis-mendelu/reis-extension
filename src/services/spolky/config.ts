@@ -1,14 +1,15 @@
 import type { AssociationProfile } from './types';
 
 /**
- * Mapping of faculty IDs to their corresponding student associations
+ * Mapping of faculty labels (found in study details) to their corresponding student associations
  */
 export const FACULTY_TO_ASSOCIATION: Record<string, string> = {
-  '2': 'supef',     // PEF
-  '3': 'au_frrms',  // FRRMS
-  '1': 'af',        // AF (Agronomická fakulta)
-  '4': 'zf',        // ZF (Zahradnická fakulta)
-  '5': 'ldf',       // LDF (Lesnická a dřevařská fakulta)
+  'PEF': 'supef',
+  'FRRMS': 'au_frrms',
+  'AF': 'af',
+  'ZF': 'zf',
+  'LDF': 'ldf',
+  'ICV': 'icv',
 };
 
 /**

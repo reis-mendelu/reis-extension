@@ -27,7 +27,7 @@ export async function fetchUserBaseIds() {
 
 export async function fetchUserStudyDetails() {
     const res = await fetchWithAuth(`${BASE_URL}/auth/student/moje_studium.pl?lang=cz`), h = await res.text();
-    const fm = h.match(/fakulta=(\d+)/), doc = new DOMParser().parseFromString(h, 'text/html'), t = doc.querySelector('#titulek');
+    const doc = new DOMParser().parseFromString(h, 'text/html'), t = doc.querySelector('#titulek');
     let sc = '', fl, sp, sf, ss, sy, pl;
     if (t) {
         const b = t.querySelectorAll('b');
@@ -38,7 +38,7 @@ export async function fetchUserStudyDetails() {
         }
         if (b.length > 1) pl = b[1].textContent?.trim().split(' - ')[0] || '';
     }
-    return { facultyId: fm ? fm[1] : '2', studyCode: sc, facultyLabel: fl, studyProgram: sp, studyForm: sf, studySemester: ss, studyYear: sy, periodLabel: pl };
+    return { facultyId: '', facultyLabel: fl, studyCode: sc, studyProgram: sp, studyForm: sf, studySemester: ss, studyYear: sy, periodLabel: pl };
 }
 
 export async function fetchUserNetId() {
