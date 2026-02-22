@@ -13,6 +13,7 @@ export function StudyJamModal({ isOpen, onClose }: StudyJamModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const suggestion = useAppStore(s => s.selectedStudyJamSuggestion);
   const optInStudyJam = useAppStore(s => s.optInStudyJam);
+  const dismissSuggestion = useAppStore(s => s.dismissStudyJamSuggestion);
   const setSelected = useAppStore(s => s.setSelectedStudyJamSuggestion);
 
   const handleClose = () => {
@@ -27,6 +28,12 @@ export function StudyJamModal({ isOpen, onClose }: StudyJamModalProps) {
     await optInStudyJam(suggestion.courseCode, suggestion.courseName, suggestion.role);
     setIsSubmitting(false);
     setState('success');
+  };
+
+  const handleDismiss = async () => {
+    if (!suggestion) return;
+    await dismissSuggestion(suggestion.courseCode);
+    handleClose();
   };
 
   const isTutor = suggestion?.role === 'tutor';
@@ -89,13 +96,21 @@ export function StudyJamModal({ isOpen, onClose }: StudyJamModalProps) {
                       )}
                     </div>
 
-                    <button
-                      onClick={handleOptIn}
-                      disabled={isSubmitting}
-                      className="btn btn-primary w-full text-white font-bold h-12 rounded-xl border-none mt-2"
-                    >
-                      {isSubmitting ? <span className="loading loading-spinner loading-sm"></span> : 'Jdu do toho!'}
-                    </button>
+                    <div className="flex gap-3 mt-2">
+                        <button 
+                          onClick={handleDismiss}
+                          className="btn bg-[#374151] hover:bg-[#4b5563] text-gray-200 border-none flex-1 h-12 rounded-xl"
+                        >
+                          Nemám zájem
+                        </button>
+                        <button
+                          onClick={handleOptIn}
+                          disabled={isSubmitting}
+                          className="btn btn-primary flex-[1.5] text-white font-bold h-12 rounded-xl border-none"
+                        >
+                          {isSubmitting ? <span className="loading loading-spinner loading-sm"></span> : 'Jdu do toho!'}
+                        </button>
+                    </div>
                   </motion.div>
                 )}
 

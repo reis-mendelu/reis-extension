@@ -118,10 +118,12 @@ export interface StudyJamsSlice {
     studyJamSuggestions: StudyJamSuggestion[];
     studyJamOptIns: Record<string, { role: 'tutor' | 'tutee' }>;
     studyJamMatch: { courseCode: string; courseName: string; otherPartyStudentId: string; myRole: 'tutor' | 'tutee' } | null;
+    studyJamDismissals: Record<string, boolean>;
     selectedStudyJamSuggestion: StudyJamSuggestion | null;
     setSelectedStudyJamSuggestion: (suggestion: StudyJamSuggestion | null) => void;
     loadStudyJamSuggestions: () => Promise<void>;
     optInStudyJam: (courseCode: string, courseName: string, role: 'tutor' | 'tutee') => Promise<void>;
+    dismissStudyJamSuggestion: (courseCode: string) => Promise<void>;
     cancelOptIn: (courseCode: string) => Promise<void>;
     dismissStudyJamMatch: () => void;
 }

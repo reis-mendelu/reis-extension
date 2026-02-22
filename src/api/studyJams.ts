@@ -77,3 +77,29 @@ export async function fetchMyAvailability(studentId: string): Promise<{ course_c
 export async function deleteAvailability(studentId: string, course_code: string): Promise<void> {
     await supabase.from('study_jam_availability').delete().eq('student_id', studentId).eq('course_code', course_code);
 }
+
+export async function dismissStudyJam(studentId: string, courseCode: string, semesterId: string): Promise<boolean> {
+    const { error } = await supabase
+        .from('study_jam_dismissals')
+        .upsert(
+            { student_id: studentId, course_code: courseCode, semester_id: semesterId },
+            { onConflict: 'student_id, course_code, semester_id' }
+        );
+    if (error) {
+        console.error('[studyJams] dismissStudyJam error', error);
+        return false;
+    }
+    return true;
+}
+
+export async function fetchMyDismissals(studentId: string): Promise<string[]> {
+    const { data, error } = await supabase
+        .from('study_jam_dismissals')
+        .select('course_code')
+        .eq('student_id', studentId);
+    if (error) {
+        console.error('[studyJams] fetchMyDismissals error', error);
+        return [];
+    }
+    return (data as { course_code: string }[] ?? []).map(r => r.course_code);
+}

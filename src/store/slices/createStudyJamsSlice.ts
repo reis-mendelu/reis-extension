@@ -21,6 +21,7 @@ export const createStudyJamsSlice: AppSlice<StudyJamsSlice> = (set, get) => ({
     studyJamSuggestions: [],
     studyJamOptIns: {},
     studyJamMatch: null,
+    studyJamDismissals: {},
     selectedStudyJamSuggestion: null,
     setSelectedStudyJamSuggestion: (suggestion) => set({ selectedStudyJamSuggestion: suggestion }),
 
@@ -32,29 +33,32 @@ export const createStudyJamsSlice: AppSlice<StudyJamsSlice> = (set, get) => ({
         _loadInFlight = (async () => {
             try {
                 const userParams = await getUserParams();
-                const [killerCourses, storedOptIns] = await Promise.all([
+                const [killerCourses, storedOptIns, storedDismissals] = await Promise.all([
                     fetchKillerCourses(),
                     IndexedDBService.get('meta', OPT_INS_KEY) as Promise<StudyJamsSlice['studyJamOptIns'] | null>,
+                    IndexedDBService.get('meta', 'study_jam_dismissals') as Promise<Record<string, boolean> | null>,
                 ]);
                 const optIns = storedOptIns ?? {};
+                const dismissals = storedDismissals ?? {};
 
                 // Reconcile: ensure local opt-ins match the server exactly
                 if (userParams) {
-                    const serverAvail = await fetchMyAvailability(userParams.studentId);
-                    console.debug('[StudyJamsSlice] Server availability records found:', serverAvail.length);
+                    const [serverAvail, serverDismissals] = await Promise.all([
+                        fetchMyAvailability(userParams.studentId),
+                        fetchMyDismissals(userParams.studentId),
+                    ]);
+                    console.debug('[StudyJamsSlice] Server data found:', { avail: serverAvail.length, dismissals: serverDismissals.length });
                     
                     const serverCodes = new Set(serverAvail.map(a => a.course_code));
                     let changed = false;
 
-                    // 1. Add missing opt-ins from the server to local cache
+                    // 1. Reconcile opt-ins
                     for (const avail of serverAvail) {
                         if (!optIns[avail.course_code]) {
                             optIns[avail.course_code] = { role: avail.role };
                             changed = true;
                         }
                     }
-
-                    // 2. Remove local opt-ins that no longer exist on the server
                     for (const code of Object.keys(optIns)) {
                         if (!serverCodes.has(code)) {
                             delete optIns[code];
@@ -62,8 +66,27 @@ export const createStudyJamsSlice: AppSlice<StudyJamsSlice> = (set, get) => ({
                         }
                     }
 
+                    // 2. Reconcile dismissals
+                    let dismissalsChanged = false;
+                    const serverDismissalSet = new Set(serverDismissals);
+                    for (const code of serverDismissals) {
+                        if (!dismissals[code]) {
+                            dismissals[code] = true;
+                            dismissalsChanged = true;
+                        }
+                    }
+                    for (const code of Object.keys(dismissals)) {
+                        if (!serverDismissalSet.has(code)) {
+                            delete dismissals[code];
+                            dismissalsChanged = true;
+                        }
+                    }
+
                     if (changed) {
                         await IndexedDBService.set('meta', OPT_INS_KEY, optIns);
+                    }
+                    if (dismissalsChanged) {
+                        await IndexedDBService.set('meta', 'study_jam_dismissals', dismissals);
                     }
                 }
 
@@ -79,20 +102,22 @@ export const createStudyJamsSlice: AppSlice<StudyJamsSlice> = (set, get) => ({
                         set({
                             studyJamMatch: { courseCode: existingMatch.course_code, courseName, otherPartyStudentId, myRole },
                             studyJamOptIns: optIns,
+                            studyJamDismissals: dismissals,
                         });
                     } else {
-                        set({ studyJamMatch: null });
+                        set({ studyJamMatch: null, studyJamDismissals: dismissals });
                     }
                 }
 
                 const suggestions = await checkStudyJamEligibility(killerCourses);
                 
-                // Filter out any courses they've opted into, or that they are already matched for
+                // Filter out any courses they've opted into, that they are already matched for, or that they've dismissed
                 const filtered = suggestions.filter(s => {
                     const isOptedIn = !!optIns[s.courseCode];
                     const isMatched = s.courseCode === matchCourseCode;
-                    if (isOptedIn || isMatched) {
-                        console.debug(`[StudyJamsSlice] Filtering out ${s.courseCode}: isOptedIn=${isOptedIn}, isMatched=${isMatched}`);
+                    const isDismissed = !!dismissals[s.courseCode];
+                    if (isOptedIn || isMatched || isDismissed) {
+                        console.debug(`[StudyJamsSlice] Filtering out ${s.courseCode}: isOptedIn=${isOptedIn}, isMatched=${isMatched}, isDismissed=${isDismissed}`);
                         return false;
                     }
                     return true;
@@ -100,7 +125,7 @@ export const createStudyJamsSlice: AppSlice<StudyJamsSlice> = (set, get) => ({
                 
                 console.debug(`[StudyJamsSlice] Final UI suggestions:`, filtered);
 
-                set({ studyJamSuggestions: filtered, studyJamOptIns: optIns });
+                set({ studyJamSuggestions: filtered, studyJamOptIns: optIns, studyJamDismissals: dismissals });
             } catch (e) {
                 console.error('[StudyJamsSlice] loadStudyJamSuggestions error', e);
             } finally {
@@ -121,6 +146,20 @@ export const createStudyJamsSlice: AppSlice<StudyJamsSlice> = (set, get) => ({
             studyJamOptIns: optIns,
             studyJamSuggestions: state.studyJamSuggestions.filter(s => s.courseCode !== courseCode),
         }));
+    },
+
+    dismissStudyJamSuggestion: async (courseCode) => {
+        const userParams = await getUserParams();
+        if (!userParams) return;
+        // Optimization: UI update first
+        const dismissals = { ...get().studyJamDismissals, [courseCode]: true };
+        await IndexedDBService.set('meta', 'study_jam_dismissals', dismissals);
+        set(state => ({
+            studyJamDismissals: dismissals,
+            studyJamSuggestions: state.studyJamSuggestions.filter(s => s.courseCode !== courseCode),
+        }));
+        // Persist to server
+        await dismissStudyJam(userParams.studentId, courseCode, userParams.obdobi);
     },
 
     cancelOptIn: async (courseCode) => {
