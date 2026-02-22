@@ -3,8 +3,7 @@ import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
 import { syncService, outlookSyncService, syncGradeHistory } from '../services/sync';
 import { useOutlookSync } from '../hooks/data';
-import { fetchTutorials } from '../services/tutorials';
-import type { Tutorial } from '../services/tutorials';
+
 import { useSpolkySettings } from './useSpolkySettings';
 import { useAppStore, initializeStore } from '../store/useAppStore';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
@@ -30,8 +29,6 @@ export function useAppLogic() {
   const [currentView, setCurrentView] = useState<AppView>('calendar');
   const [selectedSubject, setSelectedSubject] = useState<SelectedSubject | null>(null);
   const [weekNavCount, setWeekNavCount] = useState(0);
-  const [tutorials, setTutorials] = useState<Tutorial[]>([]);
-  const [selectedTutorial, setSelectedTutorial] = useState<Tutorial | null>(null);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const openSettingsRef = useRef<(() => void) | null>(null);
   const { isEnabled: outlookSyncEnabled } = useOutlookSync();
@@ -56,10 +53,6 @@ export function useAppLogic() {
 
   useEffect(() => { IndexedDBService.set('meta', 'reis_current_week', currentDate.toISOString()); }, [currentDate]);
   useEffect(() => { IndexedDBService.set('meta', 'reis_current_view', currentView); }, [currentView]);
-
-  useEffect(() => {
-    fetchTutorials(subscribedAssociations).then(setTutorials).catch(e => console.error(e));
-  }, [subscribedAssociations]);
 
   useEffect(() => {
     // Skip iframe data sync when using mock data
@@ -163,5 +156,5 @@ export function useAppLogic() {
     setSelectedSubject({ courseCode, courseName: courseName || courseCode, courseId: courseId || '', id: `search-${courseCode}`, isFromSearch: true });
   };
 
-  return { currentDate, setCurrentDate, currentView, setCurrentView, selectedSubject, setSelectedSubject, weekNavCount, setWeekNavCount, tutorials, selectedTutorial, setSelectedTutorial, isFeedbackOpen, setIsFeedbackOpen, openSettingsRef, outlookSyncEnabled, handleOpenSubjectFromSearch };
+  return { currentDate, setCurrentDate, currentView, setCurrentView, selectedSubject, setSelectedSubject, weekNavCount, setWeekNavCount, isFeedbackOpen, setIsFeedbackOpen, openSettingsRef, outlookSyncEnabled, handleOpenSubjectFromSearch };
 }

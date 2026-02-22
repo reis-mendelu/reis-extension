@@ -14,16 +14,16 @@ export function TutoringMatchCard() {
     useEffect(() => {
         if (!match) return;
         setResolvedName(null);
-        searchPeople(match.otherPartyStudium).then(results => {
+        searchPeople(match.otherPartyStudentId).then(results => {
             if (results.length > 0) setResolvedName(results[0].name);
         });
-    }, [match?.otherPartyStudium]);
+    }, [match?.otherPartyStudentId]);
 
     if (!match) return null;
 
     const isTutee = match.myRole === 'tutee';
     const teamsUrl = 'https://teams.microsoft.com';
-    const displayName = resolvedName ?? match.otherPartyStudium;
+    const displayName = resolvedName ?? match.otherPartyStudentId;
 
     const checklistItems = isTutee
         ? ['Napsal/a jsem tutorovi na Teams', 'Potvrdili jsme čas schůzky']
@@ -49,13 +49,6 @@ export function TutoringMatchCard() {
                             <ExternalLink size={11} />
                             Napsat na Teams
                         </a>
-                        {/* TODO: Re-enable when feedback/scheduling view is ready */}
-                        {false && <button
-                            onClick={() => setIsStudyJamOpen(true)}
-                            className="btn btn-xs btn-outline gap-1"
-                        >
-                            Naplánovat schůzku →
-                        </button>}
                     </div>
                     <div className="mt-2 space-y-1">
                         {checklistItems.map((label, i) => (

@@ -117,7 +117,7 @@ export interface StudyJamsSlice {
     setPendingTimeSelection: (selection: { dayIndex: number; startMins: number; endMins: number; formattedTime: string } | null) => void;
     studyJamSuggestions: StudyJamSuggestion[];
     studyJamOptIns: Record<string, { role: 'tutor' | 'tutee' }>;
-    studyJamMatch: { courseCode: string; courseName: string; otherPartyStudium: string; myRole: 'tutor' | 'tutee' } | null;
+    studyJamMatch: { courseCode: string; courseName: string; otherPartyStudentId: string; myRole: 'tutor' | 'tutee' } | null;
     selectedStudyJamSuggestion: StudyJamSuggestion | null;
     setSelectedStudyJamSuggestion: (suggestion: StudyJamSuggestion | null) => void;
     loadStudyJamSuggestions: () => Promise<void>;

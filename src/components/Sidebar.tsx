@@ -9,19 +9,16 @@ import { useSubjects } from '../hooks/data/useSubjects';
 import { useUserParams } from '../hooks/useUserParams';
 import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from '../hooks/useTranslation';
-import type { Tutorial } from '../services/tutorials';
 import type { SubjectInfo } from '../types/documents';
 
 interface SidebarProps {
   currentView: AppView;
   onViewChange: (v: AppView) => void;
   onOpenFeedback?: () => void;
-  tutorials?: Tutorial[];
-  onSelectTutorial?: (t: Tutorial) => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string) => void;
 }
 
-export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, tutorials = [], onSelectTutorial, onOpenSubject }: SidebarProps) => {
+export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, onOpenSubject }: SidebarProps) => {
   const [hovered, setHovered] = useState<string | null>(null);
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { subjects } = useSubjects();
@@ -36,10 +33,6 @@ export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, tutorials =
 
   const menuItems = getMainMenuItems(params?.studium ?? '', params?.obdobi ?? '', t, language).map(item => {
     const p = { ...item };
-    if (item.id === 'tutorials' && tutorials.length > 0) {
-      p.expandable = true;
-      p.children = tutorials.map(tItem => ({ id: `tutorial-${tItem.id}`, label: tItem.title, subtitle: `${tItem.slides.length} ${t('sidebar.slides')}`, icon: <Layers className="w-4 h-4" />, isTutorial: true, tutorial: tItem }));
-    }
     if (item.id === 'subjects' && subjects) {
       p.expandable = true;
       const sortedSubjects = Object.values(subjects.data).sort((a: SubjectInfo, b: SubjectInfo) => {
@@ -98,7 +91,7 @@ export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, tutorials =
       </button>
       <div className="flex flex-col gap-3 w-full px-2">
         {menuItems.map(item => (
-          <NavItem key={item.id} item={item} isActive={(currentView === 'exams' && item.id === 'exams') || (currentView === 'calendar' && item.id === 'dashboard')} isHovered={hovered === item.id} onMouseEnter={() => handleEnter(item.id)} onMouseLeave={handleLeave} onClick={() => { if (item.id === 'dashboard') onViewChange('calendar'); else if (item.id === 'exams') onViewChange('exams'); else if (item.href) window.open(item.href, '_blank'); }} onViewChange={onViewChange} onSelectTutorial={onSelectTutorial} onOpenSubject={onOpenSubject} />
+          <NavItem key={item.id} item={item} isActive={(currentView === 'exams' && item.id === 'exams') || (currentView === 'calendar' && item.id === 'dashboard')} isHovered={hovered === item.id} onMouseEnter={() => handleEnter(item.id)} onMouseLeave={handleLeave} onClick={() => { if (item.id === 'dashboard') onViewChange('calendar'); else if (item.id === 'exams') onViewChange('exams'); else if (item.href) window.open(item.href, '_blank'); }} onViewChange={onViewChange} onOpenSubject={onOpenSubject} />
         ))}
       </div>
       <div className="flex-1" />

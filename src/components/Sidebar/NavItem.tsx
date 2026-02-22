@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, ExternalLink } from 'lucide-react';
 import type { MenuItem } from '../menuConfig';
 import type { AppView } from '../Sidebar';
-import type { Tutorial } from '../../services/tutorials/types';
+
 
 interface NavItemProps {
   item: MenuItem;
@@ -12,11 +12,10 @@ interface NavItemProps {
   onMouseLeave: () => void;
   onClick: () => void;
   onViewChange: (view: AppView) => void;
-  onSelectTutorial?: (tutorial: Tutorial) => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string) => void;
 }
 
-export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave, onClick, onViewChange, onSelectTutorial, onOpenSubject }: NavItemProps) {
+export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave, onClick, onViewChange, onOpenSubject }: NavItemProps) {
   return (
     <div
       className="relative group"
@@ -75,10 +74,6 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
                       e.preventDefault();
                       console.log('[NavItem] Triggering view change: study-program');
                       onViewChange('study-program');
-                    } else if (child.isTutorial && child.tutorial) {
-                      e.preventDefault();
-                      console.log(`[NavItem] Triggering tutorial: ${child.tutorial.title}`);
-                      onSelectTutorial?.(child.tutorial);
                     } else if (child.isSubject && child.courseCode) {
                       e.preventDefault();
                       console.log(`[NavItem] Opening subject drawer: ${child.courseCode}`);
@@ -99,7 +94,7 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
                       <span className="text-[10px] text-base-content/40 truncate">{child.subtitle}</span>
                     )}
                   </div>
-                  {!child.isFeature && !child.isTutorial && !child.isSubject && (
+                  {!child.isFeature && !child.isSubject && (
                     <ExternalLink className="w-3 h-3 text-base-content/30 group-hover/item:text-base-content/50" />
                   )}
                 </a>

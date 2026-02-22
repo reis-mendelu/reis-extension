@@ -1,8 +1,7 @@
 import { Settings, LogOut } from 'lucide-react';
-import type { Tutorial } from '../services/tutorials/types';
 import { mainItems } from './Menu/MainItems';
 
-export interface MenuItem { id: string; label: string; shortLabel?: string; popupLabel?: string; icon: React.ReactNode; expandable?: boolean; children?: { label: string; id: string; subtitle?: string; icon?: React.ReactNode; href?: string; isFeature?: boolean; isTutorial?: boolean; tutorial?: Tutorial; isSubject?: boolean; courseCode?: string; subjectId?: string; }[]; danger?: boolean; onClick?: () => void; href?: string; isFeature?: boolean; }
+export interface MenuItem { id: string; label: string; shortLabel?: string; popupLabel?: string; icon: React.ReactNode; expandable?: boolean; children?: { label: string; id: string; subtitle?: string; icon?: React.ReactNode; href?: string; isFeature?: boolean; isSubject?: boolean; courseCode?: string; subjectId?: string; }[]; danger?: boolean; onClick?: () => void; href?: string; isFeature?: boolean; }
 
 export const getMainMenuItems = (sid: string = '', oid: string = '', t: (key: string) => string, lang: string = 'cz'): MenuItem[] => mainItems(sid, oid, t, lang);
 

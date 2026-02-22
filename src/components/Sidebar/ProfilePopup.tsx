@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Moon, MessageSquarePlus, Languages } from 'lucide-react';
+import { Moon, MessageSquarePlus, Languages, Coffee } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useOutlookSync } from '../../hooks/data';
 import { useTheme } from '../../hooks/useTheme';
@@ -110,6 +110,12 @@ export function ProfilePopup({ isOpen, onOpenFeedback }: { isOpen: boolean; onOp
                     <span className="text-xs font-medium opacity-70">{t('settings.reportBug')}</span>
                 </button>
             )}
+            <a href="https://buymeacoffee.com/reis.mendelu" target="_blank" rel="noopener noreferrer" className="mt-2 mx-1 flex flex-col items-center gap-1.5 p-3 rounded-xl bg-base-200 border border-base-300 hover:border-primary/30 hover:bg-primary/5 transition-all text-center group shadow-sm">
+                <div className="flex items-center gap-2 text-primary font-bold text-sm">
+                    <Coffee size={16} className="group-hover:scale-110 transition-transform" />
+                    <span>{t('settings.buyCoffeeTitle')}</span>
+                </div>
+            </a>
         </div>
     </motion.div></AnimatePresence>
   );
