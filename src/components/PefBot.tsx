@@ -13,7 +13,6 @@ export function PefBot({ visible }: PefBotProps) {
     useEffect(() => {
         const handle = (e: MessageEvent) => {
             if (e.data?.type === 'PEFBOT_STATE') {
-                console.log('[PefBot] state from iframe:', e.data.state);
                 setChatOpen(e.data.state === 'open');
             }
         };
@@ -24,8 +23,6 @@ export function PefBot({ visible }: PefBotProps) {
     const size = chatOpen
         ? { width: '400px', height: '550px' }
         : { width: '70px', height: '70px' };
-
-    console.log('[PefBot] render, visible:', visible, 'chatOpen:', chatOpen);
 
     return (
         <iframe
@@ -39,8 +36,10 @@ export function PefBot({ visible }: PefBotProps) {
                 height: size.height,
                 background: 'transparent',
                 colorScheme: 'normal',
+                overflow: 'hidden',
             }}
             allow="microphone"
+            allowTransparency
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
         />
     );
