@@ -4,7 +4,10 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+// In a Chrome extension, `?url` resolves to a bare path like `/assets/pdf.worker.min-xxx.mjs`
+// which the browser resolves against the IS page origin (not the extension origin) and 404s.
+// chrome.runtime.getURL() gives the correct chrome-extension:// absolute URL.
+pdfjs.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL(workerUrl);
 
 interface PdfViewerProps {
     blobUrl: string;
