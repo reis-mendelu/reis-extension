@@ -21,8 +21,8 @@ export function PefBot({ visible }: PefBotProps) {
     }, []);
 
     const size = chatOpen
-        ? { width: '400px', height: '550px' }
-        : { width: '70px', height: '70px' };
+        ? { width: '420px', height: '600px' }
+        : { width: '280px', height: '55px' };
 
     return (
         <iframe
