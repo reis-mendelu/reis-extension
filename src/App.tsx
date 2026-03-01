@@ -5,9 +5,14 @@ import { getSmartWeekRange } from '@/utils/calendar'
 import { useAppLogic } from './hooks/useAppLogic'
 import { AppMain } from './components/AppMain'
 import { AppOverlays } from './components/AppOverlays'
+import { PefBot } from './components/PefBot'
+import { useUserParams } from './hooks/useUserParams'
 
 function App() {
   const s = useAppLogic();
+  const { params: userParams } = useUserParams();
+  const isPef = userParams?.facultyLabel === 'PEF';
+  const showPefBot = isPef && !s.selectedSubject && (s.currentView === 'calendar' || s.currentView === 'exams');
 
   const handlePrevWeek = () => { s.setCurrentDate(prev => { const d = new Date(prev); d.setDate(d.getDate() - 7); return d; }); s.setWeekNavCount(p => p + 1); };
   const handleNextWeek = () => { s.setCurrentDate(prev => { const d = new Date(prev); d.setDate(d.getDate() + 7); return d; }); s.setWeekNavCount(p => p + 1); };
@@ -37,6 +42,8 @@ function App() {
       <AppOverlays selectedSubject={s.selectedSubject} setSelectedSubject={s.setSelectedSubject}
                    isFeedbackOpen={s.isFeedbackOpen}
                    setIsFeedbackOpen={s.setIsFeedbackOpen} />
+
+      {isPef && <PefBot visible={showPefBot} />}
     </div>
   )
 }
