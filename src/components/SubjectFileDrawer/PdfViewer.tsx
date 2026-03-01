@@ -51,8 +51,14 @@ export function PdfViewer({ blobUrl, onClose }: PdfViewerProps) {
                     <button className="btn btn-ghost btn-xs btn-square" onClick={() => setScale(s => { const n = Math.min(3, s + 0.25); console.log('[PDF-DEBUG] scale:', n); return n; })}>
                         <ZoomIn size={14} />
                     </button>
+                    {numPages > 0 && (
+                        <>
+                            <span className="text-base-content/30 mx-1">·</span>
+                            <span className="text-xs text-base-content/70 font-mono">{numPages} pages</span>
+                        </>
+                    )}
                 </div>
-                <span className="text-xs text-base-content/50">{numPages > 0 && `${numPages} pages`}</span>
+                <div />
                 <button className="btn btn-ghost btn-xs btn-square" onClick={onClose}>
                     <X size={14} />
                 </button>
