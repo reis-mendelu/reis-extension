@@ -4,7 +4,7 @@
  * Renders the file grid with selection support.
  */
 
-import { Folder, Check, ExternalLink } from 'lucide-react';
+import { Folder, Check, ExternalLink, PanelRightOpen } from 'lucide-react';
 import type { FileListProps } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -69,9 +69,6 @@ export function FileList({
                                                 if (e.ctrlKey || e.metaKey) {
                                                     console.log('[PDF-DEBUG] → toggleSelect');
                                                     onToggleSelect(subFile.link, e);
-                                                } else if (onViewPdf && pdf) {
-                                                    console.log('[PDF-DEBUG] → viewPdf');
-                                                    onViewPdf(subFile.link);
                                                 } else {
                                                     console.log('[PDF-DEBUG] → openFile');
                                                     onOpenFile(subFile.link);
@@ -104,7 +101,21 @@ export function FileList({
                                                 )}
                                             </div>
 
-                                            <FileTypeBadge type={subFile.type} />
+                                            <div className="flex items-center gap-2">
+                                                {isPdfFile(subFile) && onViewPdf && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onViewPdf(subFile.link);
+                                                        }}
+                                                        className="p-1.5 rounded-md hover:bg-base-300 text-base-content/40 hover:text-primary transition-colors focus:outline-none"
+                                                        title={t('course.footer.openInSidebar') || 'Open in Sidebar'}
+                                                    >
+                                                        <PanelRightOpen size={16} />
+                                                    </button>
+                                                )}
+                                                <FileTypeBadge type={subFile.type} />
+                                            </div>
                                         </div>
                                     );
                                 })}
