@@ -48,7 +48,7 @@ export function useSearch(query: string) {
   };
 
   useEffect(() => {
-    if (query.trim().length < 3) {
+    if (query.trim().length < 2) {
       setFilteredResults([]);
       setSelectedIndex(-1);
       setIsLoading(false);
@@ -96,7 +96,7 @@ export function useSearch(query: string) {
         });
         setFilteredResults(all);
       } catch { setFilteredResults([]); } finally { setIsLoading(false); }
-    }, 500);
+    }, 250);
     return () => { if (debounceTimeout.current) clearTimeout(debounceTimeout.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);

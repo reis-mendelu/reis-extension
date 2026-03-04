@@ -24,12 +24,15 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
     >
       <button
         onClick={onClick}
-        className={`w-14 h-auto min-h-[56px] py-2 rounded-xl flex flex-col items-center justify-center transition-all duration-200 mx-auto
+        className={`relative w-14 h-auto min-h-[56px] py-2 rounded-xl flex flex-col items-center justify-center transition-all duration-200 mx-auto
           ${isActive
             ? 'bg-primary/10 text-primary shadow-sm'
             : 'text-base-content/50 hover:bg-base-100 hover:text-base-content hover:shadow-sm'
           }`}
       >
+        {item.href && !item.expandable && item.id !== 'dashboard' && (
+          <ExternalLink className="absolute top-1 right-1 w-2.5 h-2.5 text-base-content/30" />
+        )}
         {item.icon}
         <span className="text-[10px] mt-1 font-medium w-full text-center px-1 leading-tight">
           {item.label}

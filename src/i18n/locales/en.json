@@ -101,7 +101,8 @@
         "save": "Save"
     },
     "search": {
-        "placeholder": "Search subjects, people, pages...",
+        "placeholder": "Search subjects, people, pages... (⌘K)",
+        "quickActions": "Quick Actions",
         "results": "Results",
         "recent": "Recent Searches",
         "loading": "Loading results...",
