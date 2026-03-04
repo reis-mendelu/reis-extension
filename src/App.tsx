@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { MobileBottomNav } from './components/MobileNav/MobileBottomNav'
 import { Toaster } from './components/ui/sonner'
@@ -6,20 +5,9 @@ import { getSmartWeekRange } from '@/utils/calendar'
 import { useAppLogic } from './hooks/useAppLogic'
 import { AppMain } from './components/AppMain'
 import { AppOverlays } from './components/AppOverlays'
-import { useUserParams } from './hooks/useUserParams'
-import { Messages } from './types/messages'
 
 function App() {
   const s = useAppLogic();
-  const { params: userParams } = useUserParams();
-  const isPef = userParams?.facultyLabel === 'PEF';
-  const showPefBot = isPef && !s.selectedSubject && (s.currentView === 'calendar' || s.currentView === 'exams');
-
-  useEffect(() => {
-    if (isPef) {
-      window.parent.postMessage(Messages.pefbotVisibility(showPefBot), '*');
-    }
-  }, [isPef, showPefBot]);
 
   const handlePrevWeek = () => { s.setCurrentDate(prev => { const d = new Date(prev); d.setDate(d.getDate() - 7); return d; }); s.setWeekNavCount(p => p + 1); };
   const handleNextWeek = () => { s.setCurrentDate(prev => { const d = new Date(prev); d.setDate(d.getDate() + 7); return d; }); s.setWeekNavCount(p => p + 1); };

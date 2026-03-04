@@ -2,8 +2,6 @@ import { IFRAME_ID } from './config';
 import { injectIframe } from './iframeManager';
 import { handleMessage } from './messageHandler';
 import { startSyncService } from './syncService';
-import { injectPefBot } from './pefbot';
-import { getUserParams } from '../utils/userParams';
 
 export function startInjection() {
     if (document.body) {
@@ -38,8 +36,4 @@ function injectAndInitialize() {
     injectIframe();
     window.addEventListener("message", handleMessage);
     startSyncService();
-
-    getUserParams().then(params => {
-        if (params?.facultyLabel === 'PEF') injectPefBot();
-    });
 }

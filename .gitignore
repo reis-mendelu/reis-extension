@@ -2,6 +2,8 @@
 .env
 .env.local
 .env.*.local
+.env.submit
+.env.submit.backup-*
 
 # Playwright
 storageState.json

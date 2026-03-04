@@ -18,15 +18,24 @@ export default defineConfig({
       48: 'mendelu_logo_48.png',
       128: 'mendelu_logo_128.png',
     },
-    permissions: ['storage', 'unlimitedStorage', 'scripting'],
+    permissions: ['storage', 'unlimitedStorage'],
     host_permissions: [
       'https://is.mendelu.cz/*',
       'https://raw.githubusercontent.com/reis-mendelu/reis-data/*',
       'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main/*',
-      'https://api.citymind.tech/*'
     ],
     action: {
       default_popup: 'main.html',
+    },
+    browser_specific_settings: {
+      gecko: {
+        id: 'reis@mendelu.cz',
+        strict_min_version: '140.0',
+        data_collection_permissions: {
+          required: ['none'],
+          optional: [],
+        },
+      },
     },
     content_security_policy: {
       extension_pages: "script-src 'self'; object-src 'self'",

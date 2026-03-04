@@ -9,9 +9,7 @@ export interface RequestDataMessage { type: 'REIS_REQUEST_DATA'; dataType: DataR
 export interface FetchRequestMessage { type: 'REIS_FETCH'; id: string; url: string; options?: { method?: string; headers?: Record<string, string>; body?: string; }; }
 export interface ActionRequestMessage { type: 'REIS_ACTION'; id: string; action: ActionType; payload: unknown; }
 
-export interface PefBotVisibilityMessage { type: 'REIS_PEFBOT_VISIBILITY'; visible: boolean; }
-
-export type IframeToContentMessage = ReadyMessage | RequestDataMessage | FetchRequestMessage | ActionRequestMessage | PefBotVisibilityMessage;
+export type IframeToContentMessage = ReadyMessage | RequestDataMessage | FetchRequestMessage | ActionRequestMessage;
 
 export interface DataResponseMessage { type: 'REIS_DATA'; dataType: DataRequestType; data: unknown; error?: string; }
 export interface FetchResultMessage { type: 'REIS_FETCH_RESULT'; id: string; success: boolean; data?: string; error?: string; }
