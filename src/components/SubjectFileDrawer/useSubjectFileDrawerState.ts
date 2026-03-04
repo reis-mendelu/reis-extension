@@ -37,13 +37,21 @@ export function useSubjectFileDrawerState(lesson: BlockLesson | SelectedSubject 
 
     const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
+    const [prevCourseCode, setPrevCourseCode] = useState(lesson?.courseCode);
+
     if (isOpen !== prevIsOpen) {
         setPrevIsOpen(isOpen);
         if (isOpen && lesson) {
             const isExamNow = 'isExam' in lesson ? lesson.isExam : false;
             const isEnrolledNow = !!(lesson.courseCode && getSubject(lesson.courseCode)?.subjectId);
             setActiveTab(isExamNow ? 'stats' : (isEnrolledNow ? 'files' : 'syllabus'));
+            fileRefs.current.clear();
         }
+    }
+
+    if (lesson?.courseCode !== prevCourseCode) {
+        setPrevCourseCode(lesson?.courseCode);
+        fileRefs.current.clear();
     }
 
     return { activeTab, setActiveTab, files, isFilesLoading, isSyncing, isPriorityLoading, progressStatus, totalCount, resolvedCourseId, syllabusResult, subjectInfo, containerRef, contentRef, fileRefs, ...drag };
