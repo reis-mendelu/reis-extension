@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { CalendarEventCard } from '../CalendarEventCard';
 import { SubjectFileDrawer } from '../SubjectFileDrawer';
-import { HOURS, getEventStyle, organizeLessons } from './utils';
+import { HOURS, getEventStyle, organizeLessons, timeToPercent } from './utils';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useHintStatus } from '../../hooks/ui/useHintStatus';
 import { useSwipeNavigation } from '../../hooks/ui/useSwipeNavigation';
@@ -51,6 +51,15 @@ export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, 
   const lessons = lessonsByDay[selectedDay] || [];
   const holiday = holidaysByDay[selectedDay];
   const { lessons: organizedLessons } = useMemo(() => organizeLessons(lessons), [lessons]);
+
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+  const isSelectedToday = selectedDay === todayIndex;
+  const showTimeLine = isSelectedToday && now.getHours() >= 7 && now.getHours() < 21;
+  const timeLineTop = timeToPercent(`${now.getHours()}:${now.getMinutes()}`);
 
   const handleEventClick = (lesson: BlockLesson) => {
     setSelected(lesson);
@@ -128,6 +137,14 @@ export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, 
                   <div key={i} className="absolute w-[94%] left-[3%] rounded-lg skeleton bg-base-300" style={pos} />
                 ))}
               </>
+            )}
+
+            {showTimeLine && (
+              <div className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+                   style={{ top: `${timeLineTop}%` }}>
+                <div className="w-2.5 h-2.5 rounded-full bg-error -ml-[5px] shrink-0" />
+                <div className="flex-1 h-[2px] bg-error" />
+              </div>
             )}
 
             {!holiday && !showSkeleton && organizedLessons.map((lesson) => {

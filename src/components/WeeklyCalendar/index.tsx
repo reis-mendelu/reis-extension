@@ -8,6 +8,7 @@ import { HOURS } from './utils';
 import { useCalendarData } from './useCalendarData';
 import { WeeklyCalendarHeader } from './WeeklyCalendarHeader';
 import { WeeklyCalendarGrid } from './WeeklyCalendarGrid';
+import { CurrentTimeIndicator } from './CurrentTimeIndicator';
 import { WeeklyCalendarDay } from './WeeklyCalendarDay';
 import { DailyView } from './DailyView';
 import { useHintStatus } from '../../hooks/ui/useHintStatus';
@@ -179,6 +180,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                     <div className="flex-1 relative flex">
                         <CalendarHint show={!isSeen} eventPosition={targetEventPosition || undefined} onDismiss={markSeen} />
                         <WeeklyCalendarGrid />
+                        <CurrentTimeIndicator todayIndex={todayIndex} />
                         {[0, 1, 2, 3, 4].map(i => (
                             <WeeklyCalendarDay key={i} dayIndex={i} date={weekDates[i]} lessons={lessonsByDay[i] || []}
                                                holiday={holidaysByDay[i]} isToday={i === todayIndex}
