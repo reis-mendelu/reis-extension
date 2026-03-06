@@ -116,7 +116,11 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     );
 
     return (
-        <div className="fixed inset-0 z-50 flex justify-end items-stretch p-0 sm:p-4 isolate">
+        <div className="fixed inset-0 z-50 flex justify-end items-stretch p-0 sm:p-4 isolate"
+             onTouchStart={(e) => e.stopPropagation()}
+             onTouchMove={(e) => e.stopPropagation()}
+             onTouchEnd={(e) => e.stopPropagation()}
+        >
             <div className="absolute inset-0 bg-black/15 animate-in fade-in" onClick={handleClose} />
             <div className="w-full flex justify-end items-start h-full pt-0 pb-0 sm:pt-10 sm:pb-10 relative z-10 pointer-events-none">
                 <div role="dialog" className={`bg-base-100 shadow-2xl rounded-2xl flex flex-col h-full animate-in slide-in-from-right pointer-events-auto border border-base-300 transition-[width] duration-300 relative ${hasPdf ? 'w-full sm:w-[90vw]' : 'w-full sm:w-[600px]'}`}>
