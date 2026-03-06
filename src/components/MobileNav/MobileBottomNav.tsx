@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, CalendarCheck, Book, User, Settings } from 'lucide-react';
+import { Home, CalendarCheck, Book, User, Settings, Menu } from 'lucide-react';
 import type { AppView } from '../../types/app';
 import type { MenuItem } from '../menuConfig';
 import { useMenuItems } from '../../hooks/ui/useMenuItems';
@@ -27,12 +27,63 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
   const menuItems = useMenuItems();
   const { t } = useTranslation();
 
+  const viceItem: MenuItem = {
+    id: 'vice',
+    label: 'Více',
+    icon: <Settings className="w-5 h-5" />, // placeholder, will use MoreHorizontal if imported, but Settings is fine for now if no MoreHorizontal
+    children: [
+      {
+        id: 'portal-studenta',
+        label: t('sidebar.portal'),
+        href: 'https://is.mendelu.cz/auth/student/moje_studium.pl?lang=cz', // Should idealy use the one from menuItems, but we can hardcode for now or fetch from menuItems
+      },
+      {
+        id: 'testy',
+        label: t('sidebar.tests'),
+        href: 'https://is.mendelu.cz/auth/elis/ot/psani_testu.pl?_m=205;lang=cz',
+      },
+      {
+        id: 'profile-action',
+        label: t('sidebar.profile'),
+        isFeature: true, // to avoid external link icon
+        // onClick is custom, we'll handle it in MobileNavSheet by passing profileOpen or handling it here
+      }
+    ]
+  }
+
+  // Find the exact menu items so we have correct links
+  const portalItem = menuItems.find(m => m.id === 'portal-studenta');
+  const testyItem = menuItems.find(m => m.id === 'testy');
+
+
+  const viceMenuItem: MenuItem = {
+      id: 'vice',
+      label: 'Více',
+      icon: <Settings className="w-5 h-5" />,
+      children: [
+          ...(portalItem ? [{
+              id: portalItem.id,
+              label: portalItem.label,
+              href: portalItem.href
+          }] : []),
+          ...(testyItem ? [{
+              id: testyItem.id,
+              label: testyItem.label,
+              href: testyItem.href
+          }] : []),
+          {
+              id: 'profile-action',
+              label: t('sidebar.profile'),
+              isFeature: true, // Prevents external link icon
+          }
+      ]
+  };
+
   const tabs = [
     { id: 'dashboard', label: t('sidebar.dashboard'), icon: TAB_ICONS.dashboard },
     { id: 'exams', label: t('sidebar.exams'), icon: TAB_ICONS.exams },
     { id: 'subjects', label: t('sidebar.subjects'), icon: TAB_ICONS.subjects },
-    { id: 'portal', label: t('sidebar.student'), icon: TAB_ICONS.portal },
-    { id: 'profile', label: t('sidebar.profile'), icon: <Settings className="w-5 h-5" /> },
+    { id: 'vice', label: 'Více', icon: <Menu className="w-5 h-5" /> }, // Need to import Menu
   ];
 
   const handleTabClick = (tabId: string) => {
@@ -42,6 +93,8 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
       onViewChange('exams');
     } else if (tabId === 'profile') {
       setProfileOpen(true);
+    } else if (tabId === 'vice') {
+       setSheetItem(viceMenuItem);
     } else {
       const item = menuItems.find(m => m.id === tabId);
       if (item?.expandable) {
@@ -53,6 +106,7 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
   const isActive = (tabId: string) => {
     if (tabId === 'dashboard') return currentView === 'calendar';
     if (tabId === 'exams') return currentView === 'exams';
+    if (tabId === 'vice') return sheetItem?.id === 'vice' || profileOpen; // Optional active state
     return false;
   };
 
@@ -82,6 +136,7 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
         onClose={() => setSheetItem(null)}
         onViewChange={onViewChange}
         onOpenSubject={onOpenSubject}
+        onOpenProfile={() => setProfileOpen(true)}
       />
 
       <MobileProfileSheet

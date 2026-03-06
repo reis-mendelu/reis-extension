@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronRight, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import type { MenuItem } from '../menuConfig';
 import type { AppView } from '../../types/app';
 
@@ -8,9 +8,10 @@ interface MobileNavSheetProps {
   onClose: () => void;
   onViewChange: (view: AppView) => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string) => void;
+  onOpenProfile?: () => void;
 }
 
-export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject }: MobileNavSheetProps) {
+export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject, onOpenProfile }: MobileNavSheetProps) {
   if (!item) return null;
 
   const handleChildClick = (child: NonNullable<MenuItem['children']>[number]) => {
@@ -20,6 +21,8 @@ export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject }: M
       onViewChange('study-program' as AppView);
     } else if (child.isSubject && child.courseCode) {
       onOpenSubject?.(child.courseCode, child.label, child.subjectId);
+    } else if (child.id === 'profile-action') {
+      onOpenProfile?.();
     } else if (child.href) {
       window.open(child.href, '_blank');
     }
@@ -68,9 +71,11 @@ export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject }: M
                       onClick={() => handleChildClick(child)}
                       className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-base-content/70 hover:bg-base-200 active:bg-base-200 transition-colors w-full text-left"
                     >
-                      <span className="text-base-content/50">
-                        {child.icon || <ChevronRight className="w-4 h-4" />}
-                      </span>
+                      {child.icon ? (
+                        <span className="text-base-content/50">
+                          {child.icon}
+                        </span>
+                      ) : null}
                       <span className="font-medium truncate flex-1">{child.label}</span>
                       {!child.isFeature && !child.isSubject && (
                         <ExternalLink className="w-3 h-3 text-base-content/30" />
