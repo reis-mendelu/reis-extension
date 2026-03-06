@@ -4,6 +4,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import type { BlockLesson } from '../../../types/calendarTypes';
 import type { CourseMetadata } from '../../../types/documents';
 import { PersonHoverCard } from '../../PersonHoverCard';
+import { MapHoverCard } from '../../MapHoverCard';
 
 export function CourseMeta({ lesson, courseInfo, isSearchContext }: { lesson: BlockLesson | null; courseInfo: CourseMetadata | undefined; isSearchContext: boolean }) {
     console.log('[REIS_LOUD_DEBUG] CourseMeta Rendering', { 
@@ -25,7 +26,13 @@ export function CourseMeta({ lesson, courseInfo, isSearchContext }: { lesson: Bl
                         </PersonHoverCard>
                     : <span className="flex items-center gap-1"><User size={14} /><span>{lesson.teachers.map(t => t.fullName).join(', ')}</span></span>
                 )}
-                {lesson?.room?.startsWith('Q') && <button onClick={() => window.open(`https://mm.mendelu.cz/mapwidget/embed?placeName=${lesson.room}`, '_blank')} className="flex items-center gap-1 hover:text-emerald-600 transition-colors"><MapIcon size={14} /><span>{lesson.room}</span></button>}
+                {lesson?.room?.startsWith('Q') && (
+                    <MapHoverCard roomName={lesson.room} className="flex items-center">
+                        <button onClick={() => window.open(`https://mm.mendelu.cz/mapwidget/embed?placeName=${lesson.room}`, '_blank')} className="flex items-center gap-1 hover:text-emerald-600 transition-colors">
+                            <MapIcon size={14} /><span>{lesson.room}</span>
+                        </button>
+                    </MapHoverCard>
+                )}
                 {lesson?.startTime && <span className="flex items-center gap-1"><Clock size={14} /><span>{lesson.startTime} - {lesson.endTime}</span></span>}
             </div>
         );
