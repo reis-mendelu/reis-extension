@@ -62,7 +62,7 @@ export function SubjectRow({ subject, compact, failRate, onOpenSubject, onSearch
       {failRate != null && failRate >= 20 && !subject.isFulfilled && (
         <span
           className={`badge badge-sm shrink-0 ${failRate >= 25 ? 'badge-error' : 'badge-warning'} badge-outline relative group/fail cursor-pointer`}
-          onClick={(e) => { e.stopPropagation(); if (hasId) onOpenSubject(subject.code, subject.name, subject.id, undefined, 'stats'); }}
+          onClick={(e) => { e.stopPropagation(); hasId ? onOpenSubject(subject.code, subject.name, subject.id, undefined, 'stats') : onSearchSubject(subject.name); }}
         >
           <span className="group-hover/fail:hidden">{failRate}%</span>
           <span className="hidden group-hover/fail:inline">{failRate}% {t('subjects.failRateLabel')}</span>
