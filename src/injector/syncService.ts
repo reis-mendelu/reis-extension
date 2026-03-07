@@ -4,7 +4,7 @@ import { fetchDualLanguageExams } from "../api/exams";
 import { fetchDualLanguageSubjects } from "../api/subjects";
 import { fetchFilesFromFolder } from "../api/documents";
 import { fetchAssessments } from "../api/assessments";
-import { fetchStudyPlan } from "../api/studyPlan";
+import { fetchDualLanguageStudyPlan } from "../api/studyPlan";
 import { fetchSyllabus } from "../api/syllabus";
 import { fetchSeminarGroupIds, fetchClassmates } from "../api/classmates";
 import type { ClassmatesData } from "../types/classmates";
@@ -48,7 +48,7 @@ export async function syncAllData() {
             });
 
         // Phase 2a-II: Fetch study plan concurrently with early subjects
-        const studyPlanPromise = studium ? fetchStudyPlan(studium).then(plan => {
+        const studyPlanPromise = studium ? fetchDualLanguageStudyPlan(studium).then(plan => {
             if (plan) {
                 cachedData = { ...cachedData, studyPlan: plan };
                 sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing: true, isPartial: true }));

@@ -215,6 +215,17 @@
     "syncToggle": "Activate Sync",
     "syncCoffeeBreak": "Sync takes about 15 minutes."
   },
+  "subjects": {
+    "title": "My Subjects",
+    "credits": "credits",
+    "enrolled": "Enrolled Subjects",
+    "studyPlan": "Study Plan",
+    "noData": "No study plan data",
+    "loading": "Loading...",
+    "fulfilled": "Fulfilled",
+    "notFulfilled": "Not fulfilled",
+    "searchToOpen": "Click to search"
+  },
   "classmates": {
     "all": "All",
     "seminar": "Seminar",

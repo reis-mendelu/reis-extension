@@ -27,7 +27,7 @@ export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, onOpenSubje
       </button>
       <div className="flex flex-col gap-3 w-full px-2">
         {menuItems.map(item => (
-          <NavItem key={item.id} item={item} isActive={(currentView === 'exams' && item.id === 'exams') || (currentView === 'calendar' && item.id === 'dashboard')} isHovered={hovered === item.id} onMouseEnter={() => handleEnter(item.id)} onMouseLeave={handleLeave} onClick={() => { if (item.id === 'dashboard') onViewChange('calendar'); else if (item.id === 'exams') onViewChange('exams'); else if (item.href) window.open(item.href, '_blank'); }} onViewChange={onViewChange} onOpenSubject={onOpenSubject} />
+          <NavItem key={item.id} item={item} isActive={(currentView === 'exams' && item.id === 'exams') || (currentView === 'calendar' && item.id === 'dashboard') || (currentView === 'subjects' && item.id === 'subjects')} isHovered={hovered === item.id} onMouseEnter={() => handleEnter(item.id)} onMouseLeave={handleLeave} onClick={() => { if (item.id === 'dashboard') onViewChange('calendar'); else if (item.id === 'exams') onViewChange('exams'); else if (item.id === 'subjects') onViewChange('subjects'); else if (item.href) window.open(item.href, '_blank'); }} onViewChange={onViewChange} onOpenSubject={onOpenSubject} />
         ))}
       </div>
       <div className="flex-1" />

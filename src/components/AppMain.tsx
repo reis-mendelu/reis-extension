@@ -3,6 +3,7 @@ import type { AppView } from '../types/app'
 import { AppHeader } from './AppHeader'
 import { WeeklyCalendar } from './WeeklyCalendar/index'
 import { ExamPanel } from './ExamPanel'
+import { SubjectsPanel } from './SubjectsPanel'
 import { useSwipeNavigation } from '../hooks/ui/useSwipeNavigation'
 import { NpsBanner } from './Feedback/NpsBanner'
 
@@ -14,11 +15,12 @@ interface AppMainProps {
     handleToday: () => void;
     handleOpenSubjectFromSearch: (courseCode: string, courseName?: string, courseId?: string) => void;
     dateRangeLabel: string;
+    searchPrefillRef?: React.MutableRefObject<((query: string) => void) | null>;
 }
 
 export function AppMain({
     currentView, currentDate, handlePrevWeek, handleNextWeek, handleToday,
-    handleOpenSubjectFromSearch, dateRangeLabel
+    handleOpenSubjectFromSearch, dateRangeLabel, searchPrefillRef
 }: AppMainProps) {
     const isMobile = useIsMobile();
     // Only handle swipe at this level for desktop week view;
@@ -27,7 +29,7 @@ export function AppMain({
 
     return (
         <main className="flex-1 flex flex-col transition-all duration-300 overflow-hidden">
-            <AppHeader currentView={currentView} dateRangeLabel={dateRangeLabel} onPrevWeek={handlePrevWeek} onNextWeek={handleNextWeek} onToday={handleToday} onOpenSubject={handleOpenSubjectFromSearch} />
+            <AppHeader currentView={currentView} dateRangeLabel={dateRangeLabel} onPrevWeek={handlePrevWeek} onNextWeek={handleNextWeek} onToday={handleToday} onOpenSubject={handleOpenSubjectFromSearch} searchPrefillRef={searchPrefillRef} />
             <NpsBanner />
             <div
                 className="flex-1 pt-3 px-4 pb-16 md:pb-1 overflow-hidden flex flex-col"
@@ -41,6 +43,7 @@ export function AppMain({
                 >
                     {currentView === 'calendar' && <WeeklyCalendar key={currentDate.toISOString()} initialDate={currentDate} onPrevWeek={handlePrevWeek} onNextWeek={handleNextWeek} />}
                     {currentView === 'exams' && <ExamPanel />}
+                    {currentView === 'subjects' && <SubjectsPanel onOpenSubject={handleOpenSubjectFromSearch} onSearchSubject={(name) => searchPrefillRef?.current?.(name)} />}
                 </div>
             </div>
         </main>

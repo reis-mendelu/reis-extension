@@ -12,6 +12,7 @@ interface AppHeaderProps {
   onNextWeek: () => void;
   onToday: () => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string) => void;
+  searchPrefillRef?: React.MutableRefObject<((query: string) => void) | null>;
 }
 
 export function AppHeader({
@@ -21,6 +22,7 @@ export function AppHeader({
   onNextWeek,
   onToday,
   onOpenSubject,
+  searchPrefillRef,
 }: AppHeaderProps) {
   const { t } = useTranslation();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -57,7 +59,7 @@ export function AppHeader({
           {/* Desktop: hero search bar — absolutely centered in header */}
           <div className="hidden md:flex absolute inset-0 items-center justify-center pointer-events-none">
             <div className="w-full max-w-2xl pointer-events-auto">
-              <SearchBar onOpenSubject={onOpenSubject} />
+              <SearchBar onOpenSubject={onOpenSubject} prefillRef={searchPrefillRef} />
             </div>
           </div>
 

@@ -2,6 +2,7 @@ export interface SearchBarProps {
   placeholder?: string;
   onSearch?: (query: string) => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string, facultyCode?: string) => void;
+  prefillRef?: React.MutableRefObject<((query: string) => void) | null>;
 }
 
   export interface SearchResult {

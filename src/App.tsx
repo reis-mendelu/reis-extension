@@ -32,7 +32,7 @@ function App() {
 
       <AppMain currentView={s.currentView} currentDate={s.currentDate} dateRangeLabel={getDateRangeLabel()}
                handlePrevWeek={handlePrevWeek} handleNextWeek={handleNextWeek} handleToday={handleToday}
-               handleOpenSubjectFromSearch={s.handleOpenSubjectFromSearch} />
+               handleOpenSubjectFromSearch={s.handleOpenSubjectFromSearch} searchPrefillRef={s.searchPrefillRef} />
 
       <AppOverlays selectedSubject={s.selectedSubject} setSelectedSubject={s.setSelectedSubject}
                    isFeedbackOpen={s.isFeedbackOpen}

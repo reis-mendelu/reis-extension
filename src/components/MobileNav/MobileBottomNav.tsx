@@ -91,6 +91,8 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
       onViewChange('calendar');
     } else if (tabId === 'exams') {
       onViewChange('exams');
+    } else if (tabId === 'subjects') {
+      onViewChange('subjects');
     } else if (tabId === 'profile') {
       setProfileOpen(true);
     } else if (tabId === 'vice') {
@@ -106,7 +108,8 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
   const isActive = (tabId: string) => {
     if (tabId === 'dashboard') return currentView === 'calendar';
     if (tabId === 'exams') return currentView === 'exams';
-    if (tabId === 'vice') return sheetItem?.id === 'vice' || profileOpen; // Optional active state
+    if (tabId === 'subjects') return currentView === 'subjects';
+    if (tabId === 'vice') return sheetItem?.id === 'vice' || profileOpen;
     return false;
   };
 

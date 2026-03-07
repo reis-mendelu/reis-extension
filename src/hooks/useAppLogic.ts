@@ -10,6 +10,8 @@ import { signalReady, requestData, isInIframe } from '../api/proxyClient';
 import type { AppView, SelectedSubject } from '../types/app';
 import { isContentMessage } from '../types/messages';
 import type { ClassmatesData } from '../types/classmates';
+import { isDualLanguageStudyPlan } from '../types/studyPlan';
+import type { DualLanguageStudyPlan } from '../types/studyPlan';
 
 interface SyncedData {
     schedule?: unknown;
@@ -18,7 +20,7 @@ interface SyncedData {
     files?: Record<string, unknown>;
     syllabuses?: Record<string, unknown>;
     classmates?: Record<string, unknown>;
-    studyPlan?: unknown;
+    studyPlan?: DualLanguageStudyPlan;
     lastSync?: string;
     isSyncing?: boolean;
     isPartial?: boolean;
@@ -32,6 +34,7 @@ export function useAppLogic() {
     const [weekNavCount, setWeekNavCount] = useState(0);
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
     const openSettingsRef = useRef<(() => void) | null>(null);
+    const searchPrefillRef = useRef<((query: string) => void) | null>(null);
     const { isEnabled: outlookSyncEnabled } = useOutlookSync();
     const { subscribedAssociations } = useSpolkySettings();
 
@@ -83,7 +86,7 @@ export function useAppLogic() {
                 }
 
 
-                if (r.studyPlan) await IndexedDBService.set('study_plan', 'current', r.studyPlan as any);
+                if (r.studyPlan && isDualLanguageStudyPlan(r.studyPlan)) await IndexedDBService.set('study_plan', 'current', r.studyPlan);
                 if (r.exams) await IndexedDBService.set('exams', 'current', r.exams);
                 if (r.subjects?.data) {
                     const existing = await IndexedDBService.get('subjects', 'current') as { data: Record<string, { nameCs?: string; nameEn?: string }> } | null;
@@ -152,5 +155,5 @@ export function useAppLogic() {
         setSelectedSubject({ courseCode, courseName: courseName || courseCode, courseId: courseId || '', id: `search-${courseCode}`, isFromSearch: true, facultyCode });
     };
 
-    return { currentDate, setCurrentDate, currentView, setCurrentView, selectedSubject, setSelectedSubject, weekNavCount, setWeekNavCount, isFeedbackOpen, setIsFeedbackOpen, openSettingsRef, outlookSyncEnabled, handleOpenSubjectFromSearch };
+    return { currentDate, setCurrentDate, currentView, setCurrentView, selectedSubject, setSelectedSubject, weekNavCount, setWeekNavCount, isFeedbackOpen, setIsFeedbackOpen, openSettingsRef, searchPrefillRef, outlookSyncEnabled, handleOpenSubjectFromSearch };
 }

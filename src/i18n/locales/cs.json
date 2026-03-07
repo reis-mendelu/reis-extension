@@ -215,6 +215,17 @@
     "syncToggle": "Aktivovat Sync",
     "syncCoffeeBreak": "Sync trvá přibližně 15 min."
   },
+  "subjects": {
+    "title": "Moje předměty",
+    "credits": "kreditů",
+    "enrolled": "Zapsané předměty",
+    "studyPlan": "Studijní plán",
+    "noData": "Žádná data o studijním plánu",
+    "loading": "Načítání...",
+    "fulfilled": "Splněno",
+    "notFulfilled": "Nesplněno",
+    "searchToOpen": "Kliknutím vyhledáte"
+  },
   "classmates": {
     "all": "Všichni",
     "seminar": "Cvičení",

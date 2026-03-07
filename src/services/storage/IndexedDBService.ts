@@ -3,7 +3,7 @@ import type { SubjectsData, Assessment, SyllabusRequirements, ParsedFile, GradeH
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ExamSubject } from '../../types/exams';
 import type { ClassmatesData } from '../../types/classmates';
-import type { StudyPlan } from '../../types/studyPlan';
+import type { StudyPlan, DualLanguageStudyPlan } from '../../types/studyPlan';
 import { StoreSchemas, type StoreName } from '../../types/storage';
 
 interface ReisDB extends DBSchema {
@@ -51,7 +51,7 @@ interface ReisDB extends DBSchema {
     };
     study_plan: {
         key: string;
-        value: StudyPlan;
+        value: StudyPlan | DualLanguageStudyPlan;
     };
 }
 

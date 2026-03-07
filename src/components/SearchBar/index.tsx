@@ -8,7 +8,7 @@ import { SearchFooter } from './SearchFooter';
 import type { SearchBarProps, SearchResult } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 
-export function SearchBar({ placeholder, onSearch, onOpenSubject }: SearchBarProps) {
+export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: SearchBarProps) {
   const { t } = useTranslation();
   const defaultPlaceholder = t('search.placeholder');
   const finalPlaceholder = placeholder || defaultPlaceholder;
@@ -41,6 +41,17 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject }: SearchBarPro
     document.addEventListener('keydown', handleGlobalKeyDown);
     return () => document.removeEventListener('keydown', handleGlobalKeyDown);
   }, [setIsOpen]);
+
+  // Wire up prefill ref for programmatic open
+  useEffect(() => {
+    if (!prefillRef) return;
+    prefillRef.current = (q: string) => {
+      setQuery(q);
+      setIsOpen(true);
+      inputRef.current?.focus();
+    };
+    return () => { prefillRef.current = null; };
+  }, [prefillRef, setIsOpen]);
 
   // Track input position for fixed dropdown
   useEffect(() => {

@@ -73,7 +73,7 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
                       onViewChange('exams');
                     } else if (child.id === 'studijni-plany') {
                       e.preventDefault();
-                      onViewChange('study-program');
+                      onViewChange('subjects');
                     } else if (child.isSubject && child.courseCode) {
                       e.preventDefault();
                       onOpenSubject?.(child.courseCode, child.label, child.subjectId);
