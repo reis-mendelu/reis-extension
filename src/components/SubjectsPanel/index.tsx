@@ -112,7 +112,7 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
             <SemesterSection
               key={bi}
               block={block}
-              defaultOpen={!isElectiveBlock(block) && (hasEnrolled(block) || (!allFulfilled(block) && bi === plan.blocks.findIndex(b => !allFulfilled(b) && !isElectiveBlock(b))))}
+              defaultOpen={false}
               onOpenSubject={onOpenSubject}
               onSearchSubject={onSearchSubject}
             />
