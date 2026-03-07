@@ -3,6 +3,7 @@ import type { SubjectsData, Assessment, SyllabusRequirements, ParsedFile, GradeH
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ExamSubject } from '../../types/exams';
 import type { ClassmatesData } from '../../types/classmates';
+import type { StudyPlan } from '../../types/studyPlan';
 import { StoreSchemas, type StoreName } from '../../types/storage';
 
 interface ReisDB extends DBSchema {
@@ -48,10 +49,14 @@ interface ReisDB extends DBSchema {
         key: string;
         value: GradeHistory;
     };
+    study_plan: {
+        key: string;
+        value: StudyPlan;
+    };
 }
 
 const DB_NAME = 'reis_db';
-const DB_VERSION = 7;
+const DB_VERSION = 8;
 
 class IndexedDBServiceImpl {
     private dbPromise: Promise<IDBPDatabase<ReisDB>>;
@@ -62,7 +67,7 @@ class IndexedDBServiceImpl {
                 const requiredStores: (keyof ReisDB)[] = [
                     'files', 'assessments', 'syllabuses', 'classmates',
                     'exams', 'schedule', 'subjects', 'success_rates', 'meta',
-                    'grade_history'
+                    'grade_history', 'study_plan'
                 ];
                 
                 requiredStores.forEach(store => {

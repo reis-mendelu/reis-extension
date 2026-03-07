@@ -11,7 +11,7 @@ All persistent data must be stored using `IndexedDBService` or `chrome.storage.s
 - **Purpose**: Primary storage for academic data (schedules, grades, exams, files).
 - **Why**: Handles large datasets better than `chrome.storage`, is asynchronous, and provides structured querying capabilities.
 - **Stores**: 
-  - `study_program`: Complete study plan structure.
+  - `study_plan`: Complete study plan progression and credit blocks.
   - `files`: Lists of materials per subject.
   - `assessments`: Student grades and points.
   - `syllabuses`: Course requirements.

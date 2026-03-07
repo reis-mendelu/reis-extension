@@ -3,6 +3,7 @@ import type { ParsedFile, Assessment, SyllabusRequirements, SubjectsData, GradeH
 import type { ExamSubject } from '../types/exams';
 import type { BlockLesson } from '../types/calendarTypes';
 import type { ClassmatesData } from '../types/classmates';
+import type { StudyPlan } from '../types/studyPlan';
 
 // --- Base Types using Zod ---
 
@@ -12,6 +13,7 @@ export const SyllabusRequirementsSchema = z.custom<SyllabusRequirements>();
 export const ExamSubjectSchema = z.custom<ExamSubject>();
 export const BlockLessonSchema = z.custom<BlockLesson>();
 export const SubjectsDataSchema = z.custom<SubjectsData>();
+export const StudyPlanSchema = z.custom<StudyPlan>();
 
 // --- Storage Value Schemas ---
 
@@ -69,6 +71,7 @@ export const StoreSchemas = {
     success_rates: SuccessRatesSchema,
     meta: MetaSchema,
     grade_history: GradeHistorySchema,
+    study_plan: StudyPlanSchema,
 };
 
 export type StoreName = keyof typeof StoreSchemas;

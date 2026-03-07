@@ -3,6 +3,7 @@ import type { BlockLesson } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
 import type { SyllabusRequirements, ParsedFile, Assessment, SubjectsData, SubjectSuccessRate } from '../types/documents';
 import type { ClassmatesData } from '../types/classmates';
+import type { StudyPlan } from '../types/studyPlan';
 import type { SyncStatus } from '../services/sync';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
@@ -138,6 +139,12 @@ export interface FeedbackSlice {
     dismissFeedback: () => Promise<void>;
 }
 
+export interface StudyPlanSlice {
+    studyPlan: StudyPlan | null;
+    studyPlanLoading: boolean;
+    fetchStudyPlan: () => Promise<void>;
+}
+
 export interface UseThemeResult {
   theme: Theme;
   isDark: boolean;
@@ -146,6 +153,6 @@ export interface UseThemeResult {
   setTheme: (theme: Theme) => void;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice;
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

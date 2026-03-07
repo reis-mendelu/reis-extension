@@ -18,6 +18,7 @@ interface SyncedData {
     files?: Record<string, unknown>;
     syllabuses?: Record<string, unknown>;
     classmates?: Record<string, unknown>;
+    studyPlan?: unknown;
     lastSync?: string;
     isSyncing?: boolean;
     isPartial?: boolean;
@@ -82,6 +83,7 @@ export function useAppLogic() {
                 }
 
 
+                if (r.studyPlan) await IndexedDBService.set('study_plan', 'current', r.studyPlan as any);
                 if (r.exams) await IndexedDBService.set('exams', 'current', r.exams);
                 if (r.subjects?.data) {
                     const existing = await IndexedDBService.get('subjects', 'current') as { data: Record<string, { nameCs?: string; nameEn?: string }> } | null;

@@ -4,6 +4,7 @@ import { fetchDualLanguageExams } from "../api/exams";
 import { fetchDualLanguageSubjects } from "../api/subjects";
 import { fetchFilesFromFolder } from "../api/documents";
 import { fetchAssessments } from "../api/assessments";
+import { fetchStudyPlan } from "../api/studyPlan";
 import { fetchSyllabus } from "../api/syllabus";
 import { fetchSeminarGroupIds, fetchClassmates } from "../api/classmates";
 import type { ClassmatesData } from "../types/classmates";
@@ -46,11 +47,21 @@ export async function syncAllData() {
                 return subjects;
             });
 
-        // Phase 2b: Full schedule + exams in parallel (subjects re-uses already-started promise)
-        const [fullSchedule, exams, subjects] = await Promise.allSettled([
+        // Phase 2a-II: Fetch study plan concurrently with early subjects
+        const studyPlanPromise = studium ? fetchStudyPlan(studium).then(plan => {
+            if (plan) {
+                cachedData = { ...cachedData, studyPlan: plan };
+                sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing: true, isPartial: true }));
+            }
+            return plan;
+        }) : Promise.resolve(null);
+
+        // Phase 2b: Full schedule + exams in parallel (subjects/studyPlan re-uses already-started promises)
+        const [fullSchedule, exams, subjects, studyPlan] = await Promise.allSettled([
             fetchFullSemesterSchedule(),
             fetchDualLanguageExams(),
             subjectsPromise,
+            studyPlanPromise,
         ]);
 
         cachedData = {
@@ -58,6 +69,7 @@ export async function syncAllData() {
             schedule: fullSchedule.status === "fulfilled" && fullSchedule.value ? fullSchedule.value : cachedData.schedule,
             exams: exams.status === "fulfilled" ? exams.value : cachedData.exams,
             subjects: subjects.status === "fulfilled" ? subjects.value : cachedData.subjects,
+            studyPlan: studyPlan.status === "fulfilled" && studyPlan.value ? studyPlan.value : cachedData.studyPlan,
             files: cachedData.files || {},
             lastSync: Date.now(),
         };
