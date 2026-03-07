@@ -237,6 +237,8 @@
     "progressionDanger": "Hrozí nesplnění!",
     "repeatWarning": "2. zápis",
     "gpa": "Průměr",
+    "compulsory": "Povinné",
+    "elective": "Volitelné",
     "enrolledCreditsLabel": "kr. zapsáno",
     "failRateLabel": "neúsp."
   },

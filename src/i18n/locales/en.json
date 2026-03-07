@@ -237,6 +237,8 @@
     "progressionDanger": "At risk!",
     "repeatWarning": "2nd enrollment",
     "gpa": "GPA",
+    "compulsory": "Compulsory",
+    "elective": "Elective",
     "enrolledCreditsLabel": "cr. enrolled",
     "failRateLabel": "fail"
   },

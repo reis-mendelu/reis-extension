@@ -90,8 +90,10 @@ export function SemesterSection({ block, open, dimmed, failRates, onToggle, onOp
                 <div className="text-[11px] text-base-content/40 font-medium px-3 py-1 uppercase tracking-wider">{group.name}</div>
               )}
               {[...group.subjects].sort((a, b) => {
-                if (a.isFulfilled === b.isFulfilled) return 0;
-                return a.isFulfilled ? 1 : -1;
+                if (a.isFulfilled !== b.isFulfilled) return a.isFulfilled ? 1 : -1;
+                const fa = failRates?.[a.code] ?? -1;
+                const fb = failRates?.[b.code] ?? -1;
+                return fb - fa;
               }).map(s => (
                 <SubjectRow
                   key={s.code}

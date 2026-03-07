@@ -95,6 +95,9 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
       }
     }
   }
+  const sortByFailRate = (a: SubjectStatus, b: SubjectStatus) => (failRates[b.code] ?? -1) - (failRates[a.code] ?? -1);
+  enrolledCore.sort(sortByFailRate);
+  enrolledElective.sort(sortByFailRate);
   const hasEnrolledSubjects = enrolledCore.length > 0 || enrolledElective.length > 0;
   const [openSemester, setOpenSemester] = useState<number | null>(null);
 
@@ -111,17 +114,25 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
             </span>
           </h3>
           {enrolledCore.length > 0 && (
-            <div className="rounded-lg border border-primary/20 bg-primary/[0.03] p-1">
-              {enrolledCore.map(s => (
-                <SubjectRow key={s.code} subject={s} failRate={failRates[s.code]} onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
-              ))}
+            <div>
+              {enrolledElective.length > 0 && (
+                <div className="text-[11px] text-base-content/40 font-medium px-2 py-1 uppercase tracking-wider">{t('subjects.compulsory')}</div>
+              )}
+              <div className="rounded-lg border border-primary/20 bg-primary/[0.03] p-1">
+                {enrolledCore.map(s => (
+                  <SubjectRow key={s.code} subject={s} failRate={failRates[s.code]} onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
+                ))}
+              </div>
             </div>
           )}
           {enrolledElective.length > 0 && (
-            <div className="mt-1.5 rounded-lg border border-base-300/50 p-1">
-              {enrolledElective.map(s => (
-                <SubjectRow key={s.code} subject={s} compact failRate={failRates[s.code]} onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
-              ))}
+            <div className="mt-1.5">
+              <div className="text-[11px] text-base-content/40 font-medium px-2 py-1 uppercase tracking-wider">{t('subjects.elective')}</div>
+              <div className="rounded-lg border border-base-300/50 p-1">
+                {enrolledElective.map(s => (
+                  <SubjectRow key={s.code} subject={s} failRate={failRates[s.code]} onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
+                ))}
+              </div>
             </div>
           )}
         </div>
