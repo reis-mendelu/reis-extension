@@ -21,10 +21,16 @@ export interface SemesterBlock {
   groups: SubjectGroup[];
 }
 
+export interface DescriptionSection {
+  title: string;
+  content: string; // HTML content for rich display
+}
+
 export interface StudyPlan {
   title: string; // e.g., "B-OI prez - ZS 2025/2026"
   isFulfilled: boolean;
   creditsAcquired: number;
   creditsRequired: number;
   blocks: SemesterBlock[];
+  descriptionSections: DescriptionSection[];
 }

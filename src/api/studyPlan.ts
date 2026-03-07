@@ -144,11 +144,41 @@ function parseStudyPlanDOM(doc: Document): StudyPlan {
     }
   }
 
+  // 4. Description Sections (Focus, Specialization, etc.)
+  const descriptionSections: DescriptionSection[] = [];
+  const h4s = Array.from(doc.querySelectorAll('h4'));
+  
+  for (const h4 of h4s) {
+      const title = (h4.textContent || '').trim();
+      // Skip titles that are actually semester blocks handled above or boilerplate/useless items
+      if (
+          title.match(/\d+\.\s+semestr/i) || 
+          title.includes("v pátém semestru volí téma") || 
+          title.includes("Podpora v průběhu studia") ||
+          title.includes("Cíle studia") ||
+          title.includes("Podmínky pro přijetí ke studiu")
+      ) {
+          continue;
+      }
+
+      let contentHtml = '';
+      let next = h4.nextElementSibling;
+      while (next && next.tagName !== 'H4' && next.tagName !== 'TABLE' && !next.id.includes('tmtab')) {
+          contentHtml += next.outerHTML;
+          next = next.nextElementSibling;
+      }
+
+      if (contentHtml.trim()) {
+          descriptionSections.push({ title, content: contentHtml });
+      }
+  }
+
   return {
     title: "Parsed Study Plan",
     isFulfilled,
     creditsAcquired,
     creditsRequired,
-    blocks
+    blocks,
+    descriptionSections
   };
 }
