@@ -1,6 +1,7 @@
 import { useTranslation } from '@/hooks/useTranslation';
+import { useUserParams } from '@/hooks/useUserParams';
 import type { StudyStats } from '@/types/studyPlan';
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ExternalLink } from 'lucide-react';
 
 interface SubjectsPanelHeaderProps {
   creditsAcquired: number;
@@ -26,14 +27,31 @@ function getProgressionInfo(stats: StudyStats): { level: ProgressionLevel; thres
 }
 
 export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studyStats }: SubjectsPanelHeaderProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const { params } = useUserParams();
+  const studium = params?.studium || '';
+  const lang = language === 'cz' ? 'cz' : 'en';
+  const planCheckUrl = studium
+    ? `https://is.mendelu.cz/auth/studijni/studijni_povinnosti.pl?studium=${studium};lang=${lang}`
+    : `https://is.mendelu.cz/auth/studijni/studijni_povinnosti.pl?lang=${lang}`;
   const pct = creditsRequired > 0 ? Math.min(100, Math.round((creditsAcquired / creditsRequired) * 100)) : 0;
   const progressionInfo = studyStats ? getProgressionInfo(studyStats) : null;
   const progression = progressionInfo?.level ?? null;
 
   return (
     <div className="px-4 py-3 border-b border-base-300">
-      <h2 className="text-lg font-semibold">{t('subjects.title')}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">{t('subjects.title')}</h2>
+        <a
+          href={planCheckUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-ghost btn-sm gap-1.5 text-base-content/50 hover:text-primary"
+        >
+          <span className="text-xs">IS MENDELU</span>
+          <ExternalLink size={14} />
+        </a>
+      </div>
 
       <div className="flex items-center gap-3 mt-2">
         <div className="flex-1 h-2 bg-base-300 rounded-full overflow-hidden">
