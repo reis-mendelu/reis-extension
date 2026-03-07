@@ -99,7 +99,7 @@ export async function fetchSubjectSuccessRates(targetCodes: string[]): Promise<S
             const response = await fetch(url);
             if (!response.ok) {
                 if (response.status === 404) {
-                    loggers.api.warn('[SuccessRate] Course not found in CDN (404):', code);
+                    loggers.api.info('[SuccessRate] No data for:', code);
                     return null;
                 }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
