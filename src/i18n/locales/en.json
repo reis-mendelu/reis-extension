@@ -110,7 +110,10 @@
         "recentlySearched": "Recently searched",
         "student": "Student",
         "teacher": "Teacher",
-        "employee": "Employee"
+        "employee": "Employee",
+        "subjects": "Subjects",
+        "pages": "Pages",
+        "people": "People"
     },
     "course": {
         "garant": "Course supervisor:",

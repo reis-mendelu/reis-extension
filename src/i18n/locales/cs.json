@@ -55,7 +55,10 @@
     "recentlySearched": "Nedávno hledáno",
     "student": "Student",
     "teacher": "Vyučující",
-    "employee": "Zaměstnanec"
+    "employee": "Zaměstnanec",
+    "subjects": "Předměty",
+    "pages": "Stránky",
+    "people": "Lidé"
   },
   "exams": {
     "title": "Moje zkoušky",

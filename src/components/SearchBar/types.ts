@@ -13,3 +13,9 @@
     onExecute?: () => void;
     keywords?: string[];
   }
+
+  export interface SearchSection {
+    key: string;
+    label: string;
+    results: SearchResult[];
+  }

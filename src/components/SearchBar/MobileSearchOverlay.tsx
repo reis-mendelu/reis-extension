@@ -17,7 +17,7 @@ interface MobileSearchOverlayProps {
 export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = [] }: MobileSearchOverlayProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
-  const { setIsOpen, selectedIndex, setSelectedIndex, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query, actions);
+  const { setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query, actions);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -50,7 +50,8 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = 
     onClose();
   };
 
-  const displayResults = query.trim() === '' ? recentSearches : filteredResults;
+  const isEmptyQuery = query.trim() === '';
+  const displayResults = isEmptyQuery ? recentSearches : filteredResults;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const resultsCount = displayResults.length;
@@ -60,6 +61,37 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = 
   };
 
   if (!isOpen) return null;
+
+  const renderSearchResults = () => {
+    if (sections.length === 0) {
+      return (
+        <div className="px-4 py-8 text-center text-sm text-base-content/50">
+          {isLoading ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-base-content/50" />
+              <span>{t('search.loading')}</span>
+            </div>
+          ) : t('search.empty')}
+        </div>
+      );
+    }
+
+    let globalIdx = 0;
+    return sections.map(section => (
+      <div key={section.key}>
+        <div className="px-4 py-1.5 text-xs font-semibold text-base-content/50 uppercase tracking-wider mt-1">
+          {section.label}
+        </div>
+        {section.results.map(result => {
+          const idx = globalIdx++;
+          return (
+            <SearchResultItem key={result.id} result={result} isRecent={false} isSelected={selectedIndex === idx}
+              onMouseEnter={() => setSelectedIndex(idx)} onMouseDown={(e) => { e.preventDefault(); handleSelect(result); }} />
+          );
+        })}
+      </div>
+    ));
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-base-100 flex flex-col">
@@ -87,28 +119,21 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = 
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="px-4 py-2 text-xs font-semibold text-base-content/50 uppercase tracking-wider">
-          {query ? t('search.results') : t('search.recent')}
-        </div>
-        {displayResults.length > 0 ? displayResults.map((result, index) => (
-          <SearchResultItem
-            key={result.id}
-            result={result}
-            isRecent={query === ''}
-            isSelected={selectedIndex === index}
-            onMouseEnter={() => setSelectedIndex(index)}
-            onMouseDown={(e) => { e.preventDefault(); handleSelect(result); }}
-          />
-        )) : (
-          <div className="px-4 py-8 text-center text-sm text-base-content/50">
-            {isLoading ? (
-              <div className="flex flex-col items-center gap-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-base-content/50" />
-                <span>{t('search.loading')}</span>
+        {isEmptyQuery ? (
+          <>
+            <div className="px-4 py-2 text-xs font-semibold text-base-content/50 uppercase tracking-wider">
+              {t('search.recent')}
+            </div>
+            {recentSearches.length > 0 ? recentSearches.map((result, index) => (
+              <SearchResultItem key={result.id} result={result} isRecent isSelected={selectedIndex === index}
+                onMouseEnter={() => setSelectedIndex(index)} onMouseDown={(e) => { e.preventDefault(); handleSelect(result); }} />
+            )) : (
+              <div className="px-4 py-8 text-center text-sm text-base-content/50">
+                {t('search.recentHint')}
               </div>
-            ) : query.trim() === '' ? t('search.recentHint') : t('search.empty')}
-          </div>
-        )}
+            )}
+          </>
+        ) : renderSearchResults()}
       </div>
       <SearchFooter />
     </div>

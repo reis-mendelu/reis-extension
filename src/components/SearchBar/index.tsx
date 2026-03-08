@@ -6,6 +6,7 @@ import { useSearch } from './useSearch';
 import { SearchResultItem } from './SearchResultItem';
 import { SearchFooter } from './SearchFooter';
 import type { SearchResult } from './types';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -14,20 +15,19 @@ interface SearchBarProps {
   prefillRef?: React.MutableRefObject<((query: string) => void) | null>;
   actions?: SearchResult[];
 }
-import { useTranslation } from '../../hooks/useTranslation';
 
 export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, actions = [] }: SearchBarProps) {
   const { t } = useTranslation();
   const defaultPlaceholder = t('search.placeholder');
   const finalPlaceholder = placeholder || defaultPlaceholder;
   const [query, setQuery] = useState('');
-  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query, actions);
+  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query, actions);
   const inputWrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
 
-  // Close on click outside (check both input and dropdown)
+  // Close on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -60,7 +60,7 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
     };
   }, [setIsOpen]);
 
-  // Wire up prefill ref for programmatic open
+  // Wire up prefill ref
   useEffect(() => {
     if (!prefillRef) return;
     prefillRef.current = (q: string) => {
@@ -99,7 +99,6 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
   };
 
   const isEmptyQuery = query.trim() === '';
-  const displayResults = isEmptyQuery ? [] : filteredResults;
 
   const browseItems: SearchResult[] = isEmptyQuery
     ? [
@@ -111,12 +110,48 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) { if (e.key === 'Enter' && query.trim() !== '') setIsOpen(true); return; }
-    const items = isEmptyQuery ? browseItems : displayResults;
+    const items = isEmptyQuery ? browseItems : filteredResults;
     const resultsCount = items.length;
     if (e.key === 'ArrowDown') { e.preventDefault(); setSelectedIndex(prev => (prev + 1) % resultsCount); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setSelectedIndex(prev => prev <= 0 ? resultsCount - 1 : prev - 1); }
     else if (e.key === 'Enter') { e.preventDefault(); if (resultsCount > 0) handleSelect(items[selectedIndex >= 0 ? selectedIndex : 0]); }
     else if (e.key === 'Escape') { e.preventDefault(); setIsOpen(false); setQuery(''); inputRef.current?.blur(); }
+  };
+
+  // Render sectioned search results
+  const renderSearchResults = () => {
+    if (sections.length === 0) {
+      return (
+        <div className="px-4 py-8 text-center text-sm text-base-content/50">
+          {isLoading ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-base-content/50" />
+              <span>{t('search.loading')}</span>
+            </div>
+          ) : t('search.empty')}
+        </div>
+      );
+    }
+
+    let globalIdx = 0;
+    return sections.map(section => {
+      const sectionStartIdx = globalIdx;
+      const items = section.results.map((result, _i) => {
+        const idx = globalIdx++;
+        return (
+          <SearchResultItem key={result.id} result={result} isRecent={false} isSelected={selectedIndex === idx}
+            onMouseEnter={() => setSelectedIndex(idx)} onMouseDown={(e) => { e.preventDefault(); handleSelect(result); }} />
+        );
+      });
+      return (
+        <div key={section.key} data-section-start={sectionStartIdx}>
+          <div className="px-4 py-1.5 text-xs font-semibold text-base-content/50 uppercase tracking-wider mt-1 sticky top-0 bg-base-100 z-10">
+            {section.label}
+          </div>
+          {items}
+        </div>
+      );
+    });
   };
 
   const dropdownContent = isOpen && dropdownPos && (
@@ -156,11 +191,11 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
                 <div key={cat.id}>
                   <div className="px-4 py-1.5 text-xs font-semibold text-base-content/50 uppercase tracking-wider mt-1 sticky top-0 bg-base-100 z-10">{cat.label}</div>
                   {cat.children.map((p, i) => {
-                    const globalIdx = catOffset + i;
+                    const idx = catOffset + i;
                     return (
                       <SearchResultItem key={p.id} result={{ id: p.id, title: p.label, type: 'page', detail: cat.label, link: p.href, category: cat.label }}
-                        isRecent={false} isSelected={selectedIndex === globalIdx}
-                        onMouseEnter={() => setSelectedIndex(globalIdx)} onMouseDown={(e) => { e.preventDefault(); handleSelect(browseItems[globalIdx]); }} />
+                        isRecent={false} isSelected={selectedIndex === idx}
+                        onMouseEnter={() => setSelectedIndex(idx)} onMouseDown={(e) => { e.preventDefault(); handleSelect(browseItems[idx]); }} />
                     );
                   })}
                 </div>
@@ -168,20 +203,9 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
             })}
           </div>
         ) : (
-          <>
-            <div className="px-4 py-2 text-xs font-semibold text-base-content/50 uppercase tracking-wider mt-1"><span>{t('search.results')}</span></div>
-            <div className="max-h-[min(500px,60vh)] overflow-y-auto pb-2">
-              {displayResults.length > 0 ? displayResults.map((result, index) => (
-                <SearchResultItem key={result.id} result={result} isRecent={false} isSelected={selectedIndex === index}
-                  onMouseEnter={() => setSelectedIndex(index)} onMouseDown={(e) => { e.preventDefault(); handleSelect(result); }} />
-              )) : (
-                <div className="px-4 py-8 text-center text-sm text-base-content/50">
-                  {isLoading ? <div className="flex flex-col items-center gap-2"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-base-content/50"></div><span>{t('search.loading')}</span></div> :
-                    t('search.empty')}
-                </div>
-              )}
-            </div>
-          </>
+          <div className="max-h-[min(500px,60vh)] overflow-y-auto pb-2">
+            {renderSearchResults()}
+          </div>
         )}
         <SearchFooter />
       </div>

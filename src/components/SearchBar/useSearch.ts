@@ -3,12 +3,41 @@ import { searchGlobal } from '../../api/search';
 import { pagesData } from '../../data/pagesData';
 import { pageKeywords } from '../../data/pages/keywords';
 import { fuzzyIncludes } from '../../utils/searchUtils';
-import type { SearchResult } from './types';
+import type { SearchResult, SearchSection } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { IndexedDBService } from '../../services/storage';
 import { useAppStore } from '../../store/useAppStore';
 
 const MAX_RECENT_SEARCHES = 3;
+
+function sortByRelevance(results: SearchResult[], searchQuery: string, studyPlanCodes: Set<string>, userFaculty?: string, userSemester?: string): SearchResult[] {
+  return [...results].sort((a, b) => {
+    const scoreA = getWithinSectionScore(a, searchQuery, studyPlanCodes, userFaculty, userSemester);
+    const scoreB = getWithinSectionScore(b, searchQuery, studyPlanCodes, userFaculty, userSemester);
+    return scoreB !== scoreA ? scoreB - scoreA : a.title.localeCompare(b.title);
+  });
+}
+
+function getWithinSectionScore(r: SearchResult, searchQuery: string, studyPlanCodes: Set<string>, userFaculty?: string, userSemester?: string): number {
+  const titleLower = r.title.toLowerCase();
+  const codeLower = r.subjectCode?.toLowerCase() ?? '';
+  let score = 0;
+
+  // Match quality
+  if (titleLower === searchQuery) score += 500;
+  else if (titleLower.startsWith(searchQuery)) score += 400;
+  else if (codeLower === searchQuery) score += 300;
+
+  // Subject-specific boosts
+  if (r.type === 'subject') {
+    if (r.id.startsWith('enrolled-')) score += 50;
+    if (r.subjectCode && studyPlanCodes.has(r.subjectCode)) score += 30;
+    if (r.faculty && userFaculty && r.faculty === userFaculty) score += 20;
+    if (r.semester && userSemester && r.semester.includes(userSemester)) score += 10;
+  }
+
+  return score;
+}
 
 export function useSearch(query: string, actions: SearchResult[] = []) {
   const { t, language } = useTranslation();
@@ -16,7 +45,7 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
   const studyPlan = useAppStore(s => s.studyPlanDual);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [filteredResults, setFilteredResults] = useState<SearchResult[]>([]);
+  const [sections, setSections] = useState<SearchSection[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<SearchResult[]>([]);
   const [studiumId, setStudiumId] = useState<string | undefined>(undefined);
@@ -24,7 +53,6 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
   const [userSemester, setUserSemester] = useState<string | undefined>(undefined);
   const debounceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Build a set of subject codes from the study plan for ranking boost
   const studyPlanCodes = useMemo(() => {
     const codes = new Set<string>();
     if (!studyPlan) return codes;
@@ -39,6 +67,9 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
     }
     return codes;
   }, [studyPlan]);
+
+  // Flat list for keyboard navigation
+  const filteredResults = useMemo(() => sections.flatMap(s => s.results), [sections]);
 
   useEffect(() => {
     import('../../utils/userParams').then(async ({ getUserParams }) => {
@@ -71,38 +102,10 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
     }
   };
 
-  const getScore = (r: SearchResult, searchQuery: string): number => {
-    const titleLower = r.title.toLowerCase();
-    const codeLower = r.subjectCode?.toLowerCase() ?? '';
-    const isEnrolled = r.type === 'subject' && r.id.startsWith('enrolled-');
-    const inStudyPlan = r.type === 'subject' && r.subjectCode ? studyPlanCodes.has(r.subjectCode) : false;
-
-    // Type tier (tiebreaker within same match quality)
-    let base = r.type === 'action' ? 90 : isEnrolled ? 50 : r.type === 'subject' ? 40 : r.type === 'page' ? 20 : 10;
-
-    if (r.type === 'subject') {
-      if (inStudyPlan) base += 8;
-      if (r.faculty && userFaculty && r.faculty === userFaculty) base += 5;
-      if (r.semester && userSemester && r.semester.includes(userSemester)) base += 3;
-    }
-
-    // Match quality dominates
-    if (titleLower === searchQuery) return 5000 + base;
-    if (titleLower.startsWith(searchQuery)) return 4000 + base;
-    if (codeLower === searchQuery) return 3000 + base;
-    return base;
-  };
-
-  const sortResults = (results: SearchResult[], searchQuery: string) =>
-    results.sort((a, b) => {
-      const sB = getScore(b, searchQuery), sA = getScore(a, searchQuery);
-      return sB !== sA ? sB - sA : a.title.localeCompare(b.title);
-    });
-
-  // Instant local results (actions + enrolled subjects + pages) — no debounce, no network
+  // Instant local results (actions + enrolled subjects + pages)
   useEffect(() => {
     if (query.trim().length < 2) {
-      setFilteredResults([]);
+      setSections([]);
       setSelectedIndex(-1);
       setIsLoading(false);
       return;
@@ -143,13 +146,19 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
       }
     }));
 
-    setFilteredResults(sortResults([...matchedActions, ...enrolledResults, ...pageResults], searchQuery));
+    const newSections: SearchSection[] = [
+      { key: 'actions', label: t('commands.quickActions'), results: matchedActions },
+      { key: 'subjects', label: t('search.subjects'), results: sortByRelevance(enrolledResults, searchQuery, studyPlanCodes, userFaculty, userSemester) },
+      { key: 'pages', label: t('search.pages'), results: pageResults },
+    ].filter(s => s.results.length > 0);
+
+    setSections(newSections);
     setSelectedIndex(0);
     setIsLoading(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, actions]);
 
-  // Debounced network results (subjects + people) — appended to local results
+  // Debounced network results (subjects + people) — merge into sections
   useEffect(() => {
     if (query.trim().length < 2) return;
 
@@ -171,11 +180,23 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
           link: s.link, subjectCode: s.code, subjectId: s.id, faculty: s.faculty, semester: s.semester
         }));
 
-        setFilteredResults(prev => {
-          const enrolledCodes = new Set(prev.filter(r => r.id.startsWith('enrolled-')).map(r => r.subjectCode));
+        setSections(prev => {
+          const enrolledCodes = new Set(
+            prev.find(s => s.key === 'subjects')?.results.filter(r => r.id.startsWith('enrolled-')).map(r => r.subjectCode) ?? []
+          );
           const networkSubjects = subjectResults.filter(s => !enrolledCodes.has(s.subjectCode));
-          const networkResults = sortResults([...networkSubjects, ...personResults], searchQuery);
-          return [...prev, ...networkResults];
+
+          const existingSubjects = prev.find(s => s.key === 'subjects')?.results ?? [];
+          const mergedSubjects = sortByRelevance([...existingSubjects, ...networkSubjects], searchQuery, studyPlanCodes, userFaculty, userSemester);
+
+          const newSections: SearchSection[] = [
+            prev.find(s => s.key === 'actions'),
+            { key: 'subjects', label: t('search.subjects'), results: mergedSubjects },
+            prev.find(s => s.key === 'pages'),
+            { key: 'people', label: t('search.people'), results: personResults },
+          ].filter((s): s is SearchSection => !!s && s.results.length > 0);
+
+          return newSections;
         });
       } catch { /* keep local results */ } finally { setIsLoading(false); }
     }, 250);
@@ -183,5 +204,5 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  return { isOpen, setIsOpen, selectedIndex, setSelectedIndex, filteredResults, isLoading, recentSearches, studiumId, saveToHistory };
+  return { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory };
 }
