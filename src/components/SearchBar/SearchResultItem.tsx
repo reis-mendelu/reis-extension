@@ -1,4 +1,4 @@
-import { Clock, FileText, BookOpen, Briefcase } from 'lucide-react';
+import { Clock, FileText, BookOpen, Briefcase, Zap } from 'lucide-react';
 import type { SearchResult } from './types';
 
 interface SearchResultItemProps {
@@ -32,6 +32,11 @@ export function SearchResultItem({ result, isRecent, isSelected, onMouseEnter, o
           </div>
         );
       }
+      case 'action': return (
+        <div className="w-6 h-6 rounded bg-warning/20 flex items-center justify-center">
+          <Zap className="w-3.5 h-3.5 text-warning" />
+        </div>
+      );
       default: return (
         <div className="w-6 h-6 rounded bg-base-200 flex items-center justify-center">
           <FileText className="w-3.5 h-3.5 text-base-content/60" />

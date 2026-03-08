@@ -242,6 +242,20 @@
     "enrolledCreditsLabel": "cr. enrolled",
     "failRateLabel": "fail"
   },
+  "commands": {
+    "quickActions": "Quick Actions",
+    "navigation": "Navigation",
+    "settings": "Settings",
+    "actions": "Actions",
+    "openCalendar": "Open Calendar",
+    "openExams": "Open Exams",
+    "openSubjects": "Open Subjects",
+    "switchToDark": "Switch to Dark Mode",
+    "switchToLight": "Switch to Light Mode",
+    "switchToCzech": "Přepnout na češtinu",
+    "switchToEnglish": "Switch to English",
+    "openFeedback": "Send Feedback"
+  },
   "classmates": {
     "all": "All",
     "seminar": "Seminar",

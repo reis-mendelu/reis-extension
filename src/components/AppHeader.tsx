@@ -1,9 +1,11 @@
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { SearchBar } from './SearchBar/index';
 import { MobileSearchOverlay } from './SearchBar/MobileSearchOverlay';
 import { useTranslation } from '../hooks/useTranslation';
 import { NotificationFeed } from './NotificationFeed';
+import { useAppStore } from '../store/useAppStore';
+import { getCommandActions } from './SearchBar/actions';
 
 interface AppHeaderProps {
   currentView: string;
@@ -13,6 +15,8 @@ interface AppHeaderProps {
   onToday: () => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string) => void;
   searchPrefillRef?: React.MutableRefObject<((query: string) => void) | null>;
+  setCurrentView?: (view: 'calendar' | 'exams' | 'subjects') => void;
+  openFeedback?: () => void;
 }
 
 export function AppHeader({
@@ -23,9 +27,25 @@ export function AppHeader({
   onToday,
   onOpenSubject,
   searchPrefillRef,
+  setCurrentView,
+  openFeedback,
 }: AppHeaderProps) {
   const { t } = useTranslation();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const theme = useAppStore(s => s.theme);
+  const setTheme = useAppStore(s => s.setTheme);
+  const language = useAppStore(s => s.language);
+  const setLanguage = useAppStore(s => s.setLanguage);
+
+  const actions = useMemo(() => getCommandActions({
+    setCurrentView: setCurrentView || (() => {}),
+    setTheme,
+    setLanguage,
+    openFeedback: openFeedback || (() => {}),
+    theme,
+    language,
+    t,
+  }), [setCurrentView, setTheme, setLanguage, openFeedback, theme, language, t]);
 
   return (
     <>
@@ -59,7 +79,7 @@ export function AppHeader({
           {/* Desktop: hero search bar — absolutely centered in header */}
           <div className="hidden md:flex absolute inset-0 items-center justify-center pointer-events-none">
             <div className="w-full max-w-2xl pointer-events-auto">
-              <SearchBar onOpenSubject={onOpenSubject} prefillRef={searchPrefillRef} />
+              <SearchBar onOpenSubject={onOpenSubject} prefillRef={searchPrefillRef} actions={actions} />
             </div>
           </div>
 
@@ -82,6 +102,7 @@ export function AppHeader({
         isOpen={mobileSearchOpen}
         onClose={() => setMobileSearchOpen(false)}
         onOpenSubject={onOpenSubject}
+        actions={actions}
       />
     </>
   );

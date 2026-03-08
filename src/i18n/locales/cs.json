@@ -242,6 +242,20 @@
     "enrolledCreditsLabel": "kr. zapsáno",
     "failRateLabel": "neúsp."
   },
+  "commands": {
+    "quickActions": "Rychlé akce",
+    "navigation": "Navigace",
+    "settings": "Nastavení",
+    "actions": "Akce",
+    "openCalendar": "Otevřít kalendář",
+    "openExams": "Otevřít zkoušky",
+    "openSubjects": "Otevřít předměty",
+    "switchToDark": "Přepnout na tmavý režim",
+    "switchToLight": "Přepnout na světlý režim",
+    "switchToCzech": "Přepnout na češtinu",
+    "switchToEnglish": "Switch to English",
+    "openFeedback": "Odeslat zpětnou vazbu"
+  },
   "classmates": {
     "all": "Všichni",
     "seminar": "Cvičení",

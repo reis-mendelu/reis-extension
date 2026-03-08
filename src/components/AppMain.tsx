@@ -16,11 +16,13 @@ interface AppMainProps {
     handleOpenSubjectFromSearch: (courseCode: string, courseName?: string, courseId?: string) => void;
     dateRangeLabel: string;
     searchPrefillRef?: React.MutableRefObject<((query: string) => void) | null>;
+    setCurrentView?: (view: AppView) => void;
+    openFeedback?: () => void;
 }
 
 export function AppMain({
     currentView, currentDate, handlePrevWeek, handleNextWeek, handleToday,
-    handleOpenSubjectFromSearch, dateRangeLabel, searchPrefillRef
+    handleOpenSubjectFromSearch, dateRangeLabel, searchPrefillRef, setCurrentView, openFeedback
 }: AppMainProps) {
     const isMobile = useIsMobile();
     // Only handle swipe at this level for desktop week view;
@@ -29,7 +31,7 @@ export function AppMain({
 
     return (
         <main className="flex-1 flex flex-col transition-all duration-300 overflow-hidden">
-            <AppHeader currentView={currentView} dateRangeLabel={dateRangeLabel} onPrevWeek={handlePrevWeek} onNextWeek={handleNextWeek} onToday={handleToday} onOpenSubject={handleOpenSubjectFromSearch} searchPrefillRef={searchPrefillRef} />
+            <AppHeader currentView={currentView} dateRangeLabel={dateRangeLabel} onPrevWeek={handlePrevWeek} onNextWeek={handleNextWeek} onToday={handleToday} onOpenSubject={handleOpenSubjectFromSearch} searchPrefillRef={searchPrefillRef} setCurrentView={setCurrentView} openFeedback={openFeedback} />
             <NpsBanner />
             <div
                 className="flex-1 pt-3 px-4 pb-16 md:pb-1 overflow-hidden flex flex-col"

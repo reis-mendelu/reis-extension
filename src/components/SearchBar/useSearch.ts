@@ -9,7 +9,7 @@ import { IndexedDBService } from '../../services/storage';
 
 const MAX_RECENT_SEARCHES = 3;
 
-export function useSearch(query: string) {
+export function useSearch(query: string, actions: SearchResult[] = []) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -52,6 +52,29 @@ export function useSearch(query: string) {
     }
   };
 
+  const getScore = (r: SearchResult, searchQuery: string): number => {
+    const titleLower = r.title.toLowerCase();
+    const codeLower = r.subjectCode?.toLowerCase() ?? '';
+    let base = r.type === 'action' ? 10000 : r.type === 'subject' ? 1000 : r.type === 'page' ? 500 : 100;
+
+    if (r.type === 'subject') {
+      if (r.faculty && userFaculty && r.faculty === userFaculty) base += 2000;
+      if (r.semester && userSemester && r.semester.includes(userSemester)) base += 1000;
+    }
+
+    if (titleLower === searchQuery) return base + 500;
+    if (titleLower.startsWith(searchQuery)) return base + 400;
+    if (codeLower === searchQuery) return base + 300;
+    return base + 10;
+  };
+
+  const sortResults = (results: SearchResult[], searchQuery: string) =>
+    results.sort((a, b) => {
+      const sB = getScore(b, searchQuery), sA = getScore(a, searchQuery);
+      return sB !== sA ? sB - sA : a.title.localeCompare(b.title);
+    });
+
+  // Instant local results (actions + pages) — no debounce, no network
   useEffect(() => {
     if (query.trim().length < 2) {
       setFilteredResults([]);
@@ -59,7 +82,34 @@ export function useSearch(query: string) {
       setIsLoading(false);
       return;
     }
+
+    const searchQuery = query.toLowerCase();
+
+    const matchedActions = actions.filter(a => {
+      const targets = [a.title, ...(a.keywords || [])];
+      return targets.some(target => fuzzyIncludes(target, searchQuery));
+    });
+
+    const pageResults: SearchResult[] = [];
+    pagesData.forEach(cat => cat.children.forEach(p => {
+      const keywords = pageKeywords[p.id] ?? [];
+      const matchesLabel = fuzzyIncludes(p.label, searchQuery);
+      const matchesKeyword = keywords.some(kw => kw.toLowerCase().includes(searchQuery));
+      if (matchesLabel || matchesKeyword) {
+        pageResults.push({ id: p.id, title: p.label, type: 'page', detail: cat.label, link: p.href, category: cat.label });
+      }
+    }));
+
+    setFilteredResults(sortResults([...matchedActions, ...pageResults], searchQuery));
+    setSelectedIndex(0);
     setIsLoading(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, actions]);
+
+  // Debounced network results (subjects + people) — merged on top of local results
+  useEffect(() => {
+    if (query.trim().length < 2) return;
+
     if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
     debounceTimeout.current = setTimeout(async () => {
       try {
@@ -78,38 +128,11 @@ export function useSearch(query: string) {
           link: s.link, subjectCode: s.code, subjectId: s.id, faculty: s.faculty, semester: s.semester
         }));
 
-        const pageResults: SearchResult[] = [];
-        pagesData.forEach(cat => cat.children.forEach(p => {
-          const keywords = pageKeywords[p.id] ?? [];
-          const matchesLabel = fuzzyIncludes(p.label, searchQuery);
-          const matchesKeyword = keywords.some(kw => kw.toLowerCase().includes(searchQuery));
-          if (matchesLabel || matchesKeyword) {
-            pageResults.push({ id: p.id, title: p.label, type: 'page', detail: cat.label, link: p.href, category: cat.label });
-          }
-        }));
-
-        const getScore = (r: SearchResult): number => {
-          const titleLower = r.title.toLowerCase();
-          const codeLower = r.subjectCode?.toLowerCase() ?? '';
-          let base = r.type === 'subject' ? 1000 : r.type === 'page' ? 500 : 100;
-          
-          if (r.type === 'subject') {
-            if (r.faculty && userFaculty && r.faculty === userFaculty) base += 2000;
-            if (r.semester && userSemester && r.semester.includes(userSemester)) base += 1000;
-          }
-
-          if (titleLower === searchQuery) return base + 500;
-          if (titleLower.startsWith(searchQuery)) return base + 400;
-          if (codeLower === searchQuery) return base + 300;
-          return base + 10;
-        };
-
-        const all = [...subjectResults, ...pageResults, ...personResults].sort((a, b) => {
-          const sB = getScore(b), sA = getScore(a);
-          return sB !== sA ? sB - sA : a.title.localeCompare(b.title);
+        setFilteredResults(prev => {
+          const localResults = prev.filter(r => r.type === 'action' || r.type === 'page');
+          return sortResults([...localResults, ...subjectResults, ...personResults], searchQuery);
         });
-        setFilteredResults(all);
-      } catch { setFilteredResults([]); } finally { setIsLoading(false); }
+      } catch { /* keep local results */ } finally { setIsLoading(false); }
     }, 250);
     return () => { if (debounceTimeout.current) clearTimeout(debounceTimeout.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps

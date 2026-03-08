@@ -34,6 +34,20 @@ function injectAndInitialize() {
         return;
     }
     injectIframe();
+    listenForSearchShortcut();
     window.addEventListener("message", handleMessage);
     startSyncService();
+}
+
+function listenForSearchShortcut() {
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            const iframe = document.getElementById(IFRAME_ID) as HTMLIFrameElement | null;
+            if (iframe) {
+                iframe.focus();
+                iframe.contentWindow?.postMessage({ type: 'REIS_OPEN_SEARCH' }, '*');
+            }
+        }
+    });
 }

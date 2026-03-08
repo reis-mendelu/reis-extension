@@ -1,14 +1,7 @@
-export interface SearchBarProps {
-  placeholder?: string;
-  onSearch?: (query: string) => void;
-  onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string, facultyCode?: string) => void;
-  prefillRef?: React.MutableRefObject<((query: string) => void) | null>;
-}
-
   export interface SearchResult {
     id: string;
     title: string;
-    type: 'person' | 'page' | 'subject';
+    type: 'person' | 'page' | 'subject' | 'action';
     detail?: string;
     link?: string;
     personType?: 'student' | 'teacher' | 'staff' | 'unknown';
@@ -17,4 +10,6 @@ export interface SearchBarProps {
     subjectId?: string;
     faculty?: string;
     semester?: string;
+    onExecute?: () => void;
+    keywords?: string[];
   }

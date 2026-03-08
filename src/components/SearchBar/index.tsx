@@ -5,15 +5,23 @@ import { injectUserParams, pagesData } from '../../data/pagesData';
 import { useSearch } from './useSearch';
 import { SearchResultItem } from './SearchResultItem';
 import { SearchFooter } from './SearchFooter';
-import type { SearchBarProps, SearchResult } from './types';
+import type { SearchResult } from './types';
+
+interface SearchBarProps {
+  placeholder?: string;
+  onSearch?: (query: string) => void;
+  onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string, facultyCode?: string) => void;
+  prefillRef?: React.MutableRefObject<((query: string) => void) | null>;
+  actions?: SearchResult[];
+}
 import { useTranslation } from '../../hooks/useTranslation';
 
-export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: SearchBarProps) {
+export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, actions = [] }: SearchBarProps) {
   const { t } = useTranslation();
   const defaultPlaceholder = t('search.placeholder');
   const finalPlaceholder = placeholder || defaultPlaceholder;
   const [query, setQuery] = useState('');
-  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query);
+  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query, actions);
   const inputWrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -38,8 +46,18 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: 
         setIsOpen(true);
       }
     };
+    const handleParentMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'REIS_OPEN_SEARCH') {
+        inputRef.current?.focus();
+        setIsOpen(true);
+      }
+    };
     document.addEventListener('keydown', handleGlobalKeyDown);
-    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+    window.addEventListener('message', handleParentMessage);
+    return () => {
+      document.removeEventListener('keydown', handleGlobalKeyDown);
+      window.removeEventListener('message', handleParentMessage);
+    };
   }, [setIsOpen]);
 
   // Wire up prefill ref for programmatic open
@@ -66,13 +84,17 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: 
   }, [isOpen]);
 
   const handleSelect = (result: SearchResult) => {
-    saveToHistory(result);
-    if (result.type === 'subject' && onOpenSubject) {
-      onOpenSubject(result.subjectCode!, result.title, result.subjectId, result.faculty);
-    } else if (result.link) {
-      window.open(injectUserParams(result.link, studiumId), '_blank');
+    if (result.type === 'action' && result.onExecute) {
+      result.onExecute();
+    } else {
+      saveToHistory(result);
+      if (result.type === 'subject' && onOpenSubject) {
+        onOpenSubject(result.subjectCode!, result.title, result.subjectId, result.faculty);
+      } else if (result.link) {
+        window.open(injectUserParams(result.link, studiumId), '_blank');
+      }
+      if (onSearch) onSearch(result.title);
     }
-    if (onSearch) onSearch(result.title);
     setQuery(''); setIsOpen(false); setSelectedIndex(-1);
   };
 
@@ -82,6 +104,7 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: 
   const browseItems: SearchResult[] = isEmptyQuery
     ? [
         ...recentSearches,
+        ...actions,
         ...pagesData.flatMap(cat => cat.children.map(p => ({ id: p.id, title: p.label, type: 'page' as const, detail: cat.label, link: p.href, category: cat.label }))),
       ]
     : [];
@@ -115,8 +138,20 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: 
                 ))}
               </div>
             )}
+            {actions.length > 0 && (
+              <div>
+                <div className="px-4 py-1.5 text-xs font-semibold text-base-content/50 uppercase tracking-wider mt-1 sticky top-0 bg-base-100 z-10">{t('commands.quickActions')}</div>
+                {actions.map((action, i) => {
+                  const globalIdx = recentSearches.length + i;
+                  return (
+                    <SearchResultItem key={action.id} result={action} isRecent={false} isSelected={selectedIndex === globalIdx}
+                      onMouseEnter={() => setSelectedIndex(globalIdx)} onMouseDown={(e) => { e.preventDefault(); handleSelect(action); }} />
+                  );
+                })}
+              </div>
+            )}
             {pagesData.map(cat => {
-              const catOffset = recentSearches.length + pagesData.slice(0, pagesData.indexOf(cat)).reduce((sum, c) => sum + c.children.length, 0);
+              const catOffset = recentSearches.length + actions.length + pagesData.slice(0, pagesData.indexOf(cat)).reduce((sum, c) => sum + c.children.length, 0);
               return (
                 <div key={cat.id}>
                   <div className="px-4 py-1.5 text-xs font-semibold text-base-content/50 uppercase tracking-wider mt-1 sticky top-0 bg-base-100 z-10">{cat.label}</div>
