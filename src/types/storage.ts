@@ -4,8 +4,10 @@ import type { ExamSubject } from '../types/exams';
 import type { BlockLesson } from '../types/calendarTypes';
 import type { ClassmatesData } from '../types/classmates';
 import type { StudyPlan, DualLanguageStudyPlan } from '../types/studyPlan';
+import type { OsnovaTest } from '../api/osnovy';
 
 // --- Base Types using Zod ---
+
 
 export const ParsedFileSchema = z.custom<ParsedFile>();
 export const AssessmentSchema = z.custom<Assessment>();
@@ -75,6 +77,7 @@ export const StoreSchemas = {
     meta: MetaSchema,
     grade_history: GradeHistorySchema,
     study_plan: StudyPlanSchema,
+    osnovy: z.array(z.custom<OsnovaTest>()),
 };
 
 export type StoreName = keyof typeof StoreSchemas;

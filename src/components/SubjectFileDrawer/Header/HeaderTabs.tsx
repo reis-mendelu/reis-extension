@@ -13,9 +13,9 @@ export function HeaderTabs({ activeTab, onTabChange, disabledTabs = [] }: Header
 
     const tabs = [
         { id: 'files', label: t('course.tabs.files') }, 
+        { id: 'osnovy', label: t('course.tabs.osnovy') },
         { id: 'syllabus', label: t('course.tabs.requirements') }, 
         { id: 'stats', label: t('course.tabs.successRate') },
-        // { id: 'classmates', label: displayLabel }
     ];
 
     return (

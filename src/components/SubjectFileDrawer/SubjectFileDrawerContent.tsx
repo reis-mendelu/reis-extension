@@ -5,6 +5,7 @@ import { SyllabusTab } from './SyllabusTab';
 import { ClassmatesTab } from './ClassmatesTab';
 import { SuccessRateTab } from '../SuccessRateTab';
 import { SelectionBox, DragHint } from './DragHint';
+import { useOsnovy } from '../../hooks/data';
 import type { FileGroup } from './types';
 import type { SyllabusRequirements, ParsedFile } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -13,7 +14,7 @@ import type { SelectedSubject } from '../../types/app';
 
 
 interface SubjectFileDrawerContentProps {
-    activeTab: 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates';
+    activeTab: 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates' | 'osnovy';
     lesson: BlockLesson | SelectedSubject | null;
     files: ParsedFile[] | null;
     isFilesLoading: boolean;
@@ -41,6 +42,8 @@ export function SubjectFileDrawerContent({
     groupedFiles, selectedIds, fileRefs, ignoreClickRef, toggleSelect, openFile, onViewPdf, resolvedCourseId, syllabusResult, folderUrl
 }: SubjectFileDrawerContentProps) {
     const { t, language } = useTranslation();
+    const { tests } = useOsnovy(lesson?.courseName);
+
     if (activeTab === 'files') {
         const isEmpty = !files || files.length === 0;
         // Show skeleton only when we have no data yet — never suppress it with isSyncing
@@ -64,6 +67,7 @@ export function SubjectFileDrawerContent({
                         )}
                     </div>
                 )}
+
                 {showSkeleton ? <FileListSkeleton /> :
                  isEmpty && !showProgress ? (
                     <div className="flex flex-col items-center justify-center h-full p-6 text-center">
@@ -96,5 +100,43 @@ export function SubjectFileDrawerContent({
     if (activeTab === 'assessments') return <AssessmentTab courseCode={lesson?.courseCode || ''} />;
     if (activeTab === 'syllabus') return <SyllabusTab courseCode={lesson?.courseCode || ''} courseId={resolvedCourseId} courseName={lesson?.courseName ?? ''} prefetchedResult={syllabusResult} />;
     if (activeTab === 'classmates') return <ClassmatesTab courseCode={lesson?.courseCode || ''} skupinaId={lesson && 'skupinaId' in lesson ? (lesson as any).skupinaId : undefined} />;
+    
+    if (activeTab === 'osnovy') {
+        const isEmpty = tests.length === 0;
+        return (
+            <div className="flex flex-col h-full bg-base-100">
+                {isEmpty ? (
+                    <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                        <FileText className="w-12 h-12 text-base-content/20 mb-3" />
+                        <p className="text-sm text-base-content/60">
+                            {t('syllabus.noData') || 'Žádné úkoly ani testy nejsou k dispozici.'}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-1 p-4">
+                        {tests.map(test => (
+                            <div key={test.url} className="flex items-center justify-between gap-4 p-3 rounded-xl hover:bg-base-200 transition-colors animate-in fade-in slide-in-from-left-2 duration-300">
+                                <span className="font-semibold text-base-content/80 text-sm">
+                                    {test.name}
+                                </span>
+                                <div className="flex items-center gap-3 shrink-0">
+                                    <div className="h-px w-6 bg-base-300" />
+                                    <a 
+                                        href={test.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="px-4 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-xl font-bold uppercase text-[10px] tracking-wider transition-all hover:bg-primary/20 active:scale-95 flex items-center justify-center h-8"
+                                    >
+                                        {t('common.start') || 'Spustit'}
+                                    </a>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     return <SuccessRateTab courseCode={lesson?.courseCode || ''} facultyCode={'facultyCode' in (lesson ?? {}) ? (lesson as { facultyCode?: string }).facultyCode : undefined} />;
 }

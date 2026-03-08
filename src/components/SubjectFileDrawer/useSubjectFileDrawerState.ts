@@ -11,7 +11,7 @@ export function useSubjectFileDrawerState(lesson: BlockLesson | SelectedSubject 
     const isExam = lesson && 'isExam' in lesson ? lesson.isExam : false;
     const isEnrolled = !!(lesson?.courseCode && getSubject(lesson.courseCode)?.subjectId);
     const requestedTab = lesson && 'initialTab' in lesson ? lesson.initialTab : undefined;
-    const [activeTab, setActiveTab] = useState<'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates'>(requestedTab ?? (isExam ? 'stats' : (isEnrolled ? 'files' : 'syllabus')));
+    const [activeTab, setActiveTab] = useState<'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates' | 'osnovy'>(requestedTab ?? (isExam ? 'stats' : (isEnrolled ? 'files' : 'syllabus')));
 
     useEffect(() => {
       if (requestedTab) setActiveTab(requestedTab);

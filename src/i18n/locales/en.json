@@ -98,8 +98,10 @@
         "close": "Close",
         "cancel": "Cancel",
         "confirm": "Confirm",
-        "save": "Save"
+        "save": "Save",
+        "start": "Start"
     },
+
     "search": {
         "placeholder": "Search subjects, people, pages... (⌘K)",
         "results": "Results",
@@ -125,8 +127,10 @@
             "requirements": "Requirements",
             "successRate": "Success Rate",
             "assessment": "Assessment",
-            "classmates": "Classmates"
+            "classmates": "Classmates",
+            "osnovy": "Tasks"
         },
+
         "footer": {
             "other": "Other",
             "noFiles": "No files",

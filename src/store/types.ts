@@ -4,6 +4,7 @@ import type { ExamSubject } from '../types/exams';
 import type { SyllabusRequirements, ParsedFile, Assessment, SubjectsData, SubjectSuccessRate } from '../types/documents';
 import type { ClassmatesData } from '../types/classmates';
 import type { DualLanguageStudyPlan, StudyStats } from '../types/studyPlan';
+import type { OsnovaTest } from '../api/osnovy';
 import type { SyncStatus } from '../services/sync';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
@@ -148,6 +149,14 @@ export interface StudyPlanSlice {
     fetchStudyStats: () => Promise<void>;
 }
 
+export interface OsnovySlice {
+    osnovy: OsnovaTest[];
+    osnovyStatus: Status;
+    fetchOsnovy: () => Promise<void>;
+    setOsnovy: (tests: OsnovaTest[]) => void;
+}
+
+
 export interface UseThemeResult {
   theme: Theme;
   isDark: boolean;
@@ -156,6 +165,6 @@ export interface UseThemeResult {
   setTheme: (theme: Theme) => void;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice;
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & OsnovySlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

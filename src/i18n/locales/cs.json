@@ -43,8 +43,10 @@
     "close": "Zavřít",
     "cancel": "Zrušit",
     "confirm": "Potvrdit",
-    "save": "Uložit"
+    "save": "Uložit",
+    "start": "Spustit"
   },
+
   "search": {
     "placeholder": "Hledej předměty, lidi, stránky... (⌘K)",
     "results": "Výsledky",
@@ -125,8 +127,10 @@
       "requirements": "Požadavky",
       "successRate": "Úspěšnost",
       "assessment": "Klasifikace",
-      "classmates": "Spolužáci"
+      "classmates": "Spolužáci",
+      "osnovy": "Úkoly a testy"
     },
+
     "footer": {
       "other": "Ostatní",
       "noFiles": "Žádné soubory",

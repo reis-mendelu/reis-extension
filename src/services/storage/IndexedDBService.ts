@@ -4,6 +4,7 @@ import type { BlockLesson } from '../../types/calendarTypes';
 import type { ExamSubject } from '../../types/exams';
 import type { ClassmatesData } from '../../types/classmates';
 import type { StudyPlan, DualLanguageStudyPlan } from '../../types/studyPlan';
+import type { OsnovaTest } from '../../api/osnovy';
 import { StoreSchemas, type StoreName } from '../../types/storage';
 
 interface ReisDB extends DBSchema {
@@ -53,10 +54,14 @@ interface ReisDB extends DBSchema {
         key: string;
         value: StudyPlan | DualLanguageStudyPlan;
     };
+    osnovy: {
+        key: string;
+        value: OsnovaTest[];
+    };
 }
 
 const DB_NAME = 'reis_db';
-const DB_VERSION = 8;
+const DB_VERSION = 9;
 
 class IndexedDBServiceImpl {
     private dbPromise: Promise<IDBPDatabase<ReisDB>>;
@@ -67,7 +72,7 @@ class IndexedDBServiceImpl {
                 const requiredStores: (keyof ReisDB)[] = [
                     'files', 'assessments', 'syllabuses', 'classmates',
                     'exams', 'schedule', 'subjects', 'success_rates', 'meta',
-                    'grade_history', 'study_plan'
+                    'grade_history', 'study_plan', 'osnovy'
                 ];
                 
                 requiredStores.forEach(store => {
@@ -81,15 +86,12 @@ class IndexedDBServiceImpl {
         });
     }
 
+
     private validate<K extends StoreName>(storeName: K, value: unknown): ReisDB[K]['value'] | undefined {
         const schema = StoreSchemas[storeName];
-        if (!schema) return value as ReisDB[K]['value'];
-
         const result = schema.safeParse(value);
-        if (!result.success) {
-            return undefined;
-        }
-        return result.data;
+        if (!result.success) return undefined;
+        return result.data as ReisDB[K]['value'];
     }
 
     async get<K extends StoreName>(storeName: K, key: string): Promise<ReisDB[K]['value'] | undefined> {
@@ -99,13 +101,13 @@ class IndexedDBServiceImpl {
         return value ? this.validate(storeName, value) : undefined;
     }
 
+
+
     async set<K extends StoreName>(storeName: K, key: string, value: ReisDB[K]['value']): Promise<void> {
         // Validate before saving to prevent corrupt data ingress
         const validated = this.validate(storeName, value);
-        if (validated === undefined && value !== undefined) {
-             return;
-        }
-
+        if (!validated) return; // Drop invalid data rather than saving it
+        
         const db = await this.dbPromise;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await db.put(storeName as any, validated, key);

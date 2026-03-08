@@ -22,10 +22,12 @@ interface SyncedData {
     classmates?: Record<string, unknown>;
     studyPlan?: DualLanguageStudyPlan;
     studyStats?: unknown;
+    osnovy?: any[];
     lastSync?: string;
     isSyncing?: boolean;
     isPartial?: boolean;
 }
+
 
 
 export function useAppLogic() {
@@ -89,7 +91,15 @@ export function useAppLogic() {
 
                 if (r.studyPlan && isDualLanguageStudyPlan(r.studyPlan)) await IndexedDBService.set('study_plan', 'current', r.studyPlan);
                 if (r.studyStats) await IndexedDBService.set('meta', 'study_stats', r.studyStats);
+                if (r.osnovy) {
+                    const userParams = await IndexedDBService.get('meta', 'reis_user_params');
+                    if (userParams?.studium) {
+                        await IndexedDBService.set('osnovy', userParams.studium, r.osnovy);
+                        useAppStore.getState().setOsnovy(r.osnovy);
+                    }
+                }
                 if (r.exams) await IndexedDBService.set('exams', 'current', r.exams);
+
                 if (r.subjects?.data) {
                     const existing = await IndexedDBService.get('subjects', 'current') as { data: Record<string, { nameCs?: string; nameEn?: string }> } | null;
                     if (existing?.data) {

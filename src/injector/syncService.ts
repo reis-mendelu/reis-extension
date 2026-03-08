@@ -7,12 +7,15 @@ import { fetchAssessments } from "../api/assessments";
 import { fetchDualLanguageStudyPlan } from "../api/studyPlan";
 import { fetchStudyStats } from "../api/studyStats";
 import { fetchSyllabus } from "../api/syllabus";
+import { fetchOsnovy } from "../api/osnovy";
 
 import { getUserParams } from "../utils/userParams";
 import { fetchScheduleBite, fetchFullSemesterSchedule } from "./dataFetchers";
 import { sendToIframe } from "./iframeManager";
 import { SYNC_INTERVAL } from "./config";
 import type { SyncedData } from "../types/messages";
+import { IndexedDBService } from "../services/storage/IndexedDBService";
+
 
 const limit = pLimit(3);
 export let cachedData: SyncedData = { lastSync: 0 };
@@ -63,13 +66,22 @@ export async function syncAllData() {
             })
             : Promise.resolve(null);
 
+        const osnovyPromise = studium ? fetchOsnovy(studium).then(osnovy => {
+            if (osnovy) {
+                cachedData = { ...cachedData, osnovy: osnovy.tests };
+                IndexedDBService.set('osnovy', studium, osnovy.tests).catch(() => {});
+            }
+            return osnovy;
+        }) : Promise.resolve(null);
+
         // Phase 2b: Full schedule + exams in parallel (subjects/studyPlan/studyStats re-uses already-started promises)
-        const [fullSchedule, exams, subjects, studyPlan, studyStats] = await Promise.allSettled([
+        const [fullSchedule, exams, subjects, studyPlan, studyStats, osnovy] = await Promise.allSettled([
             fetchFullSemesterSchedule(),
             fetchDualLanguageExams(),
             subjectsPromise,
             studyPlanPromise,
             studyStatsPromise,
+            osnovyPromise,
         ]);
 
         cachedData = {
@@ -79,6 +91,7 @@ export async function syncAllData() {
             subjects: subjects.status === "fulfilled" ? subjects.value : cachedData.subjects,
             studyPlan: studyPlan.status === "fulfilled" && studyPlan.value ? studyPlan.value : cachedData.studyPlan,
             studyStats: studyStats.status === "fulfilled" && studyStats.value ? studyStats.value : cachedData.studyStats,
+            osnovy: osnovy.status === "fulfilled" && osnovy.value ? osnovy.value.tests : cachedData.osnovy,
             files: cachedData.files || {},
             lastSync: Date.now(),
         };
