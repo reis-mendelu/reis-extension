@@ -243,7 +243,9 @@
     "compulsory": "Compulsory",
     "elective": "Elective",
     "enrolledCreditsLabel": "cr. enrolled",
-    "failRateLabel": "fail"
+    "failRateLabel": "fail",
+    "needMore": "need {n} more",
+    "notEnoughEnrolled": "not enough enrolled"
   },
   "commands": {
     "quickActions": "Quick Actions",

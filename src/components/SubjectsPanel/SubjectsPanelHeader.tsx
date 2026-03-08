@@ -1,7 +1,7 @@
 import { useTranslation } from '@/hooks/useTranslation';
 import { useUserParams } from '@/hooks/useUserParams';
 import type { StudyStats } from '@/types/studyPlan';
-import { AlertTriangle, CheckCircle2, ExternalLink } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ExternalLink, ShieldAlert } from 'lucide-react';
 
 interface SubjectsPanelHeaderProps {
   creditsAcquired: number;
@@ -11,20 +11,29 @@ interface SubjectsPanelHeaderProps {
 
 type ProgressionLevel = 'safe' | 'warning' | 'danger';
 
-function getProgressionInfo(stats: StudyStats): { level: ProgressionLevel; threshold: number } {
-  if (stats.totalEarnedCredits >= 150) return { level: 'safe', threshold: 0 };
+function getProgressionInfo(stats: StudyStats): { level: ProgressionLevel; threshold: number; earned: number; deficit: number; enrolledEnough: boolean } {
+  if (stats.totalEarnedCredits >= 150) return { level: 'safe', threshold: 0, earned: 0, deficit: 0, enrolledEnough: true };
 
-  // First semester: 12-credit minimum (no previous semester exists)
   const isFirstSemester = stats.previousSemester === null;
   const threshold = isFirstSemester ? 12 : 40;
   const earned = isFirstSemester ? stats.currentSemester.earnedCredits : stats.creditsLastTwoPeriods;
-
-  const needed = threshold - earned;
-  if (needed <= 0) return { level: 'safe', threshold };
+  const deficit = Math.max(0, threshold - earned);
   const available = stats.currentSemester.enrolledCredits;
-  if (available >= needed) return { level: needed > available * 0.7 ? 'warning' : 'safe', threshold };
-  return { level: 'danger', threshold };
+  const enrolledEnough = available >= deficit;
+
+  if (deficit <= 0) return { level: 'safe', threshold, earned, deficit: 0, enrolledEnough: true };
+  if (enrolledEnough) {
+    const level = deficit > available * 0.7 ? 'warning' : 'safe';
+    return { level, threshold, earned, deficit, enrolledEnough };
+  }
+  return { level: 'danger', threshold, earned, deficit, enrolledEnough };
 }
+
+const levelConfig = {
+  safe: { bg: 'bg-success/8', border: 'border-success/20', text: 'text-success', bar: 'bg-success', Icon: CheckCircle2 },
+  warning: { bg: 'bg-warning/8', border: 'border-warning/20', text: 'text-warning', bar: 'bg-warning', Icon: AlertTriangle },
+  danger: { bg: 'bg-error/8', border: 'border-error/20', text: 'text-error', bar: 'bg-error', Icon: ShieldAlert },
+};
 
 export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studyStats }: SubjectsPanelHeaderProps) {
   const { t, language } = useTranslation();
@@ -34,58 +43,64 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
   const planCheckUrl = studium
     ? `https://is.mendelu.cz/auth/studijni/studijni_povinnosti.pl?studium=${studium};lang=${lang}`
     : `https://is.mendelu.cz/auth/studijni/studijni_povinnosti.pl?lang=${lang}`;
+
   const pct = creditsRequired > 0 ? Math.min(100, Math.round((creditsAcquired / creditsRequired) * 100)) : 0;
   const progressionInfo = studyStats ? getProgressionInfo(studyStats) : null;
-  const progression = progressionInfo?.level ?? null;
+  const level = progressionInfo?.level ?? 'safe';
+  const cfg = levelConfig[level];
+  const Icon = cfg.Icon;
 
   return (
     <div className="px-4 py-3 border-b border-base-300">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg font-semibold">{t('subjects.title')}</h2>
-        <a
-          href={planCheckUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn btn-ghost btn-sm gap-1.5 text-base-content/50 hover:text-primary"
-        >
+        <a href={planCheckUrl} target="_blank" rel="noopener noreferrer"
+          className="btn btn-ghost btn-sm gap-1.5 text-base-content/50 hover:text-primary">
           <span className="text-xs">IS MENDELU</span>
           <ExternalLink size={14} />
         </a>
       </div>
 
-      <div className="flex items-center gap-3 mt-1.5 pl-1">
-        <span className="text-[11px] text-base-content/50 uppercase tracking-wide">
-          {creditsAcquired} / {creditsRequired} {t('subjects.credits')}
-        </span>
-      </div>
-
-      {/* Progression Banner */}
-      {progression && progression !== 'safe' && studyStats && (
-        <div className={`mt-2 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium ${
-          progression === 'warning' ? 'bg-warning/10 text-warning' :
-          'bg-error/10 text-error'
-        }`}>
-          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-          <span>
-            {progression === 'warning' ? t('subjects.progressionWarning') :
+      {/* Progression Card */}
+      <div className={`rounded-lg border px-3.5 py-2.5 ${cfg.bg} ${cfg.border}`}>
+        <div className="flex items-center gap-2 mb-2">
+          <Icon className={`w-4 h-4 ${cfg.text} shrink-0`} />
+          <span className={`text-sm font-semibold ${cfg.text}`}>
+            {level === 'safe' ? t('subjects.progressionSafe') :
+             level === 'warning' ? t('subjects.progressionWarning') :
              t('subjects.progressionDanger')}
           </span>
-          {studyStats.totalEarnedCredits < 150 && progressionInfo && (
-            <span className="ml-auto text-base-content/50">
+          <span className="ml-auto text-xs text-base-content/50 font-medium">
+            {creditsAcquired} / {creditsRequired} {t('subjects.credits')}
+          </span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full h-1.5 bg-base-content/10 rounded-full overflow-hidden mb-2">
+          <div className={`h-full rounded-full transition-all duration-500 ${cfg.bar}`} style={{ width: `${pct}%` }} />
+        </div>
+
+        {/* Detail line */}
+        <div className="flex items-center gap-2 text-[11px] text-base-content/50">
+          {studyStats && progressionInfo && progressionInfo.threshold > 0 && (
+            <span>
               {progressionInfo.threshold === 12
-                ? `${studyStats.currentSemester.earnedCredits}/${progressionInfo.threshold}`
-                : `${t('subjects.creditsLastTwo')}: ${studyStats.creditsLastTwoPeriods}/${progressionInfo.threshold}`
+                ? `${progressionInfo.earned}/${progressionInfo.threshold}`
+                : `${t('subjects.creditsLastTwo')}: ${progressionInfo.earned}/${progressionInfo.threshold}`
               }
+              {progressionInfo.deficit > 0 && (
+                <span className={cfg.text}> · {t('subjects.needMore', { n: progressionInfo.deficit })}</span>
+              )}
+              {!progressionInfo.enrolledEnough && progressionInfo.deficit > 0 && (
+                <span className="text-error"> · {t('subjects.notEnoughEnrolled')}</span>
+              )}
             </span>
           )}
+          {studyStats && studyStats.gpaTotal > 0 && (
+            <span className="ml-auto">{t('subjects.gpa')}: {studyStats.weightedGpaTotal.toFixed(2)}</span>
+          )}
         </div>
-      )}
-
-      {studyStats && studyStats.gpaTotal > 0 && (
-        <div className="mt-1 text-xs text-base-content/50">
-          {t('subjects.gpa')}: {studyStats.weightedGpaTotal.toFixed(2)}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

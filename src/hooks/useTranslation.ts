@@ -8,20 +8,21 @@ export function useTranslation() {
   const language = useAppStore((state) => state.language);
   const currentLocale = locales[language] || locales.cz;
 
-  const t = (key: string): string => {
+  const t = (key: string, params?: Record<string, string | number>): string => {
     const keys = key.split('.');
     let result: unknown = currentLocale;
-    
+
     for (const k of keys) {
       if (result && typeof result === 'object' && (result as Record<string, unknown>)[k] !== undefined) {
         result = (result as Record<string, unknown>)[k];
       } else {
-        // console.debug(`[i18n] Translation key not found: ${key} (${language})`); // Debug logging
         return key;
       }
     }
-    
-    return typeof result === 'string' ? result : key;
+
+    if (typeof result !== 'string') return key;
+    if (!params) return result;
+    return result.replace(/\{(\w+)\}/g, (_, k) => String(params[k] ?? `{${k}}`));
   };
 
   return { t, language };

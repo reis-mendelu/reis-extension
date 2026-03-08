@@ -243,7 +243,9 @@
     "compulsory": "Povinné",
     "elective": "Volitelné",
     "enrolledCreditsLabel": "kr. zapsáno",
-    "failRateLabel": "neúsp."
+    "failRateLabel": "neúsp.",
+    "needMore": "potřeba ještě {n}",
+    "notEnoughEnrolled": "málo zapsáno"
   },
   "commands": {
     "quickActions": "Rychlé akce",

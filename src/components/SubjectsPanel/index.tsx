@@ -116,9 +116,9 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
           {enrolledCore.length > 0 && (
             <div>
               {enrolledElective.length > 0 && (
-                <div className="text-[11px] text-base-content/40 font-medium px-2 py-1 uppercase tracking-wider">{t('subjects.compulsory')}</div>
+                <div className="text-[10px] text-base-content/40 font-semibold px-3 py-1 mb-1 uppercase tracking-widest">{t('subjects.compulsory')}</div>
               )}
-              <div className="rounded-lg border border-base-300/50 p-1">
+              <div className="flex flex-col gap-0.5">
                 {enrolledCore.map(s => (
                   <SubjectRow key={s.code} subject={s} failRate={failRates[s.code]} hideStatus={true} onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
                 ))}
@@ -126,9 +126,9 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
             </div>
           )}
           {enrolledElective.length > 0 && (
-            <div className="mt-1.5">
-              <div className="text-[11px] text-base-content/40 font-medium px-2 py-1 uppercase tracking-wider">{t('subjects.elective')}</div>
-              <div className="rounded-lg border border-base-300/50 p-1">
+            <div className="mt-4">
+              <div className="text-[10px] text-base-content/40 font-semibold px-3 py-1 mb-1 uppercase tracking-widest">{t('subjects.elective')}</div>
+              <div className="flex flex-col gap-0.5">
                 {enrolledElective.map(s => (
                   <SubjectRow key={s.code} subject={s} failRate={failRates[s.code]} hideStatus={true} onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
                 ))}
