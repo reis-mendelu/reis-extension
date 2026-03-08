@@ -37,21 +37,21 @@ const stateConfig: Record<SemesterState, {
     border: 'border-success/20',
     accent: 'text-success',
     indicator: 'bg-success',
-    badgeCls: 'badge-success badge-outline',
+    badgeCls: 'bg-success/15 text-success font-medium px-2 py-0.5 rounded text-[11px]',
   },
   current: {
     icon: BookOpen,
     border: 'border-primary/30',
     accent: 'text-primary',
     indicator: 'bg-primary',
-    badgeCls: 'badge-primary',
+    badgeCls: 'bg-primary/15 text-primary font-medium px-2 py-0.5 rounded text-[11px]',
   },
   future: {
     icon: Clock,
     border: 'border-base-300',
     accent: 'text-base-content/40',
     indicator: 'bg-base-content/20',
-    badgeCls: 'badge-ghost',
+    badgeCls: 'bg-base-content/5 text-base-content/50 font-medium px-2 py-0.5 rounded text-[11px]',
   },
 };
 
@@ -76,7 +76,7 @@ export function SemesterSection({ block, open, dimmed, failRates, onToggle, onOp
         <Icon className={`w-4 h-4 ${cfg.accent} shrink-0`} />
         <span className="text-sm font-semibold flex-1 text-left">{block.title}</span>
         <span className="text-[11px] text-base-content/40 shrink-0">{totalCredits} kr.</span>
-        <span className={`badge badge-sm ${cfg.badgeCls}`}>
+        <span className={cfg.badgeCls}>
           {fulfilledCount}/{totalCount}
         </span>
         <ChevronDown className={`w-4 h-4 text-base-content/40 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />

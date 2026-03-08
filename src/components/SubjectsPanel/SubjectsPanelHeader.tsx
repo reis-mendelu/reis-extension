@@ -53,27 +53,21 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
         </a>
       </div>
 
-      <div className="flex items-center gap-3 mt-2">
-        <div className="flex-1 h-2 bg-base-300 rounded-full overflow-hidden">
-          <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
-        </div>
-        <span className="text-xs text-base-content/60 whitespace-nowrap">
+      <div className="flex items-center gap-3 mt-1.5 pl-1">
+        <span className="text-[11px] text-base-content/50 uppercase tracking-wide">
           {creditsAcquired} / {creditsRequired} {t('subjects.credits')}
         </span>
       </div>
 
       {/* Progression Banner */}
-      {progression && studyStats && (
+      {progression && progression !== 'safe' && studyStats && (
         <div className={`mt-2 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium ${
-          progression === 'safe' ? 'bg-success/10 text-success' :
           progression === 'warning' ? 'bg-warning/10 text-warning' :
           'bg-error/10 text-error'
         }`}>
-          {progression === 'safe' ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> :
-           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
           <span>
-            {progression === 'safe' ? t('subjects.progressionSafe') :
-             progression === 'warning' ? t('subjects.progressionWarning') :
+            {progression === 'warning' ? t('subjects.progressionWarning') :
              t('subjects.progressionDanger')}
           </span>
           {studyStats.totalEarnedCredits < 150 && progressionInfo && (

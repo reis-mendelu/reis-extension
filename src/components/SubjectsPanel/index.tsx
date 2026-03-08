@@ -107,9 +107,9 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
 
       {hasEnrolledSubjects && (
         <div className="px-4 pt-4 pb-2">
-          <h3 className="text-sm font-semibold text-primary mb-2">
+          <h3 className="text-sm font-semibold text-base-content/60 mb-2 uppercase tracking-wider">
             {t('subjects.enrolled')}
-            <span className="ml-2 font-normal text-xs text-base-content/50">
+            <span className="ml-2 font-normal text-xs text-base-content/40 lowercase tracking-normal">
               {enrolledCore.filter(s => s.credits <= 50).reduce((a, s) => a + s.credits, 0) + enrolledElective.filter(s => s.credits <= 50).reduce((a, s) => a + s.credits, 0)} {t('subjects.enrolledCreditsLabel')}
             </span>
           </h3>
@@ -118,9 +118,9 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
               {enrolledElective.length > 0 && (
                 <div className="text-[11px] text-base-content/40 font-medium px-2 py-1 uppercase tracking-wider">{t('subjects.compulsory')}</div>
               )}
-              <div className="rounded-lg border border-primary/20 bg-primary/[0.03] p-1">
+              <div className="rounded-lg border border-base-300/50 p-1">
                 {enrolledCore.map(s => (
-                  <SubjectRow key={s.code} subject={s} failRate={failRates[s.code]} onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
+                  <SubjectRow key={s.code} subject={s} failRate={failRates[s.code]} hideStatus={true} onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
                 ))}
               </div>
             </div>
@@ -130,7 +130,7 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
               <div className="text-[11px] text-base-content/40 font-medium px-2 py-1 uppercase tracking-wider">{t('subjects.elective')}</div>
               <div className="rounded-lg border border-base-300/50 p-1">
                 {enrolledElective.map(s => (
-                  <SubjectRow key={s.code} subject={s} failRate={failRates[s.code]} onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
+                  <SubjectRow key={s.code} subject={s} failRate={failRates[s.code]} hideStatus={true} onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
                 ))}
               </div>
             </div>

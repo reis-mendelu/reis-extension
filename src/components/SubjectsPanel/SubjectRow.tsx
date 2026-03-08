@@ -24,9 +24,10 @@ interface SubjectRowProps {
   failRate?: number | null;
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates') => void;
   onSearchSubject: (name: string) => void;
+  hideStatus?: boolean;
 }
 
-export function SubjectRow({ subject, compact, failRate, onOpenSubject, onSearchSubject }: SubjectRowProps) {
+export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubject, onSearchSubject }: SubjectRowProps) {
   const { t } = useTranslation();
   const hasId = subject.id !== '';
 
@@ -45,7 +46,6 @@ export function SubjectRow({ subject, compact, failRate, onOpenSubject, onSearch
         className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-base-200/50 transition-colors text-left text-base-content/40"
       >
         {subject.isFulfilled && <CheckCircle2 className="w-3.5 h-3.5 text-success/50 shrink-0" />}
-        <span className="text-xs font-mono shrink-0">{subject.code}</span>
         <span className="flex-1 text-xs truncate">{subject.name}</span>
         <span className="text-[10px] shrink-0">{subject.credits} kr.</span>
       </button>
@@ -57,11 +57,14 @@ export function SubjectRow({ subject, compact, failRate, onOpenSubject, onSearch
       onClick={handleClick}
       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-base-200 transition-colors text-left group"
     >
-      <span className="badge badge-sm badge-ghost font-mono shrink-0">{subject.code}</span>
       <span className="flex-1 text-sm truncate">{subject.name}</span>
       {failRate != null && failRate >= 20 && !subject.isFulfilled && (
         <span
-          className={`badge badge-sm shrink-0 ${failRate >= 25 ? 'badge-error' : 'badge-warning'} badge-outline relative group/fail cursor-pointer`}
+          className={`flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium tracking-wide shrink-0 relative group/fail cursor-pointer transition-colors ${
+            failRate >= 25 
+              ? 'bg-error/10 text-error hover:bg-error/15' 
+              : 'bg-warning/15 text-warning-content hover:bg-warning/20'
+          }`}
           onClick={(e) => { e.stopPropagation(); hasId ? onOpenSubject(subject.code, subject.name, subject.id, undefined, 'stats') : onSearchSubject(subject.name); }}
         >
           <span className="group-hover/fail:hidden">{failRate}%</span>
@@ -75,20 +78,24 @@ export function SubjectRow({ subject, compact, failRate, onOpenSubject, onSearch
           {subject.enrollmentCount}x
         </span>
       )}
-      {subject.isFulfilled ? (
-        <span className="badge badge-sm badge-success gap-1">
-          <CheckCircle2 className="w-3 h-3" />
-          {t('subjects.fulfilled')}
-        </span>
-      ) : subject.isEnrolled ? (
-        <span className="badge badge-sm badge-primary badge-outline">{subject.rawStatusText}</span>
-      ) : !hasId ? (
-        <span className="badge badge-sm badge-ghost gap-1 text-base-content/40">
-          <Search className="w-3 h-3" />
-          {t('subjects.searchToOpen')}
-        </span>
-      ) : (
-        <span className="badge badge-sm badge-ghost text-base-content/40">{subject.rawStatusText || t('subjects.notFulfilled')}</span>
+      {!hideStatus && (
+        <>
+          {subject.isFulfilled ? (
+            <span className="badge badge-sm badge-success gap-1">
+              <CheckCircle2 className="w-3 h-3" />
+              {t('subjects.fulfilled')}
+            </span>
+          ) : subject.isEnrolled ? (
+            <span className="badge badge-sm badge-primary badge-outline">{subject.rawStatusText}</span>
+          ) : !hasId ? (
+            <span className="badge badge-sm badge-ghost gap-1 text-base-content/40">
+              <Search className="w-3 h-3" />
+              {t('subjects.searchToOpen')}
+            </span>
+          ) : (
+            <span className="badge badge-sm badge-ghost text-base-content/40">{subject.rawStatusText || t('subjects.notFulfilled')}</span>
+          )}
+        </>
       )}
     </button>
   );
