@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { searchGlobal } from '../../api/search';
 import { pagesData } from '../../data/pagesData';
 import { pageKeywords } from '../../data/pages/keywords';
@@ -6,11 +6,14 @@ import { fuzzyIncludes } from '../../utils/searchUtils';
 import type { SearchResult } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { IndexedDBService } from '../../services/storage';
+import { useAppStore } from '../../store/useAppStore';
 
 const MAX_RECENT_SEARCHES = 3;
 
 export function useSearch(query: string, actions: SearchResult[] = []) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const subjects = useAppStore(s => s.subjects);
+  const studyPlan = useAppStore(s => s.studyPlanDual);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [filteredResults, setFilteredResults] = useState<SearchResult[]>([]);
@@ -20,6 +23,22 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
   const [userFaculty, setUserFaculty] = useState<string | undefined>(undefined);
   const [userSemester, setUserSemester] = useState<string | undefined>(undefined);
   const debounceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Build a set of subject codes from the study plan for ranking boost
+  const studyPlanCodes = useMemo(() => {
+    const codes = new Set<string>();
+    if (!studyPlan) return codes;
+    for (const plan of [studyPlan.cz, studyPlan.en]) {
+      for (const block of plan.blocks) {
+        for (const group of block.groups) {
+          for (const subj of group.subjects) {
+            if (subj.code) codes.add(subj.code);
+          }
+        }
+      }
+    }
+    return codes;
+  }, [studyPlan]);
 
   useEffect(() => {
     import('../../utils/userParams').then(async ({ getUserParams }) => {
@@ -55,17 +74,23 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
   const getScore = (r: SearchResult, searchQuery: string): number => {
     const titleLower = r.title.toLowerCase();
     const codeLower = r.subjectCode?.toLowerCase() ?? '';
-    let base = r.type === 'action' ? 10000 : r.type === 'subject' ? 1000 : r.type === 'page' ? 500 : 100;
+    const isEnrolled = r.type === 'subject' && r.id.startsWith('enrolled-');
+    const inStudyPlan = r.type === 'subject' && r.subjectCode ? studyPlanCodes.has(r.subjectCode) : false;
+
+    // Type tier (tiebreaker within same match quality)
+    let base = r.type === 'action' ? 90 : isEnrolled ? 50 : r.type === 'subject' ? 40 : r.type === 'page' ? 20 : 10;
 
     if (r.type === 'subject') {
-      if (r.faculty && userFaculty && r.faculty === userFaculty) base += 2000;
-      if (r.semester && userSemester && r.semester.includes(userSemester)) base += 1000;
+      if (inStudyPlan) base += 8;
+      if (r.faculty && userFaculty && r.faculty === userFaculty) base += 5;
+      if (r.semester && userSemester && r.semester.includes(userSemester)) base += 3;
     }
 
-    if (titleLower === searchQuery) return base + 500;
-    if (titleLower.startsWith(searchQuery)) return base + 400;
-    if (codeLower === searchQuery) return base + 300;
-    return base + 10;
+    // Match quality dominates
+    if (titleLower === searchQuery) return 5000 + base;
+    if (titleLower.startsWith(searchQuery)) return 4000 + base;
+    if (codeLower === searchQuery) return 3000 + base;
+    return base;
   };
 
   const sortResults = (results: SearchResult[], searchQuery: string) =>
@@ -74,7 +99,7 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
       return sB !== sA ? sB - sA : a.title.localeCompare(b.title);
     });
 
-  // Instant local results (actions + pages) — no debounce, no network
+  // Instant local results (actions + enrolled subjects + pages) — no debounce, no network
   useEffect(() => {
     if (query.trim().length < 2) {
       setFilteredResults([]);
@@ -90,6 +115,24 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
       return targets.some(target => fuzzyIncludes(target, searchQuery));
     });
 
+    const enrolledResults: SearchResult[] = [];
+    if (subjects?.data) {
+      for (const [code, info] of Object.entries(subjects.data)) {
+        const name = language === 'en' ? (info.nameEn || info.displayName) : (info.nameCs || info.displayName);
+        const targets = [name, info.displayName, code, info.nameCs, info.nameEn].filter(Boolean) as string[];
+        if (targets.some(target => fuzzyIncludes(target, searchQuery))) {
+          enrolledResults.push({
+            id: `enrolled-${code}`,
+            title: name,
+            type: 'subject',
+            detail: code,
+            subjectCode: code,
+            subjectId: info.subjectId,
+          });
+        }
+      }
+    }
+
     const pageResults: SearchResult[] = [];
     pagesData.forEach(cat => cat.children.forEach(p => {
       const keywords = pageKeywords[p.id] ?? [];
@@ -100,13 +143,13 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
       }
     }));
 
-    setFilteredResults(sortResults([...matchedActions, ...pageResults], searchQuery));
+    setFilteredResults(sortResults([...matchedActions, ...enrolledResults, ...pageResults], searchQuery));
     setSelectedIndex(0);
     setIsLoading(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, actions]);
 
-  // Debounced network results (subjects + people) — merged on top of local results
+  // Debounced network results (subjects + people) — appended to local results
   useEffect(() => {
     if (query.trim().length < 2) return;
 
@@ -114,7 +157,7 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
     debounceTimeout.current = setTimeout(async () => {
       try {
         const searchQuery = query.toLowerCase();
-        const { people, subjects } = await searchGlobal(query);
+        const { people, subjects: searchSubjects } = await searchGlobal(query);
 
         const personResults: SearchResult[] = people.map((p, i) => ({
           id: p.id || `unknown-${i}`, title: p.name, type: 'person',
@@ -122,15 +165,17 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
           link: p.link, personType: p.type
         }));
 
-        const subjectResults: SearchResult[] = subjects.map(s => ({
+        const subjectResults: SearchResult[] = searchSubjects.map(s => ({
           id: `subject-${s.id}`, title: s.name, type: 'subject',
           detail: [s.code, s.semester, s.faculty].filter(p => p && p !== 'N/A').join(' · '),
           link: s.link, subjectCode: s.code, subjectId: s.id, faculty: s.faculty, semester: s.semester
         }));
 
         setFilteredResults(prev => {
-          const localResults = prev.filter(r => r.type === 'action' || r.type === 'page');
-          return sortResults([...localResults, ...subjectResults, ...personResults], searchQuery);
+          const enrolledCodes = new Set(prev.filter(r => r.id.startsWith('enrolled-')).map(r => r.subjectCode));
+          const networkSubjects = subjectResults.filter(s => !enrolledCodes.has(s.subjectCode));
+          const networkResults = sortResults([...networkSubjects, ...personResults], searchQuery);
+          return [...prev, ...networkResults];
         });
       } catch { /* keep local results */ } finally { setIsLoading(false); }
     }, 250);
