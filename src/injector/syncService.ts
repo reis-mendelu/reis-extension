@@ -7,8 +7,7 @@ import { fetchAssessments } from "../api/assessments";
 import { fetchDualLanguageStudyPlan } from "../api/studyPlan";
 import { fetchStudyStats } from "../api/studyStats";
 import { fetchSyllabus } from "../api/syllabus";
-import { fetchSeminarGroupIds, fetchClassmates } from "../api/classmates";
-import type { ClassmatesData } from "../types/classmates";
+
 import { getUserParams } from "../utils/userParams";
 import { fetchScheduleBite, fetchFullSemesterSchedule } from "./dataFetchers";
 import { sendToIframe } from "./iframeManager";
@@ -89,24 +88,6 @@ export async function syncAllData() {
 
 
         if (subjects.status === "fulfilled" && subjects.value) {
-            // Enrich subjects with seminar group IDs for classmates
-            if (studium && userParams?.obdobi) {
-                try {
-                    const groupIds = await fetchSeminarGroupIds(studium, userParams.obdobi);
-                    for (const [code, info] of Object.entries(groupIds)) {
-                        if (subjects.value.data[code]) {
-                            subjects.value.data[code].skupinaId = info.skupinaId;
-                            if (!subjects.value.data[code].subjectId) {
-                                subjects.value.data[code].subjectId = info.subjectId;
-                            }
-                        }
-                    }
-                    cachedData.subjects = subjects.value;
-                } catch (_) {
-                    // Seminar group ID fetch failed — non-critical, continue sync
-                }
-            }
-
             await syncSubjectDetails(subjects.value, fullSchedule.status === "fulfilled" ? fullSchedule.value : null);
         }
 
@@ -138,18 +119,6 @@ async function syncSubjectDetails(subjectsValue: { data: Record<string, { folder
         if (studium && obdobi && subject.subjectId) subTasks.push(fetchAssessments(studium, obdobi, subject.subjectId).then(a => { if(!cachedData.assessments) cachedData.assessments = {}; (cachedData.assessments as Record<string, unknown>)[code] = a; }).catch(() => {}));
         if (subject.subjectId) subTasks.push(fetchSyllabus(subject.subjectId).then(s => { if(!cachedData.syllabuses) cachedData.syllabuses = {}; (cachedData.syllabuses as Record<string, unknown>)[code] = s; }).catch(() => {}));
         await Promise.all(subTasks);
-        // Fetch classmates (all + seminar) after other tasks complete
-        if (studium && obdobi && subject.subjectId) {
-            const classmatesTasks: Promise<void>[] = [];
-            const classmatesData: ClassmatesData = { all: [], seminar: [] };
-            classmatesTasks.push(fetchClassmates(subject.subjectId, studium, obdobi).then(c => { classmatesData.all = c; }).catch(() => {}));
-            if (subject.skupinaId) {
-                classmatesTasks.push(fetchClassmates(subject.subjectId, studium, obdobi, subject.skupinaId).then(c => { classmatesData.seminar = c; }).catch(() => {}));
-            }
-            await Promise.all(classmatesTasks);
-            if (!cachedData.classmates) cachedData.classmates = {};
-            cachedData.classmates[code] = classmatesData;
-        }
     }));
 
     await Promise.all(tasks);
