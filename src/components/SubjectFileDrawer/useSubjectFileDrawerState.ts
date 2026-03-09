@@ -41,9 +41,12 @@ export function useSubjectFileDrawerState(lesson: BlockLesson | SelectedSubject 
     // Reset tab and clear file refs when drawer opens
     useEffect(() => {
         if (isOpen && lesson) {
-            const isExamNow = 'isExam' in lesson ? lesson.isExam : false;
-            const isEnrolledNow = !!(lesson.courseCode && getSubject(lesson.courseCode)?.subjectId);
-            queueMicrotask(() => setActiveTab(isExamNow ? 'stats' : (isEnrolledNow ? 'files' : 'syllabus')));
+            const requested = 'initialTab' in lesson ? lesson.initialTab : undefined;
+            if (!requested) {
+                const isExamNow = 'isExam' in lesson ? lesson.isExam : false;
+                const isEnrolledNow = !!(lesson.courseCode && getSubject(lesson.courseCode)?.subjectId);
+                queueMicrotask(() => setActiveTab(isExamNow ? 'stats' : (isEnrolledNow ? 'files' : 'syllabus')));
+            }
             fileRefs.current.clear();
         }
     }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
