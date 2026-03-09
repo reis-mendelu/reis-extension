@@ -37,7 +37,7 @@ export function HeaderTabs({ activeTab, onTabChange, disabledTabs = [], counts }
                         }`}
                     >
                         {tab.label}
-                        {count !== undefined && count > 0 && (
+                        {count !== undefined && (
                             <span className={`text-[10px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1 ${
                                 activeTab === tab.id
                                     ? 'bg-primary/15 text-primary'
