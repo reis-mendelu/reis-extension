@@ -64,6 +64,9 @@
     "pages": "Stránky",
     "people": "Lidé"
   },
+  "calendar": {
+    "emptyWeek": "Tento týden nemáš žádnou výuku"
+  },
   "exams": {
     "title": "Moje zkoušky",
     "noExams": "Zatím nemáš žádné registrované termíny.",

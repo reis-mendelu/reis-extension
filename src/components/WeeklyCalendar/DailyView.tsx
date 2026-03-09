@@ -131,6 +131,12 @@ export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, 
               </div>
             )}
 
+            {!holiday && !showSkeleton && lessons.length === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                <p className="text-base-content/40 text-sm font-medium">{t('calendar.emptyWeek')}</p>
+              </div>
+            )}
+
             {!holiday && showSkeleton && (
               <>
                 {[{ top: '7%', height: '15%' }, { top: '30%', height: '12%' }, { top: '50%', height: '11%' }].map((pos, i) => (

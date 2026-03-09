@@ -13,6 +13,7 @@ import { WeeklyCalendarDay } from './WeeklyCalendarDay';
 import { DailyView } from './DailyView';
 import { useHintStatus } from '../../hooks/ui/useHintStatus';
 import { useIsMobile } from '../../hooks/ui/useIsMobile';
+import { useTranslation } from '../../hooks/useTranslation';
 import type { BlockLesson } from '../../types/calendarTypes';
 
 const TOTAL_HOURS = 14;
@@ -25,8 +26,8 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     const pendingTimeSelection = useAppStore((state) => state.pendingTimeSelection);
     const setPendingTimeSelection = useAppStore((state) => state.setPendingTimeSelection);
     const isMobile = useIsMobile();
-    const { weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton: dataLoading } = useCalendarData(initialDate);
-
+    const { weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton: dataLoading, scheduleData } = useCalendarData(initialDate);
+    const { t } = useTranslation();
     const [selected, setSelected] = useState<BlockLesson | null>(null);
     const { isSeen, markSeen } = useHintStatus('calendar_event_click');
 
@@ -181,6 +182,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                         <CalendarHint show={!isSeen} eventPosition={targetEventPosition || undefined} onDismiss={markSeen} />
                         <WeeklyCalendarGrid />
                         <CurrentTimeIndicator todayIndex={todayIndex} />
+                        {!showSkeleton && scheduleData.length === 0 && <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none"><p className="text-base-content/40 text-sm font-medium">{t('calendar.emptyWeek')}</p></div>}
                         {[0, 1, 2, 3, 4].map(i => (
                             <WeeklyCalendarDay key={i} dayIndex={i} date={weekDates[i]} lessons={lessonsByDay[i] || []}
                                                holiday={holidaysByDay[i]} isToday={i === todayIndex}

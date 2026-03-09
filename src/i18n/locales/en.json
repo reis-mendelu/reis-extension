@@ -37,6 +37,9 @@
     "contactCenter": "Contact Center",
     "slides": "slides"
   },
+    "calendar": {
+        "emptyWeek": "No classes scheduled this week"
+    },
     "exams": {
         "title": "My Exams",
         "noExams": "No registered exam terms found yet.",
