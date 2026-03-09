@@ -59,7 +59,7 @@ async function markAsSynced(courseCodes: string[]): Promise<void> {
  * Returns a SuccessRateData object and saves it to storage.
  */
 export async function fetchSubjectSuccessRates(targetCodes: string[]): Promise<SuccessRateData> {
-    loggers.api.info('[SuccessRate] Fetching from CDN...', targetCodes.length, targetCodes);
+    // loggers.api.info('[SuccessRate] Fetching from CDN...', targetCodes.length, targetCodes);
     
     // 1. Check cache for each code
     const existing = await getStoredSuccessRates();
@@ -85,21 +85,21 @@ export async function fetchSubjectSuccessRates(targetCodes: string[]): Promise<S
     const codesToFetch = fetchDecisions.filter((c): c is string => c !== null);
 
     if (codesToFetch.length === 0) {
-        loggers.api.info('[SuccessRate] All codes found in valid cache');
+        // loggers.api.info('[SuccessRate] All codes found in valid cache');
         return { lastUpdated: existing?.lastUpdated || new Date().toISOString(), data: results };
     }
 
-    loggers.api.info('[SuccessRate] Fetching codes from CDN:', codesToFetch.length);
+    // loggers.api.info('[SuccessRate] Fetching codes from CDN:', codesToFetch.length);
 
     // 2. Fetch each course from CDN (parallel)
     const fetchPromises = codesToFetch.map(async (code) => {
         const url = `${CDN_BASE_URL}/subjects/${code}.json`;
-        loggers.api.info('[SuccessRate] Fetching URL:', url);
+        // loggers.api.info('[SuccessRate] Fetching URL:', url);
         try {
             const response = await fetch(url);
             if (!response.ok) {
                 if (response.status === 404) {
-                    loggers.api.info('[SuccessRate] No data for:', code);
+                    // loggers.api.info('[SuccessRate] No data for:', code);
                     return null;
                 }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -134,7 +134,7 @@ export async function fetchSubjectSuccessRates(targetCodes: string[]): Promise<S
 
     // 5. Save to storage
     await saveSuccessRates(finalResult);
-    loggers.api.info('[SuccessRate] Cached courses from CDN:', successfulCodes.length, '/', codesToFetch.length);
+    // loggers.api.info('[SuccessRate] Cached courses from CDN:', successfulCodes.length, '/', codesToFetch.length);
 
     return finalResult;
 }

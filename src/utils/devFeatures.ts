@@ -66,13 +66,4 @@ if (typeof window !== 'undefined') {
             handleMessage();
         }
     });
-    
-// Help log on first load
-    (async () => {
-        const hasSeenHelp = await IndexedDBService.get('meta', 'dev_help_shown_v4');
-        if (!hasSeenHelp) {
-            loggers.system.info('[REIS] Dev Tools Loaded. Use window.toggleDevFeatures() or postMessage to toggle.');
-            IndexedDBService.set('meta', 'dev_help_shown_v4', true).catch(console.error);
-        }
-    })();
 }
