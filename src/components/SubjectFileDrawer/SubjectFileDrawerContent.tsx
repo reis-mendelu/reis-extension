@@ -6,6 +6,7 @@ import { ClassmatesTab } from './ClassmatesTab';
 import { SuccessRateTab } from '../SuccessRateTab';
 import { SelectionBox, DragHint } from './DragHint';
 import { useOsnovy, useUkoly } from '../../hooks/data';
+import { useUserParams } from '../../hooks/useUserParams';
 import type { FileGroup } from './types';
 import type { SyllabusRequirements, ParsedFile } from '../../types/documents';
 import type { Assignment } from '../../api/ukoly';
@@ -44,7 +45,10 @@ export function SubjectFileDrawerContent({
 }: SubjectFileDrawerContentProps) {
     const { t, language } = useTranslation();
     const { tests, status: osnovyStatus } = useOsnovy(lesson?.courseName);
-    const { activeAssignments, closedAssignments, status: ukolyStatus } = useUkoly(lesson?.courseName, lesson?.courseCode);
+    const { activeAssignments, status: ukolyStatus } = useUkoly(lesson?.courseName, lesson?.courseCode);
+    const { params } = useUserParams();
+    const lang = language === 'cz' ? 'cz' : 'en';
+    const studium = params?.studium;
 
     if (activeTab === 'files') {
         const isEmpty = !files || files.length === 0;
@@ -108,8 +112,7 @@ export function SubjectFileDrawerContent({
         const isLoading = osnovyStatus === 'loading' || ukolyStatus === 'loading';
         const hasTests = tests.length > 0;
         const hasActiveAssignments = activeAssignments.length > 0;
-        const hasClosedAssignments = closedAssignments.length > 0;
-        const isEmpty = !hasTests && !hasActiveAssignments && !hasClosedAssignments;
+        const isEmpty = !hasTests && !hasActiveAssignments;
 
         if (isLoading && isEmpty) {
             return (
@@ -183,36 +186,21 @@ export function SubjectFileDrawerContent({
                         </div>
                     )}
 
-                    {/* Closed/Past Assignments Section */}
-                    {hasClosedAssignments && (
-                        <div className="flex flex-col gap-2">
-                            <h3 className="text-[10px] font-bold uppercase tracking-wider text-base-content/40 px-3">
-                                {t('course.osnovy.assignmentsDone') || 'Odevzdané / Uzavřené'}
-                            </h3>
-                            <div className="flex flex-col gap-1 opacity-60">
-                                {closedAssignments.map((assignment: Assignment) => {
-                                    const Row = assignment.actionUrl ? 'a' : 'div';
-                                    const linkProps = assignment.actionUrl ? { href: assignment.actionUrl, target: '_blank', rel: 'noopener noreferrer' } : {};
-                                    return (
-                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic element props
-                                        <Row key={assignment.name + assignment.deadline} {...(linkProps as any)}
-                                            className="flex items-center justify-between gap-2 p-3 rounded-xl hover:bg-base-200 transition-colors cursor-pointer">
-                                            <div className="flex flex-col min-w-0">
-                                                <span className="font-medium text-base-content/80 text-sm truncate">
-                                                    {assignment.name}
-                                                </span>
-                                                <span className="text-[10px] text-base-content/40">
-                                                    {assignment.deadline}
-                                                </span>
-                                            </div>
-                                            {assignment.actionUrl && <ExternalLink size={14} className="text-base-content/20 shrink-0" />}
-                                        </Row>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
                 </div>
+                {studium && (
+                    <div className="flex items-center justify-center gap-3 py-3 border-t border-base-200">
+                        <a href={`https://is.mendelu.cz/auth/elis/student/seznam_osnov.pl?studium=${studium};lang=${lang}`} target="_blank" rel="noopener noreferrer"
+                            className="btn btn-ghost btn-xs gap-1 text-base-content/50 hover:text-primary normal-case">
+                            {t('course.osnovy.tests') || 'Testy'}
+                            <ExternalLink size={12} />
+                        </a>
+                        <a href={`https://is.mendelu.cz/auth/student/odevzdavarny.pl?studium=${studium};lang=${lang}`} target="_blank" rel="noopener noreferrer"
+                            className="btn btn-ghost btn-xs gap-1 text-base-content/50 hover:text-primary normal-case">
+                            {t('course.osnovy.assignments') || 'Odevzdávárny'}
+                            <ExternalLink size={12} />
+                        </a>
+                    </div>
+                )}
             </div>
         );
     }
