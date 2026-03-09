@@ -37,176 +37,176 @@
     "contactCenter": "Contact Center",
     "slides": "slides"
   },
-    "calendar": {
-        "emptyWeek": "No classes scheduled this week"
-    },
-    "exams": {
-        "title": "My Exams",
-        "noExams": "No registered exam terms found yet.",
-        "registrationTitle": "Exam Registration",
-        "loading": "Loading exams...",
-        "empty": "📭 No exams",
-        "emptyTitle": "No exams in sight",
-        "emptySubtitle": "Enjoy your time off, focus on your studies, or check your study plan.",
-        "autoBooking": "Auto-booking active. Do not close this page!",
-        "statusLabel": "Status:",
-        "subjectLabel": "Subject:",
-        "registered": "Registered",
+  "calendar": {
+    "emptyWeek": "Nothing this week, you're free"
+  },
+  "exams": {
+    "title": "My Exams",
+    "noExams": "You don't have any registered terms yet.",
+    "registrationTitle": "Exam Registration",
+    "loading": "Loading exams...",
+    "empty": "📭 No exams",
+    "emptyTitle": "No exams in sight",
+    "emptySubtitle": "Enjoy the break!",
+    "autoBooking": "Auto-booking active. Don't close this page!",
+    "statusLabel": "Status:",
+    "subjectLabel": "Subject:",
+    "registered": "Registered",
     "register": "Register",
     "available": "Available",
-        "opening": "Opening",
-        "clearAll": "Clear all",
-        "unregister": "Unregister",
-        "changeTerm": "Change term",
-        "select": "Select",
-        "clickToRegister": "Click to register:",
-        "unregisterDeadline": "Unregister by:",
-        "term": "term",
-        "terms24": "terms",
-        "terms5plus": "terms",
-        "full": "FULL",
-        "closed": "CLOSED",
-        "countdown": "In",
-        "confirmation": {
-            "registerTitle": "Confirm Registration",
-            "unregisterTitle": "Confirm Unregistration",
-            "registerBody": "Do you really want to register for this exam term?",
-            "unregisterBody": "Do you really want to unregister from this exam?"
-        }
+    "opening": "Opening",
+    "clearAll": "Clear all",
+    "unregister": "Unregister",
+    "changeTerm": "Change term",
+    "select": "Select",
+    "clickToRegister": "Click to register:",
+    "unregisterDeadline": "Unregister by:",
+    "term": "term",
+    "terms24": "terms",
+    "terms5plus": "terms",
+    "full": "FULL",
+    "closed": "CLOSED",
+    "countdown": "In",
+    "confirmation": {
+      "registerTitle": "Confirm registration",
+      "unregisterTitle": "Confirm unregistration",
+      "registerBody": "Sure you want to register for this exam?",
+      "unregisterBody": "Sure you want to unregister from this exam?"
+    }
+  },
+  "feedback": {
+    "title": "Report Bug / Idea",
+    "typeLabel": "Message type",
+    "bug": "Bug 🐞",
+    "idea": "Idea 💡",
+    "other": "Other 📝",
+    "subject": "Subject",
+    "subjectPlaceholder": "Briefly describe the issue...",
+    "description": "Details",
+    "descriptionPlaceholder": "What happened? Where? How to reproduce?",
+    "contact": "Contact (optional)",
+    "contactPlaceholder": "Email / Discord",
+    "submit": "Send feedback",
+    "sending": "Sending...",
+    "successTitle": "Sent!",
+    "successText": "Thanks for the help! We got your feedback.",
+    "close": "Close",
+    "footer": "We automatically include technical info (version, browser) for faster fixes.",
+    "toastSuccess": "Thanks for your feedback!",
+    "toastError": "Couldn't send feedback.",
+    "npsQuestion": "Would you recommend reIS to a friend? (1-5)",
+    "npsThank": "Thanks for the rating!"
+  },
+  "common": {
+    "loading": "Loading...",
+    "today": "Today",
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "start": "Start",
+    "upload": "Upload",
+    "view": "View"
+  },
+
+  "search": {
+    "placeholder": "Search subjects, people, pages... (⌘K)",
+    "results": "Results",
+    "recent": "Recent searches",
+    "loading": "Loading results...",
+    "empty": "Nothing found",
+    "recentHint": "Search for subjects, teachers or IS pages...",
+    "recentlySearched": "Recently searched",
+    "student": "Student",
+    "teacher": "Teacher",
+    "employee": "Employee",
+    "subjects": "Subjects",
+    "pages": "Pages",
+    "people": "People"
+  },
+  "course": {
+    "garant": "Supervisor:",
+    "teachers": "Teachers:",
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "tabs": {
+      "files": "Files",
+      "requirements": "Requirements",
+      "successRate": "Success Rate",
+      "assessment": "Assessment",
+      "classmates": "Classmates",
+      "osnovy": "Practice Tests"
     },
-    "feedback": {
-        "title": "Report Bug / Idea",
-        "typeLabel": "Message Type",
-        "bug": "Bug 🐞",
-        "idea": "Idea 💡",
-        "other": "Other 📝",
-        "subject": "Subject",
-        "subjectPlaceholder": "Briefly describe the issue...",
-        "description": "Detailed description",
-        "descriptionPlaceholder": "What happened? Where? How to reproduce?",
-        "contact": "Contact (optional)",
-        "contactPlaceholder": "Email / Discord",
-        "submit": "Submit feedback",
-        "sending": "Sending...",
-        "successTitle": "Great, sent!",
-        "successText": "Thanks for your help. Your feedback has been successfully received.",
-        "close": "Close",
-        "footer": "We automatically send technical info (version, browser) for faster resolution.",
-        "toastSuccess": "Thanks for your feedback!",
-        "toastError": "Failed to send feedback.",
-        "npsQuestion": "Would you recommend reIS to a friend? (1-5)",
-        "npsThank": "Thanks for your rating!"
-    },
-    "common": {
-        "loading": "Loading...",
-        "today": "Today",
-        "close": "Close",
-        "cancel": "Cancel",
-        "confirm": "Confirm",
-        "save": "Save",
-        "start": "Start",
-        "upload": "Upload",
-        "view": "View"
+    "osnovy": {
+      "tests": "Practice Tests",
+      "assignments": "Assignments",
+      "assignmentsDone": "Submitted / Closed",
+      "noTests": "No tests available.",
+      "noAssignments": "No assignments available."
     },
 
-    "search": {
-        "placeholder": "Search subjects, people, pages... (⌘K)",
-        "results": "Results",
-        "recent": "Recent Searches",
-        "loading": "Loading results...",
-        "empty": "Nothing found",
-        "recentHint": "Search for subjects, teachers or IS pages...",
-        "recentlySearched": "Recently searched",
-        "student": "Student",
-        "teacher": "Teacher",
-        "employee": "Employee",
-        "subjects": "Subjects",
-        "pages": "Pages",
-        "people": "People"
+    "footer": {
+      "other": "Other",
+      "noFiles": "No files",
+      "searchOnlyInSchedule": "Files are only available for subjects in your schedule.",
+      "noFilesAvailable": "No files available."
     },
-    "course": {
-        "garant": "Course supervisor:",
-        "teachers": "Teachers:",
-        "showMore": "Show more",
-        "showLess": "Show less",
-        "tabs": {
-            "files": "Files",
-            "requirements": "Requirements",
-            "successRate": "Success Rate",
-            "assessment": "Assessment",
-            "classmates": "Classmates",
-            "osnovy": "Practice Tests"
-        },
-        "osnovy": {
-            "tests": "Practice Tests",
-            "assignments": "Assignments",
-            "assignmentsDone": "Submitted / Closed",
-            "noTests": "No tests available.",
-            "noAssignments": "No assignments available."
-        },
-
-        "footer": {
-            "other": "Other",
-            "noFiles": "No files",
-            "searchOnlyInSchedule": "Files are available only for subjects in your schedule",
-            "noFilesAvailable": "No files are available."
-        },
-        "dragHint": "Drag to select multiple files",
-        "clickHint": "Click to view materials",
-        "badge": {
-            "lecture": "Lecture",
-            "seminar": "Seminar",
-            "exam": "Exam",
-            "test": "Test"
-        },
-        "status": {
-            "povinný": "Compulsory",
-            "povinně volitelný": "Elective-compulsory",
-            "volitelný": "Elective"
-        },
-        "sync": {
-            "initializing": "Initializing...",
-            "fetchingFirst": "Finding first files...",
-            "syncingRemaining": "Syncing remaining files ({count})...",
-            "failed": "Sync failed",
-            "loadingFiles": "Loading files..."
-        }
+    "dragHint": "Drag to select multiple files",
+    "clickHint": "Click to view materials",
+    "badge": {
+      "lecture": "Lecture",
+      "seminar": "Seminar",
+      "exam": "Exam",
+      "test": "Test"
     },
-    "syllabus": {
-        "conditions": "Completion requirements",
-        "grading": "Point distribution",
-        "weight": "Weight",
-        "noData": "Requirements are not available for this course."
+    "status": {
+      "povinný": "Compulsory",
+      "povinně volitelný": "Elective-compulsory",
+      "volitelný": "Elective"
     },
-    "successRate": {
-        "noData": "Data not available",
-        "students": "students",
-        "credit": "Credit",
-        "exam": "Exam",
-        "regular": "Regular",
-        "retake1": "1st retake",
-        "retake2": "2nd retake",
-        "passed": "Passed"
-    },
-    "assessment": {
-        "noData": "No assessment yet",
-        "bonusDefault": "Bonus",
-        "bonusTitle": "Bonus points",
-        "bonusNamePlaceholder": "Name",
-        "points": "points",
-        "bonuses": "Bonuses",
-        "addBonus": "Add bonus",
-        "finalTitle": "Total assessment:",
-        "warning": "⚠️ This assessment may be inaccurate - adjusted weights are for orientation only"
-    },
-    "days": {
-        "monday": "Monday",
-        "tuesday": "Tuesday",
-        "wednesday": "Wednesday",
-        "thursday": "Thursday",
-        "friday": "Friday",
-        "saturday": "Saturday",
-        "sunday": "Sunday"
+    "sync": {
+      "initializing": "Initializing...",
+      "fetchingFirst": "Finding first files...",
+      "syncingRemaining": "Syncing remaining files ({count})...",
+      "failed": "Sync failed",
+      "loadingFiles": "Loading files..."
+    }
+  },
+  "syllabus": {
+    "conditions": "Completion requirements",
+    "grading": "Point distribution",
+    "weight": "Weight",
+    "noData": "No requirements available for this course."
+  },
+  "successRate": {
+    "noData": "No data available",
+    "students": "students",
+    "credit": "Credit",
+    "exam": "Exam",
+    "regular": "Regular",
+    "retake1": "1st retake",
+    "retake2": "2nd retake",
+    "passed": "Passed"
+  },
+  "assessment": {
+    "noData": "No assessment yet",
+    "bonusDefault": "Bonus",
+    "bonusTitle": "Bonus points",
+    "bonusNamePlaceholder": "Name",
+    "points": "points",
+    "bonuses": "Bonuses",
+    "addBonus": "Add bonus",
+    "finalTitle": "Total assessment:",
+    "warning": "⚠️ This might be inaccurate – adjusted weights are just for reference"
+  },
+  "days": {
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday"
   },
   "notifications": {
     "title": "News",
@@ -216,25 +216,25 @@
     "tomorrow": "Tomorrow"
   },
   "sync": {
-    "schedule": "Calendar synchronization",
-    "tooltip": "Synchronizes schedule and exam terms to Outlook.",
+    "schedule": "Calendar sync",
+    "tooltip": "Syncs your schedule and exam terms to Outlook.",
     "spolky": "Subscribed societies",
     "lastSync": "Last synced: {time}"
   },
   "fileCategories": {
-    "informace_k_vyuce": "Teaching Information",
+    "informace_k_vyuce": "Teaching Info",
     "studijni_texty": "Study Texts",
     "materialy_z_prednasek": "Lecture Materials",
     "pruvodce_studiem": "Subject Study Guide"
   },
   "onboarding": {
     "welcome": "Welcome to reIS!",
-    "description": "Enhanced version of IS MENDELU.\nBuilt by students for students.",
-    "getStarted": "Get Started",
+    "description": "Enhanced version of IS MENDELU.\nBuilt by students, for students.",
+    "getStarted": "Let's go",
     "syncTitle": "Sync to Phone (Outlook)",
     "syncDescription": "1. Open Outlook on your phone\n2. Go to the \"Calendar\" tab",
     "syncToggle": "Activate Sync",
-    "syncCoffeeBreak": "Sync takes about 15 minutes."
+    "syncCoffeeBreak": "Sync takes about 15 min."
   },
   "subjects": {
     "title": "My Subjects",

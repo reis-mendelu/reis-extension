@@ -55,7 +55,7 @@
     "recent": "Nedávná vyhledávání",
     "loading": "Načítání výsledků...",
     "empty": "Nic nenalezeno",
-    "recentHint": "Hledejte předměty, vyučující nebo stránky IS...",
+    "recentHint": "Hledej předměty, vyučující nebo stránky IS...",
     "recentlySearched": "Nedávno hledáno",
     "student": "Student",
     "teacher": "Vyučující",
@@ -65,7 +65,7 @@
     "people": "Lidé"
   },
   "calendar": {
-    "emptyWeek": "Tento týden nemáš žádnou výuku"
+    "emptyWeek": "Tento týden nic nemáš, pohodička"
   },
   "exams": {
     "title": "Moje zkoušky",
@@ -75,7 +75,7 @@
     "empty": "📭 Žádné zkoušky",
     "emptyTitle": "Žádné zkoušky v dohledu",
     "emptySubtitle": "Užij si volno!",
-    "autoBooking": "Auto-rezervace aktivní. Nezavírejte tuto stránku!",
+    "autoBooking": "Auto-rezervace aktivní. Nezavírej tuhle stránku!",
     "statusLabel": "Status:",
     "subjectLabel": "Předmět:",
     "registered": "Přihlášen",
@@ -86,7 +86,7 @@
     "unregister": "Odhlásit se",
     "changeTerm": "Změnit termín",
     "select": "Vybrat",
-    "clickToRegister": "Klikněte pro přihlášení:",
+    "clickToRegister": "Klikni pro přihlášení:",
     "unregisterDeadline": "Odhlášení do:",
     "term": "termín",
     "terms24": "termíny",
@@ -97,8 +97,8 @@
     "confirmation": {
       "registerTitle": "Potvrdit přihlášení",
       "unregisterTitle": "Potvrdit odhlášení",
-      "registerBody": "Opravdu se chcete přihlásit na tento termín zkoušky?",
-      "unregisterBody": "Opravdu se chcete odhlásit z této zkoušky?"
+      "registerBody": "Fakt se chceš přihlásit na tenhle termín?",
+      "unregisterBody": "Fakt se chceš odhlásit z téhle zkoušky?"
     }
   },
   "feedback": {
@@ -108,7 +108,7 @@
     "idea": "Nápad 💡",
     "other": "Jiné 📝",
     "subject": "Předmět",
-    "subjectPlaceholder": "Stručně popište problém...",
+    "subjectPlaceholder": "Stručně popiš problém...",
     "description": "Detailní popis",
     "descriptionPlaceholder": "Co se stalo? Kde? Jak to zopakovat?",
     "contact": "Kontakt (nepovinné)",
@@ -121,7 +121,7 @@
     "footer": "Automaticky odesíláme technické info (verze, prohlížeč) pro rychlejší opravu.",
     "toastSuccess": "Díky za zpětnou vazbu!",
     "toastError": "Nepodařilo se odeslat zpětnou vazbu.",
-    "npsQuestion": "Doporučili byste reIS kamarádovi? (1-5)",
+    "npsQuestion": "Doporučil/a bys reIS kamarádovi? (1-5)",
     "npsThank": "Díky za hodnocení!"
   },
   "course": {
@@ -148,11 +148,11 @@
     "footer": {
       "other": "Ostatní",
       "noFiles": "Žádné soubory",
-      "searchOnlyInSchedule": "Žádné soubory nejsou k dispozici.",
+      "searchOnlyInSchedule": "Soubory jsou dostupné jen pro předměty v rozvrhu.",
       "noFilesAvailable": "Žádné soubory nejsou k dispozici."
     },
-    "dragHint": "Tažením vyberete více souborů",
-    "clickHint": "Klikněte pro zobrazení materiálů",
+    "dragHint": "Tažením vyber více souborů",
+    "clickHint": "Klikni pro zobrazení materiálů",
     "badge": {
       "lecture": "Přednáška",
       "seminar": "Cvičení",
@@ -166,8 +166,8 @@
     },
     "sync": {
       "initializing": "Inicializace...",
-      "fetchingFirst": "Vyhledávání prvních souborů...",
-      "syncingRemaining": "Synchronizace zbývajících souborů ({count})...",
+      "fetchingFirst": "Hledám první soubory...",
+      "syncingRemaining": "Synchronizuju zbývající soubory ({count})...",
       "failed": "Synchronizace selhala",
       "loadingFiles": "Načítání souborů..."
     }
@@ -176,7 +176,7 @@
     "conditions": "Podmínky ukončení",
     "grading": "Bodové rozdělení",
     "weight": "Váha",
-    "noData": "Pro tento předmět nejsou dostupné požadavky."
+    "noData": "Pro tenhle předmět nejsou dostupné požadavky."
   },
   "successRate": {
     "noData": "Data nejsou k dispozici",
@@ -197,7 +197,7 @@
     "bonuses": "Bonusy",
     "addBonus": "Přidat bonus",
     "finalTitle": "Celkové hodnocení:",
-    "warning": "⚠️ Toto hodnocení může být nepřesné - upravené váhy slouží pouze pro orientaci"
+    "warning": "⚠️ Tohle hodnocení může být nepřesné – upravené váhy slouží jen pro orientaci"
   },
   "days": {
     "monday": "Pondělí",
@@ -230,7 +230,7 @@
   "onboarding": {
     "welcome": "Vítej v reISu!",
     "description": "Vylepšená verze IS MENDELU.\nVytvořeno studenty pro studenty.",
-    "getStarted": "Začít používat",
+    "getStarted": "Jdeme na to",
     "syncTitle": "Sync do mobilu (Outlook)",
     "syncDescription": "1. Otevři Outlook na mobilu\n2. Přejdi na záložku \"Kalendář\"",
     "syncToggle": "Aktivovat Sync",
@@ -245,7 +245,7 @@
     "loading": "Načítání...",
     "fulfilled": "Splněno",
     "notFulfilled": "Nesplněno",
-    "searchToOpen": "Kliknutím vyhledáte",
+    "searchToOpen": "Kliknutím vyhledáš",
     "semester": "semestr",
     "wholePlan": "Celý plán",
     "subjectCount": "předmětů",
