@@ -42,12 +42,14 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-base-200 transition-colors text-left group"
     >
       <span className="flex-1 text-sm truncate">{subject.name}</span>
-      {failRate != null && failRate >= 20 && !subject.isFulfilled && (
+      {failRate != null && !subject.isFulfilled && (
         <span
           className={`flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium tracking-wide shrink-0 relative group/fail cursor-pointer transition-colors ${
             failRate >= 25 
-              ? 'bg-error/10 text-error hover:bg-error/15' 
-              : 'bg-warning/15 text-warning-content hover:bg-warning/20'
+              ? 'bg-error/10 text-error hover:bg-error/15'
+              : failRate >= 20
+              ? 'bg-warning/15 text-warning-content hover:bg-warning/20'
+              : 'bg-base-content/5 text-base-content/40 hover:bg-base-content/10'
           }`}
           onClick={(e) => { e.stopPropagation(); if (hasId) onOpenSubject(subject.code, subject.name, subject.id, undefined, 'stats'); else onSearchSubject(subject.name); }}
         >
