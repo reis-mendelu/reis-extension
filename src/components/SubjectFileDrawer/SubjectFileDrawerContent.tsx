@@ -52,6 +52,7 @@ export function SubjectFileDrawerContent({
         const isEmpty = !files || files.length === 0;
         // Show skeleton only when we have no data yet — never suppress it with isSyncing
         const showSkeleton = isFilesLoading || (isPriorityLoading && isEmpty);
+        const currentFilesCount = files?.reduce((acc, f) => acc + f.files.length, 0) || 0;
         // Show progress bar when skeleton shows, when still fetching remaining files after first chunk,
         // or when syncing with no data yet
         const showProgress = showSkeleton || isPriorityLoading || (isSyncing && isEmpty);
@@ -66,7 +67,7 @@ export function SubjectFileDrawerContent({
                         <span>{t('course.sync.loadingFiles') || 'Loading files...'}</span>
                         {files && files.length > 0 && (
                             <span className="text-base-content/50">
-                                ({files.length}{totalCount !== undefined && totalCount > files.length ? ` / ${totalCount}` : ''})
+                                ({currentFilesCount}{totalCount !== undefined && totalCount > files.length ? ` / ${totalCount}` : ''})
                             </span>
                         )}
                     </div>

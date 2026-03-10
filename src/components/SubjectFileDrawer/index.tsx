@@ -23,7 +23,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     const { tests } = useOsnovy(lesson?.courseName);
 
     const tabCounts = useMemo(() => ({
-        files: state.files?.length || 0,
+        files: state.files?.reduce((acc, f) => acc + f.files.length, 0) || 0,
         osnovy: tests.length,
     }), [state.files, tests]);
 
