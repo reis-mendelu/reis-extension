@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <style>
+    .bg-shape { fill: var(--logo-bg, #111827); }
+    .re { fill: #9ca3af; }
+    .is { fill: #ffffff; }
+    .pea { fill: #79be15; }
+  </style>
+  <rect width="128" height="128" rx="24" class="bg-shape" />
+
+  <!--
+    Metrics:
+    baseline = 90, cap-height = 40 (H=50), x-height = 56 (h=34)
+    "re" stem = 5px (light), "IS" stem = 11px (bold)
+    Usable width: 14–114 (100px)
+    r=14–30  e=34–60  I=70–81  S=85–114
+  -->
+
+  <!-- "r" — clean geometric lowercase -->
+  <path class="re" d="
+    M14 90V56h5v3c3-3 7-4.5 11-4.5v5C24 59.5 19 63 19 70v20z
+  "/>
+
+  <!-- "e" — geometric lowercase with clean counter -->
+  <path class="re" d="
+    M34 73c0-10 7-17.5 14-17.5 7 0 13 6.5 13 15v3H39.5
+    C40 80 44.5 85 50.5 85c3.5 0 6.5-1.5 8.5-4.5l3.5 3
+    C60 87 55.5 90 49.5 90 40.5 90 34 83 34 73z
+    M39.5 70h17C56 64 52.5 60 48 60S40 64 39.5 70z
+  " fill-rule="evenodd"/>
+
+  <!-- "I" — bold geometric uppercase with slight bracket serifs -->
+  <path class="is" d="
+    M67 90V40h11v50H67z
+  "/>
+
+  <!-- "S" — bold geometric uppercase, balanced curves -->
+  <path class="is" d="
+    M100.5 42c-7.5 0-12 4-12 10 0 7 5 9 12 11.5 7 2.5 13 5.5 13 14
+    0 8-6 13.5-15 13.5-8 0-14-4-16.5-11l9-4c1.5 4.5 4.5 7 8 7
+    4 0 7-2.5 7-5.5 0-4-3.5-5.5-10-7.5C89 67.5 83 64.5 83 55.5
+    83 47 89.5 40 100 40c7 0 12 3.5 14.5 9.5l-8.5 4C104.5 50 103 47 100.5 42z
+  "/>
+
+  <!-- MENDELU green pea -->
+  <circle cx="22" cy="102" r="8" class="pea" />
+</svg>
