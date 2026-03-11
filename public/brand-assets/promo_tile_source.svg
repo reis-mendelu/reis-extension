@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 280" width="440" height="280">
+  <!-- Background -->
+  <rect width="440" height="280" fill="#111827"/>
+
+  <!-- Logo mark (left side, nested svg reuses original viewBox) -->
+  <svg x="40" y="80" width="120" height="120" viewBox="0 0 128 128">
+    <rect width="128" height="128" rx="24" fill="#1f2937"/>
+    <path d="M38 88V86h4V42h-4V40h24c12 0 20 8 20 18s-7 17-17 18l18 12H69L55 76H54v10h4v2H38z M54 66h10c6 0 10-4 10-10s-4-8-10-8H54v18z" fill="#ffffff" fill-rule="evenodd"/>
+    <circle cx="32" cy="96" r="16" fill="#79be15" stroke="#1f2937" stroke-width="4"/>
+  </svg>
+
+  <!-- Text (right half, centered at x=300, vertically centered around y=140) -->
+  <text x="300" y="155" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="56" font-weight="700" fill="#ffffff" text-anchor="middle">reIS</text>
+  <text x="300" y="183" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="15" font-weight="400" fill="#9ca3af" text-anchor="middle">Modernizovaný IS Mendelu</text>
+</svg>
+

@@ -10,8 +10,8 @@ export function injectIframe() {
 
     const favicon = document.createElement("link");
     favicon.rel = "icon";
-    favicon.type = "image/png";
-    favicon.href = chrome.runtime.getURL("mendelu_logo_128.png");
+    favicon.type = "image/svg+xml";
+    favicon.href = chrome.runtime.getURL("reIS_logo.svg");
     document.head.appendChild(favicon);
 
     const fontLink = document.createElement("link");

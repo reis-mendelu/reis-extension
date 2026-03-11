@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { TutoringMatchCard } from './TutoringMatchCard';
-import { MENDELU_LOGO_PATH } from '../../constants/icons';
+import { ReisLogo } from '../ReisLogo';
 
 export function StudyJamSuggestions({ onClose }: { onClose: () => void }) {
     const suggestions = useAppStore(s => s.studyJamSuggestions);
@@ -71,7 +71,7 @@ function ReisAvatar() {
     return (
         <div className="flex-shrink-0">
             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-black/5">
-                <img src={MENDELU_LOGO_PATH} alt="reIS" className="w-[1.6rem] h-[1.6rem] object-contain ml-0.5" />
+                <ReisLogo className="w-[1.6rem] h-[1.6rem] ml-0.5" />
             </div>
         </div>
     );

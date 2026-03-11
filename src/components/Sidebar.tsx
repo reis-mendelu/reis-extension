@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { MENDELU_LOGO_PATH } from '../constants/icons';
+import { ReisLogo } from './ReisLogo';
 import type { AppView } from '../types/app';
 import { NavItem } from './Sidebar/NavItem';
 import { BottomActions } from './Sidebar/BottomActions';
@@ -22,8 +22,8 @@ export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, onOpenSubje
 
   return (
     <aside className="hidden md:flex flex-col w-20 h-screen bg-base-200 border-r border-base-300 items-center py-6 shrink-0 relative z-40">
-      <button onClick={() => onViewChange('calendar')} className="mb-8 w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center border border-base-300/50 hover:shadow-md transition-shadow">
-        <img src={MENDELU_LOGO_PATH} alt="Logo" className="w-8 h-8 object-contain" />
+      <button onClick={() => onViewChange('calendar')} className="mb-8 w-10 h-10 rounded-xl overflow-hidden hover:opacity-80 transition-opacity flex items-center justify-center">
+        <ReisLogo className="w-full h-full" />
       </button>
       <div className="flex flex-col gap-3 w-full px-2">
         {menuItems.map(item => (

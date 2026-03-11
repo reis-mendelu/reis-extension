@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Check, Info } from 'lucide-react';
-import { MENDELU_LOGO_PATH } from '../../constants/icons';
+import { ReisLogo } from '../ReisLogo';
 import { IndexedDBService } from '../../services/storage';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useOutlookSync } from '../../hooks/data/useOutlookSync';
@@ -71,8 +71,8 @@ export function WelcomeModal() {
                                         exit={{ opacity: 0, x: 10 }}
                                         className="text-center"
                                     >
-                                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md border border-base-200">
-                                            <img src={MENDELU_LOGO_PATH} alt="Mendelu Logo" className="w-8 h-8 object-contain" />
+                                        <div className="w-12 h-12 rounded-xl overflow-hidden mx-auto mb-4 shadow-md flex items-center justify-center">
+                                            <ReisLogo className="w-full h-full" />
                                         </div>
                                         <h2 className="text-xl font-bold text-base-content mb-2 tracking-tight">
                                             {t('onboarding.welcome')}

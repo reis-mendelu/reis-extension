@@ -14,9 +14,9 @@ export default defineConfig({
     version: '4.6.0',
     description: 'Modernizovaný reIS rozšířený pro IS Mendelu',
     icons: {
-      16: 'mendelu_logo_16.png',
-      48: 'mendelu_logo_48.png',
-      128: 'mendelu_logo_128.png',
+      16: 'reIS_logo_16.png',
+      48: 'reIS_logo_48.png',
+      128: 'reIS_logo_128.png',
     },
     permissions: ['storage', 'unlimitedStorage'],
     host_permissions: [
@@ -46,9 +46,10 @@ export default defineConfig({
         resources: [
           'main.html',
           'assets/*',
-          'mendelu_logo_16.png',
-          'mendelu_logo_48.png',
-          'mendelu_logo_128.png',
+          'reIS_logo_16.png',
+          'reIS_logo_48.png',
+          'reIS_logo_128.png',
+          'reIS_logo.svg',
           'fonts/*',
         ],
         matches: ['https://is.mendelu.cz/*'],
