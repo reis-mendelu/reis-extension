@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <style>
-    .bg-shape { fill: var(--logo-bg, #111827); }
-    .letter { fill: var(--logo-text, #ffffff); }
-  </style>
-  <rect width="128" height="128" rx="24" class="bg-shape" />
-  <path d="M42 88V40H68C78.5 40 86 47.5 86 58C86 64.5 82 71 75 74L88 88H74L63 76H54V88H42ZM54 66H68C72.5 66 74 64.5 74 58C74 51.5 72.5 50 68 50H54V66Z" class="letter" />
-  <circle cx="32" cy="96" r="16" fill="#79be15" stroke="var(--logo-bg, #111827)" stroke-width="4" />
-</svg>
