@@ -6,13 +6,13 @@ import { ClassmatesListSkeleton } from './ClassmatesListSkeleton';
 
 interface ClassmatesTabProps {
     courseCode: string;
-    skupinaId?: string;
 }
 
-export function ClassmatesTab({ courseCode, skupinaId }: ClassmatesTabProps) {
+export function ClassmatesTab({ courseCode }: ClassmatesTabProps) {
     const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
-    const { classmates, isLoading } = useClassmates(courseCode, skupinaId);
+    const { classmates, isLoading } = useClassmates(courseCode);
+
 
     const translate = (key: string, fallback: string) => {
         const result = t(key);

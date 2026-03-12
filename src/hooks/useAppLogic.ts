@@ -10,7 +10,7 @@ import { useAppStore, initializeStore } from '../store/useAppStore';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
 import type { AppView, SelectedSubject } from '../types/app';
 import { isContentMessage } from '../types/messages';
-import type { Classmate } from '../types/classmates';
+
 import { isDualLanguageStudyPlan } from '../types/studyPlan';
 import type { DualLanguageStudyPlan } from '../types/studyPlan';
 import type { BlockLesson } from '../types/calendarTypes';
@@ -139,8 +139,8 @@ export function useAppLogic() {
 
                 if (r.classmates) {
                     for (const [c, cl] of Object.entries(r.classmates)) {
-                        const data = cl as { seminar?: Classmate[] };
-                        await IndexedDBService.set('classmates', c, data.seminar ?? []);
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        await IndexedDBService.set('classmates', c, cl as any);
                     }
                 }
 

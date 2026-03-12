@@ -8,23 +8,26 @@ export interface UseClassmatesResult {
 }
 
 /**
- * useClassmates - Returns seminar (Cvičení) classmates for a course.
+ * useClassmates — reads seminar classmates for a course from the Zustand store.
  *
- * Triggers fetchClassmates on mount (deduped in the slice).
- * skupinaId is forwarded to the fetch so the API can filter by seminar group.
+ * Data flows: syncService (content script) → REIS_SYNC_UPDATE message →
+ * useAppLogic writes to extension-origin IDB → this hook reads IDB via the slice.
+ *
+ * Re-fetches from IDB whenever classmates becomes undefined (e.g. after
+ * invalidateClassmates() is called when sync completes).
  */
-export function useClassmates(courseCode: string | undefined, skupinaId?: string): UseClassmatesResult {
+export function useClassmates(courseCode: string | undefined): UseClassmatesResult {
     const classmates = useAppStore(state => courseCode ? state.classmates[courseCode] : undefined);
     const isLoading = useAppStore(state => courseCode ? !!state.classmatesLoading[courseCode] : false);
 
     useEffect(() => {
-        if (courseCode) {
-            useAppStore.getState().fetchClassmates(courseCode, skupinaId);
+        if (courseCode && classmates === undefined && !isLoading) {
+            useAppStore.getState().fetchClassmates(courseCode);
         }
-    }, [courseCode, skupinaId]);
+    }, [courseCode, classmates, isLoading]);
 
     return {
         classmates: classmates ?? [],
-        isLoading: isLoading || classmates === undefined,
+        isLoading: isLoading || (classmates === undefined && !!courseCode),
     };
 }

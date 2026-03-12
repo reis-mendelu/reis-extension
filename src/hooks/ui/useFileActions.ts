@@ -30,11 +30,9 @@ export function useFileActions(): UseFileActionsResult {
     const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
 
     const openFile = useCallback(async (link: string) => {
-        log.debug(`Opening file: ${link}`);
         const fullUrl = normalizeFileUrl(link);
 
         try {
-            log.debug('Fetching file as blob for inline viewing:', fullUrl);
             const response = await fetch(fullUrl, { credentials: 'include' });
 
             if (!response.ok) {
@@ -45,7 +43,6 @@ export function useFileActions(): UseFileActionsResult {
 
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
-            log.debug('Created blob URL:', blobUrl, 'type:', blob.type);
 
             window.open(blobUrl, '_blank');
 
@@ -95,7 +92,6 @@ export function useFileActions(): UseFileActionsResult {
 
         setIsDownloading(true);
         setDownloadProgress({ completed: 0, total: fileLinks.length });
-        log.debug(`Downloading ZIP with ${fileLinks.length} files`);
 
         const zip = new JSZip();
 

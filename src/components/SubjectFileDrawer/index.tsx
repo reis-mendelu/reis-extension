@@ -12,6 +12,7 @@ import type { ParsedFile } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useOsnovy } from '../../hooks/data';
 import type { SelectedSubject } from '../../types/app';
+import { useAppStore } from '../../store/useAppStore';
 
 export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLesson | SelectedSubject | null; isOpen: boolean; onClose: () => void }) {
     const state = useSubjectFileDrawerState(lesson, isOpen);
@@ -21,11 +22,13 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     const [isPdfLoading, setIsPdfLoading] = useState(false);
     const { t } = useTranslation();
     const { tests } = useOsnovy(lesson?.courseName);
+    const classmatesCount = useAppStore(s => lesson?.courseCode ? s.classmates[lesson.courseCode]?.length : undefined);
 
     const tabCounts = useMemo(() => ({
         files: state.files?.reduce((acc, f) => acc + f.files.length, 0) || 0,
         osnovy: tests.length,
-    }), [state.files, tests]);
+        classmates: classmatesCount,
+    }), [state.files, tests, classmatesCount]);
 
     useEffect(() => {
         if (isOpen && state.files?.length) {

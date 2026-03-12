@@ -8,6 +8,7 @@ import { fetchDualLanguageStudyPlan } from "../api/studyPlan";
 import { fetchStudyStats } from "../api/studyStats";
 import { fetchSyllabus } from "../api/syllabus";
 import { fetchOsnovy } from "../api/osnovy";
+import { fetchSeminarGroupIds, fetchClassmates } from "../api/classmates";
 
 import { getUserParams } from "../utils/userParams";
 import { fetchScheduleBite, fetchFullSemesterSchedule } from "./dataFetchers";
@@ -127,6 +128,7 @@ async function syncSubjectDetails(subjectsValue: { data: Record<string, { folder
         obdobi = obdobi || first?.periodId;
     }
 
+    // Phase 3a: Files, assessments, syllabus (existing)
     const tasks = subjectEntries.map(([code, subject]) => limit(async () => {
         const subTasks = [];
         if (subject.folderUrl) subTasks.push(fetchFilesFromFolder(subject.folderUrl).then(f => { (cachedData.files as Record<string, unknown>)[code] = f; }).catch(() => {}));
@@ -136,6 +138,37 @@ async function syncSubjectDetails(subjectsValue: { data: Record<string, { folder
     }));
 
     await Promise.all(tasks);
+
+    // Phase 3b: Classmates — fetch skupina map once (predmetId→skupinaId),
+    // then match to subjects by subjectId to get the right courseCode IDB key
+    if (!studium || !obdobi) return;
+
+    try {
+        // predmetIdMap: { [predmetId]: skupinaId }
+        const predmetIdMap = await fetchSeminarGroupIds(studium, obdobi);
+        if (!cachedData.classmates) cachedData.classmates = {};
+
+        // Build tasks by iterating enrolled subjects and matching their subjectId
+        const classmateTasks = subjectEntries
+            .filter(([, subject]) => subject.subjectId && predmetIdMap[subject.subjectId])
+            .map(([courseCode, subject]) => limit(async () => {
+                const predmetId = subject.subjectId!;
+                const skupinaId = predmetIdMap[predmetId];
+                try {
+                    const data = await fetchClassmates(predmetId, studium!, obdobi!, skupinaId);
+                    await IndexedDBService.set('classmates', courseCode, data);
+                    (cachedData.classmates as Record<string, unknown>)[courseCode] = data;
+                    // Persist skupinaId for use in the UI if needed
+                    subjectsValue.data[courseCode].skupinaId = skupinaId;
+                } catch (e) {
+                    console.error(`[syncClassmates] Error for ${courseCode}:`, e);
+                }
+            }));
+
+        await Promise.all(classmateTasks);
+    } catch (e) {
+        console.error('[syncClassmates] Error fetching group map:', e);
+    }
 }
 
 export function startSyncService() {

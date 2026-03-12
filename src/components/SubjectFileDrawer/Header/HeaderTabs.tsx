@@ -13,6 +13,7 @@ export function HeaderTabs({ activeTab, onTabChange, disabledTabs = [], counts }
     type TabId = 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates' | 'osnovy';
     const tabs: { id: TabId; label: string }[] = [
         { id: 'files', label: t('course.tabs.files') },
+        { id: 'classmates', label: t('course.tabs.classmates') },
         { id: 'osnovy', label: t('course.tabs.osnovy') },
         { id: 'stats', label: t('course.tabs.successRate') },
         { id: 'syllabus', label: t('course.tabs.requirements') },

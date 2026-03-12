@@ -62,9 +62,9 @@ export interface AssessmentsSlice {
 
 export interface ClassmatesSlice {
     /** courseCode → flat list of seminar classmates */
-    classmates: Record<string, Classmate[]>;
+    classmates: Record<string, ClassmatesData>;
     classmatesLoading: Record<string, boolean>;
-    fetchClassmates: (courseCode: string, skupinaId?: string) => Promise<void>;
+    fetchClassmates: (courseCode: string) => Promise<void>;
     invalidateClassmates: () => void;
 }
 

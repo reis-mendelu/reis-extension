@@ -64,7 +64,6 @@ export const createSuccessRateSlice: AppSlice<SuccessRateSlice> = (set, get) => 
                 return;
             }
 
-            loggers.ui.info('[SuccessRateSlice] Fetching from API:', courseCode);
             const result = await fetchSubjectSuccessRates([courseCode]);
             set(state => ({
                 successRates: {

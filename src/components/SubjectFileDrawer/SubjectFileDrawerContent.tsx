@@ -104,8 +104,7 @@ export function SubjectFileDrawerContent({
 
     if (activeTab === 'assessments') return <AssessmentTab courseCode={lesson?.courseCode || ''} />;
     if (activeTab === 'syllabus') return <SyllabusTab courseCode={lesson?.courseCode || ''} courseId={resolvedCourseId} courseName={lesson?.courseName ?? ''} prefetchedResult={syllabusResult} />;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (activeTab === 'classmates') return <ClassmatesTab courseCode={lesson?.courseCode || ''} skupinaId={lesson && 'skupinaId' in lesson ? (lesson as any).skupinaId : undefined} />;
+    if (activeTab === 'classmates') return <ClassmatesTab courseCode={lesson?.courseCode || ''} />;
     
     if (activeTab === 'osnovy') {
         const isLoading = osnovyStatus === 'loading';

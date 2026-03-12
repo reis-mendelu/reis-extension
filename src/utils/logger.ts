@@ -22,12 +22,12 @@ export function enableVerboseLogging() { config.level = LogLevel.DEBUG; }
  */
 export async function logFetch<T>(context: string, url: string, opts?: any, parser?: (r: Response) => Promise<T>) {
     const l = createLogger(context), start = performance.now(), method = opts?.method || 'GET';
-    l.debug(`→ ${method} ${url}`);
+    // l.debug(`→ ${method} ${url}`);
     try {
         const res = await fetch(url, opts), ms = Math.round(performance.now() - start);
         if (!res.ok) { l.warn(`← ${method} ${url} - ${res.status} (${ms}ms)`); return { data: null, res, error: null, ms }; }
         const data = parser ? await parser(res) : (await res.text()) as unknown as T;
-        l.info(`← ${method} ${url} - ${res.status} OK (${ms}ms)`);
+        // l.info(`← ${method} ${url} - ${res.status} OK (${ms}ms)`);
         return { data, res, error: null, ms };
     } catch (e) {
         const ms = Math.round(performance.now() - start);
