@@ -11,7 +11,7 @@ export function GradingTable({ table, studyForm }: { table: string[][], studyFor
 
     return (
         <div>
-            <h3 className="text-base font-bold mb-3">{t('syllabus.grading')}</h3>
+            <h3 className="text-[14px] font-bold mb-1">{t('syllabus.grading')}</h3>
             <div className="overflow-x-auto border border-base-200 rounded-lg">
                 <table className="table table-sm w-full">
                     <thead>

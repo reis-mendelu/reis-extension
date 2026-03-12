@@ -1,4 +1,5 @@
-import { FileText, Users, ClipboardCheck, BarChart3, BookOpen, Trophy, LucideIcon } from 'lucide-react';
+import { FileText, Users, ClipboardCheck, BarChart3, BookOpen } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface HeaderTabsProps {
