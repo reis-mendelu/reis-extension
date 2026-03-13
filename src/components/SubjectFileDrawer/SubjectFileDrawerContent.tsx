@@ -5,7 +5,7 @@ import { SyllabusTab } from './SyllabusTab';
 import { ClassmatesTab } from './ClassmatesTab';
 import { SuccessRateTab } from '../SuccessRateTab';
 import { SelectionBox, DragHint } from './DragHint';
-import { useOsnovy } from '../../hooks/data';
+import { useCvicneTests } from '../../hooks/data';
 import { useUserParams } from '../../hooks/useUserParams';
 import type { FileGroup } from './types';
 import type { SyllabusRequirements, ParsedFile } from '../../types/documents';
@@ -15,7 +15,7 @@ import type { SelectedSubject } from '../../types/app';
 
 
 interface SubjectFileDrawerContentProps {
-    activeTab: 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates' | 'osnovy';
+    activeTab: 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates' | 'cvicneTests';
     lesson: BlockLesson | SelectedSubject | null;
     files: ParsedFile[] | null;
     isFilesLoading: boolean;
@@ -43,7 +43,7 @@ export function SubjectFileDrawerContent({
     groupedFiles, selectedIds, fileRefs, ignoreClickRef, toggleSelect, openFile, onViewPdf, resolvedCourseId, syllabusResult, folderUrl
 }: SubjectFileDrawerContentProps) {
     const { t, language } = useTranslation();
-    const { tests, status: osnovyStatus } = useOsnovy(lesson?.courseName);
+    const { tests, status: cvicneTestsStatus } = useCvicneTests(lesson?.courseName);
     const { params } = useUserParams();
     const lang = language === 'cz' ? 'cz' : 'en';
     const studium = params?.studium;
@@ -106,8 +106,8 @@ export function SubjectFileDrawerContent({
     if (activeTab === 'syllabus') return <SyllabusTab courseCode={lesson?.courseCode || ''} courseId={resolvedCourseId} courseName={lesson?.courseName ?? ''} prefetchedResult={syllabusResult} />;
     if (activeTab === 'classmates') return <ClassmatesTab courseCode={lesson?.courseCode || ''} />;
     
-    if (activeTab === 'osnovy') {
-        const isLoading = osnovyStatus === 'loading';
+    if (activeTab === 'cvicneTests') {
+        const isLoading = cvicneTestsStatus === 'loading';
         const hasTests = tests.length > 0;
         const isEmpty = !hasTests;
 
@@ -131,13 +131,13 @@ export function SubjectFileDrawerContent({
                         <div className="flex flex-col items-center justify-center p-6 text-center mt-4">
                             <FileText className="w-12 h-12 text-base-content/20 mb-3" />
                             <p className="text-sm text-base-content/60">
-                                {t('course.osnovy.noTests') || 'Žádné testy k dispozici.'}
+                                {t('course.cvicneTests.noTests') || 'Žádné testy k dispozici.'}
                             </p>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-2">
                             <h3 className="text-[10px] font-bold uppercase tracking-wider text-base-content/40 px-3">
-                                {t('course.osnovy.tests') || 'Testy'}
+                                {t('course.cvicneTests.tests') || 'Testy'}
                             </h3>
                             <div className="flex flex-col gap-1">
                                 {tests.map(test => (

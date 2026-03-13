@@ -77,7 +77,7 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
             <HeaderTabs
                 activeTab={activeTab}
                 onTabChange={onTabChange}
-                disabledTabs={!subjectInfo?.subjectId ? ['files', 'classmates', 'osnovy'] : []}
+                disabledTabs={!subjectInfo?.subjectId ? ['files', 'classmates', 'cvicneTests'] : []}
                 counts={tabCounts}
             />
         </div>

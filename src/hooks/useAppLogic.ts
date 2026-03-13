@@ -26,7 +26,7 @@ interface SyncedData {
     classmates?: Record<string, unknown>;
     studyPlan?: DualLanguageStudyPlan;
     studyStats?: unknown;
-    osnovy?: any[];
+    cvicneTests?: any[];
     lastSync?: string;
     isSyncing?: boolean;
     isPartial?: boolean;
@@ -95,11 +95,12 @@ export function useAppLogic() {
 
                 if (r.studyPlan && isDualLanguageStudyPlan(r.studyPlan)) await IndexedDBService.set('study_plan', 'current', r.studyPlan);
                 if (r.studyStats) await IndexedDBService.set('meta', 'study_stats', r.studyStats);
-                if (r.osnovy) {
+                console.log('[useAppLogic] cvicneTests in sync payload:', { has: !!r.cvicneTests, count: r.cvicneTests?.length });
+                if (r.cvicneTests) {
                     const userParams = await IndexedDBService.get('meta', 'reis_user_params');
                     if (userParams?.studium) {
-                        await IndexedDBService.set('osnovy', userParams.studium, r.osnovy);
-                        useAppStore.getState().setOsnovy(r.osnovy);
+                        await IndexedDBService.set('cvicne_tests', userParams.studium, r.cvicneTests);
+                        useAppStore.getState().setCvicneTests(r.cvicneTests);
                     }
                 }
                 if (r.exams) await IndexedDBService.set('exams', 'current', r.exams);

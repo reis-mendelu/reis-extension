@@ -4,7 +4,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 
 interface HeaderTabsProps {
     activeTab: string;
-    onTabChange: (id: 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates' | 'osnovy') => void;
+    onTabChange: (id: 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates' | 'cvicneTests') => void;
     disabledTabs?: string[];
     counts?: Record<string, number>;
 }
@@ -12,11 +12,11 @@ interface HeaderTabsProps {
 export function HeaderTabs({ activeTab, onTabChange, disabledTabs = [], counts }: HeaderTabsProps) {
     const { t } = useTranslation();
 
-    type TabId = 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates' | 'osnovy';
+    type TabId = 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates' | 'cvicneTests';
     const tabs: { id: TabId; label: string; icon: LucideIcon }[] = [
         { id: 'files', label: t('course.tabs.files'), icon: FileText },
         { id: 'classmates', label: t('course.tabs.classmates'), icon: Users },
-        { id: 'osnovy', label: t('course.tabs.osnovy'), icon: ClipboardCheck },
+        { id: 'cvicneTests', label: t('course.tabs.cvicneTests'), icon: ClipboardCheck },
         { id: 'stats', label: t('course.tabs.successRate'), icon: BarChart3 },
         { id: 'syllabus', label: t('course.tabs.requirements'), icon: BookOpen },
     ];
