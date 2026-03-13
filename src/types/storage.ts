@@ -6,6 +6,7 @@ import type { ClassmatesData } from '../types/classmates';
 import type { StudyPlan, DualLanguageStudyPlan } from '../types/studyPlan';
 import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
+import type { ErasmusCountryData } from '../types/erasmus';
 
 // --- Base Types using Zod ---
 
@@ -80,6 +81,7 @@ export const StoreSchemas = {
     study_plan: StudyPlanSchema,
     cvicne_tests: z.array(z.custom<CvicnyTest>()),
     odevzdavarny: z.array(z.custom<Odevzdavarna>()),
+    erasmus: z.custom<ErasmusCountryData>(),
 };
 
 export type StoreName = keyof typeof StoreSchemas;

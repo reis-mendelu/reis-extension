@@ -4,6 +4,7 @@ import { AppHeader } from './AppHeader'
 import { WeeklyCalendar } from './WeeklyCalendar/index'
 import { ExamPanel } from './ExamPanel'
 import { SubjectsPanel } from './SubjectsPanel'
+import { ErasmusPanel } from './ErasmusPanel'
 import { useSwipeNavigation } from '../hooks/ui/useSwipeNavigation'
 import { NpsBanner } from './Feedback/NpsBanner'
 
@@ -46,6 +47,7 @@ export function AppMain({
                     {currentView === 'calendar' && <WeeklyCalendar key={currentDate.toISOString()} initialDate={currentDate} onPrevWeek={handlePrevWeek} onNextWeek={handleNextWeek} />}
                     {currentView === 'exams' && <ExamPanel />}
                     {currentView === 'subjects' && <SubjectsPanel onOpenSubject={handleOpenSubjectFromSearch} onSearchSubject={(name) => searchPrefillRef?.current?.(name)} />}
+                    {currentView === 'erasmus' && <ErasmusPanel />}
                 </div>
             </div>
         </main>

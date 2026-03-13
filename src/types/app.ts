@@ -1,4 +1,4 @@
-export type AppView = 'calendar' | 'exams' | 'settings' | 'timeline-demo' | 'subjects';
+export type AppView = 'calendar' | 'exams' | 'settings' | 'timeline-demo' | 'subjects' | 'erasmus';
 
 export interface SelectedSubject {
     courseCode: string;

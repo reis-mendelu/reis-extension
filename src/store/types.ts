@@ -7,6 +7,7 @@ import type { DualLanguageStudyPlan, StudyStats } from '../types/studyPlan';
 import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { SyncStatus } from '../services/sync';
+import type { ErasmusCountryData } from '../types/erasmus';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type Theme = "mendelu" | "mendelu-dark";
@@ -149,6 +150,12 @@ export interface StudyPlanSlice {
     fetchStudyStats: () => Promise<void>;
 }
 
+export interface ErasmusSlice {
+    erasmusData: ErasmusCountryData | null;
+    erasmusLoading: boolean;
+    fetchErasmusReports: () => Promise<void>;
+}
+
 export interface CvicneTestsSlice {
     cvicneTests: CvicnyTest[];
     cvicneTestsStatus: Status;
@@ -169,6 +176,6 @@ export interface UseThemeResult {
   setTheme: (theme: Theme) => void;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice;
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

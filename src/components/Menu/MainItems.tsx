@@ -1,13 +1,14 @@
-import { Home, Book, CalendarCheck, Globe, LayoutDashboard, ClipboardList, PenTool } from 'lucide-react';
+import { Home, Book, CalendarCheck, Globe, LayoutDashboard, ClipboardList, PenTool, Plane } from 'lucide-react';
 import type { MenuItem } from '../menuConfig';
 
 export const mainItems = (sid: string, oid: string, t: (key: string) => string, lang: string = 'cz'): MenuItem[] => [
     { id: 'dashboard', label: t('sidebar.dashboard'), icon: <Home className="w-5 h-5" />, href: `https://is.mendelu.cz/auth/?lang=${lang}` },
     { id: 'exams', label: t('sidebar.exams'), icon: <CalendarCheck className="w-5 h-5" /> },
     { id: 'subjects', label: t('sidebar.subjects'), icon: <Book className="w-5 h-5" /> },
-    { 
-        id: 'is', 
-        label: t('sidebar.is'), 
+    { id: 'erasmus', label: 'Erasmus+', icon: <Plane className="w-5 h-5" /> },
+    {
+        id: 'is',
+        label: t('sidebar.is'),
         icon: <Globe className="w-5 h-5" />,
         expandable: true,
         children: [

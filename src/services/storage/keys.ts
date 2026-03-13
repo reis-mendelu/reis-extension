@@ -43,6 +43,9 @@ export const STORAGE_KEYS = {
 
     // Study Program Data
     STUDY_PROGRAM_DATA: 'reis_study_program',
+
+    // Erasmus reports
+    ERASMUS_LAST_SYNC: 'reis_erasmus_sync',
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];
