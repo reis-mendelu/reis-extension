@@ -153,6 +153,8 @@ export interface StudyPlanSlice {
 export interface ErasmusSlice {
     erasmusData: ErasmusCountryData | null;
     erasmusLoading: boolean;
+    erasmusCountryFile: string;
+    setErasmusCountry: (file: string) => Promise<void>;
     fetchErasmusReports: () => Promise<void>;
 }
 
