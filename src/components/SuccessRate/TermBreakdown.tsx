@@ -6,6 +6,7 @@ const TERM_KEYS: Record<string, string> = {
     'Řádný termín': 'successRate.regular',
     '1. opravný': 'successRate.retake1',
     '2. opravný': 'successRate.retake2',
+    'Všechny termíny': 'successRate.allTerms',
 };
 
 interface TermBreakdownProps {

@@ -10,10 +10,6 @@ interface Props {
 export function ErasmusReportCard({ report }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const rating = parseInt(report.overall.rating);
-  const accom = parseFloat(report.finance.accommodationPerDay);
-  const food = parseFloat(report.finance.foodPerDay);
-  const monthlyCost = !isNaN(accom) && !isNaN(food) ? Math.round((accom + food) * 30) : null;
 
   return (
     <div className="border border-base-300 rounded-lg overflow-hidden">
@@ -30,15 +26,7 @@ export function ErasmusReportCard({ report }: Props) {
             {report.student.faculty} · {report.stay.from} – {report.stay.to} ({report.stay.durationMonths}{t('erasmus.months')})
           </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          {monthlyCost && (
-            <span className="text-xs text-base-content/60">{monthlyCost}€/{t('erasmus.months')}</span>
-          )}
-          {!isNaN(rating) && (
-            <span className={`badge badge-sm ${rating >= 4 ? 'badge-success' : rating >= 3 ? 'badge-warning' : 'badge-error'}`}>
-              {rating}/5
-            </span>
-          )}
+        <div className="flex items-center shrink-0">
           <ChevronDown className={`w-4 h-4 text-base-content/40 transition-transform ${open ? 'rotate-180' : ''}`} />
         </div>
       </button>
@@ -49,12 +37,6 @@ export function ErasmusReportCard({ report }: Props) {
           <div className="pt-2">
             <h4 className="font-semibold text-xs text-base-content/50 mb-1">{t('erasmus.finance')}</h4>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-              {report.finance.accommodationPerDay && (
-                <div>{t('erasmus.accommodation')}: <strong>{report.finance.accommodationPerDay}€{t('erasmus.perDay')}</strong></div>
-              )}
-              {report.finance.foodPerDay && (
-                <div>{t('erasmus.food')}: <strong>{report.finance.foodPerDay}€{t('erasmus.perDay')}</strong></div>
-              )}
               {report.finance.totalCostCZK && (
                 <div>{t('erasmus.totalCost')}: <strong>{report.finance.totalCostCZK} Kč</strong></div>
               )}
@@ -62,12 +44,6 @@ export function ErasmusReportCard({ report }: Props) {
                 <div>{t('erasmus.grantCoverage')}: <strong>{report.finance.grantCoveragePercent}%</strong></div>
               )}
             </div>
-            {report.finance.unaffordable && (
-              <p className="text-xs text-error/80 mt-1">{report.finance.unaffordable}</p>
-            )}
-            {report.finance.savings && (
-              <p className="text-xs text-success/80 mt-1">{report.finance.savings}</p>
-            )}
           </div>
 
           {/* Review */}

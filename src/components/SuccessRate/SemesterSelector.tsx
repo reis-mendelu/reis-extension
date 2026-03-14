@@ -1,4 +1,5 @@
 import type { SemesterStats } from '../../types/documents';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface SemesterSelectorProps {
     stats: SemesterStats[];
@@ -7,7 +8,8 @@ interface SemesterSelectorProps {
 }
 
 export function SemesterSelector({ stats, activeIndex, onSelect }: SemesterSelectorProps) {
-    const format = (y: number, s: string) => `${s.startsWith('ZS') ? 'ZS' : 'LS'} ${y % 100}/${(y % 100) + 1}`;
+    const { t } = useTranslation();
+    const format = (y: number, s: string) => `${s.startsWith('ZS') ? t('days.winterSemester') : t('days.summerSemester')} ${y % 100}/${(y % 100) + 1}`;
     return (
         <div className="flex flex-wrap justify-center gap-2 mt-auto">
             {stats.map((s, i) => {
