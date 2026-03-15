@@ -37,6 +37,40 @@ const COUNTRIES = [
   { id: '826', file: 'country-826-study.json' },
 ];
 
+const ISO_TO_EUROSTAT = {
+  '040':'AT','056':'BE','100':'BG','191':'HR','196':'CY',
+  '208':'DK','233':'EE','246':'FI','250':'FR','276':'DE',
+  '300':'EL','348':'HU','372':'IE','380':'IT','428':'LV',
+  '440':'LT','528':'NL','578':'NO','616':'PL','620':'PT',
+  '642':'RO','688':'RS','703':'SK','705':'SI','724':'ES',
+  '752':'SE','792':'TR','826':'UK',
+};
+
+async function fetchPriceLevels() {
+  const geos = [...new Set(Object.values(ISO_TO_EUROSTAT))].map(g => `geo=${g}`).join('&');
+  const url = `https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/tec00120?format=JSON&lang=en&${geos}`;
+  try {
+    const res = await fetch(url);
+    const json = await res.json();
+    const timeIndex = json.dimension.time.category.index;
+    const latestYear = Object.entries(timeIndex).sort((a, b) => b[1] - a[1])[0]?.[0];
+    const latestTimePos = timeIndex[latestYear];
+    const geoIndex = json.dimension.geo.category.index;
+    const timeSize = Object.keys(timeIndex).length;
+    const result = {};
+    for (const [geo, geoPos] of Object.entries(geoIndex)) {
+      const idx = geoPos * timeSize + latestTimePos;
+      const val = json.value[String(idx)];
+      result[geo] = val != null ? Math.round(val * 10) / 10 : null;
+    }
+    console.error(`✓ Eurostat PLI (${latestYear}): ${Object.keys(result).length} countries`);
+    return result;
+  } catch (err) {
+    console.error(`✗ Eurostat fetch failed: ${err.message}`);
+    return {};
+  }
+}
+
 function median(arr) {
   if (!arr.length) return 0;
   const s = [...arr].sort((a, b) => a - b);
@@ -46,6 +80,7 @@ function median(arr) {
 
 async function main() {
   const results = {};
+  const priceLevels = await fetchPriceLevels();
 
   for (const c of COUNTRIES) {
     try {
@@ -85,6 +120,7 @@ async function main() {
         medianCostPerMonth: median(costs),
         avgDuration: durations.length ? +(durations.reduce((a, b) => a + b, 0) / durations.length).toFixed(1) : 0,
         topSchool: topSchool.length > 45 ? topSchool.slice(0, 42) + '...' : topSchool,
+        priceLevelIndex: priceLevels[ISO_TO_EUROSTAT[c.id]] ?? null,
       };
 
       console.error(`✓ ${c.id} — ${reports.length} reports, ${schools.size} schools`);
@@ -101,6 +137,7 @@ export const ERASMUS_COUNTRY_STATS: Record<string, {
   medianCostPerMonth: number;
   avgDuration: number;
   topSchool: string;
+  priceLevelIndex: number | null;
 }> = ${JSON.stringify(results, null, 2)};`);
 }
 

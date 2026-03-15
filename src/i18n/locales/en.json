@@ -311,7 +311,8 @@
     "positives": "Positive experiences",
     "costPerMonth": "Cost/month (EUR)",
     "grantCoverage": "Grant coverage",
-    "openInIS": "Open in IS"
+    "openInIS": "Open in IS",
+    "priceLevel": "Price level"
   },
   "classmates": {
     "all": "All",

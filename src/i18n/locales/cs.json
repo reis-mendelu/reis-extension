@@ -311,7 +311,8 @@
     "positives": "Pozitivní zkušenosti",
     "costPerMonth": "Náklady/měsíc (EUR)",
     "grantCoverage": "Pokrytí grantem",
-    "openInIS": "Otevřít v ISu"
+    "openInIS": "Otevřít v ISu",
+    "priceLevel": "Cenová hladina"
   },
   "classmates": {
     "all": "Všichni",

@@ -10,12 +10,12 @@ interface EuropeMapProps {
   lang: 'cs' | 'en';
 }
 
-const MAX_COUNT = Math.max(...Object.values(ERASMUS_COUNTRY_STATS).map(s => s.count));
-
-function countColor(count: number): string {
-  const t = Math.max(0, Math.min(1, count / MAX_COUNT));
-  const lightness = 82 - t * 40;
-  return `oklch(${lightness}% ${0.06 + t * 0.1} 250)`;
+function priceLevelColor(pli: number | null): string {
+  if (pli == null) return 'oklch(var(--b3))';
+  const t = Math.max(0, Math.min(1, (pli - 40) / 120));
+  const hue = 145 - t * 120;
+  const lightness = 72 - Math.abs(t - 0.5) * 16;
+  return `oklch(${lightness}% 0.14 ${hue})`;
 }
 
 function formatCost(czk: number): string {
@@ -96,7 +96,7 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
           }
 
           const fill = isErasmus && pathStats
-            ? countColor(pathStats.count)
+            ? priceLevelColor(pathStats.priceLevelIndex)
             : 'oklch(var(--b3))';
 
           return (
@@ -145,6 +145,13 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
 
             <span>{t('erasmus.duration')}:</span>
             <span className="font-semibold text-base-content">~{stats.avgDuration} {t('erasmus.months')}</span>
+
+            {stats.priceLevelIndex != null && (<>
+              <span>{t('erasmus.priceLevel')}:</span>
+              <span className="font-semibold text-base-content">
+                {stats.priceLevelIndex} <span className="text-base-content/50">EU=100</span>
+              </span>
+            </>)}
           </div>
 
           <div className="mt-1.5 pt-1.5 border-t border-base-300 text-base-content/50 truncate">
