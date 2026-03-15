@@ -18,11 +18,6 @@ function priceLevelColor(pli: number | null): string {
   return `oklch(${lightness}% 0.14 ${hue})`;
 }
 
-function formatCost(czk: number): string {
-  if (czk >= 1000) return `${Math.round(czk / 1000)}k`;
-  return String(czk);
-}
-
 function ratingStars(rating: number): string {
   const full = Math.floor(rating);
   const half = rating - full >= 0.3;
@@ -133,30 +128,11 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
             <span className="text-base-content/60 ml-1">{stats.avgRating}</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-base-content/70">
-            <span>{t('erasmus.reports')}:</span>
-            <span className="font-semibold text-base-content">{stats.count}</span>
-
-            <span>{t('erasmus.institution')}:</span>
-            <span className="font-semibold text-base-content">{stats.schools}</span>
-
-            <span>{t('erasmus.costPerMonth')}:</span>
-            <span className="font-semibold text-base-content">{formatCost(stats.medianCostPerMonth)} Kč</span>
-
-            <span>{t('erasmus.duration')}:</span>
-            <span className="font-semibold text-base-content">~{stats.avgDuration} {t('erasmus.months')}</span>
-
-            {stats.priceLevelIndex != null && (<>
-              <span>{t('erasmus.priceLevel')}:</span>
-              <span className="font-semibold text-base-content">
-                {stats.priceLevelIndex} <span className="text-base-content/50">EU=100</span>
-              </span>
-            </>)}
-          </div>
-
-          <div className="mt-1.5 pt-1.5 border-t border-base-300 text-base-content/50 truncate">
-            {stats.topSchool}
-          </div>
+          {stats.priceLevelIndex != null && (
+            <div className="text-base-content/70">
+              {t('erasmus.priceLevel')}: <span className="font-semibold text-base-content">{stats.priceLevelIndex}</span> <span className="text-base-content/50">EU=100</span>
+            </div>
+          )}
         </div>
       )}
     </div>
