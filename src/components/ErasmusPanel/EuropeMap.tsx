@@ -82,9 +82,9 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
               <path
                 key={id}
                 d={d}
-                fill="oklch(var(--b3))"
+                fill="none"
                 stroke="oklch(var(--b1))"
-                strokeWidth={0.5}
+                strokeWidth={0.3}
                 fillRule="evenodd"
               />
             );
