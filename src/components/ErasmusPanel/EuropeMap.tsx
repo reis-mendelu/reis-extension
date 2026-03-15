@@ -13,9 +13,9 @@ interface EuropeMapProps {
 function priceLevelColor(pli: number | null): string {
   if (pli == null) return 'oklch(var(--b3))';
   const t = Math.max(0, Math.min(1, (pli - 40) / 120));
-  const hue = 145 - t * 120;
-  const lightness = 72 - Math.abs(t - 0.5) * 16;
-  return `oklch(${lightness}% 0.14 ${hue})`;
+  const lightness = 85 - t * 30;
+  const chroma = 0.04 + t * 0.08;
+  return `oklch(${lightness}% ${chroma} 250)`;
 }
 
 function ratingStars(rating: number): string {
