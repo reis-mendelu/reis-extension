@@ -64,7 +64,7 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
     const mx = (e.clientX - rect.left) / rect.width;
     const my = (e.clientY - rect.top) / rect.height;
 
-    const step = 1 + Math.min(Math.abs(e.deltaY), 100) * 0.0008;
+    const step = 1 + Math.min(Math.abs(e.deltaY), 100) * 0.002;
     const factor = e.deltaY > 0 ? step : 1 / step;
     setVb(prev => {
       const nw = prev.w * factor;
