@@ -103,3 +103,10 @@ export interface ErasmusCountryData {
   };
   reports: ErasmusReport[];
 }
+
+export interface ErasmusConfig {
+  academicYear: string;
+  deadlines: { applicationOpen: string; applicationClose: string; resultsAnnounced: string };
+  grants: { eur: number; countries: string[] }[];
+  faculties: Record<string, { coordinator: string; email: string }>;
+}

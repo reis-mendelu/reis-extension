@@ -17,7 +17,7 @@ export const createStudyPlanSlice: AppSlice<StudyPlanSlice> = (set) => ({
             } else {
                 set({ studyPlanLoading: false, studyPlanLoaded: true });
             }
-        } catch (e) {
+        } catch (_e) {
             set({ studyPlanLoading: false, studyPlanLoaded: true });
         }
     },
@@ -25,7 +25,8 @@ export const createStudyPlanSlice: AppSlice<StudyPlanSlice> = (set) => ({
         try {
             const stored = await IndexedDBService.get('meta', 'study_stats') as StudyStats | null;
             if (stored) set({ studyStats: stored });
-        } catch (e) {
+        } catch (_e) {
+            // Ignore if stats fail to load from IDB
         }
     },
 });

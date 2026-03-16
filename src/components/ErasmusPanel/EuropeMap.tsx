@@ -1,8 +1,10 @@
-import { useMemo, useState, useCallback, useRef } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { EUROPE_PATHS } from '@/constants/europePaths';
 import { ERASMUS_COUNTRIES } from '@/constants/erasmusCountries';
 import { ERASMUS_COUNTRY_STATS } from '@/constants/erasmusCountryStats';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useAppStore } from '@/store/useAppStore';
+import { getGrantForCountryId } from '@/utils/erasmusGrants';
 
 interface EuropeMapProps {
   selectedCountryId: string;
@@ -53,6 +55,7 @@ const MAX_ZOOM = 5;
 
 export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMapProps) {
   const { t } = useTranslation();
+  const erasmusConfig = useAppStore(s => s.erasmusConfig);
   const erasmusIds = useMemo(() => new Set(ERASMUS_COUNTRIES.map(c => c.id)), []);
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -99,11 +102,26 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
     setTooltip(null);
   }, [clampVb]);
 
+  const [isDragging, setIsDragging] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(300);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (e.button !== 0) return;
     (e.target as Element).setPointerCapture(e.pointerId);
     dragRef.current = { startX: e.clientX, startY: e.clientY, vb: { ...vb } };
     didDragRef.current = false;
+    setIsDragging(true);
   }, [vb]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
@@ -180,7 +198,7 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          style={{ cursor: dragRef.current ? 'grabbing' : 'grab', touchAction: 'none' }}
+          style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
         >
           <style>{`
             .erasmus-country { transition: opacity 0.15s; }
@@ -277,7 +295,7 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
           <div
             className="absolute z-50 pointer-events-none bg-base-100 border border-base-300 rounded-lg shadow-lg px-3 py-2.5 w-52 text-xs"
             style={{
-              left: Math.min(tooltip.x + 12, (containerRef.current?.offsetWidth ?? 300) - 220),
+              left: Math.min(tooltip.x + 12, containerWidth - 220),
               top: tooltip.y - 8,
               transform: 'translateY(-100%)',
             }}
@@ -292,6 +310,14 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
                 {t('erasmus.priceLevel')}: <span className="font-semibold text-base-content">{stats.priceLevelIndex}</span> <span className="text-base-content/50">EU=100</span>
               </div>
             )}
+            {erasmusConfig && (() => {
+              const grant = getGrantForCountryId(erasmusConfig, tooltip.countryId);
+              return grant ? (
+                <div className="text-success font-semibold mt-0.5">
+                  {t('erasmus.grantPerMonth', { amount: grant })}
+                </div>
+              ) : null;
+            })()}
           </div>
         )}
       </div>

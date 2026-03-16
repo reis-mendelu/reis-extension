@@ -46,6 +46,7 @@ export const STORAGE_KEYS = {
 
     // Erasmus reports
     ERASMUS_LAST_SYNC: 'reis_erasmus_sync',
+    ERASMUS_CONFIG_SYNC: 'reis_erasmus_config_sync',
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];

@@ -48,7 +48,8 @@
     "save": "Uložit",
     "start": "Spustit",
     "upload": "Odevzdat",
-    "view": "Zobrazit"
+    "view": "Zobrazit",
+    "copiedToClipboard": "Email byl zkopírován do schránky"
   },
 
   "search": {
@@ -319,7 +320,13 @@
     "higherPrices": "Vyšší ceny",
     "lowerPrices": "Nižší ceny",
     "topDestinations": "Top 3",
-    "legendDesc": "Ceny jsou porovnány k průměru EU (100)."
+    "legendDesc": "Ceny jsou porovnány k průměru EU (100).",
+    "grantPerMonth": "Grant: {amount} €/měs.",
+    "applicationsOpen": "Přihlášky otevřeny",
+    "applicationsClose": "Přihlášky se uzavírají za {days} dní",
+    "applicationsClosed": "Přihlášky uzavřeny",
+    "resultsAnnounced": "Výsledky {date}",
+    "coordinator": "Koordinátor"
   },
   "classmates": {
     "all": "Všichni",

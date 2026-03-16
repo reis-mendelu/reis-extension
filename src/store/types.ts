@@ -7,7 +7,7 @@ import type { DualLanguageStudyPlan, StudyStats } from '../types/studyPlan';
 import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { SyncStatus } from '../services/sync';
-import type { ErasmusCountryData } from '../types/erasmus';
+import type { ErasmusCountryData, ErasmusConfig } from '../types/erasmus';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type Theme = "mendelu" | "mendelu-dark";
@@ -154,8 +154,10 @@ export interface ErasmusSlice {
     erasmusData: ErasmusCountryData | null;
     erasmusLoading: boolean;
     erasmusCountryFile: string;
+    erasmusConfig: ErasmusConfig | null;
     setErasmusCountry: (file: string) => Promise<void>;
     fetchErasmusReports: () => Promise<void>;
+    fetchErasmusConfig: () => Promise<void>;
 }
 
 export interface CvicneTestsSlice {

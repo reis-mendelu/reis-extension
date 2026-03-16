@@ -6,10 +6,12 @@ export function useErasmus() {
   const loading = useAppStore(s => s.erasmusLoading);
   const countryFile = useAppStore(s => s.erasmusCountryFile);
   const setCountry = useAppStore(s => s.setErasmusCountry);
+  const config = useAppStore(s => s.erasmusConfig);
 
   useEffect(() => {
     if (!data) useAppStore.getState().fetchErasmusReports();
-  }, [data]);
+    if (!config) useAppStore.getState().fetchErasmusConfig();
+  }, [data, config]);
 
-  return { data, loading, reports: data?.reports ?? [], countryFile, setCountry };
+  return { data, loading, reports: data?.reports ?? [], countryFile, setCountry, config };
 }

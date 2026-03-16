@@ -108,7 +108,8 @@
     "save": "Save",
     "start": "Start",
     "upload": "Upload",
-    "view": "View"
+    "view": "View",
+    "copiedToClipboard": "Email copied to clipboard"
   },
 
   "search": {
@@ -319,7 +320,13 @@
     "higherPrices": "Higher prices",
     "lowerPrices": "Lower prices",
     "topDestinations": "Top 3",
-    "legendDesc": "Prices are compared to the EU average (100)."
+    "legendDesc": "Prices are compared to the EU average (100).",
+    "grantPerMonth": "Grant: {amount} €/mo",
+    "applicationsOpen": "Applications open",
+    "applicationsClose": "Applications close in {days} days",
+    "applicationsClosed": "Applications closed",
+    "resultsAnnounced": "Results {date}",
+    "coordinator": "Coordinator"
   },
   "classmates": {
     "all": "All",

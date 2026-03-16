@@ -4,11 +4,12 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAppStore } from '@/store/useAppStore';
 import { ERASMUS_COUNTRIES } from '@/constants/erasmusCountries';
 import { EuropeMap } from './EuropeMap';
-import { DebugMap } from './DebugMap';
 import { ErasmusReportCard } from './ErasmusReportCard';
 import type { ErasmusReport } from '@/types/erasmus';
-import { GraduationCap, X, Filter, ChevronDown } from 'lucide-react';
+import { GraduationCap, X, Filter, ChevronDown, Mail } from 'lucide-react';
 import { getUserParams, type UserParams } from '@/utils/userParams';
+import { getDeadlineStatus } from '@/utils/erasmusGrants';
+import { toast } from 'sonner';
 
 const FACULTY_ABBREV_TO_NAME: Record<string, string> = {
   'PEF': 'Provozně ekonomická fakulta',
@@ -27,7 +28,7 @@ function parseDate(d: string): number {
 export function ErasmusPanel() {
   const { t } = useTranslation();
   const lang = useAppStore(s => s.language) === 'cz' ? 'cs' : 'en';
-  const { reports, loading, countryFile, setCountry } = useErasmus();
+  const { reports, loading, countryFile, setCountry, config } = useErasmus();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [schoolFilter, setSchoolFilter] = useState<string | null>(null);
@@ -91,7 +92,14 @@ export function ErasmusPanel() {
       {/* Header */}
       <div className="px-4 pt-4 pb-2">
         <h2 className="text-lg font-bold mb-1">{t('erasmus.title')}</h2>
-        <p className="text-xs text-base-content/50 mb-3">{t('erasmus.selectCountry')}</p>
+        <p className="text-xs text-base-content/50 mb-2">{t('erasmus.selectCountry')}</p>
+        {config && (() => {
+          const ds = getDeadlineStatus(config);
+          if (ds.status === 'open') return <span className="badge badge-success badge-sm">{t('erasmus.applicationsOpen')}</span>;
+          if (ds.status === 'closingSoon') return <span className="badge badge-warning badge-sm">{t('erasmus.applicationsClose', { days: ds.daysLeft })}</span>;
+          if (ds.status === 'announced') return <span className="badge badge-info badge-sm">{t('erasmus.resultsAnnounced', { date: ds.date })}</span>;
+          return null;
+        })()}
       </div>
 
       <div className="flex-1 min-h-0 px-4 pb-4">
@@ -124,6 +132,35 @@ export function ErasmusPanel() {
                     {filteredReports.length} {t('erasmus.reports')}
                     {schoolFilter && ` · ${schoolFilter}`}
                   </p>
+                  {config && userParams?.facultyLabel && config.faculties[userParams.facultyLabel] && (
+                    <p className="text-[11px] text-base-content/50 flex items-center gap-2 mt-1 px-0.5">
+                      <span className="shrink-0">{t('erasmus.coordinator')}:</span>
+                      <span className="font-medium text-base-content/80 truncate">
+                        {config.faculties[userParams.facultyLabel].coordinator}
+                      </span>
+                      <button 
+                        onClick={() => {
+                          const email = config.faculties[userParams.facultyLabel].email;
+                          navigator.clipboard.writeText(email).then(() => {
+                            toast.success(t('common.copiedToClipboard'));
+                          }).catch(err => {
+                            console.error('Failed to copy!', err);
+                            const input = document.createElement('input');
+                            input.value = email;
+                            document.body.appendChild(input);
+                            input.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(input);
+                            toast.success(t('common.copiedToClipboard'));
+                          });
+                        }}
+                        className="btn btn-ghost btn-xs w-6 h-6 p-0 min-h-0 text-primary hover:bg-primary/10 transition-colors shrink-0"
+                        title={config.faculties[userParams.facultyLabel].email}
+                      >
+                        <Mail size={12} />
+                      </button>
+                    </p>
+                  )}
                 </div>
                 <button onClick={handleClose} className="btn btn-ghost btn-xs btn-circle">
                   <X size={16} />
