@@ -166,27 +166,15 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
             .erasmus-country { transition: opacity 0.15s; }
             .erasmus-country:hover { opacity: 0.75; }
           `}</style>
+          {/* Country fills with background-colored stroke for border gaps */}
           {EUROPE_PATHS.map(({ id, d }) => {
             const isBackground = id.startsWith('BG_');
+            if (isBackground) return null;
+
             const isErasmus = erasmusIds.has(id);
             const pathStats = ERASMUS_COUNTRY_STATS[id];
             const isSelected = id === selectedCountryId;
             const opacity = selectedCountryId ? (isSelected ? 0 : 0.4) : 1;
-
-            if (isBackground) {
-              return (
-                <path 
-                  key={id} 
-                  d={d} 
-                  fill="none" 
-                  stroke="oklch(var(--b1))" 
-                  strokeWidth={0.3} 
-                  fillRule="evenodd" 
-                  opacity={opacity}
-                  style={{ transition: 'opacity 0.3s' }}
-                />
-              );
-            }
 
             const fill = isErasmus && pathStats
               ? priceLevelColor(pathStats.priceLevelIndex)
@@ -197,9 +185,12 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
                 key={id}
                 d={d}
                 fill={fill}
-                stroke={isSelected ? 'oklch(var(--p))' : 'oklch(var(--b1))'}
-                strokeWidth={isSelected ? 2.5 : 0.5}
                 fillRule="evenodd"
+                stroke="rgba(0,0,0,0.25)"
+                strokeWidth={1.5}
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+                paintOrder="stroke"
                 className={isErasmus ? 'erasmus-country cursor-pointer' : ''}
                 onClick={isErasmus ? () => handleCountryClick(id) : undefined}
                 onMouseEnter={isErasmus ? (e) => handleMouseEnter(id, e) : undefined}

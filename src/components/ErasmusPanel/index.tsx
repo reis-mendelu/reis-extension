@@ -4,6 +4,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAppStore } from '@/store/useAppStore';
 import { ERASMUS_COUNTRIES } from '@/constants/erasmusCountries';
 import { EuropeMap } from './EuropeMap';
+import { DebugMap } from './DebugMap';
 import { ErasmusReportCard } from './ErasmusReportCard';
 import type { ErasmusReport } from '@/types/erasmus';
 import { GraduationCap, X, Filter, ChevronDown } from 'lucide-react';
