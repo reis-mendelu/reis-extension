@@ -314,7 +314,11 @@
     "costPerMonth": "Cost/month (EUR)",
     "grantCoverage": "Grant coverage",
     "openInIS": "Open in IS",
-    "priceLevel": "Price level"
+    "priceLevel": "Price level",
+    "legend": "Legend",
+    "higherPrices": "Higher prices",
+    "lowerPrices": "Lower prices",
+    "topDestinations": "Top 3"
   },
   "classmates": {
     "all": "All",

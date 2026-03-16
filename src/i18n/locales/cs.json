@@ -314,7 +314,11 @@
     "costPerMonth": "Náklady/měsíc (EUR)",
     "grantCoverage": "Pokrytí grantem",
     "openInIS": "Otevřít v ISu",
-    "priceLevel": "Cenová hladina"
+    "priceLevel": "Cenová hladina",
+    "legend": "Legenda",
+    "higherPrices": "Vyšší ceny",
+    "lowerPrices": "Nižší ceny",
+    "topDestinations": "Top 3"
   },
   "classmates": {
     "all": "Všichni",

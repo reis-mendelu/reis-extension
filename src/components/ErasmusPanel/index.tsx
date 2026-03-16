@@ -96,7 +96,7 @@ export function ErasmusPanel() {
       <div className="flex-1 min-h-0 px-4 pb-4">
         <div className="bg-base-200/50 rounded-xl p-2 border border-base-300 h-full">
           <EuropeMap
-            selectedCountryId={currentCountryId}
+            selectedCountryId={drawerOpen ? currentCountryId : ''}
             onSelectCountry={id => {
               const c = ERASMUS_COUNTRIES.find(e => e.id === id);
               if (c) handleCountrySelect(c.file);
