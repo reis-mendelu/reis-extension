@@ -162,6 +162,10 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
       });
   }, [lang]);
 
+  const totalReports = useMemo(() => 
+    Object.values(ERASMUS_COUNTRY_STATS).reduce((acc, s) => acc + s.count, 0), 
+  []);
+
   return (
     <div className="flex h-full gap-4 p-1 overflow-hidden">
       {/* Map column */}
@@ -296,7 +300,10 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
       <div className="w-56 shrink-0 flex flex-col gap-8 py-3 pr-4">
         {/* Price Level Legend */}
         <div className="flex flex-col gap-3">
-          <h3 className="text-xs font-bold opacity-40 uppercase tracking-widest">{t('erasmus.legend')}</h3>
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="text-xs font-bold opacity-40 uppercase tracking-widest">{t('erasmus.legend')}</h3>
+            <span className="text-[10px] opacity-40 font-bold whitespace-nowrap">{totalReports} {t('erasmus.reports')}</span>
+          </div>
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <div className="w-4 h-4 rounded-full ring-1 ring-base-content/10 shadow-sm" style={{ backgroundColor: priceLevelColor(160) }} />
@@ -306,6 +313,9 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
               <div className="w-4 h-4 rounded-full ring-1 ring-base-content/10 shadow-sm" style={{ backgroundColor: priceLevelColor(40) }} />
               <span className="text-sm font-medium text-base-content/80">{t('erasmus.lowerPrices')}</span>
             </div>
+            <p className="text-[10px] text-base-content/40 italic leading-tight pl-0.5">
+              {t('erasmus.legendDesc')}
+            </p>
           </div>
         </div>
 

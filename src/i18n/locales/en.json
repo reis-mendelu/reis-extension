@@ -285,8 +285,8 @@
     "openFeedback": "Send Feedback"
   },
   "erasmus": {
-    "title": "Erasmus+ Reports",
-    "selectCountry": "Select Country",
+    "title": "Erasmus+ Experiences",
+    "selectCountry": "Click a country to discover student reviews, costs, and tips.",
     "selectSchool": "Select School",
     "selectSchoolHint": "Which school are you heading to?",
     "allCountries": "All Countries",
@@ -318,7 +318,8 @@
     "legend": "Legend",
     "higherPrices": "Higher prices",
     "lowerPrices": "Lower prices",
-    "topDestinations": "Top 3"
+    "topDestinations": "Top 3",
+    "legendDesc": "Prices are compared to the EU average (100)."
   },
   "classmates": {
     "all": "All",

@@ -285,8 +285,8 @@
     "openFeedback": "Odeslat zpětnou vazbu"
   },
   "erasmus": {
-    "title": "Erasmus+ Zprávy",
-    "selectCountry": "Vyber zemi",
+    "title": "Erasmus+ Zkušenosti",
+    "selectCountry": "Klikni na zemi a prozkoumej recenze, náklady a tipy od studentů.",
     "selectSchool": "Vyber školu",
     "selectSchoolHint": "Na kterou školu se chystáš?",
     "allCountries": "Všechny země",
@@ -318,7 +318,8 @@
     "legend": "Legenda",
     "higherPrices": "Vyšší ceny",
     "lowerPrices": "Nižší ceny",
-    "topDestinations": "Top 3"
+    "topDestinations": "Top 3",
+    "legendDesc": "Ceny jsou porovnány k průměru EU (100)."
   },
   "classmates": {
     "all": "Všichni",
