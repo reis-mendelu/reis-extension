@@ -3,6 +3,14 @@ import { ChevronDown, ExternalLink } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { ErasmusReport } from '@/types/erasmus';
 
+const FACULTY_NAME_TO_ABBREV: Record<string, string> = {
+  'Provozně ekonomická fakulta': 'PEF',
+  'Agronomická fakulta': 'AF',
+  'Lesnická a dřevařská fakulta': 'LDF',
+  'Fakulta regionálního rozvoje a mezinárodních studií': 'FRRMS',
+  'Zahradnická fakulta': 'ZF',
+};
+
 interface Props {
   report: ErasmusReport;
 }
@@ -23,7 +31,7 @@ export function ErasmusReportCard({ report }: Props) {
             <span className="badge badge-sm bg-base-200 text-base-content/60">{report.host.name.replace('University of ', '')}</span>
           </div>
           <div className="text-xs text-base-content/50 mt-0.5">
-            {report.student.faculty} · {report.stay.from} – {report.stay.to} ({report.stay.durationMonths}{t('erasmus.months')})
+            {FACULTY_NAME_TO_ABBREV[report.student.faculty] ?? report.student.faculty} · {report.stay.from} – {report.stay.to} ({report.stay.durationMonths}{t('erasmus.months')})
           </div>
         </div>
         <div className="flex items-center shrink-0">

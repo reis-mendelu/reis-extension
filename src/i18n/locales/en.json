@@ -290,6 +290,8 @@
     "selectSchool": "Select School",
     "selectSchoolHint": "Which school are you heading to?",
     "allCountries": "All Countries",
+    "allSchools": "Select university...",
+    "popular": "Popular",
     "personalizedFor": "Personalized for faculty {faculty}",
     "showMore": "Show more reports",
     "loading": "Loading reports...",
