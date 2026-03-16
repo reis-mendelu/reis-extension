@@ -12,10 +12,26 @@ interface EuropeMapProps {
 
 function priceLevelColor(pli: number | null): string {
   if (pli == null) return 'oklch(var(--b3))';
+  // Range 40 (Cheap) to 160 (Expensive). 100 is EU average.
   const t = Math.max(0, Math.min(1, (pli - 40) / 120));
-  const lightness = 85 - t * 30;
-  const chroma = 0.04 + t * 0.08;
-  return `oklch(${lightness}% ${chroma} 250)`;
+  
+  // Semantic Hue: 170 (Mint/Teal) -> 220 (Blue) -> 30 (Amber/Rose)
+  // We want Lighter/Safe for Cheap, and Warm for Expensive.
+  let hue = 170;
+  if (t <= 0.5) {
+    // 0 to 0.5: 170 to 220
+    hue = 170 + (t * 2) * 50;
+  } else {
+    // 0.5 to 1: 220 to 30 (crossing through 0/360 or just direct)
+    // Actually, let's go 220 -> 300 -> 30? No, let's go 220 -> 360/0 -> 30.
+    const t2 = (t - 0.5) * 2;
+    hue = 220 + t2 * 170; // 220 + 170 = 390 (equivalent to 30)
+  }
+
+  // Consistent lightness to avoid "darkness" being interpreted as anything else
+  const lightness = 72; 
+  const chroma = 0.08;
+  return `oklch(${lightness}% ${chroma} ${hue % 360})`;
 }
 
 function ratingStars(rating: number): string {
@@ -277,34 +293,34 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
       </div>
 
       {/* Legend & Stats column (Stage 2) */}
-      <div className="w-44 shrink-0 flex flex-col gap-6 py-2 pr-2">
+      <div className="w-56 shrink-0 flex flex-col gap-8 py-3 pr-4">
         {/* Price Level Legend */}
-        <div className="flex flex-col gap-2.5">
-          <h3 className="text-[10px] font-bold opacity-40 uppercase tracking-widest">{t('erasmus.legend')}</h3>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2.5">
-              <div className="w-2.5 h-2.5 rounded-full ring-1 ring-base-content/10 shadow-sm" style={{ backgroundColor: priceLevelColor(160) }} />
-              <span className="text-xs font-medium text-base-content/80">{t('erasmus.higherPrices')}</span>
+        <div className="flex flex-col gap-3">
+          <h3 className="text-xs font-bold opacity-40 uppercase tracking-widest">{t('erasmus.legend')}</h3>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-4 h-4 rounded-full ring-1 ring-base-content/10 shadow-sm" style={{ backgroundColor: priceLevelColor(160) }} />
+              <span className="text-sm font-medium text-base-content/80">{t('erasmus.higherPrices')}</span>
             </div>
-            <div className="flex items-center gap-2.5">
-              <div className="w-2.5 h-2.5 rounded-full ring-1 ring-base-content/10 shadow-sm" style={{ backgroundColor: priceLevelColor(40) }} />
-              <span className="text-xs font-medium text-base-content/80">{t('erasmus.lowerPrices')}</span>
+            <div className="flex items-center gap-3">
+              <div className="w-4 h-4 rounded-full ring-1 ring-base-content/10 shadow-sm" style={{ backgroundColor: priceLevelColor(40) }} />
+              <span className="text-sm font-medium text-base-content/80">{t('erasmus.lowerPrices')}</span>
             </div>
           </div>
         </div>
 
         {/* Top 3 Stats */}
-        <div className="flex flex-col gap-2.5">
-          <h3 className="text-[10px] font-bold opacity-40 uppercase tracking-widest">{t('erasmus.topDestinations')}</h3>
-          <ul className="flex flex-col gap-2 list-none p-0 m-0">
+        <div className="flex flex-col gap-3">
+          <h3 className="text-xs font-bold opacity-40 uppercase tracking-widest">{t('erasmus.topDestinations')}</h3>
+          <ul className="flex flex-col gap-3 list-none p-0 m-0">
             {top3.map((item) => (
-              <li key={item.id} className="flex flex-col gap-0.5">
-                <div className="flex items-baseline justify-between gap-1">
-                  <span className="text-xs font-bold truncate max-w-[100px]">{item.name}</span>
-                  <span className="text-[10px] opacity-60 font-mono whitespace-nowrap">({item.count} {t('erasmus.reports')})</span>
+              <li key={item.id} className="flex flex-col gap-1.5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-bold truncate max-w-[140px]">{item.name}</span>
+                  <span className="text-xs opacity-60 font-mono whitespace-nowrap">({item.count} {t('erasmus.reports')})</span>
                 </div>
                 {/* Visual indicator (optional bar) */}
-                <div className="w-full h-1 bg-base-300 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-base-300 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-primary/40" 
                     style={{ width: `${(item.count / top3[0].count) * 100}%` }} 
