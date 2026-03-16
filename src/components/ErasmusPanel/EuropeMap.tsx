@@ -221,23 +221,27 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
               
               return (
                 <g className="pointer-events-none">
-                  {/* Outer glow layer */}
+                  {/* Layer 1: Stark White Outline (Base contrast) */}
                   <path
                     d={path.d}
                     fill="none"
-                    stroke="oklch(var(--p) / 0.3)"
-                    strokeWidth={12}
+                    stroke="white"
+                    strokeWidth={5}
                     fillRule="evenodd"
-                    style={{ filter: 'blur(10px)' }}
                   />
-                  {/* Clean sharp layer with glow */}
+                  {/* Layer 2: Primary Core (Creates the colored edge) */}
                   <path
                     d={path.d}
-                    fill={fill}
+                    fill="none"
                     stroke="oklch(var(--p))"
                     strokeWidth={3}
                     fillRule="evenodd"
-                    style={{ filter: 'drop-shadow(0 0 12px oklch(var(--p) / 0.8))' }}
+                  />
+                  {/* Layer 3: The Fill (Ensures stroke only shows OUTWARDS) */}
+                  <path
+                    d={path.d}
+                    fill={fill}
+                    fillRule="evenodd"
                   />
                 </g>
               );
