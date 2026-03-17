@@ -7,7 +7,6 @@ export function useOdevzdavarny(courseName?: string) {
     const status = useAppStore((state: AppState) => state.odevzdavarnyStatus);
     const assignments = useMemo(() => {
         if (!globalAssignments || !courseName) {
-            console.log('[useOdevzdavarny] early return:', { globalCount: globalAssignments?.length, courseName });
             return [];
         }
 
@@ -17,8 +16,6 @@ export function useOdevzdavarny(courseName?: string) {
         const filtered = globalAssignments.filter(a =>
             normalize(a.courseNameCs) === matchName || normalize(a.courseNameEn) === matchName
         );
-
-        console.log('[useOdevzdavarny] filter:', { courseName, matchName, globalCount: globalAssignments.length, filteredCount: filtered.length, sampleNames: globalAssignments.slice(0, 3).map(a => ({ cs: a.courseNameCs, en: a.courseNameEn })) });
 
         return filtered;
     }, [courseName, globalAssignments]);

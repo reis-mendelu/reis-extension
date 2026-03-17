@@ -52,12 +52,19 @@ async function handleDataRequest(dataType: DataRequestType) {
 
 async function handleFetchRequest(id: string, url: string, options?: { method?: string; headers?: Record<string, string>; body?: string }) {
     try {
-        const response = await fetch(url, {
-            method: options?.method ?? "GET", headers: options?.headers,
-            body: options?.body, credentials: "include",
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const text = await response.text();
+        let text: string;
+        if (url.startsWith('https://is.mendelu.cz')) {
+            const response = await fetch(url, {
+                method: options?.method ?? "GET", headers: options?.headers,
+                body: options?.body, credentials: "include",
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            text = await response.text();
+        } else {
+            const result = await chrome.runtime.sendMessage({ type: 'REIS_BG_FETCH', url });
+            if (!result?.success) throw new Error(result?.error || 'Background fetch failed');
+            text = result.data;
+        }
         sendToIframe(Messages.fetchResult(id, true, text));
     } catch (e) { sendToIframe(Messages.fetchResult(id, false, undefined, String(e))); }
 }

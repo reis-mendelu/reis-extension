@@ -37,7 +37,6 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set) => ({
 
       if (studium && obdobi) {
         const data = await IndexedDBService.get('odevzdavarny', `${studium}_${obdobi}`);
-        console.log('[odevzdavarny] fetchOdevzdavarny from IDB:', { studium, obdobi, count: data?.length, data });
         set({
           odevzdavarny: data || [],
           odevzdavarnyStatus: 'success',
@@ -50,7 +49,6 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set) => ({
     }
   },
   setOdevzdavarny: (assignments) => {
-    console.log('[odevzdavarny] setOdevzdavarny called:', { count: assignments?.length, assignments });
     set({ odevzdavarny: assignments || [] });
   },
 });

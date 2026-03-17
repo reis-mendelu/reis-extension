@@ -1,4 +1,7 @@
 {
+  "menu": {
+    "unavailable": "Menu není k dispozici"
+  },
   "settings": {
     "title": "Nastavení",
     "reportBug": "Nahlásit chybu / Nápad",

@@ -103,7 +103,6 @@ export function useAppLogic() {
                         useAppStore.getState().setCvicneTests(r.cvicneTests);
                     }
                 }
-                console.log('[useAppLogic] odevzdavarny in sync payload:', { has: !!r.odevzdavarny, count: r.odevzdavarny?.length });
                 if (r.odevzdavarny) {
                     const userParams = await IndexedDBService.get('meta', 'reis_user_params');
                     if (userParams?.studium && userParams?.obdobi) {

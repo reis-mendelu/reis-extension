@@ -58,7 +58,6 @@ async function fetchLang(studium: string, obdobi: string, lang: 'cz' | 'en'): Pr
         const doc = new DOMParser().parseFromString(html, "text/html");
 
         const table = findOpenTable(doc, lang);
-        console.log('[odevzdavarny] findOpenTable result:', { lang, found: !!table });
         if (!table) return [];
 
         const rows = table.getElementsByTagName('tr');
@@ -100,7 +99,6 @@ async function fetchLang(studium: string, obdobi: string, lang: 'cz' | 'en'): Pr
             }
         }
 
-        console.log('[odevzdavarny] fetchLang result:', { lang, count: assignments.length, assignments });
         return assignments;
     } catch (error) {
         console.error("Error fetching odevzdavarny:", error);
@@ -133,6 +131,5 @@ export async function fetchOdevzdavarny(studium: string, obdobi: string): Promis
         uploadUrl: cz.uploadUrl,
     }));
 
-    console.log('[odevzdavarny] fetchOdevzdavarny merged:', { count: merged.length, merged });
     return { assignments: merged, lastFetched: Date.now() };
 }

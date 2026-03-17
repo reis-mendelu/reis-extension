@@ -9,6 +9,7 @@ import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { SyncStatus } from '../services/sync';
 import type { ErasmusCountryData, ErasmusConfig } from '../types/erasmus';
 import type { PinnedPage } from './slices/createPinnedPagesSlice';
+import type { OutletMenu } from '../types/menuTypes';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type Theme = "mendelu" | "mendelu-dark";
@@ -188,6 +189,13 @@ export interface PinnedPagesSlice {
   unpinPage: (id: string) => Promise<void>;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice;
+export interface MenuSlice {
+  menu: OutletMenu[] | null;
+  menuLoading: boolean;
+  menuError: boolean;
+  fetchMenu: () => Promise<void>;
+}
+
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

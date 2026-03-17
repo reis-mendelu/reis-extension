@@ -77,7 +77,6 @@ export async function syncAllData() {
 
         const odevzdavarnyPromise = (studium && userParams?.obdobi)
             ? syncOdevzdavarny(studium, userParams.obdobi).then(result => {
-                console.log('[syncService] odevzdavarny result:', { count: result?.assignments.length, result });
                 if (result) {
                     cachedData = { ...cachedData, odevzdavarny: result.assignments };
                 }

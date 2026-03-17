@@ -23,6 +23,7 @@ export default defineConfig({
       'https://is.mendelu.cz/*',
       'https://raw.githubusercontent.com/reis-mendelu/reis-data/*',
       'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main/*',
+      'https://skm.mendelu.cz/*',
     ],
     action: {
       default_popup: 'main.html',

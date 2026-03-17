@@ -1,4 +1,7 @@
 {
+  "menu": {
+    "unavailable": "Menu not available"
+  },
   "settings": {
     "title": "Settings",
     "reportBug": "Report Bug / Idea",
