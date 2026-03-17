@@ -17,12 +17,12 @@
   },
   "sidebar": {
     "profile": "Profil",
-    "is": "IS",
+    "is": "Student",
     "calendar": "Kalendář",
     "exams": "Zkoušky",
     "dashboard": "Domů",
     "subjects": "Předměty",
-    "notebooks": "List záznamníku",
+    "notebooks": "Záznamník učitele",
     "student": "Student",
     "study": "Studium",
     "portal": "Portál studenta",
@@ -37,7 +37,10 @@
     "successRating": "Hodnocení úspěšnosti",
     "wifi": "Wi-Fi",
     "contactCenter": "Kontaktní centrum",
-    "slides": "snímků"
+    "slides": "snímků",
+    "addPin": "Přidat",
+    "addPinTitle": "Připnout stránku",
+    "pinLimitReached": "Maximum 6 stránek"
   },
   "common": {
     "loading": "Načítání...",
@@ -283,6 +286,7 @@
     "switchToLight": "Přepnout na světlý režim",
     "switchToCzech": "Přepnout na češtinu",
     "switchToEnglish": "Switch to English",
+    "openErasmus": "Otevřít Erasmus+",
     "openFeedback": "Odeslat zpětnou vazbu"
   },
   "erasmus": {

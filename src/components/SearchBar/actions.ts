@@ -66,5 +66,13 @@ export function getCommandActions(deps: ActionDeps): SearchResult[] {
       keywords: ['zpětná vazba', 'feedback', 'bug', 'chyba', 'nápad', 'idea'],
       onExecute: openFeedback,
     },
+    {
+      id: 'action-erasmus',
+      title: t('commands.openErasmus'),
+      type: 'action',
+      detail: t('commands.navigation'),
+      keywords: ['erasmus', 'pobyt', 'zahraničí', 'study abroad', 'exchange'],
+      onExecute: () => setCurrentView('erasmus'),
+    },
   ];
 }

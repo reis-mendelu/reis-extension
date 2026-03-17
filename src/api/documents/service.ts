@@ -66,10 +66,11 @@ export async function fetchFilesFromFolder(
         const extraResults = await Promise.all(pageRequests);
         allFiles.push(...extraResults.flat());
 
-        // Count base files (excluding subfolder links themselves)
-        const baseFilesCount = allFiles.filter(f => 
-            f.files.some(fi => fi.link.includes('download') || !fi.link.includes('slozka.pl'))
-        ).length;
+        // Count actual file attachments (excluding subfolder links)
+        const baseFilesCount = allFiles.reduce((acc, f) => {
+            const fileCount = f.files.filter(fi => fi.link.includes('download') || !fi.link.includes('slozka.pl')).length;
+            return acc + fileCount;
+        }, 0);
 
         if (totalRecords !== undefined && baseFilesCount < totalRecords) {
             throw new Error(`Data integrity check failed for folder ${folderUrl}: Expected ${totalRecords} items, but parsed only ${baseFilesCount}. This indicates a parser or pagination failure.`);

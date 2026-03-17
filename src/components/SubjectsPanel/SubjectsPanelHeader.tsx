@@ -43,6 +43,9 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
   const planCheckUrl = studium
     ? `https://is.mendelu.cz/auth/studijni/studijni_povinnosti.pl?studium=${studium};lang=${lang}`
     : `https://is.mendelu.cz/auth/studijni/studijni_povinnosti.pl?lang=${lang}`;
+  const registrationsUrl = studium
+    ? `https://is.mendelu.cz/auth/student/registrace.pl?studium=${studium};lang=${lang}`
+    : `https://is.mendelu.cz/auth/student/registrace.pl?lang=${lang}`;
 
   const pct = creditsRequired > 0 ? Math.min(100, Math.round((creditsAcquired / creditsRequired) * 100)) : 0;
   const progressionInfo = studyStats ? getProgressionInfo(studyStats) : null;
@@ -54,11 +57,18 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
     <div className="px-4 py-3 border-b border-base-300">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg font-semibold">{t('subjects.title')}</h2>
-        <a href={planCheckUrl} target="_blank" rel="noopener noreferrer"
-          className="btn btn-ghost btn-sm gap-1.5 text-base-content/50 hover:text-primary">
-          <span className="text-xs">IS MENDELU</span>
-          <ExternalLink size={14} />
-        </a>
+        <div className="flex items-center gap-2">
+          <a href={registrationsUrl} target="_blank" rel="noopener noreferrer"
+            className="btn btn-ghost btn-sm px-2.5 text-base-content/50 hover:text-primary gap-1.5">
+            <span className="text-xs uppercase">{t('sidebar.registrations')}</span>
+            <ExternalLink size={14} />
+          </a>
+          <a href={planCheckUrl} target="_blank" rel="noopener noreferrer"
+            className="btn btn-ghost btn-sm px-2.5 text-base-content/50 hover:text-primary gap-1.5">
+            <span className="text-xs uppercase">IS MENDELU</span>
+            <ExternalLink size={14} />
+          </a>
+        </div>
       </div>
 
       {/* Progression Card */}

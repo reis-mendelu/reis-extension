@@ -17,12 +17,12 @@
   },
   "sidebar": {
     "profile": "Profile",
-    "is": "IS",
+    "is": "Student",
     "calendar": "Calendar",
     "exams": "Exams",
     "dashboard": "Home",
     "subjects": "Subjects",
-    "notebooks": "Record List",
+    "notebooks": "Teacher's Record Sheet",
     "student": "Student",
     "study": "Study",
     "portal": "Student Portal",
@@ -37,7 +37,10 @@
     "successRating": "Success Rating",
     "wifi": "Wi-Fi",
     "contactCenter": "Contact Center",
-    "slides": "slides"
+    "slides": "slides",
+    "addPin": "Add",
+    "addPinTitle": "Pin a page",
+    "pinLimitReached": "Maximum 6 pages"
   },
   "calendar": {
     "emptyWeek": "Nothing this week, you're free"
@@ -283,6 +286,7 @@
     "switchToLight": "Switch to Light Mode",
     "switchToCzech": "Přepnout na češtinu",
     "switchToEnglish": "Switch to English",
+    "openErasmus": "Open Erasmus+",
     "openFeedback": "Send Feedback"
   },
   "erasmus": {

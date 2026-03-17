@@ -10,9 +10,10 @@ export function useMenuItems(): MenuItem[] {
   const language = useAppStore(state => state.language);
   const examStatus = useAppStore(state => state.exams.status);
   const examsData = useAppStore(state => state.exams.data);
+  const pinnedPages = useAppStore(state => state.pinnedPages);
   const { t } = useTranslation();
 
-  const items = getMainMenuItems(params?.studium ?? '', params?.obdobi ?? '', t, language);
+  const items = getMainMenuItems(params?.studium ?? '', params?.obdobi ?? '', t, language, pinnedPages);
 
   let availableExamsCount = 0;
   if (examsData) {
