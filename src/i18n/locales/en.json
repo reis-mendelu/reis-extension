@@ -1,5 +1,6 @@
 {
   "menu": {
+    "title": "Today's Menu",
     "unavailable": "Menu not available"
   },
   "settings": {
