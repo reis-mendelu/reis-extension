@@ -1,13 +1,16 @@
 {
   "name": "reis_new",
   "private": true,
-  "version": "4.6.0",
+  "version": "4.7.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
+    "dev:firefox": "wxt --browser firefox",
     "build": "wxt build",
+    "build:firefox": "wxt build --browser firefox",
     "build:watch": "npx nodemon --watch src -e ts,tsx,html,css --exec 'npm run build'",
     "zip": "wxt zip",
+    "zip:firefox": "wxt zip --browser firefox",
     "lint": "eslint .",
     "preview": "wxt preview",
     "test": "vitest",
