@@ -98,7 +98,7 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
                     </a>
                     <button
                       onClick={() => unpinPage(child.id)}
-                      className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover/item:opacity-100 hover:btn-error transition-all shrink-0"
+                      className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover/item:opacity-100 hover:bg-error/20 hover:text-error border-none transition-all shrink-0"
                       aria-label="Unpin"
                     >
                       <X className="w-3.5 h-3.5" />

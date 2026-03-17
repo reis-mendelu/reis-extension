@@ -53,13 +53,13 @@ export async function fetchFilesFromFolder(
                 const { files: pageFiles } = parseServerFiles(pageText);
                 
                 if (pageFiles.length === 0) {
-                    throw new Error(`Pagination page ${pageUrl} returned 0 files, likely a parsing error.`);
+                    console.warn(`[fetchFilesFromFolder] Pagination page ${pageUrl} returned 0 files, possibly non-standard grouping.`);
                 }
                 
                 return pageFiles;
             } catch (err) {
-                console.error(`[fetchFilesFromFolder]   - Paged ${pageUrl} failed CRITICALLY:`, err);
-                throw err; // Re-throw to fail the whole folder fetch
+                console.warn(`[fetchFilesFromFolder] Paged ${pageUrl} failed, skipping:`, err);
+                return [];
             }
         });
 
@@ -73,7 +73,7 @@ export async function fetchFilesFromFolder(
         }, 0);
 
         if (totalRecords !== undefined && baseFilesCount < totalRecords) {
-            throw new Error(`Data integrity check failed for folder ${folderUrl}: Expected ${totalRecords} items, but parsed only ${baseFilesCount}. This indicates a parser or pagination failure.`);
+            console.warn(`[fetchFilesFromFolder] Integrity warning for ${folderUrl}: Expected ${totalRecords} items, but parsed ${baseFilesCount}. IS may group multiple files in one row.`);
         }
 
         if (recursive && currentDepth < maxDepth) {

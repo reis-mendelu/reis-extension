@@ -18,50 +18,49 @@ const TAB_ICONS: Record<string, React.ReactNode> = {
   dashboard: <Home className="w-5 h-5" />,
   exams: <CalendarCheck className="w-5 h-5" />,
   subjects: <Book className="w-5 h-5" />,
-  portal: <User className="w-5 h-5" />,
+  is: <User className="w-5 h-5" />,
 };
 
 export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onOpenSubject }: MobileBottomNavProps) {
-  const [sheetItem, setSheetItem] = useState<MenuItem | null>(null);
+  const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const menuItems = useMenuItems();
   const { t } = useTranslation();
 
-  // "More" menu item — reserved for future mobile nav expansion
-
-  // Find the exact menu items so we have correct links
-  const portalItem = menuItems.find(m => m.id === 'portal-studenta');
-  const testyItem = menuItems.find(m => m.id === 'testy');
-
-
   const viceMenuItem: MenuItem = {
       id: 'vice',
-      label: 'Více',
+      label: t('sidebar.more'),
       icon: <Settings className="w-5 h-5" />,
       children: [
-          ...(portalItem ? [{
-              id: portalItem.id,
-              label: portalItem.label,
-              href: portalItem.href
-          }] : []),
-          ...(testyItem ? [{
-              id: testyItem.id,
-              label: testyItem.label,
-              href: testyItem.href
-          }] : []),
+          {
+              id: 'teams-link',
+              label: 'Teams',
+              href: 'https://teams.microsoft.com',
+          },
+          {
+              id: 'outlook-link',
+              label: 'Outlook',
+              href: 'https://outlook.office.com',
+          },
           {
               id: 'profile-action',
               label: t('sidebar.profile'),
-              isFeature: true, // Prevents external link icon
+              isFeature: true,
           }
       ]
   };
+
+  // Derive current sheet item from activeSheetId
+  const sheetItem = activeSheetId === 'vice' 
+    ? viceMenuItem 
+    : menuItems.find(m => m.id === activeSheetId) || null;
 
   const tabs = [
     { id: 'dashboard', label: t('sidebar.dashboard'), icon: TAB_ICONS.dashboard },
     { id: 'exams', label: t('sidebar.exams'), icon: TAB_ICONS.exams },
     { id: 'subjects', label: t('sidebar.subjects'), icon: TAB_ICONS.subjects },
-    { id: 'vice', label: 'Více', icon: <Menu className="w-5 h-5" /> }, // Need to import Menu
+    { id: 'is', label: t('sidebar.is'), icon: TAB_ICONS.is },
+    { id: 'vice', label: t('sidebar.more'), icon: <Menu className="w-5 h-5" /> },
   ];
 
   const handleTabClick = (tabId: string) => {
@@ -71,14 +70,16 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
       onViewChange('exams');
     } else if (tabId === 'subjects') {
       onViewChange('subjects');
+    } else if (tabId === 'is') {
+       setActiveSheetId('is');
     } else if (tabId === 'profile') {
       setProfileOpen(true);
     } else if (tabId === 'vice') {
-       setSheetItem(viceMenuItem);
+       setActiveSheetId('vice');
     } else {
       const item = menuItems.find(m => m.id === tabId);
       if (item?.expandable) {
-        setSheetItem(item);
+        setActiveSheetId(item.id);
       }
     }
   };
@@ -87,7 +88,8 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
     if (tabId === 'dashboard') return currentView === 'calendar';
     if (tabId === 'exams') return currentView === 'exams';
     if (tabId === 'subjects') return currentView === 'subjects';
-    if (tabId === 'vice') return sheetItem?.id === 'vice' || profileOpen;
+    if (tabId === 'is') return activeSheetId === 'is';
+    if (tabId === 'vice') return activeSheetId === 'vice' || profileOpen;
     return false;
   };
 
@@ -125,7 +127,7 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
 
       <MobileNavSheet
         item={sheetItem}
-        onClose={() => setSheetItem(null)}
+        onClose={() => setActiveSheetId(null)}
         onViewChange={onViewChange}
         onOpenSubject={onOpenSubject}
         onOpenProfile={() => setProfileOpen(true)}
