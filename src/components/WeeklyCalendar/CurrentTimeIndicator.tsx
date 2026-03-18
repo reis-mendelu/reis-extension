@@ -29,7 +29,7 @@ export function CurrentTimeIndicator({ todayIndex }: CurrentTimeIndicatorProps) 
 
     return (
         <div
-            className="absolute z-20 pointer-events-none"
+            className="absolute z-10 pointer-events-none"
             style={{ top: `${top}%`, left: `${left}%`, width: `${columnWidth}%` }}
         >
             <div className="relative flex items-center">

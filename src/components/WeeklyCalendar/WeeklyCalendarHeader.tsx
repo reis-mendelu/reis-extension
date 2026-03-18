@@ -4,31 +4,44 @@ import type { DateInfo } from '../../types/calendarTypes';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 
-// ─── isTodayMatch ───────────────────────────────────────────────────────────
+// ─── helpers ─────────────────────────────────────────────────────────────────
 
-function isTodayMatch(dateStr: string): boolean {
+/** Returns JS week-day index (0 = Mon … 4 = Fri) for a date string like "17. 3." */
+function dateStrToDayIndex(dateStr: string): number {
     const now = new Date();
-    const day = now.getDate();
-    const month = now.getMonth() + 1;
     const match = dateStr.match(/(\d+)\.\s*(\d+)\./);
-    if (!match) return false;
-    return parseInt(match[1]) === day && parseInt(match[2]) === month;
+    if (!match) return -1;
+    const d = parseInt(match[1]);
+    const m = parseInt(match[2]);
+    const year = now.getFullYear();
+    // JS getDay(): 0=Sun, 1=Mon … so subtract 1 and wrap
+    const jsDay = new Date(year, m - 1, d).getDay();
+    return jsDay === 0 ? 6 : jsDay - 1; // 0=Mon … 4=Fri, 5-6=weekend
 }
+
 
 // ─── MenuPopoverContent ──────────────────────────────────────────────────────
 
-function MenuPopoverContent() {
+function MenuPopoverContent({ initialDay }: { initialDay: number }) {
     const { t } = useTranslation();
     const menu = useAppStore((s) => s.menu);
     const menuLoading = useAppStore((s) => s.menuLoading);
     const menuError = useAppStore((s) => s.menuError);
     const fetchMenu = useAppStore((s) => s.fetchMenu);
+
     const [activeTab, setActiveTab] = useState(0);
 
+    // Reset tab when the day changes (user clicked a different column's icon)
+    const prevDay = useRef(initialDay);
     useEffect(() => {
-        if (!menu && !menuLoading && !menuError) {
-            fetchMenu();
+        if (prevDay.current !== initialDay) {
+            prevDay.current = initialDay;
+            setActiveTab(0);
         }
+    }, [initialDay]);
+
+    useEffect(() => {
+        if (!menu && !menuLoading && !menuError) fetchMenu();
     }, [menu, menuLoading, menuError, fetchMenu]);
 
     if (menuLoading) {
@@ -39,7 +52,7 @@ function MenuPopoverContent() {
         );
     }
 
-    if (menuError) {
+    if (menuError || !menu?.length) {
         return (
             <div className="flex flex-col items-center gap-2 py-5 text-center">
                 <UtensilsCrossed className="w-6 h-6 text-base-content/30" />
@@ -48,38 +61,37 @@ function MenuPopoverContent() {
         );
     }
 
-    const matched = (menu ?? [])
+    const outletsForDay = menu
         .map((outlet) => {
-            const todayMenu = outlet.days.find((d) => isTodayMatch(d.date));
-            if (!todayMenu) return null;
-            if (!todayMenu.soup && todayMenu.mainDishes.length === 0) return null;
-            return { outlet: outlet.outlet, ...todayMenu };
+            const dayEntry = outlet.days.find((d) => dateStrToDayIndex(d.date) === initialDay);
+            if (!dayEntry || (!dayEntry.soup && dayEntry.mainDishes.length === 0)) return null;
+            return { outlet: outlet.outlet, soup: dayEntry.soup, mainDishes: dayEntry.mainDishes };
         })
         .filter(Boolean) as { outlet: string; soup: string | null; mainDishes: string[] }[];
 
-    if (matched.length === 0) {
+    if (outletsForDay.length === 0) {
         return (
-            <div className="flex flex-col items-center gap-2 py-5 text-center">
-                <UtensilsCrossed className="w-6 h-6 text-base-content/30" />
-                <p className="text-xs text-base-content/50">{t('menu.unavailable')}</p>
+            <div className="flex flex-col items-center gap-1.5 py-4 text-center">
+                <UtensilsCrossed className="w-5 h-5 text-base-content/20" />
+                <p className="text-xs text-base-content/40">{t('menu.unavailable')}</p>
             </div>
         );
     }
 
-    const safeIndex = Math.min(activeTab, matched.length - 1);
-    const current = matched[safeIndex];
+    const safeTab = Math.min(activeTab, outletsForDay.length - 1);
+    const current = outletsForDay[safeTab];
 
     return (
         <div className="flex flex-col">
-            {/* Tabs */}
+            {/* Outlet tabs */}
             <div role="tablist" className="flex border-b border-base-300">
-                {matched.map((m, i) => (
+                {outletsForDay.map((m, i) => (
                     <button
                         key={m.outlet}
                         role="tab"
                         onClick={() => setActiveTab(i)}
-                        className={`flex-1 py-2 text-xs font-bold transition-colors border-b-2 -mb-px ${
-                            i === safeIndex
+                        className={`flex-1 py-1.5 text-xs font-bold transition-colors border-b-2 -mb-px ${
+                            i === safeTab
                                 ? 'border-primary text-primary'
                                 : 'border-transparent text-base-content/40 hover:text-base-content/70'
                         }`}
@@ -90,14 +102,14 @@ function MenuPopoverContent() {
             </div>
 
             {/* Dish list */}
-            <div className="flex flex-col gap-2 p-3 max-h-64 overflow-y-auto">
-                {current.soup && (
+            <div className="flex flex-col gap-2 p-3">
+                {current?.soup && (
                     <div className="flex items-start gap-2">
                         <Soup className="w-3.5 h-3.5 mt-0.5 shrink-0 text-primary/70" />
                         <span className="text-xs text-base-content/70 leading-snug">{current.soup}</span>
                     </div>
                 )}
-                {current.mainDishes.map((dish, i) => (
+                {current?.mainDishes.map((dish, i) => (
                     <div key={i} className="flex items-start gap-2">
                         <Utensils className="w-3.5 h-3.5 mt-0.5 shrink-0 text-base-content/40" />
                         <span className="text-xs text-base-content/80 leading-snug">{dish}</span>
@@ -119,20 +131,44 @@ interface WeeklyCalendarHeaderProps {
 export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay }: WeeklyCalendarHeaderProps) {
     const { t } = useTranslation();
     const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-    const [menuOpen, setMenuOpen] = useState(false);
+    const menu = useAppStore((s) => s.menu);
+    const fetchMenu = useAppStore((s) => s.fetchMenu);
+    const menuLoading = useAppStore((s) => s.menuLoading);
+    const menuError = useAppStore((s) => s.menuError);
+
+    // Trigger fetch once on mount if needed
+    useEffect(() => {
+        if (!menu && !menuLoading && !menuError) fetchMenu();
+    }, [menu, menuLoading, menuError, fetchMenu]);
+
+    // Which calendar day-column index (0-4) has menu data?
+    // Build a set of "day.month" date keys that have menu data, e.g. "19.3"
+    const daysWithMenu = new Set<string>(
+        (menu ?? []).flatMap((outlet) =>
+            outlet.days
+                .filter((d) => d.soup || d.mainDishes.length > 0)
+                .map((d) => {
+                    const m = d.date.match(/(\d+)\.\s*(\d+)\./);
+                    return m ? `${parseInt(m[1])}.${parseInt(m[2])}` : '';
+                })
+                .filter(Boolean)
+        )
+    );
+
+    const [openDayKey, setOpenDayKey] = useState<string | null>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
 
-    // Close popover on outside click
+    // Close on outside click
     useEffect(() => {
-        if (!menuOpen) return;
+        if (openDayKey === null) return;
         const handler = (e: MouseEvent) => {
             if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-                setMenuOpen(false);
+                setOpenDayKey(null);
             }
         };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
-    }, [menuOpen]);
+    }, [openDayKey]);
 
     return (
         <div className="relative z-20 flex border-b border-base-300 bg-base-100 flex-shrink-0 h-[48px]">
@@ -141,6 +177,12 @@ export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay }: W
                 const dateInfo = weekDates[index];
                 const isToday = index === todayIndex;
                 const holiday = holidaysByDay[index];
+                // Exact date key for this column, e.g. "19.3"
+                const colDateKey = dateInfo ? `${parseInt(dateInfo.day)}.${parseInt(dateInfo.month)}` : '';
+                // Mon-based weekday index — only used to tell MenuPopoverContent which day to show
+                const colDayIndex = dateInfo ? dateStrToDayIndex(`${dateInfo.day}. ${dateInfo.month}.`) : -1;
+                const hasMenu = !holiday && daysWithMenu.has(colDateKey);
+                const isOpen = openDayKey === colDateKey;
 
                 return (
                     <div
@@ -149,32 +191,32 @@ export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay }: W
                                    ${isToday ? 'bg-current-day-header' : ''}`}
                     >
                         <div className="flex flex-col items-center justify-center h-full">
-                            <div className="flex flex-row items-center gap-1 justify-center">
-                                <div className={`text-lg font-semibold leading-tight ${holiday ? 'text-error' : isToday ? 'text-current-day' : 'text-base-content'}`}>
-                                    {dateInfo?.day}
-                                </div>
+                            <div className={`text-lg font-semibold leading-tight ${holiday ? 'text-error' : isToday ? 'text-current-day' : 'text-base-content'}`}>
+                                {dateInfo?.day}
                             </div>
                             <div className={`text-[13px] leading-tight ${holiday ? 'text-error' : 'text-base-content'}`}>
                                 {t(`days.${dayKeys[index]}`)}
                             </div>
                         </div>
 
-                        {/* ChefHat icon — only on today's column, right-aligned */}
-                        {isToday && (
-                            <div ref={popoverRef} className="absolute top-0 right-1 bottom-0 flex items-center">
+                        {/* ChefHat — on every day with menu data */}
+                        {hasMenu && (
+                            <div
+                                ref={isOpen ? popoverRef : undefined}
+                                className="absolute top-0 right-1 bottom-0 flex items-center"
+                            >
                                 <button
                                     type="button"
-                                    onClick={() => setMenuOpen((v) => !v)}
+                                    onClick={() => setOpenDayKey(isOpen ? null : colDateKey)}
                                     className={`btn btn-ghost btn-xs btn-circle p-0 min-h-0 h-7 w-7 transition-colors ${
-                                        menuOpen ? 'text-primary bg-primary/10' : 'text-base-content/40 hover:text-base-content'
+                                        isOpen ? 'text-primary bg-primary/10' : 'text-base-content/30 hover:text-base-content'
                                     }`}
                                     title={t('menu.title')}
                                 >
                                     <ChefHat className="w-5 h-5" />
                                 </button>
 
-                                {/* Popover — anchored to the full width of this day column */}
-                                {menuOpen && (
+                                {isOpen && (
                                     <div className="absolute top-full right-0 mt-1 w-64 bg-base-100 rounded-box shadow-xl border border-base-300 overflow-hidden z-50">
                                         <div className="flex items-center gap-2 px-3 pt-3 pb-1">
                                             <ChefHat className="w-4 h-4 text-primary" />
@@ -182,7 +224,7 @@ export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay }: W
                                                 {t('menu.title')}
                                             </span>
                                         </div>
-                                        <MenuPopoverContent />
+                                        <MenuPopoverContent initialDay={colDayIndex} />
                                     </div>
                                 )}
                             </div>
