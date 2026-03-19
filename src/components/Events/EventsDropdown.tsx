@@ -16,7 +16,6 @@ interface EventsDropdownProps {
 
 function FacultyFilters() {
   const { isSubscribed, toggleFaculty } = useEventsFacultySettings();
-  const { language } = useTranslation();
 
   return (
     <div className="flex gap-1.5 px-4 py-2 overflow-x-auto border-b border-base-300">
@@ -34,7 +33,7 @@ function FacultyFilters() {
             }`}
             style={active ? { backgroundColor: org.color } : undefined}
           >
-            {language === 'en' ? key.toUpperCase() : (key === 'mendelu' ? 'MENDELU' : org.cz.split(' ')[0])}
+            {key.toUpperCase()}
           </button>
         );
       })}
@@ -43,8 +42,12 @@ function FacultyFilters() {
 }
 
 export function EventsDropdown({ events, loading, onClose, dropdownRef }: EventsDropdownProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const isMobile = useIsMobile();
+
+  const today = new Date();
+  const dayName = today.toLocaleDateString(language === 'en' ? 'en-US' : 'cs-CZ', { weekday: 'long' });
+  const dateStr = `${language === 'en' ? dayName : dayName.toLowerCase()} ${today.getDate()}.${today.getMonth() + 1}.`;
 
   const content = (
     <>
@@ -70,8 +73,10 @@ export function EventsDropdown({ events, loading, onClose, dropdownRef }: Events
     return createPortal(
       <div ref={dropdownRef} className="fixed inset-0 z-50 bg-base-100 flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-base-300">
-          <h3 className="font-semibold text-lg text-base-content">{t('events.title')}</h3>
-          <button onClick={onClose} className="p-1 hover:bg-base-300 rounded"><X size={20} /></button>
+          <h3 className="font-semibold text-lg text-base-content whitespace-nowrap overflow-hidden">
+            {t('events.title')} <span className="opacity-40 font-normal ml-1">- {dateStr}</span>
+          </h3>
+          <button onClick={onClose} className="p-1 hover:bg-base-300 rounded ml-2 flex-shrink-0"><X size={20} /></button>
         </div>
         <div className="flex-1 overflow-y-auto">{content}</div>
       </div>,
@@ -82,8 +87,10 @@ export function EventsDropdown({ events, loading, onClose, dropdownRef }: Events
   return (
     <div ref={dropdownRef} className="absolute right-0 top-12 z-50 w-96 bg-base-100 border border-base-300 rounded-lg shadow-xl max-h-[400px] overflow-hidden flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 border-b border-base-300">
-        <h3 className="font-semibold text-lg text-base-content">{t('events.title')}</h3>
-        <button onClick={onClose} className="p-1 hover:bg-base-300 rounded"><X size={16} /></button>
+        <h3 className="font-semibold text-lg text-base-content whitespace-nowrap overflow-hidden">
+          {t('events.title')} <span className="opacity-40 font-normal ml-1">- {dateStr}</span>
+        </h3>
+        <button onClick={onClose} className="p-1 hover:bg-base-300 rounded ml-2 flex-shrink-0"><X size={16} /></button>
       </div>
       <div className="flex-1 overflow-y-auto">{content}</div>
     </div>
