@@ -17,7 +17,6 @@ interface EventsDropdownProps {
 function FacultyFilters() {
   const { isSubscribed, toggleFaculty } = useEventsFacultySettings();
   const { language } = useTranslation();
-  const langKey = language === 'en' ? 'en' : 'cz';
 
   return (
     <div className="flex gap-1.5 px-4 py-2 overflow-x-auto border-b border-base-300">
@@ -35,7 +34,7 @@ function FacultyFilters() {
             }`}
             style={active ? { backgroundColor: org.color } : undefined}
           >
-            {key === 'mendelu' ? 'MENDELU' : org[langKey].split(' ')[0]}
+            {language === 'en' ? key.toUpperCase() : (key === 'mendelu' ? 'MENDELU' : org.cz.split(' ')[0])}
           </button>
         );
       })}
