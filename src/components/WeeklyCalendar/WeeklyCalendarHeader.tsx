@@ -6,23 +6,11 @@ import { useAppStore } from '../../store/useAppStore';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-/** Returns JS week-day index (0 = Mon … 4 = Fri) for a date string like "17. 3." */
-function dateStrToDayIndex(dateStr: string): number {
-    const now = new Date();
-    const match = dateStr.match(/(\d+)\.\s*(\d+)\./);
-    if (!match) return -1;
-    const d = parseInt(match[1]);
-    const m = parseInt(match[2]);
-    const year = now.getFullYear();
-    // JS getDay(): 0=Sun, 1=Mon … so subtract 1 and wrap
-    const jsDay = new Date(year, m - 1, d).getDay();
-    return jsDay === 0 ? 6 : jsDay - 1; // 0=Mon … 4=Fri, 5-6=weekend
-}
 
 
 // ─── MenuPopoverContent ──────────────────────────────────────────────────────
 
-function MenuPopoverContent({ initialDay }: { initialDay: number }) {
+function MenuPopoverContent({ dateKey }: { dateKey: string }) {
     const { t } = useTranslation();
     const menu = useAppStore((s) => s.menu);
     const menuLoading = useAppStore((s) => s.menuLoading);
@@ -32,22 +20,18 @@ function MenuPopoverContent({ initialDay }: { initialDay: number }) {
     const [activeTab, setActiveTab] = useState(0);
 
     // Reset tab when the day changes (user clicked a different column's icon)
-    const prevDay = useRef(initialDay);
+    const prevKey = useRef(dateKey);
     useEffect(() => {
-        if (prevDay.current !== initialDay) {
-            prevDay.current = initialDay;
+        if (prevKey.current !== dateKey) {
+            prevKey.current = dateKey;
             setActiveTab(0);
         }
-    }, [initialDay]);
+    }, [dateKey]);
 
     const language = useAppStore((s) => s.language);
     useEffect(() => {
         if (!menu && !menuLoading && !menuError) fetchMenu();
     }, [menu, menuLoading, menuError, fetchMenu, language]);
-
-    if (menu) {
-        console.log('[MenuPopover] Language:', useAppStore.getState().language, 'Menu Data:', menu);
-    }
 
     if (menuLoading) {
         return (
@@ -68,7 +52,11 @@ function MenuPopoverContent({ initialDay }: { initialDay: number }) {
 
     const outletsForDay = menu
         .map((outlet) => {
-            const dayEntry = outlet.days.find((d) => dateStrToDayIndex(d.date) === initialDay);
+            const dayEntry = outlet.days.find((d) => {
+                const m = d.date.match(/(\d+)\.\s*(\d+)\./);
+                const dKey = m ? `${parseInt(m[1])}.${parseInt(m[2])}` : '';
+                return dKey === dateKey;
+            });
             if (!dayEntry || (!dayEntry.soup && dayEntry.mainDishes.length === 0)) return null;
             return { outlet: outlet.outlet, soup: dayEntry.soup, mainDishes: dayEntry.mainDishes };
         })
@@ -185,8 +173,6 @@ export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay }: W
                 const holiday = holidaysByDay[index];
                 // Exact date key for this column, e.g. "19.3"
                 const colDateKey = dateInfo ? `${parseInt(dateInfo.day)}.${parseInt(dateInfo.month)}` : '';
-                // Mon-based weekday index — only used to tell MenuPopoverContent which day to show
-                const colDayIndex = dateInfo ? dateStrToDayIndex(`${dateInfo.day}. ${dateInfo.month}.`) : -1;
                 const hasMenu = !holiday && daysWithMenu.has(colDateKey);
                 const isOpen = openDayKey === colDateKey;
 
@@ -230,7 +216,7 @@ export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay }: W
                                                 {t('menu.title')}
                                             </span>
                                         </div>
-                                        <MenuPopoverContent initialDay={colDayIndex} />
+                                        <MenuPopoverContent dateKey={colDateKey} />
                                     </div>
                                 )}
                             </div>
