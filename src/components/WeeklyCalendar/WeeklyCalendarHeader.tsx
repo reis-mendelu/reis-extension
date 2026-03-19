@@ -83,7 +83,7 @@ function MenuPopoverContent({ dateKey }: { dateKey: string }) {
                         key={m.outlet}
                         role="tab"
                         onClick={() => setActiveTab(i)}
-                        className={`flex-1 py-1.5 text-xs font-bold transition-colors border-b-2 -mb-px ${
+                        className={`flex-1 py-1.5 px-3 text-xs text-center font-bold transition-colors border-b-2 -mb-px ${
                             i === safeTab
                                 ? 'border-primary text-primary'
                                 : 'border-transparent text-base-content/40 hover:text-base-content/70'
@@ -209,7 +209,7 @@ export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay }: W
                                 </button>
 
                                 {isOpen && (
-                                    <div className="absolute top-full right-0 mt-1 w-64 bg-base-100 rounded-box shadow-xl border border-base-300 overflow-hidden z-50">
+                                    <div className="absolute top-full right-0 mt-1 w-72 bg-base-100 rounded-box shadow-xl border border-base-300 overflow-hidden z-50 text-left">
                                         <div className="flex items-center gap-2 px-3 pt-3 pb-1">
                                             <ChefHat className="w-4 h-4 text-primary" />
                                             <span className="text-xs font-bold text-base-content">
