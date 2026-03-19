@@ -229,6 +229,11 @@
     "yesterday": "Včera",
     "tomorrow": "Zítra"
   },
+  "events": {
+    "title": "Akce",
+    "loading": "Načítá se...",
+    "empty": "Žádné nadcházející akce"
+  },
   "sync": {
     "schedule": "Synchronizace kalendáře",
     "tooltip": "Synchronizuje rozvrh a termíny zkoušek do Outlooku.",

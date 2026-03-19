@@ -44,6 +44,11 @@ export interface BlockLesson {
     isExam?: boolean;
     examEvent?: any;
     isFromSearch?: boolean; // Indicates drawer opened from search (not a calendar event)
+    // Dual-language support
+    courseNameCs?: string;
+    courseNameEn?: string;
+    roomCs?: string;
+    roomEn?: string;
 }
 
 export interface FileObject {

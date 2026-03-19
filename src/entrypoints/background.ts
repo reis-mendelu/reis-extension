@@ -4,7 +4,12 @@ export default defineBackground(() => {
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type !== 'REIS_BG_FETCH') return false;
 
-    fetch(message.url)
+    const opts: RequestInit = {};
+    if (message.options?.method) opts.method = message.options.method;
+    if (message.options?.headers) opts.headers = message.options.headers;
+    if (message.options?.body) opts.body = message.options.body;
+
+    fetch(message.url, opts)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.text();

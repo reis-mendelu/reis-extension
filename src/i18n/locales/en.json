@@ -229,6 +229,11 @@
     "yesterday": "Yesterday",
     "tomorrow": "Tomorrow"
   },
+  "events": {
+    "title": "Events",
+    "loading": "Loading...",
+    "empty": "No upcoming events"
+  },
   "sync": {
     "schedule": "Calendar sync",
     "tooltip": "Syncs your schedule and exam terms to Outlook.",

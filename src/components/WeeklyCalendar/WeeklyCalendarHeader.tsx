@@ -44,6 +44,10 @@ function MenuPopoverContent({ initialDay }: { initialDay: number }) {
         if (!menu && !menuLoading && !menuError) fetchMenu();
     }, [menu, menuLoading, menuError, fetchMenu]);
 
+    if (menu) {
+        console.log('[MenuPopover] Language:', useAppStore.getState().language, 'Menu Data:', menu);
+    }
+
     if (menuLoading) {
         return (
             <div className="flex items-center justify-center py-6">

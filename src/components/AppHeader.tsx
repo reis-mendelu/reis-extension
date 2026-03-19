@@ -4,6 +4,7 @@ import { SearchBar } from './SearchBar/index';
 import { MobileSearchOverlay } from './SearchBar/MobileSearchOverlay';
 import { useTranslation } from '../hooks/useTranslation';
 import { NotificationFeed } from './NotificationFeed';
+import { EventsFeed } from './EventsFeed';
 import { useAppStore } from '../store/useAppStore';
 import { getCommandActions } from './SearchBar/actions';
 import type { AppView } from '../types/app';
@@ -93,7 +94,8 @@ export function AppHeader({
             <Search size={20} />
           </button>
 
-          <div className="flex-shrink-0 ml-auto z-10">
+          <div className="flex items-center gap-1 flex-shrink-0 ml-auto z-10">
+            <EventsFeed />
             <NotificationFeed />
           </div>
         </div>

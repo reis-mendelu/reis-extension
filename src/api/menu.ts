@@ -1,22 +1,38 @@
 import type { DayMenu, OutletMenu } from '../types/menuTypes';
+import type { Language } from '../store/types';
 import { fetchViaProxy } from './proxyClient';
 
-const MENU_URL = 'https://skm.mendelu.cz/stravovani/28603-jidelni-listek';
-
-const TARGET_OUTLETS: Record<string, string> = {
-  'vydejna-x': 'X',
-  'vydejna-ka': 'KA',
-  'menza-jak': 'JAK',
+const LANG_CONFIG: Record<Language, {
+  url: string;
+  outlets: Record<string, string>;
+  soupCategory: string;
+  mainCategory: string;
+}> = {
+  cz: {
+    url: 'https://skm.mendelu.cz/stravovani/28603-jidelni-listek',
+    outlets: { 'vydejna-x': 'X', 'vydejna-ka': 'KA', 'menza-jak': 'JAK' },
+    soupCategory: 'Polévka',
+    mainCategory: 'Hlavní jídlo',
+  },
+  en: {
+    url: 'https://skm.mendelu.cz/en/catering/28604-menu',
+    outlets: { 'vydejna-x': 'X', 'vydejna-ka': 'KA', 'canteen-jak': 'JAK' },
+    soupCategory: 'Soup',
+    mainCategory: 'Main dish',
+  },
 };
 
-const TARGET_CATEGORIES = new Set(['Polévka', 'Hlavní jídlo']);
-
 function parseDishName(row: Element): string {
-  return row.querySelector('.j-nazev .j-slozeni')?.textContent?.trim() ?? '';
+  return (
+    row.querySelector('.j-nazev .j-slozeni')?.textContent?.trim()
+    ?? row.querySelector('.j-nazev span')?.textContent?.trim()
+    ?? ''
+  );
 }
 
-function parseOutlet(container: Element): DayMenu[] {
+function parseOutlet(container: Element, config: typeof LANG_CONFIG[Language]): DayMenu[] {
   const days: DayMenu[] = [];
+  const targetCategories = new Set([config.soupCategory, config.mainCategory]);
   const h3s = container.querySelectorAll('h3');
 
   for (const h3 of h3s) {
@@ -36,10 +52,10 @@ function parseOutlet(container: Element): DayMenu[] {
       }
 
       if (!row.classList.contains('jidlo')) continue;
-      if (!TARGET_CATEGORIES.has(currentCategory)) continue;
+      if (!targetCategories.has(currentCategory)) continue;
 
       const name = parseDishName(row);
-      if (currentCategory === 'Polévka') {
+      if (currentCategory === config.soupCategory) {
         day.soup = name;
       } else {
         day.mainDishes.push(name);
@@ -52,16 +68,17 @@ function parseOutlet(container: Element): DayMenu[] {
   return days;
 }
 
-export async function fetchMenu(): Promise<OutletMenu[]> {
-  const html = await fetchViaProxy(MENU_URL);
+export async function fetchMenu(lang: Language): Promise<OutletMenu[]> {
+  const config = LANG_CONFIG[lang];
+  const html = await fetchViaProxy(config.url);
   const doc = new DOMParser().parseFromString(html, 'text/html');
 
   const result: OutletMenu[] = [];
 
-  for (const [id, label] of Object.entries(TARGET_OUTLETS)) {
+  for (const [id, label] of Object.entries(config.outlets)) {
     const container = doc.getElementById(id);
     if (!container) continue;
-    result.push({ outlet: label, days: parseOutlet(container) });
+    result.push({ outlet: label, days: parseOutlet(container, config) });
   }
 
   return result;

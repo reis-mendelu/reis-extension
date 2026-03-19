@@ -2,7 +2,11 @@ import { useAppStore } from '../store/useAppStore';
 import cs from '../i18n/locales/cs.json';
 import en from '../i18n/locales/en.json';
 
-const locales: Record<string, Record<string, unknown>> = { cz: cs as Record<string, unknown>, en: en as Record<string, unknown> };
+const locales: Record<string, Record<string, unknown>> = {
+  cz: cs as Record<string, unknown>,
+  cs: cs as Record<string, unknown>,
+  en: en as Record<string, unknown>
+};
 
 export function useTranslation() {
   const language = useAppStore((state) => state.language);

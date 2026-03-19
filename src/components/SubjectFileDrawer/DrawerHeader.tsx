@@ -61,9 +61,13 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
                         ? (courseInfo?.courseNameCs || courseInfo?.courseName)
                         : (courseInfo?.courseNameEn || courseInfo?.courseName);
                     
+                    const blockLessonName = language === 'cz'
+                        ? (lesson as BlockLesson)?.courseNameCs
+                        : (lesson as BlockLesson)?.courseNameEn;
+                    
                     const storeDisplayName = subjectInfo?.displayName ? subjectInfo.displayName.replace(subjectInfo.subjectCode, '').trim() : null;
                         
-                    const displayName = storeName || syllabusName || storeDisplayName || lesson?.courseName;
+                    const displayName = storeName || syllabusName || blockLessonName || lesson?.courseName;
                     
                     return courseId ? 
                         <a href={`https://is.mendelu.cz/auth/katalog/syllabus.pl?predmet=${courseId};lang=${language === 'cz' ? 'cz' : 'en'}`} target="_blank" rel="noopener noreferrer" className="clickable-link text-lg sm:text-xl font-bold flex items-center gap-1">
