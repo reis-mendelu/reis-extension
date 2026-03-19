@@ -14,9 +14,7 @@ export function useEventsFeed() {
   const [loading, setLoading] = useState(false);
   const { subscribedFaculties, isLoading: settingsLoading } = useEventsFacultySettings();
   const language = useAppStore(s => s.language);
-
-  const lang = language === 'en' ? 'en' : 'cs';
-  const cacheKey = `${CACHE_PREFIX}${lang}`;
+  const cacheKey = `${CACHE_PREFIX}${language}`;
 
   useEffect(() => {
     setAllEvents([]);
@@ -28,7 +26,7 @@ export function useEventsFeed() {
   const load = useCallback(async () => {
     if (allEvents.length === 0) setLoading(true);
     try {
-      const events = await fetchEvents(lang);
+      const events = await fetchEvents(language);
       setAllEvents(events);
       IndexedDBService.set('meta', cacheKey, events);
     } catch (e) {
@@ -36,7 +34,7 @@ export function useEventsFeed() {
     } finally {
       setLoading(false);
     }
-  }, [allEvents.length, lang, cacheKey]);
+  }, [allEvents.length, language, cacheKey]);
 
   useEffect(() => {
     if (!settingsLoading) {

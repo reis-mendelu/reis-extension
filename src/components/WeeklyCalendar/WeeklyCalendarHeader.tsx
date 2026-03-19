@@ -40,9 +40,10 @@ function MenuPopoverContent({ initialDay }: { initialDay: number }) {
         }
     }, [initialDay]);
 
+    const language = useAppStore((s) => s.language);
     useEffect(() => {
         if (!menu && !menuLoading && !menuError) fetchMenu();
-    }, [menu, menuLoading, menuError, fetchMenu]);
+    }, [menu, menuLoading, menuError, fetchMenu, language]);
 
     if (menu) {
         console.log('[MenuPopover] Language:', useAppStore.getState().language, 'Menu Data:', menu);
@@ -140,10 +141,11 @@ export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay }: W
     const menuLoading = useAppStore((s) => s.menuLoading);
     const menuError = useAppStore((s) => s.menuError);
 
-    // Trigger fetch once on mount if needed
+    const language = useAppStore((s) => s.language);
+    // Trigger fetch once on mount or when language changes
     useEffect(() => {
         if (!menu && !menuLoading && !menuError) fetchMenu();
-    }, [menu, menuLoading, menuError, fetchMenu]);
+    }, [menu, menuLoading, menuError, fetchMenu, language]);
 
     // Which calendar day-column index (0-4) has menu data?
     // Build a set of "day.month" date keys that have menu data, e.g. "19.3"

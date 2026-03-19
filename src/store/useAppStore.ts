@@ -87,6 +87,8 @@ export const initializeStore = async () => {
             useAppStore.getState().loadLanguage();
             // Re-fetch files from IndexedDB so language-aware hooks detect the change
             useAppStore.getState().fetchAllFiles();
+            // Clear menu so it re-fetches with the new language
+            useAppStore.setState({ menu: null });
         }
     });
 
@@ -101,6 +103,8 @@ export const initializeStore = async () => {
     bcLang.onmessage = () => {
         useAppStore.getState().loadLanguage();
         useAppStore.getState().fetchAllFiles();
+        // Clear menu so it re-fetches with the new language
+        useAppStore.setState({ menu: null });
     };
 
     return () => {

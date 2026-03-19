@@ -5,7 +5,7 @@ import { fetchViaProxy } from './proxyClient';
 const API_URL = 'https://mendelu.cz/wp-json/mendelu/v1/event-list/html';
 
 const LANG_CONFIG = {
-  cs: { lang: 'cs', categories: [351, 1023], limit: 10 },
+  cz: { lang: 'cs', categories: [351, 1023], limit: 10 },
   en: { lang: 'en', categories: [353, 359, 355, 420], limit: 9 },
 } as const;
 
@@ -52,14 +52,14 @@ function parseEventsFromHtml(html: string): MendeluEvent[] {
   return events;
 }
 
-async function fetchEventPage(lang: 'cs' | 'en', page: number, categories: readonly number[], limit: number): Promise<string> {
+async function fetchEventPage(lang: string, page: number, categories: readonly number[], limit: number): Promise<string> {
   const body = JSON.stringify({ page, limit, categories: [...categories], faculties: [], lang });
   const raw = await fetchViaProxy(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
   const json = JSON.parse(raw) as { html: string };
   return json.html;
 }
 
-export async function fetchEvents(lang: 'cs' | 'en'): Promise<MendeluEvent[]> {
+export async function fetchEvents(lang: 'cz' | 'en'): Promise<MendeluEvent[]> {
   const config = LANG_CONFIG[lang];
   const allEvents: MendeluEvent[] = [];
 
