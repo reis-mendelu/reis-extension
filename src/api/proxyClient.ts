@@ -31,5 +31,6 @@ export async function executeAction<T = unknown>(action: ActionType, payload: un
 
 export function requestData(t: string) { window.parent.postMessage(Messages.requestData(t as DataRequestType), '*'); }
 export function openPopup(url: string): Promise<void> { return executeAction('open_url', { url }); }
+export function logout(): Promise<void> { return executeAction('logout', {}); }
 export function signalReady() { window.parent.postMessage(Messages.ready(), '*'); }
 export function isInIframe(): boolean { try { return window.self !== window.parent; } catch { return true; } }

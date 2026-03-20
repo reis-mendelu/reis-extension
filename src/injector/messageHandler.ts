@@ -101,6 +101,41 @@ async function handleAction(id: string, action: string, payload: unknown) {
                 result = { success: true };
                 break;
             }
+            case "logout": {
+                if (!window.location.pathname.includes('/auth/')) {
+                    console.warn("Not in an authenticated session. No need to log out.");
+                    result = { success: false, reason: 'not_authenticated' };
+                    break;
+                }
+
+                const existingForm = document.querySelector('form[action="/auth/system/logout.pl"]') as HTMLFormElement;
+                if (existingForm) {
+                    const logoutButton = existingForm.querySelector('input[name="odhlaseni"]') as HTMLInputElement;
+                    if (logoutButton) {
+                        logoutButton.click();
+                    } else {
+                        existingForm.submit();
+                    }
+                    result = { success: true };
+                    break;
+                }
+
+                const dynamicForm = document.createElement('form');
+                dynamicForm.method = 'POST';
+                dynamicForm.action = '/auth/system/logout.pl';
+                dynamicForm.style.display = 'none';
+
+                const payloadInput = document.createElement('input');
+                payloadInput.type = 'hidden';
+                payloadInput.name = 'odhlaseni';
+                payloadInput.value = 'Log out';
+
+                dynamicForm.appendChild(payloadInput);
+                document.body.appendChild(dynamicForm);
+                dynamicForm.submit();
+                result = { success: true };
+                break;
+            }
             default: throw new Error(`Unknown action: ${action}`);
         }
         sendToIframe(Messages.actionResult(id, true, result));

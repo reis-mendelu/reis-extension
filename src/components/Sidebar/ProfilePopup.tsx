@@ -10,7 +10,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
 import { User, Mail, Hash, Building2 } from 'lucide-react';
-import { openPopup } from '../../api/proxyClient';
+import { openPopup, logout } from '../../api/proxyClient';
 import { BalanceSection } from './Profile/BalanceSection';
 
 export function ProfilePopup({ isOpen, onOpenFeedback }: { isOpen: boolean; onOpenFeedback?: () => void }) {
@@ -114,7 +114,7 @@ export function ProfilePopup({ isOpen, onOpenFeedback }: { isOpen: boolean; onOp
                 <LogOut size={16} className="text-base-content/30" />
                 <span className="text-xs font-medium opacity-70">{t('settings.logout')}</span>
                 <button
-                    onClick={(e) => { e.stopPropagation(); console.log('Logout clicked'); }}
+                    onClick={(e) => { e.stopPropagation(); logout(); }}
                     className="font-mono text-xs bg-error/20 text-error px-2.5 py-1 rounded-lg border border-error/30 ml-auto hover:bg-error/30 transition-colors"
                 >
                     {t('settings.logout')} →
