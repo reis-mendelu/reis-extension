@@ -17,7 +17,8 @@
     "topUp": "Dobít",
     "dormAdmin": "Kolejní administrativa",
     "open": "Otevřít",
-    "buyCoffeeTitle": "Pozvi nás na kafe!"
+    "buyCoffeeTitle": "Pozvi nás na kafe!",
+    "logout": "Odhlásit se"
   },
   "sidebar": {
     "profile": "Profil",

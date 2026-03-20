@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Moon, MessageSquarePlus, Languages, Coffee } from 'lucide-react';
+import { Moon, MessageSquarePlus, Languages, Coffee, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useOutlookSync } from '../../hooks/data';
 import { useTheme } from '../../hooks/useTheme';
@@ -110,6 +110,16 @@ export function ProfilePopup({ isOpen, onOpenFeedback }: { isOpen: boolean; onOp
                     <span className="text-xs font-medium opacity-70">{t('settings.reportBug')}</span>
                 </button>
             )}
+            <div className="flex items-center gap-3 px-1 py-1.5 text-base-content/60">
+                <LogOut size={16} className="text-base-content/30" />
+                <span className="text-xs font-medium opacity-70">{t('settings.logout')}</span>
+                <button
+                    onClick={(e) => { e.stopPropagation(); console.log('Logout clicked'); }}
+                    className="font-mono text-xs bg-error/20 text-error px-2.5 py-1 rounded-lg border border-error/30 ml-auto hover:bg-error/30 transition-colors"
+                >
+                    {t('settings.logout')} →
+                </button>
+            </div>
             <a href="https://buymeacoffee.com/reis.mendelu" target="_blank" rel="noopener noreferrer" className="mt-2 mx-1 flex flex-col items-center gap-1.5 p-3 rounded-xl bg-base-200 border border-base-300 hover:border-primary/30 hover:bg-primary/5 transition-all text-center group shadow-sm">
                 <div className="flex items-center gap-2 text-primary font-bold text-sm">
                     <Coffee size={16} className="group-hover:scale-110 transition-transform" />

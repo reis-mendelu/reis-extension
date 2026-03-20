@@ -17,7 +17,8 @@
     "topUp": "Top up",
     "dormAdmin": "Dormitory admin",
     "open": "Open",
-    "buyCoffeeTitle": "Buy us a coffee!"
+    "buyCoffeeTitle": "Buy us a coffee!",
+    "logout": "Logout"
   },
   "sidebar": {
     "profile": "Profile",
