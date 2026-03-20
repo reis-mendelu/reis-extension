@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { searchGlobal } from '../../api/search';
-import { pagesData } from '../../data/pagesData';
+import { pagesData, injectUserParams } from '../../data/pagesData';
 import { pageKeywords } from '../../data/pages/keywords';
 import { fuzzyIncludes } from '../../utils/searchUtils';
 import type { SearchResult, SearchSection } from './types';
@@ -141,10 +141,19 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
       const keywords = pageKeywords[p.id] ?? [];
       const matchesLabel = fuzzyIncludes(p.label, searchQuery);
       const matchesKeyword = keywords.some(kw => kw.toLowerCase().includes(searchQuery));
+
       if (matchesLabel || matchesKeyword) {
-        pageResults.push({ id: p.id, title: p.label, type: 'page', detail: cat.label, link: p.href, category: cat.label });
+        pageResults.push({
+          id: p.id,
+          title: p.label,
+          type: 'page',
+          detail: cat.label,
+          link: injectUserParams(p.href, studiumId, language === 'en' ? 'en' : 'cz'),
+          icon: 'Pin'
+        });
       }
     }));
+
 
     const newSections: SearchSection[] = [
       { key: 'actions', label: t('commands.quickActions'), results: matchedActions },

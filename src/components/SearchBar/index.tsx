@@ -93,8 +93,9 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
       if (result.type === 'subject' && onOpenSubject) {
         onOpenSubject(result.subjectCode!, result.title, result.subjectId, result.faculty);
       } else if (result.link) {
-        window.open(injectUserParams(result.link, studiumId), '_blank');
+        window.open(injectUserParams(result.link, studiumId, t('lang')), '_blank');
       }
+
       if (onSearch) onSearch(result.title);
     }
     setQuery(''); setIsOpen(false); setSelectedIndex(-1);

@@ -35,11 +35,30 @@ describe('No Hardcoded User IDs', () => {
 });
 
 describe('injectUserParams', () => {
-    it('should be used when navigating to pages', () => {
+    it('should be used when navigating to pages in SearchBar', () => {
         const content = fs.readFileSync(path.resolve(__dirname, '../../components/SearchBar/index.tsx'), 'utf-8');
-        // Should import injectUserParams
         expect(content).toContain('injectUserParams');
-        // Should use it when opening links
         expect(content).toContain('injectUserParams(result.link, studiumId)');
     });
+
+    it('should be used for pinned pages in MainItems.tsx', () => {
+        const content = fs.readFileSync(path.resolve(__dirname, '../../components/Menu/MainItems.tsx'), 'utf-8');
+        expect(content).toContain('injectUserParams');
+        expect(content).toContain('href: injectUserParams(p.href, sid, lang, oid)');
+    });
 });
+
+describe('Data Files No Hardcoded IDs', () => {
+    it('should not have hardcoded studium in moje-studium-part1.ts', () => {
+        const content = fs.readFileSync(path.resolve(__dirname, '../../data/pages/moje-studium-part1.ts'), 'utf-8');
+        expect(content).not.toContain(`studium=${HARDCODED_STUDIUM}`);
+        expect(content).toContain('studium={{studium}}');
+    });
+
+    it('should not have hardcoded studium in moje-studium-part2.ts', () => {
+        const content = fs.readFileSync(path.resolve(__dirname, '../../data/pages/moje-studium-part2.ts'), 'utf-8');
+        expect(content).not.toContain(`studium=${HARDCODED_STUDIUM}`);
+        expect(content).toContain('studium={{studium}}');
+    });
+});
+

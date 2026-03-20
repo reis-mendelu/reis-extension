@@ -89,6 +89,8 @@ export function PagePinnerModal({ open, onClose }: PagePinnerModalProps) {
         </div>
       </div>
 
+
+
       <form method="dialog" className="modal-backdrop">
         <button onClick={onClose}>close</button>
       </form>

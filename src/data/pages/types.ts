@@ -12,17 +12,40 @@ export interface PageCategory {
     children: PageItem[];
 }
 
+
+
 /**
- * Inject user's studium into a page URL.
- * Replaces the placeholder studium with the current user's actual ID.
+ * Inject user's params into a page URL.
+ * Replaces placeholders or hardcoded IDs with current values.
  */
-export function injectUserParams(url: string, studiumId?: string): string {
-    if (!studiumId) {
-        // Remove studium param entirely if we don't have one
-        return url
+export function injectUserParams(url: string, studiumId?: string, lang: string = 'cz', obdobiId?: string): string {
+    let resolved = url;
+
+    // Handle studium
+    if (studiumId) {
+        resolved = resolved
+            .replace(/{{studium}}/g, studiumId)
+            .replace(/studium=\d+/g, `studium=${studiumId}`);
+    } else {
+        resolved = resolved
+            .replace(/studium={{studium}}[;,&]?/g, '')
+            .replace(/[;,&]?studium={{studium}}/g, '')
             .replace(/studium=\d+[;,&]?/g, '')
             .replace(/[;,&]?studium=\d+/g, '');
     }
-    // Replace any existing studium with the user's value
-    return url.replace(/studium=\d+/g, `studium=${studiumId}`);
+
+    // Handle obdobi
+    if (obdobiId) {
+        resolved = resolved
+            .replace(/{{obdobi}}/g, obdobiId)
+            .replace(/obdobi=\d+/g, `obdobi=${obdobiId}`);
+    }
+
+    // Handle lang
+    resolved = resolved
+        .replace(/{{lang}}/g, lang)
+        .replace(/lang=[a-z]{2}/g, `lang=${lang}`);
+
+    return resolved;
 }
+
