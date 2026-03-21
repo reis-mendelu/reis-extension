@@ -72,5 +72,4 @@ export const pageKeywords: Record<string, string[]> = {
   'zmena-hesla': ['change password', 'heslo', 'password reset', 'nové heslo'],
   'bezpecnostni-udaje': ['security', 'recovery', 'obnovení hesla', 'reset'],
   'nastaveni-delegatu': ['delegates', 'delegáti', 'access sharing'],
-  'odhlaseni': ['logout', 'odhlásit', 'sign out'],
 };

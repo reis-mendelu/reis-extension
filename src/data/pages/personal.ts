@@ -98,11 +98,6 @@ export const nastaveniIS: PageCategory = {
             "id": "zmena-hesla",
             "label": "Změna hesla",
             "href": "https://is.mendelu.cz/auth/system/zmena_hesla.pl?_m=289;lang={{lang}}"
-        },
-        {
-            "id": "odhlaseni",
-            "label": "Odhlášení",
-            "href": "https://is.mendelu.cz/auth/system/logout.pl?_m=291;lang={{lang}}"
         }
     ]
 };
