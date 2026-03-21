@@ -4,6 +4,7 @@ import type { DataRequestType } from '../types/messages/base';
 import type { ActionType } from '../types/messages';
 import { pendingFetches, pendingActions, REQUEST_TIMEOUT } from './proxy/pendingRequests';
 import { initProxyListener } from './proxy/messageListener';
+import { IndexedDBService } from '../services/storage/IndexedDBService';
 
 export async function fetchViaProxy(url: string, opts?: MsgTypes.FetchRequestMessage['options']): Promise<string> {
     initProxyListener();
@@ -31,6 +32,15 @@ export async function executeAction<T = unknown>(action: ActionType, payload: un
 
 export function requestData(t: string) { window.parent.postMessage(Messages.requestData(t as DataRequestType), '*'); }
 export function openPopup(url: string): Promise<void> { return executeAction('open_url', { url }); }
-export function logout(): Promise<void> { return executeAction('logout', {}); }
+
+export async function logout(): Promise<void> {
+    try {
+        await IndexedDBService.clearAll();
+    } catch (e) {
+        console.warn('Failed to clear local IndexedDB during logout', e);
+    }
+    return executeAction('logout', {});
+}
+
 export function signalReady() { window.parent.postMessage(Messages.ready(), '*'); }
 export function isInIframe(): boolean { try { return window.self !== window.parent; } catch { return true; } }

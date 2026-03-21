@@ -5,6 +5,7 @@ import { fetchFullSemesterSchedule } from "./dataFetchers";
 import { fetchExamData, registerExam, unregisterExam } from "../api/exams";
 import { fetchSubjects } from "../api/subjects";
 import type { DataRequestType } from "../types/messages";
+import { IndexedDBService } from "../services/storage/IndexedDBService";
 
 let topUpPopupRef: Window | null = null;
 
@@ -106,6 +107,12 @@ async function handleAction(id: string, action: string, payload: unknown) {
                     console.warn("Not in an authenticated session. No need to log out.");
                     result = { success: false, reason: 'not_authenticated' };
                     break;
+                }
+
+                try {
+                    await IndexedDBService.clearAll();
+                } catch (e) {
+                    console.error("Failed to clear injector IndexedDB during logout", e);
                 }
 
                 const existingForm = document.querySelector('form[action="/auth/system/logout.pl"]') as HTMLFormElement;

@@ -136,6 +136,17 @@ class IndexedDBServiceImpl {
         await db.clear(storeName as any);
     }
 
+    async clearAll(): Promise<void> {
+        const db = await this.dbPromise;
+        const stores = Array.from(db.objectStoreNames);
+        if (stores.length === 0) return;
+        const tx = db.transaction(stores, 'readwrite');
+        for (const store of stores) {
+            tx.objectStore(store).clear();
+        }
+        await tx.done;
+    }
+
     async getAll<K extends StoreName>(storeName: K): Promise<ReisDB[K]['value'][]> {
         const db = await this.dbPromise;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
