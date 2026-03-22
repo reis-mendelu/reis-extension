@@ -16,7 +16,7 @@ export function PagePinnerModal({ open, onClose }: PagePinnerModalProps) {
   const pinnedPages = useAppStore(s => s.pinnedPages);
   const pinPage = useAppStore(s => s.pinPage);
   const unpinPage = useAppStore(s => s.unpinPage);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   useEffect(() => {
     if (open) {
@@ -31,10 +31,16 @@ export function PagePinnerModal({ open, onClose }: PagePinnerModalProps) {
   const atLimit = pinnedPages.length >= 6;
 
   const filtered = pagesData
-    .map(cat => ({
-      ...cat,
-      children: cat.children.filter(p => !query || fuzzyIncludes(p.label, query)),
-    }))
+    .map(cat => {
+      const catLabel = (language === 'en' && cat.labelEn) ? cat.labelEn : cat.label;
+      return {
+        ...cat,
+        label: catLabel,
+        children: cat.children
+          .map(p => ({ ...p, label: (language === 'en' && p.labelEn) ? p.labelEn : p.label }))
+          .filter(p => !query || fuzzyIncludes(p.label, query)),
+      };
+    })
     .filter(cat => cat.children.length > 0);
 
   return (
