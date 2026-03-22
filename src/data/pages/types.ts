@@ -1,12 +1,14 @@
 export interface PageItem {
     id: string;
     label: string;
+    labelEn?: string;
     href: string;
 }
 
 export interface PageCategory {
     id: string;
     label: string;
+    labelEn?: string;
     icon?: string;
     expandable?: boolean;
     children: PageItem[];

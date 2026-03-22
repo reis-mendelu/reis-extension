@@ -139,17 +139,18 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
     const pageResults: SearchResult[] = [];
     pagesData.forEach(cat => cat.children.forEach(p => {
       const keywords = pageKeywords[p.id] ?? [];
-      const matchesLabel = fuzzyIncludes(p.label, searchQuery);
+      const itemLabel = (language === 'en' && p.labelEn) ? p.labelEn : p.label;
+      const catLabel = (language === 'en' && cat.labelEn) ? cat.labelEn : cat.label;
+      const matchesLabel = fuzzyIncludes(itemLabel, searchQuery);
       const matchesKeyword = keywords.some(kw => kw.toLowerCase().includes(searchQuery));
 
       if (matchesLabel || matchesKeyword) {
         pageResults.push({
           id: p.id,
-          title: p.label,
+          title: itemLabel,
           type: 'page',
-          detail: cat.label,
-          link: injectUserParams(p.href, studiumId, language === 'en' ? 'en' : 'cz'),
-          icon: 'Pin'
+          detail: catLabel,
+          link: injectUserParams(p.href, studiumId, language === 'en' ? 'en' : 'cz')
         });
       }
     }));

@@ -18,7 +18,7 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, actions = [] }: SearchBarProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const modifier = getModifierKey();
   const defaultPlaceholder = t('search.placeholder', { shortcut: modifier });
   const finalPlaceholder = placeholder || (modifier ? defaultPlaceholder : defaultPlaceholder.replace(/\s*\(.*\)$/, ''));
@@ -107,7 +107,11 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
     ? [
         ...recentSearches,
         ...actions,
-        ...pagesData.flatMap(cat => cat.children.map(p => ({ id: p.id, title: p.label, type: 'page' as const, detail: cat.label, link: p.href, category: cat.label }))),
+        ...pagesData.flatMap(cat => cat.children.map(p => {
+            const itemLabel = (language === 'en' && p.labelEn) ? p.labelEn : p.label;
+            const catLabel = (language === 'en' && cat.labelEn) ? cat.labelEn : cat.label;
+            return { id: p.id, title: itemLabel, type: 'page' as const, detail: catLabel, link: p.href, category: catLabel };
+        })),
       ]
     : [];
 
@@ -190,13 +194,15 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
             )}
             {pagesData.map(cat => {
               const catOffset = recentSearches.length + actions.length + pagesData.slice(0, pagesData.indexOf(cat)).reduce((sum, c) => sum + c.children.length, 0);
+              const catLabel = (language === 'en' && cat.labelEn) ? cat.labelEn : cat.label;
               return (
                 <div key={cat.id}>
-                  <div className="px-4 py-1.5 text-xs font-semibold text-base-content/50 uppercase tracking-wider mt-1 sticky top-0 bg-base-100 z-10">{cat.label}</div>
+                  <div className="px-4 py-1.5 text-xs font-semibold text-base-content/50 uppercase tracking-wider mt-1 sticky top-0 bg-base-100 z-10">{catLabel}</div>
                   {cat.children.map((p, i) => {
                     const idx = catOffset + i;
+                    const itemLabel = (language === 'en' && p.labelEn) ? p.labelEn : p.label;
                     return (
-                      <SearchResultItem key={p.id} result={{ id: p.id, title: p.label, type: 'page', detail: cat.label, link: p.href, category: cat.label }}
+                      <SearchResultItem key={p.id} result={{ id: p.id, title: itemLabel, type: 'page', detail: catLabel, link: p.href, category: catLabel }}
                         isRecent={false} isSelected={selectedIndex === idx}
                         onMouseEnter={() => setSelectedIndex(idx)} onMouseDown={(e) => { e.preventDefault(); handleSelect(browseItems[idx]); }} />
                     );
