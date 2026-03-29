@@ -367,5 +367,15 @@
     "label2": "😕 Ujde",
     "label3": "🙂 Dobrý",
     "label4": "🤩 Super"
+  },
+  "courseTips": {
+    "prompt": "Máš tip pro spolužáky?",
+    "placeholder": "Krátký tip (max 140 znaků)...",
+    "submit": "Sdílet",
+    "myTip": "Tvůj tip",
+    "edit": "Upravit",
+    "delete": "Smazat",
+    "listTitle": "💬 Tipy od spolužáků",
+    "deleted": "Tip smazán"
   }
 }

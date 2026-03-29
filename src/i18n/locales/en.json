@@ -367,5 +367,15 @@
     "label2": "😕 Meh",
     "label3": "🙂 Good",
     "label4": "🤩 Amazing"
+  },
+  "courseTips": {
+    "prompt": "Got a tip for classmates?",
+    "placeholder": "Short tip (max 140 chars)...",
+    "submit": "Share",
+    "myTip": "Your tip",
+    "edit": "Edit",
+    "delete": "Delete",
+    "listTitle": "💬 Tips from classmates",
+    "deleted": "Tip removed"
   }
 }

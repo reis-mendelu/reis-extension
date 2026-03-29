@@ -5,6 +5,7 @@ import { SyllabusTab } from './SyllabusTab';
 import { ClassmatesTab } from './ClassmatesTab';
 import { SuccessRateTab } from '../SuccessRateTab';
 import { CourseRatingWidget } from '../CourseRating/CourseRatingWidget';
+import { CourseTipsList } from '../CourseRating/CourseTipsList';
 import { SelectionBox, DragHint } from './DragHint';
 import { CvicneTestsTab } from './CvicneTestsTab';
 import type { FileGroup } from './types';
@@ -110,6 +111,7 @@ export function SubjectFileDrawerContent({
     return (
         <div className="flex flex-col h-full overflow-y-auto">
             <CourseRatingWidget courseCode={courseCode} />
+            <CourseTipsList courseCode={courseCode} />
             <SuccessRateTab courseCode={courseCode} facultyCode={(lesson as { facultyCode?: string } | null)?.facultyCode} />
         </div>
     );
