@@ -357,5 +357,15 @@
     "noneFound": "Žádní spolužáci nenalezeni",
     "loadingAll": "Načítání spolužáků...",
     "loadingSeminar": "Načítání spolužáků ze cvičení..."
+  },
+  "courseRating": {
+    "question": "Jak hodnotíš tenhle předmět?",
+    "beFirst": "Buď první, kdo ohodnotí!",
+    "thanks": "Díky! ✓",
+    "totalRatings": "{count} hodnocení",
+    "label1": "😫 Hrůza",
+    "label2": "😕 Ujde",
+    "label3": "🙂 Dobrý",
+    "label4": "🤩 Super"
   }
 }

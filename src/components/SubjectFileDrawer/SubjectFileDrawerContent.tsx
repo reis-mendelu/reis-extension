@@ -4,6 +4,7 @@ import { AssessmentTab } from './AssessmentTab';
 import { SyllabusTab } from './SyllabusTab';
 import { ClassmatesTab } from './ClassmatesTab';
 import { SuccessRateTab } from '../SuccessRateTab';
+import { CourseRatingWidget } from '../CourseRating/CourseRatingWidget';
 import { SelectionBox, DragHint } from './DragHint';
 import { CvicneTestsTab } from './CvicneTestsTab';
 import type { FileGroup } from './types';
@@ -105,5 +106,11 @@ export function SubjectFileDrawerContent({
         return <CvicneTestsTab lesson={lesson} />;
     }
 
-    return <SuccessRateTab courseCode={lesson?.courseCode || ''} facultyCode={(lesson as { facultyCode?: string } | null)?.facultyCode} />;
+    const courseCode = lesson?.courseCode || '';
+    return (
+        <div className="flex flex-col h-full overflow-y-auto">
+            <CourseRatingWidget courseCode={courseCode} />
+            <SuccessRateTab courseCode={courseCode} facultyCode={(lesson as { facultyCode?: string } | null)?.facultyCode} />
+        </div>
+    );
 }

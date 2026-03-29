@@ -45,7 +45,10 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
   useEffect(() => {
     if (!plan) return;
     const codes = plan.blocks.flatMap(b => b.groups.flatMap(g => g.subjects.map(s => s.code)));
-    if (codes.length > 0) useAppStore.getState().fetchSuccessRateBatch(codes);
+    if (codes.length > 0) {
+      useAppStore.getState().fetchSuccessRateBatch(codes);
+      useAppStore.getState().fetchCourseRatingsBatch(codes);
+    }
   }, [plan]);
 
   const [openSemester, setOpenSemester] = useState<number | null>(null);

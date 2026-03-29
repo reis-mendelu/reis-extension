@@ -357,5 +357,15 @@
     "noneFound": "No classmates found",
     "loadingAll": "Loading classmates...",
     "loadingSeminar": "Loading seminar classmates..."
+  },
+  "courseRating": {
+    "question": "How do you rate this course?",
+    "beFirst": "Be the first to rate!",
+    "thanks": "Thanks! ✓",
+    "totalRatings": "{count} ratings",
+    "label1": "😫 Terrible",
+    "label2": "😕 Meh",
+    "label3": "🙂 Good",
+    "label4": "🤩 Amazing"
   }
 }

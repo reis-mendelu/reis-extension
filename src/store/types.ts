@@ -10,6 +10,7 @@ import type { SyncStatus } from '../services/sync';
 import type { ErasmusCountryData, ErasmusConfig } from '../types/erasmus';
 import type { PinnedPage } from './slices/createPinnedPagesSlice';
 import type { OutletMenu } from '../types/menuTypes';
+import type { CourseRatingAggregate } from '../api/courseRatings';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type Theme = "mendelu" | "mendelu-dark";
@@ -198,6 +199,15 @@ export interface MenuSlice {
   fetchMenu: () => Promise<void>;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice;
+export interface CourseRatingsSlice {
+    courseRatingAggregates: Record<string, CourseRatingAggregate>;
+    myRatings: Record<string, number>;
+    ratingsLoading: Record<string, boolean>;
+    fetchCourseRating: (courseCode: string) => Promise<void>;
+    fetchCourseRatingsBatch: (courseCodes: string[]) => Promise<void>;
+    submitRating: (courseCode: string, rating: number) => Promise<void>;
+}
+
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & CourseRatingsSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;
