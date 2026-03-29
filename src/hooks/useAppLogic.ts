@@ -58,13 +58,20 @@ export function useAppLogic() {
         return () => { unsub?.(); };
     }, []);
 
+    const isInitialLoad = useRef(true);
     useEffect(() => {
-        IndexedDBService.get('meta', 'reis_current_week').then(s => s && setCurrentDate(new Date(s as string)));
-        IndexedDBService.get('meta', 'reis_current_view').then(s => s && setCurrentView(s as AppView));
+        Promise.all([
+            IndexedDBService.get('meta', 'reis_current_week'),
+            IndexedDBService.get('meta', 'reis_current_view')
+        ]).then(([w, v]) => {
+            if (w) setCurrentDate(new Date(w as string));
+            if (v) setCurrentView(v as AppView);
+            setTimeout(() => { isInitialLoad.current = false; }, 50);
+        });
     }, []);
 
-    useEffect(() => { IndexedDBService.set('meta', 'reis_current_week', currentDate.toISOString()); }, [currentDate]);
-    useEffect(() => { IndexedDBService.set('meta', 'reis_current_view', currentView); }, [currentView]);
+    useEffect(() => { if (!isInitialLoad.current) IndexedDBService.set('meta', 'reis_current_week', currentDate.toISOString()); }, [currentDate]);
+    useEffect(() => { if (!isInitialLoad.current) IndexedDBService.set('meta', 'reis_current_view', currentView); }, [currentView]);
 
     useEffect(() => {
         // Skip iframe data sync when using mock data

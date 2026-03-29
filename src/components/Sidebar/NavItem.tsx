@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, ExternalLink, Plus, X } from 'lucide-react';
 import type { MenuItem } from '../menuConfig';
@@ -6,6 +6,7 @@ import type { AppView } from '../../types/app';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { PagePinnerModal } from './PagePinnerModal';
+import { IndexedDBService } from '../../services/storage';
 
 interface NavItemProps {
   item: MenuItem;
@@ -20,9 +21,18 @@ interface NavItemProps {
 
 export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave, onClick, onViewChange, onOpenSubject }: NavItemProps) {
   const [pinnerOpen, setPinnerOpen] = useState(false);
+  const [showPinHint, setShowPinHint] = useState(false);
   const pinnedPages = useAppStore(s => s.pinnedPages);
   const unpinPage = useAppStore(s => s.unpinPage);
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (item.id === 'is' && isHovered && pinnedPages.length === 0) {
+      IndexedDBService.get('meta', 'pin_hint_dismissed').then(dismissed => {
+        if (!dismissed) setShowPinHint(true);
+      }).catch(console.error);
+    }
+  }, [item.id, isHovered, pinnedPages.length]);
 
   const hasPinnedChildren = item.id === 'is' && item.children?.some(c => c.isPinned);
   const canAddMore = pinnedPages.length < 6;
@@ -148,11 +158,31 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
               <>
                 {hasPinnedChildren && <div className="divider my-0 h-1" />}
                 <button
-                  onClick={(e) => { e.stopPropagation(); setPinnerOpen(true); }}
-                  className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-base-content/40 hover:bg-base-200 hover:text-primary transition-colors"
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setPinnerOpen(true); 
+                    if (showPinHint) {
+                      setShowPinHint(false);
+                      IndexedDBService.set('meta', 'pin_hint_dismissed', true).catch(console.error);
+                    }
+                  }}
+                  className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-base-content/40 hover:bg-base-200 hover:text-primary transition-colors relative"
                 >
                   <Plus className="w-4 h-4" />
                   <span>{t('sidebar.addPin')}</span>
+                  <AnimatePresence>
+                    {showPinHint && (
+                      <motion.div
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        className="absolute left-full ml-4 top-1/2 -translate-y-1/2 bg-primary text-primary-content px-3 py-2 rounded-lg text-xs font-semibold shadow-xl whitespace-nowrap z-[100] flex items-center gap-2 pointer-events-none"
+                      >
+                        <div className="absolute w-2 h-2 bg-primary rotate-45 -left-1 top-1/2 -translate-y-1/2" />
+                        {t('sidebar.pinNudge')}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </button>
               </>
             )}
