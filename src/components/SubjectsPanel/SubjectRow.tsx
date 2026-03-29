@@ -1,6 +1,7 @@
 import { Search, CheckCircle2, AlertTriangle } from 'lucide-react';
 import type { SubjectStatus } from '@/types/studyPlan';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useCourseName } from '@/hooks/ui/useCourseName';
 
 interface SubjectRowProps {
   subject: SubjectStatus;
@@ -14,6 +15,7 @@ interface SubjectRowProps {
 export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubject, onSearchSubject }: SubjectRowProps) {
   const { t } = useTranslation();
   const hasId = subject.id !== '';
+  const displayName = useCourseName(subject.code, subject.name);
 
   const handleClick = () => {
     if (hasId) {
@@ -30,7 +32,7 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
         className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-base-200/50 transition-colors text-left text-base-content/40"
       >
         {subject.isFulfilled && <CheckCircle2 className="w-3.5 h-3.5 text-success/50 shrink-0" />}
-        <span className="flex-1 text-xs truncate">{subject.name}</span>
+        <span className="flex-1 text-xs truncate">{displayName}</span>
         <span className="text-[10px] shrink-0">{subject.credits} kr.</span>
       </button>
     );
@@ -41,7 +43,7 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
       onClick={handleClick}
       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-base-200 transition-colors text-left group"
     >
-      <span className="flex-1 text-sm truncate">{subject.name}</span>
+      <span className="flex-1 text-sm truncate">{displayName}</span>
       {failRate != null && !subject.isFulfilled && (
         <span
           className={`flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium tracking-wide shrink-0 relative group/fail cursor-pointer transition-colors ${

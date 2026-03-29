@@ -141,6 +141,9 @@
     "people": "People"
   },
   "course": {
+    "setNickname": "Set nickname",
+    "nicknamePlaceholder": "e.g., Math",
+    "removeNickname": "Remove nickname",
     "garant": "Supervisor:",
     "teachers": "Teachers:",
     "showMore": "Show more",

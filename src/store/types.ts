@@ -75,7 +75,9 @@ export interface ClassmatesSlice {
 export interface SubjectsSlice {
     subjects: SubjectsData | null;
     subjectsLoading: boolean;
+    courseNicknames: Record<string, string>;
     fetchSubjects: () => Promise<void>;
+    setCourseNickname: (courseCode: string, nickname: string | null) => void;
 }
 
 export interface SyncSlice {

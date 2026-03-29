@@ -9,6 +9,8 @@
 
 import { MapPin } from 'lucide-react';
 import type { BlockLesson } from '../types/calendarTypes';
+import { useCourseName } from '../hooks/ui/useCourseName';
+import { useAppStore } from '../store/useAppStore';
 
 interface CalendarEventCardProps {
     lesson: BlockLesson;
@@ -54,8 +56,14 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
     const duration = calculateDuration(lesson.startTime, lesson.endTime);
     const isLongEnough = duration >= 60; // Only show location if event is 1 hour+
 
-    // Get localized names
-    const courseName = getLocalizedCourseName(lesson, language);
+    // Get localized names and apply nickname
+    const fullName = getLocalizedCourseName(lesson, language);
+    const baseOnly = fullName.split(' - ')[0];
+    const nickname = useAppStore(state => state.courseNicknames?.[lesson.courseCode || '']);
+    const baseName = useCourseName(lesson.courseCode, baseOnly);
+    const courseName = lesson.isExam
+        ? `${baseName} - ${getExamSectionName(fullName)}`
+        : nickname ? baseName : fullName;
     const room = getLocalizedRoom(lesson, language);
 
     // Determine event type and colors using workspace tokens

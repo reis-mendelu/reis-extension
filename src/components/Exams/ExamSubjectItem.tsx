@@ -3,6 +3,7 @@ import { AccordionItem, AccordionHeader, AccordionTrigger, AccordionContent } fr
 import { ExamSectionItem } from './ExamSectionItem';
 
 import type { ExamSubject, ExamSection } from '../../types/exams';
+import { useCourseName } from '../../hooks/ui/useCourseName';
 
 interface ExamSubjectItemProps {
     subject: ExamSubject;
@@ -12,12 +13,13 @@ interface ExamSubjectItemProps {
 
 export function ExamSubjectItem({ subject, processingId, onOpenPicker }: ExamSubjectItemProps) {
     const isReg = subject.sections.some((s: ExamSection) => s.status === 'registered');
+    const displayName = useCourseName(subject.code, subject.name);
     return (
         <AccordionItem value={subject.id} className="border-b border-slate-100 last:border-0">
             <AccordionHeader className="flex">
                 <AccordionTrigger className="flex flex-1 items-center justify-between px-6 py-4 bg-white hover:bg-slate-50 group data-[state=open]:bg-slate-50/50">
                     <div className="flex flex-col items-start gap-0.5">
-                        <span className="font-semibold text-slate-900 text-base truncate max-w-[350px]">{subject.name}</span>
+                        <span className="font-semibold text-slate-900 text-base truncate max-w-[350px]">{displayName}</span>
                         <span className="text-xs text-slate-500 font-medium">{subject.code}</span>
                     </div>
                     <div className="flex items-center gap-3">

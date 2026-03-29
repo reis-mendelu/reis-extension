@@ -141,6 +141,9 @@
     "shareCopied": "Zkopírováno!"
   },
   "course": {
+    "setNickname": "Nastavit přezdívku",
+    "nicknamePlaceholder": "např., Matika",
+    "removeNickname": "Klepnutím odstraníte přezdívku",
     "garant": "Garant:",
     "teachers": "Vyučující:",
     "showMore": "Zobrazit více",

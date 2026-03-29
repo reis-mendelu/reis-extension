@@ -3,6 +3,7 @@ import type { DrawerHeaderProps } from './types';
 import type { BlockLesson } from '../../types/calendarTypes';
 import { HeaderActions } from './Header/HeaderActions';
 import { CourseMeta } from './Header/CourseMeta';
+import { EditableCourseTitle } from './Header/EditableCourseTitle';
 import { HeaderTabs } from './Header/HeaderTabs';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -69,12 +70,14 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
                         
                     const displayName = storeName || syllabusName || blockLessonName || lesson?.courseName;
                     
-                    return courseId ? 
-                        <a href={`https://is.mendelu.cz/auth/katalog/syllabus.pl?predmet=${courseId};lang=${language === 'cz' ? 'cz' : 'en'}`} target="_blank" rel="noopener noreferrer" className="clickable-link text-lg sm:text-xl font-bold flex items-center gap-1">
-                            <span>{displayName}</span>
-                            <ExternalLink size={14} className="opacity-50 shrink-0" />
-                        </a>
-                        : <span className="text-lg sm:text-xl font-bold text-base-content">{displayName}</span>;
+                    const courseCode = subjectInfo?.subjectCode || (lesson as BlockLesson)?.courseCode;
+
+                    return <EditableCourseTitle 
+                        courseCode={courseCode} 
+                        courseId={courseId} 
+                        defaultName={displayName || ''} 
+                        language={language} 
+                    />;
                 })()}
             </div>
             <CourseMeta lesson={lesson && 'date' in lesson ? lesson as BlockLesson : null} courseInfo={courseInfo} isSearchContext={!!isSearch} />
