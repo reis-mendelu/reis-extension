@@ -134,7 +134,10 @@
     "toastSuccess": "Díky za zpětnou vazbu!",
     "toastError": "Nepodařilo se odeslat zpětnou vazbu.",
     "npsQuestion": "Doporučil/a bys reIS kamarádovi? (1-5)",
-    "npsThank": "Díky za hodnocení!"
+    "npsThank": "Díky za hodnocení!",
+    "sharePrompt": "Pošli to spolužákovi, co ještě bojuje s IS.",
+    "shareCopy": "Kopírovat odkaz",
+    "shareCopied": "Zkopírováno!"
   },
   "course": {
     "garant": "Garant:",

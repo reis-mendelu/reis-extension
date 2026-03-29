@@ -106,7 +106,10 @@
     "toastSuccess": "Thanks for your feedback!",
     "toastError": "Couldn't send feedback.",
     "npsQuestion": "Would you recommend reIS to a friend? (1-5)",
-    "npsThank": "Thanks for the rating!"
+    "npsThank": "Thanks for the rating!",
+    "sharePrompt": "Send it to a classmate still on raw IS.",
+    "shareCopy": "Copy link",
+    "shareCopied": "Copied!"
   },
   "common": {
     "loading": "Loading...",
