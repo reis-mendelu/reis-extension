@@ -120,3 +120,4 @@ lint_results.json
 debug-*.html
 audit-report.json
 .agent/
+supabase/.temp/
