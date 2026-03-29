@@ -73,6 +73,11 @@ export function CourseRatingWidget({ courseCode }: { courseCode: string }) {
                                 </button>
                             );
                         })}
+                        {aggregate && aggregate.totalCount >= MIN_RATINGS && (
+                            <span className="text-[10px] text-base-content/40 ml-auto">
+                                {t('courseRating.totalRatings', { count: aggregate.totalCount })}
+                            </span>
+                        )}
                     </div>
                     {aggregate && aggregate.totalCount >= MIN_RATINGS && (
                         <RatingDistributionBar aggregate={aggregate} />
@@ -106,7 +111,13 @@ export function CourseRatingWidget({ courseCode }: { courseCode: string }) {
                         </button>
                     ))}
                 </div>
-                <p className="text-xs text-base-content/40">{t('courseRating.beFirst')}</p>
+                {aggregate && aggregate.totalCount >= MIN_RATINGS ? (
+                    <p className="text-xs text-base-content/40">
+                        {t('courseRating.totalRatings', { count: aggregate.totalCount })}
+                    </p>
+                ) : (
+                    <p className="text-xs text-base-content/40">{t('courseRating.beFirst')}</p>
+                )}
             </div>
         </div>
     );

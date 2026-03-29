@@ -216,6 +216,7 @@ export interface CourseTipsSlice {
     fetchCourseTips: (courseCode: string) => Promise<void>;
     submitTip: (courseCode: string, tipText: string) => Promise<void>;
     deleteTip: (courseCode: string) => Promise<void>;
+    voteTipHelpful: (courseCode: string, tipId: number) => Promise<void>;
 }
 
 export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & CourseRatingsSlice & CourseTipsSlice;

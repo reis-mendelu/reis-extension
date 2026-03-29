@@ -376,6 +376,11 @@
     "edit": "Upravit",
     "delete": "Smazat",
     "listTitle": "💬 Tipy od spolužáků",
-    "deleted": "Tip smazán"
+    "deleted": "Tip smazán",
+    "today": "dnes",
+    "yesterday": "včera",
+    "daysAgo": "před {count}d",
+    "weeksAgo": "před {count}t",
+    "monthsAgo": "před {count}m"
   }
 }

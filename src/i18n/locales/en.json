@@ -376,6 +376,11 @@
     "edit": "Edit",
     "delete": "Delete",
     "listTitle": "💬 Tips from classmates",
-    "deleted": "Tip removed"
+    "deleted": "Tip removed",
+    "today": "today",
+    "yesterday": "yesterday",
+    "daysAgo": "{count}d ago",
+    "weeksAgo": "{count}w ago",
+    "monthsAgo": "{count}mo ago"
   }
 }

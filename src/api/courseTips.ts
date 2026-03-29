@@ -7,8 +7,11 @@ async function hashId(raw: string): Promise<string> {
 }
 
 export interface CourseTip {
+    tipId: number;
     tipText: string;
     createdAt: string;
+    helpfulCount: number;
+    votedByMe: boolean;
 }
 
 export async function submitCourseTip(
@@ -28,17 +31,23 @@ export async function submitCourseTip(
 }
 
 export async function fetchCourseTips(
+    studentId: string,
     courseCode: string,
     semesterCode: string,
 ): Promise<CourseTip[]> {
-    const { data, error } = await supabase.rpc('get_course_tips', {
+    const hashedId = await hashId(studentId);
+    const { data, error } = await supabase.rpc('get_course_tips_with_votes', {
         p_course_code: courseCode,
         p_semester_code: semesterCode,
+        p_student_id: hashedId,
     });
     if (error || !data) return [];
-    return (data as { tip_text: string; created_at: string }[]).map(row => ({
+    return (data as { tip_id: number; tip_text: string; created_at: string; helpful_count: number; voted_by_me: boolean }[]).map(row => ({
+        tipId: row.tip_id,
         tipText: row.tip_text,
         createdAt: row.created_at,
+        helpfulCount: Number(row.helpful_count),
+        votedByMe: row.voted_by_me,
     }));
 }
 
@@ -69,4 +78,17 @@ export async function deleteCourseTip(
         p_semester_code: semesterCode,
     });
     return !error;
+}
+
+export async function voteTipHelpful(
+    studentId: string,
+    tipId: number,
+): Promise<boolean | null> {
+    const hashedId = await hashId(studentId);
+    const { data, error } = await supabase.rpc('vote_tip_helpful', {
+        p_student_id: hashedId,
+        p_tip_id: tipId,
+    });
+    if (error) return null;
+    return data as boolean;
 }
