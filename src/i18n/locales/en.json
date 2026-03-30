@@ -357,30 +357,5 @@
     "noneFound": "No classmates found",
     "loadingAll": "Loading classmates...",
     "loadingSeminar": "Loading seminar classmates..."
-  },
-  "courseRating": {
-    "question": "How do you rate this course?",
-    "beFirst": "Be the first to rate!",
-    "thanks": "Thanks! ✓",
-    "totalRatings": "{count} ratings",
-    "label1": "😫 Terrible",
-    "label2": "😕 Meh",
-    "label3": "🙂 Good",
-    "label4": "🤩 Amazing"
-  },
-  "courseTips": {
-    "prompt": "Add a note",
-    "placeholder": "Note (max 140 chars)...",
-    "submit": "Save",
-    "myTip": "Your note",
-    "edit": "Edit",
-    "delete": "Delete",
-    "listTitle": "💬 Tips from classmates",
-    "deleted": "Tip removed",
-    "today": "today",
-    "yesterday": "yesterday",
-    "daysAgo": "{count}d ago",
-    "weeksAgo": "{count}w ago",
-    "monthsAgo": "{count}mo ago"
   }
 }
