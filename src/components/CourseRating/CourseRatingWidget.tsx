@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { RatingDistributionBar } from './RatingDistributionBar';
 import { ChevronRight, Send, Trash2 } from 'lucide-react';
 
 const RATING_LABELS = ['label1', 'label2', 'label3', 'label4'] as const;
-const MIN_RATINGS = 3;
 
 export function CourseRatingWidget({ courseCode }: { courseCode: string }) {
     const { t } = useTranslation();
-    const aggregate = useAppStore(s => s.courseRatingAggregates[courseCode]);
     const myRating = useAppStore(s => s.myRatings[courseCode]);
     const loading = useAppStore(s => s.ratingsLoading[courseCode]);
     const fetchCourseRating = useAppStore(s => s.fetchCourseRating);
@@ -33,7 +30,7 @@ export function CourseRatingWidget({ courseCode }: { courseCode: string }) {
         if (myTip) setTipValue(myTip);
     }, [myTip]);
 
-    if (loading && !aggregate) return null;
+    if (loading) return null;
 
     const handleSubmitTip = () => {
         const trimmed = tipValue.trim();
@@ -73,15 +70,7 @@ export function CourseRatingWidget({ courseCode }: { courseCode: string }) {
                                 </button>
                             );
                         })}
-                        {aggregate && aggregate.totalCount >= MIN_RATINGS && (
-                            <span className="text-[10px] text-base-content/40 ml-auto">
-                                {t('courseRating.totalRatings', { count: aggregate.totalCount })}
-                            </span>
-                        )}
                     </div>
-                    {aggregate && aggregate.totalCount >= MIN_RATINGS && (
-                        <RatingDistributionBar aggregate={aggregate} />
-                    )}
                     <TipSection
                         myTip={myTip} tipOpen={tipOpen} isEditing={isEditing}
                         tipValue={tipValue} setTipValue={setTipValue}
@@ -111,13 +100,6 @@ export function CourseRatingWidget({ courseCode }: { courseCode: string }) {
                         </button>
                     ))}
                 </div>
-                {aggregate && aggregate.totalCount >= MIN_RATINGS ? (
-                    <p className="text-xs text-base-content/40">
-                        {t('courseRating.totalRatings', { count: aggregate.totalCount })}
-                    </p>
-                ) : (
-                    <p className="text-xs text-base-content/40">{t('courseRating.beFirst')}</p>
-                )}
             </div>
         </div>
     );

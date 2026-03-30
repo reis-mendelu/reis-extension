@@ -2,8 +2,6 @@ import { Search, CheckCircle2, AlertTriangle } from 'lucide-react';
 import type { SubjectStatus } from '@/types/studyPlan';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
-import { useAppStore } from '@/store/useAppStore';
-import { CourseRatingBadge } from '@/components/CourseRating/CourseRatingBadge';
 
 interface SubjectRowProps {
   subject: SubjectStatus;
@@ -18,7 +16,6 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
   const { t } = useTranslation();
   const hasId = subject.id !== '';
   const displayName = useCourseName(subject.code, subject.name);
-  const ratingAggregate = useAppStore(s => s.courseRatingAggregates[subject.code]);
 
   const handleClick = () => {
     if (hasId) {
@@ -62,7 +59,6 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
           <span className="hidden group-hover/fail:inline">{failRate}% {t('subjects.failRateLabel')}</span>
         </span>
       )}
-      <CourseRatingBadge aggregate={ratingAggregate} />
       <span className="text-xs text-base-content/50 shrink-0">{subject.credits} kr.</span>
       {subject.enrollmentCount >= 2 && !subject.isFulfilled && (
         <span className="badge badge-sm badge-error gap-1" title={t('subjects.repeatWarning')}>

@@ -369,10 +369,10 @@
     "label4": "🤩 Amazing"
   },
   "courseTips": {
-    "prompt": "Got a tip for classmates?",
-    "placeholder": "Short tip (max 140 chars)...",
-    "submit": "Share",
-    "myTip": "Your tip",
+    "prompt": "Add a note",
+    "placeholder": "Note (max 140 chars)...",
+    "submit": "Save",
+    "myTip": "Your note",
     "edit": "Edit",
     "delete": "Delete",
     "listTitle": "💬 Tips from classmates",
