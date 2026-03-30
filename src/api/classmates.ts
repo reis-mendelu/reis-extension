@@ -35,11 +35,7 @@ function parseClassmatesPage(doc: Document): Classmate[] {
         const personId = parseInt(idMatch[1], 10);
         const name = nameLink.textContent!.trim();
 
-        const photoImg = row.querySelector<HTMLImageElement>('img[src*="foto.pl"]');
-        const rawPhoto = photoImg?.getAttribute('src') ?? null;
-        const photoUrl = rawPhoto
-            ? (rawPhoto.startsWith('http') ? rawPhoto : `${BASE_URL}${rawPhoto}`)
-            : '';
+        const photoUrl = `${BASE_URL}/auth/lide/foto.pl?id=${personId};lang=cz`;
 
         const msgLink = row.querySelector<HTMLAnchorElement>('a[href*="nova_zprava.pl"]');
         const messageUrl = msgLink?.getAttribute('href') ?? undefined;

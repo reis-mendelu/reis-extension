@@ -77,9 +77,9 @@ export function AppHeader({
             </div>
           )}
 
-          {/* Desktop: hero search bar — absolutely centered in header */}
-          <div className="hidden md:flex absolute inset-0 items-center justify-center pointer-events-none">
-            <div className="w-full max-w-2xl pointer-events-auto">
+          {/* Desktop: search bar — fills remaining space between controls */}
+          <div className="hidden md:flex flex-1 min-w-0 justify-center px-2">
+            <div className="w-full max-w-md lg:max-w-2xl">
               <SearchBar onOpenSubject={onOpenSubject} prefillRef={searchPrefillRef} actions={actions} />
             </div>
           </div>

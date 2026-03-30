@@ -55,17 +55,17 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
 
   return (
     <div className="px-4 py-3 border-b border-base-300">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-lg font-semibold">{t('subjects.title')}</h2>
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <h2 className="text-lg font-semibold shrink-0">{t('subjects.title')}</h2>
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <a href={registrationsUrl} target="_blank" rel="noopener noreferrer"
             className="btn btn-ghost btn-sm px-2.5 text-base-content/50 hover:text-primary gap-1.5">
-            <span className="text-xs uppercase">{t('sidebar.registrations')}</span>
+            <span className="text-xs uppercase whitespace-nowrap">{t('sidebar.registrations')}</span>
             <ExternalLink size={14} />
           </a>
           <a href={planCheckUrl} target="_blank" rel="noopener noreferrer"
             className="btn btn-ghost btn-sm px-2.5 text-base-content/50 hover:text-primary gap-1.5">
-            <span className="text-xs uppercase">IS MENDELU</span>
+            <span className="text-xs uppercase whitespace-nowrap">IS MENDELU</span>
             <ExternalLink size={14} />
           </a>
         </div>

@@ -26,7 +26,7 @@ export function CalendarHint({ show, eventPosition, onDismiss }: CalendarHintPro
     
     return (
         <div 
-            className="absolute z-30 pointer-events-none"
+            className="absolute z-10 pointer-events-none"
             style={{ top, left }}
         >
             <div 

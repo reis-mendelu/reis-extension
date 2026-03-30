@@ -209,7 +209,7 @@ export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay }: W
                                 </button>
 
                                 {isOpen && (
-                                    <div className="absolute top-full right-0 mt-1 w-72 bg-base-100 rounded-box shadow-xl border border-base-300 overflow-hidden z-50 text-left">
+                                    <div className={`absolute top-full mt-1 w-72 bg-base-100 rounded-box shadow-xl border border-base-300 overflow-hidden z-50 text-left ${index <= 1 ? 'left-0' : 'right-0'}`}>
                                         <div className="flex items-center gap-2 px-3 pt-3 pb-1">
                                             <ChefHat className="w-4 h-4 text-primary" />
                                             <span className="text-xs font-bold text-base-content">
