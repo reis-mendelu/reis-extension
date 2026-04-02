@@ -79,11 +79,24 @@ export function useCalendarData(initialDate: Date) {
         });
     }, [storedExams]);
 
+    const hiddenItems = useAppStore(state => state.hiddenItems);
+ 
     const scheduleData = useMemo((): BlockLesson[] => {
-        const lessons = (storedSchedule || []).filter(l => weekDateStrings.includes(l.date));
+        const lessons = (storedSchedule || [])
+            .filter(l => weekDateStrings.includes(l.date))
+            .filter(l => 
+                !hiddenItems.events.some(e => e.id === l.id) && 
+                !hiddenItems.courses.some(c => 
+                    c.courseCode === l.courseCode && (
+                        !c.type || c.type === 'all' || 
+                        (c.type === 'seminar' && l.isSeminar === 'true') || 
+                        (c.type === 'lecture' && l.isSeminar === 'false')
+                    )
+                )
+            );
         const weekExams = examLessons.filter(e => weekDateStrings.includes(e.date));
         return [...lessons, ...weekExams];
-    }, [storedSchedule, examLessons, weekDateStrings]);
+    }, [storedSchedule, examLessons, weekDateStrings, hiddenItems]);
 
     const lessonsByDay = useMemo(() => {
         const grouped: Record<number, BlockLesson[]> = { 0: [], 1: [], 2: [], 3: [], 4: [] };

@@ -91,3 +91,21 @@ export interface DateInfo {
     year: string;
     full: string;
 }
+
+export interface HiddenEvent {
+    id: string;
+    courseCode: string;
+    courseName: string;
+    date: string;
+}
+
+export interface HiddenCourse {
+    courseCode: string;
+    courseName: string;
+    type?: 'lecture' | 'seminar' | 'all';
+}
+
+export interface HiddenItems {
+    courses: HiddenCourse[];
+    events: HiddenEvent[];
+}

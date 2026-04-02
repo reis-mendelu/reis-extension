@@ -78,7 +78,21 @@
     "people": "Lidé"
   },
   "calendar": {
-    "emptyWeek": "Tento týden nic nemáš, pohodička"
+    "emptyWeek": "Tento týden nic nemáš, pohodička",
+    "hide": {
+      "title": "Skrýt z kalendáře",
+      "occurrence": "Skrýt tuto hodinu",
+      "recurring": "Skrýt všechny hodiny {course}",
+      "lectures": "Skrýt všechny přednášky",
+      "seminars": "Skrýt všechna cvičení",
+      "allLessons": "Skrýt celý předmět",
+      "hint": "Uloženo! Skryté položky lze obnovit v Profil → Nastavení.",
+      "restore": "Obnovit",
+      "hiddenItems": "Skryté položky",
+      "noHiddenItems": "Zatím žádné skryté položky",
+      "single": "Jedna událost",
+      "all": "Všechny události"
+    }
   },
   "exams": {
     "title": "Moje zkoušky",
@@ -193,7 +207,8 @@
     "documentNote": {
       "add": "Přidat poznámku...",
       "placeholder": "Tvá poznámka k souboru...",
-      "badge": "1 poznámka"
+      "badge": "1 poznámka",
+      "subjectPlaceholder": "Poznámka..."
     }
   },
   "syllabus": {

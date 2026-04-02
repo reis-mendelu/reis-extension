@@ -16,6 +16,19 @@ export const AssessmentSchema = z.custom<Assessment>();
 export const SyllabusRequirementsSchema = z.custom<SyllabusRequirements>();
 export const ExamSubjectSchema = z.custom<ExamSubject>();
 export const BlockLessonSchema = z.custom<BlockLesson>();
+export const HiddenItemsSchema = z.object({
+    courses: z.array(z.object({
+        courseCode: z.string(),
+        courseName: z.string(),
+        type: z.enum(['lecture', 'seminar', 'all']).optional()
+    })),
+    events: z.array(z.object({
+        id: z.string(),
+        courseCode: z.string(),
+        courseName: z.string(),
+        date: z.string()
+    }))
+});
 export const SubjectsDataSchema = z.custom<SubjectsData>();
 export const StudyPlanSchema = z.union([
     z.custom<StudyPlan>(),
@@ -78,6 +91,7 @@ export const StoreSchemas = {
     schedule: ScheduleSchema,
     subjects: SubjectsSchema,
     classmates: ClassmatesSchema,
+    hidden_items: HiddenItemsSchema,
     success_rates: SuccessRatesSchema,
     meta: MetaSchema,
     grade_history: GradeHistorySchema,

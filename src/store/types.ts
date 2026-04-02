@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { BlockLesson } from '../types/calendarTypes';
+import type { BlockLesson, HiddenItems } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
 import type { SyllabusRequirements, ParsedFile, Assessment, SubjectsData, SubjectSuccessRate } from '../types/documents';
 import type { ClassmatesData } from '../types/classmates';
@@ -198,6 +198,15 @@ export interface MenuSlice {
   fetchMenu: () => Promise<void>;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice;
+export interface HiddenItemsSlice {
+  hiddenItems: HiddenItems;
+  loadHiddenItems: () => Promise<void>;
+  hideCourse: (courseCode: string, courseName: string, type?: 'lecture' | 'seminar' | 'all') => Promise<void>;
+  unhideCourse: (courseCode: string, type?: 'lecture' | 'seminar' | 'all') => Promise<void>;
+  hideEvent: (id: string, courseCode: string, courseName: string, date: string) => Promise<void>;
+  unhideEvent: (id: string) => Promise<void>;
+}
+
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

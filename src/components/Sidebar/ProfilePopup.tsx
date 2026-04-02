@@ -12,6 +12,7 @@ import { useUserParams } from '../../hooks/useUserParams';
 import { User, Mail, Hash, Building2 } from 'lucide-react';
 import { openPopup, logout } from '../../api/proxyClient';
 import { BalanceSection } from './Profile/BalanceSection';
+import { HiddenItemsSection } from './Profile/HiddenItemsSection';
 
 export function ProfilePopup({ isOpen, onOpenFeedback }: { isOpen: boolean; onOpenFeedback?: () => void }) {
   const { isEnabled, isLoading: syncLoading, toggle: tSync } = useOutlookSync(), { isDark, isLoading: tLoading, toggle: tTheme } = useTheme(), { isSubscribed, toggleAssociation } = useSpolkySettings(), [spolkyOpen, setSpolkyOpen] = useState(false);
@@ -94,6 +95,7 @@ export function ProfilePopup({ isOpen, onOpenFeedback }: { isOpen: boolean; onOp
                 </div>
                 <input type="checkbox" className="toggle toggle-primary toggle-sm" checked={isDark} disabled={tLoading} onChange={tTheme} />
             </label>
+            <HiddenItemsSection />
         </div>
 
         {/* Services Section */}

@@ -18,6 +18,7 @@ import { createCvicneTestsSlice } from './slices/createCvicneTestsSlice';
 import { createErasmusSlice } from './slices/createErasmusSlice';
 import { createPinnedPagesSlice } from './slices/createPinnedPagesSlice';
 import { createMenuSlice } from './slices/createMenuSlice';
+import { createHiddenItemsSlice } from './slices/createHiddenItemsSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 
@@ -40,6 +41,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createErasmusSlice(...a),
   ...createPinnedPagesSlice(...a),
   ...createMenuSlice(...a),
+  ...createHiddenItemsSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
@@ -62,6 +64,7 @@ export const initializeStore = async () => {
     useAppStore.getState().loadLanguage();
     useAppStore.getState().loadFeedbackState();
     useAppStore.getState().loadPinnedPages();
+    useAppStore.getState().loadHiddenItems();
 
     // Fire-and-forget daily usage tracking
     import('../api/feedback').then(({ trackDailyUsage }) =>

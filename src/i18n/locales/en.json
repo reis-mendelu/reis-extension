@@ -50,7 +50,20 @@
     "pinLimitReached": "Maximum 6 pages"
   },
   "calendar": {
-    "emptyWeek": "Nothing this week, you're free"
+    "emptyWeek": "Nothing this week, you're free",
+    "hide": {
+      "title": "Hide from calendar",
+      "occurrence": "Hide this instance",
+      "lectures": "Hide all lectures",
+      "seminars": "Hide all seminars",
+      "allLessons": "Hide entire subject",
+      "hint": "Saved! Hidden events can be restored in Profile → Settings.",
+      "restore": "Restore",
+      "hiddenItems": "Hidden Items",
+      "noHiddenItems": "No hidden items yet",
+      "single": "Single occurrence",
+      "all": "All occurrences"
+    }
   },
   "exams": {
     "title": "My Exams",
