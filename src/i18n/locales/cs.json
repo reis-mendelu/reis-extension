@@ -189,6 +189,11 @@
       "syncingRemaining": "Synchronizuju zbývající soubory ({count})...",
       "failed": "Synchronizace selhala",
       "loadingFiles": "Načítání souborů..."
+    },
+    "documentNote": {
+      "add": "Přidat poznámku...",
+      "placeholder": "Tvá poznámka k souboru...",
+      "badge": "1 poznámka"
     }
   },
   "syllabus": {

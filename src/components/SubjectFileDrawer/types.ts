@@ -32,6 +32,7 @@ export interface FileGroup {
 export interface FileListProps {
     groups: FileGroup[];
     selectedIds: string[];
+    courseCode: string;
     fileRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
     ignoreClickRef: React.MutableRefObject<boolean>;
     onToggleSelect: (id: string, e: React.MouseEvent) => void;

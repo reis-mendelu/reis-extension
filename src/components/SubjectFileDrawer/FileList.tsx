@@ -4,9 +4,12 @@
  * Renders the file grid with selection support.
  */
 
-import { Folder, Check, ExternalLink, PanelRightOpen } from 'lucide-react';
+import { useState } from 'react';
+import { Folder, Check, ExternalLink, PanelRightOpen, StickyNote } from 'lucide-react';
 import type { FileListProps } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useDocumentNoteKeys } from '../../hooks/data/useDocumentNoteKeys';
+import { DocumentNote } from './DocumentNote';
 
 const typeBadgeConfig: Record<string, string> = {
     pdf: 'badge-error',
@@ -29,6 +32,7 @@ function isPdfFile(subFile: { link: string; type: string }): boolean {
 export function FileList({
     groups,
     selectedIds,
+    courseCode,
     fileRefs,
     ignoreClickRef,
     onToggleSelect,
@@ -37,6 +41,9 @@ export function FileList({
     folderUrl
 }: FileListProps) {
     const { t, language } = useTranslation();
+    const [expandedNoteLink, setExpandedNoteLink] = useState<string | null>(null);
+    const { noteKeys, updateKey } = useDocumentNoteKeys(courseCode);
+
     if (groups.length === 0) {
         return (
             <div className="text-center py-12 text-slate-400 italic">
@@ -59,8 +66,8 @@ export function FileList({
                                 {file.files.map((subFile, j) => {
                                     const isSelected = selectedIds.includes(subFile.link);
                                     return (
+                                        <div key={subFile.link} className="space-y-1">
                                         <div
-                                            key={subFile.link}
                                             ref={el => { if (el) fileRefs.current.set(subFile.link, el); }}
                                             onClick={(e) => {
                                                 if (ignoreClickRef.current) return;
@@ -98,6 +105,19 @@ export function FileList({
                                             </div>
 
                                             <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setExpandedNoteLink(prev => prev === subFile.link ? null : subFile.link);
+                                                    }}
+                                                    className="relative p-1.5 rounded-md hover:bg-base-300 text-base-content/40 hover:text-base-content/70 transition-colors focus:outline-none"
+                                                    title={t('course.documentNote.add')}
+                                                >
+                                                    <StickyNote size={14} />
+                                                    {noteKeys.has(subFile.link) && (
+                                                        <span className="absolute top-1 right-1 w-[5px] h-[5px] rounded-full bg-primary" />
+                                                    )}
+                                                </button>
                                                 {isPdfFile(subFile) && onViewPdf && (
                                                     <button
                                                         onClick={(e) => {
@@ -113,6 +133,10 @@ export function FileList({
                                                 <FileTypeBadge type={subFile.type} />
                                             </div>
                                         </div>
+                                        {expandedNoteLink === subFile.link && (
+                                            <DocumentNote courseCode={courseCode} fileLink={subFile.link} onNoteChange={updateKey} />
+                                        )}
+                                    </div>
                                     );
                                 })}
                             </div>

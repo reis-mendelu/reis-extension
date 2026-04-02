@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ParsedFile, Assessment, SyllabusRequirements, SubjectsData, GradeHistory } from '../types/documents';
+import type { ParsedFile, Assessment, SyllabusRequirements, SubjectsData, GradeHistory, DocumentNote } from '../types/documents';
 import type { ExamSubject } from '../types/exams';
 import type { BlockLesson } from '../types/calendarTypes';
 import type { ClassmatesData } from '../types/classmates';
@@ -66,6 +66,9 @@ export const MetaSchema = z.any();
 // 'grade_history' store - GradeHistory
 export const GradeHistorySchema = z.custom<GradeHistory>();
 
+// 'document_notes' store - DocumentNote
+export const DocumentNoteSchema = z.custom<DocumentNote>();
+
 // Map store names to their schemas for runtime validation
 export const StoreSchemas = {
     files: FilesSchema,
@@ -82,6 +85,7 @@ export const StoreSchemas = {
     cvicne_tests: z.array(z.custom<CvicnyTest>()),
     odevzdavarny: z.array(z.custom<Odevzdavarna>()),
     erasmus: z.custom<ErasmusCountryData>(),
+    document_notes: DocumentNoteSchema,
 };
 
 export type StoreName = keyof typeof StoreSchemas;

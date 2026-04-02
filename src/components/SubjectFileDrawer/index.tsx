@@ -77,14 +77,6 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
         onClose();
     }, [activePdfUrl, onClose]);
 
-    useEffect(() => {
-        if (!isOpen) return;
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') handleClose();
-        };
-        document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
-    }, [isOpen, handleClose]);
 
     const groupedFiles = useMemo(() => {
         if (!state.files) return [];

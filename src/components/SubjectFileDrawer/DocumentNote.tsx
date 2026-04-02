@@ -1,36 +1,38 @@
 /**
- * SubjectNote Component
- * 
- * Minimal, unobtrusive note input for subjects.
- * Collapsed by default, expands on click, auto-saves on blur.
+ * DocumentNote Component
+ *
+ * Inline collapsible note editor for a single document file.
+ * Renders below the file row when expanded.
  */
 
 import { useState, useRef, useEffect } from 'react';
 import { StickyNote } from 'lucide-react';
-import { useSubjectNote } from '../../hooks/data/useSubjectNote';
+import { useDocumentNote } from '../../hooks/data/useDocumentNote';
+import { useTranslation } from '../../hooks/useTranslation';
 
-interface SubjectNoteProps {
-    subjectCode: string | undefined;
+interface DocumentNoteProps {
+    courseCode: string;
+    fileLink: string;
+    onNoteChange?: (fileLink: string, hasNote: boolean) => void;
 }
 
 const MAX_LENGTH = 500;
 const SHOW_COUNTER_THRESHOLD = 400;
 
-export function SubjectNote({ subjectCode }: SubjectNoteProps) {
-    const { note, setNote, isLoading } = useSubjectNote(subjectCode);
-    const [isEditing, setIsEditing] = useState(false);
+export function DocumentNote({ courseCode, fileLink, onNoteChange }: DocumentNoteProps) {
+    const { note, setNote, isLoading } = useDocumentNote(courseCode, fileLink);
+    const [isEditing, setIsEditing] = useState(true);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const prevHasNoteRef = useRef<boolean>(false);
+    const { t } = useTranslation();
 
-    // Focus textarea when entering edit mode
     useEffect(() => {
-        if (isEditing && textareaRef.current) {
+        if (isEditing && !isLoading && textareaRef.current) {
             textareaRef.current.focus();
-            // Move cursor to end
             textareaRef.current.selectionStart = textareaRef.current.value.length;
         }
-    }, [isEditing]);
+    }, [isEditing, isLoading]);
 
-    // Auto-resize textarea
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
@@ -38,49 +40,45 @@ export function SubjectNote({ subjectCode }: SubjectNoteProps) {
         }
     }, [note, isEditing]);
 
-    const handleBlur = () => {
-        // Collapse if empty
-        if (!note.trim()) {
-            setIsEditing(false);
+    // Notify parent when note presence changes
+    useEffect(() => {
+        if (isLoading) return;
+        const hasNote = note.trim().length > 0;
+        if (hasNote !== prevHasNoteRef.current) {
+            prevHasNoteRef.current = hasNote;
+            onNoteChange?.(fileLink, hasNote);
         }
+    }, [note, isLoading, fileLink, onNoteChange]);
+
+    const handleBlur = () => {
+        setIsEditing(false);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        // Escape to close
         if (e.key === 'Escape') {
             setIsEditing(false);
             e.stopPropagation();
         }
     };
 
-    // Don't render if no subject
-    if (!subjectCode) return null;
+    if (isLoading) return null;
 
-    // Loading state
-    if (isLoading) {
+    if (!isEditing && !note) {
         return (
-            <div className="mt-3 text-sm text-base-content/40 italic">
-                Načítání poznámky...
+            <div className="px-3 pb-3">
+                <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-1.5 text-sm text-base-content/40 hover:text-base-content/60 transition-colors"
+                >
+                    <StickyNote size={14} />
+                    <span className="italic">{t('course.documentNote.add')}</span>
+                </button>
             </div>
         );
     }
 
-    // Collapsed state (no note or not editing)
-    if (!isEditing && !note) {
-        return (
-            <button
-                onClick={() => setIsEditing(true)}
-                className="mt-3 flex items-center gap-1.5 text-sm text-base-content/40 hover:text-base-content/60 transition-colors"
-            >
-                <StickyNote size={14} />
-                <span className="italic">Přidat poznámku...</span>
-            </button>
-        );
-    }
-
-    // Expanded state (has note or is editing)
     return (
-        <div className="mt-3">
+        <div className="px-3 pb-3">
             {isEditing ? (
                 <div className="relative">
                     <textarea
@@ -89,7 +87,7 @@ export function SubjectNote({ subjectCode }: SubjectNoteProps) {
                         onChange={(e) => setNote(e.target.value)}
                         onBlur={handleBlur}
                         onKeyDown={handleKeyDown}
-                        placeholder="Tvá poznámka k předmětu..."
+                        placeholder={t('course.documentNote.placeholder')}
                         maxLength={MAX_LENGTH}
                         rows={1}
                         className="w-full bg-base-200/50 border border-base-300 rounded-lg px-3 py-2 text-sm text-base-content placeholder:text-base-content/40 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"

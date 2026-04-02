@@ -89,9 +89,9 @@ export function SubjectFileDrawerContent({
                         )}
                     </div>
                  ) : (
-                    <FileList groups={groupedFiles} selectedIds={selectedIds} fileRefs={fileRefs}
-                               ignoreClickRef={ignoreClickRef} onToggleSelect={toggleSelect} onOpenFile={openFile}
-                               onViewPdf={onViewPdf} folderUrl={folderUrl} />
+                    <FileList groups={groupedFiles} selectedIds={selectedIds} courseCode={lesson?.courseCode || ''}
+                               fileRefs={fileRefs} ignoreClickRef={ignoreClickRef} onToggleSelect={toggleSelect}
+                               onOpenFile={openFile} onViewPdf={onViewPdf} folderUrl={folderUrl} />
                  )}
             </>
         );

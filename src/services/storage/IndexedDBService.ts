@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { SubjectsData, Assessment, SyllabusRequirements, ParsedFile, GradeHistory } from '../../types/documents';
+import type { SubjectsData, Assessment, SyllabusRequirements, ParsedFile, GradeHistory, DocumentNote } from '../../types/documents';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ExamSubject } from '../../types/exams';
 import type { ClassmatesData } from '../../types/classmates';
@@ -68,10 +68,14 @@ interface ReisDB extends DBSchema {
         key: string;
         value: ErasmusCountryData;
     };
+    document_notes: {
+        key: string;
+        value: DocumentNote;
+    };
 }
 
 const DB_NAME = 'reis_db';
-const DB_VERSION = 13;
+const DB_VERSION = 14;
 
 class IndexedDBServiceImpl {
     private dbPromise: Promise<IDBPDatabase<ReisDB>>;
@@ -83,7 +87,7 @@ class IndexedDBServiceImpl {
                     'files', 'assessments', 'syllabuses', 'classmates',
                     'exams', 'schedule', 'subjects', 'success_rates', 'meta',
                     'grade_history', 'study_plan', 'cvicne_tests', 'odevzdavarny',
-                    'erasmus'
+                    'erasmus', 'document_notes'
                 ];
                 
                 requiredStores.forEach(store => {

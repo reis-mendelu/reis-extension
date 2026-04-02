@@ -110,6 +110,11 @@ export interface GradeHistory {
     grades: CourseGrade[];
 }
 
+export interface DocumentNote {
+    note: string;
+    updatedAt: number;
+}
+
 export interface SyllabusRequirements {
     version?: number;
     language?: string; // New: Origin language of the parsed syllabus
