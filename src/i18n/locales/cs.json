@@ -217,6 +217,22 @@
     "weight": "Váha",
     "noData": "Pro tenhle předmět nejsou dostupné požadavky."
   },
+  "timeline": {
+    "title": "Harmonogram",
+    "exam": "Zkouška",
+    "assessment": "Zápočet",
+    "project": "Projekt",
+    "other": "Jiné",
+    "type": "Typ milestonu",
+    "week": "Týden",
+    "add": "Přidat milestone",
+    "weekLabel": "{count}. týden",
+    "thisWeek": "{label} tento týden!",
+    "nextWeek": "{label} příští týden",
+    "inWeeks24": "{label} za {count} týdny",
+    "inWeeks5plus": "{label} za {count} týdnů",
+    "noDeadlines": "Zatím žádné termíny. Markni si je v Sylabu!"
+  },
   "successRate": {
     "noData": "Data nejsou k dispozici",
     "students": "studentů",

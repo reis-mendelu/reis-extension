@@ -1,7 +1,8 @@
-import { Search, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Search, CheckCircle2, AlertTriangle, Timer } from 'lucide-react';
 import type { SubjectStatus } from '@/types/studyPlan';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
+import { useTimeline } from '@/hooks';
 
 interface SubjectRowProps {
   subject: SubjectStatus;
@@ -16,6 +17,7 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
   const { t } = useTranslation();
   const hasId = subject.id !== '';
   const displayName = useCourseName(subject.code, subject.name);
+  const timeline = useTimeline(subject.code);
 
   const handleClick = () => {
     if (hasId) {
@@ -33,7 +35,8 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
       >
         {subject.isFulfilled && <CheckCircle2 className="w-3.5 h-3.5 text-success/50 shrink-0" />}
         <span className="flex-1 text-xs truncate">{displayName}</span>
-        <span className="text-[10px] shrink-0">{subject.credits} kr.</span>
+        {timeline && <span className="text-[9px] font-bold text-primary/60 shrink-0">{timeline.formatted}</span>}
+        <span className="text-[10px] shrink-0 font-medium">{subject.credits} kr.</span>
       </button>
     );
   }
@@ -43,7 +46,15 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
       onClick={handleClick}
       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-base-200 transition-colors text-left group"
     >
-      <span className="flex-1 text-sm truncate">{displayName}</span>
+      <div className="flex-1 min-w-0 flex flex-col">
+        <span className="text-sm truncate font-medium">{displayName}</span>
+        {timeline && (
+          <div className="flex items-center gap-1 text-[10px] font-bold text-primary/60 mt-0.5">
+            <Timer size={10} />
+            <span>{timeline.formatted}</span>
+          </div>
+        )}
+      </div>
       {failRate != null && !subject.isFulfilled && (
         <span
           className={`flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium tracking-wide shrink-0 relative group/fail cursor-pointer transition-colors ${

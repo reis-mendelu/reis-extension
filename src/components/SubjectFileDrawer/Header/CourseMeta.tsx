@@ -1,17 +1,23 @@
-import { User, Map as MapIcon, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { User, Map as MapIcon, Clock, ChevronDown, ChevronUp, Timer } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import type { BlockLesson } from '../../../types/calendarTypes';
 import type { CourseMetadata } from '../../../types/documents';
 import { PersonHoverCard } from '../../PersonHoverCard';
 import { MapHoverCard } from '../../MapHoverCard';
+import { useTimeline } from '../../../hooks/useTimeline';
 
 export function CourseMeta({ lesson, courseInfo, isSearchContext }: { lesson: BlockLesson | null; courseInfo: CourseMetadata | undefined; isSearchContext: boolean }) {
     const [expanded, setExpanded] = useState(false);
     const { t, language } = useTranslation();
+    const courseCode = lesson?.courseCode || courseInfo?.courseCode;
+    const timeline = useTimeline(courseCode || '');
+
     if (!isSearchContext) {
         return (
-            <div className="flex items-center gap-4 text-sm text-base-content/60 flex-wrap">
+            <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-4 text-sm text-base-content/60 flex-wrap">
+                    {/* ... teachers, rooms, etc. */}
                 {lesson?.teachers && lesson.teachers.length > 0 && (
                     lesson.teachers[0].id ?
                         <PersonHoverCard personId={String(lesson.teachers[0].id)} className="flex items-center gap-1">
@@ -28,6 +34,13 @@ export function CourseMeta({ lesson, courseInfo, isSearchContext }: { lesson: Bl
                 )}
                 {lesson?.startTime && <span className="flex items-center gap-1"><Clock size={14} /><span>{lesson.startTime} - {lesson.endTime}</span></span>}
             </div>
+            {timeline && (
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary/60 mt-1">
+                    <Timer size={12} />
+                    <span>{timeline.formatted}</span>
+                </div>
+            )}
+        </div>
         );
     }
     const displayed = expanded ? courseInfo?.teachers : courseInfo?.teachers?.slice(0, 3);
@@ -94,6 +107,12 @@ export function CourseMeta({ lesson, courseInfo, isSearchContext }: { lesson: Bl
                             </button>
                         )}
                     </div>
+                </div>
+            )}
+            {timeline && (
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary/60 mt-1">
+                    <Timer size={12} />
+                    <span>{timeline.formatted}</span>
                 </div>
             )}
         </div>

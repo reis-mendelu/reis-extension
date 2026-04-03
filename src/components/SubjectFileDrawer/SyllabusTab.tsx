@@ -3,6 +3,7 @@ import { useUserParams } from '../../hooks/useUserParams';
 import { BookOpen } from 'lucide-react';
 import { RequirementsSection } from './Syllabus/RequirementsSection';
 import { GradingTable } from './Syllabus/GradingTable';
+import { SubjectTimeline } from './Syllabus/SubjectTimeline';
 import type { SyllabusRequirements } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -24,6 +25,7 @@ export function SyllabusTab({ courseCode, courseId, courseName, prefetchedResult
 
     return (
         <div className="h-full overflow-y-auto bg-base-100 p-4 space-y-4 text-[13px]">
+            <SubjectTimeline courseCode={courseCode} />
             {syllabus.requirementsText && <RequirementsSection text={syllabus.requirementsText} />}
             {syllabus.requirementsTable.length > 0 && <GradingTable table={syllabus.requirementsTable} studyForm={params?.studyForm || 'prez'} />}
         </div>

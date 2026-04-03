@@ -15,6 +15,11 @@ export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type Theme = "mendelu" | "mendelu-dark";
 export type Language = "cz" | "en";
 
+export interface CourseDeadline {
+    week: number;
+    label: string;
+}
+
 export interface ScheduleSlice {
   schedule: {
     data: BlockLesson[];
@@ -76,8 +81,10 @@ export interface SubjectsSlice {
     subjects: SubjectsData | null;
     subjectsLoading: boolean;
     courseNicknames: Record<string, string>;
+    courseDeadlines: Record<string, CourseDeadline[]>;
     fetchSubjects: () => Promise<void>;
     setCourseNickname: (courseCode: string, nickname: string | null) => void;
+    setCourseDeadlines: (courseCode: string, deadlines: CourseDeadline[]) => void;
 }
 
 export interface SyncSlice {

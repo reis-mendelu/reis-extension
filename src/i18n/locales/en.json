@@ -215,6 +215,22 @@
     "weight": "Weight",
     "noData": "No requirements available for this course."
   },
+  "timeline": {
+    "title": "Timeline",
+    "exam": "Exam",
+    "assessment": "Credit Test",
+    "project": "Project",
+    "other": "Other",
+    "type": "Milestone type",
+    "week": "Week",
+    "add": "Add milestone",
+    "weekLabel": "Week {count}",
+    "thisWeek": "{label} this week!",
+    "nextWeek": "{label} next week",
+    "inWeeks24": "{label} in {count} weeks",
+    "inWeeks5plus": "{label} in {count} weeks",
+    "noDeadlines": "No deadlines yet. Mark them in the Syllabus!"
+  },
   "successRate": {
     "noData": "No data available",
     "students": "students",

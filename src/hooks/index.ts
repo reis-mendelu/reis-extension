@@ -9,4 +9,5 @@ export * from './data';
 export * from './ui';
 
 // Standalone hooks
+export * from './useTimeline';
 

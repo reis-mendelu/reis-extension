@@ -5,16 +5,19 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
     subjects: null,
     subjectsLoading: false,
     courseNicknames: {},
+    courseDeadlines: {},
     fetchSubjects: async () => {
         set({ subjectsLoading: true });
         try {
-            const [data, nicknames] = await Promise.all([
+            const [data, nicknames, deadlines] = await Promise.all([
                 IndexedDBService.get('subjects', 'current'),
-                IndexedDBService.get('meta', 'course_nicknames')
+                IndexedDBService.get('meta', 'course_nicknames'),
+                IndexedDBService.get('meta', 'course_deadlines')
             ]);
             set({ 
                 subjects: data || null,
                 courseNicknames: (nicknames as Record<string, string>) || {},
+                courseDeadlines: (deadlines as Record<string, any[]>) || {},
                 subjectsLoading: false 
             });
         } catch {
@@ -33,5 +36,18 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
 
         set({ courseNicknames: newNicknames });
         IndexedDBService.set('meta', 'course_nicknames', newNicknames).catch(console.error);
+    },
+    setCourseDeadlines: (courseCode, deadlines) => {
+        const currentDeadlines = get().courseDeadlines;
+        const newDeadlines = { ...currentDeadlines };
+
+        if (!deadlines || deadlines.length === 0) {
+            delete newDeadlines[courseCode];
+        } else {
+            newDeadlines[courseCode] = deadlines;
+        }
+
+        set({ courseDeadlines: newDeadlines });
+        IndexedDBService.set('meta', 'course_deadlines', newDeadlines).catch(console.error);
     }
 });
