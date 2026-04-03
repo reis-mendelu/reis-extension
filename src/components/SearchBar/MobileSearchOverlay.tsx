@@ -16,7 +16,7 @@ interface MobileSearchOverlayProps {
 }
 
 export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = [] }: MobileSearchOverlayProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [query, setQuery] = useState('');
   const { setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query, actions);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -44,7 +44,7 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = 
       if (result.type === 'subject' && onOpenSubject) {
         onOpenSubject(result.subjectCode!, result.title, result.subjectId, result.faculty);
       } else if (result.link) {
-        window.open(injectUserParams(result.link, studiumId, t('lang')), '_blank');
+        window.open(injectUserParams(result.link, studiumId, language === 'en' ? 'en' : 'cz'), '_blank');
       }
 
     }

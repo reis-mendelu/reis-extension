@@ -48,7 +48,7 @@ export function SubjectNote({ courseCode }: { courseCode: string }) {
                     e.stopPropagation();
                 }
             }}
-            placeholder={t('course.documentNote.placeholder')}
+            placeholder={t('course.documentNote.subjectPlaceholder')}
             maxLength={500}
             className="py-1 text-xs text-base-content/50 bg-transparent border-none outline-none placeholder:text-base-content/25 focus:text-base-content/70 w-full"
         />
