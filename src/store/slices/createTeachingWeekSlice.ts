@@ -1,10 +1,10 @@
 import type { TeachingWeekSlice, AppSlice } from '../types';
-import { fetchTeachingWeek } from '../../api/teachingWeek';
+import { fetchTeachingWeeks } from '../../api/teachingWeek';
 
 export const createTeachingWeekSlice: AppSlice<TeachingWeekSlice> = (set) => ({
-    teachingWeek: null,
+    teachingWeekData: null,
     fetchTeachingWeek: async () => {
-        const data = await fetchTeachingWeek();
-        set({ teachingWeek: data });
+        const data = await fetchTeachingWeeks();
+        set({ teachingWeekData: data });
     },
 });

@@ -32,7 +32,7 @@ export function AppMain({
 
     return (
         <main className="flex-1 flex flex-col transition-all duration-300 overflow-hidden">
-            <AppHeader currentView={currentView} dateRangeLabel={dateRangeLabel} onPrevWeek={handlePrevWeek} onNextWeek={handleNextWeek} onToday={handleToday} onOpenSubject={handleOpenSubjectFromSearch} searchPrefillRef={searchPrefillRef} setCurrentView={setCurrentView} openFeedback={openFeedback} />
+            <AppHeader currentView={currentView} currentDate={currentDate} dateRangeLabel={dateRangeLabel} onPrevWeek={handlePrevWeek} onNextWeek={handleNextWeek} onToday={handleToday} onOpenSubject={handleOpenSubjectFromSearch} searchPrefillRef={searchPrefillRef} setCurrentView={setCurrentView} openFeedback={openFeedback} />
             <NpsBanner />
             <div
                 className="flex-1 pt-3 px-4 pb-16 md:pb-1 overflow-hidden flex flex-col"

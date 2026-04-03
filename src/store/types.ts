@@ -208,7 +208,7 @@ export interface HiddenItemsSlice {
 }
 
 export interface TeachingWeekSlice {
-    teachingWeek: { current: number; total: number } | null;
+    teachingWeekData: { weeks: { week: number; from: string; to: string }[]; total: number } | null;
     fetchTeachingWeek: () => Promise<void>;
 }
 

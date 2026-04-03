@@ -6,10 +6,12 @@ import { useTranslation } from '../hooks/useTranslation';
 import { NotificationFeed } from './NotificationFeed';
 import { useAppStore } from '../store/useAppStore';
 import { getCommandActions } from './SearchBar/actions';
+import { getWeekForDate } from '../api/teachingWeek';
 import type { AppView } from '../types/app';
 
 interface AppHeaderProps {
   currentView: string;
+  currentDate?: Date;
   dateRangeLabel: string;
   onPrevWeek: () => void;
   onNextWeek: () => void;
@@ -22,6 +24,7 @@ interface AppHeaderProps {
 
 export function AppHeader({
   currentView,
+  currentDate,
   dateRangeLabel,
   onPrevWeek,
   onNextWeek,
@@ -33,7 +36,11 @@ export function AppHeader({
 }: AppHeaderProps) {
   const { t } = useTranslation();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const teachingWeek = useAppStore(s => s.teachingWeek);
+  const teachingWeekData = useAppStore(s => s.teachingWeekData);
+  const viewedWeek = useMemo(() => {
+    if (!teachingWeekData || !currentDate) return null;
+    return getWeekForDate(teachingWeekData, currentDate);
+  }, [teachingWeekData, currentDate]);
   const theme = useAppStore(s => s.theme);
   const setTheme = useAppStore(s => s.setTheme);
   const language = useAppStore(s => s.language);
@@ -75,9 +82,9 @@ export function AppHeader({
                 {t('common.today')}
               </button>
               <span className="hidden lg:inline text-lg font-semibold text-base-content whitespace-nowrap">{dateRangeLabel}</span>
-              {teachingWeek && (
+              {viewedWeek && (
                 <span className="hidden lg:inline text-sm text-base-content/50 whitespace-nowrap">
-                  · {t('teachingWeek.label', { current: teachingWeek.current })}
+                  · {t('teachingWeek.label', { current: viewedWeek })}
                 </span>
               )}
             </div>
