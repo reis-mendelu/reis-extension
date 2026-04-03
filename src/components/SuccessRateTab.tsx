@@ -15,11 +15,11 @@ export function SuccessRateTab({ courseCode, facultyCode }: { courseCode: string
     const { t } = useTranslation();
 
     if (loading) return <div className="flex items-center justify-center h-full"><span className="loading loading-spinner text-primary" /></div>;
-    if (!data?.stats?.length) return <div className="flex flex-col items-center justify-center h-full"><AlertTriangle className="w-8 h-8 opacity-40 mb-3" /><p className="text-sm opacity-60">{t('successRate.noData')}</p></div>;
+    if (!data?.stats?.length) return <div className="flex flex-col items-center justify-center h-full pt-16"><AlertTriangle className="w-8 h-8 opacity-40 mb-3" /><p className="text-sm opacity-60">{t('successRate.noData')}</p></div>;
 
     const allStats = sortSemesters(data.stats);
     const filtered = facultyCode ? allStats.filter(s => s.semesterName.split(' - ').at(-1) === facultyCode) : allStats;
-    if (filtered.length === 0) return <div className="flex flex-col items-center justify-center h-full"><AlertTriangle className="w-8 h-8 opacity-40 mb-3" /><p className="text-sm opacity-60">{t('successRate.noData')}</p></div>;
+    if (filtered.length === 0) return <div className="flex flex-col items-center justify-center h-full pt-16"><AlertTriangle className="w-8 h-8 opacity-40 mb-3" /><p className="text-sm opacity-60">{t('successRate.noData')}</p></div>;
     const stats = filtered.slice(0, 5), sIdx = Math.min(idx, stats.length - 1), current = stats[sIdx];
     const isCredit = current.type === 'credit', total = current.totalPass + current.totalFail;
     const order = isCredit ? ['zap', 'nezap'] : ['A', 'B', 'C', 'D', 'E', 'F', 'FN'];
