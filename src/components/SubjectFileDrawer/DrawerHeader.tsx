@@ -1,4 +1,4 @@
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Timer } from 'lucide-react';
 import type { DrawerHeaderProps } from './types';
 import type { BlockLesson } from '../../types/calendarTypes';
 import { HeaderActions } from './Header/HeaderActions';
@@ -6,6 +6,7 @@ import { CourseMeta } from './Header/CourseMeta';
 import { EditableCourseTitle } from './Header/EditableCourseTitle';
 import { HeaderTabs } from './Header/HeaderTabs';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useTimeline } from '../../hooks/useTimeline';
 
 function formatDate(ds: string, t: (k: string) => string) {
     if (!ds || ds.length !== 8) return '';
@@ -26,6 +27,8 @@ function getBadge(l: { isExam?: boolean; courseName?: string; sectionName?: stri
 export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, selectedCount, isDownloading, downloadProgress, activeTab, tabCounts, onClose, onDownload, onTabChange }: DrawerHeaderProps) {
     const { t, language } = useTranslation();
     const badge = getBadge(lesson, t), isSearch = lesson?.isFromSearch;
+    const courseCode = subjectInfo?.subjectCode || (lesson as BlockLesson)?.courseCode;
+    const timeline = useTimeline(courseCode || '');
 
     return (
         <div className="px-4 sm:px-6 py-4 border-b border-base-300 bg-base-100 z-20">
@@ -46,6 +49,12 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
                             {courseInfo.credits.toLowerCase().replace('kreditů', language === 'cz' ? 'kreditů' : 'credits' ).replace('kredity', language === 'cz' ? 'kredity' : 'credits').replace('kredit', language === 'cz' ? 'kredit' : 'credit')}
                         </span>}
                     </div>)}
+                    {timeline && (
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-primary/10 text-primary animate-in fade-in zoom-in duration-300">
+                            <Timer size={12} />
+                            <span>{timeline.formatted}</span>
+                        </span>
+                    )}
                 </div>
                 <HeaderActions selectedCount={selectedCount} isDownloading={isDownloading} downloadProgress={downloadProgress} onDownload={onDownload} onClose={onClose} />
             </div>
@@ -70,8 +79,6 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
                         
                     const displayName = storeName || syllabusName || blockLessonName || lesson?.courseName;
                     
-                    const courseCode = subjectInfo?.subjectCode || (lesson as BlockLesson)?.courseCode;
-
                     return <EditableCourseTitle 
                         courseCode={courseCode} 
                         courseId={courseId} 

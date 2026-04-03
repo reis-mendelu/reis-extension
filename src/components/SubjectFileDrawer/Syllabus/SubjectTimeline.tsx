@@ -42,6 +42,9 @@ export function SubjectTimeline({ courseCode }: { courseCode: string }) {
                 <Timer size={14} className="mt-[-2px]"/>
                 <span>{t('timeline.title')}</span>
             </div>
+            <p className="text-xs text-base-content/50 leading-relaxed mb-4 max-w-md">
+                {t('timeline.description')}
+            </p>
 
             <div className="flex flex-wrap gap-2 items-end">
                 <div className="flex flex-col gap-1.5 flex-1 min-w-[140px]">
@@ -87,7 +90,7 @@ export function SubjectTimeline({ courseCode }: { courseCode: string }) {
                 <Button 
                     size="sm"
                     onClick={handleAdd}
-                    className="h-8 w-8 p-0 shrink-0"
+                    className="h-8 w-8 p-0 shrink-0 border-none"
                     disabled={deadlines.some(d => d.week === week && d.label === t(`timeline.${labelKey}`))}
                 >
                     <Plus size={16} />
@@ -99,8 +102,8 @@ export function SubjectTimeline({ courseCode }: { courseCode: string }) {
                     {deadlines.map((d, i) => (
                         <div key={i} className="flex items-center justify-between bg-base-200/40 px-3 py-2 rounded-lg group text-sm border border-transparent hover:border-base-300 transition-all">
                             <div className="flex items-center gap-3">
-                                <div className="min-w-6 text-center font-bold text-primary text-[11px] bg-primary/10 px-1 py-0.5 rounded">
-                                    {d.week}.
+                                <div className="text-center font-bold text-primary text-[10px] bg-primary/10 px-2 py-0.5 rounded-md whitespace-nowrap">
+                                    {t('timeline.weekLabel', { count: d.week })}
                                 </div>
                                 <span className="font-medium text-base-content/80 text-[13px]">{d.label}</span>
                             </div>
