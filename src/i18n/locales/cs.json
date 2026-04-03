@@ -232,7 +232,8 @@
     "nextWeek": "{label} příští týden",
     "inWeeks24": "{label} za {count} týdny",
     "inWeeks5plus": "{label} za {count} týdnů",
-    "noDeadlines": "Zatím žádné termíny. Markni si je v Sylabu!"
+    "noDeadlines": "Zatím žádné termíny. Markni si je v Sylabu!",
+    "shortWeek": "{count}t"
   },
   "successRate": {
     "noData": "Data nejsou k dispozici",

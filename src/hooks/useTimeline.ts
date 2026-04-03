@@ -7,6 +7,8 @@ export interface TimelineCountdown {
     label: string;
     weeksLeft: number;
     formatted: string;
+    /** Compact form for tight spaces, e.g. "2w" or "now" */
+    short: string;
     isToday: boolean;
     isPassed: boolean;
 }
@@ -44,10 +46,13 @@ export function useTimeline(courseCode: string): TimelineCountdown | null {
             formatted = t(`timeline.${pluralKey}`, { label: nearest.label.toLowerCase(), count: weeksLeft });
         }
 
+        const short = weeksLeft === 0 ? '!' : t('timeline.shortWeek', { count: weeksLeft });
+
         return {
             label: nearest.label,
             weeksLeft,
             formatted,
+            short,
             isToday: weeksLeft === 0,
             isPassed: false // Filters already removed passed ones
         };

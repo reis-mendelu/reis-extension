@@ -7,11 +7,12 @@
  * NOTE: This component fills its parent container. Positioning is handled by the parent.
  */
 
-import { MapPin, EyeOff, Calendar, CalendarRange } from 'lucide-react';
+import { MapPin, EyeOff, Calendar, CalendarRange, Timer } from 'lucide-react';
 import type { BlockLesson } from '../types/calendarTypes';
 import { useCourseName } from '../hooks/ui/useCourseName';
 import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from '../hooks/useTranslation';
+import { useTimeline } from '../hooks/useTimeline';
 import { useHintStatus } from '../hooks/ui/useHintStatus';
 import { toast } from 'sonner';
 
@@ -60,6 +61,7 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
     const { isSeen, markSeen } = useHintStatus('calendar_hide_first_time');
     const hideEvent = useAppStore(s => s.hideEvent);
     const hideCourse = useAppStore(s => s.hideCourse);
+    const timeline = useTimeline(lesson.courseCode || '');
 
     const duration = calculateDuration(lesson.startTime, lesson.endTime);
     const isLongEnough = duration >= 60; // Only show location if event is 1 hour+
@@ -140,6 +142,19 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
             onClick={onClick}
             title={`${courseTitle}\n${lesson.startTime} - ${lesson.endTime}\n${room}\n${lesson.teachers[0]?.shortName || ''}`}
         >
+            {/* Deadline countdown badge */}
+            {timeline && timeline.weeksLeft <= 4 && !lesson.isExam && (
+                <div className={`absolute top-1.5 right-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold z-10 group-hover:opacity-0 transition-opacity ${
+                    timeline.weeksLeft === 0
+                        ? 'bg-error/15 text-error'
+                        : timeline.weeksLeft <= 2
+                        ? 'bg-warning/15 text-warning-content'
+                        : 'bg-info/15 text-info'
+                }`}>
+                    <Timer size={10} />
+                    <span>{timeline.short}</span>
+                </div>
+            )}
             {/* Quick Hide Action */}
             {!lesson.isExam && (
                 <div 
@@ -186,7 +201,6 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
                 <div className={`font-semibold ${styles.text} flex-shrink-0 break-words line-clamp-2`}>
                     {courseTitle}
                 </div>
-
                 {/* Additional course info - only for longer events */}
                 {isLongEnough && lesson.isExam && (
                     <div className="text-exam-text font-medium text-xs flex-shrink-0">

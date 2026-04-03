@@ -230,7 +230,8 @@
     "nextWeek": "{label} next week",
     "inWeeks24": "{label} in {count} weeks",
     "inWeeks5plus": "{label} in {count} weeks",
-    "noDeadlines": "No deadlines yet. Mark them in the Syllabus!"
+    "noDeadlines": "No deadlines yet. Mark them in the Syllabus!",
+    "shortWeek": "{count}w"
   },
   "successRate": {
     "noData": "No data available",
