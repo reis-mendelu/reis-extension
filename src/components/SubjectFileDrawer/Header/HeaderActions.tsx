@@ -9,8 +9,8 @@ interface HeaderActionsProps {
 }
 
 export function HeaderActions({ selectedCount, isDownloading, downloadProgress, onDownload, onClose }: HeaderActionsProps) {
-    const downloadLabel = downloadProgress 
-        ? `Stahování (${downloadProgress.completed}/${downloadProgress.total})...` 
+    const downloadLabel = downloadProgress
+        ? `Stahování (${downloadProgress.completed}/${downloadProgress.total})...`
         : (isDownloading ? 'Stahování...' : `Stáhnout (${selectedCount})`);
 
     return (

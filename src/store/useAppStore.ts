@@ -19,6 +19,7 @@ import { createErasmusSlice } from './slices/createErasmusSlice';
 import { createPinnedPagesSlice } from './slices/createPinnedPagesSlice';
 import { createMenuSlice } from './slices/createMenuSlice';
 import { createHiddenItemsSlice } from './slices/createHiddenItemsSlice';
+import { createTeachingWeekSlice } from './slices/createTeachingWeekSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 
@@ -42,6 +43,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createPinnedPagesSlice(...a),
   ...createMenuSlice(...a),
   ...createHiddenItemsSlice(...a),
+  ...createTeachingWeekSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
@@ -65,6 +67,7 @@ export const initializeStore = async () => {
     useAppStore.getState().loadFeedbackState();
     useAppStore.getState().loadPinnedPages();
     useAppStore.getState().loadHiddenItems();
+    useAppStore.getState().fetchTeachingWeek();
 
     // Fire-and-forget daily usage tracking
     import('../api/feedback').then(({ trackDailyUsage }) =>

@@ -5,7 +5,6 @@ import { HeaderActions } from './Header/HeaderActions';
 import { CourseMeta } from './Header/CourseMeta';
 import { EditableCourseTitle } from './Header/EditableCourseTitle';
 import { HeaderTabs } from './Header/HeaderTabs';
-import { SubjectNote } from './SubjectNote';
 import { useTranslation } from '../../hooks/useTranslation';
 
 function formatDate(ds: string, t: (k: string) => string) {
@@ -82,7 +81,6 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
                 })()}
             </div>
             <CourseMeta lesson={lesson && 'date' in lesson ? lesson as BlockLesson : null} courseInfo={courseInfo} isSearchContext={!!isSearch} />
-            <SubjectNote courseCode={lesson?.courseCode || ''} />
             <HeaderTabs
                 activeTab={activeTab}
                 onTabChange={onTabChange}

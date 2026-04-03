@@ -375,5 +375,8 @@
     "noneFound": "No classmates found",
     "loadingAll": "Loading classmates...",
     "loadingSeminar": "Loading seminar classmates..."
+  },
+  "teachingWeek": {
+    "label": "week {current}"
   }
 }

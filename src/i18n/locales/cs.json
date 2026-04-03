@@ -377,5 +377,8 @@
     "noneFound": "Žádní spolužáci nenalezeni",
     "loadingAll": "Načítání spolužáků...",
     "loadingSeminar": "Načítání spolužáků ze cvičení..."
+  },
+  "teachingWeek": {
+    "label": "{current}. týden"
   }
 }

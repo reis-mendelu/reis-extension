@@ -33,6 +33,7 @@ export function AppHeader({
 }: AppHeaderProps) {
   const { t } = useTranslation();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const teachingWeek = useAppStore(s => s.teachingWeek);
   const theme = useAppStore(s => s.theme);
   const setTheme = useAppStore(s => s.setTheme);
   const language = useAppStore(s => s.language);
@@ -74,6 +75,11 @@ export function AppHeader({
                 {t('common.today')}
               </button>
               <span className="hidden lg:inline text-lg font-semibold text-base-content whitespace-nowrap">{dateRangeLabel}</span>
+              {teachingWeek && (
+                <span className="hidden lg:inline text-sm text-base-content/50 whitespace-nowrap">
+                  · {t('teachingWeek.label', { current: teachingWeek.current })}
+                </span>
+              )}
             </div>
           )}
 
