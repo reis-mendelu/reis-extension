@@ -10,6 +10,7 @@ import type { SyncStatus } from '../services/sync';
 import type { ErasmusCountryData, ErasmusConfig } from '../types/erasmus';
 import type { PinnedPage } from './slices/createPinnedPagesSlice';
 import type { OutletMenu } from '../types/menuTypes';
+import type { PageCategory } from '../data/pages/types';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type Theme = "mendelu" | "mendelu-dark";
@@ -196,6 +197,7 @@ export interface PinnedPagesSlice {
   loadPinnedPages: () => Promise<void>;
   pinPage: (page: PinnedPage) => Promise<void>;
   unpinPage: (id: string) => Promise<void>;
+  migratePinnedIds: (navPages: PageCategory[]) => Promise<void>;
 }
 
 export interface MenuSlice {
@@ -219,6 +221,11 @@ export interface TeachingWeekSlice {
     fetchTeachingWeek: () => Promise<void>;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & TeachingWeekSlice;
+export interface NavPagesSlice {
+    navPages: PageCategory[] | null;
+    setNavPages: (pages: PageCategory[]) => void;
+}
+
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & TeachingWeekSlice & NavPagesSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

@@ -18,5 +18,6 @@ export interface FetchResultMessage { type: 'REIS_FETCH_RESULT'; id: string; suc
 export interface ActionResultMessage { type: 'REIS_ACTION_RESULT'; id: string; success: boolean; data?: unknown; error?: string; }
 export interface SyncUpdateMessage { type: 'REIS_SYNC_UPDATE'; data: SyncedData; }
 export interface PopupStateMessage { type: 'REIS_POPUP_STATE'; open: boolean; }
+export interface NavMenuMessage { type: 'REIS_NAV_MENU'; categories: { id: string; label: string; icon?: string; expandable?: boolean; children: { id: string; label: string; labelEn?: string; href: string }[] }[]; }
 
-export type ContentToIframeMessage = DataResponseMessage | FetchResultMessage | ActionResultMessage | SyncUpdateMessage | PopupStateMessage;
+export type ContentToIframeMessage = DataResponseMessage | FetchResultMessage | ActionResultMessage | SyncUpdateMessage | PopupStateMessage | NavMenuMessage;

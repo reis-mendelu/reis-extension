@@ -83,6 +83,11 @@ export function useAppLogic() {
             const d = e.data;
             if (!isContentMessage(d)) return;
             if (d.type === 'REIS_POPUP_STATE') return;
+            if (d.type === 'REIS_NAV_MENU') {
+                useAppStore.getState().setNavPages(d.categories);
+                useAppStore.getState().migratePinnedIds(d.categories);
+                return;
+            }
 
             const r = d.type === 'REIS_SYNC_UPDATE' ? (d.data as unknown as SyncedData) : (d.type === 'REIS_DATA' && d.dataType === 'all') ? (d.data as unknown as SyncedData) : null;
             if (!r) return;

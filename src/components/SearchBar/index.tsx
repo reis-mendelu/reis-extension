@@ -1,8 +1,10 @@
 import { Search, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { injectUserParams, pagesData } from '../../data/pagesData';
+import { injectUserParams } from '../../data/pagesData';
+import { pagesData } from '../../data/pages';
 import { useSearch } from './useSearch';
+import { useAppStore } from '../../store/useAppStore';
 import { SearchResultItem } from './SearchResultItem';
 import { SearchFooter } from './SearchFooter';
 import type { SearchResult } from './types';
@@ -19,6 +21,8 @@ interface SearchBarProps {
 
 export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, actions = [] }: SearchBarProps) {
   const { t, language } = useTranslation();
+  const navPages = useAppStore(s => s.navPages);
+  const pages = navPages ?? pagesData;
   const modifier = getModifierKey();
   const defaultPlaceholder = t('search.placeholder', { shortcut: modifier });
   const finalPlaceholder = placeholder || (modifier ? defaultPlaceholder : defaultPlaceholder.replace(/\s*\(.*\)$/, ''));
@@ -107,7 +111,7 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
     ? [
         ...recentSearches,
         ...actions,
-        ...pagesData.flatMap(cat => cat.children.map(p => {
+        ...pages.flatMap(cat => cat.children.map(p => {
             const itemLabel = (language === 'en' && p.labelEn) ? p.labelEn : p.label;
             const catLabel = (language === 'en' && cat.labelEn) ? cat.labelEn : cat.label;
             return { id: p.id, title: itemLabel, type: 'page' as const, detail: catLabel, link: p.href, category: catLabel };
@@ -192,8 +196,8 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
                 })}
               </div>
             )}
-            {pagesData.map(cat => {
-              const catOffset = recentSearches.length + actions.length + pagesData.slice(0, pagesData.indexOf(cat)).reduce((sum, c) => sum + c.children.length, 0);
+            {pages.map(cat => {
+              const catOffset = recentSearches.length + actions.length + pages.slice(0, pages.indexOf(cat)).reduce((sum, c) => sum + c.children.length, 0);
               const catLabel = (language === 'en' && cat.labelEn) ? cat.labelEn : cat.label;
               return (
                 <div key={cat.id}>

@@ -16,7 +16,9 @@ export function PagePinnerModal({ open, onClose }: PagePinnerModalProps) {
   const pinnedPages = useAppStore(s => s.pinnedPages);
   const pinPage = useAppStore(s => s.pinPage);
   const unpinPage = useAppStore(s => s.unpinPage);
+  const navPages = useAppStore(s => s.navPages);
   const { t, language } = useTranslation();
+  const pages = navPages ?? pagesData;
 
   useEffect(() => {
     if (open) {
@@ -30,7 +32,7 @@ export function PagePinnerModal({ open, onClose }: PagePinnerModalProps) {
   const pinnedIds = new Set(pinnedPages.map(p => p.id));
   const atLimit = pinnedPages.length >= 6;
 
-  const filtered = pagesData
+  const filtered = pages
     .map(cat => {
       const catLabel = (language === 'en' && cat.labelEn) ? cat.labelEn : cat.label;
       return {

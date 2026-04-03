@@ -20,6 +20,7 @@ import { createPinnedPagesSlice } from './slices/createPinnedPagesSlice';
 import { createMenuSlice } from './slices/createMenuSlice';
 import { createHiddenItemsSlice } from './slices/createHiddenItemsSlice';
 import { createTeachingWeekSlice } from './slices/createTeachingWeekSlice';
+import { createNavPagesSlice } from './slices/createNavPagesSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 
@@ -44,6 +45,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createMenuSlice(...a),
   ...createHiddenItemsSlice(...a),
   ...createTeachingWeekSlice(...a),
+  ...createNavPagesSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates

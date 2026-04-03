@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { searchGlobal } from '../../api/search';
-import { pagesData, injectUserParams } from '../../data/pagesData';
+import { injectUserParams } from '../../data/pagesData';
+import { pagesData } from '../../data/pages';
 import { pageKeywords } from '../../data/pages/keywords';
 import { fuzzyIncludes } from '../../utils/searchUtils';
 import type { SearchResult, SearchSection } from './types';
@@ -42,6 +43,8 @@ function getWithinSectionScore(r: SearchResult, searchQuery: string, studyPlanCo
 export function useSearch(query: string, actions: SearchResult[] = []) {
   const { t, language } = useTranslation();
   const subjects = useAppStore(s => s.subjects);
+  const navPages = useAppStore(s => s.navPages);
+  const pages = navPages ?? pagesData;
   const studyPlan = useAppStore(s => s.studyPlanDual);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -137,7 +140,7 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
     }
 
     const pageResults: SearchResult[] = [];
-    pagesData.forEach(cat => cat.children.forEach(p => {
+    pages.forEach(cat => cat.children.forEach(p => {
       const keywords = pageKeywords[p.id] ?? [];
       const itemLabel = (language === 'en' && p.labelEn) ? p.labelEn : p.label;
       const catLabel = (language === 'en' && cat.labelEn) ? cat.labelEn : cat.label;

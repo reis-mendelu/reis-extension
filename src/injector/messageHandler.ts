@@ -6,6 +6,7 @@ import { fetchExamData, registerExam, unregisterExam } from "../api/exams";
 import { fetchSubjects } from "../api/subjects";
 import type { DataRequestType } from "../types/messages";
 import { IndexedDBService } from "../services/storage/IndexedDBService";
+import { scrapedNavMenu } from "./sniper";
 
 let topUpPopupRef: Window | null = null;
 
@@ -20,6 +21,7 @@ export async function handleMessage(event: MessageEvent) {
             markIframeReady();
             // Send current state as a guarantee (may duplicate queued data, which is safe)
             sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing }));
+            if (scrapedNavMenu) sendToIframe(Messages.navMenu(scrapedNavMenu));
             break;
         case "REIS_REQUEST_DATA":
             await handleDataRequest(data.dataType);
