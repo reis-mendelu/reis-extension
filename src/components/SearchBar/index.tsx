@@ -1,6 +1,7 @@
-import { Search, X } from 'lucide-react';
+import { Search, X, LayoutGrid } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { IsPortalPopover } from './IsPortalPopover';
 import { injectUserParams } from '../../data/pagesData';
 import { pagesData } from '../../data/pages';
 import { useSearch } from './useSearch';
@@ -28,6 +29,7 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
   const finalPlaceholder = placeholder || (modifier ? defaultPlaceholder : defaultPlaceholder.replace(/\s*\(.*\)$/, ''));
   const [query, setQuery] = useState('');
   const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query, actions);
+  const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputWrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -226,10 +228,20 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
   );
 
   return (
-    <div className="w-full h-full flex items-center">
-      <div className="flex-1 max-w-3xl mx-auto flex items-center gap-2">
+    <div className="w-full flex items-center justify-end">
+      <div className="flex items-center gap-2 w-full max-w-md lg:max-w-2xl">
+        {/* Portal Launcher Trigger */}
+        <div className="tooltip tooltip-bottom flex-shrink-0" data-tip={t('search.isPortalTooltip')}>
+          <button
+            onClick={() => setIsPortalOpen(true)}
+            className="p-2.5 bg-base-100 border border-base-300 rounded-xl hover:border-primary/30 hover:bg-primary/5 text-base-content/60 hover:text-primary transition-all duration-200 shadow-sm group"
+          >
+            <LayoutGrid className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          </button>
+        </div>
+
         <div ref={inputWrapRef} className="relative w-full">
-          <div className={`relative flex items-center w-full max-w-3xl bg-base-100 rounded-xl border shadow-sm transition-all duration-200 z-50 ${isOpen ? 'border-primary shadow-[0_0_0_3px_rgba(121,190,21,0.15)]' : 'border-base-300 hover:border-base-content/30'}`}>
+          <div className={`relative flex items-center w-full bg-base-100 rounded-xl border shadow-sm transition-all duration-200 z-50 ${isOpen ? 'border-primary shadow-[0_0_0_3px_rgba(121,190,21,0.15)]' : 'border-base-300 hover:border-base-content/30'}`}>
             <div className="flex-1 flex items-center h-12 px-4">
               <Search className={`w-5 h-5 mr-3 transition-colors ${isOpen ? 'text-base-content' : 'text-base-content/50'}`} />
               <input ref={inputRef} type="text" value={query} onChange={(e) => { setQuery(e.target.value); setIsOpen(true); }}
@@ -249,6 +261,8 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
           {createPortal(dropdownContent, document.body)}
         </div>
       </div>
+
+      <IsPortalPopover isOpen={isPortalOpen} onClose={() => setIsPortalOpen(false)} />
     </div>
   );
 }

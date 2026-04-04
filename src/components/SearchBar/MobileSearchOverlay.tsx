@@ -1,6 +1,7 @@
-import { Search, X, ArrowLeft } from 'lucide-react';
+import { Search, X, ArrowLeft, LayoutGrid } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { injectUserParams } from '../../data/pagesData';
+import { IsPortalPopover } from './IsPortalPopover';
 import { useSearch } from './useSearch';
 import { SearchResultItem } from './SearchResultItem';
 import { SearchFooter } from './SearchFooter';
@@ -19,6 +20,7 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = 
   const { t, language } = useTranslation();
   const [query, setQuery] = useState('');
   const { setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query, actions);
+  const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -122,6 +124,12 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = 
             </button>
           )}
         </div>
+        <button 
+          onClick={() => setIsPortalOpen(true)}
+          className="p-2.5 bg-base-200 hover:bg-base-300 rounded-lg text-base-content/60 hover:text-primary transition-colors"
+        >
+          <LayoutGrid size={20} />
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -142,6 +150,7 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = 
         ) : renderSearchResults()}
       </div>
       <SearchFooter />
+      <IsPortalPopover isOpen={isPortalOpen} onClose={() => setIsPortalOpen(false)} />
     </div>
   );
 }

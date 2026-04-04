@@ -154,7 +154,8 @@
     "employee": "Employee",
     "subjects": "Subjects",
     "pages": "Pages",
-    "people": "People"
+    "people": "People",
+    "isPortalTooltip": "IS Portal (App Launcher)"
   },
   "course": {
     "setNickname": "Set nickname",

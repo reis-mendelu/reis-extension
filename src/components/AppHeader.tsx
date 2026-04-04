@@ -90,12 +90,7 @@ export function AppHeader({
             </div>
           )}
 
-          {/* Desktop: search bar — fills remaining space between controls */}
-          <div className="flex touch:hidden flex-1 min-w-0 justify-center px-2">
-            <div className="w-full max-w-md lg:max-w-2xl">
-              <SearchBar onOpenSubject={onOpenSubject} prefillRef={searchPrefillRef} actions={actions} />
-            </div>
-          </div>
+          <div className="flex-1" />
 
           {/* Mobile: search icon button */}
           <button
@@ -106,8 +101,15 @@ export function AppHeader({
             <Search size={20} />
           </button>
 
-          <div className="flex items-center gap-1 flex-shrink-0 ml-auto z-10">
-            <NotificationFeed />
+          <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 ml-auto z-10">
+            {/* Desktop Search Bar: Repositioned to the right for utility grouping */}
+            <div className="hidden touch:hidden md:flex items-center w-[300px] lg:w-[450px] xl:w-[600px]">
+              <SearchBar onOpenSubject={onOpenSubject} prefillRef={searchPrefillRef} actions={actions} />
+            </div>
+
+            <div className="flex items-center gap-1">
+              <NotificationFeed />
+            </div>
           </div>
         </div>
       </div>

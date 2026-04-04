@@ -75,7 +75,8 @@
     "employee": "Zaměstnanec",
     "subjects": "Předměty",
     "pages": "Stránky",
-    "people": "Lidé"
+    "people": "Lidé",
+    "isPortalTooltip": "Portál IS (Rozcestník aplikací)"
   },
   "calendar": {
     "emptyWeek": "Tento týden nic nemáš, pohodička",
