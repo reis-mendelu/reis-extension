@@ -91,7 +91,7 @@ export function AppHeader({
           )}
 
           {/* Desktop: search bar — fills remaining space between controls */}
-          <div className="hidden md:flex flex-1 min-w-0 justify-center px-2">
+          <div className="flex touch:hidden flex-1 min-w-0 justify-center px-2">
             <div className="w-full max-w-md lg:max-w-2xl">
               <SearchBar onOpenSubject={onOpenSubject} prefillRef={searchPrefillRef} actions={actions} />
             </div>
@@ -100,7 +100,7 @@ export function AppHeader({
           {/* Mobile: search icon button */}
           <button
             onClick={() => setMobileSearchOpen(true)}
-            className="md:hidden p-2 hover:bg-base-300 rounded-lg flex-shrink-0"
+            className="hidden touch:block p-2 hover:bg-base-300 rounded-lg flex-shrink-0"
             aria-label="Search"
           >
             <Search size={20} />

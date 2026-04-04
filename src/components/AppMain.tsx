@@ -35,13 +35,13 @@ export function AppMain({
             <AppHeader currentView={currentView} currentDate={currentDate} dateRangeLabel={dateRangeLabel} onPrevWeek={handlePrevWeek} onNextWeek={handleNextWeek} onToday={handleToday} onOpenSubject={handleOpenSubjectFromSearch} searchPrefillRef={searchPrefillRef} setCurrentView={setCurrentView} openFeedback={openFeedback} />
             <NpsBanner />
             <div
-                className="flex-1 pt-3 px-4 pb-16 md:pb-1 overflow-hidden flex flex-col"
+                className="flex-1 pt-3 px-4 pb-1 touch:pb-16 overflow-hidden flex flex-col"
                 onTouchStart={!isMobile ? onTouchStart : undefined}
                 onTouchMove={!isMobile ? onTouchMove : undefined}
                 onTouchEnd={!isMobile ? onTouchEnd : undefined}
             >
                 <div
-                    className="flex-1 bg-base-100 rounded-t-lg rounded-b-none md:rounded-lg shadow-sm border border-base-300 overflow-hidden"
+                    className="flex-1 bg-base-100 rounded-lg touch:rounded-t-lg touch:rounded-b-none shadow-sm border border-base-300 overflow-hidden"
                     style={!isMobile ? dragStyle : undefined}
                 >
                     {currentView === 'calendar' && <WeeklyCalendar key={currentDate.toISOString()} initialDate={currentDate} onPrevWeek={handlePrevWeek} onNextWeek={handleNextWeek} />}

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Mobile = touch device + narrow viewport. Desktop split-screen stays desktop. */
+@custom-variant touch (@media (pointer: coarse) and (max-width: 767px));
+
 /* CRITICAL: Prevent all scrolling at the page level */
 html, body, #root {
   margin: 0;

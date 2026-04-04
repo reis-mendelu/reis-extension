@@ -99,7 +99,7 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-base-200 border-t border-base-300">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 hidden touch:flex bg-base-200 border-t border-base-300">
         <div className="flex items-center justify-around h-16 px-1">
           {tabs.map(tab => (
             <button
