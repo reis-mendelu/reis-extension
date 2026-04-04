@@ -3,10 +3,12 @@ import { useSchedule, useExams } from '../../hooks/data';
 import { useAppStore } from '../../store/useAppStore';
 import { getCzechHoliday } from '../../utils/holidays';
 import { parseDate } from '../../utils/date';
+import { getWeekForDate } from '../../api/teachingWeek';
 import type { BlockLesson, DateInfo } from '../../types/calendarTypes';
 
 export function useCalendarData(initialDate: Date) {
-    const { schedule: storedSchedule, isLoaded: isScheduleLoaded, isPartial, isSyncing } = useSchedule();
+    const { schedule: storedSchedule, isLoaded: isScheduleLoaded } = useSchedule();
+    const teachingWeekData = useAppStore(state => state.teachingWeekData);
 
 
     const { exams: storedExams, isLoaded: isExamsLoaded } = useExams();
@@ -121,14 +123,22 @@ export function useCalendarData(initialDate: Date) {
         return weekDates.findIndex(d => parseInt(d.day) === today.getDate() && parseInt(d.month) === today.getMonth() + 1 && parseInt(d.year) === today.getFullYear());
     }, [weekDates]);
 
-    return { 
-        weekDates, 
-        lessonsByDay, 
-        holidaysByDay, 
-        todayIndex, 
-        showSkeleton: scheduleData.length === 0 && (isPartial || isSyncing || (storedSchedule.length === 0 && !isScheduleLoaded)), 
-        scheduleData,
+    const isOutsideTeachingPeriod = useMemo(() => {
+        if (!teachingWeekData || !isScheduleLoaded) return false;
+        return weekDates.every(d => {
+            const date = new Date(parseInt(d.year), parseInt(d.month) - 1, parseInt(d.day));
+            return getWeekForDate(teachingWeekData, date) === null;
+        });
+    }, [teachingWeekData, weekDates, isScheduleLoaded]);
 
+    return {
+        weekDates,
+        lessonsByDay,
+        holidaysByDay,
+        todayIndex,
+        showSkeleton: scheduleData.length === 0 && !isScheduleLoaded,
+        scheduleData,
+        isOutsideTeachingPeriod,
         isScheduleLoaded,
         isExamsLoaded
     };

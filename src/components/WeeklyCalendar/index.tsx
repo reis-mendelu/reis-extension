@@ -26,7 +26,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     const pendingTimeSelection = useAppStore((state) => state.pendingTimeSelection);
     const setPendingTimeSelection = useAppStore((state) => state.setPendingTimeSelection);
     const isMobile = useIsMobile();
-    const { weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton: dataLoading, scheduleData } = useCalendarData(initialDate);
+    const { weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton: dataLoading, scheduleData, isOutsideTeachingPeriod } = useCalendarData(initialDate);
     const { t } = useTranslation();
     const [selected, setSelected] = useState<BlockLesson | null>(null);
     const { isSeen, markSeen } = useHintStatus('calendar_event_click');
@@ -111,6 +111,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                 language={language}
                 onPrevWeek={onPrevWeek}
                 onNextWeek={onNextWeek}
+                isOutsideTeachingPeriod={isOutsideTeachingPeriod}
             />
         );
     }
@@ -182,7 +183,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                         <CalendarHint show={!isSeen} eventPosition={targetEventPosition || undefined} onDismiss={markSeen} />
                         <WeeklyCalendarGrid />
                         <CurrentTimeIndicator todayIndex={todayIndex} />
-                        {!showSkeleton && scheduleData.length === 0 && <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none"><p className="text-base-content/40 text-sm font-medium">{t('calendar.emptyWeek')}</p></div>}
+                        {!showSkeleton && scheduleData.length === 0 && <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none"><p className="text-base-content/40 text-sm font-medium">{t(isOutsideTeachingPeriod ? 'calendar.outsideSemester' : 'calendar.emptyWeek')}</p></div>}
                         {[0, 1, 2, 3, 4].map(i => (
                             <WeeklyCalendarDay key={i} dayIndex={i} date={weekDates[i]} lessons={lessonsByDay[i] || []}
                                                holiday={holidaysByDay[i]} isToday={i === todayIndex}

@@ -79,6 +79,7 @@
   },
   "calendar": {
     "emptyWeek": "Tento týden nic nemáš, pohodička",
+    "outsideSemester": "Mimo výukové období",
     "hide": {
       "title": "Skrýt z kalendáře",
       "occurrence": "Skrýt tuto hodinu",

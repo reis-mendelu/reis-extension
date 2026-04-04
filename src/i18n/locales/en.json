@@ -51,6 +51,7 @@
   },
   "calendar": {
     "emptyWeek": "Nothing this week, you're free",
+    "outsideSemester": "Outside the teaching period",
     "hide": {
       "title": "Hide from calendar",
       "occurrence": "Hide this instance",

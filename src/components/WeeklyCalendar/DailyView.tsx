@@ -18,9 +18,10 @@ interface DailyViewProps {
   language: string;
   onPrevWeek?: () => void;
   onNextWeek?: () => void;
+  isOutsideTeachingPeriod: boolean;
 }
 
-export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton, language, onPrevWeek, onNextWeek }: DailyViewProps) {
+export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton, language, onPrevWeek, onNextWeek, isOutsideTeachingPeriod }: DailyViewProps) {
   const { t } = useTranslation();
   const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
   const defaultDay = todayIndex >= 0 && todayIndex < 5 ? todayIndex : 0;
@@ -133,7 +134,7 @@ export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, 
 
             {!holiday && !showSkeleton && lessons.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                <p className="text-base-content/40 text-sm font-medium">{t('calendar.emptyWeek')}</p>
+                <p className="text-base-content/40 text-sm font-medium">{t(isOutsideTeachingPeriod ? 'calendar.outsideSemester' : 'calendar.emptyWeek')}</p>
               </div>
             )}
 
