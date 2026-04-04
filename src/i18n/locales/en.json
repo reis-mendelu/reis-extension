@@ -86,6 +86,8 @@
     "changeTerm": "Change term",
     "select": "Select",
     "clickToRegister": "Click to register:",
+    "registerDeadline": "Register by:",
+    "registerAndUnregisterDeadline": "Register/unregister by:",
     "unregisterDeadline": "Unregister by:",
     "term": "term",
     "terms24": "terms",

@@ -115,6 +115,8 @@
     "changeTerm": "Změnit termín",
     "select": "Vybrat",
     "clickToRegister": "Klikni pro přihlášení:",
+    "registerDeadline": "Přihlášení do:",
+    "registerAndUnregisterDeadline": "Přihlášení/odhlášení do:",
     "unregisterDeadline": "Odhlášení do:",
     "term": "termín",
     "terms24": "termíny",
