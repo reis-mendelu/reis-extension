@@ -177,9 +177,13 @@
     "cvicneTests": {
       "tests": "Cvičné testy",
       "assignments": "Odevzdávárny",
+      "deadlineLabel": "Odevzdat do",
       "assignmentsDone": "Odevzdané / Uzavřené",
       "noTests": "Žádné úkoly ani cv. testy k dispozici.",
-      "noAssignments": "Žádné odevzdávárny k dispozici."
+      "noAssignments": "Žádné odevzdávárny k dispozici.",
+      "testResults": "Výsledky testů",
+      "noTestResults": "Žádné výsledky testů.",
+      "continuousAssessment": "Průběžné hodnocení"
     },
 
     "footer": {

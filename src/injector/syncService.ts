@@ -143,7 +143,7 @@ async function syncSubjectDetails(subjectsValue: { data: Record<string, { folder
     const tasks = subjectEntries.map(([code, subject]) => limit(async () => {
         const subTasks = [];
         if (subject.folderUrl) subTasks.push(fetchFilesFromFolder(subject.folderUrl).then(f => { (cachedData.files as Record<string, unknown>)[code] = f; }).catch(() => {}));
-        if (studium && obdobi && subject.subjectId) subTasks.push(fetchAssessments(studium, obdobi, subject.subjectId).then(a => { if(!cachedData.assessments) cachedData.assessments = {}; (cachedData.assessments as Record<string, unknown>)[code] = a; }).catch(() => {}));
+        if (studium && obdobi && subject.subjectId) subTasks.push(fetchAssessments(studium, obdobi, subject.subjectId).then(a => { console.log(`[syncService] fetchAssessments ${code}:`, a?.length ?? 0, 'results'); if(!cachedData.assessments) cachedData.assessments = {}; (cachedData.assessments as Record<string, unknown>)[code] = a; }).catch(e => { console.error(`[syncService] fetchAssessments ${code} FAILED:`, e); }));
         if (subject.subjectId) subTasks.push(fetchSyllabus(subject.subjectId).then(s => { if(!cachedData.syllabuses) cachedData.syllabuses = {}; (cachedData.syllabuses as Record<string, unknown>)[code] = s; }).catch(() => {}));
         await Promise.all(subTasks);
     }));

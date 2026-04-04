@@ -1,6 +1,5 @@
 import { FileText, ExternalLink, Loader2 } from 'lucide-react';
 import { FileList, FileListSkeleton } from './FileList';
-import { AssessmentTab } from './AssessmentTab';
 import { SyllabusTab } from './SyllabusTab';
 import { ClassmatesTab } from './ClassmatesTab';
 import { SuccessRateTab } from '../SuccessRateTab';
@@ -14,7 +13,7 @@ import type { SelectedSubject } from '../../types/app';
 
 
 interface SubjectFileDrawerContentProps {
-    activeTab: 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates' | 'cvicneTests';
+    activeTab: 'files' | 'stats' | 'syllabus' | 'classmates' | 'cvicneTests';
     lesson: BlockLesson | SelectedSubject | null;
     files: ParsedFile[] | null;
     isFilesLoading: boolean;
@@ -97,7 +96,6 @@ export function SubjectFileDrawerContent({
         );
     }
 
-    if (activeTab === 'assessments') return <AssessmentTab courseCode={lesson?.courseCode || ''} />;
     if (activeTab === 'syllabus') return <SyllabusTab courseCode={lesson?.courseCode || ''} courseId={resolvedCourseId} courseName={lesson?.courseName ?? ''} prefetchedResult={syllabusResult} />;
     if (activeTab === 'classmates') return <ClassmatesTab courseCode={lesson?.courseCode || ''} />;
     

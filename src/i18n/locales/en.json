@@ -176,9 +176,13 @@
     "cvicneTests": {
       "tests": "Practice Tests",
       "assignments": "Assignments",
+      "deadlineLabel": "Deadline",
       "assignmentsDone": "Submitted / Closed",
       "noTests": "No assignments or practice tests available.",
-      "noAssignments": "No assignments available."
+      "noAssignments": "No assignments available.",
+      "testResults": "Test Results",
+      "noTestResults": "No test results.",
+      "continuousAssessment": "Continuous Assessment"
     },
 
     "footer": {

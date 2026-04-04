@@ -11,6 +11,7 @@ export const createAssessmentsSlice: AppSlice<AssessmentsSlice> = (set) => ({
 
         try {
             const raw = await IndexedDBService.get('assessments', courseCode);
+            console.log(`[assessmentsSlice] IDB read assessments/${courseCode}:`, raw);
             const data = raw ? (Array.isArray(raw) ? raw : raw.cz || []) : [];
             set((state) => ({
                 assessments: { ...state.assessments, [courseCode]: data },

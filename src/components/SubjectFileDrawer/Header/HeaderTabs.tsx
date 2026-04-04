@@ -4,7 +4,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 
 interface HeaderTabsProps {
     activeTab: string;
-    onTabChange: (id: 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates' | 'cvicneTests') => void;
+    onTabChange: (id: 'files' | 'stats' | 'syllabus' | 'classmates' | 'cvicneTests') => void;
     disabledTabs?: string[];
     counts?: Record<string, number>;
 }
@@ -12,7 +12,7 @@ interface HeaderTabsProps {
 export function HeaderTabs({ activeTab, onTabChange, disabledTabs = [], counts }: HeaderTabsProps) {
     const { t } = useTranslation();
 
-    type TabId = 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates' | 'cvicneTests';
+    type TabId = 'files' | 'stats' | 'syllabus' | 'classmates' | 'cvicneTests';
     const tabs: { id: TabId; label: string; icon: LucideIcon }[] = [
         { id: 'files', label: t('course.tabs.files'), icon: FileText },
         { id: 'classmates', label: t('course.tabs.classmates'), icon: Users },

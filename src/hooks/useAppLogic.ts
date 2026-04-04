@@ -153,6 +153,16 @@ export function useAppLogic() {
                     }
                 }
 
+                if (r.assessments) {
+                    console.log('[useAppLogic] received assessments:', Object.keys(r.assessments));
+                    for (const [c, a] of Object.entries(r.assessments)) {
+                        console.log(`[useAppLogic] writing assessments/${c}:`, Array.isArray(a) ? a.length : typeof a, a);
+                        await IndexedDBService.set('assessments', c, a);
+                    }
+                } else {
+                    console.log('[useAppLogic] no assessments in sync update');
+                }
+
                 if (r.syllabuses) {
                     for (const [c, s] of Object.entries(r.syllabuses)) {
                         const existing = await IndexedDBService.get('syllabuses', c);
@@ -191,7 +201,7 @@ export function useAppLogic() {
         return () => window.removeEventListener('message', handle);
     }, []);
 
-    const handleOpenSubjectFromSearch = (courseCode: string, courseName?: string, courseId?: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates') => {
+    const handleOpenSubjectFromSearch = (courseCode: string, courseName?: string, courseId?: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates') => {
         setSelectedSubject({ courseCode, courseName: courseName || courseCode, courseId: courseId || '', id: `search-${courseCode}`, isFromSearch: true, facultyCode, initialTab });
     };
 

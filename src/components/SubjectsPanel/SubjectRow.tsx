@@ -8,7 +8,7 @@ interface SubjectRowProps {
   subject: SubjectStatus;
   compact?: boolean;
   failRate?: number | null;
-  onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'assessments' | 'syllabus' | 'classmates') => void;
+  onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates') => void;
   onSearchSubject: (name: string) => void;
   hideStatus?: boolean;
 }
