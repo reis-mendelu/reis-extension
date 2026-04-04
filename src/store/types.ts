@@ -167,9 +167,12 @@ export interface ErasmusSlice {
     erasmusLoading: boolean;
     erasmusCountryFile: string;
     erasmusConfig: ErasmusConfig | null;
+    erasmusSelectedCourses: string[];
     setErasmusCountry: (file: string) => Promise<void>;
     fetchErasmusReports: () => Promise<void>;
     fetchErasmusConfig: () => Promise<void>;
+    toggleErasmusCourse: (code: string) => void;
+    loadErasmusSelectedCourses: () => Promise<void>;
 }
 
 export interface CvicneTestsSlice {

@@ -385,7 +385,16 @@
     "applicationsClose": "Applications close in {days} days",
     "applicationsClosed": "Applications closed",
     "resultsAnnounced": "Results {date}",
-    "coordinator": "Coordinator"
+    "coordinator": "Coordinator",
+    "myStudyPlan": "My Study Plan",
+    "remainingCourses": "remaining courses",
+    "compulsoryRemaining": "Compulsory",
+    "electiveRemaining": "Elective",
+    "allFulfilled": "All courses fulfilled",
+    "studyPlanHint": "Select courses you want recognized during your exchange",
+    "selected": "selected",
+    "selectedForLA": "Selected for Learning Agreement",
+    "credits": "cr."
   },
   "classmates": {
     "all": "All",

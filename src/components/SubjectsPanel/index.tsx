@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
+import { isElectiveGroup } from '@/utils/studyPlanUtils';
 import { SubjectsPanelHeader } from './SubjectsPanelHeader';
 import { SubjectRow } from './SubjectRow';
 import { computeFailRate } from './computeFailRate';
@@ -12,19 +13,6 @@ import type { SubjectStatus } from '@/types/studyPlan';
 interface SubjectsPanelProps {
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: string) => void;
   onSearchSubject: (name: string) => void;
-}
-
-/** Pure elective = group says "volitelných" but NOT "povinně volitelných" */
-function isElectiveGroup(groupName: string, blockTitle: string): boolean {
-  const g = groupName.toLowerCase();
-  const b = blockTitle.toLowerCase();
-  // "volitelných" without "povinně" prefix → pure elective
-  // Also match English: "elective"/"optional" without "compulsory"
-  const gElective = (g.includes('volitel') && !g.includes('povinně') && !g.includes('povin'))
-    || (g.includes('elective') && !g.includes('compulsory'))
-    || (g.includes('optional') && !g.includes('compulsory'));
-  const bElective = b.includes('volitelné předměty') || b.includes('optional courses');
-  return gElective || bElective;
 }
 
 export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelProps) {

@@ -1,15 +1,18 @@
 import type { ErasmusSlice, AppSlice } from '../types';
 import { fetchErasmusReports, getStoredErasmusData, fetchErasmusConfig as fetchErasmusConfigApi } from '../../api/erasmus';
 import { ERASMUS_COUNTRIES } from '../../constants/erasmusCountries';
+import { IndexedDBService } from '../../services/storage';
 import { loggers } from '../../utils/logger';
 
 const DEFAULT_COUNTRY = ERASMUS_COUNTRIES.find(c => c.id === '705')!; // Slovenia
+const SELECTED_COURSES_KEY = 'erasmus_selected_courses';
 
 export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
   erasmusData: null,
   erasmusLoading: false,
   erasmusCountryFile: DEFAULT_COUNTRY.file,
   erasmusConfig: null,
+  erasmusSelectedCourses: [],
   setErasmusCountry: async (file: string) => {
     set({ erasmusCountryFile: file, erasmusLoading: true });
     try {
@@ -46,5 +49,19 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     } finally {
       set({ erasmusLoading: false });
     }
+  },
+  toggleErasmusCourse: (code: string) => {
+    const current = get().erasmusSelectedCourses;
+    const next = current.includes(code)
+      ? current.filter(c => c !== code)
+      : [...current, code];
+    set({ erasmusSelectedCourses: next });
+    IndexedDBService.set('meta', SELECTED_COURSES_KEY, next).catch(() => {});
+  },
+  loadErasmusSelectedCourses: async () => {
+    try {
+      const stored = await IndexedDBService.get('meta', SELECTED_COURSES_KEY) as string[] | null;
+      if (stored) set({ erasmusSelectedCourses: stored });
+    } catch { /* ignore */ }
   },
 });

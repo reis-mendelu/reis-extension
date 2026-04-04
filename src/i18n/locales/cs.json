@@ -387,7 +387,16 @@
     "applicationsClose": "Přihlášky se uzavírají za {days} dní",
     "applicationsClosed": "Přihlášky uzavřeny",
     "resultsAnnounced": "Výsledky {date}",
-    "coordinator": "Koordinátor"
+    "coordinator": "Koordinátor",
+    "myStudyPlan": "Můj studijní plán",
+    "remainingCourses": "zbývajících předmětů",
+    "compulsoryRemaining": "Povinné",
+    "electiveRemaining": "Volitelné",
+    "allFulfilled": "Všechny předměty splněny",
+    "studyPlanHint": "Vyber předměty, které chceš uznat v rámci zahraničního pobytu",
+    "selected": "vybráno",
+    "selectedForLA": "Vybrané pro Learning Agreement",
+    "credits": "kr."
   },
   "classmates": {
     "all": "Všichni",
