@@ -25,7 +25,7 @@ export function useExamActions({ exams, setExpandedSectionId }: { exams: ExamSub
             const res = await registerExam(tid);
             if (res.success) {
                 toast.success('Přihlášeno!');
-                const t = sec.terms.find((x: ExamTerm) => x.id === tid), updated = updateExamOptimistically(exams, sec.id, { status: 'registered', registeredTerm: t ? { id: t.id, date: t.date, time: t.time, room: t.room, teacher: t.teacher, teacherId: t.teacherId, deregistrationDeadline: t.registrationEnd } : undefined });
+                const t = sec.terms.find((x: ExamTerm) => x.id === tid), updated = updateExamOptimistically(exams, sec.id, { status: 'registered', registeredTerm: t ? { id: t.id, date: t.date, time: t.time, room: t.room, teacher: t.teacher, teacherId: t.teacherId, deregistrationDeadline: t.deregistrationDeadline } : undefined });
                 setExams(updated); IndexedDBService.set('exams', 'current', updated); IndexedDBService.set('meta', 'exams_modified', Date.now());
                 setExpandedSectionId(null); void fetchExams();
             } else toast.error(res.error || 'Selhalo.');

@@ -26,6 +26,7 @@ export interface ExamTerm {
     roomEn?: string;      // Localized room name (English)
     registrationStart?: string;  // When registration opens
     registrationEnd?: string;    // When registration closes
+    deregistrationDeadline?: string;  // When deregistration closes (format: "DD.MM.YYYY HH:MM")
     attemptType?: 'regular' | 'retake1' | 'retake2' | 'retake3';  // Exam attempt type
     canRegisterNow?: boolean;  // True if registration link is available now
 }

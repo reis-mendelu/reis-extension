@@ -38,12 +38,13 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
                        row.querySelector('a[href*="terminy_info.pl"]')?.getAttribute('href')?.match(/termin=(\d+)/)?.[1] ||
                        Math.random().toString(36).substr(2, 9);
 
-        let registrationStart: string | undefined, registrationEnd: string | undefined;
+        let registrationStart: string | undefined, registrationEnd: string | undefined, deregistrationDeadline: string | undefined;
         for (let i = 0; i < cols.length; i++) {
-            if (cols[i].innerHTML.includes('<br>')) {
-                const parts = cols[i].innerHTML.split(/<br\s*\/?>/i).map(p => p.replace(/<[^>]*>/g, '').trim());
+            const parts = cols[i].innerHTML.split(/<br\s*\/?>/i).map(p => p.replace(/<[^>]*>/g, '').trim());
+            if (parts.length >= 3) {
                 if (parts[0] !== '--' && parts[0].match(/\d{2}[./]\d{2}[./]\d{4}/)) registrationStart = normalizeDateString(parts[0], isEn);
                 if (parts[1] !== '--' && parts[1].match(/\d{2}[./]\d{2}[./]\d{4}/)) registrationEnd = normalizeDateString(parts[1], isEn);
+                if (parts[2] !== '--' && parts[2].match(/\d{2}[./]\d{2}[./]\d{4}/)) deregistrationDeadline = normalizeDateString(parts[2], isEn);
                 break;
             }
         }
@@ -69,8 +70,9 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
             room, 
             teacher, 
             teacherId, 
-            registrationStart, 
-            registrationEnd, 
+            registrationStart,
+            registrationEnd,
+            deregistrationDeadline,
             attemptType, 
             canRegisterNow: !!row.querySelector('a[href*="prihlasit_ihned=1"]') && !isFull,
             roomCs: isEn ? undefined : room,
