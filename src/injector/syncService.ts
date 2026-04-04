@@ -44,12 +44,12 @@ export async function syncAllData() {
 
         // Phase 2a: Start subjects early — fast fetch, send immediately when ready
         const subjectsPromise = fetchDualLanguageSubjects(studium || undefined)
-            .then(subjects => {
-                if (subjects) {
-                    cachedData = { ...cachedData, subjects };
+            .then(result => {
+                if (result) {
+                    cachedData = { ...cachedData, subjects: result.subjects, attendance: result.attendance };
                     sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing: true, isPartial: true }));
                 }
-                return subjects;
+                return result;
             });
 
         // Phase 2a-II: Fetch study plan + study stats concurrently with early subjects
@@ -99,7 +99,8 @@ export async function syncAllData() {
             ...cachedData,
             schedule: fullSchedule.status === "fulfilled" && fullSchedule.value ? fullSchedule.value : cachedData.schedule,
             exams: exams.status === "fulfilled" ? exams.value : cachedData.exams,
-            subjects: subjects.status === "fulfilled" ? subjects.value : cachedData.subjects,
+            subjects: subjects.status === "fulfilled" && subjects.value ? subjects.value.subjects : cachedData.subjects,
+            attendance: subjects.status === "fulfilled" && subjects.value ? subjects.value.attendance : cachedData.attendance,
             studyPlan: studyPlan.status === "fulfilled" && studyPlan.value ? studyPlan.value : cachedData.studyPlan,
             studyStats: studyStats.status === "fulfilled" && studyStats.value ? studyStats.value : cachedData.studyStats,
             cvicneTests: cvicneTests.status === "fulfilled" && cvicneTests.value ? cvicneTests.value.tests : cachedData.cvicneTests,
@@ -113,7 +114,7 @@ export async function syncAllData() {
 
 
         if (subjects.status === "fulfilled" && subjects.value) {
-            await syncSubjectDetails(subjects.value, fullSchedule.status === "fulfilled" ? fullSchedule.value : null);
+            await syncSubjectDetails(subjects.value.subjects, fullSchedule.status === "fulfilled" ? fullSchedule.value : null);
         }
 
         

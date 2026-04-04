@@ -1,7 +1,7 @@
  
  
 import { fetchWithAuth, BASE_URL } from "./client";
-import type { SubjectInfo, SubjectsData } from "../types/documents";
+import type { SubjectInfo, SubjectsData, SubjectAttendance, AttendanceRecord, AttendanceStatus } from "../types/documents";
 import { SubjectsDataSchema } from "../schemas/subjectSchema";
 
 const STUDENT_LIST_URL = `${BASE_URL}/auth/student/list.pl`;
@@ -29,10 +29,15 @@ export async function fetchSubjects(lang: string = 'cz', studium?: string): Prom
     }
 }
 
+export interface SubjectsFetchResult {
+    subjects: SubjectsData;
+    attendance: Record<string, SubjectAttendance[]>;
+}
+
 /**
  * Fetches subjects in both Czech and English and merges them.
  */
-export async function fetchDualLanguageSubjects(studium?: string): Promise<SubjectsData | null> {
+export async function fetchDualLanguageSubjects(studium?: string): Promise<SubjectsFetchResult | null> {
     try {
         const czUrl = studium ? `${STUDENT_LIST_URL}?lang=cz;studium=${studium}` : `${STUDENT_LIST_URL}?lang=cz`;
         const enUrl = studium ? `${STUDENT_LIST_URL}?lang=en;studium=${studium}` : `${STUDENT_LIST_URL}?lang=en`;
@@ -44,6 +49,7 @@ export async function fetchDualLanguageSubjects(studium?: string): Promise<Subje
         ]);
 
         const czHtml = await czRes.text();
+        const attendance = parseAttendance(czHtml);
         const enHtml = await enRes.text();
 
         const czMap = parseSubjectFolders(czHtml);
@@ -82,7 +88,7 @@ export async function fetchDualLanguageSubjects(studium?: string): Promise<Subje
         };
 
         const result = SubjectsDataSchema.safeParse(subjectsData);
-        return result.success ? result.data : subjectsData;
+        return { subjects: result.success ? result.data : subjectsData, attendance };
     } catch {
         return null;
     }
@@ -123,6 +129,72 @@ function parseSubjectFolders(htmlString: string): Record<string, SubjectLinkData
         }
     });
     return subjectMap;
+}
+
+const SYSID_TO_STATUS: Record<string, AttendanceStatus> = {
+    'doch-pritomen': 'present',
+    'doch-neomluven': 'absent',
+    'doch-omluven': 'excused',
+    'doch-pozde': 'late',
+    'doch-drivejsi-odchod': 'early-leave',
+    'doch-vyloucen': 'excluded',
+    'doch-pritomen-jinde': 'elsewhere',
+};
+
+export function parseAttendance(htmlString: string): Record<string, SubjectAttendance[]> {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, 'text/html');
+    const table = doc.querySelector('#tmtab_1');
+    if (!table) return {};
+
+    const result: Record<string, SubjectAttendance[]> = {};
+    let currentCode: string | null = null;
+
+    const rows = table.querySelectorAll('tr.uis-hl-table');
+    for (const row of rows) {
+        const syllabusLink = row.querySelector('a[href*="/auth/katalog/syllabus.pl"]');
+
+        if (syllabusLink) {
+            const fullName = syllabusLink.textContent?.trim() || '';
+            currentCode = fullName.split(' ')[0] || null;
+            continue;
+        }
+
+        if (!currentCode) continue;
+
+        const imgs = row.querySelectorAll('img[sysid^="doch-"]');
+        if (imgs.length === 0) continue;
+
+        const cells = row.querySelectorAll('td');
+        const label = cells[1]?.textContent?.trim().replace(/\s*Každý týden\s*/g, '').trim()
+            || cells[0]?.textContent?.trim().replace(/\s*Každý týden\s*/g, '').trim()
+            || '';
+
+        const records: AttendanceRecord[] = [];
+        for (const img of imgs) {
+            const sysid = img.getAttribute('sysid') || '';
+            const status = SYSID_TO_STATUS[sysid];
+            if (!status) continue;
+
+            const title = img.getAttribute('title') || '';
+            const parts = title.split(', ');
+            if (parts.length < 3) continue;
+
+            const datePart = parts[0];
+            const timePart = parts[1];
+            const roomAndStatus = parts.slice(2).join(', ');
+            const room = roomAndStatus.split(' - ')[0];
+
+            records.push({ date: datePart, time: timePart, room, status });
+        }
+
+        if (records.length > 0) {
+            if (!result[currentCode]) result[currentCode] = [];
+            result[currentCode].push({ label, records });
+        }
+    }
+
+    return result;
 }
 
 function extractSubjectCode(subjectName: string): string {

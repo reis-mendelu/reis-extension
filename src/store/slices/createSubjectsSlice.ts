@@ -6,6 +6,7 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
     subjectsLoading: false,
     courseNicknames: {},
     courseDeadlines: {},
+    attendance: {},
     fetchSubjects: async () => {
         set({ subjectsLoading: true });
         try {
@@ -24,6 +25,7 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
             set({ subjectsLoading: false });
         }
     },
+    setAttendance: (data) => set({ attendance: data }),
     setCourseNickname: (courseCode, nickname) => {
         const currentNicknames = get().courseNicknames;
         const newNicknames = { ...currentNicknames };

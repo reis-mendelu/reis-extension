@@ -15,7 +15,7 @@ import { isDualLanguageStudyPlan } from '../types/studyPlan';
 import type { DualLanguageStudyPlan } from '../types/studyPlan';
 import type { BlockLesson } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
-import type { SubjectsData, ParsedFile, SyllabusRequirements } from '../types/documents';
+import type { SubjectsData, ParsedFile, SyllabusRequirements, SubjectAttendance } from '../types/documents';
 
 interface SyncedData {
     schedule?: BlockLesson[];
@@ -24,6 +24,7 @@ interface SyncedData {
     files?: Record<string, ParsedFile[] | { cz: ParsedFile[]; en: ParsedFile[] }>;
     syllabuses?: Record<string, SyllabusRequirements | { cz: SyllabusRequirements; en: SyllabusRequirements }>;
     classmates?: Record<string, unknown>;
+    attendance?: Record<string, SubjectAttendance[]>;
     studyPlan?: DualLanguageStudyPlan;
     studyStats?: unknown;
     cvicneTests?: any[];
@@ -137,6 +138,10 @@ export function useAppLogic() {
                         });
                     }
                     await IndexedDBService.set('subjects', 'current', r.subjects);
+                }
+
+                if (r.attendance) {
+                    useAppStore.getState().setAttendance(r.attendance);
                 }
 
                 if (r.files) {

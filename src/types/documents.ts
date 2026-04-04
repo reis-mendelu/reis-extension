@@ -16,6 +16,20 @@ export interface SubjectsData {
     data: Record<string, SubjectInfo>;
 }
 
+export type AttendanceStatus = 'present' | 'absent' | 'excused' | 'late' | 'early-leave' | 'excluded' | 'elsewhere';
+
+export interface AttendanceRecord {
+    date: string;
+    time: string;
+    room: string;
+    status: AttendanceStatus;
+}
+
+export interface SubjectAttendance {
+    label: string;
+    records: AttendanceRecord[];
+}
+
 export interface FileAttachment {
     name: string;
     type: string;
@@ -76,6 +90,7 @@ export interface CourseMetadata {
     courseName?: string | null;  // Deprecated: Use courseNameCs/courseNameEn
     courseNameCs?: string | null;  // Czech course name
     courseNameEn?: string | null;  // English course name
+    courseCode?: string | null;   // Short course code (e.g. "DSND")
     credits: string | null;
     garant?: { name: string | null; id?: string | null } | null;
     teachers: { name: string; id?: string | null; roles: string }[];

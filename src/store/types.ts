@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { BlockLesson, HiddenItems } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
-import type { SyllabusRequirements, ParsedFile, Assessment, SubjectsData, SubjectSuccessRate } from '../types/documents';
+import type { SyllabusRequirements, ParsedFile, Assessment, SubjectsData, SubjectSuccessRate, SubjectAttendance } from '../types/documents';
 import type { ClassmatesData } from '../types/classmates';
 import type { DualLanguageStudyPlan, StudyStats } from '../types/studyPlan';
 import type { CvicnyTest } from '../api/cvicneTests';
@@ -83,9 +83,11 @@ export interface SubjectsSlice {
     subjectsLoading: boolean;
     courseNicknames: Record<string, string>;
     courseDeadlines: Record<string, CourseDeadline[]>;
+    attendance: Record<string, SubjectAttendance[]>;
     fetchSubjects: () => Promise<void>;
+    setAttendance: (data: Record<string, SubjectAttendance[]>) => void;
     setCourseNickname: (courseCode: string, nickname: string | null) => void;
-    setCourseDeadlines: (courseCode: string, deadlines: CourseDeadline[]) => void;
+    setCourseDeadlines: (courseCode: string, deadlines: CourseDeadline[] | null) => void;
 }
 
 export interface SyncSlice {

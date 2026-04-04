@@ -198,7 +198,7 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
             )}
             <div className="p-2 h-full flex flex-col text-sm overflow-hidden font-inter">
                 {/* Course title - always visible */}
-                <div className={`font-semibold ${styles.text} flex-shrink-0 break-words line-clamp-2`}>
+                <div className={`font-semibold ${styles.text} flex-shrink-0 break-words line-clamp-2 ${!lesson.isExam ? 'pr-8' : ''}`}>
                     {courseTitle}
                 </div>
                 {/* Additional course info - only for longer events */}

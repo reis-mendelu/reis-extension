@@ -1,8 +1,9 @@
-import { FileText, ExternalLink, Upload, ChevronDown } from 'lucide-react';
+import { ExternalLink, Upload, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useCvicneTests, useOdevzdavarny } from '../../hooks/data';
 import { useUserParams } from '../../hooks/useUserParams';
 import { useTranslation } from '../../hooks/useTranslation';
+import { AttendanceSection } from './AttendanceSection';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { SelectedSubject } from '../../types/app';
 
@@ -41,7 +42,7 @@ export function CvicneTestsTab({ lesson }: CvicneTestsTabProps) {
     return (
         <div className="flex flex-col h-full bg-base-100 overflow-y-auto w-full">
             <div className="p-6 space-y-6 flex-1">
-                {/* Always render sections to ensure external links are available */}
+                <AttendanceSection courseCode={lesson?.courseCode || ''} />
                 <Section
                     title={t('course.cvicneTests.tests') || 'Cvičné testy'}
                     count={tests.length}
