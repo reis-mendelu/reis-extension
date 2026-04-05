@@ -9,8 +9,8 @@ import { herna, personalizace, nastaveniIS, ochranaUdaju } from './personal';
 export * from './types';
 
 export const pagesData: PageCategory[] = [
-    portalInfo,
     mojeStudium,
+    portalInfo,
     vedaVyzkum,
     elearning,
     osobniManagement,

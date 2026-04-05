@@ -231,6 +231,18 @@ export interface NavPagesSlice {
     setNavPages: (pages: PageCategory[]) => void;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & TeachingWeekSlice & NavPagesSlice;
+export interface ContextSlice {
+    studiumId: string | null;
+    studentId: string | null;
+    obdobiId: string | null;
+    facultyId: string | null;
+    userFaculty: string | null;
+    userSemester: string | null;
+    isErasmus: boolean;
+    fullName: string | null;
+    loadContext: () => Promise<void>;
+}
+
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

@@ -51,9 +51,7 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
   const [sections, setSections] = useState<SearchSection[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<SearchResult[]>([]);
-  const [studiumId, setStudiumId] = useState<string | undefined>(undefined);
-  const [userFaculty, setUserFaculty] = useState<string | undefined>(undefined);
-  const [userSemester, setUserSemester] = useState<string | undefined>(undefined);
+  const { studiumId, userFaculty, userSemester } = useAppStore();
   const debounceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const studyPlanCodes = useMemo(() => {
@@ -75,15 +73,6 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
   const filteredResults = useMemo(() => sections.flatMap(s => s.results), [sections]);
 
   useEffect(() => {
-    import('../../utils/userParams').then(async ({ getUserParams }) => {
-      try {
-        const params = await getUserParams();
-        if (params?.studium) setStudiumId(String(params.studium));
-        if (params?.facultyLabel) setUserFaculty(params.facultyLabel);
-        if (params?.periodLabel) setUserSemester(params.periodLabel);
-      } catch (err) { console.error("Failed to load user params", err); }
-    });
-
     const loadRecent = async () => {
       try {
         const stored = await IndexedDBService.get('meta', 'recent_searches');
@@ -153,7 +142,7 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
           title: itemLabel,
           type: 'page',
           detail: catLabel,
-          link: injectUserParams(p.href, studiumId, language === 'en' ? 'en' : 'cz')
+          link: injectUserParams(p.href, studiumId ?? undefined, language === 'en' ? 'en' : 'cz')
         });
       }
     }));

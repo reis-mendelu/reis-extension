@@ -231,13 +231,20 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
     <div className="w-full flex items-center justify-end">
       <div className="flex items-center gap-2 w-full max-w-md lg:max-w-2xl">
         {/* Portal Launcher Trigger */}
-        <div className="tooltip tooltip-bottom flex-shrink-0" data-tip={t('search.isPortalTooltip')}>
+        <div className="relative group/launcher flex-shrink-0">
           <button
             onClick={() => setIsPortalOpen(true)}
             className="p-2.5 bg-base-100 border border-base-300 rounded-xl hover:border-primary/30 hover:bg-primary/5 text-base-content/60 hover:text-primary transition-all duration-200 shadow-sm group"
           >
             <LayoutGrid className="w-5 h-5 group-hover:scale-110 transition-transform" />
           </button>
+          
+          {/* Custom Premium Tooltip */}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-3 py-2 bg-primary text-primary-content text-[11px] font-bold rounded-lg shadow-xl opacity-0 group-hover:launcher:opacity-100 translate-y-1 group-hover:launcher:translate-y-0 pointer-events-none transition-all duration-300 whitespace-nowrap z-[100] scale-95 group-hover:launcher:scale-100 origin-top">
+            {t('search.isPortalTooltip')}
+            {/* Arrow */}
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rotate-45" />
+          </div>
         </div>
 
         <div ref={inputWrapRef} className="relative w-full">
@@ -251,7 +258,7 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
                 <button onClick={() => { setQuery(''); inputRef.current?.focus(); }} className="p-1 hover:bg-base-200 rounded-full"><X className="w-4 h-4 text-base-content/50" /></button>
               ) : (
                 modifier && (
-                  <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-base-content/40 bg-base-200 border border-base-300 rounded">
+                  <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-base-content/40 bg-base-200 border border-base-300 rounded flex-shrink-0">
                     <span className={modifier === '⌘' ? 'text-xs' : 'text-[10px]'}>{modifier}</span>K
                   </kbd>
                 )

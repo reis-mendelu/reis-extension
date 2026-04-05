@@ -92,18 +92,18 @@ export function AppHeader({
 
           <div className="flex-1" />
 
-          {/* Mobile: search icon button */}
-          <button
-            onClick={() => setMobileSearchOpen(true)}
-            className="hidden touch:block p-2 hover:bg-base-300 rounded-lg flex-shrink-0"
-            aria-label="Search"
-          >
-            <Search size={20} />
-          </button>
-
           <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 ml-auto z-10">
-            {/* Desktop Search Bar: Repositioned to the right for utility grouping */}
-            <div className="hidden touch:hidden md:flex items-center w-[300px] lg:w-[450px] xl:w-[600px]">
+            {/* Narrow/mobile: search icon button */}
+            <button
+              onClick={() => setMobileSearchOpen(true)}
+              className="md:hidden p-2 hover:bg-base-300 rounded-lg flex-shrink-0"
+              aria-label="Search"
+            >
+              <Search size={20} />
+            </button>
+
+            {/* Desktop Search Bar */}
+            <div className="hidden md:flex items-center w-[300px] lg:w-[450px] xl:w-[600px]">
               <SearchBar onOpenSubject={onOpenSubject} prefillRef={searchPrefillRef} actions={actions} />
             </div>
 

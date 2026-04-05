@@ -76,7 +76,8 @@
     "subjects": "Předměty",
     "pages": "Stránky",
     "people": "Lidé",
-    "isPortalTooltip": "Portál IS (Rozcestník aplikací)"
+    "isPortalTooltip": "IS Rozcestník",
+    "filterPlaceholder": "Filtrovat..."
   },
   "calendar": {
     "emptyWeek": "Tento týden nic nemáš, pohodička",

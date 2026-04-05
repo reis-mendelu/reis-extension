@@ -155,7 +155,8 @@
     "subjects": "Subjects",
     "pages": "Pages",
     "people": "People",
-    "isPortalTooltip": "IS Portal (App Launcher)"
+    "isPortalTooltip": "IS Directory",
+    "filterPlaceholder": "Filter..."
   },
   "course": {
     "setNickname": "Set nickname",
