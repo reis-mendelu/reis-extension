@@ -1,4 +1,4 @@
-import type { SubjectsSlice, AppSlice } from '../types';
+import type { SubjectsSlice, AppSlice, CourseDeadline } from '../types';
 import { IndexedDBService } from '../../services/storage';
 
 export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
@@ -20,7 +20,7 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
             set({ 
                 subjects: data || null,
                 courseNicknames: (nicknames as Record<string, string>) || {},
-                courseDeadlines: (deadlines as Record<string, any[]>) || {},
+                courseDeadlines: (deadlines as Record<string, CourseDeadline[]>) || {},
                 subjectsLoading: false 
             });
         } catch (e) {

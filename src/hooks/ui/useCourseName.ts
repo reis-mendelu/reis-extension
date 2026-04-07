@@ -2,7 +2,6 @@ import { useAppStore } from '../../store/useAppStore';
 
 export function useCourseName(courseCode: string | undefined, fallbackName: string | undefined): string {
     const defaultName = fallbackName || courseCode || '';
-    if (!courseCode) return defaultName;
-    const nickname = useAppStore(state => state.courseNicknames?.[courseCode]);
+    const nickname = useAppStore(state => (courseCode ? state.courseNicknames?.[courseCode] : undefined));
     return nickname || defaultName;
 }

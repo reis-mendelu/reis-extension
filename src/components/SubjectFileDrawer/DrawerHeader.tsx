@@ -1,4 +1,4 @@
-import { ExternalLink, Timer } from 'lucide-react';
+import { Timer } from 'lucide-react';
 import type { DrawerHeaderProps } from './types';
 import type { BlockLesson } from '../../types/calendarTypes';
 import { HeaderActions } from './Header/HeaderActions';
@@ -75,8 +75,6 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
                         ? (lesson as BlockLesson)?.courseNameCs
                         : (lesson as BlockLesson)?.courseNameEn;
                     
-                    const storeDisplayName = subjectInfo?.displayName ? subjectInfo.displayName.replace(subjectInfo.subjectCode, '').trim() : null;
-                        
                     const displayName = storeName || syllabusName || blockLessonName || lesson?.courseName;
                     
                     return <EditableCourseTitle 

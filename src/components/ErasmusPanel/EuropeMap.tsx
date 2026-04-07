@@ -100,7 +100,7 @@ export function EuropeMap({ selectedCountryId, onSelectCountry, lang }: EuropeMa
       };
     });
     setTooltip(null);
-  }, [clampVb]);
+  }, []);
 
   const [isDragging, setIsDragging] = useState(false);
   const [containerWidth, setContainerWidth] = useState(300);

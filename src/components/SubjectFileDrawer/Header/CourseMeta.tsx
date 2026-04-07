@@ -8,7 +8,6 @@ import { MapHoverCard } from '../../MapHoverCard';
 export function CourseMeta({ lesson, courseInfo, isSearchContext }: { lesson: BlockLesson | null; courseInfo: CourseMetadata | undefined; isSearchContext: boolean }) {
     const [expanded, setExpanded] = useState(false);
     const { t, language } = useTranslation();
-    const courseCode = lesson?.courseCode || courseInfo?.courseCode;
 
     if (!isSearchContext) {
         return (

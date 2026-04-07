@@ -22,7 +22,7 @@ export function PagePinnerModal({ open, onClose }: PagePinnerModalProps) {
 
   useEffect(() => {
     if (open) {
-      setQuery('');
+      queueMicrotask(() => setQuery(''));
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);

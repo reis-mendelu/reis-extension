@@ -49,7 +49,7 @@ export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, 
 
   const { onTouchStart, onTouchMove, onTouchEnd, dragStyle } = useSwipeNavigation(goToPrev, goToNext);
 
-  const lessons = lessonsByDay[selectedDay] || [];
+  const lessons = useMemo(() => lessonsByDay[selectedDay] || [], [lessonsByDay, selectedDay]);
   const holiday = holidaysByDay[selectedDay];
   const { lessons: organizedLessons } = useMemo(() => organizeLessons(lessons), [lessons]);
 

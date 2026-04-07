@@ -24,7 +24,7 @@ function MenuPopoverContent({ dateKey }: { dateKey: string }) {
     useEffect(() => {
         if (prevKey.current !== dateKey) {
             prevKey.current = dateKey;
-            setActiveTab(0);
+            queueMicrotask(() => setActiveTab(0));
         }
     }, [dateKey]);
 

@@ -188,8 +188,7 @@ export function useAppLogic() {
                 if (r.classmates) {
                     await IndexedDBService.setMany(
                         'classmates',
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        Object.entries(r.classmates).map(([c, cl]) => [c, cl as any] as const)
+                        Object.entries(r.classmates).map(([c, cl]) => [c, cl] as const)
                     );
                 }
 

@@ -1,5 +1,5 @@
 {
-  "name": "reis_new",
+  "name":"reis",
   "private": true,
   "version": "4.9.3",
   "type": "module",
@@ -45,7 +45,6 @@
     "react-hook-form": "^7.66.1",
     "react-pdf": "^10.4.0",
     "react-resizable-panels": "^3.0.6",
-    "recharts": "^3.4.1",
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",

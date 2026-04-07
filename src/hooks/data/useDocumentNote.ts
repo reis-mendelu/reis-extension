@@ -42,7 +42,6 @@ export function useDocumentNote(courseCode: string, fileLink: string | undefined
 
         if (!key) {
             if (noteRef.current !== '' || isLoading) {
-                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setNoteState('');
                 noteRef.current = '';
                 hasChangesRef.current = false;
@@ -76,6 +75,7 @@ export function useDocumentNote(courseCode: string, fileLink: string | undefined
                 saveToStorage(noteRef.current, currentKeyRef.current);
             }
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [courseCode, fileLink, saveToStorage]);
 
     const setNote = useCallback((value: string) => {

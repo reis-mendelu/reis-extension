@@ -1,7 +1,7 @@
 import { useTranslation } from '@/hooks/useTranslation';
 import { useUserParams } from '@/hooks/useUserParams';
 import type { StudyPlan, StudyStats } from '@/types/studyPlan';
-import { AlertTriangle, CheckCircle2, ExternalLink, ShieldAlert, FileText, Layers } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ExternalLink, ShieldAlert, Layers } from 'lucide-react';
 
 export interface ZameraniProgress {
   enrolled: number;

@@ -31,13 +31,13 @@ export function CvicneTestsTab({ lesson }: CvicneTestsTabProps) {
     // Close sections if they are empty by default
     useEffect(() => {
         if (testsStatus === 'success' && tests.length === 0) {
-            setTestsOpen(false);
+            queueMicrotask(() => setTestsOpen(false));
         }
     }, [testsStatus, tests.length]);
 
     useEffect(() => {
         if (assignmentsStatus === 'success' && assignments.length === 0) {
-            setAssignmentsOpen(false);
+            queueMicrotask(() => setAssignmentsOpen(false));
         }
     }, [assignmentsStatus, assignments.length]);
 

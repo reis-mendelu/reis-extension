@@ -28,7 +28,7 @@ interface IsPortalPopoverProps {
   onClose: () => void;
 }
 
-const ICON_MAP: Record<string, any> = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   'portal-info': Info,
   'moje-studium': GraduationCap,
   'veda-vyzkum': Microscope,

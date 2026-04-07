@@ -9,7 +9,7 @@ export function CurrentTimeIndicator({ todayIndex }: CurrentTimeIndicatorProps) 
     const [now, setNow] = useState(new Date());
 
     useEffect(() => {
-        const ms = (60 - now.getSeconds()) * 1000;
+        const ms = (60 - new Date().getSeconds()) * 1000;
         const timeout = setTimeout(() => {
             setNow(new Date());
             const interval = setInterval(() => setNow(new Date()), 60_000);

@@ -10,7 +10,7 @@ export function NotificationFeed({ className = '' }: { className?: string }) {
 
   useEffect(() => {
     if (isOpen) loadStudyJamSuggestions();
-  }, [isOpen]);
+  }, [isOpen, loadStudyJamSuggestions]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
