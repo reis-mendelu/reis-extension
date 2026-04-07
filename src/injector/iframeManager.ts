@@ -14,10 +14,7 @@ export function injectIframe() {
     favicon.href = chrome.runtime.getURL("reIS_logo.svg");
     document.head.appendChild(favicon);
 
-    const fontLink = document.createElement("link");
-    fontLink.rel = "stylesheet";
-    fontLink.href = chrome.runtime.getURL("fonts/inter.css");
-    document.head.appendChild(fontLink);
+
 
     const viewport = document.createElement("meta");
     viewport.name = "viewport";

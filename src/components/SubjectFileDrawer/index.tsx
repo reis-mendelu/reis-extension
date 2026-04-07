@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useFileActions } from '../../hooks/ui/useFileActions';
 import { DrawerHeader } from './DrawerHeader';
 import { IndexedDBService } from '../../services/storage';
 import { cleanFolderName } from '../../utils/fileUrl';
 import { useSubjectFileDrawerState } from './useSubjectFileDrawerState';
 import { SubjectFileDrawerContent } from './SubjectFileDrawerContent';
-import { PdfViewer } from './PdfViewer';
+const PdfViewer = lazy(() => import('./PdfViewer').then(m => ({ default: m.PdfViewer })));
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../ui/resizable';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ParsedFile } from '../../types/documents';
@@ -150,7 +150,13 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
                             </ResizablePanel>
                             <ResizableHandle withHandle />
                             <ResizablePanel defaultSize={65} minSize={30}>
-                                <PdfViewer blobUrl={activePdfUrl} onClose={handleClosePdf} />
+                                <Suspense fallback={
+                                    <div className="flex justify-center items-center h-full bg-base-300/30">
+                                        <span className="loading loading-spinner loading-lg text-primary" />
+                                    </div>
+                                }>
+                                    <PdfViewer blobUrl={activePdfUrl} onClose={handleClosePdf} />
+                                </Suspense>
                             </ResizablePanel>
                         </ResizablePanelGroup>
                     ) : (
