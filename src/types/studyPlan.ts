@@ -15,11 +15,27 @@ export interface SubjectGroup {
   name: string;
   statusDescription: string;
   subjects: SubjectStatus[];
+  /** Minimum number of subjects required from this group (parsed from "min. N př."). */
+  minCount?: number;
+  /** Minimum total credits required from this group (parsed from "min. N kr."). */
+  minCredits?: number;
 }
 
 export interface SemesterBlock {
   title: string;
   groups: SubjectGroup[];
+  isWholePlanPool?: boolean;
+}
+
+export interface ZamerangSubjectRef {
+  code: string;
+  name: string;
+}
+
+export interface Zamerani {
+  name: string;
+  subjects: ZamerangSubjectRef[];
+  description?: string;
 }
 
 export interface StudyPlan {
@@ -28,6 +44,9 @@ export interface StudyPlan {
   creditsAcquired: number;
   creditsRequired: number;
   blocks: SemesterBlock[];
+  zameranis?: Zamerani[];
+  /** Minimum number of zaměření the student must complete during the program (e.g. 2). */
+  zameraniMinimum?: number;
 }
 
 export interface DualLanguageStudyPlan {

@@ -8,7 +8,17 @@ import { SubjectRow } from './SubjectRow';
 import { computeFailRate } from './computeFailRate';
 import { SemesterSection } from './SemesterSection';
 import { SubjectsPanelSkeleton } from './SubjectsPanelSkeleton';
-import type { SubjectStatus } from '@/types/studyPlan';
+import type { SubjectStatus, Zamerani } from '@/types/studyPlan';
+
+function normalizeZameraniName(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/^zaměření:\s*/i, '')
+    .replace(/^specialization:\s*/i, '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
 
 interface SubjectsPanelProps {
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: string) => void;
@@ -37,6 +47,37 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
   }, [plan]);
 
   const [openSemester, setOpenSemester] = useState<number | null>(null);
+
+  const zameraniLookup = useMemo(() => {
+    const map = new Map<string, Zamerani>();
+    if (!plan?.zameranis) return map;
+    for (const z of plan.zameranis) map.set(normalizeZameraniName(z.name), z);
+    return map;
+  }, [plan]);
+
+  // Pure reduce over existing data: for each zaměření, count how many of its
+  // member subjects are currently enrolled or already fulfilled. Used both by
+  // the header progress indicator and the zaměření card.
+  const zameraniProgress = useMemo(() => {
+    const out = new Map<string, { enrolled: number; fulfilled: number; total: number; touched: boolean }>();
+    if (!plan?.zameranis) return out;
+    const subjectByCode = new Map<string, { isEnrolled: boolean; isFulfilled: boolean }>();
+    for (const b of plan.blocks) for (const g of b.groups) for (const s of g.subjects) {
+      subjectByCode.set(s.code, { isEnrolled: s.isEnrolled, isFulfilled: s.isFulfilled });
+    }
+    for (const z of plan.zameranis) {
+      let enrolled = 0, fulfilled = 0;
+      for (const m of z.subjects) {
+        const hit = subjectByCode.get(m.code);
+        if (!hit) continue;
+        if (hit.isFulfilled) fulfilled++;
+        else if (hit.isEnrolled) enrolled++;
+      }
+      const touched = enrolled + fulfilled > 0;
+      out.set(normalizeZameraniName(z.name), { enrolled, fulfilled, total: z.subjects.length, touched });
+    }
+    return out;
+  }, [plan]);
 
   const failRates = useMemo(() => {
     const map: Record<string, number | null> = {};
@@ -77,7 +118,13 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
 
   return (
     <div className="h-full overflow-y-auto">
-      <SubjectsPanelHeader creditsAcquired={plan.creditsAcquired} creditsRequired={plan.creditsRequired} studyStats={studyStats} />
+      <SubjectsPanelHeader
+        creditsAcquired={plan.creditsAcquired}
+        creditsRequired={plan.creditsRequired}
+        studyStats={studyStats}
+        plan={plan}
+        zameraniProgress={zameraniProgress}
+      />
 
       {hasEnrolledSubjects && (
         <div className="px-4 pt-4 pb-2">
@@ -120,6 +167,8 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
               open={openSemester === bi}
               dimmed={openSemester !== null && openSemester !== bi}
               failRates={failRates}
+              zameraniLookup={zameraniLookup}
+              zameraniProgress={zameraniProgress}
               onToggle={() => setOpenSemester(prev => prev === bi ? null : bi)}
               onOpenSubject={onOpenSubject}
               onSearchSubject={onSearchSubject}

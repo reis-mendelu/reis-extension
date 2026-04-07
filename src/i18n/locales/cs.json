@@ -338,7 +338,12 @@
     "enrolledCreditsLabel": "kr. zapsáno",
     "failRateLabel": "neúsp.",
     "needMore": "potřeba ještě {n}",
-    "notEnoughEnrolled": "málo zapsáno"
+    "notEnoughEnrolled": "málo zapsáno",
+    "zamerani": "zaměření",
+    "zameraniMembers": "Obsahuje předměty",
+    "zameraniProgress": "Zaměření: plní se {touched}, nutno splnit {min}",
+    "zadost": "Žádosti",
+    "sourcesMismatch": "Rozdíl mezi zdroji: plán {plan} kr., statistiky {stats} kr."
   },
   "commands": {
     "quickActions": "Rychlé akce",

@@ -336,7 +336,12 @@
     "enrolledCreditsLabel": "cr. enrolled",
     "failRateLabel": "fail",
     "needMore": "need {n} more",
-    "notEnoughEnrolled": "not enough enrolled"
+    "notEnoughEnrolled": "not enough enrolled",
+    "zamerani": "specialization",
+    "zameraniMembers": "Includes courses",
+    "zameraniProgress": "Specializations: {touched} started, must complete {min}",
+    "zadost": "Requests",
+    "sourcesMismatch": "Source mismatch: plan {plan} cr., stats {stats} cr."
   },
   "commands": {
     "quickActions": "Quick Actions",

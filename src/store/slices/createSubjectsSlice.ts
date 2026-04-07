@@ -8,7 +8,9 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
     courseDeadlines: {},
     attendance: {},
     fetchSubjects: async () => {
-        set({ subjectsLoading: true });
+        // Only show loading on the first call. Subsequent sync-driven refreshes
+        // must not flip isLoaded and cause a UI flash while cached data is visible.
+        if (get().subjects === null) set({ subjectsLoading: true });
         try {
             const [data, nicknames, deadlines] = await Promise.all([
                 IndexedDBService.get('subjects', 'current'),

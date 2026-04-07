@@ -1,5 +1,6 @@
-import { Search, CheckCircle2, AlertTriangle, Timer } from 'lucide-react';
-import type { SubjectStatus } from '@/types/studyPlan';
+import { Search, CheckCircle2, AlertTriangle, Timer, Layers } from 'lucide-react';
+import type { SubjectStatus, Zamerani } from '@/types/studyPlan';
+import type { ZameraniProgress } from './SubjectsPanelHeader';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
 import { useTimeline } from '@/hooks';
@@ -11,15 +12,27 @@ interface SubjectRowProps {
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates') => void;
   onSearchSubject: (name: string) => void;
   hideStatus?: boolean;
+  zamerani?: Zamerani | null;
+  zameraniProgress?: ZameraniProgress | null;
 }
 
-export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubject, onSearchSubject }: SubjectRowProps) {
+// Zaměření pseudo-subjects in the plan table always carry these code prefixes.
+const ZAMERANI_PREFIXES = ['EBC-ZB', 'EBA-ZB'];
+const isZameraniCode = (code: string) => ZAMERANI_PREFIXES.some(p => code.startsWith(p));
+// IS Mendelu uses 999 as a sentinel "credits unknown / pass-through" value.
+const isSentinelCredits = (credits: number) => credits >= 999;
+
+export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubject, onSearchSubject, zamerani, zameraniProgress }: SubjectRowProps) {
   const { t } = useTranslation();
   const hasId = subject.id !== '';
   const displayName = useCourseName(subject.code, subject.name);
   const timeline = useTimeline(subject.code);
+  const isZamerani = isZameraniCode(subject.code);
+  const showCredits = !isSentinelCredits(subject.credits) && !isZamerani;
+  const typeLabel = subject.type?.trim();
 
   const handleClick = () => {
+    if (isZamerani) return; // pseudo-row, not openable
     if (hasId) {
       onOpenSubject(subject.code, subject.name, subject.id);
     } else {
@@ -35,9 +48,45 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
       >
         {subject.isFulfilled && <CheckCircle2 className="w-3.5 h-3.5 text-success/50 shrink-0" />}
         <span className="flex-1 text-xs truncate">{displayName}</span>
+        {subject.fulfillmentDate && (
+          <span className="text-[9px] text-base-content/30 shrink-0">{subject.fulfillmentDate}</span>
+        )}
         {timeline && <span className="text-[9px] font-bold text-primary/60 shrink-0">{timeline.formatted}</span>}
-        <span className="text-[10px] shrink-0 font-medium">{subject.credits} kr.</span>
+        {showCredits && <span className="text-[10px] shrink-0 font-medium">{subject.credits} kr.</span>}
       </button>
+    );
+  }
+
+  if (isZamerani) {
+    const progressLabel = zameraniProgress
+      ? `${zameraniProgress.fulfilled}/${zameraniProgress.total}` +
+        (zameraniProgress.enrolled > 0 ? ` (+${zameraniProgress.enrolled})` : '')
+      : null;
+    return (
+      <div className="w-full flex flex-col gap-1.5 px-3 py-2.5 rounded-lg bg-base-200/30 border border-dashed border-base-300 text-left">
+        <div className="flex items-center gap-2">
+          <Layers className="w-3.5 h-3.5 text-base-content/50 shrink-0" />
+          <span className="text-sm font-medium truncate flex-1">{displayName}</span>
+          {progressLabel && (
+            <span className="text-[10px] font-mono text-base-content/60 shrink-0">{progressLabel}</span>
+          )}
+          <span className="badge badge-sm badge-ghost text-[10px]">{t('subjects.zamerani')}</span>
+        </div>
+        {zamerani?.description && (
+          <p className="pl-5 text-[11px] text-base-content/60 leading-snug line-clamp-3">{zamerani.description}</p>
+        )}
+        {zamerani && zamerani.subjects.length > 0 && (
+          <div className="pl-5 flex flex-col gap-0.5">
+            <div className="text-[10px] uppercase tracking-wider text-base-content/40">{t('subjects.zameraniMembers')}</div>
+            {zamerani.subjects.map(s => (
+              <div key={s.code} className="text-[11px] text-base-content/60 truncate">
+                <span className="font-mono text-base-content/70">{s.code}</span>
+                {s.name !== s.code && <span> — {s.name}</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -55,10 +104,13 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
           </div>
         )}
       </div>
+      {typeLabel && (
+        <span className="text-[10px] font-mono uppercase text-base-content/40 shrink-0">{typeLabel}</span>
+      )}
       {failRate != null && !subject.isFulfilled && (
         <span
           className={`flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium tracking-wide shrink-0 relative group/fail cursor-pointer transition-colors ${
-            failRate >= 25 
+            failRate >= 25
               ? 'bg-error/10 text-error hover:bg-error/15'
               : failRate >= 20
               ? 'bg-warning/15 text-warning-content hover:bg-warning/20'
@@ -70,7 +122,12 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
           <span className="hidden group-hover/fail:inline">{failRate}% {t('subjects.failRateLabel')}</span>
         </span>
       )}
-      <span className="text-xs text-base-content/50 shrink-0">{subject.credits} kr.</span>
+      {showCredits && (
+        <span className="text-xs text-base-content/50 shrink-0">{subject.credits} kr.</span>
+      )}
+      {subject.fulfillmentDate && (
+        <span className="text-[10px] text-base-content/40 font-mono shrink-0 hidden sm:inline">{subject.fulfillmentDate}</span>
+      )}
       {subject.enrollmentCount >= 2 && !subject.isFulfilled && (
         <span className="badge badge-sm badge-error gap-1" title={t('subjects.repeatWarning')}>
           <AlertTriangle className="w-3 h-3" />

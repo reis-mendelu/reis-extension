@@ -1,12 +1,21 @@
 import { useTranslation } from '@/hooks/useTranslation';
 import { useUserParams } from '@/hooks/useUserParams';
-import type { StudyStats } from '@/types/studyPlan';
-import { AlertTriangle, CheckCircle2, ExternalLink, ShieldAlert } from 'lucide-react';
+import type { StudyPlan, StudyStats } from '@/types/studyPlan';
+import { AlertTriangle, CheckCircle2, ExternalLink, ShieldAlert, FileText, Layers } from 'lucide-react';
+
+export interface ZameraniProgress {
+  enrolled: number;
+  fulfilled: number;
+  total: number;
+  touched: boolean;
+}
 
 interface SubjectsPanelHeaderProps {
   creditsAcquired: number;
   creditsRequired: number;
   studyStats: StudyStats | null;
+  plan: StudyPlan | null;
+  zameraniProgress?: Map<string, ZameraniProgress>;
 }
 
 type ProgressionLevel = 'safe' | 'warning' | 'danger';
@@ -35,7 +44,7 @@ const levelConfig = {
   danger: { bg: 'bg-error/8', border: 'border-error/20', text: 'text-error', bar: 'bg-error', Icon: ShieldAlert },
 };
 
-export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studyStats }: SubjectsPanelHeaderProps) {
+export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studyStats, plan, zameraniProgress }: SubjectsPanelHeaderProps) {
   const { t, language } = useTranslation();
   const { params } = useUserParams();
   const studium = params?.studium || '';
@@ -46,6 +55,10 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
   const registrationsUrl = studium
     ? `https://is.mendelu.cz/auth/student/registrace.pl?studium=${studium};lang=${lang}`
     : `https://is.mendelu.cz/auth/student/registrace.pl?lang=${lang}`;
+  const zadostUrl = `https://is.mendelu.cz/auth/kc/index.pl?zalozka=novy;lang=${lang}`;
+
+  const zameraniMin = plan?.zameraniMinimum;
+  const zameraniTouched = zameraniProgress ? Array.from(zameraniProgress.values()).filter(p => p.touched).length : 0;
 
   const pct = creditsRequired > 0 ? Math.min(100, Math.round((creditsAcquired / creditsRequired) * 100)) : 0;
   const progressionInfo = studyStats ? getProgressionInfo(studyStats) : null;
@@ -53,11 +66,24 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
   const cfg = levelConfig[level];
   const Icon = cfg.Icon;
 
+  // Cross-source reconciliation: studyStats and the parsed plan are independent
+  // scrapes. If they disagree on earned credits, the banner should not claim OK.
+  const creditsMismatch = plan && studyStats
+    ? plan.creditsAcquired !== studyStats.totalEarnedCredits
+    : false;
+
   return (
     <div className="px-4 py-3 border-b border-base-300">
       <div className="flex items-center justify-between gap-2 mb-2">
-        <h2 className="text-lg font-semibold shrink-0">{t('subjects.title')}</h2>
+        <h2 className="text-lg font-semibold shrink-0 truncate" title={plan?.title}>
+          {plan?.title || t('subjects.title')}
+        </h2>
         <div className="flex items-center gap-2 flex-wrap justify-end">
+          <a href={zadostUrl} target="_blank" rel="noopener noreferrer"
+            className="btn btn-ghost btn-sm px-2.5 text-base-content/50 hover:text-primary gap-1.5">
+            <span className="text-xs uppercase whitespace-nowrap">{t('subjects.zadost')}</span>
+            <ExternalLink size={14} />
+          </a>
           <a href={registrationsUrl} target="_blank" rel="noopener noreferrer"
             className="btn btn-ghost btn-sm px-2.5 text-base-content/50 hover:text-primary gap-1.5">
             <span className="text-xs uppercase whitespace-nowrap">{t('sidebar.registrations')}</span>
@@ -110,6 +136,24 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
             <span className="ml-auto">{t('subjects.gpa')}: {studyStats.weightedGpaTotal.toFixed(2)}</span>
           )}
         </div>
+
+        {zameraniMin !== undefined && zameraniMin > 0 && (
+          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-base-content/60">
+            <Layers className="w-3 h-3 shrink-0" />
+            <span>
+              {t('subjects.zameraniProgress', { touched: zameraniTouched, min: zameraniMin })}
+            </span>
+          </div>
+        )}
+
+        {creditsMismatch && plan && studyStats && (
+          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-warning">
+            <AlertTriangle className="w-3 h-3 shrink-0" />
+            <span>
+              {t('subjects.sourcesMismatch', { plan: plan.creditsAcquired, stats: studyStats.totalEarnedCredits })}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
