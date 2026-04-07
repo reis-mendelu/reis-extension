@@ -5,6 +5,7 @@ import type { ActionType } from '../types/messages';
 import { pendingFetches, pendingActions, REQUEST_TIMEOUT } from './proxy/pendingRequests';
 import { initProxyListener } from './proxy/messageListener';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
+import { clearUserParamsCache } from '../utils/userParams';
 
 export async function fetchViaProxy(url: string, opts?: MsgTypes.FetchRequestMessage['options']): Promise<string> {
     initProxyListener();
@@ -34,6 +35,7 @@ export function requestData(t: string) { window.parent.postMessage(Messages.requ
 export function openPopup(url: string): Promise<void> { return executeAction('open_url', { url }); }
 
 export async function logout(): Promise<void> {
+    clearUserParamsCache();
     try {
         await IndexedDBService.clearAll();
     } catch (e) {

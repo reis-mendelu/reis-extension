@@ -125,7 +125,8 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                 filesProgress: { ...state.filesProgress, [courseCode]: 'success' },
                 filesTotalCount: { ...state.filesTotalCount, [courseCode]: fullFilesList.length }
             }));
-        } catch {
+        } catch (e) {
+            console.warn('[FilesSlice] fetchFilesPriority failed:', e);
             set((state) => ({
                 files: { ...state.files, [courseCode]: [] },
                 filesPriorityLoading: { ...state.filesPriorityLoading, [courseCode]: false },
@@ -175,7 +176,8 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                             const dualData = { cz: czFiles || [], en: enFiles || [] };
                             await IndexedDBService.set('files', courseCode, dualData);
                             filesList = currentLang === 'en' ? dualData.en : dualData.cz;
-                        } catch {
+                        } catch (e) {
+                            console.warn('[FilesSlice] language re-fetch failed:', e);
                             // Re-fetch failed, use existing data
                         }
                     }
@@ -186,7 +188,8 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                 files: { ...state.files, [courseCode]: filesList },
                 filesLoading: { ...state.filesLoading, [courseCode]: false }
             }));
-        } catch {
+        } catch (e) {
+            console.warn('[FilesSlice] refreshFiles failed:', e);
             set((state) => ({
                 files: { ...state.files, [courseCode]: state.files[courseCode] ?? [] },
                 filesLoading: { ...state.filesLoading, [courseCode]: false }
@@ -222,6 +225,6 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                 }
             }
             set({ files: filesMap });
-        } catch { /* no-op */ }
+        } catch (e) { console.warn('[FilesSlice] fetchAllFiles failed:', e); }
     },
 });

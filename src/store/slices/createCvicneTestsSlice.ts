@@ -1,14 +1,15 @@
 import type { CvicneTestsSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
+import { getUserParams } from '../../utils/userParams';
 
-export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set) => ({
+export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => ({
   cvicneTests: [],
   cvicneTestsStatus: 'idle',
   fetchCvicneTests: async () => {
     set(() => ({ cvicneTestsStatus: 'loading' }));
     try {
-      const userParams = await IndexedDBService.get('meta', 'reis_user_params');
-      const studium = userParams?.studium;
+      // Prefer context store (already loaded), fall back to getUserParams
+      const studium = get().studiumId || (await getUserParams())?.studium;
 
       if (studium) {
         const data = await IndexedDBService.get('cvicne_tests', studium);
@@ -19,7 +20,8 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set) => ({
       } else {
         set({ cvicneTestsStatus: 'success', cvicneTests: [] });
       }
-    } catch {
+    } catch (e) {
+      console.warn('[CvicneTestsSlice] fetchCvicneTests failed:', e);
       set({ cvicneTestsStatus: 'error' });
     }
   },
@@ -31,9 +33,10 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set) => ({
   fetchOdevzdavarny: async () => {
     set(() => ({ odevzdavarnyStatus: 'loading' }));
     try {
-      const userParams = await IndexedDBService.get('meta', 'reis_user_params');
-      const studium = userParams?.studium;
-      const obdobi = userParams?.obdobi;
+      // Prefer context store (already loaded), fall back to getUserParams
+      const params = await getUserParams();
+      const studium = get().studiumId || params?.studium;
+      const obdobi = get().obdobiId || params?.obdobi;
 
       if (studium && obdobi) {
         const data = await IndexedDBService.get('odevzdavarny', `${studium}_${obdobi}`);
@@ -44,7 +47,8 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set) => ({
       } else {
         set({ odevzdavarnyStatus: 'success', odevzdavarny: [] });
       }
-    } catch {
+    } catch (e) {
+      console.warn('[CvicneTestsSlice] fetchOdevzdavarny failed:', e);
       set({ odevzdavarnyStatus: 'error' });
     }
   },

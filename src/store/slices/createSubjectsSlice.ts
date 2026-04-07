@@ -23,7 +23,8 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
                 courseDeadlines: (deadlines as Record<string, any[]>) || {},
                 subjectsLoading: false 
             });
-        } catch {
+        } catch (e) {
+            console.warn('[SubjectsSlice] fetchSubjects failed:', e);
             set({ subjectsLoading: false });
         }
     },

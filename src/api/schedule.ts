@@ -69,7 +69,8 @@ export async function fetchWeekSchedule(specific?: { start: Date, end: Date }, l
         try {
             const data: ScheduleData = JSON.parse(text);
             return data.blockLessons || [];
-        } catch {
+        } catch (e) {
+            console.warn('[schedule] JSON parse failed:', e);
             return null;
         }
     } catch (error) {

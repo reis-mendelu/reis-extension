@@ -24,7 +24,8 @@ export async function fetchSubjects(lang: string = 'cz', studium?: string): Prom
         } else {
             return subjectsData;
         }
-    } catch {
+    } catch (e) {
+        console.warn('[subjects] fetchSubjects failed:', e);
         return null;
     }
 }
@@ -89,7 +90,8 @@ export async function fetchDualLanguageSubjects(studium?: string): Promise<Subje
 
         const result = SubjectsDataSchema.safeParse(subjectsData);
         return { subjects: result.success ? result.data : subjectsData, attendance };
-    } catch {
+    } catch (e) {
+        console.warn('[subjects] fetchDualLanguageSubjects failed:', e);
         return null;
     }
 }

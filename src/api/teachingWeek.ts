@@ -67,7 +67,8 @@ export async function fetchTeachingWeeks(): Promise<TeachingWeekData | null> {
         const res = await fetchWithAuth(`${PREHLED_URL}?studium=${studium};lang=cz`);
         const html = await res.text();
         return parseTeachingWeeks(html);
-    } catch {
+    } catch (e) {
+        console.warn('[teachingWeek] fetchTeachingWeeks failed:', e);
         return null;
     }
 }

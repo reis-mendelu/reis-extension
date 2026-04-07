@@ -23,7 +23,6 @@ export function CvicneTestsTab({ lesson }: CvicneTestsTabProps) {
     const obdobi = params?.obdobi;
     const subjectId = lesson?.courseCode ? getSubject(lesson.courseCode)?.subjectId : undefined;
 
-    console.log(`[CvicneTestsTab] courseCode=${lesson?.courseCode} assessments=`, assessments, 'loading=', assessmentsLoading);
 
     const [testsOpen, setTestsOpen] = useState(true);
     const [assignmentsOpen, setAssignmentsOpen] = useState(true);

@@ -60,7 +60,8 @@ export const createSyllabusSlice: AppSlice<SyllabusSlice> = (set, get) => ({
           loading: { ...state.syllabuses.loading, [courseCode]: false },
         },
       }));
-    } catch {
+    } catch (e) {
+      console.warn('[SyllabusSlice] fetchSyllabus failed:', e);
       set((state) => ({
         syllabuses: {
           ...state.syllabuses,

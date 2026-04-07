@@ -58,21 +58,28 @@ export const initializeStore = async () => {
         await initMockData();
     }
 
-    // Initial fetch
-    useAppStore.getState().fetchSchedule();
-    useAppStore.getState().fetchExams();
-    useAppStore.getState().fetchSubjects();
-    useAppStore.getState().fetchStudyPlan();
-    useAppStore.getState().fetchCvicneTests();
-    useAppStore.getState().fetchOdevzdavarny();
-    useAppStore.getState().fetchAllFiles();
-    useAppStore.getState().loadTheme();
-    useAppStore.getState().loadLanguage();
-    useAppStore.getState().loadFeedbackState();
-    useAppStore.getState().loadPinnedPages();
-    useAppStore.getState().loadHiddenItems();
-    useAppStore.getState().fetchTeachingWeek();
-    useAppStore.getState().loadContext();
+    const s = useAppStore.getState();
+
+    // Tier 1: User-visible data — load immediately
+    s.fetchSchedule();
+    s.fetchExams();
+    s.fetchSubjects();
+    s.loadTheme();
+    s.loadLanguage();
+    s.loadContext();
+
+    // Tier 2: Background data — deferred to avoid thundering-herd on IDB at startup
+    queueMicrotask(() => {
+        const s2 = useAppStore.getState();
+        s2.fetchStudyPlan();
+        s2.fetchCvicneTests();
+        s2.fetchOdevzdavarny();
+        s2.fetchAllFiles();
+        s2.loadFeedbackState();
+        s2.loadPinnedPages();
+        s2.loadHiddenItems();
+        s2.fetchTeachingWeek();
+    });
 
     // Fire-and-forget daily usage tracking
     import('../api/feedback').then(({ trackDailyUsage }) =>
@@ -81,26 +88,29 @@ export const initializeStore = async () => {
         )
     );
 
-    // Subscribe to sync service
+    // Subscribe to sync service — selective refresh based on type
     const unsubscribe = syncService.subscribe((type) => {
-        useAppStore.getState().fetchSchedule();
-        useAppStore.getState().fetchExams();
-        useAppStore.getState().fetchSubjects();
-        useAppStore.getState().fetchStudyPlan();
-        useAppStore.getState().fetchCvicneTests();
-        useAppStore.getState().fetchOdevzdavarny();
-        useAppStore.getState().fetchAllFiles();
+        const st = useAppStore.getState();
 
         if (type === 'THEME_UPDATE') {
-            useAppStore.getState().loadTheme();
+            st.loadTheme();
+            return;
         }
         if (type === 'LANGUAGE_UPDATE') {
-            useAppStore.getState().loadLanguage();
-            // Re-fetch files from IndexedDB so language-aware hooks detect the change
-            useAppStore.getState().fetchAllFiles();
-            // Clear menu so it re-fetches with the new language
+            st.loadLanguage();
+            st.fetchAllFiles();
             useAppStore.setState({ menu: null });
+            return;
         }
+
+        // Default: full data refresh (e.g. after sync completes)
+        st.fetchSchedule();
+        st.fetchExams();
+        st.fetchSubjects();
+        st.fetchStudyPlan();
+        st.fetchCvicneTests();
+        st.fetchOdevzdavarny();
+        st.fetchAllFiles();
     });
 
     // Cross-tab theme listener — use loadTheme() to also update DOM data-theme attribute

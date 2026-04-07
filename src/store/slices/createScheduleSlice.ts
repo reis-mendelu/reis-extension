@@ -10,9 +10,11 @@ export const createScheduleSlice: AppSlice<ScheduleSlice> = (set) => ({
   fetchSchedule: async () => {
     set((state) => ({ schedule: { ...state.schedule, status: 'loading' } }));
     try {
-      const data = await IndexedDBService.get('schedule', 'current');
-      const weekStartStr = await IndexedDBService.get('meta', 'schedule_week_start');
-      const isPartial = await IndexedDBService.get('meta', 'schedule_is_partial');
+      const [data, weekStartStr, isPartial] = await Promise.all([
+        IndexedDBService.get('schedule', 'current'),
+        IndexedDBService.get('meta', 'schedule_week_start'),
+        IndexedDBService.get('meta', 'schedule_is_partial'),
+      ]);
       
       set((state) => ({
         schedule: {
@@ -23,7 +25,8 @@ export const createScheduleSlice: AppSlice<ScheduleSlice> = (set) => ({
         },
       }));
 
-    } catch {
+    } catch (e) {
+      console.warn('[ScheduleSlice] fetchSchedule failed:', e);
       set((state) => ({ schedule: { ...state.schedule, status: 'error' } }));
     }
   },
