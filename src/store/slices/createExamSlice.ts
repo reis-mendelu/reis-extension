@@ -1,14 +1,18 @@
 import type { ExamSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 
-export const createExamSlice: AppSlice<ExamSlice> = (set) => ({
+export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
   exams: {
     data: [],
     status: 'idle',
     error: null,
   },
   fetchExams: async () => {
-    set((state) => ({ exams: { ...state.exams, status: 'loading', error: null } }));
+    if (get().exams.data.length === 0) {
+      set((state) => ({ exams: { ...state.exams, status: 'loading', error: null } }));
+    } else {
+      set((state) => ({ exams: { ...state.exams, error: null } }));
+    }
     try {
       const data = await IndexedDBService.get('exams', 'current');
       set({

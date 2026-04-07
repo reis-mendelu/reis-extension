@@ -14,7 +14,11 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
   erasmusConfig: null,
   erasmusSelectedCourses: [],
   setErasmusCountry: async (file: string) => {
-    set({ erasmusCountryFile: file, erasmusLoading: true });
+    if (get().erasmusCountryFile !== file || !get().erasmusData) {
+      set({ erasmusCountryFile: file, erasmusLoading: true });
+    } else {
+      set({ erasmusCountryFile: file });
+    }
     try {
       const cached = await getStoredErasmusData(file);
       if (cached) set({ erasmusData: cached });
@@ -37,7 +41,7 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
   },
   fetchErasmusReports: async () => {
     const file = get().erasmusCountryFile;
-    set({ erasmusLoading: true });
+    if (!get().erasmusData) set({ erasmusLoading: true });
     try {
       const cached = await getStoredErasmusData(file);
       if (cached) set({ erasmusData: cached });

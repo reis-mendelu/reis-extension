@@ -6,7 +6,8 @@ export const createMenuSlice: AppSlice<MenuSlice> = (set, get) => ({
   menuLoading: false,
   menuError: false,
   fetchMenu: async () => {
-    set({ menuLoading: true, menuError: false });
+    if (!get().menu) set({ menuLoading: true });
+    set({ menuError: false });
     try {
       const data = await fetchMenu(get().language);
       set({ menu: data, menuLoading: false });

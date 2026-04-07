@@ -6,7 +6,9 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => 
   cvicneTests: [],
   cvicneTestsStatus: 'idle',
   fetchCvicneTests: async () => {
-    set(() => ({ cvicneTestsStatus: 'loading' }));
+    if (get().cvicneTests.length === 0) {
+      set(() => ({ cvicneTestsStatus: 'loading' }));
+    }
     try {
       // Prefer context store (already loaded), fall back to getUserParams
       const studium = get().studiumId || (await getUserParams())?.studium;
@@ -31,7 +33,9 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => 
   odevzdavarny: [],
   odevzdavarnyStatus: 'idle',
   fetchOdevzdavarny: async () => {
-    set(() => ({ odevzdavarnyStatus: 'loading' }));
+    if (get().odevzdavarny.length === 0) {
+      set(() => ({ odevzdavarnyStatus: 'loading' }));
+    }
     try {
       // Prefer context store (already loaded), fall back to getUserParams
       const params = await getUserParams();

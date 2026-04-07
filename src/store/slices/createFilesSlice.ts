@@ -135,11 +135,13 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
         }
     },
     refreshFiles: async (courseCode) => {
-        const { language: currentLang } = get();
+        const { language: currentLang, files } = get();
         
-        set((state) => ({
-            filesLoading: { ...state.filesLoading, [courseCode]: true }
-        }));
+        if (!files[courseCode]) {
+            set((state) => ({
+                filesLoading: { ...state.filesLoading, [courseCode]: true }
+            }));
+        }
 
         try {
             const data = await IndexedDBService.get('files', courseCode);

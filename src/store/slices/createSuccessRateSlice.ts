@@ -46,9 +46,11 @@ export const createSuccessRateSlice: AppSlice<SuccessRateSlice> = (set, get) => 
     fetchSuccessRate: async (courseCode) => {
         if (get().successRatesLoading[courseCode]) return;
 
-        set(state => ({
-            successRatesLoading: { ...state.successRatesLoading, [courseCode]: true }
-        }));
+        if (!get().successRates[courseCode]) {
+            set(state => ({
+                successRatesLoading: { ...state.successRatesLoading, [courseCode]: true }
+            }));
+        }
 
         try {
             const stored = await getStoredSuccessRates();

@@ -1,14 +1,16 @@
 import type { ScheduleSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 
-export const createScheduleSlice: AppSlice<ScheduleSlice> = (set) => ({
+export const createScheduleSlice: AppSlice<ScheduleSlice> = (set, get) => ({
   schedule: {
     data: [],
     status: 'idle',
     weekStart: null,
   },
   fetchSchedule: async () => {
-    set((state) => ({ schedule: { ...state.schedule, status: 'loading' } }));
+    if (get().schedule.data.length === 0) {
+      set((state) => ({ schedule: { ...state.schedule, status: 'loading' } }));
+    }
     try {
       const [data, weekStartStr, isPartial] = await Promise.all([
         IndexedDBService.get('schedule', 'current'),

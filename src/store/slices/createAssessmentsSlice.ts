@@ -1,13 +1,15 @@
 import type { AssessmentsSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 
-export const createAssessmentsSlice: AppSlice<AssessmentsSlice> = (set) => ({
+export const createAssessmentsSlice: AppSlice<AssessmentsSlice> = (set, get) => ({
     assessments: {},
     assessmentsLoading: {},
     fetchAssessments: async (courseCode) => {
-        set((state) => ({
-            assessmentsLoading: { ...state.assessmentsLoading, [courseCode]: true }
-        }));
+        if (!get().assessments[courseCode]) {
+            set((state) => ({
+                assessmentsLoading: { ...state.assessmentsLoading, [courseCode]: true }
+            }));
+        }
 
         try {
             const raw = await IndexedDBService.get('assessments', courseCode);
