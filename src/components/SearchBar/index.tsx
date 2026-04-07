@@ -173,7 +173,11 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
       <div
         ref={dropdownRef}
         className="fixed z-50 bg-base-100 border border-base-300 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2 duration-200"
-        style={{ top: dropdownPos.top + 4, left: dropdownPos.left, width: Math.max(dropdownPos.width, 500) }}
+        style={(() => {
+          const width = Math.min(Math.max(dropdownPos.width, 500), window.innerWidth - 32);
+          const left = Math.max(16, Math.min(dropdownPos.left, window.innerWidth - width - 16));
+          return { top: dropdownPos.top + 4, left, width };
+        })()}
       >
         {isEmptyQuery ? (
           <div className="max-h-[min(500px,60vh)] overflow-y-auto pb-2">
