@@ -133,6 +133,27 @@ class IndexedDBServiceImpl {
         await db.put(storeName as any, validated, key);
     }
 
+    async setMany<K extends StoreName>(
+        storeName: K,
+        entries: Array<readonly [string, ReisDB[K]['value']]>
+    ): Promise<void> {
+        if (entries.length === 0) return;
+        const validated = entries
+            .map(([key, value]) => [key, this.validate(storeName, value)] as const)
+            .filter((e): e is readonly [string, ReisDB[K]['value']] => e[1] !== undefined);
+        if (validated.length === 0) return;
+
+        const db = await this.dbPromise;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const tx = db.transaction(storeName as any, 'readwrite');
+        const store = tx.store;
+        for (const [key, value] of validated) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            store.put(value as any, key);
+        }
+        await tx.done;
+    }
+
     async delete<K extends keyof ReisDB>(storeName: K, key: string): Promise<void> {
         const db = await this.dbPromise;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -165,10 +186,12 @@ class IndexedDBServiceImpl {
 
     async getAllWithKeys<K extends StoreName>(storeName: K): Promise<{ key: string, value: ReisDB[K]['value'] }[]> {
         const db = await this.dbPromise;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const keys = await db.getAllKeys(storeName as any);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const values = await db.getAll(storeName as any);
+        const [keys, values] = await Promise.all([
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            db.getAllKeys(storeName as any),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            db.getAll(storeName as any),
+        ]);
         
         return (keys as string[]).map((key, i) => {
             const value = this.validate(storeName, values[i]);

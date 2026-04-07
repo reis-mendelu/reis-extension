@@ -145,38 +145,52 @@ export function useAppLogic() {
                 }
 
                 if (r.files) {
-                    for (const [c, f] of Object.entries(r.files)) {
-                        const existing = await IndexedDBService.get('files', c);
-                        if (!existing || (f as Record<string, unknown>).cz || !(existing as Record<string, unknown>).cz) {
-                            await IndexedDBService.set('files', c, f);
-                        }
-                    }
+                    const fileEntries = Object.entries(r.files);
+                    const existingFiles = await Promise.all(
+                        fileEntries.map(([c]) => IndexedDBService.get('files', c))
+                    );
+                    const toWrite = fileEntries
+                        .map(([c, f], i) => {
+                            const existing = existingFiles[i];
+                            if (!existing || (f as Record<string, unknown>).cz || !(existing as Record<string, unknown>).cz) {
+                                return [c, f] as const;
+                            }
+                            return null;
+                        })
+                        .filter((e): e is readonly [string, ParsedFile[] | { cz: ParsedFile[]; en: ParsedFile[] }] => e !== null);
+                    await IndexedDBService.setMany('files', toWrite);
                 }
 
                 if (r.assessments) {
-                    console.log('[useAppLogic] received assessments:', Object.keys(r.assessments));
-                    for (const [c, a] of Object.entries(r.assessments)) {
-                        console.log(`[useAppLogic] writing assessments/${c}:`, Array.isArray(a) ? a.length : typeof a, a);
-                        await IndexedDBService.set('assessments', c, a);
-                    }
-                } else {
-                    console.log('[useAppLogic] no assessments in sync update');
+                    await IndexedDBService.setMany(
+                        'assessments',
+                        Object.entries(r.assessments).map(([c, a]) => [c, a] as const)
+                    );
                 }
 
                 if (r.syllabuses) {
-                    for (const [c, s] of Object.entries(r.syllabuses)) {
-                        const existing = await IndexedDBService.get('syllabuses', c);
-                        if (!existing || (s as Record<string, unknown>).cz || !(existing as Record<string, unknown>).cz) {
-                            await IndexedDBService.set('syllabuses', c, s);
-                        }
-                    }
+                    const sylEntries = Object.entries(r.syllabuses);
+                    const existingSyl = await Promise.all(
+                        sylEntries.map(([c]) => IndexedDBService.get('syllabuses', c))
+                    );
+                    const toWrite = sylEntries
+                        .map(([c, s], i) => {
+                            const existing = existingSyl[i];
+                            if (!existing || (s as Record<string, unknown>).cz || !(existing as Record<string, unknown>).cz) {
+                                return [c, s] as const;
+                            }
+                            return null;
+                        })
+                        .filter((e): e is readonly [string, SyllabusRequirements | { cz: SyllabusRequirements; en: SyllabusRequirements }] => e !== null);
+                    await IndexedDBService.setMany('syllabuses', toWrite);
                 }
 
                 if (r.classmates) {
-                    for (const [c, cl] of Object.entries(r.classmates)) {
+                    await IndexedDBService.setMany(
+                        'classmates',
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        await IndexedDBService.set('classmates', c, cl as any);
-                    }
+                        Object.entries(r.classmates).map(([c, cl]) => [c, cl as any] as const)
+                    );
                 }
 
                 if (r.lastSync) await IndexedDBService.set('meta', 'last_sync', r.lastSync);

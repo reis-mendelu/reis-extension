@@ -196,16 +196,31 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     fetchAllFiles: async () => {
         try {
             const currentLang = get().language;
-            const allFiles = await IndexedDBService.getAllWithKeys('files');
-            const filesMap: Record<string, ParsedFile[]> = {};
+            // Scope to currently enrolled courses instead of scanning the whole
+            // 'files' store (which accumulates historical semesters).
+            const subjectsData = get().subjects?.data
+                ?? (await IndexedDBService.get('subjects', 'current'))?.data;
+            const courseCodes = subjectsData ? Object.keys(subjectsData) : [];
+            if (courseCodes.length === 0) {
+                set({ files: {} });
+                return;
+            }
 
-            allFiles.forEach(({ key, value }) => {
+            const entries = await Promise.all(
+                courseCodes.map(async (code) => {
+                    const value = await IndexedDBService.get('files', code);
+                    return [code, value] as const;
+                })
+            );
+
+            const filesMap: Record<string, ParsedFile[]> = {};
+            for (const [code, value] of entries) {
                 if (value && 'cz' in value && 'en' in value) {
-                    filesMap[key] = currentLang === 'en' ? value.en : value.cz;
+                    filesMap[code] = currentLang === 'en' ? value.en : value.cz;
                 } else if (Array.isArray(value)) {
-                    filesMap[key] = value;
+                    filesMap[code] = value;
                 }
-            });
+            }
             set({ files: filesMap });
         } catch { /* no-op */ }
     },
