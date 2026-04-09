@@ -18,8 +18,10 @@ export function parseRegistrationStart(str: string): Date | null {
 export function formatCountdown(ms: number): string {
     if (ms <= 0) return 'Nyní';
     const s = Math.floor(ms / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
-    if (d > 0) return `${d}d ${h % 24}h`;
+    
+    if (d > 0) return `${d}d ${h % 24}h ${m % 60}m`;
     if (h > 0) return `${h}h ${m % 60}m`;
+    if (m >= 10) return `${m}m`;
     if (m > 0) return `${m}m ${s % 60}s`;
     return `${s}s`;
 }

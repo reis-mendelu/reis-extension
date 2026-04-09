@@ -46,5 +46,5 @@ export function useExamActions({ exams, setExpandedSectionId }: { exams: ExamSub
         } catch { toast.error('Chyba.'); } finally { setProcId(null); }
     };
 
-    return { processingSectionId: procId, pendingAction: pending, setPendingAction: setPending, handleRegisterRequest: (s: ExamSection, t: string) => setPending({ type: 'register', section: s, termId: t }), handleUnregisterRequest: (s: ExamSection) => setPending({ type: 'unregister', section: s }), handleConfirmAction: () => { if (!pending) return; if (pending.type === 'register' && pending.termId) handleRegister(pending.section, pending.termId); else if (pending.type === 'unregister') handleUnregister(pending.section); } };
+    return { processingSectionId: procId, pendingAction: pending, setPendingAction: setPending, handleRegisterRequest: (s: ExamSection, t: string) => setPending({ type: 'register', section: s, termId: t }), handleUnregisterRequest: (s: ExamSection) => setPending({ type: 'unregister', section: s }), handleConfirmAction: () => { if (!pending) return; if (pending.type === 'register' && pending.termId) handleRegister(pending.section, pending.termId); else if (pending.type === 'unregister') handleUnregister(pending.section); }, handleRegisterDirect: handleRegister };
 }

@@ -126,6 +126,11 @@
     "full": "PLNÝ",
     "closed": "UZAVŘENO",
     "countdown": "Za",
+    "autoRegArm": "Zapnout auto-rezervaci",
+    "autoRegArmed": "Automatizováno",
+    "autoRegWarning": "⚠️ Auto-rezervace čeká. Nezavírej tuhle stránku a neuspávej zařízení!",
+    "autoRegFiring": "Odesílání žádostí...",
+    "autoRegTimeLock": "Dostupné {min} min. před spuštěním",
     "confirmation": {
       "registerTitle": "Potvrdit přihlášení",
       "unregisterTitle": "Potvrdit odhlášení",
@@ -162,7 +167,7 @@
   "course": {
     "setNickname": "Nastavit přezdívku",
     "nicknamePlaceholder": "např., Matika",
-    "removeNickname": "Klepnutím odstraníte přezdívku",
+    "removeNickname": "Klepnutím odstraníš přezdívku",
     "garant": "Garant:",
     "teachers": "Vyučující:",
     "showMore": "Zobrazit více",
