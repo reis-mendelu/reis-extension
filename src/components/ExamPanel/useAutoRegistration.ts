@@ -14,6 +14,8 @@ interface ArmedTerm {
     regStart: Date;
 }
 
+export const SNIPER_WINDOW_MS = 60 * 60 * 1000; // 60 minutes window for auto-registration to appear
+
 export function useAutoRegistration() {
     const [armedTerms, setArmedTerms] = useState<Map<string, ArmedTerm>>(new Map());
     const [firingTerms, setFiringTerms] = useState<Set<string>>(new Set());
@@ -152,6 +154,12 @@ export function useAutoRegistration() {
         }
         const regStart = parseRegistrationStart(term.registrationStart);
         if (!regStart) return;
+
+        const currentSyncTime = getSynchronizedServerTime();
+        if (regStart.getTime() - currentSyncTime > SNIPER_WINDOW_MS) {
+            toast.error("Auto-rezervaci lze zapnout nejdříve 60 minut před začátkem.");
+            return;
+        }
 
         setArmedTerms(prev => {
             const map = new Map(prev);
