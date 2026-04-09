@@ -27,36 +27,71 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
     const sectionName = (language === 'en' && section.nameEn) ? section.nameEn : (section.nameCs || section.name);
 
     return (
-        <div className="card bg-base-100 shadow-sm border border-base-200 hover:shadow-md transition-shadow">
-            <div className="p-3">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="flex-1 min-w-[200px]">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className="badge badge-sm font-bold bg-primary/10 text-primary py-1 h-auto whitespace-normal border-none">
-                                {subjectName}
-                            </span>
-                            <span className="text-sm font-bold opacity-80">{sectionName}</span>
-                            {isReg && <span className="badge badge-success badge-outline badge-sm font-semibold">{t('exams.registered')}</span>}
-                        </div>
-                        {isReg && section.registeredTerm ? <RegisteredTermDetails section={section} /> : (section.terms.length > 0 && !isExpanded && <TermsSummary terms={section.terms} />)}
+        <div className="card bg-base-100 shadow-sm border border-base-200 hover:shadow-md transition-shadow overflow-hidden">
+            {/* Interactive Header Wrapper */}
+            <div 
+                onClick={() => section.terms.length > 0 && onToggleExpand(section.id)}
+                className={`flex flex-wrap items-start justify-between gap-2 p-3 transition-colors ${section.terms.length > 0 ? 'cursor-pointer hover:bg-base-200/50' : ''}`}
+            >
+                <div className="flex-1 min-w-[200px]">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="badge badge-sm font-bold bg-primary/10 text-primary py-1 h-auto whitespace-normal border-none">
+                            {subjectName}
+                        </span>
+                        <span className="text-sm font-bold opacity-80">{sectionName}</span>
+                        {isReg && <span className="badge badge-success badge-outline badge-sm font-semibold">{t('exams.registered')}</span>}
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                        {isReg && <button onClick={() => onUnregister(section)} disabled={isProcessing} className="btn btn-sm btn-error btn-outline">{isProcessing ? <span className="loading loading-spinner loading-xs" /> : t('exams.unregister')}</button>}
-                        {section.terms.length > 0 && (
-                            <button 
-                                onClick={() => onToggleExpand(section.id)} 
-                                disabled={isProcessing} 
-                                className={`btn btn-sm gap-1 min-w-[130px] justify-center ${isReg && !isExpanded ? "btn-outline border-base-300 hover:border-warning hover:bg-warning/10 hover:text-warning" : "btn-ghost"}`}
-                            >
-                                {isExpanded ? <>{t('common.close')} <ChevronUp size={14} /></> : isReg ? <>{t('exams.changeTerm')} <Repeat size={14} /></> : <>{t('exams.select')} <ChevronDown size={14} /></>}
-                            </button>
-                        )}
+                    {isReg && section.registeredTerm ? <RegisteredTermDetails section={section} /> : (section.terms.length > 0 && !isExpanded && <TermsSummary terms={section.terms} />)}
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                    {isReg && (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onUnregister(section); }} 
+                            disabled={isProcessing} 
+                            className="btn btn-sm btn-error btn-outline"
+                        >
+                            {isProcessing ? <span className="loading loading-spinner loading-xs" /> : t('exams.unregister')}
+                        </button>
+                    )}
+
+                    {section.terms.length > 0 && (
+                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${isReg && !isExpanded ? 'bg-warning/10 text-warning border border-warning/20' : 'opacity-60'}`}>
+                            {isExpanded ? (
+                                <>{t('common.close')} <ChevronUp size={14} /></>
+                            ) : isReg ? (
+                                <>{t('exams.changeTerm')} <Repeat size={14} /></>
+                            ) : (
+                                <>{t('exams.select')} <ChevronDown size={14} /></>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {isExpanded && section.terms.length > 0 && (
+                <div className="p-3 pt-0">
+                    <div className="mt-1 pt-4 border-t border-base-200">
+                        <div className="text-[10px] font-black uppercase tracking-widest opacity-30 mb-3 ml-1">
+                            {t('exams.clickToRegister')}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            {section.terms.map(t => (
+                                <TermTile 
+                                    key={t.id} 
+                                    term={t} 
+                                    section={section} 
+                                    isArmed={armedTerms?.has(t.id)} 
+                                    isFiring={firingTerms?.has(t.id)} 
+                                    onToggleArm={toggleArm ? () => toggleArm(t, section) : undefined} 
+                                    onSelect={() => onRegister(section, t.id)} 
+                                    isProcessing={isProcessing} 
+                                />
+                            ))}
+                        </div>
                     </div>
                 </div>
-                {isExpanded && section.terms.length > 0 && (
-                    <div className="mt-4 pt-3 border-t border-base-200"><div className="text-xs opacity-50 mb-2">{t('exams.clickToRegister')}</div><div className="flex flex-col gap-2">{section.terms.map(t => <TermTile key={t.id} term={t} section={section} isArmed={armedTerms?.has(t.id)} isFiring={firingTerms?.has(t.id)} onToggleArm={toggleArm ? () => toggleArm(t, section) : undefined} onSelect={() => onRegister(section, t.id)} isProcessing={isProcessing} />)}</div></div>
-                )}
-            </div>
+            )}
         </div>
     );
 }
