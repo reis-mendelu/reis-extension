@@ -11,7 +11,7 @@ export function useExamsData() {
     const language = useAppStore(s => s.language);
     
     const exams = useMemo(() => storeExams, [storeExams]);
-    const [statusFilter, setStatusFilter] = useState<('registered' | 'available' | 'opening')[]>(['available']), [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+    const [statusFilter, setStatusFilter] = useState<('registered' | 'available' | 'opening')[]>([]), [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
     
     useEffect(() => { 
         IndexedDBService.get('meta', STORAGE_KEY).then((s: Record<string, unknown> | null) => { 
