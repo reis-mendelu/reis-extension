@@ -161,13 +161,21 @@ export function useAutoRegistration() {
             return;
         }
 
+        // Check if another term for the same section is already armed
+        const existingSectionTermId = Array.from(armedTerms.entries())
+            .find(([_, armed]) => armed.section.id === section.id)?.[0];
+
+        if (existingSectionTermId && existingSectionTermId !== term.id) {
+            disarm(existingSectionTermId);
+        }
+
         setArmedTerms(prev => {
             const map = new Map(prev);
             map.set(term.id, { termId: term.id, section, regStart });
             return map;
         });
         toast.info(`Auto-rezervace aktivována pro termín v ${term.time}. Nezavírejte okno!`);
-    }, []);
+    }, [armedTerms, disarm]);
 
     const toggleArm = useCallback((term: ExamTerm, section: ExamSection) => {
         if (armedTerms.has(term.id)) disarm(term.id);

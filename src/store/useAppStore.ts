@@ -22,6 +22,7 @@ import { createHiddenItemsSlice } from './slices/createHiddenItemsSlice';
 import { createTeachingWeekSlice } from './slices/createTeachingWeekSlice';
 import { createNavPagesSlice } from './slices/createNavPagesSlice';
 import { createContextSlice } from './slices/createContextSlice';
+import { createPulseSlice } from './slices/createPulseSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 
@@ -48,6 +49,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createTeachingWeekSlice(...a),
   ...createNavPagesSlice(...a),
   ...createContextSlice(...a),
+  ...createPulseSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
@@ -59,6 +61,11 @@ export const initializeStore = async () => {
     }
 
     const s = useAppStore.getState();
+
+    // Start global pulse
+    const pulseInterval = setInterval(() => {
+        useAppStore.getState().updatePulse();
+    }, 1000);
 
     // Tier 1: User-visible data — load immediately
     s.fetchSchedule();
@@ -129,6 +136,7 @@ export const initializeStore = async () => {
     };
 
     return () => {
+        clearInterval(pulseInterval);
         unsubscribe();
         bcTheme.close();
         bcLang.close();
