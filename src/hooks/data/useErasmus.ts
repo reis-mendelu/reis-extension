@@ -9,9 +9,9 @@ export function useErasmus() {
   const config = useAppStore(s => s.erasmusConfig);
 
   useEffect(() => {
-    if (!data) useAppStore.getState().fetchErasmusReports();
+    if (countryFile && !data) useAppStore.getState().fetchErasmusReports();
     if (!config) useAppStore.getState().fetchErasmusConfig();
-  }, [data, config]);
+  }, [countryFile, data, config]);
 
   return { data, loading, reports: data?.reports ?? [], countryFile, setCountry, config };
 }

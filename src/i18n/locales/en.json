@@ -415,7 +415,22 @@
     "studyPlanHint": "Select courses you want recognized during your exchange",
     "selected": "selected",
     "selectedForLA": "Selected for Learning Agreement",
-    "credits": "cr."
+    "credits": "cr.",
+    "progressTitle": "Goal: 18 ECTS",
+    "progressLow": "Insufficient credits (min 18)",
+    "progressOk": "Min 18 ECTS reached",
+    "progressHigh": "Ideal amount (25+ ECTS)",
+    "targetECTS": "Minimum 18 ECTS",
+    "nextSteps": "What's next?",
+    "contactCoordinator": "Contact your faculty coordinator",
+    "officialApproval": "Final approval depends on the Vice-Dean for International Relations.",
+    "erasmusPortal": "https://international.mendelu.cz/studijni-pobyty/erasmus/",
+    "erasmusCoordinators": "https://international.mendelu.cz/fakultni-zahranicni-oddeleni/",
+    "compulsoryCredits": "Compulsory credits",
+    "prolongationWarning": "Warning: Few compulsory subjects matched. This may prolong your studies after return.",
+    "coreSubject": "Core",
+    "coreElectiveSubject": "Core Elective",
+    "recognizedSubject": "Recognized (EXA-UP)"
   },
   "transfer": {
     "title": "Check credit transfer",

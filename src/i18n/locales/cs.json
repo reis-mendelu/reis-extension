@@ -417,7 +417,22 @@
     "studyPlanHint": "Vyber předměty, které chceš uznat v rámci zahraničního pobytu",
     "selected": "vybráno",
     "selectedForLA": "Vybrané pro Learning Agreement",
-    "credits": "kr."
+    "credits": "kr.",
+    "progressTitle": "Cíl: 18 ECTS",
+    "progressLow": "Nedostatečný počet kreditů (min. 18)",
+    "progressOk": "Splněn limit 18 ECTS",
+    "progressHigh": "Ideální počet (25+ ECTS)",
+    "targetECTS": "Minimum 18 ECTS",
+    "nextSteps": "Co dál?",
+    "contactCoordinator": "Kontaktuj koordinátora fakulty",
+    "officialApproval": "Konečné schválení závisí na proděkanovi pro mezinárodní vztahy.",
+    "erasmusPortal": "https://international.mendelu.cz/studijni-pobyty/erasmus/",
+    "erasmusCoordinators": "https://international.mendelu.cz/fakultni-zahranicni-oddeleni/",
+    "compulsoryCredits": "Z toho povinných",
+    "prolongationWarning": "Pozor: Máte málo uznaných povinných předmětů. To může vést k prodloužení studia po návratu.",
+    "coreSubject": "Povinný",
+    "coreElectiveSubject": "Povinně volitelný",
+    "recognizedSubject": "Uznaný (EXA-UP)"
   },
   "transfer": {
     "title": "Ověření přenosu předmětu",

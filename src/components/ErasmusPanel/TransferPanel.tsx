@@ -159,18 +159,22 @@ export function TransferPanel({ subject, onVerdict }: Props) {
           </span>
         )}
         {result && verdict && (
-          <span className={`badge ${verdict.badge} badge-xs flex-1 justify-start gap-1`}>
-            {verdict.icon}{verdict.label}
-          </span>
+          <div className={`badge ${verdict.badge} badge-xs flex-1 justify-between gap-1 h-auto py-1`}>
+            <div className="flex items-center gap-1">
+              {verdict.icon}
+              <span className="leading-tight">{verdict.label}</span>
+            </div>
+            <span className="font-mono text-[9px] opacity-70">{(result.similarity * 100).toFixed(0)}%</span>
+          </div>
         )}
         {error && <span className="text-[10px] text-error flex-1 truncate">{error}</span>}
       </div>
       <button className="btn btn-primary btn-sm w-full" onClick={handleCompare} disabled={!canSubmit}>
         {comparing ? <Loader2 size={13} className="animate-spin" /> : t('transfer.compare')}
       </button>
-      {result?.verdict === 'approved' && (
-        <p className="text-[10px] text-base-content/50 leading-relaxed">{t('transfer.approvedNote')}</p>
-      )}
+      <p className="text-[9px] text-base-content/40 leading-relaxed italic mt-0.5">
+        {t('transfer.disclaimer')}
+      </p>
     </div>
   );
 }
