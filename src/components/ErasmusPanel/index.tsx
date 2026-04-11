@@ -7,6 +7,7 @@ import { EuropeMap } from './EuropeMap';
 import { ErasmusDrawer } from './ErasmusDrawer';
 import { getDeadlineStatus } from '@/utils/erasmusGrants';
 import { getUserParams, type UserParams } from '@/utils/userParams';
+import { warmupTransferApi } from '@/api/syllabusTransfer';
 
 interface ErasmusPanelProps {
   onOpenSubject: (courseCode: string, courseName?: string, courseId?: string) => void;
@@ -31,6 +32,8 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
   const { t } = useTranslation();
   const lang = useAppStore(s => s.language) === 'cz' ? 'cs' : 'en';
   const { reports, loading, countryFile, setCountry, config } = useErasmus();
+
+  useEffect(() => { warmupTransferApi().catch(() => {}); }, []);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [schoolFilter, setSchoolFilter] = useState<string | null>(null);

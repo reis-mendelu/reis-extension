@@ -18,7 +18,17 @@ export function UnfulfilledCoursesSection({ onOpenSubject, onSearchSubject }: Pr
   const loaded = useAppStore(s => s.studyPlanLoaded);
   const successRates = useAppStore(s => s.successRates);
   const selectedCourses = useAppStore(s => s.erasmusSelectedCourses);
-  const toggleCourse = useAppStore(s => s.toggleErasmusCourse);
+  const rawToggle = useAppStore(s => s.toggleErasmusCourse);
+
+  const toggleCourse = (code: string) => {
+    const isAdding = !selectedCourses.includes(code);
+    rawToggle(code);
+    if (isAdding) {
+      const allSubjects = futureSemesters.flatMap(({ block }) => block.groups.flatMap(g => g.subjects));
+      const subject = allSubjects.find(s => s.code === code);
+      if (subject?.id) useAppStore.getState().fetchSyllabus(subject.code, subject.id);
+    }
+  };
   const [open, setOpen] = useState(false);
   const [openSemester, setOpenSemester] = useState<number | null>(null);
 

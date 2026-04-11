@@ -2,6 +2,8 @@ import { SyllabusRequirementsSchema } from '../../schemas/syllabusSchema';
 import { parseRequirementsText } from './syllabus/requirementParser';
 import { parseRequirementsTable } from './syllabus/gradingParser';
 import { parseCourseMetadata } from './syllabus/metadataParser';
+import { parseCourseObjectives } from './syllabus/objectivesParser';
+import { parseCourseContent } from './syllabus/contentParser';
 
 import type { SyllabusRequirements } from '../../schemas/syllabusSchema';
 
@@ -13,6 +15,8 @@ export function parseSyllabusOffline(html: string, lang: string = 'cz'): Syllabu
         requirementsText: parseRequirementsText(doc),
         requirementsTable: parseRequirementsTable(doc),
         courseInfo: parseCourseMetadata(doc, lang),
+        objectivesText: parseCourseObjectives(doc),
+        contentText: parseCourseContent(doc),
     };
     const v = SyllabusRequirementsSchema.safeParse(res);
     return v.success ? v.data : res;

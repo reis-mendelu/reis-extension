@@ -1,13 +1,4 @@
-function findHeaderRow(doc: Document, searchTexts: string[]) {
-    const boldTags = Array.from(doc.querySelectorAll('td.odsazena b, b, span, strong, h1, h2, h3'));
-    for (const tag of boldTags) {
-        const text = tag.textContent?.trim() || '';
-        if (searchTexts.some(s => text.includes(s))) {
-            return tag.closest('tr');
-        }
-    }
-    return null;
-}
+import { findHeaderRow } from './findHeaderRow';
 
 export function parseRequirementsText(doc: Document) {
     const row = findHeaderRow(doc, ["Požadavky na ukončení", "Requirements for completion", "Assessment methods:", "Metody hodnocení:"]);

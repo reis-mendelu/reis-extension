@@ -25,6 +25,7 @@ export default defineConfig({
       'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main/*',
       'https://skm.mendelu.cz/*',
       'https://mendelu.cz/*',
+      'https://darksoothingshadow-reis-syllabus-similarity.hf.space/*',
     ],
     action: {
       default_popup: 'main.html',

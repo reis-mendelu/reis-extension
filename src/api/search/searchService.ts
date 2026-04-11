@@ -45,6 +45,27 @@ export async function searchPeople(personName: string): Promise<Person[]> {
     }
 }
 
+export async function searchSubjects(query: string): Promise<Subject[]> {
+    const formData = new URLSearchParams();
+    formData.append('lang', 'cz');
+    formData.append('vzorek', query);
+    formData.append('vyhledat', 'Vyhledat');
+    formData.append('oblasti', 'predmety');
+    formData.append('pocet', '20');
+
+    try {
+        const response = await fetch('https://is.mendelu.cz/auth/hledani/index.pl', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString(),
+            credentials: 'include',
+        });
+        return parseSubjectResults(await response.text());
+    } catch {
+        return [];
+    }
+}
+
 export async function searchGlobal(query: string): Promise<{ people: Person[]; subjects: Subject[] }> {
     const formData = new URLSearchParams();
     formData.append('lang', 'cz');

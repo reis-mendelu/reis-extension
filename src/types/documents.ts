@@ -132,9 +132,11 @@ export interface DocumentNote {
 
 export interface SyllabusRequirements {
     version?: number;
-    language?: string; // New: Origin language of the parsed syllabus
-    courseId?: string; // Resolved IS Subject ID
-    requirementsText: string; // Textual description of requirements
-    requirementsTable: string[][]; // Grading breakdown table (rows of cells)
-    courseInfo?: CourseMetadata; // New: General course info (credits, garant, etc.)
+    language?: string;
+    courseId?: string;
+    requirementsText: string;
+    requirementsTable: string[][];
+    courseInfo?: CourseMetadata;
+    objectivesText?: string | null;
+    contentText?: string | null;
 }
