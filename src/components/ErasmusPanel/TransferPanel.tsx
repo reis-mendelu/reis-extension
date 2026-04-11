@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { ChevronDown, Loader2, CheckCircle2, XCircle, Search } from 'lucide-react';
+import { ChevronDown, Loader2, CheckCircle2, XCircle, Search, FileUp, AlertTriangle } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { compareSyllabi, buildMendeluText, type TransferResult } from '@/api/syllabusTransfer';
 import { searchSubjects } from '@/api/search/searchService';
+import { extractSyllabusFromPdf, compareSyllabiAI, type AIComparisonResult } from '@/api/gemini';
 import type { Subject } from '@/api/search/types';
 import type { SubjectStatus } from '@/types/studyPlan';
 
@@ -22,9 +23,14 @@ export function TransferPanel({ subject, onVerdict }: Props) {
 
   const hasId = !!subject.id;
   const [foreignText, setForeignText] = useState('');
-  const [result, setResult] = useState<TransferResult | null>(null);
+  const [result, setResult] = useState<TransferResult | (AIComparisonResult & { verdict: 'approved' | 'rejected' }) | null>(null);
   const [comparing, setComparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // PDF Extraction state
+  const [extracting, setExtracting] = useState(false);
+  const [extractStatus, setExtractStatus] = useState<'success' | 'error' | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // No-ID: subject search state
   const [searchQuery, setSearchQuery] = useState(subject.code);
@@ -40,7 +46,7 @@ export function TransferPanel({ subject, onVerdict }: Props) {
   const loading = syllabusLoading[syllabusKey] ?? false;
   const autoMendeluText = cachedSyllabus ? buildMendeluText(cachedSyllabus) : '';
   const mendeluReady = autoMendeluText.trim().length >= MIN_CHARS;
-  const canSubmit = foreignText.trim().length >= MIN_CHARS && mendeluReady && !comparing;
+  const canSubmit = (foreignText.trim().length >= MIN_CHARS || extracting) && mendeluReady && !comparing;
 
   useEffect(() => {
     if (hasId) fetchSyllabus(subject.code, subject.id);
@@ -79,16 +85,85 @@ export function TransferPanel({ subject, onVerdict }: Props) {
     fetchSyllabus(s.code, s.id);
   };
 
-  async function handleCompare() {
-    if (!canSubmit) return;
-    setComparing(true); setError(null); setResult(null);
+  const runComparison = useCallback(async (mendeluText: string, fText: string, pdfBase64?: string) => {
+    if (mendeluText.trim().length < MIN_CHARS) return;
+    
+    setComparing(true); 
+    setError(null); 
+    setResult(null);
     try {
-      const r = await compareSyllabi(autoMendeluText, foreignText.trim());
-      setResult(r);
-      onVerdict?.(r.verdict);
+      if (pdfBase64) {
+        // Deep AI comparison
+        const r = await compareSyllabiAI(
+          mendeluText, 
+          { 
+            credits: subject.credits, 
+            type: subject.rawStatusText || '', 
+            code: subject.code, 
+            name: subject.name 
+          }, 
+          pdfBase64
+        );
+        setResult(r);
+        onVerdict?.(r.verdict);
+      } else {
+        // Fast similarity comparison
+        const r = await compareSyllabi(mendeluText, fText.trim());
+        setResult(r);
+        onVerdict?.(r.verdict);
+      }
     }
-    catch { setError(t('transfer.error')); }
-    finally { setComparing(false); }
+    catch (err) { 
+      console.error('[TransferPanel] Comparison failed:', err);
+      setError(t('transfer.error')); 
+    }
+    finally { 
+      setComparing(false); 
+    }
+  }, [onVerdict, t, subject]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setExtracting(true);
+    setExtractStatus(null);
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const res = reader.result as string;
+          resolve(res.split(',')[1]); // remove data:application/pdf;base64,
+        };
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(file);
+      
+      const base64 = await base64Promise;
+      
+      // AUTO-COMPARE directly with PDF if MENDELU is already ready
+      if (mendeluReady) {
+        await runComparison(autoMendeluText, '', base64);
+        setExtractStatus('success');
+        // Still extract text for the textarea so user can see it
+        const extractedText = await extractSyllabusFromPdf(base64);
+        setForeignText(extractedText);
+      } else {
+        const extractedText = await extractSyllabusFromPdf(base64);
+        setForeignText(extractedText);
+        setExtractStatus('success');
+      }
+    } catch (err) {
+      console.error('[TransferPanel] Extraction failed:', err);
+      setExtractStatus('error');
+    } finally {
+      setExtracting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  async function handleCompare() {
+    runComparison(autoMendeluText, foreignText);
   }
 
   const verdict = result ? ({
@@ -142,6 +217,48 @@ export function TransferPanel({ subject, onVerdict }: Props) {
         }
       </div>
 
+      {/* Foreign UI Header */}
+      <div className="flex items-center justify-between mt-1">
+        <span className="text-[10px] text-base-content/30 uppercase tracking-wide">{t('transfer.foreignLabel')}</span>
+        
+        <div className="flex items-center gap-2">
+          {extracting && (
+            <span className="text-[9px] text-primary flex items-center gap-1 animate-pulse">
+              <Loader2 size={10} className="animate-spin" />
+              {t('transfer.extracting')}
+            </span>
+          )}
+          {extractStatus === 'success' && (
+            <span className="text-[9px] text-success flex items-center gap-1 animate-in fade-in zoom-in duration-300">
+              <CheckCircle2 size={10} />
+              {t('transfer.extractSuccess')}
+            </span>
+          )}
+          {extractStatus === 'error' && (
+            <span className="text-[9px] text-error flex items-center gap-1 animate-in shake duration-300">
+              <XCircle size={10} />
+              {t('transfer.extractError')}
+            </span>
+          )}
+          
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            accept="application/pdf"
+            className="hidden"
+          />
+          <button 
+            className="btn btn-ghost btn-xs h-6 px-1.5 min-h-0 text-[10px] font-bold gap-1 text-primary hover:bg-primary/10"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={extracting}
+          >
+            <FileUp size={12} />
+            {t('transfer.uploadPdf')}
+          </button>
+        </div>
+      </div>
+
       {/* Foreign textarea */}
       <textarea
         autoFocus
@@ -152,24 +269,61 @@ export function TransferPanel({ subject, onVerdict }: Props) {
       />
 
       {/* Footer */}
-      <div className="flex items-center gap-2">
-        {foreignText.trim().length < MIN_CHARS && (
-          <span className="text-[10px] tabular-nums shrink-0 text-base-content/30">
-            {foreignText.trim().length}/{MIN_CHARS}
-          </span>
-        )}
-        {result && verdict && (
-          <div className={`badge ${verdict.badge} badge-xs flex-1 justify-between gap-1 h-auto py-1`}>
-            <div className="flex items-center gap-1">
-              {verdict.icon}
-              <span className="leading-tight">{verdict.label}</span>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          {foreignText.trim().length < MIN_CHARS && !result && !comparing && (
+            <span className="text-[10px] tabular-nums shrink-0 text-base-content/30">
+              {foreignText.trim().length}/{MIN_CHARS}
+            </span>
+          )}
+          {result && verdict && (
+            <div className={`badge ${verdict.badge} badge-xs flex-1 justify-between gap-1 h-auto py-1`}>
+              <div className="flex items-center gap-1">
+                {verdict.icon}
+                <span className="leading-tight">{verdict.label}</span>
+              </div>
+              <span className="font-mono text-[9px] opacity-70">
+                {('similarity' in result ? (result.similarity * 100).toFixed(0) : 0)}%
+              </span>
             </div>
-            <span className="font-mono text-[9px] opacity-70">{(result.similarity * 100).toFixed(0)}%</span>
+          )}
+          {error && <span className="text-[10px] text-error flex-1 truncate">{error}</span>}
+        </div>
+
+        {/* AI Reasoning Card */}
+        {result && 'reasoning' in result && (
+          <div className="bg-base-200/50 rounded-lg p-2 flex flex-col gap-1.5 border border-base-300 animate-in fade-in slide-in-from-top-1">
+            <p className="text-[10px] leading-relaxed text-base-content/70 italic">
+              "{result.reasoning}"
+            </p>
+            
+            {(result.mismatches.length > 0 || !result.creditsMatch || !result.typeMatch) && (
+              <div className="flex flex-col gap-1 mt-1 pt-1 border-t border-base-300">
+                {!result.creditsMatch && (
+                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-error">
+                    <AlertTriangle size={10} />
+                    <span>Nízký počet kreditů</span>
+                  </div>
+                )}
+                {!result.typeMatch && (
+                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-error">
+                    <AlertTriangle size={10} />
+                    <span>Nesoulad v ukončení (zkouška vs zápočet)</span>
+                  </div>
+                )}
+                {result.mismatches.map((m, i) => (
+                  <div key={i} className="flex items-start gap-1.5 text-[9px] text-base-content/50 leading-tight">
+                    <span className="mt-1 w-1 h-1 rounded-full bg-base-content/20 shrink-0" />
+                    <span>{m}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
-        {error && <span className="text-[10px] text-error flex-1 truncate">{error}</span>}
       </div>
-      <button className="btn btn-primary btn-sm w-full" onClick={handleCompare} disabled={!canSubmit}>
+
+      <button className="btn btn-primary btn-sm w-full" onClick={handleCompare} disabled={!canSubmit || comparing}>
         {comparing ? <Loader2 size={13} className="animate-spin" /> : t('transfer.compare')}
       </button>
       <p className="text-[9px] text-base-content/40 leading-relaxed italic mt-0.5">

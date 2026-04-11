@@ -35,11 +35,17 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
   const plan = useStudyPlan();
   const selectedCourses = useAppStore(s => s.erasmusSelectedCourses) || [];
   const toggleCourse = useAppStore(s => s.toggleErasmusCourse);
+  const activeTab = useAppStore(s => s.erasmusActiveTab);
+  const setActiveTab = useAppStore(s => s.setErasmusActiveTab);
+  const planPhase = useAppStore(s => s.erasmusPlanPhase);
+  const setPlanPhase = useAppStore(s => s.setErasmusPlanPhase);
+  const loadState = useAppStore(s => s.loadErasmusSelectedCourses);
 
-  useEffect(() => { warmupTransferApi(); }, []);
+  useEffect(() => { 
+    warmupTransferApi();
+    loadState();
+  }, [loadState]);
 
-  const [activeTab, setActiveTab] = useState<'plan' | 'explore'>('plan');
-  const [planPhase, setPlanPhase] = useState<'select' | 'review'>('select');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [schoolFilter, setSchoolFilter] = useState<string | null>(null);
   const [facultyFilter, setFacultyFilter] = useState(false);

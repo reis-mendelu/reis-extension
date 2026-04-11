@@ -63,3 +63,71 @@ export async function askGemini(prompt: string, systemInstruction?: string, pdfB
 
   return data.candidates[0].content.parts[0].text;
 }
+
+/**
+ * Extracts syllabus text from a PDF file using Gemini.
+ * It focuses on learning objectives, topics/content, and assessment methods.
+ */
+export async function extractSyllabusFromPdf(pdfBase64: string): Promise<string> {
+  const prompt = "Extract the course syllabus information from this document. I need: \n1. Course Name\n2. Learning Objectives/Outcomes\n3. Course Content/Topics\n4. Assessment Methods/Grading\n\nPlease provide a clear, structured text summary of these parts. If some parts are missing, just extract what is available.";
+  const systemInstruction = "You are an academic advisor helping students with Erasmus credit transfers. Your task is to extract relevant syllabus information from university documents in any language and provide a concise summary in English.";
+  
+  return askGemini(prompt, systemInstruction, pdfBase64);
+}
+
+export interface AIComparisonResult {
+  similarity: number;
+  verdict: 'approved' | 'rejected';
+  reasoning: string;
+  mismatches: string[];
+  creditsMatch: boolean;
+  typeMatch: boolean;
+}
+
+/**
+ * Platinum-Standard Comparison: Sends MENDELU data + Foreign PDF to Gemini.
+ * It enforces MENDELU's specific academic rules.
+ */
+export async function compareSyllabiAI(
+  mendeluSyllabus: string, 
+  mendeluMetadata: { credits: number; type: string; code: string; name: string },
+  pdfBase64?: string,
+  foreignText?: string
+): Promise<AIComparisonResult> {
+  const prompt = `
+COMPARE THESE TWO COURSE SYLLABI FOR ERASMUS RECOGNITION.
+
+MENDELU COURSE (HOME):
+- Code: ${mendeluMetadata.code}
+- Name: ${mendeluMetadata.name}
+- Credits: ${mendeluMetadata.credits} ECTS
+- Type: ${mendeluMetadata.type} (zk = Exam, zap/zak = Credit only)
+- Content: ${mendeluSyllabus}
+
+FOREIGN COURSE (CANDIDATE):
+${foreignText ? `Text content: ${foreignText}` : 'Please extract content from the attached PDF document.'}
+
+RECOGNITION RULES:
+1. Learning Outcomes: Need ~70-80% overlap in topics/outcomes.
+2. Credits: Foreign ECTS should be >= Home ECTS. 
+3. Type Mismatch: If Home is "zk" (Exam), Foreign MUST have an exam or grade. If Foreign is only "Pass/Fail" (Credit), it cannot replace an Exam course.
+
+OUTPUT FORMAT (JSON ONLY):
+{
+  "similarity": 0.0-1.0,
+  "verdict": "approved" | "rejected",
+  "reasoning": "Short explanation in Czech",
+  "mismatches": ["list of specific missing topics or rule violations"],
+  "creditsMatch": true/false,
+  "typeMatch": true/false
+}
+`;
+
+  const systemInstruction = "You are a senior academic advisor at Mendel University in Brno. You are an expert at evaluating syllabus equivalence for Erasmus+ students. You are strict but fair, ensuring MENDELU standards are met while supporting student mobility.";
+  
+  const responseText = await askGemini(prompt, systemInstruction, pdfBase64);
+  
+  // Clean up potential markdown JSON wrapping
+  const jsonStr = responseText.replace(/```json\n?|\n?```/g, '').trim();
+  return JSON.parse(jsonStr) as AIComparisonResult;
+}

@@ -6,6 +6,7 @@ import { loggers } from '../../utils/logger';
 
 const DEFAULT_COUNTRY = ERASMUS_COUNTRIES.find(c => c.id === '705')!; // Slovenia
 const SELECTED_COURSES_KEY = 'erasmus_selected_courses';
+const ERASMUS_UI_STATE_KEY = 'erasmus_ui_state';
 
 export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
   erasmusData: null,
@@ -13,6 +14,22 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
   erasmusCountryFile: '',
   erasmusConfig: null,
   erasmusSelectedCourses: [],
+  erasmusActiveTab: 'plan',
+  erasmusPlanPhase: 'select',
+  setErasmusActiveTab: (tab: 'plan' | 'explore') => {
+    set({ erasmusActiveTab: tab });
+    IndexedDBService.set('meta', ERASMUS_UI_STATE_KEY, { 
+      activeTab: tab, 
+      planPhase: get().erasmusPlanPhase 
+    }).catch(() => {});
+  },
+  setErasmusPlanPhase: (phase: 'select' | 'review') => {
+    set({ erasmusPlanPhase: phase });
+    IndexedDBService.set('meta', ERASMUS_UI_STATE_KEY, { 
+      activeTab: get().erasmusActiveTab, 
+      planPhase: phase 
+    }).catch(() => {});
+  },
   setErasmusCountry: async (file: string) => {
     if (get().erasmusCountryFile !== file || !get().erasmusData) {
       set({ erasmusCountryFile: file, erasmusLoading: true });
@@ -67,6 +84,12 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     try {
       const stored = await IndexedDBService.get('meta', SELECTED_COURSES_KEY) as string[] | null;
       if (stored) set({ erasmusSelectedCourses: stored });
+
+      const uiState = await IndexedDBService.get('meta', ERASMUS_UI_STATE_KEY) as { activeTab?: any; planPhase?: any } | null;
+      if (uiState) {
+        if (uiState.activeTab) set({ erasmusActiveTab: uiState.activeTab });
+        if (uiState.planPhase) set({ erasmusPlanPhase: uiState.planPhase });
+      }
     } catch { /* ignore */ }
   },
 });

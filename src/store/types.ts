@@ -170,7 +170,11 @@ export interface ErasmusSlice {
     erasmusCountryFile: string;
     erasmusConfig: ErasmusConfig | null;
     erasmusSelectedCourses: string[];
+    erasmusActiveTab: 'plan' | 'explore';
+    erasmusPlanPhase: 'select' | 'review';
     setErasmusCountry: (file: string) => Promise<void>;
+    setErasmusActiveTab: (tab: 'plan' | 'explore') => void;
+    setErasmusPlanPhase: (phase: 'select' | 'review') => void;
     fetchErasmusReports: () => Promise<void>;
     fetchErasmusConfig: () => Promise<void>;
     toggleErasmusCourse: (code: string) => void;
