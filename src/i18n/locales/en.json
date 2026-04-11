@@ -430,7 +430,12 @@
     "prolongationWarning": "Warning: Few compulsory subjects matched. This may prolong your studies after return.",
     "coreSubject": "Core",
     "coreElectiveSubject": "Core Elective",
-    "recognizedSubject": "Recognized (EXA-UP)"
+    "recognizedSubject": "Recognized (EXA-UP)",
+    "tripWindow": "When are you going?",
+    "semesterLabel": "Semester {n}",
+    "replacementPriority": "Priority: Replacing this semester",
+    "futurePool": "Other future subjects",
+    "selectTripWindow": "Select your departure semester to filter subjects"
   },
   "transfer": {
     "title": "Check credit transfer",

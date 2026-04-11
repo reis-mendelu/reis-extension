@@ -432,7 +432,12 @@
     "prolongationWarning": "Pozor: Máte málo uznaných povinných předmětů. To může vést k prodloužení studia po návratu.",
     "coreSubject": "Povinný",
     "coreElectiveSubject": "Povinně volitelný",
-    "recognizedSubject": "Uznaný (EXA-UP)"
+    "recognizedSubject": "Uznaný (EXA-UP)",
+    "tripWindow": "Kdy plánuješ vyjet?",
+    "semesterLabel": "{n}. semestr",
+    "replacementPriority": "Priorita: Nahrazení tohoto semestru",
+    "futurePool": "Další budoucí předměty",
+    "selectTripWindow": "Vyber semestr výjezdu pro filtraci předmětů"
   },
   "transfer": {
     "title": "Ověření přenosu předmětu",

@@ -1,10 +1,11 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { computeFailRate } from '@/components/SubjectsPanel/computeFailRate';
 import { ErasmusSemesterSection, isTransferableCourse } from './ErasmusSemesterSection';
 import { isCompulsoryGroup, isCoreElectiveGroup } from '@/utils/studyPlanUtils';
+import { Calendar } from 'lucide-react';
 import type { Zamerani } from '@/types/studyPlan';
 
 interface Props {
@@ -30,14 +31,37 @@ export function UnfulfilledCoursesSection({ onOpenSubject, onSearchSubject }: Pr
   const selectedCourses = useAppStore(s => s.erasmusSelectedCourses) || [];
   const rawToggle = useAppStore(s => s.toggleErasmusCourse);
 
-  const futureSemesters = useMemo(() => {
+  const [targetSemester, setTargetSemester] = useState<number | null>(null);
+
+  // Logic to determine available future semesters for selection
+  const availableSemesters = useMemo(() => {
     if (!plan || !plan.blocks) return [];
     return plan.blocks
       .map((block, index) => ({ block, index }))
       .filter(({ block }) => {
-        if (!block || !block.groups) return false;
-        // Only include semesters that have high-value subjects remaining
-        const actionableSubjects = block.groups
+        if (block.isWholePlanPool || !block.groups) return false;
+        const all = block.groups.flatMap(g => g.subjects || []);
+        // Only include semesters that haven't been completed yet
+        return !all.some(s => s.isFulfilled) && !all.some(s => s.isEnrolled);
+      });
+  }, [plan]);
+
+  // Set default target semester to the first available one
+  useEffect(() => {
+    if (targetSemester === null && availableSemesters.length > 0) {
+      setTargetSemester(availableSemesters[0].index);
+    }
+  }, [availableSemesters, targetSemester]);
+
+  const futureSemesters = useMemo(() => {
+    if (!plan || !plan.blocks || targetSemester === null) return [];
+    return plan.blocks
+      .map((block, index) => ({ block, index }))
+      .filter(({ block, index }) => {
+        // HARD FILTER: Hide anything before the target semester
+        if (!block.isWholePlanPool && index < targetSemester) return false;
+        
+        const actionableSubjects = (block.groups || [])
           .filter(g => isCompulsoryGroup(g.name, block.title) || isCoreElectiveGroup(g.name, block.title))
           .flatMap(g => g.subjects || [])
           .filter(s => isTransferableCourse(s));
@@ -45,11 +69,10 @@ export function UnfulfilledCoursesSection({ onOpenSubject, onSearchSubject }: Pr
         if (actionableSubjects.length === 0) return false;
         if (block.isWholePlanPool) return true;
         
-        // Also ensure the semester hasn't been fulfilled or enrolled already
         const allSubjects = block.groups.flatMap(g => g.subjects || []);
         return !allSubjects.some(s => s.isFulfilled) && !allSubjects.some(s => s.isEnrolled);
       });
-  }, [plan]);
+  }, [plan, targetSemester]);
 
   const toggleCourse = (code: string) => {
     const isAdding = !selectedCourses.includes(code);
@@ -152,29 +175,55 @@ export function UnfulfilledCoursesSection({ onOpenSubject, onSearchSubject }: Pr
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between px-1">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40">
-          {t('erasmus.myStudyPlan')}
-        </h3>
-        <span className="badge badge-ghost badge-sm font-medium">
-          {totalSubjects} {t('erasmus.remainingCourses')}
-        </span>
+      {/* Trip Window Selector */}
+      <div className="bg-base-200/50 rounded-xl p-4 border border-base-300 flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <Calendar size={16} className="text-primary" />
+          <h4 className="text-sm font-bold">{t('erasmus.tripWindow')}</h4>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {availableSemesters.map(({ block, index }) => (
+            <button
+              key={index}
+              onClick={() => setTargetSemester(index)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                targetSemester === index 
+                  ? 'bg-primary border-primary text-primary-content shadow-md' 
+                  : 'bg-base-100 border-base-300 text-base-content/60 hover:border-primary/50'
+              }`}
+            >
+              {t('erasmus.semesterLabel', { n: index + 1 })}
+            </button>
+          ))}
+        </div>
+        <p className="text-[10px] text-base-content/40 italic">
+          {t('erasmus.selectTripWindow')}
+        </p>
       </div>
 
       <div className="flex flex-col gap-5">
-        {futureSemesters.map(({ block, index }) => (
-          <ErasmusSemesterSection
-            key={index}
-            block={block}
-            failRates={failRates}
-            selectedCodes={selectedSet}
-            zameraniLookup={zameraniLookup}
-            zameraniProgress={zameraniProgress}
-            onToggleCourse={toggleCourse}
-            onOpenSubject={onOpenSubject}
-            onSearchSubject={onSearchSubject}
-          />
-        ))}
+        {futureSemesters.map(({ block, index }) => {
+          const isPriority = index === targetSemester;
+          return (
+            <div key={index} className="flex flex-col gap-2">
+              {isPriority && (
+                <div className="badge badge-primary badge-outline text-[9px] font-bold uppercase tracking-widest ml-1">
+                  {t('erasmus.replacementPriority')}
+                </div>
+              )}
+              <ErasmusSemesterSection
+                block={block}
+                failRates={failRates}
+                selectedCodes={selectedSet}
+                zameraniLookup={zameraniLookup}
+                zameraniProgress={zameraniProgress}
+                onToggleCourse={toggleCourse}
+                onOpenSubject={onOpenSubject}
+                onSearchSubject={onSearchSubject}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
