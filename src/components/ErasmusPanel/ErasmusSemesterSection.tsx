@@ -91,10 +91,10 @@ function SelectableRow({ subject, failRate, selected, isCompulsory, isCoreElecti
         </span>
         <button
           onClick={(e) => { e.stopPropagation(); onOpen(); }}
-          className="btn btn-ghost btn-xs w-6 h-6 p-0 text-base-content/30 hover:text-primary"
+          className="btn btn-ghost btn-xs w-8 h-8 p-0 text-base-content/30 hover:text-primary hover:bg-primary/5 rounded-full"
           title="Details"
         >
-          <Info size={14} />
+          <Info size={16} />
         </button>
       </div>
     </div>

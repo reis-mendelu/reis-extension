@@ -39,13 +39,21 @@ export function TransferRow({ subject, onRemove }: Props) {
         {lastVerdict && VERDICT_ICONS[lastVerdict]}
         <button
           onClick={() => setExpanded(e => !e)}
-          className={`btn btn-ghost btn-xs h-6 min-h-0 px-1.5 gap-1 shrink-0 transition-colors ${expanded ? 'text-primary bg-primary/10' : 'text-base-content/40 hover:text-primary'}`}
+          className={`btn btn-xs h-7 min-h-0 px-2 gap-1.5 shrink-0 transition-all font-bold ${
+            expanded 
+              ? 'btn-primary shadow-sm ring-2 ring-primary/20' 
+              : lastVerdict 
+                ? 'btn-ghost border-base-300 text-base-content/60' 
+                : 'btn-primary btn-outline hover:btn-primary'
+          }`}
         >
-          <ChevronDown size={11} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
-          <span className="text-[10px]">{t('transfer.checkButton')}</span>
+          {expanded ? <ChevronDown size={12} className="rotate-180" /> : <ChevronDown size={12} />}
+          <span className="text-[10px] uppercase tracking-tight">
+            {lastVerdict ? t('transfer.checkButton') : t('transfer.checkButton')}
+          </span>
         </button>
-        <button onClick={onRemove} className="btn btn-ghost btn-xs w-5 h-5 min-h-0 p-0 shrink-0 text-base-content/20 hover:text-base-content/60">
-          <X size={12} />
+        <button onClick={onRemove} className="btn btn-ghost btn-xs w-6 h-6 min-h-0 p-0 shrink-0 text-base-content/20 hover:text-error hover:bg-error/10 rounded-full">
+          <X size={14} />
         </button>
       </div>
 

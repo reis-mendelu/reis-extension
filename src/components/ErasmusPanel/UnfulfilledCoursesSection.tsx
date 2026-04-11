@@ -127,12 +127,19 @@ export function UnfulfilledCoursesSection({ onOpenSubject, onSearchSubject }: Pr
     const map: Record<string, number | null> = {};
     for (const { block } of futureSemesters) {
       if (!block.groups) continue;
+      
+      // Determine if this is a winter or summer semester subject to filter stats
+      const title = (block.title || '').toLowerCase();
+      const isSummer = title.includes('letní') || title.includes('summer') || title.includes('ls');
+      const isWinter = title.includes('zimní') || title.includes('winter') || title.includes('zs');
+      const semesterType = isSummer ? 'LS' : isWinter ? 'ZS' : null;
+
       for (const group of block.groups) {
         if (isCompulsoryGroup(group.name, block.title) || isCoreElectiveGroup(group.name, block.title)) {
           if (!group.subjects) continue;
           for (const s of group.subjects) {
             if (isTransferableCourse(s)) {
-              map[s.code] = computeFailRate(successRates[s.code]);
+              map[s.code] = computeFailRate(successRates[s.code], semesterType);
             }
           }
         }

@@ -107,17 +107,18 @@ MENDELU COURSE (HOME):
 FOREIGN COURSE (CANDIDATE):
 ${foreignText ? `Text content: ${foreignText}` : 'Please extract content from the attached PDF document.'}
 
-RECOGNITION RULES:
-1. Learning Outcomes: Need ~70-80% overlap in topics/outcomes.
-2. Credits: Foreign ECTS should be >= Home ECTS. 
-3. Type Mismatch: If Home is "zk" (Exam), Foreign MUST have an exam or grade. If Foreign is only "Pass/Fail" (Credit), it cannot replace an Exam course.
+REGNITION RULES:
+1. Learning Outcomes: Focus on the CORE 60-70% overlap. Do not be overly strict about missing theoretical sub-topics if the main applied topics are present.
+2. Credits: Foreign ECTS should ideally be >= Home ECTS. However, a 1-credit deficit (e.g., 5 vs 6) is VERY OFTEN accepted by coordinators and should NOT be a reason for rejection.
+3. Type Mismatch: Only reject if there is a massive gap (e.g., a 10-credit Exam course being replaced by a 2-credit workshop).
+4. Tone: Be a "Helpful Advisor," not a "Hostile Bureaucrat."
 
 OUTPUT FORMAT (JSON ONLY):
 {
   "similarity": 0.0-1.0,
   "verdict": "approved" | "rejected",
-  "reasoning": "Short explanation in Czech",
-  "mismatches": ["list of specific missing topics or rule violations"],
+  "reasoning": "Krátké, realistické zhodnocení v češtině. Pokud je drobný nesoulad, zmiň, že koordinátor to pravděpodobně uzná.",
+  "mismatches": ["seznam věcí k diskusi s koordinátorem"],
   "creditsMatch": true/false,
   "typeMatch": true/false
 }

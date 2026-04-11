@@ -37,6 +37,7 @@ export function TransferPanel({ subject, onVerdict }: Props) {
   const [searchResults, setSearchResults] = useState<Subject[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [manualSearchMode, setManualSearchMode] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -64,9 +65,16 @@ export function TransferPanel({ subject, onVerdict }: Props) {
     if (q.trim().length < 2) { setSearchResults([]); return; }
     setSearching(true);
     searchSubjects(q.trim()).then(res => {
-      setSearchResults(res); setDropdownOpen(res.length > 0);
+      setSearchResults(res); 
+      // AUTO-SELECT FIRST RESULT (the latest/most relevant)
+      if (res.length > 0 && !selectedSubject) {
+        const first = res[0];
+        setSelectedSubject(first);
+        setSearchQuery(first.name);
+        fetchSyllabus(first.code, first.id);
+      }
     }).finally(() => setSearching(false));
-  }, []);
+  }, [fetchSyllabus, selectedSubject]);
 
   useEffect(() => {
     if (!hasId) runSearch(subject.code);
@@ -176,30 +184,51 @@ export function TransferPanel({ subject, onVerdict }: Props) {
       {/* No-ID: subject search dropdown */}
       {!hasId && (
         <div className="relative mt-1" ref={dropdownRef}>
-          <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/30 pointer-events-none" />
-          <input
-            type="text"
-            className="input input-bordered input-xs w-full pl-7 pr-7 text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-            value={searchQuery}
-            onChange={e => handleSearchChange(e.target.value)}
-            onFocus={() => searchResults.length > 0 && setDropdownOpen(true)}
-            placeholder={t('transfer.mendeluSearchPlaceholder')}
-          />
-          {searching
-            ? <Loader2 size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-base-content/30" />
-            : searchResults.length > 0 && <ChevronDown size={11} className={`absolute right-2.5 top-1/2 -translate-y-1/2 text-base-content/30 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-          }
-          {dropdownOpen && (
-            <ul className="absolute z-50 w-full mt-0.5 bg-base-100 border border-base-300 rounded-lg shadow-xl max-h-40 overflow-y-auto">
-              {searchResults.map(s => (
-                <li key={s.id}>
-                  <button className="w-full text-left px-2.5 py-1.5 text-xs hover:bg-base-200 flex items-center gap-2" onClick={() => handleSelectSubject(s)}>
-                    <span className="flex-1 truncate">{s.name}</span>
-                    <span className="text-[10px] text-base-content/30 shrink-0">{s.semester}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+          {manualSearchMode || !selectedSubject ? (
+            <>
+              <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/30 pointer-events-none" />
+              <input
+                type="text"
+                className="input input-bordered input-xs w-full pl-7 pr-7 text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                value={searchQuery}
+                onChange={e => handleSearchChange(e.target.value)}
+                onFocus={() => searchResults.length > 0 && setDropdownOpen(true)}
+                placeholder={t('transfer.mendeluSearchPlaceholder')}
+                autoFocus
+              />
+              {searching
+                ? <Loader2 size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-base-content/30" />
+                : searchResults.length > 0 && <ChevronDown size={11} className={`absolute right-2.5 top-1/2 -translate-y-1/2 text-base-content/30 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+              }
+              {dropdownOpen && (
+                <ul className="absolute z-50 w-full mt-0.5 bg-base-100 border border-base-300 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                  {searchResults.map(s => (
+                    <li key={s.id}>
+                      <button 
+                        className="w-full text-left px-2.5 py-1.5 text-xs hover:bg-base-200 flex items-center gap-2" 
+                        onClick={() => { handleSelectSubject(s); setManualSearchMode(false); }}
+                      >
+                        <span className="flex-1 truncate">{s.name}</span>
+                        <span className="text-[10px] text-base-content/30 shrink-0">{s.semester}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center justify-between bg-base-200/50 rounded-lg px-2 py-1 border border-base-300">
+              <div className="flex flex-col min-w-0">
+                <span className="text-[9px] font-bold text-base-content/40 uppercase tracking-widest leading-none">Vybrán ekvivalent MENDELU</span>
+                <span className="text-xs truncate font-medium text-base-content/80">{selectedSubject.name}</span>
+              </div>
+              <button 
+                onClick={() => setManualSearchMode(true)}
+                className="btn btn-ghost btn-xs h-6 px-1.5 text-[10px] text-primary hover:bg-primary/10"
+              >
+                Změnit
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -218,102 +247,134 @@ export function TransferPanel({ subject, onVerdict }: Props) {
       </div>
 
       {/* Foreign UI Header */}
-      <div className="flex items-center justify-between mt-1">
-        <span className="text-[10px] text-base-content/30 uppercase tracking-wide">{t('transfer.foreignLabel')}</span>
-        
-        <div className="flex items-center gap-2">
-          {extracting && (
-            <span className="text-[9px] text-primary flex items-center gap-1 animate-pulse">
-              <Loader2 size={10} className="animate-spin" />
-              {t('transfer.extracting')}
-            </span>
-          )}
-          {extractStatus === 'success' && (
-            <span className="text-[9px] text-success flex items-center gap-1 animate-in fade-in zoom-in duration-300">
-              <CheckCircle2 size={10} />
-              {t('transfer.extractSuccess')}
-            </span>
-          )}
-          {extractStatus === 'error' && (
-            <span className="text-[9px] text-error flex items-center gap-1 animate-in shake duration-300">
-              <XCircle size={10} />
-              {t('transfer.extractError')}
-            </span>
-          )}
+      <div className="flex flex-col gap-2 mt-1">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-base-content/30 uppercase tracking-wide font-bold">{t('transfer.foreignLabel')}</span>
           
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            accept="application/pdf"
-            className="hidden"
-          />
+          {(extracting || extractStatus) && (
+            <div className="flex items-center gap-2">
+              {extracting && (
+                <span className="text-[9px] text-primary flex items-center gap-1 animate-pulse">
+                  <Loader2 size={10} className="animate-spin" />
+                  {t('transfer.extracting')}
+                </span>
+              )}
+              {extractStatus === 'success' && (
+                <span className="text-[9px] text-success flex items-center gap-1 animate-in fade-in zoom-in duration-300">
+                  <CheckCircle2 size={10} />
+                  {t('transfer.extractSuccess')}
+                </span>
+              )}
+              {extractStatus === 'error' && (
+                <span className="text-[9px] text-error flex items-center gap-1 animate-in shake duration-300">
+                  <XCircle size={10} />
+                  {t('transfer.extractError')}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          accept="application/pdf"
+          className="hidden"
+        />
+        
+        {/* HERO PDF BUTTON */}
+        {!foreignText && !result && (
           <button 
-            className="btn btn-ghost btn-xs h-6 px-1.5 min-h-0 text-[10px] font-bold gap-1 text-primary hover:bg-primary/10"
+            className="btn btn-primary btn-outline border-dashed w-full h-32 flex flex-col gap-3 hover:bg-primary/5 group transition-all duration-300"
             onClick={() => fileInputRef.current?.click()}
-            disabled={extracting}
+            disabled={extracting || comparing}
           >
-            <FileUp size={12} />
-            {t('transfer.uploadPdf')}
+            {extracting 
+              ? <Loader2 size={32} className="animate-spin" /> 
+              : <FileUp size={32} className="group-hover:-translate-y-1 transition-transform duration-300" />
+            }
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-black uppercase tracking-widest">{t('transfer.uploadPdf')}</span>
+              <span className="text-[10px] font-medium opacity-50 lowercase italic">
+                Stačí nahrát zahraniční sylabus v PDF
+              </span>
+            </div>
           </button>
+        )}
+
+        {/* Text area as a fallback or result viewer */}
+        <div className="relative group">
+          <textarea
+            autoFocus
+            className={`textarea textarea-bordered w-full text-xs leading-relaxed resize-none transition-all focus:outline-none focus:border-primary ${
+              result ? 'h-16 opacity-50' : 'h-24'
+            }`}
+            placeholder={t('transfer.foreignPlaceholder')}
+            value={foreignText}
+            onChange={e => { setForeignText(e.target.value); setResult(null); setExtractStatus(null); }}
+          />
+          {foreignText && (
+            <button 
+              onClick={() => { setForeignText(''); setResult(null); setExtractStatus(null); }}
+              className="absolute top-2 right-2 p-1 rounded-full bg-base-300/50 text-base-content/50 hover:bg-error/20 hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <XCircle size={12} />
+            </button>
+          )}
         </div>
       </div>
-
-      {/* Foreign textarea */}
-      <textarea
-        autoFocus
-        className="textarea textarea-bordered w-full text-xs leading-relaxed resize-none h-24 focus:outline-none focus:border-primary"
-        placeholder={t('transfer.foreignPlaceholder')}
-        value={foreignText}
-        onChange={e => { setForeignText(e.target.value); setResult(null); }}
-      />
 
       {/* Footer */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           {foreignText.trim().length < MIN_CHARS && !result && !comparing && (
-            <span className="text-[10px] tabular-nums shrink-0 text-base-content/30">
-              {foreignText.trim().length}/{MIN_CHARS}
+            <span className="text-[10px] tabular-nums shrink-0 text-base-content/30 italic">
+              {t('transfer.minCharsHint', { min: MIN_CHARS })} ({foreignText.trim().length}/{MIN_CHARS})
             </span>
           )}
           {result && verdict && (
-            <div className={`badge ${verdict.badge} badge-xs flex-1 justify-between gap-1 h-auto py-1`}>
+            <div className={`badge ${verdict.badge} badge-xs flex-1 justify-between gap-1 h-auto py-1 shadow-sm`}>
               <div className="flex items-center gap-1">
                 {verdict.icon}
-                <span className="leading-tight">{verdict.label}</span>
+                <span className="leading-tight font-bold">{verdict.label}</span>
               </div>
               <span className="font-mono text-[9px] opacity-70">
                 {('similarity' in result ? (result.similarity * 100).toFixed(0) : 0)}%
               </span>
             </div>
           )}
-          {error && <span className="text-[10px] text-error flex-1 truncate">{error}</span>}
+          {error && <span className="text-[10px] text-error flex-1 font-bold animate-pulse">{error}</span>}
         </div>
 
         {/* AI Reasoning Card */}
         {result && 'reasoning' in result && (
-          <div className="bg-base-200/50 rounded-lg p-2 flex flex-col gap-1.5 border border-base-300 animate-in fade-in slide-in-from-top-1">
-            <p className="text-[10px] leading-relaxed text-base-content/70 italic">
+          <div className="bg-base-200/80 rounded-xl p-3 flex flex-col gap-2 border border-base-300 shadow-inner animate-in fade-in slide-in-from-bottom-2">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest border-b border-base-300 pb-1.5 mb-0.5">
+              <CheckCircle2 size={12} className="text-primary" />
+              Zdůvodnění AI
+            </div>
+            <p className="text-[11px] leading-relaxed text-base-content/80 italic font-medium">
               "{result.reasoning}"
             </p>
             
             {(result.mismatches.length > 0 || !result.creditsMatch || !result.typeMatch) && (
-              <div className="flex flex-col gap-1 mt-1 pt-1 border-t border-base-300">
+              <div className="flex flex-col gap-1.5 mt-1 pt-2 border-t border-base-300">
                 {!result.creditsMatch && (
-                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-error">
-                    <AlertTriangle size={10} />
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-error bg-error/5 p-1.5 rounded-lg border border-error/10">
+                    <AlertTriangle size={12} />
                     <span>Nízký počet kreditů</span>
                   </div>
                 )}
                 {!result.typeMatch && (
-                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-error">
-                    <AlertTriangle size={10} />
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-error bg-error/5 p-1.5 rounded-lg border border-error/10">
+                    <AlertTriangle size={12} />
                     <span>Nesoulad v ukončení (zkouška vs zápočet)</span>
                   </div>
                 )}
                 {result.mismatches.map((m, i) => (
-                  <div key={i} className="flex items-start gap-1.5 text-[9px] text-base-content/50 leading-tight">
-                    <span className="mt-1 w-1 h-1 rounded-full bg-base-content/20 shrink-0" />
+                  <div key={i} className="flex items-start gap-2 text-[10px] text-base-content/60 leading-tight">
+                    <span className="mt-1.5 w-1 h-1 rounded-full bg-base-content/30 shrink-0" />
                     <span>{m}</span>
                   </div>
                 ))}
@@ -323,8 +384,12 @@ export function TransferPanel({ subject, onVerdict }: Props) {
         )}
       </div>
 
-      <button className="btn btn-primary btn-sm w-full" onClick={handleCompare} disabled={!canSubmit || comparing}>
-        {comparing ? <Loader2 size={13} className="animate-spin" /> : t('transfer.compare')}
+      <button 
+        className={`btn btn-sm w-full transition-all ${result ? 'btn-ghost text-base-content/30 hover:bg-transparent' : 'btn-primary shadow-lg shadow-primary/20'}`} 
+        onClick={handleCompare} 
+        disabled={!canSubmit || comparing || !!result}
+      >
+        {comparing ? <Loader2 size={13} className="animate-spin" /> : result ? 'Ověřeno' : t('transfer.compare')}
       </button>
       <p className="text-[9px] text-base-content/40 leading-relaxed italic mt-0.5">
         {t('transfer.disclaimer')}
