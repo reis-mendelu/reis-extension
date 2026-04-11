@@ -18,7 +18,7 @@ export const CourseMetadataSchema = z.object({
 });
 
 export const SyllabusRequirementsSchema = z.object({
-    version: z.union([z.literal(1), z.literal(2)]),
+    version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
     courseId: z.string().optional(),
     requirementsText: z.string(),
     requirementsTable: z.array(z.array(z.string())),

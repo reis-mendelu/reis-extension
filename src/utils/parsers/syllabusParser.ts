@@ -11,7 +11,7 @@ export function parseSyllabusOffline(html: string, lang: string = 'cz'): Syllabu
     if (!html || typeof html !== 'string') return { version: 1 as const, requirementsText: 'Error: Section not found', requirementsTable: [] };
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const res = {
-        version: 2 as const,
+        version: 3 as const,
         requirementsText: parseRequirementsText(doc),
         requirementsTable: parseRequirementsTable(doc),
         courseInfo: parseCourseMetadata(doc, lang),

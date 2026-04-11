@@ -48,7 +48,6 @@ export async function fetchServerTimeOffset(forceRefresh: boolean = false): Prom
             // Calculate the offset
             const offsetMs = serverTime - localTimeAtServerProcessing;
             
-            console.log(`[AutoReg TimeSync] RTT: ${roundTripTime}ms. Offset: ${offsetMs}ms.`);
             cachedOffset = offsetMs;
             return offsetMs;
             

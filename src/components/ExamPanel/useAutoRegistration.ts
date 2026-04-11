@@ -86,7 +86,6 @@ export function useAutoRegistration() {
     const fireBatteringRam = useCallback((termId: string, section: ExamSection) => {
         if (firingRefs.current.has(termId)) return;
         
-        console.log(`[AutoReg] 🚀 Unleashing battering ram for ${termId}...`);
         setFiringTerms(prev => {
             const next = new Set(prev);
             next.add(termId);
@@ -103,7 +102,6 @@ export function useAutoRegistration() {
                 firingRefs.current.delete(termId);
                 return;
             }
-            console.log(`[AutoReg] 💥 Spamming ${termId}...`);
             const shouldStop = await performRegisterHit(section, termId);
             if (shouldStop) {
                 clearInterval(intervalId);

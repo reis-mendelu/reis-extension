@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Zap } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { SearchBar } from './SearchBar/index';
 import { MobileSearchOverlay } from './SearchBar/MobileSearchOverlay';
@@ -7,6 +7,7 @@ import { NotificationFeed } from './NotificationFeed';
 import { useAppStore } from '../store/useAppStore';
 import { getCommandActions } from './SearchBar/actions';
 import { getWeekForDate } from '../api/teachingWeek';
+import { testGeminiConnection } from '../api/gemini';
 import type { AppView } from '../types/app';
 
 interface AppHeaderProps {
@@ -56,63 +57,85 @@ export function AppHeader({
     t,
   }), [setCurrentView, setTheme, setLanguage, openFeedback, theme, language, t]);
 
-  return (
-    <>
-      <div className="flex-shrink-0 z-30 bg-base-200/90 backdrop-blur-md border-b border-base-300 px-4 pt-5 pb-3">
-        <div className="relative flex items-center justify-between gap-2 md:gap-4 w-full">
-          {currentView === 'calendar' && (
-            <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 z-10">
-              <div className="flex items-center bg-base-300 rounded-lg p-1">
-                <button
-                  onClick={onPrevWeek}
-                  className="p-1 hover:bg-base-100 rounded-md shadow-sm transition-all text-base-content/70 hover:text-primary"
-                  aria-label="Previous week"
-                >
-                  <ChevronLeft size={20} />
+    const [isGeminiLoading, setIsGeminiLoading] = useState(false);
+  
+    const handleTestGemini = async () => {
+      setIsGeminiLoading(true);
+      try {
+        const result = await testGeminiConnection();
+        console.log('Gemini Response:', result);
+      } catch (error) {
+        console.error('Gemini Error:', error);
+      } finally {
+        setIsGeminiLoading(false);
+      }
+    };
+  
+    return (
+      <>
+        <div className="flex-shrink-0 z-30 bg-base-200/90 backdrop-blur-md border-b border-base-300 px-4 pt-5 pb-3">
+          <div className="relative flex items-center justify-between gap-2 md:gap-4 w-full">
+            {currentView === 'calendar' && (
+              <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 z-10">
+                <div className="flex items-center bg-base-300 rounded-lg p-1">
+                  <button
+                    onClick={onPrevWeek}
+                    className="p-1 hover:bg-base-100 rounded-md shadow-sm transition-all text-base-content/70 hover:text-primary"
+                    aria-label="Previous week"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    onClick={onNextWeek}
+                    className="p-1 hover:bg-base-100 rounded-md shadow-sm transition-all text-base-content/70 hover:text-primary"
+                    aria-label="Next week"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+                <button onClick={onToday} className="btn btn-primary btn-sm border-none shadow-sm">
+                  {t('common.today')}
                 </button>
-                <button
-                  onClick={onNextWeek}
-                  className="p-1 hover:bg-base-100 rounded-md shadow-sm transition-all text-base-content/70 hover:text-primary"
-                  aria-label="Next week"
-                >
-                  <ChevronRight size={20} />
-                </button>
+                <span className="hidden lg:inline text-lg font-semibold text-base-content whitespace-nowrap">{dateRangeLabel}</span>
+                {viewedWeek && (
+                  <span className="hidden lg:inline text-sm text-base-content/50 whitespace-nowrap">
+                    · {t('teachingWeek.label', { current: viewedWeek })}
+                  </span>
+                )}
               </div>
-              <button onClick={onToday} className="btn btn-primary btn-sm border-none shadow-sm">
-                {t('common.today')}
+            )}
+  
+            <div className="flex-1" />
+  
+            <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 ml-auto z-10">
+              {/* Narrow/mobile: search icon button */}
+              <button
+                onClick={() => setMobileSearchOpen(true)}
+                className="md:hidden p-2 hover:bg-base-300 rounded-lg flex-shrink-0"
+                aria-label="Search"
+              >
+                <Search size={20} />
               </button>
-              <span className="hidden lg:inline text-lg font-semibold text-base-content whitespace-nowrap">{dateRangeLabel}</span>
-              {viewedWeek && (
-                <span className="hidden lg:inline text-sm text-base-content/50 whitespace-nowrap">
-                  · {t('teachingWeek.label', { current: viewedWeek })}
-                </span>
-              )}
-            </div>
-          )}
-
-          <div className="flex-1" />
-
-          <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 ml-auto z-10">
-            {/* Narrow/mobile: search icon button */}
-            <button
-              onClick={() => setMobileSearchOpen(true)}
-              className="md:hidden p-2 hover:bg-base-300 rounded-lg flex-shrink-0"
-              aria-label="Search"
-            >
-              <Search size={20} />
-            </button>
-
-            {/* Desktop Search Bar */}
-            <div className="hidden md:flex items-center w-[300px] lg:w-[450px] xl:w-[600px]">
-              <SearchBar onOpenSubject={onOpenSubject} prefillRef={searchPrefillRef} actions={actions} />
-            </div>
-
-            <div className="flex items-center gap-1">
-              <NotificationFeed />
+  
+              {/* Desktop Search Bar */}
+              <div className="hidden md:flex items-center w-[300px] lg:w-[450px] xl:w-[600px]">
+                <SearchBar onOpenSubject={onOpenSubject} prefillRef={searchPrefillRef} actions={actions} />
+              </div>
+  
+              <div className="flex items-center gap-1">
+                <button 
+                  onClick={handleTestGemini} 
+                  disabled={isGeminiLoading}
+                  className={`p-2 rounded-lg transition-colors ${isGeminiLoading ? 'bg-base-300 opacity-50 cursor-not-allowed' : 'hover:bg-base-300 text-amber-500'}`}
+                  title="Test Gemini API"
+                >
+                  <Zap size={20} className={isGeminiLoading ? 'animate-pulse' : ''} />
+                </button>
+                <NotificationFeed />
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
       <MobileSearchOverlay
         isOpen={mobileSearchOpen}

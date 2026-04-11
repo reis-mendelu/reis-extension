@@ -1,6 +1,6 @@
 const API_BASE = 'https://darksoothingshadow-reis-syllabus-similarity.hf.space';
 
-export type TransferVerdict = 'transferable' | 'borderline' | 'unlikely';
+export type TransferVerdict = 'approved' | 'rejected';
 
 export interface TransferResult {
   similarity: number;
@@ -11,13 +11,11 @@ export function buildMendeluText(syllabus: {
   courseInfo?: { courseNameEn?: string | null; courseNameCs?: string | null } | null;
   objectivesText?: string | null;
   contentText?: string | null;
-  requirementsText?: string;
 }): string {
   const parts = [
     syllabus.courseInfo?.courseNameEn ?? syllabus.courseInfo?.courseNameCs,
     syllabus.objectivesText,
     syllabus.contentText,
-    syllabus.requirementsText,
   ].filter(Boolean);
   return parts.join('\n\n');
 }
@@ -38,10 +36,7 @@ export async function compareSyllabi(a: string, b: string): Promise<TransferResu
 
   const { similarity } = await res.json() as { similarity: number };
 
-  let verdict: TransferVerdict;
-  if (similarity >= 0.72) verdict = 'transferable';
-  else if (similarity >= 0.58) verdict = 'borderline';
-  else verdict = 'unlikely';
+  const verdict: TransferVerdict = similarity >= 0.65 ? 'approved' : 'rejected';
 
   return { similarity, verdict };
 }
