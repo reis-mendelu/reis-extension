@@ -5,7 +5,6 @@ import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { computeFailRate } from '@/components/SubjectsPanel/computeFailRate';
 import { ErasmusSemesterSection } from './ErasmusSemesterSection';
-import { SelectedCoursesCard } from './SelectedCoursesCard';
 
 interface Props {
   onOpenSubject: (courseCode: string, courseName?: string, courseId?: string) => void;
@@ -82,8 +81,7 @@ export function UnfulfilledCoursesSection({ onOpenSubject, onSearchSubject }: Pr
   const selectedSet = new Set(selectedCourses);
 
   return (
-    <div className="flex flex-col gap-3 mb-3">
-      <div className="border border-base-300 rounded-lg overflow-hidden">
+    <div className="border border-base-300 rounded-lg overflow-hidden">
         <button
           className="w-full px-3 py-2.5 flex items-center gap-2 hover:bg-base-200 transition-colors text-left"
           onClick={() => setOpen(!open)}
@@ -117,15 +115,6 @@ export function UnfulfilledCoursesSection({ onOpenSubject, onSearchSubject }: Pr
             </div>
           </div>
         )}
-      </div>
-
-      {selectedCourses.length > 0 && (
-        <SelectedCoursesCard
-          plan={plan}
-          selectedCodes={selectedCourses}
-          onToggle={toggleCourse}
-        />
-      )}
     </div>
   );
 }

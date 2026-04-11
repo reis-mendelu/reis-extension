@@ -1,6 +1,5 @@
 import { useTranslation } from '@/hooks/useTranslation';
 import { ErasmusReportCard } from './ErasmusReportCard';
-import { UnfulfilledCoursesSection } from './UnfulfilledCoursesSection';
 import type { ErasmusReport } from '@/types/erasmus';
 import type { ErasmusConfig } from '@/types/erasmus';
 import type { UserParams } from '@/utils/userParams';
@@ -30,15 +29,12 @@ interface ErasmusDrawerProps {
   loading: boolean;
   config: ErasmusConfig | null;
   onClose: () => void;
-  onOpenSubject: (courseCode: string, courseName?: string, courseId?: string) => void;
-  onSearchSubject: (name: string) => void;
 }
 
 export function ErasmusDrawer({
   countryName, filteredReports, displayedReports, schools,
   schoolFilter, setSchoolFilter, facultyFilter, setFacultyFilter,
   userParams, showAll, setShowAll, loading, config, onClose,
-  onOpenSubject, onSearchSubject,
 }: ErasmusDrawerProps) {
   const { t } = useTranslation();
 
@@ -144,8 +140,6 @@ export function ErasmusDrawer({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto px-4 py-3">
-            <UnfulfilledCoursesSection onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
-
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <span className="loading loading-spinner loading-md" />

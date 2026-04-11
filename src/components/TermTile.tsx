@@ -20,7 +20,7 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
     return (
         <div onClick={() => !disabled && onSelect()}
                 className={`flex flex-col w-full rounded-lg border transition-all text-left ${(isArmed || isFiring) ? 'bg-warning/10 border-warning shadow-[0_0_10px_rgba(251,189,35,0.3)]' : isFuture ? 'bg-warning/5 border-warning/30' : (isFull || isClosed || isBlocked) ? 'bg-base-200 opacity-60' : 'bg-base-100 hover:border-primary shadow-sm cursor-pointer'}`}>
-            <div className="flex items-center gap-4 w-full p-3.5">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 w-full p-3.5">
                 {/* Date: Bold & Clear */}
                 <div className="flex flex-col min-w-[70px]">
                     <span className={`text-base font-bold tracking-tight ${disabled ? 'text-base-content/40 line-through' : 'text-base-content'}`}>
@@ -60,11 +60,11 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                 </div>
 
                 {/* Action Section: Stabilized & Context-Aware */}
-                <div className="ml-auto flex items-center justify-end gap-3">
+                <div className="ml-auto flex items-center justify-end gap-2 sm:gap-3 flex-wrap">
                     {isFuture ? (
-                        <div className="flex items-center gap-3">
-                            <div className={`flex flex-col items-end px-3 py-1.5 rounded-md border transition-colors ${isWithinSniperWindow ? 'bg-warning/10 border-warning/30' : 'bg-base-200/50 border-transparent'}`}>
-                                <span className={`text-[10px] font-bold ${isWithinSniperWindow ? 'text-warning' : 'opacity-40'} uppercase tracking-wider`}>
+                        <div className="flex items-center gap-2 sm:gap-3 justify-end flex-wrap">
+                            <div className={`flex flex-col items-end px-3 py-1.5 rounded-md border transition-colors ${isWithinSniperWindow ? 'bg-warning/10 border-warning/30' : 'bg-base-200/50 border-transparent'} min-w-0 flex-shrink-1`}>
+                                <span className={`text-[10px] font-bold ${isWithinSniperWindow ? 'text-warning' : 'opacity-40'} uppercase tracking-wider whitespace-nowrap`}>
                                     {t('exams.opening')} {formatCountdown(msRemaining)}
                                 </span>
                                 <span className={`text-[10px] font-mono ${isWithinSniperWindow ? 'text-warning/70' : 'opacity-30'}`}>
@@ -73,10 +73,10 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                             </div>
                             
                             {onToggleArm && section && isWithinSniperWindow && (
-                                <div className="w-[100px] flex justify-end">
+                                <div className="flex justify-end min-w-[100px]">
                                     <button 
                                         onClick={(e) => { e.stopPropagation(); onToggleArm(); }}
-                                        className={`btn btn-xs h-8 ${isArmed ? 'btn-warning shadow-lg shadow-warning/20' : 'btn-outline border-warning/30 hover:bg-warning hover:border-warning'} ${isFiring ? 'animate-pulse' : ''} gap-1.5 px-3`}
+                                        className={`btn btn-xs h-8 ${isArmed ? 'btn-warning shadow-lg shadow-warning/20' : 'btn-outline border-warning/30 hover:bg-warning hover:border-warning'} ${isFiring ? 'animate-pulse' : ''} gap-1.5 px-3 whitespace-nowrap`}
                                     >
                                         <Zap size={12} className={isArmed ? 'fill-current' : ''} />
                                         <span className="text-[10px] font-bold uppercase tracking-wider">

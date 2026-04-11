@@ -2,12 +2,16 @@ import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useErasmus } from '@/hooks/data/useErasmus';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAppStore } from '@/store/useAppStore';
+import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { ERASMUS_COUNTRIES } from '@/constants/erasmusCountries';
 import { EuropeMap } from './EuropeMap';
 import { ErasmusDrawer } from './ErasmusDrawer';
+import { UnfulfilledCoursesSection } from './UnfulfilledCoursesSection';
+import { SelectedCoursesCard } from './SelectedCoursesCard';
 import { getDeadlineStatus } from '@/utils/erasmusGrants';
 import { getUserParams, type UserParams } from '@/utils/userParams';
 import { warmupTransferApi } from '@/api/syllabusTransfer';
+import type { StudyPlan } from '@/types/studyPlan';
 
 interface ErasmusPanelProps {
   onOpenSubject: (courseCode: string, courseName?: string, courseId?: string) => void;
@@ -33,8 +37,13 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
   const lang = useAppStore(s => s.language) === 'cz' ? 'cs' : 'en';
   const { reports, loading, countryFile, setCountry, config } = useErasmus();
 
+  const plan = useStudyPlan();
+  const selectedCourses = useAppStore(s => s.erasmusSelectedCourses);
+  const toggleCourse = useAppStore(s => s.toggleErasmusCourse);
+
   useEffect(() => { warmupTransferApi().catch(() => {}); }, []);
 
+  const [activeTab, setActiveTab] = useState<'plan' | 'explore'>('plan');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [schoolFilter, setSchoolFilter] = useState<string | null>(null);
   const [facultyFilter, setFacultyFilter] = useState(false);
@@ -66,6 +75,11 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
 
   const handleClose = useCallback(() => { setDrawerOpen(false); }, []);
 
+  const handleTabChange = (tab: 'plan' | 'explore') => {
+    setActiveTab(tab);
+    if (tab === 'plan') setDrawerOpen(false);
+  };
+
   useEffect(() => {
     if (!drawerOpen) return;
     const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
@@ -75,9 +89,9 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
 
   return (
     <div className="h-full flex flex-col">
+      {/* Persistent header */}
       <div className="px-4 pt-4 pb-2">
         <h2 className="text-lg font-bold mb-1">{t('erasmus.title')}</h2>
-        <p className="text-xs text-base-content/50 mb-2">{t('erasmus.selectCountry')}</p>
         {config && (() => {
           const ds = getDeadlineStatus(config);
           if (ds.status === 'open') return <span className="badge badge-success badge-sm">{t('erasmus.applicationsOpen')}</span>;
@@ -87,20 +101,55 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
         })()}
       </div>
 
-      <div className="flex-1 min-h-0 px-4 pb-4">
-        <div className="bg-base-200/50 rounded-xl p-2 border border-base-300 h-full">
-          <EuropeMap
-            selectedCountryId={drawerOpen ? currentCountryId : ''}
-            onSelectCountry={id => {
-              const c = ERASMUS_COUNTRIES.find(e => e.id === id);
-              if (c) handleCountrySelect(c.file);
-            }}
-            lang={lang}
-          />
-        </div>
+      {/* Tab bar */}
+      <div className="flex border-b border-base-300 shrink-0">
+        {(['plan', 'explore'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => handleTabChange(tab)}
+            className={`flex-1 py-2 text-sm font-medium transition-colors
+              ${activeTab === tab
+                ? 'border-b-2 border-primary bg-primary/10 text-primary'
+                : 'text-base-content/60 hover:bg-base-200'}`}
+          >
+            {tab === 'plan' ? t('erasmus.tabPlan') : t('erasmus.tabExplore')}
+          </button>
+        ))}
       </div>
 
-      {drawerOpen && (
+      {/* Plan tab */}
+      {activeTab === 'plan' && (
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 flex flex-col gap-3">
+          <SelectedCoursesCard
+            plan={plan ?? { blocks: [] } as unknown as StudyPlan}
+            selectedCodes={selectedCourses}
+            onToggle={toggleCourse}
+          />
+          <UnfulfilledCoursesSection
+            onOpenSubject={onOpenSubject}
+            onSearchSubject={onSearchSubject}
+          />
+        </div>
+      )}
+
+      {/* Explore tab */}
+      {activeTab === 'explore' && (
+        <div className="flex-1 min-h-0 px-4 pb-4 pt-2">
+          <div className="bg-base-200/50 rounded-xl p-2 border border-base-300 h-full">
+            <EuropeMap
+              selectedCountryId={drawerOpen ? currentCountryId : ''}
+              onSelectCountry={id => {
+                const c = ERASMUS_COUNTRIES.find(e => e.id === id);
+                if (c) handleCountrySelect(c.file);
+              }}
+              lang={lang}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Drawer — only in explore context */}
+      {drawerOpen && activeTab === 'explore' && (
         <ErasmusDrawer
           countryName={countryName}
           filteredReports={filteredReports}
@@ -116,8 +165,6 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
           loading={loading}
           config={config}
           onClose={handleClose}
-          onOpenSubject={onOpenSubject}
-          onSearchSubject={onSearchSubject}
         />
       )}
     </div>

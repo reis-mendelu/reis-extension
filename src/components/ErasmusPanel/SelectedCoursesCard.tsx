@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { ClipboardList, X, ScanSearch } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
-import { SyllabusTransferModal } from './SyllabusTransferModal';
+import { TransferRow } from './TransferRow';
 import type { StudyPlan, SubjectStatus } from '@/types/studyPlan';
 
 interface Props {
@@ -12,56 +11,36 @@ interface Props {
 
 export function SelectedCoursesCard({ plan, selectedCodes, onToggle }: Props) {
   const { t } = useTranslation();
-  const [transferSubject, setTransferSubject] = useState<SubjectStatus | null>(null);
 
   const allSubjects = plan.blocks.flatMap(b => b.groups.flatMap(g => g.subjects));
   const selected: SubjectStatus[] = selectedCodes
     .map(code => allSubjects.find(s => s.code === code))
     .filter((s): s is SubjectStatus => s !== undefined);
 
-  if (selected.length === 0) return null;
+  if (selected.length === 0) {
+    return (
+      <div className="border border-dashed border-base-300 rounded-lg px-4 py-5 flex flex-col items-center gap-1.5 text-center">
+        <ClipboardList size={18} className="text-base-content/20" />
+        <p className="text-sm text-base-content/40">{t('erasmus.selectedForLA')}</p>
+        <p className="text-xs text-base-content/30">{t('erasmus.studyPlanHint')}</p>
+      </div>
+    );
+  }
 
   const totalCredits = selected.reduce((sum, s) => sum + s.credits, 0);
 
   return (
-    <>
-      <div className="border border-primary/30 bg-primary/5 rounded-lg overflow-hidden">
-        <div className="px-3 py-2.5 flex items-center gap-2">
-          <ClipboardList size={14} className="text-primary shrink-0" />
-          <span className="text-sm font-medium text-primary flex-1">{t('erasmus.selectedForLA')}</span>
-          <span className="text-[11px] text-primary/70">{totalCredits} {t('erasmus.credits')}</span>
-        </div>
-        <div className="px-3 pb-2.5 border-t border-primary/10">
-          {selected.map(s => (
-            <div key={s.code} className="flex items-center gap-2 py-1 text-xs group">
-              <span className="font-mono text-base-content/50 shrink-0">{s.code}</span>
-              <span className="flex-1 truncate">{s.name}</span>
-              <span className="text-base-content/40 shrink-0">{s.credits} {t('erasmus.credits')}</span>
-              <button
-                onClick={() => setTransferSubject(s)}
-                className="btn btn-ghost btn-xs h-6 min-h-0 px-1.5 gap-1 opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:bg-primary/10"
-                title={t('transfer.checkTitle')}
-              >
-                <ScanSearch size={11} />
-                <span className="text-[10px]">{t('transfer.checkButton')}</span>
-              </button>
-              <button
-                onClick={() => onToggle(s.code)}
-                className="btn btn-ghost btn-xs w-5 h-5 min-h-0 p-0 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-              >
-                <X size={12} />
-              </button>
-            </div>
-          ))}
-        </div>
+    <div className="border border-primary/30 bg-primary/5 rounded-lg overflow-hidden">
+      <div className="px-3 py-2.5 flex items-center gap-2">
+        <ClipboardList size={14} className="text-primary shrink-0" />
+        <span className="text-sm font-medium text-primary flex-1">{t('erasmus.selectedForLA')}</span>
+        <span className="text-[11px] text-primary/70">{totalCredits} {t('erasmus.credits')}</span>
       </div>
-
-      {transferSubject && (
-        <SyllabusTransferModal
-          subject={transferSubject}
-          onClose={() => setTransferSubject(null)}
-        />
-      )}
-    </>
+      <div>
+        {selected.map(s => (
+          <TransferRow key={s.code} subject={s} onRemove={() => onToggle(s.code)} />
+        ))}
+      </div>
+    </div>
   );
 }
