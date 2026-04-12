@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, CheckCircle2, ExternalLink, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, CheckCircle2, ExternalLink, Info } from 'lucide-react';
 import { useErasmus } from '@/hooks/data/useErasmus';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAppStore } from '@/store/useAppStore';
@@ -9,10 +9,9 @@ import { EuropeMap } from './EuropeMap';
 import { ErasmusDrawer } from './ErasmusDrawer';
 import { UnfulfilledCoursesSection } from './UnfulfilledCoursesSection';
 import { SelectedCoursesCard } from './SelectedCoursesCard';
-import { getDeadlineStatus } from '@/utils/erasmusGrants';
 import { getUserParams, type UserParams } from '@/utils/userParams';
 import { warmupTransferApi } from '@/api/syllabusTransfer';
-import { isElectiveGroup, isCompulsoryGroup, isCoreElectiveGroup } from '@/utils/studyPlanUtils';
+import { isCompulsoryGroup, isCoreElectiveGroup } from '@/utils/studyPlanUtils';
 import type { StudyPlan } from '@/types/studyPlan';
 
 const FACULTY_ABBREV_TO_NAME: Record<string, string> = {
@@ -35,6 +34,7 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
   const plan = useStudyPlan();
   const selectedCourses = useAppStore(s => s.erasmusSelectedCourses) || [];
   const toggleCourse = useAppStore(s => s.toggleErasmusCourse);
+  const erasmusVerdicts = useAppStore(s => s.erasmusVerdicts);
   const activeTab = useAppStore(s => s.erasmusActiveTab);
   const setActiveTab = useAppStore(s => s.setErasmusActiveTab);
   const planPhase = useAppStore(s => s.erasmusPlanPhase);
@@ -98,7 +98,7 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
     if (schoolFilter) base = base.filter(r => r.host.name === schoolFilter);
     const fullFaculty = facultyFilter && userParams?.facultyLabel
       ? FACULTY_ABBREV_TO_NAME[userParams.facultyLabel] : null;
-    if (fullFaculty) base = base.filter(r => r.home.faculty === fullFaculty);
+    if (fullFaculty) base = base.filter(r => r.student.faculty === fullFaculty);
     return base;
   }, [reports, schoolFilter, facultyFilter, userParams]);
 
@@ -191,27 +191,41 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
                     compulsoryCredits={totalCoreCreditsSelected}
                   />
                   
-                  {/* Next steps card */}
-                  <div className="bg-base-200/50 rounded-xl p-4 border border-base-300 flex flex-col gap-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                        <CheckCircle2 size={16} />
+                  {/* Next steps card — gated by verification progress */}
+                  {(() => {
+                    const verifiedCount = selectedCourses.filter(c => erasmusVerdicts[c]).length;
+                    const allVerified = verifiedCount === selectedCourses.length && selectedCourses.length > 0;
+                    if (verifiedCount === 0) return null;
+                    return (
+                      <div className={`bg-base-200/50 rounded-xl p-4 border border-base-300 flex flex-col gap-3 ${!allVerified ? 'opacity-60' : ''}`}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                            <CheckCircle2 size={16} />
+                          </div>
+                          <h4 className="font-bold text-sm">{t('erasmus.nextSteps')}</h4>
+                        </div>
+                        <p className="text-[11px] text-base-content/60 leading-relaxed">
+                          {allVerified ? t('erasmus.officialApproval') : t('erasmus.verifyAllFirst')}
+                        </p>
+                        {allVerified ? (
+                          <a
+                            href={t('erasmus.erasmusCoordinators')}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-outline btn-sm gap-2 w-full text-xs font-bold"
+                          >
+                            {t('erasmus.contactCoordinator')}
+                            <ExternalLink size={12} />
+                          </a>
+                        ) : (
+                          <button disabled className="btn btn-outline btn-sm gap-2 w-full text-xs font-bold btn-disabled">
+                            {t('erasmus.contactCoordinator')}
+                            <ExternalLink size={12} />
+                          </button>
+                        )}
                       </div>
-                      <h4 className="font-bold text-sm">{t('erasmus.nextSteps')}</h4>
-                    </div>
-                    <p className="text-[11px] text-base-content/60 leading-relaxed">
-                      {t('erasmus.officialApproval')}
-                    </p>
-                    <a 
-                      href={t('erasmus.erasmusCoordinators')}
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="btn btn-outline btn-sm gap-2 w-full text-xs font-bold"
-                    >
-                      {t('erasmus.contactCoordinator')}
-                      <ExternalLink size={12} />
-                    </a>
-                  </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -221,8 +235,12 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
 
       {/* Explore tab */}
       {activeTab === 'explore' && (
-        <div className="flex-1 min-h-0 px-4 pb-4 pt-2">
-          <div className="bg-base-200/50 rounded-xl p-2 border border-base-300 h-full">
+        <div className="flex-1 min-h-0 px-4 pb-4 pt-2 flex flex-col gap-2">
+          <div className="flex items-start gap-2 px-1 py-1.5 text-[10px] text-base-content/50 leading-relaxed">
+            <Info size={12} className="shrink-0 mt-0.5 text-info" />
+            <span>{t('erasmus.exploreDisclaimer')}</span>
+          </div>
+          <div className="bg-base-200/50 rounded-xl p-2 border border-base-300 flex-1 min-h-0">
             <EuropeMap 
               selectedCountryId={currentCountryId ? currentCountryId : ''}
               onSelectCountry={id => {

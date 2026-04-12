@@ -16,7 +16,7 @@ interface Props {
 }
 
 export function ErasmusReportCard({ report }: Props) {
-  const { t } = useTranslation();
+  const { t, language: lang } = useTranslation();
   const [open, setOpen] = useState(false);
 
   return (
@@ -85,7 +85,7 @@ export function ErasmusReportCard({ report }: Props) {
 
           {/* External link */}
           <a
-            href={`https://is.mendelu.cz/auth/int/zavzpr.pl?akce=1;zobrazit=${report.reportId};lang=cz`}
+            href={`https://is.mendelu.cz/auth/int/zavzpr.pl?akce=1;zobrazit=${report.reportId};lang=${lang === 'en' ? 'en' : 'cz'}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary-focus transition-colors"

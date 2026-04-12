@@ -437,7 +437,13 @@
     "semesterLabel": "{n}. semestr",
     "replacementPriority": "Priorita: Nahrazení tohoto semestru",
     "futurePool": "Další budoucí předměty",
-    "selectTripWindow": "Vyber semestr výjezdu pro filtraci předmětů"
+    "selectTripWindow": "Vyber semestr výjezdu pro filtraci předmětů",
+    "progressIdeal": "Ideální počet kreditů",
+    "considerUniversity": "Zvážit tuto univerzitu",
+    "universityPinned": "Zvažovaná univerzita",
+    "consideredUniversities": "Zvažované univerzity",
+    "verifyAllFirst": "Ověř všechny předměty pro pokračování.",
+    "exploreDisclaimer": "Přesný seznam partnerských univerzit pro tvou fakultu najdeš v Erasmus+ smlouvách. Zde vidíš zkušenosti studentů ze všech fakult MENDELU."
   },
   "transfer": {
     "title": "Ověření přenosu předmětu",
@@ -466,7 +472,19 @@
     "verdictRejected": "Uznání nepravděpodobné",
     "approvedNote": "Před podáním Learning Agreementu ověř uznání u koordinátora fakulty — jde o odhad, ne o oficiální rozhodnutí.",
     "disclaimer": "Jde o odhad sémantické podobnosti, nikoliv o oficiální rozhodnutí. Konečné schválení závisí na koordinátorovi fakulty.",
-    "error": "Porovnání selhalo — služba může být nedostupná. Zkus to znovu za chvíli."
+    "error": "Porovnání selhalo — služba může být nedostupná. Zkus to znovu za chvíli.",
+    "manualPaste": "nebo vložit text ručně",
+    "uploadPdfHint": "stačí nahrát zahraniční sylabus v pdf",
+    "batchUpload": "Nahraj zahraniční sylabusy (PDF)",
+    "batchUploaded": "{count} souborů nahráno",
+    "batchVerified": "{count} předmětů ověřeno",
+    "compareAll": "Porovnat vše",
+    "pickPdf": "Vyber nahraný sylabus...",
+    "uploadOther": "nebo nahrát jiný PDF",
+    "aiReasoning": "Zdůvodnění AI",
+    "lowCredits": "Nízký počet kreditů",
+    "typeMismatch": "Nesoulad v ukončení (zkouška vs zápočet)",
+    "pdfOnly": "Pouze soubory PDF jsou podporovány"
   },
   "classmates": {
     "all": "Všichni",

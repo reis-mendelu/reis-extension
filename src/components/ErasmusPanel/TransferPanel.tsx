@@ -1,12 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { ChevronDown, Loader2, CheckCircle2, XCircle, Search, FileUp, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, AlertTriangle, FileUp } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { compareSyllabi, buildMendeluText, type TransferResult } from '@/api/syllabusTransfer';
 import { searchSubjects } from '@/api/search/searchService';
-import { extractSyllabusFromPdf, compareSyllabiAI, type AIComparisonResult } from '@/api/gemini';
-import type { Subject } from '@/api/search/types';
+import { compareSyllabiAI, type AIComparisonResult, extractSyllabusFromPdf } from '@/api/gemini';
 import type { SubjectStatus } from '@/types/studyPlan';
+import { toast } from 'sonner';
 
 const MIN_CHARS = 100;
 
@@ -20,380 +20,234 @@ export function TransferPanel({ subject, onVerdict }: Props) {
   const syllabusCache = useAppStore(s => s.syllabuses.cache);
   const syllabusLoading = useAppStore(s => s.syllabuses.loading);
   const fetchSyllabus = useAppStore(s => s.fetchSyllabus);
+  const uploadedPdfs = useAppStore(s => s.erasmusUploadedPdfs);
+  const addUploadedPdf = useAppStore(s => s.addErasmusUploadedPdf);
+  const assignedPdfFilename = useAppStore(s => s.erasmusPdfAssignments[subject.code]);
 
   const hasId = !!subject.id;
   const [foreignText, setForeignText] = useState('');
   const [result, setResult] = useState<TransferResult | (AIComparisonResult & { verdict: 'approved' | 'rejected' }) | null>(null);
   const [comparing, setComparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [manualMode, setManualMode] = useState(false);
 
-  // PDF Extraction state
-  const [extracting, setExtracting] = useState(false);
-  const [extractStatus, setExtractStatus] = useState<'success' | 'error' | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Effective PDF is assigned globally via Row dropdown
+  const effectivePdf = assignedPdfFilename ? uploadedPdfs[assignedPdfFilename] : null;
 
-  // No-ID: subject search state
-  const [searchQuery, setSearchQuery] = useState(subject.code);
-  const [searchResults, setSearchResults] = useState<Subject[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-  const [manualSearchMode, setManualSearchMode] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  // No-ID: auto-search for MENDELU equivalent (silent, no UI)
+  const [selectedSubjectCode, setSelectedSubjectCode] = useState<string | null>(null);
 
-  const syllabusKey = hasId ? subject.code : (selectedSubject?.code ?? '');
+  const syllabusKey = hasId ? subject.code : (selectedSubjectCode ?? '');
   const cachedSyllabus = syllabusCache[syllabusKey];
   const loading = syllabusLoading[syllabusKey] ?? false;
   const autoMendeluText = cachedSyllabus ? buildMendeluText(cachedSyllabus) : '';
   const mendeluReady = autoMendeluText.trim().length >= MIN_CHARS;
-  const canSubmit = (foreignText.trim().length >= MIN_CHARS || extracting) && mendeluReady && !comparing;
+  const hasPoolPdfs = Object.keys(uploadedPdfs).length > 0;
+  const canSubmit = (foreignText.trim().length >= MIN_CHARS || !!effectivePdf) && mendeluReady && !comparing;
 
+  // Fetch MENDELU syllabus silently
   useEffect(() => {
     if (hasId) fetchSyllabus(subject.code, subject.id);
   }, [hasId, subject.code, subject.id, fetchSyllabus]);
 
+  // Auto-search for no-ID courses silently
   useEffect(() => {
-    const h = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setDropdownOpen(false);
-    };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, []);
-
-  const runSearch = useCallback((q: string) => {
-    if (q.trim().length < 2) { setSearchResults([]); return; }
-    setSearching(true);
-    searchSubjects(q.trim()).then(res => {
-      setSearchResults(res); 
-      // AUTO-SELECT FIRST RESULT (the latest/most relevant)
-      if (res.length > 0 && !selectedSubject) {
-        const first = res[0];
-        setSelectedSubject(first);
-        setSearchQuery(first.name);
-        fetchSyllabus(first.code, first.id);
+    if (hasId || selectedSubjectCode) return;
+    searchSubjects(subject.code.trim()).then(res => {
+      if (res.length > 0) {
+        setSelectedSubjectCode(res[0].code);
+        fetchSyllabus(res[0].code, res[0].id);
       }
-    }).finally(() => setSearching(false));
-  }, [fetchSyllabus, selectedSubject]);
-
-  useEffect(() => {
-    if (!hasId) runSearch(subject.code);
-  }, [hasId, subject.code, runSearch]);
-
-  const handleSearchChange = (q: string) => {
-    setSearchQuery(q); setSelectedSubject(null); setResult(null);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => runSearch(q), 350);
-  };
-
-  const handleSelectSubject = (s: Subject) => {
-    setSelectedSubject(s);
-    setSearchQuery(s.name);
-    setDropdownOpen(false);
-    fetchSyllabus(s.code, s.id);
-  };
+    });
+  }, [hasId, subject.code, fetchSyllabus, selectedSubjectCode]);
 
   const runComparison = useCallback(async (mendeluText: string, fText: string, pdfBase64?: string) => {
     if (mendeluText.trim().length < MIN_CHARS) return;
-    
-    setComparing(true); 
-    setError(null); 
+    setComparing(true);
+    setError(null);
     setResult(null);
     try {
-      if (pdfBase64) {
-        // Deep AI comparison
+      // Use Gemini for Platinum comparison (with reasoning)
+      // If we have text, we prefer sending just text to save tokens
+      if (pdfBase64 || fText.trim().length >= MIN_CHARS) {
         const r = await compareSyllabiAI(
-          mendeluText, 
-          { 
-            credits: subject.credits, 
-            type: subject.rawStatusText || '', 
-            code: subject.code, 
-            name: subject.name 
-          }, 
-          pdfBase64
+          mendeluText,
+          { credits: subject.credits, type: subject.rawStatusText || '', code: subject.code, name: subject.name },
+          pdfBase64,
+          fText
         );
         setResult(r);
         onVerdict?.(r.verdict);
       } else {
-        // Fast similarity comparison
+        // Fallback to simple similarity model for short manual text
         const r = await compareSyllabi(mendeluText, fText.trim());
         setResult(r);
         onVerdict?.(r.verdict);
       }
-    }
-    catch (err) { 
+    } catch (err) {
       console.error('[TransferPanel] Comparison failed:', err);
-      setError(t('transfer.error')); 
-    }
-    finally { 
-      setComparing(false); 
+      setError(t('transfer.error'));
+    } finally {
+      setComparing(false);
     }
   }, [onVerdict, t, subject]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Auto-run comparison when PDF is assigned and Mendelu is ready
+  useEffect(() => {
+    const autoProcess = async () => {
+      if (mendeluReady && effectivePdf && !result && !comparing && !error) {
+        let fText = effectivePdf.text;
+        
+        // Step 1: Extract if text missing
+        if (!fText || fText.length < MIN_CHARS) {
+          setComparing(true);
+          try {
+            fText = await extractSyllabusFromPdf(effectivePdf.base64);
+            addUploadedPdf(assignedPdfFilename!, fText, effectivePdf.base64);
+          } catch (err) {
+            console.error('[TransferPanel] Extraction failed:', err);
+            setError(t('transfer.extractError'));
+            setComparing(false);
+            return;
+          }
+          // After extraction, we need a small delay before comparison to respect RPM
+          await new Promise(resolve => setTimeout(resolve, 3100));
+        }
 
-    setExtracting(true);
-    setExtractStatus(null);
-    try {
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-          const res = reader.result as string;
-          resolve(res.split(',')[1]); // remove data:application/pdf;base64,
-        };
-        reader.onerror = reject;
-      });
-      reader.readAsDataURL(file);
-      
-      const base64 = await base64Promise;
-      
-      // AUTO-COMPARE directly with PDF if MENDELU is already ready
-      if (mendeluReady) {
-        await runComparison(autoMendeluText, '', base64);
-        setExtractStatus('success');
-        // Still extract text for the textarea so user can see it
-        const extractedText = await extractSyllabusFromPdf(base64);
-        setForeignText(extractedText);
-      } else {
-        const extractedText = await extractSyllabusFromPdf(base64);
-        setForeignText(extractedText);
-        setExtractStatus('success');
+        // Step 2: Compare
+        runComparison(autoMendeluText, fText);
       }
-    } catch (err) {
-      console.error('[TransferPanel] Extraction failed:', err);
-      setExtractStatus('error');
-    } finally {
-      setExtracting(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
+    };
 
-  async function handleCompare() {
-    runComparison(autoMendeluText, foreignText);
-  }
+    autoProcess();
+  }, [mendeluReady, assignedPdfFilename, result, comparing, error, autoMendeluText, runComparison]);
 
   const verdict = result ? ({
     approved: { icon: <CheckCircle2 size={13} className="text-success shrink-0" />, badge: 'badge-success', label: t('transfer.verdictApproved') },
-    rejected: { icon: <XCircle      size={13} className="text-error shrink-0"   />, badge: 'badge-error',   label: t('transfer.verdictRejected') },
+    rejected: { icon: <XCircle size={13} className="text-error shrink-0" />, badge: 'badge-error', label: t('transfer.verdictRejected') },
   }[result.verdict]) : null;
 
   return (
-    <div className="px-3 pb-3 flex flex-col gap-2 border-t border-primary/10">
-      {/* No-ID: subject search dropdown */}
-      {!hasId && (
-        <div className="relative mt-1" ref={dropdownRef}>
-          {manualSearchMode || !selectedSubject ? (
-            <>
-              <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/30 pointer-events-none" />
-              <input
-                type="text"
-                className="input input-bordered input-xs w-full pl-7 pr-7 text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                value={searchQuery}
-                onChange={e => handleSearchChange(e.target.value)}
-                onFocus={() => searchResults.length > 0 && setDropdownOpen(true)}
-                placeholder={t('transfer.mendeluSearchPlaceholder')}
-                autoFocus
-              />
-              {searching
-                ? <Loader2 size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-base-content/30" />
-                : searchResults.length > 0 && <ChevronDown size={11} className={`absolute right-2.5 top-1/2 -translate-y-1/2 text-base-content/30 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-              }
-              {dropdownOpen && (
-                <ul className="absolute z-50 w-full mt-0.5 bg-base-100 border border-base-300 rounded-lg shadow-xl max-h-40 overflow-y-auto">
-                  {searchResults.map(s => (
-                    <li key={s.id}>
-                      <button 
-                        className="w-full text-left px-2.5 py-1.5 text-xs hover:bg-base-200 flex items-center gap-2" 
-                        onClick={() => { handleSelectSubject(s); setManualSearchMode(false); }}
-                      >
-                        <span className="flex-1 truncate">{s.name}</span>
-                        <span className="text-[10px] text-base-content/30 shrink-0">{s.semester}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
-          ) : (
-            <div className="flex items-center justify-between bg-base-200/50 rounded-lg px-2 py-1 border border-base-300">
-              <div className="flex flex-col min-w-0">
-                <span className="text-[9px] font-bold text-base-content/40 uppercase tracking-widest leading-none">Vybrán ekvivalent MENDELU</span>
-                <span className="text-xs truncate font-medium text-base-content/80">{selectedSubject.name}</span>
-              </div>
-              <button 
-                onClick={() => setManualSearchMode(true)}
-                className="btn btn-ghost btn-xs h-6 px-1.5 text-[10px] text-primary hover:bg-primary/10"
-              >
-                Změnit
-              </button>
-            </div>
-          )}
-        </div>
+    <div className={`px-3 flex flex-col gap-2 ${effectivePdf || result || comparing || error ? 'py-3' : ''}`}>
+      {/* Loading indicator for MENDELU syllabus — subtle */}
+      {loading && !result && !comparing && (
+        <span className="text-[9px] text-base-content/30 flex items-center gap-1">
+          <Loader2 size={9} className="animate-spin" /> {t('transfer.fetchingSyllabus')}
+        </span>
       )}
 
-      {/* MENDELU status */}
-      <div className="flex items-center gap-1.5 text-[10px]">
-        <span className="text-base-content/30 uppercase tracking-wide">Mendelu</span>
-        {loading
-          ? <span className="flex items-center gap-1 text-base-content/40"><Loader2 size={9} className="animate-spin" />{t('transfer.fetchingSyllabus')}</span>
-          : mendeluReady
-            ? <span className="text-success">{t('transfer.syllabusReady')}</span>
-            : cachedSyllabus !== undefined
-              ? <span className="text-error/70">{t('transfer.mendeluEmpty')}</span>
-              : <span className="text-base-content/30">—</span>
-        }
-      </div>
+      {/* Manual text fallback toggle — only if nothing assigned */}
+      {!effectivePdf && !result && !manualMode && !comparing && (
+        <button
+          onClick={() => setManualMode(true)}
+          className="btn btn-ghost btn-xs text-base-content/40 hover:text-primary w-full justify-start px-0 font-normal"
+        >
+          {t('transfer.manualPaste')}
+        </button>
+      )}
 
-      {/* Foreign UI Header */}
-      <div className="flex flex-col gap-2 mt-1">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] text-base-content/30 uppercase tracking-wide font-bold">{t('transfer.foreignLabel')}</span>
-          
-          {(extracting || extractStatus) && (
-            <div className="flex items-center gap-2">
-              {extracting && (
-                <span className="text-[9px] text-primary flex items-center gap-1 animate-pulse">
-                  <Loader2 size={10} className="animate-spin" />
-                  {t('transfer.extracting')}
-                </span>
-              )}
-              {extractStatus === 'success' && (
-                <span className="text-[9px] text-success flex items-center gap-1 animate-in fade-in zoom-in duration-300">
-                  <CheckCircle2 size={10} />
-                  {t('transfer.extractSuccess')}
-                </span>
-              )}
-              {extractStatus === 'error' && (
-                <span className="text-[9px] text-error flex items-center gap-1 animate-in shake duration-300">
-                  <XCircle size={10} />
-                  {t('transfer.extractError')}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-        
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileUpload}
-          accept="application/pdf"
-          className="hidden"
-        />
-        
-        {/* HERO PDF BUTTON */}
-        {!foreignText && !result && (
-          <button 
-            className="btn btn-primary btn-outline border-dashed w-full h-32 flex flex-col gap-3 hover:bg-primary/5 group transition-all duration-300"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={extracting || comparing}
-          >
-            {extracting 
-              ? <Loader2 size={32} className="animate-spin" /> 
-              : <FileUp size={32} className="group-hover:-translate-y-1 transition-transform duration-300" />
-            }
-            <div className="flex flex-col gap-1">
-              <span className="text-sm font-black uppercase tracking-widest">{t('transfer.uploadPdf')}</span>
-              <span className="text-[10px] font-medium opacity-50 lowercase italic">
-                Stačí nahrát zahraniční sylabus v PDF
-              </span>
-            </div>
-          </button>
-        )}
-
-        {/* Text area as a fallback or result viewer */}
+      {/* Textarea — manual mode or showing extracted content */}
+      {(manualMode || (effectivePdf && !result && !comparing)) && (
         <div className="relative group">
           <textarea
-            autoFocus
-            className={`textarea textarea-bordered w-full text-xs leading-relaxed resize-none transition-all focus:outline-none focus:border-primary ${
-              result ? 'h-16 opacity-50' : 'h-24'
-            }`}
+            autoFocus={manualMode}
+            readOnly={!!effectivePdf}
+            className="textarea textarea-bordered w-full text-xs leading-relaxed h-20 resize-none transition-all focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 shadow-inner bg-base-200/50"
             placeholder={t('transfer.foreignPlaceholder')}
-            value={foreignText}
-            onChange={e => { setForeignText(e.target.value); setResult(null); setExtractStatus(null); }}
+            value={foreignText || effectivePdf?.text || ''}
+            onChange={e => { setForeignText(e.target.value); setResult(null); }}
           />
-          {foreignText && (
-            <button 
-              onClick={() => { setForeignText(''); setResult(null); setExtractStatus(null); }}
+          {(foreignText || effectivePdf) && (
+            <button
+              onClick={() => { setForeignText(''); setResult(null); setManualMode(false); }}
               className="absolute top-2 right-2 p-1 rounded-full bg-base-300/50 text-base-content/50 hover:bg-error/20 hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <XCircle size={12} />
             </button>
           )}
         </div>
-      </div>
+      )}
 
-      {/* Footer */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          {foreignText.trim().length < MIN_CHARS && !result && !comparing && (
-            <span className="text-[10px] tabular-nums shrink-0 text-base-content/30 italic">
-              {t('transfer.minCharsHint', { min: MIN_CHARS })} ({foreignText.trim().length}/{MIN_CHARS})
-            </span>
-          )}
-          {result && verdict && (
-            <div className={`badge ${verdict.badge} badge-xs flex-1 justify-between gap-1 h-auto py-1 shadow-sm`}>
-              <div className="flex items-center gap-1">
-                {verdict.icon}
-                <span className="leading-tight font-bold">{verdict.label}</span>
-              </div>
-              <span className="font-mono text-[9px] opacity-70">
-                {('similarity' in result ? (result.similarity * 100).toFixed(0) : 0)}%
-              </span>
-            </div>
-          )}
-          {error && <span className="text-[10px] text-error flex-1 font-bold animate-pulse">{error}</span>}
+      {/* Loading State */}
+      {comparing && (
+        <div className="flex flex-col items-center justify-center py-4 bg-base-200/30 rounded-xl border border-dashed border-primary/20 animate-pulse">
+          <Loader2 size={24} className="animate-spin text-primary mb-2" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60">{t('transfer.comparing')}</span>
         </div>
+      )}
 
-        {/* AI Reasoning Card */}
-        {result && 'reasoning' in result && (
-          <div className="bg-base-200/80 rounded-xl p-3 flex flex-col gap-2 border border-base-300 shadow-inner animate-in fade-in slide-in-from-bottom-2">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest border-b border-base-300 pb-1.5 mb-0.5">
-              <CheckCircle2 size={12} className="text-primary" />
-              Zdůvodnění AI
-            </div>
-            <p className="text-[11px] leading-relaxed text-base-content/80 italic font-medium">
-              "{result.reasoning}"
-            </p>
-            
-            {(result.mismatches.length > 0 || !result.creditsMatch || !result.typeMatch) && (
-              <div className="flex flex-col gap-1.5 mt-1 pt-2 border-t border-base-300">
-                {!result.creditsMatch && (
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-error bg-error/5 p-1.5 rounded-lg border border-error/10">
-                    <AlertTriangle size={12} />
-                    <span>Nízký počet kreditů</span>
-                  </div>
-                )}
-                {!result.typeMatch && (
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-error bg-error/5 p-1.5 rounded-lg border border-error/10">
-                    <AlertTriangle size={12} />
-                    <span>Nesoulad v ukončení (zkouška vs zápočet)</span>
-                  </div>
-                )}
-                {result.mismatches.map((m, i) => (
-                  <div key={i} className="flex items-start gap-2 text-[10px] text-base-content/60 leading-tight">
-                    <span className="mt-1.5 w-1 h-1 rounded-full bg-base-content/30 shrink-0" />
-                    <span>{m}</span>
-                  </div>
-                ))}
+      {/* Results & actions */}
+      {(result || error) && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            {result && verdict && (
+              <div className={`badge ${verdict.badge} badge-xs flex-1 justify-between gap-1 h-auto py-1 shadow-sm`}>
+                <div className="flex items-center gap-1">
+                  {verdict.icon}
+                  <span className="leading-tight font-bold">{verdict.label}</span>
+                </div>
+                <span className="font-mono text-[9px] opacity-70">
+                  {('similarity' in result ? (result.similarity * 100).toFixed(0) : 0)}%
+                </span>
               </div>
             )}
+            {error && <span className="text-[10px] text-error flex-1 font-bold animate-pulse">{error}</span>}
           </div>
-        )}
-      </div>
 
-      <button 
-        className={`btn btn-sm w-full transition-all ${result ? 'btn-ghost text-base-content/30 hover:bg-transparent' : 'btn-primary shadow-lg shadow-primary/20'}`} 
-        onClick={handleCompare} 
-        disabled={!canSubmit || comparing || !!result}
-      >
-        {comparing ? <Loader2 size={13} className="animate-spin" /> : result ? 'Ověřeno' : t('transfer.compare')}
-      </button>
-      <p className="text-[9px] text-base-content/40 leading-relaxed italic mt-0.5">
-        {t('transfer.disclaimer')}
-      </p>
+          {/* AI Reasoning Card */}
+          {result && 'reasoning' in result && (
+            <div className="bg-base-100 rounded-xl p-3 flex flex-col gap-2 border border-base-300 shadow-sm animate-in fade-in slide-in-from-top-1">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest border-b border-base-200 pb-1.5 mb-0.5">
+                <CheckCircle2 size={12} className="text-primary" />
+                {t('transfer.aiReasoning')}
+              </div>
+              <p className="text-[11px] leading-relaxed text-base-content/80 italic font-medium">
+                "{result.reasoning}"
+              </p>
+              {(result.mismatches.length > 0 || !result.creditsMatch || !result.typeMatch) && (
+                <div className="flex flex-col gap-1.5 mt-1 pt-2 border-t border-base-200">
+                  {!result.creditsMatch && (
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-error bg-error/5 p-1.5 rounded-lg border border-error/10">
+                      <AlertTriangle size={12} />
+                      <span>{t('transfer.lowCredits')}</span>
+                    </div>
+                  )}
+                  {!result.typeMatch && (
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-error bg-error/5 p-1.5 rounded-lg border border-error/10">
+                      <AlertTriangle size={12} />
+                      <span>{t('transfer.typeMismatch')}</span>
+                    </div>
+                  )}
+                  {result.mismatches.map((m, i) => (
+                    <div key={i} className="flex items-start gap-2 text-[10px] text-base-content/60 leading-tight">
+                      <span className="mt-1.5 w-1 h-1 rounded-full bg-base-content/30 shrink-0" />
+                      <span>{m}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Compare button — only if result not yet ready or manual text entered */}
+      {((manualMode && foreignText.trim().length >= MIN_CHARS) || (effectivePdf && error)) && !comparing && !result && (
+        <button
+          className="btn btn-sm btn-primary w-full shadow-lg shadow-primary/20"
+          onClick={() => {
+            if (effectivePdf && effectivePdf.text.trim().length >= MIN_CHARS) {
+              runComparison(autoMendeluText, effectivePdf.text);
+            } else if (effectivePdf) {
+              runComparison(autoMendeluText, '', effectivePdf.base64);
+            } else {
+              runComparison(autoMendeluText, foreignText);
+            }
+          }}
+        >
+          {t('transfer.compare')}
+        </button>
+      )}
     </div>
   );
 }

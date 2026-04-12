@@ -3,8 +3,16 @@ import { ErasmusReportCard } from './ErasmusReportCard';
 import type { ErasmusReport } from '@/types/erasmus';
 import type { ErasmusConfig } from '@/types/erasmus';
 import type { UserParams } from '@/utils/userParams';
-import { GraduationCap, X, Filter, ChevronDown, Mail } from 'lucide-react';
+import { GraduationCap, X, Filter, ChevronDown, Mail, Star } from 'lucide-react';
+import { useAppStore } from '@/store/useAppStore';
 import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from '@/components/ui/dropdown-menu';
 
 const FACULTY_ABBREV_TO_NAME: Record<string, string> = {
   'PEF': 'Provozně ekonomická fakulta',
@@ -37,6 +45,12 @@ export function ErasmusDrawer({
   userParams, showAll, setShowAll, loading, config, onClose,
 }: ErasmusDrawerProps) {
   const { t } = useTranslation();
+  const pinnedUniversities = useAppStore(s => s.erasmusPinnedUniversities);
+  const pinUniversity = useAppStore(s => s.pinErasmusUniversity);
+  const unpinUniversity = useAppStore(s => s.unpinErasmusUniversity);
+
+  const isPinned = schoolFilter ? pinnedUniversities.includes(schoolFilter) : false;
+  const canPin = pinnedUniversities.length < 4;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end items-stretch p-0 sm:p-4 isolate">
@@ -93,37 +107,35 @@ export function ErasmusDrawer({
             <div className="px-4 pt-3 pb-1">
               <div className="flex items-center gap-2">
                 {schools.length > 1 && (
-                  <div className="dropdown dropdown-bottom flex-1">
-                    <div
-                      tabIndex={0}
-                      role="button"
-                      className="btn btn-sm btn-ghost border border-base-300 w-full justify-between font-normal px-3 pl-8 relative"
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="btn btn-sm btn-ghost border border-base-300 flex-1 justify-between font-normal px-3 pl-8 relative min-w-0">
+                        <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" />
+                        <span className="truncate mr-1">{schoolFilter ?? t('erasmus.allSchools')}</span>
+                        <ChevronDown size={14} className="opacity-50 shrink-0" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent 
+                      className="w-[calc(600px-2rem)] max-w-[calc(100vw-2rem)] max-h-60 overflow-y-auto overflow-x-hidden p-1 shadow-2xl rounded-xl"
                     >
-                      <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" />
-                      <span className="truncate">{schoolFilter ?? t('erasmus.allSchools')}</span>
-                      <ChevronDown size={14} className="opacity-50 shrink-0" />
-                    </div>
-                    <ul tabIndex={0} className="dropdown-content z-[100] menu p-2 shadow-xl bg-base-100 rounded-xl border border-base-300 w-full mt-1 max-h-60 overflow-y-auto">
-                      <li>
-                        <button
-                          className={`rounded-lg ${!schoolFilter ? 'bg-primary text-primary-content' : ''}`}
-                          onClick={() => { setSchoolFilter(null); setShowAll(false); (document.activeElement as HTMLElement)?.blur(); }}
-                        >
-                          {t('erasmus.allSchools')}
-                        </button>
-                      </li>
-                      {schools.map(school => (
-                        <li key={school}>
-                          <button
-                            className={`rounded-lg ${schoolFilter === school ? 'bg-primary text-primary-content' : ''}`}
-                            onClick={() => { setSchoolFilter(school); setShowAll(false); (document.activeElement as HTMLElement)?.blur(); }}
-                          >
-                            {school}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                      <DropdownMenuRadioGroup 
+                        value={schoolFilter || 'all'} 
+                        onValueChange={(val) => {
+                          setSchoolFilter(val === 'all' ? null : val);
+                          setShowAll(false);
+                        }}
+                      >
+                        <DropdownMenuRadioItem value="all" className="rounded-lg py-1.5">
+                          <span className="text-sm font-medium">{t('erasmus.allSchools')}</span>
+                        </DropdownMenuRadioItem>
+                        {schools.map(school => (
+                          <DropdownMenuRadioItem key={school} value={school} className="rounded-lg py-1.5">
+                            <span className="text-sm font-medium truncate w-full">{school}</span>
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
                 {userParams?.facultyLabel && FACULTY_ABBREV_TO_NAME[userParams.facultyLabel] && (
                   <button
@@ -135,6 +147,21 @@ export function ErasmusDrawer({
                   </button>
                 )}
               </div>
+              {schoolFilter && (
+                <button
+                  onClick={() => isPinned ? unpinUniversity(schoolFilter) : pinUniversity(schoolFilter)}
+                  disabled={!isPinned && !canPin}
+                  className={`btn btn-sm gap-1.5 w-full mt-2 border ${
+                    isPinned
+                      ? 'btn-primary border-primary'
+                      : 'btn-ghost border-base-300 hover:border-primary/50'
+                  }`}
+                >
+                  <Star size={14} className={isPinned ? 'fill-current' : ''} />
+                  {isPinned ? t('erasmus.universityPinned') : t('erasmus.considerUniversity')}
+                  {!isPinned && <span className="text-[10px] opacity-50">({pinnedUniversities.length}/4)</span>}
+                </button>
+              )}
             </div>
           )}
 

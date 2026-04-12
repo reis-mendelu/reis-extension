@@ -435,7 +435,13 @@
     "semesterLabel": "Semester {n}",
     "replacementPriority": "Priority: Replacing this semester",
     "futurePool": "Other future subjects",
-    "selectTripWindow": "Select your departure semester to filter subjects"
+    "selectTripWindow": "Select your departure semester to filter subjects",
+    "progressIdeal": "Ideal credit count",
+    "considerUniversity": "Consider this university",
+    "universityPinned": "University considered",
+    "consideredUniversities": "Considered universities",
+    "verifyAllFirst": "Verify all courses to continue.",
+    "exploreDisclaimer": "The exact list of partner universities for your faculty can be found in the Erasmus+ agreements. Here you can see experiences from students across all MENDELU faculties."
   },
   "transfer": {
     "title": "Check credit transfer",
@@ -464,7 +470,19 @@
     "verdictRejected": "Unlikely to transfer",
     "approvedNote": "Verify with your faculty coordinator before submitting the Learning Agreement — this is an estimate, not an official decision.",
     "disclaimer": "This is a semantic similarity estimate, not an official decision. Final approval rests with your faculty coordinator.",
-    "error": "Comparison failed — the service may be unavailable. Try again in a moment."
+    "error": "Comparison failed — the service may be unavailable. Try again in a moment.",
+    "manualPaste": "or paste text manually",
+    "uploadPdfHint": "just upload the foreign syllabus as PDF",
+    "batchUpload": "Upload foreign syllabi (PDF)",
+    "batchUploaded": "{count} files uploaded",
+    "batchVerified": "{count} courses verified",
+    "compareAll": "Compare all",
+    "pickPdf": "Select uploaded syllabus...",
+    "uploadOther": "or upload another PDF",
+    "aiReasoning": "AI Reasoning",
+    "lowCredits": "Low credit count",
+    "typeMismatch": "Completion type mismatch (exam vs credit)",
+    "pdfOnly": "Only PDF files are supported"
   },
   "classmates": {
     "all": "All",

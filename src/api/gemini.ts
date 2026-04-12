@@ -26,6 +26,9 @@ export interface GeminiResponse {
   };
 }
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 2000;
+
 /**
  * Standard "Hello World" test for Gemini API.
  */
@@ -35,33 +38,59 @@ export async function testGeminiConnection(): Promise<string> {
 
 /**
  * Sends a prompt with optional system instruction to Gemini via Supabase proxy.
+ * Includes automatic retry for quota limits.
  */
-export async function askGemini(prompt: string, systemInstruction?: string, pdfBase64?: string): Promise<string> {
+export async function askGemini(prompt: string, systemInstruction?: string, pdfBase64?: string, retryCount = 0): Promise<string> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error('Supabase configuration (URL or Anon Key) is missing in .env');
   }
 
-  const response = await fetch(PROXY_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-    },
-    body: JSON.stringify({ prompt, systemInstruction, pdfBase64 })
-  });
+  try {
+    const response = await fetch(PROXY_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({ prompt, systemInstruction, pdfBase64 })
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || `Proxy Error: ${response.statusText}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      const errorMessage = errorData.error || `Proxy Error: ${response.statusText}`;
+
+      // Handle Quota Limit (429 or specific error message)
+      const isQuotaError = response.status === 429 || 
+                          errorMessage.toLowerCase().includes('quota exceeded') || 
+                          errorMessage.toLowerCase().includes('rate limit');
+
+      if (isQuotaError && retryCount < MAX_RETRIES) {
+        // Exponential backoff
+        const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
+        console.warn(`[Gemini] Quota limit hit. Retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return askGemini(prompt, systemInstruction, pdfBase64, retryCount + 1);
+      }
+
+      throw new Error(`Gemini API Error: ${errorMessage}`);
+    }
+
+    const data: GeminiResponse = await response.json();
+    
+    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      throw new Error('Invalid response format from Gemini');
+    }
+
+    return data.candidates[0].content.parts[0].text;
+  } catch (error) {
+    if (retryCount < MAX_RETRIES && (error instanceof Error && error.message.includes('fetch'))) {
+      const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
+      console.warn(`[Gemini] Network error. Retrying in ${delay}ms...`, error);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return askGemini(prompt, systemInstruction, pdfBase64, retryCount + 1);
+    }
+    throw error;
   }
-
-  const data: GeminiResponse = await response.json();
-  
-  if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-    throw new Error('Invalid response format from Gemini');
-  }
-
-  return data.candidates[0].content.parts[0].text;
 }
 
 /**
@@ -107,7 +136,7 @@ MENDELU COURSE (HOME):
 FOREIGN COURSE (CANDIDATE):
 ${foreignText ? `Text content: ${foreignText}` : 'Please extract content from the attached PDF document.'}
 
-REGNITION RULES:
+RECOGNITION RULES:
 1. Learning Outcomes: Focus on the CORE 60-70% overlap. Do not be overly strict about missing theoretical sub-topics if the main applied topics are present.
 2. Credits: Foreign ECTS should ideally be >= Home ECTS. However, a 1-credit deficit (e.g., 5 vs 6) is VERY OFTEN accepted by coordinators and should NOT be a reason for rejection.
 3. Type Mismatch: Only reject if there is a massive gap (e.g., a 10-credit Exam course being replaced by a 2-credit workshop).
