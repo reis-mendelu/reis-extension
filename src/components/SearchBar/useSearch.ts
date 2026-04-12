@@ -44,14 +44,29 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
   const { t, language } = useTranslation();
   const subjects = useAppStore(s => s.subjects);
   const navPages = useAppStore(s => s.navPages);
-  const pages = navPages ?? pagesData;
+  const pages = useMemo(() => {
+    if (!navPages) return pagesData;
+    const merged = [...navPages];
+    const seenIds = new Set(navPages.flatMap(cat => cat.children.map(p => p.id)));
+    
+    pagesData.forEach(cat => {
+      const extra = cat.children.filter(p => !seenIds.has(p.id));
+      if (extra.length > 0) {
+        const existing = merged.find(c => c.id === cat.id);
+        if (existing) existing.children.push(...extra);
+        else merged.push({ ...cat, children: [...extra] });
+      }
+    });
+    return merged;
+  }, [navPages]);
+
   const studyPlan = useAppStore(s => s.studyPlanDual);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [sections, setSections] = useState<SearchSection[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<SearchResult[]>([]);
-  const { studiumId, userFaculty, userSemester } = useAppStore();
+  const { studiumId, obdobiId, facultyId, userFaculty, userSemester } = useAppStore();
   const debounceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const studyPlanCodes = useMemo(() => {
@@ -142,7 +157,7 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
           title: itemLabel,
           type: 'page',
           detail: catLabel,
-          link: injectUserParams(p.href, studiumId ?? undefined, language === 'en' ? 'en' : 'cz')
+          link: injectUserParams(p.href, studiumId ?? undefined, language === 'en' ? 'en' : 'cz', obdobiId ?? undefined, facultyId ?? undefined)
         });
       }
     }));

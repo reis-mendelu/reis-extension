@@ -22,13 +22,12 @@ interface SearchBarProps {
 
 export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, actions = [] }: SearchBarProps) {
   const { t, language } = useTranslation();
-  const navPages = useAppStore(s => s.navPages);
-  const pages = navPages ?? pagesData;
+  const { studiumId, obdobiId, facultyId, userFaculty, userSemester } = useAppStore();
   const modifier = getModifierKey();
   const defaultPlaceholder = t('search.placeholder', { shortcut: modifier });
   const finalPlaceholder = placeholder || (modifier ? defaultPlaceholder : defaultPlaceholder.replace(/\s*\(.*\)$/, ''));
   const [query, setQuery] = useState('');
-  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query, actions);
+  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, saveToHistory } = useSearch(query, actions);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputWrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -99,7 +98,7 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
       if (result.type === 'subject' && onOpenSubject) {
         onOpenSubject(result.subjectCode!, result.title, result.subjectId, result.faculty);
       } else if (result.link) {
-        window.open(injectUserParams(result.link, studiumId, language === 'en' ? 'en' : 'cz'), '_blank');
+        window.open(injectUserParams(result.link, studiumId, language === 'en' ? 'en' : 'cz', obdobiId, facultyId), '_blank');
       }
 
       if (onSearch) onSearch(result.title);

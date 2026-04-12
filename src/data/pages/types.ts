@@ -20,7 +20,7 @@ export interface PageCategory {
  * Inject user's params into a page URL.
  * Replaces placeholders or hardcoded IDs with current values.
  */
-export function injectUserParams(url: string, studiumId?: string, lang: string = 'cz', obdobiId?: string): string {
+export function injectUserParams(url: string, studiumId?: string, lang: string = 'cz', obdobiId?: string, facultyId?: string): string {
     let resolved = url;
 
     // Handle studium
@@ -34,6 +34,13 @@ export function injectUserParams(url: string, studiumId?: string, lang: string =
             .replace(/[;,&]?studium={{studium}}/g, '')
             .replace(/studium=\d+[;,&]?/g, '')
             .replace(/[;,&]?studium=\d+/g, '');
+    }
+
+    // Handle faculty
+    if (facultyId) {
+        resolved = resolved
+            .replace(/{{faculty}}/g, facultyId)
+            .replace(/fakulta=\d+/g, `fakulta=${facultyId}`);
     }
 
     // Handle obdobi

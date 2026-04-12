@@ -13,7 +13,7 @@ export const pageKeywords: Record<string, string[]> = {
   'e-osnovy': ['syllabus', 'osnovy', 'course outline', 'requirements', 'požadavky', 'cvičné testy', 'practice tests'],
   'rozpisy-temat': ['topics', 'témata', 'assignments', 'thesis topics', 'seminární práce', 'seminar work'],
   'odevzdavarny': ['submit', 'upload', 'homework', 'úkoly', 'odevzdat', 'dropbox', 'hand in', 'domácí úkol', 'submission'],
-  'kontrola-planu': ['plan check', 'study plan', 'kontrola', 'povinnosti', 'requirements', 'credits needed', 'kolik kreditů'],
+  'kontrola-planu': ['plan check', 'study plan', 'kontrola', 'povinnosti', 'requirements', 'credits needed', 'kolik kreditů', 'studijní plány', 'studijní plán'],
   'list-zaznamnik': ['teacher list', 'záznamník', 'učitel', 'docházka', 'attendance'],
   'oblibene-predmety': ['favorites', 'oblíbené', 'bookmarks', 'saved courses'],
   'prihlasovani-zkouskam': ['exam registration', 'přihlásit zkoušku', 'termín', 'exam date', 'sign up exam', 'zapsat zkoušku'],
@@ -37,6 +37,7 @@ export const pageKeywords: Record<string, string[]> = {
   'objednavky': ['orders', 'objednávky', 'ISIC', 'karta', 'card'],
   'vymenny-pobyt': ['exchange', 'Erasmus', 'mobility', 'abroad', 'zahraničí', 'výměnný pobyt'],
   'hodnoceni-uspesnosti': ['success rate', 'úspěšnost', 'statistics', 'pass rate', 'statistiky předmětů'],
+  'studijni-plany': ['study plan', 'studijní plány', 'studijní plán', 'katalog', 'programy'],
   'prihlaska-ke-studiu': ['application', 'přihláška', 'apply', 'admission', 'přijímací řízení'],
 
   // Technologie

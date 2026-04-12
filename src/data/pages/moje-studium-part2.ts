@@ -11,13 +11,13 @@ export const mojeStudiumItemsPart2: PageItem[] = [
         "id": "harmonogram-ak-roku",
         "label": "Harmonogram akademického roku",
         "labelEn": "Academic year schedule",
-        "href": "https://is.mendelu.cz/auth/student/harmonogram.pl?fakulta=2;zpet_student=moje_studium.pl?lang={{lang}},studium={{studium}},;lang={{lang}}"
+        "href": "https://is.mendelu.cz/auth/student/harmonogram.pl?fakulta={{faculty}};zpet_student=moje_studium.pl?lang={{lang}},studium={{studium}},;lang={{lang}}"
     },
     {
         "id": "kontaktni-oddeleni",
         "label": "Kontaktní oddělení",
         "labelEn": "Contact departments",
-        "href": "https://is.mendelu.cz/auth/pracoviste/stud_odd.pl?fakulta=2;zpet_student=moje_studium.pl?lang={{lang}},studium={{studium}},lang={{lang}}"
+        "href": "https://is.mendelu.cz/auth/pracoviste/stud_odd.pl?fakulta={{faculty}};zpet_student=moje_studium.pl?lang={{lang}},studium={{studium}},lang={{lang}}"
     },
     {
         "id": "statni-zkousky",
