@@ -28,7 +28,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     const tabCounts = useMemo(() => ({
         files: state.files?.reduce((acc, f) => acc + f.files.length, 0) || 0,
         cvicneTests: tests.length + assignments.length,
-        classmates: classmatesCount,
+        classmates: classmatesCount || 0,
     }), [state.files, tests, assignments, classmatesCount]);
 
     useEffect(() => {

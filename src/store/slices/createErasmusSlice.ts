@@ -1,10 +1,9 @@
 import type { ErasmusSlice, AppSlice } from '../types';
 import { fetchErasmusReports, getStoredErasmusData, fetchErasmusConfig as fetchErasmusConfigApi } from '../../api/erasmus';
-import { fetchLearningAgreement } from '../../api/erasmusLA';
-import { getUserParams } from '../../utils/userParams';
 import { IndexedDBService } from '../../services/storage';
 import { loggers } from '../../utils/logger';
 
+const TABLE_A_COURSES_KEY = 'erasmus_table_a_courses';
 const SELECTED_COURSES_KEY = 'erasmus_selected_courses';
 const ERASMUS_UI_STATE_KEY = 'erasmus_ui_state';
 const VERDICTS_KEY = 'erasmus_verdicts';
@@ -19,12 +18,11 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
   erasmusCountryFile: '',
   erasmusConfig: null,
   erasmusSelectedCourses: [],
+  erasmusTableACourses: [],
   erasmusVerdicts: {},
   erasmusPdfAssignments: {},
   erasmusPinnedUniversities: [],
   erasmusUploadedPdfs: {},
-  erasmusLA: null,
-  erasmusLALoading: false,
   erasmusActiveTab: 'plan',
   erasmusPlanPhase: 'select',
   setErasmusActiveTab: (tab: 'plan' | 'explore') => {
@@ -40,21 +38,6 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
       activeTab: get().erasmusActiveTab, 
       planPhase: phase 
     }).catch(() => {});
-  },
-  fetchErasmusLA: async () => {
-    if (get().erasmusLALoading) return;
-    set({ erasmusLALoading: true });
-    try {
-      const params = await getUserParams();
-      if (!params?.studium || !params?.obdobi) return;
-      const lang = get().language === 'en' ? 'en' : 'cz';
-      const data = await fetchLearningAgreement(params.studium, params.obdobi, lang);
-      if (data) set({ erasmusLA: data });
-    } catch (err) {
-      loggers.ui.error('[ErasmusSlice] LA fetch failed:', err);
-    } finally {
-      set({ erasmusLALoading: false });
-    }
   },
   setErasmusCountry: async (file: string) => {
     if (get().erasmusCountryFile !== file || !get().erasmusData) {
@@ -150,10 +133,23 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     set({ erasmusUploadedPdfs: {} });
     IndexedDBService.set('meta', UPLOADED_PDFS_KEY, {}).catch(() => {});
   },
+  addErasmusTableACourse: (course: { code: string; name: string; credits: number }) => {
+    const next = [...get().erasmusTableACourses, course];
+    set({ erasmusTableACourses: next });
+    IndexedDBService.set('meta', TABLE_A_COURSES_KEY, next).catch(() => {});
+  },
+  removeErasmusTableACourse: (index: number) => {
+    const next = get().erasmusTableACourses.filter((_, i) => i !== index);
+    set({ erasmusTableACourses: next });
+    IndexedDBService.set('meta', TABLE_A_COURSES_KEY, next).catch(() => {});
+  },
   loadErasmusSelectedCourses: async () => {
     try {
       const stored = await IndexedDBService.get('meta', SELECTED_COURSES_KEY) as string[] | null;
       if (stored) set({ erasmusSelectedCourses: stored });
+
+      const tableA = await IndexedDBService.get('meta', TABLE_A_COURSES_KEY) as { code: string; name: string; credits: number }[] | null;
+      if (tableA) set({ erasmusTableACourses: tableA });
 
       const verdicts = await IndexedDBService.get('meta', VERDICTS_KEY) as Record<string, 'approved' | 'rejected'> | null;
       if (verdicts) set({ erasmusVerdicts: verdicts });

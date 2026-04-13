@@ -15,7 +15,8 @@ import { isDualLanguageStudyPlan } from '../types/studyPlan';
 import type { DualLanguageStudyPlan } from '../types/studyPlan';
 import type { BlockLesson } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
-import type { SubjectsData, ParsedFile, SyllabusRequirements, SubjectAttendance } from '../types/documents';
+import type { SubjectsData, ParsedFile, SyllabusRequirements, SubjectAttendance, Assessment } from '../types/documents';
+import type { ClassmatesData } from '../types/classmates';
 
 interface SyncedData {
     schedule?: BlockLesson[];
@@ -23,7 +24,8 @@ interface SyncedData {
     subjects?: SubjectsData;
     files?: Record<string, ParsedFile[] | { cz: ParsedFile[]; en: ParsedFile[] }>;
     syllabuses?: Record<string, SyllabusRequirements | { cz: SyllabusRequirements; en: SyllabusRequirements }>;
-    classmates?: Record<string, unknown>;
+    classmates?: Record<string, ClassmatesData>;
+    assessments?: Record<string, Assessment[] | { cz: Assessment[]; en: Assessment[] }>;
     attendance?: Record<string, SubjectAttendance[]>;
     studyPlan?: DualLanguageStudyPlan;
     studyStats?: unknown;

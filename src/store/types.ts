@@ -8,7 +8,6 @@ import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { SyncStatus } from '../services/sync';
 import type { ErasmusCountryData, ErasmusConfig } from '../types/erasmus';
-import type { LearningAgreementData } from '../types/erasmusLA';
 import type { PinnedPage } from './slices/createPinnedPagesSlice';
 import type { OutletMenu } from '../types/menuTypes';
 import type { PageCategory } from '../data/pages/types';
@@ -171,15 +170,13 @@ export interface ErasmusSlice {
     erasmusCountryFile: string;
     erasmusConfig: ErasmusConfig | null;
     erasmusSelectedCourses: string[];
+    erasmusTableACourses: { code: string; name: string; credits: number }[];
     erasmusVerdicts: Record<string, 'approved' | 'rejected'>;
     erasmusPdfAssignments: Record<string, string>; // courseCode → filename
     erasmusPinnedUniversities: string[];
     erasmusUploadedPdfs: Record<string, { text: string; base64: string }>; // filename → extracted text + raw base64
-    erasmusLA: LearningAgreementData | null;
-    erasmusLALoading: boolean;
     erasmusActiveTab: 'plan' | 'explore';
     erasmusPlanPhase: 'select' | 'review';
-    fetchErasmusLA: () => Promise<void>;
     addErasmusUploadedPdf: (filename: string, text: string, base64: string) => void;
     removeErasmusUploadedPdf: (filename: string) => void;
     clearErasmusUploadedPdfs: () => void;
@@ -193,6 +190,8 @@ export interface ErasmusSlice {
     setErasmusVerdict: (code: string, verdict: 'approved' | 'rejected') => void;
     pinErasmusUniversity: (name: string) => void;
     unpinErasmusUniversity: (name: string) => void;
+    addErasmusTableACourse: (course: { code: string; name: string; credits: number }) => void;
+    removeErasmusTableACourse: (index: number) => void;
     loadErasmusSelectedCourses: () => Promise<void>;
 }
 

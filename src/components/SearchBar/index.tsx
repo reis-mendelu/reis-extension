@@ -22,7 +22,7 @@ interface SearchBarProps {
 
 export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, actions = [] }: SearchBarProps) {
   const { t, language } = useTranslation();
-  const { studiumId, obdobiId, facultyId, userFaculty, userSemester } = useAppStore();
+  const { studiumId, obdobiId, facultyId } = useAppStore();
   const modifier = getModifierKey();
   const defaultPlaceholder = t('search.placeholder', { shortcut: modifier });
   const finalPlaceholder = placeholder || (modifier ? defaultPlaceholder : defaultPlaceholder.replace(/\s*\(.*\)$/, ''));
@@ -112,7 +112,7 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
     ? [
         ...recentSearches,
         ...actions,
-        ...pages.flatMap(cat => cat.children.map(p => {
+        ...pagesData.flatMap(cat => cat.children.map(p => {
             const itemLabel = (language === 'en' && p.labelEn) ? p.labelEn : p.label;
             const catLabel = (language === 'en' && cat.labelEn) ? cat.labelEn : cat.label;
             return { id: p.id, title: itemLabel, type: 'page' as const, detail: catLabel, link: p.href, category: catLabel };
@@ -201,8 +201,8 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
                 })}
               </div>
             )}
-            {pages.map(cat => {
-              const catOffset = recentSearches.length + actions.length + pages.slice(0, pages.indexOf(cat)).reduce((sum, c) => sum + c.children.length, 0);
+            {pagesData.map(cat => {
+              const catOffset = recentSearches.length + actions.length + pagesData.slice(0, pagesData.indexOf(cat)).reduce((sum, c) => sum + c.children.length, 0);
               const catLabel = (language === 'en' && cat.labelEn) ? cat.labelEn : cat.label;
               return (
                 <div key={cat.id}>

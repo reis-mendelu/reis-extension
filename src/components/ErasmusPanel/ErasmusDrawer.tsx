@@ -3,8 +3,7 @@ import { ErasmusReportCard } from './ErasmusReportCard';
 import type { ErasmusReport } from '@/types/erasmus';
 import type { ErasmusConfig } from '@/types/erasmus';
 import type { UserParams } from '@/utils/userParams';
-import { GraduationCap, X, Filter, ChevronDown, Mail, Star } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
+import { GraduationCap, X, Filter, ChevronDown, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -45,12 +44,6 @@ export function ErasmusDrawer({
   userParams, showAll, setShowAll, loading, config, onClose,
 }: ErasmusDrawerProps) {
   const { t } = useTranslation();
-  const pinnedUniversities = useAppStore(s => s.erasmusPinnedUniversities);
-  const pinUniversity = useAppStore(s => s.pinErasmusUniversity);
-  const unpinUniversity = useAppStore(s => s.unpinErasmusUniversity);
-
-  const isPinned = schoolFilter ? pinnedUniversities.includes(schoolFilter) : false;
-  const canPin = pinnedUniversities.length < 4;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end items-stretch p-0 sm:p-4 isolate">
@@ -147,21 +140,6 @@ export function ErasmusDrawer({
                   </button>
                 )}
               </div>
-              {schoolFilter && (
-                <button
-                  onClick={() => isPinned ? unpinUniversity(schoolFilter) : pinUniversity(schoolFilter)}
-                  disabled={!isPinned && !canPin}
-                  className={`btn btn-sm gap-1.5 w-full mt-2 border ${
-                    isPinned
-                      ? 'btn-primary border-primary'
-                      : 'btn-ghost border-base-300 hover:border-primary/50'
-                  }`}
-                >
-                  <Star size={14} className={isPinned ? 'fill-current' : ''} />
-                  {isPinned ? t('erasmus.universityPinned') : t('erasmus.considerUniversity')}
-                  {!isPinned && <span className="text-[10px] opacity-50">({pinnedUniversities.length}/4)</span>}
-                </button>
-              )}
             </div>
           )}
 

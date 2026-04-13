@@ -11,7 +11,7 @@ import { useAppStore } from '../../store/useAppStore';
 
 const MAX_RECENT_SEARCHES = 3;
 
-function sortByRelevance(results: SearchResult[], searchQuery: string, studyPlanCodes: Set<string>, userFaculty?: string, userSemester?: string): SearchResult[] {
+function sortByRelevance(results: SearchResult[], searchQuery: string, studyPlanCodes: Set<string>, userFaculty?: string | null, userSemester?: string | null): SearchResult[] {
   return [...results].sort((a, b) => {
     const scoreA = getWithinSectionScore(a, searchQuery, studyPlanCodes, userFaculty, userSemester);
     const scoreB = getWithinSectionScore(b, searchQuery, studyPlanCodes, userFaculty, userSemester);
@@ -19,7 +19,7 @@ function sortByRelevance(results: SearchResult[], searchQuery: string, studyPlan
   });
 }
 
-function getWithinSectionScore(r: SearchResult, searchQuery: string, studyPlanCodes: Set<string>, userFaculty?: string, userSemester?: string): number {
+function getWithinSectionScore(r: SearchResult, searchQuery: string, studyPlanCodes: Set<string>, userFaculty?: string | null, userSemester?: string | null): number {
   const titleLower = r.title.toLowerCase();
   const codeLower = r.subjectCode?.toLowerCase() ?? '';
   let score = 0;

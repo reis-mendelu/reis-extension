@@ -1,8 +1,8 @@
 import { Info } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
-import { isCompulsoryGroup, isCoreElectiveGroup } from '@/utils/studyPlanUtils';
-import type { SemesterBlock, SubjectStatus, Zamerani } from '@/types/studyPlan';
+import { isCompulsoryGroup, isCoreElectiveGroup, isElectiveGroup } from '@/utils/studyPlanUtils';
+import type { SemesterBlock, SubjectStatus } from '@/types/studyPlan';
 
 interface Props {
   block: SemesterBlock;
@@ -109,12 +109,12 @@ export function ErasmusSemesterSection({
   
   const groups = block.groups;
   
-  // Filter out non-core groups entirely to focus the student on graduation progress
-  const highValueGroups = groups.filter(g => 
-    g && (isCompulsoryGroup(g.name, block.title) || isCoreElectiveGroup(g.name, block.title))
+  // Include all graduation-relevant groups (compulsory, core elective, and elective)
+  const visibleGroups = groups.filter(g => 
+    g && (isCompulsoryGroup(g.name, block.title) || isCoreElectiveGroup(g.name) || isElectiveGroup(g.name, block.title))
   );
 
-  const allVisibleSubjects = highValueGroups.flatMap(g => g.subjects || []).filter(s => isTransferableCourse(s));
+  const allVisibleSubjects = visibleGroups.flatMap(g => g.subjects || []).filter(s => isTransferableCourse(s));
   
   const totalCredits = allVisibleSubjects
     .filter(s => s && s.credits <= 50)
@@ -122,7 +122,7 @@ export function ErasmusSemesterSection({
     
   const selectedCount = allVisibleSubjects.filter(s => (s && selectedCodes?.has(s.code))).length;
 
-  if (highValueGroups.length === 0) return null;
+  if (visibleGroups.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-2">
@@ -137,10 +137,10 @@ export function ErasmusSemesterSection({
       </div>
 
       <div className="flex flex-col gap-0.5">
-        {highValueGroups.map((group, gi) => {
+        {visibleGroups.map((group, gi) => {
           if (!group) return null;
           const isCompulsory = isCompulsoryGroup(group.name, block.title);
-          const isCoreElective = isCoreElectiveGroup(group.name, block.title);
+          const isCoreElective = isCoreElectiveGroup(group.name);
           
           const subjects = group.subjects || [];
           const filteredSubjects = subjects.filter(s => isTransferableCourse(s));

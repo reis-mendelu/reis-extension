@@ -8,14 +8,14 @@ export function isCompulsoryGroup(groupName: string | undefined, blockTitle: str
 }
 
 /** mandatory group, but choice of subjects */
-export function isCoreElectiveGroup(groupName: string | undefined, blockTitle: string | undefined): boolean {
+export function isCoreElectiveGroup(groupName: string | undefined): boolean {
   const g = (groupName || '').toLowerCase();
   return g.includes('povinně volitel') || g.includes('elective compulsory');
 }
 
 /** Pure elective = group says "volitelných" but NOT "povinně volitelných" */
 export function isElectiveGroup(groupName: string | undefined, blockTitle: string | undefined): boolean {
-  if (isCoreElectiveGroup(groupName, blockTitle)) return false;
+  if (isCoreElectiveGroup(groupName)) return false;
   if (isCompulsoryGroup(groupName, blockTitle)) return false;
 
   const g = (groupName || '').toLowerCase();
