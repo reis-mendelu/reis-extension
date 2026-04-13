@@ -28,12 +28,10 @@ export const isTransferableCourse = (s: SubjectStatus) => {
   return true;
 };
 
-function SelectableRow({ subject, failRate, selected, isCompulsory, isCoreElective, isRecognized, onToggle, onOpen }: {
+function SelectableRow({ subject, failRate, selected, isRecognized, onToggle, onOpen }: {
   subject: SubjectStatus;
   failRate: number | null;
   selected: boolean;
-  isCompulsory?: boolean;
-  isCoreElective?: boolean;
   isRecognized?: boolean;
   onToggle: () => void;
   onOpen: () => void;
@@ -55,19 +53,8 @@ function SelectableRow({ subject, failRate, selected, isCompulsory, isCoreElecti
         />
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-base-content/50 shrink-0">{subject.code}</span>
-            <span className="text-sm truncate flex-1">{displayName}</span>
+            <span className="text-sm truncate flex-1 text-left">{displayName}</span>
           </div>
-          {isCompulsory && (
-            <span className="text-[9px] uppercase font-bold text-primary tracking-tighter -mt-0.5">
-              {t('erasmus.coreSubject')}
-            </span>
-          )}
-          {isCoreElective && (
-            <span className="text-[9px] uppercase font-bold text-base-content/40 tracking-tighter -mt-0.5">
-              {t('erasmus.coreElectiveSubject')}
-            </span>
-          )}
           {isRecognized && (
             <span className="text-[9px] uppercase font-bold text-success/70 tracking-tighter -mt-0.5">
               {t('erasmus.recognizedSubject')}
@@ -166,8 +153,6 @@ export function ErasmusSemesterSection({
                     subject={s}
                     failRate={failRates[s.code] ?? null}
                     selected={!!selectedCodes?.has(s.code)}
-                    isCompulsory={isCompulsory}
-                    isCoreElective={isCoreElective}
                     isRecognized={isRecognized}
                     onToggle={() => onToggleCourse(s.code)}
                     onOpen={() => s.id ? onOpenSubject(s.code, s.name, s.id) : onSearchSubject(s.name)}
