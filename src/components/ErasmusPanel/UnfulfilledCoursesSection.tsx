@@ -115,29 +115,26 @@ export function UnfulfilledCoursesSection({ onOpenSubject, onSearchSubject }: Pr
     <div className="flex flex-col gap-6">
       {/* Trip Window Selector */}
       {availableSemesters.length > 0 && (
-        <div className="bg-base-200/50 rounded-xl p-4 border border-base-300 flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-primary" />
-            <h4 className="text-sm font-bold">{t('erasmus.tripWindow')}</h4>
+        <div className="flex flex-col gap-2 px-1 mb-2">
+          <div className="flex items-center gap-1.5 text-base-content/70">
+            <Calendar size={14} />
+            <span className="text-xs font-medium">{t('erasmus.tripWindow')}</span>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {availableSemesters.map(({ index }) => (
               <button
                 key={index}
                 onClick={() => setTargetSemester(index)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors border ${
                   targetSemester === index
-                    ? 'bg-primary border-primary text-primary-content shadow-md'
-                    : 'bg-base-100 border-base-300 text-base-content/60 hover:border-primary/50'
+                    ? 'bg-primary border-primary text-primary-content'
+                    : 'bg-transparent border-base-300 text-base-content/60 hover:bg-base-200'
                 }`}
               >
                 {t('erasmus.semesterLabel', { n: index + 1 })}
               </button>
             ))}
           </div>
-          <p className="text-[10px] text-base-content/40 italic">
-            {t('erasmus.selectTripWindow')}
-          </p>
         </div>
       )}
 
