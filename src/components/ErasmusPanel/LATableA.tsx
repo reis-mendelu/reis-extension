@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Plus, X } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAppStore } from '@/store/useAppStore';
@@ -13,15 +13,24 @@ export function LATableA() {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [credits, setCredits] = useState('');
+  const codeInputRef = useRef<HTMLInputElement>(null);
 
   const handleAdd = () => {
-    const c = parseInt(credits, 10);
-    if (!code.trim() || !name.trim() || isNaN(c) || c <= 0) return;
-    addCourse({ code: code.trim(), name: name.trim(), credits: c });
+    const c = parseInt(credits, 10) || 0;
+    const trimmedCode = code.trim();
+    const trimmedName = name.trim();
+    
+    // Only block if EVERYTHING is empty
+    if (!trimmedCode && !trimmedName && c <= 0) {
+      codeInputRef.current?.focus();
+      return;
+    }
+    
+    addCourse({ code: trimmedCode, name: trimmedName, credits: c });
     setCode('');
     setName('');
     setCredits('');
-    setAdding(false);
+    codeInputRef.current?.focus();
   };
 
   const totalCredits = courses.reduce((sum, c) => sum + c.credits, 0);
@@ -63,9 +72,10 @@ export function LATableA() {
         ))}
 
         {/* Add row form */}
-        {adding ? (
+        {adding && (
           <div className="grid grid-cols-[auto_1fr_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 bg-base-200/20">
             <input
+              ref={codeInputRef}
               autoFocus
               className="input input-xs input-bordered w-20 font-mono text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
               placeholder={t('erasmus.colCode')}
@@ -94,15 +104,16 @@ export function LATableA() {
               <X size={12} />
             </button>
           </div>
-        ) : (
-          <button
-            onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 px-3 py-2 text-[10px] text-base-content/30 hover:text-primary hover:bg-base-200/30 transition-colors w-full border-b border-base-300/50"
-          >
-            <Plus size={12} />
-            <span>{t('erasmus.addCourse')}</span>
-          </button>
         )}
+
+        {/* Add course button - Always visible */}
+        <button
+          onClick={() => (adding ? handleAdd() : setAdding(true))}
+          className="flex items-center gap-1.5 px-3 py-2 text-[10px] text-primary hover:bg-primary/10 transition-colors w-full border-b border-base-300/50 font-bold"
+        >
+          <Plus size={12} />
+          <span>{t('erasmus.addCourse')}</span>
+        </button>
 
         {/* Total */}
         {courses.length > 0 && (
