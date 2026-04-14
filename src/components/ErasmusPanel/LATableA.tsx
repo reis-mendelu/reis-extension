@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, X, Globe, Link, Hash, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, X, Globe, Link, Hash, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAppStore } from '@/store/useAppStore';
 import { LATableB } from './LATableB';
@@ -25,6 +25,7 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
   const removeOption = useAppStore(s => s.removeErasmusTableAOption);
   const addCourse = useAppStore(s => s.addErasmusTableACourse);
   const removeCourse = useAppStore(s => s.removeErasmusTableACourse);
+  const reorderCourseA = useAppStore(s => s.reorderErasmusTableACourse);
 
   const [adding, setAdding] = useState(false);
   const [code, setCode] = useState('');
@@ -148,7 +149,8 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
         </div>
 
         {/* Table A header */}
-        <div className="grid grid-cols-[auto_1fr_auto_auto] gap-2 px-3 py-2 bg-base-200/50 border-b border-base-300 text-[10px] uppercase tracking-wider font-bold text-base-content/40">
+        <div className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-2 px-3 py-2 bg-base-200/50 border-b border-base-300 text-[10px] uppercase tracking-wider font-bold text-base-content/40">
+          <span className="w-4" />
           <span className="w-20">{t('erasmus.colCode')}</span>
           <span>{t('erasmus.colCourse')}</span>
           <span className="w-12 text-right">{t('erasmus.colECTS')}</span>
@@ -159,8 +161,24 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
         {option.courses.map((course, i) => (
           <div
             key={i}
-            className="grid grid-cols-[auto_1fr_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 text-xs hover:bg-base-200/30 transition-colors"
+            className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 text-xs hover:bg-base-200/30 transition-colors"
           >
+            <div className="flex flex-col gap-0">
+              <button
+                onClick={() => reorderCourseA(option.id, i, i - 1)}
+                disabled={i === 0}
+                className="btn btn-ghost w-4 h-3.5 min-h-0 p-0 text-base-content/20 hover:text-primary disabled:opacity-0 disabled:pointer-events-none rounded-none"
+              >
+                <ChevronUp size={11} />
+              </button>
+              <button
+                onClick={() => reorderCourseA(option.id, i, i + 1)}
+                disabled={i === option.courses.length - 1}
+                className="btn btn-ghost w-4 h-3.5 min-h-0 p-0 text-base-content/20 hover:text-primary disabled:opacity-0 disabled:pointer-events-none rounded-none"
+              >
+                <ChevronDown size={11} />
+              </button>
+            </div>
             <span className="font-mono text-base-content/50 w-20 truncate">{course.code}</span>
             <span className="truncate font-medium">{course.name}</span>
             <span className="tabular-nums font-bold text-base-content/70 w-12 text-right">{course.credits}</span>
@@ -219,7 +237,8 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
 
         {/* Table A total */}
         {option.courses.length > 0 && (
-          <div className="grid grid-cols-[auto_1fr_auto_auto] gap-2 items-center px-3 py-2 bg-base-200/30 text-xs border-b border-base-300/50">
+          <div className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-2 items-center px-3 py-2 bg-base-200/30 text-xs border-b border-base-300/50">
+            <span className="w-4" />
             <span className="font-bold text-base-content/50 w-20">{t('erasmus.total')}</span>
             <span />
             <span className="tabular-nums font-black w-12 text-right">{totalCredits}</span>

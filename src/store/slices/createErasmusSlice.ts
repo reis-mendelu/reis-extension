@@ -215,6 +215,17 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     set({ erasmusTableAOptions: next });
     IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(() => {});
   },
+  reorderErasmusTableACourse: (optionId: string, fromIndex: number, toIndex: number) => {
+    const next = get().erasmusTableAOptions.map(o => {
+      if (o.id !== optionId) return o;
+      const courses = [...o.courses];
+      const [moved] = courses.splice(fromIndex, 1);
+      courses.splice(toIndex, 0, moved);
+      return { ...o, courses };
+    });
+    set({ erasmusTableAOptions: next });
+    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(() => {});
+  },
   loadErasmusState: async () => {
     try {
       const tableBCourses = await IndexedDBService.get('meta', TABLE_B_COURSES_KEY) as Record<string, string[]> | null;

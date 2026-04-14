@@ -217,6 +217,7 @@ export interface ErasmusSlice {
     updateErasmusTableAOptionHeader: (id: string, data: Partial<Omit<ErasmusUniversityOption, 'id' | 'courses'>>) => void;
     addErasmusTableACourse: (optionId: string, course: { code: string; name: string; credits: number }) => void;
     removeErasmusTableACourse: (optionId: string, index: number) => void;
+    reorderErasmusTableACourse: (optionId: string, fromIndex: number, toIndex: number) => void;
     loadErasmusState: () => Promise<void>;
 }
 
