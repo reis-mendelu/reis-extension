@@ -45,29 +45,41 @@ export async function askGemini(prompt: string, systemInstruction?: string, pdfB
     throw new Error('Supabase configuration (URL or Anon Key) is missing in .env');
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 45000);
+
   try {
     const response = await fetch(PROXY_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'x-reis-extension-secret': import.meta.env.VITE_EXTENSION_SECRET || 'reis-secret'
       },
-      body: JSON.stringify({ prompt, systemInstruction, pdfBase64 })
+      body: JSON.stringify({ prompt, systemInstruction, pdfBase64 }),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: response.statusText }));
       const errorMessage = errorData.error || `Proxy Error: ${response.statusText}`;
 
       // Handle Quota Limit (429 or specific error message)
-      const isQuotaError = response.status === 429 || 
-                          errorMessage.toLowerCase().includes('quota exceeded') || 
-                          errorMessage.toLowerCase().includes('rate limit');
+      const isRateLimit = errorMessage.toLowerCase().includes('rate limit');
+      const isHardQuota = response.status === 429 && !isRateLimit;
 
-      if (isQuotaError && retryCount < MAX_RETRIES) {
+      if (isHardQuota) {
+        throw new Error(`Gemini API Quota Exhausted: ${errorMessage}. Please try again later.`);
+      }
+
+      const isTransientError = isRateLimit || response.status >= 500;
+
+      if (isTransientError && retryCount < MAX_RETRIES) {
         // Exponential backoff
         const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
-        console.warn(`[Gemini] Quota limit hit. Retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+        console.warn(`[Gemini] Transient error hit. Retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         return askGemini(prompt, systemInstruction, pdfBase64, retryCount + 1);
       }
@@ -83,6 +95,11 @@ export async function askGemini(prompt: string, systemInstruction?: string, pdfB
 
     return data.candidates[0].content.parts[0].text;
   } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Gemini API request timed out (45s). Please try again.');
+    }
+    
     if (retryCount < MAX_RETRIES && (error instanceof Error && error.message.includes('fetch'))) {
       const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
       console.warn(`[Gemini] Network error. Retrying in ${delay}ms...`, error);
@@ -157,7 +174,10 @@ OUTPUT FORMAT (JSON ONLY):
   
   const responseText = await askGemini(prompt, systemInstruction, pdfBase64);
   
-  // Clean up potential markdown JSON wrapping
-  const jsonStr = responseText.replace(/```json\n?|\n?```/g, '').trim();
-  return JSON.parse(jsonStr) as AIComparisonResult;
+  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error("AI failed to return a structured JSON response. Raw output: " + responseText.substring(0, 100) + "...");
+  }
+  
+  return JSON.parse(jsonMatch[0]) as AIComparisonResult;
 }
