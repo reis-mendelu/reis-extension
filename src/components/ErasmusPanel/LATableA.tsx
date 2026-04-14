@@ -13,12 +13,13 @@ interface OptionProps {
   total: number;
   selectedCodes: string[];
   onToggle: (code: string) => void;
+  onReorder: (fromIndex: number, toIndex: number) => void;
   plan: StudyPlan;
   onOpenSubject: (courseCode: string, courseName?: string, courseId?: string) => void;
   onSearchSubject: (name: string) => void;
 }
 
-function LATableAOption({ option, index, total, selectedCodes, onToggle, plan, onOpenSubject, onSearchSubject }: OptionProps) {
+function LATableAOption({ option, index, total, selectedCodes, onToggle, onReorder, plan, onOpenSubject, onSearchSubject }: OptionProps) {
   const { t } = useTranslation();
   const updateHeader = useAppStore(s => s.updateErasmusTableAOptionHeader);
   const removeOption = useAppStore(s => s.removeErasmusTableAOption);
@@ -228,7 +229,7 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, plan, o
       </div>
 
       {/* Table B */}
-      <LATableB plan={plan} selectedCodes={selectedCodes} onToggle={onToggle} tableATotal={totalCredits} />
+      <LATableB plan={plan} selectedCodes={selectedCodes} onToggle={onToggle} tableACourses={option.courses} onReorder={onReorder} />
 
       {/* Add courses picker */}
       <div className="flex flex-col gap-0">
@@ -271,6 +272,7 @@ export function LATableA({ plan, onOpenSubject, onSearchSubject }: LATableAProps
   const addOption = useAppStore(s => s.addErasmusTableAOption);
   const tableBCourses = useAppStore(s => s.erasmusTableBCourses);
   const toggleCourse = useAppStore(s => s.toggleErasmusTableBCourse);
+  const reorderCourse = useAppStore(s => s.reorderErasmusTableBCourse);
 
   return (
     <div className="flex flex-col gap-8 pb-4">
@@ -282,6 +284,7 @@ export function LATableA({ plan, onOpenSubject, onSearchSubject }: LATableAProps
           total={options.length}
           selectedCodes={tableBCourses[option.id] ?? []}
           onToggle={(code) => toggleCourse(option.id, code)}
+          onReorder={(from, to) => reorderCourse(option.id, from, to)}
           plan={plan}
           onOpenSubject={onOpenSubject}
           onSearchSubject={onSearchSubject}

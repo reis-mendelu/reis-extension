@@ -90,6 +90,15 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
       set({ erasmusLoading: false });
     }
   },
+  reorderErasmusTableBCourse: (optionId: string, fromIndex: number, toIndex: number) => {
+    const all = get().erasmusTableBCourses;
+    const current = [...(all[optionId] ?? [])];
+    const [moved] = current.splice(fromIndex, 1);
+    current.splice(toIndex, 0, moved);
+    const next = { ...all, [optionId]: current };
+    set({ erasmusTableBCourses: next });
+    IndexedDBService.set('meta', TABLE_B_COURSES_KEY, next).catch(() => {});
+  },
   toggleErasmusTableBCourse: (optionId: string, code: string) => {
     const all = get().erasmusTableBCourses;
     const current = all[optionId] ?? [];

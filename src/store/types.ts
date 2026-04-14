@@ -206,6 +206,7 @@ export interface ErasmusSlice {
     fetchErasmusReports: () => Promise<void>;
     fetchErasmusConfig: () => Promise<void>;
     toggleErasmusTableBCourse: (optionId: string, code: string) => void;
+    reorderErasmusTableBCourse: (optionId: string, fromIndex: number, toIndex: number) => void;
     setErasmusStudentInfo: (data: Partial<ErasmusStudentInfo>) => void;
     initErasmusStudentInfo: (params: { fullName?: string; studyProgram?: string; studentId?: string }) => void;
     setErasmusVerdict: (code: string, verdict: 'approved' | 'rejected') => void;

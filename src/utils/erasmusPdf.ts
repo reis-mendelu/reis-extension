@@ -97,23 +97,16 @@ export async function downloadErasmusPdf(
   for (const [i, option] of options.entries()) {
     const codes = tableBCourses[option.id] ?? [];
     const tableATotal = option.courses.reduce((s, c) => s + c.credits, 0);
-    const knownBTotal = codes.reduce((sum, code) => {
+    const knownBTotal = codes.reduce((sum, code) => { const s = subjectMap.get(code); return sum + (s && s.credits < 999 ? s.credits : 0); }, 0);
+    const positionalExaTotal = codes.reduce((sum, code, i) => { const s = subjectMap.get(code); return (!s || s.credits >= 999) ? sum + (option.courses[i]?.credits ?? 0) : sum; }, 0);
+    const residual = Math.max(0, tableATotal - knownBTotal - positionalExaTotal);
+    const lastExaIdx = codes.map((code, i) => { const s = subjectMap.get(code); return (!s || s.credits >= 999) ? i : -1; }).filter(i => i >= 0).pop();
+    const bRows = codes.map((code, rowIndex) => {
       const s = subjectMap.get(code);
-      return sum + (s && s.credits < 999 ? s.credits : 0);
-    }, 0);
-    const exaUpTotal = Math.max(0, tableATotal - knownBTotal);
-    const exaUpCount = codes.filter(code => { const s = subjectMap.get(code); return !s || s.credits >= 999; }).length;
-    const base = exaUpCount > 0 ? Math.floor(exaUpTotal / exaUpCount) : 0;
-    const remainder = exaUpCount > 0 ? exaUpTotal % exaUpCount : 0;
-    let exaUpIdx = 0;
-    const bRows = codes.map(code => {
-      const s = subjectMap.get(code);
-      if (!s || s.credits >= 999) {
-        const credits = base + (exaUpIdx >= exaUpCount - remainder ? 1 : 0);
-        exaUpIdx++;
-        return { code, name: s?.name ?? code, credits };
-      }
-      return { code, name: s.name, credits: s.credits };
+      const isExa = !s || s.credits >= 999;
+      const base = isExa ? (option.courses[rowIndex]?.credits ?? 0) : s.credits;
+      const credits = isExa && rowIndex === lastExaIdx ? base + residual : base;
+      return { code, name: s?.name ?? code, credits };
     });
 
     // Institution header
