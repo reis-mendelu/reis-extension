@@ -1,10 +1,12 @@
-import type { ErasmusSlice, AppSlice } from '../types';
+import type { ErasmusSlice, AppSlice, ErasmusUniversityOption, ErasmusStudentInfo } from '../types';
 import { fetchErasmusReports, getStoredErasmusData, fetchErasmusConfig as fetchErasmusConfigApi } from '../../api/erasmus';
 import { IndexedDBService } from '../../services/storage';
 import { loggers } from '../../utils/logger';
 
-const TABLE_A_COURSES_KEY = 'erasmus_table_a_courses';
-const SELECTED_COURSES_KEY = 'erasmus_selected_courses';
+const TABLE_A_COURSES_KEY = 'erasmus_table_a_courses'; // Legacy
+const TABLE_A_OPTIONS_KEY = 'erasmus_table_a_options';
+const TABLE_B_COURSES_KEY = 'erasmus_table_b_courses';
+const STUDENT_INFO_KEY = 'erasmus_student_info';
 const ERASMUS_UI_STATE_KEY = 'erasmus_ui_state';
 const VERDICTS_KEY = 'erasmus_verdicts';
 const PDF_ASSIGNMENTS_KEY = 'erasmus_pdf_assignments';
@@ -12,13 +14,20 @@ const PINNED_UNIVERSITIES_KEY = 'erasmus_pinned_universities';
 const UPLOADED_PDFS_KEY = 'erasmus_uploaded_pdfs';
 const MAX_PINNED = 4;
 
+const EMPTY_STUDENT_INFO: ErasmusStudentInfo = {
+  firstName: '', lastName: '', dob: '', studyCode: '', semester: '', studentId: '',
+};
+
 export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
   erasmusData: null,
   erasmusLoading: false,
   erasmusCountryFile: '',
   erasmusConfig: null,
-  erasmusSelectedCourses: [],
-  erasmusTableACourses: [],
+  erasmusTableBCourses: {},
+  erasmusStudentInfo: { ...EMPTY_STUDENT_INFO },
+  erasmusTableAOptions: [
+    { id: 'opt-1', institutionName: '', erasmusCode: '', country: '', link: '', courses: [] }
+  ],
   erasmusVerdicts: {},
   erasmusPdfAssignments: {},
   erasmusPinnedUniversities: [],
@@ -81,18 +90,45 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
       set({ erasmusLoading: false });
     }
   },
-  toggleErasmusCourse: (code: string) => {
-    const current = get().erasmusSelectedCourses;
+  toggleErasmusTableBCourse: (optionId: string, code: string) => {
+    const all = get().erasmusTableBCourses;
+    const current = all[optionId] ?? [];
     const isRemoving = current.includes(code);
-    const next = isRemoving ? current.filter(c => c !== code) : [...current, code];
-    set({ erasmusSelectedCourses: next });
-    IndexedDBService.set('meta', SELECTED_COURSES_KEY, next).catch(() => {});
+    const next = { ...all, [optionId]: isRemoving ? current.filter(c => c !== code) : [...current, code] };
+    set({ erasmusTableBCourses: next });
+    IndexedDBService.set('meta', TABLE_B_COURSES_KEY, next).catch(() => {});
     if (isRemoving) {
       const verdicts = { ...get().erasmusVerdicts };
       delete verdicts[code];
       set({ erasmusVerdicts: verdicts });
       IndexedDBService.set('meta', VERDICTS_KEY, verdicts).catch(() => {});
     }
+  },
+  setErasmusStudentInfo: (data: Partial<ErasmusStudentInfo>) => {
+    const next = { ...get().erasmusStudentInfo, ...data };
+    set({ erasmusStudentInfo: next });
+    IndexedDBService.set('meta', STUDENT_INFO_KEY, next).catch(() => {});
+  },
+  initErasmusStudentInfo: (params: { fullName?: string; studyProgram?: string; studentId?: string }) => {
+    const current = get().erasmusStudentInfo;
+    const allBlank = !current.firstName && !current.lastName && !current.studyCode && !current.studentId;
+    if (!allBlank) return;
+    const fullName = params.fullName?.trim() ?? '';
+    const parts = fullName.split(' ');
+    const lastName = parts.length > 1 ? parts[parts.length - 1] : fullName;
+    const firstName = parts.length > 1 ? parts.slice(0, -1).join(' ') : '';
+    // Extract only the first two dash-separated segments (e.g. "B-OI" from "B-OI-ZBOI")
+    const rawProgram = params.studyProgram ?? '';
+    const programParts = rawProgram.split('-');
+    const studyCode = programParts.length >= 2 ? `${programParts[0]}-${programParts[1]}` : rawProgram;
+    const next: ErasmusStudentInfo = {
+      ...current,
+      firstName,
+      lastName,
+      studyCode,
+      studentId: params.studentId ?? '',
+    };
+    set({ erasmusStudentInfo: next });
   },
   setErasmusVerdict: (code: string, verdict: 'approved' | 'rejected') => {
     const verdicts = { ...get().erasmusVerdicts, [code]: verdict };
@@ -133,23 +169,62 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     set({ erasmusUploadedPdfs: {} });
     IndexedDBService.set('meta', UPLOADED_PDFS_KEY, {}).catch(() => {});
   },
-  addErasmusTableACourse: (course: { code: string; name: string; credits: number }) => {
-    const next = [...get().erasmusTableACourses, course];
-    set({ erasmusTableACourses: next });
-    IndexedDBService.set('meta', TABLE_A_COURSES_KEY, next).catch(() => {});
+  addErasmusTableAOption: () => {
+    const current = get().erasmusTableAOptions;
+    if (current.length >= 4) return;
+    const next = [...current, { 
+      id: `opt-${Date.now()}`, 
+      institutionName: '', 
+      erasmusCode: '', 
+      country: '', 
+      link: '', 
+      courses: [] 
+    }];
+    set({ erasmusTableAOptions: next });
+    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(() => {});
   },
-  removeErasmusTableACourse: (index: number) => {
-    const next = get().erasmusTableACourses.filter((_, i) => i !== index);
-    set({ erasmusTableACourses: next });
-    IndexedDBService.set('meta', TABLE_A_COURSES_KEY, next).catch(() => {});
+  removeErasmusTableAOption: (id: string) => {
+    const next = get().erasmusTableAOptions.filter(o => o.id !== id);
+    if (next.length === 0) {
+      next.push({ id: `opt-${Date.now()}`, institutionName: '', erasmusCode: '', country: '', link: '', courses: [] });
+    }
+    set({ erasmusTableAOptions: next });
+    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(() => {});
   },
-  loadErasmusSelectedCourses: async () => {
+  updateErasmusTableAOptionHeader: (id, data) => {
+    const next = get().erasmusTableAOptions.map(o => o.id === id ? { ...o, ...data } : o);
+    set({ erasmusTableAOptions: next });
+    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(() => {});
+  },
+  addErasmusTableACourse: (optionId: string, course: { code: string; name: string; credits: number }) => {
+    const next = get().erasmusTableAOptions.map(o => o.id === optionId ? { ...o, courses: [...o.courses, course] } : o);
+    set({ erasmusTableAOptions: next });
+    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(() => {});
+  },
+  removeErasmusTableACourse: (optionId: string, index: number) => {
+    const next = get().erasmusTableAOptions.map(o => o.id === optionId ? { ...o, courses: o.courses.filter((_, i) => i !== index) } : o);
+    set({ erasmusTableAOptions: next });
+    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(() => {});
+  },
+  loadErasmusState: async () => {
     try {
-      const stored = await IndexedDBService.get('meta', SELECTED_COURSES_KEY) as string[] | null;
-      if (stored) set({ erasmusSelectedCourses: stored });
+      const tableBCourses = await IndexedDBService.get('meta', TABLE_B_COURSES_KEY) as Record<string, string[]> | null;
+      if (tableBCourses) set({ erasmusTableBCourses: tableBCourses });
 
-      const tableA = await IndexedDBService.get('meta', TABLE_A_COURSES_KEY) as { code: string; name: string; credits: number }[] | null;
-      if (tableA) set({ erasmusTableACourses: tableA });
+      const studentInfo = await IndexedDBService.get('meta', STUDENT_INFO_KEY) as ErasmusStudentInfo | null;
+      if (studentInfo) set({ erasmusStudentInfo: { ...EMPTY_STUDENT_INFO, ...studentInfo } });
+
+      const tableAOptions = await IndexedDBService.get('meta', TABLE_A_OPTIONS_KEY) as ErasmusUniversityOption[] | null;
+      if (tableAOptions && tableAOptions.length > 0) {
+        set({ erasmusTableAOptions: tableAOptions });
+      } else {
+        const oldTableA = await IndexedDBService.get('meta', TABLE_A_COURSES_KEY) as any[] | null;
+        if (oldTableA && oldTableA.length > 0) {
+           const initial = [{ id: 'opt-initial', institutionName: '', erasmusCode: '', country: '', link: '', courses: oldTableA }];
+           set({ erasmusTableAOptions: initial });
+           IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, initial).catch(() => {});
+        }
+      }
 
       const verdicts = await IndexedDBService.get('meta', VERDICTS_KEY) as Record<string, 'approved' | 'rejected'> | null;
       if (verdicts) set({ erasmusVerdicts: verdicts });

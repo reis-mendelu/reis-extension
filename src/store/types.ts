@@ -164,13 +164,32 @@ export interface StudyPlanSlice {
     fetchStudyStats: () => Promise<void>;
 }
 
+export interface ErasmusStudentInfo {
+    firstName: string;
+    lastName: string;
+    dob: string;
+    studyCode: string;
+    semester: 'WS' | 'SS' | '';
+    studentId: string;
+}
+
+export interface ErasmusUniversityOption {
+    id: string;
+    institutionName: string;
+    erasmusCode: string;
+    country: string;
+    link: string;
+    courses: { code: string; name: string; credits: number }[];
+}
+
 export interface ErasmusSlice {
     erasmusData: ErasmusCountryData | null;
     erasmusLoading: boolean;
     erasmusCountryFile: string;
     erasmusConfig: ErasmusConfig | null;
-    erasmusSelectedCourses: string[];
-    erasmusTableACourses: { code: string; name: string; credits: number }[];
+    erasmusTableBCourses: Record<string, string[]>;
+    erasmusStudentInfo: ErasmusStudentInfo;
+    erasmusTableAOptions: ErasmusUniversityOption[];
     erasmusVerdicts: Record<string, 'approved' | 'rejected'>;
     erasmusPdfAssignments: Record<string, string>; // courseCode → filename
     erasmusPinnedUniversities: string[];
@@ -186,13 +205,18 @@ export interface ErasmusSlice {
     setErasmusPlanPhase: (phase: 'select' | 'review') => void;
     fetchErasmusReports: () => Promise<void>;
     fetchErasmusConfig: () => Promise<void>;
-    toggleErasmusCourse: (code: string) => void;
+    toggleErasmusTableBCourse: (optionId: string, code: string) => void;
+    setErasmusStudentInfo: (data: Partial<ErasmusStudentInfo>) => void;
+    initErasmusStudentInfo: (params: { fullName?: string; studyProgram?: string; studentId?: string }) => void;
     setErasmusVerdict: (code: string, verdict: 'approved' | 'rejected') => void;
     pinErasmusUniversity: (name: string) => void;
     unpinErasmusUniversity: (name: string) => void;
-    addErasmusTableACourse: (course: { code: string; name: string; credits: number }) => void;
-    removeErasmusTableACourse: (index: number) => void;
-    loadErasmusSelectedCourses: () => Promise<void>;
+    addErasmusTableAOption: () => void;
+    removeErasmusTableAOption: (id: string) => void;
+    updateErasmusTableAOptionHeader: (id: string, data: Partial<Omit<ErasmusUniversityOption, 'id' | 'courses'>>) => void;
+    addErasmusTableACourse: (optionId: string, course: { code: string; name: string; credits: number }) => void;
+    removeErasmusTableACourse: (optionId: string, index: number) => void;
+    loadErasmusState: () => Promise<void>;
 }
 
 export interface CvicneTestsSlice {

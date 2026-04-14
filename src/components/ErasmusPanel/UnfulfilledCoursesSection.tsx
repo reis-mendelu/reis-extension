@@ -9,17 +9,17 @@ import { Calendar } from 'lucide-react';
 import type { SemesterBlock } from '@/types/studyPlan';
 
 interface Props {
+  selectedCodes: string[];
+  onToggle: (code: string) => void;
   onOpenSubject: (courseCode: string, courseName?: string, courseId?: string) => void;
   onSearchSubject: (name: string) => void;
 }
 
-export function UnfulfilledCoursesSection({ onOpenSubject, onSearchSubject }: Props) {
+export function UnfulfilledCoursesSection({ selectedCodes, onToggle, onOpenSubject, onSearchSubject }: Props) {
   const { t } = useTranslation();
   const plan = useStudyPlan();
   const loaded = useAppStore(s => s.studyPlanLoaded);
   const successRates = useAppStore(s => s.successRates);
-  const selectedCourses = useAppStore(s => s.erasmusSelectedCourses) || [];
-  const rawToggle = useAppStore(s => s.toggleErasmusCourse);
 
   const [targetSemester, setTargetSemester] = useState<number | null>(null);
 
@@ -57,8 +57,8 @@ export function UnfulfilledCoursesSection({ onOpenSubject, onSearchSubject }: Pr
   }, [plan, targetSemester]);
 
   const toggleCourse = (code: string) => {
-    const isAdding = !selectedCourses.includes(code);
-    rawToggle(code);
+    const isAdding = !selectedCodes.includes(code);
+    onToggle(code);
     if (isAdding) {
       const allSubjects = futureSemesters.flatMap(({ block }) => (block.groups || []).flatMap(g => g.subjects || []));
       const subject = allSubjects.find(s => s.code === code);
@@ -109,7 +109,7 @@ export function UnfulfilledCoursesSection({ onOpenSubject, onSearchSubject }: Pr
 
   if (!plan || futureSemesters.length === 0) return null;
 
-  const selectedSet = new Set(selectedCourses);
+  const selectedSet = new Set(selectedCodes);
 
   return (
     <div className="flex flex-col gap-6">

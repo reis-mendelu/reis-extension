@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import { ChevronDown, ExternalLink, Info, Plus } from 'lucide-react';
+import { ExternalLink, Info } from 'lucide-react';
 import { useErasmus } from '@/hooks/data/useErasmus';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAppStore } from '@/store/useAppStore';
@@ -7,9 +7,9 @@ import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { ERASMUS_COUNTRIES } from '@/constants/erasmusCountries';
 import { EuropeMap } from './EuropeMap';
 import { ErasmusDrawer } from './ErasmusDrawer';
-import { UnfulfilledCoursesSection } from './UnfulfilledCoursesSection';
+import { StudentInfoSection } from './StudentInfoSection';
 import { LATableA } from './LATableA';
-import { LATableB } from './LATableB';
+import { ErasmusExportButton } from './ErasmusExportButton';
 import { getUserParams, type UserParams } from '@/utils/userParams';
 import type { StudyPlan } from '@/types/studyPlan';
 
@@ -32,13 +32,10 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
   const lang = language === 'en' ? 'en' : 'cs';
   const { reports, countryFile, setCountry, loading, config } = useErasmus();
   const plan = useStudyPlan();
-  const selectedCourses = useAppStore(s => s.erasmusSelectedCourses) || [];
-  const toggleCourse = useAppStore(s => s.toggleErasmusCourse);
+  const tableBCourses = useAppStore(s => s.erasmusTableBCourses);
   const activeTab = useAppStore(s => s.erasmusActiveTab);
   const setActiveTab = useAppStore(s => s.setErasmusActiveTab);
-  const loadState = useAppStore(s => s.loadErasmusSelectedCourses);
-  const syllabusCache = useAppStore(s => s.syllabuses.cache);
-  const fetchSyllabus = useAppStore(s => s.fetchSyllabus);
+  const loadState = useAppStore(s => s.loadErasmusState);
 
   useEffect(() => {
     loadState();
@@ -49,21 +46,8 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
   const [facultyFilter, setFacultyFilter] = useState(false);
   const [userParams, setUserParams] = useState<UserParams | null>(null);
   const [showAll, setShowAll] = useState(false);
-  const [builderOpen, setBuilderOpen] = useState(false);
 
   useEffect(() => { getUserParams().then(setUserParams); }, []);
-
-  // Pre-fetch MENDELU syllabi for selected courses
-  useEffect(() => {
-    if (!plan?.blocks) return;
-    const allSubjects = plan.blocks.flatMap(b => (b.groups || []).flatMap(g => g.subjects || []));
-    for (const code of selectedCourses) {
-      if (!syllabusCache[code]) {
-        const subject = allSubjects.find(s => s.code === code);
-        if (subject?.id) fetchSyllabus(subject.code, subject.id);
-      }
-    }
-  }, [selectedCourses, plan, syllabusCache, fetchSyllabus]);
 
   const handleCountrySelect = useCallback((file: string) => {
     setCountry(file);
@@ -96,8 +80,7 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
 
   const handleClose = useCallback(() => setDrawerOpen(false), []);
 
-  // Auto-open builder if no courses selected yet
-  const shouldShowBuilder = builderOpen || selectedCourses.length === 0;
+  const hasAnyCoursesSelected = Object.values(tableBCourses).some(arr => arr.length > 0);
 
   return (
     <div className="h-full flex flex-col">
@@ -117,21 +100,19 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
         ))}
       </div>
 
-      {/* Plan tab — Table A + Table B as primary view */}
       {activeTab === 'plan' && (
         <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-5">
-          {/* Table A — Host university courses */}
-          <LATableA />
+          <StudentInfoSection userParams={userParams} />
 
-          {/* Table B — MENDELU recognition (selected courses) */}
-          <LATableB
+          <LATableA
             plan={plan ?? { blocks: [] } as unknown as StudyPlan}
-            selectedCodes={selectedCourses}
-            onToggle={toggleCourse}
+            onOpenSubject={onOpenSubject}
+            onSearchSubject={onSearchSubject}
           />
 
-          {/* Next steps — coordinator link */}
-          {selectedCourses.length > 0 && (
+          <ErasmusExportButton />
+
+          {hasAnyCoursesSelected && (
             <a
               href={t('erasmus.erasmusCoordinators')}
               target="_blank"
@@ -142,34 +123,9 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
               <ExternalLink size={12} />
             </a>
           )}
-
-          {/* Builder toggle — collapsible course picker */}
-          <div className="flex flex-col gap-0">
-            <button
-              onClick={() => setBuilderOpen(!builderOpen)}
-              className="flex items-center gap-2 px-2 py-2 text-xs font-bold text-base-content/50 hover:text-primary transition-colors group w-full"
-            >
-              {shouldShowBuilder
-                ? <ChevronDown size={14} className="transition-transform rotate-180" />
-                : <Plus size={14} />
-              }
-              <span>{t('erasmus.addCourses')}</span>
-              {!shouldShowBuilder && (
-                <span className="text-[10px] font-normal text-base-content/30 ml-1">{t('erasmus.addCoursesHint')}</span>
-              )}
-            </button>
-
-            {shouldShowBuilder && (
-              <UnfulfilledCoursesSection
-                onOpenSubject={onOpenSubject}
-                onSearchSubject={onSearchSubject}
-              />
-            )}
-          </div>
         </div>
       )}
 
-      {/* Explore tab */}
       {activeTab === 'explore' && (
         <div className="flex-1 min-h-0 px-4 pb-4 pt-2 flex flex-col gap-2">
           <div className="flex items-start gap-2 px-1 py-1.5 text-[10px] text-base-content/50 leading-relaxed">
