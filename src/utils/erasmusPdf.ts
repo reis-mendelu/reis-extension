@@ -64,7 +64,7 @@ function courseTable(doc: jsPDF, y: number, label: string, rows: { code: string;
     [{ content: label, colSpan: 3, styles: { fillColor: WHT, textColor: BLK, fontSize: 8, minCellHeight: 7 } }],
     [hdrCell('Code'), hdrCell('Course name'), hdrCell('ECTS (credits)')],
     ...padded.map(r => [bdy(r.code), bdy(r.name), bdy(r.credits > 0 ? String(r.credits) : '', 'right')]),
-    [{ content: '', colSpan: 2, styles: { fillColor: WHT } }, { content: 'Total', styles: { fillColor: WHT, fontStyle: 'bold', halign: 'right' } }, bdy(String(total), 'right')],
+    [bdy(''), { content: 'Total', styles: { fillColor: WHT, fontStyle: 'bold', halign: 'right' } }, bdy(String(total), 'right')],
   ], [22, 136, 22]);
 }
 
@@ -95,9 +95,25 @@ export async function downloadErasmusPdf(
   y += 6;
 
   for (const [i, option] of options.entries()) {
-    const bRows = (tableBCourses[option.id] ?? []).map(code => {
+    const codes = tableBCourses[option.id] ?? [];
+    const tableATotal = option.courses.reduce((s, c) => s + c.credits, 0);
+    const knownBTotal = codes.reduce((sum, code) => {
       const s = subjectMap.get(code);
-      return { code, name: s?.name ?? code, credits: s && s.credits < 999 ? s.credits : 0 };
+      return sum + (s && s.credits < 999 ? s.credits : 0);
+    }, 0);
+    const exaUpTotal = Math.max(0, tableATotal - knownBTotal);
+    const exaUpCount = codes.filter(code => { const s = subjectMap.get(code); return !s || s.credits >= 999; }).length;
+    const base = exaUpCount > 0 ? Math.floor(exaUpTotal / exaUpCount) : 0;
+    const remainder = exaUpCount > 0 ? exaUpTotal % exaUpCount : 0;
+    let exaUpIdx = 0;
+    const bRows = codes.map(code => {
+      const s = subjectMap.get(code);
+      if (!s || s.credits >= 999) {
+        const credits = base + (exaUpIdx >= exaUpCount - remainder ? 1 : 0);
+        exaUpIdx++;
+        return { code, name: s?.name ?? code, credits };
+      }
+      return { code, name: s.name, credits: s.credits };
     });
 
     // Institution header

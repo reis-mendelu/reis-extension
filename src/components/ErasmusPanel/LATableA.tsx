@@ -138,6 +138,14 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, plan, o
           </div>
         </div>
 
+        {/* Table A label */}
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-base-300/60">
+          <div className="badge badge-sm font-black tracking-wider bg-primary/10 text-primary border-primary/20">A</div>
+          <span className="text-[10px] uppercase tracking-widest font-bold text-base-content/50">
+            {t('erasmus.tableATitle')}
+          </span>
+        </div>
+
         {/* Table A header */}
         <div className="grid grid-cols-[auto_1fr_auto_auto] gap-2 px-3 py-2 bg-base-200/50 border-b border-base-300 text-[10px] uppercase tracking-wider font-bold text-base-content/40">
           <span className="w-20">{t('erasmus.colCode')}</span>
@@ -220,7 +228,7 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, plan, o
       </div>
 
       {/* Table B */}
-      <LATableB plan={plan} selectedCodes={selectedCodes} onToggle={onToggle} />
+      <LATableB plan={plan} selectedCodes={selectedCodes} onToggle={onToggle} tableATotal={totalCredits} />
 
       {/* Add courses picker */}
       <div className="flex flex-col gap-0">
