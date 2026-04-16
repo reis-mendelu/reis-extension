@@ -26,4 +26,4 @@ jobs:
           version: latest
 
       - name: Deploy gemini-proxy function
-        run: supabase functions deploy gemini-proxy --project-ref $PROJECT_ID
+        run: supabase functions deploy gemini-proxy --project-ref $PROJECT_ID --no-verify-jwt
