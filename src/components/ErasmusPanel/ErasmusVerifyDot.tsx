@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { FileText, Paperclip, Sparkles, X, RotateCcw, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import { compareSyllabiAI, type AIComparisonResult } from '@/api/gemini';
 import { buildMendeluText } from '@/api/syllabusTransfer';
 import type { StudyPlan } from '@/types/studyPlan';
@@ -11,14 +12,16 @@ interface ErasmusVerifyDotProps {
   courseName: string;
   optionId: string;
   plan: StudyPlan;
+  rowIndex: number;
 }
 
-export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan }: ErasmusVerifyDotProps) {
+export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan, rowIndex }: ErasmusVerifyDotProps) {
+  const { t } = useTranslation();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
-  const [panelPos, setPanelPos] = useState<{ top: number; right: number } | null>(null);
+  const [panelPos, setPanelPos] = useState<{ top?: number; bottom?: number; right: number; maxHeight: number } | null>(null);
 
   // Store reads
   const erasmusPdfAssignments = useAppStore(s => s.erasmusPdfAssignments);
@@ -44,9 +47,17 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
   const pdfData = assignedFilename ? erasmusUploadedPdfs[assignedFilename] : null;
   const verdict = erasmusVerdicts[courseCode] ?? null;
   const tableBCodes = erasmusTableBCourses[optionId] ?? [];
+  const targetBCode = tableBCodes[rowIndex];
+
+  // ── Auto-Approval Logic ───────────────────────────────────────────────────
+  const isAutoApproved = targetBCode && (
+    targetBCode.toUpperCase().startsWith('EXA-UP') || 
+    targetBCode.toUpperCase().startsWith('EXA-')
+  );
 
   // ── Dot color ──────────────────────────────────────────────────────────────
   const dotClass = (() => {
+    if (isAutoApproved) return 'bg-success shadow-[0_0_8px_rgba(0,169,110,0.4)]';
     if (!pdfData) return 'bg-base-content/15 hover:bg-base-content/30';
     if (aiStatus === 'loading') return 'bg-primary animate-pulse';
     if (verdict === 'approved') return 'bg-success';
@@ -56,23 +67,34 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
 
   // ── Verify button label ────────────────────────────────────────────────────
   const verifyLabel = (() => {
-    if (tableBCodes.length === 0) return 'Verify';
-    if (tableBCodes.length === 1) {
-      const entry = syllabusCache[tableBCodes[0]];
-      const name = entry?.courseInfo?.courseNameEn ?? entry?.courseInfo?.courseNameCs ?? tableBCodes[0];
-      return `Verify with ${name}`;
-    }
-    return `Verify with Table B (${tableBCodes.length} courses)`;
+    if (!targetBCode) return t('erasmus.verifyDefault');
+    const entry = syllabusCache[targetBCode];
+    const name = entry?.courseInfo?.courseNameEn ?? entry?.courseInfo?.courseNameCs ?? targetBCode;
+    return t('erasmus.verifyWith', { name });
   })();
 
   // ── Toggle panel ───────────────────────────────────────────────────────────
   const handleToggle = useCallback(() => {
     if (!open && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      setPanelPos({
-        top: rect.bottom + 6,
-        right: window.innerWidth - rect.right,
-      });
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      if (spaceBelow < 300 && spaceAbove > spaceBelow) {
+        // Render above
+        setPanelPos({
+          bottom: window.innerHeight - rect.top + 6,
+          right: window.innerWidth - rect.right,
+          maxHeight: spaceAbove - 12,
+        });
+      } else {
+        // Render below
+        setPanelPos({
+          top: rect.bottom + 6,
+          right: window.innerWidth - rect.right,
+          maxHeight: spaceBelow - 12,
+        });
+      }
     }
     setOpen(prev => !prev);
   }, [open]);
@@ -127,22 +149,18 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
 
   // ── AI check ───────────────────────────────────────────────────────────────
   const runAICheck = useCallback(async () => {
-    if (!pdfData || tableBCodes.length === 0) return;
+    if (!pdfData || !targetBCode) return;
     setAiStatus('loading');
     setAiError(null);
     try {
-      await Promise.all(tableBCodes.map(code => fetchSyllabus(code)));
-      const mendeluText = tableBCodes
-        .map(code => { const s = syllabusCache[code]; return s ? buildMendeluText(s) : ''; })
-        .filter(Boolean)
-        .join('\n\n---\n\n');
-      const firstCode = tableBCodes[0];
-      const firstSyl = syllabusCache[firstCode];
+      await fetchSyllabus(targetBCode);
+      const targetSyl = syllabusCache[targetBCode];
+      const mendeluText = targetSyl ? buildMendeluText(targetSyl) : '';
       const primaryMetadata = {
         credits: 0,
         type: '',
-        code: firstCode ?? courseCode,
-        name: firstSyl?.courseInfo?.courseNameEn ?? firstSyl?.courseInfo?.courseNameCs ?? courseName,
+        code: targetBCode,
+        name: targetSyl?.courseInfo?.courseNameEn ?? targetSyl?.courseInfo?.courseNameCs ?? targetBCode,
       };
       const result = await compareSyllabiAI(mendeluText, primaryMetadata, pdfData.base64);
       setErasmusVerdict(courseCode, result.verdict);
@@ -152,7 +170,7 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
       setAiError(err instanceof Error ? err.message : 'Unknown error');
       setAiStatus('error');
     }
-  }, [pdfData, tableBCodes, fetchSyllabus, syllabusCache, courseCode, courseName, setErasmusVerdict]);
+  }, [pdfData, targetBCode, fetchSyllabus, syllabusCache, courseCode, courseName, setErasmusVerdict]);
 
   const similarityPct = aiResult ? Math.round(aiResult.similarity * 100) : null;
 
@@ -160,26 +178,46 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
   const panelContent = open && panelPos ? createPortal(
     <div
       ref={panelRef}
-      style={{ position: 'fixed', top: panelPos.top, right: panelPos.right, zIndex: 9999 }}
-      className="bg-base-100 rounded-box p-4 shadow-lg border border-base-300 w-72 flex flex-col gap-3"
+      style={{ 
+        position: 'fixed', 
+        top: panelPos.top, 
+        bottom: panelPos.bottom,
+        right: panelPos.right, 
+        maxHeight: panelPos.maxHeight,
+        zIndex: 9999 
+      }}
+      className="bg-base-100 rounded-box p-4 shadow-lg border border-base-300 w-72 flex flex-col gap-3 overflow-y-auto"
     >
+      {/* ── Auto-Approved Component (EXA-UP Wildcards) ── */}
+      {isAutoApproved && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-1.5">
+            <CheckCircle size={13} className="text-success shrink-0" />
+            <span className="text-xs font-bold text-success">{t('erasmus.verifyAutoApprovedPercent')}</span>
+          </div>
+          <p className="text-xs text-base-content/70 italic">
+            "{t('erasmus.verifyAutoApprovedInfo')}"
+          </p>
+        </div>
+      )}
+
       {/* ── State 1: No PDF ── */}
-      {!pdfData && (
+      {!pdfData && !isAutoApproved && (
         <>
           <span className="text-[10px] uppercase tracking-wider font-bold text-base-content/40">
-            📎 Attach syllabus PDF
+            {t('erasmus.verifyAttachPdf')}
           </span>
           <button
             className="btn btn-outline btn-sm w-full text-xs"
             onClick={() => fileInputRef.current?.click()}
           >
-            Choose PDF <span className="text-base-content/40 font-normal ml-1">(max 15 MB)</span>
+            {t('erasmus.verifyChoosePdf')} <span className="text-base-content/40 font-normal ml-1">{t('erasmus.verifyMax15Mb')}</span>
           </button>
         </>
       )}
 
       {/* ── States 2–4: PDF attached ── */}
-      {pdfData && (
+      {pdfData && !isAutoApproved && (
         <>
           {/* PDF name row */}
           <div className="flex items-center gap-2">
@@ -200,7 +238,7 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
           {aiStatus === 'loading' && (
             <div className="flex items-center gap-2 text-xs text-base-content/60">
               <Loader2 size={13} className="animate-spin shrink-0" />
-              <span>Analysing syllabi…</span>
+              <span>{t('erasmus.verifyAnalysing')}</span>
             </div>
           )}
 
@@ -209,14 +247,14 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-1.5">
                 <CheckCircle size={13} className="text-success shrink-0" />
-                <span className="text-xs font-bold text-success">{similarityPct}% Schváleno</span>
+                <span className="text-xs font-bold text-success">{similarityPct}% {t('erasmus.verifyApproved')}</span>
               </div>
               {aiResult.reasoning && (
                 <p className="text-xs text-base-content/70 italic">"{aiResult.reasoning}"</p>
               )}
               <div className="flex justify-end">
                 <button onClick={runAICheck} className="btn btn-ghost btn-xs text-[10px] gap-1 text-base-content/40">
-                  <RotateCcw size={10} /> Re-run
+                  <RotateCcw size={10} /> {t('erasmus.verifyRerun')}
                 </button>
               </div>
             </div>
@@ -227,7 +265,7 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-1.5">
                 <XCircle size={13} className="text-error shrink-0" />
-                <span className="text-xs font-bold text-error">{similarityPct}% Zamítnuto</span>
+                <span className="text-xs font-bold text-error">{similarityPct}% {t('erasmus.verifyRejected')}</span>
               </div>
               {aiResult.reasoning && (
                 <p className="text-xs text-base-content/70 italic">"{aiResult.reasoning}"</p>
@@ -235,7 +273,7 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
               {aiResult.mismatches && aiResult.mismatches.length > 0 && (
                 <div className="flex flex-col gap-1">
                   <span className="text-[10px] uppercase tracking-wider font-bold text-base-content/40">
-                    ⚠ Discuss with coordinator:
+                    {t('erasmus.verifyDiscuss')}
                   </span>
                   <ul className="flex flex-col gap-0.5 pl-2">
                     {aiResult.mismatches.map((m, idx) => (
@@ -248,7 +286,7 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
               )}
               <div className="flex justify-end">
                 <button onClick={runAICheck} className="btn btn-ghost btn-xs text-[10px] gap-1 text-base-content/40">
-                  <RotateCcw size={10} /> Re-run
+                  <RotateCcw size={10} /> {t('erasmus.verifyRerun')}
                 </button>
               </div>
             </div>
@@ -259,23 +297,23 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
             <div className="flex flex-col gap-2">
               <p className="text-xs text-error">{aiError}</p>
               <button onClick={runAICheck} className="btn btn-ghost btn-xs text-[10px] gap-1 text-base-content/40">
-                <RotateCcw size={10} /> Retry
+                <RotateCcw size={10} /> {t('erasmus.verifyRetry')}
               </button>
             </div>
           )}
 
-          {/* Verify button (idle, has Table B courses) */}
-          {aiStatus === 'idle' && tableBCodes.length > 0 && (
+          {/* Verify button (idle, has target) */}
+          {aiStatus === 'idle' && targetBCode && (
             <button className="btn btn-primary btn-sm w-full text-xs gap-1.5" onClick={runAICheck}>
               <Sparkles size={12} />
               {verifyLabel}
             </button>
           )}
 
-          {/* No Table B courses yet */}
-          {aiStatus === 'idle' && tableBCodes.length === 0 && (
-            <p className="text-[10px] text-base-content/40 italic">
-              Add Table B courses first to enable verification.
+          {/* No Table B course mapped yet at this index */}
+          {aiStatus === 'idle' && !targetBCode && (
+            <p className="text-[10px] text-base-content/40 italic text-center leading-tight">
+              {t('erasmus.verifyAddCorresponding', { row: String(rowIndex + 1) })}
             </p>
           )}
 
@@ -287,10 +325,10 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
                 : <XCircle size={13} className="text-error shrink-0" />
               }
               <span className={`text-xs font-bold ${verdict === 'approved' ? 'text-success' : 'text-error'}`}>
-                {verdict === 'approved' ? 'Schváleno' : 'Zamítnuto'}
+                {verdict === 'approved' ? t('erasmus.verifyApproved') : t('erasmus.verifyRejected')}
               </span>
               <button onClick={runAICheck} className="btn btn-ghost btn-xs text-[10px] gap-1 text-base-content/40 ml-auto">
-                <RotateCcw size={10} /> Re-run
+                <RotateCcw size={10} /> {t('erasmus.verifyRerun')}
               </button>
             </div>
           )}
@@ -300,7 +338,7 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
             className="btn btn-ghost btn-xs text-[10px] text-base-content/30 w-full gap-1"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Paperclip size={10} /> Change PDF
+            <Paperclip size={10} /> {t('erasmus.verifyChangePdf')}
           </button>
         </>
       )}

@@ -189,6 +189,7 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
               courseName={course.name}
               optionId={option.id}
               plan={plan}
+              rowIndex={i}
             />
             <button
               onClick={() => removeCourse(option.id, i)}

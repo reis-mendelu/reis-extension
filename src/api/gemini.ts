@@ -140,6 +140,22 @@ export async function compareSyllabiAI(
   pdfBase64?: string,
   foreignText?: string
 ): Promise<AIComparisonResult> {
+  // Fast path: EXA-UP subjects are wildcards for electives abroad and do not require syllabus mapping.
+  if (
+    mendeluMetadata.code.toUpperCase().startsWith('EXA-UP') || 
+    mendeluMetadata.name.toLowerCase().includes('uznaný předmět') ||
+    mendeluMetadata.name.toLowerCase().includes('recognized subject')
+  ) {
+    return {
+      similarity: 1.0,
+      verdict: 'approved',
+      reasoning: 'Automaticky schváleno. Předměty typu "Uznaný předmět ze zahraničního výjezdu" slouží jako volitelný blok a nevyžadují obsahovou shodu.',
+      mismatches: [],
+      creditsMatch: true,
+      typeMatch: true
+    };
+  }
+
   const prompt = `
 COMPARE THESE TWO COURSE SYLLABI FOR ERASMUS RECOGNITION.
 
@@ -148,16 +164,17 @@ MENDELU COURSE (HOME):
 - Name: ${mendeluMetadata.name}
 - Credits: ${mendeluMetadata.credits} ECTS
 - Type: ${mendeluMetadata.type} (zk = Exam, zap/zak = Credit only)
-- Content: ${mendeluSyllabus}
+- Content: ${mendeluSyllabus && mendeluSyllabus.trim().length > 0 ? mendeluSyllabus : '!!! CONTENT MISSING !!! The official syllabus was not found automatically. DO NOT hallucinate its contents. You MUST evaluate strictly from the NAME of the course alone if content is missing.'}
 
 FOREIGN COURSE (CANDIDATE):
 ${foreignText ? `Text content: ${foreignText}` : 'Please extract content from the attached PDF document.'}
 
 RECOGNITION RULES:
 1. Learning Outcomes: Focus on the CORE 60-70% overlap. Do not be overly strict about missing theoretical sub-topics if the main applied topics are present.
-2. Credits: Foreign ECTS should ideally be >= Home ECTS. However, a 1-credit deficit (e.g., 5 vs 6) is VERY OFTEN accepted by coordinators and should NOT be a reason for rejection.
-3. Type Mismatch: Only reject if there is a massive gap (e.g., a 10-credit Exam course being replaced by a 2-credit workshop).
-4. Tone: Be a "Helpful Advisor," not a "Hostile Bureaucrat."
+2. Missing Home Content: If MENDELU Content says "CONTENT MISSING", you MUST NOT assume it matches the foreign course. E.g. if Home is "Literature" and Foreign is "Statistics", REJECT it.
+3. Credits: Foreign ECTS should ideally be >= Home ECTS. However, a 1-credit deficit (e.g., 5 vs 6) is VERY OFTEN accepted by coordinators and should NOT be a reason for rejection.
+4. Type Mismatch: Only reject if there is a massive gap (e.g., a 10-credit Exam course being replaced by a 2-credit workshop).
+5. Tone: Be a "Helpful Advisor," not a "Hostile Bureaucrat."
 
 OUTPUT FORMAT (JSON ONLY):
 {

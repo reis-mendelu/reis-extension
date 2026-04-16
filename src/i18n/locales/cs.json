@@ -476,7 +476,22 @@
     "semesterOfStay": "Semestr pobytu",
     "semesterWS": "ZS",
     "semesterSS": "LS",
-    "studentId": "ID studenta"
+    "studentId": "ID studenta",
+    "verifyAttachPdf": "📎 Připojit sylabus",
+    "verifyChoosePdf": "Vybrat PDF",
+    "verifyMax15Mb": "(max 15 MB)",
+    "verifyAnalysing": "Analyzuji sylaby…",
+    "verifyApproved": "Schváleno",
+    "verifyAutoApprovedPercent": "100% Schváleno",
+    "verifyRejected": "Zamítnuto",
+    "verifyRerun": "Zkusit znovu",
+    "verifyRetry": "Zkusit znovu",
+    "verifyWith": "Ověřit s {name}",
+    "verifyDefault": "Ověřit",
+    "verifyAddCorresponding": "Přidej odpovídající kurz do Tabulky B na řádek {row} pro ověření.",
+    "verifyChangePdf": "Změnit PDF",
+    "verifyAutoApprovedInfo": "Automaticky schváleno. Uznaný předmět (EXA-UP) slouží jako volitelné kredity a nevyžaduje obsahovou shodu.",
+    "verifyDiscuss": "⚠ Probrat s koordinátorem:"
   },
   "transfer": {
     "title": "Ověření přenosu předmětu",

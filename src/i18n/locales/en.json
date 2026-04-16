@@ -474,7 +474,22 @@
     "semesterOfStay": "Semester of stay",
     "semesterWS": "WS",
     "semesterSS": "SS",
-    "studentId": "Student ID"
+    "studentId": "Student ID",
+    "verifyAttachPdf": "📎 Attach syllabus PDF",
+    "verifyChoosePdf": "Choose PDF",
+    "verifyMax15Mb": "(max 15 MB)",
+    "verifyAnalysing": "Analysing syllabi…",
+    "verifyApproved": "Approved",
+    "verifyAutoApprovedPercent": "100% Approved",
+    "verifyRejected": "Rejected",
+    "verifyRerun": "Re-run",
+    "verifyRetry": "Retry",
+    "verifyWith": "Verify with {name}",
+    "verifyDefault": "Verify",
+    "verifyAddCorresponding": "Add a corresponding Table B course at row {row} to enable verification.",
+    "verifyChangePdf": "Change PDF",
+    "verifyAutoApprovedInfo": "Automatically approved. The recognized subject (EXA-UP) serves as an elective block and does not require content match.",
+    "verifyDiscuss": "⚠ Discuss with coordinator:"
   },
   "transfer": {
     "title": "Check credit transfer",
