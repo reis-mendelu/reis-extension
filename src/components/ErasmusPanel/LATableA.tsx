@@ -4,6 +4,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAppStore } from '@/store/useAppStore';
 import { LATableB } from './LATableB';
 import { UnfulfilledCoursesSection } from './UnfulfilledCoursesSection';
+import { ErasmusVerifyDot } from './ErasmusVerifyDot';
 import type { ErasmusUniversityOption } from '@/store/types';
 import type { StudyPlan } from '@/types/studyPlan';
 
@@ -149,11 +150,12 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
         </div>
 
         {/* Table A header */}
-        <div className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-2 px-3 py-2 bg-base-200/50 border-b border-base-300 text-[10px] uppercase tracking-wider font-bold text-base-content/40">
+        <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] gap-2 px-3 py-2 bg-base-200/50 border-b border-base-300 text-[10px] uppercase tracking-wider font-bold text-base-content/40">
           <span className="w-4" />
           <span className="w-20">{t('erasmus.colCode')}</span>
           <span>{t('erasmus.colCourse')}</span>
           <span className="w-12 text-right">{t('erasmus.colECTS')}</span>
+          <span className="w-4" />
           <span className="w-5" />
         </div>
 
@@ -161,7 +163,7 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
         {option.courses.map((course, i) => (
           <div
             key={i}
-            className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 text-xs hover:bg-base-200/30 transition-colors"
+            className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 text-xs hover:bg-base-200/30 transition-colors"
           >
             <div className="flex flex-col gap-0">
               <button
@@ -182,6 +184,12 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
             <span className="font-mono text-base-content/50 w-20 truncate">{course.code}</span>
             <span className="truncate font-medium">{course.name}</span>
             <span className="tabular-nums font-bold text-base-content/70 w-12 text-right">{course.credits}</span>
+            <ErasmusVerifyDot
+              courseCode={course.code}
+              courseName={course.name}
+              optionId={option.id}
+              plan={plan}
+            />
             <button
               onClick={() => removeCourse(option.id, i)}
               className="btn btn-ghost btn-xs w-5 h-5 min-h-0 p-0 text-base-content/15 hover:text-error hover:bg-error/10 rounded-full"
@@ -237,11 +245,12 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
 
         {/* Table A total */}
         {option.courses.length > 0 && (
-          <div className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-2 items-center px-3 py-2 bg-base-200/30 text-xs border-b border-base-300/50">
+          <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] gap-2 items-center px-3 py-2 bg-base-200/30 text-xs border-b border-base-300/50">
             <span className="w-4" />
             <span className="font-bold text-base-content/50 w-20">{t('erasmus.total')}</span>
             <span />
             <span className="tabular-nums font-black w-12 text-right">{totalCredits}</span>
+            <span className="w-4" />
             <span className="w-5" />
           </div>
         )}
