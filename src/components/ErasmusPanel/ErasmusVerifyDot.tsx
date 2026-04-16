@@ -154,15 +154,20 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
     setAiError(null);
     try {
       await fetchSyllabus(targetBCode);
-      const targetSyl = syllabusCache[targetBCode];
+      
+      const freshCache = useAppStore.getState().syllabuses.cache;
+      const targetSyl = freshCache[targetBCode];
       const mendeluText = targetSyl ? buildMendeluText(targetSyl) : '';
+
       const primaryMetadata = {
         credits: 0,
         type: '',
         code: targetBCode,
         name: targetSyl?.courseInfo?.courseNameEn ?? targetSyl?.courseInfo?.courseNameCs ?? targetBCode,
       };
+      
       const result = await compareSyllabiAI(mendeluText, primaryMetadata, pdfData.base64);
+      
       setErasmusVerdict(courseCode, result.verdict);
       setAiResult(result);
       setAiStatus('done');
@@ -170,7 +175,7 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
       setAiError(err instanceof Error ? err.message : 'Unknown error');
       setAiStatus('error');
     }
-  }, [pdfData, targetBCode, fetchSyllabus, syllabusCache, courseCode, courseName, setErasmusVerdict]);
+  }, [pdfData, targetBCode, fetchSyllabus, courseCode, courseName, setErasmusVerdict]);
 
   const similarityPct = aiResult ? Math.round(aiResult.similarity * 100) : null;
 

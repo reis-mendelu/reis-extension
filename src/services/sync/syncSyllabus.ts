@@ -47,7 +47,9 @@ export async function fetchAndCacheSingleSyllabus(
         activeId = await findSubjectId(courseCode, subjectName) || undefined;
     }
 
-    if (!activeId) return undefined;
+    if (!activeId) {
+        return undefined;
+    }
 
     const [czSyllabus, enSyllabus] = await Promise.all([
         fetchSyllabus(activeId, 'cz'),
