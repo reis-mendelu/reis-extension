@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Search, Zap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { SearchBar } from './SearchBar/index';
 import { MobileSearchOverlay } from './SearchBar/MobileSearchOverlay';
@@ -7,7 +7,6 @@ import { NotificationFeed } from './NotificationFeed';
 import { useAppStore } from '../store/useAppStore';
 import { getCommandActions } from './SearchBar/actions';
 import { getWeekForDate } from '../api/teachingWeek';
-import { testGeminiConnection } from '../api/gemini';
 import type { AppView } from '../types/app';
 
 interface AppHeaderProps {
@@ -57,20 +56,6 @@ export function AppHeader({
     t,
   }), [setCurrentView, setTheme, setLanguage, openFeedback, theme, language, t]);
 
-    const [isGeminiLoading, setIsGeminiLoading] = useState(false);
-  
-    const handleTestGemini = async () => {
-      setIsGeminiLoading(true);
-      try {
-        const result = await testGeminiConnection();
-        console.log('Gemini Response:', result);
-      } catch (error) {
-        console.error('Gemini Error:', error);
-      } finally {
-        setIsGeminiLoading(false);
-      }
-    };
-  
     return (
       <>
         <div className="flex-shrink-0 z-30 bg-base-200/90 backdrop-blur-md border-b border-base-300 px-4 pt-5 pb-3">
@@ -123,14 +108,6 @@ export function AppHeader({
               </div>
   
               <div className="flex items-center gap-1">
-                <button 
-                  onClick={handleTestGemini} 
-                  disabled={isGeminiLoading}
-                  className={`p-2 rounded-lg transition-colors ${isGeminiLoading ? 'bg-base-300 opacity-50 cursor-not-allowed' : 'hover:bg-base-300 text-amber-500'}`}
-                  title="Test Gemini API"
-                >
-                  <Zap size={20} className={isGeminiLoading ? 'animate-pulse' : ''} />
-                </button>
                 <NotificationFeed />
               </div>
             </div>
