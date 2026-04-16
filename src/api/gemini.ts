@@ -180,7 +180,7 @@ OUTPUT FORMAT (JSON ONLY):
 {
   "similarity": 0.0-1.0,
   "verdict": "approved" | "rejected",
-  "reasoning": "Krátké, realistické zhodnocení v češtině. Pokud je drobný nesoulad, zmiň, že koordinátor to pravděpodobně uzná.",
+  "reasoning": "Dvě stručné a úderné věty v češtině. MUSÍŠ výslovně uvést do jedné věty název obou předmětů (např. 'Zahraniční kurz [A] lze uznat za MENDELU [B], protože...'). Buď naprosto věcný a opírej se o důkazy ze sylabu. NIKDY nepiš, že jsi AI.",
   "mismatches": ["seznam věcí k diskusi s koordinátorem"],
   "creditsMatch": true/false,
   "typeMatch": true/false

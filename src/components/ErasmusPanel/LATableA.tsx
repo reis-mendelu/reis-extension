@@ -33,6 +33,7 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
   const [name, setName] = useState('');
   const [credits, setCredits] = useState('');
   const [builderOpen, setBuilderOpen] = useState(false);
+  const [hoveredRowIndex, setHoveredRowIndex] = useState<number | null>(null);
   const codeInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddCourse = () => {
@@ -163,7 +164,9 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
         {option.courses.map((course, i) => (
           <div
             key={i}
-            className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 text-xs hover:bg-base-200/30 transition-colors"
+            onMouseEnter={() => setHoveredRowIndex(i)}
+            onMouseLeave={() => setHoveredRowIndex(null)}
+            className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 text-xs hover:bg-base-200/50 transition-colors"
           >
             <div className="flex flex-col gap-0">
               <button
@@ -258,7 +261,7 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
       </div>
 
       {/* Table B */}
-      <LATableB plan={plan} selectedCodes={selectedCodes} onToggle={onToggle} tableACourses={option.courses} onReorder={onReorder} />
+      <LATableB plan={plan} selectedCodes={selectedCodes} onToggle={onToggle} tableACourses={option.courses} onReorder={onReorder} hoveredRowIndex={hoveredRowIndex} />
 
       {/* Add courses picker */}
       <div className="flex flex-col gap-0">

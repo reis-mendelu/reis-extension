@@ -15,6 +15,7 @@ interface Props {
   onToggle: (code: string) => void;
   tableACourses: TableACourse[];
   onReorder: (fromIndex: number, toIndex: number) => void;
+  hoveredRowIndex?: number | null;
 }
 
 function TableBRow({ subject, displayCredits, isFirst, isLast, onMoveUp, onMoveDown, onRemove }: {
@@ -25,11 +26,12 @@ function TableBRow({ subject, displayCredits, isFirst, isLast, onMoveUp, onMoveD
   onMoveUp: () => void;
   onMoveDown: () => void;
   onRemove: () => void;
+  isHovered?: boolean;
 }) {
   const displayName = useCourseName(subject.code, subject.name);
 
   return (
-    <div className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 last:border-b-0 text-xs hover:bg-base-200/30 transition-colors">
+    <div className={`grid grid-cols-[auto_auto_1fr_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 last:border-b-0 text-xs transition-colors ${isHovered ? 'bg-primary/10 border-primary/30 shadow-[inset_3px_0_0_oklch(var(--p))]' : 'hover:bg-base-200/30'}`}>
       <div className="flex flex-col gap-0">
         <button
           onClick={onMoveUp}
@@ -59,7 +61,7 @@ function TableBRow({ subject, displayCredits, isFirst, isLast, onMoveUp, onMoveD
   );
 }
 
-export function LATableB({ plan, selectedCodes, onToggle, tableACourses, onReorder }: Props) {
+export function LATableB({ plan, selectedCodes, onToggle, tableACourses, onReorder, hoveredRowIndex }: Props) {
   const { t } = useTranslation();
 
   const allSubjects = (plan.blocks || []).flatMap(b => (b.groups || []).flatMap(g => g.subjects || []));
@@ -116,6 +118,7 @@ export function LATableB({ plan, selectedCodes, onToggle, tableACourses, onReord
               onMoveUp={() => onReorder(i, i - 1)}
               onMoveDown={() => onReorder(i, i + 1)}
               onRemove={() => onToggle(s.code)}
+              isHovered={hoveredRowIndex === i}
             />
           ))}
 
