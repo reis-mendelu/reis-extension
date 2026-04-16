@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const EXTENSION_SECRET = Deno.env.get("EXTENSION_SECRET");
-const GEMINI_MODEL = "gemini-3.1-flash-lite-preview";
+const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const corsHeaders = {
