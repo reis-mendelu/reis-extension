@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const EXTENSION_SECRET = Deno.env.get("EXTENSION_SECRET");
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-2.5-flash-lite";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const corsHeaders = {
@@ -75,7 +75,11 @@ serve(async (req) => {
 
     if (!geminiRes.ok) {
       const errorData = await geminiRes.json();
-      throw new Error(`Gemini API Error: ${errorData.error?.message || geminiRes.statusText}`);
+      const errorMessage = errorData.error?.message || geminiRes.statusText;
+      return new Response(JSON.stringify({ error: `Gemini API Error: ${errorMessage}` }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: geminiRes.status,
+      });
     }
 
     const data = await geminiRes.json();
@@ -85,7 +89,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
-  } catch (error) {
+  } catch (error: any) {
     // Handle the AbortError separately
     if (error.name === 'AbortError') {
       return new Response(JSON.stringify({ error: "Gemini API Timeout" }), {
@@ -96,7 +100,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status: 500,
     })
   }
 })
