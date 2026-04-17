@@ -122,7 +122,7 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
                 <CountryPicker
                   value={option.country}
                   onChange={val => updateHeader(option.id, { country: val })}
-                  onViewReports={(file, school) => onViewReports(file, school, true)}
+                  onViewReports={onViewReports}
                   placeholder="Slovenia"
                   className="pl-8"
                 />

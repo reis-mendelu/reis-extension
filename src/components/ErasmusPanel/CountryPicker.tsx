@@ -160,9 +160,7 @@ export function CountryPicker({ value, onChange, onViewReports, placeholder, cla
                     <button
                       onClick={(e) => {
                         e.stopPropagation(); 
-                        // Preselect the country for the user
-                        onChange(c.en);
-                        // Open reports
+                        // Open reports (temporary peek)
                         if (onViewReports) onViewReports(c.file!, null);
                       }}
                       className="flex items-center gap-1 px-1.5 py-1 rounded bg-info/5 hover:bg-info/20 text-info border border-transparent hover:border-info/20 transition-all opacity-40 group-hover:opacity-100"
