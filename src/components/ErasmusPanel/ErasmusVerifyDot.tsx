@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FileText, Paperclip, Sparkles, X, RotateCcw, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { FileText, Paperclip, Sparkles, X, RotateCcw, CheckCircle, XCircle, Loader2, BrainCircuit } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { compareSyllabiAI, type AIComparisonResult } from '@/api/gemini';
@@ -58,14 +58,15 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
     targetBCode.toUpperCase().startsWith('EXA-')
   );
 
-  // ── Dot color ──────────────────────────────────────────────────────────────
+  // ── Dot vs Icon Logic ──────────────────────────────────────────────────────
+  const showDotStatus = isAutoApproved || verdict || aiStatus === 'loading';
+
   const dotClass = (() => {
     if (isAutoApproved) return 'bg-success shadow-[0_0_8px_rgba(0,169,110,0.4)]';
-    if (!pdfData) return 'bg-base-content/15 hover:bg-base-content/30';
-    if (aiStatus === 'loading') return 'bg-primary animate-pulse';
+    if (aiStatus === 'loading') return 'bg-primary animate-[pulse_1s_ease-in-out_infinite]';
     if (verdict === 'approved') return 'bg-success';
     if (verdict === 'rejected') return 'bg-error';
-    return 'bg-primary/60';
+    return '';
   })();
 
   // ── Verify button label ────────────────────────────────────────────────────
@@ -312,8 +313,8 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
 
           {/* Verify button (idle, has target) */}
           {aiStatus === 'idle' && targetBCode && (
-            <button className="btn btn-primary btn-sm w-full text-xs gap-1.5" onClick={runAICheck}>
-              <Sparkles size={12} />
+            <button className="btn btn-soft btn-primary btn-sm w-full text-xs font-bold gap-1.5 shadow-sm border border-primary/20" onClick={runAICheck}>
+              <BrainCircuit size={12} />
               {verifyLabel}
             </button>
           )}
@@ -353,10 +354,17 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
         ref={triggerRef}
         type="button"
         onClick={handleToggle}
-        className="btn btn-ghost btn-xs w-4 h-4 min-h-0 p-0 rounded-full flex items-center justify-center"
-        title={pdfData ? `${assignedFilename} — click for details` : 'Attach syllabus PDF'}
+        className={`btn btn-ghost w-6 h-6 min-h-0 p-0 rounded-md flex items-center justify-center hover:bg-base-200/50 transition-colors ${open ? 'bg-base-200/50' : ''}`}
+        title={pdfData ? `${assignedFilename} — click for details` : 'Verify syllabus equivalence'}
       >
-        <span className={`w-2 h-2 rounded-full transition-colors ${dotClass}`} />
+        {showDotStatus ? (
+          <span className={`w-2.5 h-2.5 rounded-full transition-colors ${dotClass}`} />
+        ) : (
+          <BrainCircuit 
+            size={14} 
+            className={`transition-colors ${pdfData ? 'text-primary' : 'text-base-content/30 hover:text-primary'} ${pdfData && !verdict ? 'animate-[pulse_2s_ease-in-out_infinite]' : ''}`} 
+          />
+        )}
       </button>
 
       {panelContent}
