@@ -150,6 +150,7 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
     removeErasmusUploadedPdf(assignedFilename);
     setLocalStatus('idle');
     setErasmusAiResult(courseCode, null);
+    setErasmusVerdict(courseCode, null);
     setAiError(null);
   };
 
@@ -257,7 +258,7 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
                 </button>
               </div>
               <textarea
-                className="textarea textarea-bordered textarea-sm w-full h-32 text-xs resize-none"
+                className="w-full h-32 bg-base-200/50 border border-base-300 rounded-lg px-3 py-2 text-xs text-base-content placeholder:text-base-content/40 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"
                 placeholder="Zkopírujte sem obsah sylabu ze zahraniční univerzity..."
                 value={pastedSyllabus}
                 onChange={(e) => setPastedSyllabus(e.target.value)}

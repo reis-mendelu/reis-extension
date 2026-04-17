@@ -299,9 +299,7 @@ interface LATableAProps {
 }
 
 export function LATableA({ plan, onOpenSubject, onSearchSubject }: LATableAProps) {
-  const { t } = useTranslation();
   const options = useAppStore(s => s.erasmusTableAOptions);
-  const addOption = useAppStore(s => s.addErasmusTableAOption);
   const tableBCourses = useAppStore(s => s.erasmusTableBCourses);
   const toggleCourse = useAppStore(s => s.toggleErasmusTableBCourse);
   const reorderCourse = useAppStore(s => s.reorderErasmusTableBCourse);
@@ -322,21 +320,6 @@ export function LATableA({ plan, onOpenSubject, onSearchSubject }: LATableAProps
           onSearchSubject={onSearchSubject}
         />
       ))}
-
-      {options.length < 4 && (
-        <button
-          onClick={addOption}
-          className="btn btn-outline btn-primary btn-sm border-dashed border-2 w-full h-auto py-4 rounded-xl flex flex-col gap-1"
-        >
-          <div className="flex items-center gap-2">
-            <Plus size={16} />
-            <span className="font-bold text-sm">{t('erasmus.addOption', { n: options.length + 1 })}</span>
-          </div>
-          <span className="text-[10px] opacity-60 font-medium normal-case">
-            {t('erasmus.addOptionHint')}
-          </span>
-        </button>
-      )}
     </div>
   );
 }

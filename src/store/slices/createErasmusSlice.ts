@@ -145,8 +145,10 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     };
     set({ erasmusStudentInfo: next });
   },
-  setErasmusVerdict: (code: string, verdict: 'approved' | 'rejected') => {
-    const verdicts = { ...get().erasmusVerdicts, [code]: verdict };
+  setErasmusVerdict: (code: string, verdict: 'approved' | 'rejected' | null) => {
+    const verdicts = { ...get().erasmusVerdicts };
+    if (verdict === null) delete verdicts[code];
+    else verdicts[code] = verdict;
     set({ erasmusVerdicts: verdicts });
     IndexedDBService.set('meta', VERDICTS_KEY, verdicts).catch(() => {});
   },

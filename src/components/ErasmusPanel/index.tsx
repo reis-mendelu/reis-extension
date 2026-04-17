@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import { ExternalLink, Info } from 'lucide-react';
+import { ExternalLink, Info, Plus } from 'lucide-react';
 import { useErasmus } from '@/hooks/data/useErasmus';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAppStore } from '@/store/useAppStore';
@@ -33,6 +33,8 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
   const { reports, countryFile, setCountry, loading, config } = useErasmus();
   const plan = useStudyPlan();
   const tableBCourses = useAppStore(s => s.erasmusTableBCourses);
+  const tableAOptions = useAppStore(s => s.erasmusTableAOptions);
+  const addOption = useAppStore(s => s.addErasmusTableAOption);
   const activeTab = useAppStore(s => s.erasmusActiveTab);
   const setActiveTab = useAppStore(s => s.setErasmusActiveTab);
   const loadState = useAppStore(s => s.loadErasmusState);
@@ -110,19 +112,32 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
             onSearchSubject={onSearchSubject}
           />
 
-          <ErasmusExportButton />
-
-          {hasAnyCoursesSelected && (
-            <a
-              href={t('erasmus.erasmusCoordinators')}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outline btn-sm gap-2 w-full text-xs font-bold"
-            >
-              {t('erasmus.contactCoordinator')}
-              <ExternalLink size={12} />
-            </a>
-          )}
+          <div className="flex w-full items-center justify-between mt-2 pt-4 pb-4 border-t border-base-200">
+            <div className="flex items-center gap-3">
+              {tableAOptions.length < 4 && (
+                <button
+                  onClick={addOption}
+                  className="btn btn-soft btn-primary btn-sm rounded-full px-5 shadow-sm border border-primary/20 h-8"
+                >
+                  <Plus size={14} className="opacity-70" />
+                  <span className="font-bold text-xs">{t('erasmus.addOption', { n: (tableAOptions.length + 1).toString() })}</span>
+                </button>
+              )}
+              {hasAnyCoursesSelected && (
+                <a
+                  href={t('erasmus.erasmusCoordinators')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-ghost btn-sm gap-1.5 text-xs text-base-content/60 hover:text-base-content/80 font-normal px-2"
+                >
+                  {t('erasmus.contactCoordinator')}
+                  <ExternalLink size={12} className="opacity-70" />
+                </a>
+              )}
+            </div>
+            
+            <ErasmusExportButton className="btn-primary" />
+          </div>
         </div>
       )}
 

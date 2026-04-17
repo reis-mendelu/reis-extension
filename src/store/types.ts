@@ -211,7 +211,7 @@ export interface ErasmusSlice {
     reorderErasmusTableBCourse: (optionId: string, fromIndex: number, toIndex: number) => void;
     setErasmusStudentInfo: (data: Partial<ErasmusStudentInfo>) => void;
     initErasmusStudentInfo: (params: { fullName?: string; studyProgram?: string; studentId?: string }) => void;
-    setErasmusVerdict: (code: string, verdict: 'approved' | 'rejected') => void;
+    setErasmusVerdict: (code: string, verdict: 'approved' | 'rejected' | null) => void;
     setErasmusAiResult: (code: string, result: AIComparisonResult | null) => void;
     pinErasmusUniversity: (name: string) => void;
     unpinErasmusUniversity: (name: string) => void;

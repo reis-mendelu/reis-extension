@@ -3,7 +3,11 @@ import { Download } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { downloadErasmusPdf } from '@/utils/erasmusPdf';
 
-export function ErasmusExportButton() {
+interface Props {
+  className?: string;
+}
+
+export function ErasmusExportButton({ className = '' }: Props) {
   const studentInfo = useAppStore(s => s.erasmusStudentInfo);
   const options = useAppStore(s => s.erasmusTableAOptions);
   const tableBCourses = useAppStore(s => s.erasmusTableBCourses);
@@ -26,7 +30,7 @@ export function ErasmusExportButton() {
     <button
       onClick={handleExport}
       disabled={loading}
-      className="btn btn-outline btn-sm gap-2 w-full text-xs font-bold"
+      className={`btn btn-sm gap-2 text-xs font-bold ${className}`}
     >
       {loading ? <span className="loading loading-spinner loading-xs" /> : <Download size={12} />}
       Export .pdf
