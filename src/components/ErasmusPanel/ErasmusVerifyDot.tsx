@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FileText, Paperclip, X, RotateCcw, CheckCircle, XCircle, Loader2, BrainCircuit } from 'lucide-react';
+import { FileText, Paperclip, X, RotateCcw, CheckCircle, XCircle, Loader2, WandSparkles, Type } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { compareSyllabiAI } from '@/api/gemini';
@@ -22,6 +22,8 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [panelPos, setPanelPos] = useState<{ top?: number; bottom?: number; right: number; maxHeight: number } | null>(null);
+  const [isPastingSyllabus, setIsPastingSyllabus] = useState(false);
+  const [pastedSyllabus, setPastedSyllabus] = useState('');
 
   // Store reads
   const erasmusPdfAssignments = useAppStore(s => s.erasmusPdfAssignments);
@@ -170,7 +172,12 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
         name: targetSyl?.courseInfo?.courseNameEn ?? targetSyl?.courseInfo?.courseNameCs ?? targetBCode,
       };
       
-      const result = await compareSyllabiAI(mendeluText, primaryMetadata, pdfData.base64);
+      const result = await compareSyllabiAI(
+        mendeluText, 
+        primaryMetadata, 
+        pdfData.base64 ? pdfData.base64 : undefined,
+        pdfData.text ? pdfData.text : undefined
+      );
       
       setErasmusVerdict(courseCode, result.verdict);
       setErasmusAiResult(courseCode, result);
@@ -213,15 +220,66 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
       {/* ── State 1: No PDF ── */}
       {!pdfData && !isAutoApproved && (
         <>
-          <span className="text-[10px] uppercase tracking-wider font-bold text-base-content/40">
-            {t('erasmus.verifyAttachPdf')}
-          </span>
-          <button
-            className="btn btn-outline btn-sm w-full text-xs"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {t('erasmus.verifyChoosePdf')} <span className="text-base-content/40 font-normal ml-1">{t('erasmus.verifyMax15Mb')}</span>
-          </button>
+          {!isPastingSyllabus ? (
+            <>
+              <span className="text-[10px] uppercase tracking-wider font-bold text-base-content/40">
+                {t('erasmus.verifyAttachPdf')}
+              </span>
+              <button
+                className="btn btn-outline btn-sm w-full text-xs"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip size={12} className="mr-1 opacity-60" />
+                {t('erasmus.verifyChoosePdf')} <span className="text-base-content/40 font-normal ml-1">{t('erasmus.verifyMax15Mb')}</span>
+              </button>
+              
+              <div className="divider my-0 text-[10px] text-base-content/30 h-4 uppercase">nebo</div>
+              
+              <button
+                className="btn btn-ghost btn-sm w-full text-xs text-base-content/60 hover:bg-base-200"
+                onClick={() => setIsPastingSyllabus(true)}
+              >
+                <Type size={12} className="mr-1 opacity-60" />
+                Vložit text sylabu ručně
+              </button>
+            </>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] uppercase tracking-wider font-bold text-base-content/60 flex items-center gap-1">
+                  <Type size={10} /> Ruční vložení
+                </span>
+                <button
+                  onClick={() => setIsPastingSyllabus(false)} 
+                  className="btn btn-ghost btn-xs w-6 h-6 min-h-0 p-0 rounded-full text-base-content/40 hover:text-error hover:bg-error/10"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+              <textarea
+                className="textarea textarea-bordered textarea-sm w-full h-32 text-xs resize-none"
+                placeholder="Zkopírujte sem obsah sylabu ze zahraniční univerzity..."
+                value={pastedSyllabus}
+                onChange={(e) => setPastedSyllabus(e.target.value)}
+              />
+              <button
+                className="btn btn-primary btn-sm w-full text-xs shadow-sm"
+                disabled={pastedSyllabus.trim().length === 0}
+                onClick={() => {
+                  const fakeName = `Vložený text (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+                  addErasmusUploadedPdf(fakeName, pastedSyllabus.trim(), '');
+                  setErasmusPdfAssignment(courseCode, fakeName);
+                  setLocalStatus('idle');
+                  setErasmusAiResult(courseCode, null);
+                  setAiError(null);
+                  setIsPastingSyllabus(false);
+                  setPastedSyllabus('');
+                }}
+              >
+                Uložit a pokračovat
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -314,7 +372,7 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
           {/* Verify button (idle, has target) */}
           {aiStatus === 'idle' && targetBCode && (
             <button className="btn btn-soft btn-primary btn-sm w-full text-xs font-bold gap-1.5 shadow-sm border border-primary/20" onClick={runAICheck}>
-              <BrainCircuit size={12} />
+              <WandSparkles size={12} />
               {verifyLabel}
             </button>
           )}
@@ -360,7 +418,7 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
         {showDotStatus ? (
           <span className={`w-2.5 h-2.5 rounded-full transition-colors ${dotClass}`} />
         ) : (
-          <BrainCircuit 
+          <WandSparkles 
             size={14} 
             className={`transition-colors ${pdfData ? 'text-primary' : 'text-base-content/30 hover:text-primary'} ${pdfData && !verdict ? 'animate-[pulse_2s_ease-in-out_infinite]' : ''}`} 
           />
