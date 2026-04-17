@@ -104,10 +104,10 @@ export function CountryPicker({ value, onChange, onViewReports, placeholder, cla
         />
         
         {/* Left Icon: Globe */}
-        <Globe size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/30 pointer-events-none" />
+        <Globe size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/40 pointer-events-none z-10" />
 
         {/* Right Action: Clear or View Reports */}
-        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10">
           {isOpen && search && (
              <button 
                onClick={() => { setSearch(''); onChange(''); }}

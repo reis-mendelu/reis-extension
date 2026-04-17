@@ -93,7 +93,7 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
                   value={option.institutionName}
                   onChange={e => updateHeader(option.id, { institutionName: e.target.value })}
                 />
-                <Globe size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/30" />
+                <Globe size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/40 z-10" />
               </div>
             </div>
             <div className="flex flex-col gap-1">
@@ -108,7 +108,7 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
                   value={option.erasmusCode}
                   onChange={e => updateHeader(option.id, { erasmusCode: e.target.value })}
                 />
-                <Hash size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/30" />
+                <Hash size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/40 z-10" />
               </div>
             </div>
           </div>
@@ -140,7 +140,7 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
                   value={option.link}
                   onChange={e => updateHeader(option.id, { link: e.target.value })}
                 />
-                <Link size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/30" />
+                <Link size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/40 z-10" />
               </div>
             </div>
           </div>

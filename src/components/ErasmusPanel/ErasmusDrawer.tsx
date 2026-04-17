@@ -103,7 +103,7 @@ export function ErasmusDrawer({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="btn btn-sm btn-ghost border border-base-300 flex-1 justify-between font-normal px-3 pl-8 relative min-w-0">
-                        <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" />
+                        <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40 z-10" />
                         <span className="truncate mr-1">{schoolFilter ?? t('erasmus.allSchools')}</span>
                         <ChevronDown size={14} className="opacity-50 shrink-0" />
                       </button>
