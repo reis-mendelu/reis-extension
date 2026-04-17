@@ -1,9 +1,9 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FileText, Paperclip, Sparkles, X, RotateCcw, CheckCircle, XCircle, Loader2, BrainCircuit } from 'lucide-react';
+import { FileText, Paperclip, X, RotateCcw, CheckCircle, XCircle, Loader2, BrainCircuit } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { compareSyllabiAI, type AIComparisonResult } from '@/api/gemini';
+import { compareSyllabiAI } from '@/api/gemini';
 import { buildMendeluText } from '@/api/syllabusTransfer';
 import type { StudyPlan } from '@/types/studyPlan';
 
