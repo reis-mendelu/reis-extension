@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { ExternalLink, Info, Plus } from 'lucide-react';
 import { useErasmus } from '@/hooks/data/useErasmus';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -48,13 +48,12 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
   const [facultyFilter, setFacultyFilter] = useState(false);
   const [userParams, setUserParams] = useState<UserParams | null>(null);
   const [showAll, setShowAll] = useState(false);
+  
+  // Track if we are "Peeking" (temp viewing) vs "Planning" (committing)
+  const previousCountryRef = useRef<string | null>(null);
+  const isPeekingRef = useRef(false);
 
   useEffect(() => { getUserParams().then(setUserParams); }, []);
-
-  const handleCountrySelect = useCallback((file: string) => {
-    setCountry(file);
-    setDrawerOpen(true);
-  }, [setCountry]);
 
   const currentCountry = useMemo(() => ERASMUS_COUNTRIES.find(c => c.file === countryFile), [countryFile]);
   const countryName = currentCountry ? currentCountry[lang] : '';
@@ -75,18 +74,44 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
     return showAll ? filteredReports : filteredReports.slice(0, 10);
   }, [filteredReports, showAll]);
 
-  const handleViewReports = useCallback((file: string, schoolName: string | null) => {
-    setCountry(file);
+  const handleViewReports = useCallback((file: string, schoolName: string | null, isPermanent: boolean = false) => {
+    // If permanent, we update the store and ensure we don't restore later.
+    // If temporary (peek), we save the previous state to restore on close.
+    if (isPermanent) {
+      setCountry(file);
+      isPeekingRef.current = false;
+      previousCountryRef.current = null;
+    } else if (file !== countryFile) {
+      previousCountryRef.current = countryFile || null;
+      isPeekingRef.current = true;
+      setCountry(file);
+    }
     setSchoolFilter(schoolName);
     setDrawerOpen(true);
-  }, [setCountry]);
+  }, [setCountry, countryFile]);
 
   const handleTabChange = (tab: 'plan' | 'explore') => {
     setActiveTab(tab);
-    if (tab === 'plan') setDrawerOpen(false);
+    if (tab === 'plan') {
+       // Close drawer and restore original country if we were just peeking
+       setDrawerOpen(false);
+       if (isPeekingRef.current) {
+         setCountry(previousCountryRef.current || '');
+         isPeekingRef.current = false;
+         previousCountryRef.current = null;
+       }
+    }
   };
 
-  const handleClose = useCallback(() => setDrawerOpen(false), []);
+  const handleClose = useCallback(() => {
+    setDrawerOpen(false);
+    // If we were peeking, restore the original selection
+    if (isPeekingRef.current) {
+      setCountry(previousCountryRef.current || '');
+      isPeekingRef.current = false;
+      previousCountryRef.current = null;
+    }
+  }, [setCountry]);
 
   const hasAnyCoursesSelected = Object.values(tableBCourses).some(arr => arr.length > 0);
 
@@ -156,10 +181,10 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
           </div>
           <div className="bg-base-200/50 rounded-xl p-2 border border-base-300 flex-1 min-h-0">
             <EuropeMap
-              selectedCountryId={currentCountryId ? currentCountryId : ''}
+              selectedCountryId={drawerOpen ? currentCountryId : ''}
               onSelectCountry={id => {
                 const c = ERASMUS_COUNTRIES.find(e => e.id === id);
-                if (c) handleCountrySelect(c.file);
+                if (c) handleViewReports(c.file, null);
               }}
               lang={lang}
             />

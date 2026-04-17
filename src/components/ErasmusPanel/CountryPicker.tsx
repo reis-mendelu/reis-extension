@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Globe, GraduationCap, X } from 'lucide-react';
 import { ERASMUS_COUNTRIES } from '@/constants/erasmusCountries';
 import { useErasmus } from '@/hooks/data/useErasmus';
@@ -9,7 +9,7 @@ import { fuzzyMatch, removeDiacritics } from '@/utils/searchUtils';
 interface CountryPickerProps {
   value: string;
   onChange: (value: string) => void;
-  onViewReports?: (file: string, schoolName: string | null) => void;
+  onViewReports?: (file: string, schoolName: string | null, isPermanent?: boolean) => void;
   placeholder?: string;
   className?: string;
 }
@@ -159,7 +159,10 @@ export function CountryPicker({ value, onChange, onViewReports, placeholder, cla
                   {c.file && (
                     <button
                       onClick={(e) => {
-                        e.stopPropagation(); // Don't select the country
+                        e.stopPropagation(); 
+                        // Preselect the country for the user
+                        onChange(c.en);
+                        // Open reports
                         if (onViewReports) onViewReports(c.file!, null);
                       }}
                       className="flex items-center gap-1 px-1.5 py-1 rounded bg-info/5 hover:bg-info/20 text-info border border-transparent hover:border-info/20 transition-all opacity-40 group-hover:opacity-100"

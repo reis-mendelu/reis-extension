@@ -19,7 +19,7 @@ interface OptionProps {
   plan: StudyPlan;
   onOpenSubject: (courseCode: string, courseName?: string, courseId?: string) => void;
   onSearchSubject: (name: string) => void;
-  onViewReports: (file: string, schoolName: string | null) => void;
+  onViewReports: (file: string, schoolName: string | null, isPermanent?: boolean) => void;
 }
 
 function LATableAOption({ option, index, total, selectedCodes, onToggle, onReorder, plan, onOpenSubject, onSearchSubject, onViewReports }: OptionProps) {
@@ -122,7 +122,7 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
                 <CountryPicker
                   value={option.country}
                   onChange={val => updateHeader(option.id, { country: val })}
-                  onViewReports={onViewReports}
+                  onViewReports={(file, school) => onViewReports(file, school, true)}
                   placeholder="Slovenia"
                   className="pl-8"
                 />
@@ -300,7 +300,7 @@ interface LATableAProps {
   plan: StudyPlan;
   onOpenSubject: (courseCode: string, courseName?: string, courseId?: string) => void;
   onSearchSubject: (name: string) => void;
-  onViewReports: (file: string, schoolName: string | null) => void;
+  onViewReports: (file: string, schoolName: string | null, isPermanent?: boolean) => void;
 }
 
 export function LATableA({ plan, onOpenSubject, onSearchSubject, onViewReports }: LATableAProps) {
