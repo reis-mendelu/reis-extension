@@ -110,3 +110,10 @@ export interface ErasmusConfig {
   grants: { eur: number; countries: string[] }[];
   faculties: Record<string, { coordinator: string; email: string }>;
 }
+
+export interface University {
+  name: string;
+  erasmusCode: string;
+  city?: string;
+  website?: string;
+}

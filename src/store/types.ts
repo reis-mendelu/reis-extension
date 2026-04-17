@@ -7,7 +7,7 @@ import type { DualLanguageStudyPlan, StudyStats } from '../types/studyPlan';
 import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { SyncStatus } from '../services/sync';
-import type { ErasmusCountryData, ErasmusConfig } from '../types/erasmus';
+import type { ErasmusCountryData, ErasmusConfig, University } from '../types/erasmus';
 import type { AIComparisonResult } from '../api/gemini';
 import type { PinnedPage } from './slices/createPinnedPagesSlice';
 import type { OutletMenu } from '../types/menuTypes';
@@ -198,6 +198,9 @@ export interface ErasmusSlice {
     erasmusUploadedPdfs: Record<string, { text: string; base64: string }>; // filename → extracted text + raw base64
     erasmusActiveTab: 'plan' | 'explore';
     erasmusPlanPhase: 'select' | 'review';
+    universities: Record<string, University[]>;
+    universitiesLoading: Record<string, boolean>;
+    fetchUniversities: (alpha2: string) => Promise<void>;
     addErasmusUploadedPdf: (filename: string, text: string, base64: string) => void;
     removeErasmusUploadedPdf: (filename: string) => void;
     clearErasmusUploadedPdfs: () => void;

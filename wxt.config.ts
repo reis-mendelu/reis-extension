@@ -27,6 +27,7 @@ export default defineConfig({
       'https://mendelu.cz/*',
       'https://darksoothingshadow-reis-syllabus-similarity.hf.space/*',
       'https://zvbpgkmnrqyprtkyxkwn.supabase.co/*',
+      'https://hei.api.uni-foundation.eu/*',
     ],
     action: {
       default_popup: 'main.html',

@@ -1,12 +1,15 @@
 import { useState, useRef } from 'react';
-import { Plus, X, Globe, Link, Hash, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, X, Link, Hash, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAppStore } from '@/store/useAppStore';
 import { LATableB } from './LATableB';
 import { UnfulfilledCoursesSection } from './UnfulfilledCoursesSection';
 import { ErasmusVerifyDot } from './ErasmusVerifyDot';
 import { CountryPicker } from './CountryPicker';
+import { UniversityPicker } from './UniversityPicker';
+import { ERASMUS_COUNTRIES } from '@/constants/erasmusCountries';
 import type { ErasmusUniversityOption } from '@/store/types';
+import type { University } from '@/types/erasmus';
 import type { StudyPlan } from '@/types/studyPlan';
 
 interface OptionProps {
@@ -83,17 +86,16 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] uppercase tracking-wider font-bold text-base-content/40 ml-1">
-                {t('erasmus.institution')}
+                {t('erasmus.country')}
               </label>
               <div className="relative">
-                <input
-                  type="text"
-                  className="input input-sm input-bordered w-full pl-8 text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                  placeholder="University of Maribor"
-                  value={option.institutionName}
-                  onChange={e => updateHeader(option.id, { institutionName: e.target.value })}
+                <CountryPicker
+                  value={option.country}
+                  onChange={val => updateHeader(option.id, { country: val })}
+                  onViewReports={onViewReports}
+                  placeholder="Slovenia"
+                  className="pl-8"
                 />
-                <Globe size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/40 z-10" />
               </div>
             </div>
             <div className="flex flex-col gap-1">
@@ -116,17 +118,15 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] uppercase tracking-wider font-bold text-base-content/40 ml-1">
-                {t('erasmus.country')}
+                {t('erasmus.institution')}
               </label>
-              <div className="relative">
-                <CountryPicker
-                  value={option.country}
-                  onChange={val => updateHeader(option.id, { country: val })}
-                  onViewReports={onViewReports}
-                  placeholder="Slovenia"
-                  className="pl-8"
-                />
-              </div>
+              <UniversityPicker
+                alpha2={ERASMUS_COUNTRIES.find(c => c.en === option.country || c.cs === option.country)?.alpha2 || null}
+                value={option.institutionName}
+                onChange={val => updateHeader(option.id, { institutionName: val })}
+                onSelect={(u) => updateHeader(option.id, { institutionName: u.name, erasmusCode: u.erasmusCode })}
+                placeholder="University of Maribor"
+              />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] uppercase tracking-wider font-bold text-base-content/40 ml-1">

@@ -1,5 +1,7 @@
 import type { ErasmusSlice, AppSlice, ErasmusUniversityOption, ErasmusStudentInfo } from '../types';
+import type { University } from '../../types/erasmus';
 import { fetchErasmusReports, getStoredErasmusData, fetchErasmusConfig as fetchErasmusConfigApi } from '../../api/erasmus';
+import { fetchJsonViaProxy } from '../../api/proxyClient';
 import { IndexedDBService } from '../../services/storage';
 import { loggers } from '../../utils/logger';
 import type { AIComparisonResult } from '../../api/gemini';
@@ -15,6 +17,8 @@ const PDF_ASSIGNMENTS_KEY = 'erasmus_pdf_assignments';
 const PINNED_UNIVERSITIES_KEY = 'erasmus_pinned_universities';
 const UPLOADED_PDFS_KEY = 'erasmus_uploaded_pdfs';
 const MAX_PINNED = 4;
+const UNIVERSITIES_KEY_PREFIX = 'erasmus_universities';
+const HEI_API_BASE = 'https://hei.api.uni-foundation.eu/api/public/v1';
 
 const EMPTY_STUDENT_INFO: ErasmusStudentInfo = {
   firstName: '', lastName: '', dob: '', studyCode: '', semester: '', studentId: '',
@@ -37,6 +41,44 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
   erasmusUploadedPdfs: {},
   erasmusActiveTab: 'plan',
   erasmusPlanPhase: 'select',
+  universities: {},
+  universitiesLoading: {},
+  fetchUniversities: async (alpha2: string) => {
+    if (get().universitiesLoading[alpha2]) return;
+    set({ universitiesLoading: { ...get().universitiesLoading, [alpha2]: true } });
+    try {
+      loggers.ui.debug(`[fetchUniversities] start alpha2=${alpha2}`);
+      const cached = await IndexedDBService.get('meta', `${UNIVERSITIES_KEY_PREFIX}:${alpha2}`) as University[] | null;
+      loggers.ui.debug(`[fetchUniversities] cache result:`, cached?.length ?? 'miss');
+      if (cached && cached.length > 0) {
+        set({ universities: { ...get().universities, [alpha2]: cached } });
+        return;
+      }
+      const url = `${HEI_API_BASE}/country/${alpha2}/hei`;
+      loggers.ui.debug(`[fetchUniversities] fetching via proxy:`, url);
+      const json = await fetchJsonViaProxy<any>(url);
+      loggers.ui.debug(`[fetchUniversities] response keys:`, Object.keys(json));
+      const parsed: University[] = (json.data || []).map((item: any) => {
+        const attrs = item.attributes || {};
+        const nameObj = attrs.name?.find((n: any) => n.lang === 'en') || attrs.name?.[0];
+        const erasmusCode = attrs.other_id?.find((id: any) => id.type === 'erasmus')?.value;
+        return {
+          name: nameObj?.string || 'Unknown Institution',
+          erasmusCode: erasmusCode || '',
+          city: attrs.city,
+          website: attrs.website_url,
+        };
+      }).filter((u: University) => u.erasmusCode);
+      loggers.ui.debug(`[fetchUniversities] parsed count:`, parsed.length);
+      set({ universities: { ...get().universities, [alpha2]: parsed } });
+      await IndexedDBService.set('meta', `${UNIVERSITIES_KEY_PREFIX}:${alpha2}`, parsed);
+    } catch (err) {
+      loggers.ui.error('[ErasmusSlice] fetchUniversities failed:', err);
+      console.error('[fetchUniversities] raw error:', err);
+    } finally {
+      set({ universitiesLoading: { ...get().universitiesLoading, [alpha2]: false } });
+    }
+  },
   setErasmusActiveTab: (tab: 'plan' | 'explore') => {
     set({ erasmusActiveTab: tab });
     IndexedDBService.set('meta', ERASMUS_UI_STATE_KEY, { 
