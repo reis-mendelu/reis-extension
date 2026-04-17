@@ -69,7 +69,9 @@ export function CountryPicker({ value, onChange, onViewReports, placeholder, cla
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const selectedCountry = ERASMUS_COUNTRIES.find(c => c.en === value);
+  const selectedCountry = ERASMUS_COUNTRIES.find(c => c.en === value || c.cs === value);
+  const lang = t('lang') === 'en' ? 'en' : 'cs';
+  const displayValue = isOpen ? search : (selectedCountry ? selectedCountry[lang as 'en' | 'cs'] : value);
   const hasReports = selectedCountry?.file && reports.length > 0;
 
   return (
@@ -84,7 +86,7 @@ export function CountryPicker({ value, onChange, onViewReports, placeholder, cla
             className
           )}
           placeholder={placeholder}
-          value={isOpen ? search : value}
+          value={displayValue}
           onChange={(e) => {
             setSearch(e.target.value);
             if (!isOpen) setIsOpen(true);
