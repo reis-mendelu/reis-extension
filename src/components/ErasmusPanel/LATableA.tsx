@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { LATableB } from './LATableB';
 import { UnfulfilledCoursesSection } from './UnfulfilledCoursesSection';
 import { ErasmusVerifyDot } from './ErasmusVerifyDot';
+import { CountryPicker } from './CountryPicker';
 import type { ErasmusUniversityOption } from '@/store/types';
 import type { StudyPlan } from '@/types/studyPlan';
 
@@ -18,9 +19,10 @@ interface OptionProps {
   plan: StudyPlan;
   onOpenSubject: (courseCode: string, courseName?: string, courseId?: string) => void;
   onSearchSubject: (name: string) => void;
+  onViewReports: (file: string, schoolName: string | null) => void;
 }
 
-function LATableAOption({ option, index, total, selectedCodes, onToggle, onReorder, plan, onOpenSubject, onSearchSubject }: OptionProps) {
+function LATableAOption({ option, index, total, selectedCodes, onToggle, onReorder, plan, onOpenSubject, onSearchSubject, onViewReports }: OptionProps) {
   const { t } = useTranslation();
   const updateHeader = useAppStore(s => s.updateErasmusTableAOptionHeader);
   const removeOption = useAppStore(s => s.removeErasmusTableAOption);
@@ -116,13 +118,15 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
               <label className="text-[10px] uppercase tracking-wider font-bold text-base-content/40 ml-1">
                 {t('erasmus.country')}
               </label>
-              <input
-                type="text"
-                className="input input-sm input-bordered w-full text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                placeholder="Slovenia"
-                value={option.country}
-                onChange={e => updateHeader(option.id, { country: e.target.value })}
-              />
+              <div className="relative">
+                <CountryPicker
+                  value={option.country}
+                  onChange={val => updateHeader(option.id, { country: val })}
+                  onViewReports={onViewReports}
+                  placeholder="Slovenia"
+                  className="pl-8"
+                />
+              </div>
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] uppercase tracking-wider font-bold text-base-content/40 ml-1">
@@ -296,9 +300,10 @@ interface LATableAProps {
   plan: StudyPlan;
   onOpenSubject: (courseCode: string, courseName?: string, courseId?: string) => void;
   onSearchSubject: (name: string) => void;
+  onViewReports: (file: string, schoolName: string | null) => void;
 }
 
-export function LATableA({ plan, onOpenSubject, onSearchSubject }: LATableAProps) {
+export function LATableA({ plan, onOpenSubject, onSearchSubject, onViewReports }: LATableAProps) {
   const options = useAppStore(s => s.erasmusTableAOptions);
   const tableBCourses = useAppStore(s => s.erasmusTableBCourses);
   const toggleCourse = useAppStore(s => s.toggleErasmusTableBCourse);
@@ -318,6 +323,7 @@ export function LATableA({ plan, onOpenSubject, onSearchSubject }: LATableAProps
           plan={plan}
           onOpenSubject={onOpenSubject}
           onSearchSubject={onSearchSubject}
+          onViewReports={onViewReports}
         />
       ))}
     </div>

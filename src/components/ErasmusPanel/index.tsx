@@ -75,6 +75,12 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
     return showAll ? filteredReports : filteredReports.slice(0, 10);
   }, [filteredReports, showAll]);
 
+  const handleViewReports = useCallback((file: string, schoolName: string | null) => {
+    setCountry(file);
+    setSchoolFilter(schoolName);
+    setDrawerOpen(true);
+  }, [setCountry]);
+
   const handleTabChange = (tab: 'plan' | 'explore') => {
     setActiveTab(tab);
     if (tab === 'plan') setDrawerOpen(false);
@@ -110,6 +116,7 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
             plan={plan ?? { blocks: [] } as unknown as StudyPlan}
             onOpenSubject={onOpenSubject}
             onSearchSubject={onSearchSubject}
+            onViewReports={handleViewReports}
           />
 
           <div className="flex w-full items-center justify-between mt-2 pt-4 pb-4 border-t border-base-200">
