@@ -143,6 +143,8 @@
     "start": "Start",
     "upload": "Upload",
     "view": "View",
+    "search": "Search",
+    "autoFill": "Auto-fill",
     "copiedToClipboard": "Email copied to clipboard"
   },
 

@@ -59,6 +59,8 @@
     "start": "Spustit",
     "upload": "Odevzdat",
     "view": "Zobrazit",
+    "search": "Vyhledat",
+    "autoFill": "Automaticky vyplnit",
     "copiedToClipboard": "Email byl zkopírován do schránky"
   },
 

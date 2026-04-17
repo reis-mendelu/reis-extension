@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, X, Link, Hash, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, X, Link, Hash, Trash2, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAppStore } from '@/store/useAppStore';
 import { LATableB } from './LATableB';
@@ -129,13 +129,27 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] uppercase tracking-wider font-bold text-base-content/40 ml-1">
+              <label className="text-[10px] uppercase tracking-wider font-bold text-base-content/40 ml-1 flex items-center gap-1.5">
                 {t('erasmus.courseCatalogue')}
+                {!option.link && option.institutionName && (
+                  <span className="animate-in fade-in slide-in-from-left-1 duration-300">
+                    <button 
+                      onClick={() => {
+                        const query = encodeURIComponent(`${option.institutionName} erasmus students course catalog`);
+                        window.open(`https://www.google.com/search?q=${query}`, '_blank');
+                      }}
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-base-200 text-base-content/60 hover:bg-base-300 hover:text-base-content transition-colors text-[9px] font-black uppercase tracking-tighter"
+                    >
+                      <Search size={8} />
+                      {t('common.search') || 'Search'}
+                    </button>
+                  </span>
+                )}
               </label>
               <div className="relative">
                 <input
                   type="text"
-                  className="input input-sm input-bordered w-full pl-8 text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                  className="input input-sm input-bordered w-full pl-8 text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
                   placeholder="https://..."
                   value={option.link}
                   onChange={e => updateHeader(option.id, { link: e.target.value })}
