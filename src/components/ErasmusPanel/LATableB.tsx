@@ -18,7 +18,7 @@ interface Props {
   hoveredRowIndex?: number | null;
 }
 
-function TableBRow({ subject, displayCredits, isFirst, isLast, onMoveUp, onMoveDown, onRemove }: {
+function TableBRow({ subject, displayCredits, isFirst, isLast, onMoveUp, onMoveDown, onRemove, isHovered }: {
   subject: SubjectStatus;
   displayCredits: number;
   isFirst: boolean;
