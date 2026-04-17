@@ -26,8 +26,7 @@ export interface GeminiResponse {
   };
 }
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 2000;
+
 
 /**
  * Standard "Hello World" test for Gemini API.
@@ -40,7 +39,7 @@ export async function testGeminiConnection(): Promise<string> {
  * Sends a prompt with optional system instruction to Gemini via Supabase proxy.
  * Includes automatic retry for quota limits.
  */
-export async function askGemini(prompt: string, systemInstruction?: string, pdfBase64?: string, retryCount = 0): Promise<string> {
+export async function askGemini(prompt: string, systemInstruction?: string, pdfBase64?: string): Promise<string> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error('Supabase configuration (URL or Anon Key) is missing in .env');
   }
@@ -74,16 +73,7 @@ export async function askGemini(prompt: string, systemInstruction?: string, pdfB
         throw new Error(`Gemini API Quota Exhausted: ${errorMessage}. Please try again later.`);
       }
 
-      const isTransientError = isRateLimit || response.status >= 500;
-
-      if (isTransientError && retryCount < MAX_RETRIES) {
-        // Exponential backoff
-        const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
-        console.warn(`[Gemini] Transient error hit. Retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return askGemini(prompt, systemInstruction, pdfBase64, retryCount + 1);
-      }
-
+      // Surface all errors directly to the user to avoid silent background looping
       throw new Error(`Gemini API Error: ${errorMessage}`);
     }
 
@@ -98,13 +88,6 @@ export async function askGemini(prompt: string, systemInstruction?: string, pdfB
     clearTimeout(timeoutId);
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error('Gemini API request timed out (45s). Please try again.');
-    }
-    
-    if (retryCount < MAX_RETRIES && (error instanceof Error && error.message.includes('fetch'))) {
-      const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
-      console.warn(`[Gemini] Network error. Retrying in ${delay}ms...`, error);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return askGemini(prompt, systemInstruction, pdfBase64, retryCount + 1);
     }
     throw error;
   }
