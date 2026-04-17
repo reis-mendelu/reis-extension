@@ -27,6 +27,7 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
   const erasmusPdfAssignments = useAppStore(s => s.erasmusPdfAssignments);
   const erasmusUploadedPdfs = useAppStore(s => s.erasmusUploadedPdfs);
   const erasmusVerdicts = useAppStore(s => s.erasmusVerdicts);
+  const aiResult = useAppStore(s => s.erasmusAiResults[courseCode]) ?? null;
   const erasmusTableBCourses = useAppStore(s => s.erasmusTableBCourses);
   const syllabusCache = useAppStore(s => s.syllabuses.cache);
   const fetchSyllabus = useAppStore(s => s.fetchSyllabus);
@@ -36,11 +37,13 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
   const removeErasmusUploadedPdf = useAppStore(s => s.removeErasmusUploadedPdf);
   const setErasmusPdfAssignment = useAppStore(s => s.setErasmusPdfAssignment);
   const setErasmusVerdict = useAppStore(s => s.setErasmusVerdict);
+  const setErasmusAiResult = useAppStore(s => s.setErasmusAiResult);
 
   // Local AI state
-  const [aiStatus, setAiStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
-  const [aiResult, setAiResult] = useState<AIComparisonResult | null>(null);
+  const [localStatus, setLocalStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [aiError, setAiError] = useState<string | null>(null);
+
+  const aiStatus = localStatus !== 'idle' ? localStatus : (aiResult ? 'done' : 'idle');
 
   // Derived state
   const assignedFilename = erasmusPdfAssignments[courseCode] ?? null;
@@ -133,8 +136,8 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
     const base64 = await readFileAsBase64(file);
     addErasmusUploadedPdf(file.name, '', base64);
     setErasmusPdfAssignment(courseCode, file.name);
-    setAiStatus('idle');
-    setAiResult(null);
+    setLocalStatus('idle');
+    setErasmusAiResult(courseCode, null);
     setAiError(null);
   };
 
@@ -142,15 +145,15 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
     if (!assignedFilename) return;
     setErasmusPdfAssignment(courseCode, null);
     removeErasmusUploadedPdf(assignedFilename);
-    setAiStatus('idle');
-    setAiResult(null);
+    setLocalStatus('idle');
+    setErasmusAiResult(courseCode, null);
     setAiError(null);
   };
 
   // ── AI check ───────────────────────────────────────────────────────────────
   const runAICheck = useCallback(async () => {
     if (!pdfData || !targetBCode) return;
-    setAiStatus('loading');
+    setLocalStatus('loading');
     setAiError(null);
     try {
       await fetchSyllabus(targetBCode);
@@ -169,13 +172,13 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
       const result = await compareSyllabiAI(mendeluText, primaryMetadata, pdfData.base64);
       
       setErasmusVerdict(courseCode, result.verdict);
-      setAiResult(result);
-      setAiStatus('done');
+      setErasmusAiResult(courseCode, result);
+      setLocalStatus('idle');
     } catch (err) {
       setAiError(err instanceof Error ? err.message : 'Unknown error');
-      setAiStatus('error');
+      setLocalStatus('error');
     }
-  }, [pdfData, targetBCode, fetchSyllabus, courseCode, courseName, setErasmusVerdict]);
+  }, [pdfData, targetBCode, fetchSyllabus, courseCode, courseName, setErasmusVerdict, setErasmusAiResult]);
 
   const similarityPct = aiResult ? Math.round(aiResult.similarity * 100) : null;
 
@@ -322,21 +325,6 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
             </p>
           )}
 
-          {/* Show persisted verdict when idle but verdict exists (page reload) */}
-          {aiStatus === 'idle' && verdict && !aiResult && (
-            <div className="flex items-center gap-1.5">
-              {verdict === 'approved'
-                ? <CheckCircle size={13} className="text-success shrink-0" />
-                : <XCircle size={13} className="text-error shrink-0" />
-              }
-              <span className={`text-xs font-bold ${verdict === 'approved' ? 'text-success' : 'text-error'}`}>
-                {verdict === 'approved' ? t('erasmus.verifyApproved') : t('erasmus.verifyRejected')}
-              </span>
-              <button onClick={runAICheck} className="btn btn-ghost btn-xs text-[10px] gap-1 text-base-content/40 ml-auto">
-                <RotateCcw size={10} /> {t('erasmus.verifyRerun')}
-              </button>
-            </div>
-          )}
 
           {/* Change PDF */}
           <button

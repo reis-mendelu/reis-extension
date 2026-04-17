@@ -8,6 +8,7 @@ import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { SyncStatus } from '../services/sync';
 import type { ErasmusCountryData, ErasmusConfig } from '../types/erasmus';
+import type { AIComparisonResult } from '../api/gemini';
 import type { PinnedPage } from './slices/createPinnedPagesSlice';
 import type { OutletMenu } from '../types/menuTypes';
 import type { PageCategory } from '../data/pages/types';
@@ -191,6 +192,7 @@ export interface ErasmusSlice {
     erasmusStudentInfo: ErasmusStudentInfo;
     erasmusTableAOptions: ErasmusUniversityOption[];
     erasmusVerdicts: Record<string, 'approved' | 'rejected'>;
+    erasmusAiResults: Record<string, AIComparisonResult>;
     erasmusPdfAssignments: Record<string, string>; // courseCode → filename
     erasmusPinnedUniversities: string[];
     erasmusUploadedPdfs: Record<string, { text: string; base64: string }>; // filename → extracted text + raw base64
@@ -210,6 +212,7 @@ export interface ErasmusSlice {
     setErasmusStudentInfo: (data: Partial<ErasmusStudentInfo>) => void;
     initErasmusStudentInfo: (params: { fullName?: string; studyProgram?: string; studentId?: string }) => void;
     setErasmusVerdict: (code: string, verdict: 'approved' | 'rejected') => void;
+    setErasmusAiResult: (code: string, result: AIComparisonResult | null) => void;
     pinErasmusUniversity: (name: string) => void;
     unpinErasmusUniversity: (name: string) => void;
     addErasmusTableAOption: () => void;

@@ -2,6 +2,7 @@ import type { ErasmusSlice, AppSlice, ErasmusUniversityOption, ErasmusStudentInf
 import { fetchErasmusReports, getStoredErasmusData, fetchErasmusConfig as fetchErasmusConfigApi } from '../../api/erasmus';
 import { IndexedDBService } from '../../services/storage';
 import { loggers } from '../../utils/logger';
+import type { AIComparisonResult } from '../../api/gemini';
 
 const TABLE_A_COURSES_KEY = 'erasmus_table_a_courses'; // Legacy
 const TABLE_A_OPTIONS_KEY = 'erasmus_table_a_options';
@@ -9,6 +10,7 @@ const TABLE_B_COURSES_KEY = 'erasmus_table_b_courses';
 const STUDENT_INFO_KEY = 'erasmus_student_info';
 const ERASMUS_UI_STATE_KEY = 'erasmus_ui_state';
 const VERDICTS_KEY = 'erasmus_verdicts';
+const AI_RESULTS_KEY = 'erasmus_ai_results';
 const PDF_ASSIGNMENTS_KEY = 'erasmus_pdf_assignments';
 const PINNED_UNIVERSITIES_KEY = 'erasmus_pinned_universities';
 const UPLOADED_PDFS_KEY = 'erasmus_uploaded_pdfs';
@@ -29,6 +31,7 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     { id: 'opt-1', institutionName: '', erasmusCode: '', country: '', link: '', courses: [] }
   ],
   erasmusVerdicts: {},
+  erasmusAiResults: {},
   erasmusPdfAssignments: {},
   erasmusPinnedUniversities: [],
   erasmusUploadedPdfs: {},
@@ -109,8 +112,11 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     if (isRemoving) {
       const verdicts = { ...get().erasmusVerdicts };
       delete verdicts[code];
-      set({ erasmusVerdicts: verdicts });
+      const aiResults = { ...get().erasmusAiResults };
+      delete aiResults[code];
+      set({ erasmusVerdicts: verdicts, erasmusAiResults: aiResults });
       IndexedDBService.set('meta', VERDICTS_KEY, verdicts).catch(() => {});
+      IndexedDBService.set('meta', AI_RESULTS_KEY, aiResults).catch(() => {});
     }
   },
   setErasmusStudentInfo: (data: Partial<ErasmusStudentInfo>) => {
@@ -143,6 +149,13 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     const verdicts = { ...get().erasmusVerdicts, [code]: verdict };
     set({ erasmusVerdicts: verdicts });
     IndexedDBService.set('meta', VERDICTS_KEY, verdicts).catch(() => {});
+  },
+  setErasmusAiResult: (code: string, result: AIComparisonResult | null) => {
+    const next = { ...get().erasmusAiResults };
+    if (result === null) delete next[code];
+    else next[code] = result;
+    set({ erasmusAiResults: next });
+    IndexedDBService.set('meta', AI_RESULTS_KEY, next).catch(() => {});
   },
   setErasmusPdfAssignment: (courseCode: string, filename: string | null) => {
     const assignments = { ...get().erasmusPdfAssignments };
@@ -248,6 +261,9 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
 
       const verdicts = await IndexedDBService.get('meta', VERDICTS_KEY) as Record<string, 'approved' | 'rejected'> | null;
       if (verdicts) set({ erasmusVerdicts: verdicts });
+
+      const aiResults = await IndexedDBService.get('meta', AI_RESULTS_KEY) as Record<string, AIComparisonResult> | null;
+      if (aiResults) set({ erasmusAiResults: aiResults });
 
       const assignments = await IndexedDBService.get('meta', PDF_ASSIGNMENTS_KEY) as Record<string, string> | null;
       if (assignments) set({ erasmusPdfAssignments: assignments });
