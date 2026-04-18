@@ -103,8 +103,8 @@ export async function syncAllData() {
             attendance: subjects.status === "fulfilled" && subjects.value ? subjects.value.attendance : cachedData.attendance,
             studyPlan: studyPlan.status === "fulfilled" && studyPlan.value ? studyPlan.value : cachedData.studyPlan,
             studyStats: studyStats.status === "fulfilled" && studyStats.value ? studyStats.value : cachedData.studyStats,
-            cvicneTests: cvicneTests.status === "fulfilled" && cvicneTests.value ? cvicneTests.value.tests : cachedData.cvicneTests,
-            odevzdavarny: odevzdavarnyResult.status === "fulfilled" && odevzdavarnyResult.value ? odevzdavarnyResult.value.assignments : cachedData.odevzdavarny,
+            cvicneTests: cvicneTests.status === "fulfilled" && cvicneTests.value?.tests?.length ? cvicneTests.value.tests : cachedData.cvicneTests,
+            odevzdavarny: odevzdavarnyResult.status === "fulfilled" && odevzdavarnyResult.value?.assignments?.length ? odevzdavarnyResult.value.assignments : cachedData.odevzdavarny,
             files: cachedData.files || {},
             lastSync: Date.now(),
         };

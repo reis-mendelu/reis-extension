@@ -111,14 +111,14 @@ export function useAppLogic() {
 
                 if (r.studyPlan && isDualLanguageStudyPlan(r.studyPlan)) await IndexedDBService.set('study_plan', 'current', r.studyPlan);
                 if (r.studyStats) await IndexedDBService.set('meta', 'study_stats', r.studyStats);
-                if (r.cvicneTests) {
+                if (r.cvicneTests?.length) {
                     const userParams = await IndexedDBService.get('meta', 'reis_user_params');
                     if (userParams?.studium) {
                         await IndexedDBService.set('cvicne_tests', userParams.studium, r.cvicneTests);
                         useAppStore.getState().setCvicneTests(r.cvicneTests);
                     }
                 }
-                if (r.odevzdavarny) {
+                if (r.odevzdavarny?.length) {
                     const userParams = await IndexedDBService.get('meta', 'reis_user_params');
                     if (userParams?.studium && userParams?.obdobi) {
                         await IndexedDBService.set('odevzdavarny', `${userParams.studium}_${userParams.obdobi}`, r.odevzdavarny);
