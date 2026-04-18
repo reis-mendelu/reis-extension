@@ -19,7 +19,6 @@ interface SubjectFileDrawerContentProps {
     isFilesLoading: boolean;
     isSyncing: boolean;
     isPriorityLoading?: boolean;
-    totalCount?: number;
     isDragging: boolean;
 
     selectionBoxStyle: { left: number; top: number; width: number; height: number; } | null;
@@ -37,18 +36,14 @@ interface SubjectFileDrawerContentProps {
 }
 
 export function SubjectFileDrawerContent({
-    activeTab, lesson, files, isFilesLoading, isSyncing, isPriorityLoading, totalCount, isDragging, selectionBoxStyle, showDragHint,
+    activeTab, lesson, files, isFilesLoading, isSyncing, isPriorityLoading, isDragging, selectionBoxStyle, showDragHint,
     groupedFiles, selectedIds, fileRefs, ignoreClickRef, toggleSelect, openFile, onViewPdf, resolvedCourseId, syllabusResult, folderUrl
 }: SubjectFileDrawerContentProps) {
     const { t, language } = useTranslation();
 
     if (activeTab === 'files') {
         const isEmpty = !files || files.length === 0;
-        // Show skeleton only when we have no data yet — never suppress it with isSyncing
         const showSkeleton = isFilesLoading || (isPriorityLoading && isEmpty);
-        const currentFilesCount = files?.reduce((acc, f) => acc + f.files.length, 0) || 0;
-        // Show progress bar when skeleton shows, when still fetching remaining files after first chunk,
-        // or when syncing with no data yet
         const showProgress = showSkeleton || isPriorityLoading || (isSyncing && isEmpty);
 
         return (
@@ -59,11 +54,6 @@ export function SubjectFileDrawerContent({
                     <div className="flex items-center gap-2 text-xs text-base-content/70 font-medium px-6 py-4 bg-base-200/30 border-b border-base-300 animate-in fade-in slide-in-from-top-1">
                         <Loader2 size={12} className="text-primary animate-spin" />
                         <span>{t('course.sync.loadingFiles') || 'Loading files...'}</span>
-                        {files && files.length > 0 && (
-                            <span className="text-base-content/50">
-                                ({currentFilesCount}{totalCount !== undefined && totalCount > files.length ? ` / ${totalCount}` : ''})
-                            </span>
-                        )}
                     </div>
                 )}
 

@@ -102,16 +102,10 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
             const folderUrl = `https://is.mendelu.cz/auth/dok_server/slozka.pl?id=${folderId}`;
 
             set((state) => ({
-                filesProgress: { ...state.filesProgress, [courseCode]: 'fetching_first' }
+                filesProgress: { ...state.filesProgress, [courseCode]: 'fetching' }
             }));
 
-            // Fetch with onChunk callback for progressive update
-            const fullFilesList = await fetchFilesFromFolder(folderUrl, currentLang, true, 0, 2, (chunk) => {
-                set((state) => ({
-                    files: { ...state.files, [courseCode]: chunk },
-                    filesProgress: { ...state.filesProgress, [courseCode]: 'syncing_remaining' }
-                }));
-            });
+            const fullFilesList = await fetchFilesFromFolder(folderUrl, currentLang, true, 0, 2);
 
             // Store full data in IndexedDB
             const cachedFiles = await IndexedDBService.get('files', courseCode);
