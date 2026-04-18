@@ -4,7 +4,6 @@ import { SubjectFileDrawer } from '../SubjectFileDrawer';
 import { HOURS, getEventStyle, organizeLessons, timeToPercent } from './utils';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useHintStatus } from '../../hooks/ui/useHintStatus';
-import { useSwipeNavigation } from '../../hooks/ui/useSwipeNavigation';
 import type { BlockLesson, DateInfo } from '../../types/calendarTypes';
 
 const TOTAL_HOURS = 13;
@@ -47,7 +46,7 @@ export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, 
     }
   };
 
-  const { onTouchStart, onTouchMove, onTouchEnd, dragStyle } = useSwipeNavigation(goToPrev, goToNext);
+
 
   const lessons = useMemo(() => lessonsByDay[selectedDay] || [], [lessonsByDay, selectedDay]);
   const holiday = holidaysByDay[selectedDay];
@@ -97,14 +96,9 @@ export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, 
         })}
       </div>
 
-      {/* Swipeable day content */}
-      <div
-        className="flex-1 overflow-y-auto"
-        onTouchStart={!selected ? onTouchStart : undefined}
-        onTouchMove={!selected ? onTouchMove : undefined}
-        onTouchEnd={!selected ? onTouchEnd : undefined}
-      >
-        <div className="flex h-full min-h-[780px]" style={dragStyle}>
+      {/* Day content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="flex h-full min-h-[780px]">
           {/* Time gutter */}
           <div className="w-12 flex-shrink-0 border-r border-base-300 bg-base-200 relative">
             {HOURS.map((hour, i) => (
