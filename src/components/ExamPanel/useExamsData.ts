@@ -88,7 +88,6 @@ export function useExamsData() {
 
     return {
         exams,
-        isLoading: status === 'loading' || status === 'idle',
         showSkeleton,
         statusFilter,
         onToggleStatus, 
