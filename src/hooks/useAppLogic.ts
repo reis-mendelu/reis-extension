@@ -33,7 +33,6 @@ interface SyncedData {
     odevzdavarny?: any[];
     lastSync?: string;
     isSyncing?: boolean;
-    isPartial?: boolean;
 }
 
 
@@ -96,16 +95,13 @@ export function useAppLogic() {
             if (!r) return;
 
             // Instantly update store for reactivity, then persist to IDB in background
-            if (r.schedule && typeof r.isPartial === 'boolean') {
-                useAppStore.getState().setSchedule(r.schedule as any, r.isPartial);
+            if (r.schedule) {
+                useAppStore.getState().setSchedule(r.schedule as any);
             }
 
             try {
                 if (r.schedule) {
                     await IndexedDBService.set('schedule', 'current', r.schedule);
-                    if (typeof r.isPartial === 'boolean') {
-                        await IndexedDBService.set('meta', 'schedule_is_partial', r.isPartial);
-                    }
                 }
 
 
@@ -207,9 +203,9 @@ export function useAppLogic() {
                     syncGradeHistory()
                         .then(() => useAppStore.getState().loadStudyJamSuggestions())
                         .catch(() => {});
+                    syncService.triggerRefresh();
                 }
             }
-            syncService.triggerRefresh();
         };
         window.addEventListener('message', handle);
         signalReady(); requestData('all');

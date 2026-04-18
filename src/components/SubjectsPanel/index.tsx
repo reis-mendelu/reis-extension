@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -28,16 +28,12 @@ interface SubjectsPanelProps {
 export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelProps) {
   const { t } = useTranslation();
   const plan = useStudyPlan();
-  const loading = useAppStore(s => s.studyPlanLoading);
-  const loaded = useAppStore(s => s.studyPlanLoaded);
-  const isSyncing = useAppStore(s => s.isSyncing);
+  const studyPlanLoaded = useAppStore(s => s.studyPlanLoaded);
   const studyStats = useAppStore(s => s.studyStats);
   const successRates = useAppStore(s => s.successRates);
-
-  useEffect(() => {
-    useAppStore.getState().fetchStudyPlan();
-    useAppStore.getState().fetchStudyStats();
-  }, []);
+  const handshakeDone = useAppStore(s => s.syncStatus.handshakeDone);
+  const handshakeTimedOut = useAppStore(s => s.syncStatus.handshakeTimedOut);
+  const isSyncing = useAppStore(s => s.syncStatus.isSyncing);
 
   // Batch-prefetch success rates for all subjects in the plan
   useEffect(() => {
@@ -92,10 +88,10 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
     return map;
   }, [plan, successRates]);
 
-  // Skeleton while: initial load, any active fetch, or sync in progress with no data yet
-  if (loading || !loaded || (isSyncing && !plan)) return <SubjectsPanelSkeleton />;
-
   if (!plan) {
+    if (!studyPlanLoaded || (!handshakeDone && !handshakeTimedOut) || isSyncing) {
+      return <SubjectsPanelSkeleton />;
+    }
     return <div className="flex items-center justify-center h-full text-base-content/50">{t('subjects.noData')}</div>;
   }
 

@@ -5,20 +5,13 @@ import type { ParsedFile } from '../../types/documents';
 export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     files: {},
     filesLoading: {},
-    filesPriorityLoading: {},
-    filesProgress: {},
-    filesTotalCount: {},
     fetchFiles: async (courseCode) => {
         const { files, filesLoading } = get();
 
-        // We skip if:
-        // 1. We're already loading this course
-        // 2. We have cached files (even if empty [])
         if (filesLoading[courseCode] || files[courseCode] !== undefined) {
             return;
         }
 
-        // Set loading synchronously before any await so the skeleton renders immediately
         set((state) => ({
             filesLoading: { ...state.filesLoading, [courseCode]: true }
         }));
@@ -26,16 +19,14 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
         await get().refreshFiles(courseCode);
     },
     fetchFilesPriority: async (courseCode) => {
-        const { files, filesPriorityLoading, language: currentLang } = get();
+        const { files, filesLoading, language: currentLang } = get();
 
-        // Already loading, or files have been fetched (even if empty — [] means "synced, no files")
-        if (filesPriorityLoading[courseCode] || Array.isArray(files[courseCode])) {
+        if (filesLoading[courseCode] || files[courseCode] !== undefined) {
             return;
         }
 
         set((state) => ({
-            filesPriorityLoading: { ...state.filesPriorityLoading, [courseCode]: true },
-            filesProgress: { ...state.filesProgress, [courseCode]: 'initializing' }
+            filesLoading: { ...state.filesLoading, [courseCode]: true }
         }));
 
         try {
@@ -45,9 +36,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                 const data = (cached as { cz?: ParsedFile[], en?: ParsedFile[] })[currentLang] || [];
                 set((state) => ({
                     files: { ...state.files, [courseCode]: data },
-                    filesPriorityLoading: { ...state.filesPriorityLoading, [courseCode]: false },
-                    filesProgress: { ...state.filesProgress, [courseCode]: 'success' },
-                    filesTotalCount: { ...state.filesTotalCount, [courseCode]: data.length }
+                    filesLoading: { ...state.filesLoading, [courseCode]: false },
                 }));
                 return;
             }
@@ -57,9 +46,17 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
             let syncStatus = get().syncStatus;
 
             if (!syncStatus.handshakeDone || !subjects) {
-                set((state) => ({ filesProgress: { ...state.filesProgress, [courseCode]: 'waiting_metadata' } }));
                 const { useAppStore } = await import('../useAppStore');
                 await new Promise<void>((resolve) => {
+                    // Re-check synchronously inside the Promise — handles the race where
+                    // handshake completed between the outer get() and this subscription.
+                    const current = useAppStore.getState();
+                    if (current.syncStatus.handshakeDone && current.subjects) {
+                        subjects = current.subjects;
+                        syncStatus = current.syncStatus;
+                        resolve();
+                        return;
+                    }
                     const unsubscribe = useAppStore.subscribe((state) => {
                         if (state.syncStatus.handshakeDone && state.subjects) {
                             unsubscribe();
@@ -77,15 +74,10 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
 
             if (!subject?.folderUrl) {
                 const isSyncActive = syncStatus.isSyncing || !syncStatus.handshakeDone;
-                if (!isSyncActive) {
-                    set((state) => ({
-                        files: { ...state.files, [courseCode]: [] },
-                        filesPriorityLoading: { ...state.filesPriorityLoading, [courseCode]: false },
-                        filesProgress: { ...state.filesProgress, [courseCode]: 'success' }
-                    }));
-                } else {
-                    set((state) => ({ filesProgress: { ...state.filesProgress, [courseCode]: 'waiting_sync' } }));
-                }
+                set((state) => ({
+                    files: isSyncActive ? state.files : { ...state.files, [courseCode]: [] },
+                    filesLoading: { ...state.filesLoading, [courseCode]: false },
+                }));
                 return;
             }
 
@@ -93,18 +85,12 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
             if (!folderId) {
                 set((state) => ({
                     files: { ...state.files, [courseCode]: [] },
-                    filesPriorityLoading: { ...state.filesPriorityLoading, [courseCode]: false },
-                    filesProgress: { ...state.filesProgress, [courseCode]: 'success' }
+                    filesLoading: { ...state.filesLoading, [courseCode]: false },
                 }));
                 return;
             }
 
             const folderUrl = `https://is.mendelu.cz/auth/dok_server/slozka.pl?id=${folderId}`;
-
-            set((state) => ({
-                filesProgress: { ...state.filesProgress, [courseCode]: 'fetching' }
-            }));
-
             const fullFilesList = await fetchFilesFromFolder(folderUrl, currentLang, true, 0, 2);
 
             // Store full data in IndexedDB
@@ -115,22 +101,19 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
 
             set((state) => ({
                 files: { ...state.files, [courseCode]: fullFilesList },
-                filesPriorityLoading: { ...state.filesPriorityLoading, [courseCode]: false },
-                filesProgress: { ...state.filesProgress, [courseCode]: 'success' },
-                filesTotalCount: { ...state.filesTotalCount, [courseCode]: fullFilesList.length }
+                filesLoading: { ...state.filesLoading, [courseCode]: false },
             }));
         } catch (e) {
             console.warn('[FilesSlice] fetchFilesPriority failed:', e);
             set((state) => ({
                 files: { ...state.files, [courseCode]: [] },
-                filesPriorityLoading: { ...state.filesPriorityLoading, [courseCode]: false },
-                filesProgress: { ...state.filesProgress, [courseCode]: 'error' }
+                filesLoading: { ...state.filesLoading, [courseCode]: false },
             }));
         }
     },
     refreshFiles: async (courseCode) => {
         const { language: currentLang, files } = get();
-        
+
         if (!files[courseCode]) {
             set((state) => ({
                 filesLoading: { ...state.filesLoading, [courseCode]: true }
@@ -152,14 +135,14 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                  filesList = data;
                  languageMatches = data.length > 0 && data[0]?.language === currentLang;
             }
-            
+
             if (!languageMatches && data) {
                 // Language mismatch in legacy structure - fetch fresh data from API
-                
+
                 const { fetchFilesFromFolder } = await import('../../api/documents/service');
                 const subjectsData = await IndexedDBService.get('subjects', 'current');
                 const subject = subjectsData?.data?.[courseCode];
-                
+
                 if (subject?.folderUrl) {
                     const folderId = subject.folderUrl.match(/[?&;]id=(\d+)/)?.[1];
                     if (folderId) {
@@ -179,7 +162,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                     }
                 }
             }
-            
+
             set((state) => ({
                 files: { ...state.files, [courseCode]: filesList },
                 filesLoading: { ...state.filesLoading, [courseCode]: false }

@@ -9,6 +9,9 @@ export function useExamsData() {
     const storeExams = useAppStore(s => s.exams.data);
     const status = useAppStore(s => s.exams.status);
     const language = useAppStore(s => s.language);
+    const handshakeDone = useAppStore(s => s.syncStatus.handshakeDone);
+    const handshakeTimedOut = useAppStore(s => s.syncStatus.handshakeTimedOut);
+    const isSyncing = useAppStore(s => s.syncStatus.isSyncing);
     
     const exams = useMemo(() => storeExams, [storeExams]);
     const [statusFilter, setStatusFilter] = useState<('registered' | 'available' | 'opening')[]>([]), [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
@@ -77,10 +80,17 @@ export function useExamsData() {
         return res;
     }, [exams, statusFilter, selectedSubjects]);
 
-    return { 
-        exams, 
-        isLoading: status === 'loading' || status === 'idle', 
-        statusFilter, 
+    const hasAnyExams = exams.length > 0;
+    const showSkeleton = !hasAnyExams && (
+        status === 'loading' || status === 'idle' ||
+        (!handshakeDone && !handshakeTimedOut) || isSyncing
+    );
+
+    return {
+        exams,
+        isLoading: status === 'loading' || status === 'idle',
+        showSkeleton,
+        statusFilter,
         onToggleStatus, 
         selectedSubjects, 
         setSelectedSubjects, 

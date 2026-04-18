@@ -6,6 +6,7 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => 
   cvicneTests: [],
   cvicneTestsStatus: 'idle',
   fetchCvicneTests: async () => {
+    if (get().cvicneTestsStatus === 'loading') return;
     if (get().cvicneTests.length === 0) {
       set(() => ({ cvicneTestsStatus: 'loading' }));
     }
@@ -33,6 +34,7 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => 
   odevzdavarny: [],
   odevzdavarnyStatus: 'idle',
   fetchOdevzdavarny: async () => {
+    if (get().odevzdavarnyStatus === 'loading') return;
     if (get().odevzdavarny.length === 0) {
       set(() => ({ odevzdavarnyStatus: 'loading' }));
     }

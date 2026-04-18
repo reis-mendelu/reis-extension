@@ -12,18 +12,16 @@ export const createScheduleSlice: AppSlice<ScheduleSlice> = (set, get) => ({
       set((state) => ({ schedule: { ...state.schedule, status: 'loading' } }));
     }
     try {
-      const [data, weekStartStr, isPartial] = await Promise.all([
+      const [data, weekStartStr] = await Promise.all([
         IndexedDBService.get('schedule', 'current'),
         IndexedDBService.get('meta', 'schedule_week_start'),
-        IndexedDBService.get('meta', 'schedule_is_partial'),
       ]);
-      
-      set((state) => ({
+
+      set((_state) => ({
         schedule: {
           data: data || [],
           status: 'success',
           weekStart: weekStartStr ? new Date(weekStartStr) : null,
-          isPartial: state.schedule.isPartial === false ? false : !!isPartial
         },
       }));
 
@@ -32,9 +30,9 @@ export const createScheduleSlice: AppSlice<ScheduleSlice> = (set, get) => ({
       set((state) => ({ schedule: { ...state.schedule, status: 'error' } }));
     }
   },
-  setSchedule: (data, isPartial) => {
+  setSchedule: (data) => {
     set((state) => ({
-      schedule: { ...state.schedule, data: data || [], isPartial },
+      schedule: { ...state.schedule, data: data || [] },
     }));
   },
 

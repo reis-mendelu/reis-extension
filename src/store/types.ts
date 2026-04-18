@@ -27,10 +27,9 @@ export interface ScheduleSlice {
     data: BlockLesson[];
     status: Status;
     weekStart: Date | null;
-    isPartial?: boolean;
   };
   fetchSchedule: () => Promise<void>;
-  setSchedule: (data: BlockLesson[], isPartial?: boolean) => void;
+  setSchedule: (data: BlockLesson[]) => void;
 }
 
 export interface ExamSlice {
@@ -56,9 +55,6 @@ export interface SyllabusSlice {
 export interface FilesSlice {
     files: Record<string, ParsedFile[]>;
     filesLoading: Record<string, boolean>;
-    filesPriorityLoading: Record<string, boolean>;
-    filesProgress: Record<string, string>;
-    filesTotalCount: Record<string, number>;
     fetchFiles: (courseCode: string) => Promise<void>;
     fetchFilesPriority: (courseCode: string) => Promise<void>;
     fetchAllFiles: () => Promise<void>;
@@ -157,7 +153,6 @@ export interface FeedbackSlice {
 
 export interface StudyPlanSlice {
     studyPlanDual: DualLanguageStudyPlan | null;
-    studyPlanLoading: boolean;
     /** true once the first fetchStudyPlan() call has fully resolved */
     studyPlanLoaded: boolean;
     studyStats: StudyStats | null;

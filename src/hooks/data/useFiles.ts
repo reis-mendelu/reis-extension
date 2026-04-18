@@ -5,9 +5,6 @@ import type { ParsedFile } from '../../types/documents';
 export interface UseFilesResult {
     files: ParsedFile[] | null;
     isLoading: boolean;
-    isPriorityLoading: boolean;
-    progressStatus: string;
-    totalCount: number | undefined;
 }
 
 /**
@@ -19,16 +16,11 @@ export interface UseFilesResult {
 export function useFiles(courseCode?: string): UseFilesResult {
     const subjectFiles = useAppStore(state => courseCode ? state.files[courseCode] : undefined);
     const isSubjectLoading = useAppStore(state => courseCode ? !!state.filesLoading[courseCode] : false);
-    const isPriorityLoading = useAppStore(state => courseCode ? !!state.filesPriorityLoading[courseCode] : false);
-    const progressStatus = useAppStore(state => courseCode ? state.filesProgress[courseCode] || '' : '');
-    const totalCount = useAppStore(state => courseCode ? state.filesTotalCount[courseCode] : undefined);
     const lastSync = useAppStore(state => state.syncStatus.lastSync);
 
     useEffect(() => {
         if (courseCode) {
             const state = useAppStore.getState();
-            // Priority fetch only when files have never been loaded (undefined)
-            // [] means synced with no files — use the normal IDB path
             if (state.files[courseCode] === undefined) {
                 state.fetchFilesPriority(courseCode);
             } else {
@@ -37,16 +29,10 @@ export function useFiles(courseCode?: string): UseFilesResult {
         }
     }, [courseCode, lastSync]);
 
-    const isLoading = courseCode
-        ? (isSubjectLoading || subjectFiles === undefined || (isPriorityLoading && (!subjectFiles || subjectFiles.length === 0)))
-        : false;
+    const isLoading = courseCode ? (isSubjectLoading || subjectFiles === undefined) : false;
 
     return {
         files: subjectFiles ?? null,
         isLoading,
-        isPriorityLoading,
-        progressStatus,
-        totalCount
     };
 }
-

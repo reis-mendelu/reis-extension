@@ -3,7 +3,7 @@ import type { DualLanguageStudyPlan, StudyStats } from '../studyPlan';
 export type DataRequestType = 'schedule' | 'exams' | 'subjects' | 'files' | 'assessments' | 'all';
 export type ActionType = 'register_exam' | 'unregister_exam' | 'toggle_outlook_sync' | 'download_file' | 'trigger_sync' | 'open_url' | 'logout';
 
-export interface SyncedData { schedule?: unknown; exams?: unknown; subjects?: unknown; files?: unknown; assessments?: unknown; syllabuses?: unknown; cvicneTests?: unknown; odevzdavarny?: unknown; classmates?: Record<string, unknown>; attendance?: Record<string, unknown>; studyPlan?: DualLanguageStudyPlan; studyStats?: StudyStats; isSyncing?: boolean; isPartial?: boolean; lastSync: number; error?: string; }
+export interface SyncedData { schedule?: unknown; exams?: unknown; subjects?: unknown; files?: unknown; assessments?: unknown; syllabuses?: unknown; cvicneTests?: unknown; odevzdavarny?: unknown; classmates?: Record<string, unknown>; attendance?: Record<string, unknown>; studyPlan?: DualLanguageStudyPlan; studyStats?: StudyStats; isSyncing?: boolean; lastSync: number; error?: string; }
 
 
 export interface ReadyMessage { type: 'REIS_READY'; }

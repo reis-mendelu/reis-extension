@@ -1,15 +1,5 @@
 import { fetchDualLanguageSchedule } from "../api/schedule";
 
-export async function fetchScheduleBite() {
-    const now = new Date();
-    const start = new Date(now);
-    start.setDate(now.getDate() - 14);
-    const end = new Date(now);
-    end.setDate(now.getDate() + 14);
-    
-    return fetchDualLanguageSchedule({ start, end });
-}
-
 export async function fetchFullSemesterSchedule() {
     const now = new Date();
     const currentYear = now.getFullYear();

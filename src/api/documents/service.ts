@@ -14,12 +14,11 @@ export async function fetchDocumentsForSubject(subjectCode: string): Promise<Fil
 }
 
 export async function fetchFilesFromFolder(
-    folderUrl: string, 
-    lang: string = 'cz', 
-    recursive = true, 
-    currentDepth = 0, 
+    folderUrl: string,
+    lang: string = 'cz',
+    recursive = true,
+    currentDepth = 0,
     maxDepth = 2,
-    onChunk?: (files: ParsedFile[]) => void
 ): Promise<ParsedFile[]> {
     try {
         // Append language parameter if not already present
@@ -31,14 +30,9 @@ export async function fetchFilesFromFolder(
         const response = await fetchWithAuth(url);
         const respText = await response.text();
         const { files: initialFiles, paginationLinks, totalRecords } = parseServerFiles(respText);
-        
+
         // Tag initial files with language
         initialFiles.forEach(f => f.language = lang);
-
-        // Immediate callback for the first "chunk" (page 1)
-        if (onChunk && initialFiles.length > 0) {
-            onChunk(initialFiles);
-        }
 
         const allFiles = [...initialFiles];
 

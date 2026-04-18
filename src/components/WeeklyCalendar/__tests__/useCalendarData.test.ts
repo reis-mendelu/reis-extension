@@ -23,13 +23,13 @@ describe('useCalendarData', () => {
         vi.clearAllMocks();
 
         // Default mock implementations
-        vi.mocked(useSchedule).mockReturnValue({ schedule: [], isLoaded: true, weekStart: null, status: 'success', isPartial: false, isSyncing: false } as UseScheduleResult);
+        vi.mocked(useSchedule).mockReturnValue({ schedule: [], isLoaded: true, weekStart: null, status: 'success', isSyncing: false } as UseScheduleResult);
         vi.mocked(useExams).mockReturnValue({ exams: [], isLoaded: true, error: null, lastSync: null, retry: () => {} });
         vi.mocked(useAppStore).mockImplementation((selector: any) => selector({ language: 'cz' }));
     });
 
     it('should show skeleton when no data is loaded and status is not success', () => {
-        vi.mocked(useSchedule).mockReturnValue({ schedule: [], isLoaded: false, weekStart: null, status: 'loading', isPartial: false, isSyncing: false } as UseScheduleResult);
+        vi.mocked(useSchedule).mockReturnValue({ schedule: [], isLoaded: false, weekStart: null, status: 'loading', isSyncing: false } as UseScheduleResult);
         vi.mocked(useExams).mockReturnValue({ exams: [], isLoaded: false, error: null, lastSync: null, retry: () => {} });
 
         const { result } = renderHook(() => useCalendarData(mockInitialDate));
@@ -38,7 +38,7 @@ describe('useCalendarData', () => {
 
     it('should NOT show skeleton when data is empty but already loaded successfully', () => {
         // This is the core of the fix: empty schedule + isLoaded should not show skeleton
-        vi.mocked(useSchedule).mockReturnValue({ schedule: [], isLoaded: true, weekStart: null, status: 'success', isPartial: false, isSyncing: false } as UseScheduleResult);
+        vi.mocked(useSchedule).mockReturnValue({ schedule: [], isLoaded: true, weekStart: null, status: 'success', isSyncing: false } as UseScheduleResult);
         vi.mocked(useExams).mockReturnValue({ exams: [], isLoaded: true, error: null, lastSync: null, retry: () => {} });
 
         const { result } = renderHook(() => useCalendarData(mockInitialDate));
@@ -47,7 +47,7 @@ describe('useCalendarData', () => {
 
     it('should NOT show skeleton when data is empty but we are re-fetching (status loading, but schedule exists)', () => {
         // Data exists from previous fetch
-        vi.mocked(useSchedule).mockReturnValue({ schedule: [{ id: '1', date: '20260212', startTime: '10:00', endTime: '11:00', courseName: 'Test' } as any], isLoaded: true, weekStart: null, status: 'loading', isPartial: false, isSyncing: false } as UseScheduleResult);
+        vi.mocked(useSchedule).mockReturnValue({ schedule: [{ id: '1', date: '20260212', startTime: '10:00', endTime: '11:00', courseName: 'Test' } as any], isLoaded: true, weekStart: null, status: 'loading', isSyncing: false } as UseScheduleResult);
 
         const { result } = renderHook(() => useCalendarData(mockInitialDate));
         expect(result.current.showSkeleton).toBe(false);
@@ -58,7 +58,7 @@ describe('useCalendarData', () => {
             { id: '1', date: '20260209', startTime: '08:00', endTime: '09:00', courseName: 'Monday Lesson' }, // Monday
             { id: '2', date: '20260212', startTime: '10:00', endTime: '11:00', courseName: 'Thursday Lesson' }, // Thursday
         ];
-        vi.mocked(useSchedule).mockReturnValue({ schedule: mockLessons as any, isLoaded: true, weekStart: null, status: 'success', isPartial: false, isSyncing: false } as UseScheduleResult);
+        vi.mocked(useSchedule).mockReturnValue({ schedule: mockLessons as any, isLoaded: true, weekStart: null, status: 'success', isSyncing: false } as UseScheduleResult);
 
         const { result } = renderHook(() => useCalendarData(mockInitialDate));
 

@@ -22,10 +22,10 @@ interface RegisteredExam {
 
 export function ExamPanel() {
     const { t, language } = useTranslation();
-    const { 
-        exams, 
-        isLoading, 
-        statusFilter, 
+    const {
+        exams,
+        showSkeleton,
+        statusFilter,
         onToggleStatus, 
         selectedSubjects, 
         setSelectedSubjects, 
@@ -91,7 +91,7 @@ export function ExamPanel() {
                 </div>
             )}
 
-            {(filterCounts.available === 0 && filterCounts.opening === 0 && filterCounts.registered === 0) && !isLoading ? (
+            {(filterCounts.available === 0 && filterCounts.opening === 0 && filterCounts.registered === 0) && !showSkeleton ? (
                 <div className="flex-1 flex items-center justify-center">
                     <EmptyExamsState />
                 </div>
@@ -106,7 +106,7 @@ export function ExamPanel() {
                         onToggleSubject={(c: string) => setSelectedSubjects((p: string[]) => p.includes(c) ? p.filter((x: string) => x !== c) : [...p, c])} 
                         onClearFilters={clearAllFilters} 
                     />
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3">{isLoading ? <div className="flex items-center justify-center h-32 opacity-50"><span className="loading loading-spinner mr-2" /> {t('exams.loading')}</div> : !filteredSubjects.length ? <EmptyExamsState />
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">{showSkeleton ? <div className="flex items-center justify-center h-32 opacity-50"><span className="loading loading-spinner mr-2" /> {t('exams.loading')}</div> : !filteredSubjects.length ? <EmptyExamsState />
                         : filteredSubjects.map(({ subject, section }: { subject: ExamSubject, section: ExamSection }) => <ExamSectionCard key={section.id} subject={subject} section={section} isExpanded={expandedId === section.id} isProcessing={processingSectionId === section.id} armedTerms={armedTerms} firingTerms={firingTerms} toggleArm={toggleArm} onToggleExpand={(id: string) => setExpandedId(p => p === id ? null : id)} onRegister={handleRegisterRequest} onUnregister={handleUnregisterRequest} />)}</div>
                 </>
             )}

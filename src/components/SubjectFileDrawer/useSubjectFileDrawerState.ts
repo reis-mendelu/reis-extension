@@ -17,7 +17,7 @@ export function useSubjectFileDrawerState(lesson: BlockLesson | SelectedSubject 
       if (requestedTab) queueMicrotask(() => setActiveTab(requestedTab));
     }, [requestedTab, lesson?.courseCode]);
 
-    const { files, isLoading: isFilesLoading, isPriorityLoading, progressStatus, totalCount } = useFiles(isOpen ? lesson?.courseCode : undefined);
+    const { files, isLoading: isFilesLoading } = useFiles(isOpen ? lesson?.courseCode : undefined);
     const { isSyncing } = useSyncStatus();
 
     // Trigger pre-fetching for classmates when drawer opens
@@ -56,6 +56,6 @@ export function useSubjectFileDrawerState(lesson: BlockLesson | SelectedSubject 
         fileRefs.current.clear();
     }, [lesson?.courseCode]);
 
-    return { activeTab, setActiveTab, files, isFilesLoading, isSyncing, isPriorityLoading, progressStatus, totalCount, resolvedCourseId, syllabusResult, subjectInfo, containerRef, contentRef, fileRefs, ...drag };
+    return { activeTab, setActiveTab, files, isFilesLoading, isSyncing, resolvedCourseId, syllabusResult, subjectInfo, containerRef, contentRef, fileRefs, ...drag };
 }
 

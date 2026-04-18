@@ -12,7 +12,7 @@ import { syncOdevzdavarny } from "../services/sync/syncOdevzdavarny";
 import { fetchSeminarGroupIds, fetchClassmates } from "../api/classmates";
 
 import { getUserParams } from "../utils/userParams";
-import { fetchScheduleBite, fetchFullSemesterSchedule } from "./dataFetchers";
+import { fetchFullSemesterSchedule } from "./dataFetchers";
 import { sendToIframe } from "./iframeManager";
 import { SYNC_INTERVAL } from "./config";
 import type { SyncedData } from "../types/messages";
@@ -34,20 +34,11 @@ export async function syncAllData() {
         const userParams = await getUserParams();
         const studium = userParams?.studium;
 
-        // Phase 1: Progressive "First Bite" - fetch (+/- 2 weeks) schedule first
-        const scheduleBite = await fetchScheduleBite();
-        if (scheduleBite) {
-            cachedData.schedule = scheduleBite;
-            // Send partial update immediately
-            sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing: true, isPartial: true }));
-        }
-
-        // Phase 2a: Start subjects early — fast fetch, send immediately when ready
+        // Phase 2a: Start subjects early — fast fetch
         const subjectsPromise = fetchDualLanguageSubjects(studium || undefined)
             .then(result => {
                 if (result) {
                     cachedData = { ...cachedData, subjects: result.subjects, attendance: result.attendance };
-                    sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing: true, isPartial: true }));
                 }
                 return result;
             });
@@ -56,7 +47,6 @@ export async function syncAllData() {
         const studyPlanPromise = studium ? fetchDualLanguageStudyPlan(studium).then(plan => {
             if (plan) {
                 cachedData = { ...cachedData, studyPlan: plan };
-                sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing: true, isPartial: true }));
             }
             return plan;
         }) : Promise.resolve(null);
@@ -108,10 +98,6 @@ export async function syncAllData() {
             files: cachedData.files || {},
             lastSync: Date.now(),
         };
-
-        // Send full update with isPartial: false
-        sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing: true, isPartial: false }));
-
 
         if (subjects.status === "fulfilled" && subjects.value) {
             await syncSubjectDetails(subjects.value.subjects, fullSchedule.status === "fulfilled" ? fullSchedule.value : null);

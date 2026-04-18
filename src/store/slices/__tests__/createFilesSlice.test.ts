@@ -18,7 +18,7 @@ describe('createFilesSlice', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         set = vi.fn((fn) => {
-            const result = typeof fn === 'function' ? fn({ files: {}, filesLoading: {}, filesPriorityLoading: {}, filesProgress: {} }) : fn;
+            const result = typeof fn === 'function' ? fn({ files: {}, filesLoading: {} }) : fn;
             Object.assign(slice, result);
         });
 
@@ -60,20 +60,17 @@ describe('createFilesSlice', () => {
         expect(slice.files['ALG']).toEqual([]);
     });
 
-    it('should fetch files with priority progressively', async () => {
-        const mockFolders = { data: { ALG: { folderUrl: 'slozka.pl?id=123' } } };
-        vi.mocked(IndexedDBService.get).mockResolvedValueOnce(mockFolders); // subjects
-        vi.mocked(IndexedDBService.get).mockResolvedValueOnce(null); // existing files
-        
-        // Mock the dynamic import which is used inside fetchFilesPriority
-        // We can't easily mock dynamic imports in vitest like this, 
-        // so we'll just verify the initial status transition
-        await slice.fetchFilesPriority('ALG');
+    it('should use filesLoading for priority fetch', async () => {
+        vi.mocked(IndexedDBService.get).mockResolvedValue(null);
 
-        expect(slice.filesPriorityLoading['ALG']).toBeDefined();
-        // Since the dynamic import/API call will likely fail in this test environment 
-        // (unless we setup proper happy-dom mocking for fetch), 
-        // we'll at least verify it reached the loading state.
+        const promise = slice.fetchFilesPriority('ALG');
+
+        // Loading flag set synchronously
+        expect(slice.filesLoading['ALG']).toBe(true);
+
+        await promise;
+        // Loading cleared after completion
+        expect(slice.filesLoading['ALG']).toBe(false);
     });
 });
 

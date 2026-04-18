@@ -9,6 +9,9 @@ import type { BlockLesson, DateInfo } from '../../types/calendarTypes';
 export function useCalendarData(initialDate: Date) {
     const { schedule: storedSchedule, isLoaded: isScheduleLoaded } = useSchedule();
     const teachingWeekData = useAppStore(state => state.teachingWeekData);
+    const handshakeDone = useAppStore(state => state.syncStatus.handshakeDone);
+    const handshakeTimedOut = useAppStore(state => state.syncStatus.handshakeTimedOut);
+    const isSyncing = useAppStore(state => state.syncStatus.isSyncing);
 
 
     const { exams: storedExams, isLoaded: isExamsLoaded } = useExams();
@@ -136,7 +139,9 @@ export function useCalendarData(initialDate: Date) {
         lessonsByDay,
         holidaysByDay,
         todayIndex,
-        showSkeleton: scheduleData.length === 0 && !isScheduleLoaded,
+        showSkeleton: (storedSchedule?.length ?? 0) === 0 && (
+            !isScheduleLoaded || (!handshakeDone && !handshakeTimedOut) || isSyncing
+        ),
         scheduleData,
         isOutsideTeachingPeriod,
         isScheduleLoaded,

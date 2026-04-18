@@ -117,7 +117,6 @@ export const initializeStore = async () => {
         st.fetchStudyPlan();
         st.fetchCvicneTests();
         st.fetchOdevzdavarny();
-        st.fetchAllFiles();
     });
 
     // Cross-tab theme listener — use loadTheme() to also update DOM data-theme attribute

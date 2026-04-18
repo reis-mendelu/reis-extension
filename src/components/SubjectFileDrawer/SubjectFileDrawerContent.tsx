@@ -18,7 +18,6 @@ interface SubjectFileDrawerContentProps {
     files: ParsedFile[] | null;
     isFilesLoading: boolean;
     isSyncing: boolean;
-    isPriorityLoading?: boolean;
     isDragging: boolean;
 
     selectionBoxStyle: { left: number; top: number; width: number; height: number; } | null;
@@ -36,15 +35,15 @@ interface SubjectFileDrawerContentProps {
 }
 
 export function SubjectFileDrawerContent({
-    activeTab, lesson, files, isFilesLoading, isSyncing, isPriorityLoading, isDragging, selectionBoxStyle, showDragHint,
+    activeTab, lesson, files, isFilesLoading, isSyncing, isDragging, selectionBoxStyle, showDragHint,
     groupedFiles, selectedIds, fileRefs, ignoreClickRef, toggleSelect, openFile, onViewPdf, resolvedCourseId, syllabusResult, folderUrl
 }: SubjectFileDrawerContentProps) {
     const { t, language } = useTranslation();
 
     if (activeTab === 'files') {
         const isEmpty = !files || files.length === 0;
-        const showSkeleton = isFilesLoading || (isPriorityLoading && isEmpty);
-        const showProgress = showSkeleton || isPriorityLoading || (isSyncing && isEmpty);
+        const showSkeleton = isFilesLoading;
+        const showProgress = showSkeleton || (isSyncing && isEmpty);
 
         return (
             <>
