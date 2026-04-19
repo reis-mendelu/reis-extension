@@ -5,9 +5,10 @@ import type { UserParams } from '@/utils/userParams';
 
 interface Props {
   userParams: UserParams | null;
+  dob: string;
 }
 
-export function StudentInfoSection({ userParams }: Props) {
+export function StudentInfoSection({ userParams, dob }: Props) {
   const { t } = useTranslation();
   const info = useAppStore(s => s.erasmusStudentInfo);
   const setInfo = useAppStore(s => s.setErasmusStudentInfo);
@@ -21,6 +22,11 @@ export function StudentInfoSection({ userParams }: Props) {
       studentId: userParams.studentId,
     });
   }, [userParams, initInfo]);
+
+  useEffect(() => {
+    if (!dob || info.dob) return;
+    setInfo({ dob });
+  }, [dob, info.dob, setInfo]);
 
   const inputCls = 'input input-sm input-bordered w-full text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20';
   const labelCls = 'text-[10px] uppercase tracking-wider font-bold text-base-content/40 ml-1';

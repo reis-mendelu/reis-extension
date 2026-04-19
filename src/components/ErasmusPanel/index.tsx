@@ -11,6 +11,7 @@ import { StudentInfoSection } from './StudentInfoSection';
 import { LATableA } from './LATableA';
 import { ErasmusExportButton } from './ErasmusExportButton';
 import { getUserParams, type UserParams } from '@/utils/userParams';
+import { fetchKontrolaData } from '@/api/kontrola';
 import type { StudyPlan } from '@/types/studyPlan';
 
 const FACULTY_ABBREV_TO_NAME: Record<string, string> = {
@@ -53,7 +54,18 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
   const previousCountryRef = useRef<string | null>(null);
   const isPeekingRef = useRef(false);
 
-  useEffect(() => { getUserParams().then(setUserParams); }, []);
+  const [dob, setDob] = useState('');
+
+  useEffect(() => {
+    getUserParams().then(setUserParams);
+    fetchKontrolaData().then(data => {
+      if (!data) return;
+      const [year, month, day] = data.datumNarozeni.split('-');
+      const formatted = `${day}.${month}.${year}`;
+      console.log('[Erasmus] dob formatted:', formatted);
+      setDob(formatted);
+    });
+  }, []);
 
   const currentCountry = useMemo(() => ERASMUS_COUNTRIES.find(c => c.file === countryFile), [countryFile]);
   const countryName = currentCountry ? currentCountry[lang] : '';
@@ -135,7 +147,7 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
 
       {activeTab === 'plan' && (
         <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-5">
-          <StudentInfoSection userParams={userParams} />
+          <StudentInfoSection userParams={userParams} dob={dob} />
 
           <LATableA
             plan={plan ?? { blocks: [] } as unknown as StudyPlan}

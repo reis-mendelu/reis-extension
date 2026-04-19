@@ -166,7 +166,7 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     set({ erasmusStudentInfo: next });
     IndexedDBService.set('meta', STUDENT_INFO_KEY, next).catch(() => {});
   },
-  initErasmusStudentInfo: (params: { fullName?: string; studyProgram?: string; studentId?: string }) => {
+  initErasmusStudentInfo: (params: { fullName?: string; studyProgram?: string; studentId?: string; dob?: string }) => {
     const current = get().erasmusStudentInfo;
     const allBlank = !current.firstName && !current.lastName && !current.studyCode && !current.studentId;
     if (!allBlank) return;
