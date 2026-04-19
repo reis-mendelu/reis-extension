@@ -298,7 +298,8 @@
     "examReg": "Uzavírá se přihlašování",
     "assignment": "Odevzdávárna",
     "hoursLeft": "za {h} h",
-    "lessThanHour": "za méně než 1 h"
+    "lessThanHour": "za méně než 1 h",
+    "cvicnyTest": "Cvičný test"
   },
   "events": {
     "title": "Akce",

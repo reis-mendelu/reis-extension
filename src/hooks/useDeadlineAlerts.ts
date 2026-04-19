@@ -1,14 +1,14 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { parseDate } from '../utils/date';
 
 export interface DeadlineAlert {
   id: string;
-  type: 'exam-reg-opens' | 'exam-reg' | 'assignment';
+  type: 'exam-reg-opens' | 'exam-reg' | 'assignment' | 'cvicny-test';
   title: string;
   body: string;
-  deadline: Date;
-  hoursUntil: number;
+  deadline?: Date;
+  hoursUntil?: number;
   link?: string;
 }
 
@@ -27,6 +27,7 @@ const H = 3_600_000;
 export function useDeadlineAlerts() {
   const exams = useAppStore(s => s.exams.data);
   const odevzdavarny = useAppStore(s => s.odevzdavarny);
+  const cvicneTests = useAppStore(s => s.cvicneTests);
   const language = useAppStore(s => s.language);
   const seenIds = useAppStore(s => s.notifications.seenDeadlineAlertIds);
   const markDeadlineAlertsSeen = useAppStore(s => s.markDeadlineAlertsSeen);
@@ -83,9 +84,16 @@ export function useDeadlineAlerts() {
       }
     }
 
-    result.sort((a, b) => a.hoursUntil - b.hoursUntil);
+    for (const test of cvicneTests) {
+      if (test.status !== 'accessible') continue;
+      const id = `cvicny-${test.courseId}-${test.name}`;
+      const courseName = isEn ? test.courseNameEn : test.courseNameCs;
+      result.push({ id, type: 'cvicny-test', title: courseName, body: test.name, link: test.url });
+    }
+
+    result.sort((a, b) => (a.hoursUntil ?? Infinity) - (b.hoursUntil ?? Infinity));
     return result;
-  }, [exams, odevzdavarny, language, pulseNow]);
+  }, [exams, odevzdavarny, cvicneTests, language, pulseNow]);
 
   const unseenCount = useMemo(() => 
     alerts.filter(a => !seenIds.has(a.id)).length,

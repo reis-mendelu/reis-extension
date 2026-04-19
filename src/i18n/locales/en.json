@@ -296,7 +296,8 @@
     "examReg": "Registration closes",
     "assignment": "Assignment due",
     "hoursLeft": "in {h}h",
-    "lessThanHour": "in < 1h"
+    "lessThanHour": "in < 1h",
+    "cvicnyTest": "Practice test"
   },
   "events": {
     "title": "Events",
