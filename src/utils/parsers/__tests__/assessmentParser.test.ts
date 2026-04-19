@@ -84,4 +84,24 @@ describe('assessmentParser', () => {
         const results = parseAssessmentTable('<table id="wrong_id"><tr><td>Test</td></tr></table>');
         expect(results).toEqual([]);
     });
+
+    it('should normalize "prubezny" to "průběžný"', () => {
+        const html = `
+        <table id="tmtab_1">
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>prubezny test 1</td>
+                    <td>10</td>
+                    <td>20</td>
+                    <td>z</td>
+                    <td>50 %</td>
+                    <td>1.1.2026</td>
+                    <td>Teacher</td>
+                </tr>
+            </tbody>
+        </table>`;
+        const results = parseAssessmentTable(html);
+        expect(results[0].name).toBe('průběžný test 1');
+    });
 });

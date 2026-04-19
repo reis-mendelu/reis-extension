@@ -34,7 +34,10 @@ export function parseExamData(html: string, lang: string = 'cz'): ExamSubject[] 
     };
 
     const getOrCreateSection = (subject: ScrapedExamSubject, rawSectionName: string): ScrapedExamSection => {
-        const sectionName = rawSectionName.charAt(0).toUpperCase() + rawSectionName.slice(1);
+        let sectionName = rawSectionName.charAt(0).toUpperCase() + rawSectionName.slice(1);
+        
+        // Normalize "prubezny" to "průběžný"
+        sectionName = sectionName.replace(/prubezny/gi, 'průběžný');
         let section = subject.sections.find((s) => s.name === sectionName);
         if (!section) {
             section = { 

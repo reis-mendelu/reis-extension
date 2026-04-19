@@ -48,12 +48,12 @@ function calculateDuration(startTime: string, endTime: string): number {
 // Extract exam section name from the composite title
 function getExamSectionName(courseName: string): string {
     // The format from WeeklyCalendar is `${subject.name} - ${section.name}`
-    // We want to extract just the section name part
+    // We want to extract the full section name (everything after the first dash)
     const parts = courseName.split(' - ');
-    if (parts.length > 1) {
-        return parts[parts.length - 1];
-    }
-    return courseName;
+    const sectionName = parts.length > 1 ? parts.slice(1).join(' - ') : courseName;
+    
+    // Normalize "prubezny" to "průběžný"
+    return sectionName.replace(/prubezny/gi, 'průběžný');
 }
 
 export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCardProps) {

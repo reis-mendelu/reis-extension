@@ -58,7 +58,8 @@ export function parseAssessmentTable(html: string): Assessment[] {
         const shift = isScoreLike(c1Text) ? 0 : 1;
         
         // Extract data using shift
-        const name = cells[0 + shift]?.textContent?.trim() || '';
+        const nameRaw = cells[0 + shift]?.textContent?.trim() || '';
+        const name = nameRaw.replace(/prubezny/gi, 'průběžný');
         if (!name || (shift === 1 && name.match(/^\d+$/))) {
             // If we shifted and name still looks like just a number, maybe logic failed?
             // But usually this works.
