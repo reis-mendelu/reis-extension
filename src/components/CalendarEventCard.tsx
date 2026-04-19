@@ -7,7 +7,7 @@
  * NOTE: This component fills its parent container. Positioning is handled by the parent.
  */
 
-import { MapPin, EyeOff, Calendar, CalendarRange, Timer, Pencil, Trash2 } from 'lucide-react';
+import { MapPin, EyeOff, Calendar, CalendarRange, Timer } from 'lucide-react';
 import type { BlockLesson } from '../types/calendarTypes';
 import { useCourseName } from '../hooks/ui/useCourseName';
 import { useAppStore } from '../store/useAppStore';
@@ -155,31 +155,8 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
                     <span>{timeline.short}</span>
                 </div>
             )}
-            {/* Quick Hide Action or Custom Event Actions */}
-            {lesson.isCustom ? (
-                <div
-                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex gap-1"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <button
-                        className="btn btn-ghost btn-xs btn-circle bg-base-100/50 hover:bg-base-100 shadow-sm"
-                        onClick={(e) => { e.stopPropagation(); onClick?.(e); }}
-                    >
-                        <Pencil size={14} className="text-base-content/70" />
-                    </button>
-                    <button
-                        className="btn btn-ghost btn-xs btn-circle bg-base-100/50 hover:bg-error hover:text-error-content shadow-sm"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (lesson.customEventId) {
-                                useAppStore.getState().removeCalendarCustomEvent(lesson.customEventId);
-                            }
-                        }}
-                    >
-                        <Trash2 size={14} className="text-error/70 group-hover/btn:text-error-content" />
-                    </button>
-                </div>
-            ) : !lesson.isExam && (
+            {/* Quick Hide Action (custom event actions disabled until feature ships) */}
+            {!lesson.isCustom && !lesson.isExam && (
                 <div
                     className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-20"                    onClick={(e) => e.stopPropagation()}
                 >

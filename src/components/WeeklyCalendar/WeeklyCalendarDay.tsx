@@ -61,7 +61,7 @@ export function WeeklyCalendarDay({
     };
 
     const handleColumnPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-        if (isSelectingTime || holiday || showSkeleton || !date || e.target !== e.currentTarget) return;
+        if (true || isSelectingTime || holiday || showSkeleton || !date || e.target !== e.currentTarget) return; // custom events disabled
         e.currentTarget.setPointerCapture(e.pointerId);
         const startMins = getMinutesFromY(e.clientY);
         setGhost({ startMins, endMins: Math.min(startMins + 60, 13 * 60), isDragging: true });
