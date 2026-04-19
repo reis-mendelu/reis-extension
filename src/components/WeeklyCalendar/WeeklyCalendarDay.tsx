@@ -13,7 +13,7 @@ interface WeeklyCalendarDayProps {
     showSkeleton: boolean;
     onEventClick: (lesson: BlockLesson) => void;
     language: string; // Current UI language
-    onCreateEvent?: (date: string, startTime: string, endTime: string) => void;
+    onCreateEvent?: (date: string, startTime: string, endTime: string, anchor: { x: number; y: number }) => void;
 }
 
 export function WeeklyCalendarDay({
@@ -44,7 +44,7 @@ export function WeeklyCalendarDay({
         return Math.round(rawMinutes / 15) * 15;
     };
 
-    const f = (m: number) => `${7 + Math.floor(m / 60)}:${(m % 60).toString().padStart(2, '0')}`;
+    const f = (m: number) => `${String(7 + Math.floor(m / 60)).padStart(2, '0')}:${(m % 60).toString().padStart(2, '0')}`;
 
     const buildSelection = (startMins: number, endMins: number) => {
         const dayName = DAYS[dayIndex]?.full || '';
@@ -76,7 +76,7 @@ export function WeeklyCalendarDay({
         if (!ghost?.isDragging || !date) return;
         e.currentTarget.releasePointerCapture(e.pointerId);
         const yyyymmdd = `${date.year}${date.month.toString().padStart(2, '0')}${date.day.toString().padStart(2, '0')}`;
-        onCreateEvent?.(yyyymmdd, f(ghost.startMins), f(ghost.endMins));
+        onCreateEvent?.(yyyymmdd, f(ghost.startMins), f(ghost.endMins), { x: e.clientX, y: e.clientY });
         setGhost(null);
     };
 

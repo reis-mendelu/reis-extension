@@ -32,7 +32,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     const [selected, setSelected] = useState<BlockLesson | null>(null);
     const { isSeen, markSeen } = useHintStatus('calendar_event_click');
 
-    const [pendingCreate, setPendingCreate] = useState<{ date: string, startTime: string, endTime: string } | null>(null);
+    const [pendingCreate, setPendingCreate] = useState<{ date: string, startTime: string, endTime: string, anchor: { x: number; y: number } } | null>(null);
     const [editingCustomEvent, setEditingCustomEvent] = useState<CalendarCustomEvent | null>(null);
     const addCalendarCustomEvent = useAppStore(state => state.addCalendarCustomEvent);
     const updateCalendarCustomEvent = useAppStore(state => state.updateCalendarCustomEvent);
@@ -200,7 +200,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                                                    holiday={holidaysByDay[i]} isToday={i === todayIndex}
                                                    showSkeleton={showSkeleton} onEventClick={handleEventClick}
                                                    language={language}
-                                                   onCreateEvent={(date, startTime, endTime) => setPendingCreate({ date, startTime, endTime })} />
+                                                   onCreateEvent={(date, startTime, endTime, anchor) => setPendingCreate({ date, startTime, endTime, anchor })} />
                             ))}
                         </div>
                     </div>
@@ -213,6 +213,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                     initialDate={pendingCreate.date}
                     initialStart={pendingCreate.startTime}
                     initialEnd={pendingCreate.endTime}
+                    anchor={pendingCreate.anchor}
                     onClose={() => setPendingCreate(null)}
                     onSave={(data: Omit<CalendarCustomEvent, 'id'>) => {
                         addCalendarCustomEvent({ id: crypto.randomUUID(), ...data });
