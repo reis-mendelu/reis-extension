@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { parseDate } from '../utils/date';
 
@@ -28,59 +28,69 @@ export function useDeadlineAlerts() {
   const exams = useAppStore(s => s.exams.data);
   const odevzdavarny = useAppStore(s => s.odevzdavarny);
   const language = useAppStore(s => s.language);
-  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+  const seenIds = useAppStore(s => s.notifications.seenDeadlineAlertIds);
+  const markDeadlineAlertsSeen = useAppStore(s => s.markDeadlineAlertsSeen);
+  const pulseNow = useAppStore(s => s.now);
 
   const markAllSeen = useCallback((ids: string[]) => {
-    setSeenIds(prev => { const next = new Set(prev); ids.forEach(id => next.add(id)); return next; });
-  }, []);
+    markDeadlineAlertsSeen(ids);
+  }, [markDeadlineAlertsSeen]);
 
-  const now = Date.now();
-  const isEn = language === 'en';
-  const alerts: DeadlineAlert[] = [];
+  const alerts = useMemo(() => {
+    const now = pulseNow.getTime();
+    const isEn = language === 'en';
+    const result: DeadlineAlert[] = [];
 
-  for (const subject of exams) {
-    const subjectName = (isEn ? subject.nameEn : subject.nameCs) ?? subject.name;
+    for (const subject of exams) {
+      const subjectName = (isEn ? subject.nameEn : subject.nameCs) ?? subject.name;
 
-    for (const section of subject.sections) {
-      const sectionName = (isEn ? section.nameEn : section.nameCs) ?? section.name;
+      for (const section of subject.sections) {
+        const sectionName = (isEn ? section.nameEn : section.nameCs) ?? section.name;
 
-      if (section.status === 'available') {
-        for (const term of section.terms) {
-          if (term.registrationStart) {
-            const start = parseCzDateTime(term.registrationStart);
-            if (start) {
-              const h = (start.getTime() - now) / H;
-              if (h > 0 && h <= 24)
-                alerts.push({ id: `exam-opens-${term.id}`, type: 'exam-reg-opens', title: subjectName, body: sectionName, deadline: start, hoursUntil: h });
+        if (section.status === 'available') {
+          for (const term of section.terms) {
+            if (term.registrationStart) {
+              const start = parseCzDateTime(term.registrationStart);
+              if (start) {
+                const h = (start.getTime() - now) / H;
+                if (h > 0 && h <= 24)
+                  result.push({ id: `exam-opens-${term.id}`, type: 'exam-reg-opens', title: subjectName, body: sectionName, deadline: start, hoursUntil: h });
+              }
             }
-          }
-          if (term.registrationEnd) {
-            const end = parseCzDateTime(term.registrationEnd);
-            if (end) {
-              const h = (end.getTime() - now) / H;
-              const startTime = term.registrationStart ? parseCzDateTime(term.registrationStart)?.getTime() : undefined;
-              const isOpen = !startTime || startTime <= now;
-              if (h > 0 && h <= 48 && isOpen)
-                alerts.push({ id: `exam-reg-${term.id}`, type: 'exam-reg', title: subjectName, body: sectionName, deadline: end, hoursUntil: h });
+            if (term.registrationEnd) {
+              const end = parseCzDateTime(term.registrationEnd);
+              if (end) {
+                const h = (end.getTime() - now) / H;
+                const startTime = term.registrationStart ? parseCzDateTime(term.registrationStart)?.getTime() : undefined;
+                const isOpen = !startTime || startTime <= now;
+                if (h > 0 && h <= 48 && isOpen)
+                  result.push({ id: `exam-reg-${term.id}`, type: 'exam-reg', title: subjectName, body: sectionName, deadline: end, hoursUntil: h });
+              }
             }
           }
         }
       }
     }
-  }
 
-  for (const a of odevzdavarny) {
-    if (a.fileCount > 0 || !a.deadline) continue;
-    const deadline = parseCzDateTime(a.deadline);
-    if (!deadline) continue;
-    const h = (deadline.getTime() - now) / H;
-    if (h > 0 && h <= 48) {
-      const courseName = isEn ? a.courseNameEn : a.courseNameCs;
-      alerts.push({ id: `odev-${a.odevzdavarnaId || a.name}`, type: 'assignment', title: courseName, body: a.name, deadline, hoursUntil: h, link: a.uploadUrl });
+    for (const a of odevzdavarny) {
+      if (a.fileCount > 0 || !a.deadline) continue;
+      const deadline = parseCzDateTime(a.deadline);
+      if (!deadline) continue;
+      const h = (deadline.getTime() - now) / H;
+      if (h > 0 && h <= 48) {
+        const courseName = isEn ? a.courseNameEn : a.courseNameCs;
+        result.push({ id: `odev-${a.odevzdavarnaId || a.name}`, type: 'assignment', title: courseName, body: a.name, deadline, hoursUntil: h, link: a.uploadUrl });
+      }
     }
-  }
 
-  alerts.sort((a, b) => a.hoursUntil - b.hoursUntil);
-  const unseenCount = alerts.filter(a => !seenIds.has(a.id)).length;
+    result.sort((a, b) => a.hoursUntil - b.hoursUntil);
+    return result;
+  }, [exams, odevzdavarny, language, pulseNow]);
+
+  const unseenCount = useMemo(() => 
+    alerts.filter(a => !seenIds.has(a.id)).length,
+    [alerts, seenIds]
+  );
+
   return { alerts, markAllSeen, unseenCount };
 }

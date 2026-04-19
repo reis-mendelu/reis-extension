@@ -24,6 +24,7 @@ import { createNavPagesSlice } from './slices/createNavPagesSlice';
 import { createContextSlice } from './slices/createContextSlice';
 import { createPulseSlice } from './slices/createPulseSlice';
 import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
+import { createNotificationSlice } from './slices/createNotificationSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 
@@ -52,6 +53,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createContextSlice(...a),
   ...createPulseSlice(...a),
   ...createCustomEventsSlice(...a),
+  ...createNotificationSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
@@ -70,6 +72,8 @@ export const initializeStore = async () => {
     }, 1000);
 
     // Tier 1: User-visible data — load immediately
+    s.loadNotificationState();
+    s.fetchNotifications();
     s.fetchSchedule();
     s.fetchExams();
     s.fetchSubjects();

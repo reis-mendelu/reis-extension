@@ -12,6 +12,7 @@ import type { AIComparisonResult } from '../api/gemini';
 import type { PinnedPage } from './slices/createPinnedPagesSlice';
 import type { OutletMenu } from '../types/menuTypes';
 import type { PageCategory } from '../data/pages/types';
+import type { SpolekNotification } from '../services/spolky/types';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type Theme = "mendelu" | "mendelu-dark";
@@ -301,7 +302,22 @@ export interface PulseSlice {
     updatePulse: () => void;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice;
+export interface NotificationSlice {
+    notifications: {
+        data: SpolekNotification[];
+        readIds: Set<string>;
+        viewedIds: Set<string>;
+        seenDeadlineAlertIds: Set<string>;
+        status: Status;
+    };
+    fetchNotifications: () => Promise<void>;
+    markNotificationsRead: (ids: string[]) => Promise<void>;
+    markNotificationViewed: (id: string) => Promise<void>;
+    markDeadlineAlertsSeen: (ids: string[]) => Promise<void>;
+    loadNotificationState: () => Promise<void>;
+}
+
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice;
 
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;
