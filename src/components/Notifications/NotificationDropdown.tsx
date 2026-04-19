@@ -28,15 +28,10 @@ export function NotificationDropdown({ notifications, loading, onClose, onVisibl
   const notificationList = (
     <>
       {deadlineAlerts.length > 0 && (
-        <div>
-          <p className="px-4 py-2 text-xs font-semibold text-base-content/50 uppercase tracking-wide bg-base-200">
-            {t('deadlines.title')}
-          </p>
-          <div className="divide-y divide-base-300">
-            {deadlineAlerts.map(alert => (
-              <DeadlineAlertItem key={alert.id} alert={alert} />
-            ))}
-          </div>
+        <div className="divide-y divide-base-300">
+          {deadlineAlerts.map(alert => (
+            <DeadlineAlertItem key={alert.id} alert={alert} />
+          ))}
         </div>
       )}
       <StudyJamSuggestions onClose={onClose} />

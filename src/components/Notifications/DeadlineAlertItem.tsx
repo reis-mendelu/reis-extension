@@ -21,7 +21,7 @@ export function DeadlineAlertItem({ alert }: { alert: DeadlineAlert }) {
         <p className="text-sm font-medium text-base-content truncate">{alert.title}</p>
         <p className="text-xs text-base-content/60 truncate">{alert.body}</p>
         <div className="flex items-center gap-2 mt-1">
-          <span className="badge badge-warning badge-xs">{t(TYPE_KEY[alert.type])}</span>
+          <span className="badge badge-warning badge-outline badge-xs">{t(TYPE_KEY[alert.type])}</span>
           <span className="text-xs text-warning font-medium">{timeLabel}</span>
         </div>
       </div>
