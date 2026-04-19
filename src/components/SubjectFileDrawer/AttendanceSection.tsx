@@ -38,7 +38,7 @@ export function AttendanceSection({ courseCode }: { courseCode: string }) {
                 {allRecords.map((rec, i) => {
                     const ok = rec.status === 'present' || rec.status === 'elsewhere';
                     return (
-                        <span key={i} className={`text-xs ${ok ? 'text-base-content/30' : 'text-error/70'}`} title={rec.date}>
+                        <span key={i} className={`text-xs ${ok ? 'text-success' : 'text-error/70'}`} title={rec.date}>
                             {shortDate(rec.date)}{ok ? ' ✓' : ' ✗'}
                         </span>
                     );
