@@ -12,6 +12,7 @@ import type { TimelineExam } from '../Exams/Timeline/ExamTimeline';
 import { useAutoRegistration } from './useAutoRegistration';
 import { Zap } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useAppStore } from '../../store/useAppStore';
 
 interface RegisteredExam {
     subjectName: string;
@@ -37,6 +38,10 @@ export function ExamPanel() {
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const { processingSectionId, pendingAction, setPendingAction, handleRegisterRequest, handleUnregisterRequest, handleConfirmAction } = useExamActions({ exams, setExpandedSectionId: setExpandedId });
     const { armedTerms, firingTerms, toggleArm } = useAutoRegistration();
+    const studiumId = useAppStore(s => s.studiumId);
+    const obdobiId = useAppStore(s => s.obdobiId);
+    const loadExamClassmates = useAppStore(s => s.loadExamClassmates);
+
     // Extract registered exams from data
     const realExams = useMemo(() => {
         const registered: RegisteredExam[] = [];
@@ -66,6 +71,15 @@ export function ExamPanel() {
         const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('[role="dialog"]') && expandedId) setExpandedId(null); };
         document.addEventListener('keydown', h); return () => document.removeEventListener('keydown', h);
     }, [expandedId]);
+
+    useEffect(() => {
+        if (!studiumId || !obdobiId || !realExams.length) return;
+        for (const exam of realExams) {
+            const terminId = exam.term.id;
+            if (!terminId || terminId.includes('-')) continue;
+            loadExamClassmates(terminId, studiumId, obdobiId);
+        }
+    }, [realExams, studiumId, obdobiId, loadExamClassmates]);
 
 return (
         <><div className="flex flex-col h-full bg-base-100 rounded-lg border border-base-300 overflow-hidden relative">

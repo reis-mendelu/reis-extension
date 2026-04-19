@@ -41,7 +41,7 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                         <span className="text-sm font-bold opacity-80">{sectionName}</span>
                         {isReg && <span className="badge badge-success badge-outline badge-sm font-semibold">{t('exams.registered')}</span>}
                     </div>
-                    {isReg && section.registeredTerm ? <RegisteredTermDetails section={section} /> : (section.terms.length > 0 && !isExpanded && <TermsSummary terms={section.terms} />)}
+                    {isReg && section.registeredTerm ? <RegisteredTermDetails section={section} terminId={section.registeredTerm.id} /> : (section.terms.length > 0 && !isExpanded && <TermsSummary terms={section.terms} />)}
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0 pt-0.5">

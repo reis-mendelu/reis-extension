@@ -2,7 +2,7 @@ import type { StateCreator } from 'zustand';
 import type { BlockLesson, HiddenItems, CalendarCustomEvent } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
 import type { SyllabusRequirements, ParsedFile, Assessment, SubjectsData, SubjectSuccessRate, SubjectAttendance } from '../types/documents';
-import type { ClassmatesData } from '../types/classmates';
+import type { ClassmatesData, Classmate } from '../types/classmates';
 import type { DualLanguageStudyPlan, StudyStats } from '../types/studyPlan';
 import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
@@ -41,6 +41,8 @@ export interface ExamSlice {
   };
   fetchExams: () => Promise<void>;
   setExams: (data: ExamSubject[]) => void;
+  examClassmates: Record<string, Classmate[]>;
+  loadExamClassmates: (terminId: string, studiumId: string, obdobiId: string) => Promise<void>;
 }
 
 export interface SyllabusSlice {
