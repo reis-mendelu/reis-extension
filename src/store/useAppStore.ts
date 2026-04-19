@@ -85,6 +85,7 @@ export const initializeStore = async () => {
     queueMicrotask(() => {
         const s2 = useAppStore.getState();
         s2.fetchStudyPlan();
+        s2.fetchStudyStats();
         s2.fetchCvicneTests();
         s2.fetchOdevzdavarny();
         s2.fetchAllFiles();
@@ -122,6 +123,7 @@ export const initializeStore = async () => {
         st.fetchExams();
         st.fetchSubjects();
         st.fetchStudyPlan();
+        st.fetchStudyStats();
         st.fetchCvicneTests();
         st.fetchOdevzdavarny();
     });
