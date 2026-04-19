@@ -1,20 +1,17 @@
-import { useState } from 'react';
 import { Calendar, Clock, MapPin, AlertCircle, Users } from 'lucide-react';
 import { getDayOfWeek } from './utils';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useAppStore } from '../../store/useAppStore';
-import { ExamClassmatesList } from './ExamClassmatesPopover';
 import type { ExamSection } from '../../types/exams';
 
 interface RegisteredTermDetailsProps {
     section: ExamSection;
-    terminId?: string;
+    classmatesCount?: number;
+    classmatesOpen?: boolean;
+    onToggleClassmates?: (e: React.MouseEvent) => void;
 }
 
-export function RegisteredTermDetails({ section, terminId }: RegisteredTermDetailsProps) {
+export function RegisteredTermDetails({ section, classmatesCount, classmatesOpen, onToggleClassmates }: RegisteredTermDetailsProps) {
     const { t, language } = useTranslation();
-    const [classmatesOpen, setClassmatesOpen] = useState(false);
-    const classmates = useAppStore(s => terminId ? s.examClassmates[terminId] : undefined);
     const term = section.registeredTerm;
     if (!term) return null;
 
@@ -36,13 +33,13 @@ export function RegisteredTermDetails({ section, terminId }: RegisteredTermDetai
                         <span className="text-base-content/80 font-medium">{(language === 'en' && term.roomEn) ? term.roomEn : (term.roomCs || term.room)}</span>
                     </span>
                 )}
-                {classmates && (
+                {classmatesCount !== undefined && onToggleClassmates && (
                     <button
-                        onClick={e => { e.stopPropagation(); setClassmatesOpen(p => !p); }}
+                        onClick={onToggleClassmates}
                         className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold transition-colors ${classmatesOpen ? 'bg-primary text-primary-content' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
                     >
                         <Users size={11} />
-                        {classmates.length}
+                        {classmatesCount}
                     </button>
                 )}
             </div>
@@ -51,9 +48,6 @@ export function RegisteredTermDetails({ section, terminId }: RegisteredTermDetai
                     <AlertCircle size={10} />
                     <span>{t('exams.unregisterDeadline')} {term.deregistrationDeadline}</span>
                 </div>
-            )}
-            {classmatesOpen && classmates && (
-                <ExamClassmatesList classmates={classmates} />
             )}
         </div>
     );
