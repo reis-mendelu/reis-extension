@@ -11,7 +11,7 @@ interface WeeklyCalendarDayProps {
     holiday: string | null;
     isToday: boolean;
     showSkeleton: boolean;
-    onEventClick: (lesson: BlockLesson) => void;
+    onEventClick: (lesson: BlockLesson, anchor: { x: number; y: number }) => void;
     language: string; // Current UI language
     onCreateEvent?: (date: string, startTime: string, endTime: string, anchor: { x: number; y: number }) => void;
     confirmedGhost?: { startTime: string; endTime: string };
@@ -190,8 +190,8 @@ export function WeeklyCalendarDay({
                             pointerEvents: isSelectingTime ? 'none' : 'auto'
                         }}
                     >
-                        <CalendarEventCard lesson={lesson} onClick={() => {
-                            if (!isSelectingTime) onEventClick(lesson);
+                        <CalendarEventCard lesson={lesson} onClick={(e) => {
+                            if (!isSelectingTime) onEventClick(lesson, { x: e.clientX, y: e.clientY });
                         }} language={language} />
                     </div>
                 );

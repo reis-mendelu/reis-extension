@@ -53,8 +53,7 @@ export function CustomEventModal({ mode, initialDate, initialStart, initialEnd, 
         return () => document.removeEventListener('keydown', handler);
     }, [onClose]);
 
-    const handleSave = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSave = () => {
         if (!title.trim() || !date || !startTime || !endTime) return;
         onSave({ title: title.trim(), date, startTime, endTime, room: room.trim() || undefined });
     };
@@ -73,16 +72,16 @@ export function CustomEventModal({ mode, initialDate, initialStart, initialEnd, 
                 </button>
             </div>
 
-            <form onSubmit={handleSave} className="px-4 pb-4 space-y-3">
+            <div className="px-4 pb-4 space-y-3">
                 {/* Title */}
                 <input
                     ref={titleRef}
                     type="text"
                     value={title}
                     onChange={e => setTitle(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
                     placeholder="Přidat název"
                     className="w-full bg-transparent border-b-2 border-base-300 focus:border-primary outline-none text-lg font-medium text-base-content placeholder:text-base-content/30 pb-1 transition-colors"
-                    required
                 />
 
                 {/* Date + time — two rows */}
@@ -91,9 +90,9 @@ export function CustomEventModal({ mode, initialDate, initialStart, initialEnd, 
                     <div className="flex flex-col gap-1.5">
                         <span className="text-sm text-base-content/55">{formatDateLabel(date)}</span>
                         <div className="flex items-center gap-2">
-                            <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={timeCls} required />
+                            <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={timeCls} />
                             <span className="text-base-content/40 text-sm">–</span>
-                            <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={timeCls} required />
+                            <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={timeCls} />
                         </div>
                     </div>
                 </div>
@@ -126,10 +125,10 @@ export function CustomEventModal({ mode, initialDate, initialStart, initialEnd, 
                     ) : null}
                     <div className="flex items-center gap-2 ml-auto">
                         <button type="button" onClick={onClose} className="btn btn-ghost btn-sm text-base-content/50">Zrušit</button>
-                        <button type="submit" disabled={!title.trim()} className="btn btn-primary btn-sm rounded-full px-5 disabled:opacity-40">Uložit</button>
+                        <button type="button" onClick={handleSave} disabled={!title.trim()} className="btn btn-primary btn-sm rounded-full px-5 disabled:opacity-40">Uložit</button>
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
     );
 

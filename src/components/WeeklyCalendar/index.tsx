@@ -33,7 +33,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     const { isSeen, markSeen } = useHintStatus('calendar_event_click');
 
     const [pendingCreate, setPendingCreate] = useState<{ date: string, startTime: string, endTime: string, anchor: { x: number; y: number } } | null>(null);
-    const [editingCustomEvent, setEditingCustomEvent] = useState<CalendarCustomEvent | null>(null);
+    const [editingCustomEvent, setEditingCustomEvent] = useState<{ event: CalendarCustomEvent; anchor: { x: number; y: number } } | null>(null);
     const addCalendarCustomEvent = useAppStore(state => state.addCalendarCustomEvent);
     const updateCalendarCustomEvent = useAppStore(state => state.updateCalendarCustomEvent);
     const removeCalendarCustomEvent = useAppStore(state => state.removeCalendarCustomEvent);
@@ -102,10 +102,10 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
         return null;
     }, [lessonsByDay, todayIndex, showSkeleton, isSeen]);
 
-    const handleEventClick = (lesson: BlockLesson) => {
+    const handleEventClick = (lesson: BlockLesson, anchor: { x: number; y: number }) => {
         if (lesson.isCustom && lesson.customEventId) {
             const event = useAppStore.getState().customEvents.find((ce: CalendarCustomEvent) => ce.id === lesson.customEventId);
-            if (event) setEditingCustomEvent(event);
+            if (event) setEditingCustomEvent({ event, anchor });
             return;
         }
         setSelected(lesson);
@@ -232,14 +232,15 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
             {editingCustomEvent && (
                 <CustomEventModal
                     mode="edit"
-                    event={editingCustomEvent}
+                    event={editingCustomEvent.event}
+                    anchor={editingCustomEvent.anchor}
                     onClose={() => setEditingCustomEvent(null)}
                     onSave={(data: Omit<CalendarCustomEvent, 'id'>) => {
-                        updateCalendarCustomEvent(editingCustomEvent.id, data);
+                        updateCalendarCustomEvent(editingCustomEvent.event.id, data);
                         setEditingCustomEvent(null);
                     }}
                     onDelete={() => {
-                        removeCalendarCustomEvent(editingCustomEvent.id);
+                        removeCalendarCustomEvent(editingCustomEvent.event.id);
                         setEditingCustomEvent(null);
                     }}
                 />
