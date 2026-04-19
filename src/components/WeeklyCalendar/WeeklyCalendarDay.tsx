@@ -13,10 +13,11 @@ interface WeeklyCalendarDayProps {
     showSkeleton: boolean;
     onEventClick: (lesson: BlockLesson) => void;
     language: string; // Current UI language
+    onCreateEvent?: (date: string, startTime: string, endTime: string) => void;
 }
 
 export function WeeklyCalendarDay({
-    dayIndex, date, lessons, holiday, isToday, showSkeleton, onEventClick, language
+    dayIndex, date, lessons, holiday, isToday, showSkeleton, onEventClick, language, onCreateEvent
 }: WeeklyCalendarDayProps) {
     const { lessons: organizedLessons } = useMemo(() => organizeLessons(lessons), [lessons]);
     const isSelectingTime = useAppStore(s => s.isSelectingTime);
@@ -25,6 +26,7 @@ export function WeeklyCalendarDay({
 
     const containerRef = useRef<HTMLDivElement>(null);
     const [isResizing, setIsResizing] = useState(false);
+    const [ghost, setGhost] = useState<{ startMins: number, endMins: number, isDragging: boolean } | null>(null);
 
     useEffect(() => {
         if (!isSelectingTime) {
@@ -57,6 +59,27 @@ export function WeeklyCalendarDay({
         setPendingTimeSelection(buildSelection(startMins, endMins));
     };
 
+    const handleColumnPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (isSelectingTime || holiday || showSkeleton || !date || e.target !== e.currentTarget) return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        const startMins = getMinutesFromY(e.clientY);
+        setGhost({ startMins, endMins: Math.min(startMins + 60, 13 * 60), isDragging: true });
+    };
+
+    const handleColumnPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!ghost?.isDragging) return;
+        const newEnd = Math.max(ghost.startMins + 15, Math.min(getMinutesFromY(e.clientY), 13 * 60));
+        setGhost(prev => prev ? { ...prev, endMins: newEnd } : null);
+    };
+
+    const handleColumnPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!ghost?.isDragging || !date) return;
+        e.currentTarget.releasePointerCapture(e.pointerId);
+        const yyyymmdd = `${date.year}${date.month.toString().padStart(2, '0')}${date.day.toString().padStart(2, '0')}`;
+        onCreateEvent?.(yyyymmdd, f(ghost.startMins), f(ghost.endMins));
+        setGhost(null);
+    };
+
     const handleResizePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
@@ -85,6 +108,9 @@ export function WeeklyCalendarDay({
             ref={containerRef}
             className={`flex-1 relative ${isToday ? 'bg-current-day' : ''} ${isSelectingTime ? 'cursor-crosshair select-none touch-none' : ''}`}
             onClick={handleColumnClick}
+            onPointerDown={handleColumnPointerDown}
+            onPointerMove={handleColumnPointerMove}
+            onPointerUp={handleColumnPointerUp}
         >
             {pendingTimeSelection?.dayIndex === dayIndex && (() => {
                 const { startMins: rs, endMins: re } = pendingTimeSelection;
@@ -105,6 +131,21 @@ export function WeeklyCalendarDay({
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="w-8 h-1 rounded-full bg-primary/60" />
+                        </div>
+                    </div>
+                );
+            })()}
+
+            {ghost && (() => {
+                const { startMins: rs, endMins: re } = ghost;
+                const totalMins = 13 * 60;
+                return (
+                    <div
+                        className="absolute left-1 right-1 bg-secondary/15 border-2 border-dashed border-secondary z-30 rounded-md pointer-events-none shadow-sm"
+                        style={{ top: `${(rs / totalMins) * 100}%`, height: `${((re - rs) / totalMins) * 100}%` }}
+                    >
+                        <div className="text-[10px] sm:text-xs font-bold text-secondary p-1 bg-white/60 dark:bg-black/40 rounded-t-sm w-max backdrop-blur-md">
+                            {`${f(rs)} - ${f(re)}`}
                         </div>
                     </div>
                 );

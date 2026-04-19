@@ -114,7 +114,11 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
               <div className="relative flex items-center justify-center z-10">
                 {tab.icon}
                 {getBadge(tab.id) !== undefined && (
-                  <span className="absolute -top-2 -right-3 bg-base-content/10 text-base-content/50 font-medium px-1 rounded text-[9px] leading-[14px]">
+                  <span className={`absolute -top-2 -right-3 font-medium px-1 rounded text-[9px] leading-[14px] transition-all
+                    ${(getBadge(tab.id) ?? 0) > 0 
+                      ? 'bg-neutral text-neutral-content' 
+                      : 'bg-base-content/10 text-base-content/50'
+                    }`}>
                     {getBadge(tab.id)}
                   </span>
                 )}

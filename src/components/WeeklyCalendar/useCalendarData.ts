@@ -15,6 +15,7 @@ export function useCalendarData(initialDate: Date) {
 
 
     const { exams: storedExams, isLoaded: isExamsLoaded } = useExams();
+    const customEvents = useAppStore(state => state.customEvents);
     const language = useAppStore((state) => state.language);
 
     const weekDates = useMemo((): DateInfo[] => {
@@ -100,8 +101,32 @@ export function useCalendarData(initialDate: Date) {
                 )
             );
         const weekExams = examLessons.filter(e => weekDateStrings.includes(e.date));
-        return [...lessons, ...weekExams];
-    }, [storedSchedule, examLessons, weekDateStrings, hiddenItems]);
+        
+        const mappedCustomEvents = customEvents
+            .filter(e => weekDateStrings.includes(e.date))
+            .map(e => ({
+                id: e.id,
+                date: e.date,
+                startTime: e.startTime,
+                endTime: e.endTime,
+                courseNameCs: e.title,
+                courseNameEn: e.title,
+                courseCode: '',
+                roomCs: e.room || '',
+                roomEn: e.room || '',
+                teachers: [],
+                isExam: false,
+                isCustom: true,
+                customEventId: e.id,
+                isConsultation: 'false',
+                studyId: '', facultyCode: '', isDefaultCampus: 'true', courseId: '', campus: '', isSeminar: 'false', periodId: '',
+                courseName: e.title,
+                room: e.room || '',
+                roomStructured: { name: e.room || '', id: '' }
+            } as BlockLesson));
+
+        return [...lessons, ...weekExams, ...mappedCustomEvents];
+    }, [storedSchedule, examLessons, customEvents, weekDateStrings, hiddenItems]);
 
     const lessonsByDay = useMemo(() => {
         const grouped: Record<number, BlockLesson[]> = { 0: [], 1: [], 2: [], 3: [], 4: [] };

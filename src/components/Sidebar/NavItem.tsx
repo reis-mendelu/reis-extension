@@ -57,7 +57,11 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
         <div className="relative flex items-center justify-center">
           {item.icon}
           {item.badge !== undefined && (
-            <span className="absolute -top-2 -right-3 bg-base-content/10 text-base-content/50 font-medium px-1 rounded text-[9px] leading-[14px]">
+            <span className={`absolute -top-2 -right-3 font-bold px-1 rounded text-[10px] leading-[14px] shadow-sm transition-all duration-300
+              ${item.badge > 0 
+                ? 'bg-neutral text-neutral-content scale-110 shadow-neutral/20' 
+                : 'bg-base-content/10 text-base-content/50'
+              }`}>
               {item.badge}
             </span>
           )}

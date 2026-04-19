@@ -23,6 +23,7 @@ import { createTeachingWeekSlice } from './slices/createTeachingWeekSlice';
 import { createNavPagesSlice } from './slices/createNavPagesSlice';
 import { createContextSlice } from './slices/createContextSlice';
 import { createPulseSlice } from './slices/createPulseSlice';
+import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 
@@ -50,6 +51,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createNavPagesSlice(...a),
   ...createContextSlice(...a),
   ...createPulseSlice(...a),
+  ...createCustomEventsSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
@@ -85,6 +87,7 @@ export const initializeStore = async () => {
         s2.loadFeedbackState();
         s2.loadPinnedPages();
         s2.loadHiddenItems();
+        s2.loadCalendarCustomEvents();
         s2.fetchTeachingWeek();
     });
 

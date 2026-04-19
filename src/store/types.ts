@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { BlockLesson, HiddenItems } from '../types/calendarTypes';
+import type { BlockLesson, HiddenItems, CalendarCustomEvent } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
 import type { SyllabusRequirements, ParsedFile, Assessment, SubjectsData, SubjectSuccessRate, SubjectAttendance } from '../types/documents';
 import type { ClassmatesData } from '../types/classmates';
@@ -288,12 +288,20 @@ export interface ContextSlice {
     loadContext: () => Promise<void>;
 }
 
+export interface CalendarCustomEventsSlice {
+  customEvents: CalendarCustomEvent[];
+  loadCalendarCustomEvents: () => Promise<void>;
+  addCalendarCustomEvent: (event: CalendarCustomEvent) => Promise<void>;
+  updateCalendarCustomEvent: (id: string, patch: Partial<CalendarCustomEvent>) => Promise<void>;
+  removeCalendarCustomEvent: (id: string) => Promise<void>;
+}
+
 export interface PulseSlice {
     now: Date;
     updatePulse: () => void;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice;
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice;
 
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

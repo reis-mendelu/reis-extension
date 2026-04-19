@@ -11,10 +11,11 @@ import { WeeklyCalendarGrid } from './WeeklyCalendarGrid';
 import { CurrentTimeIndicator } from './CurrentTimeIndicator';
 import { WeeklyCalendarDay } from './WeeklyCalendarDay';
 import { DailyView } from './DailyView';
+import { CustomEventModal } from '../CustomEventModal';
 import { useHintStatus } from '../../hooks/ui/useHintStatus';
 import { useIsMobile } from '../../hooks/ui/useIsMobile';
 import { useTranslation } from '../../hooks/useTranslation';
-import type { BlockLesson } from '../../types/calendarTypes';
+import type { BlockLesson, CalendarCustomEvent } from '../../types/calendarTypes';
 
 const TOTAL_HOURS = 14;
 
@@ -30,6 +31,12 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     const { t } = useTranslation();
     const [selected, setSelected] = useState<BlockLesson | null>(null);
     const { isSeen, markSeen } = useHintStatus('calendar_event_click');
+
+    const [pendingCreate, setPendingCreate] = useState<{ date: string, startTime: string, endTime: string } | null>(null);
+    const [editingCustomEvent, setEditingCustomEvent] = useState<CalendarCustomEvent | null>(null);
+    const addCalendarCustomEvent = useAppStore(state => state.addCalendarCustomEvent);
+    const updateCalendarCustomEvent = useAppStore(state => state.updateCalendarCustomEvent);
+    const removeCalendarCustomEvent = useAppStore(state => state.removeCalendarCustomEvent);
 
     // Show skeletons if either data is loading (initial) or language is still being determined
     const showSkeleton = dataLoading || isLanguageLoading;
@@ -96,6 +103,11 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     }, [lessonsByDay, todayIndex, showSkeleton, isSeen]);
 
     const handleEventClick = (lesson: BlockLesson) => {
+        if (lesson.isCustom && lesson.customEventId) {
+            const event = useAppStore.getState().customEvents.find((ce: CalendarCustomEvent) => ce.id === lesson.customEventId);
+            if (event) setEditingCustomEvent(event);
+            return;
+        }
         setSelected(lesson);
         if (!isSeen) markSeen();
     };
@@ -187,12 +199,43 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                                 <WeeklyCalendarDay key={i} dayIndex={i} date={weekDates[i]} lessons={lessonsByDay[i] || []}
                                                    holiday={holidaysByDay[i]} isToday={i === todayIndex}
                                                    showSkeleton={showSkeleton} onEventClick={handleEventClick}
-                                                   language={language} />
+                                                   language={language}
+                                                   onCreateEvent={(date, startTime, endTime) => setPendingCreate({ date, startTime, endTime })} />
                             ))}
                         </div>
                     </div>
                 </div>
             <SubjectFileDrawer lesson={selected} isOpen={!!selected} onClose={() => setSelected(null)} />
+            
+            {pendingCreate && (
+                <CustomEventModal
+                    mode="create"
+                    initialDate={pendingCreate.date}
+                    initialStart={pendingCreate.startTime}
+                    initialEnd={pendingCreate.endTime}
+                    onClose={() => setPendingCreate(null)}
+                    onSave={(data: Omit<CalendarCustomEvent, 'id'>) => {
+                        addCalendarCustomEvent({ id: crypto.randomUUID(), ...data });
+                        setPendingCreate(null);
+                    }}
+                />
+            )}
+
+            {editingCustomEvent && (
+                <CustomEventModal
+                    mode="edit"
+                    event={editingCustomEvent}
+                    onClose={() => setEditingCustomEvent(null)}
+                    onSave={(data: Omit<CalendarCustomEvent, 'id'>) => {
+                        updateCalendarCustomEvent(editingCustomEvent.id, data);
+                        setEditingCustomEvent(null);
+                    }}
+                    onDelete={() => {
+                        removeCalendarCustomEvent(editingCustomEvent.id);
+                        setEditingCustomEvent(null);
+                    }}
+                />
+            )}
         </div>
     );
 }

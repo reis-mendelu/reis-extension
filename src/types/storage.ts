@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { ParsedFile, Assessment, SyllabusRequirements, SubjectsData, GradeHistory, DocumentNote } from '../types/documents';
 import type { ExamSubject } from '../types/exams';
-import type { BlockLesson } from '../types/calendarTypes';
+import type { BlockLesson, CalendarCustomEvent } from '../types/calendarTypes';
 import type { ClassmatesData } from '../types/classmates';
 import type { StudyPlan, DualLanguageStudyPlan } from '../types/studyPlan';
 import type { CvicnyTest } from '../api/cvicneTests';
@@ -16,6 +16,17 @@ export const AssessmentSchema = z.custom<Assessment>();
 export const SyllabusRequirementsSchema = z.custom<SyllabusRequirements>();
 export const ExamSubjectSchema = z.custom<ExamSubject>();
 export const BlockLessonSchema = z.custom<BlockLesson>();
+export const CalendarCustomEventSchema = z.object({
+    id: z.string(),
+    title: z.string(),
+    date: z.string(),
+    startTime: z.string(),
+    endTime: z.string(),
+    room: z.string().optional(),
+});
+export type { CalendarCustomEvent };
+export const CalendarCustomEventsSchema = z.array(CalendarCustomEventSchema);
+
 export const HiddenItemsSchema = z.object({
     courses: z.array(z.object({
         courseCode: z.string(),
@@ -92,6 +103,7 @@ export const StoreSchemas = {
     subjects: SubjectsSchema,
     classmates: ClassmatesSchema,
     hidden_items: HiddenItemsSchema,
+    custom_events: CalendarCustomEventSchema,
     success_rates: SuccessRatesSchema,
     meta: MetaSchema,
     grade_history: GradeHistorySchema,

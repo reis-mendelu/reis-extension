@@ -44,11 +44,22 @@ export interface BlockLesson {
     isExam?: boolean;
     examEvent?: any;
     isFromSearch?: boolean; // Indicates drawer opened from search (not a calendar event)
+    isCustom?: boolean;
+    customEventId?: string;
     // Dual-language support
     courseNameCs?: string;
     courseNameEn?: string;
     roomCs?: string;
     roomEn?: string;
+}
+
+export interface CalendarCustomEvent {
+    id: string;
+    title: string;
+    date: string;       // YYYYMMDD
+    startTime: string;  // HH:MM
+    endTime: string;    // HH:MM
+    room?: string;
 }
 
 export interface FileObject {
