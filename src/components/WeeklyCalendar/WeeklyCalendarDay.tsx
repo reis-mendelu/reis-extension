@@ -14,10 +14,11 @@ interface WeeklyCalendarDayProps {
     onEventClick: (lesson: BlockLesson) => void;
     language: string; // Current UI language
     onCreateEvent?: (date: string, startTime: string, endTime: string, anchor: { x: number; y: number }) => void;
+    confirmedGhost?: { startTime: string; endTime: string };
 }
 
 export function WeeklyCalendarDay({
-    dayIndex, date, lessons, holiday, isToday, showSkeleton, onEventClick, language, onCreateEvent
+    dayIndex, date, lessons, holiday, isToday, showSkeleton, onEventClick, language, onCreateEvent, confirmedGhost
 }: WeeklyCalendarDayProps) {
     const { lessons: organizedLessons } = useMemo(() => organizeLessons(lessons), [lessons]);
     const isSelectingTime = useAppStore(s => s.isSelectingTime);
@@ -136,16 +137,19 @@ export function WeeklyCalendarDay({
                 );
             })()}
 
-            {ghost && (() => {
-                const { startMins: rs, endMins: re } = ghost;
+            {(ghost || confirmedGhost) && (() => {
                 const totalMins = 13 * 60;
+                const toMins = (t: string) => { const [h, m] = t.split(':').map(Number); return (h - 7) * 60 + m; };
+                const rs = ghost ? ghost.startMins : toMins(confirmedGhost!.startTime);
+                const re = ghost ? ghost.endMins   : toMins(confirmedGhost!.endTime);
+                const isConfirmed = !ghost && !!confirmedGhost;
                 return (
                     <div
-                        className="absolute left-1 right-1 bg-secondary/15 border-2 border-dashed border-secondary z-30 rounded-md pointer-events-none shadow-sm"
+                        className={`absolute left-1 right-1 z-30 rounded-md pointer-events-none shadow-sm border-2 border-dashed ${isConfirmed ? 'bg-primary/10 border-primary' : 'bg-secondary/15 border-secondary'}`}
                         style={{ top: `${(rs / totalMins) * 100}%`, height: `${((re - rs) / totalMins) * 100}%` }}
                     >
-                        <div className="text-[10px] sm:text-xs font-bold text-secondary p-1 bg-white/60 dark:bg-black/40 rounded-t-sm w-max backdrop-blur-md">
-                            {`${f(rs)} - ${f(re)}`}
+                        <div className={`text-[10px] sm:text-xs font-bold p-1 bg-white/60 dark:bg-black/40 rounded-t-sm w-max backdrop-blur-md ${isConfirmed ? 'text-primary' : 'text-secondary'}`}>
+                            {`${f(rs)} – ${f(re)}`}
                         </div>
                     </div>
                 );

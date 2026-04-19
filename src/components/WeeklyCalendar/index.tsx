@@ -195,13 +195,20 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                             <WeeklyCalendarGrid />
                             <CurrentTimeIndicator todayIndex={todayIndex} />
                             {!showSkeleton && scheduleData.length === 0 && <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none"><p className="text-base-content/40 text-sm font-medium">{t(isOutsideTeachingPeriod ? 'calendar.outsideSemester' : 'calendar.emptyWeek')}</p></div>}
-                            {[0, 1, 2, 3, 4].map(i => (
-                                <WeeklyCalendarDay key={i} dayIndex={i} date={weekDates[i]} lessons={lessonsByDay[i] || []}
-                                                   holiday={holidaysByDay[i]} isToday={i === todayIndex}
-                                                   showSkeleton={showSkeleton} onEventClick={handleEventClick}
-                                                   language={language}
-                                                   onCreateEvent={(date, startTime, endTime, anchor) => setPendingCreate({ date, startTime, endTime, anchor })} />
-                            ))}
+                            {[0, 1, 2, 3, 4].map(i => {
+                                const wd = weekDates[i];
+                                const dayKey = wd ? `${wd.year}${wd.month.padStart(2, '0')}${wd.day.padStart(2, '0')}` : null;
+                                const confirmed = pendingCreate && dayKey === pendingCreate.date
+                                    ? { startTime: pendingCreate.startTime, endTime: pendingCreate.endTime }
+                                    : undefined;
+                                return (
+                                    <WeeklyCalendarDay key={i} dayIndex={i} date={wd} lessons={lessonsByDay[i] || []}
+                                                       holiday={holidaysByDay[i]} isToday={i === todayIndex}
+                                                       showSkeleton={showSkeleton} onEventClick={handleEventClick}
+                                                       language={language} confirmedGhost={confirmed}
+                                                       onCreateEvent={(date, startTime, endTime, anchor) => setPendingCreate({ date, startTime, endTime, anchor })} />
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

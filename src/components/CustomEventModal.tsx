@@ -22,8 +22,8 @@ function formatDateLabel(yyyymmdd: string): string {
     return new Date(y, m, d).toLocaleDateString('cs-CZ', { weekday: 'short', day: 'numeric', month: 'long' });
 }
 
-const POPOVER_W = 296;
-const POPOVER_H = 260; // rough max height
+const POPOVER_W = 300;
+const POPOVER_H = 280;
 
 export function CustomEventModal({ mode, initialDate, initialStart, initialEnd, event, anchor, onSave, onDelete, onClose }: CustomEventModalProps) {
     const [title, setTitle] = useState(event?.title ?? '');
@@ -34,14 +34,13 @@ export function CustomEventModal({ mode, initialDate, initialStart, initialEnd, 
     const date = event?.date ?? initialDate ?? '';
     const titleRef = useRef<HTMLInputElement>(null);
 
-    // Smart popover position: keep inside viewport
     const pos = (() => {
         if (!anchor) return null;
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-        let x = anchor.x + 12;
-        let y = anchor.y - 20;
-        if (x + POPOVER_W > vw - 8) x = anchor.x - POPOVER_W - 12;
+        let x = anchor.x + 14;
+        let y = anchor.y - 24;
+        if (x + POPOVER_W > vw - 8) x = anchor.x - POPOVER_W - 14;
         if (y + POPOVER_H > vh - 8) y = vh - POPOVER_H - 8;
         if (y < 8) y = 8;
         return { left: Math.max(8, x), top: y };
@@ -60,23 +59,22 @@ export function CustomEventModal({ mode, initialDate, initialStart, initialEnd, 
         onSave({ title: title.trim(), date, startTime, endTime, room: room.trim() || undefined });
     };
 
-    const timeCls = 'w-[72px] bg-base-200 rounded px-2 py-1 text-sm text-center border-none outline-none focus:ring-1 focus:ring-primary/40 focus:bg-base-300 transition-all tabular-nums';
+    const timeCls = 'w-[104px] bg-base-200 rounded-lg px-2 py-1.5 text-sm border-none outline-none focus:ring-1 focus:ring-primary/40 focus:bg-base-300 transition-all tabular-nums';
 
-    const content = (
+    const box = (
         <div
-            className="bg-base-100 border border-base-300 rounded-2xl shadow-xl w-[296px] overflow-hidden"
-            style={pos ? { position: 'fixed', ...pos, zIndex: 9999 } : {}}
+            className="bg-base-100 border border-base-300 rounded-2xl shadow-2xl overflow-hidden"
+            style={pos ? { position: 'fixed', ...pos, zIndex: 9999, width: POPOVER_W } : { width: '100%' }}
             onClick={e => e.stopPropagation()}
         >
-            {/* Header */}
-            <div className="flex items-center justify-end px-3 pt-3 pb-0">
-                <button onClick={onClose} className="btn btn-ghost btn-xs btn-circle text-base-content/40 hover:text-base-content">
+            <div className="flex items-center justify-end px-3 pt-3">
+                <button type="button" onClick={onClose} className="btn btn-ghost btn-xs btn-circle text-base-content/40 hover:text-base-content">
                     <X size={14} />
                 </button>
             </div>
 
             <form onSubmit={handleSave} className="px-4 pb-4 space-y-3">
-                {/* Title — borderless, large, Google-style */}
+                {/* Title */}
                 <input
                     ref={titleRef}
                     type="text"
@@ -87,13 +85,17 @@ export function CustomEventModal({ mode, initialDate, initialStart, initialEnd, 
                     required
                 />
 
-                {/* Time row */}
-                <div className="flex items-center gap-2 text-sm text-base-content/70">
-                    <Clock size={14} className="shrink-0 text-base-content/40" />
-                    <span className="text-xs text-base-content/50 mr-1">{formatDateLabel(date)}</span>
-                    <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={timeCls} required />
-                    <span className="text-base-content/40">–</span>
-                    <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={timeCls} required />
+                {/* Date + time — two rows */}
+                <div className="flex items-start gap-2">
+                    <Clock size={14} className="shrink-0 text-base-content/40 mt-1" />
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-sm text-base-content/55">{formatDateLabel(date)}</span>
+                        <div className="flex items-center gap-2">
+                            <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={timeCls} required />
+                            <span className="text-base-content/40 text-sm">–</span>
+                            <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={timeCls} required />
+                        </div>
+                    </div>
                 </div>
 
                 {/* Location */}
@@ -111,50 +113,39 @@ export function CustomEventModal({ mode, initialDate, initialStart, initialEnd, 
                     </div>
                 ) : (
                     <button type="button" onClick={() => setShowRoom(true)}
-                        className="flex items-center gap-2 text-sm text-base-content/40 hover:text-base-content/70 transition-colors">
+                        className="flex items-center gap-2 text-sm text-base-content/40 hover:text-base-content/70 transition-colors w-full">
                         <MapPin size={14} />
                         <span>Přidat místo</span>
                     </button>
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center pt-2">
                     {mode === 'edit' && onDelete ? (
-                        <button type="button" onClick={onDelete}
-                            className="text-xs text-error/60 hover:text-error transition-colors">
-                            Smazat
-                        </button>
-                    ) : <div />}
+                        <button type="button" onClick={onDelete} className="text-xs text-error/60 hover:text-error transition-colors">Smazat</button>
+                    ) : null}
                     <div className="flex items-center gap-2 ml-auto">
-                        <button type="button" onClick={onClose}
-                            className="btn btn-ghost btn-sm text-base-content/50">
-                            Zrušit
-                        </button>
-                        <button type="submit" disabled={!title.trim()}
-                            className="btn btn-primary btn-sm rounded-full px-5 disabled:opacity-40">
-                            Uložit
-                        </button>
+                        <button type="button" onClick={onClose} className="btn btn-ghost btn-sm text-base-content/50">Zrušit</button>
+                        <button type="submit" disabled={!title.trim()} className="btn btn-primary btn-sm rounded-full px-5 disabled:opacity-40">Uložit</button>
                     </div>
                 </div>
             </form>
         </div>
     );
 
-    // If we have an anchor position, render fixed (no backdrop overlay)
     if (pos) {
         return (
             <>
                 <div className="fixed inset-0 z-[9998]" onClick={onClose} />
-                {content}
+                {box}
             </>
         );
     }
 
-    // Fallback: centered DaisyUI modal (edit mode without anchor)
+    // Centered fallback for edit without anchor — no <form method="dialog"> (sandboxed iframe blocks it)
     return (
-        <dialog className="modal modal-open">
-            <div className="modal-box p-0 max-w-xs overflow-hidden rounded-2xl">{content}</div>
-            <form method="dialog" className="modal-backdrop"><button onClick={onClose}>close</button></form>
-        </dialog>
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/30" onClick={onClose}>
+            <div className="max-w-xs w-full mx-4">{box}</div>
+        </div>
     );
 }
