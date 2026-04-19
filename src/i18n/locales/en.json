@@ -69,6 +69,7 @@
   "exams": {
     "title": "My Exams",
     "noExams": "You don't have any registered terms yet.",
+    "noClassmates": "No classmates found.",
     "registrationTitle": "Exam Registration",
     "loading": "Loading exams...",
     "empty": "📭 No exams",

@@ -102,6 +102,7 @@
   "exams": {
     "title": "Moje zkoušky",
     "noExams": "Zatím nemáš žádné registrované termíny.",
+    "noClassmates": "Žádní spolužáci nenalezeni.",
     "registrationTitle": "Zápisy na zkoušky",
     "loading": "Načítání zkoušek...",
     "empty": "📭 Žádné zkoušky",

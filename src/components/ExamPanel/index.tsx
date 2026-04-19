@@ -12,6 +12,8 @@ import type { TimelineExam } from '../Exams/Timeline/ExamTimeline';
 import { useAutoRegistration } from './useAutoRegistration';
 import { Zap } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
+import { fetchExamClassmates } from '../../api/terminyInfo';
+import { useAppStore } from '../../store/useAppStore';
 
 interface RegisteredExam {
     subjectName: string;
@@ -37,6 +39,8 @@ export function ExamPanel() {
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const { processingSectionId, pendingAction, setPendingAction, handleRegisterRequest, handleUnregisterRequest, handleConfirmAction } = useExamActions({ exams, setExpandedSectionId: setExpandedId });
     const { armedTerms, firingTerms, toggleArm } = useAutoRegistration();
+    const studiumId = useAppStore(s => s.studiumId);
+    const obdobiId = useAppStore(s => s.obdobiId);
 
     // Extract registered exams from data
     const realExams = useMemo(() => {
@@ -68,8 +72,19 @@ export function ExamPanel() {
         document.addEventListener('keydown', h); return () => document.removeEventListener('keydown', h);
     }, [expandedId]);
 
+    useEffect(() => {
+        if (!studiumId || !obdobiId || !realExams.length) return;
+        for (const exam of realExams) {
+            const terminId = exam.term.id;
+            if (!terminId || terminId.includes('-')) continue; // skip fallback ids
+            fetchExamClassmates(terminId, studiumId, obdobiId).then(classmates => {
+                console.log(`[spoluzaci] ${exam.subjectName} (termin ${terminId}):`, classmates);
+            });
+        }
+    }, [realExams, studiumId, obdobiId]);
+
     return (
-        <><div className="flex flex-col h-full bg-base-100 rounded-lg border border-base-300 overflow-hidden">
+        <><div className="flex flex-col h-full bg-base-100 rounded-lg border border-base-300 overflow-hidden relative">
             <ExamPanelHeader />
             
             {armedTerms.size > 0 && (
@@ -84,9 +99,9 @@ export function ExamPanel() {
             {/* Horizontal Timeline Integration */}
             {realExams.length > 0 && (
                 <div className="px-4 pb-0 border-b border-base-200">
-                    <ExamTimeline 
-                        exams={realExams as unknown as TimelineExam[]} 
-                        orientation="horizontal" 
+                    <ExamTimeline
+                        exams={realExams as unknown as TimelineExam[]}
+                        orientation="horizontal"
                     />
                 </div>
             )}
