@@ -292,6 +292,14 @@
     "yesterday": "Včera",
     "tomorrow": "Zítra"
   },
+  "deadlines": {
+    "title": "Blížící se termíny",
+    "examRegOpens": "Otevírá se přihlašování",
+    "examReg": "Uzavírá se přihlašování",
+    "assignment": "Odevzdávárna",
+    "hoursLeft": "za {h} h",
+    "lessThanHour": "za méně než 1 h"
+  },
   "events": {
     "title": "Akce",
     "loading": "Načítá se...",

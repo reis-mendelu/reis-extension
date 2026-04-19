@@ -1,16 +1,21 @@
 import { useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { useNotificationFeed } from '../hooks/useNotificationFeed';
+import { useDeadlineAlerts } from '../hooks/useDeadlineAlerts';
 import { NotificationDropdown } from './Notifications/NotificationDropdown';
 import { useAppStore } from '../store/useAppStore';
 
 export function NotificationFeed({ className = '' }: { className?: string }) {
   const { isOpen, setIsOpen, notifications, loading, readIds, toggle, markVisible } = useNotificationFeed();
+  const { alerts: deadlineAlerts, markAllSeen, unseenCount } = useDeadlineAlerts();
   const loadStudyJamSuggestions = useAppStore(s => s.loadStudyJamSuggestions);
 
   useEffect(() => {
-    if (isOpen) loadStudyJamSuggestions();
-  }, [isOpen, loadStudyJamSuggestions]);
+    if (isOpen) {
+      loadStudyJamSuggestions();
+      markAllSeen(deadlineAlerts.map(a => a.id));
+    }
+  }, [isOpen, loadStudyJamSuggestions, markAllSeen, deadlineAlerts]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,7 +31,7 @@ export function NotificationFeed({ className = '' }: { className?: string }) {
     return () => { document.removeEventListener('keydown', handleEsc); document.removeEventListener('mousedown', handleClick); };
   }, [isOpen, setIsOpen]);
 
-  const unreadCount = notifications.filter(n => !readIds.has(n.id)).length;
+  const unreadCount = notifications.filter(n => !readIds.has(n.id)).length + unseenCount;
 
   return (
     <div className={`relative ${className}`}>
@@ -34,7 +39,7 @@ export function NotificationFeed({ className = '' }: { className?: string }) {
         <Bell size={20} className="text-base-content/70" />
         {unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-error text-error-content text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>}
       </button>
-      {isOpen && <NotificationDropdown dropdownRef={dropdownRef} notifications={notifications} loading={loading} onClose={() => setIsOpen(false)} onVisible={markVisible} />}
+      {isOpen && <NotificationDropdown dropdownRef={dropdownRef} notifications={notifications} loading={loading} onClose={() => setIsOpen(false)} onVisible={markVisible} deadlineAlerts={deadlineAlerts} />}
     </div>
   );
 }

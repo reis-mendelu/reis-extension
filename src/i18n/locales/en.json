@@ -290,6 +290,14 @@
     "yesterday": "Yesterday",
     "tomorrow": "Tomorrow"
   },
+  "deadlines": {
+    "title": "Upcoming deadlines",
+    "examRegOpens": "Registration opens",
+    "examReg": "Registration closes",
+    "assignment": "Assignment due",
+    "hoursLeft": "in {h}h",
+    "lessThanHour": "in < 1h"
+  },
   "events": {
     "title": "Events",
     "loading": "Loading...",

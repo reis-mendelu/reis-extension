@@ -81,10 +81,11 @@ export function AppHeader({
                 <button onClick={onToday} className="btn btn-primary btn-sm border-none shadow-sm">
                   {t('common.today')}
                 </button>
-                <span className="hidden lg:inline text-lg font-semibold text-base-content whitespace-nowrap">{dateRangeLabel}</span>
+                <span className="hidden sm:inline text-lg font-semibold text-base-content whitespace-nowrap">{dateRangeLabel}</span>
                 {viewedWeek && (
-                  <span className="hidden lg:inline text-sm text-base-content/50 whitespace-nowrap">
-                    · {t('teachingWeek.label', { current: viewedWeek })}
+                  <span className="text-sm text-base-content/50 whitespace-nowrap">
+                    <span className="hidden sm:inline"> · </span>
+                    {t('teachingWeek.label', { current: viewedWeek })}
                   </span>
                 )}
               </div>
