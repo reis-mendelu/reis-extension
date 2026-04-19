@@ -119,22 +119,25 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
 
             {/* Constraints: Clearer and More Reliable */}
             {term.registrationEnd && (
-                <div className="flex items-center gap-4 px-4 pb-3 text-[10px] font-medium border-t border-base-content/5 mt-[-2px] pt-2">
+                <div className="flex items-center gap-4 px-4 pb-3 text-[11px] font-medium border-t border-base-content/5 mt-[-2px] pt-2">
                     {sameDeadline ? (
-                        <span className="opacity-50 flex items-center gap-1.5">
+                        <span className="flex items-center gap-1.5">
                             <span className="w-1 h-1 rounded-full bg-base-content/30" />
-                            {t('exams.registerAndUnregisterDeadline')} <b className="opacity-100">{term.registrationEnd}</b>
+                            <span className="text-base-content/50">{t('exams.registerAndUnregisterDeadline')}</span>
+                            <b className="text-base-content/80">{term.registrationEnd}</b>
                         </span>
                     ) : (
                         <>
-                            <span className="opacity-50 flex items-center gap-1.5">
+                            <span className="flex items-center gap-1.5">
                                 <span className="w-1 h-1 rounded-full bg-base-content/30" />
-                                {t('exams.registerDeadline')} <b className="opacity-100">{term.registrationEnd}</b>
+                                <span className="text-base-content/50">{t('exams.registerDeadline')}</span>
+                                <b className="text-base-content/80">{term.registrationEnd}</b>
                             </span>
                             {term.deregistrationDeadline && (
-                                <span className="opacity-50 flex items-center gap-1.5">
+                                <span className="flex items-center gap-1.5">
                                     <span className="w-1 h-1 rounded-full bg-base-content/30" />
-                                    {t('exams.unregisterDeadline')} <b className="opacity-100">{term.deregistrationDeadline}</b>
+                                    <span className="text-base-content/50">{t('exams.unregisterDeadline')}</span>
+                                    <b className="text-base-content/80">{term.deregistrationDeadline}</b>
                                 </span>
                             )}
                         </>
