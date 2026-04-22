@@ -12,6 +12,7 @@ export interface TeachingWeekEntry {
 export interface TeachingWeekData {
     weeks: TeachingWeekEntry[];
     total: number;
+    currentWeek: number | null;
 }
 
 function parseDateCz(d: string): string {
@@ -29,6 +30,7 @@ export function parseTeachingWeeks(html: string): TeachingWeekData | null {
     if (rows.length === 0) return null;
 
     const weeks: TeachingWeekEntry[] = [];
+    let currentWeek: number | null = null;
     for (const row of rows) {
         const cells = row.querySelectorAll('td.odsazena');
         if (cells.length < 3) continue;
@@ -40,19 +42,22 @@ export function parseTeachingWeeks(html: string): TeachingWeekData | null {
         const match = weekText.match(/(\d+)\./);
         if (!match) continue;
 
+        const weekNum = parseInt(match[1], 10);
+        if (cells[0].querySelector('b')) currentWeek = weekNum;
+
         weeks.push({
-            week: parseInt(match[1], 10),
+            week: weekNum,
             from: parseDateCz(fromText),
             to: parseDateCz(toText),
         });
     }
 
     if (weeks.length === 0) return null;
-    return { weeks, total: weeks.length };
+    return { weeks, total: weeks.length, currentWeek };
 }
 
 export function getWeekForDate(data: TeachingWeekData, date: Date): number | null {
-    const d = date.toISOString().slice(0, 10);
+    const d = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     for (const entry of data.weeks) {
         if (d >= entry.from && d <= entry.to) return entry.week;
     }
