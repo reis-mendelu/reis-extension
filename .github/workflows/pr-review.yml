@@ -1,0 +1,36 @@
+name: Claude PR Review
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 3"
+          prompt: |
+            You are reviewing a pull request for reIS — a Chrome extension for MENDELU university students (TypeScript, React 19, WXT, Zustand, DaisyUI).
+
+            Review the diff for:
+            1. Correctness — logic errors, edge cases, broken types
+            2. Architecture — violations of the slice pattern, no useEffect for data fetching, no localStorage
+            3. Style — DaisyUI classes only (no raw Tailwind layout), max 200 lines per file
+            4. Tests — are changed functions covered?
+            5. Security — no XSS, no data leaks, no external network calls with student data
+
+            Post inline comments on specific lines where issues exist. Be concise and actionable.
+            If everything looks good, say so briefly.
+# PR Review Test
