@@ -1,15 +1,6 @@
 name: Claude Review
 
 on:
-  push:
-    branches-ignore:
-      - main
-    paths-ignore:
-      - 'package-lock.json'
-      - '.output/**'
-      - 'public/**'
-      - '**/*.lock'
-      - '**/*.md'
   pull_request:
     types: [opened, ready_for_review, synchronize]
     paths-ignore:
@@ -25,7 +16,7 @@ concurrency:
 
 jobs:
   review:
-    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -40,13 +31,8 @@ jobs:
       - name: Measure diff size
         id: diff
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch --no-tags origin "${{ github.base_ref }}" >/dev/null 2>&1 || true
-            base="origin/${{ github.base_ref }}"
-          else
-            git fetch --no-tags origin main >/dev/null 2>&1 || true
-            base="$(git merge-base origin/main HEAD 2>/dev/null || echo HEAD~1)"
-          fi
+          git fetch --no-tags origin "${{ github.base_ref }}" >/dev/null 2>&1 || true
+          base="origin/${{ github.base_ref }}"
           added_removed=$(git diff --shortstat "$base"...HEAD | grep -oE '[0-9]+ (insertion|deletion)' | awk '{s+=$1} END {print s+0}')
           echo "lines=$added_removed" >> "$GITHUB_OUTPUT"
           echo "Diff size: $added_removed lines (base: $base)"
@@ -70,9 +56,7 @@ jobs:
             simplifies IS Mendelu. Read CLAUDE.md and AGENTS.md at the repo
             root first — they are the source of truth.
 
-            On pull_request events, post inline review comments plus one
-            summary comment on the PR. On push events (no PR yet), post a
-            single commit comment on the head commit summarising findings.
+            Post inline review comments plus one summary comment on the PR.
 
             HARD RULES (violations must be flagged):
             - No localStorage / sessionStorage — use IndexedDBService.
