@@ -99,3 +99,4 @@ jobs:
               among: Hard-rule violations, Parser risks, Bugs, Suggestions.
               Omit headers with nothing to report. If there is nothing
               substantive, reply "LGTM — no blocking issues found."
+
