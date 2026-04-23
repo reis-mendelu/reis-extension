@@ -28,6 +28,17 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
     const classmates = useAppStore(s => terminId ? s.examClassmates[terminId] : undefined);
     const isReg = section.status === 'registered';
 
+    const canUnregister = (() => {
+        const deadline = section.registeredTerm?.deregistrationDeadline;
+        if (!deadline) return isReg;
+        const [datePart, timePart] = deadline.split(' ');
+        if (!timePart) return isReg;
+        const [day, month, year] = datePart.split('.');
+        const [hours, minutes] = timePart.split(':');
+        const deadlineDate = new Date(+year, +month - 1, +day, +hours, +minutes);
+        return isReg && new Date() <= deadlineDate;
+    })();
+
     const subjectName = (language === 'en' && subject.nameEn) ? subject.nameEn : (subject.nameCs || subject.name);
     const sectionName = (language === 'en' && section.nameEn) ? section.nameEn : (section.nameCs || section.name);
 
@@ -59,7 +70,7 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                    {isReg && (
+                    {canUnregister && (
                         <button
                             onClick={(e) => { e.stopPropagation(); onUnregister(section); }}
                             disabled={isProcessing}
