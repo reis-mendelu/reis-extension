@@ -32,7 +32,10 @@ export function parseRegisteredTerms(doc: Document, getOrCreateSubject: (c: stri
         const normalizedDateStr = normalizeDateString(dateStr, isEn);
         const [date, time] = normalizedDateStr.split(' ');
 
-        const termId = row.querySelector('a[href*="odhlasit_ihned=1"]')?.getAttribute('href')?.match(/termin=(\d+)/)?.[1] || '';
+        const termId =
+            row.querySelector('a[href*="odhlasit_ihned=1"]')?.getAttribute('href')?.match(/termin=(\d+)/)?.[1] ||
+            row.querySelector('a[href*="terminy_info"]')?.getAttribute('href')?.match(/termin=(\d+)/)?.[1] ||
+            '';
 
         let deregistrationDeadline: string | undefined;
         for (let i = 0; i < cols.length; i++) {
