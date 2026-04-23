@@ -32,6 +32,7 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
         const deadline = section.registeredTerm?.deregistrationDeadline;
         if (!deadline) return isReg;
         const [datePart, timePart] = deadline.split(' ');
+        if (!timePart) return isReg;
         const [day, month, year] = datePart.split('.');
         const [hours, minutes] = timePart.split(':');
         const deadlineDate = new Date(+year, +month - 1, +day, +hours, +minutes);

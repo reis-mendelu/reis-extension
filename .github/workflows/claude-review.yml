@@ -102,3 +102,26 @@ jobs:
             - Prefer silence over speculation; tolerate a short review.
             - Summary sections (include only non-empty): Hard-rule violations,
               Parser risks, Bugs, Suggestions.
+
+      - name: Post sticky summary comment
+        if: always() && steps.diff.outputs.oversized != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          marker="<!-- claude-review-summary -->"
+          count=$(gh api "repos/$REPO/pulls/$PR/comments" --jq 'length')
+          if [ "$count" -eq 0 ]; then
+            verdict="✅ **LGTM** — no inline findings"
+          else
+            verdict="🔍 **$count inline finding(s)** — see the [Files changed](${{ github.server_url }}/${{ github.repository }}/pull/$PR/files) tab"
+          fi
+          body=$(printf '%s\n\n🤖 Claude review complete\n\n%s\n\n[View run](%s)' "$marker" "$verdict" "$RUN_URL")
+          existing=$(gh api "repos/$REPO/issues/$PR/comments" --jq ".[] | select(.body | contains(\"$marker\")) | .id" | head -1)
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$existing" -f body="$body"
+          else
+            gh api -X POST "repos/$REPO/issues/$PR/comments" -f body="$body"
+          fi
