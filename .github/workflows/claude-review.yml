@@ -79,7 +79,9 @@ jobs:
             - Comment only on lines inside the diff.
             - Skip anything already caught by ESLint, Prettier, or tsc.
             - Prefer silence over speculation; tolerate a short review.
+            - Always post a summary comment on the PR — no exceptions.
             - End with a summary containing only the non-empty sections
               among: Hard-rule violations, Parser risks, Bugs, Suggestions.
               Omit headers with nothing to report. If there is nothing
-              substantive, reply "LGTM — no blocking issues found."
+              substantive, write "LGTM — no blocking issues found." and
+              post it as a PR comment.
