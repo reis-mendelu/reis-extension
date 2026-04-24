@@ -2,6 +2,7 @@ import pLimit from "p-limit";
 import { Messages } from "../types/messages";
 import { fetchDualLanguageExams } from "../api/exams";
 import { fetchDualLanguageSubjects } from "../api/subjects";
+import { fetchDualLanguagePastSubjects } from "../api/pastSubjects";
 import { fetchFilesFromFolder } from "../api/documents";
 import { fetchAssessments } from "../api/assessments";
 import { fetchDualLanguageStudyPlan } from "../api/studyPlan";
@@ -10,6 +11,7 @@ import { fetchSyllabus } from "../api/syllabus";
 import { syncCvicneTests } from "../services/sync/syncCvicneTests";
 import { syncOdevzdavarny } from "../services/sync/syncOdevzdavarny";
 import { fetchSeminarGroupIds, fetchClassmates } from "../api/classmates";
+import { mergePastSubjects } from "../services/sync/mergePastSubjects";
 
 import { getUserParams } from "../utils/userParams";
 import { fetchFullSemesterSchedule } from "./dataFetchers";
@@ -51,6 +53,10 @@ export async function syncAllData() {
             return plan;
         }) : Promise.resolve(null);
 
+        // Past-semester folders from doc server history — used to backfill
+        // SubjectInfo for fulfilled subjects that list.pl no longer returns.
+        const pastSubjectsPromise = fetchDualLanguagePastSubjects();
+
         const studyStatsPromise = (studium && userParams?.obdobi)
             ? fetchStudyStats(studium, userParams.obdobi).then(stats => {
                 if (stats) cachedData = { ...cachedData, studyStats: stats };
@@ -75,7 +81,7 @@ export async function syncAllData() {
             : Promise.resolve(null);
 
         // Phase 2b: Full schedule + exams in parallel (subjects/studyPlan/studyStats re-uses already-started promises)
-        const [fullSchedule, exams, subjects, studyPlan, studyStats, cvicneTests, odevzdavarnyResult] = await Promise.allSettled([
+        const [fullSchedule, exams, subjects, studyPlan, studyStats, cvicneTests, odevzdavarnyResult, pastSubjects] = await Promise.allSettled([
             fetchFullSemesterSchedule(),
             fetchDualLanguageExams(),
             subjectsPromise,
@@ -83,7 +89,19 @@ export async function syncAllData() {
             studyStatsPromise,
             cvicneTestsPromise,
             odevzdavarnyPromise,
+            pastSubjectsPromise,
         ]);
+
+        if (
+            subjects.status === "fulfilled" && subjects.value &&
+            pastSubjects.status === "fulfilled" && pastSubjects.value
+        ) {
+            mergePastSubjects(
+                subjects.value.subjects,
+                pastSubjects.value,
+                studyPlan.status === "fulfilled" ? studyPlan.value : null,
+            );
+        }
 
         cachedData = {
             ...cachedData,

@@ -8,6 +8,10 @@ import { HeaderTabs } from './Header/HeaderTabs';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTimeline } from '../../hooks/useTimeline';
 
+const NO_ID_DISABLED: string[] = ['files', 'classmates', 'cvicneTests'];
+const CLASSMATES_ONLY: string[] = ['classmates'];
+const EMPTY_TABS: string[] = [];
+
 function formatDate(ds: string, t: (k: string) => string) {
     if (!ds || ds.length !== 8) return '';
     const d = new Date(parseInt(ds.substring(0, 4)), parseInt(ds.substring(4, 6)) - 1, parseInt(ds.substring(6, 8)));
@@ -89,7 +93,7 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
             <HeaderTabs
                 activeTab={activeTab}
                 onTabChange={onTabChange}
-                disabledTabs={!subjectInfo?.subjectId ? ['files', 'classmates', 'cvicneTests'] : []}
+                disabledTabs={!subjectInfo?.subjectId ? NO_ID_DISABLED : (lesson && 'isFulfilled' in lesson && lesson.isFulfilled ? CLASSMATES_ONLY : EMPTY_TABS)}
                 counts={tabCounts}
             />
         </div>
