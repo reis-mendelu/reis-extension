@@ -197,7 +197,6 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
       />
 
       <div className="px-4 pt-4 pb-4">
-        <h3 className="text-sm font-semibold text-base-content/50 mb-3">{t('subjects.studyPlan')}</h3>
         <div className="flex flex-col gap-2">
           {plan.blocks.map((block, bi) => (
             <div key={bi} ref={bi === firstCurrentIdx ? currentSemesterRef : undefined}>

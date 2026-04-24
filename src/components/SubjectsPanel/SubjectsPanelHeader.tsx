@@ -80,19 +80,9 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
           {plan?.title || t('subjects.title')}
         </h2>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          <a href={zadostUrl} target="_blank" rel="noopener noreferrer"
-            className="btn btn-ghost btn-sm px-2.5 text-base-content/50 hover:text-primary gap-1.5">
-            <span className="text-xs uppercase whitespace-nowrap">{t('subjects.zadost')}</span>
-            <ExternalLink size={14} />
-          </a>
           <a href={registrationsUrl} target="_blank" rel="noopener noreferrer"
             className="btn btn-ghost btn-sm px-2.5 text-base-content/50 hover:text-primary gap-1.5">
             <span className="text-xs uppercase whitespace-nowrap">{t('sidebar.registrations')}</span>
-            <ExternalLink size={14} />
-          </a>
-          <a href={planCheckUrl} target="_blank" rel="noopener noreferrer"
-            className="btn btn-ghost btn-sm px-2.5 text-base-content/50 hover:text-primary gap-1.5">
-            <span className="text-xs uppercase whitespace-nowrap">IS MENDELU</span>
             <ExternalLink size={14} />
           </a>
         </div>

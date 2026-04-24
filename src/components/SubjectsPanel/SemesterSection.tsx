@@ -75,7 +75,6 @@ const stateConfig: Record<SemesterState, {
 export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup, zameraniProgress, onToggle, onOpenSubject, onSearchSubject }: SemesterSectionProps) {
   const state = getSemesterState(block);
   const cfg = stateConfig[state];
-  const Icon = block.isWholePlanPool ? Layers : cfg.icon;
 
   const allSubjects = block.groups.flatMap(g => g.subjects);
   const fulfilledCount = allSubjects.filter(s => s.isFulfilled).length;
@@ -90,9 +89,8 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
         className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${open ? 'bg-base-200/30' : 'hover:bg-base-200/50'}`}
       >
         <div className={`w-1 h-8 rounded-full ${cfg.indicator} shrink-0`} />
-        <Icon className={`w-4 h-4 ${cfg.accent} shrink-0`} />
-        <span className="text-sm font-semibold flex-1 text-left">{block.title}</span>
-        {totalCredits > 0 && (
+        <span className="text-sm font-semibold flex-1 text-left">{block.title.replace(/\s*\(dosud neaktivní\)/gi, '')}</span>
+        {totalCredits > 0 && (state !== 'future' || open) && (
           <span className="text-[11px] text-base-content/40 shrink-0">{totalCredits} kr.</span>
         )}
         <span className={cfg.badgeCls}>
