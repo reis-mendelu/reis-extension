@@ -84,7 +84,7 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
   const isPast = state === 'past';
 
   return (
-    <div className={`rounded-lg border overflow-hidden transition-all ${open ? 'border-base-content/20 bg-base-100 shadow-sm' : cfg.border} ${dimmed ? 'opacity-40' : ''} ${block.isWholePlanPool ? 'border-dashed' : ''}`}>
+    <div className={`rounded-lg border overflow-hidden transition-all ${open ? 'border-base-content/20 bg-base-100 shadow-sm' : `${cfg.border} ${state === 'current' ? 'bg-primary/5 ring-1 ring-primary/15' : ''}`} ${dimmed ? 'opacity-40' : ''} ${block.isWholePlanPool ? 'border-dashed' : ''}`}>
       <button
         onClick={onToggle}
         className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${open ? 'bg-base-200/30' : 'hover:bg-base-200/50'}`}
