@@ -9,7 +9,7 @@ interface SubjectRowProps {
   subject: SubjectStatus;
   compact?: boolean;
   failRate?: number | null;
-  onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates') => void;
+  onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => void;
   onSearchSubject: (name: string) => void;
   hideStatus?: boolean;
   zamerani?: Zamerani | null;
@@ -34,7 +34,7 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
   const handleClick = () => {
     if (isZamerani) return; // pseudo-row, not openable
     if (hasId) {
-      onOpenSubject(subject.code, subject.name, subject.id);
+      onOpenSubject(subject.code, subject.name, subject.id, undefined, undefined, subject.isFulfilled);
     } else {
       onSearchSubject(subject.name);
     }

@@ -2,6 +2,7 @@ import pLimit from "p-limit";
 import { Messages } from "../types/messages";
 import { fetchDualLanguageExams } from "../api/exams";
 import { fetchDualLanguageSubjects } from "../api/subjects";
+import { fetchDualLanguagePastSubjects } from "../api/pastSubjects";
 import { fetchFilesFromFolder } from "../api/documents";
 import { fetchAssessments } from "../api/assessments";
 import { fetchDualLanguageStudyPlan } from "../api/studyPlan";
@@ -51,6 +52,10 @@ export async function syncAllData() {
             return plan;
         }) : Promise.resolve(null);
 
+        // Past-semester folders from doc server history — used to backfill
+        // SubjectInfo for fulfilled subjects that list.pl no longer returns.
+        const pastSubjectsPromise = fetchDualLanguagePastSubjects();
+
         const studyStatsPromise = (studium && userParams?.obdobi)
             ? fetchStudyStats(studium, userParams.obdobi).then(stats => {
                 if (stats) cachedData = { ...cachedData, studyStats: stats };
@@ -75,7 +80,7 @@ export async function syncAllData() {
             : Promise.resolve(null);
 
         // Phase 2b: Full schedule + exams in parallel (subjects/studyPlan/studyStats re-uses already-started promises)
-        const [fullSchedule, exams, subjects, studyPlan, studyStats, cvicneTests, odevzdavarnyResult] = await Promise.allSettled([
+        const [fullSchedule, exams, subjects, studyPlan, studyStats, cvicneTests, odevzdavarnyResult, pastSubjects] = await Promise.allSettled([
             fetchFullSemesterSchedule(),
             fetchDualLanguageExams(),
             subjectsPromise,
@@ -83,7 +88,19 @@ export async function syncAllData() {
             studyStatsPromise,
             cvicneTestsPromise,
             odevzdavarnyPromise,
+            pastSubjectsPromise,
         ]);
+
+        if (
+            subjects.status === "fulfilled" && subjects.value &&
+            pastSubjects.status === "fulfilled" && pastSubjects.value
+        ) {
+            mergePastSubjects(
+                subjects.value.subjects,
+                pastSubjects.value,
+                studyPlan.status === "fulfilled" ? studyPlan.value : null,
+            );
+        }
 
         cachedData = {
             ...cachedData,
@@ -169,6 +186,45 @@ async function syncSubjectDetails(subjectsValue: { data: Record<string, { folder
         await Promise.all(classmateTasks);
     } catch (e) {
         console.error('[syncClassmates] Error fetching group map:', e);
+    }
+}
+
+type PastFoldersByLang = Awaited<ReturnType<typeof fetchDualLanguagePastSubjects>>;
+type DualStudyPlan = Awaited<ReturnType<typeof fetchDualLanguageStudyPlan>>;
+
+function mergePastSubjects(
+    subjectsData: { data: Record<string, { displayName: string; fullName: string; nameCs?: string; nameEn?: string; subjectCode: string; subjectId?: string; folderUrl: string; fetchedAt: string }> },
+    past: PastFoldersByLang,
+    plan: DualStudyPlan | null,
+) {
+    const planById = new Map<string, string>();
+    const planNameCs = new Map<string, string>();
+    const planNameEn = new Map<string, string>();
+    if (plan) {
+        for (const block of plan.cz.blocks) for (const group of block.groups) for (const s of group.subjects) {
+            planById.set(s.code, s.id);
+            planNameCs.set(s.code, s.name);
+        }
+        for (const block of plan.en.blocks) for (const group of block.groups) for (const s of group.subjects) {
+            planNameEn.set(s.code, s.name);
+        }
+    }
+
+    const now = new Date().toISOString();
+    for (const [code, czFolder] of Object.entries(past.cz)) {
+        if (subjectsData.data[code]) continue;
+        const nameCs = planNameCs.get(code) ?? czFolder.displayName;
+        const nameEn = planNameEn.get(code) ?? past.en[code]?.displayName;
+        subjectsData.data[code] = {
+            subjectCode: code,
+            displayName: nameCs,
+            fullName: `${code} ${nameCs}`,
+            nameCs,
+            nameEn,
+            subjectId: planById.get(code),
+            folderUrl: czFolder.folderUrl,
+            fetchedAt: now,
+        };
     }
 }
 

@@ -21,7 +21,7 @@ function normalizeZameraniName(s: string): string {
 }
 
 interface SubjectsPanelProps {
-  onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: string) => void;
+  onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => void;
   onSearchSubject: (name: string) => void;
 }
 

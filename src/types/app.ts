@@ -8,4 +8,5 @@ export interface SelectedSubject {
     isFromSearch?: boolean;
     facultyCode?: string;
     initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates';
+    isFulfilled?: boolean;
 }

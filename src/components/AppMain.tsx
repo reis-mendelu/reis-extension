@@ -13,7 +13,7 @@ interface AppMainProps {
     handlePrevWeek: () => void;
     handleNextWeek: () => void;
     handleToday: () => void;
-    handleOpenSubjectFromSearch: (courseCode: string, courseName?: string, courseId?: string) => void;
+    handleOpenSubjectFromSearch: (courseCode: string, courseName?: string, courseId?: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => void;
     dateRangeLabel: string;
     searchPrefillRef?: React.MutableRefObject<((query: string) => void) | null>;
     setCurrentView?: (view: AppView) => void;
