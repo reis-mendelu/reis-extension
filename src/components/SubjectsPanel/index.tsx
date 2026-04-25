@@ -7,33 +7,10 @@ import { computeFailRate } from './computeFailRate';
 import { SemesterSection } from './SemesterSection';
 import { SubjectsPanelSkeleton } from './SubjectsPanelSkeleton';
 import { IndexedDBService } from '@/services/storage';
-import type { SubjectStatus, Zamerani, SemesterBlock } from '@/types/studyPlan';
+import type { Zamerani } from '@/types/studyPlan';
+import { getSemesterState, isRealCredits, normalizeZameraniName } from './utils';
 
 const IDB_KEY = 'subjects_open_semesters';
-
-function normalizeZamereniName(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/^zaměření:\s*/i, '')
-    .replace(/^specialization:\s*/i, '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim();
-}
-
-// IS Mendelu sentinel: 999 credits = "uznaný předmět", don't sum.
-const isRealCredits = (c: number) => c < 999;
-
-function getSemesterState(block: SemesterBlock): 'past' | 'current' | 'future' {
-  const all = block.groups.flatMap(g => g.subjects);
-  if (all.length === 0) return 'future';
-  const hasEnrolled = all.some(s => s.isEnrolled);
-  if (hasEnrolled) return 'current';
-  const allFulfilled = all.every(s => s.isFulfilled);
-  if (allFulfilled) return 'past';
-  const hasFulfilled = all.some(s => s.isFulfilled);
-  return hasFulfilled ? 'past' : 'future';
-}
 
 interface SubjectsPanelProps {
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => void;
@@ -117,17 +94,17 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
     });
   }, []);
 
-  const zamereniLookup = useMemo(() => {
+  const zameraniLookup = useMemo(() => {
     const map = new Map<string, Zamerani>();
     if (!plan?.zameranis) return map;
-    for (const z of plan.zameranis) map.set(normalizeZamereniName(z.name), z);
+    for (const z of plan.zameranis) map.set(normalizeZameraniName(z.name), z);
     return map;
   }, [plan]);
 
   // Pure reduce over existing data: for each zaměření, count how many of its
   // member subjects are currently enrolled or already fulfilled. Used both by
   // the header progress indicator and the zaměření card.
-  const zamereniProgress = useMemo(() => {
+  const zameraniProgress = useMemo(() => {
     const out = new Map<string, { enrolled: number; fulfilled: number; total: number; touched: boolean }>();
     if (!plan?.zameranis) return out;
     const subjectByCode = new Map<string, { isEnrolled: boolean; isFulfilled: boolean }>();
@@ -143,7 +120,7 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
         else if (hit.isEnrolled) enrolled++;
       }
       const touched = enrolled + fulfilled > 0;
-      out.set(normalizeZamereniName(z.name), { enrolled, fulfilled, total: z.subjects.length, touched });
+      out.set(normalizeZameraniName(z.name), { enrolled, fulfilled, total: z.subjects.length, touched });
     }
     return out;
   }, [plan]);
@@ -192,27 +169,30 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
         creditsRequired={plan.creditsRequired}
         studyStats={studyStats}
         plan={plan}
-        zameraniProgress={zamereniProgress}
+        zameraniProgress={zameraniProgress}
         enrolledCredits={enrolledCredits}
       />
 
       <div className="px-4 pt-4 pb-4">
         <div className="flex flex-col gap-2">
-          {plan.blocks.map((block, bi) => (
-            <div key={bi} ref={bi === firstCurrentIdx ? currentSemesterRef : undefined}>
-              <SemesterSection
-                block={block}
-                open={openSemesters.has(bi)}
-                dimmed={openSemesters.size > 0 && !openSemesters.has(bi)}
-                failRates={failRates}
-                zamereniLookup={zamereniLookup}
-                zamereniProgress={zamereniProgress}
-                onToggle={() => handleToggle(bi)}
-                onOpenSubject={onOpenSubject}
-                onSearchSubject={onSearchSubject}
-              />
-            </div>
-          ))}
+          {plan.blocks.map((block, bi) => {
+            const hasSubjects = block.groups.flatMap(g => g.subjects).length > 0;
+            return (
+              <div key={bi} ref={bi === firstCurrentIdx ? currentSemesterRef : undefined}>
+                <SemesterSection
+                  block={block}
+                  open={openSemesters.has(bi)}
+                  dimmed={hasSubjects && openSemesters.size > 0 && !openSemesters.has(bi)}
+                  failRates={failRates}
+                  zameraniLookup={zameraniLookup}
+                  zameraniProgress={zameraniProgress}
+                  onToggle={() => handleToggle(bi)}
+                  onOpenSubject={onOpenSubject}
+                  onSearchSubject={onSearchSubject}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

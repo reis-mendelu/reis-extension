@@ -50,13 +50,9 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
   const { params } = useUserParams();
   const studium = params?.studium || '';
   const lang = language === 'cz' ? 'cz' : 'en';
-  const planCheckUrl = studium
-    ? `https://is.mendelu.cz/auth/studijni/studijni_povinnosti.pl?studium=${studium};lang=${lang}`
-    : `https://is.mendelu.cz/auth/studijni/studijni_povinnosti.pl?lang=${lang}`;
   const registrationsUrl = studium
     ? `https://is.mendelu.cz/auth/student/registrace.pl?studium=${studium};lang=${lang}`
     : `https://is.mendelu.cz/auth/student/registrace.pl?lang=${lang}`;
-  const zadostUrl = `https://is.mendelu.cz/auth/kc/index.pl?zalozka=novy;lang=${lang}`;
 
   const zameraniMin = plan?.zameraniMinimum;
   const zameraniTouched = zameraniProgress ? Array.from(zameraniProgress.values()).filter(p => p.touched).length : 0;
