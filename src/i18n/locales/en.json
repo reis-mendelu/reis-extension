@@ -330,7 +330,6 @@
   "subjects": {
     "title": "My Subjects",
     "credits": "credits",
-    "enrolled": "Enrolled Subjects",
     "studyPlan": "Study Plan",
     "noData": "No study plan data",
     "loading": "Loading...",
@@ -349,8 +348,6 @@
     "progressionDanger": "At risk!",
     "repeatWarning": "2nd enrollment",
     "gpa": "GPA",
-    "compulsory": "Compulsory",
-    "elective": "Elective",
     "enrolledCreditsLabel": "cr. enrolled",
     "failRateLabel": "fail",
     "needMore": "need {n} more",

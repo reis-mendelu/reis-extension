@@ -332,7 +332,6 @@
   "subjects": {
     "title": "Moje předměty",
     "credits": "kreditů",
-    "enrolled": "Zapsané předměty",
     "studyPlan": "Studijní plán",
     "noData": "Žádná data o studijním plánu",
     "loading": "Načítání...",
@@ -351,8 +350,6 @@
     "progressionDanger": "Hrozí nesplnění!",
     "repeatWarning": "2. zápis",
     "gpa": "Průměr",
-    "compulsory": "Povinné",
-    "elective": "Volitelné",
     "enrolledCreditsLabel": "kr. zapsáno",
     "failRateLabel": "neúsp.",
     "needMore": "potřeba ještě {n}",

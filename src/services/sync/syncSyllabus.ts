@@ -44,7 +44,9 @@ export async function fetchAndCacheSingleSyllabus(
 ): Promise<SyllabusRequirements | undefined> {
     let activeId = courseId;
     if (!activeId) {
+        console.log(`[fetchAndCacheSingleSyllabus] finding subject id for ${courseCode}...`);
         activeId = await findSubjectId(courseCode, subjectName) || undefined;
+        console.log(`[fetchAndCacheSingleSyllabus] found activeId: ${activeId}`);
     }
 
     if (!activeId) {
@@ -56,6 +58,7 @@ export async function fetchAndCacheSingleSyllabus(
         fetchSyllabus(activeId, 'en')
     ]);
 
+    console.log(`[fetchAndCacheSingleSyllabus] fetch activeId: ${activeId} complete.`);
     await IndexedDBService.set('syllabuses', courseCode, {
         cz: czSyllabus,
         en: enSyllabus

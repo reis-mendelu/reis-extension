@@ -3,7 +3,7 @@ import { IndexedDBService } from '../../services/storage';
 import { fetchAndCacheSingleSyllabus } from '../../services/sync/syncSyllabus';
 import type { SyllabusRequirements } from '../../types/documents';
 
-const SYLLABUS_VERSION = 3; // v3: added objectivesText + contentText
+const SYLLABUS_VERSION = 4; // v4: force fetch to ensure we get newest predmetId
 
 export const createSyllabusSlice: AppSlice<SyllabusSlice> = (set, get) => ({
   syllabuses: {

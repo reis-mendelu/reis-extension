@@ -43,8 +43,10 @@ export async function findSubjectId(courseCode: string, subjectName?: string): P
         
         // Use the catalogue search (vyhledavani v katalogu)
         const searchUrl = `${BASE_URL}/auth/katalog/index.pl?search_text=${encodeURIComponent(query)};lang=cz`;
+        console.log(`[findSubjectId] Searching URL: ${searchUrl}`);
         const response = await fetchWithAuth(searchUrl);
         const html = await response.text();
+        console.log(`[findSubjectId] Search returned ${html.length} bytes.`);
         
         // Parse the HTML to find a link to syllabus that matches the code
         const parser = new DOMParser();
@@ -52,6 +54,9 @@ export async function findSubjectId(courseCode: string, subjectName?: string): P
         
         // Find rows or links containing the code/name and a link to syllabus
         const links = Array.from(doc.querySelectorAll('a[href*="syllabus.pl?predmet="]'));
+        
+        let bestMatchId: string | null = null;
+        let maxId = 0;
         
         for (const link of links) {
             const href = link.getAttribute('href') || '';
@@ -73,21 +78,28 @@ export async function findSubjectId(courseCode: string, subjectName?: string): P
             if (isMatch) {
                 const match = href.match(/predmet=(\d+)/);
                 if (match) {
+                    const idVal = parseInt(match[1], 10);
                     // Start of heuristics:
                     // If we have a code, let's double check if the link TEXT contains the code to reduce false positives
                     if (courseCode && text.includes(courseCode)) {
-                         return match[1];
+                         if (idVal > maxId) {
+                             maxId = idVal;
+                             bestMatchId = match[1];
+                         }
                     }
-                    
                     // If we searched by name and found a result, it's likely correct
-                    if (subjectName) {
-                        return match[1];
+                    else if (subjectName) {
+                         if (idVal > maxId) {
+                             maxId = idVal;
+                             bestMatchId = match[1];
+                         }
                     }
                 }
             }
         }
         
-        return null;
+        console.log(`[findSubjectId] bestMatchId for ${courseCode} (maxId=${maxId}) -> ${bestMatchId}`);
+        return bestMatchId;
         
     } catch (error) {
         console.error(`[findSubjectId] Error searching for ${courseCode}:`, error);

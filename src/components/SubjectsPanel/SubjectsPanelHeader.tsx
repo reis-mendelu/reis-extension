@@ -16,6 +16,7 @@ interface SubjectsPanelHeaderProps {
   studyStats: StudyStats | null;
   plan: StudyPlan | null;
   zameraniProgress?: Map<string, ZameraniProgress>;
+  enrolledCredits?: number;
 }
 
 type ProgressionLevel = 'safe' | 'warning' | 'danger';
@@ -44,7 +45,7 @@ const levelConfig = {
   danger: { bg: 'bg-error/8', border: 'border-error/20', text: 'text-error', bar: 'bg-error', Icon: ShieldAlert },
 };
 
-export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studyStats, plan, zameraniProgress }: SubjectsPanelHeaderProps) {
+export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studyStats, plan, zameraniProgress, enrolledCredits }: SubjectsPanelHeaderProps) {
   const { t, language } = useTranslation();
   const { params } = useUserParams();
   const studium = params?.studium || '';
@@ -79,19 +80,9 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
           {plan?.title || t('subjects.title')}
         </h2>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          <a href={zadostUrl} target="_blank" rel="noopener noreferrer"
-            className="btn btn-ghost btn-sm px-2.5 text-base-content/50 hover:text-primary gap-1.5">
-            <span className="text-xs uppercase whitespace-nowrap">{t('subjects.zadost')}</span>
-            <ExternalLink size={14} />
-          </a>
           <a href={registrationsUrl} target="_blank" rel="noopener noreferrer"
             className="btn btn-ghost btn-sm px-2.5 text-base-content/50 hover:text-primary gap-1.5">
             <span className="text-xs uppercase whitespace-nowrap">{t('sidebar.registrations')}</span>
-            <ExternalLink size={14} />
-          </a>
-          <a href={planCheckUrl} target="_blank" rel="noopener noreferrer"
-            className="btn btn-ghost btn-sm px-2.5 text-base-content/50 hover:text-primary gap-1.5">
-            <span className="text-xs uppercase whitespace-nowrap">IS MENDELU</span>
             <ExternalLink size={14} />
           </a>
         </div>
@@ -132,9 +123,14 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
               )}
             </span>
           )}
-          {studyStats && studyStats.gpaTotal > 0 && (
-            <span className="ml-auto">{t('subjects.gpa')}: {studyStats.weightedGpaTotal.toFixed(2)}</span>
-          )}
+          <span className="flex items-center gap-2 ml-auto">
+            {enrolledCredits != null && enrolledCredits > 0 && (
+              <span>{enrolledCredits} {t('subjects.enrolledCreditsLabel')}</span>
+            )}
+            {studyStats && studyStats.gpaTotal > 0 && (
+              <span>{t('subjects.gpa')}: {studyStats.weightedGpaTotal.toFixed(2)}</span>
+            )}
+          </span>
         </div>
 
         {zameraniMin !== undefined && zameraniMin > 0 && (
