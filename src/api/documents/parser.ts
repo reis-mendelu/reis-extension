@@ -1,4 +1,6 @@
 import { sanitizeString, validateFileName, validateUrl } from "../../utils/validation/index";
+import { ParserError } from "../../utils/parsers/parserGuards";
+import { reportError } from "../../utils/reportError";
 import type { ParsedFile, FileAttachment } from "../../types/documents";
 
 /**
@@ -62,16 +64,21 @@ export function parseServerFiles(html: string): { files: ParsedFile[], paginatio
         const rows = Array.from(table.querySelectorAll('tr.uis-hl-table.lbn, tbody tr')).filter(r => r.querySelectorAll('td').length >= 2);
         
         rows.forEach(row => {
+          try {
             const cells = row.querySelectorAll('td');
             if (cells.length === 0) return;
 
             const adder = (cells[0]?.classList.contains("UISTMNumberCell") || cells[0]?.classList.contains("UISTMNumberCellHidden") || cells[0]?.querySelector('input[type="checkbox"]')) ? 1 : 0;
-            
+
             const nameIdx = indices.name ?? (1 + adder);
             const authorIdx = indices.author ?? (3 + adder);
             const dateIdx = indices.date ?? (4 + adder);
             const commentIdx = indices.comment ?? (2 + adder);
             const subfolderIdx = indices.subfolder ?? adder;
+
+            if (nameIdx >= cells.length) {
+                throw new ParserError('name', 'parseServerFiles', `nameIdx ${nameIdx} >= cells.length ${cells.length}`, row.outerHTML.slice(0, 500));
+            }
 
             const nameCell = cells[nameIdx];
             const file_name = validateFileName(nameCell?.textContent || '');
@@ -111,6 +118,10 @@ export function parseServerFiles(html: string): { files: ParsedFile[], paginatio
             if (extractedFiles.length > 0) {
                 files.push({ subfolder, file_name, file_comment, author, date, files: extractedFiles });
             }
+          } catch (e) {
+            if (e instanceof ParserError) reportError('Parser.parseServerFiles', e, { snippet: e.snippet });
+            else throw e;
+          }
         });
     });
 

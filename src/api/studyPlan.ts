@@ -1,4 +1,6 @@
 import { fetchWithAuth, BASE_URL } from "./client";
+import { parseRequiredInt, parseOptionalInt, ParserError } from "../utils/parsers/parserGuards";
+import { reportError } from "../utils/reportError";
 import type { StudyPlan, DualLanguageStudyPlan, SemesterBlock, SubjectGroup, SubjectStatus, Zamerani, ZamerangSubjectRef } from "../types/studyPlan";
 
 const STUDY_PLAN_URL = `${BASE_URL}/auth/studijni/studijni_povinnosti.pl`;
@@ -107,8 +109,14 @@ function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
                 const creditText = (parentRow.textContent || '').replace(/\s+/g, ' ');
                 const match = creditText.match(L.creditsRegex);
                 if (match) {
-                    creditsAcquired = parseInt(match[1], 10);
-                    creditsRequired = parseInt(match[2], 10);
+                    try {
+                        creditsAcquired = parseRequiredInt(match[1], 'creditsAcquired', 'parseStudyPlanDOM');
+                        creditsRequired = parseRequiredInt(match[2], 'creditsRequired', 'parseStudyPlanDOM');
+                    } catch (e) {
+                        if (e instanceof ParserError) {
+                            reportError('Parser.parseStudyPlanDOM', e, { lang, snippet: creditText.slice(0, 200) });
+                        } else throw e;
+                    }
                 }
             }
             break;
@@ -203,8 +211,8 @@ function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
                     code: (codeCell.textContent || '').trim(),
                     name: cleanName,
                     type: (typeCell.textContent || '').trim(),
-                    credits: parseInt((creditsCell.textContent || '').trim(), 10) || 0,
-                    enrollmentCount: parseInt((enrolledCell.textContent || '').replace(/x/i, '').trim(), 10) || 0,
+                    credits: parseOptionalInt((creditsCell.textContent || '').trim(), 'subject.credits', 'parseStudyPlanDOM') ?? 0,
+                    enrollmentCount: parseOptionalInt((enrolledCell.textContent || '').replace(/x/i, '').trim(), 'subject.enrollmentCount', 'parseStudyPlanDOM') ?? 0,
                     isEnrolled,
                     isFulfilled: subjectFulfilled,
                     rawStatusText: rawStatus,

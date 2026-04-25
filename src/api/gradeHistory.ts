@@ -1,4 +1,5 @@
 import { fetchWithAuth, BASE_URL } from './client';
+import { parseOptionalInt } from '../utils/parsers/parserGuards';
 import type { GradeHistory, CourseGrade } from '../types/documents';
 
 export async function fetchGradeHistory(
@@ -51,19 +52,22 @@ function parseGradeHistory(html: string, studium: string): GradeHistory {
             const predmetId = predmetMatch?.[1] ?? '';
             const courseName = courseLink.textContent?.trim().replace(/\u00a0/g, ' ') ?? '';
 
+            // Column layout (12 cols): 0=Po\u0159, 1=K\u00f3d, 2=P\u0159edm\u011bt, 3=Povinnost,
+            // 4=Jaz, 5=Uk (examType), 6=Pokus (attempt), 7=V\u00fdsledek (grade),
+            // 8=Zad\u00e1no, 9=Zadal, 10=Kredity, 11=Zp\u016fsob.
             const cells = row.querySelectorAll('td');
             const courseCode = cells[1]?.textContent?.trim().replace(/\u00a0/g, ' ') || undefined;
-            const examType = cells[4]?.textContent?.trim() ?? '';
-            const attemptText = cells[5]?.textContent?.trim() ?? '';
-            const attempt = attemptText ? parseInt(attemptText, 10) : null;
+            const examType = cells[5]?.textContent?.trim() ?? '';
+            const attemptText = cells[6]?.textContent?.trim() ?? '';
+            const attempt = parseOptionalInt(attemptText, 'attempt', 'parseGradeHistory');
 
             const gradeDiv = row.querySelector('div.flex-container');
             const gradeText = gradeDiv?.textContent?.trim().replace(/\u00a0/g, ' ') ?? '';
             const letterMatch = gradeText.match(/\(([A-F])\)$/i);
             const gradeLetter = letterMatch ? letterMatch[1].toUpperCase() : '';
 
-            const creditsText = cells[7]?.textContent?.trim() ?? '';
-            const credits = creditsText ? parseInt(creditsText, 10) : null;
+            const creditsText = cells[10]?.textContent?.trim() ?? '';
+            const credits = parseOptionalInt(creditsText, 'credits', 'parseGradeHistory');
 
             if (predmetId && courseName) {
                 grades.push({ period, predmetId, courseCode, courseName, examType, attempt, gradeText, gradeLetter, credits });

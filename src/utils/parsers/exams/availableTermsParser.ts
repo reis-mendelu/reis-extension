@@ -1,5 +1,6 @@
 import type { ScrapedExamSubject, ScrapedExamSection } from './types';
 import { normalizeDateString } from './utils';
+import { reportError } from '../../reportError';
 
 export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: string, n: string) => ScrapedExamSubject, getOrCreateSection: (s: ScrapedExamSubject, n: string) => ScrapedExamSection, lang: string = 'cz') {
     const isEn = lang === 'en';
@@ -32,7 +33,10 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
         const normalizedDateStr = normalizeDateString(dateStr, isEn);
         const [datePart, timePart] = normalizedDateStr.split(' ');
         const [occupied, total] = capacityStr.split('/').map(Number);
-        const isFull = occupied >= total;
+        if (capacityStr && (Number.isNaN(occupied) || Number.isNaN(total))) {
+            reportError('Parser.parseAvailableTerms', new Error(`capacity unparseable: ${JSON.stringify(capacityStr)}`), { code, name });
+        }
+        const isFull = Number.isFinite(occupied) && Number.isFinite(total) && occupied >= total;
 
         const termId = row.querySelector('a[href*="prihlasit_ihned=1"]')?.getAttribute('href')?.match(/termin=(\d+)/)?.[1] ||
                        row.querySelector('a[href*="terminy_info.pl"]')?.getAttribute('href')?.match(/termin=(\d+)/)?.[1] ||

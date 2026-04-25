@@ -1,5 +1,6 @@
 import type { FilesSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
+import { reportError } from '../../utils/reportError';
 import type { ParsedFile } from '../../types/documents';
 
 export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
@@ -104,7 +105,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                 filesLoading: { ...state.filesLoading, [courseCode]: false },
             }));
         } catch (e) {
-            console.warn('[FilesSlice] fetchFilesPriority failed:', e);
+            reportError('FilesSlice.fetchFilesPriority', e, { courseCode });
             set((state) => ({
                 files: { ...state.files, [courseCode]: [] },
                 filesLoading: { ...state.filesLoading, [courseCode]: false },
@@ -156,8 +157,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                             await IndexedDBService.set('files', courseCode, dualData);
                             filesList = currentLang === 'en' ? dualData.en : dualData.cz;
                         } catch (e) {
-                            console.warn('[FilesSlice] language re-fetch failed:', e);
-                            // Re-fetch failed, use existing data
+                            reportError('FilesSlice.refreshFiles:langRefetch', e, { courseCode });
                         }
                     }
                 }
@@ -168,7 +168,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                 filesLoading: { ...state.filesLoading, [courseCode]: false }
             }));
         } catch (e) {
-            console.warn('[FilesSlice] refreshFiles failed:', e);
+            reportError('FilesSlice.refreshFiles', e, { courseCode });
             set((state) => ({
                 files: { ...state.files, [courseCode]: state.files[courseCode] ?? [] },
                 filesLoading: { ...state.filesLoading, [courseCode]: false }
@@ -204,6 +204,6 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                 }
             }
             set({ files: filesMap });
-        } catch (e) { console.warn('[FilesSlice] fetchAllFiles failed:', e); }
+        } catch (e) { reportError('FilesSlice.fetchAllFiles', e); }
     },
 });

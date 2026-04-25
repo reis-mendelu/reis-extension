@@ -10,7 +10,10 @@ import { scrapedNavMenu } from "./sniper";
 
 let topUpPopupRef: Window | null = null;
 
+const IFRAME_ORIGIN = chrome.runtime.getURL('').replace(/\/$/, '');
+
 export async function handleMessage(event: MessageEvent) {
+    if (event.origin !== IFRAME_ORIGIN) return;
     if (event.source !== iframeElement?.contentWindow) return;
     const data = event.data;
     if (!isIframeMessage(data)) return;

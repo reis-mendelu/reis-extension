@@ -7,9 +7,12 @@ interface ProxyRequest {
     reject: (err: Error) => void;
 }
 
+const PARENT_ORIGIN = 'https://is.mendelu.cz';
+
 export function initProxyListener() {
     if (initialized) return; initialized = true;
     window.addEventListener('message', (e: MessageEvent) => {
+        if (e.origin !== PARENT_ORIGIN) return;
         if (e.source !== window.parent || !e.data || typeof e.data !== 'object') return;
         const { type, id, success, data, error } = e.data;
         const handle = (map: Map<string, ProxyRequest>) => {
