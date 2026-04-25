@@ -94,14 +94,19 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
             const folderUrl = `https://is.mendelu.cz/auth/dok_server/slozka.pl?id=${folderId}`;
             const fullFilesList = await fetchFilesFromFolder(folderUrl, currentLang, true, 0, 2);
 
-            // Store full data in IndexedDB
+            // Always persist under the language used at fetch time (correct regardless of current lang).
             const cachedFiles = await IndexedDBService.get('files', courseCode);
             const data = (cachedFiles || { cz: [], en: [] }) as { cz: ParsedFile[], en: ParsedFile[] };
             if (currentLang === 'en') data.en = fullFilesList; else data.cz = fullFilesList;
             await IndexedDBService.set('files', courseCode, data);
 
+            // Language may have changed while the fetch was in flight — display the right one.
+            const activeLang = get().language;
+            const displayList = activeLang === currentLang ? fullFilesList
+                : (activeLang === 'en' ? data.en : data.cz);
+
             set((state) => ({
-                files: { ...state.files, [courseCode]: fullFilesList },
+                files: { ...state.files, [courseCode]: displayList },
                 filesLoading: { ...state.filesLoading, [courseCode]: false },
             }));
         } catch (e) {

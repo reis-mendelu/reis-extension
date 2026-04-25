@@ -8,6 +8,7 @@ import { Messages } from '../types/messages';
 import type { PageCategory } from '../data/pages/types';
 
 export let scrapedNavMenu: PageCategory[] | null = null;
+let messageHandlerRegistered = false;
 
 export function startInjection() {
     if (document.body) {
@@ -58,7 +59,10 @@ function injectAndInitialize() {
 
         injectIframe();
         listenForSearchShortcut();
-        window.addEventListener("message", handleMessage);
+        if (!messageHandlerRegistered) {
+            window.addEventListener("message", handleMessage);
+            messageHandlerRegistered = true;
+        }
         startSyncService();
     };
 
