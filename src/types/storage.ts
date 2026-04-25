@@ -7,6 +7,7 @@ import type { StudyPlan, DualLanguageStudyPlan } from '../types/studyPlan';
 import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { ErasmusCountryData } from '../types/erasmus';
+import type { IskamData } from './iskam';
 
 // --- Base Types using Zod ---
 
@@ -93,6 +94,28 @@ export const GradeHistorySchema = z.custom<GradeHistory>();
 // 'document_notes' store - DocumentNote
 export const DocumentNoteSchema = z.custom<DocumentNote>();
 
+// 'iskam' store - WebISKAM dashboard snapshot (konta + ubytovani + freshness)
+export const IskamDataSchema = z.object({
+    konta: z.array(z.object({
+        name: z.string(),
+        nameCs: z.string().optional(),
+        nameEn: z.string().optional(),
+        balance: z.number(),
+        balanceText: z.string(),
+        topUpHref: z.string().nullable(),
+    })),
+    ubytovani: z.array(z.object({
+        dorm: z.string(),
+        block: z.string(),
+        room: z.string(),
+        startDate: z.string(),
+        endDate: z.string(),
+        status: z.string(),
+        contractHref: z.string().nullable(),
+    })),
+    syncedAt: z.number(),
+}) as z.ZodType<IskamData>;
+
 // Map store names to their schemas for runtime validation
 export const StoreSchemas = {
     files: FilesSchema,
@@ -112,6 +135,7 @@ export const StoreSchemas = {
     odevzdavarny: z.array(z.custom<Odevzdavarna>()),
     erasmus: z.custom<ErasmusCountryData>(),
     document_notes: DocumentNoteSchema,
+    iskam: IskamDataSchema,
 };
 
 export type StoreName = keyof typeof StoreSchemas;

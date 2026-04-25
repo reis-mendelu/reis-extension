@@ -8,6 +8,7 @@ import type { CvicnyTest } from '../../api/cvicneTests';
 import type { Odevzdavarna } from '../../api/odevzdavarny';
 import type { ErasmusCountryData } from '../../types/erasmus';
 import type { HiddenItems, CalendarCustomEvent } from '../../types/calendarTypes';
+import type { IskamData } from '../../types/iskam';
 import { StoreSchemas, type StoreName } from '../../types/storage';
 
 interface ReisDB extends DBSchema {
@@ -81,10 +82,14 @@ interface ReisDB extends DBSchema {
         key: string;
         value: CalendarCustomEvent;
     };
+    iskam: {
+        key: string;
+        value: IskamData;
+    };
 }
 
 const DB_NAME = 'reis_db';
-const DB_VERSION = 17;
+const DB_VERSION = 18;
 
 class IndexedDBServiceImpl {
     private dbPromise: Promise<IDBPDatabase<ReisDB>>;
@@ -96,7 +101,8 @@ class IndexedDBServiceImpl {
                     'files', 'assessments', 'syllabuses', 'classmates',
                     'exams', 'schedule', 'subjects', 'success_rates', 'meta',
                     'grade_history', 'study_plan', 'cvicne_tests', 'odevzdavarny',
-                    'erasmus', 'document_notes', 'hidden_items', 'custom_events'
+                    'erasmus', 'document_notes', 'hidden_items', 'custom_events',
+                    'iskam'
                 ];
                 
                 requiredStores.forEach(store => {

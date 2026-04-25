@@ -1,0 +1,1 @@
+export { IskamPanel } from './IskamPanel';

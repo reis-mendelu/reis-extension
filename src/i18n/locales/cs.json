@@ -1,4 +1,23 @@
 {
+  "iskam": {
+    "title": "WebISKAM Přehled",
+    "accountsLabel": "Konta",
+    "accommodationLabel": "Ubytování",
+    "topUpLabel": "Dobít",
+    "openContractLabel": "Smlouva",
+    "freshnessLabel": "Aktualizováno",
+    "refreshLabel": "Aktualizovat",
+    "daysRemaining": "Smlouva končí za {days} dní",
+    "daysRemainingExpired": "Smlouva skončila",
+    "daysRemainingToday": "Smlouva končí dnes",
+    "emptyTitle": "Žádná data z WebISKAM",
+    "emptyDescription": "Po načtení uvidíš zůstatky kont a aktuální smlouvu o ubytování.",
+    "authTitle": "Přihlas se do WebISKAM",
+    "authDescription": "Pro načtení dat se musíš přihlásit přes Shibboleth.",
+    "reconnectLabel": "Otevřít WebISKAM",
+    "errorTitle": "Něco se pokazilo",
+    "errorDescription": "Data z WebISKAM se nepodařilo načíst. Zkus to znovu."
+  },
   "menu": {
     "title": "Jídelníček",
     "unavailable": "Menu není k dispozici"

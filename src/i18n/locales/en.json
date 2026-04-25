@@ -1,4 +1,23 @@
 {
+  "iskam": {
+    "title": "WebISKAM Overview",
+    "accountsLabel": "Accounts",
+    "accommodationLabel": "Accommodation",
+    "topUpLabel": "Top up",
+    "openContractLabel": "Contract",
+    "freshnessLabel": "Updated",
+    "refreshLabel": "Refresh",
+    "daysRemaining": "Contract ends in {days} days",
+    "daysRemainingExpired": "Contract has ended",
+    "daysRemainingToday": "Contract ends today",
+    "emptyTitle": "No WebISKAM data yet",
+    "emptyDescription": "After loading you'll see your account balances and current accommodation contract.",
+    "authTitle": "Sign in to WebISKAM",
+    "authDescription": "Log in via Shibboleth to load your data.",
+    "reconnectLabel": "Open WebISKAM",
+    "errorTitle": "Something went wrong",
+    "errorDescription": "Could not load WebISKAM data. Try again."
+  },
   "menu": {
     "title": "Today's Menu",
     "unavailable": "Menu not available"
