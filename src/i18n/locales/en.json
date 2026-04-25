@@ -37,7 +37,10 @@
     "dormAdmin": "Dormitory admin",
     "open": "Open",
     "buyCoffeeTitle": "Buy us a coffee!",
-    "logout": "Logout"
+    "logout": "Logout",
+    "basicDetails": "Basic Details",
+    "accounts": "Accounts",
+    "cards": "Cards"
   },
   "sidebar": {
     "profile": "Profile",

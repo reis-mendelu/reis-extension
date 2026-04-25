@@ -37,7 +37,10 @@
     "dormAdmin": "Kolejní administrativa",
     "open": "Otevřít",
     "buyCoffeeTitle": "Pozvi nás na kafe!",
-    "logout": "Odhlásit se"
+    "logout": "Odhlásit se",
+    "basicDetails": "Základní údaje",
+    "accounts": "Konta",
+    "cards": "Karty"
   },
   "sidebar": {
     "profile": "Profil",

@@ -12,6 +12,9 @@ interface MobileBottomNavProps {
   onViewChange: (v: AppView) => void;
   onOpenFeedback?: () => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string) => void;
+  items?: MenuItem[];
+  tabs?: { id: string; label: string; icon: React.ReactNode }[];
+  isIskam?: boolean;
 }
 
 const TAB_ICONS: Record<string, React.ReactNode> = {
@@ -21,10 +24,11 @@ const TAB_ICONS: Record<string, React.ReactNode> = {
   is: <User className="w-5 h-5" />,
 };
 
-export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onOpenSubject }: MobileBottomNavProps) {
+export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onOpenSubject, items, tabs: customTabs, isIskam }: MobileBottomNavProps) {
   const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
-  const menuItems = useMenuItems();
+  const hookItems = useMenuItems();
+  const menuItems = items || hookItems;
   const { t } = useTranslation();
 
   const viceMenuItem: MenuItem = {
@@ -55,7 +59,7 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
     ? viceMenuItem 
     : menuItems.find(m => m.id === activeSheetId) || null;
 
-  const tabs = [
+  const tabs = customTabs || [
     { id: 'dashboard', label: t('sidebar.dashboard'), icon: TAB_ICONS.dashboard },
     { id: 'exams', label: t('sidebar.exams'), icon: TAB_ICONS.exams },
     { id: 'subjects', label: t('sidebar.subjects'), icon: TAB_ICONS.subjects },
@@ -66,6 +70,8 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
   const handleTabClick = (tabId: string) => {
     if (tabId === 'dashboard') {
       onViewChange('calendar');
+    } else if (tabId === 'iskam-dashboard') {
+      onViewChange('iskam-dashboard');
     } else if (tabId === 'exams') {
       onViewChange('exams');
     } else if (tabId === 'subjects') {
@@ -86,6 +92,7 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
 
   const isActive = (tabId: string) => {
     if (tabId === 'dashboard') return currentView === 'calendar';
+    if (tabId === 'iskam-dashboard') return currentView === 'iskam-dashboard';
     if (tabId === 'exams') return currentView === 'exams';
     if (tabId === 'subjects') return currentView === 'subjects';
     if (tabId === 'is') return activeSheetId === 'is';
@@ -141,6 +148,7 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
         isOpen={profileOpen}
         onClose={() => setProfileOpen(false)}
         onOpenFeedback={onOpenFeedback}
+        isIskam={isIskam}
       />
     </>
   );
