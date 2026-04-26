@@ -26,7 +26,8 @@
     "floorLabel": "floor",
     "noFreeRooms": "No free rooms",
     "loadingRooms": "Loading...",
-    "dateFrom": "From"
+    "dateFrom": "From",
+    "gapMonth": "no contracts"
   },
   "menu": {
     "title": "Today's Menu",

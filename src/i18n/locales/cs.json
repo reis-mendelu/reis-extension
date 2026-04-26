@@ -26,7 +26,8 @@
     "floorLabel": "patro",
     "noFreeRooms": "Žádné volné pokoje",
     "loadingRooms": "Načítám...",
-    "dateFrom": "Od"
+    "dateFrom": "Od",
+    "gapMonth": "prázdniny"
   },
   "menu": {
     "title": "Jídelníček",

@@ -2,12 +2,22 @@ import { useState } from 'react';
 import { format, addMonths, subMonths } from 'date-fns';
 import { cs as csLocale } from 'date-fns/locale';
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { ISKAM_CAMPUSES, academicYearDates } from '../../api/iskam/volneKapacity';
+import { ISKAM_CAMPUSES, academicYearDates } from '../../api/iskam/volneKapacity'; // academicYearDates used for default month init
 import type { VolneKapacityRoom } from '../../types/iskam';
 import { createIskamT, type IskamLanguage } from '../../i18n/iskamTranslate';
 
 function monthToOdCz(month: Date): string {
     return `01.${String(month.getMonth() + 1).padStart(2, '0')}.${month.getFullYear()}`;
+}
+
+function dooFromMonth(month: Date): string {
+    const endYear = month.getMonth() >= 8 ? month.getFullYear() + 1 : month.getFullYear();
+    return `30.06.${endYear}`;
+}
+
+function isGapMonth(month: Date): boolean {
+    const m = month.getMonth();
+    return m === 6 || m === 7; // July (6) or August (7)
 }
 
 function fetchBlockViaContentScript(blockId: string, od: string, doo: string): Promise<VolneKapacityRoom[]> {
@@ -54,8 +64,8 @@ export function VolneKapacitySection({ language }: Props) {
     };
 
     const fetchCampus = async (campusName: string, blocks: { id: string; label: string }[], fetchMonth: Date) => {
-        const { doo } = academicYearDates();
         const od = monthToOdCz(fetchMonth);
+        const doo = dooFromMonth(fetchMonth);
         setCampuses(prev => ({ ...prev, [campusName]: { blocks: [], fetching: true, expanded: true } }));
         for (const block of blocks) {
             const rooms = await fetchBlockViaContentScript(block.id, od, doo).catch(() => [] as VolneKapacityRoom[]);
@@ -98,9 +108,14 @@ export function VolneKapacitySection({ language }: Props) {
                             <button onClick={() => shiftMonth(-1)} className="btn btn-ghost btn-xs btn-square">
                                 <ChevronLeft size={12} />
                             </button>
-                            <span className="text-xs font-medium w-28 text-center capitalize">
-                                {format(month, 'LLLL yyyy', { locale: language === 'en' ? undefined : csLocale })}
-                            </span>
+                            <div className="flex flex-col items-center w-28">
+                                <span className={`text-xs font-medium text-center capitalize ${isGapMonth(month) ? 'text-base-content/30' : ''}`}>
+                                    {format(month, 'LLLL yyyy', { locale: language === 'en' ? undefined : csLocale })}
+                                </span>
+                                {isGapMonth(month) && (
+                                    <span className="text-[10px] text-warning/70 leading-tight">{t('iskam.gapMonth')}</span>
+                                )}
+                            </div>
                             <button onClick={() => shiftMonth(1)} className="btn btn-ghost btn-xs btn-square">
                                 <ChevronRight size={12} />
                             </button>
@@ -132,17 +147,13 @@ export function VolneKapacitySection({ language }: Props) {
 
                                 {isExpanded && (
                                     <div className="px-4 pb-3 flex flex-col gap-3">
+                                        {freeCount === 0 && !state.fetching && (
+                                            <div className="text-xs text-base-content/30">{t('iskam.noFreeRooms')}</div>
+                                        )}
                                         {state.blocks.map(block => {
                                             const freeRooms = block.rooms.filter(r => r.free > 0);
                                             const totalFree = freeRooms.reduce((s, r) => s + r.free, 0);
-                                            if (totalFree === 0 && !state.fetching) return (
-                                                <div key={block.label}>
-                                                    <div className="text-xs font-semibold text-base-content/40 uppercase tracking-wide mb-1">
-                                                        {t('iskam.blockLabel')} {block.label}
-                                                    </div>
-                                                    <div className="text-xs text-base-content/30">{t('iskam.noFreeRooms')}</div>
-                                                </div>
-                                            );
+                                            if (totalFree === 0) return null;
                                             const byFloor = groupByFloor(freeRooms);
                                             return (
                                                 <div key={block.label}>
