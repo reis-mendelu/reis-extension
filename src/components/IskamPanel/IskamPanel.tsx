@@ -1,4 +1,5 @@
-import { Wallet, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import { Wallet, ChevronDown, ChevronUp } from 'lucide-react';
 import { useIskamStore } from '../../store/iskamStore';
 import { createIskamT, type IskamLanguage } from '../../i18n/iskamTranslate';
 import { useAppStore } from '../../store/useAppStore';
@@ -11,6 +12,8 @@ import { isStale } from './freshness';
 import { ISKAM_BASE } from '../../api/iskam/client';
 
 export function IskamPanel() {
+    const [contractsOpen, setContractsOpen] = useState(false);
+
     const data = useIskamStore(s => s.data);
     const status = useIskamStore(s => s.status);
     const error = useIskamStore(s => s.error);
@@ -28,12 +31,10 @@ export function IskamPanel() {
     const dimmed = isStale(data.syncedAt);
     const showAuthBanner = status === 'error' && error === 'auth';
 
-    // Partition accounts: Main account vs Others (deposits, etc.)
-    const mainAccount = data.konta.find(k => 
-        k.name.toLowerCase().includes('hlavní') || 
+    const mainAccount = data.konta.find(k =>
+        k.name.toLowerCase().includes('hlavní') ||
         k.name.toLowerCase().includes('main')
     );
-    const otherAccounts = data.konta.filter(k => k !== mainAccount);
 
     return (
         <div className="flex flex-col gap-4 p-4 pt-2 overflow-y-auto max-h-full pb-20">
@@ -56,18 +57,7 @@ export function IskamPanel() {
                 </div>
             )}
 
-            {/* 2. OTHER ACCOUNTS (deposits etc.) — inline, never hidden */}
-            {otherAccounts.length > 0 && (
-                <div className="card bg-base-100 border border-base-200 shadow-sm">
-                    <div className="card-body p-0">
-                        {otherAccounts.map(row => (
-                            <KontoCard key={row.name} row={row} language={language} variant="minimal" dimmed={dimmed} />
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* 3. ACTIVE RESERVATIONS */}
+            {/* 2. ACTIVE RESERVATIONS */}
             {data.reservations && data.reservations.length > 0 && (
                 <section className="flex flex-col gap-2">
                     <h3 className="text-xs font-semibold text-base-content/50 uppercase tracking-widest px-1">
@@ -79,19 +69,28 @@ export function IskamPanel() {
                 </section>
             )}
 
-            {/* 4. HOUSING CONTRACTS — expandable, collapsed by default */}
+            {/* 3. HOUSING CONTRACTS — card pattern, collapsed by default */}
             {data.ubytovani.length > 0 && (
-                <div className="collapse bg-base-100 border border-base-200 shadow-sm rounded-2xl">
-                    <input type="checkbox" className="min-h-0" />
-                    <div className="collapse-title text-xs font-semibold text-base-content/50 uppercase tracking-widest flex items-center gap-2 min-h-0 py-3 px-4">
-                        <span>{t('iskam.accommodationLabel')}</span>
-                        <ChevronDown size={12} className="ml-auto opacity-40" />
-                    </div>
-                    <div className="collapse-content flex flex-col gap-2 px-4 pb-4">
-                        {data.ubytovani.map((row, i) => (
-                            <UbytovaniCard key={`${row.dorm}-${row.room}-${i}`} row={row} language={language} dimmed={dimmed} />
-                        ))}
-                    </div>
+                <div className="card bg-base-100 border border-base-200 shadow-sm overflow-hidden">
+                    <button
+                        onClick={() => setContractsOpen(o => !o)}
+                        className="flex items-center justify-between w-full px-4 py-3 hover:bg-base-200/50 transition-colors"
+                    >
+                        <span className="text-xs font-semibold text-base-content/50 uppercase tracking-widest">
+                            {t('iskam.accommodationLabel')}
+                        </span>
+                        {contractsOpen
+                            ? <ChevronUp size={14} className="text-base-content/40" />
+                            : <ChevronDown size={14} className="text-base-content/40" />
+                        }
+                    </button>
+                    {contractsOpen && (
+                        <div className="flex flex-col gap-2 px-4 pb-4 border-t border-base-200">
+                            {data.ubytovani.map((row, i) => (
+                                <UbytovaniCard key={`${row.dorm}-${row.room}-${i}`} row={row} language={language} dimmed={dimmed} />
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
