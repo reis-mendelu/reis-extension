@@ -25,7 +25,8 @@
     "freeLabel": "volných",
     "floorLabel": "patro",
     "noFreeRooms": "Žádné volné pokoje",
-    "loadingRooms": "Načítám..."
+    "loadingRooms": "Načítám...",
+    "dateFrom": "Od"
   },
   "menu": {
     "title": "Jídelníček",

@@ -14,17 +14,16 @@ export const ISKAM_CAMPUSES: IskamCampus[] = [
     { name: 'Akademie', blocks: [{ id: '17', label: 'KA' }] },
 ];
 
-function academicYearDates(): { od: string; doo: string } {
+export function academicYearDates(): { od: string; doo: string } {
     const now = new Date();
-    // Server defaults to the NEXT upcoming academic year (enrollment is prospective).
-    // Jan–Aug: next Sep is this calendar year. Sep–Dec: next Sep is next calendar year.
     const y = now.getMonth() < 8 ? now.getFullYear() : now.getFullYear() + 1;
     return { od: `01.09.${y}`, doo: `30.06.${y + 1}` };
 }
 
-export async function fetchVolneKapacityBlock(blockId: string): Promise<VolneKapacityRoom[]> {
-    const { od, doo } = academicYearDates();
+
+export async function fetchVolneKapacityBlock(blockId: string, od: string, doo: string): Promise<VolneKapacityRoom[]> {
     console.log('[reIS:iskam] fetchVolneKapacityBlock', { blockId, od, doo });
+
     const body = new URLSearchParams({ datumOd: od, datumDo: doo, selBlok: blockId, buttSeek: 'Zobrazit' });
     const html = await postIskam('/VolneKapacity', body);
     const rooms = parseVolneKapacity(html);

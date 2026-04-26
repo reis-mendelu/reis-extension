@@ -25,7 +25,8 @@
     "freeLabel": "free",
     "floorLabel": "floor",
     "noFreeRooms": "No free rooms",
-    "loadingRooms": "Loading..."
+    "loadingRooms": "Loading...",
+    "dateFrom": "From"
   },
   "menu": {
     "title": "Today's Menu",

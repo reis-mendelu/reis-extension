@@ -18,9 +18,9 @@ export async function handleIskamMessage(event: MessageEvent): Promise<void> {
     }
 
     if (data.type === 'ISKAM_FETCH_BLOCK') {
-        const { id, blockId } = data;
+        const { id, blockId, od, doo } = data;
         console.log('[reIS:iskam] ISKAM_FETCH_BLOCK received, blockId:', blockId);
-        fetchVolneKapacityBlock(blockId)
+        fetchVolneKapacityBlock(blockId, od, doo)
             .then(rooms => {
                 console.log('[reIS:iskam] ISKAM_FETCH_BLOCK result, blockId:', blockId, 'rooms:', rooms.length);
                 iskamIframeElement?.contentWindow?.postMessage({ type: 'ISKAM_BLOCK_RESULT', id, rooms }, IFRAME_ORIGIN);

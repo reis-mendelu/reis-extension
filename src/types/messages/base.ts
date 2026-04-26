@@ -28,7 +28,7 @@ export interface IskamSyncUpdateMessage {
         error: 'auth' | 'network' | null;
     };
 }
-export interface IskamFetchBlockMessage { type: 'ISKAM_FETCH_BLOCK'; id: string; blockId: string; }
+export interface IskamFetchBlockMessage { type: 'ISKAM_FETCH_BLOCK'; id: string; blockId: string; od: string; doo: string; }
 export interface IskamBlockResultMessage { type: 'ISKAM_BLOCK_RESULT'; id: string; rooms: import('../iskam').VolneKapacityRoom[]; }
 
 export type IframeToContentMessage = ReadyMessage | RequestDataMessage | FetchRequestMessage | ActionRequestMessage | IskamReadyMessage | IskamFetchBlockMessage;
