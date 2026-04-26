@@ -37,7 +37,7 @@ export function KontoCard({ row, language, dimmed, variant = 'default' }: KontoC
                             href={`${ISKAM_BASE}${row.topUpHref}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="btn btn-primary w-full mt-3 shadow-sm no-animation"
+                            className="btn btn-primary btn-sm mt-3 no-animation border-none"
                         >
                             {t('iskam.topUpLabel')} →
                         </a>
