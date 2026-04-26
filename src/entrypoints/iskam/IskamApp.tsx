@@ -4,7 +4,6 @@ import { IskamPanel } from '@/components/IskamPanel';
 import { Sidebar } from '@/components/Sidebar';
 import { MobileBottomNav } from '@/components/MobileNav/MobileBottomNav';
 import { Toaster } from '@/components/ui/sonner';
-import { WelcomeModal } from '@/components/Onboarding/WelcomeModal';
 import { initializeIskamStore, useIskamStore } from '@/store/iskamStore';
 import { IskamMessages } from '@/types/messages';
 import { IndexedDBService } from '@/services/storage';
@@ -87,8 +86,6 @@ export function IskamApp() {
     return (
         <div className="flex h-screen overflow-hidden bg-base-200 font-sans text-base-content">
             <Toaster position="top-center" />
-            <WelcomeModal />
-
             <Sidebar
                 currentView={currentView}
                 onViewChange={setCurrentView}
