@@ -1,7 +1,7 @@
 import type { UbytovaniRow } from '../../../types/iskam';
 
 const TABLE_ID = 'tablePrehledUbytovani';
-const ACTIVE_STATUSES = new Set(['Ubytovaný', 'Rezervace', 'Accommodated', 'Reservation']);
+const ACTIVE_STATUSES = new Set(['Ubytovaný', 'Rezervace', 'Accommodated', 'Reservation', 'Booking']);
 
 export function parseUbytovani(html: string): UbytovaniRow[] {
     const doc = new DOMParser().parseFromString(html, 'text/html');

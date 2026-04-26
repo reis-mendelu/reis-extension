@@ -108,16 +108,6 @@ async function handleAction(id: string, action: string, payload: unknown) {
                 break;
             }
             case "logout": {
-                if (window.location.hostname.includes('webiskam')) {
-                    const dynamicForm = document.createElement('form');
-                    dynamicForm.method = 'POST';
-                    dynamicForm.action = '/Prihlaseni/LogOut';
-                    document.body.appendChild(dynamicForm);
-                    dynamicForm.submit();
-                    result = { success: true };
-                    break;
-                }
-
                 if (!window.location.pathname.includes('/auth/')) {
                     console.warn("Not in an authenticated session. No need to log out.");
                     result = { success: false, reason: 'not_authenticated' };

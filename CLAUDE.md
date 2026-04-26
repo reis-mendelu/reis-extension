@@ -52,6 +52,37 @@ Store uses the **slice pattern**: `src/store/slices/create*Slice.ts` composed in
 - Internal code uses `'cs'`/`'en'`; IS Mendelu API uses `'cz'`/`'en'` — mapping applied in API layer
 - UI strings via `useTranslation()` hook reading from `src/i18n/locales/{cs,en}.json`
 
+## Host Integration Contract
+
+The extension uses a **push-based postMessage IPC** for each injected host. There are exactly two execution contexts: the **content script** (runs on the host page, has auth cookies) and the **iframe app** (chrome-extension:// origin, no auth cookies). Data always flows content script → iframe, never the reverse.
+
+### IS Mendelu (`is.mendelu.cz`)
+| Role | File | Responsibility |
+|------|------|----------------|
+| Content script entry | `entrypoints/content.ts` | Registers `handleMessage`, calls `startInjection()` |
+| Iframe injection + queue | `injector/iframeManager.ts` | `injectIframe()`, `markIframeReady()`, `sendToIframe()` |
+| Data fetching | `injector/syncService.ts` | `startSyncService()` → `syncAllData()` → `sendToIframe(REIS_SYNC_UPDATE)` |
+| Message routing | `injector/messageHandler.ts` | Handles `REIS_READY` → flush queue; handles actions/fetch/data |
+| Iframe bootstrap | `entrypoints/main/main.tsx` → `hooks/useAppLogic.ts` | IDB hydration → signal `REIS_READY` → listen for `REIS_SYNC_UPDATE` |
+| Skeleton guard | `store/slices/createSyncSlice.ts` | `handshakeDone` / `handshakeTimedOut` (10s) unblock skeletons |
+
+### WebISKAM (`webiskam.mendelu.cz`)
+| Role | File | Responsibility |
+|------|------|----------------|
+| Content script entry | `entrypoints/webiskam.content.ts` | `document.open/write/close`, registers `handleIskamMessage`, calls `startIskamSync()` |
+| Iframe injection + queue | `injector/iskamInjector.ts` | `startIskamInjection()`, `markIskamIframeReady()`, `sendToIskamIframe()` |
+| Data fetching | `injector/iskamSyncService.ts` | `startIskamSync()` → `syncIskamData()` → `sendToIskamIframe(ISKAM_SYNC_UPDATE)` |
+| Message routing | `injector/iskamMessageHandler.ts` | Handles `ISKAM_READY` → flush queue + send current state |
+| Iframe bootstrap | `entrypoints/iskam/IskamApp.tsx` | IDB hydration → signal `ISKAM_READY` → listen for `ISKAM_SYNC_UPDATE` |
+| Skeleton guard | `store/iskamStore.ts` | `handshakeDone` / `handshakeTimedOut` (10s) unblock skeletons |
+
+### Isolation rules
+- `useIskamStore` is separate from `useAppStore`. They share only theme/language (via `loadTheme`/`loadLanguage`).
+- `IskamMessages` factory is separate from `Messages` factory. ISKAM message types begin with `ISKAM_`.
+- The ISKAM iframe never calls the WebISKAM API directly. Only the content script calls `fetchDualLanguageIskam()`.
+- IDB writes for ISKAM data happen in the iframe (`IskamApp.tsx`), not in the content script — mirrors IS Mendelu pattern.
+- Adding a new host: create `injector/<host>Injector.ts`, `injector/<host>SyncService.ts`, `injector/<host>MessageHandler.ts`, message types (`ISKAM_*` → `<HOST>_*`), and iframe bootstrap logic.
+
 ## Parser Rules
 
 IS Mendelu HTML parsers (`src/api/documents/parser.ts`, `src/api/ukoly.ts`, `src/api/osnovy.ts`, `src/utils/parsers/`) are **extremely brittle** and must almost never be altered.

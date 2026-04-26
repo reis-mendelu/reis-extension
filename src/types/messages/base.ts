@@ -1,4 +1,5 @@
 import type { DualLanguageStudyPlan, StudyStats } from '../studyPlan';
+import type { IskamData } from '../iskam';
 
 export type DataRequestType = 'schedule' | 'exams' | 'subjects' | 'files' | 'assessments' | 'all';
 export type ActionType = 'register_exam' | 'unregister_exam' | 'toggle_outlook_sync' | 'download_file' | 'trigger_sync' | 'open_url' | 'logout';
@@ -11,8 +12,6 @@ export interface RequestDataMessage { type: 'REIS_REQUEST_DATA'; dataType: DataR
 export interface FetchRequestMessage { type: 'REIS_FETCH'; id: string; url: string; options?: { method?: string; headers?: Record<string, string>; body?: string; }; }
 export interface ActionRequestMessage { type: 'REIS_ACTION'; id: string; action: ActionType; payload: unknown; }
 
-export type IframeToContentMessage = ReadyMessage | RequestDataMessage | FetchRequestMessage | ActionRequestMessage;
-
 export interface DataResponseMessage { type: 'REIS_DATA'; dataType: DataRequestType; data: unknown; error?: string; }
 export interface FetchResultMessage { type: 'REIS_FETCH_RESULT'; id: string; success: boolean; data?: string; error?: string; }
 export interface ActionResultMessage { type: 'REIS_ACTION_RESULT'; id: string; success: boolean; data?: unknown; error?: string; }
@@ -20,4 +19,15 @@ export interface SyncUpdateMessage { type: 'REIS_SYNC_UPDATE'; data: SyncedData;
 export interface PopupStateMessage { type: 'REIS_POPUP_STATE'; open: boolean; }
 export interface NavMenuMessage { type: 'REIS_NAV_MENU'; categories: { id: string; label: string; icon?: string; expandable?: boolean; children: { id: string; label: string; labelEn?: string; href: string }[] }[]; }
 
-export type ContentToIframeMessage = DataResponseMessage | FetchResultMessage | ActionResultMessage | SyncUpdateMessage | PopupStateMessage | NavMenuMessage;
+export interface IskamReadyMessage { type: 'ISKAM_READY'; }
+export interface IskamSyncUpdateMessage {
+    type: 'ISKAM_SYNC_UPDATE';
+    data: {
+        iskamData: IskamData | null;
+        isSyncing: boolean;
+        error: 'auth' | 'network' | null;
+    };
+}
+
+export type IframeToContentMessage = ReadyMessage | RequestDataMessage | FetchRequestMessage | ActionRequestMessage | IskamReadyMessage;
+export type ContentToIframeMessage = DataResponseMessage | FetchResultMessage | ActionResultMessage | SyncUpdateMessage | PopupStateMessage | NavMenuMessage | IskamSyncUpdateMessage;

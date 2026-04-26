@@ -12,11 +12,20 @@ export function isStale(syncedAt: number, now: number = Date.now()): boolean {
 }
 
 export function parseCzechDate(s: string): Date | null {
-    const m = s.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})$/);
-    if (!m) return null;
-    const [, d, mo, y] = m;
-    const date = new Date(Number(y), Number(mo) - 1, Number(d));
-    return Number.isFinite(date.getTime()) ? date : null;
+    // CZ: D.M.YYYY  |  EN: M/D/YYYY
+    const czMatch = s.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})$/);
+    if (czMatch) {
+        const [, d, mo, y] = czMatch;
+        const date = new Date(Number(y), Number(mo) - 1, Number(d));
+        return Number.isFinite(date.getTime()) ? date : null;
+    }
+    const enMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (enMatch) {
+        const [, mo, d, y] = enMatch;
+        const date = new Date(Number(y), Number(mo) - 1, Number(d));
+        return Number.isFinite(date.getTime()) ? date : null;
+    }
+    return null;
 }
 
 export function daysUntil(target: Date, now: Date = new Date()): number {

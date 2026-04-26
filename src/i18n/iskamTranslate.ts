@@ -9,12 +9,6 @@ const locales: Record<string, Record<string, unknown>> = {
 
 export type IskamLanguage = 'cz' | 'en';
 
-export function detectIskamLanguage(): IskamLanguage {
-    const docLang = (document.documentElement.lang || '').toLowerCase();
-    if (docLang.startsWith('en')) return 'en';
-    return 'cz';
-}
-
 export function createIskamT(language: IskamLanguage) {
     const currentLocale = locales[language] || locales.cz;
 

@@ -1,31 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useIskamStore } from '../../store/iskamStore';
-import { detectIskamLanguage, createIskamT } from '../../i18n/iskamTranslate';
+import { createIskamT, type IskamLanguage } from '../../i18n/iskamTranslate';
+import { useAppStore } from '../../store/useAppStore';
 import { KontoCard } from './KontoCard';
 import { UbytovaniCard } from './UbytovaniCard';
 import { IskamPanelSkeleton } from './IskamPanelSkeleton';
 import { EmptyIskamState } from './EmptyIskamState';
-import { formatTime, isStale } from './freshness';
+import { isStale } from './freshness';
 
 export function IskamPanel() {
     const [isAccommodationOpen, setIsAccommodationOpen] = useState(false);
     const data = useIskamStore(s => s.data);
     const status = useIskamStore(s => s.status);
     const error = useIskamStore(s => s.error);
-    const refresh = useIskamStore(s => s.refresh);
-    const loadFromCache = useIskamStore(s => s.loadFromCache);
+    const handshakeDone = useIskamStore(s => s.handshakeDone);
+    const handshakeTimedOut = useIskamStore(s => s.handshakeTimedOut);
 
-    const language = detectIskamLanguage();
+    const language = useAppStore(s => s.language) as IskamLanguage;
     const t = createIskamT(language);
 
-    useEffect(() => {
-        loadFromCache().then(() => refresh());
-    }, [loadFromCache, refresh]);
-
-    if (!data && status === 'loading') return <IskamPanelSkeleton />;
+    if (!data && !handshakeDone && !handshakeTimedOut) return <IskamPanelSkeleton />;
     if (!data && status === 'error' && error === 'auth') return <EmptyIskamState language={language} variant="auth" />;
-    if (!data && status === 'error') return <EmptyIskamState language={language} variant="error" onRetry={refresh} />;
+    if (!data && status === 'error') return <EmptyIskamState language={language} variant="error" />;
     if (!data) return <EmptyIskamState language={language} variant="empty" />;
 
     const dimmed = isStale(data.syncedAt);
