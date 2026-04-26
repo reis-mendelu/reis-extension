@@ -32,6 +32,14 @@ export interface IskamReservation {
     price?: string;
 }
 
+export interface VolneKapacityRoom {
+    floor: string;
+    room: string;
+    beds: number;
+    free: number;
+    nationalities: string;
+}
+
 export interface IskamData {
     konta: KontoRow[];
     ubytovani: UbytovaniRow[];

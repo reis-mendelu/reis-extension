@@ -19,7 +19,13 @@
     "errorTitle": "Něco se pokazilo",
     "errorDescription": "Data z WebISKAM se nepodařilo načíst. Zkus to znovu.",
     "reservationsLabel": "Moje rezervace",
-    "noMainAccount": "Hlavní konto nenalezeno."
+    "noMainAccount": "Hlavní konto nenalezeno.",
+    "freeRoomsLabel": "Volné pokoje",
+    "blockLabel": "Blok",
+    "freeLabel": "volných",
+    "floorLabel": "patro",
+    "noFreeRooms": "Žádné volné pokoje",
+    "loadingRooms": "Načítám..."
   },
   "menu": {
     "title": "Jídelníček",

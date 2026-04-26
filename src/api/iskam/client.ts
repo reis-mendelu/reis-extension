@@ -37,6 +37,20 @@ export async function fetchIskam(path: string, lang: 'cz' | 'en' = 'cz'): Promis
     return html;
 }
 
+export async function postIskam(path: string, body: URLSearchParams): Promise<string> {
+    const response = await fetch(`${ISKAM_BASE}${path}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString(),
+    });
+    if (isAuthRedirect(response)) throw new IskamAuthError();
+    if (!response.ok) throw new Error(`WebISKAM POST failed: ${response.status}`);
+    const html = await response.text();
+    if (html.includes('alibaba.mendelu.cz/idp')) throw new IskamAuthError();
+    return html;
+}
+
 export async function requestIskam(path: string): Promise<string> {
     const response = await fetch(`${ISKAM_BASE}${path}`, { credentials: 'include' });
     if (isAuthRedirect(response)) {

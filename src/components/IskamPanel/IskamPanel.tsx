@@ -10,6 +10,7 @@ import { IskamPanelSkeleton } from './IskamPanelSkeleton';
 import { EmptyIskamState } from './EmptyIskamState';
 import { isStale } from './freshness';
 import { ISKAM_BASE } from '../../api/iskam/client';
+import { VolneKapacitySection } from './VolneKapacitySection';
 
 export function IskamPanel() {
     const [contractsOpen, setContractsOpen] = useState(false);
@@ -69,7 +70,10 @@ export function IskamPanel() {
                 </section>
             )}
 
-            {/* 3. HOUSING CONTRACTS — card pattern, collapsed by default */}
+            {/* 3. FREE ROOMS */}
+            <VolneKapacitySection language={language} />
+
+            {/* 4. HOUSING CONTRACTS — card pattern, collapsed by default */}
             {data.ubytovani.length > 0 && (
                 <div className="card bg-base-100 border border-base-200 shadow-sm overflow-hidden">
                     <button
