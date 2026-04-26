@@ -70,7 +70,7 @@ export function IskamApp() {
     const iskamTabs = [
         { id: 'iskam-dashboard', label: 'ISKAM', icon: <LayoutDashboard className="w-5 h-5" /> },
         { id: 'accounts', label: 'Konta', icon: <Wallet className="w-5 h-5" /> },
-        { id: 'cards', label: 'Karty', icon: <CreditCard className="w-5 h-5" /> },
+        { id: 'skm', label: 'SKM', icon: <Building2 className="w-5 h-5" /> },
         { id: 'profile', label: 'Profil', icon: <User className="w-5 h-5" /> },
     ];
 
