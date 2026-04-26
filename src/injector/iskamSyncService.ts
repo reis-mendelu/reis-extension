@@ -11,24 +11,19 @@ let isSyncingIskam = false;
 export async function syncIskamData(): Promise<void> {
     if (isSyncingIskam) return;
     isSyncingIskam = true;
-    console.log('[reIS:iskam] syncIskamData start');
 
     sendToIskamIframe(IskamMessages.iskamSyncUpdate(cachedIskamData, true, null));
 
     try {
         const data = await fetchDualLanguageIskam();
         cachedIskamData = data;
-        console.log('[reIS:iskam] syncIskamData success', data);
         sendToIskamIframe(IskamMessages.iskamSyncUpdate(data, false, null));
     } catch (err) {
         if (err instanceof IskamAuthError) {
-            // Session expired — navigate to the extension's entry page so WebISKAM
-            // triggers Shibboleth and returns here after login.
-            console.warn('[reIS:iskam] auth error, redirecting to ObjednavkyStravovani');
             window.location.href = `${ISKAM_BASE}/ObjednavkyStravovani`;
             return;
         }
-        console.error('[reIS:iskam] syncIskamData network error', err);
+        console.error('[reIS:iskam] sync error', err);
         sendToIskamIframe(IskamMessages.iskamSyncUpdate(cachedIskamData, false, 'network'));
     } finally {
         isSyncingIskam = false;

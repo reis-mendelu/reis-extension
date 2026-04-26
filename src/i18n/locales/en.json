@@ -4,6 +4,7 @@
     "accountsLabel": "Accounts",
     "accommodationLabel": "Contracts",
     "topUpLabel": "Top up",
+    "customAmountPlaceholder": "custom",
     "openContractLabel": "Contract",
     "freshnessLabel": "Updated",
     "refreshLabel": "Refresh",

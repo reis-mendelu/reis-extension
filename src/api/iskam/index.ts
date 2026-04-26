@@ -12,16 +12,12 @@ function mergeKontaLanguages(cz: KontoRow[], en: KontoRow[]): KontoRow[] {
 }
 
 export async function fetchDualLanguageIskam(): Promise<IskamData> {
-    console.log('[reIS:iskam] fetchDualLanguageIskam start');
-
     // Sequential — lang-switch sets a session cookie, parallel requests race and corrupt each other.
     const czKonta = await fetchKonta('cz');
-    const enKonta = await fetchKonta('en').catch((e) => { console.warn('[reIS:iskam] fetchKonta(en) failed', e); return [] as KontoRow[]; });
+    const enKonta = await fetchKonta('en').catch(() => [] as KontoRow[]);
     const ubytovani = await fetchUbytovani('cz');
     const profile = await fetchProfile();
     const reservations = await fetchReservations();
-
-    console.log(`[reIS:iskam] czKonta=${czKonta.length} enKonta=${enKonta.length} ubytovani=${ubytovani.length} profile=${!!profile} reservations=${reservations.length}`);
 
     return {
         konta: enKonta.length === czKonta.length ? mergeKontaLanguages(czKonta, enKonta) : czKonta,
