@@ -22,9 +22,10 @@ export async function syncIskamData(): Promise<void> {
         sendToIskamIframe(IskamMessages.iskamSyncUpdate(data, false, null));
     } catch (err) {
         if (err instanceof IskamAuthError) {
-            // Session expired — hand the page back to WebISKAM so Shibboleth can log them in.
-            console.warn('[reIS:iskam] auth error, redirecting to WebISKAM login');
-            window.location.href = `${ISKAM_BASE}/`;
+            // Session expired — navigate to the extension's entry page so WebISKAM
+            // triggers Shibboleth and returns here after login.
+            console.warn('[reIS:iskam] auth error, redirecting to ObjednavkyStravovani');
+            window.location.href = `${ISKAM_BASE}/ObjednavkyStravovani`;
             return;
         }
         console.error('[reIS:iskam] syncIskamData network error', err);

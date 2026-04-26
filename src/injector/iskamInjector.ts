@@ -34,6 +34,7 @@ function injectIframe() {
     document.body.appendChild(iskamIframeElement);
     document.body.style.cssText = 'margin: 0; padding: 0; overflow: hidden;';
     document.documentElement.style.cssText = 'margin: 0; padding: 0; overflow: hidden;';
+    document.documentElement.style.visibility = 'visible';
 }
 
 export function markIskamIframeReady() {
@@ -53,5 +54,15 @@ export function sendToIskamIframe(message: unknown) {
 }
 
 export function startIskamInjection() {
-    injectIframe();
+    if (document.body) {
+        injectIframe();
+    } else {
+        const observer = new MutationObserver((_mutations, obs) => {
+            if (document.body) {
+                obs.disconnect();
+                injectIframe();
+            }
+        });
+        observer.observe(document.documentElement, { childList: true });
+    }
 }

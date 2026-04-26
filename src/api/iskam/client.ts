@@ -7,8 +7,12 @@ const LANG_COOKIE_PATH: Record<'cz' | 'en', string> = {
     en: 'en-US',
 };
 
-function isShibbolethRedirect(response: Response): boolean {
-    return response.url.includes('alibaba.mendelu.cz') || response.url.includes('/idp/');
+function isAuthRedirect(response: Response): boolean {
+    return (
+        response.url.includes('alibaba.mendelu.cz') ||
+        response.url.includes('/idp/') ||
+        response.url.includes('/Home/Index')
+    );
 }
 
 export async function fetchIskam(path: string, lang: 'cz' | 'en' = 'cz'): Promise<string> {
@@ -24,7 +28,7 @@ export async function fetchIskam(path: string, lang: 'cz' | 'en' = 'cz'): Promis
     const response = await fetch(langSwitch, { credentials: 'include' });
     console.log(`[reIS:iskam] response status=${response.status} finalUrl=${response.url}`);
 
-    if (isShibbolethRedirect(response)) {
+    if (isAuthRedirect(response)) {
         console.warn(`[reIS:iskam] auth redirect detected → ${response.url}`);
         throw new IskamAuthError();
     }
@@ -42,7 +46,7 @@ export async function fetchIskam(path: string, lang: 'cz' | 'en' = 'cz'): Promis
 
 export async function requestIskam(path: string): Promise<string> {
     const response = await fetch(`${ISKAM_BASE}${path}`, { credentials: 'include' });
-    if (isShibbolethRedirect(response)) {
+    if (isAuthRedirect(response)) {
         throw new IskamAuthError();
     }
     if (!response.ok) {

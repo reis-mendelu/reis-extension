@@ -6,18 +6,17 @@ import { ISKAM_ENABLED } from '@/config/featureFlags';
 
 export default defineContentScript({
     matches: [
-        'https://webiskam.mendelu.cz/*',
+        'https://webiskam.mendelu.cz/ObjednavkyStravovani',
+        'https://webiskam.mendelu.cz/ObjednavkyStravovani?*',
     ],
     runAt: 'document_start',
     main() {
+        console.log('[reIS/iskam] content script firing on', window.location.href);
         if (!ISKAM_ENABLED) return;
 
-        // Reset the document stream before the browser can parse/execute any
-        // of WebISKAM's own scripts (e.g. jquery.unobtrusive-ajax which calls
-        // the removed $.live() API). This gives us a clean slate immediately.
-        document.open();
-        document.write('<!DOCTYPE html><html><head></head><body></body></html>');
-        document.close();
+        if (document.documentElement) {
+            document.documentElement.style.visibility = 'hidden';
+        }
 
         startIskamInjection();
         window.addEventListener('message', handleIskamMessage);
