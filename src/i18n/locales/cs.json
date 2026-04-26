@@ -18,11 +18,7 @@
     "errorTitle": "Něco se pokazilo",
     "errorDescription": "Data z WebISKAM se nepodařilo načíst. Zkus to znovu.",
     "reservationsLabel": "Moje rezervace",
-    "laundryLabel": "Rezervace praček",
-    "mealsLabel": "Objednávka jídel",
-    "otherServicesLabel": "Další služby a nastavení",
-    "inkasoLabel": "Inkaso za stravu",
-    "profileLabel": "Základní údaje a karty"
+    "noMainAccount": "Hlavní konto nenalezeno."
   },
   "menu": {
     "title": "Jídelníček",
