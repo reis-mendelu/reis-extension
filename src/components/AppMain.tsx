@@ -1,4 +1,3 @@
-import { useIsMobile } from '../hooks/ui/useIsMobile'
 import type { AppView } from '../types/app'
 import { AppHeader } from './AppHeader'
 import { WeeklyCalendar } from './WeeklyCalendar/index'
@@ -24,7 +23,7 @@ export function AppMain({
     currentView, currentDate, handlePrevWeek, handleNextWeek, handleToday,
     handleOpenSubjectFromSearch, dateRangeLabel, searchPrefillRef, setCurrentView, openFeedback
 }: AppMainProps) {
-    const isMobile = useIsMobile();
+    // const isMobile = useIsMobile();
 
     return (
         <main className="flex-1 flex flex-col transition-all duration-300 overflow-hidden">

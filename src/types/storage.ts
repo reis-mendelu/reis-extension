@@ -113,6 +113,17 @@ export const IskamDataSchema = z.object({
         status: z.string(),
         contractHref: z.string().nullable(),
     })),
+    profile: z.object({
+        fullName: z.string(),
+        email: z.string(),
+    }).optional(),
+    reservations: z.array(z.object({
+        facility: z.string(),
+        room: z.string(),
+        startDate: z.string(),
+        endDate: z.string(),
+        price: z.string().optional(),
+    })),
     syncedAt: z.number(),
 }) as z.ZodType<IskamData>;
 

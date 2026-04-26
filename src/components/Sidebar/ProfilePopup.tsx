@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Moon, MessageSquarePlus, Languages, Coffee, LogOut, Wallet, CreditCard, BadgeInfo, ExternalLink } from 'lucide-react';
+import { Moon, MessageSquarePlus, Languages, Coffee, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useOutlookSync } from '../../hooks/data';
 import { useTheme } from '../../hooks/useTheme';
@@ -9,6 +9,7 @@ import { OutlookSyncToggle } from './Profile/OutlookSyncToggle';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
+import { useIskamStore } from '../../store/iskamStore';
 import { User, Mail, Hash, Building2 } from 'lucide-react';
 import { openPopup, logout } from '../../api/proxyClient';
 import { BalanceSection } from './Profile/BalanceSection';
@@ -17,6 +18,10 @@ import { HiddenItemsSection } from './Profile/HiddenItemsSection';
 export function ProfilePopup({ isOpen, onOpenFeedback, isIskam }: { isOpen: boolean; onOpenFeedback?: () => void; isIskam?: boolean }) {
   const { isEnabled, isLoading: syncLoading, toggle: tSync } = useOutlookSync(), { isDark, isLoading: tLoading, toggle: tTheme } = useTheme(), { isSubscribed, toggleAssociation } = useSpolkySettings(), [spolkyOpen, setSpolkyOpen] = useState(false);
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
+  
+  const data = useIskamStore(s => s.data);
+  const iskamProfile = data?.profile;
+
   useEffect(() => {
     const handler = (e: Event) => setIsTopUpOpen((e as CustomEvent<{ open: boolean }>).detail.open);
     window.addEventListener('reis:popup-state', handler);
@@ -32,6 +37,8 @@ export function ProfilePopup({ isOpen, onOpenFeedback, isIskam }: { isOpen: bool
     <AnimatePresence><motion.div initial={{ opacity: 0, x: 10, scale: 0.95 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.95 }} className="absolute left-14 bottom-0 w-80 max-w-[calc(100vw-5rem)] bg-base-100 rounded-xl shadow-popover-heavy border border-base-300 p-3 z-50">
         <div className="px-1 pt-1 pb-3 border-b border-base-200">
             <h3 className="font-bold text-base mb-3 ">{t('sidebar.profile')}</h3>
+            
+            {/* IS MENDELU Profile Info */}
             {params && !isIskam && (
                 <div className="flex flex-col gap-2.5 text-xs">
                     <div className="flex items-center gap-3 text-base-content/90">
@@ -63,6 +70,22 @@ export function ProfilePopup({ isOpen, onOpenFeedback, isIskam }: { isOpen: bool
                             {isTopUpOpen ? <span className="loading loading-spinner loading-xs" /> : `${t('settings.open')} →`}
                         </button>
                     </div>
+                </div>
+            )}
+
+            {/* WebISKAM Profile Info */}
+            {isIskam && iskamProfile && (
+                <div className="flex flex-col gap-2.5 text-xs">
+                    <div className="flex items-center gap-3 text-base-content/90">
+                        <User size={16} className="text-base-content/40" />
+                        <span className="font-semibold text-sm truncate">{iskamProfile.fullName}</span>
+                    </div>
+                    {iskamProfile.email && (
+                        <div className="flex items-center gap-3 text-base-content/60">
+                            <Mail size={16} className="text-base-content/30" />
+                            <span className="truncate opacity-80">{iskamProfile.email}</span>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -114,18 +137,18 @@ export function ProfilePopup({ isOpen, onOpenFeedback, isIskam }: { isOpen: bool
                     <span className="text-xs font-medium opacity-70">{t('settings.reportBug')}</span>
                 </button>
             )}
-            {!isIskam && (
-                <div className="flex items-center gap-3 px-1 py-1.5 text-base-content/60">
-                    <LogOut size={16} className="text-base-content/30" />
-                    <span className="text-xs font-medium opacity-70">{t('settings.logout')}</span>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); logout(); }}
-                        className="font-mono text-xs bg-error/20 text-error px-2.5 py-1 rounded-lg border border-error/30 ml-auto hover:bg-error/30 transition-colors"
-                    >
-                        {t('settings.logout')} →
-                    </button>
-                </div>
-            )}
+            
+            <div className="flex items-center gap-3 px-1 py-1.5 text-base-content/60">
+                <LogOut size={16} className="text-base-content/30" />
+                <span className="text-xs font-medium opacity-70">{t('settings.logout')}</span>
+                <button
+                    onClick={(e) => { e.stopPropagation(); logout(); }}
+                    className="font-mono text-xs bg-error/20 text-error px-2.5 py-1 rounded-lg border border-error/30 ml-auto hover:bg-error/30 transition-colors"
+                >
+                    {t('settings.logout')} →
+                </button>
+            </div>
+
             {!isIskam && (
                 <a href="https://buymeacoffee.com/reis.mendelu" target="_blank" rel="noopener noreferrer" className="mt-2 mx-1 flex flex-col items-center gap-1.5 p-3 rounded-xl bg-base-200 border border-base-300 hover:border-primary/30 hover:bg-primary/5 transition-all text-center group shadow-sm">
                     <div className="flex items-center gap-2 text-primary font-bold text-sm">

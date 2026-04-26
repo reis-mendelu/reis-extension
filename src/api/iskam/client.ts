@@ -39,3 +39,18 @@ export async function fetchIskam(path: string, lang: 'cz' | 'en' = 'cz'): Promis
     console.log(`[reIS:iskam] fetchIskam OK lang=${lang} path=${path} htmlLen=${html.length}`);
     return html;
 }
+
+export async function requestIskam(path: string): Promise<string> {
+    const response = await fetch(`${ISKAM_BASE}${path}`, { credentials: 'include' });
+    if (isShibbolethRedirect(response)) {
+        throw new IskamAuthError();
+    }
+    if (!response.ok) {
+        throw new Error(`WebISKAM request failed: ${response.status}`);
+    }
+    const html = await response.text();
+    if (html.includes('alibaba.mendelu.cz/idp')) {
+        throw new IskamAuthError();
+    }
+    return html;
+}

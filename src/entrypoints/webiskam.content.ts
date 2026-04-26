@@ -6,8 +6,7 @@ import { ISKAM_ENABLED } from '@/config/featureFlags';
 
 export default defineContentScript({
     matches: [
-        'https://webiskam.mendelu.cz/ObjednavkyStravovani',
-        'https://webiskam.mendelu.cz/ObjednavkyStravovani/*',
+        'https://webiskam.mendelu.cz/*',
     ],
     runAt: 'document_start',
     main() {

@@ -9,7 +9,6 @@ import { CountryPicker } from './CountryPicker';
 import { UniversityPicker } from './UniversityPicker';
 import { ERASMUS_COUNTRIES } from '@/constants/erasmusCountries';
 import type { ErasmusUniversityOption } from '@/store/types';
-import type { University } from '@/types/erasmus';
 import type { StudyPlan } from '@/types/studyPlan';
 
 interface OptionProps {

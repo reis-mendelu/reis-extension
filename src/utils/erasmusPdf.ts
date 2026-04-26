@@ -8,7 +8,7 @@ const MARGIN = 15;
 const PAGE_W = 210;
 
 // Colour palette
-const LAV: [number, number, number] = [198, 224, 180]; // light green section headers
+// const LAV: [number, number, number] = [198, 224, 180]; // light green section headers
 const GRY: [number, number, number] = [217, 217, 217]; // gray column headers
 const GRN: [number, number, number] = [0, 104, 56];    // MENDELU green
 const BDR: [number, number, number] = [166, 166, 166]; // cell borders

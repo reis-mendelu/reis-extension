@@ -1,4 +1,4 @@
-import { ChevronDown, CheckCircle2, BookOpen, Clock, Layers } from 'lucide-react';
+import { ChevronDown, CheckCircle2, BookOpen, Clock } from 'lucide-react';
 import type { SemesterBlock, Zamerani } from '@/types/studyPlan';
 import type { ZameraniProgress } from './SubjectsPanelHeader';
 import { SubjectRow } from './SubjectRow';

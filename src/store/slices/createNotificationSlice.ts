@@ -1,4 +1,4 @@
-import { AppSlice } from '../types';
+import type { AppSlice, NotificationSlice } from '../types';
 import { fetchNotifications, trackNotificationsViewed } from '../../services/spolky';
 import { IndexedDBService } from '../../services/storage';
 

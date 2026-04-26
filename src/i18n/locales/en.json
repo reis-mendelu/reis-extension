@@ -16,7 +16,13 @@
     "authDescription": "Log in via Shibboleth to load your data.",
     "reconnectLabel": "Open WebISKAM",
     "errorTitle": "Something went wrong",
-    "errorDescription": "Could not load WebISKAM data. Try again."
+    "errorDescription": "Could not load WebISKAM data. Try again.",
+    "reservationsLabel": "My Reservations",
+    "laundryLabel": "Laundry Booking",
+    "mealsLabel": "Meal Orders",
+    "otherServicesLabel": "Other Services & Settings",
+    "inkasoLabel": "Direct Debit (Meals)",
+    "profileLabel": "Basic Info & Cards"
   },
   "menu": {
     "title": "Today's Menu",

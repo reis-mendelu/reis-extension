@@ -20,33 +20,13 @@ interface DailyViewProps {
   isOutsideTeachingPeriod: boolean;
 }
 
-export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton, language, onPrevWeek, onNextWeek, isOutsideTeachingPeriod }: DailyViewProps) {
+export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton, language, isOutsideTeachingPeriod }: DailyViewProps) {
   const { t } = useTranslation();
   const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
   const defaultDay = todayIndex >= 0 && todayIndex < 5 ? todayIndex : 0;
   const [selectedDay, setSelectedDay] = useState(defaultDay);
   const [selected, setSelected] = useState<BlockLesson | null>(null);
   const { isSeen, markSeen } = useHintStatus('calendar_event_click');
-
-  const goToPrev = () => {
-    if (selectedDay > 0) {
-      setSelectedDay(d => d - 1);
-    } else if (onPrevWeek) {
-      onPrevWeek();
-      setSelectedDay(4); // Jump to Friday of the previous week
-    }
-  };
-
-  const goToNext = () => {
-    if (selectedDay < 4) {
-      setSelectedDay(d => d + 1);
-    } else if (onNextWeek) {
-      onNextWeek();
-      setSelectedDay(0); // Jump to Monday of the next week
-    }
-  };
-
-
 
   const lessons = useMemo(() => lessonsByDay[selectedDay] || [], [lessonsByDay, selectedDay]);
   const holiday = holidaysByDay[selectedDay];

@@ -1,5 +1,6 @@
 import { IskamAuthError } from '../api/iskam/errors';
 import { fetchDualLanguageIskam } from '../api/iskam';
+import { ISKAM_BASE } from '../api/iskam/client';
 import { sendToIskamIframe } from './iskamInjector';
 import { IskamMessages } from '../types/messages';
 import type { IskamData } from '../types/iskam';
@@ -20,9 +21,14 @@ export async function syncIskamData(): Promise<void> {
         console.log('[reIS:iskam] syncIskamData success', data);
         sendToIskamIframe(IskamMessages.iskamSyncUpdate(data, false, null));
     } catch (err) {
-        const error = err instanceof IskamAuthError ? 'auth' : 'network';
-        console.error(`[reIS:iskam] syncIskamData error=${error}`, err);
-        sendToIskamIframe(IskamMessages.iskamSyncUpdate(cachedIskamData, false, error));
+        if (err instanceof IskamAuthError) {
+            // Session expired — hand the page back to WebISKAM so Shibboleth can log them in.
+            console.warn('[reIS:iskam] auth error, redirecting to WebISKAM login');
+            window.location.href = `${ISKAM_BASE}/`;
+            return;
+        }
+        console.error('[reIS:iskam] syncIskamData network error', err);
+        sendToIskamIframe(IskamMessages.iskamSyncUpdate(cachedIskamData, false, 'network'));
     } finally {
         isSyncingIskam = false;
     }

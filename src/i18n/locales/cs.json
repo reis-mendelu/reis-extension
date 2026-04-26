@@ -16,7 +16,13 @@
     "authDescription": "Pro načtení dat se musíš přihlásit přes Shibboleth.",
     "reconnectLabel": "Otevřít WebISKAM",
     "errorTitle": "Něco se pokazilo",
-    "errorDescription": "Data z WebISKAM se nepodařilo načíst. Zkus to znovu."
+    "errorDescription": "Data z WebISKAM se nepodařilo načíst. Zkus to znovu.",
+    "reservationsLabel": "Moje rezervace",
+    "laundryLabel": "Rezervace praček",
+    "mealsLabel": "Objednávka jídel",
+    "otherServicesLabel": "Další služby a nastavení",
+    "inkasoLabel": "Inkaso za stravu",
+    "profileLabel": "Základní údaje a karty"
   },
   "menu": {
     "title": "Jídelníček",

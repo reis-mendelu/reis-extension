@@ -12,7 +12,7 @@ export interface TeachingWeekEntry {
 export interface TeachingWeekData {
     weeks: TeachingWeekEntry[];
     total: number;
-    currentWeek: number | null;
+    currentWeek?: number | null;
 }
 
 function parseDateCz(d: string): string {

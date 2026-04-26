@@ -21,7 +21,7 @@ export function useTimeline(courseCode: string): TimelineCountdown | null {
     return useMemo(() => {
         if (!teachingWeekData || !courseDeadlines[courseCode]) return null;
 
-        const currentWeek = teachingWeekData.currentWeek ?? getWeekForDate(teachingWeekData, new Date());
+        const currentWeek = getWeekForDate(teachingWeekData as any, new Date());
         if (currentWeek === null) return null;
 
         const deadlines = courseDeadlines[courseCode];
