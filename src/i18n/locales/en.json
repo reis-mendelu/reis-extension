@@ -46,7 +46,11 @@
     "logout": "Logout",
     "basicDetails": "Basic Details",
     "accounts": "Accounts",
-    "cards": "Cards"
+    "cards": "Cards",
+    "availableCapacity": "Available Capacity",
+    "housingOverview": "Housing Overview",
+    "reservations": "Reservations",
+    "foodDebit": "Food Debit"
   },
   "sidebar": {
     "profile": "Profile",

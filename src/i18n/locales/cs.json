@@ -46,7 +46,11 @@
     "logout": "Odhlásit se",
     "basicDetails": "Základní údaje",
     "accounts": "Konta",
-    "cards": "Karty"
+    "cards": "Karty",
+    "availableCapacity": "Volné kapacity",
+    "housingOverview": "Přehled ubytování",
+    "reservations": "Rezervace",
+    "foodDebit": "Inkaso za stravu"
   },
   "sidebar": {
     "profile": "Profil",

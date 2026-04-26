@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, BadgeInfo, Wallet, CreditCard, User } from 'lucide-react';
+import { LayoutDashboard, BadgeInfo, Wallet, Building2, BedDouble, CalendarCheck, UtensilsCrossed, User } from 'lucide-react';
 import { IskamPanel } from '@/components/IskamPanel';
 import { Sidebar } from '@/components/Sidebar';
 import { MobileBottomNav } from '@/components/MobileNav/MobileBottomNav';
@@ -51,29 +51,20 @@ export function IskamApp() {
             label: 'ISKAM',
             icon: <LayoutDashboard className="w-5 h-5" />
         },
-        { id: 'div-1', type: 'divider', label: '', icon: <div /> },
-        { id: 'hdr-1', type: 'header', label: t('sidebar.more'), icon: <div /> },
         {
-            id: 'basic-details',
-            label: t('settings.basicDetails'),
-            shortLabel: 'Info',
-            icon: <BadgeInfo className="w-5 h-5" />,
-            href: 'https://webiskam.mendelu.cz/InformaceOKlientovi'
+            id: 'skm',
+            label: 'SKM',
+            icon: <Building2 className="w-5 h-5" />,
+            expandable: true,
+            children: [
+                { id: 'zakladni-udaje', label: t('settings.basicDetails'), icon: <BadgeInfo className="w-4 h-4" />, href: 'https://webiskam.mendelu.cz/InformaceOKlientovi' },
+                { id: 'konta', label: t('settings.accounts'), icon: <Wallet className="w-4 h-4" />, href: 'https://webiskam.mendelu.cz/Konta' },
+                { id: 'volne-kapacity', label: t('settings.availableCapacity'), icon: <BedDouble className="w-4 h-4" />, href: 'https://webiskam.mendelu.cz/VolneKapacity' },
+                { id: 'prehled-ubytovani', label: t('settings.housingOverview'), icon: <Building2 className="w-4 h-4" />, href: 'https://webiskam.mendelu.cz/PrehledUbytovani' },
+                { id: 'rezervace', label: t('settings.reservations'), icon: <CalendarCheck className="w-4 h-4" />, href: 'https://webiskam.mendelu.cz/Rezervace' },
+                { id: 'inkaso-stravu', label: t('settings.foodDebit'), icon: <UtensilsCrossed className="w-4 h-4" />, href: 'https://webiskam.mendelu.cz/KrSystem' },
+            ]
         },
-        {
-            id: 'accounts',
-            label: t('settings.accounts'),
-            shortLabel: 'Konta',
-            icon: <Wallet className="w-5 h-5" />,
-            href: 'https://webiskam.mendelu.cz/Konta'
-        },
-        {
-            id: 'cards',
-            label: t('settings.cards'),
-            shortLabel: 'Karty',
-            icon: <CreditCard className="w-5 h-5" />,
-            href: 'https://webiskam.mendelu.cz/KartyKlienta'
-        }
     ];
 
     const iskamTabs = [
