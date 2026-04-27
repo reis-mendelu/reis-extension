@@ -46,7 +46,9 @@ export function IskamPanel() {
         k.name.toLowerCase().includes('main')
     );
 
-    const sortedContracts = [...data.ubytovani].sort((a, b) => contractOrder(a) - contractOrder(b));
+    const sortedContracts = [...data.ubytovani]
+        .filter(row => contractOrder(row) !== 2)
+        .sort((a, b) => contractOrder(a) - contractOrder(b));
 
     const todayMidnight = new Date();
     todayMidnight.setHours(0, 0, 0, 0);
