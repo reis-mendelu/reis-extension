@@ -17,7 +17,12 @@ export function PendingPaymentsSection({ payments, language }: Props) {
             <h3 className="text-xs font-semibold text-base-content/50 uppercase tracking-widest px-1">
                 {t('iskam.pendingPaymentsLabel')}
             </h3>
-            <div className="card bg-base-100 border border-warning/40 shadow-sm">
+            <a
+                href={`${ISKAM_BASE}/InformaceOKlientovi`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="card bg-base-100 border border-warning/40 shadow-sm hover:border-warning/70 transition-colors"
+            >
                 <div className="card-body p-4 gap-0">
                     {payments.map((p, i) => (
                         <div key={i} className="flex items-baseline justify-between gap-3 py-1.5 border-b border-base-200 last:border-0">
@@ -29,14 +34,6 @@ export function PendingPaymentsSection({ payments, language }: Props) {
                         </div>
                     ))}
                 </div>
-            </div>
-            <a
-                href={`${ISKAM_BASE}/InformaceOKlientovi`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-xs btn-warning btn-outline self-end"
-            >
-                {t('iskam.reconnectLabel')} →
             </a>
         </section>
     );
