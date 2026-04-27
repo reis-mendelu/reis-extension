@@ -10,6 +10,7 @@ import { isStale, parseCzechDate, daysUntil } from './freshness';
 import { ISKAM_BASE } from '../../api/iskam/client';
 import { VolneKapacitySection } from './VolneKapacitySection';
 import { PendingPaymentsSection } from './PendingPaymentsSection';
+import { MenzaSpendingSection } from './MenzaSpendingSection';
 import type { UbytovaniRow } from '../../types/iskam';
 
 function contractOrder(row: UbytovaniRow): number {
@@ -83,10 +84,15 @@ export function IskamPanel() {
                 </div>
             )}
 
-            {/* 2. PENDING PAYMENTS */}
+            {/* 2. MENZA SPENDING */}
+            {data.stravovaniTransactions.length > 0 && (
+                <MenzaSpendingSection transactions={data.stravovaniTransactions} language={language} />
+            )}
+
+            {/* 3. PENDING PAYMENTS */}
             <PendingPaymentsSection payments={data.pendingPayments ?? []} language={language} />
 
-            {/* 3. CONTRACTS */}
+            {/* 4. CONTRACTS */}
             {sortedContracts.length > 0 && (
                 <section className="flex flex-col gap-2">
                     <h3 className="text-xs font-semibold text-base-content/50 uppercase tracking-widest px-1">
@@ -112,7 +118,7 @@ export function IskamPanel() {
                 </section>
             )}
 
-            {/* 4. FREE ROOMS */}
+            {/* 5. FREE ROOMS */}
             <VolneKapacitySection language={language} />
         </div>
     );

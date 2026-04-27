@@ -32,7 +32,16 @@
     "dateFrom": "From",
     "gapMonth": "no contracts",
     "pendingPaymentsLabel": "Requested payments",
-    "pendingPaymentDue": "due"
+    "pendingPaymentDue": "due",
+    "spending": {
+      "title": "Food spending",
+      "today": "Today",
+      "week": "Week",
+      "month": "Month",
+      "total": "Total",
+      "avgPerDay": "~{amount} CZK / day",
+      "days": "{n} days"
+    }
   },
   "menu": {
     "title": "Today's Menu",

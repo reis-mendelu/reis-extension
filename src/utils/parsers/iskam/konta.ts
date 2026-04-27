@@ -34,6 +34,9 @@ export function parseKonta(html: string, lang: 'cz' | 'en' = 'cz'): KontoRow[] {
         const topUpAnchor = Array.from(row.querySelectorAll('a')).find(a => TOP_UP_LABEL_RE.test((a.textContent || '').trim()));
         const topUpHref = topUpAnchor?.getAttribute('href') || null;
 
+        const detailAnchor = row.querySelector('a[href*="/Konta/PrevodyUhrady/"]');
+        const transactionsHref = detailAnchor?.getAttribute('href') ?? null;
+
         out.push({
             name,
             nameCs: lang === 'cz' ? name : undefined,
@@ -41,6 +44,7 @@ export function parseKonta(html: string, lang: 'cz' | 'en' = 'cz'): KontoRow[] {
             balance: parsed.value,
             balanceText: parsed.raw,
             topUpHref,
+            transactionsHref,
         });
     }
     return out;
