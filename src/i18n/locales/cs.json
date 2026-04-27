@@ -19,6 +19,9 @@
     "errorTitle": "Něco se pokazilo",
     "errorDescription": "Data z WebISKAM se nepodařilo načíst. Zkus to znovu.",
     "reservationsLabel": "Moje rezervace",
+    "contractNext": "Příští rok",
+    "noNextContract": "Nemáš smlouvu na příští rok.",
+    "bookRoom": "Rezervovat",
     "noMainAccount": "Hlavní konto nenalezeno.",
     "freeRoomsLabel": "Volné pokoje",
     "blockLabel": "Blok",
@@ -27,7 +30,9 @@
     "noFreeRooms": "Žádné volné pokoje",
     "loadingRooms": "Načítám...",
     "dateFrom": "Od",
-    "gapMonth": "prázdniny"
+    "gapMonth": "prázdniny",
+    "pendingPaymentsLabel": "Požadavky na úhradu",
+    "pendingPaymentDue": "splatnost"
   },
   "menu": {
     "title": "Jídelníček",

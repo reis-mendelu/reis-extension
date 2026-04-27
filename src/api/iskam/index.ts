@@ -1,6 +1,6 @@
 import { fetchKonta } from './konta';
 import { fetchUbytovani } from './ubytovani';
-import { fetchProfile } from './profile';
+import { fetchProfileAndPayments } from './profile';
 import { fetchReservations } from './reservations';
 import type { IskamData, KontoRow } from '../../types/iskam';
 
@@ -16,7 +16,7 @@ export async function fetchDualLanguageIskam(): Promise<IskamData> {
     const czKonta = await fetchKonta('cz');
     const enKonta = await fetchKonta('en').catch(() => [] as KontoRow[]);
     const ubytovani = await fetchUbytovani('cz');
-    const profile = await fetchProfile();
+    const { profile, pendingPayments } = await fetchProfileAndPayments();
     const reservations = await fetchReservations();
 
     return {
@@ -24,9 +24,10 @@ export async function fetchDualLanguageIskam(): Promise<IskamData> {
         ubytovani,
         profile: profile ?? undefined,
         reservations,
+        pendingPayments,
         syncedAt: Date.now(),
     };
 }
 
-export { fetchKonta, fetchUbytovani, fetchProfile, fetchReservations };
+export { fetchKonta, fetchUbytovani, fetchProfileAndPayments, fetchReservations };
 export { IskamAuthError } from './errors';

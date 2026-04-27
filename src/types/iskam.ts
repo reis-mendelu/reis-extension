@@ -40,10 +40,17 @@ export interface VolneKapacityRoom {
     nationalities: string;
 }
 
+export interface PendingPayment {
+    dueDate: string;
+    description: string;
+    amount: string;
+}
+
 export interface IskamData {
     konta: KontoRow[];
     ubytovani: UbytovaniRow[];
     profile?: IskamProfile;
     reservations: IskamReservation[];
+    pendingPayments: PendingPayment[];
     syncedAt: number;
 }
