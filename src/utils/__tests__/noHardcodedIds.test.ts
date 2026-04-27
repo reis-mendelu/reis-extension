@@ -38,7 +38,7 @@ describe('injectUserParams', () => {
     it('should be used when navigating to pages in SearchBar', () => {
         const content = fs.readFileSync(path.resolve(__dirname, '../../components/SearchBar/index.tsx'), 'utf-8');
         expect(content).toContain('injectUserParams');
-        expect(content).toContain('injectUserParams(result.link, studiumId)');
+        expect(content).toContain('injectUserParams(result.link, studiumId, language === \'en\' ? \'en\' : \'cz\', obdobiId, facultyId)');
     });
 
     it('should be used for pinned pages in MainItems.tsx', () => {

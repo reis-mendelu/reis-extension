@@ -16,6 +16,7 @@ const SAMPLE: IskamData = {
     konta: [{ name: 'Hlavní konto', balance: 100, balanceText: '100 Kč', topUpHref: '/Platby/NabitiKonta/0' }],
     ubytovani: [],
     reservations: [],
+    pendingPayments: [],
     syncedAt: 1700000000000,
 };
 

@@ -25,7 +25,13 @@ describe('useCalendarData', () => {
         // Default mock implementations
         vi.mocked(useSchedule).mockReturnValue({ schedule: [], isLoaded: true, weekStart: null, status: 'success', isSyncing: false } as UseScheduleResult);
         vi.mocked(useExams).mockReturnValue({ exams: [], isLoaded: true, error: null, lastSync: null, retry: () => {} });
-        vi.mocked(useAppStore).mockImplementation((selector: any) => selector({ language: 'cz' }));
+        vi.mocked(useAppStore).mockImplementation((selector: any) => selector({
+            language: 'cz',
+            syncStatus: { handshakeDone: true, handshakeTimedOut: false, isSyncing: false },
+            customEvents: [],
+            hiddenItems: { events: [], courses: [] },
+            teachingWeekData: null,
+        }));
     });
 
     it('should show skeleton when no data is loaded and status is not success', () => {
@@ -70,12 +76,24 @@ describe('useCalendarData', () => {
 
     it('should update localization when language changes', () => {
         // Start with CZ
-        vi.mocked(useAppStore).mockImplementation((selector: any) => selector({ language: 'cz' }));
+        vi.mocked(useAppStore).mockImplementation((selector: any) => selector({
+            language: 'cz',
+            syncStatus: { handshakeDone: true, handshakeTimedOut: false, isSyncing: false },
+            customEvents: [],
+            hiddenItems: { events: [], courses: [] },
+            teachingWeekData: null,
+        }));
         const { result, rerender } = renderHook(() => useCalendarData(mockInitialDate));
         expect(result.current.weekDates[0].weekday).toBe('po'); // Short for Pondělí
 
         // Switch to EN
-        vi.mocked(useAppStore).mockImplementation((selector: any) => selector({ language: 'en' }));
+        vi.mocked(useAppStore).mockImplementation((selector: any) => selector({
+            language: 'en',
+            syncStatus: { handshakeDone: true, handshakeTimedOut: false, isSyncing: false },
+            customEvents: [],
+            hiddenItems: { events: [], courses: [] },
+            teachingWeekData: null,
+        }));
         rerender();
         expect(result.current.weekDates[0].weekday).toBe('Mon');
     });

@@ -25,6 +25,7 @@ import { createContextSlice } from './slices/createContextSlice';
 import { createPulseSlice } from './slices/createPulseSlice';
 import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
 import { createNotificationSlice } from './slices/createNotificationSlice';
+import { createSearchSlice } from './slices/createSearchSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 
@@ -54,6 +55,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createPulseSlice(...a),
   ...createCustomEventsSlice(...a),
   ...createNotificationSlice(...a),
+  ...createSearchSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
@@ -94,6 +96,7 @@ export const initializeStore = async () => {
         s2.loadHiddenItems();
         s2.loadCalendarCustomEvents();
         s2.fetchTeachingWeek();
+        s2.loadRecentSearches();
     });
 
     // Fire-and-forget daily usage tracking

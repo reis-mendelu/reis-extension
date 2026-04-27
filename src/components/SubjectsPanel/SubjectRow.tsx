@@ -3,7 +3,7 @@ import type { SubjectStatus, Zamerani } from '@/types/studyPlan';
 import type { ZameraniProgress } from './SubjectsPanelHeader';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
-import { useTimeline } from '@/hooks';
+import { useTimeline } from '@/hooks/useTimeline';
 
 interface SubjectRowProps {
   subject: SubjectStatus;

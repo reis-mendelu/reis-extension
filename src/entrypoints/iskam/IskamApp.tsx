@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { LayoutDashboard, BadgeInfo, Wallet, Building2, BedDouble, CalendarCheck, UtensilsCrossed, User } from 'lucide-react';
-import { IskamPanel } from '@/components/IskamPanel';
+import { IskamPanel } from '@/components/IskamPanel/IskamPanel';
 import { Sidebar } from '@/components/Sidebar';
 import { MobileBottomNav } from '@/components/MobileNav/MobileBottomNav';
 import { Toaster } from '@/components/ui/sonner';

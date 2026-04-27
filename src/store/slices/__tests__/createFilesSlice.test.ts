@@ -22,7 +22,12 @@ describe('createFilesSlice', () => {
             Object.assign(slice, result);
         });
 
-        get = vi.fn(() => slice);
+        get = vi.fn(() => ({
+            ...slice,
+            syncStatus: { handshakeDone: true, handshakeTimedOut: false, isSyncing: false },
+            subjects: { data: {} },
+            language: 'cz',
+        }));
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         slice = createFilesSlice(set, get, {} as unknown as any);
     });

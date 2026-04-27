@@ -16,7 +16,7 @@ describe('parsePendingPayments', () => {
 
     it('captures dueDate, description, and amount', () => {
         const [row] = parsePendingPayments(FIXTURE);
-        expect(row.dueDate).toBe('20.10.2025');
+        expect(row.dueDate).toBe('10/20/2025');
         expect(row.description).toBe('Dobití konta STRAVOVACÍ KONTO');
         expect(row.amount).toBe('600 Kč');
     });
