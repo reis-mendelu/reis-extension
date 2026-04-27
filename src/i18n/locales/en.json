@@ -40,7 +40,8 @@
       "month": "Month",
       "total": "Total",
       "avgPerVisit": "~{amount} CZK / day",
-      "visits": "{n}× this month"
+      "visits": "{n}× this month",
+      "moreDays": "more days"
     }
   },
   "menu": {

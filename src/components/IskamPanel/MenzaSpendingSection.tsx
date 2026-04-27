@@ -87,8 +87,11 @@ interface Props {
     language: IskamLanguage;
 }
 
+const COLLAPSED_GROUPS = 3;
+
 export function MenzaSpendingSection({ transactions, language }: Props) {
     const [period, setPeriod] = useState<Period>('month');
+    const [expanded, setExpanded] = useState(false);
     const t = createIskamT(language);
 
     const filtered = useMemo(() => filterByPeriod(transactions, period), [transactions, period]);
@@ -99,7 +102,7 @@ export function MenzaSpendingSection({ transactions, language }: Props) {
     const elapsedDays = today.getDate();
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const visitDays = groups.length;
-    const avgPerDay = elapsedDays > 0 ? Math.round(total / elapsedDays) : 0;
+    const avgPerDay = visitDays > 0 ? Math.round(total / visitDays) : 0;
     const monthProgress = Math.round((elapsedDays / daysInMonth) * 100);
 
     const periods: Period[] = ['day', 'week', 'month'];
@@ -121,7 +124,7 @@ export function MenzaSpendingSection({ transactions, language }: Props) {
                             <button
                                 key={p}
                                 className={`btn btn-sm join-item flex-1 border-none ${period === p ? 'btn-primary' : 'btn-ghost'}`}
-                                onClick={() => setPeriod(p)}
+                                onClick={() => { setPeriod(p); setExpanded(false); }}
                             >
                                 {periodLabels[p]}
                             </button>
@@ -146,11 +149,21 @@ export function MenzaSpendingSection({ transactions, language }: Props) {
                     {groups.length === 0 ? (
                         <p className="text-xs text-base-content/40 text-center py-2">–</p>
                     ) : (
-                        <div className="flex flex-col gap-2 mt-1">
-                            {groups.map(([date, txs]) => (
-                                <TransactionDayGroup key={date} date={date} transactions={txs} />
-                            ))}
-                        </div>
+                        <>
+                            <div className="flex flex-col gap-2 mt-1">
+                                {(expanded ? groups : groups.slice(0, COLLAPSED_GROUPS)).map(([date, txs]) => (
+                                    <TransactionDayGroup key={date} date={date} transactions={txs} />
+                                ))}
+                            </div>
+                            {groups.length > COLLAPSED_GROUPS && (
+                                <button
+                                    className="btn btn-xs btn-ghost w-full text-base-content/40"
+                                    onClick={() => setExpanded(e => !e)}
+                                >
+                                    {expanded ? '↑' : `+${groups.length - COLLAPSED_GROUPS} ${t('iskam.spending.moreDays')}`}
+                                </button>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

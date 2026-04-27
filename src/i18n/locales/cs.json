@@ -40,7 +40,8 @@
       "month": "Měsíc",
       "total": "Celkem",
       "avgPerVisit": "~{amount} Kč / den",
-      "visits": "{n}× tento měsíc"
+      "visits": "{n}× tento měsíc",
+      "moreDays": "další dny"
     }
   },
   "menu": {
