@@ -1,13 +1,14 @@
 import { requestIskam } from './client';
 import { parseProfile } from '../../utils/parsers/iskam/profile';
-import type { IskamProfile } from '../../types/iskam';
+import { parsePendingPayments } from '../../utils/parsers/iskam/pendingPayments';
+import type { IskamProfile, PendingPayment } from '../../types/iskam';
 
-export async function fetchProfile(): Promise<IskamProfile | null> {
+export async function fetchProfileAndPayments(): Promise<{ profile: IskamProfile | null; pendingPayments: PendingPayment[] }> {
     try {
         const html = await requestIskam('/InformaceOKlientovi');
-        return parseProfile(html);
+        return { profile: parseProfile(html), pendingPayments: parsePendingPayments(html) };
     } catch (e) {
         console.warn('[reIS:iskam] fetchProfile failed', e);
-        return null;
+        return { profile: null, pendingPayments: [] };
     }
 }

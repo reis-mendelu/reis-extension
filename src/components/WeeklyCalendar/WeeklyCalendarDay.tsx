@@ -60,8 +60,9 @@ export function WeeklyCalendarDay({
         setPendingTimeSelection(buildSelection(startMins, endMins));
     };
 
+    const CUSTOM_EVENTS_ENABLED = false;
     const handleColumnPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-        if (true || isSelectingTime || holiday || showSkeleton || !date || e.target !== e.currentTarget) return; // custom events disabled
+        if (!CUSTOM_EVENTS_ENABLED || isSelectingTime || holiday || showSkeleton || !date || e.target !== e.currentTarget) return;
         e.currentTarget.setPointerCapture(e.pointerId);
         const startMins = getMinutesFromY(e.clientY);
         setGhost({ startMins, endMins: Math.min(startMins + 60, 13 * 60), isDragging: true });

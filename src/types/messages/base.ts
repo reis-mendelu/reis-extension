@@ -28,6 +28,8 @@ export interface IskamSyncUpdateMessage {
         error: 'auth' | 'network' | null;
     };
 }
+export interface IskamFetchBlockMessage { type: 'ISKAM_FETCH_BLOCK'; id: string; blockId: string; od: string; doo: string; }
+export interface IskamBlockResultMessage { type: 'ISKAM_BLOCK_RESULT'; id: string; rooms: import('../iskam').VolneKapacityRoom[]; }
 
-export type IframeToContentMessage = ReadyMessage | RequestDataMessage | FetchRequestMessage | ActionRequestMessage | IskamReadyMessage;
-export type ContentToIframeMessage = DataResponseMessage | FetchResultMessage | ActionResultMessage | SyncUpdateMessage | PopupStateMessage | NavMenuMessage | IskamSyncUpdateMessage;
+export type IframeToContentMessage = ReadyMessage | RequestDataMessage | FetchRequestMessage | ActionRequestMessage | IskamReadyMessage | IskamFetchBlockMessage;
+export type ContentToIframeMessage = DataResponseMessage | FetchResultMessage | ActionResultMessage | SyncUpdateMessage | PopupStateMessage | NavMenuMessage | IskamSyncUpdateMessage | IskamBlockResultMessage;

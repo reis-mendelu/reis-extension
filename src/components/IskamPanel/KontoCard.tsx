@@ -24,20 +24,22 @@ export function KontoCard({ row, language, dimmed, variant = 'default' }: KontoC
     }
 
     if (variant === 'hero') {
+        const topUpUrl = row.topUpHref ? `${ISKAM_BASE}${row.topUpHref}` : null;
+        const roundedBalance = `${Math.round(row.balance).toLocaleString('cs-CZ')} Kč`;
+
         return (
             <div className={`card bg-base-100 shadow-sm border border-primary/20 ${dimmed ? 'opacity-60' : ''}`}>
-                <div className="card-body p-4 gap-1">
-                    <div className="flex items-center gap-2 text-base-content/70">
-                        <Wallet size={16} className="text-primary" />
-                        <span className="text-sm font-medium uppercase tracking-wide">{displayName}</span>
+                <div className="card-body p-4 flex flex-row items-center gap-3">
+                    <Wallet size={18} className="text-primary shrink-0" />
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-medium uppercase tracking-wide text-base-content/50">{displayName}</span>
+                        <span className="text-2xl font-bold text-base-content leading-tight">{roundedBalance}</span>
                     </div>
-                    <div className="text-3xl font-bold text-base-content">{row.balanceText}</div>
-                    {row.topUpHref && (
+                    {topUpUrl && (
                         <a
-                            href={`${ISKAM_BASE}${row.topUpHref}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-primary btn-sm mt-3 no-animation border-none"
+                            href={topUpUrl}
+                            target="_top"
+                            className="btn btn-primary btn-sm no-animation border-none shrink-0 ml-auto"
                         >
                             {t('iskam.topUpLabel')} →
                         </a>

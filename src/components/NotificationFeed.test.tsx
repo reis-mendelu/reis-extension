@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NotificationFeed } from './NotificationFeed';
 import { IndexedDBService } from '../services/storage';
 import * as spolkyService from '../services/spolky';
+import { useAppStore } from '../store/useAppStore';
 
 // Mock the services
 vi.mock('../services/spolky', () => ({
@@ -79,7 +80,7 @@ describe('NotificationFeed', () => {
       body: 'Body 1',
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 86400000).toISOString(),
-      priority: 'normal',
+      priority: 'normal' as const,
       associationId: 'test-assoc',
       link: 'https://example.com'
     },
@@ -89,7 +90,7 @@ describe('NotificationFeed', () => {
       body: 'Body 2',
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 86400000).toISOString(),
-      priority: 'normal',
+      priority: 'normal' as const,
       associationId: 'test-assoc-2',
     }
   ];
@@ -106,6 +107,15 @@ vi.mock('../services/storage', () => ({
     vi.clearAllMocks();
     (spolkyService.fetchNotifications as any).mockResolvedValue(mockNotifications);
     (IndexedDBService.get as any).mockResolvedValue(null);
+    useAppStore.setState({
+      notifications: {
+        data: mockNotifications,
+        readIds: new Set(),
+        viewedIds: new Set(),
+        seenDeadlineAlertIds: new Set(),
+        status: 'success',
+      },
+    });
   });
 
   it('should track views when notification becomes visible', async () => {
@@ -143,13 +153,16 @@ vi.mock('../services/storage', () => ({
   });
 
   it('should NOT track views again if notifications are locally marked as VIEWED (analytics)', async () => {
-    // Setup IDB as viewed
-     
-    (IndexedDBService.get as any).mockImplementation((_store: string, key: string) => {
-        if (key === 'viewed_notifications_analytics') return Promise.resolve(['1']);
-        return Promise.resolve(null);
+    useAppStore.setState({
+      notifications: {
+        data: mockNotifications,
+        readIds: new Set(),
+        viewedIds: new Set(['1']),
+        seenDeadlineAlertIds: new Set(),
+        status: 'success',
+      },
     });
-    
+
     render(<NotificationFeed />);
     
     const bellButton = screen.getByLabelText('Notifications');

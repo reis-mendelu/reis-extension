@@ -21,7 +21,7 @@ export function UnfulfilledCoursesSection({ selectedCodes, onToggle, onOpenSubje
   const loaded = useAppStore(s => s.studyPlanLoaded);
   const successRates = useAppStore(s => s.successRates);
 
-  const [targetSemester, setTargetSemester] = useState<number | null>(null);
+  const [targetSemesterOverride, setTargetSemester] = useState<number | null>(null);
 
   const availableSemesters = useMemo(() => {
     if (!plan || !plan.blocks) return [];
@@ -36,11 +36,7 @@ export function UnfulfilledCoursesSection({ selectedCodes, onToggle, onOpenSubje
       });
   }, [plan]);
 
-  useEffect(() => {
-    if (targetSemester === null && availableSemesters.length > 0) {
-      setTargetSemester(availableSemesters[0].index);
-    }
-  }, [availableSemesters, targetSemester]);
+  const targetSemester = targetSemesterOverride ?? availableSemesters[0]?.index ?? null;
 
   const futureSemesters = useMemo((): { block: SemesterBlock; index: number }[] => {
     if (!plan || !plan.blocks || targetSemester === null) return [];

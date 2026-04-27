@@ -46,7 +46,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
             let subjects = get().subjects;
             let syncStatus = get().syncStatus;
 
-            if (!syncStatus.handshakeDone || !subjects) {
+            if (!syncStatus?.handshakeDone || !subjects) {
                 const { useAppStore } = await import('../useAppStore');
                 await new Promise<void>((resolve) => {
                     // Re-check synchronously inside the Promise — handles the race where

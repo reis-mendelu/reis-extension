@@ -124,6 +124,11 @@ export const IskamDataSchema = z.object({
         endDate: z.string(),
         price: z.string().optional(),
     })),
+    pendingPayments: z.array(z.object({
+        dueDate: z.string(),
+        description: z.string(),
+        amount: z.string(),
+    })),
     syncedAt: z.number(),
 }) as z.ZodType<IskamData>;
 

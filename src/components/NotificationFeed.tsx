@@ -3,19 +3,13 @@ import { Bell } from 'lucide-react';
 import { useNotificationFeed } from '../hooks/useNotificationFeed';
 import { useDeadlineAlerts } from '../hooks/useDeadlineAlerts';
 import { NotificationDropdown } from './Notifications/NotificationDropdown';
-import { useAppStore } from '../store/useAppStore';
 
 export function NotificationFeed({ className = '' }: { className?: string }) {
   const { isOpen, setIsOpen, notifications, loading, readIds, toggle, markVisible } = useNotificationFeed();
   const { alerts: deadlineAlerts, markAllSeen, unseenCount } = useDeadlineAlerts();
-  const loadStudyJamSuggestions = useAppStore(s => s.loadStudyJamSuggestions);
-
   useEffect(() => {
-    if (isOpen) {
-      loadStudyJamSuggestions();
-      markAllSeen(deadlineAlerts.map(a => a.id));
-    }
-  }, [isOpen, loadStudyJamSuggestions, markAllSeen, deadlineAlerts]);
+    if (isOpen) markAllSeen(deadlineAlerts.map(a => a.id));
+  }, [isOpen, markAllSeen, deadlineAlerts]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

@@ -1,0 +1,8 @@
+reviews:
+  path_filters:
+    - "!src/api/documents/parser.ts"
+    - "!src/api/ukoly.ts"
+    - "!src/api/osnovy.ts"
+  auto_review:
+    enabled: true
+    drafts: false

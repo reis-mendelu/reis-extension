@@ -11,12 +11,11 @@ export default defineContentScript({
     ],
     runAt: 'document_start',
     main() {
-        console.log('[reIS/iskam] content script firing on', window.location.href);
         if (!ISKAM_ENABLED) return;
 
-        if (document.documentElement) {
-            document.documentElement.style.visibility = 'hidden';
-        }
+        document.open();
+        document.write('<!DOCTYPE html><html><head></head><body></body></html>');
+        document.close();
 
         startIskamInjection();
         window.addEventListener('message', handleIskamMessage);

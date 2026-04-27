@@ -1,19 +1,29 @@
-import { useState } from 'react';
-import { Wallet, ChevronDown, ChevronUp } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { useIskamStore } from '../../store/iskamStore';
 import { createIskamT, type IskamLanguage } from '../../i18n/iskamTranslate';
 import { useAppStore } from '../../store/useAppStore';
 import { KontoCard } from './KontoCard';
 import { UbytovaniCard } from './UbytovaniCard';
-import { ReservationCard } from './ReservationCard';
 import { IskamPanelSkeleton } from './IskamPanelSkeleton';
 import { EmptyIskamState } from './EmptyIskamState';
-import { isStale } from './freshness';
+import { isStale, parseCzechDate, daysUntil } from './freshness';
 import { ISKAM_BASE } from '../../api/iskam/client';
+import { VolneKapacitySection } from './VolneKapacitySection';
+import { PendingPaymentsSection } from './PendingPaymentsSection';
+import type { UbytovaniRow } from '../../types/iskam';
+
+function contractOrder(row: UbytovaniRow): number {
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    const start = parseCzechDate(row.startDate);
+    const end = parseCzechDate(row.endDate);
+    if (!start || !end) return 2;
+    if (end < todayMidnight) return 2;
+    if (start > todayMidnight) return 1;
+    return 0;
+}
 
 export function IskamPanel() {
-    const [contractsOpen, setContractsOpen] = useState(false);
-
     const data = useIskamStore(s => s.data);
     const status = useIskamStore(s => s.status);
     const error = useIskamStore(s => s.error);
@@ -36,6 +46,20 @@ export function IskamPanel() {
         k.name.toLowerCase().includes('main')
     );
 
+    const sortedContracts = [...data.ubytovani].sort((a, b) => contractOrder(a) - contractOrder(b));
+
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+
+    const activeContract = sortedContracts.find(r => contractOrder(r) === 0);
+    const hasNextContract = sortedContracts.some(r => contractOrder(r) === 1);
+    const activeEnd = activeContract ? parseCzechDate(activeContract.endDate) : null;
+    const daysLeft = activeEnd ? daysUntil(activeEnd) : null;
+    const showNoNextWarning = activeContract && !hasNextContract && daysLeft !== null && daysLeft <= 90;
+
+    const getPriceFor = (row: UbytovaniRow): string | undefined =>
+        data.reservations.find(r => r.room === row.room && r.startDate === row.startDate)?.price;
+
     return (
         <div className="flex flex-col gap-4 p-4 pt-2 overflow-y-auto max-h-full pb-20">
             {showAuthBanner && (
@@ -57,42 +81,37 @@ export function IskamPanel() {
                 </div>
             )}
 
-            {/* 2. ACTIVE RESERVATIONS */}
-            {data.reservations && data.reservations.length > 0 && (
+            {/* 2. PENDING PAYMENTS */}
+            <PendingPaymentsSection payments={data.pendingPayments ?? []} language={language} />
+
+            {/* 3. CONTRACTS */}
+            {sortedContracts.length > 0 && (
                 <section className="flex flex-col gap-2">
                     <h3 className="text-xs font-semibold text-base-content/50 uppercase tracking-widest px-1">
-                        {t('iskam.reservationsLabel')}
+                        {t('iskam.accommodationLabel')}
                     </h3>
-                    {data.reservations.map((res, i) => (
-                        <ReservationCard key={`${res.facility}-${i}`} reservation={res} dimmed={dimmed} />
+                    {sortedContracts.map((row, i) => (
+                        <UbytovaniCard
+                            key={`${row.dorm}-${row.room}-${i}`}
+                            row={row}
+                            language={language}
+                            dimmed={dimmed}
+                            price={getPriceFor(row)}
+                        />
                     ))}
+                    {showNoNextWarning && (
+                        <div className="alert alert-warning text-xs py-2 px-3">
+                            <span>{t('iskam.noNextContract')}</span>
+                            <a href={`${ISKAM_BASE}`} target="_blank" rel="noopener noreferrer" className="btn btn-xs btn-warning btn-outline shrink-0">
+                                {t('iskam.bookRoom')}
+                            </a>
+                        </div>
+                    )}
                 </section>
             )}
 
-            {/* 3. HOUSING CONTRACTS — card pattern, collapsed by default */}
-            {data.ubytovani.length > 0 && (
-                <div className="card bg-base-100 border border-base-200 shadow-sm overflow-hidden">
-                    <button
-                        onClick={() => setContractsOpen(o => !o)}
-                        className="flex items-center justify-between w-full px-4 py-3 hover:bg-base-200/50 transition-colors"
-                    >
-                        <span className="text-xs font-semibold text-base-content/50 uppercase tracking-widest">
-                            {t('iskam.accommodationLabel')}
-                        </span>
-                        {contractsOpen
-                            ? <ChevronUp size={14} className="text-base-content/40" />
-                            : <ChevronDown size={14} className="text-base-content/40" />
-                        }
-                    </button>
-                    {contractsOpen && (
-                        <div className="flex flex-col gap-2 px-4 pb-4 border-t border-base-200">
-                            {data.ubytovani.map((row, i) => (
-                                <UbytovaniCard key={`${row.dorm}-${row.room}-${i}`} row={row} language={language} dimmed={dimmed} />
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
+            {/* 4. FREE ROOMS */}
+            <VolneKapacitySection language={language} />
         </div>
     );
 }

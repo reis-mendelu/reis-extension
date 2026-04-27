@@ -3,8 +3,8 @@ import * as T from './messages/base';
 export * from './messages/base';
 export type { ActionType, DataRequestType } from './messages/base';
 
-export function isIframeMessage(d: unknown): d is T.IframeToContentMessage { return typeof d === 'object' && d !== null && 'type' in d && ['REIS_READY', 'REIS_REQUEST_DATA', 'REIS_FETCH', 'REIS_ACTION', 'ISKAM_READY'].includes((d as any).type); }
-export function isContentMessage(d: unknown): d is T.ContentToIframeMessage { return typeof d === 'object' && d !== null && 'type' in d && ['REIS_DATA', 'REIS_FETCH_RESULT', 'REIS_ACTION_RESULT', 'REIS_SYNC_UPDATE', 'REIS_POPUP_STATE', 'REIS_NAV_MENU', 'ISKAM_SYNC_UPDATE'].includes((d as any).type); }
+export function isIframeMessage(d: unknown): d is T.IframeToContentMessage { return typeof d === 'object' && d !== null && 'type' in d && ['REIS_READY', 'REIS_REQUEST_DATA', 'REIS_FETCH', 'REIS_ACTION', 'ISKAM_READY', 'ISKAM_FETCH_BLOCK'].includes((d as any).type); }
+export function isContentMessage(d: unknown): d is T.ContentToIframeMessage { return typeof d === 'object' && d !== null && 'type' in d && ['REIS_DATA', 'REIS_FETCH_RESULT', 'REIS_ACTION_RESULT', 'REIS_SYNC_UPDATE', 'REIS_POPUP_STATE', 'REIS_NAV_MENU', 'ISKAM_SYNC_UPDATE', 'ISKAM_BLOCK_RESULT'].includes((d as any).type); }
 
 export const Messages = {
     ready: (): T.ReadyMessage => ({ type: 'REIS_READY' }),
