@@ -39,8 +39,8 @@
       "week": "Týden",
       "month": "Měsíc",
       "total": "Celkem",
-      "avgPerDay": "~{amount} Kč / den",
-      "days": "{n} dní"
+      "avgPerVisit": "~{amount} Kč / den",
+      "visits": "{n}× tento měsíc"
     }
   },
   "menu": {

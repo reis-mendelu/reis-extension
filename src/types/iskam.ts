@@ -63,6 +63,6 @@ export interface IskamData {
     profile?: IskamProfile;
     reservations: IskamReservation[];
     pendingPayments: PendingPayment[];
-    stravovaniTransactions: KontaTransaction[];
+    foodTransactions: KontaTransaction[];
     syncedAt: number;
 }

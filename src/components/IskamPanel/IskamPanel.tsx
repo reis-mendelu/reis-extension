@@ -85,8 +85,8 @@ export function IskamPanel() {
             )}
 
             {/* 2. MENZA SPENDING */}
-            {data.stravovaniTransactions.length > 0 && (
-                <MenzaSpendingSection transactions={data.stravovaniTransactions} language={language} />
+            {data.foodTransactions.length > 0 && (
+                <MenzaSpendingSection transactions={data.foodTransactions} language={language} />
             )}
 
             {/* 3. PENDING PAYMENTS */}

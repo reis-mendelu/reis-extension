@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { format, addMonths, subMonths } from 'date-fns';
 import { cs as csLocale } from 'date-fns/locale';
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { ISKAM_CAMPUSES, academicYearDates } from '../../api/iskam/volneKapacity'; // academicYearDates used for default month init
+import { ISKAM_CAMPUSES, academicYearDates } from '../../api/iskam/volneKapacity';
 import type { VolneKapacityRoom } from '../../types/iskam';
 import { createIskamT, type IskamLanguage } from '../../i18n/iskamTranslate';
 

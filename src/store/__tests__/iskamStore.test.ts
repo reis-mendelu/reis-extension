@@ -17,7 +17,7 @@ const SAMPLE: IskamData = {
     ubytovani: [],
     reservations: [],
     pendingPayments: [],
-    stravovaniTransactions: [],
+    foodTransactions: [],
     syncedAt: 1700000000000,
 };
 
@@ -31,6 +31,17 @@ describe('useIskamStore', () => {
     });
 
     describe('loadFromCache()', () => {
+        it('backfills missing foodTransactions for legacy cached entries', async () => {
+            const legacy = { ...SAMPLE } as Partial<IskamData>;
+            delete (legacy as { foodTransactions?: unknown }).foodTransactions;
+
+            vi.mocked(IndexedDBService.get).mockResolvedValue(legacy as IskamData);
+            await useIskamStore.getState().loadFromCache();
+
+            expect(useIskamStore.getState().data?.foodTransactions).toEqual([]);
+            expect(useIskamStore.getState().status).toBe('success');
+        });
+
         it('sets data and status=success when IDB has a cached value', async () => {
             vi.mocked(IndexedDBService.get).mockResolvedValue(SAMPLE);
             await useIskamStore.getState().loadFromCache();

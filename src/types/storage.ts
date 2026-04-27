@@ -130,7 +130,7 @@ export const IskamDataSchema = z.object({
         description: z.string(),
         amount: z.string(),
     })),
-    stravovaniTransactions: z.array(z.object({
+    foodTransactions: z.array(z.object({
         datetime: z.string(),
         settledDate: z.string(),
         type: z.string(),

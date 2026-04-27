@@ -13,10 +13,10 @@ export async function fetchProfileAndPayments(): Promise<{ profile: IskamProfile
     }
 
     let profile: IskamProfile | null = null;
-    try { profile = parseProfile(html); } catch { /* non-critical */ }
+    try { profile = parseProfile(html); } catch (e) { console.warn('[reIS:iskam] parseProfile failed', e); }
 
     let pendingPayments: PendingPayment[] = [];
-    try { pendingPayments = parsePendingPayments(html); } catch { /* non-critical */ }
+    try { pendingPayments = parsePendingPayments(html); } catch (e) { console.warn('[reIS:iskam] parsePendingPayments failed', e); }
 
     return { profile, pendingPayments };
 }

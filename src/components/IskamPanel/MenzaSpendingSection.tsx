@@ -25,15 +25,18 @@ function isInCurrentWeek(d: Date): boolean {
     return d >= monday && d <= sunday;
 }
 
+function isInCurrentMonth(d: Date, today: Date): boolean {
+    return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
+}
+
 function filterByPeriod(transactions: KontaTransaction[], period: Period): KontaTransaction[] {
     const today = new Date();
     return transactions.filter(tx => {
-        if (tx.type !== 'Úhrada') return false;
         const d = parseSettledDate(tx.settledDate);
         if (!d) return false;
         if (period === 'day') return isSameDay(d, today);
         if (period === 'week') return isInCurrentWeek(d);
-        return true;
+        return isInCurrentMonth(d, today);
     });
 }
 
@@ -95,6 +98,7 @@ export function MenzaSpendingSection({ transactions, language }: Props) {
     const today = new Date();
     const elapsedDays = today.getDate();
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const visitDays = groups.length;
     const avgPerDay = elapsedDays > 0 ? Math.round(total / elapsedDays) : 0;
     const monthProgress = Math.round((elapsedDays / daysInMonth) * 100);
 
@@ -116,7 +120,7 @@ export function MenzaSpendingSection({ transactions, language }: Props) {
                         {periods.map(p => (
                             <button
                                 key={p}
-                                className={`btn btn-sm join-item flex-1 ${period === p ? 'btn-primary' : 'btn-ghost'}`}
+                                className={`btn btn-sm join-item flex-1 border-none ${period === p ? 'btn-primary' : 'btn-ghost'}`}
                                 onClick={() => setPeriod(p)}
                             >
                                 {periodLabels[p]}
@@ -133,9 +137,8 @@ export function MenzaSpendingSection({ transactions, language }: Props) {
                         <>
                             <progress className="progress progress-primary w-full h-1.5" value={monthProgress} max={100} />
                             <span className="text-xs text-base-content/40 -mt-2">
-                                {t('iskam.spending.days', { n: elapsedDays })}
-                                {' · '}
-                                {t('iskam.spending.avgPerDay', { amount: avgPerDay })}
+                                {t('iskam.spending.visits', { n: visitDays })}
+                                {visitDays > 0 && <>{' · '}{t('iskam.spending.avgPerVisit', { amount: avgPerDay })}</>}
                             </span>
                         </>
                     )}

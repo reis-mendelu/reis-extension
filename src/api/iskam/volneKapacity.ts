@@ -16,7 +16,7 @@ export const ISKAM_CAMPUSES: IskamCampus[] = [
 
 export function academicYearDates(): { od: string; doo: string } {
     const now = new Date();
-    const startYear = now.getMonth() < 8 ? now.getFullYear() - 1 : now.getFullYear();
+    const startYear = now.getMonth() < 8 ? now.getFullYear() : now.getFullYear() + 1;
     return { od: `01.09.${startYear}`, doo: `30.06.${startYear + 1}` };
 }
 

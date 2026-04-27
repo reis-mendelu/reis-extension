@@ -39,8 +39,8 @@
       "week": "Week",
       "month": "Month",
       "total": "Total",
-      "avgPerDay": "~{amount} CZK / day",
-      "days": "{n} days"
+      "avgPerVisit": "~{amount} CZK / day",
+      "visits": "{n}× this month"
     }
   },
   "menu": {
