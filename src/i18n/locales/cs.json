@@ -32,7 +32,17 @@
     "dateFrom": "Od",
     "gapMonth": "prázdniny",
     "pendingPaymentsLabel": "Požadavky na úhradu",
-    "pendingPaymentDue": "splatnost"
+    "pendingPaymentDue": "splatnost",
+    "spending": {
+      "title": "Výdaje za stravu",
+      "today": "Dnes",
+      "week": "Týden",
+      "month": "Měsíc",
+      "total": "Celkem",
+      "avgPerVisit": "~{amount} Kč / den",
+      "visits": "{n}× tento měsíc",
+      "moreDays": "další dny"
+    }
   },
   "menu": {
     "title": "Jídelníček",

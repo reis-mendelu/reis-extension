@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { format, addMonths, subMonths } from 'date-fns';
 import { cs as csLocale } from 'date-fns/locale';
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { ISKAM_CAMPUSES, academicYearDates } from '../../api/iskam/volneKapacity'; // academicYearDates used for default month init
+import { ISKAM_CAMPUSES, academicYearDates } from '../../api/iskam/volneKapacity';
 import type { VolneKapacityRoom } from '../../types/iskam';
 import { createIskamT, type IskamLanguage } from '../../i18n/iskamTranslate';
 
@@ -50,6 +50,7 @@ export function VolneKapacitySection({ language }: Props) {
     const [open, setOpen] = useState(false);
     const [campuses, setCampuses] = useState<Record<string, CampusState>>({});
     const [expandedFloors, setExpandedFloors] = useState<Record<string, boolean>>({});
+    const fetchGenRef = useRef(0);
 
     const toggleFloor = (key: string) => setExpandedFloors(prev => ({ ...prev, [key]: !prev[key] }));
     const [month, setMonth] = useState<Date>(() => {
@@ -59,22 +60,27 @@ export function VolneKapacitySection({ language }: Props) {
     });
 
     const shiftMonth = (delta: 1 | -1) => {
+        fetchGenRef.current += 1;
         setMonth(prev => delta === 1 ? addMonths(prev, 1) : subMonths(prev, 1));
         setCampuses({});
     };
 
     const fetchCampus = async (campusName: string, blocks: { id: string; label: string }[], fetchMonth: Date) => {
+        const gen = fetchGenRef.current;
         const od = monthToOdCz(fetchMonth);
         const doo = dooFromMonth(fetchMonth);
+        if (fetchGenRef.current !== gen) return;
         setCampuses(prev => ({ ...prev, [campusName]: { blocks: [], fetching: true, expanded: true } }));
         for (const block of blocks) {
             const rooms = await fetchBlockViaContentScript(block.id, od, doo).catch(() => [] as VolneKapacityRoom[]);
+            if (fetchGenRef.current !== gen) return;
             setCampuses(prev => {
                 const campus = prev[campusName];
                 if (!campus) return prev;
                 return { ...prev, [campusName]: { ...campus, blocks: [...campus.blocks, { label: block.label, rooms }] } };
             });
         }
+        if (fetchGenRef.current !== gen) return;
         setCampuses(prev => {
             const campus = prev[campusName];
             if (!campus) return prev;
@@ -83,6 +89,7 @@ export function VolneKapacitySection({ language }: Props) {
     };
 
     const handleCampus = (campusName: string, blocks: { id: string; label: string }[]) => {
+        if (isGapMonth(month)) return;
         const state = campuses[campusName];
         if (!state) { fetchCampus(campusName, blocks, month); return; }
         setCampuses(prev => ({ ...prev, [campusName]: { ...prev[campusName], expanded: !prev[campusName].expanded } }));
@@ -131,7 +138,8 @@ export function VolneKapacitySection({ language }: Props) {
                             <div key={campus.name} className="border-b border-base-200/60 last:border-0">
                                 <button
                                     onClick={() => handleCampus(campus.name, campus.blocks)}
-                                    className="flex items-center justify-between w-full px-4 py-3 hover:bg-base-200/40 transition-colors"
+                                    disabled={isGapMonth(month)}
+                                    className="flex items-center justify-between w-full px-4 py-3 hover:bg-base-200/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
                                     <span className="text-sm font-medium">{campus.name}</span>
                                     <div className="flex items-center gap-2">

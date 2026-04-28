@@ -103,6 +103,7 @@ export const IskamDataSchema = z.object({
         balance: z.number(),
         balanceText: z.string(),
         topUpHref: z.string().nullable(),
+        transactionsHref: z.string().nullable(),
     })),
     ubytovani: z.array(z.object({
         dorm: z.string(),
@@ -128,6 +129,15 @@ export const IskamDataSchema = z.object({
         dueDate: z.string(),
         description: z.string(),
         amount: z.string(),
+    })),
+    foodTransactions: z.array(z.object({
+        datetime: z.string(),
+        settledDate: z.string(),
+        type: z.string(),
+        description: z.string(),
+        topUp: z.number().nullable(),
+        payment: z.number().nullable(),
+        balance: z.number(),
     })),
     syncedAt: z.number(),
 }) as z.ZodType<IskamData>;

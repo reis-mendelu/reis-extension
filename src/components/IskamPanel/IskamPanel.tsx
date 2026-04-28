@@ -10,6 +10,7 @@ import { isStale, parseCzechDate, daysUntil } from './freshness';
 import { ISKAM_BASE } from '../../api/iskam/client';
 import { VolneKapacitySection } from './VolneKapacitySection';
 import { PendingPaymentsSection } from './PendingPaymentsSection';
+import { MenzaSpendingSection } from './MenzaSpendingSection';
 import type { UbytovaniRow } from '../../types/iskam';
 
 function contractOrder(row: UbytovaniRow): number {
@@ -46,7 +47,10 @@ export function IskamPanel() {
         k.name.toLowerCase().includes('main')
     );
 
-    const sortedContracts = [...data.ubytovani].sort((a, b) => contractOrder(a) - contractOrder(b));
+    // contractOrder returns 2 for expired or date-unparseable contracts — hide them.
+    const sortedContracts = [...data.ubytovani]
+        .filter(row => contractOrder(row) !== 2)
+        .sort((a, b) => contractOrder(a) - contractOrder(b));
 
     const todayMidnight = new Date();
     todayMidnight.setHours(0, 0, 0, 0);
@@ -81,10 +85,15 @@ export function IskamPanel() {
                 </div>
             )}
 
-            {/* 2. PENDING PAYMENTS */}
+            {/* 2. MENZA SPENDING */}
+            {data.konta.some(k => /stravov/i.test(k.name)) && (
+                <MenzaSpendingSection transactions={data.foodTransactions} language={language} />
+            )}
+
+            {/* 3. PENDING PAYMENTS */}
             <PendingPaymentsSection payments={data.pendingPayments ?? []} language={language} />
 
-            {/* 3. CONTRACTS */}
+            {/* 4. CONTRACTS */}
             {sortedContracts.length > 0 && (
                 <section className="flex flex-col gap-2">
                     <h3 className="text-xs font-semibold text-base-content/50 uppercase tracking-widest px-1">
@@ -110,7 +119,7 @@ export function IskamPanel() {
                 </section>
             )}
 
-            {/* 4. FREE ROOMS */}
+            {/* 5. FREE ROOMS */}
             <VolneKapacitySection language={language} />
         </div>
     );

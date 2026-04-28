@@ -5,6 +5,7 @@ export interface KontoRow {
     balance: number;
     balanceText: string;
     topUpHref: string | null;
+    transactionsHref: string | null;
 }
 
 export type UbytovaniStatus = 'Ubytovaný' | 'Rezervace' | 'Odhlášen' | string;
@@ -46,11 +47,22 @@ export interface PendingPayment {
     amount: string;
 }
 
+export interface KontaTransaction {
+    datetime: string;       // "27.4.2026 12:48:02"
+    settledDate: string;    // "27.4.2026"
+    type: string;           // "Úhrada" | "Převod" | ...
+    description: string;
+    topUp: number | null;   // Nabíjení column
+    payment: number | null; // Úhrady column
+    balance: number;        // Zůstatek column
+}
+
 export interface IskamData {
     konta: KontoRow[];
     ubytovani: UbytovaniRow[];
     profile?: IskamProfile;
     reservations: IskamReservation[];
     pendingPayments: PendingPayment[];
+    foodTransactions: KontaTransaction[];
     syncedAt: number;
 }

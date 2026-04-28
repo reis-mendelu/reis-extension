@@ -16,19 +16,12 @@ export const ISKAM_CAMPUSES: IskamCampus[] = [
 
 export function academicYearDates(): { od: string; doo: string } {
     const now = new Date();
-    const y = now.getMonth() < 8 ? now.getFullYear() : now.getFullYear() + 1;
-    return { od: `01.09.${y}`, doo: `30.06.${y + 1}` };
+    const startYear = now.getMonth() < 8 ? now.getFullYear() : now.getFullYear() + 1;
+    return { od: `01.09.${startYear}`, doo: `30.06.${startYear + 1}` };
 }
 
-
 export async function fetchVolneKapacityBlock(blockId: string, od: string, doo: string): Promise<VolneKapacityRoom[]> {
-    console.log('[reIS:iskam] fetchVolneKapacityBlock', { blockId, od, doo });
-
     const body = new URLSearchParams({ datumOd: od, datumDo: doo, selBlok: blockId, buttSeek: 'Zobrazit' });
     const html = await postIskam('/VolneKapacity', body);
-    const rooms = parseVolneKapacity(html);
-    console.log('[reIS:iskam] fetchVolneKapacityBlock parsed blockId=' + blockId + ' rooms=' + rooms.length);
-    const tableStart = html.indexOf('<table');
-    console.log('[reIS:iskam] table html:', tableStart >= 0 ? html.slice(tableStart, tableStart + 800) : 'NO TABLE FOUND');
-    return rooms;
+    return parseVolneKapacity(html);
 }

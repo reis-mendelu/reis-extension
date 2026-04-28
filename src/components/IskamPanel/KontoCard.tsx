@@ -25,7 +25,6 @@ export function KontoCard({ row, language, dimmed, variant = 'default' }: KontoC
 
     if (variant === 'hero') {
         const topUpUrl = row.topUpHref ? `${ISKAM_BASE}${row.topUpHref}` : null;
-        const roundedBalance = `${Math.round(row.balance).toLocaleString('cs-CZ')} Kč`;
 
         return (
             <div className={`card bg-base-100 shadow-sm border border-primary/20 ${dimmed ? 'opacity-60' : ''}`}>
@@ -33,7 +32,7 @@ export function KontoCard({ row, language, dimmed, variant = 'default' }: KontoC
                     <Wallet size={18} className="text-primary shrink-0" />
                     <div className="flex flex-col min-w-0">
                         <span className="text-xs font-medium uppercase tracking-wide text-base-content/50">{displayName}</span>
-                        <span className="text-2xl font-bold text-base-content leading-tight">{roundedBalance}</span>
+                        <span className="text-2xl font-bold text-base-content leading-tight">{row.balanceText}</span>
                     </div>
                     {topUpUrl && (
                         <a

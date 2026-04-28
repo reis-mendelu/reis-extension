@@ -27,7 +27,12 @@ export const useIskamStore = create<IskamStoreState>((set) => {
         loadFromCache: async () => {
             try {
                 const cached = await IndexedDBService.get('iskam', 'current');
-                if (cached) set({ data: cached as IskamData, status: 'success', error: null });
+                if (cached) {
+                    const data = cached as IskamData;
+                    // Guard: migrate old cache shapes to current field names.
+                    if (!Array.isArray(data.foodTransactions)) data.foodTransactions = [];
+                    set({ data, status: 'success', error: null });
+                }
             } catch { /* cache miss — receiveSync will populate */ }
         },
 
