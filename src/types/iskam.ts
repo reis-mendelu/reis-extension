@@ -47,6 +47,11 @@ export interface PendingPayment {
     amount: string;
 }
 
+export interface SkmDocument {
+    label: string;
+    href: string;
+}
+
 export interface KontaTransaction {
     datetime: string;       // "27.4.2026 12:48:02"
     settledDate: string;    // "27.4.2026"
@@ -64,5 +69,6 @@ export interface IskamData {
     reservations: IskamReservation[];
     pendingPayments: PendingPayment[];
     foodTransactions: KontaTransaction[];
+    skmDocuments: SkmDocument[];
     syncedAt: number;
 }

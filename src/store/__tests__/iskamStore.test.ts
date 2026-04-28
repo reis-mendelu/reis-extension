@@ -18,6 +18,7 @@ const SAMPLE: IskamData = {
     reservations: [],
     pendingPayments: [],
     foodTransactions: [],
+    skmDocuments: [],
     syncedAt: 1700000000000,
 };
 

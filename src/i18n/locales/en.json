@@ -42,6 +42,10 @@
       "avgPerVisit": "~{amount} CZK / day",
       "visits": "{n}× this month",
       "moreDays": "more days"
+    },
+    "documents": {
+      "title": "Documents",
+      "moreDocs": "+{n} more"
     }
   },
   "menu": {

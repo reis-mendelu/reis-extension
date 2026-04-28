@@ -42,6 +42,10 @@
       "avgPerVisit": "~{amount} Kč / den",
       "visits": "{n}× tento měsíc",
       "moreDays": "další dny"
+    },
+    "documents": {
+      "title": "Dokumenty",
+      "moreDocs": "+{n} dalších"
     }
   },
   "menu": {

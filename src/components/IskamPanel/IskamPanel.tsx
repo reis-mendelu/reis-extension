@@ -11,6 +11,7 @@ import { ISKAM_BASE } from '../../api/iskam/client';
 import { VolneKapacitySection } from './VolneKapacitySection';
 import { PendingPaymentsSection } from './PendingPaymentsSection';
 import { MenzaSpendingSection } from './MenzaSpendingSection';
+import { SkmDocumentsSection } from './SkmDocumentsSection';
 import type { UbytovaniRow } from '../../types/iskam';
 
 function contractOrder(row: UbytovaniRow): number {
@@ -119,7 +120,12 @@ export function IskamPanel() {
                 </section>
             )}
 
-            {/* 5. FREE ROOMS */}
+            {/* 5. SKM DOCUMENTS */}
+            {data.skmDocuments.length > 0 && (
+                <SkmDocumentsSection documents={data.skmDocuments} language={language} />
+            )}
+
+            {/* 6. FREE ROOMS */}
             <VolneKapacitySection language={language} />
         </div>
     );

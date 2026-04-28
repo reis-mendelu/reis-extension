@@ -3,6 +3,7 @@ import { fetchUbytovani } from './ubytovani';
 import { fetchProfileAndPayments } from './profile';
 import { fetchReservations } from './reservations';
 import { fetchKontaTransactions } from './kontaTransactions';
+import { fetchSkmDocuments } from './skmDocuments';
 import type { IskamData, KontaTransaction, KontoRow } from '../../types/iskam';
 
 const NON_FOOD_RE = [/^Ubytování/i, /^Tisky/i];
@@ -35,13 +36,14 @@ export async function fetchDualLanguageIskam(): Promise<IskamData> {
     const mainKonto = czKonta.find(k => /hlavní|main/i.test(k.name));
     const stravKonto = czKonta.find(k => /stravov/i.test(k.name));
 
-    const [mainTxs, stravTxs] = await Promise.all([
+    const [mainTxs, stravTxs, skmDocuments] = await Promise.all([
         mainKonto?.transactionsHref
             ? fetchKontaTransactions(mainKonto.transactionsHref).catch(() => [])
             : Promise.resolve([]),
         stravKonto?.transactionsHref
             ? fetchKontaTransactions(stravKonto.transactionsHref).catch(() => [])
             : Promise.resolve([]),
+        fetchSkmDocuments().catch(() => []),
     ]);
 
     // HLA needs non-food filtered out; STRAVOVACÍ is food-only but filter anyway for consistency.
@@ -56,6 +58,7 @@ export async function fetchDualLanguageIskam(): Promise<IskamData> {
         reservations,
         pendingPayments,
         foodTransactions,
+        skmDocuments,
         syncedAt: Date.now(),
     };
 }
