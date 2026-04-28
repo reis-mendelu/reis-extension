@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, BadgeInfo, Wallet, Building2, BedDouble, CalendarCheck, UtensilsCrossed, User } from 'lucide-react';
+import { LayoutDashboard, BadgeInfo, Wallet, Building2, BedDouble, CalendarCheck, UtensilsCrossed, User, FileText } from 'lucide-react';
 import { IskamPanel } from '@/components/IskamPanel/IskamPanel';
 import { Sidebar } from '@/components/Sidebar';
 import { MobileBottomNav } from '@/components/MobileNav/MobileBottomNav';
@@ -63,6 +63,7 @@ export function IskamApp() {
                 { id: 'prehled-ubytovani', label: t('settings.housingOverview'), icon: <Building2 className="w-4 h-4" />, href: 'https://webiskam.mendelu.cz/PrehledUbytovani' },
                 { id: 'rezervace', label: t('settings.reservations'), icon: <CalendarCheck className="w-4 h-4" />, href: 'https://webiskam.mendelu.cz/Rezervace' },
                 { id: 'inkaso-stravu', label: t('settings.foodDebit'), icon: <UtensilsCrossed className="w-4 h-4" />, href: 'https://webiskam.mendelu.cz/KrSystem' },
+                { id: 'dokumenty-skm', label: t('settings.skmDocuments'), icon: <FileText className="w-4 h-4" />, href: 'https://skm.mendelu.cz/27393-dokumenty' },
             ]
         },
     ];

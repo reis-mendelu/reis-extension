@@ -70,7 +70,8 @@
     "availableCapacity": "Available Capacity",
     "housingOverview": "Housing Overview",
     "reservations": "Reservations",
-    "foodDebit": "Food Debit"
+    "foodDebit": "Food Debit",
+    "skmDocuments": "SKM Documents"
   },
   "sidebar": {
     "profile": "Profile",

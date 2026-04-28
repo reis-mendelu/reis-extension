@@ -70,7 +70,8 @@
     "availableCapacity": "Volné kapacity",
     "housingOverview": "Přehled ubytování",
     "reservations": "Rezervace",
-    "foodDebit": "Inkaso za stravu"
+    "foodDebit": "Inkaso za stravu",
+    "skmDocuments": "Dokumenty SKM"
   },
   "sidebar": {
     "profile": "Profil",
