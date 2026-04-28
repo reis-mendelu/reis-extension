@@ -1,16 +1,19 @@
 import { create } from 'zustand';
 import { IndexedDBService } from '../services/storage';
 import { useAppStore } from './useAppStore';
-import type { IskamData } from '../types/iskam';
+import { fetchSkmDocuments } from '../api/iskam/skmDocuments';
+import type { IskamData, SkmDocument } from '../types/iskam';
 import type { Status } from './types';
 
 export interface IskamStoreState {
     data: IskamData | null;
+    skmDocuments: SkmDocument[];
     status: Status;
     error: 'auth' | 'network' | null;
     handshakeDone: boolean;
     handshakeTimedOut: boolean;
     loadFromCache: () => Promise<void>;
+    loadSkmDocuments: () => Promise<void>;
     receiveSync: (iskamData: IskamData | null, isSyncing: boolean, error: 'auth' | 'network' | null) => void;
 }
 
@@ -19,6 +22,7 @@ export const useIskamStore = create<IskamStoreState>((set) => {
 
     return {
         data: null,
+        skmDocuments: [],
         status: 'idle',
         error: null,
         handshakeDone: false,
@@ -35,6 +39,17 @@ export const useIskamStore = create<IskamStoreState>((set) => {
                     set({ data, status: 'success', error: null });
                 }
             } catch { /* cache miss — receiveSync will populate */ }
+        },
+
+        loadSkmDocuments: async () => {
+            console.log('[ISKAM] Fetching SKM documents from iframe context...');
+            try {
+                const docs = await fetchSkmDocuments();
+                console.log('[ISKAM] SKM documents fetched:', docs.length, docs);
+                set({ skmDocuments: docs });
+            } catch (e) {
+                console.warn('[ISKAM] SKM documents fetch failed:', e);
+            }
         },
 
         receiveSync: (iskamData, isSyncing, error) => {

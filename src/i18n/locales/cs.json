@@ -45,7 +45,11 @@
     },
     "documents": {
       "title": "Dokumenty",
-      "moreDocs": "+{n} dalších"
+      "moreDocs": "+{n} dalších",
+      "groupCenik": "Ceníky",
+      "groupHarmonogram": "Harmonogram",
+      "groupRady": "Řády a pravidla",
+      "groupOstatni": "Ostatní"
     }
   },
   "menu": {

@@ -24,6 +24,9 @@ export function IskamApp() {
             window.parent.postMessage(IskamMessages.iskamReady(), '*');
         });
 
+        // 3a. Fetch SKM documents from iframe (chrome-extension) context — avoids content script CORS issues.
+        useIskamStore.getState().loadSkmDocuments();
+
         // 3. Listen for content script push (ISKAM_SYNC_UPDATE).
         function onMessage(event: MessageEvent) {
             if (event.source !== window.parent) return;
