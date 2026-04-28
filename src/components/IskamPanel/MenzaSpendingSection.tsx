@@ -100,12 +100,8 @@ export function MenzaSpendingSection({ transactions, language }: Props) {
 
     const monthStats = useMemo(() => {
         if (period !== 'month') return null;
-        const today = new Date();
-        const elapsedDays = today.getDate();
-        const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
         const visitDays = groups.length;
         return {
-            progress: Math.round((elapsedDays / daysInMonth) * 100),
             visitDays,
             avgPerVisit: visitDays > 0 ? Math.round(total / visitDays) : 0,
         };
@@ -143,13 +139,10 @@ export function MenzaSpendingSection({ transactions, language }: Props) {
                     </div>
 
                     {monthStats && (
-                        <>
-                            <progress className="progress progress-primary w-full h-1.5" value={monthStats.progress} max={100} />
-                            <span className="text-xs text-base-content/40 -mt-2">
-                                {t('iskam.spending.visits', { n: monthStats.visitDays })}
-                                {monthStats.visitDays > 0 && <>{' · '}{t('iskam.spending.avgPerVisit', { amount: monthStats.avgPerVisit })}</>}
-                            </span>
-                        </>
+                        <span className="text-xs text-base-content/40">
+                            {t('iskam.spending.visits', { n: monthStats.visitDays })}
+                            {monthStats.visitDays > 0 && <>{' · '}{t('iskam.spending.avgPerVisit', { amount: monthStats.avgPerVisit })}</>}
+                        </span>
                     )}
 
                     {groups.length === 0 ? (
