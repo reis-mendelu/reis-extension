@@ -72,8 +72,8 @@ function TransactionDayGroup({ date, transactions }: DayGroupProps) {
                 <span>{date}</span>
                 <span>{formatCzk(dayTotal)}</span>
             </div>
-            {transactions.map((tx, i) => (
-                <div key={i} className="flex justify-between text-xs text-base-content/80 pl-3 py-0.5">
+            {transactions.map(tx => (
+                <div key={`${tx.datetime}-${tx.description}`} className="flex justify-between text-xs text-base-content/80 pl-3 py-0.5">
                     <span className="truncate pr-2">{tx.description}</span>
                     <span className="shrink-0 text-base-content/50">{tx.payment !== null ? formatCzk(tx.payment) : ''}</span>
                 </div>
@@ -98,12 +98,18 @@ export function MenzaSpendingSection({ transactions, language }: Props) {
     const total = useMemo(() => filtered.reduce((s, tx) => s + (tx.payment ?? 0), 0), [filtered]);
     const groups = useMemo(() => groupByDate(filtered), [filtered]);
 
-    const today = new Date();
-    const elapsedDays = today.getDate();
-    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-    const visitDays = groups.length;
-    const avgPerDay = visitDays > 0 ? Math.round(total / visitDays) : 0;
-    const monthProgress = Math.round((elapsedDays / daysInMonth) * 100);
+    const monthStats = useMemo(() => {
+        if (period !== 'month') return null;
+        const today = new Date();
+        const elapsedDays = today.getDate();
+        const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+        const visitDays = groups.length;
+        return {
+            progress: Math.round((elapsedDays / daysInMonth) * 100),
+            visitDays,
+            avgPerVisit: visitDays > 0 ? Math.round(total / visitDays) : 0,
+        };
+    }, [period, groups, total]);
 
     const periods: Period[] = ['day', 'week', 'month'];
     const periodLabels: Record<Period, string> = {
@@ -136,12 +142,12 @@ export function MenzaSpendingSection({ transactions, language }: Props) {
                         <span className="text-lg font-bold">{formatCzk(total)}</span>
                     </div>
 
-                    {period === 'month' && (
+                    {monthStats && (
                         <>
-                            <progress className="progress progress-primary w-full h-1.5" value={monthProgress} max={100} />
+                            <progress className="progress progress-primary w-full h-1.5" value={monthStats.progress} max={100} />
                             <span className="text-xs text-base-content/40 -mt-2">
-                                {t('iskam.spending.visits', { n: visitDays })}
-                                {visitDays > 0 && <>{' · '}{t('iskam.spending.avgPerVisit', { amount: avgPerDay })}</>}
+                                {t('iskam.spending.visits', { n: monthStats.visitDays })}
+                                {monthStats.visitDays > 0 && <>{' · '}{t('iskam.spending.avgPerVisit', { amount: monthStats.avgPerVisit })}</>}
                             </span>
                         </>
                     )}

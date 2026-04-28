@@ -47,6 +47,7 @@ export function IskamPanel() {
         k.name.toLowerCase().includes('main')
     );
 
+    // contractOrder returns 2 for expired or date-unparseable contracts — hide them.
     const sortedContracts = [...data.ubytovani]
         .filter(row => contractOrder(row) !== 2)
         .sort((a, b) => contractOrder(a) - contractOrder(b));
