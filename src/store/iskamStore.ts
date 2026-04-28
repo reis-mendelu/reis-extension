@@ -30,7 +30,7 @@ export const useIskamStore = create<IskamStoreState>((set) => {
                 if (cached) {
                     const data = cached as IskamData;
                     // Guard: migrate old cache shapes to current field names.
-                    if (!data.foodTransactions) data.foodTransactions = [];
+                    if (!Array.isArray(data.foodTransactions)) data.foodTransactions = [];
                     set({ data, status: 'success', error: null });
                 }
             } catch { /* cache miss — receiveSync will populate */ }

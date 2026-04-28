@@ -86,7 +86,7 @@ export function IskamPanel() {
             )}
 
             {/* 2. MENZA SPENDING */}
-            {data.foodTransactions.length > 0 && (
+            {data.konta.some(k => /stravov/i.test(k.name)) && (
                 <MenzaSpendingSection transactions={data.foodTransactions} language={language} />
             )}
 

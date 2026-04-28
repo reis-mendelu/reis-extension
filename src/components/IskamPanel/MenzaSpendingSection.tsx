@@ -5,9 +5,12 @@ import { createIskamT, type IskamLanguage } from '../../i18n/iskamTranslate';
 type Period = 'day' | 'week' | 'month';
 
 function parseSettledDate(s: string): Date | null {
-    const [d, m, y] = s.split('.');
-    const date = new Date(Number(y), Number(m) - 1, Number(d));
-    return isNaN(date.getTime()) ? null : date;
+    const parts = s.split('.');
+    if (parts.length !== 3) return null;
+    const [d, m, y] = parts.map(Number);
+    const date = new Date(y, m - 1, d);
+    if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) return null;
+    return date;
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -32,6 +35,7 @@ function isInCurrentMonth(d: Date, today: Date): boolean {
 function filterByPeriod(transactions: KontaTransaction[], period: Period): KontaTransaction[] {
     const today = new Date();
     return transactions.filter(tx => {
+        if (tx.payment === null) return false;
         const d = parseSettledDate(tx.settledDate);
         if (!d) return false;
         if (period === 'day') return isSameDay(d, today);
