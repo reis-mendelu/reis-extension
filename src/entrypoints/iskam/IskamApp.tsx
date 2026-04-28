@@ -53,7 +53,7 @@ export function IskamApp() {
         },
         {
             id: 'skm',
-            label: 'WebISKAM',
+            label: 'ISKAM',
             icon: <Building2 className="w-5 h-5" />,
             expandable: true,
             children: [
@@ -70,7 +70,7 @@ export function IskamApp() {
     const iskamTabs = [
         { id: 'iskam-dashboard', label: 'Přehled', icon: <LayoutDashboard className="w-5 h-5" /> },
         { id: 'accounts', label: 'Konta', icon: <Wallet className="w-5 h-5" /> },
-        { id: 'skm', label: 'WebISKAM', icon: <Building2 className="w-5 h-5" /> },
+        { id: 'skm', label: 'ISKAM', icon: <Building2 className="w-5 h-5" /> },
         { id: 'profile', label: 'Profil', icon: <User className="w-5 h-5" /> },
     ];
 
