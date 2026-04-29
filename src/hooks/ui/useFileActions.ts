@@ -58,7 +58,6 @@ export function useFileActions(): UseFileActionsResult {
         const fullUrl = normalizeFileUrl(link);
         try {
             const response = await fetch(fullUrl, { credentials: 'include' });
-            console.log('[openPdfInline] url:', fullUrl, 'status:', response.status, 'ok:', response.ok, 'content-type:', response.headers.get('content-type'));
             if (!response.ok) return null;
             const blob = await response.blob();
             return URL.createObjectURL(blob);

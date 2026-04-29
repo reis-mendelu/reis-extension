@@ -36,7 +36,7 @@ export function SkmDocumentsSection({ documents, language }: Props) {
             const ga = GROUP_ORDER.indexOf(groupOf(a.label));
             const gb = GROUP_ORDER.indexOf(groupOf(b.label));
             if (ga !== gb) return ga - gb;
-            if (ga === GROUP_ORDER.indexOf('cenik')) {
+            if (ga === 0) {
                 const pa = studentPriority(a.label);
                 const pb = studentPriority(b.label);
                 if (pa !== pb) return pa - pb;
@@ -47,9 +47,7 @@ export function SkmDocumentsSection({ documents, language }: Props) {
 
     const handlePreview = async (href: string) => {
         setLoadingHref(href);
-        console.log('[SKM] openPdfInline start:', href);
         const blobUrl = await openPdfInline(href);
-        console.log('[SKM] openPdfInline result:', blobUrl);
         setLoadingHref(null);
         if (blobUrl) {
             setPreviewUrl(blobUrl);
@@ -71,8 +69,6 @@ export function SkmDocumentsSection({ documents, language }: Props) {
                         <PdfViewer blobUrl={previewUrl} onClose={closePreview} />
                     </div>
                 </div>
-                {/* Keep section visible behind the overlay so layout doesn't shift */}
-                <section aria-hidden="true" />
             </>
         );
     }

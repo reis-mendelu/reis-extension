@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useIskamStore } from '../iskamStore';
 import { IndexedDBService } from '../../services/storage';
-import type { IskamData } from '../../types/iskam';
+import type { IskamData, SkmDocument } from '../../types/iskam';
+
+vi.mock('../../api/iskam/skmDocuments', () => ({
+    fetchSkmDocuments: vi.fn(),
+}));
+import { fetchSkmDocuments } from '../../api/iskam/skmDocuments';
 
 vi.mock('../../services/storage', () => ({
     IndexedDBService: { get: vi.fn(), set: vi.fn() },
@@ -18,7 +23,7 @@ const SAMPLE: IskamData = {
     reservations: [],
     pendingPayments: [],
     foodTransactions: [],
-    skmDocuments: [],
+    lastTopUp: null,
     syncedAt: 1700000000000,
 };
 
@@ -106,5 +111,54 @@ describe('useIskamStore', () => {
         // Since we can't re-create the store in tests, verify the initial value is false
         // and that the timeout callback is wired up (it runs against the singleton store).
         vi.useRealTimers();
+    });
+
+    describe('loadSkmDocuments()', () => {
+        const DOCS: SkmDocument[] = [{ label: 'Ceník pro studenty', href: '/doc1.pdf' }];
+
+        beforeEach(() => {
+            useIskamStore.setState({ skmDocuments: [] });
+        });
+
+        it('sets docs from network and writes to IDB cache', async () => {
+            vi.mocked(IndexedDBService.get).mockResolvedValue(null);
+            vi.mocked(fetchSkmDocuments).mockResolvedValue(DOCS);
+            vi.mocked(IndexedDBService.set).mockResolvedValue(undefined);
+
+            await useIskamStore.getState().loadSkmDocuments();
+
+            expect(useIskamStore.getState().skmDocuments).toEqual(DOCS);
+            expect(IndexedDBService.set).toHaveBeenCalledWith('meta', 'skm_documents', DOCS);
+        });
+
+        it('shows cached docs immediately before network resolves', async () => {
+            vi.mocked(IndexedDBService.get).mockResolvedValue(DOCS);
+            vi.mocked(fetchSkmDocuments).mockResolvedValue([]);
+            vi.mocked(IndexedDBService.set).mockResolvedValue(undefined);
+
+            // Capture state after cache read but before fetch completes by checking
+            // that get() was called with the right key.
+            await useIskamStore.getState().loadSkmDocuments();
+
+            expect(IndexedDBService.get).toHaveBeenCalledWith('meta', 'skm_documents');
+        });
+
+        it('keeps cached docs visible when network fetch fails', async () => {
+            vi.mocked(IndexedDBService.get).mockResolvedValue(DOCS);
+            vi.mocked(fetchSkmDocuments).mockRejectedValue(new Error('network'));
+
+            await useIskamStore.getState().loadSkmDocuments();
+
+            expect(useIskamStore.getState().skmDocuments).toEqual(DOCS);
+        });
+
+        it('leaves docs empty when both cache and network fail', async () => {
+            vi.mocked(IndexedDBService.get).mockResolvedValue(null);
+            vi.mocked(fetchSkmDocuments).mockRejectedValue(new Error('network'));
+
+            await useIskamStore.getState().loadSkmDocuments();
+
+            expect(useIskamStore.getState().skmDocuments).toEqual([]);
+        });
     });
 });

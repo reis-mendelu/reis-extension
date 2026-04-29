@@ -49,6 +49,8 @@ export async function fetchDualLanguageIskam(): Promise<IskamData> {
     const foodTransactions = [...mainTxs.filter(isFoodTx), ...stravTxs.filter(isFoodTx)]
         .sort((a, b) => czDatetimeToMs(b.datetime) - czDatetimeToMs(a.datetime));
 
+    const lastTopUpTx = mainTxs.find(tx => tx.topUp !== null && tx.topUp > 0);
+
     return {
         konta: enKonta.length === czKonta.length ? mergeKontaLanguages(czKonta, enKonta) : czKonta,
         ubytovani,
@@ -56,7 +58,7 @@ export async function fetchDualLanguageIskam(): Promise<IskamData> {
         reservations,
         pendingPayments,
         foodTransactions,
-        skmDocuments: [],
+        lastTopUp: lastTopUpTx?.topUp ?? null,
         syncedAt: Date.now(),
     };
 }

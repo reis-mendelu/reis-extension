@@ -139,10 +139,7 @@ export const IskamDataSchema = z.object({
         payment: z.number().nullable(),
         balance: z.number(),
     })),
-    skmDocuments: z.array(z.object({
-        label: z.string(),
-        href: z.string(),
-    })),
+    lastTopUp: z.number().nullable(),
     syncedAt: z.number(),
 }) as z.ZodType<IskamData>;
 

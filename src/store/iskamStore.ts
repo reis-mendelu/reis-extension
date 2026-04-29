@@ -35,21 +35,21 @@ export const useIskamStore = create<IskamStoreState>((set) => {
                     const data = cached as IskamData;
                     // Guard: migrate old cache shapes to current field names.
                     if (!Array.isArray(data.foodTransactions)) data.foodTransactions = [];
-                    if (!Array.isArray(data.skmDocuments)) data.skmDocuments = [];
+                    if (data.lastTopUp === undefined) data.lastTopUp = null;
                     set({ data, status: 'success', error: null });
                 }
             } catch { /* cache miss — receiveSync will populate */ }
         },
 
         loadSkmDocuments: async () => {
-            console.log('[ISKAM] Fetching SKM documents from iframe context...');
+            const cached = await IndexedDBService.get('meta', 'skm_documents') as SkmDocument[] | null;
+            if (cached?.length) set({ skmDocuments: cached });
+
             try {
                 const docs = await fetchSkmDocuments();
-                console.log('[ISKAM] SKM documents fetched:', docs.length, docs);
                 set({ skmDocuments: docs });
-            } catch (e) {
-                console.warn('[ISKAM] SKM documents fetch failed:', e);
-            }
+                IndexedDBService.set('meta', 'skm_documents', docs).catch(() => {});
+            } catch { /* network fail — cached docs remain visible */ }
         },
 
         receiveSync: (iskamData, isSyncing, error) => {
