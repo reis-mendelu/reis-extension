@@ -69,6 +69,6 @@ export interface IskamData {
     reservations: IskamReservation[];
     pendingPayments: PendingPayment[];
     foodTransactions: KontaTransaction[];
-    skmDocuments: SkmDocument[];
+    lastTopUp: number | null;
     syncedAt: number;
 }

@@ -45,7 +45,11 @@
     },
     "documents": {
       "title": "Documents",
-      "moreDocs": "+{n} more"
+      "moreDocs": "+{n} more",
+      "groupCenik": "Price lists",
+      "groupHarmonogram": "Schedule",
+      "groupRady": "Rules & regulations",
+      "groupOstatni": "Other"
     }
   },
   "menu": {

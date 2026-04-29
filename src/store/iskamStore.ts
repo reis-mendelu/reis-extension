@@ -1,16 +1,19 @@
 import { create } from 'zustand';
 import { IndexedDBService } from '../services/storage';
 import { useAppStore } from './useAppStore';
-import type { IskamData } from '../types/iskam';
+import { fetchSkmDocuments } from '../api/iskam/skmDocuments';
+import type { IskamData, SkmDocument } from '../types/iskam';
 import type { Status } from './types';
 
 export interface IskamStoreState {
     data: IskamData | null;
+    skmDocuments: SkmDocument[];
     status: Status;
     error: 'auth' | 'network' | null;
     handshakeDone: boolean;
     handshakeTimedOut: boolean;
     loadFromCache: () => Promise<void>;
+    loadSkmDocuments: () => Promise<void>;
     receiveSync: (iskamData: IskamData | null, isSyncing: boolean, error: 'auth' | 'network' | null) => void;
 }
 
@@ -19,6 +22,7 @@ export const useIskamStore = create<IskamStoreState>((set) => {
 
     return {
         data: null,
+        skmDocuments: [],
         status: 'idle',
         error: null,
         handshakeDone: false,
@@ -31,10 +35,21 @@ export const useIskamStore = create<IskamStoreState>((set) => {
                     const data = cached as IskamData;
                     // Guard: migrate old cache shapes to current field names.
                     if (!Array.isArray(data.foodTransactions)) data.foodTransactions = [];
-                    if (!Array.isArray(data.skmDocuments)) data.skmDocuments = [];
+                    if (data.lastTopUp === undefined) data.lastTopUp = null;
                     set({ data, status: 'success', error: null });
                 }
             } catch { /* cache miss — receiveSync will populate */ }
+        },
+
+        loadSkmDocuments: async () => {
+            const cached = await IndexedDBService.get('meta', 'skm_documents') as SkmDocument[] | null;
+            if (cached?.length) set({ skmDocuments: cached });
+
+            try {
+                const docs = await fetchSkmDocuments();
+                set({ skmDocuments: docs });
+                IndexedDBService.set('meta', 'skm_documents', docs).catch(() => {});
+            } catch { /* network fail — cached docs remain visible */ }
         },
 
         receiveSync: (iskamData, isSyncing, error) => {

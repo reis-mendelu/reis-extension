@@ -27,6 +27,7 @@ function contractOrder(row: UbytovaniRow): number {
 
 export function IskamPanel() {
     const data = useIskamStore(s => s.data);
+    const skmDocuments = useIskamStore(s => s.skmDocuments);
     const status = useIskamStore(s => s.status);
     const error = useIskamStore(s => s.error);
     const handshakeDone = useIskamStore(s => s.handshakeDone);
@@ -121,8 +122,8 @@ export function IskamPanel() {
             )}
 
             {/* 5. SKM DOCUMENTS */}
-            {data.skmDocuments.length > 0 && (
-                <SkmDocumentsSection documents={data.skmDocuments} language={language} />
+            {skmDocuments.length > 0 && (
+                <SkmDocumentsSection documents={skmDocuments} language={language} />
             )}
 
             {/* 6. FREE ROOMS */}

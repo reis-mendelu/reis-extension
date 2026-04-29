@@ -62,7 +62,6 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
       if (!data) return;
       const [year, month, day] = data.datumNarozeni.split('-');
       const formatted = `${day}.${month}.${year}`;
-      console.log('[Erasmus] dob formatted:', formatted);
       setDob(formatted);
     });
   }, []);

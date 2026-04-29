@@ -3,7 +3,6 @@ import { fetchUbytovani } from './ubytovani';
 import { fetchProfileAndPayments } from './profile';
 import { fetchReservations } from './reservations';
 import { fetchKontaTransactions } from './kontaTransactions';
-import { fetchSkmDocuments } from './skmDocuments';
 import type { IskamData, KontaTransaction, KontoRow } from '../../types/iskam';
 
 const NON_FOOD_RE = [/^Ubytování/i, /^Tisky/i];
@@ -36,20 +35,23 @@ export async function fetchDualLanguageIskam(): Promise<IskamData> {
     const mainKonto = czKonta.find(k => /hlavní|main/i.test(k.name));
     const stravKonto = czKonta.find(k => /stravov/i.test(k.name));
 
-    const [mainTxs, stravTxs, skmDocuments] = await Promise.all([
+    const [mainTxs, stravTxs] = await Promise.all([
         mainKonto?.transactionsHref
             ? fetchKontaTransactions(mainKonto.transactionsHref).catch(() => [])
             : Promise.resolve([]),
         stravKonto?.transactionsHref
             ? fetchKontaTransactions(stravKonto.transactionsHref).catch(() => [])
             : Promise.resolve([]),
-        fetchSkmDocuments().catch(() => []),
     ]);
 
     // HLA needs non-food filtered out; STRAVOVACÍ is food-only but filter anyway for consistency.
     // datetime is Czech format "27.4.2026 12:48:02" — not lexicographically sortable, parse to ms.
     const foodTransactions = [...mainTxs.filter(isFoodTx), ...stravTxs.filter(isFoodTx)]
         .sort((a, b) => czDatetimeToMs(b.datetime) - czDatetimeToMs(a.datetime));
+
+    const lastTopUpTx = [...mainTxs]
+        .sort((a, b) => czDatetimeToMs(b.datetime) - czDatetimeToMs(a.datetime))
+        .find(tx => tx.topUp !== null && tx.topUp > 0);
 
     return {
         konta: enKonta.length === czKonta.length ? mergeKontaLanguages(czKonta, enKonta) : czKonta,
@@ -58,7 +60,7 @@ export async function fetchDualLanguageIskam(): Promise<IskamData> {
         reservations,
         pendingPayments,
         foodTransactions,
-        skmDocuments,
+        lastTopUp: lastTopUpTx?.topUp ?? null,
         syncedAt: Date.now(),
     };
 }

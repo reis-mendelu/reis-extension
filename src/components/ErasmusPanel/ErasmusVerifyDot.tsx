@@ -165,7 +165,6 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
       const freshCache = useAppStore.getState().syllabuses.cache;
       const targetSyl = freshCache[targetBCode];
       const mendeluText = targetSyl ? buildMendeluText(targetSyl) : '';
-      console.log(`[ErasmusVerifyDot] Home syllabus for ${targetBCode}:`, mendeluText);
 
       const primaryMetadata = {
         credits: 0,

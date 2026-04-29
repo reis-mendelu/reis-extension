@@ -43,10 +43,8 @@ export async function findSubjectId(courseCode: string, subjectName?: string): P
         
         // Use the catalogue search (vyhledavani v katalogu)
         const searchUrl = `${BASE_URL}/auth/katalog/index.pl?search_text=${encodeURIComponent(query)};lang=cz`;
-        console.log(`[findSubjectId] Searching URL: ${searchUrl}`);
         const response = await fetchWithAuth(searchUrl);
         const html = await response.text();
-        console.log(`[findSubjectId] Search returned ${html.length} bytes.`);
         
         // Parse the HTML to find a link to syllabus that matches the code
         const parser = new DOMParser();
@@ -98,7 +96,6 @@ export async function findSubjectId(courseCode: string, subjectName?: string): P
             }
         }
         
-        console.log(`[findSubjectId] bestMatchId for ${courseCode} (maxId=${maxId}) -> ${bestMatchId}`);
         return bestMatchId;
         
     } catch (error) {
