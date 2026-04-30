@@ -63,12 +63,6 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
   const cfg = levelConfig[level];
   const Icon = cfg.Icon;
 
-  // Cross-source reconciliation: studyStats and the parsed plan are independent
-  // scrapes. If they disagree on earned credits, the banner should not claim OK.
-  const creditsMismatch = plan && studyStats
-    ? plan.creditsAcquired !== studyStats.totalEarnedCredits
-    : false;
-
   return (
     <div className="px-4 py-3 border-b border-base-300">
       <div className="flex items-center justify-between gap-2 mb-2">
@@ -138,14 +132,6 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
           </div>
         )}
 
-        {creditsMismatch && plan && studyStats && (
-          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-warning">
-            <AlertTriangle className="w-3 h-3 shrink-0" />
-            <span>
-              {t('subjects.sourcesMismatch', { plan: plan.creditsAcquired, stats: studyStats.totalEarnedCredits })}
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );
