@@ -1,4 +1,4 @@
-import { BASE_URL } from './client';
+import { BASE_URL, fetchWithAuth } from './client';
 import type { Classmate } from '../types/classmates';
 
 export async function fetchExamClassmates(
@@ -8,8 +8,7 @@ export async function fetchExamClassmates(
 ): Promise<Classmate[] | null> {
     try {
         const url = `${BASE_URL}/auth/student/terminy_info.pl?termin=${terminId};spoluzaci=1;studium=${studiumId};obdobi=${obdobiId};lang=cz`;
-        const res = await fetch(url);
-        if (!res.ok) return null;
+        const res = await fetchWithAuth(url);
 
         const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
         const tables = doc.getElementsByTagName('table');
