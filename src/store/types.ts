@@ -84,8 +84,10 @@ export interface SubjectsSlice {
     courseNicknames: Record<string, string>;
     courseDeadlines: Record<string, CourseDeadline[]>;
     attendance: Record<string, SubjectAttendance[]>;
+    pastAttendance: Record<string, SubjectAttendance[]>;
     fetchSubjects: () => Promise<void>;
     setAttendance: (data: Record<string, SubjectAttendance[]>) => void;
+    setPastAttendance: (data: Record<string, SubjectAttendance[]>) => void;
     setCourseNickname: (courseCode: string, nickname: string | null) => void;
     setCourseDeadlines: (courseCode: string, deadlines: CourseDeadline[] | null) => void;
 }

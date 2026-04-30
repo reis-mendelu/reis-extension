@@ -107,11 +107,17 @@ export interface Assessment {
     detailUrl?: string; // Relative URL for details
 }
 
+export interface AvailablePeriod {
+    id: string;    // e.g. "801"
+    label: string; // e.g. "ZS 2025/2026 - PEF"
+}
+
 export interface CourseGrade {
     period: string;        // "ZS 2025/2026 - PEF"
     predmetId: string;     // "159410"
     courseCode?: string;   // "DSND" — short code from second table cell
     courseName: string;    // "Algoritmizace"
+    courseNameEn?: string; // English name from EN parallel fetch
     examType: string;      // "zk" | "záp" | "zak"
     attempt: number | null;
     gradeText: string;     // "dobře plus (D)"

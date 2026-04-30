@@ -7,6 +7,7 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
     courseNicknames: {},
     courseDeadlines: {},
     attendance: {},
+    pastAttendance: {},
     fetchSubjects: async () => {
         // Only show loading on the first call. Subsequent sync-driven refreshes
         // must not flip isLoaded and cause a UI flash while cached data is visible.
@@ -29,6 +30,7 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
         }
     },
     setAttendance: (data) => set({ attendance: data }),
+    setPastAttendance: (data) => set({ pastAttendance: data }),
     setCourseNickname: (courseCode, nickname) => {
         const currentNicknames = get().courseNicknames;
         const newNicknames = { ...currentNicknames };
