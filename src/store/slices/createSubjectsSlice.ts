@@ -30,15 +30,7 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
         }
     },
     setAttendance: (data) => set({ attendance: data }),
-    setPastAttendance: (incoming) => set(s => {
-        const merged: Record<string, import('../../types/documents').SubjectAttendance[]> = { ...s.pastAttendance };
-        for (const [code, records] of Object.entries(incoming)) {
-            merged[code] = s.pastAttendance[code]
-                ? [...s.pastAttendance[code], ...records]
-                : records;
-        }
-        return { pastAttendance: merged };
-    }),
+    setPastAttendance: (data) => set({ pastAttendance: data }),
     setCourseNickname: (courseCode, nickname) => {
         const currentNicknames = get().courseNicknames;
         const newNicknames = { ...currentNicknames };
