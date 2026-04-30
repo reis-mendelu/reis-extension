@@ -1,7 +1,7 @@
  
  
 import { fetchWithAuth, BASE_URL } from "./client";
-import type { SubjectInfo, SubjectsData, SubjectAttendance, AttendanceRecord, AttendanceStatus } from "../types/documents";
+import type { SubjectInfo, SubjectsData, SubjectAttendance, AttendanceRecord, AttendanceStatus, AvailablePeriod } from "../types/documents";
 import { SubjectsDataSchema } from "../schemas/subjectSchema";
 
 const STUDENT_LIST_URL = `${BASE_URL}/auth/student/list.pl`;
@@ -33,15 +33,70 @@ export async function fetchSubjects(lang: string = 'cz', studium?: string): Prom
 export interface SubjectsFetchResult {
     subjects: SubjectsData;
     attendance: Record<string, SubjectAttendance[]>;
+    availablePeriods: AvailablePeriod[];
+}
+
+function buildListUrl(lang: string, studium?: string, obdobi?: string): string {
+    const params = new URLSearchParams();
+    params.set('lang', lang);
+    if (studium) params.set('studium', studium);
+    if (obdobi) params.set('obdobi', obdobi);
+    return `${STUDENT_LIST_URL}?${params.toString().replace(/&/g, ';')}`;
+}
+
+export function parseAvailablePeriods(html: string): AvailablePeriod[] {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const select = doc.querySelector('select[name="obdobi"]');
+    if (!select) return [];
+    return Array.from(select.querySelectorAll('option')).map(opt => ({
+        id: opt.getAttribute('value') ?? '',
+        label: opt.textContent?.trim() ?? '',
+    })).filter(p => p.id);
+}
+
+/**
+ * Fetches subjects + attendance for a specific past semester (no periods list).
+ * Result is cached in IDB by the caller — this function is pure fetch+parse.
+ */
+export async function fetchPastSemesterData(studium: string, obdobi: string): Promise<SubjectsFetchResult | null> {
+    try {
+        const [czRes, enRes] = await Promise.all([
+            fetchWithAuth(buildListUrl('cz', studium, obdobi)),
+            fetchWithAuth(buildListUrl('en', studium, obdobi)),
+        ]);
+        const czHtml = await czRes.text();
+        const enHtml = await enRes.text();
+
+        const attendance = parseAttendance(czHtml);
+        const czMap = parseSubjectFolders(czHtml);
+        const enMap = parseSubjectFolders(enHtml);
+
+        const merged: Record<string, SubjectInfo> = {};
+        for (const [fullName, data] of Object.entries(czMap)) {
+            const code = extractSubjectCode(fullName);
+            const name = extractCleanName(fullName);
+            merged[code] = { displayName: name, fullName, nameCs: name, subjectCode: code, subjectId: data.subjectId, folderUrl: data.folderUrl, fetchedAt: new Date().toISOString() };
+        }
+        for (const [fullName] of Object.entries(enMap)) {
+            const code = extractSubjectCode(fullName);
+            if (merged[code]) merged[code].nameEn = extractCleanName(fullName);
+        }
+
+        const subjectsData: SubjectsData = { version: 1, lastUpdated: new Date().toISOString(), data: merged };
+        return { subjects: subjectsData, attendance, availablePeriods: [] };
+    } catch (e) {
+        console.warn('[subjects] fetchPastSemesterData failed:', e);
+        return null;
+    }
 }
 
 /**
  * Fetches subjects in both Czech and English and merges them.
  */
-export async function fetchDualLanguageSubjects(studium?: string): Promise<SubjectsFetchResult | null> {
+export async function fetchDualLanguageSubjects(studium?: string, obdobi?: string): Promise<SubjectsFetchResult | null> {
     try {
-        const czUrl = studium ? `${STUDENT_LIST_URL}?lang=cz;studium=${studium}` : `${STUDENT_LIST_URL}?lang=cz`;
-        const enUrl = studium ? `${STUDENT_LIST_URL}?lang=en;studium=${studium}` : `${STUDENT_LIST_URL}?lang=en`;
+        const czUrl = buildListUrl('cz', studium, obdobi);
+        const enUrl = buildListUrl('en', studium, obdobi);
 
         // Fetch both in parallel
         const [czRes, enRes] = await Promise.all([
@@ -89,7 +144,8 @@ export async function fetchDualLanguageSubjects(studium?: string): Promise<Subje
         };
 
         const result = SubjectsDataSchema.safeParse(subjectsData);
-        return { subjects: result.success ? result.data : subjectsData, attendance };
+        const availablePeriods = parseAvailablePeriods(czHtml);
+        return { subjects: result.success ? result.data : subjectsData, attendance, availablePeriods };
     } catch (e) {
         console.warn('[subjects] fetchDualLanguageSubjects failed:', e);
         return null;

@@ -27,6 +27,7 @@ interface SyncedData {
     classmates?: Record<string, ClassmatesData>;
     assessments?: Record<string, Assessment[] | { cz: Assessment[]; en: Assessment[] }>;
     attendance?: Record<string, SubjectAttendance[]>;
+    pastAttendance?: Record<string, SubjectAttendance[]>;
     studyPlan?: DualLanguageStudyPlan;
     studyStats?: unknown;
     cvicneTests?: any[];
@@ -53,6 +54,26 @@ export function useAppLogic() {
         syncGradeHistory()
             .then(() => useAppStore.getState().loadStudyJamSuggestions())
             .catch(() => {});
+
+        // Hydrate past attendance from permanently-cached IDB entries
+        IndexedDBService.getAllWithKeys('meta').then(entries => {
+            const pastEntries = entries.filter(({ key }) => key.startsWith('past_semester_'));
+            const merged: Record<string, SubjectAttendance[]> = {};
+            for (const { value } of pastEntries) {
+                const att = (value as { attendance?: Record<string, SubjectAttendance[]> })?.attendance ?? {};
+                for (const [code, records] of Object.entries(att)) {
+                    if (merged[code]) {
+                        merged[code] = [...merged[code], ...records];
+                    } else {
+                        merged[code] = records;
+                    }
+                }
+            }
+            if (Object.keys(merged).length > 0) {
+                useAppStore.getState().setPastAttendance(merged);
+            }
+        }).catch(() => {});
+
         let unsub: (() => void) | undefined;
         initializeStore().then(unsubscribe => {
             unsub = unsubscribe;
@@ -140,6 +161,10 @@ export function useAppLogic() {
 
                 if (r.attendance) {
                     useAppStore.getState().setAttendance(r.attendance);
+                }
+
+                if (r.pastAttendance) {
+                    useAppStore.getState().setPastAttendance(r.pastAttendance);
                 }
 
                 if (r.files) {

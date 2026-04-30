@@ -20,7 +20,7 @@ function shortDate(d: string): string {
 
 export function AttendanceSection({ courseCode }: { courseCode: string }) {
     const { t } = useTranslation();
-    const groups = useAppStore(state => state.attendance[courseCode]);
+    const groups = useAppStore(state => state.attendance[courseCode] ?? state.pastAttendance[courseCode]);
 
     if (!groups || groups.length === 0) return null;
 

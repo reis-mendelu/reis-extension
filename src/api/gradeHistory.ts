@@ -7,10 +7,25 @@ export async function fetchGradeHistory(
     obdobi: string
 ): Promise<GradeHistory | null> {
     try {
-        const url = `${BASE_URL}/auth/student/pruchod_studiem.pl?vyber=vsechna_obdobi;studium=${studium};obdobi=${obdobi};lang=cz`;
-        const response = await fetchWithAuth(url);
-        const html = await response.text();
-        return parseGradeHistory(html, studium);
+        const base = `${BASE_URL}/auth/student/pruchod_studiem.pl?vyber=vsechna_obdobi;studium=${studium};obdobi=${obdobi}`;
+        const [czRes, enRes] = await Promise.all([
+            fetchWithAuth(`${base};lang=cz`),
+            fetchWithAuth(`${base};lang=en`),
+        ]);
+        const czHtml = await czRes.text();
+        const enHtml = await enRes.text();
+
+        const result = parseGradeHistory(czHtml, studium);
+
+        // Build predmetId → EN course name map and merge in
+        const enGrades = parseGradeHistory(enHtml, studium).grades;
+        const enNameMap = new Map(enGrades.map(g => [g.predmetId, g.courseName]));
+        for (const grade of result.grades) {
+            const enName = enNameMap.get(grade.predmetId);
+            if (enName) grade.courseNameEn = enName;
+        }
+
+        return result;
     } catch (e) {
         console.warn('[gradeHistory] fetchGradeHistory failed:', e);
         return null;

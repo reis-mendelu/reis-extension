@@ -12,6 +12,7 @@ import { syncCvicneTests } from "../services/sync/syncCvicneTests";
 import { syncOdevzdavarny } from "../services/sync/syncOdevzdavarny";
 import { fetchSeminarGroupIds, fetchClassmates } from "../api/classmates";
 import { mergePastSubjects } from "../services/sync/mergePastSubjects";
+import { syncPastSemesters } from "../services/sync/syncPastSemesters";
 
 import { getUserParams } from "../utils/userParams";
 import { fetchFullSemesterSchedule } from "./dataFetchers";
@@ -36,8 +37,8 @@ export async function syncAllData() {
         const userParams = await getUserParams();
         const studium = userParams?.studium;
 
-        // Phase 2a: Start subjects early — fast fetch
-        const subjectsPromise = fetchDualLanguageSubjects(studium || undefined)
+        // Phase 2a: Start subjects early — fast fetch (explicit obdobi prevents session-state coupling)
+        const subjectsPromise = fetchDualLanguageSubjects(studium || undefined, userParams?.obdobi || undefined)
             .then(result => {
                 if (result) {
                     cachedData = { ...cachedData, subjects: result.subjects, attendance: result.attendance };
@@ -96,6 +97,23 @@ export async function syncAllData() {
             subjects.status === "fulfilled" && subjects.value &&
             pastSubjects.status === "fulfilled" && pastSubjects.value
         ) {
+            // Inject already-cached past semester subjects (richer data than dok_server)
+            // before mergePastSubjects so dok_server only fills truly old subjects.
+            if (studium && userParams?.obdobi && subjects.value.availablePeriods.length > 0) {
+                const pastPeriods = subjects.value.availablePeriods.filter(p => p.id !== userParams!.obdobi);
+                for (const period of pastPeriods) {
+                    const cached = await IndexedDBService.get('meta', `past_semester_${period.id}`) as
+                        { subjects: { data: typeof subjects.value.subjects.data }; attendance: unknown } | undefined;
+                    if (cached?.subjects?.data) {
+                        for (const [code, info] of Object.entries(cached.subjects.data)) {
+                            if (!subjects.value.subjects.data[code]) {
+                                subjects.value.subjects.data[code] = info;
+                            }
+                        }
+                    }
+                }
+            }
+
             mergePastSubjects(
                 subjects.value.subjects,
                 pastSubjects.value,
@@ -124,6 +142,11 @@ export async function syncAllData() {
         
         cachedData.lastSync = Date.now();
         sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing: false }));
+
+        // Fire-and-forget: fetch past semesters once, permanently cache in IDB
+        if (studium && userParams?.obdobi && subjects.status === "fulfilled" && subjects.value?.availablePeriods.length) {
+            syncPastSemesters(studium, userParams.obdobi, subjects.value.availablePeriods).catch(() => {});
+        }
     } catch (e) {
         sendToIframe(Messages.syncUpdate({ isSyncing: false, error: String(e), lastSync: cachedData.lastSync }));
     } finally { 
