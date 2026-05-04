@@ -11,6 +11,7 @@ interface SemesterSectionProps {
   failRates?: Record<string, number | null>;
   zameraniLookup?: Map<string, Zamerani>;
   zameraniProgress?: Map<string, ZameraniProgress>;
+  subjectSemesters?: Map<string, string[]>;
   onToggle: () => void;
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => void;
   onSearchSubject: (name: string) => void;
@@ -46,7 +47,7 @@ const stateConfig: Record<SemesterState, {
   },
 };
 
-export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup, zameraniProgress, onToggle, onOpenSubject, onSearchSubject }: SemesterSectionProps) {
+export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup, zameraniProgress, subjectSemesters, onToggle, onOpenSubject, onSearchSubject }: SemesterSectionProps) {
   const state = getSemesterState(block);
   const cfg = stateConfig[state];
 
@@ -115,6 +116,7 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
                     failRate={failRates?.[s.code]}
                     zamerani={zameraniLookup?.get(normalizeZameraniName(s.name)) ?? null}
                     zameraniProgress={zameraniProgress?.get(normalizeZameraniName(s.name)) ?? null}
+                    subjectSemesters={subjectSemesters}
                     onOpenSubject={onOpenSubject}
                     onSearchSubject={onSearchSubject}
                   />
