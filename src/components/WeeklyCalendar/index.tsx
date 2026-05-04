@@ -184,8 +184,8 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                 <div className="flex h-full">
                         <div className="w-12 flex-shrink-0 border-r border-base-300 bg-base-200 relative">
                             {HOURS.map((hour, i) => (
-                                <div key={hour} className="absolute left-0 right-0 text-xs text-base-content/80 text-right pr-1"
-                                     style={{ top: `${(i / TOTAL_HOURS) * 100}%`, height: `${100 / TOTAL_HOURS}%` }}>
+                                <div key={hour} className="absolute left-0 right-0 text-xs text-base-content/80 text-right pr-1 leading-none"
+                                     style={{ top: `${(i / TOTAL_HOURS) * 100}%`, transform: i > 0 ? 'translateY(-50%)' : undefined }}>
                                     {hour}
                                 </div>
                             ))}
