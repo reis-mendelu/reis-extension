@@ -11,7 +11,7 @@ export function useSubjectFileDrawerState(lesson: BlockLesson | SelectedSubject 
     const isExam = lesson && 'isExam' in lesson ? lesson.isExam : false;
     const isEnrolled = !!(lesson?.courseCode && getSubject(lesson.courseCode)?.subjectId);
     const requestedTab = lesson && 'initialTab' in lesson ? lesson.initialTab : undefined;
-    const [activeTab, setActiveTab] = useState<'files' | 'stats' | 'syllabus' | 'classmates' | 'cvicneTests'>(requestedTab ?? (isExam || !isEnrolled ? 'stats' : 'files'));
+    const [activeTab, setActiveTab] = useState<'files' | 'stats' | 'syllabus' | 'classmates'>(requestedTab ?? (isExam || !isEnrolled ? 'stats' : 'files'));
 
     useEffect(() => {
       if (requestedTab) queueMicrotask(() => setActiveTab(requestedTab));

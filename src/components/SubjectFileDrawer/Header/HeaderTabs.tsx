@@ -1,10 +1,10 @@
-import { FileText, Users, ClipboardCheck, BarChart3, BookOpen } from 'lucide-react';
+import { FileText, Users, BarChart3, BookOpen } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface HeaderTabsProps {
     activeTab: string;
-    onTabChange: (id: 'files' | 'stats' | 'syllabus' | 'classmates' | 'cvicneTests') => void;
+    onTabChange: (id: 'files' | 'stats' | 'syllabus' | 'classmates') => void;
     disabledTabs?: string[];
     counts?: Record<string, number>;
 }
@@ -12,11 +12,10 @@ interface HeaderTabsProps {
 export function HeaderTabs({ activeTab, onTabChange, disabledTabs = [], counts }: HeaderTabsProps) {
     const { t } = useTranslation();
 
-    type TabId = 'files' | 'stats' | 'syllabus' | 'classmates' | 'cvicneTests';
+    type TabId = 'files' | 'stats' | 'syllabus' | 'classmates';
     const tabs: { id: TabId; label: string; icon: LucideIcon }[] = [
         { id: 'files', label: t('course.tabs.files'), icon: FileText },
         { id: 'classmates', label: t('course.tabs.classmates'), icon: Users },
-        { id: 'cvicneTests', label: t('course.tabs.cvicneTests'), icon: ClipboardCheck },
         { id: 'stats', label: t('course.tabs.successRate'), icon: BarChart3 },
         { id: 'syllabus', label: t('course.tabs.requirements'), icon: BookOpen },
     ];
@@ -44,7 +43,7 @@ export function HeaderTabs({ activeTab, onTabChange, disabledTabs = [], counts }
                     >
                         <div className="relative">
                             <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
-                            {count !== undefined && (count > 0 || tab.id === 'cvicneTests') && (
+                            {count !== undefined && count > 0 && (
                                 <span className={`absolute -top-1.5 -right-2 text-[9px] font-bold min-w-[14px] h-[14px] flex items-center justify-center rounded-full px-0.5 ${
                                     isActive
                                         ? 'bg-primary text-primary-content'

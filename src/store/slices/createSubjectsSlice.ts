@@ -13,23 +13,28 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
         // must not flip isLoaded and cause a UI flash while cached data is visible.
         if (get().subjects === null) set({ subjectsLoading: true });
         try {
-            const [data, nicknames, deadlines] = await Promise.all([
+            const [data, nicknames, deadlines, attendance] = await Promise.all([
                 IndexedDBService.get('subjects', 'current'),
                 IndexedDBService.get('meta', 'course_nicknames'),
-                IndexedDBService.get('meta', 'course_deadlines')
+                IndexedDBService.get('meta', 'course_deadlines'),
+                IndexedDBService.get('meta', 'current_attendance'),
             ]);
-            set({ 
+            set({
                 subjects: data || null,
                 courseNicknames: (nicknames as Record<string, string>) || {},
                 courseDeadlines: (deadlines as Record<string, CourseDeadline[]>) || {},
-                subjectsLoading: false 
+                attendance: (attendance as Record<string, import('../../types/documents').SubjectAttendance[]>) || {},
+                subjectsLoading: false,
             });
         } catch (e) {
             console.warn('[SubjectsSlice] fetchSubjects failed:', e);
             set({ subjectsLoading: false });
         }
     },
-    setAttendance: (data) => set({ attendance: data }),
+    setAttendance: (data) => {
+        set({ attendance: data });
+        IndexedDBService.set('meta', 'current_attendance', data).catch(() => {});
+    },
     setPastAttendance: (data) => set({ pastAttendance: data }),
     setCourseNickname: (courseCode, nickname) => {
         const currentNicknames = get().courseNicknames;

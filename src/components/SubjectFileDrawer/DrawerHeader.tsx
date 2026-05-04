@@ -8,7 +8,7 @@ import { HeaderTabs } from './Header/HeaderTabs';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTimeline } from '../../hooks/useTimeline';
 
-const NO_ID_DISABLED: string[] = ['files', 'classmates', 'cvicneTests'];
+const NO_ID_DISABLED: string[] = ['files', 'classmates'];
 const CLASSMATES_ONLY: string[] = ['classmates'];
 const EMPTY_TABS: string[] = [];
 

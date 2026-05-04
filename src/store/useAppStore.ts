@@ -4,7 +4,6 @@ import { createScheduleSlice } from './slices/createScheduleSlice';
 import { createExamSlice } from './slices/createExamSlice';
 import { createSyllabusSlice } from './slices/createSyllabusSlice';
 import { createFilesSlice } from './slices/createFilesSlice';
-import { createAssessmentsSlice } from './slices/createAssessmentsSlice';
 import { createClassmatesSlice } from './slices/createClassmatesSlice';
 import { createSubjectsSlice } from './slices/createSubjectsSlice';
 import { createSyncSlice } from './slices/createSyncSlice';
@@ -34,7 +33,6 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createExamSlice(...a),
   ...createSyllabusSlice(...a),
   ...createFilesSlice(...a),
-  ...createAssessmentsSlice(...a),
   ...createClassmatesSlice(...a),
   ...createSubjectsSlice(...a),
   ...createSyncSlice(...a),

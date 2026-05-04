@@ -4,7 +4,6 @@ import { SyllabusTab } from './SyllabusTab';
 import { ClassmatesTab } from './ClassmatesTab';
 import { SuccessRateTab } from '../SuccessRateTab';
 import { SelectionBox, DragHint } from './DragHint';
-import { CvicneTestsTab } from './CvicneTestsTab';
 import type { FileGroup } from './types';
 import type { SyllabusRequirements, ParsedFile } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -13,7 +12,7 @@ import type { SelectedSubject } from '../../types/app';
 
 
 interface SubjectFileDrawerContentProps {
-    activeTab: 'files' | 'stats' | 'syllabus' | 'classmates' | 'cvicneTests';
+    activeTab: 'files' | 'stats' | 'syllabus' | 'classmates';
     lesson: BlockLesson | SelectedSubject | null;
     files: ParsedFile[] | null;
     isFilesLoading: boolean;
@@ -88,9 +87,5 @@ export function SubjectFileDrawerContent({
     if (activeTab === 'syllabus') return <SyllabusTab courseCode={lesson?.courseCode || ''} courseId={resolvedCourseId} courseName={lesson?.courseName ?? ''} prefetchedResult={syllabusResult} />;
     if (activeTab === 'classmates') return <ClassmatesTab courseCode={lesson?.courseCode || ''} />;
     
-    if (activeTab === 'cvicneTests') {
-        return <CvicneTestsTab lesson={lesson} />;
-    }
-
     return <SuccessRateTab courseCode={lesson?.courseCode || ''} facultyCode={(lesson as { facultyCode?: string } | null)?.facultyCode} />;
 }

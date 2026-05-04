@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ParsedFile, Assessment, SyllabusRequirements, SubjectsData, GradeHistory, DocumentNote } from '../types/documents';
+import type { ParsedFile, SyllabusRequirements, SubjectsData, GradeHistory, DocumentNote } from '../types/documents';
 import type { ExamSubject } from '../types/exams';
 import type { BlockLesson, CalendarCustomEvent } from '../types/calendarTypes';
 import type { ClassmatesData } from '../types/classmates';
@@ -13,7 +13,6 @@ import type { IskamData } from './iskam';
 
 
 export const ParsedFileSchema = z.custom<ParsedFile>();
-export const AssessmentSchema = z.custom<Assessment>();
 export const SyllabusRequirementsSchema = z.custom<SyllabusRequirements>();
 export const ExamSubjectSchema = z.custom<ExamSubject>();
 export const BlockLessonSchema = z.custom<BlockLesson>();
@@ -58,8 +57,8 @@ export const FilesSchema = z.union([
     })
 ]);
 
-// 'assessments' store - Array of Assessment
-export const AssessmentsSchema = z.array(AssessmentSchema);
+// 'assessments' store - Legacy, kept for backward compatibility
+export const AssessmentsSchema = z.array(z.unknown());
 
 // 'syllabuses' store - can be legacy single-language or dual-language object
 export const SyllabusSchema = z.union([
