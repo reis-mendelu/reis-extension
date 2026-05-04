@@ -4,7 +4,7 @@ import { SubjectFileDrawer } from '../SubjectFileDrawer';
 import { HOURS, getEventStyle, organizeLessons, timeToPercent } from './utils';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useHintStatus } from '../../hooks/ui/useHintStatus';
-import type { BlockLesson, DateInfo } from '../../types/calendarTypes';
+import type { BlockLesson, LessonWithRow, DateInfo } from '../../types/calendarTypes';
 
 const TOTAL_HOURS = 13;
 
@@ -25,7 +25,7 @@ export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, 
   const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
   const defaultDay = todayIndex >= 0 && todayIndex < 5 ? todayIndex : 0;
   const [selectedDay, setSelectedDay] = useState(defaultDay);
-  const [selected, setSelected] = useState<BlockLesson | null>(null);
+  const [selected, setSelected] = useState<LessonWithRow | null>(null);
   const { isSeen, markSeen } = useHintStatus('calendar_event_click');
 
   const lessons = useMemo(() => lessonsByDay[selectedDay] || [], [lessonsByDay, selectedDay]);
@@ -41,7 +41,7 @@ export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, 
   const showTimeLine = isSelectedToday && now.getHours() >= 7 && now.getHours() < 21;
   const timeLineTop = timeToPercent(`${now.getHours()}:${now.getMinutes()}`);
 
-  const handleEventClick = (lesson: BlockLesson) => {
+  const handleEventClick = (lesson: LessonWithRow) => {
     setSelected(lesson);
     if (!isSeen) markSeen();
   };

@@ -8,7 +8,7 @@
  */
 
 import { MapPin, EyeOff, Calendar, CalendarRange, Timer } from 'lucide-react';
-import type { BlockLesson } from '../types/calendarTypes';
+import type { LessonWithRow } from '../types/calendarTypes';
 import { useCourseName } from '../hooks/ui/useCourseName';
 import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from '../hooks/useTranslation';
@@ -17,13 +17,13 @@ import { useHintStatus } from '../hooks/ui/useHintStatus';
 import { toast } from 'sonner';
 
 interface CalendarEventCardProps {
-    lesson: BlockLesson;
+    lesson: LessonWithRow;
     onClick?: (e: React.MouseEvent<HTMLElement>) => void;
     language?: string; // Language for localization
 }
 
 // Helper function to get localized course name
-function getLocalizedCourseName(lesson: BlockLesson, language?: string): string {
+function getLocalizedCourseName(lesson: LessonWithRow, language?: string): string {
     if (language === 'en' && lesson.courseNameEn) {
         return lesson.courseNameEn;
     }
@@ -31,7 +31,7 @@ function getLocalizedCourseName(lesson: BlockLesson, language?: string): string 
 }
 
 // Helper function to get localized room name
-function getLocalizedRoom(lesson: BlockLesson, language?: string): string {
+function getLocalizedRoom(lesson: LessonWithRow, language?: string): string {
     if (language === 'en' && lesson.roomEn) {
         return lesson.roomEn;
     }
@@ -131,7 +131,13 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
 
     // For exams: show the section name (e.g. "Průběžný test 2")
     // For others: show the full course name
-    const courseTitle = lesson.isExam
+    const isCompact = (lesson.maxColumns ?? 1) > 1;
+    const compactCode = lesson.courseCode
+        ? (lesson.courseCode.includes('-') ? lesson.courseCode.split('-').slice(1).join('-') : lesson.courseCode)
+        : courseName;
+    const courseTitle = isCompact
+        ? compactCode
+        : lesson.isExam
         ? getExamSectionName(courseName)
         : courseName;
 
@@ -156,7 +162,7 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
                 </div>
             )}
             {/* Quick Hide Action (custom event actions disabled until feature ships) */}
-            {!lesson.isCustom && !lesson.isExam && (
+            {!lesson.isCustom && !lesson.isExam && !isCompact && (
                 <div
                     className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-20"                    onClick={(e) => e.stopPropagation()}
                 >
@@ -197,12 +203,12 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
             )}
             <div className="p-2 h-full flex flex-col text-sm overflow-hidden font-inter">
                 {/* Course title - always visible */}
-                <div className={`font-semibold ${styles.text} flex-shrink-0 break-words line-clamp-2 ${!lesson.isExam ? 'pr-8' : ''}`}>
+                <div className={`font-semibold ${styles.text} flex-shrink-0 truncate ${!lesson.isExam && !isCompact ? 'pr-8' : ''}`}>
                     {courseTitle}
                 </div>
                 {/* Additional course info - only for longer events */}
-                {isLongEnough && lesson.isExam && (
-                    <div className="text-exam-text font-medium text-xs flex-shrink-0">
+                {isLongEnough && lesson.isExam && !isCompact && (
+                    <div className="text-exam-text font-medium text-xs flex-shrink-0 truncate">
                         {courseName.split(' - ')[0]}
                     </div>
                 )}
