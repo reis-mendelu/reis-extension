@@ -7,8 +7,6 @@
 
 import type { FileObject, StoredSubject } from "../types/calendarTypes";
 import { IndexedDBService } from "../services/storage";
-import type { Assessment } from "../types/documents";
-
 export async function getStoredSubject(courseCode: string): Promise<StoredSubject | null> {
     const subjectsData = await IndexedDBService.get('subjects', 'current');
     if (!subjectsData || !subjectsData.data) return null;
@@ -48,8 +46,3 @@ export async function getFilesFromId(folderId: string | null): Promise<FileObjec
     return null;
 }
 
-export async function getAssessmentsForSubject(courseCode: string): Promise<Assessment[] | null> {
-    const raw = await IndexedDBService.get('assessments', courseCode);
-    if (!raw) return null;
-    return Array.isArray(raw) ? raw : raw.cz || [];
-}

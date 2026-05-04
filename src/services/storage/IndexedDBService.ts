@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { SubjectsData, Assessment, SyllabusRequirements, ParsedFile, GradeHistory, DocumentNote } from '../../types/documents';
+import type { SubjectsData, SyllabusRequirements, ParsedFile, GradeHistory, DocumentNote } from '../../types/documents';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ExamSubject } from '../../types/exams';
 import type { ClassmatesData } from '../../types/classmates';
@@ -18,7 +18,8 @@ interface ReisDB extends DBSchema {
     };
     assessments: {
         key: string;
-        value: Assessment[] | { cz: Assessment[]; en: Assessment[] }; // Key is courseCode
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        value: any; // Legacy store — kept for backward compatibility
     };
     syllabuses: {
         key: string;

@@ -75,7 +75,7 @@ export async function fetchPastSemesterData(studium: string, obdobi: string): Pr
         for (const [fullName, data] of Object.entries(czMap)) {
             const code = extractSubjectCode(fullName);
             const name = extractCleanName(fullName);
-            merged[code] = { displayName: name, fullName, nameCs: name, subjectCode: code, subjectId: data.subjectId, folderUrl: data.folderUrl, fetchedAt: new Date().toISOString() };
+            merged[code] = { displayName: name, fullName, nameCs: name, subjectCode: code, subjectId: data.subjectId, folderUrl: data.folderUrl, fetchedAt: new Date().toISOString(), hasPrubezne: data.hasPrubezne, hasTest: data.hasTest, autoHref: data.autoHref };
         }
         for (const [fullName] of Object.entries(enMap)) {
             const code = extractSubjectCode(fullName);
@@ -125,7 +125,10 @@ export async function fetchDualLanguageSubjects(studium?: string, obdobi?: strin
                 subjectCode: code,
                 subjectId: data.subjectId,
                 folderUrl: data.folderUrl,
-                fetchedAt: new Date().toISOString()
+                fetchedAt: new Date().toISOString(),
+                hasPrubezne: data.hasPrubezne,
+                hasTest: data.hasTest,
+                autoHref: data.autoHref,
             };
         }
 
@@ -155,6 +158,9 @@ export async function fetchDualLanguageSubjects(studium?: string, obdobi?: strin
 interface SubjectLinkData {
     folderUrl: string;
     subjectId?: string;
+    hasPrubezne?: boolean;
+    hasTest?: boolean;
+    autoHref?: string | null;
 }
 
 function parseSubjectFolders(htmlString: string): Record<string, SubjectLinkData> {
@@ -175,14 +181,25 @@ function parseSubjectFolders(htmlString: string): Record<string, SubjectLinkData
             const relativeUrl = folderLinkElement.getAttribute('href') || '';
             const cleanUrl = relativeUrl.replace('../', '');
             const absoluteUrl = new URL(cleanUrl, `${BASE_URL}/auth/`).href;
-            
+
             const syllabusHref = subjectLinkElement.getAttribute('href') || '';
             const idMatch = syllabusHref.match(/[?&;]predmet=(\d+)/);
             const subjectId = idMatch ? idMatch[1] : undefined;
 
-            subjectMap[subjectName] = { 
+            const hasPrubezne = !!row.querySelector('td[title="Průběžné hodnocení"] a');
+            const hasTest = !!row.querySelector('td[title^="Výsledky"] a');
+            const autoAnchor = row.querySelector('td[title="Automatické hodnocení"] a');
+            const rawAutoHref = autoAnchor ? (autoAnchor.getAttribute('href') ?? null) : null;
+            const autoHref = rawAutoHref
+                ? (rawAutoHref.startsWith('../') ? new URL(rawAutoHref.replace('../', ''), `${BASE_URL}/auth/`).href : rawAutoHref)
+                : null;
+
+            subjectMap[subjectName] = {
                 folderUrl: absoluteUrl,
-                subjectId 
+                subjectId,
+                hasPrubezne,
+                hasTest,
+                autoHref,
             };
         }
     });

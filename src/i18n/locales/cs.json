@@ -362,7 +362,11 @@
     "assignment": "Odevzdávárna",
     "hoursLeft": "za {h} h",
     "lessThanHour": "za méně než 1 h",
-    "cvicnyTest": "Cvičný test"
+    "cvicnyTest": "Cvičný test",
+    "today": "Dnes",
+    "tomorrow": "Zítra",
+    "inDays": "za {n} d",
+    "accessible": "Přístupný"
   },
   "events": {
     "title": "Akce",

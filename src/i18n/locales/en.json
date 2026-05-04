@@ -360,7 +360,11 @@
     "assignment": "Assignment due",
     "hoursLeft": "in {h}h",
     "lessThanHour": "in < 1h",
-    "cvicnyTest": "Practice test"
+    "cvicnyTest": "Practice test",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "inDays": "in {n}d",
+    "accessible": "Accessible"
   },
   "events": {
     "title": "Events",

@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { BlockLesson, HiddenItems, CalendarCustomEvent } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
-import type { SyllabusRequirements, ParsedFile, Assessment, SubjectsData, SubjectSuccessRate, SubjectAttendance } from '../types/documents';
+import type { SyllabusRequirements, ParsedFile, SubjectsData, SubjectSuccessRate, SubjectAttendance } from '../types/documents';
 import type { ClassmatesData, Classmate } from '../types/classmates';
 import type { DualLanguageStudyPlan, StudyStats } from '../types/studyPlan';
 import type { CvicnyTest } from '../api/cvicneTests';
@@ -62,12 +62,6 @@ export interface FilesSlice {
     fetchFilesPriority: (courseCode: string) => Promise<void>;
     fetchAllFiles: () => Promise<void>;
     refreshFiles: (courseCode: string) => Promise<void>;
-}
-
-export interface AssessmentsSlice {
-    assessments: Record<string, Assessment[]>;
-    assessmentsLoading: Record<string, boolean>;
-    fetchAssessments: (courseCode: string) => Promise<void>;
 }
 
 export interface ClassmatesSlice {
@@ -321,7 +315,7 @@ export interface NotificationSlice {
     loadNotificationState: () => Promise<void>;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & AssessmentsSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & import('./slices/createSearchSlice').SearchSlice;
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & import('./slices/createSearchSlice').SearchSlice;
 
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

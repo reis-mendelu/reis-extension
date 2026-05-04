@@ -7,7 +7,11 @@ export const SubjectInfoSchema = z.object({
     nameEn: z.string().optional(),
     subjectCode: z.string(),
     subjectId: z.string().optional(),
+    skupinaId: z.string().optional(),
     folderUrl: z.string().url(),
+    hasPrubezne: z.boolean().optional(),
+    hasTest: z.boolean().optional(),
+    autoHref: z.string().nullable().optional(),
     fetchedAt: z.string().datetime().or(z.string()), // Flexible for ISO strings
 });
 

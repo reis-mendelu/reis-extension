@@ -8,6 +8,9 @@ export interface SubjectInfo {
     skupinaId?: string; // Seminar group ID for classmates
     folderUrl: string;
     fetchedAt: string;
+    hasPrubezne?: boolean;
+    hasTest?: boolean;
+    autoHref?: string | null;
 }
 
 export interface SubjectsData {
@@ -95,16 +98,6 @@ export interface CourseMetadata {
     garant?: { name: string | null; id?: string | null } | null;
     teachers: { name: string; id?: string | null; roles: string }[];
     status: string | null;
-}
-
-export interface Assessment {
-    name: string;
-    score: number;
-    maxScore: number;
-    successRate: number;
-    submittedDate: string;
-    teacher: string;
-    detailUrl?: string; // Relative URL for details
 }
 
 export interface AvailablePeriod {

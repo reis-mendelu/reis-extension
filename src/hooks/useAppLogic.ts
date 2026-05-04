@@ -15,7 +15,7 @@ import { isDualLanguageStudyPlan } from '../types/studyPlan';
 import type { DualLanguageStudyPlan } from '../types/studyPlan';
 import type { BlockLesson } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
-import type { SubjectsData, ParsedFile, SyllabusRequirements, SubjectAttendance, Assessment } from '../types/documents';
+import type { SubjectsData, ParsedFile, SyllabusRequirements, SubjectAttendance } from '../types/documents';
 import type { ClassmatesData } from '../types/classmates';
 
 interface SyncedData {
@@ -25,7 +25,6 @@ interface SyncedData {
     files?: Record<string, ParsedFile[] | { cz: ParsedFile[]; en: ParsedFile[] }>;
     syllabuses?: Record<string, SyllabusRequirements | { cz: SyllabusRequirements; en: SyllabusRequirements }>;
     classmates?: Record<string, ClassmatesData>;
-    assessments?: Record<string, Assessment[] | { cz: Assessment[]; en: Assessment[] }>;
     attendance?: Record<string, SubjectAttendance[]>;
     pastAttendance?: Record<string, SubjectAttendance[]>;
     studyPlan?: DualLanguageStudyPlan;
@@ -182,13 +181,6 @@ export function useAppLogic() {
                         })
                         .filter((e): e is readonly [string, ParsedFile[] | { cz: ParsedFile[]; en: ParsedFile[] }] => e !== null);
                     await IndexedDBService.setMany('files', toWrite);
-                }
-
-                if (r.assessments) {
-                    await IndexedDBService.setMany(
-                        'assessments',
-                        Object.entries(r.assessments).map(([c, a]) => [c, a] as const)
-                    );
                 }
 
                 if (r.syllabuses) {

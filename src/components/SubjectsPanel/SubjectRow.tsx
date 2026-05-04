@@ -4,6 +4,8 @@ import type { ZameraniProgress } from './SubjectsPanelHeader';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
 import { useTimeline } from '@/hooks/useTimeline';
+import { useAppStore } from '@/store/useAppStore';
+import { ZaznamnikLine } from './ZaznamnikLine';
 
 interface SubjectRowProps {
   subject: SubjectStatus;
@@ -30,6 +32,7 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
   const isZamerani = isZameraniCode(subject.code);
   const showCredits = !isSentinelCredits(subject.credits) && !isZamerani;
   const typeLabel = subject.type?.trim();
+  const subjectId = useAppStore(s => s.subjects?.data[subject.code]?.subjectId);
 
   const handleClick = () => {
     if (isZamerani) return; // pseudo-row, not openable
@@ -91,6 +94,7 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
   }
 
   return (
+    <div className="flex flex-col">
     <button
       onClick={handleClick}
       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-base-200 transition-colors text-left group"
@@ -154,5 +158,9 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
         </>
       )}
     </button>
+    {subject.isEnrolled && !subject.isFulfilled && (
+      <ZaznamnikLine courseCode={subject.code} subjectId={subjectId} />
+    )}
+    </div>
   );
 }
