@@ -47,15 +47,15 @@ export function ZaznamnikLine({ courseCode, subjectId }: ZaznamnikLineProps) {
     }, [subjectId, allTests]);
     const accessibleCount = accessibleTests.length;
 
-    const nextDeadline = useMemo(() => {
-        if (!subjectId || !allAssignments) return null;
+    const upcomingDeadlines = useMemo(() => {
+        if (!subjectId || !allAssignments) return [];
         const now = Date.now();
-        const cutoff = now + 14 * 24 * 60 * 60 * 1000;
+        const cutoff = now + 21 * 24 * 60 * 60 * 1000;
         return allAssignments
             .filter(a => a.courseId === subjectId)
             .map(a => ({ a, ts: parseRegistrationStart(a.deadline)?.getTime() ?? 0 }))
             .filter(({ ts }) => ts > now && ts <= cutoff)
-            .sort((x, y) => x.ts - y.ts)[0] ?? null;
+            .sort((x, y) => x.ts - y.ts);
     }, [subjectId, allAssignments]);
 
     const hasPrubezne = subjectInfo?.hasPrubezne;
@@ -68,18 +68,17 @@ export function ZaznamnikLine({ courseCode, subjectId }: ZaznamnikLineProps) {
     const buildUrl = (extra: string) =>
         `${IS_BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${predmet};${extra};lang=${lang}`;
 
-    const hasAnything = visibleDots.length > 0 || hasPrubezne || hasTest || autoHref || accessibleCount > 0 || nextDeadline;
+    const hasAnything = visibleDots.length > 0 || hasPrubezne || hasTest || autoHref || accessibleCount > 0 || upcomingDeadlines.length > 0;
     if (!hasAnything) return null;
 
-    const deadlineDaysLeft = nextDeadline
-        ? Math.ceil((nextDeadline.ts - Date.now()) / (1000 * 60 * 60 * 24))
-        : 0;
-
-    const deadlineLabel = deadlineDaysLeft === 0
-        ? t('deadlines.today')
-        : deadlineDaysLeft === 1
-        ? t('deadlines.tomorrow')
-        : t('deadlines.inDays').replace('{n}', String(deadlineDaysLeft));
+    const deadlineLabel = (ts: number) => {
+        const days = Math.ceil((ts - Date.now()) / (1000 * 60 * 60 * 24));
+        return days === 0 ? t('deadlines.today') : days === 1 ? t('deadlines.tomorrow') : t('deadlines.inDays').replace('{n}', String(days));
+    };
+    const deadlineUrgency = (ts: number) => {
+        const days = Math.ceil((ts - Date.now()) / (1000 * 60 * 60 * 24));
+        return days === 0 ? 'text-error hover:text-error/80' : days <= 2 ? 'text-warning hover:text-warning/80' : 'text-base-content/50 hover:text-base-content/70';
+    };
 
     return (
         <div className="flex items-center flex-wrap gap-x-3 gap-y-1 px-3 pb-2 -mt-1">
@@ -135,22 +134,19 @@ export function ZaznamnikLine({ courseCode, subjectId }: ZaznamnikLineProps) {
                     {accessibleCount} {t('deadlines.cvicnyTest')}
                 </a>
             )}
-            {nextDeadline && (
+            {upcomingDeadlines.map(({ a, ts }, i) => (
                 <a
-                    href={nextDeadline.a.uploadUrl}
+                    key={i}
+                    href={a.uploadUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={e => e.stopPropagation()}
-                    className={`flex items-center gap-0.5 text-[10px] shrink-0 transition-colors ${
-                        deadlineDaysLeft === 0 ? 'text-error hover:text-error/80' :
-                        deadlineDaysLeft <= 2 ? 'text-warning hover:text-warning/80' :
-                        'text-base-content/50 hover:text-base-content/70'
-                    }`}
+                    className={`flex items-center gap-0.5 text-[10px] shrink-0 transition-colors ${deadlineUrgency(ts)}`}
                 >
-                    {nextDeadline.a.name.length > 20 ? nextDeadline.a.name.slice(0, 20) + '…' : nextDeadline.a.name}
-                    <span className="font-bold ml-0.5">{deadlineLabel}</span>
+                    {a.name.length > 20 ? a.name.slice(0, 20) + '…' : a.name}
+                    <span className="font-bold ml-0.5">{deadlineLabel(ts)}</span>
                 </a>
-            )}
+            ))}
         </div>
     );
 }
