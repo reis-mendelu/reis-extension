@@ -1,5 +1,6 @@
 import { isIframeMessage } from '../types/messages';
 import { iskamIframeElement, markIskamIframeReady } from './iskamInjector';
+import { IndexedDBService } from '../services/storage/IndexedDBService';
 import { fetchVolneKapacityBlock } from '../api/iskam/volneKapacity';
 
 const IFRAME_ORIGIN = chrome.runtime.getURL('').replace(/\/$/, '');
@@ -31,6 +32,11 @@ export async function handleIskamMessage(event: MessageEvent): Promise<void> {
     }
 
     if (data.type === 'REIS_ACTION' && data.action === 'logout') {
+        try {
+            await IndexedDBService.clearAll();
+        } catch {
+            // Best-effort clear
+        }
         try {
             const form = document.createElement('form');
             form.method = 'POST';
