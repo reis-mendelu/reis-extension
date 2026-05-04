@@ -190,9 +190,14 @@ function parseSubjectFolders(htmlString: string): Record<string, SubjectLinkData
             const hasTest = !!row.querySelector('td[title^="Výsledky"] a');
             const autoAnchor = row.querySelector('td[title="Automatické hodnocení"] a');
             const rawAutoHref = autoAnchor ? (autoAnchor.getAttribute('href') ?? null) : null;
-            const autoHref = rawAutoHref
-                ? (rawAutoHref.startsWith('../') ? new URL(rawAutoHref.replace('../', ''), `${BASE_URL}/auth/`).href : rawAutoHref)
-                : null;
+            let autoHref: string | null = null;
+            if (rawAutoHref) {
+                try {
+                    autoHref = rawAutoHref.startsWith('http://') || rawAutoHref.startsWith('https://')
+                        ? rawAutoHref
+                        : new URL(rawAutoHref, `${BASE_URL}/auth/`).href;
+                } catch { autoHref = null; }
+            }
 
             subjectMap[subjectName] = {
                 folderUrl: absoluteUrl,

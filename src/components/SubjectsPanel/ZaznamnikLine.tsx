@@ -71,12 +71,20 @@ export function ZaznamnikLine({ courseCode, subjectId }: ZaznamnikLineProps) {
     const hasAnything = visibleDots.length > 0 || hasPrubezne || hasTest || autoHref || accessibleCount > 0 || upcomingDeadlines.length > 0;
     if (!hasAnything) return null;
 
+    const DAY_MS = 1000 * 60 * 60 * 24;
+    const dayDiff = (ts: number) => {
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const d = new Date(ts);
+        const targetStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        return Math.max(0, Math.floor((targetStart - todayStart) / DAY_MS));
+    };
     const deadlineLabel = (ts: number) => {
-        const days = Math.ceil((ts - Date.now()) / (1000 * 60 * 60 * 24));
+        const days = dayDiff(ts);
         return days === 0 ? t('deadlines.today') : days === 1 ? t('deadlines.tomorrow') : t('deadlines.inDays').replace('{n}', String(days));
     };
     const deadlineUrgency = (ts: number) => {
-        const days = Math.ceil((ts - Date.now()) / (1000 * 60 * 60 * 24));
+        const days = dayDiff(ts);
         return days === 0 ? 'text-error hover:text-error/80' : days <= 2 ? 'text-warning hover:text-warning/80' : 'text-base-content/50 hover:text-base-content/70';
     };
 
@@ -123,7 +131,7 @@ export function ZaznamnikLine({ courseCode, subjectId }: ZaznamnikLineProps) {
                     VT <ExternalLink size={9} />
                 </a>
             )}
-            {accessibleCount > 0 && (
+            {accessibleCount > 0 && (accessibleCount === 1 || studium) && (
                 <a
                     href={accessibleCount === 1 ? accessibleTests[0].url : `${IS_BASE}/auth/student/seznam_osnov.pl?studium=${studium};lang=${lang}`}
                     target="_blank"
