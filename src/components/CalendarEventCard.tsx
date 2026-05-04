@@ -216,14 +216,14 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
                 {/* Bottom row - Location and Time, pushed to bottom */}
                 {isLongEnough && (
                     <div className="text-gray-600 text-sm mt-auto flex-shrink-0 flex items-center justify-between gap-2">
-                        {room && (
+                        {room && !isCompact && (
                             <div className="flex items-center gap-1 min-w-0 flex-1">
                                 <MapPin size={12} className="flex-shrink-0" />
                                 <span className="truncate">{room}</span>
                             </div>
                         )}
                         <div className="text-gray-500 whitespace-nowrap flex-shrink-0">
-                            {lesson.startTime} - {lesson.endTime}
+                            {isCompact ? lesson.startTime : `${lesson.startTime} - ${lesson.endTime}`}
                         </div>
                     </div>
                 )}
