@@ -197,6 +197,7 @@ function parseSubjectFolders(htmlString: string): Record<string, SubjectLinkData
                         ? rawAutoHref
                         : new URL(rawAutoHref, `${BASE_URL}/auth/`).href;
                 } catch { autoHref = null; }
+                if (autoHref && !autoHref.startsWith('https://') && !autoHref.startsWith('http://')) autoHref = null;
             }
 
             subjectMap[subjectName] = {
