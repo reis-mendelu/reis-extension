@@ -1,7 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useUserParams } from '@/hooks/useUserParams';
 import { parseRegistrationStart } from '@/utils/termUtils';
 import { useMemo } from 'react';
 
@@ -21,12 +20,22 @@ const STATUS_DOT: Record<string, string> = {
 };
 
 const IS_BASE = 'https://is.mendelu.cz';
+const DAY_MS = 1000 * 60 * 60 * 24;
+
+function dayDiff(ts: number): number {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const d = new Date(ts);
+    const targetStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    return Math.max(0, Math.floor((targetStart - todayStart) / DAY_MS));
+}
 
 export function ZaznamnikLine({ courseCode, subjectId }: ZaznamnikLineProps) {
     const { t, language } = useTranslation();
-    const { params } = useUserParams();
     const lang = language === 'cz' ? 'cz' : 'en';
 
+    const studium = useAppStore(s => s.studiumId);
+    const obdobi = useAppStore(s => s.obdobiId);
     const attendanceGroups = useAppStore(s => s.attendance[courseCode]);
     const subjectInfo = useAppStore(s => s.subjects?.data[courseCode]);
     const allTests = useAppStore(s => s.cvicneTests);
@@ -37,9 +46,15 @@ export function ZaznamnikLine({ courseCode, subjectId }: ZaznamnikLineProps) {
         return attendanceGroups.flatMap(g => g.records);
     }, [attendanceGroups]);
 
-    const visibleDots = dots.slice(-10);
-    const presentCount = dots.filter(d => d.status === 'present' || d.status === 'elsewhere').length;
-    const totalCount = dots.filter(d => d.status !== 'excused' && d.status !== 'excluded').length;
+    const { visibleDots, presentCount, totalCount } = useMemo(() => {
+        const visible = dots.slice(-10);
+        let present = 0, total = 0;
+        for (const d of dots) {
+            if (d.status === 'present' || d.status === 'elsewhere') present++;
+            if (d.status !== 'excused' && d.status !== 'excluded') total++;
+        }
+        return { visibleDots: visible, presentCount: present, totalCount: total };
+    }, [dots]);
 
     const accessibleTests = useMemo(() => {
         if (!subjectId || !allTests) return [];
@@ -61,24 +76,13 @@ export function ZaznamnikLine({ courseCode, subjectId }: ZaznamnikLineProps) {
     const hasPrubezne = subjectInfo?.hasPrubezne;
     const hasTest = subjectInfo?.hasTest;
     const autoHref = subjectInfo?.autoHref;
-    const studium = params?.studium;
-    const obdobi = params?.obdobi;
-    const predmet = subjectId;
 
     const buildUrl = (extra: string) =>
-        `${IS_BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${predmet};${extra};lang=${lang}`;
+        `${IS_BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${subjectId};${extra};lang=${lang}`;
 
     const hasAnything = visibleDots.length > 0 || hasPrubezne || hasTest || autoHref || accessibleCount > 0 || upcomingDeadlines.length > 0;
     if (!hasAnything) return null;
 
-    const DAY_MS = 1000 * 60 * 60 * 24;
-    const dayDiff = (ts: number) => {
-        const now = new Date();
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-        const d = new Date(ts);
-        const targetStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-        return Math.max(0, Math.floor((targetStart - todayStart) / DAY_MS));
-    };
     const deadlineLabel = (ts: number) => {
         const days = dayDiff(ts);
         return days === 0 ? t('deadlines.today') : days === 1 ? t('deadlines.tomorrow') : t('deadlines.inDays').replace('{n}', String(days));
@@ -98,7 +102,7 @@ export function ZaznamnikLine({ courseCode, subjectId }: ZaznamnikLineProps) {
                     <span className="text-[10px] text-base-content/40 ml-0.5 font-mono">{presentCount}/{totalCount}</span>
                 </span>
             )}
-            {hasPrubezne && studium && obdobi && predmet && (
+            {hasPrubezne && studium && obdobi && subjectId && (
                 <a
                     href={buildUrl('prubezne=1')}
                     target="_blank"
@@ -120,7 +124,7 @@ export function ZaznamnikLine({ courseCode, subjectId }: ZaznamnikLineProps) {
                     AH <ExternalLink size={9} />
                 </a>
             )}
-            {hasTest && studium && obdobi && predmet && (
+            {hasTest && studium && obdobi && subjectId && (
                 <a
                     href={buildUrl('test=1')}
                     target="_blank"

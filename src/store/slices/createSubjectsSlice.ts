@@ -1,4 +1,5 @@
 import type { SubjectsSlice, AppSlice, CourseDeadline } from '../types';
+import type { SubjectAttendance } from '../../types/documents';
 import { IndexedDBService } from '../../services/storage';
 
 export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
@@ -23,7 +24,7 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
                 subjects: data || null,
                 courseNicknames: (nicknames as Record<string, string>) || {},
                 courseDeadlines: (deadlines as Record<string, CourseDeadline[]>) || {},
-                attendance: (attendance as Record<string, import('../../types/documents').SubjectAttendance[]>) || {},
+                attendance: (attendance as Record<string, SubjectAttendance[]>) || {},
                 subjectsLoading: false,
             });
         } catch (e) {
