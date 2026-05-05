@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ExamFilterBar } from './ExamFilterBar';
 import { ExamSectionCard } from './ExamSectionCard';
 import { ConfirmationModal } from './ConfirmationModal';
 import { EmptyExamsState } from './EmptyExamsState';
@@ -23,18 +22,7 @@ interface RegisteredExam {
 
 export function ExamPanel() {
     const { t, language } = useTranslation();
-    const {
-        exams,
-        showSkeleton,
-        statusFilter,
-        onToggleStatus, 
-        selectedSubjects, 
-        setSelectedSubjects, 
-        clearAllFilters,
-        filterCounts, 
-        filteredSubjects, 
-        subjectOptions 
-    } = useExamsData();
+    const { exams, showSkeleton, sections } = useExamsData();
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const { processingSectionId, pendingAction, setPendingAction, handleRegisterRequest, handleUnregisterRequest, handleConfirmAction } = useExamActions({ exams, setExpandedSectionId: setExpandedId });
     const { armedTerms, firingTerms, toggleArm } = useAutoRegistration();
@@ -100,29 +88,24 @@ return (
                     <ExamTimeline
                         exams={realExams as unknown as TimelineExam[]}
                         orientation="horizontal"
+                        onUnregister={handleUnregisterRequest}
+                        onChangeTerm={handleRegisterRequest}
+                        processingSectionId={processingSectionId}
                     />
                 </div>
             )}
 
-            {(filterCounts.available === 0 && filterCounts.opening === 0 && filterCounts.registered === 0) && !showSkeleton ? (
+            {showSkeleton ? (
+                <div className="flex items-center justify-center h-32 opacity-50"><span className="loading loading-spinner mr-2" /> {t('exams.loading')}</div>
+            ) : exams.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center">
                     <EmptyExamsState />
                 </div>
-            ) : (
-                <>
-                    <ExamFilterBar 
-                        statusFilter={statusFilter} 
-                        selectedSubjects={selectedSubjects} 
-                        filterCounts={filterCounts} 
-                        subjectOptions={subjectOptions} 
-                        onToggleStatus={onToggleStatus} 
-                        onToggleSubject={(c: string) => setSelectedSubjects((p: string[]) => p.includes(c) ? p.filter((x: string) => x !== c) : [...p, c])} 
-                        onClearFilters={clearAllFilters} 
-                    />
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3">{showSkeleton ? <div className="flex items-center justify-center h-32 opacity-50"><span className="loading loading-spinner mr-2" /> {t('exams.loading')}</div> : !filteredSubjects.length ? <EmptyExamsState />
-                        : filteredSubjects.map(({ subject, section }: { subject: ExamSubject, section: ExamSection }) => <ExamSectionCard key={section.id} subject={subject} section={section} isExpanded={expandedId === section.id} isProcessing={processingSectionId === section.id} armedTerms={armedTerms} firingTerms={firingTerms} toggleArm={toggleArm} onToggleExpand={(id: string) => setExpandedId(p => p === id ? null : id)} onRegister={handleRegisterRequest} onUnregister={handleUnregisterRequest} />)}</div>
-                </>
-            )}
+            ) : sections.length > 0 ? (
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    {sections.map(({ subject, section }: { subject: ExamSubject, section: ExamSection }) => <ExamSectionCard key={section.id} subject={subject} section={section} isExpanded={expandedId === section.id} isProcessing={processingSectionId === section.id} armedTerms={armedTerms} firingTerms={firingTerms} toggleArm={toggleArm} onToggleExpand={(id: string) => setExpandedId(p => p === id ? null : id)} onRegister={handleRegisterRequest} onUnregister={handleUnregisterRequest} />)}
+                </div>
+            ) : null}
         </div>
         <ConfirmationModal isOpen={!!pendingAction} actionType={pendingAction?.type ?? 'register'} sectionName={pendingAction?.section.name ?? ''} termInfo={pendingAction?.type === 'register' ? pendingAction.section.terms.find((t) => t.id === pendingAction.termId) : (pendingAction?.section.registeredTerm)} onConfirm={handleConfirmAction} onCancel={() => setPendingAction(null)} /></>
     );

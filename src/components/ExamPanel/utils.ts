@@ -1,6 +1,40 @@
 /**
  * ExamPanel Shared Utilities
  */
+import { parseRegistrationStart } from '../../utils/termUtils';
+import type { ExamSection } from '../../types/exams';
+
+export type SectionState =
+    | { type: 'open'; openCount: number }
+    | { type: 'opening'; earliest: Date }
+    | { type: 'noInfo' }   // terms exist but no registration info yet
+    | { type: 'empty' };   // no terms at all
+
+export function getSectionState(section: ExamSection, now: Date): SectionState {
+    if (!section.terms.length) return { type: 'empty' };
+
+    const openCount = section.terms.filter(t =>
+        t.canRegisterNow === true &&
+        !t.full &&
+        !(t.capacity && t.capacity.occupied >= t.capacity.total)
+    ).length;
+    if (openCount > 0) return { type: 'open', openCount };
+
+    const futureDates = section.terms
+        .map(t => t.registrationStart ? parseRegistrationStart(t.registrationStart) : null)
+        .filter((d): d is Date => d !== null && d > now)
+        .sort((a, b) => a.getTime() - b.getTime());
+    if (futureDates.length) return { type: 'opening', earliest: futureDates[0] };
+
+    const allBlocked = section.terms.every(t =>
+        t.canRegisterNow === false ||
+        t.full ||
+        (t.capacity && t.capacity.occupied >= t.capacity.total)
+    );
+    if (allBlocked) return { type: 'empty' };
+
+    return { type: 'noInfo' };
+}
 
 /**
  * Get day of week abbreviation from date string.

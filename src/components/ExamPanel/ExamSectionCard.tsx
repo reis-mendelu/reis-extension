@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Repeat } from 'lucide-react';
-import type { ExamSubject, ExamSection } from '../../types/exams';
+import type { ExamSubject, ExamSection, ExamTerm } from '../../types/exams';
 import { TermTile } from '../TermTile';
 import { RegisteredTermDetails } from './RegisteredTermDetails';
 import { ExamClassmatesList } from './ExamClassmatesPopover';
 import { TermsSummary } from './TermsSummary';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
+import { getSectionState } from './utils';
 
 interface ExamSectionCardProps {
     subject: ExamSubject;
@@ -16,23 +17,31 @@ interface ExamSectionCardProps {
     onToggleExpand: (id: string) => void;
     onRegister: (section: ExamSection, termId: string) => void;
     onUnregister: (section: ExamSection) => void;
-    armedTerms?: Map<string, any>;
+    armedTerms?: Map<string, unknown>;
     firingTerms?: Set<string>;
-    toggleArm?: (term: any, section: ExamSection) => void;
+    toggleArm?: (term: ExamTerm, section: ExamSection) => void;
 }
+
+const stateCardClass = {
+    open: 'border-success/25 bg-success/[0.02]',
+    opening: 'border-base-200',
+    noInfo: 'border-base-200',
+    empty: 'border-base-200 opacity-55',
+};
 
 export function ExamSectionCard({ subject, section, isExpanded, isProcessing, onToggleExpand, onRegister, onUnregister, armedTerms, firingTerms, toggleArm }: ExamSectionCardProps) {
     const { t, language } = useTranslation();
     const [classmatesOpen, setClassmatesOpen] = useState(false);
+    const now = useAppStore(s => s.now);
     const terminId = section.registeredTerm?.id;
     const classmates = useAppStore(s => terminId ? s.examClassmates[terminId] : undefined);
     const isReg = section.status === 'registered';
+    const sectionState = isReg ? { type: 'open' as const, openCount: 0 } : getSectionState(section, now);
 
     const canUnregister = (() => {
         const deadline = section.registeredTerm?.deregistrationDeadline;
         if (!deadline) return isReg;
         const [datePart, timePart] = deadline.split(' ');
-        if (!timePart) return isReg;
         const [day, month, year] = datePart.split('.');
         const [hours, minutes] = timePart.split(':');
         const deadlineDate = new Date(+year, +month - 1, +day, +hours, +minutes);
@@ -43,8 +52,7 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
     const sectionName = (language === 'en' && section.nameEn) ? section.nameEn : (section.nameCs || section.name);
 
     return (
-        <div className="card bg-base-100 shadow-sm border border-base-200 hover:shadow-md transition-shadow overflow-hidden">
-            {/* Interactive Header Wrapper */}
+        <div className={`card bg-base-100 shadow-sm border hover:shadow-md transition-shadow overflow-hidden ${stateCardClass[sectionState.type]}`}>
             <div
                 onClick={() => section.terms.length > 0 && onToggleExpand(section.id)}
                 className={`flex flex-wrap items-start justify-between gap-2 p-3 transition-colors ${section.terms.length > 0 ? 'cursor-pointer hover:bg-base-200/50' : ''}`}
@@ -56,6 +64,7 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                         </span>
                         <span className="text-sm font-bold opacity-80">{sectionName}</span>
                         {isReg && <span className="badge badge-success badge-outline badge-sm font-semibold">{t('exams.registered')}</span>}
+                        {!isReg && <SectionStatePill state={sectionState} t={t} />}
                     </div>
                     {isReg && section.registeredTerm ? (
                         <RegisteredTermDetails
@@ -65,7 +74,7 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                             onToggleClassmates={e => { e.stopPropagation(); setClassmatesOpen(p => !p); }}
                         />
                     ) : (
-                        section.terms.length > 0 && !isExpanded && <TermsSummary terms={section.terms} />
+                        section.terms.length > 0 && !isExpanded && <TermsSummary terms={section.terms} sectionState={sectionState} />
                     )}
                 </div>
 
@@ -94,7 +103,6 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                 </div>
             </div>
 
-            {/* Full-width classmates list */}
             {classmatesOpen && classmates && (
                 <div className="border-t border-base-200">
                     <ExamClassmatesList classmates={classmates} />
@@ -108,15 +116,15 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                             {t('exams.clickToRegister')}
                         </div>
                         <div className="flex flex-col gap-2">
-                            {section.terms.map(t => (
+                            {section.terms.map(term => (
                                 <TermTile
-                                    key={t.id}
-                                    term={t}
+                                    key={term.id}
+                                    term={term}
                                     section={section}
-                                    isArmed={armedTerms?.has(t.id)}
-                                    isFiring={firingTerms?.has(t.id)}
-                                    onToggleArm={toggleArm ? () => toggleArm(t, section) : undefined}
-                                    onSelect={() => onRegister(section, t.id)}
+                                    isArmed={armedTerms?.has(term.id)}
+                                    isFiring={firingTerms?.has(term.id)}
+                                    onToggleArm={toggleArm ? () => toggleArm(term, section) : undefined}
+                                    onSelect={() => onRegister(section, term.id)}
                                     isProcessing={isProcessing}
                                 />
                             ))}
@@ -126,4 +134,20 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
             )}
         </div>
     );
+}
+
+function SectionStatePill({ state, t }: { state: ReturnType<typeof getSectionState>, t: (k: string) => string }) {
+    if (state.type === 'open') return (
+        <span className="flex items-center gap-1 text-[10px] font-bold text-success/90 uppercase tracking-wide">
+            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
+            {state.openCount} {t('exams.available')}
+        </span>
+    );
+    if (state.type === 'opening') return (
+        <span className="text-[10px] font-bold text-warning/60 uppercase tracking-wide">
+            {t('exams.opening')}
+        </span>
+    );
+    if (state.type === 'noInfo') return null;
+    return null;
 }
