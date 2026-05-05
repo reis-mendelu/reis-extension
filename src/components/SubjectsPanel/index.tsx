@@ -8,7 +8,7 @@ import { SemesterSection } from './SemesterSection';
 import { SubjectsPanelSkeleton } from './SubjectsPanelSkeleton';
 import { IndexedDBService } from '@/services/storage';
 import type { Zamerani } from '@/types/studyPlan';
-import { getSemesterState, isRealCredits, normalizeZameraniName } from './utils';
+import { getSemesterState, isRealCredits, normalizeZameraniName, buildSubjectSemesters } from './utils';
 
 const IDB_KEY = 'subjects_open_semesters';
 
@@ -101,25 +101,8 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
     return map;
   }, [plan]);
 
-  // Maps each subject code to the semester numbers it appears in (e.g. ["4", "5"]).
-  const subjectSemesters = useMemo(() => {
-    const map = new Map<string, string[]>();
-    if (!plan) return map;
-    for (const block of plan.blocks) {
-      const num = block.title.match(/^(\d+)/)?.[1];
-      if (!num) continue;
-      for (const g of block.groups) for (const s of g.subjects) {
-        const existing = map.get(s.code);
-        if (existing) existing.push(num);
-        else map.set(s.code, [num]);
-      }
-    }
-    return map;
-  }, [plan]);
+  const subjectSemesters = useMemo(() => buildSubjectSemesters(plan), [plan]);
 
-  // Pure reduce over existing data: for each zaměření, count how many of its
-  // member subjects are currently enrolled or already fulfilled. Used both by
-  // the header progress indicator and the zaměření card.
   const zameraniProgress = useMemo(() => {
     const out = new Map<string, { enrolled: number; fulfilled: number; total: number; touched: boolean }>();
     if (!plan?.zameranis) return out;

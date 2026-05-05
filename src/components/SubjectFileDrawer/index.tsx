@@ -93,12 +93,13 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
             if (!groups.has(sub)) groups.set(sub, []);
             groups.get(sub)?.push(f);
         });
-        return Array.from(groups.keys()).sort((a, b) => a === otherFolder ? 1 : b === otherFolder ? -1 : a.localeCompare(b, 'cs'))
+        return Array.from(groups.keys())
             .map(key => ({
                 name: key,
                 displayName: key === otherFolder ? otherFolder : translateFolder(cleanFolderName(key, lesson?.courseCode)),
                 files: groups.get(key)!.sort((a, b) => (a.file_comment || a.file_name).localeCompare(b.file_comment || b.file_name, 'cs', { numeric: true }))
-            }));
+            }))
+            .sort((a, b) => a.name === otherFolder ? 1 : b.name === otherFolder ? -1 : a.displayName.localeCompare(b.displayName));
     }, [state.files, lesson, t]);
 
     const {
