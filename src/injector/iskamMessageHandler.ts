@@ -34,8 +34,8 @@ export async function handleIskamMessage(event: MessageEvent): Promise<void> {
     if (data.type === 'REIS_ACTION' && data.action === 'logout') {
         try {
             await IndexedDBService.clearAll();
-        } catch {
-            // Best-effort clear
+        } catch (error) {
+            console.warn('[reIS:iskam] IndexedDB clear failed during logout', error);
         }
         try {
             const form = document.createElement('form');
