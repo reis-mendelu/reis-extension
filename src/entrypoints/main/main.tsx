@@ -11,6 +11,10 @@ import '@fontsource/inter/latin-ext-700.css'
 import '@/index.css'
 import '@/utils/devFeatures' // Register window.toggleDevFeatures
 import App from '@/App.tsx'
+import { installErrorReporter } from '@/services/errorReporter/reporter'
+import { useAppStore } from '@/store/useAppStore'
+
+installErrorReporter(() => useAppStore.getState().errorReportingEnabled)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

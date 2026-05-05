@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: February 28, 2026**
+**Last Updated: May 5, 2026**
 
 ## Introduction
 reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enhance the user experience of the Mendel University Information System (IS Mendelu). We are committed to protecting your privacy and ensuring the security of your data.
@@ -43,6 +43,13 @@ If you use the built-in "Report Bug / Feedback" feature, the following data is s
 - **Technical Context**: Extension version, browser user agent, and screen resolution (to help debug issues).
 - **Storage**: This data is processed securely via Discord webhooks for developer review.
 
+### 6. Automatic Error Reporting
+When an unhandled error or warning occurs in the extension, a sanitized diagnostic report is automatically sent to our Supabase backend so we can detect and fix bugs.
+- **What is sent**: Error type, error message string, file path and line number, extension version, browser name and version.
+- **What is never sent**: Your name, your UIC / student ID or any hash of it, session cookies, any data fetched from IS Mendelu (grades, schedules, exam dates, course materials), and any content stored in IndexedDB.
+- **Identity**: Reports are **not linked** to any individual user identity.
+- **Lawful Basis**: Legitimate interest under GDPR Art. 6(1)(f) — improving extension stability and fixing bugs.
+
 ## Data Storage & Security
 - **Local Storage**: Your sensitive academic data and credentials remain on your device.
 - **Encryption**: Data stored locally is encrypted where supported by the browser.
@@ -51,13 +58,14 @@ If you use the built-in "Report Bug / Feedback" feature, the following data is s
 ## Third-Party Access
 The extension communicates exclusively with:
 1.  **IS Mendelu servers** (`*.mendelu.cz`): To fetch your academic data (Authenticated by you).
-2.  **Supabase** (`*.supabase.co`): To fetch public notifications, store anonymous interaction stats, and manage tutoring participation data if you opt in.
+2.  **Supabase** (`*.supabase.co`): To fetch public notifications, store anonymous interaction stats, manage tutoring participation data if you opt in, and receive sanitized error diagnostic reports.
 3.  **Discord** (`discord.com`): To deliver your feedback messages to the developers (only when you submit feedback).
 
 ## User Control
 You have full control over your data:
 - **Access**: You can view all data displayed by the extension within its interface.
 - **Tutoring Opt-Out**: You can withdraw from the tutoring feature at any time, which removes your availability record from our servers.
+- **Error Reporting Opt-Out**: You can disable automatic error reporting at any time via the extension's profile/settings panel.
 - **Deletion**: You can remove all locally stored data by uninstalling the extension or clearing the extension's storage in your browser settings.
 
 ## Changes to This Policy
