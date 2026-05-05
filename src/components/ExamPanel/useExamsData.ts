@@ -1,104 +1,30 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { IndexedDBService } from '../../services/storage';
+import { useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import type { ExamSubject, ExamSection, ExamTerm } from '../../types/exams';
-
-const STORAGE_KEY = 'exam_panel_filters';
+import type { ExamSubject, ExamSection } from '../../types/exams';
 
 export function useExamsData() {
     const storeExams = useAppStore(s => s.exams.data);
     const status = useAppStore(s => s.exams.status);
-    const language = useAppStore(s => s.language);
     const handshakeDone = useAppStore(s => s.syncStatus.handshakeDone);
     const handshakeTimedOut = useAppStore(s => s.syncStatus.handshakeTimedOut);
     const isSyncing = useAppStore(s => s.syncStatus.isSyncing);
-    
+
     const exams = useMemo(() => storeExams, [storeExams]);
-    const [statusFilter, setStatusFilter] = useState<('registered' | 'available' | 'opening')[]>([]), [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-    
-    useEffect(() => { 
-        IndexedDBService.get('meta', STORAGE_KEY).then((s: Record<string, unknown> | null) => { 
-            if (s?.statusFilter) setStatusFilter(Array.isArray(s.statusFilter) ? s.statusFilter as ('registered' | 'available' | 'opening')[] : [s.statusFilter as 'registered' | 'available' | 'opening']); 
-            if (s?.selectedSubjects) setSelectedSubjects(s.selectedSubjects as string[]); 
-        }); 
-    }, []);
-    
-    useEffect(() => { IndexedDBService.set('meta', STORAGE_KEY, { statusFilter, selectedSubjects }); }, [statusFilter, selectedSubjects]);
 
-    const onToggleStatus = useCallback((status: 'registered' | 'available' | 'opening') => {
-        setStatusFilter(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]);
-    }, []);
-
-    const clearAllFilters = useCallback(() => {
-        setStatusFilter([]);
-        setSelectedSubjects([]);
-    }, []);
-
-    const filterCounts = useMemo(() => {
-        const c = { registered: 0, available: 0, opening: 0 };
-        exams.forEach((sub: ExamSubject) => sub.sections.forEach((sec: ExamSection) => {
-            if (sec.status === 'registered') c.registered++;
-            else {
-                if (sec.terms.some((t: ExamTerm) => !t.full && t.canRegisterNow === true)) c.available++;
-                if (sec.terms.some((t: ExamTerm) => !t.full && t.canRegisterNow !== true)) c.opening++;
-            }
-        }));
-        return c;
-    }, [exams]);
-
-    const filtered = useMemo(() => {
+    const sections = useMemo(() => {
         const res: { subject: ExamSubject; section: ExamSection }[] = [];
         exams.forEach((sub: ExamSubject) => {
-            if (selectedSubjects.length && !selectedSubjects.includes(sub.code)) return;
             sub.sections.forEach((sec: ExamSection) => {
-                const matchesStatus = (stat: string) => {
-                    if (stat === 'registered') return sec.status === 'registered';
-                    if (stat === 'available') return sec.status !== 'registered' && sec.terms.some((t: ExamTerm) => !t.full && t.canRegisterNow === true);
-                    if (stat === 'opening') return sec.status !== 'registered' && sec.terms.some((t: ExamTerm) => !t.full && t.canRegisterNow !== true);
-                    return true;
-                };
-
-                const activeStatuses = statusFilter.length > 0 ? statusFilter : ['registered', 'available', 'opening'];
-                
-                if (activeStatuses.some(stat => matchesStatus(stat))) {
-                    let finalSec = sec;
-                    // If filtering by specific available/opening status, filter the terms too for better UX
-                    if (statusFilter.length > 0 && !statusFilter.includes('registered')) {
-                        const ts = sec.terms.filter((t: ExamTerm) => {
-                            if (t.full) return false;
-                            if (statusFilter.includes('available') && t.canRegisterNow === true) return true;
-                            if (statusFilter.includes('opening') && t.canRegisterNow !== true) return true;
-                            return false;
-                        });
-                        if (ts.length) finalSec = { ...sec, terms: ts };
-                        else return; // If no terms left after filtering, skip section
-                    }
-                    res.push({ subject: sub, section: finalSec });
-                }
+                if (sec.status !== 'registered') res.push({ subject: sub, section: sec });
             });
         });
         return res;
-    }, [exams, statusFilter, selectedSubjects]);
+    }, [exams]);
 
-    const hasAnyExams = exams.length > 0;
-    const showSkeleton = !hasAnyExams && (
+    const showSkeleton = exams.length === 0 && (
         status === 'loading' || status === 'idle' ||
         (!handshakeDone && !handshakeTimedOut) || isSyncing
     );
 
-    return {
-        exams,
-        showSkeleton,
-        statusFilter,
-        onToggleStatus, 
-        selectedSubjects, 
-        setSelectedSubjects, 
-        clearAllFilters,
-        filterCounts, 
-        filteredSubjects: filtered, 
-        subjectOptions: useMemo(() => exams.map(e => {
-            const name = (language === 'en' && e.nameEn) ? e.nameEn : (e.nameCs || e.name);
-            return { code: e.code, name };
-        }).filter((v, i, a) => a.findIndex(t => t.code === v.code) === i).sort((a, b) => a.name.localeCompare(b.name)), [exams, language]) 
-    };
+    return { exams, showSkeleton, sections };
 }
