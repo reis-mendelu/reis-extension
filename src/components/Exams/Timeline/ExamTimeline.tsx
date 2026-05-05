@@ -25,7 +25,13 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
   exams, orientation = 'vertical', className = '',
   onSelectItem, onUnregister, onChangeTerm, processingSectionId
 }) => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+
+  const resolveSectionName = (item: TimelineExam): string | undefined => {
+    const s = item.section;
+    if (!s) return undefined;
+    return (language === 'en' ? s.nameEn : s.nameCs) || s.name || undefined;
+  };
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const parseDateTime = (d: string, tStr: string) => {
@@ -59,6 +65,7 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
               key={item.term.id || `${item.subjectName}-${index}`}
               term={item.term}
               subjectName={item.subjectName}
+              sectionName={resolveSectionName(item)}
               deadline={item.section?.registeredTerm?.deregistrationDeadline}
               orientation={orientation}
               isFirst={index === 0}
@@ -85,6 +92,7 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
             key={item.term.id || `${item.subjectName}-${index}`}
             term={item.term}
             subjectName={item.subjectName}
+            sectionName={resolveSectionName(item)}
             deadline={item.section?.registeredTerm?.deregistrationDeadline}
             orientation="horizontal"
             isSelected={selectedId === item.term.id}

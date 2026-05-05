@@ -7,6 +7,7 @@ import { getDeadlineUrgency, formatDeadlineCountdown } from './TimelineDrawer';
 interface ExamItemProps {
   term: ExamTerm;
   subjectName: string;
+  sectionName?: string;
   deadline?: string;
   isSelected?: boolean;
   isFirst?: boolean;
@@ -31,6 +32,7 @@ const urgencyBadge = {
 
 interface ContentBoxProps {
   subjectName: string;
+  sectionName?: string;
   term: ExamTerm;
   deadline?: string;
   isHorizontal: boolean;
@@ -40,7 +42,7 @@ interface ContentBoxProps {
   language?: string;
 }
 
-const ContentBox: React.FC<ContentBoxProps> = ({ subjectName, term, deadline, isHorizontal, isSelected, onClick, t, language }) => {
+const ContentBox: React.FC<ContentBoxProps> = ({ subjectName, sectionName, term, deadline, isHorizontal, isSelected, onClick, t, language }) => {
   const urgency = getDeadlineUrgency(deadline);
   const countdown = deadline && urgency !== 'none' && urgency !== 'expired' ? formatDeadlineCountdown(deadline) : null;
   const badgeClass = urgencyBadge[urgency];
@@ -58,8 +60,15 @@ const ContentBox: React.FC<ContentBoxProps> = ({ subjectName, term, deadline, is
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-4 mb-1">
-        <div className="font-black tracking-tight text-base-content text-sm leading-tight">
-          {subjectName}
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <div className="font-black tracking-tight text-base-content text-sm leading-tight">
+            {subjectName}
+          </div>
+          {sectionName && (
+            <div className="text-[10px] font-medium text-base-content/45 uppercase tracking-wide leading-none">
+              {sectionName}
+            </div>
+          )}
         </div>
         <div className="text-[12px] font-bold text-primary flex items-center gap-1 mt-0.5 whitespace-nowrap">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
@@ -89,7 +98,7 @@ const ContentBox: React.FC<ContentBoxProps> = ({ subjectName, term, deadline, is
   );
 };
 
-const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, deadline, isSelected, isFirst, isLast, orientation = 'vertical', onClick }) => {
+const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, deadline, isSelected, isFirst, isLast, orientation = 'vertical', onClick }) => {
   const { t, language } = useTranslation();
   const isHorizontal = orientation === 'horizontal';
   const hrClass = 'bg-base-300 opacity-30 hidden';
@@ -98,7 +107,7 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, deadline, isSele
   if (isHorizontal) {
     return (
       <div className="flex-shrink-0">
-        <ContentBox subjectName={subjectName} term={term} deadline={deadline} isHorizontal isSelected={isSelected} onClick={onClick} t={t} language={language} />
+        <ContentBox subjectName={subjectName} sectionName={sectionName} term={term} deadline={deadline} isHorizontal isSelected={isSelected} onClick={onClick} t={t} language={language} />
       </div>
     );
   }
@@ -107,7 +116,7 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, deadline, isSele
     <li>
       {!isFirst && <hr className={hrClass} />}
       <div className="timeline-start md:text-end mb-10 px-4">
-        <ContentBox subjectName={subjectName} term={term} deadline={deadline} isHorizontal={false} isSelected={isSelected} onClick={onClick} t={t} language={language} />
+        <ContentBox subjectName={subjectName} sectionName={sectionName} term={term} deadline={deadline} isHorizontal={false} isSelected={isSelected} onClick={onClick} t={t} language={language} />
       </div>
       <div className="timeline-middle">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`${iconClass} h-5 w-5`}>
