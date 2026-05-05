@@ -77,6 +77,16 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     const groupedFiles = useMemo(() => {
         if (!state.files) return [];
         const otherFolder = t('course.footer.other');
+        const knownFolderKeys: Record<string, string> = {
+            'informace k výuce': 'fileCategories.informace_k_vyuce',
+            'studijní texty': 'fileCategories.studijni_texty',
+            'materiály z přednášek': 'fileCategories.materialy_z_prednasek',
+            'průvodce studiem předmětu': 'fileCategories.pruvodce_studiem',
+        };
+        const translateFolder = (name: string) => {
+            const i18nKey = knownFolderKeys[name.toLowerCase()];
+            return i18nKey ? (t(i18nKey) || name) : name;
+        };
         const groups = new Map<string, ParsedFile[]>();
         state.files.forEach(f => {
             const sub = f.subfolder?.trim() || otherFolder;
@@ -85,7 +95,8 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
         });
         return Array.from(groups.keys()).sort((a, b) => a === otherFolder ? 1 : b === otherFolder ? -1 : a.localeCompare(b, 'cs'))
             .map(key => ({
-                name: key, displayName: key === otherFolder ? otherFolder : cleanFolderName(key, lesson?.courseCode),
+                name: key,
+                displayName: key === otherFolder ? otherFolder : translateFolder(cleanFolderName(key, lesson?.courseCode)),
                 files: groups.get(key)!.sort((a, b) => (a.file_comment || a.file_name).localeCompare(b.file_comment || b.file_name, 'cs', { numeric: true }))
             }));
     }, [state.files, lesson, t]);

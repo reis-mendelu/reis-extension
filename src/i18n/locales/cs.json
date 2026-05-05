@@ -421,6 +421,7 @@
     "notEnoughEnrolled": "málo zapsáno",
     "zamerani": "zaměření",
     "zameraniMembers": "Obsahuje předměty",
+    "semesterShort": "sem.",
     "zameraniProgress": "Zaměření: plní se {touched}, nutno splnit {min}",
     "zadost": "Žádosti",
     "sourcesMismatch": "Rozdíl mezi zdroji: plán {plan} kr., statistiky {stats} kr."

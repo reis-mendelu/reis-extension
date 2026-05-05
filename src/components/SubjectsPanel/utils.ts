@@ -10,6 +10,8 @@ export function getSemesterState(block: SemesterBlock): SemesterState {
   if (all.length === 0) return 'future';
   const hasEnrolled = all.some(s => s.isEnrolled);
   if (hasEnrolled) return 'current';
+  const isNotActivated = /neaktiv/i.test(block.title) || /not been activated/i.test(block.title);
+  if (isNotActivated) return 'future';
   const allFulfilled = all.every(s => s.isFulfilled);
   if (allFulfilled) return 'past';
   const hasFulfilled = all.some(s => s.isFulfilled);

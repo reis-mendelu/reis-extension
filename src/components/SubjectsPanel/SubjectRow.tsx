@@ -16,6 +16,7 @@ interface SubjectRowProps {
   hideStatus?: boolean;
   zamerani?: Zamerani | null;
   zameraniProgress?: ZameraniProgress | null;
+  subjectSemesters?: Map<string, string[]>;
 }
 
 // Zaměření pseudo-subjects in the plan table always carry these code prefixes.
@@ -24,7 +25,7 @@ const isZameraniCode = (code: string) => ZAMERANI_PREFIXES.some(p => code.starts
 // IS Mendelu uses 999 as a sentinel "credits unknown / pass-through" value.
 const isSentinelCredits = (credits: number) => credits >= 999;
 
-export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubject, onSearchSubject, zamerani, zameraniProgress }: SubjectRowProps) {
+export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubject, onSearchSubject, zamerani, zameraniProgress, subjectSemesters }: SubjectRowProps) {
   const { t } = useTranslation();
   const hasId = subject.id !== '';
   const displayName = useCourseName(subject.code, subject.name);
@@ -81,12 +82,26 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
         {zamerani && zamerani.subjects.length > 0 && (
           <div className="pl-5 flex flex-col gap-0.5">
             <div className="text-[10px] uppercase tracking-wider text-base-content/40">{t('subjects.zameraniMembers')}</div>
-            {zamerani.subjects.map(s => (
-              <div key={s.code} className="text-[11px] text-base-content/60 truncate">
-                <span className="font-mono text-base-content/70">{s.code}</span>
-                {s.name !== s.code && <span> — {s.name}</span>}
-              </div>
-            ))}
+            {[...zamerani.subjects].sort((a, b) => {
+              const sa = subjectSemesters?.get(a.code)?.[0] ?? '999';
+              const sb = subjectSemesters?.get(b.code)?.[0] ?? '999';
+              return Number(sa) - Number(sb);
+            }).map(s => {
+              const sems = subjectSemesters?.get(s.code);
+              return (
+                <div key={s.code} className="text-[11px] text-base-content/60 flex items-center gap-1.5 min-w-0">
+                  <span className="font-mono text-base-content/70 shrink-0">{s.code}</span>
+                  {s.name !== s.code && <span className="truncate"> — {s.name}</span>}
+                  {sems && (
+                    <span className="flex gap-1 shrink-0 ml-auto">
+                      {sems.map(n => (
+                        <span key={n} className="text-[10px] text-base-content/40 font-medium whitespace-nowrap">{n}. {t('subjects.semesterShort')}</span>
+                      ))}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

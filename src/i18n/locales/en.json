@@ -419,6 +419,7 @@
     "notEnoughEnrolled": "not enough enrolled",
     "zamerani": "specialization",
     "zameraniMembers": "Includes courses",
+    "semesterShort": "sem.",
     "zameraniProgress": "Specializations: {touched} started, must complete {min}",
     "zadost": "Requests",
     "sourcesMismatch": "Source mismatch: plan {plan} cr., stats {stats} cr."
