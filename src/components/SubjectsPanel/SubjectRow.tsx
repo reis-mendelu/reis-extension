@@ -11,6 +11,7 @@ interface SubjectRowProps {
   subject: SubjectStatus;
   compact?: boolean;
   failRate?: number | null;
+  failRates?: Record<string, number | null>;
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => void;
   onSearchSubject: (name: string) => void;
   hideStatus?: boolean;
@@ -25,7 +26,7 @@ const isZameraniCode = (code: string) => ZAMERANI_PREFIXES.some(p => code.starts
 // IS Mendelu uses 999 as a sentinel "credits unknown / pass-through" value.
 const isSentinelCredits = (credits: number) => credits >= 999;
 
-export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubject, onSearchSubject, zamerani, zameraniProgress, subjectSemesters }: SubjectRowProps) {
+export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, onOpenSubject, onSearchSubject, zamerani, zameraniProgress, subjectSemesters }: SubjectRowProps) {
   const { t } = useTranslation();
   const hasId = subject.id !== '';
   const displayName = useCourseName(subject.code, subject.name);
@@ -88,18 +89,22 @@ export function SubjectRow({ subject, compact, failRate, hideStatus, onOpenSubje
               return Number(sa) - Number(sb);
             }).map(s => {
               const sems = subjectSemesters?.get(s.code);
+              const rate = failRates?.[s.code] ?? null;
               return (
-                <div key={s.code} className="text-[11px] text-base-content/60 flex items-center gap-1.5 min-w-0">
+                <button key={s.code} onClick={() => onSearchSubject(s.name)} className="text-[11px] text-base-content/60 flex items-center gap-1.5 min-w-0 w-full text-left rounded hover:bg-base-200 px-1 -mx-1 transition-colors">
                   <span className="font-mono text-base-content/70 shrink-0">{s.code}</span>
                   {s.name !== s.code && <span className="truncate"> — {s.name}</span>}
-                  {sems && (
-                    <span className="flex gap-1 shrink-0 ml-auto">
-                      {sems.map(n => (
-                        <span key={n} className="text-[10px] text-base-content/40 font-medium whitespace-nowrap">{n}. {t('subjects.semesterShort')}</span>
-                      ))}
-                    </span>
-                  )}
-                </div>
+                  <span className="flex items-center gap-1.5 shrink-0 ml-auto">
+                    {rate != null && (
+                      <span className={`flex items-center justify-center h-4 px-1 rounded text-[10px] font-medium tracking-wide ${
+                        rate >= 25 ? 'bg-error/10 text-error' : rate >= 20 ? 'bg-warning/15 text-warning-content' : 'bg-base-content/5 text-base-content/40'
+                      }`}>{rate}%</span>
+                    )}
+                    {sems && sems.map(n => (
+                      <span key={n} className="text-[10px] text-base-content/40 font-medium whitespace-nowrap">{n}. {t('subjects.semesterShort')}</span>
+                    ))}
+                  </span>
+                </button>
               );
             })}
           </div>

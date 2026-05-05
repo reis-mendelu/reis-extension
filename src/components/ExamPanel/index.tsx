@@ -4,14 +4,14 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { EmptyExamsState } from './EmptyExamsState';
 import type { ExamSubject, ExamSection } from '../../types/exams';
 import { useExamActions } from './useExamActions';
-import { ExamPanelHeader } from './ExamPanelHeader';
 import { useExamsData } from './useExamsData';
 import ExamTimeline from '../Exams/Timeline/ExamTimeline';
 import type { TimelineExam } from '../Exams/Timeline/ExamTimeline';
 import { useAutoRegistration } from './useAutoRegistration';
-import { Zap } from 'lucide-react';
+import { Zap, ExternalLink } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
+import { useUserParams } from '../../hooks/useUserParams';
 
 interface RegisteredExam {
     subjectName: string;
@@ -20,9 +20,28 @@ interface RegisteredExam {
     term: { id: string; date: string; time: string; room: string; };
 }
 
+function IsMendeluLink({ href }: { href: string }) {
+    return (
+        <div className="flex justify-center pt-2 pb-2">
+            <a href={href} target="_blank" rel="noopener noreferrer"
+                className="btn btn-ghost btn-sm gap-2 text-base-content/50 hover:text-primary normal-case font-bold">
+                <span>IS MENDELU</span>
+                <ExternalLink size={16} />
+            </a>
+        </div>
+    );
+}
+
 export function ExamPanel() {
     const { t, language } = useTranslation();
+    const { params } = useUserParams();
     const { exams, showSkeleton, sections } = useExamsData();
+    const studium = params?.studium || '';
+    const obdobi = params?.obdobi || '';
+    const lang = language === 'cz' ? 'cz' : 'en';
+    const href = studium && obdobi
+        ? `https://is.mendelu.cz/auth/student/terminy_seznam.pl?studium=${studium};obdobi=${obdobi};lang=${lang}`
+        : `https://is.mendelu.cz/auth/student/prihlasovani_zkousky.pl?lang=${lang}`;
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const { processingSectionId, pendingAction, setPendingAction, handleRegisterRequest, handleUnregisterRequest, handleConfirmAction } = useExamActions({ exams, setExpandedSectionId: setExpandedId });
     const { armedTerms, firingTerms, toggleArm } = useAutoRegistration();
@@ -71,8 +90,6 @@ export function ExamPanel() {
 
 return (
         <><div className="flex flex-col h-full bg-base-100 rounded-lg border border-base-300 overflow-hidden relative">
-            <ExamPanelHeader />
-            
             {armedTerms.size > 0 && (
                 <div className="bg-warning/10 border-b border-warning/20 px-4 py-2.5 flex flex-wrap items-center justify-center gap-2">
                     <Zap size={16} className="text-warning animate-pulse shrink-0" />
@@ -81,7 +98,7 @@ return (
                     </span>
                 </div>
             )}
-            
+
             {/* Horizontal Timeline Integration */}
             {realExams.length > 0 && (
                 <div className="px-4 pb-0 border-b border-base-200">
@@ -98,12 +115,14 @@ return (
             {showSkeleton ? (
                 <div className="flex items-center justify-center h-32 opacity-50"><span className="loading loading-spinner mr-2" /> {t('exams.loading')}</div>
             ) : exams.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center">
+                <div className="flex-1 flex flex-col items-center justify-center">
                     <EmptyExamsState />
+                    <IsMendeluLink href={href} />
                 </div>
             ) : sections.length > 0 ? (
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     {sections.map(({ subject, section }: { subject: ExamSubject, section: ExamSection }) => <ExamSectionCard key={section.id} subject={subject} section={section} isExpanded={expandedId === section.id} isProcessing={processingSectionId === section.id} armedTerms={armedTerms} firingTerms={firingTerms} toggleArm={toggleArm} onToggleExpand={(id: string) => setExpandedId(p => p === id ? null : id)} onRegister={handleRegisterRequest} onUnregister={handleUnregisterRequest} />)}
+                    <IsMendeluLink href={href} />
                 </div>
             ) : null}
         </div>

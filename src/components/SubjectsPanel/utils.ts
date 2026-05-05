@@ -15,7 +15,11 @@ export function getSemesterState(block: SemesterBlock): SemesterState {
   const allFulfilled = all.every(s => s.isFulfilled);
   if (allFulfilled) return 'past';
   const hasFulfilled = all.some(s => s.isFulfilled);
-  return hasFulfilled ? 'past' : 'future';
+  if (!hasFulfilled) return 'future';
+  // Some fulfilled, some not — past only if unfulfilled subjects were attempted (enrollmentCount > 0).
+  // Without that signal the semester is ambiguous (e.g. stale IDB before enrollment) → treat as current.
+  const unfulfilledAttempted = all.some(s => !s.isFulfilled && s.enrollmentCount > 0);
+  return unfulfilledAttempted ? 'past' : 'current';
 }
 
 export function normalizeZameraniName(s: string): string {

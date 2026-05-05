@@ -59,6 +59,9 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
 
   const pct = creditsRequired > 0 ? Math.min(100, Math.round((creditsAcquired / creditsRequired) * 100)) : 0;
   const progressionInfo = studyStats ? getProgressionInfo(studyStats) : null;
+  const hasDetailLine = (studyStats && progressionInfo && progressionInfo.threshold > 0) ||
+    (enrolledCredits != null && enrolledCredits > 0) ||
+    (studyStats != null && studyStats.gpaTotal > 0);
   const level = progressionInfo?.level ?? 'safe';
   const cfg = levelConfig[level];
   const Icon = cfg.Icon;
@@ -97,37 +100,35 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
           <div className={`h-full rounded-full transition-all duration-500 ${cfg.bar}`} style={{ width: `${pct}%` }} />
         </div>
 
-        {/* Detail line */}
-        <div className="flex items-center gap-2 text-[11px] text-base-content/50">
-          {studyStats && progressionInfo && progressionInfo.threshold > 0 && (
-            <span>
-              {progressionInfo.threshold === 12
-                ? `${progressionInfo.earned}/${progressionInfo.threshold}`
-                : `${t('subjects.creditsLastTwo')}: ${progressionInfo.earned}/${progressionInfo.threshold}`
-              }
-              {progressionInfo.deficit > 0 && (
-                <span className={cfg.text}> · {t('subjects.needMore', { n: progressionInfo.deficit })}</span>
+        {/* Detail / zaměření line */}
+        {(hasDetailLine || (zameraniMin !== undefined && zameraniMin > 0)) && (
+          <div className="flex items-center gap-2 text-[11px] text-base-content/50 mt-1">
+            {zameraniMin !== undefined && zameraniMin > 0 ? (
+              <span className="flex items-center gap-1.5 text-[10px] text-base-content/60">
+                <Layers className="w-3 h-3 shrink-0" />
+                {t('subjects.zameraniProgress', { touched: zameraniTouched, min: zameraniMin })}
+              </span>
+            ) : (studyStats && progressionInfo && progressionInfo.threshold > 0) ? (
+              <span>
+                {progressionInfo.threshold === 12
+                  ? `${progressionInfo.earned}/${progressionInfo.threshold}`
+                  : `${t('subjects.creditsLastTwo')}: ${progressionInfo.earned}/${progressionInfo.threshold}`
+                }
+                {progressionInfo.deficit > 0 && (
+                  <span className={cfg.text}> · {t('subjects.needMore', { n: progressionInfo.deficit })}</span>
+                )}
+                {!progressionInfo.enrolledEnough && progressionInfo.deficit > 0 && (
+                  <span className="text-error"> · {t('subjects.notEnoughEnrolled')}</span>
+                )}
+              </span>
+            ) : null}
+            <span className="flex items-center gap-2 ml-auto">
+              {enrolledCredits != null && enrolledCredits > 0 && (
+                <span>{enrolledCredits} {t('subjects.enrolledCreditsLabel')}</span>
               )}
-              {!progressionInfo.enrolledEnough && progressionInfo.deficit > 0 && (
-                <span className="text-error"> · {t('subjects.notEnoughEnrolled')}</span>
+              {studyStats && studyStats.gpaTotal > 0 && (
+                <span>{t('subjects.gpa')}: {studyStats.weightedGpaTotal.toFixed(2)}</span>
               )}
-            </span>
-          )}
-          <span className="flex items-center gap-2 ml-auto">
-            {enrolledCredits != null && enrolledCredits > 0 && (
-              <span>{enrolledCredits} {t('subjects.enrolledCreditsLabel')}</span>
-            )}
-            {studyStats && studyStats.gpaTotal > 0 && (
-              <span>{t('subjects.gpa')}: {studyStats.weightedGpaTotal.toFixed(2)}</span>
-            )}
-          </span>
-        </div>
-
-        {zameraniMin !== undefined && zameraniMin > 0 && (
-          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-base-content/60">
-            <Layers className="w-3 h-3 shrink-0" />
-            <span>
-              {t('subjects.zameraniProgress', { touched: zameraniTouched, min: zameraniMin })}
             </span>
           </div>
         )}
