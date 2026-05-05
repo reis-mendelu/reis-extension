@@ -79,7 +79,7 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
 
   return (
     <>
-      <div className={`flex flex-row overflow-x-auto gap-3 py-1.5 px-0.5 custom-scrollbar w-full h-fit ${className}`}>
+      <div className={`flex flex-row overflow-x-auto gap-3 py-1.5 px-0.5 w-full h-fit ${className}`}>
         {sortedExams.map((item, index) => (
           <ExamItem
             key={item.term.id || `${item.subjectName}-${index}`}

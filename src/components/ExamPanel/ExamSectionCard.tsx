@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Repeat } from 'lucide-react';
-import type { ExamSubject, ExamSection } from '../../types/exams';
+import type { ExamSubject, ExamSection, ExamTerm } from '../../types/exams';
 import { TermTile } from '../TermTile';
 import { RegisteredTermDetails } from './RegisteredTermDetails';
 import { ExamClassmatesList } from './ExamClassmatesPopover';
@@ -19,7 +19,7 @@ interface ExamSectionCardProps {
     onUnregister: (section: ExamSection) => void;
     armedTerms?: Map<string, unknown>;
     firingTerms?: Set<string>;
-    toggleArm?: (term: unknown, section: ExamSection) => void;
+    toggleArm?: (term: ExamTerm, section: ExamSection) => void;
 }
 
 const stateCardClass = {
@@ -149,9 +149,5 @@ function SectionStatePill({ state, t }: { state: ReturnType<typeof getSectionSta
         </span>
     );
     if (state.type === 'noInfo') return null;
-    return (
-        <span className="text-[10px] font-bold text-base-content/25 uppercase tracking-wide">
-            {t('exams.noTermsYet')}
-        </span>
-    );
+    return null;
 }
