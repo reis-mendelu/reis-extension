@@ -1,5 +1,6 @@
 import type { ScheduleSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
+import { sendTelemetry } from '../../services/errorReporter/telemetry';
 
 export const createScheduleSlice: AppSlice<ScheduleSlice> = (set, get) => ({
   schedule: {
@@ -27,6 +28,7 @@ export const createScheduleSlice: AppSlice<ScheduleSlice> = (set, get) => ({
 
     } catch (e) {
       console.warn('[ScheduleSlice] fetchSchedule failed:', e);
+      sendTelemetry('ScheduleSlice.fetchSchedule', e);
       set((state) => ({ schedule: { ...state.schedule, status: 'error' } }));
     }
   },

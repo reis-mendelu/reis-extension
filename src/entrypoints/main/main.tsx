@@ -12,9 +12,11 @@ import '@/index.css'
 import '@/utils/devFeatures' // Register window.toggleDevFeatures
 import App from '@/App.tsx'
 import { installErrorReporter } from '@/services/errorReporter/reporter'
+import { initTelemetry } from '@/services/errorReporter/telemetry'
 import { useAppStore } from '@/store/useAppStore'
 
 installErrorReporter(() => useAppStore.getState().errorReportingEnabled)
+initTelemetry(() => useAppStore.getState().errorReportingEnabled)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

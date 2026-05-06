@@ -59,6 +59,21 @@ describe('sanitizeMessage', () => {
         const out = sanitizeMessage("Cannot read properties of undefined (reading 'foo')");
         expect(out).toBe("Cannot read properties of undefined (reading 'foo')");
     });
+
+    it('strips 7-digit IDs', () => {
+        const out = sanitizeMessage('student 1234567 not found');
+        expect(out).not.toContain('1234567');
+    });
+
+    it('strips 6-digit UIC embedded in identifier-like strings', () => {
+        const out = sanitizeMessage('uid123456 lookup failed');
+        expect(out).not.toContain('123456');
+    });
+
+    it('does not strip 8-digit numbers (timestamps, record IDs)', () => {
+        const out = sanitizeMessage('record 12345678 missing');
+        expect(out).toContain('12345678');
+    });
 });
 
 describe('sanitizeFilePath', () => {

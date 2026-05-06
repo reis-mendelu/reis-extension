@@ -3,7 +3,7 @@
 // NaN/undefined flow through. All guards either throw ParserError (caught at
 // row/page boundaries and logged) or call reportError for soft signals.
 
-import { reportError } from '../reportError';
+import { logError } from '../reportError';
 
 export class ParserError extends Error {
     readonly field: string;
@@ -35,7 +35,7 @@ export function parseOptionalInt(text: string, field: string, context: string): 
     const n = parseInt(text, 10);
     if (Number.isNaN(n)) {
         if (/^[-+]?\d/.test(text)) {
-            reportError(`Parser.${context}`, new Error(`parseInt failed on ${JSON.stringify(text)}`), { field });
+            logError(`Parser.${context}`, new Error(`parseInt failed on ${JSON.stringify(text)}`), { field });
         }
         return null;
     }

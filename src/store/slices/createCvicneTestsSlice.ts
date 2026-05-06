@@ -1,6 +1,7 @@
 import type { CvicneTestsSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import { getUserParams } from '../../utils/userParams';
+import { sendTelemetry } from '../../services/errorReporter/telemetry';
 
 export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => ({
   cvicneTests: [],
@@ -25,6 +26,7 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => 
       }
     } catch (e) {
       console.warn('[CvicneTestsSlice] fetchCvicneTests failed:', e);
+      sendTelemetry('CvicneTestsSlice.fetchCvicneTests', e);
       set({ cvicneTestsStatus: 'error' });
     }
   },

@@ -2,6 +2,7 @@ import type { SyllabusSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import { fetchAndCacheSingleSyllabus } from '../../services/sync/syncSyllabus';
 import type { SyllabusRequirements } from '../../types/documents';
+import { sendTelemetry } from '../../services/errorReporter/telemetry';
 
 const SYLLABUS_VERSION = 4; // v4: force fetch to ensure we get newest predmetId
 
@@ -62,6 +63,7 @@ export const createSyllabusSlice: AppSlice<SyllabusSlice> = (set, get) => ({
       }));
     } catch (e) {
       console.warn('[SyllabusSlice] fetchSyllabus failed:', e);
+      sendTelemetry('SyllabusSlice.fetchSyllabus', e);
       set((state) => ({
         syllabuses: {
           ...state.syllabuses,

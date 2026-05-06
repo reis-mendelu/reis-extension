@@ -198,12 +198,14 @@ async function syncSubjectDetails(subjectsValue: { data: Record<string, { folder
                     subjectsValue.data[courseCode].skupinaId = skupinaId;
                 } catch (e) {
                     console.error(`[syncClassmates] Error for ${courseCode}:`, e);
+                    sendToIframe(Messages.telemetryError('SyncService.syncClassmates', e));
                 }
             }));
 
         await Promise.all(classmateTasks);
     } catch (e) {
         console.error('[syncClassmates] Error fetching group map:', e);
+        sendToIframe(Messages.telemetryError('SyncService.syncClassmates:groupMap', e));
     }
 }
 

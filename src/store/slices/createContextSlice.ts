@@ -1,5 +1,6 @@
 import type { ContextSlice, AppSlice } from '../types';
 import { getUserParams } from '../../utils/userParams';
+import { sendTelemetry } from '../../services/errorReporter/telemetry';
 
 export const createContextSlice: AppSlice<ContextSlice> = (set) => ({
     studiumId: null,
@@ -27,6 +28,7 @@ export const createContextSlice: AppSlice<ContextSlice> = (set) => ({
             }
         } catch (err) {
             console.error("Failed to load user context", err);
+            sendTelemetry('ContextSlice.loadContext', err);
         }
     },
 });

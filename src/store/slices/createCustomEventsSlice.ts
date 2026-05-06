@@ -1,6 +1,7 @@
 import type { CalendarCustomEventsSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import type { CalendarCustomEvent } from '../../types/calendarTypes';
+import { sendTelemetry } from '../../services/errorReporter/telemetry';
 
 export const createCustomEventsSlice: AppSlice<CalendarCustomEventsSlice> = (set, get) => ({
   customEvents: [],
@@ -13,6 +14,7 @@ export const createCustomEventsSlice: AppSlice<CalendarCustomEventsSlice> = (set
       }
     } catch (error) {
       console.error('Failed to load custom events:', error);
+      sendTelemetry('CustomEventsSlice.loadCalendarCustomEvents', error);
     }
   },
 

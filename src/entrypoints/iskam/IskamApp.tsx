@@ -6,6 +6,7 @@ import { MobileBottomNav } from '@/components/MobileNav/MobileBottomNav';
 import { Toaster } from '@/components/ui/sonner';
 import { initializeIskamStore, useIskamStore } from '@/store/iskamStore';
 import { IskamMessages } from '@/types/messages';
+import { sendTelemetry } from '@/services/errorReporter/telemetry';
 import { IndexedDBService } from '@/services/storage';
 import type { AppView } from '@/types/app';
 import type { MenuItem } from '@/components/menuConfig';
@@ -30,6 +31,10 @@ export function IskamApp() {
         // 3. Listen for content script push (ISKAM_SYNC_UPDATE).
         function onMessage(event: MessageEvent) {
             if (event.source !== window.parent) return;
+            if (event.data?.type === 'REIS_TELEMETRY_ERROR') {
+                sendTelemetry(event.data.context, new Error(event.data.message));
+                return;
+            }
             if (event.data?.type !== 'ISKAM_SYNC_UPDATE') return;
             const { iskamData, isSyncing, error } = event.data.data;
             if (iskamData) {

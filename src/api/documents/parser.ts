@@ -1,6 +1,6 @@
 import { sanitizeString, validateFileName, validateUrl } from "../../utils/validation/index";
 import { ParserError } from "../../utils/parsers/parserGuards";
-import { reportError } from "../../utils/reportError";
+import { logError } from "../../utils/reportError";
 import type { ParsedFile, FileAttachment } from "../../types/documents";
 
 /**
@@ -119,7 +119,7 @@ export function parseServerFiles(html: string): { files: ParsedFile[], paginatio
                 files.push({ subfolder, file_name, file_comment, author, date, files: extractedFiles });
             }
           } catch (e) {
-            if (e instanceof ParserError) reportError('Parser.parseServerFiles', e, { snippet: e.snippet });
+            if (e instanceof ParserError) logError('Parser.parseServerFiles', e, { snippet: e.snippet });
             else throw e;
           }
         });

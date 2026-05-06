@@ -2,7 +2,7 @@ import { IskamAuthError } from '../api/iskam/errors';
 import { fetchDualLanguageIskam } from '../api/iskam';
 import { ISKAM_BASE } from '../api/iskam/client';
 import { sendToIskamIframe } from './iskamInjector';
-import { IskamMessages } from '../types/messages';
+import { IskamMessages, Messages } from '../types/messages';
 import type { IskamData } from '../types/iskam';
 
 export let cachedIskamData: IskamData | null = null;
@@ -24,6 +24,7 @@ export async function syncIskamData(): Promise<void> {
             return;
         }
         console.error('[reIS:iskam] sync error', err);
+        sendToIskamIframe(Messages.telemetryError('IskamSyncService.syncIskamData', err));
         sendToIskamIframe(IskamMessages.iskamSyncUpdate(cachedIskamData, false, 'network'));
     } finally {
         isSyncingIskam = false;

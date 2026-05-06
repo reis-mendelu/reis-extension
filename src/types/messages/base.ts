@@ -31,5 +31,9 @@ export interface IskamSyncUpdateMessage {
 export interface IskamFetchBlockMessage { type: 'ISKAM_FETCH_BLOCK'; id: string; blockId: string; od: string; doo: string; }
 export interface IskamBlockResultMessage { type: 'ISKAM_BLOCK_RESULT'; id: string; rooms: import('../iskam').VolneKapacityRoom[]; }
 
+// Sent by content scripts to route explicit error telemetry through the iframe
+// (which has Supabase access). Context must contain no student data.
+export interface TelemetryErrorMessage { type: 'REIS_TELEMETRY_ERROR'; context: string; message: string; }
+
 export type IframeToContentMessage = ReadyMessage | RequestDataMessage | FetchRequestMessage | ActionRequestMessage | IskamReadyMessage | IskamFetchBlockMessage;
-export type ContentToIframeMessage = DataResponseMessage | FetchResultMessage | ActionResultMessage | SyncUpdateMessage | PopupStateMessage | NavMenuMessage | IskamSyncUpdateMessage | IskamBlockResultMessage;
+export type ContentToIframeMessage = DataResponseMessage | FetchResultMessage | ActionResultMessage | SyncUpdateMessage | PopupStateMessage | NavMenuMessage | IskamSyncUpdateMessage | IskamBlockResultMessage | TelemetryErrorMessage;

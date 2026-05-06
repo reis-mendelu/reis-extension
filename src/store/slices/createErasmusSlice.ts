@@ -4,7 +4,8 @@ import { fetchErasmusReports, getStoredErasmusData, fetchErasmusConfig as fetchE
 import { fetchJsonViaProxy } from '../../api/proxyClient';
 import { IndexedDBService } from '../../services/storage';
 import { loggers } from '../../utils/logger';
-import { reportError } from '../../utils/reportError';
+import { logError } from '../../utils/reportError';
+import { sendTelemetry } from '../../services/errorReporter/telemetry';
 import type { AIComparisonResult } from '../../api/gemini';
 
 const TABLE_A_COURSES_KEY = 'erasmus_table_a_courses'; // Legacy
@@ -85,14 +86,14 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     IndexedDBService.set('meta', ERASMUS_UI_STATE_KEY, {
       activeTab: tab,
       planPhase: get().erasmusPlanPhase
-    }).catch(e => reportError('ErasmusSlice.setErasmusActiveTab', e));
+    }).catch(e => logError('ErasmusSlice.setErasmusActiveTab', e));
   },
   setErasmusPlanPhase: (phase: 'select' | 'review') => {
     set({ erasmusPlanPhase: phase });
     IndexedDBService.set('meta', ERASMUS_UI_STATE_KEY, {
       activeTab: get().erasmusActiveTab,
       planPhase: phase
-    }).catch(e => reportError('ErasmusSlice.setErasmusPlanPhase', e));
+    }).catch(e => logError('ErasmusSlice.setErasmusPlanPhase', e));
   },
   setErasmusCountry: async (file: string) => {
     if (get().erasmusCountryFile !== file || !get().erasmusData) {
@@ -143,7 +144,7 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     current.splice(toIndex, 0, moved);
     const next = { ...all, [optionId]: current };
     set({ erasmusTableBCourses: next });
-    IndexedDBService.set('meta', TABLE_B_COURSES_KEY, next).catch(e => reportError('ErasmusSlice.reorderErasmusTableBCourse', e));
+    IndexedDBService.set('meta', TABLE_B_COURSES_KEY, next).catch(e => logError('ErasmusSlice.reorderErasmusTableBCourse', e));
   },
   toggleErasmusTableBCourse: (optionId: string, code: string) => {
     const all = get().erasmusTableBCourses;
@@ -151,21 +152,21 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     const isRemoving = current.includes(code);
     const next = { ...all, [optionId]: isRemoving ? current.filter(c => c !== code) : [...current, code] };
     set({ erasmusTableBCourses: next });
-    IndexedDBService.set('meta', TABLE_B_COURSES_KEY, next).catch(e => reportError('ErasmusSlice.toggleErasmusTableBCourse', e));
+    IndexedDBService.set('meta', TABLE_B_COURSES_KEY, next).catch(e => logError('ErasmusSlice.toggleErasmusTableBCourse', e));
     if (isRemoving) {
       const verdicts = { ...get().erasmusVerdicts };
       delete verdicts[code];
       const aiResults = { ...get().erasmusAiResults };
       delete aiResults[code];
       set({ erasmusVerdicts: verdicts, erasmusAiResults: aiResults });
-      IndexedDBService.set('meta', VERDICTS_KEY, verdicts).catch(e => reportError('ErasmusSlice.toggleErasmusTableBCourse:verdicts', e));
-      IndexedDBService.set('meta', AI_RESULTS_KEY, aiResults).catch(e => reportError('ErasmusSlice.toggleErasmusTableBCourse:aiResults', e));
+      IndexedDBService.set('meta', VERDICTS_KEY, verdicts).catch(e => logError('ErasmusSlice.toggleErasmusTableBCourse:verdicts', e));
+      IndexedDBService.set('meta', AI_RESULTS_KEY, aiResults).catch(e => logError('ErasmusSlice.toggleErasmusTableBCourse:aiResults', e));
     }
   },
   setErasmusStudentInfo: (data: Partial<ErasmusStudentInfo>) => {
     const next = { ...get().erasmusStudentInfo, ...data };
     set({ erasmusStudentInfo: next });
-    IndexedDBService.set('meta', STUDENT_INFO_KEY, next).catch(e => reportError('ErasmusSlice.setErasmusStudentInfo', e));
+    IndexedDBService.set('meta', STUDENT_INFO_KEY, next).catch(e => logError('ErasmusSlice.setErasmusStudentInfo', e));
   },
   initErasmusStudentInfo: (params: { fullName?: string; studyProgram?: string; studentId?: string; dob?: string }) => {
     const current = get().erasmusStudentInfo;
@@ -193,48 +194,48 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     if (verdict === null) delete verdicts[code];
     else verdicts[code] = verdict;
     set({ erasmusVerdicts: verdicts });
-    IndexedDBService.set('meta', VERDICTS_KEY, verdicts).catch(e => reportError('ErasmusSlice.setErasmusVerdict', e));
+    IndexedDBService.set('meta', VERDICTS_KEY, verdicts).catch(e => logError('ErasmusSlice.setErasmusVerdict', e));
   },
   setErasmusAiResult: (code: string, result: AIComparisonResult | null) => {
     const next = { ...get().erasmusAiResults };
     if (result === null) delete next[code];
     else next[code] = result;
     set({ erasmusAiResults: next });
-    IndexedDBService.set('meta', AI_RESULTS_KEY, next).catch(e => reportError('ErasmusSlice.setErasmusAiResult', e));
+    IndexedDBService.set('meta', AI_RESULTS_KEY, next).catch(e => logError('ErasmusSlice.setErasmusAiResult', e));
   },
   setErasmusPdfAssignment: (courseCode: string, filename: string | null) => {
     const assignments = { ...get().erasmusPdfAssignments };
     if (filename === null) delete assignments[courseCode];
     else assignments[courseCode] = filename;
     set({ erasmusPdfAssignments: assignments });
-    IndexedDBService.set('meta', PDF_ASSIGNMENTS_KEY, assignments).catch(e => reportError('ErasmusSlice.setErasmusPdfAssignment', e));
+    IndexedDBService.set('meta', PDF_ASSIGNMENTS_KEY, assignments).catch(e => logError('ErasmusSlice.setErasmusPdfAssignment', e));
   },
   pinErasmusUniversity: (name: string) => {
     const current = get().erasmusPinnedUniversities;
     if (current.includes(name) || current.length >= MAX_PINNED) return;
     const next = [...current, name];
     set({ erasmusPinnedUniversities: next });
-    IndexedDBService.set('meta', PINNED_UNIVERSITIES_KEY, next).catch(e => reportError('ErasmusSlice.pinErasmusUniversity', e));
+    IndexedDBService.set('meta', PINNED_UNIVERSITIES_KEY, next).catch(e => logError('ErasmusSlice.pinErasmusUniversity', e));
   },
   unpinErasmusUniversity: (name: string) => {
     const next = get().erasmusPinnedUniversities.filter(n => n !== name);
     set({ erasmusPinnedUniversities: next });
-    IndexedDBService.set('meta', PINNED_UNIVERSITIES_KEY, next).catch(e => reportError('ErasmusSlice.unpinErasmusUniversity', e));
+    IndexedDBService.set('meta', PINNED_UNIVERSITIES_KEY, next).catch(e => logError('ErasmusSlice.unpinErasmusUniversity', e));
   },
   addErasmusUploadedPdf: (filename: string, text: string, base64: string) => {
     const next = { ...get().erasmusUploadedPdfs, [filename]: { text, base64 } };
     set({ erasmusUploadedPdfs: next });
-    IndexedDBService.set('meta', UPLOADED_PDFS_KEY, next).catch(e => reportError('ErasmusSlice.addErasmusUploadedPdf', e));
+    IndexedDBService.set('meta', UPLOADED_PDFS_KEY, next).catch(e => logError('ErasmusSlice.addErasmusUploadedPdf', e));
   },
   removeErasmusUploadedPdf: (filename: string) => {
     const next = { ...get().erasmusUploadedPdfs };
     delete next[filename];
     set({ erasmusUploadedPdfs: next });
-    IndexedDBService.set('meta', UPLOADED_PDFS_KEY, next).catch(e => reportError('ErasmusSlice.removeErasmusUploadedPdf', e));
+    IndexedDBService.set('meta', UPLOADED_PDFS_KEY, next).catch(e => logError('ErasmusSlice.removeErasmusUploadedPdf', e));
   },
   clearErasmusUploadedPdfs: () => {
     set({ erasmusUploadedPdfs: {} });
-    IndexedDBService.set('meta', UPLOADED_PDFS_KEY, {}).catch(e => reportError('ErasmusSlice.clearErasmusUploadedPdfs', e));
+    IndexedDBService.set('meta', UPLOADED_PDFS_KEY, {}).catch(e => logError('ErasmusSlice.clearErasmusUploadedPdfs', e));
   },
   addErasmusTableAOption: () => {
     const current = get().erasmusTableAOptions;
@@ -248,7 +249,7 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
       courses: [] 
     }];
     set({ erasmusTableAOptions: next });
-    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(e => reportError('ErasmusSlice.addErasmusTableAOption', e));
+    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(e => logError('ErasmusSlice.addErasmusTableAOption', e));
   },
   removeErasmusTableAOption: (id: string) => {
     const next = get().erasmusTableAOptions.filter(o => o.id !== id);
@@ -256,22 +257,22 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
       next.push({ id: `opt-${Date.now()}`, institutionName: '', erasmusCode: '', country: '', link: '', courses: [] });
     }
     set({ erasmusTableAOptions: next });
-    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(e => reportError('ErasmusSlice.removeErasmusTableAOption', e));
+    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(e => logError('ErasmusSlice.removeErasmusTableAOption', e));
   },
   updateErasmusTableAOptionHeader: (id, data) => {
     const next = get().erasmusTableAOptions.map(o => o.id === id ? { ...o, ...data } : o);
     set({ erasmusTableAOptions: next });
-    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(e => reportError('ErasmusSlice.updateErasmusTableAOptionHeader', e));
+    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(e => logError('ErasmusSlice.updateErasmusTableAOptionHeader', e));
   },
   addErasmusTableACourse: (optionId: string, course: { code: string; name: string; credits: number }) => {
     const next = get().erasmusTableAOptions.map(o => o.id === optionId ? { ...o, courses: [...o.courses, course] } : o);
     set({ erasmusTableAOptions: next });
-    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(e => reportError('ErasmusSlice.addErasmusTableACourse', e));
+    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(e => logError('ErasmusSlice.addErasmusTableACourse', e));
   },
   removeErasmusTableACourse: (optionId: string, index: number) => {
     const next = get().erasmusTableAOptions.map(o => o.id === optionId ? { ...o, courses: o.courses.filter((_, i) => i !== index) } : o);
     set({ erasmusTableAOptions: next });
-    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(e => reportError('ErasmusSlice.removeErasmusTableACourse', e));
+    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(e => logError('ErasmusSlice.removeErasmusTableACourse', e));
   },
   reorderErasmusTableACourse: (optionId: string, fromIndex: number, toIndex: number) => {
     const next = get().erasmusTableAOptions.map(o => {
@@ -282,7 +283,7 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
       return { ...o, courses };
     });
     set({ erasmusTableAOptions: next });
-    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(e => reportError('ErasmusSlice.reorderErasmusTableACourse', e));
+    IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(e => logError('ErasmusSlice.reorderErasmusTableACourse', e));
   },
   loadErasmusState: async () => {
     try {
@@ -300,7 +301,7 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
         if (oldTableA && oldTableA.length > 0) {
            const initial = [{ id: 'opt-initial', institutionName: '', erasmusCode: '', country: '', link: '', courses: oldTableA }];
            set({ erasmusTableAOptions: initial });
-           IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, initial).catch(e => reportError('ErasmusSlice.loadErasmusState:migrateTableA', e));
+           IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, initial).catch(e => logError('ErasmusSlice.loadErasmusState:migrateTableA', e));
         }
       }
 
@@ -325,7 +326,8 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
         if (uiState.planPhase) set({ erasmusPlanPhase: uiState.planPhase });
       }
     } catch (e) {
-      reportError('ErasmusSlice.loadErasmusState', e);
+      logError('ErasmusSlice.loadErasmusState', e);
+      sendTelemetry('ErasmusSlice.loadErasmusState', e);
     }
   },
 });

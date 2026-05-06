@@ -1,6 +1,7 @@
 import type { SubjectsSlice, AppSlice, CourseDeadline } from '../types';
 import type { SubjectAttendance } from '../../types/documents';
 import { IndexedDBService } from '../../services/storage';
+import { sendTelemetry } from '../../services/errorReporter/telemetry';
 
 export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
     subjects: null,
@@ -29,6 +30,7 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
             });
         } catch (e) {
             console.warn('[SubjectsSlice] fetchSubjects failed:', e);
+            sendTelemetry('SubjectsSlice.fetchSubjects', e);
             set({ subjectsLoading: false });
         }
     },

@@ -1,6 +1,7 @@
 import type { FilesSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
-import { reportError } from '../../utils/reportError';
+import { logError } from '../../utils/reportError';
+import { sendTelemetry } from '../../services/errorReporter/telemetry';
 import type { ParsedFile } from '../../types/documents';
 
 export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
@@ -110,7 +111,8 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                 filesLoading: { ...state.filesLoading, [courseCode]: false },
             }));
         } catch (e) {
-            reportError('FilesSlice.fetchFilesPriority', e, { courseCode });
+            logError('FilesSlice.fetchFilesPriority', e, { courseCode });
+            sendTelemetry('FilesSlice.fetchFilesPriority', e);
             set((state) => ({
                 files: { ...state.files, [courseCode]: [] },
                 filesLoading: { ...state.filesLoading, [courseCode]: false },
@@ -162,7 +164,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                             await IndexedDBService.set('files', courseCode, dualData);
                             filesList = currentLang === 'en' ? dualData.en : dualData.cz;
                         } catch (e) {
-                            reportError('FilesSlice.refreshFiles:langRefetch', e, { courseCode });
+                            logError('FilesSlice.refreshFiles:langRefetch', e, { courseCode });
                         }
                     }
                 }
@@ -173,7 +175,8 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                 filesLoading: { ...state.filesLoading, [courseCode]: false }
             }));
         } catch (e) {
-            reportError('FilesSlice.refreshFiles', e, { courseCode });
+            logError('FilesSlice.refreshFiles', e, { courseCode });
+            sendTelemetry('FilesSlice.refreshFiles', e);
             set((state) => ({
                 files: { ...state.files, [courseCode]: state.files[courseCode] ?? [] },
                 filesLoading: { ...state.filesLoading, [courseCode]: false }
@@ -209,6 +212,6 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                 }
             }
             set({ files: filesMap });
-        } catch (e) { reportError('FilesSlice.fetchAllFiles', e); }
+        } catch (e) { logError('FilesSlice.fetchAllFiles', e); sendTelemetry('FilesSlice.fetchAllFiles', e); }
     },
 });

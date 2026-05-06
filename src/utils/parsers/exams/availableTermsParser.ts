@@ -1,6 +1,6 @@
 import type { ScrapedExamSubject, ScrapedExamSection } from './types';
 import { normalizeDateString } from './utils';
-import { reportError } from '../../reportError';
+import { logError } from '../../reportError';
 
 export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: string, n: string) => ScrapedExamSubject, getOrCreateSection: (s: ScrapedExamSubject, n: string) => ScrapedExamSection, lang: string = 'cz') {
     const isEn = lang === 'en';
@@ -35,7 +35,7 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
         // Strip trailing "(n)" waitlist suffix before parsing: "0/12(8)" → occupied=0, total=12
         const [occupied, total] = capacityStr.split('/').map(s => Number(s.replace(/\(\d+\)$/, '')));
         if (capacityStr && (Number.isNaN(occupied) || Number.isNaN(total))) {
-            reportError('Parser.parseAvailableTerms', new Error(`capacity unparseable: ${JSON.stringify(capacityStr)}`), { code, name });
+            logError('Parser.parseAvailableTerms', new Error(`capacity unparseable: ${JSON.stringify(capacityStr)}`), { code, name });
         }
         const isFull = Number.isFinite(occupied) && Number.isFinite(total) && occupied >= total;
 

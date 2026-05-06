@@ -10,6 +10,7 @@ import { useAppStore, initializeStore } from '../store/useAppStore';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
 import type { AppView, SelectedSubject } from '../types/app';
 import { isContentMessage } from '../types/messages';
+import { sendTelemetry } from '../services/errorReporter/telemetry';
 
 import { isDualLanguageStudyPlan } from '../types/studyPlan';
 import type { DualLanguageStudyPlan } from '../types/studyPlan';
@@ -105,6 +106,10 @@ export function useAppLogic() {
             const d = e.data;
             if (!isContentMessage(d)) return;
             if (d.type === 'REIS_POPUP_STATE') return;
+            if (d.type === 'REIS_TELEMETRY_ERROR') {
+                sendTelemetry(d.context, new Error(d.message));
+                return;
+            }
             if (d.type === 'REIS_NAV_MENU') {
                 useAppStore.getState().setNavPages(d.categories);
                 useAppStore.getState().migratePinnedIds(d.categories);

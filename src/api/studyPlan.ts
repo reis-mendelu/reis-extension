@@ -1,6 +1,6 @@
 import { fetchWithAuth, BASE_URL } from "./client";
 import { parseRequiredInt, parseOptionalInt, ParserError } from "../utils/parsers/parserGuards";
-import { reportError } from "../utils/reportError";
+import { logError } from "../utils/reportError";
 import type { StudyPlan, DualLanguageStudyPlan, SemesterBlock, SubjectGroup, SubjectStatus, Zamerani, ZamerangSubjectRef } from "../types/studyPlan";
 
 const STUDY_PLAN_URL = `${BASE_URL}/auth/studijni/studijni_povinnosti.pl`;
@@ -114,7 +114,7 @@ function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
                         creditsRequired = parseRequiredInt(match[2], 'creditsRequired', 'parseStudyPlanDOM');
                     } catch (e) {
                         if (e instanceof ParserError) {
-                            reportError('Parser.parseStudyPlanDOM', e, { lang, snippet: creditText.slice(0, 200) });
+                            logError('Parser.parseStudyPlanDOM', e, { lang, snippet: creditText.slice(0, 200) });
                         } else throw e;
                     }
                 }

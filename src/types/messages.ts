@@ -4,7 +4,7 @@ export * from './messages/base';
 export type { ActionType, DataRequestType } from './messages/base';
 
 export function isIframeMessage(d: unknown): d is T.IframeToContentMessage { return typeof d === 'object' && d !== null && 'type' in d && ['REIS_READY', 'REIS_REQUEST_DATA', 'REIS_FETCH', 'REIS_ACTION', 'ISKAM_READY', 'ISKAM_FETCH_BLOCK'].includes((d as any).type); }
-export function isContentMessage(d: unknown): d is T.ContentToIframeMessage { return typeof d === 'object' && d !== null && 'type' in d && ['REIS_DATA', 'REIS_FETCH_RESULT', 'REIS_ACTION_RESULT', 'REIS_SYNC_UPDATE', 'REIS_POPUP_STATE', 'REIS_NAV_MENU', 'ISKAM_SYNC_UPDATE', 'ISKAM_BLOCK_RESULT'].includes((d as any).type); }
+export function isContentMessage(d: unknown): d is T.ContentToIframeMessage { return typeof d === 'object' && d !== null && 'type' in d && ['REIS_DATA', 'REIS_FETCH_RESULT', 'REIS_ACTION_RESULT', 'REIS_SYNC_UPDATE', 'REIS_POPUP_STATE', 'REIS_NAV_MENU', 'ISKAM_SYNC_UPDATE', 'ISKAM_BLOCK_RESULT', 'REIS_TELEMETRY_ERROR'].includes((d as any).type); }
 
 export const Messages = {
     ready: (): T.ReadyMessage => ({ type: 'REIS_READY' }),
@@ -16,7 +16,12 @@ export const Messages = {
     actionResult: (id: string, s: boolean, d?: unknown, e?: string): T.ActionResultMessage => ({ type: 'REIS_ACTION_RESULT', id, success: s, data: d, error: e }),
     syncUpdate: (d: T.SyncedData): T.SyncUpdateMessage => ({ type: 'REIS_SYNC_UPDATE', data: d }),
     popupState: (open: boolean): T.PopupStateMessage => ({ type: 'REIS_POPUP_STATE', open }),
-    navMenu: (categories: T.NavMenuMessage['categories']): T.NavMenuMessage => ({ type: 'REIS_NAV_MENU', categories })
+    navMenu: (categories: T.NavMenuMessage['categories']): T.NavMenuMessage => ({ type: 'REIS_NAV_MENU', categories }),
+    telemetryError: (context: string, err: unknown): T.TelemetryErrorMessage => ({
+        type: 'REIS_TELEMETRY_ERROR',
+        context,
+        message: err instanceof Error ? err.message : String(err),
+    })
 };
 
 export const IskamMessages = {

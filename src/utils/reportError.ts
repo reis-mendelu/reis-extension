@@ -1,7 +1,7 @@
-// Single chokepoint for non-fatal errors that previously vanished into
-// `.catch(() => {})`. Keeps a stable prefix so production reports are greppable.
+// Console logger for non-fatal errors. Use sendTelemetry() to also forward
+// to Supabase — logError() is console-only and never transmits data.
 
-export function reportError(context: string, err: unknown, extra?: Record<string, unknown>): void {
+export function logError(context: string, err: unknown, extra?: Record<string, unknown>): void {
     const msg = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : undefined;
     const payload: Record<string, unknown> = { context, msg };

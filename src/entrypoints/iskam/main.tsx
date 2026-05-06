@@ -11,9 +11,11 @@ import '@fontsource/inter/latin-ext-700.css'
 import '@/index.css'
 import { IskamApp } from './IskamApp'
 import { installErrorReporter } from '@/services/errorReporter/reporter'
+import { initTelemetry } from '@/services/errorReporter/telemetry'
 import { useAppStore } from '@/store/useAppStore'
 
 installErrorReporter(() => useAppStore.getState().errorReportingEnabled)
+initTelemetry(() => useAppStore.getState().errorReportingEnabled)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
