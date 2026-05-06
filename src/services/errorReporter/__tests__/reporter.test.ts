@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { __resetReporterStateForTests, installErrorReporter } from '../reporter';
+import { installErrorReporter } from '../reporter';
 import { supabase } from '../../spolky/supabaseClient';
 
 vi.mock('../../spolky/supabaseClient', () => ({
@@ -24,8 +24,8 @@ describe('installErrorReporter', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        __resetReporterStateForTests();
-        // happy-dom sets navigator.webdriver = true by default; override per-test.
+        // Each test calls installErrorReporter() which creates a fresh closure,
+        // so per-session state (seen set, reportsSent) resets automatically.
         Object.defineProperty(navigator, 'webdriver', { value: false, configurable: true });
     });
 

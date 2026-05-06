@@ -13,14 +13,6 @@ import {
 
 const SESSION_CAP = 5;
 
-let reportsSent = 0;
-const seen = new Set<string>();
-
-export function __resetReporterStateForTests(): void {
-    reportsSent = 0;
-    seen.clear();
-}
-
 function shouldSkipEnvironment(): boolean {
     if (typeof navigator !== 'undefined' && navigator.webdriver) return true;
     // Skip the WXT dev server but allow vitest (MODE === 'test') to exercise the path.
@@ -74,28 +66,33 @@ function normalizeFromRejection(ev: PromiseRejectionEvent): NormalizedError | nu
     return { type, message, file: '', line: 0 };
 }
 
-function send(n: NormalizedError): void {
-    const key = dedupeKey(n.type, n.message, n.file, n.line);
-    if (seen.has(key)) return;
-    seen.add(key);
-    if (reportsSent >= SESSION_CAP) return;
-    reportsSent++;
-
-    const browser = getBrowserInfo();
-    // Promise: exactly these seven fields. No spread, no extras.
-    const payload = {
-        p_error_type: n.type,
-        p_error_message: n.message,
-        p_file_path: n.file,
-        p_line_number: n.line,
-        p_ext_version: getExtVersion(),
-        p_browser_name: browser.name,
-        p_browser_version: browser.version,
-    };
-    void supabase.rpc('report_error', payload).then(() => {}, () => {});
-}
-
 export function installErrorReporter(getEnabled: () => boolean): () => void {
+    let reportsSent = 0;
+    const seen = new Set<string>();
+
+    function send(n: NormalizedError): void {
+        const key = dedupeKey(n.type, n.message, n.file, n.line);
+        // Register before cap check: post-cap unique errors are intentionally
+        // dropped rather than queued, preventing a burst if the cap were raised.
+        if (seen.has(key)) return;
+        seen.add(key);
+        if (reportsSent >= SESSION_CAP) return;
+        reportsSent++;
+
+        const browser = getBrowserInfo();
+        // Promise: exactly these seven fields. No spread, no extras.
+        const payload = {
+            p_error_type: n.type,
+            p_error_message: n.message,
+            p_file_path: n.file,
+            p_line_number: n.line,
+            p_ext_version: getExtVersion(),
+            p_browser_name: browser.name,
+            p_browser_version: browser.version,
+        };
+        void supabase.rpc('report_error', payload).then(() => {}, () => {});
+    }
+
     const onError = (ev: ErrorEvent) => {
         if (!getEnabled() || shouldSkipEnvironment()) return;
         const n = normalizeFromErrorEvent(ev);
