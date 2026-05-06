@@ -32,7 +32,8 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
         const sectionName = sectionNameRaw.split('(')[0].trim();
         const normalizedDateStr = normalizeDateString(dateStr, isEn);
         const [datePart, timePart] = normalizedDateStr.split(' ');
-        const [occupied, total] = capacityStr.split('/').map(Number);
+        // Strip trailing "(n)" waitlist suffix before parsing: "0/12(8)" → occupied=0, total=12
+        const [occupied, total] = capacityStr.split('/').map(s => Number(s.replace(/\(\d+\)$/, '')));
         if (capacityStr && (Number.isNaN(occupied) || Number.isNaN(total))) {
             reportError('Parser.parseAvailableTerms', new Error(`capacity unparseable: ${JSON.stringify(capacityStr)}`), { code, name });
         }

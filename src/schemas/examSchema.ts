@@ -5,7 +5,8 @@ import { z } from 'zod';
  */
 export const ExamCapacitySchema = z.string().transform((val) => {
     const clean = val.trim().replace(/\s+/g, '');
-    const [occupied, total] = clean.split('/').map(Number);
+    // Strip trailing "(n)" waitlist suffix before parsing: "12(8)" → "12"
+    const [occupied, total] = clean.split('/').map(s => Number(s.replace(/\(\d+\)$/, '')));
     return {
         occupied: isNaN(occupied) ? 0 : occupied,
         total: isNaN(total) ? 0 : total,
