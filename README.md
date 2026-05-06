@@ -102,4 +102,16 @@ npm run build
 
 ---
 
+## License
+
+The source code in this repository is licensed under the **GNU Affero General Public License v3.0 only** (AGPL-3.0-only). See [`LICENSE`](LICENSE) for the full text.
+
+In short: you are free to use, study, modify, and redistribute the code, but any distributed or network-deployed derivative work must also be released under the AGPL-3.0 with full source code available.
+
+## Trademarks
+
+The name **"reIS"** and the reIS logo are **not** covered by the AGPL license above. They are unregistered trademarks of the project authors. You may not use them to name, brand, or promote a forked or derivative extension — including (but not limited to) listings on the Chrome Web Store, the Firefox Add-ons store, or any equivalent distribution channel — in a way that could cause confusion with the official reIS extension. Forks must use a distinct name and icon.
+
+---
+
 *Nezávislá studentská iniciativa • Provozně ekonomická fakulta • MENDELU*

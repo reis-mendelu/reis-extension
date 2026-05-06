@@ -100,6 +100,12 @@ export interface ThemeSlice {
     loadTheme: () => Promise<void>;
 }
 
+export interface ErrorReportingSlice {
+    errorReportingEnabled: boolean;
+    loadErrorReportingEnabled: () => Promise<void>;
+    setErrorReportingEnabled: (enabled: boolean) => Promise<void>;
+}
+
 export interface I18nSlice {
     language: Language;
     isLanguageLoading: boolean;
@@ -315,7 +321,7 @@ export interface NotificationSlice {
     loadNotificationState: () => Promise<void>;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & import('./slices/createSearchSlice').SearchSlice;
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & import('./slices/createSearchSlice').SearchSlice;
 
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

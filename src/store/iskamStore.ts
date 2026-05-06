@@ -71,6 +71,7 @@ export async function initializeIskamStore(): Promise<() => void> {
     const s = useAppStore.getState();
     s.loadTheme();
     s.loadLanguage();
+    s.loadErrorReportingEnabled();
 
     const bcTheme = new BroadcastChannel('reis_theme_sync');
     bcTheme.onmessage = () => useAppStore.getState().loadTheme();

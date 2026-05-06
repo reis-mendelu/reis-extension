@@ -9,6 +9,7 @@ import { createSubjectsSlice } from './slices/createSubjectsSlice';
 import { createSyncSlice } from './slices/createSyncSlice';
 import { createThemeSlice } from './slices/createThemeSlice';
 import { createI18nSlice } from './slices/createI18nSlice';
+import { createErrorReportingSlice } from './slices/createErrorReportingSlice';
 import { createSuccessRateSlice } from './slices/createSuccessRateSlice';
 import { createStudyJamsSlice } from './slices/createStudyJamsSlice';
 import { createFeedbackSlice } from './slices/createFeedbackSlice';
@@ -38,6 +39,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createSyncSlice(...a),
   ...createThemeSlice(...a),
   ...createI18nSlice(...a),
+  ...createErrorReportingSlice(...a),
   ...createSuccessRateSlice(...a),
   ...createStudyJamsSlice(...a),
   ...createFeedbackSlice(...a),
@@ -79,6 +81,7 @@ export const initializeStore = async () => {
     s.fetchSubjects();
     s.loadTheme();
     s.loadLanguage();
+    s.loadErrorReportingEnabled();
     s.loadContext();
 
     // Tier 2: Background data — deferred to avoid thundering-herd on IDB at startup

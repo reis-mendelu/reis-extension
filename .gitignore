@@ -113,6 +113,9 @@ server/db/*.db-shm
 server/db/*.db-wal
 !server/db/schema.sql
 
+# MCP server config (dev-machine concern, never commit)
+.mcp.json
+
 # Artifacts
 lint_results.json
 

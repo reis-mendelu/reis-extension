@@ -10,6 +10,10 @@ import '@fontsource/inter/latin-ext-600.css'
 import '@fontsource/inter/latin-ext-700.css'
 import '@/index.css'
 import { IskamApp } from './IskamApp'
+import { installErrorReporter } from '@/services/errorReporter/reporter'
+import { useAppStore } from '@/store/useAppStore'
+
+installErrorReporter(() => useAppStore.getState().errorReportingEnabled)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
