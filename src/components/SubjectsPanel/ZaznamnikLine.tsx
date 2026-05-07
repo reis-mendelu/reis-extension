@@ -1,4 +1,4 @@
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Upload, PenLine } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { parseRegistrationStart } from '@/utils/termUtils';
@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 interface ZaznamnikLineProps {
     courseCode: string;
     subjectId?: string;
+    className?: string;
 }
 
 const STATUS_DOT: Record<string, string> = {
@@ -30,7 +31,7 @@ function dayDiff(ts: number): number {
     return Math.max(0, Math.floor((targetStart - todayStart) / DAY_MS));
 }
 
-export function ZaznamnikLine({ courseCode, subjectId }: ZaznamnikLineProps) {
+export function ZaznamnikLine({ courseCode, subjectId, className }: ZaznamnikLineProps) {
     const { t, language } = useTranslation();
     const lang = language === 'cz' ? 'cz' : 'en';
 
@@ -89,11 +90,15 @@ export function ZaznamnikLine({ courseCode, subjectId }: ZaznamnikLineProps) {
     };
     const deadlineUrgency = (ts: number) => {
         const days = dayDiff(ts);
-        return days === 0 ? 'text-error hover:text-error/80' : days <= 2 ? 'text-warning hover:text-warning/80' : 'text-base-content/50 hover:text-base-content/70';
+        return days === 0
+            ? 'bg-error/15 text-error hover:bg-error/25 border border-error/30'
+            : days <= 2
+            ? 'bg-warning/15 text-warning-content hover:bg-warning/25 border border-warning/30'
+            : 'bg-base-content/8 text-base-content/70 hover:bg-base-content/12 border border-base-content/15';
     };
 
     return (
-        <div className="flex items-center flex-wrap gap-x-3 gap-y-1 px-3 pb-2 -mt-1">
+        <div className={className ?? "flex items-center flex-wrap gap-x-3 gap-y-1 px-3 pb-2 -mt-1"}>
             {visibleDots.length > 0 && (
                 <span className="flex items-center gap-1 shrink-0">
                     {visibleDots.map((d, i) => (
@@ -141,8 +146,9 @@ export function ZaznamnikLine({ courseCode, subjectId }: ZaznamnikLineProps) {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={e => e.stopPropagation()}
-                    className="badge badge-xs badge-primary badge-outline text-[9px] shrink-0 hover:badge-primary cursor-pointer"
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 transition-colors bg-primary/10 text-primary hover:bg-primary/20 border border-primary/25"
                 >
+                    <PenLine size={9} className="shrink-0" />
                     {accessibleCount} {t('deadlines.cvicnyTest')}
                 </a>
             )}
@@ -153,10 +159,11 @@ export function ZaznamnikLine({ courseCode, subjectId }: ZaznamnikLineProps) {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={e => e.stopPropagation()}
-                    className={`flex items-center gap-0.5 text-[10px] shrink-0 transition-colors ${deadlineUrgency(ts)}`}
+                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 transition-colors ${deadlineUrgency(ts)}`}
                 >
+                    <Upload size={9} className="shrink-0" />
                     {a.name.length > 20 ? a.name.slice(0, 20) + '…' : a.name}
-                    <span className="font-bold ml-0.5">{deadlineLabel(ts)}</span>
+                    <span className="font-bold opacity-70">{deadlineLabel(ts)}</span>
                 </a>
             ))}
         </div>

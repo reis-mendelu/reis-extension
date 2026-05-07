@@ -11,6 +11,7 @@ import { signalReady, requestData, isInIframe } from '../api/proxyClient';
 import type { AppView, SelectedSubject } from '../types/app';
 import { isContentMessage } from '../types/messages';
 import { sendTelemetry } from '../services/errorReporter/telemetry';
+import { logError } from '../utils/reportError';
 
 import { isDualLanguageStudyPlan } from '../types/studyPlan';
 import type { DualLanguageStudyPlan } from '../types/studyPlan';
@@ -55,24 +56,12 @@ export function useAppLogic() {
             .then(() => useAppStore.getState().loadStudyJamSuggestions())
             .catch(() => {});
 
-        // Hydrate past attendance from permanently-cached IDB entries
-        IndexedDBService.getAllWithKeys('meta').then(entries => {
-            const pastEntries = entries.filter(({ key }) => key.startsWith('past_semester_'));
-            const merged: Record<string, SubjectAttendance[]> = {};
-            for (const { value } of pastEntries) {
-                const att = (value as { attendance?: Record<string, SubjectAttendance[]> })?.attendance ?? {};
-                for (const [code, records] of Object.entries(att)) {
-                    if (merged[code]) {
-                        merged[code] = [...merged[code], ...records];
-                    } else {
-                        merged[code] = records;
-                    }
-                }
+        // Hydrate past attendance from iframe-side IDB cache
+        IndexedDBService.get('meta', 'past_attendance_merged').then(data => {
+            if (data && typeof data === 'object' && !Array.isArray(data)) {
+                useAppStore.getState().setPastAttendance(data as Record<string, SubjectAttendance[]>);
             }
-            if (Object.keys(merged).length > 0) {
-                useAppStore.getState().setPastAttendance(merged);
-            }
-        }).catch(() => {});
+        }).catch(e => logError('useAppLogic.hydratePastAttendance', e));
 
         let unsub: (() => void) | undefined;
         initializeStore().then(unsubscribe => {
@@ -169,6 +158,7 @@ export function useAppLogic() {
 
                 if (r.pastAttendance) {
                     useAppStore.getState().setPastAttendance(r.pastAttendance);
+                    await IndexedDBService.set('meta', 'past_attendance_merged', r.pastAttendance);
                 }
 
                 if (r.files) {

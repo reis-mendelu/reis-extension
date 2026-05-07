@@ -6,6 +6,7 @@ import { useCourseName } from '@/hooks/ui/useCourseName';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useAppStore } from '@/store/useAppStore';
 import { ZaznamnikLine } from './ZaznamnikLine';
+import { PastAttendanceDots } from './PastAttendanceDots';
 
 interface SubjectRowProps {
   subject: SubjectStatus;
@@ -47,18 +48,21 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
 
   if (compact) {
     return (
-      <button
-        onClick={handleClick}
-        className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-base-200/50 transition-colors text-left text-base-content/40"
-      >
-        {subject.isFulfilled && <CheckCircle2 className="w-3.5 h-3.5 text-success/50 shrink-0" />}
-        <span className="flex-1 text-xs truncate">{displayName}</span>
-        {subject.fulfillmentDate && (
-          <span className="text-[9px] text-base-content/30 shrink-0">{subject.fulfillmentDate}</span>
-        )}
-        {timeline && <span className="text-[9px] font-bold text-primary/60 shrink-0">{timeline.formatted}</span>}
-        {showCredits && <span className="text-[10px] shrink-0 font-medium">{subject.credits} kr.</span>}
-      </button>
+      <div className="flex flex-col">
+        <button
+          onClick={handleClick}
+          className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-base-200/50 transition-colors text-left text-base-content/40"
+        >
+          {subject.isFulfilled && <CheckCircle2 className="w-3.5 h-3.5 text-success/50 shrink-0" />}
+          <span className="flex-1 text-xs truncate">{displayName}</span>
+          {subject.fulfillmentDate && (
+            <span className="text-[9px] text-base-content/30 shrink-0">{subject.fulfillmentDate}</span>
+          )}
+          {timeline && <span className="text-[9px] font-bold text-primary/60 shrink-0">{timeline.formatted}</span>}
+          {showCredits && <span className="text-[10px] shrink-0 font-medium">{subject.credits} kr.</span>}
+        </button>
+        {subject.isFulfilled && <PastAttendanceDots courseCode={subject.code} />}
+      </div>
     );
   }
 
@@ -180,6 +184,9 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
     </button>
     {subject.isEnrolled && !subject.isFulfilled && (
       <ZaznamnikLine courseCode={subject.code} subjectId={subjectId} />
+    )}
+    {subject.isFulfilled && (
+      <PastAttendanceDots courseCode={subject.code} />
     )}
     </div>
   );
