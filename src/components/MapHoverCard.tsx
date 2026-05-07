@@ -73,7 +73,7 @@ export function MapHoverCard({ roomName, children, className }: MapHoverCardProp
 
     useEffect(() => () => cancelTimers(), []);
 
-    const normalizedRoom = roomName.replace(/\s*\(.*?\)\s*/g, '').trim();
+    const normalizedRoom = roomName.replace(/\s*\([^)]*\)\s*$/, '').trim() || roomName.trim();
     const mapUrl = `https://mm.mendelu.cz/mapwidget/embed?placeName=${encodeURIComponent(normalizedRoom)}`;
 
     const card = (

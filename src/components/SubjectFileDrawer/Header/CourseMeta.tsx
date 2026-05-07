@@ -22,7 +22,7 @@ export function CourseMeta({ lesson, courseInfo, isSearchContext }: { lesson: Bl
                                 <a href={`https://is.mendelu.cz/auth/lide/clovek.pl?;id=${lesson.teachers[0].id};lang=${language === 'cz' ? 'cz' : 'en'}`} target="_blank" rel="noopener noreferrer" className="clickable-link flex items-center gap-1"><User size={14} /><span>{lesson.teachers[0].fullName}</span></a>
                             </PersonHoverCard>
                         : <span className="flex items-center gap-1"><User size={14} /><span>{lesson.teachers.map(t => t.fullName).join(', ')}</span></span>}
-                        {lesson.teachers[0].id && <TeacherGradingPill teacherId={lesson.teachers[0].id} />}
+                        {lesson.teachers[0].id && <TeacherGradingPill teacherId={String(lesson.teachers[0].id)} />}
                     </span>
                 )}
                 {lesson?.room?.startsWith('Q') && (

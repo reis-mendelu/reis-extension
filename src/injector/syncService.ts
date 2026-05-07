@@ -184,7 +184,8 @@ async function syncSubjectDetails(subjectsValue: { data: Record<string, { folder
         let predmetIdMap: Record<string, string>;
         try {
             predmetIdMap = await fetchSeminarGroupIds(studium, obdobi);
-        } catch {
+        } catch (err) {
+            sendToIframe(Messages.telemetryError('Sync.fetchSeminarGroupIds.retry', err));
             await new Promise(r => setTimeout(r, 2000));
             predmetIdMap = await fetchSeminarGroupIds(studium, obdobi);
         }

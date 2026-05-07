@@ -49,8 +49,8 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
     const isVisible = () => !!inputWrapRef.current && inputWrapRef.current.offsetWidth > 0;
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
         if (!isVisible()) return;
+        e.preventDefault();
         inputRef.current?.focus();
         setIsOpen(true);
       }

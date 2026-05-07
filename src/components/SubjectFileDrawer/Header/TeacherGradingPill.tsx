@@ -79,7 +79,8 @@ export function TeacherGradingPill({ teacherId }: { teacherId: string }) {
 
     async function remove() {
         if (!sessionId || !voted) return;
-        await supabase.rpc('delete_subject_rating', { p_teacher_id: teacherId, p_session_id: sessionId });
+        const { error } = await supabase.rpc('delete_subject_rating', { p_teacher_id: teacherId, p_session_id: sessionId });
+        if (error) return;
         await ChromeAsyncStorage.remove(`grading_${teacherId}`);
         setCounts(prev => ({ ...prev, [voted]: Math.max(0, prev[voted] - 1) }));
         setVoted(null);
@@ -88,11 +89,12 @@ export function TeacherGradingPill({ teacherId }: { teacherId: string }) {
 
     async function vote(value: GradingValue) {
         if (!sessionId) return;
-        await supabase.rpc('upsert_subject_rating', {
+        const { error } = await supabase.rpc('upsert_subject_rating', {
             p_teacher_id: teacherId,
             p_session_id: sessionId,
             p_tag_value: value,
         });
+        if (error) return;
         await ChromeAsyncStorage.set(`grading_${teacherId}`, value);
         setCounts(prev => {
             const next = { ...prev };

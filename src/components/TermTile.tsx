@@ -56,10 +56,10 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                 {term.attemptTypes && term.attemptTypes.length > 0 && (
                     <div className="flex items-center gap-1 shrink-0">
                         {term.attemptTypes.map(type => (
-                            <div key={type} className={`flex items-center gap-1 px-2 py-0.5 rounded-md ${attemptPillClass(type)}`}>
+                            <div key={type} className={`flex items-center gap-1 px-2 py-0.5 rounded-md ${attemptPillClass(type)}`} title={t(`successRate.${type}`)}>
                                 {type === 'regular'
                                     ? <CircleCheck size={10} className={attemptIconClass(type)} />
-                                    : <RotateCcw size={10} className={attemptIconClass(type)} />}
+                                    : <><RotateCcw size={10} className={attemptIconClass(type)} /><span className={`text-[9px] font-bold leading-none ${attemptIconClass(type)}`}>{type === 'retake1' ? '1' : type === 'retake2' ? '2' : '3'}</span></>}
                             </div>
                         ))}
                     </div>
