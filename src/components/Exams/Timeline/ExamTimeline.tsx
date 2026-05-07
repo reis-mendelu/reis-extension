@@ -87,7 +87,7 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
             sectionName={resolveSectionName(item)}
             deadline={item.section?.registeredTerm?.deregistrationDeadline}
             orientation="horizontal"
-            isSelected={selectedSectionId === item.section?.id}
+            isSelected={selectedSectionId != null && selectedSectionId === item.section?.id}
             onClick={() => handleCardClick(item)}
           />
         ))}

@@ -55,11 +55,9 @@ export function ExamPanel() {
     };
 
     const handleToggleExpand = (id: string) => {
-        setExpandedId(p => {
-            const next = p === id ? null : id;
-            if (next === null) setTimelineSelectedId(null);
-            return next;
-        });
+        const next = expandedId === id ? null : id;
+        setExpandedId(next);
+        if (next === null) setTimelineSelectedId(null);
     };
     const { armedTerms, firingTerms, toggleArm } = useAutoRegistration();
     const studiumId = useAppStore(s => s.studiumId);

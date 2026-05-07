@@ -57,7 +57,7 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                             <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-error/10">
                                 <RotateCcw size={10} className="text-error" />
                                 <span className="text-[10px] font-bold text-error">
-                                    {term.attemptType === 'retake2' ? t('successRate.retake2') : '3. opravný'}
+                                    {term.attemptType === 'retake2' ? t('successRate.retake2') : t('successRate.retake3')}
                                 </span>
                             </div>
                         )}
