@@ -29,13 +29,13 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
         <div onClick={() => !disabled && onSelect()}
                 className={`relative flex flex-col w-full rounded-lg border transition-all text-left overflow-hidden ${(isArmed || isFiring) ? 'bg-warning/10 border-warning shadow-[0_0_10px_rgba(251,189,35,0.3)]' : isFuture ? 'bg-warning/5 border-warning/30' : (isFull || isClosed || isBlocked) ? 'bg-base-200 border-transparent opacity-60' : 'bg-base-100 border-transparent hover:border-primary shadow-sm cursor-pointer'}`}>
             {attemptAccent && <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${attemptAccent}`} />}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 w-full p-3.5">
-                {/* Date: Bold & Clear */}
-                <div className="flex flex-col min-w-[70px]">
-                    <span className={`text-base font-bold tracking-tight ${disabled ? 'text-base-content/40 line-through' : 'text-base-content'}`}>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 w-full p-2.5">
+                {/* Date */}
+                <div className="flex items-baseline gap-1.5 min-w-[58px]">
+                    <span className={`text-sm font-bold tracking-tight ${disabled ? 'text-base-content/30 line-through' : 'text-base-content'}`}>
                         {term.date.split('.').slice(0, 2).join('.')}
                     </span>
-                    <span className="text-[10px] uppercase font-bold tracking-wider opacity-40">
+                    <span className="text-[10px] uppercase tracking-wider opacity-25">
                         {getDayOfWeek(term.date, t)}
                     </span>
                 </div>
@@ -64,13 +64,13 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                     </div>
                 )}
 
-                {/* Time & Room: Typographic Priority */}
-                <div className="flex flex-col min-w-[60px] ml-1">
-                    <span className={`text-base font-bold ${disabled ? 'opacity-40' : 'opacity-90'}`}>
+                {/* Time & Room */}
+                <div className="flex items-baseline gap-1.5">
+                    <span className={`text-sm font-bold ${disabled ? 'opacity-30' : 'opacity-90'}`}>
                         {term.time}
                     </span>
                     {term.room && (
-                        <span className="text-[11px] truncate opacity-50 font-medium">
+                        <span className="text-[10px] truncate opacity-25">
                             {(language === 'en' && term.roomEn) ? term.roomEn : (term.roomCs || term.room)}
                         </span>
                     )}
@@ -80,11 +80,11 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                 <div className="ml-auto flex items-center justify-end gap-2 sm:gap-3 flex-wrap">
                     {isFuture ? (
                         <div className="flex items-center gap-2 sm:gap-3 justify-end flex-wrap">
-                            <div className={`flex flex-col items-end px-3 py-1.5 rounded-md border transition-colors ${isWithinSniperWindow ? 'bg-warning/10 border-warning/30' : 'bg-base-200/50 border-transparent'} min-w-0 flex-shrink-1`}>
-                                <span className={`text-[10px] font-bold ${isWithinSniperWindow ? 'text-warning' : 'opacity-40'} uppercase tracking-wider whitespace-nowrap`}>
+                            <div className={`flex flex-col items-end transition-colors ${isWithinSniperWindow ? 'text-warning' : 'text-base-content/30'}`}>
+                                <span className="text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
                                     {t('exams.opening')} {formatCountdown(msRemaining)}
                                 </span>
-                                <span className={`text-[10px] font-mono ${isWithinSniperWindow ? 'text-warning/70' : 'opacity-30'}`}>
+                                <span className="text-[10px] font-mono opacity-60">
                                     {term.registrationStart}
                                 </span>
                             </div>
@@ -132,28 +132,16 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
 
             </div>
 
-            {/* Constraints: Clearer and More Reliable */}
+            {/* Deadlines */}
             {term.registrationEnd && (
-                <div className="flex items-center gap-4 px-4 pb-3 text-[11px] font-medium border-t border-base-content/5 mt-[-2px] pt-2">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 pb-2 text-[10px] font-medium border-t border-base-content/5 pt-1.5">
                     {sameDeadline ? (
-                        <span className="flex items-center gap-1.5">
-                            <span className="w-1 h-1 rounded-full bg-base-content/30" />
-                            <span className="text-base-content/50">{t('exams.registerAndUnregisterDeadline')}</span>
-                            <b className="text-base-content/80">{term.registrationEnd}</b>
-                        </span>
+                        <span className="text-base-content/40">{t('exams.registerAndUnregisterDeadline')} <b className="text-base-content/60">{term.registrationEnd}</b></span>
                     ) : (
                         <>
-                            <span className="flex items-center gap-1.5">
-                                <span className="w-1 h-1 rounded-full bg-base-content/30" />
-                                <span className="text-base-content/50">{t('exams.registerDeadline')}</span>
-                                <b className="text-base-content/80">{term.registrationEnd}</b>
-                            </span>
+                            <span className="text-base-content/40">{t('exams.registerDeadline')} <b className="text-base-content/60">{term.registrationEnd}</b></span>
                             {term.deregistrationDeadline && (
-                                <span className="flex items-center gap-1.5">
-                                    <span className="w-1 h-1 rounded-full bg-base-content/30" />
-                                    <span className="text-base-content/50">{t('exams.unregisterDeadline')}</span>
-                                    <b className="text-base-content/80">{term.deregistrationDeadline}</b>
-                                </span>
+                                <span className="text-base-content/40">{t('exams.unregisterDeadline')} <b className="text-base-content/60">{term.deregistrationDeadline}</b></span>
                             )}
                         </>
                     )}
