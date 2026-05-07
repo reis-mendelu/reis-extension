@@ -27,7 +27,7 @@ export const ldfDataset: SocietyDataset = {
               teacherId: 'green-robert',
               registrationStart: '15.02.2026 00:00',
               registrationEnd: '19.02.2026 23:59',
-              attemptType: 'regular',
+              attemptTypes: ['regular'],
               canRegisterNow: false
             }
           ]

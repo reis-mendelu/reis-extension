@@ -34,7 +34,7 @@ describe('ExamSubjectSchema', () => {
                         teacherId: '5432',
                         registrationStart: '01.12.2025 08:00',
                         registrationEnd: '04.01.2026 23:59',
-                        attemptType: 'regular',
+                        attemptTypes: ['regular'],
                         canRegisterNow: true
                     }
                 ]
@@ -97,7 +97,7 @@ describe('ExamSubjectSchema', () => {
                     terms: [
                         {
                             ...goldStandardSubject.sections[0].terms[0],
-                            attemptType: 'invalid-type'
+                            attemptTypes: ['invalid-type']
                         }
                     ]
                 }

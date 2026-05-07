@@ -76,7 +76,7 @@ export const supefDataset: SocietyDataset = {
               teacherId: 'melicharova-alena',
               registrationStart: '01.01.2026 00:00',
               registrationEnd: '11.02.2026 23:59',
-              attemptType: 'regular',
+              attemptTypes: ['regular'],
               canRegisterNow: true
             }
           ]
@@ -106,7 +106,7 @@ export const supefDataset: SocietyDataset = {
               teacherId: 'janku-martin',
               registrationStart: '05.02.2026 00:00',
               registrationEnd: '18.02.2026 23:59',
-              attemptType: 'regular',
+              attemptTypes: ['regular'],
               canRegisterNow: true
             }
           ]
@@ -136,7 +136,7 @@ export const supefDataset: SocietyDataset = {
               teacherId: 'andrlik-bretislav',
               registrationStart: '01.02.2026 00:00',
               registrationEnd: '22.02.2026 23:59',
-              attemptType: 'regular',
+              attemptTypes: ['regular'],
               canRegisterNow: true
             }
           ]
@@ -166,7 +166,7 @@ export const supefDataset: SocietyDataset = {
               teacherId: 'zufan-pavel',
               registrationStart: '01.02.2026 00:00',
               registrationEnd: '24.02.2026 23:59',
-              attemptType: 'regular',
+              attemptTypes: ['regular'],
               canRegisterNow: true
             }
           ]
@@ -196,7 +196,7 @@ export const supefDataset: SocietyDataset = {
               teacherId: 'strelec-lubos',
               registrationStart: '01.02.2026 00:00',
               registrationEnd: '25.02.2026 23:59',
-              attemptType: 'regular',
+              attemptTypes: ['regular'],
               canRegisterNow: true
             }
           ]
@@ -226,7 +226,7 @@ export const supefDataset: SocietyDataset = {
               teacherId: 'paseka-jaroslav',
               registrationStart: '01.02.2026 00:00',
               registrationEnd: '01.03.2026 23:59',
-              attemptType: 'regular',
+              attemptTypes: ['regular'],
               canRegisterNow: true
             }
           ]
@@ -256,7 +256,7 @@ export const supefDataset: SocietyDataset = {
               teacherId: 'prichystal-jan',
               registrationStart: '01.02.2026 00:00',
               registrationEnd: '02.03.2026 23:59',
-              attemptType: 'regular',
+              attemptTypes: ['regular'],
               canRegisterNow: true
             }
           ]

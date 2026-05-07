@@ -38,15 +38,15 @@ export function TermsSummary({ terms, sectionState }: { terms: ExamTerm[], secti
                             className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold ${
                                 term.full || (term.capacity && term.capacity.occupied >= term.capacity.total)
                                     ? 'bg-base-200 text-base-content/30'
-                                    : term.attemptType && term.attemptType !== 'regular'
+                                    : term.attemptTypes?.some(t => t !== 'regular')
                                         ? 'bg-warning/10 text-warning/80'
                                         : term.canRegisterNow === true
                                             ? 'bg-success/10 text-success/80'
                                             : 'bg-primary/5 text-primary/70'
                             }`}
                         >
-                            {term.attemptType === 'regular' && <CircleCheck size={9} className="shrink-0" />}
-                            {term.attemptType && term.attemptType !== 'regular' && <RotateCcw size={9} className="shrink-0" />}
+                            {term.attemptTypes?.includes('regular') && !term.attemptTypes?.some(t => t !== 'regular') && <CircleCheck size={9} className="shrink-0" />}
+                            {term.attemptTypes?.some(t => t !== 'regular') && <RotateCcw size={9} className="shrink-0" />}
                             {term.date.split('.').slice(0, 2).join('.')}
                         </div>
                     ))}
