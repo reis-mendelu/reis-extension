@@ -99,15 +99,18 @@ export async function fetchDualLanguageSubjects(studium?: string, obdobi?: strin
         const czUrl = buildListUrl('cz', studium, obdobi);
         const enUrl = buildListUrl('en', studium, obdobi);
 
-        // Fetch both in parallel
-        const [czRes, enRes] = await Promise.all([
+        // Fetch both in parallel; fetch without obdobi separately to get the period picker dropdown
+        const periodsUrl = buildListUrl('cz', studium);
+        const [czRes, enRes, periodsRes] = await Promise.all([
             fetchWithAuth(czUrl),
-            fetchWithAuth(enUrl)
+            fetchWithAuth(enUrl),
+            obdobi ? fetchWithAuth(periodsUrl) : Promise.resolve(null),
         ]);
 
         const czHtml = await czRes.text();
         const attendance = parseAttendance(czHtml);
         const enHtml = await enRes.text();
+        const periodsHtml = periodsRes ? await periodsRes.text() : czHtml;
 
         const czMap = parseSubjectFolders(czHtml);
         const enMap = parseSubjectFolders(enHtml);
@@ -148,7 +151,7 @@ export async function fetchDualLanguageSubjects(studium?: string, obdobi?: strin
         };
 
         const result = SubjectsDataSchema.safeParse(subjectsData);
-        const availablePeriods = parseAvailablePeriods(czHtml);
+        const availablePeriods = parseAvailablePeriods(periodsHtml);
         return { subjects: result.success ? result.data : subjectsData, attendance, availablePeriods };
     } catch (e) {
         logError('Api.fetchDualLanguageSubjects', e);

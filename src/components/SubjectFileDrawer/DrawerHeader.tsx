@@ -5,6 +5,7 @@ import { HeaderActions } from './Header/HeaderActions';
 import { CourseMeta } from './Header/CourseMeta';
 import { EditableCourseTitle } from './Header/EditableCourseTitle';
 import { HeaderTabs } from './Header/HeaderTabs';
+import { ZaznamnikLine } from '../SubjectsPanel/ZaznamnikLine';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTimeline } from '../../hooks/useTimeline';
 
@@ -90,6 +91,7 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
                 })()}
             </div>
             <CourseMeta lesson={lesson && 'date' in lesson ? lesson as BlockLesson : null} courseInfo={courseInfo} isSearchContext={!!isSearch} />
+            {courseCode && <ZaznamnikLine courseCode={courseCode} subjectId={subjectInfo?.subjectId} className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2 mb-1" />}
             <HeaderTabs
                 activeTab={activeTab}
                 onTabChange={onTabChange}
