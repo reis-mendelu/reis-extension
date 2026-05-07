@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { SearchBar } from './SearchBar/index';
 import { MobileSearchOverlay } from './SearchBar/MobileSearchOverlay';
 import { useTranslation } from '../hooks/useTranslation';
@@ -36,6 +36,15 @@ export function AppHeader({
 }: AppHeaderProps) {
   const { t } = useTranslation();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const openIfMobile = () => { if (window.innerWidth < 768) setMobileSearchOpen(true); };
+    const onKey = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key === 'k') openIfMobile(); };
+    const onMsg = (e: MessageEvent) => { if (e.data?.type === 'REIS_OPEN_SEARCH') openIfMobile(); };
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('message', onMsg);
+    return () => { document.removeEventListener('keydown', onKey); window.removeEventListener('message', onMsg); };
+  }, []);
   const teachingWeekData = useAppStore(s => s.teachingWeekData);
   const viewedWeek = useMemo(() => {
     if (!teachingWeekData || !currentDate) return null;

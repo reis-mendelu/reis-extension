@@ -73,7 +73,8 @@ export function MapHoverCard({ roomName, children, className }: MapHoverCardProp
 
     useEffect(() => () => cancelTimers(), []);
 
-    const mapUrl = `https://mm.mendelu.cz/mapwidget/embed?placeName=${encodeURIComponent(roomName)}`;
+    const normalizedRoom = roomName.replace(/\s*\(.*?\)\s*/g, '').trim();
+    const mapUrl = `https://mm.mendelu.cz/mapwidget/embed?placeName=${encodeURIComponent(normalizedRoom)}`;
 
     const card = (
         <AnimatePresence>
@@ -109,7 +110,7 @@ export function MapHoverCard({ roomName, children, className }: MapHoverCardProp
                    <div className="px-3 py-2 bg-base-100 border-t border-base-300 flex items-center justify-between">
                         <span className="text-xs font-bold text-base-content/70 flex items-center gap-1.5">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
-                            {roomName}
+                            {normalizedRoom}
                         </span>
                         <a 
                             href={mapUrl.replace('/embed', '')} 
