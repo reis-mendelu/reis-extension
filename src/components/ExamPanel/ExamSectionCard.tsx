@@ -112,9 +112,6 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
             {isExpanded && section.terms.length > 0 && (
                 <div className="p-3 pt-0">
                     <div className="mt-1 pt-4 border-t border-base-200">
-                        <div className="text-[10px] font-black uppercase tracking-widest opacity-30 mb-3 ml-1">
-                            {t('exams.clickToRegister')}
-                        </div>
                         <div className="flex flex-col gap-2">
                             {section.terms.map(term => (
                                 <TermTile
