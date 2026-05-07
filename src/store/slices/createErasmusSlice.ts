@@ -106,7 +106,7 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
       const data = await fetchErasmusReports(file);
       if (data) set({ erasmusData: data });
     } catch (err) {
-      loggers.ui.error('[ErasmusSlice] Fetch failed:', err);
+      logError('ErasmusSlice.setErasmusCountry', err);
     } finally {
       set({ erasmusLoading: false });
     }
@@ -116,7 +116,7 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
       const data = await fetchErasmusConfigApi();
       if (data) set({ erasmusConfig: data });
     } catch (err) {
-      loggers.ui.error('[ErasmusSlice] Config fetch failed:', err);
+      logError('ErasmusSlice.fetchErasmusConfig', err);
     }
   },
   fetchErasmusReports: async () => {
@@ -130,7 +130,7 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
       const data = await fetchErasmusReports(file);
       if (data) set({ erasmusData: data });
     } catch (err) {
-      loggers.ui.error('[ErasmusSlice] Fetch failed:', err);
+      logError('ErasmusSlice.fetchErasmusReports', err);
     } finally {
       set({ erasmusLoading: false });
     }

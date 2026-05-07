@@ -12,5 +12,9 @@ export function logError(context: string, err: unknown, extra?: Record<string, u
     if (stack) payload.stack = stack;
     if (extra) Object.assign(payload, extra);
     console.error(`[reIS:error] ${context}: ${msg}`, payload);
-    sendTelemetry(context, err);
+    try {
+        sendTelemetry(context, err);
+    } catch (telemetryErr) {
+        console.warn('[reIS:error] telemetry dispatch failed', telemetryErr);
+    }
 }

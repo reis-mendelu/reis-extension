@@ -112,6 +112,17 @@ describe('sanitizeFilePath', () => {
         const out = sanitizeFilePath(long);
         expect(out.length).toBeLessThanOrEqual(500);
     });
+
+    it('scrubs mendelu.cz URLs in non-extension paths', () => {
+        const out = sanitizeFilePath('https://intranet.mendelu.cz/scripts/main.js');
+        expect(out).not.toContain('mendelu.cz');
+        expect(out).not.toContain('intranet');
+    });
+
+    it('scrubs email addresses in non-extension paths', () => {
+        const out = sanitizeFilePath('/app/student@mendelu.cz/bundle.js');
+        expect(out).not.toContain('@');
+    });
 });
 
 describe('getBrowserInfo', () => {
