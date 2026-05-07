@@ -8,11 +8,12 @@ reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enha
 ## Data Collection
 We collect the following information:
 
-### 1. Academic Data (Local Only)
-We fetch and store the following information directly from the IS Mendelu website to your device:
+### 1. Academic & Dining Data (Local Only)
+We fetch and store the following information directly from MENDELU services to your device:
 - **Student Information**: Name, personal number (UIC), and study details.
 - **Academic Data**: Schedules, grades, exam dates, success rates, and course materials.
-- **Authentication Data**: Session cookies required to make authenticated requests to IS Mendelu on your behalf.
+- **Dining Data**: Your canteen profile and meal reservations from WebISKAM (`webiskam.mendelu.cz`).
+- **Authentication Data**: Session cookies required to make authenticated requests to IS Mendelu and WebISKAM on your behalf.
 
 This data is stored **locally on your device** using highly efficient storage (IndexedDB) and is **never** transmitted to our servers.
 
@@ -57,9 +58,10 @@ When an unhandled error or warning occurs in the extension, a sanitized diagnost
 
 ## Third-Party Access
 The extension communicates exclusively with:
-1.  **IS Mendelu servers** (`*.mendelu.cz`): To fetch your academic data (Authenticated by you).
-2.  **Supabase** (`*.supabase.co`): To fetch public notifications, store anonymous interaction stats, manage tutoring participation data if you opt in, and receive sanitized error diagnostic reports.
-3.  **Discord** (`discord.com`): To deliver your feedback messages to the developers (only when you submit feedback).
+1.  **IS Mendelu** (`is.mendelu.cz`): To fetch your academic data (authenticated by you).
+2.  **WebISKAM** (`webiskam.mendelu.cz`): To display your canteen profile and meal reservations. The extension replaces the WebISKAM page with its own interface; all dining data remains local.
+3.  **Supabase** (`*.supabase.co`): To fetch public notifications, store anonymous interaction stats, manage tutoring participation data if you opt in, and receive sanitized error diagnostic reports.
+4.  **Discord** (`discord.com`): To deliver your feedback messages to the developers (only when you submit feedback).
 
 ## User Control
 You have full control over your data:
