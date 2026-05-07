@@ -181,7 +181,14 @@ async function syncSubjectDetails(subjectsValue: { data: Record<string, { folder
 
     try {
         // predmetIdMap: { [predmetId]: skupinaId }
-        const predmetIdMap = await fetchSeminarGroupIds(studium, obdobi);
+        let predmetIdMap: Record<string, string>;
+        try {
+            predmetIdMap = await fetchSeminarGroupIds(studium, obdobi);
+        } catch (err) {
+            sendToIframe(Messages.telemetryError('Sync.fetchSeminarGroupIds.retry', err));
+            await new Promise(r => setTimeout(r, 2000));
+            predmetIdMap = await fetchSeminarGroupIds(studium, obdobi);
+        }
         if (!cachedData.classmates) cachedData.classmates = {};
 
         // Build tasks by iterating enrolled subjects and matching their subjectId

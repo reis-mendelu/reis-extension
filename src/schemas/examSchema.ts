@@ -28,7 +28,7 @@ export const ExamTermSchema = z.object({
     registrationStart: z.string().optional(),
     registrationEnd: z.string().optional(),
     deregistrationDeadline: z.string().optional(),
-    attemptType: z.enum(['regular', 'retake1', 'retake2', 'retake3']).optional(),
+    attemptTypes: z.array(z.enum(['regular', 'retake1', 'retake2', 'retake3'])).optional(),
     canRegisterNow: z.boolean().optional(),
 });
 

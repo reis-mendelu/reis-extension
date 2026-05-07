@@ -63,6 +63,10 @@ async function handleFetchRequest(id: string, url: string, options?: { method?: 
                 method: options?.method ?? "GET", headers: options?.headers,
                 body: options?.body, credentials: "include",
             });
+            if (response.status === 401 || response.status === 403) {
+                window.location.href = "https://is.mendelu.cz/system/login.pl?lang=cz";
+                throw new Error(`HTTP ${response.status}`);
+            }
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             text = await response.text();
         } else {

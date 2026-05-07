@@ -36,7 +36,7 @@ export const esnDataset: SocietyDataset = {
               teacherId: 'smith-john',
               registrationStart: '01.02.2026 00:00',
               registrationEnd: '14.02.2026 23:59',
-              attemptType: 'regular',
+              attemptTypes: ['regular'],
               canRegisterNow: true
             }
           ]
@@ -66,7 +66,7 @@ export const esnDataset: SocietyDataset = {
               teacherId: 'novakova-anna',
               registrationStart: '05.02.2026 00:00',
               registrationEnd: '17.02.2026 23:59',
-              attemptType: 'regular',
+              attemptTypes: ['regular'],
               canRegisterNow: true
             }
           ]

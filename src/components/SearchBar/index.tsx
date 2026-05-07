@@ -46,8 +46,10 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
   }, [setIsOpen]);
 
   useEffect(() => {
+    const isVisible = () => !!inputWrapRef.current && inputWrapRef.current.offsetWidth > 0;
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        if (!isVisible()) return;
         e.preventDefault();
         inputRef.current?.focus();
         setIsOpen(true);
@@ -55,6 +57,7 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
     };
     const handleParentMessage = (e: MessageEvent) => {
       if (e.data?.type === 'REIS_OPEN_SEARCH') {
+        if (!isVisible()) return;
         inputRef.current?.focus();
         setIsOpen(true);
       }

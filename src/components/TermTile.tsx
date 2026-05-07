@@ -12,6 +12,17 @@ const attemptAccentClass: Record<string, string> = {
     retake3: 'bg-error/50',
 };
 
+function attemptPillClass(type: string) {
+    if (type === 'regular') return 'bg-success/10';
+    if (type === 'retake1') return 'bg-warning/10';
+    return 'bg-error/10';
+}
+function attemptIconClass(type: string) {
+    if (type === 'regular') return 'text-success';
+    if (type === 'retake1') return 'text-warning';
+    return 'text-error';
+}
+
 export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSelect, isProcessing = false }: { term: ExamTerm; section?: ExamSection; isArmed?: boolean; isFiring?: boolean; onToggleArm?: () => void; onSelect: () => void; isProcessing?: boolean }) {
     const { t, language } = useTranslation();
     const now = useAppStore(s => s.now);
@@ -23,7 +34,8 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
     const isBlocked = term.canRegisterNow === false && !isFuture && !isFull;
     const disabled = isFull || isProcessing || isFuture || isClosed || isBlocked;
     const sameDeadline = term.registrationEnd && term.deregistrationDeadline && term.registrationEnd === term.deregistrationDeadline;
-    const attemptAccent = term.attemptType ? attemptAccentClass[term.attemptType] ?? '' : '';
+    const primaryAttempt = term.attemptTypes?.find(t => t !== 'regular') ?? term.attemptTypes?.[0];
+    const attemptAccent = primaryAttempt ? attemptAccentClass[primaryAttempt] ?? '' : '';
 
     return (
         <div onClick={() => !disabled && onSelect()}
@@ -40,27 +52,16 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                     </span>
                 </div>
 
-                {/* Attempt type pill */}
-                {term.attemptType && (
-                    <div className="flex items-center shrink-0">
-                        {term.attemptType === 'regular' ? (
-                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-success/10">
-                                <CircleCheck size={10} className="text-success" />
-                                <span className="text-[10px] font-bold text-success">{t('successRate.regular')}</span>
+                {/* Attempt type pills — one per type; regular shows icon only */}
+                {term.attemptTypes && term.attemptTypes.length > 0 && (
+                    <div className="flex items-center gap-1 shrink-0">
+                        {term.attemptTypes.map(type => (
+                            <div key={type} className={`flex items-center gap-1 px-2 py-0.5 rounded-md ${attemptPillClass(type)}`} title={t(`successRate.${type}`)}>
+                                {type === 'regular'
+                                    ? <CircleCheck size={10} className={attemptIconClass(type)} />
+                                    : <><RotateCcw size={10} className={attemptIconClass(type)} /><span className={`text-[9px] font-bold leading-none ${attemptIconClass(type)}`}>{type === 'retake1' ? '1' : type === 'retake2' ? '2' : '3'}</span></>}
                             </div>
-                        ) : term.attemptType === 'retake1' ? (
-                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-warning/10">
-                                <RotateCcw size={10} className="text-warning" />
-                                <span className="text-[10px] font-bold text-warning">{t('successRate.retake1')}</span>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-error/10">
-                                <RotateCcw size={10} className="text-error" />
-                                <span className="text-[10px] font-bold text-error">
-                                    {term.attemptType === 'retake2' ? t('successRate.retake2') : t('successRate.retake3')}
-                                </span>
-                            </div>
-                        )}
+                        ))}
                     </div>
                 )}
 

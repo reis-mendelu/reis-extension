@@ -54,14 +54,21 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
             }
         }
 
-        let attemptType: 'regular' | 'retake1' | 'retake2' | 'retake3' | undefined;
+        // A single term can serve multiple attempt types (e.g. both řádný and 1. opravný).
+        // IS Mendelu uses sysid="termin-radny" / "termin-opravny-1" etc. on <img> tags in the Typ termínu cell.
+        const attemptTypes: ('regular' | 'retake1' | 'retake2' | 'retake3')[] = [];
+        const sysidMap: Record<string, 'regular' | 'retake1' | 'retake2' | 'retake3'> = {
+            'termin-radny': 'regular',
+            'termin-opravny-1': 'retake1',
+            'termin-opravny-2': 'retake2',
+            'termin-opravny-3': 'retake3',
+        };
         for (let i = 0; i < cols.length; i++) {
-            const text = (cols[i].innerHTML + (cols[i].querySelector('img')?.getAttribute('alt') || '') + (cols[i].querySelector('img')?.getAttribute('title') || '')).toLowerCase();
-            if (text.includes('opravný 3') || text.includes('3rd resit')) attemptType = 'retake3';
-            else if (text.includes('opravný 2') || text.includes('2nd resit')) attemptType = 'retake2';
-            else if (text.includes('opravný 1') || text.includes('opravný') || text.includes('resit')) attemptType = 'retake1';
-            else if (text.includes('řádný') || text.includes('first sit')) attemptType = 'regular';
-            if (attemptType) break;
+            cols[i].querySelectorAll('img[sysid]').forEach(img => {
+                const mapped = sysidMap[img.getAttribute('sysid') || ''];
+                if (mapped && !attemptTypes.includes(mapped)) attemptTypes.push(mapped);
+            });
+            if (attemptTypes.length > 0) break;
         }
 
         const subject = getOrCreateSubject(code, name);
@@ -78,7 +85,7 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
             registrationStart,
             registrationEnd,
             deregistrationDeadline,
-            attemptType, 
+            attemptTypes: attemptTypes.length > 0 ? attemptTypes : undefined,
             canRegisterNow: !!row.querySelector('a[href*="prihlasit_ihned=1"]') && !isFull,
             roomCs: isEn ? undefined : room,
             roomEn: isEn ? room : undefined

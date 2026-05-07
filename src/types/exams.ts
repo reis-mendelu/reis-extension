@@ -27,7 +27,7 @@ export interface ExamTerm {
     registrationStart?: string;  // When registration opens
     registrationEnd?: string;    // When registration closes
     deregistrationDeadline?: string;  // When deregistration closes (format: "DD.MM.YYYY HH:MM")
-    attemptType?: 'regular' | 'retake1' | 'retake2' | 'retake3';  // Exam attempt type
+    attemptTypes?: ('regular' | 'retake1' | 'retake2' | 'retake3')[];  // One or more attempt types (e.g. a term can serve as both regular and retake)
     canRegisterNow?: boolean;  // True if registration link is available now
 }
 

@@ -5,6 +5,7 @@ import type { BlockLesson } from '../../../types/calendarTypes';
 import type { CourseMetadata } from '../../../types/documents';
 import { PersonHoverCard } from '../../PersonHoverCard';
 import { MapHoverCard } from '../../MapHoverCard';
+import { TeacherGradingPill } from './TeacherGradingPill';
 export function CourseMeta({ lesson, courseInfo, isSearchContext }: { lesson: BlockLesson | null; courseInfo: CourseMetadata | undefined; isSearchContext: boolean }) {
     const [expanded, setExpanded] = useState(false);
     const { t, language } = useTranslation();
@@ -15,11 +16,14 @@ export function CourseMeta({ lesson, courseInfo, isSearchContext }: { lesson: Bl
                 <div className="flex items-center gap-4 text-sm text-base-content/60 flex-wrap">
                     {/* ... teachers, rooms, etc. */}
                 {lesson?.teachers && lesson.teachers.length > 0 && (
-                    lesson.teachers[0].id ?
-                        <PersonHoverCard personId={String(lesson.teachers[0].id)} className="flex items-center gap-1">
-                            <a href={`https://is.mendelu.cz/auth/lide/clovek.pl?;id=${lesson.teachers[0].id};lang=${language === 'cz' ? 'cz' : 'en'}`} target="_blank" rel="noopener noreferrer" className="clickable-link flex items-center gap-1"><User size={14} /><span>{lesson.teachers[0].fullName}</span></a>
-                        </PersonHoverCard>
-                    : <span className="flex items-center gap-1"><User size={14} /><span>{lesson.teachers.map(t => t.fullName).join(', ')}</span></span>
+                    <span className="inline-flex items-center gap-1.5">
+                        {lesson.teachers[0].id ?
+                            <PersonHoverCard personId={String(lesson.teachers[0].id)} className="flex items-center gap-1">
+                                <a href={`https://is.mendelu.cz/auth/lide/clovek.pl?;id=${lesson.teachers[0].id};lang=${language === 'cz' ? 'cz' : 'en'}`} target="_blank" rel="noopener noreferrer" className="clickable-link flex items-center gap-1"><User size={14} /><span>{lesson.teachers[0].fullName}</span></a>
+                            </PersonHoverCard>
+                        : <span className="flex items-center gap-1"><User size={14} /><span>{lesson.teachers.map(t => t.fullName).join(', ')}</span></span>}
+                        {lesson.teachers[0].id && <TeacherGradingPill teacherId={String(lesson.teachers[0].id)} />}
+                    </span>
                 )}
                 {lesson?.room?.startsWith('Q') && (
                     <MapHoverCard roomName={lesson.room} className="flex items-center">

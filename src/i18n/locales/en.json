@@ -291,6 +291,12 @@
       "add": "Add note...",
       "placeholder": "Your note for this file...",
       "badge": "1 note"
+    },
+    "teacherRating": {
+      "strict": "strict",
+      "fair": "fair",
+      "generous": "generous",
+      "rate": "rate?"
     }
   },
   "syllabus": {
