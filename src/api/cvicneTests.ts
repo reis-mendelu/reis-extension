@@ -1,3 +1,5 @@
+import { logError } from '../utils/reportError';
+
 export interface CvicnyTest {
     courseId: string;
     courseNameCs: string;
@@ -66,7 +68,7 @@ async function fetchLang(studium: string, lang: 'cz' | 'en'): Promise<RawTest[] 
 
         return tests;
     } catch (error) {
-        console.error("Error fetching cvicne testy:", error);
+        logError('Api.fetchCvicneTests', error);
         return null;
     }
 }

@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
+import { logError } from '../../utils/reportError';
 
 export function useDocumentNoteKeys(courseCode: string) {
     const [noteKeys, setNoteKeys] = useState<Set<string>>(new Set());
@@ -26,7 +27,7 @@ export function useDocumentNoteKeys(courseCode: string) {
                 setNoteKeys(links);
             })
             .catch((error) => {
-                console.warn('[useDocumentNoteKeys] Failed to load:', error);
+                logError('useDocumentNoteKeys.load', error);
             });
     }, [courseCode]);
 

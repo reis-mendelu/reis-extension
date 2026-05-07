@@ -1,7 +1,7 @@
 import type { SubjectsSlice, AppSlice, CourseDeadline } from '../types';
 import type { SubjectAttendance } from '../../types/documents';
 import { IndexedDBService } from '../../services/storage';
-import { sendTelemetry } from '../../services/errorReporter/telemetry';
+import { logError } from '../../utils/reportError';
 
 export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
     subjects: null,
@@ -29,8 +29,7 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
                 subjectsLoading: false,
             });
         } catch (e) {
-            console.warn('[SubjectsSlice] fetchSubjects failed:', e);
-            sendTelemetry('SubjectsSlice.fetchSubjects', e);
+            logError('SubjectsSlice.fetchSubjects', e);
             set({ subjectsLoading: false });
         }
     },
@@ -50,7 +49,7 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
         }
 
         set({ courseNicknames: newNicknames });
-        IndexedDBService.set('meta', 'course_nicknames', newNicknames).catch(console.error);
+        IndexedDBService.set('meta', 'course_nicknames', newNicknames).catch(e => logError('SubjectsSlice.setCourseNickname', e));
     },
     setCourseDeadlines: (courseCode, deadlines) => {
         const currentDeadlines = get().courseDeadlines;
@@ -63,6 +62,6 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
         }
 
         set({ courseDeadlines: newDeadlines });
-        IndexedDBService.set('meta', 'course_deadlines', newDeadlines).catch(console.error);
+        IndexedDBService.set('meta', 'course_deadlines', newDeadlines).catch(e => logError('SubjectsSlice.setCourseDeadlines', e));
     }
 });

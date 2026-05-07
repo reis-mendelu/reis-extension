@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { registerExam, unregisterExam } from '../api/exams';
 import { useExams } from '../hooks/data';
 import { useAppStore } from '../store/useAppStore';
+import { logError } from '../utils/reportError';
 import type { ExamSection, ExamTerm } from '../types/exams';
 
 export function useExamDrawerLogic(isOpen: boolean) {
@@ -24,7 +25,7 @@ export function useExamDrawerLogic(isOpen: boolean) {
             }
             if (await registerExam(termId)) { await fetchExams(); setPopupSection(null); }
             else alert("Reg failed");
-        } catch (e) { console.error(e); } finally { setProcessingId(null); }
+        } catch (e) { logError('useExamDrawerLogic.register', e); } finally { setProcessingId(null); }
     }, [fetchExams]);
 
     useEffect(() => {

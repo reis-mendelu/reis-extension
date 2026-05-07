@@ -1,5 +1,5 @@
-import { isIframeMessage } from '../types/messages';
-import { iskamIframeElement, markIskamIframeReady } from './iskamInjector';
+import { isIframeMessage, Messages } from '../types/messages';
+import { iskamIframeElement, markIskamIframeReady, sendToIskamIframe } from './iskamInjector';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
 import { fetchVolneKapacityBlock } from '../api/iskam/volneKapacity';
 
@@ -25,7 +25,7 @@ export async function handleIskamMessage(event: MessageEvent): Promise<void> {
                 iskamIframeElement?.contentWindow?.postMessage({ type: 'ISKAM_BLOCK_RESULT', id, rooms }, IFRAME_ORIGIN);
             })
             .catch(err => {
-                console.error('[reIS:iskam] ISKAM_FETCH_BLOCK error, blockId:', blockId, err);
+                sendToIskamIframe(Messages.telemetryError('IskamMessageHandler.fetchBlock', err));
                 iskamIframeElement?.contentWindow?.postMessage({ type: 'ISKAM_BLOCK_RESULT', id, rooms: [] }, IFRAME_ORIGIN);
             });
         return;
@@ -35,7 +35,7 @@ export async function handleIskamMessage(event: MessageEvent): Promise<void> {
         try {
             await IndexedDBService.clearAll();
         } catch (error) {
-            console.warn('[reIS:iskam] IndexedDB clear failed during logout', error);
+            sendToIskamIframe(Messages.telemetryError('IskamMessageHandler.logout:clearAll', error));
         }
         try {
             const form = document.createElement('form');

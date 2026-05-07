@@ -1,5 +1,6 @@
 import type { ClassmatesSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
+import { logError } from '../../utils/reportError';
 
 /**
  * Classmates slice — IDB-read-only pattern (mirrors files slice).
@@ -25,7 +26,7 @@ export const createClassmatesSlice: AppSlice<ClassmatesSlice> = (set, get) => ({
                 classmatesLoading: { ...s.classmatesLoading, [courseCode]: false },
             }));
         } catch (error) {
-            console.error(`[ClassmatesSlice] Error loading from IDB for ${courseCode}:`, error);
+            logError('ClassmatesSlice.fetchClassmates', error, { courseCode });
             set((s) => ({
                 classmates: { ...s.classmates, [courseCode]: [] },
                 classmatesLoading: { ...s.classmatesLoading, [courseCode]: false },

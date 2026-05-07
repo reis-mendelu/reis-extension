@@ -2,6 +2,7 @@
  
 import { fetchWithAuth, BASE_URL } from "./client";
 import { IndexedDBService } from "../services/storage";
+import { logError } from "../utils/reportError";
 
 const ID_URL = `${BASE_URL}/auth/student/studium.pl`;
 
@@ -24,7 +25,7 @@ export async function fetchUserId(): Promise<string | null> {
         }
         return null;
     } catch (error) {
-        console.error("Failed to fetch user ID:", error);
+        logError('Api.fetchUserId', error);
         return null;
     }
 }
@@ -40,7 +41,7 @@ export async function getUserId(): Promise<string | null> {
             return fetchedId;
         }
     } catch (err) {
-        console.error("[api/user] Failed to get user ID:", err);
+        logError('Api.getUserId', err);
     }
 
     return null;

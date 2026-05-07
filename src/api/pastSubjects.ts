@@ -1,4 +1,5 @@
 import { fetchWithAuth, BASE_URL } from "./client";
+import { logError } from "../utils/reportError";
 
 const PAST_SUBJECTS_TREE_URL = `${BASE_URL}/auth/dok_server/strom_od.pl?id=6`;
 
@@ -15,7 +16,7 @@ export async function fetchPastSubjectFolders(lang: string = 'cz'): Promise<Reco
         const html = await response.text();
         return parsePastSubjectTree(html);
     } catch (e) {
-        console.warn('[pastSubjects] fetchPastSubjectFolders failed:', e);
+        logError('Api.fetchPastSubjectFolders', e, { lang });
         return {};
     }
 }

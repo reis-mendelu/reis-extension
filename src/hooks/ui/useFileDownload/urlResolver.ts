@@ -1,3 +1,5 @@
+import { logError } from '../../../utils/reportError';
+
 export async function resolveFinalFileUrl(link: string): Promise<string> {
     link = link.replace(/\?;/g, '?').replace(/;/g, '&');
     const auth = "https://is.mendelu.cz/auth", root = "https://is.mendelu.cz";
@@ -21,7 +23,7 @@ export async function resolveFinalFileUrl(link: string): Promise<string> {
                     else full = `${auth}/dok_server/${h}`;
                 }
             }
-        } catch (e) { console.warn(e); }
+        } catch (e) { logError('urlResolver.resolveFinalFileUrl', e); }
     }
     return full;
 }

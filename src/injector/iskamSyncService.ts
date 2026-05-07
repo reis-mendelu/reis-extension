@@ -23,7 +23,6 @@ export async function syncIskamData(): Promise<void> {
             window.location.href = `${ISKAM_BASE}/ObjednavkyStravovani`;
             return;
         }
-        console.error('[reIS:iskam] sync error', err);
         sendToIskamIframe(Messages.telemetryError('IskamSyncService.syncIskamData', err));
         sendToIskamIframe(IskamMessages.iskamSyncUpdate(cachedIskamData, false, 'network'));
     } finally {

@@ -74,7 +74,7 @@ export async function fetchDualLanguageStudyPlan(studium: string): Promise<DualL
 
         return { cz: czPlan, en: enPlan };
     } catch (e) {
-        console.error('[Study Plan API] Failed to fetch or parse:', e);
+        logError('Api.fetchDualLanguageStudyPlan', e);
         return null;
     }
 }

@@ -3,6 +3,7 @@ import { requestQueue, processWithDelay } from "../../utils/requestQueue";
 import { parseServerFiles } from "./parser";
 import { fetchSubjects } from "../subjects";
 import { validateUrl } from "../../utils/validation/index";
+import { logError } from "../../utils/reportError";
 import type { ParsedFile, FileAttachment } from "../../types/documents";
 
 export async function fetchDocumentsForSubject(subjectCode: string): Promise<FileAttachment[]> {
@@ -47,12 +48,12 @@ export async function fetchFilesFromFolder(
                 const { files: pageFiles } = parseServerFiles(pageText);
                 
                 if (pageFiles.length === 0) {
-                    console.warn(`[fetchFilesFromFolder] Pagination page ${pageUrl} returned 0 files, possibly non-standard grouping.`);
+                    logError('Documents.paginationEmpty', new Error('pagination page returned 0 files'));
                 }
-                
+
                 return pageFiles;
             } catch (err) {
-                console.warn(`[fetchFilesFromFolder] Paged ${pageUrl} failed, skipping:`, err);
+                logError('Documents.paginationFetch', err);
                 return [];
             }
         });
@@ -67,7 +68,10 @@ export async function fetchFilesFromFolder(
         }, 0);
 
         if (totalRecords !== undefined && baseFilesCount < totalRecords) {
-            console.warn(`[fetchFilesFromFolder] Integrity warning for ${folderUrl}: Expected ${totalRecords} items, but parsed ${baseFilesCount}. IS may group multiple files in one row.`);
+            logError(
+                'Documents.integrityMismatch',
+                new Error(`expected ${totalRecords} items, parsed ${baseFilesCount}`),
+            );
         }
 
         if (recursive && currentDepth < maxDepth) {
@@ -87,7 +91,7 @@ export async function fetchFilesFromFolder(
                     results.forEach(r => r.subfolder = f.name);
                     return results;
                 } catch (err) {
-                    console.error(`[fetchFilesFromFolder] Subfolder ${f.name} failed (recurse depth ${currentDepth}):`, err);
+                    logError('Documents.subfolderFetch', err, { depth: currentDepth });
                     return []; // Resilience: return empty array instead of failing the whole fetch
                 }
             }, 200);
@@ -114,7 +118,7 @@ export async function fetchFilesFromFolder(
 
         return finalResults;
     } catch (e) {
-        console.error(`[fetchFilesFromFolder] Failed to fetch folder ${folderUrl}:`, e);
+        logError('Documents.fetchFilesFromFolder', e);
         throw e;
     }
 }

@@ -1,6 +1,6 @@
 import type { HiddenItemsSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
-import { sendTelemetry } from '../../services/errorReporter/telemetry';
+import { logError } from '../../utils/reportError';
 
 export const createHiddenItemsSlice: AppSlice<HiddenItemsSlice> = (set, get) => ({
   hiddenItems: {
@@ -15,8 +15,7 @@ export const createHiddenItemsSlice: AppSlice<HiddenItemsSlice> = (set, get) => 
         set({ hiddenItems: data });
       }
     } catch (error) {
-      console.error('Failed to load hidden items:', error);
-      sendTelemetry('HiddenItemsSlice.loadHiddenItems', error);
+      logError('HiddenItemsSlice.loadHiddenItems', error);
     }
   },
 

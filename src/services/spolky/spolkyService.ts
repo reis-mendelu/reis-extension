@@ -1,6 +1,7 @@
 import type { SpolekNotification, AssociationProfile } from './types';
 import { FACULTY_TO_ASSOCIATION, ASSOCIATION_PROFILES } from './config';
 import { supabase } from './supabaseClient';
+import { logError } from '../../utils/reportError';
 
 // ... rest of imports
 
@@ -20,8 +21,7 @@ export async function trackNotificationsViewed(notificationIds: string[]): Promi
       )
     );
   } catch (error) {
-    // Fail silently but log error
-    console.error(error);
+    logError('Spolky.trackNotificationsViewed', error);
   }
 }
 
@@ -33,11 +33,9 @@ export async function trackNotificationClick(notificationId: string): Promise<vo
   if (!notificationId) return;
 
   try {
-    // Call Supabase RPC to increment click count
     await supabase.rpc('increment_notification_click', { row_id: notificationId });
   } catch (error) {
-    // Fail silently
-    console.error(error);
+    logError('Spolky.trackNotificationClick', error);
   }
 }
 

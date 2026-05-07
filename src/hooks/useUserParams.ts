@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logError } from '../utils/reportError';
 import { getUserParams } from '../utils/userParams';
 import type { UserParams } from '../utils/userParams';
 
@@ -16,7 +17,7 @@ export function useUserParams() {
                     setParams(data);
                 }
             } catch (error) {
-                console.error("Error in useUserParams:", error);
+                logError('useUserParams', error);
             } finally {
                 if (mounted) {
                     setLoading(false);

@@ -3,6 +3,7 @@
 import { fetchWithAuth, BASE_URL } from "./client";
 import type { SubjectInfo, SubjectsData, SubjectAttendance, AttendanceRecord, AttendanceStatus, AvailablePeriod } from "../types/documents";
 import { SubjectsDataSchema } from "../schemas/subjectSchema";
+import { logError } from "../utils/reportError";
 
 const STUDENT_LIST_URL = `${BASE_URL}/auth/student/list.pl`;
 
@@ -25,7 +26,7 @@ export async function fetchSubjects(lang: string = 'cz', studium?: string): Prom
             return subjectsData;
         }
     } catch (e) {
-        console.warn('[subjects] fetchSubjects failed:', e);
+        logError('Api.fetchSubjects', e, { lang });
         return null;
     }
 }
@@ -85,7 +86,7 @@ export async function fetchPastSemesterData(studium: string, obdobi: string): Pr
         const subjectsData: SubjectsData = { version: 1, lastUpdated: new Date().toISOString(), data: merged };
         return { subjects: subjectsData, attendance, availablePeriods: [] };
     } catch (e) {
-        console.warn('[subjects] fetchPastSemesterData failed:', e);
+        logError('Api.fetchPastSemesterData', e);
         return null;
     }
 }
@@ -150,7 +151,7 @@ export async function fetchDualLanguageSubjects(studium?: string, obdobi?: strin
         const availablePeriods = parseAvailablePeriods(czHtml);
         return { subjects: result.success ? result.data : subjectsData, attendance, availablePeriods };
     } catch (e) {
-        console.warn('[subjects] fetchDualLanguageSubjects failed:', e);
+        logError('Api.fetchDualLanguageSubjects', e);
         return null;
     }
 }

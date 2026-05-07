@@ -1,6 +1,7 @@
 import { fetchWithAuth, BASE_URL } from './client';
 import { parseOptionalInt } from '../utils/parsers/parserGuards';
 import type { GradeHistory, CourseGrade } from '../types/documents';
+import { logError } from '../utils/reportError';
 
 export async function fetchGradeHistory(
     studium: string,
@@ -27,7 +28,7 @@ export async function fetchGradeHistory(
 
         return result;
     } catch (e) {
-        console.warn('[gradeHistory] fetchGradeHistory failed:', e);
+        logError('Api.fetchGradeHistory', e);
         return null;
     }
 }

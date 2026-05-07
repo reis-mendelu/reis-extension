@@ -3,6 +3,7 @@
 import { fetchWithAuth, BASE_URL } from "./client";
 import { parseSyllabusOffline } from "../utils/parsers/syllabusParser";
 import type { SyllabusRequirements } from "../types/documents";
+import { logError } from "../utils/reportError";
 
 /**
  * Fetch syllabus requirements for a specific subject.
@@ -21,7 +22,7 @@ export async function fetchSyllabus(predmetId: string, lang: string = 'cz'): Pro
 
         return parsed;
     } catch (error) {
-        console.error(`[fetchSyllabus] Failed for predmetId ${predmetId}:`, error);
+        logError('Api.fetchSyllabus', error, { predmetId, lang });
         
         // Return empty structure on error (graceful degradation)
         return {
@@ -99,7 +100,7 @@ export async function findSubjectId(courseCode: string, subjectName?: string): P
         return bestMatchId;
         
     } catch (error) {
-        console.error(`[findSubjectId] Error searching for ${courseCode}:`, error);
+        logError('Api.findSubjectId', error, { courseCode });
         return null;
     }
 }

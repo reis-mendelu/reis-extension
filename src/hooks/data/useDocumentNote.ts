@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
+import { logError } from '../../utils/reportError';
 import type { DocumentNote } from '../../types/documents';
 
 const MAX_NOTE_LENGTH = 500;
@@ -33,7 +34,7 @@ export function useDocumentNote(courseCode: string, fileLink: string | undefined
             : IndexedDBService.delete('document_notes', key);
 
         op.then(() => { hasChangesRef.current = false; })
-            .catch((error) => { console.warn('[useDocumentNote] Failed to save:', error); });
+            .catch((error) => { logError('useDocumentNote.save', error); });
     }, []);
 
     useEffect(() => {
@@ -62,7 +63,7 @@ export function useDocumentNote(courseCode: string, fileLink: string | undefined
                 setIsLoading(false);
             })
             .catch((error) => {
-                console.warn('[useDocumentNote] Failed to load:', error);
+                logError('useDocumentNote.load', error);
                 if (currentKeyRef.current !== key) return;
                 setNoteState('');
                 noteRef.current = '';

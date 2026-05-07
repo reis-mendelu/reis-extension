@@ -3,6 +3,7 @@ import { fetchEvents } from '../api/events';
 import { useEventsFacultySettings } from './useEventsFacultySettings';
 import { useAppStore } from '../store/useAppStore';
 import { IndexedDBService } from '../services/storage';
+import { logError } from '../utils/reportError';
 import type { MendeluEvent } from '../types/events';
 
 const CACHE_PREFIX = 'reis_events_cache_';
@@ -30,7 +31,7 @@ export function useEventsFeed() {
       setAllEvents(events);
       IndexedDBService.set('meta', cacheKey, events);
     } catch (e) {
-      console.warn('[useEventsFeed] Fetch failed:', e);
+      logError('useEventsFeed.load', e);
     } finally {
       setLoading(false);
     }

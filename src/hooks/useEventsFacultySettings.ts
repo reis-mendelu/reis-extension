@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { IndexedDBService } from '../services/storage';
 import { getUserParams } from '../utils/userParams';
+import { logError } from '../utils/reportError';
 import type { FacultyKey } from '../types/events';
 import { FACULTY_LABEL_TO_KEY } from '../types/events';
 
@@ -28,7 +29,7 @@ export function useEventsFacultySettings() {
 
       setSubscribedFaculties(saved);
     } catch (err) {
-      console.warn('[useEventsFacultySettings] Failed to load:', err);
+      logError('useEventsFacultySettings.load', err);
     } finally {
       setIsLoading(false);
     }
@@ -51,7 +52,7 @@ export function useEventsFacultySettings() {
       await IndexedDBService.set('meta', STORAGE_KEY, next);
       window.dispatchEvent(new Event(CHANGE_EVENT));
     } catch (err) {
-      console.warn('[useEventsFacultySettings] Failed to save:', err);
+      logError('useEventsFacultySettings.save', err);
     }
   };
 

@@ -2,6 +2,7 @@ import { fetchWithAuth, BASE_URL } from "./client";
 import { getUserId } from "./user";
 import { getScheduleFormat } from "../utils/date";
 import { getUserParams } from "../utils/userParams";
+import { logError } from "../utils/reportError";
 import type { BlockLesson, ScheduleData } from "../types/schedule";
 
 const SCHEDULE_URL = `${BASE_URL}/auth/katalog/rozvrhy_view.pl`;
@@ -70,11 +71,11 @@ export async function fetchWeekSchedule(specific?: { start: Date, end: Date }, l
             const data: ScheduleData = JSON.parse(text);
             return data.blockLessons || [];
         } catch (e) {
-            console.warn('[schedule] JSON parse failed:', e);
+            logError('Api.fetchWeekSchedule:jsonParse', e);
             return null;
         }
     } catch (error) {
-        console.error("[fetchWeekSchedule] Error fetching schedule:", error);
+        logError('Api.fetchWeekSchedule', error, { lang });
         return null;
     }
 }
@@ -119,7 +120,7 @@ export async function fetchDualLanguageSchedule(dateRange: { start: Date, end: D
 
         return merged;
     } catch (error) {
-        console.error('[fetchDualLanguageSchedule] Error:', error);
+        logError('Api.fetchDualLanguageSchedule', error);
         return null;
     }
 }

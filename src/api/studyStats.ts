@@ -1,5 +1,6 @@
 import { fetchWithAuth, BASE_URL } from "./client";
 import type { StudyStats, SemesterStats } from "../types/studyPlan";
+import { logError } from "../utils/reportError";
 
 const STATS_URL = `${BASE_URL}/auth/student/pruchod_studiem.pl`;
 
@@ -10,7 +11,7 @@ export async function fetchStudyStats(studium: string, obdobi: string): Promise<
         const doc = new DOMParser().parseFromString(html, 'text/html');
         return parseStudyStats(doc);
     } catch (e) {
-        console.error('[Study Stats API] Failed to fetch:', e);
+        logError('Api.fetchStudyStats', e);
         return null;
     }
 }

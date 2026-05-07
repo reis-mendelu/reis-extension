@@ -1,6 +1,7 @@
 import { IndexedDBService } from "../services/storage";
 import { STORAGE_KEYS } from "../services/storage/keys";
 import { fetchUserBaseIds, fetchUserStudyDetails, fetchUserNetId } from "./userParams/fetchers";
+import { logError } from "./reportError";
 
 export interface UserParams {
     studium: string; obdobi: string; facultyId: string; username: string; email?: string;
@@ -38,7 +39,7 @@ export async function getUserParams(): Promise<UserParams | null> {
             await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, params);
             _cached = params;
             return params;
-        } catch (e) { console.warn('[getUserParams] failed:', e); return null; }
+        } catch (e) { logError('getUserParams', e); return null; }
     })();
 
     try { return await _inflight; } finally { _inflight = null; }

@@ -1,5 +1,6 @@
 import { fetchWithAuth } from './client';
 import { getStudium } from '../utils/userParams';
+import { logError } from '../utils/reportError';
 
 const PREHLED_URL = 'https://is.mendelu.cz/auth/ca/prehled_tydnu.pl';
 
@@ -73,7 +74,7 @@ export async function fetchTeachingWeeks(): Promise<TeachingWeekData | null> {
         const html = await res.text();
         return parseTeachingWeeks(html);
     } catch (e) {
-        console.warn('[teachingWeek] fetchTeachingWeeks failed:', e);
+        logError('Api.fetchTeachingWeeks', e);
         return null;
     }
 }

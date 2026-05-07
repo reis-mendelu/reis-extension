@@ -1,3 +1,5 @@
+import { logError } from '../utils/reportError';
+
 export interface KontrolaData {
     datumNarozeni: string; // ISO date: "YYYY-MM-DD"
 }
@@ -33,7 +35,7 @@ export async function fetchKontrolaData(): Promise<KontrolaData | null> {
         }
         return null;
     } catch (e) {
-        console.error('[kontrola] fetch error:', e);
+        logError('Api.fetchKontrolaData', e);
         return null;
     }
 }
