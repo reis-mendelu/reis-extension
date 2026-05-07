@@ -61,16 +61,10 @@ export async function fetchFilesFromFolder(
         const extraResults = await Promise.all(pageRequests);
         allFiles.push(...extraResults.flat());
 
-        // Count actual file attachments (excluding subfolder links)
-        const baseFilesCount = allFiles.reduce((acc, f) => {
-            const fileCount = f.files.filter(fi => fi.link.includes('download') || !fi.link.includes('slozka.pl')).length;
-            return acc + fileCount;
-        }, 0);
-
-        if (totalRecords !== undefined && baseFilesCount < totalRecords) {
+        if (totalRecords !== undefined && allFiles.length < totalRecords) {
             logError(
                 'Documents.integrityMismatch',
-                new Error(`expected ${totalRecords} items, parsed ${baseFilesCount}`),
+                new Error(`expected ${totalRecords} items, parsed ${allFiles.length}`),
             );
         }
 
