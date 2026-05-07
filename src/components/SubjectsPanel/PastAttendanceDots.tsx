@@ -41,7 +41,8 @@ export function PastAttendanceDots({ courseCode }: PastAttendanceDotsProps) {
         return { dots: all.slice(-12), presentCount: present, totalCount: total };
     }, [groups]);
 
-    const hasAnything = dots.length > 0 || hasPrubezne || hasTest;
+    const hasLinkContext = Boolean(studium && subjectId);
+    const hasAnything = dots.length > 0 || (hasLinkContext && (hasPrubezne || hasTest));
     if (!hasAnything) return null;
 
     const buildUrl = (extra: string) =>

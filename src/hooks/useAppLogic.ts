@@ -11,6 +11,7 @@ import { signalReady, requestData, isInIframe } from '../api/proxyClient';
 import type { AppView, SelectedSubject } from '../types/app';
 import { isContentMessage } from '../types/messages';
 import { sendTelemetry } from '../services/errorReporter/telemetry';
+import { logError } from '../utils/reportError';
 
 import { isDualLanguageStudyPlan } from '../types/studyPlan';
 import type { DualLanguageStudyPlan } from '../types/studyPlan';
@@ -60,7 +61,7 @@ export function useAppLogic() {
             if (data && typeof data === 'object' && !Array.isArray(data)) {
                 useAppStore.getState().setPastAttendance(data as Record<string, SubjectAttendance[]>);
             }
-        }).catch(() => {});
+        }).catch(e => logError('useAppLogic.hydratePastAttendance', e));
 
         let unsub: (() => void) | undefined;
         initializeStore().then(unsubscribe => {

@@ -101,10 +101,14 @@ export async function fetchDualLanguageSubjects(studium?: string, obdobi?: strin
 
         // Fetch both in parallel; fetch without obdobi separately to get the period picker dropdown
         const periodsUrl = buildListUrl('cz', studium);
+        const periodsPromise = obdobi
+            ? fetchWithAuth(periodsUrl).catch(() => null)
+            : Promise.resolve(null);
+
         const [czRes, enRes, periodsRes] = await Promise.all([
             fetchWithAuth(czUrl),
             fetchWithAuth(enUrl),
-            obdobi ? fetchWithAuth(periodsUrl) : Promise.resolve(null),
+            periodsPromise,
         ]);
 
         const czHtml = await czRes.text();
