@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import ExamItem from './ExamItem';
-import { TimelineDrawer } from './TimelineDrawer';
 import { useTranslation } from '../../../hooks/useTranslation';
 import type { ExamSection } from '../../../types/exams';
 
@@ -16,14 +15,12 @@ interface ExamTimelineProps {
   orientation?: 'vertical' | 'horizontal';
   className?: string;
   onSelectItem?: (item: TimelineExam) => void;
-  onUnregister?: (section: ExamSection) => void;
-  onChangeTerm?: (section: ExamSection, termId: string) => void;
-  processingSectionId?: string | null;
+  selectedSectionId?: string | null;
 }
 
 const ExamTimeline: React.FC<ExamTimelineProps> = ({
   exams, orientation = 'vertical', className = '',
-  onSelectItem, onUnregister, onChangeTerm, processingSectionId
+  onSelectItem, selectedSectionId
 }) => {
   const { t, language } = useTranslation();
 
@@ -32,8 +29,6 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
     if (!s) return undefined;
     return (language === 'en' ? s.nameEn : s.nameCs) || s.name || undefined;
   };
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
   const parseDateTime = (d: string, tStr: string) => {
     const parts = d.split('.').map(p => p.trim()).filter(p => p.length > 0);
     return new Date(+parts[2], +parts[1] - 1, +parts[0], ...tStr.split(':').map(Number) as [number, number]);
@@ -44,11 +39,8 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
   );
 
   const isHorizontal = orientation === 'horizontal';
-  const selectedExam = selectedId ? sortedExams.find(e => e.term.id === selectedId) ?? null : null;
 
   const handleCardClick = (exam: TimelineExam) => {
-    const id = exam.term.id;
-    setSelectedId(p => p === id ? null : id);
     onSelectItem?.(exam);
   };
 
@@ -95,20 +87,12 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
             sectionName={resolveSectionName(item)}
             deadline={item.section?.registeredTerm?.deregistrationDeadline}
             orientation="horizontal"
-            isSelected={selectedId === item.term.id}
+            isSelected={selectedSectionId != null && selectedSectionId === item.section?.id}
             onClick={() => handleCardClick(item)}
           />
         ))}
       </div>
 
-      {selectedExam?.section && (
-        <TimelineDrawer
-          exam={selectedExam}
-          onUnregister={onUnregister}
-          onChangeTerm={onChangeTerm}
-          isProcessing={processingSectionId === selectedExam.section.id}
-        />
-      )}
     </>
   );
 };

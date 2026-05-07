@@ -1,9 +1,16 @@
-import { CircleCheck, RotateCcw, Zap } from 'lucide-react';
+import { RotateCcw, Zap, CircleCheck } from 'lucide-react';
 import type { ExamTerm, ExamSection } from '../types/exams';
 import { getDayOfWeek, parseRegistrationStart, formatCountdown } from '../utils/termUtils';
 import { useTranslation } from '../hooks/useTranslation';
 import { useAppStore } from '../store/useAppStore';
 import { SNIPER_WINDOW_MS } from './ExamPanel/useAutoRegistration';
+
+const attemptAccentClass: Record<string, string> = {
+    regular: 'bg-success/50',
+    retake1: 'bg-warning/50',
+    retake2: 'bg-error/50',
+    retake3: 'bg-error/50',
+};
 
 export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSelect, isProcessing = false }: { term: ExamTerm; section?: ExamSection; isArmed?: boolean; isFiring?: boolean; onToggleArm?: () => void; onSelect: () => void; isProcessing?: boolean }) {
     const { t, language } = useTranslation();
@@ -16,44 +23,54 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
     const isBlocked = term.canRegisterNow === false && !isFuture && !isFull;
     const disabled = isFull || isProcessing || isFuture || isClosed || isBlocked;
     const sameDeadline = term.registrationEnd && term.deregistrationDeadline && term.registrationEnd === term.deregistrationDeadline;
+    const attemptAccent = term.attemptType ? attemptAccentClass[term.attemptType] ?? '' : '';
 
     return (
         <div onClick={() => !disabled && onSelect()}
-                className={`flex flex-col w-full rounded-lg border transition-all text-left ${(isArmed || isFiring) ? 'bg-warning/10 border-warning shadow-[0_0_10px_rgba(251,189,35,0.3)]' : isFuture ? 'bg-warning/5 border-warning/30' : (isFull || isClosed || isBlocked) ? 'bg-base-200 opacity-60' : 'bg-base-100 hover:border-primary shadow-sm cursor-pointer'}`}>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 w-full p-3.5">
-                {/* Date: Bold & Clear */}
-                <div className="flex flex-col min-w-[70px]">
-                    <span className={`text-base font-bold tracking-tight ${disabled ? 'text-base-content/40 line-through' : 'text-base-content'}`}>
+                className={`relative flex flex-col w-full rounded-lg border transition-all text-left overflow-hidden ${(isArmed || isFiring) ? 'bg-warning/10 border-warning shadow-[0_0_10px_rgba(251,189,35,0.3)]' : isFuture ? 'bg-warning/5 border-warning/30' : (isFull || isClosed || isBlocked) ? 'bg-base-200 border-transparent opacity-60' : 'bg-base-100 border-transparent hover:border-primary shadow-sm cursor-pointer'}`}>
+            {attemptAccent && <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${attemptAccent}`} />}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 w-full p-2.5">
+                {/* Date */}
+                <div className="flex items-baseline gap-1.5 min-w-[58px]">
+                    <span className={`text-sm font-bold tracking-tight ${disabled ? 'text-base-content/30 line-through' : 'text-base-content'}`}>
                         {term.date.split('.').slice(0, 2).join('.')}
                     </span>
-                    <span className="text-[10px] uppercase font-bold tracking-wider opacity-40">
+                    <span className="text-[10px] uppercase tracking-wider opacity-25">
                         {getDayOfWeek(term.date, t)}
                     </span>
                 </div>
 
-                {/* Status Icon */}
+                {/* Attempt type pill */}
                 {term.attemptType && (
                     <div className="flex items-center shrink-0">
                         {term.attemptType === 'regular' ? (
-                            <CircleCheck size={16} className="text-success/70" />
-                        ) : (
-                            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-warning/10 border border-warning/20">
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-success/10">
+                                <CircleCheck size={10} className="text-success" />
+                                <span className="text-[10px] font-bold text-success">{t('successRate.regular')}</span>
+                            </div>
+                        ) : term.attemptType === 'retake1' ? (
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-warning/10">
                                 <RotateCcw size={10} className="text-warning" />
-                                <span className="text-[10px] font-black text-warning">
-                                    {term.attemptType === 'retake1' ? '1' : term.attemptType === 'retake2' ? '2' : '3'}
+                                <span className="text-[10px] font-bold text-warning">{t('successRate.retake1')}</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-error/10">
+                                <RotateCcw size={10} className="text-error" />
+                                <span className="text-[10px] font-bold text-error">
+                                    {term.attemptType === 'retake2' ? t('successRate.retake2') : t('successRate.retake3')}
                                 </span>
                             </div>
                         )}
                     </div>
                 )}
 
-                {/* Time & Room: Typographic Priority */}
-                <div className="flex flex-col min-w-[60px] ml-1">
-                    <span className={`text-base font-bold ${disabled ? 'opacity-40' : 'opacity-90'}`}>
+                {/* Time & Room */}
+                <div className="flex items-baseline gap-1.5">
+                    <span className={`text-sm font-bold ${disabled ? 'opacity-30' : 'opacity-90'}`}>
                         {term.time}
                     </span>
                     {term.room && (
-                        <span className="text-[11px] truncate opacity-50 font-medium">
+                        <span className="text-[10px] truncate opacity-25">
                             {(language === 'en' && term.roomEn) ? term.roomEn : (term.roomCs || term.room)}
                         </span>
                     )}
@@ -63,11 +80,11 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                 <div className="ml-auto flex items-center justify-end gap-2 sm:gap-3 flex-wrap">
                     {isFuture ? (
                         <div className="flex items-center gap-2 sm:gap-3 justify-end flex-wrap">
-                            <div className={`flex flex-col items-end px-3 py-1.5 rounded-md border transition-colors ${isWithinSniperWindow ? 'bg-warning/10 border-warning/30' : 'bg-base-200/50 border-transparent'} min-w-0 flex-shrink-1`}>
-                                <span className={`text-[10px] font-bold ${isWithinSniperWindow ? 'text-warning' : 'opacity-40'} uppercase tracking-wider whitespace-nowrap`}>
+                            <div className={`flex flex-col items-end transition-colors ${isWithinSniperWindow ? 'text-warning' : 'text-base-content/30'}`}>
+                                <span className="text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
                                     {t('exams.opening')} {formatCountdown(msRemaining)}
                                 </span>
-                                <span className={`text-[10px] font-mono ${isWithinSniperWindow ? 'text-warning/70' : 'opacity-30'}`}>
+                                <span className="text-[10px] font-mono opacity-60">
                                     {term.registrationStart}
                                 </span>
                             </div>
@@ -87,58 +104,44 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                             )}
                         </div>
                     ) : (
-                        term.capacity && (
-                            <div className="flex items-center gap-3">
-                                <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-3">
+                            {isProcessing ? (
+                                <span className="loading loading-spinner loading-sm text-primary" />
+                            ) : (isClosed || isBlocked) ? (
+                                <span className="text-[10px] font-bold opacity-30 uppercase tracking-wider">{t('exams.closed')}</span>
+                            ) : term.capacity ? (
+                                <>
                                     <div className="flex items-center gap-2">
-                                        <progress 
-                                            className={`progress w-12 h-1 ${disabled ? 'progress-error' : 'progress-primary'} opacity-60`} 
-                                            value={Math.min(100, (term.capacity.occupied / term.capacity.total) * 100)} 
-                                            max="100" 
+                                        <progress
+                                            className={`progress w-12 h-1 ${isFull ? 'progress-error' : 'progress-primary'} opacity-60`}
+                                            value={Math.min(100, (term.capacity.occupied / term.capacity.total) * 100)}
+                                            max="100"
                                         />
-                                        <span className={`text-[11px] font-bold ${isFull ? 'text-error' : 'opacity-60'}`}>
-                                            {isFull ? t('exams.full') : (isClosed || isBlocked) ? t('exams.closed') : term.capacity.raw}
+                                        <span className={`text-[11px] font-bold ${isFull ? 'text-error/60' : 'opacity-60'}`}>
+                                            {isFull ? t('exams.full') : term.capacity.raw}
                                         </span>
                                     </div>
-                                </div>
-                                <div className="w-[100px] flex justify-end">
-                                    {isProcessing ? (
-                                        <span className="loading loading-spinner loading-sm text-primary"></span>
-                                    ) : (isFull || isClosed || isBlocked) ? (
-                                        <span className="text-error/40 text-lg font-bold">✕</span>
-                                    ) : (
+                                    {!isFull && (
                                         <span className="btn btn-primary btn-sm px-4 font-bold">{t('exams.register')}</span>
                                     )}
-                                </div>
-                            </div>
-                        )
+                                </>
+                            ) : null}
+                        </div>
                     )}
                 </div>
 
             </div>
 
-            {/* Constraints: Clearer and More Reliable */}
+            {/* Deadlines */}
             {term.registrationEnd && (
-                <div className="flex items-center gap-4 px-4 pb-3 text-[11px] font-medium border-t border-base-content/5 mt-[-2px] pt-2">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 pb-2 text-[10px] font-medium border-t border-base-content/5 pt-1.5">
                     {sameDeadline ? (
-                        <span className="flex items-center gap-1.5">
-                            <span className="w-1 h-1 rounded-full bg-base-content/30" />
-                            <span className="text-base-content/50">{t('exams.registerAndUnregisterDeadline')}</span>
-                            <b className="text-base-content/80">{term.registrationEnd}</b>
-                        </span>
+                        <span className="text-base-content/40">{t('exams.registerAndUnregisterDeadline')} <b className="text-base-content/60">{term.registrationEnd}</b></span>
                     ) : (
                         <>
-                            <span className="flex items-center gap-1.5">
-                                <span className="w-1 h-1 rounded-full bg-base-content/30" />
-                                <span className="text-base-content/50">{t('exams.registerDeadline')}</span>
-                                <b className="text-base-content/80">{term.registrationEnd}</b>
-                            </span>
+                            <span className="text-base-content/40">{t('exams.registerDeadline')} <b className="text-base-content/60">{term.registrationEnd}</b></span>
                             {term.deregistrationDeadline && (
-                                <span className="flex items-center gap-1.5">
-                                    <span className="w-1 h-1 rounded-full bg-base-content/30" />
-                                    <span className="text-base-content/50">{t('exams.unregisterDeadline')}</span>
-                                    <b className="text-base-content/80">{term.deregistrationDeadline}</b>
-                                </span>
+                                <span className="text-base-content/40">{t('exams.unregisterDeadline')} <b className="text-base-content/60">{term.deregistrationDeadline}</b></span>
                             )}
                         </>
                     )}
