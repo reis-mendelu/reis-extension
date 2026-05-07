@@ -6,6 +6,7 @@ import { useAppStore } from '../store/useAppStore';
 import { SNIPER_WINDOW_MS } from './ExamPanel/useAutoRegistration';
 
 const attemptAccentClass: Record<string, string> = {
+    regular: 'bg-success/50',
     retake1: 'bg-warning/50',
     retake2: 'bg-error/50',
     retake3: 'bg-error/50',
