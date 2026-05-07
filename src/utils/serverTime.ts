@@ -1,6 +1,4 @@
-/**
- * Utility for fetching and synchronizing with IS Mendelu server time.
- */
+import { logError } from './reportError';
 
 let cachedOffset: number | null = null;
 let offsetPromise: Promise<number> | null = null;
@@ -52,7 +50,7 @@ export async function fetchServerTimeOffset(forceRefresh: boolean = false): Prom
             return offsetMs;
             
         } catch (error) {
-            console.error("[AutoReg TimeSync] Failed to sync clock with server:", error);
+            logError('serverTime.syncOffset', error);
             cachedOffset = 0; // Fallback to 0 offset (trust local clock) on failure
             return 0;
         } finally {

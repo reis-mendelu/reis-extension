@@ -7,6 +7,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { PagePinnerModal } from './PagePinnerModal';
 import { IndexedDBService } from '../../services/storage';
+import { logError } from '../../utils/reportError';
 
 interface NavItemProps {
   item: MenuItem;
@@ -30,7 +31,7 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
     if (item.id === 'is' && isHovered && pinnedPages.length === 0) {
       IndexedDBService.get('meta', 'pin_hint_dismissed').then(dismissed => {
         if (!dismissed) setShowPinHint(true);
-      }).catch(console.error);
+      }).catch(e => logError('NavItem.checkPinHint', e));
     }
   }, [item.id, isHovered, pinnedPages.length]);
 
@@ -167,7 +168,7 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
                     setPinnerOpen(true); 
                     if (showPinHint) {
                       setShowPinHint(false);
-                      IndexedDBService.set('meta', 'pin_hint_dismissed', true).catch(console.error);
+                      IndexedDBService.set('meta', 'pin_hint_dismissed', true).catch(e => logError('NavItem.dismissPinHint', e));
                     }
                   }}
                   className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-base-content/40 hover:bg-base-200 hover:text-primary transition-colors relative"

@@ -6,6 +6,7 @@ import { IndexedDBService } from '../../services/storage';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useOutlookSync } from '../../hooks/data/useOutlookSync';
 import { useAppStore } from '../../store/useAppStore';
+import { logError } from '../../utils/reportError';
 
 export function WelcomeModal() {
     const [isVisible, setIsVisible] = useState(false);
@@ -23,7 +24,7 @@ export function WelcomeModal() {
                     return () => clearTimeout(timer);
                 }
             } catch (err) {
-                console.error('[WelcomeModal] Failed to check status:', err);
+                logError('WelcomeModal.checkStatus', err);
             }
         }
         checkWelcome();
@@ -39,7 +40,7 @@ export function WelcomeModal() {
 
     const handleDismiss = () => {
         setIsVisible(false);
-        IndexedDBService.set('meta', 'welcome_dismissed', true).catch(console.error);
+        IndexedDBService.set('meta', 'welcome_dismissed', true).catch(e => logError('WelcomeModal.dismiss', e));
     };
 
 

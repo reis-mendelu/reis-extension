@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { resolveFinalFileUrl } from './useFileDownload/urlResolver';
+import { logError } from '../../utils/reportError';
 
 export interface FileInfo { url: string; name: string; subfolder?: string; }
 export interface UseFileDownloadOptions { onRefreshUrls?: () => Promise<FileInfo[] | null>; onDownloadStart?: () => void; onDownloadComplete?: () => void; onError?: (error: Error) => void; }
@@ -47,7 +48,7 @@ export function useFileDownload(options: UseFileDownloadOptions = {}) {
                     let name = m?.[1] || f.name;
                     if (f.subfolder) name = `${f.subfolder.replace(/^\/|\/$/g, '').replace(/\//g, '_')}_${name}`;
                     zip.file(name, await r.blob());
-                } catch (e) { console.warn(e); }
+                } catch (e) { logError('useFileDownload.zipEntry', e); }
             }));
             saveAs(await zip.generateAsync({ type: 'blob' }), `${zipName}.zip`);
             onDownloadComplete?.();

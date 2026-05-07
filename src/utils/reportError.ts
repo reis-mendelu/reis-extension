@@ -1,5 +1,9 @@
-// Console logger for non-fatal errors. Use sendTelemetry() to also forward
-// to Supabase — logError() is console-only and never transmits data.
+// Single entry point for non-fatal errors.
+// - Always console.error with stack + extras (local debugging).
+// - Forwards (context, err) to sendTelemetry — only the sanitized message is
+//   transmitted; `extra` stays local. Safe to call before initTelemetry().
+
+import { sendTelemetry } from '../services/errorReporter/telemetry';
 
 export function logError(context: string, err: unknown, extra?: Record<string, unknown>): void {
     const msg = err instanceof Error ? err.message : String(err);
@@ -8,4 +12,9 @@ export function logError(context: string, err: unknown, extra?: Record<string, u
     if (stack) payload.stack = stack;
     if (extra) Object.assign(payload, extra);
     console.error(`[reIS:error] ${context}: ${msg}`, payload);
+    try {
+        sendTelemetry(context, err);
+    } catch (telemetryErr) {
+        console.warn('[reIS:error] telemetry dispatch failed', telemetryErr);
+    }
 }

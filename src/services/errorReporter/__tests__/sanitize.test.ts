@@ -18,6 +18,17 @@ describe('sanitizeMessage', () => {
         expect(out).not.toContain('mendelu.cz');
     });
 
+    it('strips non-MENDELU email addresses', () => {
+        const out = sanitizeMessage('Erasmus contact alice.smith@uni-foo.de bounced');
+        expect(out).not.toContain('alice.smith@uni-foo.de');
+    });
+
+    it('strips arbitrary mendelu.cz subdomains', () => {
+        const out = sanitizeMessage('fetch https://intranet.mendelu.cz/x?id=123 failed');
+        expect(out).not.toContain('intranet.mendelu.cz');
+        expect(out).not.toContain('id=123');
+    });
+
     it('strips Bearer tokens', () => {
         const out = sanitizeMessage('401 with Bearer eyJhbGciOiJIUzI1NiJ9.foo');
         expect(out).not.toContain('eyJhbGciOiJIUzI1NiJ9.foo');
@@ -100,6 +111,17 @@ describe('sanitizeFilePath', () => {
         const long = 'chrome-extension://abc/' + 'a/'.repeat(500) + 'main.js';
         const out = sanitizeFilePath(long);
         expect(out.length).toBeLessThanOrEqual(500);
+    });
+
+    it('scrubs mendelu.cz URLs in non-extension paths', () => {
+        const out = sanitizeFilePath('https://intranet.mendelu.cz/scripts/main.js');
+        expect(out).not.toContain('mendelu.cz');
+        expect(out).not.toContain('intranet');
+    });
+
+    it('scrubs email addresses in non-extension paths', () => {
+        const out = sanitizeFilePath('/app/student@mendelu.cz/bundle.js');
+        expect(out).not.toContain('@');
     });
 });
 

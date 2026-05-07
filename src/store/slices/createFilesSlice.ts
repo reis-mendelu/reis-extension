@@ -1,7 +1,6 @@
 import type { FilesSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
-import { sendTelemetry } from '../../services/errorReporter/telemetry';
 import type { ParsedFile } from '../../types/documents';
 
 export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
@@ -112,7 +111,6 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
             }));
         } catch (e) {
             logError('FilesSlice.fetchFilesPriority', e, { courseCode });
-            sendTelemetry('FilesSlice.fetchFilesPriority', e);
             set((state) => ({
                 files: { ...state.files, [courseCode]: [] },
                 filesLoading: { ...state.filesLoading, [courseCode]: false },
@@ -176,7 +174,6 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
             }));
         } catch (e) {
             logError('FilesSlice.refreshFiles', e, { courseCode });
-            sendTelemetry('FilesSlice.refreshFiles', e);
             set((state) => ({
                 files: { ...state.files, [courseCode]: state.files[courseCode] ?? [] },
                 filesLoading: { ...state.filesLoading, [courseCode]: false }
@@ -212,6 +209,6 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                 }
             }
             set({ files: filesMap });
-        } catch (e) { logError('FilesSlice.fetchAllFiles', e); sendTelemetry('FilesSlice.fetchAllFiles', e); }
+        } catch (e) { logError('FilesSlice.fetchAllFiles', e); }
     },
 });

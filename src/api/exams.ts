@@ -4,6 +4,7 @@ import { parseExamData } from "../utils/parsers/exams";
 import type { ExamSubject } from "../types/exams";
 import { fetchWithAuth } from "./client";
 import { getUserParams } from "../utils/userParams";
+import { logError } from "../utils/reportError";
 
 /**
  * Result of exam registration/unregistration.
@@ -52,7 +53,7 @@ export async function fetchExamData(lang: string = 'cz'): Promise<ExamSubject[]>
         const data = parseExamData(html, lang);
         return data;
     } catch (error) {
-        console.error("Error fetching exam data:", error);
+        logError('Api.fetchExamData', error, { lang });
         return [];
     }
 }
@@ -117,7 +118,7 @@ export async function fetchDualLanguageExams(): Promise<ExamSubject[]> {
 
         return merged;
     } catch (error) {
-        console.error('[exams] Error fetching dual language exams:', error);
+        logError('Api.fetchDualLanguageExams', error);
         return fetchExamData('cz'); // Fallback to CZ
     }
 }
@@ -150,7 +151,7 @@ export async function registerExam(termId: string): Promise<ExamActionResult> {
         return { success: false, error: 'Registrace se nepodařila ověřit. Zkontrolujte v IS.' };
         
     } catch (error) {
-        console.error("Error registering for exam:", error);
+        logError('Api.registerExam', error);
         return { success: false, error: 'Chyba připojení. Zkuste to znovu.' };
     }
 }
@@ -169,7 +170,7 @@ export async function unregisterExam(termId: string): Promise<ExamActionResult> 
         return { success: true };
         
     } catch (error) {
-        console.error("Error unregistering from exam:", error);
+        logError('Api.unregisterExam', error);
         return { success: false, error: 'Chyba připojení. Zkuste to znovu.' };
     }
 }

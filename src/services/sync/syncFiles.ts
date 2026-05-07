@@ -4,6 +4,7 @@
 
 import { IndexedDBService } from '../storage';
 import { fetchFilesFromFolder } from '../../api/documents';
+import { logError } from '../../utils/reportError';
 
 function getIdFromUrl(url: string): string | null {
     const match = url.match(/[?&;]id=(\d+)/);
@@ -40,7 +41,7 @@ export async function syncFiles(): Promise<void> {
                 en: Array.isArray(enFiles) ? enFiles : []
             });
         } catch (e) {
-            console.error(`[syncFiles] Failed for ${courseCode}:`, e);
+            logError('Sync.syncFiles', e, { courseCode });
         }
     }
 

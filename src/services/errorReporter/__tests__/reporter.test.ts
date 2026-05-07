@@ -109,6 +109,22 @@ describe('installErrorReporter', () => {
         expect(supabase.rpc).not.toHaveBeenCalled();
     });
 
+    it('does not stringify non-Error rejection reasons (privacy)', async () => {
+        cleanup = installErrorReporter(() => true);
+        const ev = new Event('unhandledrejection') as PromiseRejectionEvent;
+        const reason = { studentName: 'Jan Novák', grade: 'A', courseCode: 'ALG' };
+        Object.defineProperty(ev, 'reason', { value: reason, configurable: true });
+        window.dispatchEvent(ev);
+        await flush();
+        expect(supabase.rpc).toHaveBeenCalledTimes(1);
+        const [, args] = (supabase.rpc as ReturnType<typeof vi.fn>).mock.calls[0];
+        expect(args.p_error_message).not.toContain('Jan');
+        expect(args.p_error_message).not.toContain('Novák');
+        expect(args.p_error_message).not.toContain('ALG');
+        expect(args.p_error_message).toContain('non-error rejection');
+        expect(args.p_error_message).toContain('object');
+    });
+
     it('handles unhandledrejection events', async () => {
         cleanup = installErrorReporter(() => true);
         const reason = new Error('promise blew up');

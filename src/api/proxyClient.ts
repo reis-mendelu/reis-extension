@@ -6,6 +6,7 @@ import { pendingFetches, pendingActions, REQUEST_TIMEOUT } from './proxy/pending
 import { initProxyListener } from './proxy/messageListener';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
 import { clearUserParamsCache } from '../utils/userParams';
+import { logError } from '../utils/reportError';
 
 export async function fetchViaProxy(url: string, opts?: MsgTypes.FetchRequestMessage['options']): Promise<string> {
     initProxyListener();
@@ -39,7 +40,7 @@ export async function logout(): Promise<void> {
     try {
         await IndexedDBService.clearAll();
     } catch (e) {
-        console.warn('Failed to clear local IndexedDB during logout', e);
+        logError('ProxyClient.logout:clearAll', e);
     }
     return executeAction('logout', {});
 }

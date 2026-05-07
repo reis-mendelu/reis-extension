@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { IndexedDBService } from '../services/storage'; 
+import { IndexedDBService } from '../services/storage';
 import { FACULTY_TO_ASSOCIATION } from '../services/spolky/config';
 import { getUserParams } from '../utils/userParams';
+import { logError } from '../utils/reportError';
 
 // New key for full list
 const STORAGE_KEY = 'reis_subscribed_associations';
@@ -55,7 +56,7 @@ export function useSpolkySettings() {
               }
           }
       } catch (err) {
-          console.error('[useSpolkySettings] Failed to load settings:', err);
+          logError('useSpolkySettings.load', err);
       } finally {
           setIsLoading(false);
       }
@@ -90,7 +91,7 @@ export function useSpolkySettings() {
         // Dispatch event for other hooks in the same tab
         window.dispatchEvent(new Event('reis-spolky-settings-changed'));
     } catch (err) {
-        console.error('[useSpolkySettings] Failed to save setting:', err);
+        logError('useSpolkySettings.save', err);
     }
   };
 

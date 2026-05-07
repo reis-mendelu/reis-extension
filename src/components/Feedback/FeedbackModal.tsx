@@ -4,6 +4,7 @@ import { X, Send, Loader2, CheckCircle2 } from 'lucide-react';
 import { DISCORD_WEBHOOK_URL } from '../../constants/config';
 import { toast } from 'sonner';
 import { useTranslation } from '../../hooks/useTranslation';
+import { logError } from '../../utils/reportError';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -53,7 +54,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         throw new Error('Failed to send');
       }
     } catch (error) {
-      console.error('Feedback error:', error);
+      logError('FeedbackModal.send', error);
       toast.error(t('feedback.toastError'));
     } finally {
       setIsSending(false);

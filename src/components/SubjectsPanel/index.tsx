@@ -7,6 +7,7 @@ import { computeFailRate } from './computeFailRate';
 import { SemesterSection } from './SemesterSection';
 import { SubjectsPanelSkeleton } from './SubjectsPanelSkeleton';
 import { IndexedDBService } from '@/services/storage';
+import { logError } from '@/utils/reportError';
 import type { Zamerani } from '@/types/studyPlan';
 import { getSemesterState, isRealCredits, normalizeZameraniName, buildSubjectSemesters } from './utils';
 
@@ -71,7 +72,7 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
   // Persist to IndexedDB on change (skip the initial load)
   useEffect(() => {
     if (!idbLoaded) return;
-    IndexedDBService.set('meta', IDB_KEY, Array.from(openSemesters)).catch(console.error);
+    IndexedDBService.set('meta', IDB_KEY, Array.from(openSemesters)).catch(e => logError('SubjectsPanel.persistOpenSemesters', e));
   }, [openSemesters, idbLoaded]);
 
   // Auto-scroll to the first current semester on initial render

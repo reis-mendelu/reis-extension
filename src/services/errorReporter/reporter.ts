@@ -59,7 +59,10 @@ function normalizeFromRejection(ev: PromiseRejectionEvent): NormalizedError | nu
     } else if (typeof reason === 'string') {
         rawMessage = reason;
     } else {
-        try { rawMessage = JSON.stringify(reason); } catch { rawMessage = String(reason); }
+        // Never JSON.stringify the reason: arbitrary objects (parsed payloads,
+        // Response bodies) can contain student data the regex set won't redact.
+        // The type tag is enough to identify the rejection class.
+        rawMessage = `<non-error rejection: ${typeof reason}>`;
     }
     const message = sanitizeMessage(rawMessage);
     if (!message) return null;

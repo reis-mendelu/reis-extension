@@ -5,6 +5,7 @@
 import { IndexedDBService } from '../storage';
 import { fetchSyllabus, findSubjectId } from '../../api/syllabus';
 import type { SyllabusRequirements } from '../../types/documents';
+import { logError } from '../../utils/reportError';
 
 export async function syncSyllabus(): Promise<void> {
     const subjectsData = await IndexedDBService.get('subjects', 'current');
@@ -27,7 +28,7 @@ export async function syncSyllabus(): Promise<void> {
                 en: enSyllabus
             });
         } catch (e) {
-            console.error(`[syncSyllabus] Failed for ${courseCode}:`, e);
+            logError('Sync.syncSyllabus', e, { courseCode });
         }
     }
 }

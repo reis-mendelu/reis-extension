@@ -1,3 +1,5 @@
+import { logError } from '../utils/reportError';
+
 export interface Odevzdavarna {
     courseId: string;
     courseNameCs: string;
@@ -101,7 +103,7 @@ async function fetchLang(studium: string, obdobi: string, lang: 'cz' | 'en'): Pr
 
         return assignments;
     } catch (error) {
-        console.error("Error fetching odevzdavarny:", error);
+        logError('Api.fetchOdevzdavarnyLang', error);
         return null;
     }
 }

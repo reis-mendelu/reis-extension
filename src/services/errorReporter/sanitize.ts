@@ -15,10 +15,11 @@ const PATTERNS: RegExp[] = [
     /\b(?:Bearer|Basic|Token)\s+[A-Za-z0-9._\-+/=]+/gi,
     // Cookie / Set-Cookie payloads
     /(?:Cookie|Set-Cookie)\s*[:=]\s*[^\s;]+/gi,
-    // MENDELU email addresses (covers @mendelu.cz, @node.mendelu.cz, etc.)
-    /[\w.+-]+@(?:[\w-]+\.)*mendelu\.cz/gi,
-    // is.mendelu.cz / webiskam.mendelu.cz URLs (with or without query)
-    /https?:\/\/(?:is|webiskam|node)\.mendelu\.cz[^\s)]*/gi,
+    // Any email address — a non-MENDELU address (Erasmus contacts, gmail in
+    // user-typed text) is still PII once paired with anything else.
+    /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g,
+    // Any *.mendelu.cz URL (with or without query)
+    /https?:\/\/(?:[\w-]+\.)*mendelu\.cz[^\s)]*/gi,
     // 6-to-7-digit student/staff IDs — negative look-around avoids matching
     // longer numbers (timestamps, counts) while catching UIDs embedded in strings.
     /(?<!\d)\d{6,7}(?!\d)/g,
@@ -45,6 +46,8 @@ export function sanitizeFilePath(input: unknown): string {
         const slash = out.lastIndexOf('/');
         if (slash !== -1) out = out.slice(slash + 1);
     }
+    // Defensive: if a non-extension path slips through, still scrub PII patterns.
+    for (const re of PATTERNS) out = out.replace(re, REDACT);
     if (out.length > MAX_PATH_LEN) out = out.slice(0, MAX_PATH_LEN);
     return out;
 }
