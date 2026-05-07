@@ -293,6 +293,12 @@
       "placeholder": "Tvá poznámka k souboru...",
       "badge": "1 poznámka",
       "subjectPlaceholder": "Poznámka..."
+    },
+    "teacherRating": {
+      "strict": "přísný",
+      "fair": "férový",
+      "generous": "mírný",
+      "rate": "ohodnotit?"
     }
   },
   "syllabus": {
