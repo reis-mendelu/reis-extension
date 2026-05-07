@@ -135,7 +135,7 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
     const compactCode = lesson.courseCode
         ? (lesson.courseCode.includes('-') ? lesson.courseCode.split('-').slice(1).join('-') : lesson.courseCode)
         : courseName;
-    const courseTitle = isCompact
+    const courseTitle = isCompact && !lesson.isExam
         ? compactCode
         : lesson.isExam
         ? getExamSectionName(courseName)
