@@ -1,9 +1,15 @@
-import { CircleCheck, RotateCcw, Zap } from 'lucide-react';
+import { RotateCcw, Zap, CircleCheck } from 'lucide-react';
 import type { ExamTerm, ExamSection } from '../types/exams';
 import { getDayOfWeek, parseRegistrationStart, formatCountdown } from '../utils/termUtils';
 import { useTranslation } from '../hooks/useTranslation';
 import { useAppStore } from '../store/useAppStore';
 import { SNIPER_WINDOW_MS } from './ExamPanel/useAutoRegistration';
+
+const attemptAccentClass: Record<string, string> = {
+    retake1: 'bg-warning/50',
+    retake2: 'bg-error/50',
+    retake3: 'bg-error/50',
+};
 
 export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSelect, isProcessing = false }: { term: ExamTerm; section?: ExamSection; isArmed?: boolean; isFiring?: boolean; onToggleArm?: () => void; onSelect: () => void; isProcessing?: boolean }) {
     const { t, language } = useTranslation();
@@ -16,10 +22,12 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
     const isBlocked = term.canRegisterNow === false && !isFuture && !isFull;
     const disabled = isFull || isProcessing || isFuture || isClosed || isBlocked;
     const sameDeadline = term.registrationEnd && term.deregistrationDeadline && term.registrationEnd === term.deregistrationDeadline;
+    const attemptAccent = term.attemptType ? attemptAccentClass[term.attemptType] ?? '' : '';
 
     return (
         <div onClick={() => !disabled && onSelect()}
-                className={`flex flex-col w-full rounded-lg border transition-all text-left ${(isArmed || isFiring) ? 'bg-warning/10 border-warning shadow-[0_0_10px_rgba(251,189,35,0.3)]' : isFuture ? 'bg-warning/5 border-warning/30' : (isFull || isClosed || isBlocked) ? 'bg-base-200 opacity-60' : 'bg-base-100 hover:border-primary shadow-sm cursor-pointer'}`}>
+                className={`relative flex flex-col w-full rounded-lg border transition-all text-left overflow-hidden ${(isArmed || isFiring) ? 'bg-warning/10 border-warning shadow-[0_0_10px_rgba(251,189,35,0.3)]' : isFuture ? 'bg-warning/5 border-warning/30' : (isFull || isClosed || isBlocked) ? 'bg-base-200 border-transparent opacity-60' : 'bg-base-100 border-transparent hover:border-primary shadow-sm cursor-pointer'}`}>
+            {attemptAccent && <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${attemptAccent}`} />}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 w-full p-3.5">
                 {/* Date: Bold & Clear */}
                 <div className="flex flex-col min-w-[70px]">
@@ -31,16 +39,24 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                     </span>
                 </div>
 
-                {/* Status Icon */}
+                {/* Attempt type pill */}
                 {term.attemptType && (
                     <div className="flex items-center shrink-0">
                         {term.attemptType === 'regular' ? (
-                            <CircleCheck size={16} className="text-success/70" />
-                        ) : (
-                            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-warning/10 border border-warning/20">
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-success/10">
+                                <CircleCheck size={10} className="text-success" />
+                                <span className="text-[10px] font-bold text-success">{t('successRate.regular')}</span>
+                            </div>
+                        ) : term.attemptType === 'retake1' ? (
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-warning/10">
                                 <RotateCcw size={10} className="text-warning" />
-                                <span className="text-[10px] font-black text-warning">
-                                    {term.attemptType === 'retake1' ? '1' : term.attemptType === 'retake2' ? '2' : '3'}
+                                <span className="text-[10px] font-bold text-warning">{t('successRate.retake1')}</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-error/10">
+                                <RotateCcw size={10} className="text-error" />
+                                <span className="text-[10px] font-bold text-error">
+                                    {term.attemptType === 'retake2' ? t('successRate.retake2') : '3. opravný'}
                                 </span>
                             </div>
                         )}

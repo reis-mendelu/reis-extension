@@ -43,7 +43,24 @@ export function ExamPanel() {
         ? `https://is.mendelu.cz/auth/student/terminy_seznam.pl?studium=${studium};obdobi=${obdobi};lang=${lang}`
         : `https://is.mendelu.cz/auth/student/prihlasovani_zkousky.pl?lang=${lang}`;
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [timelineSelectedId, setTimelineSelectedId] = useState<string | null>(null);
     const { processingSectionId, pendingAction, setPendingAction, handleRegisterRequest, handleUnregisterRequest, handleConfirmAction } = useExamActions({ exams, setExpandedSectionId: setExpandedId });
+
+    const handleTimelineSelect = (item: TimelineExam) => {
+        const sectionId = item.section?.id;
+        if (!sectionId) return;
+        const next = timelineSelectedId === sectionId ? null : sectionId;
+        setTimelineSelectedId(next);
+        setExpandedId(next);
+    };
+
+    const handleToggleExpand = (id: string) => {
+        setExpandedId(p => {
+            const next = p === id ? null : id;
+            if (next === null) setTimelineSelectedId(null);
+            return next;
+        });
+    };
     const { armedTerms, firingTerms, toggleArm } = useAutoRegistration();
     const studiumId = useAppStore(s => s.studiumId);
     const obdobiId = useAppStore(s => s.obdobiId);
@@ -105,9 +122,8 @@ return (
                     <ExamTimeline
                         exams={realExams as unknown as TimelineExam[]}
                         orientation="horizontal"
-                        onUnregister={handleUnregisterRequest}
-                        onChangeTerm={handleRegisterRequest}
-                        processingSectionId={processingSectionId}
+                        onSelectItem={handleTimelineSelect}
+                        selectedSectionId={timelineSelectedId}
                     />
                 </div>
             )}
@@ -119,9 +135,16 @@ return (
                     <EmptyExamsState />
                     <IsMendeluLink href={href} />
                 </div>
-            ) : sections.length > 0 ? (
+            ) : timelineSelectedId ? (() => {
+                const picked = realExams.find(e => e.section.id === timelineSelectedId);
+                return picked ? (
+                    <div className="flex-1 overflow-y-auto p-4">
+                        <ExamSectionCard subject={picked.subject} section={picked.section} isExpanded={true} isProcessing={processingSectionId === picked.section.id} armedTerms={armedTerms} firingTerms={firingTerms} toggleArm={toggleArm} onToggleExpand={handleToggleExpand} onRegister={handleRegisterRequest} onUnregister={handleUnregisterRequest} />
+                    </div>
+                ) : null;
+            })() : sections.length > 0 ? (
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {sections.map(({ subject, section }: { subject: ExamSubject, section: ExamSection }) => <ExamSectionCard key={section.id} subject={subject} section={section} isExpanded={expandedId === section.id} isProcessing={processingSectionId === section.id} armedTerms={armedTerms} firingTerms={firingTerms} toggleArm={toggleArm} onToggleExpand={(id: string) => setExpandedId(p => p === id ? null : id)} onRegister={handleRegisterRequest} onUnregister={handleUnregisterRequest} />)}
+                    {sections.map(({ subject, section }: { subject: ExamSubject, section: ExamSection }) => <ExamSectionCard key={section.id} subject={subject} section={section} isExpanded={expandedId === section.id} isProcessing={processingSectionId === section.id} armedTerms={armedTerms} firingTerms={firingTerms} toggleArm={toggleArm} onToggleExpand={handleToggleExpand} onRegister={handleRegisterRequest} onUnregister={handleUnregisterRequest} />)}
                     <IsMendeluLink href={href} />
                 </div>
             ) : null}
