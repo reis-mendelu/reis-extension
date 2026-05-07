@@ -69,12 +69,18 @@ The extension uses a **push-based postMessage IPC** for each injected host. Ther
 ### WebISKAM (`webiskam.mendelu.cz`)
 | Role | File | Responsibility |
 |------|------|----------------|
-| Content script entry | `entrypoints/webiskam.content.ts` | `document.open/write/close`, registers `handleIskamMessage`, calls `startIskamSync()` |
+| Content script entry | `entrypoints/webiskam.content.ts` | `document.open/write/close` to take over the page, registers `handleIskamMessage`, calls `startIskamSync()` |
 | Iframe injection + queue | `injector/iskamInjector.ts` | `startIskamInjection()`, `markIskamIframeReady()`, `sendToIskamIframe()` |
 | Data fetching | `injector/iskamSyncService.ts` | `startIskamSync()` → `syncIskamData()` → `sendToIskamIframe(ISKAM_SYNC_UPDATE)` |
-| Message routing | `injector/iskamMessageHandler.ts` | Handles `ISKAM_READY` → flush queue + send current state |
+| Message routing | `injector/iskamMessageHandler.ts` | Handles `ISKAM_READY` → flush queue + send current state; handles `ISKAM_FETCH_BLOCK` and `logout` |
 | Iframe bootstrap | `entrypoints/iskam/IskamApp.tsx` | IDB hydration → signal `ISKAM_READY` → listen for `ISKAM_SYNC_UPDATE` |
 | Skeleton guard | `store/iskamStore.ts` | `handshakeDone` / `handshakeTimedOut` (10s) unblock skeletons |
+
+**ISKAM-specific behaviors:**
+- The content script replaces the entire WebISKAM page via `document.open/write/close` — it owns the DOM entirely, there is no partial injection.
+- `syncIskamData()` calls `fetchDualLanguageIskam()` (fetches profile + reservations in CZ and EN in parallel). If the session is expired, the fetch throws `IskamAuthError`; the handler then redirects to `${ISKAM_BASE}/ObjednavkyStravovani` to re-authenticate, rather than sending an error to the iframe.
+- `ISKAM_FETCH_BLOCK` is a message type the iframe sends to request a block fetch. The handler in `iskamMessageHandler.ts` performs the fetch and sends the result back.
+- On `logout`, the message handler clears all IDB data then redirects to the IS Mendelu logout URL.
 
 ### Isolation rules
 - `useIskamStore` is separate from `useAppStore`. They share only theme/language (via `loadTheme`/`loadLanguage`).
@@ -82,6 +88,33 @@ The extension uses a **push-based postMessage IPC** for each injected host. Ther
 - The ISKAM iframe never calls the WebISKAM API directly. Only the content script calls `fetchDualLanguageIskam()`.
 - IDB writes for ISKAM data happen in the iframe (`IskamApp.tsx`), not in the content script — mirrors IS Mendelu pattern.
 - Adding a new host: create `injector/<host>Injector.ts`, `injector/<host>SyncService.ts`, `injector/<host>MessageHandler.ts`, message types (`ISKAM_*` → `<HOST>_*`), and iframe bootstrap logic.
+
+## Error Reporting & Privacy
+
+### Pipeline
+`logError(context, err, extra?)` (`src/utils/reportError.ts`) is the single call site for all non-fatal errors. It logs to `console.error` locally and calls `sendTelemetry(context, err)` (`src/services/errorReporter/telemetry.ts`). The `extra` object is **never** transmitted.
+
+**Three reporting paths — all funnel to `sendTelemetry`:**
+1. **Automatic** — `installErrorReporter()` catches `window.onerror` and `unhandledrejection` events in the iframe app.
+2. **Explicit** — `logError(...)` at structured `try/catch` sites throughout the codebase.
+3. **Content-script bridge** — content scripts have no Supabase access; they call `sendToIframe(Messages.telemetryError(context, err))` or `sendToIskamIframe(Messages.telemetryError(...))` to route the report through the iframe.
+
+Context naming convention: `Slice.method`, `Api.fetchX`, `Sync.stepY`, `Iskam.fetchX`, `Parser.parseX`, `useHookName.action`.
+
+### What is (and isn't) transmitted
+
+Exactly 7 fields leave the device — `p_error_type`, `p_error_message`, `p_file_path`, `p_line_number`, `p_extension_version`, `p_browser_name`, `p_browser_version` — via the `report_error` Supabase RPC.
+
+**Sanitization** (`src/services/errorReporter/sanitize.ts`) runs on message and file path before transmission:
+- Redacts bearer/cookie tokens, all email addresses, all `*.mendelu.cz` URLs, and 6–7-digit student/staff IDs.
+- Strips query strings and fragments from file paths; strips extension ID prefix from `chrome-extension://` paths.
+- `normalizeFromRejection` in `reporter.ts` emits `<non-error rejection: typeof X>` instead of `JSON.stringify(reason)` to prevent object payloads (parsed API responses with grades, names) from leaking.
+
+**Never sent:** student name, UIC/student ID (raw or hashed), session cookies, IS Mendelu data (grades, schedules, exams), IndexedDB contents.
+
+### Supabase schema
+- Table: `error_reports` — RLS enabled, zero policies (deny-all for direct row access).
+- RPC: `report_error(...)` — `SECURITY DEFINER`, grants `EXECUTE` to `anon` role, enforces 500 reports/hour server-side rate limit per `(browser, version)` window. Migration: `supabase/migrations/20260506120000_error_reports_rate_limit.sql`.
 
 ## Parser Rules
 
