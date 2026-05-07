@@ -104,31 +104,29 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                             )}
                         </div>
                     ) : (
-                        term.capacity && (
-                            <div className="flex items-center gap-3">
-                                <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-3">
+                            {isProcessing ? (
+                                <span className="loading loading-spinner loading-sm text-primary" />
+                            ) : (isClosed || isBlocked) ? (
+                                <span className="text-[10px] font-bold opacity-30 uppercase tracking-wider">{t('exams.closed')}</span>
+                            ) : term.capacity ? (
+                                <>
                                     <div className="flex items-center gap-2">
-                                        <progress 
-                                            className={`progress w-12 h-1 ${disabled ? 'progress-error' : 'progress-primary'} opacity-60`} 
-                                            value={Math.min(100, (term.capacity.occupied / term.capacity.total) * 100)} 
-                                            max="100" 
+                                        <progress
+                                            className={`progress w-12 h-1 ${isFull ? 'progress-error' : 'progress-primary'} opacity-60`}
+                                            value={Math.min(100, (term.capacity.occupied / term.capacity.total) * 100)}
+                                            max="100"
                                         />
-                                        <span className={`text-[11px] font-bold ${isFull ? 'text-error' : 'opacity-60'}`}>
-                                            {isFull ? t('exams.full') : (isClosed || isBlocked) ? t('exams.closed') : term.capacity.raw}
+                                        <span className={`text-[11px] font-bold ${isFull ? 'text-error/60' : 'opacity-60'}`}>
+                                            {isFull ? t('exams.full') : term.capacity.raw}
                                         </span>
                                     </div>
-                                </div>
-                                <div className="w-[100px] flex justify-end">
-                                    {isProcessing ? (
-                                        <span className="loading loading-spinner loading-sm text-primary"></span>
-                                    ) : (isFull || isClosed || isBlocked) ? (
-                                        <span className="text-error/40 text-lg font-bold">✕</span>
-                                    ) : (
+                                    {!isFull && (
                                         <span className="btn btn-primary btn-sm px-4 font-bold">{t('exams.register')}</span>
                                     )}
-                                </div>
-                            </div>
-                        )
+                                </>
+                            ) : null}
+                        </div>
                     )}
                 </div>
 
