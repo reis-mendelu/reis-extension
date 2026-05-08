@@ -3,6 +3,7 @@ import type { AppState } from './types';
 import { createScheduleSlice } from './slices/createScheduleSlice';
 import { createExamSlice } from './slices/createExamSlice';
 import { createSyllabusSlice } from './slices/createSyllabusSlice';
+import { createZaznamnikSlice } from './slices/createZaznamnikSlice';
 import { createFilesSlice } from './slices/createFilesSlice';
 import { createClassmatesSlice } from './slices/createClassmatesSlice';
 import { createSubjectsSlice } from './slices/createSubjectsSlice';
@@ -33,6 +34,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createScheduleSlice(...a),
   ...createExamSlice(...a),
   ...createSyllabusSlice(...a),
+  ...createZaznamnikSlice(...a),
   ...createFilesSlice(...a),
   ...createClassmatesSlice(...a),
   ...createSubjectsSlice(...a),
@@ -92,6 +94,7 @@ export const initializeStore = async () => {
         s2.fetchCvicneTests();
         s2.fetchOdevzdavarny();
         s2.fetchAllFiles();
+        s2.fetchZaznamnik();
         s2.loadFeedbackState();
         s2.loadPinnedPages();
         s2.loadHiddenItems();

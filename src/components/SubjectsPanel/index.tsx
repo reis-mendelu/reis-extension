@@ -10,7 +10,6 @@ import { IndexedDBService } from '@/services/storage';
 import { logError } from '@/utils/reportError';
 import type { Zamerani } from '@/types/studyPlan';
 import { getSemesterState, isRealCredits, normalizeZameraniName, buildSubjectSemesters } from './utils';
-
 const IDB_KEY = 'subjects_open_semesters';
 
 interface SubjectsPanelProps {

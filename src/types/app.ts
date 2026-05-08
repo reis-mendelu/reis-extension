@@ -7,6 +7,6 @@ export interface SelectedSubject {
     id: string;
     isFromSearch?: boolean;
     facultyCode?: string;
-    initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates';
+    initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
     isFulfilled?: boolean;
 }

@@ -1,6 +1,6 @@
 /**
  * SubjectFileDrawer Types
- * 
+ *
  * Shared types for SubjectFileDrawer subcomponents.
  */
 
@@ -16,11 +16,11 @@ export interface DrawerHeaderProps {
     selectedCount: number;
     isDownloading: boolean;
     downloadProgress?: { completed: number; total: number } | null;
-    activeTab: 'files' | 'stats' | 'syllabus' | 'classmates';
-    tabCounts?: Record<string, number>;
+    activeTab: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
+    tabCounts?: Record<string, number | undefined>;
     onClose: () => void;
     onDownload: () => void;
-    onTabChange: (tab: 'files' | 'stats' | 'syllabus' | 'classmates') => void;
+    onTabChange: (tab: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik') => void;
 }
 
 export interface FileGroup {

@@ -1,23 +1,26 @@
-import { FileText, Users, BarChart3, BookOpen } from 'lucide-react';
+import { FileText, Users, BarChart3, BookOpen, ClipboardList } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 
+type TabId = 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
+
 interface HeaderTabsProps {
     activeTab: string;
-    onTabChange: (id: 'files' | 'stats' | 'syllabus' | 'classmates') => void;
+    onTabChange: (id: TabId) => void;
     disabledTabs?: string[];
-    counts?: Record<string, number>;
+    counts?: Record<string, number | undefined>;
+    zeroBadgeTabs?: TabId[];
 }
 
-export function HeaderTabs({ activeTab, onTabChange, disabledTabs = [], counts }: HeaderTabsProps) {
+export function HeaderTabs({ activeTab, onTabChange, disabledTabs = [], counts, zeroBadgeTabs = [] }: HeaderTabsProps) {
     const { t } = useTranslation();
 
-    type TabId = 'files' | 'stats' | 'syllabus' | 'classmates';
     const tabs: { id: TabId; label: string; icon: LucideIcon }[] = [
         { id: 'files', label: t('course.tabs.files'), icon: FileText },
         { id: 'classmates', label: t('course.tabs.classmates'), icon: Users },
         { id: 'stats', label: t('course.tabs.successRate'), icon: BarChart3 },
         { id: 'syllabus', label: t('course.tabs.requirements'), icon: BookOpen },
+        { id: 'zaznamnik', label: t('course.tabs.zaznamnik'), icon: ClipboardList },
     ];
 
     return (
@@ -43,11 +46,13 @@ export function HeaderTabs({ activeTab, onTabChange, disabledTabs = [], counts }
                     >
                         <div className="relative">
                             <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
-                            {count !== undefined && count > 0 && (
+                            {count !== undefined && (count > 0 || zeroBadgeTabs.includes(tab.id)) && (
                                 <span className={`absolute -top-1.5 -right-2 text-[9px] font-bold min-w-[14px] h-[14px] flex items-center justify-center rounded-full px-0.5 ${
-                                    isActive
-                                        ? 'bg-primary text-primary-content'
-                                        : 'bg-base-300 text-base-content/60'
+                                    count === 0
+                                        ? 'bg-base-200 text-base-content/30'
+                                        : isActive
+                                            ? 'bg-primary text-primary-content'
+                                            : 'bg-base-300 text-base-content/60'
                                 }`}>
                                     {count}
                                 </span>

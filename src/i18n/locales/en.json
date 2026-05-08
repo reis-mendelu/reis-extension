@@ -247,6 +247,7 @@
       "successRate": "Success",
       "assessment": "Grades",
       "classmates": "Classmates",
+      "zaznamnik": "Grades",
       "cvicneTests": "Tasks"
     },
     "cvicneTests": {
@@ -298,6 +299,12 @@
       "generous": "generous",
       "rate": "rate?"
     }
+  },
+  "zaznamnik": {
+    "noData": "No assessment data.",
+    "noAssessment": "This course has no continuous assessment or tests.",
+    "phSection": "Continuous assessment",
+    "vtSection": "Tests"
   },
   "syllabus": {
     "conditions": "Completion requirements",

@@ -7,6 +7,7 @@ import { fetchFilesFromFolder } from "../api/documents";
 import { fetchDualLanguageStudyPlan } from "../api/studyPlan";
 import { fetchStudyStats } from "../api/studyStats";
 import { fetchSyllabus } from "../api/syllabus";
+import { syncZaznamnik } from "../services/sync/syncZaznamnik";
 import { syncCvicneTests } from "../services/sync/syncCvicneTests";
 import { syncOdevzdavarny } from "../services/sync/syncOdevzdavarny";
 import { fetchSeminarGroupIds, fetchClassmates } from "../api/classmates";
@@ -165,15 +166,24 @@ async function syncSubjectDetails(subjectsValue: { data: Record<string, { folder
         obdobi = obdobi || first?.periodId;
     }
 
-    // Phase 3a: Files, assessments, syllabus (existing)
+    // Phase 3a: Files + syllabus per subject (zaznamnik runs as a separate batched job below)
     const tasks = subjectEntries.map(([code, subject]) => limit(async () => {
+        const subjectFull = subject as { folderUrl?: string; subjectId?: string };
         const subTasks = [];
-        if (subject.folderUrl) subTasks.push(fetchFilesFromFolder(subject.folderUrl).then(f => { (cachedData.files as Record<string, unknown>)[code] = f; }).catch(() => {}));
-        if (subject.subjectId) subTasks.push(fetchSyllabus(subject.subjectId).then(s => { if(!cachedData.syllabuses) cachedData.syllabuses = {}; (cachedData.syllabuses as Record<string, unknown>)[code] = s; }).catch(() => {}));
+        if (subjectFull.folderUrl) subTasks.push(fetchFilesFromFolder(subjectFull.folderUrl).then(f => { (cachedData.files as Record<string, unknown>)[code] = f; }).catch(() => {}));
+        if (subjectFull.subjectId) subTasks.push(fetchSyllabus(subjectFull.subjectId).then(s => { if(!cachedData.syllabuses) cachedData.syllabuses = {}; (cachedData.syllabuses as Record<string, unknown>)[code] = s; }).catch(() => {}));
         await Promise.all(subTasks);
     }));
 
-    await Promise.all(tasks);
+    // Zaznamnik batch — own pLimit(2), preserves prior values via merge guard in slice
+    const zaznamnikPromise = (studium && obdobi)
+        ? syncZaznamnik(studium, obdobi, subjectEntries.map(([courseCode, s]) => {
+            const sf = s as { subjectId?: string; hasPrubezne?: boolean; hasTest?: boolean };
+            return { courseCode, subjectId: sf.subjectId ?? '', hasPrubezne: sf.hasPrubezne, hasTest: sf.hasTest };
+        })).then(z => { cachedData.zaznamnik = z; }).catch(() => {})
+        : Promise.resolve();
+
+    await Promise.all([...tasks, zaznamnikPromise]);
 
     // Phase 3b: Classmates — fetch skupina map once (predmetId→skupinaId),
     // then match to subjects by subjectId to get the right courseCode IDB key

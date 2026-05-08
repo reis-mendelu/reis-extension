@@ -8,6 +8,7 @@ import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { ErasmusCountryData } from '../types/erasmus';
 import type { IskamData } from './iskam';
+import type { SubjectZaznamnik } from './zaznamnik';
 
 // --- Base Types using Zod ---
 
@@ -142,6 +143,39 @@ export const IskamDataSchema = z.object({
     syncedAt: z.number(),
 }) as z.ZodType<IskamData>;
 
+// 'zaznamnik' store - PH + VT assessment data per subject (nullable on parse failure)
+const PhArchSchema = z.object({
+    name: z.string(),
+    empty: z.boolean(),
+    columns: z.array(z.string()),
+    values: z.array(z.string()),
+});
+const PhSectionSchema = z.object({
+    label: z.string(),
+    arches: z.array(PhArchSchema),
+});
+const SubjectPhSchema = z.object({
+    sections: z.array(PhSectionSchema),
+    fetchedAt: z.number(),
+});
+const VtTestAttemptSchema = z.object({
+    name: z.string(),
+    score: z.number(),
+    maxScore: z.number(),
+    successPct: z.number(),
+    submittedAt: z.string(),
+    teacher: z.string(),
+    hasDetail: z.boolean(),
+});
+const SubjectVtSchema = z.object({
+    tests: z.array(VtTestAttemptSchema),
+    fetchedAt: z.number(),
+});
+export const ZaznamnikSchema = z.object({
+    ph: SubjectPhSchema,
+    vt: SubjectVtSchema,
+}).nullable() as z.ZodType<SubjectZaznamnik | null>;
+
 // Map store names to their schemas for runtime validation
 export const StoreSchemas = {
     files: FilesSchema,
@@ -162,6 +196,7 @@ export const StoreSchemas = {
     erasmus: z.custom<ErasmusCountryData>(),
     document_notes: DocumentNoteSchema,
     iskam: IskamDataSchema,
+    zaznamnik: ZaznamnikSchema,
 };
 
 export type StoreName = keyof typeof StoreSchemas;

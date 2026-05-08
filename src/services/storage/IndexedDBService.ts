@@ -9,6 +9,7 @@ import type { Odevzdavarna } from '../../api/odevzdavarny';
 import type { ErasmusCountryData } from '../../types/erasmus';
 import type { HiddenItems, CalendarCustomEvent } from '../../types/calendarTypes';
 import type { IskamData } from '../../types/iskam';
+import type { SubjectZaznamnik } from '../../types/zaznamnik';
 import { StoreSchemas, type StoreName } from '../../types/storage';
 
 interface ReisDB extends DBSchema {
@@ -87,6 +88,10 @@ interface ReisDB extends DBSchema {
         key: string;
         value: IskamData;
     };
+    zaznamnik: {
+        key: string;
+        value: SubjectZaznamnik | null; // Key is courseCode
+    };
 }
 
 const DB_NAME = 'reis_db';
@@ -103,7 +108,7 @@ class IndexedDBServiceImpl {
                     'exams', 'schedule', 'subjects', 'success_rates', 'meta',
                     'grade_history', 'study_plan', 'cvicne_tests', 'odevzdavarny',
                     'erasmus', 'document_notes', 'hidden_items', 'custom_events',
-                    'iskam'
+                    'iskam', 'zaznamnik'
                 ];
                 
                 requiredStores.forEach(store => {

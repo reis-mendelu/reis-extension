@@ -9,9 +9,10 @@ import { ZaznamnikLine } from '../SubjectsPanel/ZaznamnikLine';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTimeline } from '../../hooks/useTimeline';
 
-const NO_ID_DISABLED: string[] = ['files', 'classmates'];
+const NO_ID_DISABLED: string[] = ['files', 'classmates', 'zaznamnik'];
 const CLASSMATES_ONLY: string[] = ['classmates'];
 const EMPTY_TABS: string[] = [];
+const ZERO_BADGE_TABS = ['zaznamnik'] as const;
 
 function formatDate(ds: string, t: (k: string) => string) {
     if (!ds || ds.length !== 8) return '';
@@ -97,6 +98,7 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
                 onTabChange={onTabChange}
                 disabledTabs={!subjectInfo?.subjectId ? NO_ID_DISABLED : (lesson && 'isFulfilled' in lesson && lesson.isFulfilled ? CLASSMATES_ONLY : EMPTY_TABS)}
                 counts={tabCounts}
+                zeroBadgeTabs={[...ZERO_BADGE_TABS]}
             />
         </div>
     );

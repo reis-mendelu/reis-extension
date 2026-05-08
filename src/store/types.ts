@@ -13,6 +13,7 @@ import type { PinnedPage } from './slices/createPinnedPagesSlice';
 import type { OutletMenu } from '../types/menuTypes';
 import type { PageCategory } from '../data/pages/types';
 import type { SpolekNotification } from '../services/spolky/types';
+import type { SubjectZaznamnik } from '../types/zaznamnik';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type Theme = "mendelu" | "mendelu-dark";
@@ -43,6 +44,13 @@ export interface ExamSlice {
   setExams: (data: ExamSubject[]) => void;
   examClassmates: Record<string, Classmate[]>;
   loadExamClassmates: (terminId: string, studiumId: string, obdobiId: string) => Promise<void>;
+}
+
+export interface ZaznamnikSlice {
+    zaznamnik: Record<string, SubjectZaznamnik | null>;
+    zaznamnikHydrated: boolean;
+    setZaznamnikBatch: (data: Record<string, SubjectZaznamnik | null>) => void;
+    fetchZaznamnik: () => Promise<void>;
 }
 
 export interface SyllabusSlice {
@@ -321,7 +329,7 @@ export interface NotificationSlice {
     loadNotificationState: () => Promise<void>;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & FilesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & import('./slices/createSearchSlice').SearchSlice;
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & import('./slices/createSearchSlice').SearchSlice;
 
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

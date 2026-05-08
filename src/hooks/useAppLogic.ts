@@ -19,6 +19,7 @@ import type { BlockLesson } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
 import type { SubjectsData, ParsedFile, SyllabusRequirements, SubjectAttendance } from '../types/documents';
 import type { ClassmatesData } from '../types/classmates';
+import type { SubjectZaznamnik } from '../types/zaznamnik';
 
 interface SyncedData {
     schedule?: BlockLesson[];
@@ -27,6 +28,7 @@ interface SyncedData {
     files?: Record<string, ParsedFile[] | { cz: ParsedFile[]; en: ParsedFile[] }>;
     syllabuses?: Record<string, SyllabusRequirements | { cz: SyllabusRequirements; en: SyllabusRequirements }>;
     classmates?: Record<string, ClassmatesData>;
+    zaznamnik?: Record<string, SubjectZaznamnik | null>;
     attendance?: Record<string, SubjectAttendance[]>;
     pastAttendance?: Record<string, SubjectAttendance[]>;
     studyPlan?: DualLanguageStudyPlan;
@@ -202,6 +204,16 @@ export function useAppLogic() {
                     );
                 }
 
+                if (r.zaznamnik) {
+                    useAppStore.getState().setZaznamnikBatch(r.zaznamnik);
+                    const persistEntries = Object.entries(r.zaznamnik).filter(([, v]) =>
+                        v && (v.ph.sections.length > 0 || v.vt.tests.length > 0)
+                    );
+                    if (persistEntries.length > 0) {
+                        await IndexedDBService.setMany('zaznamnik', persistEntries);
+                    }
+                }
+
                 if (r.lastSync) await IndexedDBService.set('meta', 'last_sync', r.lastSync);
             } catch {
                 // IDB write failure is non-critical — store already has fresh data
@@ -224,7 +236,7 @@ export function useAppLogic() {
         return () => window.removeEventListener('message', handle);
     }, []);
 
-    const handleOpenSubjectFromSearch = (courseCode: string, courseName?: string, courseId?: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => {
+    const handleOpenSubjectFromSearch = (courseCode: string, courseName?: string, courseId?: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik', isFulfilled?: boolean) => {
         setSelectedSubject({ courseCode, courseName: courseName || courseCode, courseId: courseId || '', id: `search-${courseCode}`, isFromSearch: true, facultyCode, initialTab, isFulfilled });
     };
 

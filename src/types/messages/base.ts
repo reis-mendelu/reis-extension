@@ -1,10 +1,11 @@
 import type { DualLanguageStudyPlan, StudyStats } from '../studyPlan';
 import type { IskamData } from '../iskam';
+import type { SubjectZaznamnik } from '../zaznamnik';
 
 export type DataRequestType = 'schedule' | 'exams' | 'subjects' | 'files' | 'all';
 export type ActionType = 'register_exam' | 'unregister_exam' | 'toggle_outlook_sync' | 'download_file' | 'trigger_sync' | 'open_url' | 'logout';
 
-export interface SyncedData { schedule?: unknown; exams?: unknown; subjects?: unknown; files?: unknown; syllabuses?: unknown; cvicneTests?: unknown; odevzdavarny?: unknown; classmates?: Record<string, unknown>; attendance?: Record<string, unknown>; pastAttendance?: Record<string, unknown>; studyPlan?: DualLanguageStudyPlan; studyStats?: StudyStats; isSyncing?: boolean; lastSync: number; error?: string; }
+export interface SyncedData { schedule?: unknown; exams?: unknown; subjects?: unknown; files?: unknown; syllabuses?: unknown; cvicneTests?: unknown; odevzdavarny?: unknown; classmates?: Record<string, unknown>; attendance?: Record<string, unknown>; pastAttendance?: Record<string, unknown>; zaznamnik?: Record<string, SubjectZaznamnik | null>; studyPlan?: DualLanguageStudyPlan; studyStats?: StudyStats; isSyncing?: boolean; lastSync: number; error?: string; }
 
 
 export interface ReadyMessage { type: 'REIS_READY'; }
