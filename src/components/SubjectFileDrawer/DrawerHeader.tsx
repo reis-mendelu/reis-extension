@@ -9,7 +9,7 @@ import { ZaznamnikLine } from '../SubjectsPanel/ZaznamnikLine';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTimeline } from '../../hooks/useTimeline';
 
-const NO_ID_DISABLED: string[] = ['files', 'classmates'];
+const NO_ID_DISABLED: string[] = ['files', 'classmates', 'zaznamnik'];
 const CLASSMATES_ONLY: string[] = ['classmates'];
 const EMPTY_TABS: string[] = [];
 

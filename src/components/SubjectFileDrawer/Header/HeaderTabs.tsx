@@ -1,10 +1,10 @@
-import { FileText, Users, BarChart3, BookOpen } from 'lucide-react';
+import { FileText, Users, BarChart3, BookOpen, ClipboardList } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface HeaderTabsProps {
     activeTab: string;
-    onTabChange: (id: 'files' | 'stats' | 'syllabus' | 'classmates') => void;
+    onTabChange: (id: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik') => void;
     disabledTabs?: string[];
     counts?: Record<string, number>;
 }
@@ -12,12 +12,13 @@ interface HeaderTabsProps {
 export function HeaderTabs({ activeTab, onTabChange, disabledTabs = [], counts }: HeaderTabsProps) {
     const { t } = useTranslation();
 
-    type TabId = 'files' | 'stats' | 'syllabus' | 'classmates';
+    type TabId = 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
     const tabs: { id: TabId; label: string; icon: LucideIcon }[] = [
         { id: 'files', label: t('course.tabs.files'), icon: FileText },
         { id: 'classmates', label: t('course.tabs.classmates'), icon: Users },
         { id: 'stats', label: t('course.tabs.successRate'), icon: BarChart3 },
         { id: 'syllabus', label: t('course.tabs.requirements'), icon: BookOpen },
+        { id: 'zaznamnik', label: t('course.tabs.zaznamnik'), icon: ClipboardList },
     ];
 
     return (

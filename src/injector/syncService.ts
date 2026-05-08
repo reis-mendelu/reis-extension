@@ -7,6 +7,7 @@ import { fetchFilesFromFolder } from "../api/documents";
 import { fetchDualLanguageStudyPlan } from "../api/studyPlan";
 import { fetchStudyStats } from "../api/studyStats";
 import { fetchSyllabus } from "../api/syllabus";
+import { fetchSubjectZaznamnik } from "../api/zaznamnik";
 import { syncCvicneTests } from "../services/sync/syncCvicneTests";
 import { syncOdevzdavarny } from "../services/sync/syncOdevzdavarny";
 import { fetchSeminarGroupIds, fetchClassmates } from "../api/classmates";
@@ -165,11 +166,19 @@ async function syncSubjectDetails(subjectsValue: { data: Record<string, { folder
         obdobi = obdobi || first?.periodId;
     }
 
-    // Phase 3a: Files, assessments, syllabus (existing)
+    // Phase 3a: Files, syllabus, zaznamnik per subject
     const tasks = subjectEntries.map(([code, subject]) => limit(async () => {
+        const subjectFull = subject as { folderUrl?: string; subjectId?: string; hasPrubezne?: boolean; hasTest?: boolean };
         const subTasks = [];
-        if (subject.folderUrl) subTasks.push(fetchFilesFromFolder(subject.folderUrl).then(f => { (cachedData.files as Record<string, unknown>)[code] = f; }).catch(() => {}));
-        if (subject.subjectId) subTasks.push(fetchSyllabus(subject.subjectId).then(s => { if(!cachedData.syllabuses) cachedData.syllabuses = {}; (cachedData.syllabuses as Record<string, unknown>)[code] = s; }).catch(() => {}));
+        if (subjectFull.folderUrl) subTasks.push(fetchFilesFromFolder(subjectFull.folderUrl).then(f => { (cachedData.files as Record<string, unknown>)[code] = f; }).catch(() => {}));
+        if (subjectFull.subjectId) subTasks.push(fetchSyllabus(subjectFull.subjectId).then(s => { if(!cachedData.syllabuses) cachedData.syllabuses = {}; (cachedData.syllabuses as Record<string, unknown>)[code] = s; }).catch(() => {}));
+        if (subjectFull.subjectId && (subjectFull.hasPrubezne || subjectFull.hasTest) && studium && obdobi) {
+            subTasks.push(
+                fetchSubjectZaznamnik(studium, obdobi, subjectFull.subjectId)
+                    .then(z => { if (!cachedData.zaznamnik) cachedData.zaznamnik = {}; (cachedData.zaznamnik as Record<string, unknown>)[code] = z; })
+                    .catch(() => {})
+            );
+        }
         await Promise.all(subTasks);
     }));
 

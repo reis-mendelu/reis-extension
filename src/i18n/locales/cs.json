@@ -248,6 +248,7 @@
       "successRate": "Úspěšnost",
       "assessment": "Klasifikace",
       "classmates": "Spolužáci",
+      "zaznamnik": "Záznámník",
       "cvicneTests": "Úkoly"
     },
     "cvicneTests": {
@@ -300,6 +301,12 @@
       "generous": "mírný",
       "rate": "ohodnotit?"
     }
+  },
+  "zaznamnik": {
+    "noData": "Žádná data hodnocení.",
+    "noAssessment": "Tento předmět nemá průběžné hodnocení ani testy.",
+    "phSection": "Průběžné hodnocení",
+    "vtSection": "Testy"
   },
   "syllabus": {
     "conditions": "Podmínky ukončení",
