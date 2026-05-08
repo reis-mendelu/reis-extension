@@ -1,5 +1,4 @@
 import { useAppStore } from '../../store/useAppStore';
-import { useSyncStatus } from './useSyncStatus';
 import type { SubjectZaznamnik } from '../../types/zaznamnik';
 
 export interface UseZaznamnikResult {
@@ -9,10 +8,11 @@ export interface UseZaznamnikResult {
 
 export function useZaznamnik(courseCode: string | undefined): UseZaznamnikResult {
     const data = useAppStore(s => courseCode ? s.zaznamnik?.[courseCode] : undefined);
-    const { isSyncing } = useSyncStatus();
+    const hydrated = useAppStore(s => s.zaznamnikHydrated);
 
     return {
         data: data ?? null,
-        isLoading: data === undefined && isSyncing,
+        // Skeleton only until first IDB hydration completes; afterwards undefined → empty state.
+        isLoading: !hydrated && data === undefined,
     };
 }
