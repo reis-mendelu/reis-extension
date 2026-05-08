@@ -206,6 +206,12 @@ export function useAppLogic() {
 
                 if (r.zaznamnik) {
                     useAppStore.getState().setZaznamnikBatch(r.zaznamnik);
+                    const persistEntries = Object.entries(r.zaznamnik).filter(([, v]) =>
+                        v && (v.ph.sections.length > 0 || v.vt.tests.length > 0)
+                    );
+                    if (persistEntries.length > 0) {
+                        await IndexedDBService.setMany('zaznamnik', persistEntries);
+                    }
                 }
 
                 if (r.lastSync) await IndexedDBService.set('meta', 'last_sync', r.lastSync);

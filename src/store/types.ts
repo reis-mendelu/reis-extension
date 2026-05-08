@@ -48,7 +48,9 @@ export interface ExamSlice {
 
 export interface ZaznamnikSlice {
     zaznamnik: Record<string, SubjectZaznamnik | null>;
+    zaznamnikHydrated: boolean;
     setZaznamnikBatch: (data: Record<string, SubjectZaznamnik | null>) => void;
+    fetchZaznamnik: () => Promise<void>;
 }
 
 export interface SyllabusSlice {
