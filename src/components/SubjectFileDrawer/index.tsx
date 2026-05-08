@@ -21,11 +21,17 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     const [isPdfLoading, setIsPdfLoading] = useState(false);
     const { t } = useTranslation();
     const classmatesCount = useAppStore(s => lesson?.courseCode ? s.classmates[lesson.courseCode]?.length : undefined);
+    const zaznamnikData = useAppStore(s => lesson?.courseCode ? s.zaznamnik[lesson.courseCode] : undefined);
 
-    const tabCounts = useMemo(() => ({
-        files: state.files?.reduce((acc, f) => acc + f.files.length, 0) || 0,
-        classmates: classmatesCount || 0,
-    }), [state.files, classmatesCount]);
+    const tabCounts = useMemo(() => {
+        const phCount = zaznamnikData?.ph.sections.flatMap(s => s.arches).filter(a => !a.empty).length ?? 0;
+        const vtCount = zaznamnikData?.vt.tests.length ?? 0;
+        return {
+            files: state.files?.reduce((acc, f) => acc + f.files.length, 0) || 0,
+            classmates: classmatesCount || 0,
+            zaznamnik: phCount + vtCount,
+        };
+    }, [state.files, classmatesCount, zaznamnikData]);
 
     useEffect(() => {
         if (isOpen && state.files?.length) {
