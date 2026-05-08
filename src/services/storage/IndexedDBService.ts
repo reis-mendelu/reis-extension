@@ -90,7 +90,7 @@ interface ReisDB extends DBSchema {
 }
 
 const DB_NAME = 'reis_db';
-const DB_VERSION = 18;
+const DB_VERSION = 19;
 
 class IndexedDBServiceImpl {
     private dbPromise: Promise<IDBPDatabase<ReisDB>>;
