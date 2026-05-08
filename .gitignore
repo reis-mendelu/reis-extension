@@ -1,3 +1,6 @@
+# Claude Code — local-only settings (project-shared settings.json IS committed)
+.claude/settings.local.json
+
 # Environment variables (NEVER commit credentials!)
 .env
 .env.local
