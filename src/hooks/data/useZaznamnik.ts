@@ -8,7 +8,7 @@ export interface UseZaznamnikResult {
 }
 
 export function useZaznamnik(courseCode: string | undefined): UseZaznamnikResult {
-    const data = useAppStore(s => courseCode ? s.zaznamnik[courseCode] : undefined);
+    const data = useAppStore(s => courseCode ? s.zaznamnik?.[courseCode] : undefined);
     const { isSyncing } = useSyncStatus();
 
     return {

@@ -6,7 +6,7 @@ interface HeaderTabsProps {
     activeTab: string;
     onTabChange: (id: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik') => void;
     disabledTabs?: string[];
-    counts?: Record<string, number>;
+    counts?: Record<string, number | undefined>;
 }
 
 export function HeaderTabs({ activeTab, onTabChange, disabledTabs = [], counts }: HeaderTabsProps) {
@@ -44,7 +44,7 @@ export function HeaderTabs({ activeTab, onTabChange, disabledTabs = [], counts }
                     >
                         <div className="relative">
                             <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
-                            {count !== undefined && count > 0 && (
+                            {tab.id !== 'zaznamnik' && count !== undefined && count > 0 && (
                                 <span className={`absolute -top-1.5 -right-2 text-[9px] font-bold min-w-[14px] h-[14px] flex items-center justify-center rounded-full px-0.5 ${
                                     isActive
                                         ? 'bg-primary text-primary-content'
@@ -52,6 +52,11 @@ export function HeaderTabs({ activeTab, onTabChange, disabledTabs = [], counts }
                                 }`}>
                                     {count}
                                 </span>
+                            )}
+                            {tab.id === 'zaznamnik' && !isDisabled && count !== undefined && (
+                                <span className={`absolute -top-0.5 -right-1.5 w-[7px] h-[7px] rounded-full border border-base-100 transition-colors ${
+                                    count > 0 ? 'bg-success' : 'bg-base-content/20'
+                                }`} />
                             )}
                         </div>
                         <span className="text-[10px] sm:text-[11px] font-bold leading-tight text-center whitespace-nowrap">
