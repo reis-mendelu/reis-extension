@@ -26,6 +26,33 @@ npm run typecheck        # TypeScript strict check
 
 Run a single test file: `npx vitest run src/store/slices/__tests__/someSlice.test.ts`
 
+## Release
+
+Pushing a `v*` tag triggers `.github/workflows/publish.yml` → builds Chrome + Firefox zips → submits to all three stores via `wxt submit`. Use `/release` to automate the full flow.
+
+**Manual steps (or use `/release`):**
+1. Bump version in `package.json` and `wxt.config.ts` (manifest) — both must match
+2. Commit: `chore: bump to X.Y.Z - <one-line description>`
+3. Tag + push: `git tag vX.Y.Z && git push origin main vX.Y.Z`
+
+**Store review SLAs** (version goes live after review):
+
+| Store | Typical review time |
+|-------|-------------------|
+| Chrome Web Store | 1–3 days |
+| Firefox AMO | days–weeks (manual review) |
+| Edge Add-ons | 1–7 days |
+
+**GitHub Secrets** (repo → Settings → Secrets → Actions):
+
+| Store | Secrets |
+|-------|---------|
+| Chrome | `CHROME_EXTENSION_ID`, `CHROME_CLIENT_ID`, `CHROME_CLIENT_SECRET`, `CHROME_REFRESH_TOKEN` |
+| Firefox | `FIREFOX_EXTENSION_ID`, `FIREFOX_API_KEY`, `FIREFOX_API_SECRET` |
+| Edge | `EDGE_PRODUCT_ID`, `EDGE_CLIENT_ID`, `EDGE_API_KEY` |
+
+> `CHROME_REFRESH_TOKEN` is permanent only while the Google OAuth consent screen is set to **"In production"** (currently set). If it ever reverts to "Testing", tokens expire after 7 days.
+
 ## Architecture
 
 ### Extension Structure (WXT)
