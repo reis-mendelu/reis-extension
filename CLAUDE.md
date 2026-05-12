@@ -6,6 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 reIS (REIS.mendelu) is a Chrome browser extension that simplifies the MENDELU university Information System (IS Mendelu) for students. Built with WXT, it injects an iframe containing a React app into IS Mendelu pages. All processing is client-side — no student data is intercepted or stored externally.
 
+## Multi-Repo Organization
+
+Three active repos live as siblings under `../`:
+
+| Repo | Path | Role |
+|------|------|------|
+| **reis-extension** | `../reis-extension` | This repo — browser extension |
+| **reis-scraper** | `../reis-scraper` | Playwright scraper — authenticates to IS Mendelu with real credentials, crawls data into SQLite |
+| **reis-data** | `../reis-data` | Static CDN — pre-crawled subject difficulty JSON served via jsDelivr |
+
+**Subject difficulty pipeline:** `reis-scraper` crawls IS Mendelu → exports JSON → committed to `reis-data` → served via jsDelivr CDN → extension fetches at runtime (`src/api/successRate.ts`, `src/api/erasmus.ts`).
+
+**Supabase** is separate — the extension uses it directly for notifications. Not related to scraper or reis-data.
+
+When a task involves IS Mendelu data, a new scraper, or the CDN data shape: read `../reis-scraper/scripts/` for patterns and `../reis-scraper/db/schema.sql` for the data model before designing anything. Scraper tasks run via a dedicated sub-agent. Use `/repos` for full detail.
+
 ## Commands
 
 ```bash
