@@ -110,18 +110,21 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
             return {
                 bg: 'bg-exam-bg/85',
                 border: 'border-l-exam-border',
+                outerBorder: 'border-exam-border/30',
                 text: 'text-gray-900',
             };
         } else if (lesson.isSeminar === 'true') {
             return {
                 bg: 'bg-seminar-bg/85',
                 border: 'border-l-seminar-border',
+                outerBorder: 'border-seminar-border/30',
                 text: 'text-gray-900',
             };
         } else {
             return {
                 bg: 'bg-lecture-bg/85',
                 border: 'border-l-lecture-border',
+                outerBorder: 'border-lecture-border/30',
                 text: 'text-gray-900',
             };
         }
@@ -143,8 +146,8 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
 
     return (
         <div
-            className={`h-full mx-1 rounded cursor-pointer group 
-                        ${styles.bg} border-l-4 ${styles.border} relative`}
+            className={`h-full mx-1 rounded cursor-pointer group
+                        ${styles.bg} border ${styles.outerBorder} border-l-4 ${styles.border} relative`}
             onClick={onClick}
             title={`${courseTitle}\n${lesson.startTime} - ${lesson.endTime}\n${room}\n${lesson.teachers[0]?.shortName || ''}`}
         >
