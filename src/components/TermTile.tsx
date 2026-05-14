@@ -1,4 +1,4 @@
-import { RotateCcw, Zap, CircleCheck } from 'lucide-react';
+import { RotateCcw, Zap, CircleCheck, AlertCircle } from 'lucide-react';
 import type { ExamTerm, ExamSection } from '../types/exams';
 import { getDayOfWeek, parseRegistrationStart, formatCountdown } from '../utils/termUtils';
 import { useTranslation } from '../hooks/useTranslation';
@@ -111,7 +111,7 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                                 <span className="loading loading-spinner loading-sm text-primary" />
                             ) : isIneligible ? (
                                 <span className="flex items-center gap-1 text-[10px] font-bold text-warning/70 uppercase tracking-wider bg-warning/10 border border-warning/20 px-2 py-0.5 rounded-md whitespace-nowrap">
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                    <AlertCircle size={10} strokeWidth={2.5} />
                                     {t('exams.ineligible')}
                                 </span>
                             ) : (isClosed || isBlocked) ? (
