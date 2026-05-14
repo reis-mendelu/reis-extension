@@ -6,12 +6,23 @@ import type { PDFDocumentProxy } from 'pdfjs-dist';
 // Fetch the worker script as text and serve it via a blob URL instead.
 import workerPath from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-const workerReady = fetch(chrome.runtime.getURL(workerPath))
-    .then(r => r.text())
-    .then(text => {
-        const url = URL.createObjectURL(new Blob([text], { type: 'application/javascript' }));
-        pdfjs.GlobalWorkerOptions.workerSrc = url;
-    });
+let workerReadyPromise: Promise<void> | null = null;
+
+function getWorkerReady(): Promise<void> {
+    if (!workerReadyPromise) {
+        try {
+            workerReadyPromise = fetch(chrome.runtime.getURL(workerPath))
+                .then(r => r.text())
+                .then(text => {
+                    const url = URL.createObjectURL(new Blob([text], { type: 'application/javascript' }));
+                    pdfjs.GlobalWorkerOptions.workerSrc = url;
+                });
+        } catch {
+            return Promise.reject(new Error('Extension context invalidated'));
+        }
+    }
+    return workerReadyPromise;
+}
 
 interface PdfViewerProps {
     blobUrl: string;
@@ -25,7 +36,7 @@ export function PdfViewer({ blobUrl, onClose }: PdfViewerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        workerReady.then(() => setReady(true));
+        getWorkerReady().then(() => setReady(true)).catch(() => {});
     }, []);
 
     const onDocumentLoadSuccess = useCallback(async (pdf: PDFDocumentProxy) => {
