@@ -6,6 +6,8 @@ import type { VtTestAttempt } from '../../types/zaznamnik';
 import { VtTestGroup } from './Zaznamnik/VtTestGroup';
 import { PhArchView } from './Zaznamnik/PhArchView';
 
+const IS_BASE = 'https://is.mendelu.cz';
+
 interface ZaznamnikTabProps {
     courseCode: string;
 }
@@ -20,7 +22,7 @@ export function ZaznamnikTab({ courseCode }: ZaznamnikTabProps) {
     const subjectId = subjectInfo?.subjectId;
 
     const buildUrl = (extra: string) =>
-        `https://is.mendelu.cz/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${subjectId};${extra};lang=${lang}`;
+        `${IS_BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${subjectId};${extra};lang=${lang}`;
 
     if (isLoading) {
         return (
