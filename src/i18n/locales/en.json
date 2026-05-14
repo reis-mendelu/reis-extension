@@ -167,6 +167,7 @@
     "autoRegWarning": "⚠️ Auto-registration pending. Don't close this page or put your computer to sleep!",
     "autoRegFiring": "Sending requests...",
     "autoRegTimeLock": "Available {min} min. before start",
+    "ineligible": "Missing credit",
     "confirmation": {
       "registerTitle": "Confirm registration",
       "unregisterTitle": "Confirm unregistration",

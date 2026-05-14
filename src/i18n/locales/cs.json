@@ -200,6 +200,7 @@
     "autoRegWarning": "⚠️ Auto-rezervace čeká. Nezavírej tuhle stránku a neuspávej zařízení!",
     "autoRegFiring": "Odesílání žádostí...",
     "autoRegTimeLock": "Dostupné {min} min. před spuštěním",
+    "ineligible": "Chybí zápočet",
     "confirmation": {
       "registerTitle": "Potvrdit přihlášení",
       "unregisterTitle": "Potvrdit odhlášení",

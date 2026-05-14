@@ -71,22 +71,25 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
             if (attemptTypes.length > 0) break;
         }
 
+        const ineligible = !!row.querySelector('img[sysid="termin-nevhodny"]');
+
         const subject = getOrCreateSubject(code, name);
         const section = getOrCreateSection(subject, sectionName);
-        section.terms.push({ 
-            id: termId, 
-            date: datePart, 
-            time: timePart, 
-            capacity: capacityStr, 
-            full: isFull, 
-            room, 
-            teacher, 
-            teacherId, 
+        section.terms.push({
+            id: termId,
+            date: datePart,
+            time: timePart,
+            capacity: capacityStr,
+            full: isFull,
+            room,
+            teacher,
+            teacherId,
             registrationStart,
             registrationEnd,
             deregistrationDeadline,
             attemptTypes: attemptTypes.length > 0 ? attemptTypes : undefined,
             canRegisterNow: !!row.querySelector('a[href*="prihlasit_ihned=1"]') && !isFull,
+            ineligible: ineligible || undefined,
             roomCs: isEn ? undefined : room,
             roomEn: isEn ? room : undefined
         });

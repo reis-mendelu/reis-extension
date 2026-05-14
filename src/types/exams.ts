@@ -29,6 +29,7 @@ export interface ExamTerm {
     deregistrationDeadline?: string;  // When deregistration closes (format: "DD.MM.YYYY HH:MM")
     attemptTypes?: ('regular' | 'retake1' | 'retake2' | 'retake3')[];  // One or more attempt types (e.g. a term can serve as both regular and retake)
     canRegisterNow?: boolean;  // True if registration link is available now
+    ineligible?: boolean;      // True when img[sysid="termin-nevhodny"] — student lacks prerequisite (e.g. missing zápočet)
 }
 
 export interface ExamSection {
