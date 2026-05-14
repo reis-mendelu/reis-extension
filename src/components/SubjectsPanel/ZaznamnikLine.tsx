@@ -36,7 +36,6 @@ export function ZaznamnikLine({ courseCode, subjectId, className }: ZaznamnikLin
     const lang = language === 'cz' ? 'cz' : 'en';
 
     const studium = useAppStore(s => s.studiumId);
-    const obdobi = useAppStore(s => s.obdobiId);
     const attendanceGroups = useAppStore(s => s.attendance[courseCode]);
     const subjectInfo = useAppStore(s => s.subjects?.data[courseCode]);
     const allTests = useAppStore(s => s.cvicneTests);
@@ -74,14 +73,9 @@ export function ZaznamnikLine({ courseCode, subjectId, className }: ZaznamnikLin
             .sort((x, y) => x.ts - y.ts);
     }, [subjectId, allAssignments]);
 
-    const hasPrubezne = subjectInfo?.hasPrubezne;
-    const hasTest = subjectInfo?.hasTest;
     const autoHref = subjectInfo?.autoHref;
 
-    const buildUrl = (extra: string) =>
-        `${IS_BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${subjectId};${extra};lang=${lang}`;
-
-    const hasAnything = visibleDots.length > 0 || hasPrubezne || hasTest || autoHref || accessibleCount > 0 || upcomingDeadlines.length > 0;
+    const hasAnything = visibleDots.length > 0 || autoHref || accessibleCount > 0 || upcomingDeadlines.length > 0;
     if (!hasAnything) return null;
 
     const deadlineLabel = (ts: number) => {
@@ -107,17 +101,6 @@ export function ZaznamnikLine({ courseCode, subjectId, className }: ZaznamnikLin
                     <span className="text-[10px] text-base-content/40 ml-0.5 font-mono">{presentCount}/{totalCount}</span>
                 </span>
             )}
-            {hasPrubezne && studium && obdobi && subjectId && (
-                <a
-                    href={buildUrl('prubezne=1')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={e => e.stopPropagation()}
-                    className="flex items-center gap-0.5 text-[10px] text-primary/70 hover:text-primary transition-colors shrink-0"
-                >
-                    PH <ExternalLink size={9} />
-                </a>
-            )}
             {autoHref && (
                 <a
                     href={autoHref}
@@ -127,17 +110,6 @@ export function ZaznamnikLine({ courseCode, subjectId, className }: ZaznamnikLin
                     className="flex items-center gap-0.5 text-[10px] text-primary/70 hover:text-primary transition-colors shrink-0"
                 >
                     AH <ExternalLink size={9} />
-                </a>
-            )}
-            {hasTest && studium && obdobi && subjectId && (
-                <a
-                    href={buildUrl('test=1')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={e => e.stopPropagation()}
-                    className="flex items-center gap-0.5 text-[10px] text-primary/70 hover:text-primary transition-colors shrink-0"
-                >
-                    VT <ExternalLink size={9} />
                 </a>
             )}
             {accessibleCount > 0 && (accessibleCount === 1 || studium) && (
