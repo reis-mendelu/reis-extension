@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Plus, X, Link, Hash, Trash2, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAppStore } from '@/store/useAppStore';
-import { LATableB } from './LATableB';
+import { LATableB, type ManualCourse } from './LATableB';
 import { UnfulfilledCoursesSection } from './UnfulfilledCoursesSection';
 import { ErasmusVerifyDot } from './ErasmusVerifyDot';
 import { CountryPicker } from './CountryPicker';
@@ -22,9 +22,13 @@ interface OptionProps {
   onOpenSubject: (courseCode: string, courseName?: string, courseId?: string) => void;
   onSearchSubject: (name: string) => void;
   onViewReports: (file: string, schoolName: string | null, isPermanent?: boolean) => void;
+  manualCourses: ManualCourse[];
+  onAddManual: (course: ManualCourse) => void;
+  onRemoveManual: (index: number) => void;
+  onReorderManual: (from: number, to: number) => void;
 }
 
-function LATableAOption({ option, index, total, selectedCodes, onToggle, onReorder, plan, onOpenSubject, onSearchSubject, onViewReports }: OptionProps) {
+function LATableAOption({ option, index, total, selectedCodes, onToggle, onReorder, plan, onOpenSubject, onSearchSubject, onViewReports, manualCourses, onAddManual, onRemoveManual, onReorderManual }: OptionProps) {
   const { t } = useTranslation();
   const updateHeader = useAppStore(s => s.updateErasmusTableAOptionHeader);
   const removeOption = useAppStore(s => s.removeErasmusTableAOption);
@@ -278,13 +282,13 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
       </div>
 
       {/* Table B */}
-      <LATableB plan={plan} selectedCodes={selectedCodes} onToggle={onToggle} tableACourses={option.courses} onReorder={onReorder} hoveredRowIndex={hoveredRowIndex} />
+      <LATableB plan={plan} selectedCodes={selectedCodes} onToggle={onToggle} tableACourses={option.courses} onReorder={onReorder} hoveredRowIndex={hoveredRowIndex} manualCourses={manualCourses} onAddManual={onAddManual} onRemoveManual={onRemoveManual} onReorderManual={onReorderManual} />
 
       {/* Add courses picker */}
       <div className="flex flex-col gap-0">
         <button
           onClick={() => setBuilderOpen(!builderOpen)}
-          className="flex items-center gap-2 px-2 py-2 text-xs font-bold text-base-content/50 hover:text-primary transition-colors group w-full"
+          className="flex items-center gap-2 px-2 py-2 text-xs font-bold text-primary/70 hover:text-primary transition-colors group w-full"
         >
           {builderOpen
             ? <ChevronDown size={14} className="transition-transform rotate-180" />
@@ -319,8 +323,12 @@ interface LATableAProps {
 export function LATableA({ plan, onOpenSubject, onSearchSubject, onViewReports }: LATableAProps) {
   const options = useAppStore(s => s.erasmusTableAOptions);
   const tableBCourses = useAppStore(s => s.erasmusTableBCourses);
+  const tableBManual = useAppStore(s => s.erasmusTableBManualCourses);
   const toggleCourse = useAppStore(s => s.toggleErasmusTableBCourse);
   const reorderCourse = useAppStore(s => s.reorderErasmusTableBCourse);
+  const addManual = useAppStore(s => s.addErasmusTableBManualCourse);
+  const removeManual = useAppStore(s => s.removeErasmusTableBManualCourse);
+  const reorderManual = useAppStore(s => s.reorderErasmusTableBManualCourse);
 
   return (
     <div className="flex flex-col gap-8 pb-4">
@@ -337,6 +345,10 @@ export function LATableA({ plan, onOpenSubject, onSearchSubject, onViewReports }
           onOpenSubject={onOpenSubject}
           onSearchSubject={onSearchSubject}
           onViewReports={onViewReports}
+          manualCourses={tableBManual[option.id] ?? []}
+          onAddManual={(course) => addManual(option.id, course)}
+          onRemoveManual={(idx) => removeManual(option.id, idx)}
+          onReorderManual={(from, to) => reorderManual(option.id, from, to)}
         />
       ))}
     </div>

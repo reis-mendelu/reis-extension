@@ -558,6 +558,8 @@
     "uploadSyllabi": "Upload foreign syllabi (PDF)",
     "matchedWith": "Matched with",
     "addCourse": "Add course",
+    "addManually": "Add manually",
+    "addManuallyFallback": "Course not listed? Add manually",
     "addCourses": "Add courses",
     "addCoursesHint": "Select MENDELU courses from your study plan",
     "addOptionHint": "Draft another learning agreement for a different institution",

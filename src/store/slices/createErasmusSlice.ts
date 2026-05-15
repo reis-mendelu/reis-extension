@@ -10,6 +10,7 @@ import type { AIComparisonResult } from '../../api/claude';
 const TABLE_A_COURSES_KEY = 'erasmus_table_a_courses'; // Legacy
 const TABLE_A_OPTIONS_KEY = 'erasmus_table_a_options';
 const TABLE_B_COURSES_KEY = 'erasmus_table_b_courses';
+const TABLE_B_MANUAL_KEY = 'erasmus_table_b_manual';
 const STUDENT_INFO_KEY = 'erasmus_student_info';
 const ERASMUS_UI_STATE_KEY = 'erasmus_ui_state';
 const VERDICTS_KEY = 'erasmus_verdicts';
@@ -31,6 +32,7 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
   erasmusCountryFile: '',
   erasmusConfig: null,
   erasmusTableBCourses: {},
+  erasmusTableBManualCourses: {},
   erasmusStudentInfo: { ...EMPTY_STUDENT_INFO },
   erasmusTableAOptions: [
     { id: 'opt-1', institutionName: '', erasmusCode: '', country: '', link: '', courses: [] }
@@ -272,6 +274,27 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     set({ erasmusTableAOptions: next });
     IndexedDBService.set('meta', TABLE_A_OPTIONS_KEY, next).catch(e => logError('ErasmusSlice.removeErasmusTableACourse', e));
   },
+  addErasmusTableBManualCourse: (optionId: string, course: { code: string; name: string; credits: number }) => {
+    const all = get().erasmusTableBManualCourses;
+    const next = { ...all, [optionId]: [...(all[optionId] ?? []), course] };
+    set({ erasmusTableBManualCourses: next });
+    IndexedDBService.set('meta', TABLE_B_MANUAL_KEY, next).catch(e => logError('ErasmusSlice.addErasmusTableBManualCourse', e));
+  },
+  removeErasmusTableBManualCourse: (optionId: string, index: number) => {
+    const all = get().erasmusTableBManualCourses;
+    const next = { ...all, [optionId]: (all[optionId] ?? []).filter((_, i) => i !== index) };
+    set({ erasmusTableBManualCourses: next });
+    IndexedDBService.set('meta', TABLE_B_MANUAL_KEY, next).catch(e => logError('ErasmusSlice.removeErasmusTableBManualCourse', e));
+  },
+  reorderErasmusTableBManualCourse: (optionId: string, fromIndex: number, toIndex: number) => {
+    const all = get().erasmusTableBManualCourses;
+    const current = [...(all[optionId] ?? [])];
+    const [moved] = current.splice(fromIndex, 1);
+    current.splice(toIndex, 0, moved);
+    const next = { ...all, [optionId]: current };
+    set({ erasmusTableBManualCourses: next });
+    IndexedDBService.set('meta', TABLE_B_MANUAL_KEY, next).catch(e => logError('ErasmusSlice.reorderErasmusTableBManualCourse', e));
+  },
   reorderErasmusTableACourse: (optionId: string, fromIndex: number, toIndex: number) => {
     const next = get().erasmusTableAOptions.map(o => {
       if (o.id !== optionId) return o;
@@ -287,6 +310,9 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
     try {
       const tableBCourses = await IndexedDBService.get('meta', TABLE_B_COURSES_KEY) as Record<string, string[]> | null;
       if (tableBCourses) set({ erasmusTableBCourses: tableBCourses });
+
+      const tableBManual = await IndexedDBService.get('meta', TABLE_B_MANUAL_KEY) as Record<string, { code: string; name: string; credits: number }[]> | null;
+      if (tableBManual) set({ erasmusTableBManualCourses: tableBManual });
 
       const studentInfo = await IndexedDBService.get('meta', STUDENT_INFO_KEY) as ErasmusStudentInfo | null;
       if (studentInfo) set({ erasmusStudentInfo: { ...EMPTY_STUDENT_INFO, ...studentInfo } });

@@ -1,22 +1,24 @@
 import { defineBackground } from 'wxt/utils/define-background';
-import { browser } from 'wxt/browser';
 
 export default defineBackground(() => {
-  // Return a Promise instead of sendResponse+return true — fixes Firefox cross-context `.then` access denial.
-  browser.runtime.onMessage.addListener((message): Promise<unknown> | undefined => {
-    if (message.type !== 'REIS_BG_FETCH') return;
+  // Use sendResponse+return true (not Promise-return) — WXT's browser polyfill does not
+  // reliably relay async Promise returns to chrome.runtime.sendMessage callers in Chrome.
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message.type !== 'REIS_BG_FETCH') return false;
 
     const opts: RequestInit = {};
     if (message.options?.method) opts.method = message.options.method;
     if (message.options?.headers) opts.headers = message.options.headers;
     if (message.options?.body) opts.body = message.options.body;
 
-    return fetch(message.url, opts)
+    fetch(message.url, opts)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.text();
       })
-      .then((text) => ({ success: true, data: text }))
-      .catch((e) => ({ success: false, error: String(e) }));
+      .then((text) => sendResponse({ success: true, data: text }))
+      .catch((e) => sendResponse({ success: false, error: String(e) }));
+
+    return true; // keep the message channel open for async sendResponse
   });
 });

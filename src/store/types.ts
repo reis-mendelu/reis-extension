@@ -197,6 +197,7 @@ export interface ErasmusSlice {
     erasmusCountryFile: string;
     erasmusConfig: ErasmusConfig | null;
     erasmusTableBCourses: Record<string, string[]>;
+    erasmusTableBManualCourses: Record<string, { code: string; name: string; credits: number }[]>;
     erasmusStudentInfo: ErasmusStudentInfo;
     erasmusTableAOptions: ErasmusUniversityOption[];
     erasmusVerdicts: Record<string, 'approved' | 'rejected'>;
@@ -232,6 +233,9 @@ export interface ErasmusSlice {
     addErasmusTableACourse: (optionId: string, course: { code: string; name: string; credits: number }) => void;
     removeErasmusTableACourse: (optionId: string, index: number) => void;
     reorderErasmusTableACourse: (optionId: string, fromIndex: number, toIndex: number) => void;
+    addErasmusTableBManualCourse: (optionId: string, course: { code: string; name: string; credits: number }) => void;
+    removeErasmusTableBManualCourse: (optionId: string, index: number) => void;
+    reorderErasmusTableBManualCourse: (optionId: string, fromIndex: number, toIndex: number) => void;
     loadErasmusState: () => Promise<void>;
 }
 
