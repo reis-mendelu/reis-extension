@@ -93,7 +93,7 @@ export function StudentInfoSection({ userParams, dob }: Props) {
                   <button
                     key={sem}
                     onClick={() => setInfo({ semester: info.semester === sem ? '' : sem })}
-                    className={`join-item btn btn-sm flex-1 text-xs font-bold ${info.semester === sem ? 'btn-primary' : 'btn-ghost border border-base-300'}`}
+                    className={`join-item btn btn-sm flex-1 text-xs font-bold border-0 ${info.semester === sem ? 'btn-primary' : 'btn-ghost'}`}
                   >
                     {t(sem === 'WS' ? 'erasmus.semesterWS' : 'erasmus.semesterSS')}
                   </button>

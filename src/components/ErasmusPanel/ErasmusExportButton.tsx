@@ -31,7 +31,7 @@ export function ErasmusExportButton({ className = '' }: Props) {
     <button
       onClick={handleExport}
       disabled={loading}
-      className={`btn btn-sm gap-2 text-xs font-bold ${className}`}
+      className={`btn btn-sm gap-2 text-xs font-bold border-0 ${className}`}
     >
       {loading ? <span className="loading loading-spinner loading-xs" /> : <Download size={12} />}
       Export .pdf
