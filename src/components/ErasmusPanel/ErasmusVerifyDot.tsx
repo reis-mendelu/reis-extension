@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { FileText, Paperclip, X, RotateCcw, CheckCircle, XCircle, Loader2, WandSparkles, Type } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { compareSyllabiAI } from '@/api/gemini';
+import { compareSyllabiAI } from '@/api/claude';
 import { buildMendeluText } from '@/api/syllabusTransfer';
 import type { StudyPlan } from '@/types/studyPlan';
 
