@@ -98,6 +98,49 @@ const ContentBox: React.FC<ContentBoxProps> = ({ subjectName, sectionName, term,
   );
 };
 
+interface CompactCardProps {
+  subjectName: string;
+  sectionName?: string;
+  term: ExamTerm;
+  deadline?: string;
+  isSelected?: boolean;
+  onClick?: () => void;
+  t: (key: string) => string;
+  language?: string;
+}
+
+const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, term, deadline, isSelected, onClick, language }) => {
+  const urgency = getDeadlineUrgency(deadline);
+  const countdown = deadline && urgency !== 'none' && urgency !== 'expired' ? formatDeadlineCountdown(deadline) : null;
+  const badgeClass = urgencyBadge[urgency];
+
+  return (
+    <div
+      className={`
+        border px-2.5 py-1.5 w-full bg-base-100 rounded-md
+        transition-all duration-200
+        ${urgencyBorder[urgency]}
+        ${isSelected ? 'ring-1 ring-primary/40 bg-base-200/40' : ''}
+        ${onClick ? 'cursor-pointer hover:bg-base-200/50 active:scale-[0.98]' : ''}
+      `}
+      onClick={onClick}
+    >
+      <div className="font-black text-[11px] leading-tight truncate text-base-content">{subjectName}</div>
+      {sectionName && (
+        <div className="text-[9px] font-medium text-base-content/40 uppercase tracking-wide truncate leading-none mt-0.5">{sectionName}</div>
+      )}
+      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+        <div className="text-[10px] font-mono font-bold text-primary leading-none whitespace-nowrap">
+          {term.date} · {term.time}
+        </div>
+        {countdown && badgeClass && (
+          <span className={`text-[9px] font-bold px-1 py-px rounded border ${badgeClass} leading-none`}>{countdown}</span>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, deadline, isSelected, isFirst, isLast, orientation = 'vertical', onClick }) => {
   const { t, language } = useTranslation();
   const isHorizontal = orientation === 'horizontal';
@@ -105,9 +148,24 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, dea
   const iconClass = 'text-base-content opacity-40 invisible';
 
   if (isHorizontal) {
+    const urgency = getDeadlineUrgency(deadline);
+    const dotColor = isSelected
+      ? 'bg-primary ring-2 ring-primary/30 scale-110'
+      : urgency === 'critical'
+      ? 'bg-error animate-pulse'
+      : urgency === 'warning'
+      ? 'bg-warning'
+      : 'bg-base-content/40';
+
     return (
-      <div className="flex-shrink-0">
-        <ContentBox subjectName={subjectName} sectionName={sectionName} term={term} deadline={deadline} isHorizontal isSelected={isSelected} onClick={onClick} t={t} language={language} />
+      <div className="flex-shrink-0 flex flex-col items-center w-40">
+        <div className="px-1.5 w-full">
+          <CompactCard subjectName={subjectName} sectionName={sectionName} term={term} deadline={deadline} isSelected={isSelected} onClick={onClick} t={t} language={language} />
+        </div>
+        <div className="w-px h-2.5 bg-base-content/15 shrink-0" />
+        <div className="h-2 flex items-center justify-center shrink-0">
+          <div className={`w-2 h-2 rounded-full transition-all duration-200 ${dotColor}`} />
+        </div>
       </div>
     );
   }

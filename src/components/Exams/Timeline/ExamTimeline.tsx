@@ -77,8 +77,9 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
   }
 
   return (
-    <>
-      <div className={`flex flex-row overflow-x-auto gap-3 py-1.5 px-0.5 w-full h-fit ${className}`}>
+    <div className={`overflow-x-auto w-full py-3 ${className}`}>
+      <div className="relative flex flex-row w-full min-w-max">
+        <div className="absolute left-0 right-0 bottom-[4px] h-px bg-base-content/15 pointer-events-none" />
         {sortedExams.map((item, index) => (
           <ExamItem
             key={item.term.id || `${item.subjectName}-${index}`}
@@ -87,13 +88,14 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
             sectionName={resolveSectionName(item)}
             deadline={item.section?.registeredTerm?.deregistrationDeadline}
             orientation="horizontal"
+            isFirst={index === 0}
+            isLast={index === sortedExams.length - 1}
             isSelected={selectedSectionId != null && selectedSectionId === item.section?.id}
             onClick={() => handleCardClick(item)}
           />
         ))}
       </div>
-
-    </>
+    </div>
   );
 };
 

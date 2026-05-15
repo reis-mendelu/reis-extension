@@ -116,7 +116,7 @@ return (
 
             {/* Horizontal Timeline Integration */}
             {realExams.length > 0 && (
-                <div className="px-4 pb-0 border-b border-base-200">
+                <div>
                     <ExamTimeline
                         exams={realExams as unknown as TimelineExam[]}
                         orientation="horizontal"
