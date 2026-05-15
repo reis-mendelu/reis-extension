@@ -8,7 +8,7 @@ import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { SyncStatus } from '../services/sync';
 import type { ErasmusCountryData, ErasmusConfig, University } from '../types/erasmus';
-import type { AIComparisonResult } from '../api/gemini';
+import type { AIComparisonResult } from '../api/claude';
 import type { PinnedPage } from './slices/createPinnedPagesSlice';
 import type { OutletMenu } from '../types/menuTypes';
 import type { PageCategory } from '../data/pages/types';

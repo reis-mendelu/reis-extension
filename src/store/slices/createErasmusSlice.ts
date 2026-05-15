@@ -5,7 +5,7 @@ import { fetchJsonViaProxy } from '../../api/proxyClient';
 import { IndexedDBService } from '../../services/storage';
 import { loggers } from '../../utils/logger';
 import { logError } from '../../utils/reportError';
-import type { AIComparisonResult } from '../../api/gemini';
+import type { AIComparisonResult } from '../../api/claude';
 
 const TABLE_A_COURSES_KEY = 'erasmus_table_a_courses'; // Legacy
 const TABLE_A_OPTIONS_KEY = 'erasmus_table_a_options';
