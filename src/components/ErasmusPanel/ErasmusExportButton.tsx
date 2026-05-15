@@ -11,6 +11,7 @@ export function ErasmusExportButton({ className = '' }: Props) {
   const studentInfo = useAppStore(s => s.erasmusStudentInfo);
   const options = useAppStore(s => s.erasmusTableAOptions);
   const tableBCourses = useAppStore(s => s.erasmusTableBCourses);
+  const tableBManual = useAppStore(s => s.erasmusTableBManualCourses);
   const dualPlan = useAppStore(s => s.studyPlanDual);
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +21,7 @@ export function ErasmusExportButton({ className = '' }: Props) {
   const handleExport = async () => {
     setLoading(true);
     try {
-      await downloadErasmusPdf(studentInfo, options, tableBCourses, allSubjects);
+      await downloadErasmusPdf(studentInfo, options, tableBCourses, allSubjects, tableBManual);
     } finally {
       setLoading(false);
     }

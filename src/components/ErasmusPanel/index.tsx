@@ -160,7 +160,7 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
               {tableAOptions.length < 4 && (
                 <button
                   onClick={addOption}
-                  className="btn btn-soft btn-primary btn-sm rounded-full px-5 shadow-sm border border-primary/20 h-8"
+                  className="btn btn-ghost btn-sm rounded-full px-4 h-8 text-base-content/40 hover:text-base-content/70 border border-base-300 hover:border-base-content/20 font-normal"
                 >
                   <Plus size={14} className="opacity-70" />
                   <span className="font-bold text-xs">{t('erasmus.addOption', { n: (tableAOptions.length + 1).toString() })}</span>

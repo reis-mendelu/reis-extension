@@ -560,6 +560,8 @@
     "uploadSyllabi": "Nahrát zahraniční sylabusy (PDF)",
     "matchedWith": "Spárováno s",
     "addCourse": "Přidat předmět",
+    "addManually": "Přidat ručně",
+    "addManuallyFallback": "Předmět tu není? Přidat ručně",
     "addCourses": "Přidat předměty",
     "addCoursesHint": "Vyber předměty MENDELU ze studijního plánu",
     "addOptionHint": "Vytvoř další studijní smlouvu pro jinou instituci",

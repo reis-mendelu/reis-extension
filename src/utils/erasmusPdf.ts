@@ -73,6 +73,7 @@ export async function downloadErasmusPdf(
   options: ErasmusUniversityOption[],
   tableBCourses: Record<string, string[]>,
   allSubjects: SubjectStatus[],
+  tableBManualCourses: Record<string, { code: string; name: string; credits: number }[]> = {},
 ): Promise<void> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const subjectMap = new Map(allSubjects.map(s => [s.code, s]));
@@ -101,13 +102,16 @@ export async function downloadErasmusPdf(
     const positionalExaTotal = codes.reduce((sum, code, i) => { const s = subjectMap.get(code); return (!s || s.credits >= 999) ? sum + (option.courses[i]?.credits ?? 0) : sum; }, 0);
     const residual = Math.max(0, tableATotal - knownBTotal - positionalExaTotal);
     const lastExaIdx = codes.map((code, i) => { const s = subjectMap.get(code); return (!s || s.credits >= 999) ? i : -1; }).filter(i => i >= 0).pop();
-    const bRows = codes.map((code, rowIndex) => {
-      const s = subjectMap.get(code);
-      const isExa = !s || s.credits >= 999;
-      const base = isExa ? (option.courses[rowIndex]?.credits ?? 0) : s.credits;
-      const credits = isExa && rowIndex === lastExaIdx ? base + residual : base;
-      return { code, name: s?.name ?? code, credits };
-    });
+    const bRows = [
+      ...codes.map((code, rowIndex) => {
+        const s = subjectMap.get(code);
+        const isExa = !s || s.credits >= 999;
+        const base = isExa ? (option.courses[rowIndex]?.credits ?? 0) : s.credits;
+        const credits = isExa && rowIndex === lastExaIdx ? base + residual : base;
+        return { code, name: s?.name ?? code, credits };
+      }),
+      ...(tableBManualCourses[option.id] ?? []),
+    ];
 
     // Institution header
     y = drawTable(doc, y, [
