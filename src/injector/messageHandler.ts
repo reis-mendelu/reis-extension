@@ -71,7 +71,7 @@ async function handleFetchRequest(id: string, url: string, options?: { method?: 
             text = await response.text();
         } else {
             let result = await chrome.runtime.sendMessage({ type: 'REIS_BG_FETCH', url, options });
-            if (result === undefined) {
+            if (result == null) {
                 // Service worker may still be waking up — retry once after a brief pause
                 await new Promise(r => setTimeout(r, 500));
                 result = await chrome.runtime.sendMessage({ type: 'REIS_BG_FETCH', url, options });
