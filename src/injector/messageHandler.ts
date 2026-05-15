@@ -70,7 +70,12 @@ async function handleFetchRequest(id: string, url: string, options?: { method?: 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             text = await response.text();
         } else {
-            const result = await chrome.runtime.sendMessage({ type: 'REIS_BG_FETCH', url, options });
+            let result = await chrome.runtime.sendMessage({ type: 'REIS_BG_FETCH', url, options });
+            if (result === undefined) {
+                // Service worker may still be waking up — retry once after a brief pause
+                await new Promise(r => setTimeout(r, 500));
+                result = await chrome.runtime.sendMessage({ type: 'REIS_BG_FETCH', url, options });
+            }
             if (!result?.success) throw new Error(result?.error || 'Background fetch failed');
             text = result.data;
         }
