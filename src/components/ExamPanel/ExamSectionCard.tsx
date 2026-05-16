@@ -8,6 +8,8 @@ import { TermsSummary } from './TermsSummary';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { getSectionState } from './utils';
+import { parseRegistrationStart } from '../../utils/termUtils';
+import type { ArmedTerm } from './useAutoRegistration';
 
 interface ExamSectionCardProps {
     subject: ExamSubject;
@@ -17,12 +19,13 @@ interface ExamSectionCardProps {
     onToggleExpand: (id: string) => void;
     onRegister: (section: ExamSection, termId: string) => void;
     onUnregister: (section: ExamSection) => void;
-    armedTerms?: Map<string, unknown>;
+    armedTerms?: Map<string, ArmedTerm>;
     firingTerms?: Set<string>;
     toggleArm?: (term: ExamTerm, section: ExamSection) => void;
 }
 
 const stateCardClass = {
+    registered: 'border-success/25 bg-success/[0.02]',
     open: 'border-success/25 bg-success/[0.02]',
     opening: 'border-base-200',
     noInfo: 'border-base-200',
@@ -36,16 +39,13 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
     const terminId = section.registeredTerm?.id;
     const classmates = useAppStore(s => terminId ? s.examClassmates[terminId] : undefined);
     const isReg = section.status === 'registered';
-    const sectionState = isReg ? { type: 'open' as const, openCount: 0 } : getSectionState(section, now);
+    const sectionState = isReg ? { type: 'registered' as const } : getSectionState(section, now);
 
     const canUnregister = (() => {
         const deadline = section.registeredTerm?.deregistrationDeadline;
         if (!deadline) return isReg;
-        const [datePart, timePart] = deadline.split(' ');
-        const [day, month, year] = datePart.split('.');
-        const [hours, minutes] = timePart.split(':');
-        const deadlineDate = new Date(+year, +month - 1, +day, +hours, +minutes);
-        return isReg && new Date() <= deadlineDate;
+        const deadlineDate = parseRegistrationStart(deadline);
+        return isReg && !!deadlineDate && now <= deadlineDate;
     })();
 
     const subjectName = (language === 'en' && subject.nameEn) ? subject.nameEn : (subject.nameCs || subject.name);

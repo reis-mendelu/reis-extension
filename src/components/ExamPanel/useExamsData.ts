@@ -3,13 +3,11 @@ import { useAppStore } from '../../store/useAppStore';
 import type { ExamSubject, ExamSection } from '../../types/exams';
 
 export function useExamsData() {
-    const storeExams = useAppStore(s => s.exams.data);
+    const exams = useAppStore(s => s.exams.data);
     const status = useAppStore(s => s.exams.status);
     const handshakeDone = useAppStore(s => s.syncStatus.handshakeDone);
     const handshakeTimedOut = useAppStore(s => s.syncStatus.handshakeTimedOut);
     const isSyncing = useAppStore(s => s.syncStatus.isSyncing);
-
-    const exams = useMemo(() => storeExams, [storeExams]);
 
     const sections = useMemo(() => {
         const res: { subject: ExamSubject; section: ExamSection }[] = [];

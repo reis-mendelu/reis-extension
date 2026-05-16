@@ -13,8 +13,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
 
-interface RegisteredExam {
-    subjectName: string;
+interface RegisteredExam extends TimelineExam {
     subject: ExamSubject;
     section: ExamSection;
     term: { id: string; date: string; time: string; room: string; };
@@ -38,10 +37,9 @@ export function ExamPanel() {
     const { exams, showSkeleton, sections } = useExamsData();
     const studium = params?.studium || '';
     const obdobi = params?.obdobi || '';
-    const lang = language === 'cz' ? 'cz' : 'en';
     const href = studium && obdobi
-        ? `https://is.mendelu.cz/auth/student/terminy_seznam.pl?studium=${studium};obdobi=${obdobi};lang=${lang}`
-        : `https://is.mendelu.cz/auth/student/prihlasovani_zkousky.pl?lang=${lang}`;
+        ? `https://is.mendelu.cz/auth/student/terminy_seznam.pl?studium=${studium};obdobi=${obdobi};lang=${language}`
+        : `https://is.mendelu.cz/auth/student/prihlasovani_zkousky.pl?lang=${language}`;
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [timelineSelectedId, setTimelineSelectedId] = useState<string | null>(null);
     const { processingSectionId, pendingAction, setPendingAction, handleRegisterRequest, handleUnregisterRequest, handleConfirmAction } = useExamActions({ exams, setExpandedSectionId: setExpandedId });
@@ -60,9 +58,6 @@ export function ExamPanel() {
         if (next === null) setTimelineSelectedId(null);
     };
     const { armedTerms, firingTerms, toggleArm } = useAutoRegistration();
-    const studiumId = useAppStore(s => s.studiumId);
-    const obdobiId = useAppStore(s => s.obdobiId);
-    const loadExamClassmates = useAppStore(s => s.loadExamClassmates);
 
     // Extract registered exams from data
     const realExams = useMemo(() => {
@@ -94,15 +89,6 @@ export function ExamPanel() {
         document.addEventListener('keydown', h); return () => document.removeEventListener('keydown', h);
     }, [expandedId]);
 
-    useEffect(() => {
-        if (!studiumId || !obdobiId || !realExams.length) return;
-        for (const exam of realExams) {
-            const terminId = exam.term.id;
-            if (!terminId || terminId.includes('-')) continue;
-            loadExamClassmates(terminId, studiumId, obdobiId);
-        }
-    }, [realExams, studiumId, obdobiId, loadExamClassmates]);
-
 return (
         <><div className="flex flex-col h-full bg-base-100 rounded-lg border border-base-300 overflow-hidden relative">
             {armedTerms.size > 0 && (
@@ -118,7 +104,7 @@ return (
             {realExams.length > 0 && (
                 <div>
                     <ExamTimeline
-                        exams={realExams as unknown as TimelineExam[]}
+                        exams={realExams}
                         orientation="horizontal"
                         onSelectItem={handleTimelineSelect}
                         selectedSectionId={timelineSelectedId}

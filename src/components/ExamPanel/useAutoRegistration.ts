@@ -5,10 +5,11 @@ import { parseRegistrationStart } from '../../utils/termUtils';
 import type { ExamSection, ExamTerm } from '../../types/exams';
 import { registerExam } from '../../api/exams';
 import { useAppStore } from '../../store/useAppStore';
-import { IndexedDBService } from '../../services/storage';
 import { updateExamOptimistically } from './actions/optimisticUpdates';
+import { logError } from '../../utils/reportError';
+import { useTranslation } from '../../hooks/useTranslation';
 
-interface ArmedTerm {
+export interface ArmedTerm {
     termId: string;
     section: ExamSection;
     regStart: Date;
@@ -17,17 +18,21 @@ interface ArmedTerm {
 export const SNIPER_WINDOW_MS = 60 * 60 * 1000; // 60 minutes window for auto-registration to appear
 
 export function useAutoRegistration() {
+    const { t } = useTranslation();
+    const tRef = useRef(t);
+    tRef.current = t;
     const [armedTerms, setArmedTerms] = useState<Map<string, ArmedTerm>>(new Map());
     const [firingTerms, setFiringTerms] = useState<Set<string>>(new Set());
     
-    // Store handlers
-    const exams = useAppStore(s => s.exams.data);
+    // Store handlers — read fresh via getState() inside callbacks to keep deps stable
     const setExams = useAppStore(s => s.setExams);
     const fetchExams = useAppStore(s => s.fetchExams);
 
     // Use refs for intervals to avoid dependency loops in useEffect
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const firingRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
+    const armedTermsRef = useRef<Map<string, ArmedTerm>>(armedTerms);
+    armedTermsRef.current = armedTerms;
 
     useEffect(() => {
         if (armedTerms.size > 0) void fetchServerTimeOffset();
@@ -45,7 +50,7 @@ export function useAutoRegistration() {
             return next;
         });
         if (firingRefs.current.has(termId)) {
-            clearInterval(firingRefs.current.get(termId)!);
+            clearTimeout(firingRefs.current.get(termId)!);
             firingRefs.current.delete(termId);
         }
     }, []);
@@ -56,70 +61,72 @@ export function useAutoRegistration() {
             if (res.success) {
                 // Success! Stop the battering ram.
                 disarm(termId);
-                toast.success('Auto-rezervace úspěšná! Jsi přihlášen.');
+                toast.success(tRef.current('exams.autoRegSuccess'));
                 
-                // Optimistic UI update
+                // Optimistic UI update — read latest exams from store, not closure
                 const t = section.terms.find((x: ExamTerm) => x.id === termId);
-                const updated = updateExamOptimistically(exams, section.id, { 
-                    status: 'registered', 
-                    registeredTerm: t ? { id: t.id, date: t.date, time: t.time, room: t.room, teacher: t.teacher, teacherId: t.teacherId, deregistrationDeadline: t.deregistrationDeadline } : undefined 
+                const currentExams = useAppStore.getState().exams.data;
+                const updated = updateExamOptimistically(currentExams, section.id, {
+                    status: 'registered',
+                    registeredTerm: t ? { id: t.id, date: t.date, time: t.time, room: t.room, teacher: t.teacher, teacherId: t.teacherId, deregistrationDeadline: t.deregistrationDeadline } : undefined
                 });
-                setExams(updated); 
-                IndexedDBService.set('exams', 'current', updated); 
-                IndexedDBService.set('meta', 'exams_modified', Date.now());
+                setExams(updated);
                 void fetchExams();
                 return true;
             } else if (res.error === 'Termín je již plný.') {
                 // Fatal error, no point in retrying
                 disarm(termId);
-                toast.error('Termín se zaplnil. Auto-rezervace byla ukončena.');
+                toast.error(tRef.current('exams.autoRegFull'));
                 return true; // We want to stop
             }
             // Other errors (like 'nelze přihlásit' which might just mean the server hasn't opened it yet)
             // we ignore and keep firing.
             return false;
         } catch (e) {
+            logError('useAutoRegistration.performRegisterHit', e, { termId });
             return false;
         }
-    }, [exams, setExams, fetchExams, disarm]);
+    }, [setExams, fetchExams, disarm]);
 
     const fireBatteringRam = useCallback((termId: string, section: ExamSection) => {
         if (firingRefs.current.has(termId)) return;
-        
+
         setFiringTerms(prev => {
             const next = new Set(prev);
             next.add(termId);
             return next;
         });
 
-        // Fire once immediately
-        void performRegisterHit(section, termId);
+        // Serial fire-on-response loop. Each hit awaits its response before the next is dispatched,
+        // which (a) maximizes throughput on fast RTTs without piling up concurrent in-flight requests
+        // and (b) naturally backs off when the server is slow. Hard 10s wall-clock cap.
+        const start = Date.now();
+        const TIMEOUT_MS = 10000;
 
-        // Then fire every 350ms
-        const intervalId = setInterval(async () => {
-            if (!armedTerms.has(termId)) {
-                clearInterval(intervalId);
+        const timeoutHandle = setTimeout(() => {
+            if (firingRefs.current.get(termId) === timeoutHandle) {
                 firingRefs.current.delete(termId);
-                return;
-            }
-            const shouldStop = await performRegisterHit(section, termId);
-            if (shouldStop) {
-                clearInterval(intervalId);
-                firingRefs.current.delete(termId);
-            }
-        }, 350);
-
-        firingRefs.current.set(termId, intervalId);
-
-        // Fallback: stop firing after 10 seconds
-        setTimeout(() => {
-            if (firingRefs.current.has(termId)) {
-                console.warn(`[AutoReg] 🛑 Forced stop on battering ram for ${termId} after 10s.`);
                 disarm(termId);
-                toast.error('Auto-rezervace vypršela po 10 vteřinách bez úspěchu.');
+                toast.error(tRef.current('exams.autoRegExpired'));
             }
-        }, 10000);
-    }, [performRegisterHit, armedTerms, disarm]);
+        }, TIMEOUT_MS);
+        firingRefs.current.set(termId, timeoutHandle);
+
+        (async () => {
+            while (
+                firingRefs.current.get(termId) === timeoutHandle &&
+                armedTermsRef.current.has(termId) &&
+                Date.now() - start < TIMEOUT_MS
+            ) {
+                const shouldStop = await performRegisterHit(section, termId);
+                if (shouldStop) break;
+            }
+            if (firingRefs.current.get(termId) === timeoutHandle) {
+                clearTimeout(timeoutHandle);
+                firingRefs.current.delete(termId);
+            }
+        })();
+    }, [performRegisterHit, disarm]);
 
     useEffect(() => {
         if (armedTerms.size === 0) {
@@ -147,7 +154,7 @@ export function useAutoRegistration() {
 
     const arm = useCallback((term: ExamTerm, section: ExamSection) => {
         if (!term.registrationStart) {
-            toast.error("Tento termín nemá začátek přihlašování.");
+            toast.error(tRef.current('exams.autoRegNoStart'));
             return;
         }
         const regStart = parseRegistrationStart(term.registrationStart);
@@ -155,7 +162,7 @@ export function useAutoRegistration() {
 
         const currentSyncTime = getSynchronizedServerTime();
         if (regStart.getTime() - currentSyncTime > SNIPER_WINDOW_MS) {
-            toast.error("Auto-rezervaci lze zapnout nejdříve 60 minut před začátkem.");
+            toast.error(tRef.current('exams.autoRegTooEarly'));
             return;
         }
 
@@ -172,7 +179,7 @@ export function useAutoRegistration() {
             map.set(term.id, { termId: term.id, section, regStart });
             return map;
         });
-        toast.info(`Auto-rezervace aktivována pro termín v ${term.time}. Nezavírejte okno!`);
+        toast.info(tRef.current('exams.autoRegArmedToast', { time: term.time }));
     }, [armedTerms, disarm]);
 
     const toggleArm = useCallback((term: ExamTerm, section: ExamSection) => {
