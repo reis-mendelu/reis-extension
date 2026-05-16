@@ -29,7 +29,6 @@ export interface ExamTerm {
     deregistrationDeadline?: string;  // When deregistration closes (format: "DD.MM.YYYY HH:MM")
     attemptTypes?: ('regular' | 'retake1' | 'retake2' | 'retake3')[];  // One or more attempt types (e.g. a term can serve as both regular and retake)
     canRegisterNow?: boolean;  // True if registration link is available now
-    ineligible?: boolean;      // True when img[sysid="termin-nevhodny"] — student lacks prerequisite (e.g. missing zápočet)
 }
 
 export interface ExamSection {
@@ -61,13 +60,4 @@ export interface ExamSubject {
     nameEn?: string;      // Localized subject name (English)
     code: string;         // e.g., "EBC-ALG"
     sections: ExamSection[];
-}
-
-/**
- * Filter state for ExamPanel.
- * Persisted in localStorage.
- */
-export interface ExamFilterState {
-    statusFilter: ('registered' | 'available' | 'opening')[];
-    selectedSubjects: string[];
 }

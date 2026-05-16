@@ -28,7 +28,8 @@ interface ReisDB extends DBSchema {
     };
     classmates: {
         key: string;
-        value: ClassmatesData; // Key is courseCode
+        // Keys are either `${courseCode}` (course classmates) or `exam:${terminId}` (per-exam-term classmates)
+        value: ClassmatesData;
     };
     exams: {
         key: string;

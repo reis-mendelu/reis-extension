@@ -5,6 +5,7 @@ import { parseRegistrationStart } from '../../utils/termUtils';
 import type { ExamSection } from '../../types/exams';
 
 export type SectionState =
+    | { type: 'registered' }
     | { type: 'open'; openCount: number }
     | { type: 'opening'; earliest: Date }
     | { type: 'noInfo' }   // terms exist but no registration info yet
@@ -41,9 +42,12 @@ export function getSectionState(section: ExamSection, now: Date): SectionState {
  */
 export function getDayOfWeek(dateString: string, t: (k: string) => string): string {
     const [day, month, year] = dateString.split('.').map(Number);
+    if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) return '';
     const date = new Date(year, month - 1, day);
+    const idx = date.getDay();
+    if (Number.isNaN(idx)) return '';
     const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    return t(`days.${dayKeys[date.getDay()]}`).substring(0, 2);
+    return t(`days.${dayKeys[idx]}`).substring(0, 2);
 }
 
 /**

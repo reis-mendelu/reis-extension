@@ -40,8 +40,11 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
         const isFull = Number.isFinite(occupied) && Number.isFinite(total) && occupied >= total;
 
         const termId = row.querySelector('a[href*="prihlasit_ihned=1"]')?.getAttribute('href')?.match(/termin=(\d+)/)?.[1] ||
-                       row.querySelector('a[href*="terminy_info.pl"]')?.getAttribute('href')?.match(/termin=(\d+)/)?.[1] ||
-                       Math.random().toString(36).substr(2, 9);
+                       row.querySelector('a[href*="terminy_info.pl"]')?.getAttribute('href')?.match(/termin=(\d+)/)?.[1];
+        if (!termId) {
+            logError('Parser.parseAvailableTerms', new Error('row has no termin ID'), { code, name, dateStr });
+            return;
+        }
 
         let registrationStart: string | undefined, registrationEnd: string | undefined, deregistrationDeadline: string | undefined;
         for (let i = 0; i < cols.length; i++) {
@@ -71,8 +74,6 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
             if (attemptTypes.length > 0) break;
         }
 
-        const ineligible = !!row.querySelector('img[sysid="termin-nevhodny"]');
-
         const subject = getOrCreateSubject(code, name);
         const section = getOrCreateSection(subject, sectionName);
         section.terms.push({
@@ -89,7 +90,6 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
             deregistrationDeadline,
             attemptTypes: attemptTypes.length > 0 ? attemptTypes : undefined,
             canRegisterNow: !!row.querySelector('a[href*="prihlasit_ihned=1"]') && !isFull,
-            ineligible: ineligible || undefined,
             roomCs: isEn ? undefined : room,
             roomEn: isEn ? room : undefined
         });

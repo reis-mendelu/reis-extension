@@ -1,4 +1,4 @@
-import { RotateCcw, Zap, CircleCheck, AlertCircle } from 'lucide-react';
+import { RotateCcw, Zap, CircleCheck } from 'lucide-react';
 import type { ExamTerm, ExamSection } from '../types/exams';
 import { getDayOfWeek, parseRegistrationStart, formatCountdown } from '../utils/termUtils';
 import { useTranslation } from '../hooks/useTranslation';
@@ -31,21 +31,20 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
     const msRemaining = regStart ? regStart.getTime() - now.getTime() : 0;
     const isFuture = !!(regStart && regStart > now), isClosed = !!(regEnd && regEnd < now), isFull = term.full || (term.capacity && term.capacity.occupied >= term.capacity.total);
     const isWithinSniperWindow = isFuture && msRemaining <= SNIPER_WINDOW_MS;
-    const isIneligible = !!term.ineligible;
-    const isBlocked = term.canRegisterNow === false && !isFuture && !isFull && !isIneligible;
-    const disabled = isIneligible || isFull || isProcessing || isFuture || isClosed || isBlocked;
+    const isBlocked = term.canRegisterNow === false && !isFuture && !isFull;
+    const disabled = isFull || isProcessing || isFuture || isClosed || isBlocked;
     const sameDeadline = term.registrationEnd && term.deregistrationDeadline && term.registrationEnd === term.deregistrationDeadline;
     const primaryAttempt = term.attemptTypes?.find(t => t !== 'regular') ?? term.attemptTypes?.[0];
     const attemptAccent = primaryAttempt ? attemptAccentClass[primaryAttempt] ?? '' : '';
 
     return (
         <div onClick={() => !disabled && onSelect()}
-                className={`relative flex flex-col w-full rounded-lg border transition-all text-left overflow-hidden ${(isArmed || isFiring) ? 'bg-warning/10 border-warning shadow-[0_0_10px_rgba(251,189,35,0.3)]' : isIneligible ? 'bg-warning/[0.04] border-warning/20 opacity-75' : isFuture ? 'bg-warning/5 border-warning/30' : (isFull || isClosed || isBlocked) ? 'bg-base-200 border-transparent opacity-60' : 'bg-base-100 border-transparent hover:border-primary shadow-sm cursor-pointer'}`}>
+                className={`relative flex flex-col w-full rounded-lg border transition-all text-left overflow-hidden ${(isArmed || isFiring) ? 'bg-warning/10 border-warning shadow-[0_0_10px_rgba(251,189,35,0.3)]' : isFuture ? 'bg-warning/5 border-warning/30' : (isFull || isClosed || isBlocked) ? 'bg-base-200 border-transparent opacity-60' : 'bg-base-100 border-transparent hover:border-primary shadow-sm cursor-pointer'}`}>
             {attemptAccent && <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${attemptAccent}`} />}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 w-full p-2.5">
                 {/* Date */}
                 <div className="flex items-baseline gap-1.5 min-w-[58px]">
-                    <span className={`text-sm font-bold tracking-tight ${isIneligible ? 'text-base-content/40' : disabled ? 'text-base-content/30 line-through' : 'text-base-content'}`}>
+                    <span className={`text-sm font-bold tracking-tight ${disabled ? 'text-base-content/30 line-through' : 'text-base-content'}`}>
                         {term.date.split('.').slice(0, 2).join('.')}
                     </span>
                     <span className="text-[10px] uppercase tracking-wider opacity-25">
@@ -109,11 +108,6 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                         <div className="flex items-center gap-3">
                             {isProcessing ? (
                                 <span className="loading loading-spinner loading-sm text-primary" />
-                            ) : isIneligible ? (
-                                <span className="flex items-center gap-1 text-[10px] font-bold text-warning/70 uppercase tracking-wider bg-warning/10 border border-warning/20 px-2 py-0.5 rounded-md whitespace-nowrap">
-                                    <AlertCircle size={10} strokeWidth={2.5} />
-                                    {t('exams.ineligible')}
-                                </span>
                             ) : (isClosed || isBlocked) ? (
                                 <span className="text-[10px] font-bold opacity-30 uppercase tracking-wider">{t('exams.closed')}</span>
                             ) : term.capacity ? (
