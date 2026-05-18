@@ -144,8 +144,6 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, dea
 
   if (isHorizontal) {
     const urgency = getDeadlineUrgency(deadline);
-    const countdown = deadline && urgency !== 'none' && urgency !== 'expired' ? formatDeadlineCountdown(deadline) : null;
-    const badgeClass = urgencyBadge[urgency];
     const dotColor = isSelected
       ? 'bg-primary ring-2 ring-primary/30 scale-110'
       : urgency === 'critical'
@@ -159,13 +157,10 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, dea
         <div className="px-1.5 w-full">
           <CompactCard subjectName={subjectName} sectionName={sectionName} term={term} deadline={deadline} isSelected={isSelected} onClick={onClick} t={t} language={language} />
         </div>
-        <div className="w-px h-2.5 bg-base-content/15 shrink-0" />
+        <div className="w-px flex-1 min-h-[10px] bg-base-content/15" />
         <div className="h-2 flex items-center justify-center shrink-0">
           <div className={`w-2 h-2 rounded-full transition-all duration-200 ${dotColor}`} />
         </div>
-        {countdown && badgeClass
-          ? <span className={`mt-1 text-[9px] font-bold px-1 py-px rounded border ${badgeClass} leading-none`}>{countdown}</span>
-          : <div className="h-4" />}
       </div>
     );
   }
