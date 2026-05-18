@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ExamTerm } from '../../../types/exams';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { getDeadlineUrgency, getExamProximity, formatDeadlineCountdown } from './TimelineDrawer';
+import { getDeadlineUrgency, formatDeadlineCountdown } from './TimelineDrawer';
 
 interface ExamItemProps {
   term: ExamTerm;
@@ -12,6 +12,8 @@ interface ExamItemProps {
   isSelected?: boolean;
   isFirst?: boolean;
   isLast?: boolean;
+  isNext?: boolean;
+  isPast?: boolean;
   orientation?: 'vertical' | 'horizontal';
   onClick?: () => void;
 }
@@ -102,11 +104,8 @@ interface CompactCardProps {
   subjectName: string;
   sectionName?: string;
   term: ExamTerm;
-  deadline?: string;
   isSelected?: boolean;
   onClick?: () => void;
-  t: (key: string) => string;
-  language?: string;
 }
 
 const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, term, isSelected, onClick }) => {
@@ -133,30 +132,29 @@ const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, ter
   );
 };
 
-const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, deadline, isSelected, isFirst, isLast, orientation = 'vertical', onClick }) => {
+const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, deadline, isSelected, isFirst, isLast, isNext, isPast, orientation = 'vertical', onClick }) => {
   const { t, language } = useTranslation();
   const isHorizontal = orientation === 'horizontal';
   const hrClass = 'bg-base-300 opacity-30 hidden';
   const iconClass = 'text-base-content opacity-40 invisible';
 
   if (isHorizontal) {
-    const urgency = getExamProximity(term.date, term.time);
-    const dotColor = isSelected
+    const dotClass = isSelected
       ? 'bg-primary ring-2 ring-primary/30 scale-110'
-      : urgency === 'critical'
+      : isPast
+      ? 'bg-transparent border border-base-content/25'
+      : isNext
       ? 'bg-error'
-      : urgency === 'warning'
-      ? 'bg-warning'
-      : 'bg-base-content/40';
+      : 'bg-base-content/30';
 
     return (
-      <div className="flex-shrink-0 flex flex-col items-center w-40">
+      <div className={`flex-shrink-0 flex flex-col items-center w-40 ${isPast ? 'opacity-50' : ''}`}>
         <div className="px-1.5 w-full">
-          <CompactCard subjectName={subjectName} sectionName={sectionName} term={term} deadline={deadline} isSelected={isSelected} onClick={onClick} t={t} language={language} />
+          <CompactCard subjectName={subjectName} sectionName={sectionName} term={term} isSelected={isSelected} onClick={onClick} />
         </div>
         <div className="w-px flex-1 min-h-[10px] bg-base-content/15" />
         <div className="h-2 flex items-center justify-center shrink-0">
-          <div className={`w-2 h-2 rounded-full transition-all duration-200 ${dotColor}`} />
+          <div className={`w-2 h-2 rounded-full transition-all duration-200 ${dotClass}`} />
         </div>
       </div>
     );

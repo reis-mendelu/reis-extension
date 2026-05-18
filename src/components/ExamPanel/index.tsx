@@ -89,6 +89,17 @@ export function ExamPanel() {
         document.addEventListener('keydown', h); return () => document.removeEventListener('keydown', h);
     }, [expandedId]);
 
+    const topTimeline = realExams.length > 0 ? (
+        <div>
+            <ExamTimeline
+                exams={realExams}
+                orientation="horizontal"
+                onSelectItem={handleTimelineSelect}
+                selectedSectionId={timelineSelectedId}
+            />
+        </div>
+    ) : null;
+
 return (
         <><div className="flex flex-col h-full bg-base-100 rounded-lg border border-base-300 overflow-hidden relative">
             {armedTerms.size > 0 && (
@@ -97,18 +108,6 @@ return (
                     <span className="text-xs font-semibold text-warning-content/80 text-center">
                         {t('exams.autoRegWarning')}
                     </span>
-                </div>
-            )}
-
-            {/* Horizontal Timeline Integration */}
-            {realExams.length > 0 && (
-                <div>
-                    <ExamTimeline
-                        exams={realExams}
-                        orientation="horizontal"
-                        onSelectItem={handleTimelineSelect}
-                        selectedSectionId={timelineSelectedId}
-                    />
                 </div>
             )}
 
@@ -122,13 +121,35 @@ return (
             ) : timelineSelectedId ? (() => {
                 const picked = realExams.find(e => e.section.id === timelineSelectedId);
                 return picked ? (
-                    <div className="flex-1 overflow-y-auto p-4">
-                        <ExamSectionCard subject={picked.subject} section={picked.section} isExpanded={true} isProcessing={processingSectionId === picked.section.id} armedTerms={armedTerms} firingTerms={firingTerms} toggleArm={toggleArm} onToggleExpand={handleToggleExpand} onRegister={handleRegisterRequest} onUnregister={handleUnregisterRequest} />
-                    </div>
+                    <>
+                        {topTimeline}
+                        <div className="flex-1 overflow-y-auto p-4">
+                            <ExamSectionCard subject={picked.subject} section={picked.section} isExpanded={true} isProcessing={processingSectionId === picked.section.id} armedTerms={armedTerms} firingTerms={firingTerms} toggleArm={toggleArm} onToggleExpand={handleToggleExpand} onRegister={handleRegisterRequest} onUnregister={handleUnregisterRequest} />
+                        </div>
+                    </>
                 ) : null;
             })() : sections.length > 0 ? (
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {sections.map(({ subject, section }: { subject: ExamSubject, section: ExamSection }) => <ExamSectionCard key={section.id} subject={subject} section={section} isExpanded={expandedId === section.id} isProcessing={processingSectionId === section.id} armedTerms={armedTerms} firingTerms={firingTerms} toggleArm={toggleArm} onToggleExpand={handleToggleExpand} onRegister={handleRegisterRequest} onUnregister={handleUnregisterRequest} />)}
+                <>
+                    {topTimeline}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        {sections.map(({ subject, section }: { subject: ExamSubject, section: ExamSection }) => <ExamSectionCard key={section.id} subject={subject} section={section} isExpanded={expandedId === section.id} isProcessing={processingSectionId === section.id} armedTerms={armedTerms} firingTerms={firingTerms} toggleArm={toggleArm} onToggleExpand={handleToggleExpand} onRegister={handleRegisterRequest} onUnregister={handleUnregisterRequest} />)}
+                        <IsMendeluLink href={href} />
+                    </div>
+                </>
+            ) : realExams.length > 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-6 px-4">
+                    <div className="text-center">
+                        <h2 className="text-xl font-black tracking-tight">{t('exams.allSet')}</h2>
+                        <p className="text-sm text-base-content/60 mt-1">{t('exams.upcomingHint')}</p>
+                    </div>
+                    <div className="w-full">
+                        <ExamTimeline
+                            exams={realExams}
+                            orientation="horizontal"
+                            onSelectItem={handleTimelineSelect}
+                            selectedSectionId={timelineSelectedId}
+                        />
+                    </div>
                     <IsMendeluLink href={href} />
                 </div>
             ) : null}

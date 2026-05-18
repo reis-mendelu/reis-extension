@@ -76,6 +76,9 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
     );
   }
 
+  const now = Date.now();
+  const nextIndex = sortedExams.findIndex(e => parseDateTime(e.term.date, e.term.time).getTime() >= now);
+
   return (
     <div className={`overflow-x-auto w-full py-3 ${className}`}>
       <div className="relative flex flex-row w-full min-w-max">
@@ -91,6 +94,8 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
             isFirst={index === 0}
             isLast={index === sortedExams.length - 1}
             isSelected={selectedSectionId != null && selectedSectionId === item.section?.id}
+            isNext={nextIndex >= 0 && index === nextIndex}
+            isPast={nextIndex >= 0 ? index < nextIndex : true}
             onClick={() => handleCardClick(item)}
           />
         ))}

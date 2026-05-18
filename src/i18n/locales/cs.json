@@ -200,6 +200,8 @@
     "autoRegWarning": "⚠️ Auto-rezervace čeká. Nezavírej tuhle stránku a neuspávej zařízení!",
     "autoRegFiring": "Odesílání žádostí...",
     "autoRegTimeLock": "Dostupné {min} min. před spuštěním",
+    "allSet": "Máš všechno zaregistrované",
+    "upcomingHint": "Tady jsou nadcházející termíny",
     "autoRegSuccess": "Auto-rezervace úspěšná! Jsi přihlášen.",
     "autoRegFull": "Termín se zaplnil. Auto-rezervace byla ukončena.",
     "autoRegExpired": "Auto-rezervace vypršela po 10 vteřinách bez úspěchu.",

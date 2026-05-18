@@ -167,6 +167,8 @@
     "autoRegWarning": "⚠️ Auto-registration pending. Don't close this page or put your computer to sleep!",
     "autoRegFiring": "Sending requests...",
     "autoRegTimeLock": "Available {min} min. before start",
+    "allSet": "You're all signed up",
+    "upcomingHint": "Here are your upcoming exams",
     "autoRegSuccess": "Auto-registration successful! You're registered.",
     "autoRegFull": "Term filled up. Auto-registration stopped.",
     "autoRegExpired": "Auto-registration timed out after 10 seconds with no success.",
