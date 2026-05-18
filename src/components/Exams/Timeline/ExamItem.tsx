@@ -162,7 +162,7 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, dea
         <div className="px-1.5 w-full">
           <CompactCard subjectName={subjectName} sectionName={sectionName} term={term} deadline={deadline} isSelected={isSelected} onClick={onClick} t={t} language={language} />
         </div>
-        <div className="w-px h-2.5 bg-base-content/15 shrink-0" />
+        <div className="w-px flex-1 min-h-[10px] bg-base-content/15" />
         <div className="h-2 flex items-center justify-center shrink-0">
           <div className={`w-2 h-2 rounded-full transition-all duration-200 ${dotColor}`} />
         </div>
