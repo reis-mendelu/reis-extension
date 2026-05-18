@@ -1,4 +1,4 @@
-import { Calendar, Clock, MapPin, AlertCircle, Users } from 'lucide-react';
+import { Calendar, Clock, MapPin, AlertCircle } from 'lucide-react';
 import { getDayOfWeek } from './utils';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { ExamSection } from '../../types/exams';
@@ -32,15 +32,6 @@ export function RegisteredTermDetails({ section, classmatesCount, classmatesOpen
                         <MapPin size={13} className="text-base-content/40" />
                         <span className="text-base-content/80 font-medium">{(language === 'en' && term.roomEn) ? term.roomEn : (term.roomCs || term.room)}</span>
                     </span>
-                )}
-                {classmatesCount !== undefined && onToggleClassmates && (
-                    <button
-                        onClick={onToggleClassmates}
-                        className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold transition-colors ${classmatesOpen ? 'bg-primary text-primary-content' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
-                    >
-                        <Users size={11} />
-                        {classmatesCount}
-                    </button>
                 )}
             </div>
             {term.deregistrationDeadline && (

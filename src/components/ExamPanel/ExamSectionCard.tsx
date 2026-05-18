@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { ChevronDown, ChevronUp, Repeat } from 'lucide-react';
 import type { ExamSubject, ExamSection, ExamTerm } from '../../types/exams';
 import { TermTile } from '../TermTile';
 import { RegisteredTermDetails } from './RegisteredTermDetails';
-import { ExamClassmatesList } from './ExamClassmatesPopover';
 import { TermsSummary } from './TermsSummary';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';

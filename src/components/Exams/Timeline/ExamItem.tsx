@@ -109,15 +109,12 @@ interface CompactCardProps {
   language?: string;
 }
 
-const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, term, deadline, isSelected, onClick, language }) => {
-  const urgency = getDeadlineUrgency(deadline);
-
+const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, term, isSelected, onClick }) => {
   return (
     <div
       className={`
-        border px-2.5 py-1.5 w-full bg-base-100 rounded-md
+        border border-base-content/10 px-2.5 py-1.5 w-full bg-base-100 rounded-md
         transition-all duration-200
-        ${urgencyBorder[urgency]}
         ${isSelected ? 'ring-1 ring-primary/40 bg-base-200/40' : ''}
         ${onClick ? 'cursor-pointer hover:bg-base-200/50 active:scale-[0.98]' : ''}
       `}
@@ -147,7 +144,7 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, dea
     const dotColor = isSelected
       ? 'bg-primary ring-2 ring-primary/30 scale-110'
       : urgency === 'critical'
-      ? 'bg-error animate-pulse'
+      ? 'bg-error'
       : urgency === 'warning'
       ? 'bg-warning'
       : 'bg-base-content/40';
