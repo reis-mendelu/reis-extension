@@ -111,13 +111,11 @@ interface CompactCardProps {
 
 const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, term, deadline, isSelected, onClick, language }) => {
   const urgency = getDeadlineUrgency(deadline);
-  const countdown = deadline && urgency !== 'none' && urgency !== 'expired' ? formatDeadlineCountdown(deadline) : null;
-  const badgeClass = urgencyBadge[urgency];
 
   return (
     <div
       className={`
-        border px-2.5 py-1.5 w-full h-full bg-base-100 rounded-md
+        border px-2.5 py-1.5 w-full bg-base-100 rounded-md
         transition-all duration-200
         ${urgencyBorder[urgency]}
         ${isSelected ? 'ring-1 ring-primary/40 bg-base-200/40' : ''}
@@ -129,13 +127,10 @@ const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, ter
       {sectionName && (
         <div className="text-[9px] font-medium text-base-content/40 uppercase tracking-wide truncate leading-none mt-0.5">{sectionName}</div>
       )}
-      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+      <div className="flex items-center gap-1.5 mt-1">
         <div className="text-[10px] font-mono font-bold text-primary leading-none whitespace-nowrap">
           {term.date} · {term.time}
         </div>
-        {countdown && badgeClass && (
-          <span className={`text-[9px] font-bold px-1 py-px rounded border ${badgeClass} leading-none`}>{countdown}</span>
-        )}
       </div>
     </div>
   );
@@ -149,6 +144,8 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, dea
 
   if (isHorizontal) {
     const urgency = getDeadlineUrgency(deadline);
+    const countdown = deadline && urgency !== 'none' && urgency !== 'expired' ? formatDeadlineCountdown(deadline) : null;
+    const badgeClass = urgencyBadge[urgency];
     const dotColor = isSelected
       ? 'bg-primary ring-2 ring-primary/30 scale-110'
       : urgency === 'critical'
@@ -159,13 +156,16 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, dea
 
     return (
       <div className="flex-shrink-0 flex flex-col items-center w-40">
-        <div className="px-1.5 w-full flex-1 flex">
+        <div className="px-1.5 w-full">
           <CompactCard subjectName={subjectName} sectionName={sectionName} term={term} deadline={deadline} isSelected={isSelected} onClick={onClick} t={t} language={language} />
         </div>
-        <div className="w-px flex-1 min-h-[10px] bg-base-content/15" />
+        <div className="w-px h-2.5 bg-base-content/15 shrink-0" />
         <div className="h-2 flex items-center justify-center shrink-0">
           <div className={`w-2 h-2 rounded-full transition-all duration-200 ${dotColor}`} />
         </div>
+        {countdown && badgeClass
+          ? <span className={`mt-1 text-[9px] font-bold px-1 py-px rounded border ${badgeClass} leading-none`}>{countdown}</span>
+          : <div className="h-4" />}
       </div>
     );
   }
