@@ -1,7 +1,8 @@
 import { ChevronDown, CheckCircle2, BookOpen, Clock } from 'lucide-react';
-import type { SemesterBlock, Zamerani } from '@/types/studyPlan';
+import type { SemesterBlock, SubjectStatus, Zamerani } from '@/types/studyPlan';
 import type { ZameraniProgress } from './SubjectsPanelHeader';
 import { SubjectRow } from './SubjectRow';
+import type { SortMode, SubjectFilters } from './types';
 import { getSemesterState, isRealCredits, normalizeZameraniName, type SemesterState } from './utils';
 
 interface SemesterSectionProps {
@@ -12,6 +13,8 @@ interface SemesterSectionProps {
   zameraniLookup?: Map<string, Zamerani>;
   zameraniProgress?: Map<string, ZameraniProgress>;
   subjectSemesters?: Map<string, string[]>;
+  sortMode?: SortMode;
+  filters?: SubjectFilters;
   onToggle: () => void;
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => void;
   onSearchSubject: (name: string) => void;
@@ -47,7 +50,7 @@ const stateConfig: Record<SemesterState, {
   },
 };
 
-export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup, zameraniProgress, subjectSemesters, onToggle, onOpenSubject, onSearchSubject }: SemesterSectionProps) {
+export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup, zameraniProgress, subjectSemesters, sortMode = 'default', filters, onToggle, onOpenSubject, onSearchSubject }: SemesterSectionProps) {
   const state = getSemesterState(block);
   const cfg = stateConfig[state];
 
@@ -59,6 +62,48 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
   const totalCount = allSubjects.length;
   const totalCredits = allSubjects.filter(s => isRealCredits(s.credits)).reduce((a, s) => a + s.credits, 0);
   const isPast = state === 'past';
+
+  const applyFilter = (subjects: SubjectStatus[]) =>
+    filters?.hideFulfilled ? subjects.filter(s => !s.isFulfilled) : subjects;
+  const applySort = (subjects: SubjectStatus[]) => {
+    const cmp = (a: SubjectStatus, b: SubjectStatus): number => {
+      switch (sortMode) {
+        case 'failRateDesc': {
+          const fa = failRates?.[a.code], fb = failRates?.[b.code];
+          if (fa == null && fb == null) return 0;
+          if (fa == null) return 1;
+          if (fb == null) return -1;
+          return fb - fa;
+        }
+        case 'failRateAsc': {
+          const fa = failRates?.[a.code], fb = failRates?.[b.code];
+          if (fa == null && fb == null) return 0;
+          if (fa == null) return 1;
+          if (fb == null) return -1;
+          return fa - fb;
+        }
+        case 'creditsDesc': {
+          const ca = isRealCredits(a.credits) ? a.credits : -1;
+          const cb = isRealCredits(b.credits) ? b.credits : -1;
+          return cb - ca;
+        }
+        case 'alpha':
+          return a.name.localeCompare(b.name, 'cs');
+        case 'default':
+        default: {
+          if (a.isFulfilled !== b.isFulfilled) return a.isFulfilled ? 1 : -1;
+          const fa = failRates?.[a.code] ?? -1;
+          const fb = failRates?.[b.code] ?? -1;
+          return fb - fa;
+        }
+      }
+    };
+    return [...subjects].sort(cmp);
+  };
+
+  const visibleByGroup = block.groups.map(g => applySort(applyFilter(g.subjects)));
+  const visibleCount = visibleByGroup.reduce((a, g) => a + g.length, 0);
+  if (filters?.hideFulfilled && visibleCount === 0 && totalCount > 0) return null;
 
   return (
     <div className={`rounded-lg border overflow-hidden transition-all ${open ? 'border-base-content/20 bg-base-100 shadow-sm' : `${cfg.border} ${state === 'current' ? 'bg-primary/5 ring-1 ring-primary/15' : ''}`} ${dimmed ? 'opacity-40' : ''} ${block.isWholePlanPool ? 'border-dashed' : ''}`}>
@@ -80,6 +125,8 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
       {open && (
         <div className="px-2 pb-2 animate-in fade-in slide-in-from-top-1 duration-150">
           {block.groups.map((group, gi) => {
+            const visible = visibleByGroup[gi];
+            if (visible.length === 0 && filters?.hideFulfilled) return null;
             const statusText = (group.statusDescription || '').trim();
             const statusIsFulfilled = /^SPLN[ĚE]N/i.test(statusText) || /^FULFILLED/i.test(statusText);
             const statusCls = statusIsFulfilled ? 'text-success/70' : statusText ? 'text-warning/80' : 'text-base-content/40';
@@ -103,12 +150,7 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
                     </span>
                   </div>
                 )}
-                {[...group.subjects].sort((a, b) => {
-                  if (a.isFulfilled !== b.isFulfilled) return a.isFulfilled ? 1 : -1;
-                  const fa = failRates?.[a.code] ?? -1;
-                  const fb = failRates?.[b.code] ?? -1;
-                  return fb - fa;
-                }).map(s => (
+                {visible.map(s => (
                   <SubjectRow
                     key={s.code}
                     subject={s}
