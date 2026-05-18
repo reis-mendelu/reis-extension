@@ -137,21 +137,12 @@ return (
                     </div>
                 </>
             ) : realExams.length > 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center gap-6 px-4">
-                    <div className="text-center">
-                        <h2 className="text-xl font-black tracking-tight">{t('exams.allSet')}</h2>
-                        <p className="text-sm text-base-content/60 mt-1">{t('exams.upcomingHint')}</p>
+                <>
+                    {topTimeline}
+                    <div className="flex-1 flex items-end justify-center pb-2">
+                        <IsMendeluLink href={href} />
                     </div>
-                    <div className="w-full">
-                        <ExamTimeline
-                            exams={realExams}
-                            orientation="horizontal"
-                            onSelectItem={handleTimelineSelect}
-                            selectedSectionId={timelineSelectedId}
-                        />
-                    </div>
-                    <IsMendeluLink href={href} />
-                </div>
+                </>
             ) : null}
         </div>
         <ConfirmationModal isOpen={!!pendingAction} actionType={pendingAction?.type ?? 'register'} sectionName={pendingAction?.section.name ?? ''} termInfo={pendingAction?.type === 'register' ? pendingAction.section.terms.find((t) => t.id === pendingAction.termId) : (pendingAction?.section.registeredTerm)} onConfirm={handleConfirmAction} onCancel={() => setPendingAction(null)} /></>
