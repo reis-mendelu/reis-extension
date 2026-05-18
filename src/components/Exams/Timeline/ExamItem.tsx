@@ -8,6 +8,7 @@ interface ExamItemProps {
   term: ExamTerm;
   subjectName: string;
   sectionName?: string;
+  sectionType?: string;
   deadline?: string;
   isSelected?: boolean;
   isFirst?: boolean;
@@ -103,16 +104,24 @@ const ContentBox: React.FC<ContentBoxProps> = ({ subjectName, sectionName, term,
 interface CompactCardProps {
   subjectName: string;
   sectionName?: string;
+  sectionType?: string;
   term: ExamTerm;
   isSelected?: boolean;
   onClick?: () => void;
 }
 
-const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, term, isSelected, onClick }) => {
+const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, sectionType, term, isSelected, onClick }) => {
+  const typeLower = sectionType?.toLowerCase() ?? '';
+  const accentClass = typeLower.includes('zkouška') || typeLower.includes('exam')
+    ? 'border-l-warning/60'
+    : typeLower.includes('zápočet') || typeLower.includes('credit')
+    ? 'border-l-success/60'
+    : 'border-l-base-content/10';
+
   return (
     <div
       className={`
-        border border-base-content/10 px-3 py-2 w-full bg-base-100 rounded-md
+        border border-base-content/10 border-l-2 ${accentClass} px-3 py-2 w-full bg-base-100 rounded-md
         transition-all duration-200
         ${isSelected ? 'ring-1 ring-primary/40 bg-base-200/40' : ''}
         ${onClick ? 'cursor-pointer hover:bg-base-200/50 active:scale-[0.98]' : ''}
@@ -124,7 +133,7 @@ const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, ter
         <div className="text-[10px] font-medium text-base-content/40 uppercase tracking-wide truncate leading-none mt-0.5">{sectionName}</div>
       )}
       <div className="flex items-center gap-1.5 mt-1.5">
-        <div className="text-[11px] font-mono font-bold text-primary leading-none whitespace-nowrap">
+        <div className="text-[11px] font-mono text-primary/80 leading-none whitespace-nowrap">
           {term.date} · {term.time}
         </div>
       </div>
@@ -132,7 +141,7 @@ const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, ter
   );
 };
 
-const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, deadline, isSelected, isFirst, isLast, isNext, isPast, orientation = 'vertical', onClick }) => {
+const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, sectionType, deadline, isSelected, isFirst, isLast, isNext, isPast, orientation = 'vertical', onClick }) => {
   const { t, language } = useTranslation();
   const isHorizontal = orientation === 'horizontal';
   const hrClass = 'bg-base-300 opacity-30 hidden';
@@ -150,7 +159,7 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, dea
     return (
       <div className={`flex-shrink-0 flex flex-col items-center w-48 ${isPast ? 'opacity-50' : ''}`}>
         <div className="px-1.5 w-full">
-          <CompactCard subjectName={subjectName} sectionName={sectionName} term={term} isSelected={isSelected} onClick={onClick} />
+          <CompactCard subjectName={subjectName} sectionName={sectionName} sectionType={sectionType} term={term} isSelected={isSelected} onClick={onClick} />
         </div>
         <div className="w-px flex-1 min-h-[10px] bg-base-content/15" />
         <div className="h-2 flex items-center justify-center shrink-0">

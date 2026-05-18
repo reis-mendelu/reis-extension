@@ -89,6 +89,7 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
             term={item.term}
             subjectName={item.subjectName}
             sectionName={resolveSectionName(item)}
+            sectionType={item.section?.type}
             deadline={item.section?.registeredTerm?.deregistrationDeadline}
             orientation="horizontal"
             isFirst={index === 0}
