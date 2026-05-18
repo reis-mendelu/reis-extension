@@ -117,7 +117,7 @@ const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, ter
   return (
     <div
       className={`
-        border px-2.5 py-1.5 w-full bg-base-100 rounded-md
+        border px-2.5 py-1.5 w-full h-full bg-base-100 rounded-md
         transition-all duration-200
         ${urgencyBorder[urgency]}
         ${isSelected ? 'ring-1 ring-primary/40 bg-base-200/40' : ''}
@@ -159,7 +159,7 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, dea
 
     return (
       <div className="flex-shrink-0 flex flex-col items-center w-40">
-        <div className="px-1.5 w-full">
+        <div className="px-1.5 w-full flex-1 flex">
           <CompactCard subjectName={subjectName} sectionName={sectionName} term={term} deadline={deadline} isSelected={isSelected} onClick={onClick} t={t} language={language} />
         </div>
         <div className="w-px flex-1 min-h-[10px] bg-base-content/15" />
