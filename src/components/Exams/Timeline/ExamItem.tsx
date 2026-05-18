@@ -112,19 +112,19 @@ const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, ter
   return (
     <div
       className={`
-        border border-base-content/10 px-2.5 py-1.5 w-full bg-base-100 rounded-md
+        border border-base-content/10 px-3 py-2 w-full bg-base-100 rounded-md
         transition-all duration-200
         ${isSelected ? 'ring-1 ring-primary/40 bg-base-200/40' : ''}
         ${onClick ? 'cursor-pointer hover:bg-base-200/50 active:scale-[0.98]' : ''}
       `}
       onClick={onClick}
     >
-      <div className="font-black text-[11px] leading-tight truncate text-base-content">{subjectName}</div>
+      <div className="font-black text-xs leading-tight truncate text-base-content">{subjectName}</div>
       {sectionName && (
-        <div className="text-[9px] font-medium text-base-content/40 uppercase tracking-wide truncate leading-none mt-0.5">{sectionName}</div>
+        <div className="text-[10px] font-medium text-base-content/40 uppercase tracking-wide truncate leading-none mt-0.5">{sectionName}</div>
       )}
-      <div className="flex items-center gap-1.5 mt-1">
-        <div className="text-[10px] font-mono font-bold text-primary leading-none whitespace-nowrap">
+      <div className="flex items-center gap-1.5 mt-1.5">
+        <div className="text-[11px] font-mono font-bold text-primary leading-none whitespace-nowrap">
           {term.date} · {term.time}
         </div>
       </div>
@@ -148,7 +148,7 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, dea
       : 'bg-base-content/30';
 
     return (
-      <div className={`flex-shrink-0 flex flex-col items-center w-40 ${isPast ? 'opacity-50' : ''}`}>
+      <div className={`flex-shrink-0 flex flex-col items-center w-48 ${isPast ? 'opacity-50' : ''}`}>
         <div className="px-1.5 w-full">
           <CompactCard subjectName={subjectName} sectionName={sectionName} term={term} isSelected={isSelected} onClick={onClick} />
         </div>

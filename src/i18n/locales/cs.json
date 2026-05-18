@@ -171,6 +171,7 @@
     "empty": "📭 Žádné zkoušky",
     "emptyTitle": "Žádné zkoušky v dohledu",
     "emptySubtitle": "Užij si volno!",
+    "noOpenRegistrations": "Momentálně se není na co přihlásit.",
     "autoBooking": "Auto-rezervace aktivní. Nezavírej tuhle stránku!",
     "statusLabel": "Status:",
     "subjectLabel": "Předmět:",
@@ -456,7 +457,19 @@
     "semesterShort": "sem.",
     "zameraniProgress": "Zaměření: plní se {touched}, nutno splnit {min}",
     "zadost": "Žádosti",
-    "sourcesMismatch": "Rozdíl mezi zdroji: plán {plan} kr., statistiky {stats} kr."
+    "sourcesMismatch": "Rozdíl mezi zdroji: plán {plan} kr., statistiky {stats} kr.",
+    "sort": {
+      "default": "Výchozí",
+      "failRateDesc": "Nejvyšší neúspěšnost",
+      "failRateAsc": "Nejnižší neúspěšnost",
+      "creditsDesc": "Nejvíce kreditů",
+      "alpha": "Abecedně"
+    },
+    "filter": {
+      "zs": "ZS",
+      "ls": "LS",
+      "hideFulfilled": "Skrýt splněné"
+    }
   },
   "commands": {
     "quickActions": "Rychlé akce",

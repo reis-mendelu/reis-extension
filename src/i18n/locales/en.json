@@ -138,6 +138,7 @@
     "empty": "📭 No exams",
     "emptyTitle": "No exams in sight",
     "emptySubtitle": "Enjoy the break!",
+    "noOpenRegistrations": "No exams to sign up for right now.",
     "autoBooking": "Auto-booking active. Don't close this page!",
     "statusLabel": "Status:",
     "subjectLabel": "Subject:",
@@ -454,7 +455,19 @@
     "semesterShort": "sem.",
     "zameraniProgress": "Specializations: {touched} started, must complete {min}",
     "zadost": "Requests",
-    "sourcesMismatch": "Source mismatch: plan {plan} cr., stats {stats} cr."
+    "sourcesMismatch": "Source mismatch: plan {plan} cr., stats {stats} cr.",
+    "sort": {
+      "default": "Default",
+      "failRateDesc": "Highest fail rate",
+      "failRateAsc": "Lowest fail rate",
+      "creditsDesc": "Most credits",
+      "alpha": "Alphabetical"
+    },
+    "filter": {
+      "zs": "Winter",
+      "ls": "Summer",
+      "hideFulfilled": "Hide fulfilled"
+    }
   },
   "commands": {
     "quickActions": "Quick Actions",

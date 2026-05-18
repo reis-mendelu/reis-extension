@@ -139,9 +139,10 @@ return (
             ) : realExams.length > 0 ? (
                 <>
                     {topTimeline}
-                    <div className="flex-1 flex items-end justify-center pb-2">
-                        <IsMendeluLink href={href} />
+                    <div className="flex-1 flex flex-col items-center justify-center gap-1 px-4 text-center">
+                        <span className="text-sm font-medium text-base-content/60">{t('exams.noOpenRegistrations')}</span>
                     </div>
+                    <IsMendeluLink href={href} />
                 </>
             ) : null}
         </div>
