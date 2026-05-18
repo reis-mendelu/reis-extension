@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ExamTerm } from '../../../types/exams';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { getDeadlineUrgency, formatDeadlineCountdown } from './TimelineDrawer';
+import { getDeadlineUrgency, getExamProximity, formatDeadlineCountdown } from './TimelineDrawer';
 
 interface ExamItemProps {
   term: ExamTerm;
@@ -140,7 +140,7 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, dea
   const iconClass = 'text-base-content opacity-40 invisible';
 
   if (isHorizontal) {
-    const urgency = getDeadlineUrgency(deadline);
+    const urgency = getExamProximity(term.date, term.time);
     const dotColor = isSelected
       ? 'bg-primary ring-2 ring-primary/30 scale-110'
       : urgency === 'critical'

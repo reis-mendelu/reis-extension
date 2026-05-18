@@ -31,6 +31,20 @@ export function getDeadlineUrgency(deadline?: string): 'none' | 'warning' | 'cri
     return 'none';
 }
 
+// Exam-date proximity for the horizontal timeline dot.
+// critical: within 24h (today/tomorrow). warning: within 72h (this week).
+export function getExamProximity(date: string, time: string): 'none' | 'warning' | 'critical' | 'expired' {
+    const parts = date.split('.').map(p => p.trim()).filter(Boolean);
+    const [h, m] = time.split(':').map(Number);
+    if (parts.length !== 3 || Number.isNaN(h) || Number.isNaN(m)) return 'none';
+    const examMs = new Date(+parts[2], +parts[1] - 1, +parts[0], h, m).getTime();
+    const ms = examMs - Date.now();
+    if (ms < 0) return 'expired';
+    if (ms < 86_400_000) return 'critical';
+    if (ms < 259_200_000) return 'warning';
+    return 'none';
+}
+
 export function formatDeadlineCountdown(deadline: string): string {
     const parsed = parseDeadline(deadline);
     if (!parsed) return '';

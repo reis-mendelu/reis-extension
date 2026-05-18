@@ -32,10 +32,7 @@ const stateCardClass = {
 
 export function ExamSectionCard({ subject, section, isExpanded, isProcessing, onToggleExpand, onRegister, onUnregister, armedTerms, firingTerms, toggleArm }: ExamSectionCardProps) {
     const { t, language } = useTranslation();
-    const [classmatesOpen, setClassmatesOpen] = useState(false);
     const now = useAppStore(s => s.now);
-    const terminId = section.registeredTerm?.id;
-    const classmates = useAppStore(s => terminId ? s.examClassmates[terminId] : undefined);
     const isReg = section.status === 'registered';
     const sectionState = isReg ? { type: 'registered' as const } : getSectionState(section, now);
 
@@ -65,12 +62,7 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                         {!isReg && <SectionStatePill state={sectionState} t={t} />}
                     </div>
                     {isReg && section.registeredTerm ? (
-                        <RegisteredTermDetails
-                            section={section}
-                            classmatesCount={classmates?.length}
-                            classmatesOpen={classmatesOpen}
-                            onToggleClassmates={e => { e.stopPropagation(); setClassmatesOpen(p => !p); }}
-                        />
+                        <RegisteredTermDetails section={section} />
                     ) : (
                         section.terms.length > 0 && !isExpanded && <TermsSummary terms={section.terms} sectionState={sectionState} />
                     )}
@@ -100,12 +92,6 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                     )}
                 </div>
             </div>
-
-            {classmatesOpen && classmates && (
-                <div className="border-t border-base-200">
-                    <ExamClassmatesList classmates={classmates} />
-                </div>
-            )}
 
             {isExpanded && section.terms.length > 0 && (
                 <div className="p-3 pt-0">
