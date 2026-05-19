@@ -4,6 +4,7 @@ import type { ZameraniProgress } from './SubjectsPanelHeader';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
 import { useTimeline } from '@/hooks/useTimeline';
+import { useSpeculativeHover } from '@/hooks/data/useSpeculativeHover';
 import { isZameraniCode } from './utils';
 
 interface SubjectRowProps {
@@ -38,6 +39,8 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
   const zameraniMembership = subjectToZameranis?.get(subject.code);
   const zameraniTag = zameraniMembership?.length ? zameraniAcronym(zameraniMembership[0]) : null;
 
+  const hover = useSpeculativeHover(subject.code, !isZamerani && hasId);
+
   const handleClick = () => {
     if (isZamerani) return; // pseudo-row, not openable
     if (hasId) {
@@ -52,6 +55,8 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
       <div className="flex flex-col">
         <button
           onClick={handleClick}
+          onMouseEnter={hover.onMouseEnter}
+          onMouseLeave={hover.onMouseLeave}
           className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-base-200/50 transition-colors text-left text-base-content/40"
         >
           {subject.isFulfilled && <CheckCircle2 className="w-3.5 h-3.5 text-success/50 shrink-0" />}
@@ -121,6 +126,8 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
     <div className="flex flex-col">
     <button
       onClick={handleClick}
+      onMouseEnter={hover.onMouseEnter}
+      onMouseLeave={hover.onMouseLeave}
       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-base-200 transition-colors text-left group"
     >
       <div className="flex-1 min-w-0 flex flex-col">

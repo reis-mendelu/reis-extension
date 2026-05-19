@@ -9,6 +9,7 @@ import {
 } from './files/refreshFilesForSubject';
 import { loadAllFilesFromCache } from './files/fetchAllFiles';
 import { prefetchTodaySubjectsImpl } from './files/prefetchTodaySubjects';
+import { speculativeRefreshFilesImpl } from './files/speculativeRefreshFiles';
 
 export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     files: {},
@@ -233,6 +234,15 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
         prefetchTodaySubjectsImpl({
             schedule: schedule.data,
             lastFilesFetchedAt,
+            refreshFilesForSubject: (code) => get().refreshFilesForSubject(code),
+        });
+    },
+    speculativeRefreshFiles: (courseCode) => {
+        const { lastFilesFetchedAt, filesLoading } = get();
+        speculativeRefreshFilesImpl({
+            courseCode,
+            lastFilesFetchedAt,
+            filesLoading,
             refreshFilesForSubject: (code) => get().refreshFilesForSubject(code),
         });
     },
