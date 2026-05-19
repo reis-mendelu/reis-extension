@@ -303,6 +303,12 @@
       "failed": "Sync failed",
       "loadingFiles": "Loading files..."
     },
+    "freshness": {
+      "newBadge": "NEW",
+      "refresh": "Refresh files",
+      "updated": "Updated",
+      "updatedJustNow": "Updated just now"
+    },
     "documentNote": {
       "add": "Add note...",
       "placeholder": "Your note for this file...",
@@ -453,20 +459,36 @@
     "zamerani": "specialization",
     "zameraniMembers": "Includes courses",
     "semesterShort": "sem.",
+    "enrolledNow": "Currently enrolled",
     "zameraniProgress": "Specializations: {touched} started, must complete {min}",
+    "zameraniPickPrompt": "Pick a specialization above →",
+    "zameraniPickProgress": "Picked {picked} / min {min}",
+    "zameraniPickProgressNoMin": "Picked {picked}",
+    "zameraniPickPick": "Pick specialization",
+    "zameraniPickUnpick": "Unpick",
+    "zameraniPickDerived": "Auto-picked — you're enrolled in subjects from this specialization",
     "zadost": "Requests",
     "sourcesMismatch": "Source mismatch: plan {plan} cr., stats {stats} cr.",
-    "sort": {
-      "default": "Default",
-      "failRateDesc": "Highest fail rate",
-      "failRateAsc": "Lowest fail rate",
-      "creditsDesc": "Most credits",
-      "alpha": "Alphabetical"
+    "insights": {
+      "hardestTitle": "Hardest subjects you have ahead",
+      "hardestSubtitle": "≥30 students, last 3 semesters",
+      "zameraniTitle": "Specialization comparison",
+      "zameraniSubtitle": "credit-weighted fail rate",
+      "lowSampleHint": "{n} subjects with low data"
     },
-    "filter": {
-      "zs": "Winter",
-      "ls": "Summer",
-      "hideFulfilled": "Hide fulfilled"
+    "mode": {
+      "plan": "My plan",
+      "catalog": "Catalog"
+    },
+    "catalog": {
+      "placeholder": "Search subject…",
+      "hint": "Type at least 2 characters — searches the whole MENDELU catalog",
+      "noResults": "No matches",
+      "noResultsAfterFilter": "No subjects match the filters",
+      "minPass": "Min. pass rate",
+      "allFaculties": "All",
+      "hideNoData": "Hide subjects without data",
+      "shownOf": "Showing {shown} of {total}"
     }
   },
   "commands": {

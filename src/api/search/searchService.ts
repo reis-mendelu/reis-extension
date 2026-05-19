@@ -66,6 +66,28 @@ export async function searchSubjects(query: string): Promise<Subject[]> {
     }
 }
 
+/** Like searchSubjects but with a configurable result cap, for the catalog browser. */
+export async function searchSubjectsCatalog(query: string, limit = 50): Promise<Subject[]> {
+    const formData = new URLSearchParams();
+    formData.append('lang', 'cz');
+    formData.append('vzorek', query);
+    formData.append('vyhledat', 'Vyhledat');
+    formData.append('oblasti', 'predmety');
+    formData.append('pocet', String(limit));
+
+    try {
+        const response = await fetch('https://is.mendelu.cz/auth/hledani/index.pl', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString(),
+            credentials: 'include',
+        });
+        return parseSubjectResults(await response.text());
+    } catch {
+        return [];
+    }
+}
+
 export async function searchGlobal(query: string): Promise<{ people: Person[]; subjects: Subject[] }> {
     const formData = new URLSearchParams();
     formData.append('lang', 'cz');

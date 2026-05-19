@@ -135,6 +135,21 @@ export async function syncAllData() {
             lastSync: Date.now(),
         };
 
+        // Push Phase 2 data (exams, schedule, subjects) to the iframe immediately,
+        // before the slow per-subject Phase 3 (files, classmates, zazramnik).
+        sendToIframe(Messages.syncUpdate({
+            exams: cachedData.exams,
+            schedule: cachedData.schedule,
+            subjects: cachedData.subjects,
+            attendance: cachedData.attendance,
+            studyPlan: cachedData.studyPlan,
+            studyStats: cachedData.studyStats,
+            cvicneTests: cachedData.cvicneTests,
+            odevzdavarny: cachedData.odevzdavarny,
+            isSyncing: true,
+            lastSync: cachedData.lastSync,
+        }));
+
         if (subjects.status === "fulfilled" && subjects.value) {
             await syncSubjectDetails(subjects.value.subjects, fullSchedule.status === "fulfilled" ? fullSchedule.value : null);
         }
@@ -231,4 +246,12 @@ export function startSyncService() {
 
 export function stopSyncService() {
     if (syncIntervalId) clearInterval(syncIntervalId);
+}
+
+export async function refreshExams(): Promise<void> {
+    const fresh = await fetchDualLanguageExams();
+    if (fresh.length > 0) {
+        cachedData = { ...cachedData, exams: fresh };
+        sendToIframe(Messages.syncUpdate({ exams: fresh, isSyncing, lastSync: cachedData.lastSync }));
+    }
 }

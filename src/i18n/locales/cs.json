@@ -304,6 +304,12 @@
       "failed": "Synchronizace selhala",
       "loadingFiles": "Načítání souborů..."
     },
+    "freshness": {
+      "newBadge": "NOVÉ",
+      "refresh": "Obnovit soubory",
+      "updated": "Aktualizováno",
+      "updatedJustNow": "Aktualizováno právě teď"
+    },
     "documentNote": {
       "add": "Přidat poznámku...",
       "placeholder": "Tvá poznámka k souboru...",
@@ -455,20 +461,36 @@
     "zamerani": "zaměření",
     "zameraniMembers": "Obsahuje předměty",
     "semesterShort": "sem.",
+    "enrolledNow": "Aktuálně zapsáno",
     "zameraniProgress": "Zaměření: plní se {touched}, nutno splnit {min}",
+    "zameraniPickPrompt": "Vyber zaměření výše →",
+    "zameraniPickProgress": "Vybráno {picked} / min {min}",
+    "zameraniPickProgressNoMin": "Vybráno {picked}",
+    "zameraniPickPick": "Vybrat zaměření",
+    "zameraniPickUnpick": "Zrušit výběr",
+    "zameraniPickDerived": "Auto-vybráno – máš zapsané předměty z tohoto zaměření",
     "zadost": "Žádosti",
     "sourcesMismatch": "Rozdíl mezi zdroji: plán {plan} kr., statistiky {stats} kr.",
-    "sort": {
-      "default": "Výchozí",
-      "failRateDesc": "Nejvyšší neúspěšnost",
-      "failRateAsc": "Nejnižší neúspěšnost",
-      "creditsDesc": "Nejvíce kreditů",
-      "alpha": "Abecedně"
+    "insights": {
+      "hardestTitle": "Nejtěžší předměty, které tě čekají",
+      "hardestSubtitle": "min. 30 studentů, posl. 3 semestry",
+      "zameraniTitle": "Srovnání zaměření",
+      "zameraniSubtitle": "průměrná neúspěšnost vážená kredity",
+      "lowSampleHint": "{n} předmětů má málo dat"
     },
-    "filter": {
-      "zs": "ZS",
-      "ls": "LS",
-      "hideFulfilled": "Skrýt splněné"
+    "mode": {
+      "plan": "Můj plán",
+      "catalog": "Katalog"
+    },
+    "catalog": {
+      "placeholder": "Hledat předmět…",
+      "hint": "Zadej alespoň 2 znaky — prohledá se celý katalog MENDELU",
+      "noResults": "Nic nenalezeno",
+      "noResultsAfterFilter": "Žádný předmět neodpovídá filtrům",
+      "minPass": "Min. úspěšnost",
+      "allFaculties": "Vše",
+      "hideNoData": "Skrýt předměty bez dat",
+      "shownOf": "Zobrazeno {shown} z {total}"
     }
   },
   "commands": {

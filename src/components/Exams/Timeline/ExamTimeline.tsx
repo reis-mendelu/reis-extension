@@ -80,7 +80,7 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
   const nextIndex = sortedExams.findIndex(e => parseDateTime(e.term.date, e.term.time).getTime() >= now);
 
   return (
-    <div className={`overflow-x-auto w-full py-3 ${className}`}>
+    <div className={`overflow-x-auto w-full py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}>
       <div className="relative flex flex-row w-full min-w-max">
         <div className="absolute left-0 right-0 bottom-[4px] h-px bg-base-content/15 pointer-events-none" />
         {sortedExams.map((item, index) => (

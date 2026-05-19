@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { registerExam, unregisterExam } from '../../api/exams';
 import { useAppStore } from '../../store/useAppStore';
+import { syncService } from '../../services/sync';
 import { updateExamOptimistically } from './actions/optimisticUpdates';
 import type { ExamSubject, ExamSection, ExamTerm } from '../../types/exams';
 import { logError } from '../../utils/reportError';
@@ -16,7 +17,7 @@ interface PendingAction {
 export function useExamActions({ exams, setExpandedSectionId }: { exams: ExamSubject[]; setExpandedSectionId: (id: string | null) => void }) {
     const { t: tr } = useTranslation();
     const [procId, setProcId] = useState<string | null>(null), [pending, setPending] = useState<PendingAction | null>(null);
-    const setExams = useAppStore(s => s.setExams), fetchExams = useAppStore(s => s.fetchExams);
+    const setExams = useAppStore(s => s.setExams);
 
     const handleRegister = async (sec: ExamSection, tid: string) => {
         setProcId(sec.id); setPending(null);
@@ -30,7 +31,8 @@ export function useExamActions({ exams, setExpandedSectionId }: { exams: ExamSub
                 toast.success(tr('exams.actionRegistered'));
                 const t = sec.terms.find((x: ExamTerm) => x.id === tid), updated = updateExamOptimistically(exams, sec.id, { status: 'registered', registeredTerm: t ? { id: t.id, date: t.date, time: t.time, room: t.room, teacher: t.teacher, teacherId: t.teacherId, deregistrationDeadline: t.deregistrationDeadline } : undefined });
                 setExams(updated);
-                setExpandedSectionId(null); void fetchExams();
+                setExpandedSectionId(null);
+                syncService.triggerExamRefresh();
                 return;
             }
             // Registration failed. If we unregistered first, attempt best-effort rollback.
@@ -42,7 +44,7 @@ export function useExamActions({ exams, setExpandedSectionId }: { exams: ExamSub
                     logError('useExamActions.handleRegister.rollbackFailed', new Error(`restore failed for ${previousTermId} after register ${tid} failed: regErr=${res.error}; rollbackErr=${rollback.error}`));
                     toast.error(tr('exams.actionSwitchFailedNoRollback'));
                 }
-                void fetchExams();
+                syncService.triggerExamRefresh();
             } else {
                 toast.error(res.error || tr('exams.actionFailed'));
             }
@@ -58,7 +60,7 @@ export function useExamActions({ exams, setExpandedSectionId }: { exams: ExamSub
                 toast.success(tr('exams.actionUnregistered'));
                 const updated = updateExamOptimistically(exams, sec.id, { status: 'available', registeredTerm: undefined });
                 setExams(updated);
-                void fetchExams();
+                syncService.triggerExamRefresh();
             } else toast.error(res.error || tr('exams.actionFailed'));
         } catch (e) { logError('useExamActions.handleUnregister', e); toast.error(tr('exams.actionGenericError')); } finally { setProcId(null); }
     };

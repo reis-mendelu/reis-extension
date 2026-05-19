@@ -241,6 +241,22 @@ function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
         }
     }
 
+    // The <ul> description section may omit zaměření whose <li> lacks a <strong>
+    // tag (e.g. "zahraniční mobilita" — its <li> is plain prose with a code range).
+    // Recover name from pseudo-subject rows in the plan table; subjects from the
+    // no-<strong> <li> items in the same <ul>, matched in appearance order.
+    const orphanSubjects = extractUnnamedZameraniSubjects(doc, lang);
+    const existingNorms = new Set(zameranis.map(z => normalizeZameraniName(z.name)));
+    for (const block of blocks) for (const group of block.groups) for (const s of group.subjects) {
+        const isZbCode = s.code.startsWith('EBC-ZB') || s.code.startsWith('EBA-ZB');
+        if (!isZbCode) continue;
+        const norm = normalizeZameraniName(s.name);
+        if (existingNorms.has(norm)) continue;
+        existingNorms.add(norm);
+        const clean = s.name.replace(/^zaměření:\s*/i, '').replace(/^specialization:\s*/i, '').trim();
+        zameranis.push({ name: clean.charAt(0).toUpperCase() + clean.slice(1), subjects: orphanSubjects.shift() ?? [] });
+    }
+
     return {
         title: extractPlanTitle(doc),
         isFulfilled,
@@ -328,34 +344,44 @@ function extractZameraniMinimum(doc: Document, lang: Lang): number | undefined {
     return words[token] ?? words[stripped];
 }
 
+function findZameraniUl(doc: Document, lang: Lang): Element | null {
+    const anchor = lang === 'cz' ? 'Studijní plán zaměření' : 'study plan of specialization';
+    for (const p of Array.from(doc.querySelectorAll('p'))) {
+        if (!(p.textContent || '').toLowerCase().includes(anchor.toLowerCase())) continue;
+        let el: Element | null = p.nextElementSibling;
+        while (el && el.tagName !== 'UL') el = el.nextElementSibling;
+        if (!el) {
+            const uls = p.parentElement?.querySelectorAll('ul');
+            if (uls?.length) el = uls[0];
+        }
+        if (el) return el;
+    }
+    return null;
+}
+
+/** Returns subject lists from <li> items that lack a <strong> name tag
+ *  (e.g. "předměty EXA-UP01-04."). Used to recover subjects for zaměření
+ *  whose name could not be parsed from the <ul>. */
+function extractUnnamedZameraniSubjects(doc: Document, lang: Lang): ZamerangSubjectRef[][] {
+    const ul = findZameraniUl(doc, lang);
+    if (!ul) return [];
+    const result: ZamerangSubjectRef[][] = [];
+    for (const li of Array.from(ul.querySelectorAll('li'))) {
+        if (li.querySelector('strong')) continue;
+        const text = (li.textContent || '').replace(/ /g, ' ').trim();
+        const subjects = parseZameraniSubjectList(text);
+        if (subjects.length > 0) result.push(subjects);
+    }
+    return result;
+}
+
 // Zaměření paragraph lives above the plan table: a <p> starting with
 // "Studijní plán zaměření" / "The study plan of specialization", followed by a <ul>
 // whose <li> items look like:
 //   <strong>Vývoj webových aplikací</strong>: EBC-WGD Webová grafika..., EBC-WAF ...;
 // Degrade gracefully: if anchor not found, return [].
 function extractZameranis(doc: Document, lang: Lang): Zamerani[] {
-    const anchorCz = 'Studijní plán zaměření';
-    const anchorEn = 'study plan of specialization';
-    const anchor = lang === 'cz' ? anchorCz : anchorEn;
-
-    const paragraphs = Array.from(doc.querySelectorAll('p'));
-    let ul: Element | null = null;
-    for (const p of paragraphs) {
-        const txt = (p.textContent || '').trim();
-        if (!txt.toLowerCase().includes(anchor.toLowerCase())) continue;
-        // walk forward through siblings of p (and of p's parent) to find a <ul>
-        let el: Element | null = p.nextElementSibling;
-        while (el && el.tagName !== 'UL') el = el.nextElementSibling;
-        if (!el) {
-            // sometimes the <p> is wrapped in a <td> and the <ul> is the next child of the same parent
-            const parent = p.parentElement;
-            if (parent) {
-                const uls = parent.querySelectorAll('ul');
-                if (uls.length > 0) el = uls[0];
-            }
-        }
-        if (el) { ul = el; break; }
-    }
+    const ul = findZameraniUl(doc, lang);
     if (!ul) return [];
 
     const result: Zamerani[] = [];

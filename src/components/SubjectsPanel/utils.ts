@@ -1,9 +1,13 @@
-import type { SemesterBlock } from '@/types/studyPlan';
+import type { SemesterBlock, StudyPlan } from '@/types/studyPlan';
 
 export type SemesterState = 'past' | 'current' | 'future';
 
 // IS Mendelu sentinel: 999 credits = "uznaný předmět", don't sum.
 export const isRealCredits = (c: number) => c < 999;
+
+// Zaměření pseudo-subjects are plan placeholders, not real courses.
+const ZAMERANI_PREFIXES = ['EBC-ZB', 'EBA-ZB'];
+export const isZameraniCode = (code: string) => ZAMERANI_PREFIXES.some(p => code.startsWith(p));
 
 export function getSemesterState(block: SemesterBlock): SemesterState {
   const all = block.groups.flatMap(g => g.subjects);
@@ -30,6 +34,22 @@ export function normalizeZameraniName(s: string): string {
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .trim();
+}
+
+// Reverse map: subject code → normalized names of zaměření that contain it.
+// Subjects not in the map are mandatory or general electives (always visible).
+export function buildSubjectToZameranis(plan: StudyPlan | null | undefined): Map<string, string[]> {
+  const map = new Map<string, string[]>();
+  if (!plan?.zameranis) return map;
+  for (const z of plan.zameranis) {
+    const norm = normalizeZameraniName(z.name);
+    for (const s of z.subjects) {
+      const existing = map.get(s.code) ?? [];
+      existing.push(norm);
+      map.set(s.code, existing);
+    }
+  }
+  return map;
 }
 
 export function buildSubjectSemesters(plan: { blocks: SemesterBlock[] } | null | undefined): Map<string, string[]> {

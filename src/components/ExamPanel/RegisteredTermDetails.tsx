@@ -10,7 +10,7 @@ interface RegisteredTermDetailsProps {
     onToggleClassmates?: (e: React.MouseEvent) => void;
 }
 
-export function RegisteredTermDetails({ section, classmatesCount, classmatesOpen, onToggleClassmates }: RegisteredTermDetailsProps) {
+export function RegisteredTermDetails({ section, classmatesCount: _classmatesCount, classmatesOpen: _classmatesOpen, onToggleClassmates: _onToggleClassmates }: RegisteredTermDetailsProps) {
     const { t, language } = useTranslation();
     const term = section.registeredTerm;
     if (!term) return null;

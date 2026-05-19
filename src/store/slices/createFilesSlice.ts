@@ -2,10 +2,17 @@ import type { FilesSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
 import type { ParsedFile } from '../../types/documents';
+import {
+    fetchAndPersistFolderFiles,
+    persistLastFetched,
+    FILES_LAST_FETCHED_KEY,
+} from './files/refreshFilesForSubject';
+import { loadAllFilesFromCache } from './files/fetchAllFiles';
 
 export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     files: {},
     filesLoading: {},
+    lastFilesFetchedAt: {},
     fetchFiles: async (courseCode) => {
         const { files, filesLoading } = get();
 
@@ -105,9 +112,12 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
             const displayList = activeLang === currentLang ? fullFilesList
                 : (activeLang === 'en' ? data.en : data.cz);
 
+            const nextLast = { ...get().lastFilesFetchedAt, [courseCode]: Date.now() };
+            persistLastFetched(nextLast);
             set((state) => ({
                 files: { ...state.files, [courseCode]: displayList },
                 filesLoading: { ...state.filesLoading, [courseCode]: false },
+                lastFilesFetchedAt: nextLast,
             }));
         } catch (e) {
             logError('FilesSlice.fetchFilesPriority', e, { courseCode });
@@ -180,35 +190,41 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
             }));
         }
     },
-    fetchAllFiles: async () => {
+    refreshFilesForSubject: async (courseCode) => {
+        const { language: currentLang, subjects } = get();
+        set((state) => ({ filesLoading: { ...state.filesLoading, [courseCode]: true } }));
         try {
-            const currentLang = get().language;
-            // Scope to currently enrolled courses instead of scanning the whole
-            // 'files' store (which accumulates historical semesters).
-            const subjectsData = get().subjects?.data
-                ?? (await IndexedDBService.get('subjects', 'current'))?.data;
-            const courseCodes = subjectsData ? Object.keys(subjectsData) : [];
-            if (courseCodes.length === 0) {
-                set({ files: {} });
+            const result = await fetchAndPersistFolderFiles({ courseCode, language: currentLang, subjects });
+            if (!result) {
+                set((state) => ({ filesLoading: { ...state.filesLoading, [courseCode]: false } }));
                 return;
             }
-
-            const entries = await Promise.all(
-                courseCodes.map(async (code) => {
-                    const value = await IndexedDBService.get('files', code);
-                    return [code, value] as const;
-                })
-            );
-
-            const filesMap: Record<string, ParsedFile[]> = {};
-            for (const [code, value] of entries) {
-                if (value && 'cz' in value && 'en' in value) {
-                    filesMap[code] = currentLang === 'en' ? value.en : value.cz;
-                } else if (Array.isArray(value)) {
-                    filesMap[code] = value;
-                }
+            const activeLang = get().language;
+            const displayList = activeLang === currentLang
+                ? result.displayList
+                : (((await IndexedDBService.get('files', courseCode)) as { cz: ParsedFile[]; en: ParsedFile[] } | null)?.[activeLang] ?? result.displayList);
+            const nextLast = { ...get().lastFilesFetchedAt, [courseCode]: result.fetchedAt };
+            persistLastFetched(nextLast);
+            set((state) => ({
+                files: { ...state.files, [courseCode]: displayList },
+                filesLoading: { ...state.filesLoading, [courseCode]: false },
+                lastFilesFetchedAt: nextLast,
+            }));
+        } catch (e) {
+            logError('FilesSlice.refreshFilesForSubject', e, { courseCode });
+            set((state) => ({ filesLoading: { ...state.filesLoading, [courseCode]: false } }));
+        }
+    },
+    hydrateLastFilesFetchedAt: async () => {
+        try {
+            const cached = await IndexedDBService.get('meta', FILES_LAST_FETCHED_KEY);
+            if (cached && typeof cached === 'object') {
+                set({ lastFilesFetchedAt: cached as Record<string, number> });
             }
-            set({ files: filesMap });
-        } catch (e) { logError('FilesSlice.fetchAllFiles', e); }
+        } catch (e) { logError('FilesSlice.hydrateLastFilesFetchedAt', e); }
+    },
+    fetchAllFiles: async () => {
+        const files = await loadAllFilesFromCache({ language: get().language, subjects: get().subjects });
+        set({ files });
     },
 });

@@ -10,8 +10,8 @@ import type { TimelineExam } from '../Exams/Timeline/ExamTimeline';
 import { useAutoRegistration } from './useAutoRegistration';
 import { Zap, ExternalLink } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
+import { syncService } from '../../services/sync';
 
 interface RegisteredExam extends TimelineExam {
     subject: ExamSubject;
@@ -88,6 +88,12 @@ export function ExamPanel() {
         const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('[role="dialog"]') && expandedId) setExpandedId(null); };
         document.addEventListener('keydown', h); return () => document.removeEventListener('keydown', h);
     }, [expandedId]);
+
+    useEffect(() => {
+        const onVisible = () => { if (document.visibilityState === 'visible') syncService.triggerExamRefresh(); };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => document.removeEventListener('visibilitychange', onVisible);
+    }, []);
 
     const topTimeline = realExams.length > 0 ? (
         <div>

@@ -18,7 +18,7 @@ describe('createFilesSlice', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         set = vi.fn((fn) => {
-            const result = typeof fn === 'function' ? fn({ files: {}, filesLoading: {} }) : fn;
+            const result = typeof fn === 'function' ? fn({ files: {}, filesLoading: {}, lastFilesFetchedAt: {} }) : fn;
             Object.assign(slice, result);
         });
 
@@ -35,6 +35,25 @@ describe('createFilesSlice', () => {
     it('should initialize with default state', () => {
         expect(slice.files).toEqual({});
         expect(slice.filesLoading).toEqual({});
+        expect(slice.lastFilesFetchedAt).toEqual({});
+    });
+
+    it('should hydrate lastFilesFetchedAt from IDB', async () => {
+        const cached = { ALG: 1700000000000, BIO: 1700000005000 };
+        vi.mocked(IndexedDBService.get).mockResolvedValue(cached);
+
+        await slice.hydrateLastFilesFetchedAt();
+
+        expect(IndexedDBService.get).toHaveBeenCalledWith('meta', 'files_last_fetched');
+        expect(slice.lastFilesFetchedAt).toEqual(cached);
+    });
+
+    it('should leave lastFilesFetchedAt empty when no IDB entry exists', async () => {
+        vi.mocked(IndexedDBService.get).mockResolvedValue(undefined);
+
+        await slice.hydrateLastFilesFetchedAt();
+
+        expect(slice.lastFilesFetchedAt).toEqual({});
     });
 
     it('should fetch files for a subject', async () => {

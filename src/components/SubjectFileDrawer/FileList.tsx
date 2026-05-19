@@ -43,6 +43,7 @@ import type { FileListProps } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDocumentNoteKeys } from '../../hooks/data/useDocumentNoteKeys';
 import { DocumentNote } from './DocumentNote';
+import { isRecent } from './utils/fileDate';
 
 const typeBadgeConfig: Record<string, string> = {
     pdf: 'badge-error',
@@ -129,12 +130,16 @@ export function FileList({
                                             </div>
                                             
                                             <div className="flex-1 min-w-0">
-                                                <div className={`font-medium truncate ${isSelected ? 'text-primary' : 'text-base-content'}`}>
-                                                    {file.files.length > 1 ? `${file.file_name} (${j + 1})` : file.file_name}
+                                                <div className={`font-medium truncate flex items-center gap-2 ${isSelected ? 'text-primary' : 'text-base-content'}`}>
+                                                    <span className="truncate">{file.files.length > 1 ? `${file.file_name} (${j + 1})` : file.file_name}</span>
+                                                    {isRecent(file.date) && (
+                                                        <span className="badge badge-primary badge-xs font-bold shrink-0">{t('course.freshness.newBadge')}</span>
+                                                    )}
                                                 </div>
-                                                {file.file_comment && (
-                                                    <div className="text-xs text-base-content/50 truncate">{file.file_comment}</div>
-                                                )}
+                                                <div className="text-xs text-base-content/50 truncate flex items-center gap-2">
+                                                    {file.date && <span className="shrink-0">{file.date}</span>}
+                                                    {file.file_comment && <span className="truncate">{file.file_comment}</span>}
+                                                </div>
                                             </div>
 
                                             <div className="flex items-center gap-2">

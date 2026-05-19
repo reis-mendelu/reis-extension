@@ -66,10 +66,13 @@ export interface SyllabusSlice {
 export interface FilesSlice {
     files: Record<string, ParsedFile[]>;
     filesLoading: Record<string, boolean>;
+    lastFilesFetchedAt: Record<string, number>;
     fetchFiles: (courseCode: string) => Promise<void>;
     fetchFilesPriority: (courseCode: string) => Promise<void>;
     fetchAllFiles: () => Promise<void>;
     refreshFiles: (courseCode: string) => Promise<void>;
+    refreshFilesForSubject: (courseCode: string) => Promise<void>;
+    hydrateLastFilesFetchedAt: () => Promise<void>;
 }
 
 export interface ClassmatesSlice {

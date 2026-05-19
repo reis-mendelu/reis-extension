@@ -4,9 +4,7 @@ import type { ZameraniProgress } from './SubjectsPanelHeader';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
 import { useTimeline } from '@/hooks/useTimeline';
-import { useAppStore } from '@/store/useAppStore';
-import { ZaznamnikLine } from './ZaznamnikLine';
-import { PastAttendanceDots } from './PastAttendanceDots';
+import { isZameraniCode } from './utils';
 
 interface SubjectRowProps {
   subject: SubjectStatus;
@@ -19,15 +17,17 @@ interface SubjectRowProps {
   zamerani?: Zamerani | null;
   zameraniProgress?: ZameraniProgress | null;
   subjectSemesters?: Map<string, string[]>;
+  subjectToZameranis?: Map<string, string[]>;
 }
 
-// Zaměření pseudo-subjects in the plan table always carry these code prefixes.
-const ZAMERANI_PREFIXES = ['EBC-ZB', 'EBA-ZB'];
-const isZameraniCode = (code: string) => ZAMERANI_PREFIXES.some(p => code.startsWith(p));
+function zameraniAcronym(norm: string): string {
+  return norm.split(/\s+/).map(w => w[0]?.toUpperCase() ?? '').join('');
+}
+
 // IS Mendelu uses 999 as a sentinel "credits unknown / pass-through" value.
 const isSentinelCredits = (credits: number) => credits >= 999;
 
-export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, onOpenSubject, onSearchSubject, zamerani, zameraniProgress, subjectSemesters }: SubjectRowProps) {
+export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, onOpenSubject, onSearchSubject, zamerani, zameraniProgress, subjectSemesters, subjectToZameranis }: SubjectRowProps) {
   const { t } = useTranslation();
   const hasId = subject.id !== '';
   const displayName = useCourseName(subject.code, subject.name);
@@ -35,7 +35,8 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
   const isZamerani = isZameraniCode(subject.code);
   const showCredits = !isSentinelCredits(subject.credits) && !isZamerani;
   const typeLabel = subject.type?.trim();
-  const subjectId = useAppStore(s => s.subjects?.data[subject.code]?.subjectId);
+  const zameraniMembership = subjectToZameranis?.get(subject.code);
+  const zameraniTag = zameraniMembership?.length ? zameraniAcronym(zameraniMembership[0]) : null;
 
   const handleClick = () => {
     if (isZamerani) return; // pseudo-row, not openable
@@ -61,7 +62,6 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
           {timeline && <span className="text-[9px] font-bold text-primary/60 shrink-0">{timeline.formatted}</span>}
           {showCredits && <span className="text-[10px] shrink-0 font-medium">{subject.credits} kr.</span>}
         </button>
-        {subject.isFulfilled && <PastAttendanceDots courseCode={subject.code} />}
       </div>
     );
   }
@@ -150,44 +150,39 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
           <span className="hidden group-hover/fail:inline">{failRate}% {t('subjects.failRateLabel')}</span>
         </span>
       )}
+      {zameraniTag && (
+        <span className="text-[9px] font-mono tracking-widest text-primary/50 bg-primary/8 px-1.5 py-0.5 rounded shrink-0">{zameraniTag}</span>
+      )}
       {showCredits && (
         <span className="text-xs text-base-content/50 shrink-0">{subject.credits} kr.</span>
       )}
-      {subject.fulfillmentDate && (
-        <span className="text-[10px] text-base-content/40 font-mono shrink-0 hidden sm:inline">{subject.fulfillmentDate}</span>
-      )}
+      {subject.isFulfilled && subject.fulfillmentDate ? (
+        <span className="flex items-center gap-1 text-[10px] text-success/70 shrink-0">
+          <CheckCircle2 className="w-3 h-3" />
+          <span className="font-mono">{subject.fulfillmentDate}</span>
+        </span>
+      ) : subject.isFulfilled ? (
+        <CheckCircle2 className="w-3.5 h-3.5 text-success/70 shrink-0" />
+      ) : null}
       {subject.enrollmentCount >= 2 && !subject.isFulfilled && (
         <span className="badge badge-sm badge-error gap-1" title={t('subjects.repeatWarning')}>
           <AlertTriangle className="w-3 h-3" />
           {subject.enrollmentCount}x
         </span>
       )}
-      {!hideStatus && (
-        <>
-          {subject.isFulfilled ? (
-            <span className="badge badge-sm badge-success gap-1">
-              <CheckCircle2 className="w-3 h-3" />
-              {t('subjects.fulfilled')}
-            </span>
-          ) : subject.isEnrolled ? (
-            <span className="badge badge-sm badge-primary badge-outline">{subject.rawStatusText}</span>
-          ) : !hasId ? (
-            <span className="badge badge-sm badge-ghost gap-1 text-base-content/40">
-              <Search className="w-3 h-3" />
-              {t('subjects.searchToOpen')}
-            </span>
-          ) : (
-            <span className="badge badge-sm badge-ghost text-base-content/40">{subject.rawStatusText || t('subjects.notFulfilled')}</span>
-          )}
-        </>
+      {!hideStatus && !subject.isFulfilled && (
+        subject.isEnrolled ? (
+          <span className="badge badge-sm badge-primary badge-outline">{subject.rawStatusText}</span>
+        ) : !hasId ? (
+          <span className="badge badge-sm badge-ghost gap-1 text-base-content/40">
+            <Search className="w-3 h-3" />
+            {t('subjects.searchToOpen')}
+          </span>
+        ) : (
+          <span className="badge badge-sm badge-ghost text-base-content/40">{subject.rawStatusText || t('subjects.notFulfilled')}</span>
+        )
       )}
     </button>
-    {subject.isEnrolled && !subject.isFulfilled && (
-      <ZaznamnikLine courseCode={subject.code} subjectId={subjectId} />
-    )}
-    {subject.isFulfilled && (
-      <PastAttendanceDots courseCode={subject.code} />
-    )}
     </div>
   );
 }

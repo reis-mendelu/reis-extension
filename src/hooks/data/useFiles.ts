@@ -7,11 +7,14 @@ export interface UseFilesResult {
     isLoading: boolean;
 }
 
+const STALE_MS = 60_000;
+
 /**
  * useFiles - Hook to access subject files from store.
  *
  * Reads files and loading state from the Zustand store.
- * Triggers a store fetch if data is missing (store action is idempotent).
+ * Triggers a store fetch if data is missing, OR a background refresh if the
+ * cached data is older than STALE_MS (stale-while-revalidate).
  */
 export function useFiles(courseCode?: string): UseFilesResult {
     const subjectFiles = useAppStore(state => courseCode ? state.files[courseCode] : undefined);
@@ -19,13 +22,17 @@ export function useFiles(courseCode?: string): UseFilesResult {
     const lastSync = useAppStore(state => state.syncStatus.lastSync);
 
     useEffect(() => {
-        if (courseCode) {
-            const state = useAppStore.getState();
-            if (state.files[courseCode] === undefined) {
-                state.fetchFilesPriority(courseCode);
-            } else {
-                state.fetchFiles(courseCode);
-            }
+        if (!courseCode) return;
+        const state = useAppStore.getState();
+        if (state.files[courseCode] === undefined) {
+            state.fetchFilesPriority(courseCode);
+            return;
+        }
+        const fetchedAt = state.lastFilesFetchedAt[courseCode];
+        if (!fetchedAt || Date.now() - fetchedAt > STALE_MS) {
+            state.refreshFilesForSubject(courseCode);
+        } else {
+            state.fetchFiles(courseCode);
         }
     }, [courseCode, lastSync]);
 

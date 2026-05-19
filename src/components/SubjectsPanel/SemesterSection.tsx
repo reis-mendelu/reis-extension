@@ -1,9 +1,9 @@
-import { ChevronDown, CheckCircle2, BookOpen, Clock } from 'lucide-react';
-import type { SemesterBlock, SubjectStatus, Zamerani } from '@/types/studyPlan';
+import { ChevronDown, CheckCircle2, BookOpen, Clock, Layers } from 'lucide-react';
+import type { SemesterBlock, Zamerani, SubjectStatus } from '@/types/studyPlan';
+import { useTranslation } from '@/hooks/useTranslation';
 import type { ZameraniProgress } from './SubjectsPanelHeader';
 import { SubjectRow } from './SubjectRow';
-import type { SortMode, SubjectFilters } from './types';
-import { getSemesterState, isRealCredits, normalizeZameraniName, type SemesterState } from './utils';
+import { getSemesterState, isRealCredits, isZameraniCode, normalizeZameraniName, type SemesterState } from './utils';
 
 interface SemesterSectionProps {
   block: SemesterBlock;
@@ -13,11 +13,22 @@ interface SemesterSectionProps {
   zameraniLookup?: Map<string, Zamerani>;
   zameraniProgress?: Map<string, ZameraniProgress>;
   subjectSemesters?: Map<string, string[]>;
-  sortMode?: SortMode;
-  filters?: SubjectFilters;
+  subjectToZameranis?: Map<string, string[]>;
+  pickedZameranis?: Set<string>;
   onToggle: () => void;
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => void;
   onSearchSubject: (name: string) => void;
+}
+
+// A subject is "always visible" if it's not affiliated with any zaměření
+// (mandatory / general elective). Affiliated subjects show only when at least
+// one of their zaměření is picked. Hides the noise of unchosen zaměření paths.
+function isSubjectVisible(s: SubjectStatus, subjectToZameranis?: Map<string, string[]>, picked?: Set<string>): boolean {
+  if (isZameraniCode(s.code)) return false;
+  const memberOf = subjectToZameranis?.get(s.code);
+  if (!memberOf || memberOf.length === 0) return true;
+  if (!picked || picked.size === 0) return false;
+  return memberOf.some(z => picked.has(z));
 }
 
 const stateConfig: Record<SemesterState, {
@@ -50,60 +61,34 @@ const stateConfig: Record<SemesterState, {
   },
 };
 
-export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup, zameraniProgress, subjectSemesters, sortMode = 'default', filters, onToggle, onOpenSubject, onSearchSubject }: SemesterSectionProps) {
+export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup, zameraniProgress, subjectSemesters, subjectToZameranis, pickedZameranis, onToggle, onOpenSubject, onSearchSubject }: SemesterSectionProps) {
+  const { t } = useTranslation();
   const state = getSemesterState(block);
   const cfg = stateConfig[state];
 
   const titleMatch = block.title.match(/^(\d+\.\s*semestr)/i);
   const cleanTitle = titleMatch ? titleMatch[1] : block.title.replace(/\s*\(dosud neaktivní\)/gi, '');
 
-  const allSubjects = block.groups.flatMap(g => g.subjects);
+  const allSubjects = block.groups.flatMap(g => g.subjects).filter(s => isSubjectVisible(s, subjectToZameranis, pickedZameranis));
   const fulfilledCount = allSubjects.filter(s => s.isFulfilled).length;
   const totalCount = allSubjects.length;
   const totalCredits = allSubjects.filter(s => isRealCredits(s.credits)).reduce((a, s) => a + s.credits, 0);
   const isPast = state === 'past';
 
-  const applyFilter = (subjects: SubjectStatus[]) =>
-    filters?.hideFulfilled ? subjects.filter(s => !s.isFulfilled) : subjects;
-  const applySort = (subjects: SubjectStatus[]) => {
-    const cmp = (a: SubjectStatus, b: SubjectStatus): number => {
-      switch (sortMode) {
-        case 'failRateDesc': {
-          const fa = failRates?.[a.code], fb = failRates?.[b.code];
-          if (fa == null && fb == null) return 0;
-          if (fa == null) return 1;
-          if (fb == null) return -1;
-          return fb - fa;
-        }
-        case 'failRateAsc': {
-          const fa = failRates?.[a.code], fb = failRates?.[b.code];
-          if (fa == null && fb == null) return 0;
-          if (fa == null) return 1;
-          if (fb == null) return -1;
-          return fa - fb;
-        }
-        case 'creditsDesc': {
-          const ca = isRealCredits(a.credits) ? a.credits : -1;
-          const cb = isRealCredits(b.credits) ? b.credits : -1;
-          return cb - ca;
-        }
-        case 'alpha':
-          return a.name.localeCompare(b.name, 'cs');
-        case 'default':
-        default: {
-          if (a.isFulfilled !== b.isFulfilled) return a.isFulfilled ? 1 : -1;
-          const fa = failRates?.[a.code] ?? -1;
-          const fb = failRates?.[b.code] ?? -1;
-          return fb - fa;
-        }
-      }
-    };
-    return [...subjects].sort(cmp);
-  };
+  const visibleByGroup = block.groups.map(g => [...g.subjects].filter(s => isSubjectVisible(s, subjectToZameranis, pickedZameranis)).sort((a, b) => {
+    if (a.isFulfilled !== b.isFulfilled) return a.isFulfilled ? 1 : -1;
+    const fa = failRates?.[a.code] ?? -1;
+    const fb = failRates?.[b.code] ?? -1;
+    return fb - fa;
+  }));
 
-  const visibleByGroup = block.groups.map(g => applySort(applyFilter(g.subjects)));
-  const visibleCount = visibleByGroup.reduce((a, g) => a + g.length, 0);
-  if (filters?.hideFulfilled && visibleCount === 0 && totalCount > 0) return null;
+  // A group needs the "pick a zaměření" prompt iff it has zaměření-affiliated
+  // subjects, none of those zaměření are currently picked, and the visible list
+  // is therefore empty. Pure mandatory groups stay hidden when empty.
+  const groupNeedsPrompt = (group: SemesterBlock['groups'][number]): boolean => {
+    if (!subjectToZameranis || !pickedZameranis) return false;
+    return group.subjects.some(s => (subjectToZameranis.get(s.code)?.length ?? 0) > 0);
+  };
 
   return (
     <div className={`rounded-lg border overflow-hidden transition-all ${open ? 'border-base-content/20 bg-base-100 shadow-sm' : `${cfg.border} ${state === 'current' ? 'bg-primary/5 ring-1 ring-primary/15' : ''}`} ${dimmed ? 'opacity-40' : ''} ${block.isWholePlanPool ? 'border-dashed' : ''}`}>
@@ -126,7 +111,8 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
         <div className="px-2 pb-2 animate-in fade-in slide-in-from-top-1 duration-150">
           {block.groups.map((group, gi) => {
             const visible = visibleByGroup[gi];
-            if (visible.length === 0 && filters?.hideFulfilled) return null;
+            const showPickPrompt = visible.length === 0 && groupNeedsPrompt(group);
+            if (visible.length === 0 && !showPickPrompt) return null;
             const statusText = (group.statusDescription || '').trim();
             const statusIsFulfilled = /^SPLN[ĚE]N/i.test(statusText) || /^FULFILLED/i.test(statusText);
             const statusCls = statusIsFulfilled ? 'text-success/70' : statusText ? 'text-warning/80' : 'text-base-content/40';
@@ -150,7 +136,12 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
                     </span>
                   </div>
                 )}
-                {visible.map(s => (
+                {showPickPrompt ? (
+                  <div className="mx-3 my-1 flex items-center gap-2 px-3 py-2 rounded-md border border-dashed border-base-300 text-[11px] text-base-content/50">
+                    <Layers className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+                    <span>{t('subjects.zameraniPickPrompt')}</span>
+                  </div>
+                ) : visible.map(s => (
                   <SubjectRow
                     key={s.code}
                     subject={s}
@@ -160,6 +151,7 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
                     zamerani={zameraniLookup?.get(normalizeZameraniName(s.name)) ?? null}
                     zameraniProgress={zameraniProgress?.get(normalizeZameraniName(s.name)) ?? null}
                     subjectSemesters={subjectSemesters}
+                    subjectToZameranis={subjectToZameranis}
                     onOpenSubject={onOpenSubject}
                     onSearchSubject={onSearchSubject}
                   />

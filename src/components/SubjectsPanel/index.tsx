@@ -1,16 +1,23 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { SubjectsPanelHeader } from './SubjectsPanelHeader';
-import { SubjectsPanelToolbar } from './SubjectsPanelToolbar';
+import { IndexedDBService } from '@/services/storage';
+import { SubjectsPanelHeader, type SubjectsPanelMode } from './SubjectsPanelHeader';
 import { computeFailRate } from './computeFailRate';
 import { SemesterSection } from './SemesterSection';
 import { SubjectsPanelSkeleton } from './SubjectsPanelSkeleton';
-import { DEFAULT_FILTERS, type SortMode, type SubjectFilters } from './types';
+import { HardestUpcomingCard } from './HardestUpcomingCard';
+import { ZameraniComparisonCard } from './ZameraniComparisonCard';
+import { EnrolledNowSection } from './EnrolledNowSection';
+import { CatalogView } from './CatalogView';
+import { topHardestUpcoming, zameraniInsights } from './insights';
 import { useOpenSemesters } from './useOpenSemesters';
+import { useZameraniPicks } from './useZameraniPicks';
 import type { Zamerani } from '@/types/studyPlan';
-import { getSemesterState, isRealCredits, normalizeZameraniName, buildSubjectSemesters } from './utils';
+import { getSemesterState, isRealCredits, isZameraniCode, normalizeZameraniName, buildSubjectSemesters, buildSubjectToZameranis } from './utils';
+
+const MODE_IDB_KEY = 'subjects_view_mode';
 
 interface SubjectsPanelProps {
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => void;
@@ -27,7 +34,6 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
   const handshakeTimedOut = useAppStore(s => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore(s => s.syncStatus.isSyncing);
 
-  // Batch-prefetch success rates for all subjects in the plan
   useEffect(() => {
     if (!plan) return;
     const codes = plan.blocks.flatMap(b => b.groups.flatMap(g => g.subjects.map(s => s.code)));
@@ -35,8 +41,16 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
   }, [plan]);
 
   const { openSemesters, currentSemesterRef, handleToggle } = useOpenSemesters(plan);
-  const [sortMode, setSortMode] = useState<SortMode>('default');
-  const [filters, setFilters] = useState<SubjectFilters>(DEFAULT_FILTERS);
+  const [mode, setModeState] = useState<SubjectsPanelMode>('plan');
+  useEffect(() => {
+    IndexedDBService.get('meta', MODE_IDB_KEY).then(v => {
+      if (v === 'catalog' || v === 'plan') setModeState(v);
+    }).catch(() => {});
+  }, []);
+  const setMode = (m: SubjectsPanelMode) => {
+    setModeState(m);
+    IndexedDBService.set('meta', MODE_IDB_KEY, m).catch(() => {});
+  };
 
   const zameraniLookup = useMemo(() => {
     const map = new Map<string, Zamerani>();
@@ -46,6 +60,7 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
   }, [plan]);
 
   const subjectSemesters = useMemo(() => buildSubjectSemesters(plan), [plan]);
+  const subjectToZameranis = useMemo(() => buildSubjectToZameranis(plan), [plan]);
 
   const zameraniProgress = useMemo(() => {
     const out = new Map<string, { enrolled: number; fulfilled: number; total: number; touched: boolean }>();
@@ -71,38 +86,37 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
   const failRates = useMemo(() => {
     const map: Record<string, number | null> = {};
     if (!plan) return map;
-    for (const block of plan.blocks) {
-      for (const group of block.groups) {
-        for (const s of group.subjects) {
-          map[s.code] = computeFailRate(successRates[s.code]);
-        }
-      }
+    for (const block of plan.blocks) for (const group of block.groups) for (const s of group.subjects) {
+      map[s.code] = computeFailRate(successRates[s.code]);
     }
     return map;
   }, [plan, successRates]);
 
-  // Compute total enrolled credits for the header
   const enrolledCredits = useMemo(() => {
     if (!plan) return 0;
     let total = 0;
-    for (const block of plan.blocks) {
-      for (const group of block.groups) {
-        for (const s of group.subjects) {
-          if (s.isEnrolled && isRealCredits(s.credits)) total += s.credits;
-        }
-      }
+    for (const block of plan.blocks) for (const group of block.groups) for (const s of group.subjects) {
+      if (s.isEnrolled && isRealCredits(s.credits)) total += s.credits;
     }
     return total;
   }, [plan]);
 
+  const picks = useZameraniPicks();
+
+  const hardest = useMemo(
+    () => plan ? topHardestUpcoming(plan, successRates, subjectSemesters, 5) : [],
+    [plan, successRates, subjectSemesters],
+  );
+  const zameraniStats = useMemo(
+    () => plan ? zameraniInsights(plan, successRates) : [],
+    [plan, successRates],
+  );
+
   if (!plan) {
-    if (!studyPlanLoaded || (!handshakeDone && !handshakeTimedOut) || isSyncing) {
-      return <SubjectsPanelSkeleton />;
-    }
+    if (!studyPlanLoaded || (!handshakeDone && !handshakeTimedOut) || isSyncing) return <SubjectsPanelSkeleton />;
     return <div className="flex items-center justify-center h-full text-base-content/50">{t('subjects.noData')}</div>;
   }
 
-  // Determine the first current semester index for the scroll ref
   const firstCurrentIdx = plan.blocks.findIndex((block) => getSemesterState(block) === 'current');
 
   return (
@@ -114,39 +128,67 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
         plan={plan}
         zameraniProgress={zameraniProgress}
         enrolledCredits={enrolledCredits}
+        mode={mode}
+        onModeChange={setMode}
       />
 
-      <SubjectsPanelToolbar sortMode={sortMode} filters={filters} onSortChange={setSortMode} onFiltersChange={setFilters} />
-
-      <div className="px-4 pb-4">
-        <div className="flex flex-col gap-2">
-          {plan.blocks.map((block, bi) => {
-            const hasSubjects = block.groups.flatMap(g => g.subjects).length > 0;
-            const numMatch = block.title.match(/^(\d+)/);
-            const num = numMatch ? Number(numMatch[1]) : null;
-            const parity: 'ZS' | 'LS' | null = num == null ? null : num % 2 === 1 ? 'ZS' : 'LS';
-            if (filters.semesterType !== 'all' && parity && parity !== filters.semesterType) return null;
-            return (
-              <div key={bi} ref={bi === firstCurrentIdx ? currentSemesterRef : undefined}>
-                <SemesterSection
-                  block={block}
-                  open={openSemesters.has(bi)}
-                  dimmed={hasSubjects && openSemesters.size > 0 && !openSemesters.has(bi)}
-                  failRates={failRates}
-                  zameraniLookup={zameraniLookup}
-                  zameraniProgress={zameraniProgress}
-                  subjectSemesters={subjectSemesters}
-                  sortMode={sortMode}
-                  filters={filters}
-                  onToggle={() => handleToggle(bi)}
-                  onOpenSubject={onOpenSubject}
-                  onSearchSubject={onSearchSubject}
-                />
-              </div>
-            );
-          })}
+      {mode === 'catalog' ? (
+        <div className="px-4 pt-4 pb-4">
+          <CatalogView onOpenSubject={onOpenSubject} />
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="px-4 pt-4 flex flex-col gap-3">
+            <HardestUpcomingCard entries={hardest} onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
+            <ZameraniComparisonCard
+              insights={zameraniStats}
+              picks={picks.effectivePicks}
+              onTogglePick={picks.togglePick}
+              minRequired={plan.zameraniMinimum}
+              subjectSemesters={subjectSemesters}
+              onOpenSubject={onOpenSubject}
+              onSearchSubject={onSearchSubject}
+            />
+          </div>
+
+          <div className="px-4 pt-2 pb-0">
+            <EnrolledNowSection
+              plan={plan}
+              failRates={failRates}
+              subjectSemesters={subjectSemesters}
+              subjectToZameranis={subjectToZameranis}
+              onOpenSubject={onOpenSubject}
+              onSearchSubject={onSearchSubject}
+            />
+          </div>
+
+          <div className="px-4 pt-4 pb-4">
+            <div className="flex flex-col gap-2">
+              {plan.blocks.map((block, bi) => {
+                const hasSubjects = block.groups.flatMap(g => g.subjects).some(s => !isZameraniCode(s.code));
+                return (
+                  <div key={bi} ref={bi === firstCurrentIdx ? currentSemesterRef : undefined}>
+                    <SemesterSection
+                      block={block}
+                      open={openSemesters.has(bi)}
+                      dimmed={hasSubjects && openSemesters.size > 0 && !openSemesters.has(bi)}
+                      failRates={failRates}
+                      zameraniLookup={zameraniLookup}
+                      zameraniProgress={zameraniProgress}
+                      subjectSemesters={subjectSemesters}
+                      subjectToZameranis={subjectToZameranis}
+                      pickedZameranis={picks.effectivePicks}
+                      onToggle={() => handleToggle(bi)}
+                      onOpenSubject={onOpenSubject}
+                      onSearchSubject={onSearchSubject}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { Messages, isIframeMessage } from "../types/messages";
 import { iframeElement, sendToIframe, markIframeReady } from "./iframeManager";
-import { cachedData, syncAllData, isSyncing } from "./syncService";
+import { cachedData, syncAllData, isSyncing, refreshExams } from "./syncService";
 import { fetchFullSemesterSchedule } from "./dataFetchers";
 import { fetchExamData, registerExam, unregisterExam } from "../api/exams";
 import { fetchSubjects } from "../api/subjects";
@@ -92,6 +92,10 @@ async function handleAction(id: string, action: string, payload: unknown) {
             case "unregister_exam": result = { success: await unregisterExam(p.termId) }; break;
             case "trigger_sync":
                 await syncAllData();
+                result = { success: true };
+                break;
+            case "refresh_exams":
+                await refreshExams();
                 result = { success: true };
                 break;
             case "open_url": {
