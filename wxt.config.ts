@@ -18,7 +18,7 @@ export default defineConfig({
       48: 'reIS_logo_48.png',
       128: 'reIS_logo_128.png',
     },
-    permissions: ['storage', 'unlimitedStorage'],
+    permissions: ['storage', 'unlimitedStorage', 'alarms'],
     host_permissions: [
       'https://is.mendelu.cz/*',
       'https://webiskam.mendelu.cz/*',
