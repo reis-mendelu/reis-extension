@@ -10,6 +10,7 @@ import {
 import { loadAllFilesFromCache } from './files/fetchAllFiles';
 import { prefetchTodaySubjectsImpl } from './files/prefetchTodaySubjects';
 import { speculativeRefreshFilesImpl } from './files/speculativeRefreshFiles';
+import { broadcastFilesUpdate } from './files/broadcastFilesSync';
 
 export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     files: {},
@@ -212,6 +213,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
                 filesLoading: { ...state.filesLoading, [courseCode]: false },
                 lastFilesFetchedAt: nextLast,
             }));
+            broadcastFilesUpdate({ courseCode, fetchedAt: result.fetchedAt });
         } catch (e) {
             logError('FilesSlice.refreshFilesForSubject', e, { courseCode });
             set((state) => ({ filesLoading: { ...state.filesLoading, [courseCode]: false } }));

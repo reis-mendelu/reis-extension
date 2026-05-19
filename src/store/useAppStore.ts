@@ -29,6 +29,7 @@ import { createNotificationSlice } from './slices/createNotificationSlice';
 import { createSearchSlice } from './slices/createSearchSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
+import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
 
 export const useAppStore = create<AppState>()((...a) => ({
   ...createScheduleSlice(...a),
@@ -156,10 +157,23 @@ export const initializeStore = async () => {
         useAppStore.setState({ menu: null });
     };
 
+    // Cross-iframe files listener — when another window refreshes a subject's
+    // files, rehydrate from IDB and advance lastFilesFetchedAt without re-fetching.
+    const bcFiles = new BroadcastChannel(FILES_SYNC_CHANNEL);
+    bcFiles.onmessage = (event) => {
+        const msg = event.data as FilesSyncMessage | undefined;
+        if (!msg?.courseCode) return;
+        useAppStore.setState((s) => ({
+            lastFilesFetchedAt: { ...s.lastFilesFetchedAt, [msg.courseCode]: msg.fetchedAt },
+        }));
+        void useAppStore.getState().refreshFiles(msg.courseCode);
+    };
+
     return () => {
         clearInterval(pulseInterval);
         unsubscribe();
         bcTheme.close();
         bcLang.close();
+        bcFiles.close();
     };
 };
