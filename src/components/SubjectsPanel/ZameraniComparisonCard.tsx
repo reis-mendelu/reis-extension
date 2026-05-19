@@ -80,37 +80,41 @@ function ZameraniRow({ insight, open, picked, subjectSemesters, onToggle, onTogg
 
 export function ZameraniComparisonCard({ insights, picks, onTogglePick, minRequired, subjectSemesters, onOpenSubject, onSearchSubject }: Props) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   if (insights.length < 2) return null;
   return (
-    <div className="rounded-lg border border-base-300 bg-base-100 p-3">
-      <div className="flex items-center gap-2 mb-2 px-1">
-        <Layers className="w-4 h-4 text-primary" />
-        <h3 className="text-sm font-semibold">{t('subjects.insights.zameraniTitle')}</h3>
-        <span className="ml-auto text-[10px] text-base-content/50 font-medium">
+    <div className="rounded-lg border border-base-300 bg-base-100">
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center gap-2 px-4 py-3 hover:bg-base-200/50 transition-colors text-left">
+        <Layers className="w-4 h-4 text-primary shrink-0" />
+        <span className="text-sm font-semibold flex-1">{t('subjects.insights.zameraniTitle')}</span>
+        <span className="text-[10px] text-base-content/50 font-medium mr-1">
           {minRequired && minRequired > 0
             ? t('subjects.zameraniPickProgress', { picked: picks.size, min: minRequired })
             : t('subjects.zameraniPickProgressNoMin', { picked: picks.size })}
         </span>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        {insights.map((z, i) => {
-          const norm = normalizeZameraniName(z.name);
-          return (
-            <ZameraniRow
-              key={z.name}
-              insight={z}
-              open={openIdx === i}
-              picked={picks.has(norm)}
-              subjectSemesters={subjectSemesters}
-              onToggle={() => setOpenIdx(openIdx === i ? null : i)}
-              onTogglePick={() => onTogglePick(norm)}
-              onOpen={onOpenSubject}
-              onSearch={onSearchSubject}
-            />
-          );
-        })}
-      </div>
+        <ChevronDown className={`w-4 h-4 text-base-content/40 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="px-3 pb-3 flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+          {insights.map((z, i) => {
+            const norm = normalizeZameraniName(z.name);
+            return (
+              <ZameraniRow
+                key={z.name}
+                insight={z}
+                open={openIdx === i}
+                picked={picks.has(norm)}
+                subjectSemesters={subjectSemesters}
+                onToggle={() => setOpenIdx(openIdx === i ? null : i)}
+                onTogglePick={() => onTogglePick(norm)}
+                onOpen={onOpenSubject}
+                onSearch={onSearchSubject}
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

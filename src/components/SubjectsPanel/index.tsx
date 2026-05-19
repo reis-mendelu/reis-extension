@@ -138,7 +138,18 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
         </div>
       ) : (
         <>
-          <div className="px-4 pt-4 flex flex-col gap-3">
+          <div className="px-4 pt-4 pb-0">
+            <EnrolledNowSection
+              plan={plan}
+              failRates={failRates}
+              subjectSemesters={subjectSemesters}
+              subjectToZameranis={subjectToZameranis}
+              onOpenSubject={onOpenSubject}
+              onSearchSubject={onSearchSubject}
+            />
+          </div>
+
+          <div className="px-4 pt-3 grid grid-cols-2 gap-3 items-start">
             <HardestUpcomingCard entries={hardest} onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
             <ZameraniComparisonCard
               insights={zameraniStats}
@@ -146,17 +157,6 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
               onTogglePick={picks.togglePick}
               minRequired={plan.zameraniMinimum}
               subjectSemesters={subjectSemesters}
-              onOpenSubject={onOpenSubject}
-              onSearchSubject={onSearchSubject}
-            />
-          </div>
-
-          <div className="px-4 pt-2 pb-0">
-            <EnrolledNowSection
-              plan={plan}
-              failRates={failRates}
-              subjectSemesters={subjectSemesters}
-              subjectToZameranis={subjectToZameranis}
               onOpenSubject={onOpenSubject}
               onSearchSubject={onSearchSubject}
             />
