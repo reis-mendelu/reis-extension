@@ -73,6 +73,7 @@ export interface FilesSlice {
     refreshFiles: (courseCode: string) => Promise<void>;
     refreshFilesForSubject: (courseCode: string) => Promise<void>;
     hydrateLastFilesFetchedAt: () => Promise<void>;
+    prefetchTodaySubjects: () => void;
 }
 
 export interface ClassmatesSlice {

@@ -8,6 +8,7 @@ import {
     FILES_LAST_FETCHED_KEY,
 } from './files/refreshFilesForSubject';
 import { loadAllFilesFromCache } from './files/fetchAllFiles';
+import { prefetchTodaySubjectsImpl } from './files/prefetchTodaySubjects';
 
 export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     files: {},
@@ -226,5 +227,13 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     fetchAllFiles: async () => {
         const files = await loadAllFilesFromCache({ language: get().language, subjects: get().subjects });
         set({ files });
+    },
+    prefetchTodaySubjects: () => {
+        const { schedule, lastFilesFetchedAt } = get();
+        prefetchTodaySubjectsImpl({
+            schedule: schedule.data,
+            lastFilesFetchedAt,
+            refreshFilesForSubject: (code) => get().refreshFilesForSubject(code),
+        });
     },
 });

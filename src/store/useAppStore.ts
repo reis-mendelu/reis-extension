@@ -87,14 +87,14 @@ export const initializeStore = async () => {
     s.loadContext();
 
     // Tier 2: Background data — deferred to avoid thundering-herd on IDB at startup
-    queueMicrotask(() => {
+    queueMicrotask(async () => {
         const s2 = useAppStore.getState();
         s2.fetchStudyPlan();
         s2.fetchStudyStats();
         s2.fetchCvicneTests();
         s2.fetchOdevzdavarny();
         s2.fetchAllFiles();
-        s2.hydrateLastFilesFetchedAt();
+        await s2.hydrateLastFilesFetchedAt();
         s2.fetchZaznamnik();
         s2.loadFeedbackState();
         s2.loadPinnedPages();
@@ -102,6 +102,9 @@ export const initializeStore = async () => {
         s2.loadCalendarCustomEvents();
         s2.fetchTeachingWeek();
         s2.loadRecentSearches();
+        // Predictive prefetch — files for subjects scheduled today.
+        // Guarded by 60s SWR + max 6 subjects in prefetchTodaySubjectsImpl.
+        useAppStore.getState().prefetchTodaySubjects();
     });
 
     // Fire-and-forget daily usage tracking
@@ -127,7 +130,9 @@ export const initializeStore = async () => {
         }
 
         // Default: full data refresh (e.g. after sync completes)
-        st.fetchSchedule();
+        // Chain prefetch after schedule resolves so a fresh install (empty IDB
+        // schedule at init) still gets predictive prefetch on the first sync.
+        st.fetchSchedule().then(() => useAppStore.getState().prefetchTodaySubjects());
         st.fetchExams();
         st.fetchSubjects();
         st.fetchStudyPlan();
