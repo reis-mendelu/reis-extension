@@ -2,6 +2,7 @@ import type { ExamSlice, AppSlice } from '../types';
 import type { ExamSubject } from '../../types/exams';
 import { IndexedDBService } from '../../services/storage';
 import { fetchExamClassmates } from '../../api/terminyInfo';
+import { syncService } from '../../services/sync/SyncService';
 
 const inFlightClassmates = new Set<string>();
 
@@ -28,6 +29,7 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
     error: null,
   },
   lastExamsFetchedAt: null,
+  examsRefreshing: false,
   examClassmates: {},
   loadExamClassmates: async (terminId, studiumId, obdobiId) => {
     if (get().examClassmates[terminId] !== undefined) return;
@@ -84,10 +86,19 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
       });
     }
   },
+  triggerExamsRefresh: () => {
+    if (get().examsRefreshing) return;
+    set({ examsRefreshing: true });
+    syncService.triggerExamRefresh();
+    setTimeout(() => {
+      if (get().examsRefreshing) set({ examsRefreshing: false });
+    }, 15_000);
+  },
   setExams: (data) => {
     set((state) => ({
         exams: { ...state.exams, data },
         lastExamsFetchedAt: Date.now(),
+        examsRefreshing: false,
     }));
     IndexedDBService.set('exams', 'current', data).catch(() => {});
     IndexedDBService.set('meta', 'exams_modified', Date.now()).catch(() => {});

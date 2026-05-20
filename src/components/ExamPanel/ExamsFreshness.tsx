@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { syncService } from '../../services/sync';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -20,11 +19,8 @@ export function ExamsFreshness() {
     const { t, language } = useTranslation();
     const fetchedAt = useAppStore(s => s.lastExamsFetchedAt);
     const now = useAppStore(s => s.now);
-    const [isRefreshing, setIsRefreshing] = useState(false);
-
-    useEffect(() => {
-        setIsRefreshing(false);
-    }, [fetchedAt]);
+    const isRefreshing = useAppStore(s => s.examsRefreshing);
+    const triggerExamsRefresh = useAppStore(s => s.triggerExamsRefresh);
 
     const locale = language === 'cz' ? 'cs' : 'en';
     const label = useMemo(() => {
@@ -39,7 +35,7 @@ export function ExamsFreshness() {
             {label && <span className="hidden md:inline">{label}</span>}
             <button
                 type="button"
-                onClick={() => { setIsRefreshing(true); syncService.triggerExamRefresh(); }}
+                onClick={() => triggerExamsRefresh()}
                 disabled={isRefreshing}
                 title={t('course.freshness.refresh')}
                 aria-label={t('course.freshness.refresh')}
