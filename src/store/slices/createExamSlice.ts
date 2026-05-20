@@ -27,6 +27,7 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
     status: 'idle',
     error: null,
   },
+  lastExamsFetchedAt: null,
   examClassmates: {},
   loadExamClassmates: async (terminId, studiumId, obdobiId) => {
     if (get().examClassmates[terminId] !== undefined) return;
@@ -57,7 +58,10 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
       set((state) => ({ exams: { ...state.exams, error: null } }));
     }
     try {
-      const data = await IndexedDBService.get('exams', 'current');
+      const [data, modifiedAt] = await Promise.all([
+        IndexedDBService.get('exams', 'current'),
+        IndexedDBService.get('meta', 'exams_modified'),
+      ]);
       const resolved = data || [];
       set({
         exams: {
@@ -65,6 +69,7 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
           status: 'success',
           error: null,
         },
+        ...(modifiedAt != null ? { lastExamsFetchedAt: modifiedAt as number } : {}),
       });
       const { studiumId, obdobiId, loadExamClassmates } = get();
       fanOutClassmates(resolved, studiumId, obdobiId, loadExamClassmates);
@@ -82,6 +87,7 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
   setExams: (data) => {
     set((state) => ({
         exams: { ...state.exams, data },
+        lastExamsFetchedAt: Date.now(),
     }));
     IndexedDBService.set('exams', 'current', data).catch(() => {});
     IndexedDBService.set('meta', 'exams_modified', Date.now()).catch(() => {});

@@ -137,7 +137,7 @@ export function useAppLogic() {
                         useAppStore.getState().setOdevzdavarny(r.odevzdavarny);
                     }
                 }
-                if (r.exams) await IndexedDBService.set('exams', 'current', r.exams);
+                if (r.exams) useAppStore.getState().setExams(r.exams);
 
                 if (r.subjects?.data) {
                     const existing = await IndexedDBService.get('subjects', 'current') as { data: Record<string, { nameCs?: string; nameEn?: string }> } | null;

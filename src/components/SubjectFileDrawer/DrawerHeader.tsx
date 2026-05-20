@@ -11,7 +11,6 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useTimeline } from '../../hooks/useTimeline';
 
 const NO_ID_DISABLED: string[] = ['files', 'classmates', 'zaznamnik'];
-const CLASSMATES_ONLY: string[] = ['classmates'];
 const EMPTY_TABS: string[] = [];
 const ZERO_BADGE_TABS = ['zaznamnik'] as const;
 
@@ -100,7 +99,7 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
             <HeaderTabs
                 activeTab={activeTab}
                 onTabChange={onTabChange}
-                disabledTabs={!subjectInfo?.subjectId ? NO_ID_DISABLED : (lesson && 'isFulfilled' in lesson && lesson.isFulfilled ? CLASSMATES_ONLY : EMPTY_TABS)}
+                disabledTabs={!subjectInfo?.subjectId ? NO_ID_DISABLED : EMPTY_TABS}
                 counts={tabCounts}
                 zeroBadgeTabs={[...ZERO_BADGE_TABS]}
             />

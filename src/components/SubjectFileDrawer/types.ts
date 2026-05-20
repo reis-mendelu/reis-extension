@@ -39,6 +39,7 @@ export interface FileListProps {
     onOpenFile: (link: string) => void;
     onViewPdf?: (link: string) => void;
     folderUrl?: string;
+    lastVisitedAt?: number | null;
 }
 
 export interface DragSelectionState {

@@ -43,7 +43,7 @@ import type { FileListProps } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDocumentNoteKeys } from '../../hooks/data/useDocumentNoteKeys';
 import { DocumentNote } from './DocumentNote';
-import { isRecent } from './utils/fileDate';
+import { parseIsDate } from './utils/fileDate';
 
 const typeBadgeConfig: Record<string, string> = {
     pdf: 'badge-error',
@@ -63,6 +63,15 @@ function isPdfFile(subFile: { link: string; type: string }): boolean {
     return subFile.type === 'pdf' || subFile.link.toLowerCase().endsWith('.pdf');
 }
 
+function isNewSinceVisit(date: string, lastVisitedAt: number | null | undefined): boolean {
+    if (typeof lastVisitedAt !== 'number') return false;
+    const d = parseIsDate(date);
+    if (!d) return false;
+    const lastDay = new Date(lastVisitedAt);
+    lastDay.setHours(0, 0, 0, 0);
+    return d.getTime() > lastDay.getTime();
+}
+
 export function FileList({
     groups,
     selectedIds,
@@ -72,7 +81,8 @@ export function FileList({
     onToggleSelect,
     onOpenFile,
     onViewPdf,
-    folderUrl
+    folderUrl,
+    lastVisitedAt
 }: FileListProps) {
     const { t, language } = useTranslation();
     const [expandedNoteLink, setExpandedNoteLink] = useState<string | null>(null);
@@ -132,7 +142,7 @@ export function FileList({
                                             <div className="flex-1 min-w-0">
                                                 <div className={`font-medium truncate flex items-center gap-2 ${isSelected ? 'text-primary' : 'text-base-content'}`}>
                                                     <span className="truncate">{file.files.length > 1 ? `${file.file_name} (${j + 1})` : file.file_name}</span>
-                                                    {isRecent(file.date) && (
+                                                    {isNewSinceVisit(file.date, lastVisitedAt) && (
                                                         <span className="badge badge-primary badge-xs font-bold shrink-0">{t('course.freshness.newBadge')}</span>
                                                     )}
                                                 </div>

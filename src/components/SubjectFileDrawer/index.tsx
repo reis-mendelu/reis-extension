@@ -18,6 +18,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     const { isDownloading, downloadProgress, openFile, openPdfInline, downloadSingle, downloadZip } = useFileActions();
     const [showDragHint, setShowDragHint] = useState(false);
     const [activePdfUrl, setActivePdfUrl] = useState<string | null>(null);
+    const [lastVisitedAt, setLastVisitedAt] = useState<number | null | undefined>(undefined);
     const [isPdfLoading, setIsPdfLoading] = useState(false);
     const { t } = useTranslation();
     const classmatesCount = useAppStore(s => lesson?.courseCode ? s.classmates[lesson.courseCode]?.length : undefined);
@@ -47,6 +48,17 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
             });
         }
     }, [isOpen, state.files]);
+
+    useEffect(() => {
+        const courseCode = lesson?.courseCode;
+        if (!isOpen || !courseCode) return;
+        setLastVisitedAt(undefined);
+        const key = `file_last_visit_${courseCode}`;
+        IndexedDBService.get('meta', key).then(prev => {
+            setLastVisitedAt(prev ?? null);
+            IndexedDBService.set('meta', key, Date.now());
+        });
+    }, [isOpen, lesson?.courseCode]);
 
     // Clean up blob URL when drawer closes
     useEffect(() => {
@@ -106,7 +118,10 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
             .map(key => ({
                 name: key,
                 displayName: key === otherFolder ? otherFolder : translateFolder(cleanFolderName(key, lesson?.courseCode)),
-                files: groups.get(key)!.sort((a, b) => (a.file_comment || a.file_name).localeCompare(b.file_comment || b.file_name, 'cs', { numeric: true }))
+                files: groups.get(key)!.sort((a, b) => {
+                    const parseDate = (d: string) => { const [day, mon, yr] = d.split('.').map(s => parseInt(s.trim(), 10)); return isNaN(yr) ? 0 : new Date(yr, mon - 1, day).getTime(); };
+                    return parseDate(b.date) - parseDate(a.date) || (a.file_comment || a.file_name).localeCompare(b.file_comment || b.file_name, 'cs', { numeric: true });
+                })
             }))
             .sort((a, b) => a.name === otherFolder ? 1 : b.name === otherFolder ? -1 : a.displayName.localeCompare(b.displayName));
     }, [state.files, lesson, t]);
@@ -139,6 +154,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
                         fileRefs={fileRefs} ignoreClickRef={ignoreClickRef} toggleSelect={toggleSelect}
                         openFile={openFile} onViewPdf={handleViewPdf} resolvedCourseId={resolvedCourseId}
                         syllabusResult={syllabusResult} folderUrl={state.subjectInfo?.folderUrl}
+                        lastVisitedAt={lastVisitedAt}
                     />
                 </div>
             </div>

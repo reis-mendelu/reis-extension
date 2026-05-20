@@ -40,6 +40,7 @@ export interface ExamSlice {
     status: Status;
     error: string | null;
   };
+  lastExamsFetchedAt: number | null;
   fetchExams: () => Promise<void>;
   setExams: (data: ExamSubject[]) => void;
   examClassmates: Record<string, Classmate[]>;

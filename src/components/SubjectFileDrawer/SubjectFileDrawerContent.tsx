@@ -32,17 +32,18 @@ interface SubjectFileDrawerContentProps {
     resolvedCourseId: string;
     syllabusResult: { syllabus: SyllabusRequirements | null; isLoading: boolean };
     folderUrl?: string;
+    lastVisitedAt?: number | null;
 }
 
 export function SubjectFileDrawerContent({
     activeTab, lesson, files, isFilesLoading, isSyncing, isDragging, selectionBoxStyle, showDragHint,
-    groupedFiles, selectedIds, fileRefs, ignoreClickRef, toggleSelect, openFile, onViewPdf, resolvedCourseId, syllabusResult, folderUrl
+    groupedFiles, selectedIds, fileRefs, ignoreClickRef, toggleSelect, openFile, onViewPdf, resolvedCourseId, syllabusResult, folderUrl, lastVisitedAt
 }: SubjectFileDrawerContentProps) {
     const { t, language } = useTranslation();
 
     if (activeTab === 'files') {
         const isEmpty = !files || files.length === 0;
-        const showSkeleton = isFilesLoading;
+        const showSkeleton = isFilesLoading && isEmpty;
         const showProgress = showSkeleton || (isSyncing && isEmpty);
 
         return (
@@ -79,7 +80,7 @@ export function SubjectFileDrawerContent({
                  ) : (
                     <FileList groups={groupedFiles} selectedIds={selectedIds} courseCode={lesson?.courseCode || ''}
                                fileRefs={fileRefs} ignoreClickRef={ignoreClickRef} onToggleSelect={toggleSelect}
-                               onOpenFile={openFile} onViewPdf={onViewPdf} folderUrl={folderUrl} />
+                               onOpenFile={openFile} onViewPdf={onViewPdf} folderUrl={folderUrl} lastVisitedAt={lastVisitedAt} />
                  )}
             </>
         );

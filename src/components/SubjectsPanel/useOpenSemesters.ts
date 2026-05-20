@@ -25,10 +25,10 @@ export function useOpenSemesters(plan: StudyPlan | null) {
     IndexedDBService.get('meta', IDB_KEY)
       .then((stored) => {
         if (Array.isArray(stored) && stored.length > 0) setOpenSemesters(new Set(stored as number[]));
-        else setOpenSemesters(currentSemesterIndices);
+        else setOpenSemesters(new Set());
         setIdbLoaded(true);
       })
-      .catch(() => { setOpenSemesters(currentSemesterIndices); setIdbLoaded(true); });
+      .catch(() => { setOpenSemesters(new Set()); setIdbLoaded(true); });
   }, [currentSemesterIndices]);
 
   useEffect(() => {
