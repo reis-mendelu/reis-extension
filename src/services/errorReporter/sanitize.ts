@@ -76,3 +76,23 @@ export function dedupeKey(
 ): string {
     return `${errorType}|${message}|${filePath}|${lineNumber}`;
 }
+
+// Sanitize a stack trace string for telemetry. Keeps the top N frames so we
+// can pinpoint the failing call site; everything below is rarely useful and
+// just enlarges the payload. Each line passes through the same PATTERNS as
+// the message, plus chrome-extension://… prefix stripping (same as filePath).
+const MAX_STACK_FRAMES = 4;
+const MAX_STACK_LEN = 1000;
+
+export function sanitizeStack(input: unknown, maxFrames: number = MAX_STACK_FRAMES): string {
+    if (typeof input !== 'string' || !input) return '';
+    const lines = input.split('\n').slice(0, maxFrames + 1); // +1 to include the leading "Error: …" line
+    const cleaned = lines.map(line => {
+        let out = line;
+        // Strip extension origin from in-frame URLs.
+        out = out.replace(/(chrome-extension|moz-extension):\/\/[a-z0-9-]+\//gi, '');
+        for (const re of PATTERNS) out = out.replace(re, REDACT);
+        return out.trim();
+    }).filter(Boolean).join(' | ');
+    return cleaned.length > MAX_STACK_LEN ? cleaned.slice(0, MAX_STACK_LEN) : cleaned;
+}

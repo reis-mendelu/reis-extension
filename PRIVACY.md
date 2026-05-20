@@ -46,7 +46,8 @@ If you use the built-in "Report Bug / Feedback" feature, the following data is s
 
 ### 6. Automatic Error Reporting
 When an unhandled error or warning occurs in the extension, a sanitized diagnostic report is automatically sent to our Supabase backend so we can detect and fix bugs.
-- **What is sent**: Error type, error message string, file path and line number, extension version, browser name and version.
+- **What is sent**: Error type, error message string, file path and line number, extension version, browser name and version, a sanitized excerpt of the JavaScript stack trace (top frames, run through the same redaction regex as the message), a client-side timestamp of when the error fired, and an anonymous per-session identifier.
+- **About the session identifier**: A random UUID generated when the extension iframe loads and held only in memory for that browser tab. It is **not persisted** to disk, **not synced** across devices, and **regenerated every page load**. Its sole purpose is to let us tell apart "one user retrying the same broken request 30 times" from "30 different users each hit a real bug once." It cannot be linked back to your account or browser across sessions.
 - **What is never sent**: Your name, your UIC / student ID or any hash of it, session cookies, any data fetched from IS Mendelu (grades, schedules, exam dates, course materials), and any content stored in IndexedDB.
 - **Identity**: Reports are **not linked** to any individual user identity.
 - **Lawful Basis**: Legitimate interest under GDPR Art. 6(1)(f) — improving extension stability and fixing bugs.

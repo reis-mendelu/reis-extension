@@ -15,19 +15,24 @@ describe('sendTelemetry', () => {
         initTelemetry(() => true);
     });
 
-    it('calls report_error RPC with context as p_error_type', async () => {
+    it('calls report_error_v2 RPC with context as p_error_type', async () => {
         sendTelemetry('FilesSlice.fetchFiles', new Error('IDB closed'));
         await flush();
         expect(supabase.rpc).toHaveBeenCalledTimes(1);
         const [name, args] = (supabase.rpc as ReturnType<typeof vi.fn>).mock.calls[0];
-        expect(name).toBe('report_error');
+        expect(name).toBe('report_error_v2');
         expect(args.p_error_type).toBe('FilesSlice.fetchFiles');
         expect(args.p_error_message).toBe('IDB closed');
         expect(args.p_file_path).toBe('');
         expect(args.p_line_number).toBe(0);
+        // Session ID is a UUID generated at module load — assert shape, not value.
+        expect(args.p_session_id).toMatch(/^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$|^[0-9a-f]{32}$/);
+        expect(typeof args.p_stack_excerpt).toBe('string');
+        expect(typeof args.p_client_ts).toBe('string');
         expect(Object.keys(args).sort()).toEqual(
-            ['p_browser_name', 'p_browser_version', 'p_error_message', 'p_error_type',
-             'p_ext_version', 'p_file_path', 'p_line_number'].sort(),
+            ['p_browser_name', 'p_browser_version', 'p_client_ts', 'p_error_message',
+             'p_error_type', 'p_ext_version', 'p_file_path', 'p_line_number',
+             'p_session_id', 'p_stack_excerpt'].sort(),
         );
     });
 
