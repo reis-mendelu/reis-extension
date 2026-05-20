@@ -91,6 +91,16 @@ export function ExamPanel() {
         document.addEventListener('keydown', h); return () => document.removeEventListener('keydown', h);
     }, [expandedId]);
 
+    // When the timeline-selected section disappears from realExams (e.g. user
+    // deregistered it, sync dropped it, language switch reshuffles ids), clear
+    // the selection so the render falls through to the regular sections view
+    // instead of returning null (which would blank the entire panel).
+    useEffect(() => {
+        if (timelineSelectedId && !realExams.some(e => e.section.id === timelineSelectedId)) {
+            setTimelineSelectedId(null);
+        }
+    }, [timelineSelectedId, realExams]);
+
     useEffect(() => {
         const onVisible = () => { if (document.visibilityState === 'visible') syncService.triggerExamRefresh(); };
         document.addEventListener('visibilitychange', onVisible);

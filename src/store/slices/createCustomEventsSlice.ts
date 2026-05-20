@@ -9,7 +9,7 @@ export const createCustomEventsSlice: AppSlice<CalendarCustomEventsSlice> = (set
   loadCalendarCustomEvents: async () => {
     try {
       const data = await IndexedDBService.getAllWithKeys('custom_events');
-      if (data) {
+      if (Array.isArray(data)) {
         set({ customEvents: data.map(item => item.value as CalendarCustomEvent) });
       }
     } catch (error) {

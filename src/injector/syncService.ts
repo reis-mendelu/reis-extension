@@ -209,14 +209,17 @@ async function syncSubjectDetails(subjectsValue: { data: Record<string, { folder
         let predmetIdMap: Record<string, string>;
         try {
             predmetIdMap = await fetchSeminarGroupIds(studium, obdobi);
-        } catch (err) {
-            sendToIframe(Messages.telemetryError('Sync.fetchSeminarGroupIds.retry', err));
+        } catch {
+            // First attempt failed — wait and retry once. Only report if the
+            // retry also fails (caught by the outer try/catch below).
             await new Promise(r => setTimeout(r, 2000));
             predmetIdMap = await fetchSeminarGroupIds(studium, obdobi);
         }
         if (!cachedData.classmates) cachedData.classmates = {};
 
-        // Build tasks by iterating enrolled subjects and matching their subjectId
+        // Build tasks by iterating enrolled subjects and matching their subjectId.
+        // Per-subject failures are reported individually only when the group map
+        // succeeded (root cause is then the per-subject fetch, not the map).
         const classmateTasks = subjectEntries
             .filter(([, subject]) => subject.subjectId && predmetIdMap[subject.subjectId])
             .map(([courseCode, subject]) => limit(async () => {
@@ -235,7 +238,9 @@ async function syncSubjectDetails(subjectsValue: { data: Record<string, { folder
 
         await Promise.all(classmateTasks);
     } catch (e) {
-        sendToIframe(Messages.telemetryError('SyncService.syncClassmates:groupMap', e));
+        // Group-map fetch failed twice — single report for the root cause.
+        // Per-subject classmate fetches are skipped (no map), so no cascade.
+        sendToIframe(Messages.telemetryError('Sync.fetchSeminarGroupIds.retry', e));
     }
 }
 

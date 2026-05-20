@@ -70,14 +70,18 @@ async function handleFetchRequest(id: string, url: string, options?: { method?: 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             text = await response.text();
         } else {
-            let result = await chrome.runtime.sendMessage({ type: 'REIS_BG_FETCH', url, options });
-            if (result == null) {
-                // Service worker may still be waking up — retry once after a brief pause
-                await new Promise(r => setTimeout(r, 500));
+            // Up to 3 attempts: handles SW wake-up (null result) and transient
+            // CDN/HEI API hiccups (success: false on 5xx or network blips).
+            let result: { success?: boolean; data?: string; error?: string } | null = null;
+            for (let attempt = 0; attempt < 3; attempt++) {
                 result = await chrome.runtime.sendMessage({ type: 'REIS_BG_FETCH', url, options });
+                if (result?.success) break;
+                // Don't retry 4xx — those won't change on retry.
+                if (result?.error && /HTTP 4\d\d\b/.test(result.error)) break;
+                if (attempt < 2) await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
             }
             if (!result?.success) throw new Error(result?.error || 'Background fetch failed');
-            text = result.data;
+            text = result.data!;
         }
         sendToIframe(Messages.fetchResult(id, true, text));
     } catch (e) { sendToIframe(Messages.fetchResult(id, false, undefined, String(e))); }

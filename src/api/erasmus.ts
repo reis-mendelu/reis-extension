@@ -5,6 +5,24 @@ import type { ErasmusCountryData, ErasmusConfig } from '../types/erasmus';
 const CDN_BASE_URL = 'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main';
 const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+// Retry CDN fetches with linear backoff. jsDelivr occasionally returns 5xx or
+// transient network errors; one extra attempt fixes the vast majority.
+async function fetchWithRetry(url: string, attempts = 3): Promise<Response> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) return res;
+      if (res.status >= 400 && res.status < 500) return res; // don't retry 4xx
+      lastErr = new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      lastErr = err;
+    }
+    if (i < attempts - 1) await new Promise(r => setTimeout(r, 500 * (i + 1)));
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+}
+
 function cacheKey(file: string): string {
   return `erasmus_${file}`;
 }
@@ -34,7 +52,7 @@ export async function fetchErasmusConfig(): Promise<ErasmusConfig | null> {
 
   try {
     const url = `${CDN_BASE_URL}/erasmus/config.json`;
-    const res = await fetch(url);
+    const res = await fetchWithRetry(url);
     if (!res.ok) {
       loggers.api.error('[Erasmus] Config fetch failed:', res.status);
       return cached;
@@ -55,7 +73,7 @@ export async function fetchErasmusReports(file: string): Promise<ErasmusCountryD
 
   try {
     const url = `${CDN_BASE_URL}/erasmus/${file}`;
-    const res = await fetch(url);
+    const res = await fetchWithRetry(url);
     if (!res.ok) {
       loggers.api.error('[Erasmus] CDN fetch failed:', res.status, file);
       return cached;

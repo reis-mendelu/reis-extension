@@ -60,8 +60,9 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
       const url = `${HEI_API_BASE}/country/${alpha2}/hei`;
       loggers.ui.debug(`[fetchUniversities] fetching via proxy:`, url);
       const json = await fetchJsonViaProxy<any>(url);
-      loggers.ui.debug(`[fetchUniversities] response keys:`, Object.keys(json));
-      const parsed: University[] = (json.data || []).map((item: any) => {
+      loggers.ui.debug(`[fetchUniversities] response keys:`, json && typeof json === 'object' ? Object.keys(json) : typeof json);
+      const items: any[] = Array.isArray(json?.data) ? json.data : [];
+      const parsed: University[] = items.map((item: any) => {
         const attrs = item.attributes || {};
         const nameObj = attrs.name?.find((n: any) => n.lang === 'en') || attrs.name?.[0];
         const erasmusCode = attrs.other_id?.find((id: any) => id.type === 'erasmus')?.value;
