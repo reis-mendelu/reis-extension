@@ -1,23 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { IndexedDBService } from '@/services/storage';
-import { SubjectsPanelHeader, type SubjectsPanelMode } from './SubjectsPanelHeader';
+import { SubjectsPanelHeader } from './SubjectsPanelHeader';
 import { computeFailRate } from './computeFailRate';
 import { SemesterSection } from './SemesterSection';
 import { SubjectsPanelSkeleton } from './SubjectsPanelSkeleton';
 import { HardestUpcomingCard } from './HardestUpcomingCard';
 import { ZameraniComparisonCard } from './ZameraniComparisonCard';
 import { EnrolledNowSection } from './EnrolledNowSection';
-import { CatalogView } from './CatalogView';
 import { topHardestUpcoming, zameraniInsights } from './insights';
 import { useOpenSemesters } from './useOpenSemesters';
 import { useZameraniPicks } from './useZameraniPicks';
 import type { Zamerani } from '@/types/studyPlan';
 import { getSemesterState, isRealCredits, isZameraniCode, normalizeZameraniName, buildSubjectSemesters, buildSubjectToZameranis } from './utils';
-
-const MODE_IDB_KEY = 'subjects_view_mode';
 
 interface SubjectsPanelProps {
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => void;
@@ -41,16 +37,6 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
   }, [plan]);
 
   const { openSemesters, currentSemesterRef, handleToggle } = useOpenSemesters(plan);
-  const [mode, setModeState] = useState<SubjectsPanelMode>('plan');
-  useEffect(() => {
-    IndexedDBService.get('meta', MODE_IDB_KEY).then(v => {
-      if (v === 'catalog' || v === 'plan') setModeState(v);
-    }).catch(() => {});
-  }, []);
-  const setMode = (m: SubjectsPanelMode) => {
-    setModeState(m);
-    IndexedDBService.set('meta', MODE_IDB_KEY, m).catch(() => {});
-  };
 
   const zameraniLookup = useMemo(() => {
     const map = new Map<string, Zamerani>();
@@ -128,16 +114,9 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
         plan={plan}
         zameraniProgress={zameraniProgress}
         enrolledCredits={enrolledCredits}
-        mode={mode}
-        onModeChange={setMode}
       />
 
-      {mode === 'catalog' ? (
-        <div className="px-4 pt-4 pb-4">
-          <CatalogView onOpenSubject={onOpenSubject} />
-        </div>
-      ) : (
-        <>
+      <>
           <div className="px-4 pt-4 pb-0">
             <EnrolledNowSection
               plan={plan}
@@ -187,8 +166,7 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
               })}
             </div>
           </div>
-        </>
-      )}
+      </>
     </div>
   );
 }

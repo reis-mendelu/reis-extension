@@ -476,20 +476,6 @@
       "zameraniSubtitle": "credit-weighted fail rate",
       "lowSampleHint": "{n} subjects with low data"
     },
-    "mode": {
-      "plan": "My plan",
-      "catalog": "Catalog"
-    },
-    "catalog": {
-      "placeholder": "Search subject…",
-      "hint": "Type at least 2 characters — searches the whole MENDELU catalog",
-      "noResults": "No matches",
-      "noResultsAfterFilter": "No subjects match the filters",
-      "minPass": "Min. pass rate",
-      "allFaculties": "All",
-      "hideNoData": "Hide subjects without data",
-      "shownOf": "Showing {shown} of {total}"
-    }
   },
   "commands": {
     "quickActions": "Quick Actions",

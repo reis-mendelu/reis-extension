@@ -10,8 +10,6 @@ export interface ZameraniProgress {
   touched: boolean;
 }
 
-export type SubjectsPanelMode = 'plan' | 'catalog';
-
 interface SubjectsPanelHeaderProps {
   creditsAcquired: number;
   creditsRequired: number;
@@ -19,8 +17,6 @@ interface SubjectsPanelHeaderProps {
   plan: StudyPlan | null;
   zameraniProgress?: Map<string, ZameraniProgress>;
   enrolledCredits?: number;
-  mode: SubjectsPanelMode;
-  onModeChange: (m: SubjectsPanelMode) => void;
 }
 
 type ProgressionLevel = 'safe' | 'warning' | 'danger';
@@ -49,7 +45,7 @@ const levelConfig = {
   danger: { bg: 'bg-error/8', border: 'border-error/20', text: 'text-error', bar: 'bg-error', Icon: ShieldAlert },
 };
 
-export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studyStats, plan, zameraniProgress, enrolledCredits, mode, onModeChange }: SubjectsPanelHeaderProps) {
+export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studyStats, plan, zameraniProgress, enrolledCredits }: SubjectsPanelHeaderProps) {
   const { t, language } = useTranslation();
   const { params } = useUserParams();
   const studium = params?.studium || '';
@@ -77,20 +73,6 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
           {plan?.title || t('subjects.title')}
         </h2>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          <div className="join">
-            <button
-              onClick={() => onModeChange('plan')}
-              className={`btn btn-xs join-item ${mode === 'plan' ? 'btn-primary' : 'btn-ghost'}`}
-            >
-              {t('subjects.mode.plan')}
-            </button>
-            <button
-              onClick={() => onModeChange('catalog')}
-              className={`btn btn-xs join-item ${mode === 'catalog' ? 'btn-primary' : 'btn-ghost'}`}
-            >
-              {t('subjects.mode.catalog')}
-            </button>
-          </div>
           <a href={registrationsUrl} target="_blank" rel="noopener noreferrer"
             className="btn btn-ghost btn-sm px-2.5 text-base-content/50 hover:text-primary gap-1.5">
             <span className="text-xs uppercase whitespace-nowrap">{t('sidebar.registrations')}</span>
@@ -99,8 +81,6 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
         </div>
       </div>
 
-      {/* Progression Card — plan mode only */}
-      {mode === 'plan' && (
       <div className={`rounded-lg border px-3.5 py-2.5 ${cfg.bg} ${cfg.border}`}>
         <div className="flex items-center gap-2 mb-2">
           <Icon className={`w-4 h-4 ${cfg.text} shrink-0`} />
@@ -153,7 +133,6 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
         )}
 
       </div>
-      )}
     </div>
   );
 }

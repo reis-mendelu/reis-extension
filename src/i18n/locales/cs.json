@@ -478,20 +478,6 @@
       "zameraniSubtitle": "průměrná neúspěšnost vážená kredity",
       "lowSampleHint": "{n} předmětů má málo dat"
     },
-    "mode": {
-      "plan": "Můj plán",
-      "catalog": "Katalog"
-    },
-    "catalog": {
-      "placeholder": "Hledat předmět…",
-      "hint": "Zadej alespoň 2 znaky — prohledá se celý katalog MENDELU",
-      "noResults": "Nic nenalezeno",
-      "noResultsAfterFilter": "Žádný předmět neodpovídá filtrům",
-      "minPass": "Min. úspěšnost",
-      "allFaculties": "Vše",
-      "hideNoData": "Skrýt předměty bez dat",
-      "shownOf": "Zobrazeno {shown} z {total}"
-    }
   },
   "commands": {
     "quickActions": "Rychlé akce",
