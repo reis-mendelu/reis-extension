@@ -223,7 +223,7 @@ export function useAppLogic() {
                 useAppStore.getState().setSyncStatus({ isSyncing: r.isSyncing });
                 if (!r.isSyncing) {
                     useAppStore.getState().fetchAllFiles();
-                    useAppStore.getState().invalidateClassmates();
+                    useAppStore.getState().fetchAllClassmates();
                     syncGradeHistory()
                         .then(() => useAppStore.getState().loadStudyJamSuggestions())
                         .catch(() => {});

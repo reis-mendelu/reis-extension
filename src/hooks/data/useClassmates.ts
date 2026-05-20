@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import type { Classmate } from '../../types/classmates';
 
@@ -8,26 +7,21 @@ export interface UseClassmatesResult {
 }
 
 /**
- * useClassmates — reads seminar classmates for a course from the Zustand store.
+ * useClassmates — selector-only read of seminar classmates for a course.
  *
  * Data flows: syncService (content script) → REIS_SYNC_UPDATE message →
- * useAppLogic writes to extension-origin IDB → this hook reads IDB via the slice.
+ * useAppLogic writes to extension-origin IDB → useAppLogic calls
+ * fetchAllClassmates() which batch-loads every enrolled course's IDB entry
+ * into the store. This hook is a pure read — no useEffect, no lazy fetch.
  *
- * Re-fetches from IDB whenever classmates becomes undefined (e.g. after
- * invalidateClassmates() is called when sync completes).
+ * The `isLoading` flag is driven entirely by the sync skeleton-guard pattern
+ * in ClassmatesTab (isSyncing && classmates.length === 0).
  */
 export function useClassmates(courseCode: string | undefined): UseClassmatesResult {
     const classmates = useAppStore(state => courseCode ? state.classmates[courseCode] : undefined);
-    const isLoading = useAppStore(state => courseCode ? !!state.classmatesLoading[courseCode] : false);
-
-    useEffect(() => {
-        if (courseCode && classmates === undefined && !isLoading) {
-            useAppStore.getState().fetchClassmates(courseCode);
-        }
-    }, [courseCode, classmates, isLoading]);
 
     return {
         classmates: classmates ?? [],
-        isLoading: isLoading || (classmates === undefined && !!courseCode),
+        isLoading: false,
     };
 }

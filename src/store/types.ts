@@ -41,8 +41,10 @@ export interface ExamSlice {
     error: string | null;
   };
   lastExamsFetchedAt: number | null;
+  examsRefreshing: boolean;
   fetchExams: () => Promise<void>;
   setExams: (data: ExamSubject[]) => void;
+  triggerExamsRefresh: () => void;
   examClassmates: Record<string, Classmate[]>;
   loadExamClassmates: (terminId: string, studiumId: string, obdobiId: string) => Promise<void>;
 }
@@ -81,9 +83,7 @@ export interface FilesSlice {
 export interface ClassmatesSlice {
     /** courseCode → flat list of seminar classmates */
     classmates: Record<string, ClassmatesData>;
-    classmatesLoading: Record<string, boolean>;
-    fetchClassmates: (courseCode: string) => Promise<void>;
-    invalidateClassmates: () => void;
+    fetchAllClassmates: () => Promise<void>;
 }
 
 export interface SubjectsSlice {
