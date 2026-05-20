@@ -61,7 +61,7 @@ export async function fetchFilesFromFolder(
         const extraResults = await Promise.all(pageRequests);
         allFiles.push(...extraResults.flat());
 
-        if (totalRecords !== undefined && allFiles.length < totalRecords) {
+        if (totalRecords !== undefined && allFiles.length > 0 && allFiles.length < totalRecords) {
             logError(
                 'Documents.integrityMismatch',
                 new Error(`expected ${totalRecords} items, parsed ${allFiles.length}`),
