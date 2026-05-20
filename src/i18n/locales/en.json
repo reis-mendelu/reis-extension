@@ -475,7 +475,7 @@
       "zameraniTitle": "Specialization comparison",
       "zameraniSubtitle": "credit-weighted fail rate",
       "lowSampleHint": "{n} subjects with low data"
-    },
+    }
   },
   "commands": {
     "quickActions": "Quick Actions",

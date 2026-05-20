@@ -4,6 +4,7 @@ import { pagesData } from '../../data/pages';
 import { fuzzyIncludes } from '../../utils/searchUtils';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { ReisLogo } from '../ReisLogo';
 
 interface PagePinnerModalProps {
   open: boolean;
@@ -49,7 +50,7 @@ export function PagePinnerModal({ open, onClose }: PagePinnerModalProps) {
     <dialog className={`modal ${open ? 'modal-open' : ''}`}>
       <div className="modal-box max-w-md max-h-[70vh] flex flex-col p-0">
         <div className="flex flex-col items-center pt-5 pb-1">
-          <img src="/reIS_logo.svg" alt="reIS" className="w-10 h-10" />
+          <ReisLogo className="w-10 h-10" />
         </div>
         <div className="flex items-center justify-between px-4 pb-2">
           <span className="font-bold text-lg">{t('sidebar.addPinTitle')}</span>

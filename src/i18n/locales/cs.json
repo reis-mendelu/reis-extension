@@ -477,7 +477,7 @@
       "zameraniTitle": "Srovnání zaměření",
       "zameraniSubtitle": "průměrná neúspěšnost vážená kredity",
       "lowSampleHint": "{n} předmětů má málo dat"
-    },
+    }
   },
   "commands": {
     "quickActions": "Rychlé akce",
