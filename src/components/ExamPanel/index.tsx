@@ -12,6 +12,7 @@ import { Zap, ExternalLink } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useUserParams } from '../../hooks/useUserParams';
 import { syncService } from '../../services/sync';
+import { ExamsFreshness } from './ExamsFreshness';
 
 interface RegisteredExam extends TimelineExam {
     subject: ExamSubject;
@@ -19,9 +20,10 @@ interface RegisteredExam extends TimelineExam {
     term: { id: string; date: string; time: string; room: string; };
 }
 
-function IsMendeluLink({ href }: { href: string }) {
+function PanelTopBar({ href }: { href: string }) {
     return (
-        <div className="flex justify-center pt-2 pb-2">
+        <div className="flex items-center justify-between border-b border-base-300 px-2">
+            <ExamsFreshness />
             <a href={href} target="_blank" rel="noopener noreferrer"
                 className="btn btn-ghost btn-sm gap-2 text-base-content/50 hover:text-primary normal-case font-bold">
                 <span>IS MENDELU</span>
@@ -117,12 +119,13 @@ return (
                 </div>
             )}
 
+            {!showSkeleton && <PanelTopBar href={href} />}
+
             {showSkeleton ? (
                 <div className="flex items-center justify-center h-32 opacity-50"><span className="loading loading-spinner mr-2" /> {t('exams.loading')}</div>
             ) : exams.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center">
                     <EmptyExamsState />
-                    <IsMendeluLink href={href} />
                 </div>
             ) : timelineSelectedId ? (() => {
                 const picked = realExams.find(e => e.section.id === timelineSelectedId);
@@ -139,7 +142,6 @@ return (
                     {topTimeline}
                     <div className="flex-1 overflow-y-auto p-4 space-y-3">
                         {sections.map(({ subject, section }: { subject: ExamSubject, section: ExamSection }) => <ExamSectionCard key={section.id} subject={subject} section={section} isExpanded={expandedId === section.id} isProcessing={processingSectionId === section.id} armedTerms={armedTerms} firingTerms={firingTerms} toggleArm={toggleArm} onToggleExpand={handleToggleExpand} onRegister={handleRegisterRequest} onUnregister={handleUnregisterRequest} />)}
-                        <IsMendeluLink href={href} />
                     </div>
                 </>
             ) : realExams.length > 0 ? (
@@ -148,7 +150,6 @@ return (
                     <div className="flex-1 flex flex-col items-center justify-center gap-1 px-4 text-center">
                         <span className="text-sm font-medium text-base-content/60">{t('exams.noOpenRegistrations')}</span>
                     </div>
-                    <IsMendeluLink href={href} />
                 </>
             ) : null}
         </div>

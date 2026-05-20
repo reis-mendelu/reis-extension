@@ -1,11 +1,8 @@
-import { useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { useAppStore } from '../../../store/useAppStore';
-import { useTranslation } from '../../../hooks/useTranslation';
-
-interface Props {
-    courseCode: string;
-}
+import { useAppStore } from '../../store/useAppStore';
+import { useTranslation } from '../../hooks/useTranslation';
+import { syncService } from '../../services/sync';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -19,12 +16,15 @@ function relativeTime(deltaMs: number, locale: string): string {
     return rtf.format(-Math.round(deltaMs / DAY), 'day');
 }
 
-export function FilesFreshness({ courseCode }: Props) {
+export function ExamsFreshness() {
     const { t, language } = useTranslation();
-    const fetchedAt = useAppStore(s => s.lastFilesFetchedAt[courseCode]);
-    const isLoading = useAppStore(s => !!s.filesLoading[courseCode]);
-    const refresh = useAppStore(s => s.refreshFilesForSubject);
+    const fetchedAt = useAppStore(s => s.lastExamsFetchedAt);
     const now = useAppStore(s => s.now);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    useEffect(() => {
+        setIsRefreshing(false);
+    }, [fetchedAt]);
 
     const locale = language === 'cz' ? 'cs' : 'en';
     const label = useMemo(() => {
@@ -39,13 +39,13 @@ export function FilesFreshness({ courseCode }: Props) {
             {label && <span className="hidden md:inline">{label}</span>}
             <button
                 type="button"
-                onClick={() => refresh(courseCode)}
-                disabled={isLoading}
+                onClick={() => { setIsRefreshing(true); syncService.triggerExamRefresh(); }}
+                disabled={isRefreshing}
                 title={t('course.freshness.refresh')}
                 aria-label={t('course.freshness.refresh')}
                 className="btn btn-ghost btn-xs btn-circle interactive disabled:opacity-50"
             >
-                <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
+                <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
             </button>
         </div>
     );
