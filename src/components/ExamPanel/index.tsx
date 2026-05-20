@@ -11,7 +11,7 @@ import { useAutoRegistration } from './useAutoRegistration';
 import { Zap, ExternalLink } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useUserParams } from '../../hooks/useUserParams';
-import { syncService } from '../../services/sync';
+import { useAppStore } from '../../store/useAppStore';
 import { ExamsFreshness } from './ExamsFreshness';
 
 interface RegisteredExam extends TimelineExam {
@@ -102,7 +102,9 @@ export function ExamPanel() {
     }, [timelineSelectedId, realExams]);
 
     useEffect(() => {
-        const onVisible = () => { if (document.visibilityState === 'visible') syncService.triggerExamRefresh(); };
+        const trigger = useAppStore.getState().triggerExamsRefresh;
+        trigger();
+        const onVisible = () => { if (document.visibilityState === 'visible') trigger(); };
         document.addEventListener('visibilitychange', onVisible);
         return () => document.removeEventListener('visibilitychange', onVisible);
     }, []);
