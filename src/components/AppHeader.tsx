@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { SearchBar } from './SearchBar/index';
 import { MobileSearchOverlay } from './SearchBar/MobileSearchOverlay';
 import { useTranslation } from '../hooks/useTranslation';
@@ -36,6 +36,25 @@ export function AppHeader({
 }: AppHeaderProps) {
   const { t } = useTranslation();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [prefillQuery, setPrefillQuery] = useState('');
+  const desktopPrefillRef = useRef<((query: string) => void) | null>(null);
+
+  useEffect(() => {
+    if (!searchPrefillRef) return;
+    searchPrefillRef.current = (q: string) => {
+      if (window.innerWidth < 768) {
+        setPrefillQuery(q);
+        setMobileSearchOpen(true);
+      } else {
+        desktopPrefillRef.current?.(q);
+      }
+    };
+    return () => {
+      if (searchPrefillRef) {
+        searchPrefillRef.current = null;
+      }
+    };
+  }, [searchPrefillRef]);
 
   useEffect(() => {
     const openIfMobile = () => { if (window.innerWidth < 768) setMobileSearchOpen(true); };
@@ -114,7 +133,7 @@ export function AppHeader({
   
               {/* Desktop Search Bar */}
               <div className="hidden md:flex items-center w-[300px] lg:w-[450px] xl:w-[600px]">
-                <SearchBar onOpenSubject={onOpenSubject} prefillRef={searchPrefillRef} actions={actions} />
+                <SearchBar onOpenSubject={onOpenSubject} prefillRef={desktopPrefillRef} actions={actions} />
               </div>
   
               <div className="flex items-center gap-1">
@@ -126,9 +145,13 @@ export function AppHeader({
 
       <MobileSearchOverlay
         isOpen={mobileSearchOpen}
-        onClose={() => setMobileSearchOpen(false)}
+        onClose={() => {
+          setMobileSearchOpen(false);
+          setPrefillQuery('');
+        }}
         onOpenSubject={onOpenSubject}
         actions={actions}
+        prefillQuery={prefillQuery}
       />
     </>
   );

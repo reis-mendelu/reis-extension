@@ -21,7 +21,7 @@ function Row({ entry, onOpen, onSearch }: { entry: HardestEntry; onOpen: Props['
   const displayName = useCourseName(subject.code, subject.name);
   const handleClick = () => {
     if (subject.id) onOpen(subject.code, subject.name, subject.id, undefined, 'stats', subject.isFulfilled);
-    else onSearch(subject.name);
+    else onSearch(subject.code);
   };
   return (
     <button onClick={handleClick} className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-base-200 transition-colors text-left">

@@ -58,7 +58,7 @@ function ZameraniRow({ insight, open, picked, subjectSemesters, onToggle, onTogg
             <p className="px-2 pt-1 pb-2 text-[11px] text-base-content/60 leading-relaxed">{insight.description}</p>
           )}
           {insight.subjects.map(s => {
-            const handleClick = () => s.id ? onOpen(s.code, s.name, s.id, undefined, 'stats') : onSearch(s.name);
+            const handleClick = () => s.id ? onOpen(s.code, s.name, s.id, undefined, 'stats') : onSearch(s.code);
             const sems = subjectSemesters?.get(s.code);
             const semLabel = sems?.length ? `${sems.join('+')}. sem.` : null;
             return (

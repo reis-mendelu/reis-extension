@@ -14,9 +14,10 @@ interface MobileSearchOverlayProps {
   onClose: () => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string, faculty?: string) => void;
   actions?: SearchResult[];
+  prefillQuery?: string;
 }
 
-export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = [] }: MobileSearchOverlayProps) {
+export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = [], prefillQuery = '' }: MobileSearchOverlayProps) {
   const { t, language } = useTranslation();
   const [query, setQuery] = useState('');
   const { setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query, actions);
@@ -26,9 +27,14 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = 
   useEffect(() => {
     if (isOpen) {
       setIsOpen(true);
+      if (prefillQuery) {
+        setQuery(prefillQuery);
+      }
       setTimeout(() => inputRef.current?.focus(), 100);
+    } else {
+      setQuery('');
     }
-  }, [isOpen, setIsOpen]);
+  }, [isOpen, setIsOpen, prefillQuery]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {

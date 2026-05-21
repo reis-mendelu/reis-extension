@@ -155,7 +155,7 @@ export function ErasmusSemesterSection({
                     selected={!!selectedCodes?.has(s.code)}
                     isRecognized={isRecognized}
                     onToggle={() => onToggleCourse(s.code)}
-                    onOpen={() => s.id ? onOpenSubject(s.code, s.name, s.id) : onSearchSubject(s.name)}
+                    onOpen={() => s.id ? onOpenSubject(s.code, s.name, s.id) : onSearchSubject(s.code)}
                   />
                 );
               })}

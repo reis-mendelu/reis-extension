@@ -46,7 +46,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
     if (hasId) {
       onOpenSubject(subject.code, subject.name, subject.id, undefined, undefined, subject.isFulfilled);
     } else {
-      onSearchSubject(subject.name);
+      onSearchSubject(subject.code);
     }
   };
 
@@ -100,7 +100,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
               const sems = subjectSemesters?.get(s.code);
               const rate = failRates?.[s.code] ?? null;
               return (
-                <button key={s.code} onClick={() => onSearchSubject(s.name)} className="text-[11px] text-base-content/60 flex items-center gap-1.5 min-w-0 w-full text-left rounded hover:bg-base-200 px-1 -mx-1 transition-colors">
+                <button key={s.code} onClick={() => onSearchSubject(s.code)} className="text-[11px] text-base-content/60 flex items-center gap-1.5 min-w-0 w-full text-left rounded hover:bg-base-200 px-1 -mx-1 transition-colors">
                   <span className="font-mono text-base-content/70 shrink-0">{s.code}</span>
                   {s.name !== s.code && <span className="truncate"> — {s.name}</span>}
                   <span className="flex items-center gap-1.5 shrink-0 ml-auto">
@@ -151,7 +151,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
               ? 'bg-warning/15 text-warning-content hover:bg-warning/20'
               : 'bg-base-content/5 text-base-content/40 hover:bg-base-content/10'
           }`}
-          onClick={(e) => { e.stopPropagation(); if (hasId) onOpenSubject(subject.code, subject.name, subject.id, undefined, 'stats'); else onSearchSubject(subject.name); }}
+          onClick={(e) => { e.stopPropagation(); if (hasId) onOpenSubject(subject.code, subject.name, subject.id, undefined, 'stats'); else onSearchSubject(subject.code); }}
         >
           <span className="group-hover/fail:hidden">{failRate}%</span>
           <span className="hidden group-hover/fail:inline">{failRate}% {t('subjects.failRateLabel')}</span>
