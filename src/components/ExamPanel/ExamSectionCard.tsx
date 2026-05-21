@@ -2,6 +2,7 @@ import { ChevronDown, ChevronUp, Repeat } from 'lucide-react';
 import type { ExamSubject, ExamSection, ExamTerm } from '../../types/exams';
 import { TermTile } from '../TermTile';
 import { RegisteredTermDetails } from './RegisteredTermDetails';
+import { ExamClassmatesStrip } from './ExamClassmatesStrip';
 import { TermsSummary } from './TermsSummary';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
@@ -101,6 +102,12 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                     )}
                 </div>
             </div>
+
+            {isReg && section.registeredTerm?.id && !section.registeredTerm.id.includes('-') && (
+                <div className="px-3 pb-3 -mt-1">
+                    <ExamClassmatesStrip terminId={section.registeredTerm.id} />
+                </div>
+            )}
 
             {isExpanded && section.terms.length > 0 && (
                 <div className="p-3 pt-0">

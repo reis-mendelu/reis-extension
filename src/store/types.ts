@@ -45,8 +45,15 @@ export interface ExamSlice {
   fetchExams: () => Promise<void>;
   setExams: (data: ExamSubject[]) => void;
   triggerExamsRefresh: () => void;
+  /** terminId → flat classmate list */
   examClassmates: Record<string, Classmate[]>;
-  loadExamClassmates: (terminId: string, studiumId: string, obdobiId: string) => Promise<void>;
+  examClassmatesLoading: Record<string, boolean>;
+  lastExamClassmatesFetchedAt: Record<string, number>;
+  examClassmatesError: Record<string, string>;
+  fetchExamClassmatesPriority: (terminId: string) => Promise<void>;
+  refreshExamClassmatesForTermin: (terminId: string) => Promise<void>;
+  fetchAllExamClassmates: () => Promise<void>;
+  hydrateLastExamClassmatesFetchedAt: () => Promise<void>;
 }
 
 export interface ZaznamnikSlice {

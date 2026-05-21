@@ -133,6 +133,8 @@
     "noExams": "You don't have any registered terms yet.",
     "noClassmates": "No classmates found.",
     "classmatesLabel": "classmates",
+    "loadingClassmates": "Loading classmates...",
+    "searchClassmates": "Search classmate...",
     "registrationTitle": "Exam Registration",
     "loading": "Loading exams...",
     "empty": "📭 No exams",

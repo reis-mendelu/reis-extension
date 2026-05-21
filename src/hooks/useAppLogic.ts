@@ -225,6 +225,7 @@ export function useAppLogic() {
                 if (!r.isSyncing) {
                     useAppStore.getState().fetchAllFiles();
                     useAppStore.getState().fetchAllClassmates();
+                    useAppStore.getState().fetchAllExamClassmates();
                     syncGradeHistory()
                         .then(() => useAppStore.getState().loadStudyJamSuggestions())
                         .catch(() => {});

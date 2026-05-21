@@ -7,12 +7,9 @@ import { parseRegistrationStart } from '../../utils/termUtils';
 
 interface RegisteredTermDetailsProps {
     section: ExamSection;
-    classmatesCount?: number;
-    classmatesOpen?: boolean;
-    onToggleClassmates?: (e: React.MouseEvent) => void;
 }
 
-export function RegisteredTermDetails({ section, classmatesCount: _classmatesCount, classmatesOpen: _classmatesOpen, onToggleClassmates: _onToggleClassmates }: RegisteredTermDetailsProps) {
+export function RegisteredTermDetails({ section }: RegisteredTermDetailsProps) {
     const { t, language } = useTranslation();
     const now = useAppStore(s => s.now);
     const term = section.registeredTerm;
