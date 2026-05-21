@@ -3,15 +3,28 @@ import { Search, Mail, User, Users } from 'lucide-react';
 import { useClassmates } from '../../hooks/data/useClassmates';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ClassmatesListSkeleton } from './ClassmatesListSkeleton';
+import { useAppStore } from '../../store/useAppStore';
+import { ISBacklink } from './ISBacklink';
 
 interface ClassmatesTabProps {
     courseCode: string;
 }
 
 export function ClassmatesTab({ courseCode }: ClassmatesTabProps) {
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
     const { classmates, isLoading, error } = useClassmates(courseCode);
+    const subjectInfo = useAppStore(s => courseCode ? s.subjects?.data[courseCode] : undefined);
+    const studium = useAppStore(s => s.studiumId);
+    const obdobi = useAppStore(s => s.obdobiId);
+
+    const lang = language === 'cz' ? 'cz' : 'en';
+    const subjectId = subjectInfo?.subjectId;
+    const classmatesUrl = studium && obdobi
+        ? (subjectId
+            ? `https://is.mendelu.cz/auth/student/spoluzaci.pl?predmet=${subjectId};;studium=${studium};obdobi=${obdobi};lang=${lang}`
+            : `https://is.mendelu.cz/auth/student/spoluzaci.pl?studium=${studium};obdobi=${obdobi};lang=${lang}`)
+        : null;
 
     const translate = (key: string, fallback: string) => {
         const result = t(key);
@@ -129,7 +142,10 @@ export function ClassmatesTab({ courseCode }: ClassmatesTabProps) {
                 </div>
             </div>
             {isLoading ? renderBody() : (
-                <div className="flex-1 overflow-y-auto p-4">{renderBody()}</div>
+                <div className="flex-1 overflow-y-auto p-4">
+                    {renderBody()}
+                    {classmatesUrl && <ISBacklink href={classmatesUrl} />}
+                </div>
             )}
         </div>
     );

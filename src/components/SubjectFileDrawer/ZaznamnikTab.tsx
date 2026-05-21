@@ -24,6 +24,23 @@ export function ZaznamnikTab({ courseCode }: ZaznamnikTabProps) {
     const buildUrl = (extra: string) =>
         `${IS_BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${subjectId};${extra};lang=${lang}`;
 
+    const backlinks = (subjectInfo?.hasPrubezne || subjectInfo?.hasTest) && studium && obdobi && subjectId ? (
+        <div className="flex justify-center gap-2 pt-2 pb-2">
+            {subjectInfo!.hasPrubezne && (
+                <a href={buildUrl('prubezne=1')} target="_blank" rel="noopener noreferrer"
+                    className="btn btn-ghost btn-sm gap-2 text-base-content/50 hover:text-primary normal-case font-bold">
+                    <span>IS (průběžné hodnocení)</span><ExternalLink size={14} />
+                </a>
+            )}
+            {subjectInfo!.hasTest && (
+                <a href={buildUrl('test=1')} target="_blank" rel="noopener noreferrer"
+                    className="btn btn-ghost btn-sm gap-2 text-base-content/50 hover:text-primary normal-case font-bold">
+                    <span>IS (výsledky testů)</span><ExternalLink size={14} />
+                </a>
+            )}
+        </div>
+    ) : null;
+
     if (isLoading) {
         return (
             <div className="p-4 space-y-3 animate-pulse">
@@ -35,23 +52,6 @@ export function ZaznamnikTab({ courseCode }: ZaznamnikTabProps) {
             </div>
         );
     }
-
-    const backlinks = (subjectInfo?.hasPrubezne || subjectInfo?.hasTest) && studium && obdobi && subjectId ? (
-        <div className="flex justify-center gap-2 pt-2 pb-2">
-            {subjectInfo!.hasPrubezne && (
-                <a href={buildUrl('prubezne=1')} target="_blank" rel="noopener noreferrer"
-                    className="btn btn-ghost btn-sm gap-2 text-base-content/50 hover:text-primary normal-case font-bold">
-                    <span>PH</span><ExternalLink size={14} />
-                </a>
-            )}
-            {subjectInfo!.hasTest && (
-                <a href={buildUrl('test=1')} target="_blank" rel="noopener noreferrer"
-                    className="btn btn-ghost btn-sm gap-2 text-base-content/50 hover:text-primary normal-case font-bold">
-                    <span>VT</span><ExternalLink size={14} />
-                </a>
-            )}
-        </div>
-    ) : null;
 
     if (!data || (!data.ph.sections.length && !data.vt.tests.length)) {
         const hasFlags = subjectInfo?.hasPrubezne || subjectInfo?.hasTest;

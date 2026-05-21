@@ -1,10 +1,11 @@
-import { FileText, ExternalLink, Loader2 } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
 import { FileList, FileListSkeleton } from './FileList';
 import { SyllabusTab } from './SyllabusTab';
 import { ClassmatesTab } from './ClassmatesTab';
 import { ZaznamnikTab } from './ZaznamnikTab';
 import { SuccessRateTab } from '../SuccessRateTab';
 import { SelectionBox, DragHint } from './DragHint';
+import { ISBacklink } from './ISBacklink';
 import type { FileGroup } from './types';
 import type { SyllabusRequirements, ParsedFile } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -66,15 +67,10 @@ export function SubjectFileDrawerContent({
                             t('course.footer.noFilesAvailable')}
                         </p>
                         {folderUrl && (
-                            <a 
-                                href={folderUrl.includes('?') ? `${folderUrl};lang=${language === 'cz' ? 'cz' : 'en'}` : `${folderUrl}?lang=${language === 'cz' ? 'cz' : 'en'}`} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="btn btn-ghost btn-sm gap-2 text-base-content/70 hover:text-primary normal-case font-bold mt-4"
-                            >
-                                <span>IS MENDELU</span>
-                                <ExternalLink size={16} />
-                            </a>
+                            <ISBacklink
+                                href={folderUrl.includes('?') ? `${folderUrl};lang=${language === 'cz' ? 'cz' : 'en'}` : `${folderUrl}?lang=${language === 'cz' ? 'cz' : 'en'}`}
+                                showBorder={false}
+                            />
                         )}
                     </div>
                  ) : (

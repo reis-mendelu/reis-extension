@@ -44,6 +44,8 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useDocumentNoteKeys } from '../../hooks/data/useDocumentNoteKeys';
 import { DocumentNote } from './DocumentNote';
 import { parseIsDate } from './utils/fileDate';
+import { cleanFileName } from '../../utils/fileUrl';
+import { ISBacklink } from './ISBacklink';
 
 const typeBadgeConfig: Record<string, string> = {
     pdf: 'badge-error',
@@ -194,17 +196,9 @@ export function FileList({
                 </div>
             ))}
             {folderUrl && (
-                <div className="flex justify-center pt-2 pb-2">
-                    <a
-                        href={folderUrl.includes('?') ? `${folderUrl};lang=${language === 'cz' ? 'cz' : 'en'}` : `${folderUrl}?lang=${language === 'cz' ? 'cz' : 'en'}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-ghost btn-sm gap-2 text-base-content/50 hover:text-primary normal-case font-bold"
-                    >
-                        <span>IS MENDELU</span>
-                        <ExternalLink size={16} />
-                    </a>
-                </div>
+                <ISBacklink
+                    href={folderUrl.includes('?') ? `${folderUrl};lang=${language === 'cz' ? 'cz' : 'en'}` : `${folderUrl}?lang=${language === 'cz' ? 'cz' : 'en'}`}
+                />
             )}
         </div>
     );

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useSuccessRate } from '../hooks/data/useSuccessRate';
-import { AlertTriangle, ExternalLink } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { sortSemesters } from '../utils/semesterSort';
 import { GradeBarChart } from './SuccessRate/GradeBarChart';
 import { SemesterSelector } from './SuccessRate/SemesterSelector';
 import { TermBreakdown } from './SuccessRate/TermBreakdown';
 import { useTranslation } from '../hooks/useTranslation';
+import { ISBacklink } from './SubjectFileDrawer/ISBacklink';
 
 const COLORS: Record<string, string> = { A: 'var(--color-grade-a)', B: 'var(--color-grade-b)', C: 'var(--color-grade-c)', D: 'var(--color-grade-d)', E: 'var(--color-grade-e)', F: 'var(--color-grade-f)', FN: 'var(--color-grade-fn)' };
 
@@ -45,14 +46,14 @@ export function SuccessRateTab({ courseCode, facultyCode }: { courseCode: string
     const individualTerms = current.terms.filter(t => t.term !== 'Všechny termíny');
 
     return (
-        <div className="flex flex-col h-full px-4 py-3 select-none font-inter">
+        <div className="flex flex-col h-full px-4 py-3 select-none font-inter overflow-y-auto">
             <div className="text-center mb-6 flex items-center justify-center gap-2">
                 <span className="text-sm opacity-50 font-bold uppercase tracking-wider">{total} {t('successRate.students')} {isCredit ? ` (${t('successRate.credit')})` : ` (${t('successRate.exam')})`}</span>
-                {current.sourceUrl && <a href={current.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-primary/50 hover:text-primary"><ExternalLink size={16} /></a>}
             </div>
             <GradeBarChart grades={grades} order={order} colors={colors} max={max} />
             {individualTerms.length > 0 && <TermBreakdown terms={individualTerms} isCredit={isCredit} />}
             <SemesterSelector stats={stats} activeIndex={sIdx} onSelect={setIdx} />
+            {current.sourceUrl && <ISBacklink href={current.sourceUrl} />}
         </div>
     );
 }
