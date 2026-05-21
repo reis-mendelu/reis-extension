@@ -33,18 +33,27 @@ vi.mock('sonner', () => ({
   },
 }));
 
-const mockSetExams = vi.fn();
-const mockFetchExams = vi.fn();
-
-vi.mock('../../../store/useAppStore', () => ({
-  useAppStore: vi.fn((selector) => {
-    const mockState = {
-      setExams: mockSetExams,
-      fetchExams: mockFetchExams,
-    };
-    return selector(mockState);
+const { mockSetExams, mockFetchExams, mockTriggerExamsRefresh } = vi.hoisted(() => ({
+  mockSetExams: vi.fn((data) => {
+    IndexedDBService.set('exams', 'current', data);
+    IndexedDBService.set('meta', 'exams_modified', Date.now());
   }),
+  mockFetchExams: vi.fn(),
+  mockTriggerExamsRefresh: vi.fn(),
 }));
+
+vi.mock('../../../store/useAppStore', () => {
+  const mockState = {
+    setExams: mockSetExams,
+    fetchExams: mockFetchExams,
+    triggerExamsRefresh: mockTriggerExamsRefresh,
+  };
+  const mockUseAppStore = vi.fn((selector) => selector(mockState)) as any;
+  mockUseAppStore.getState = () => mockState;
+  return {
+    useAppStore: mockUseAppStore,
+  };
+});
 
 // Test helpers
 function createMockTerm(id: string, overrides = {}) {

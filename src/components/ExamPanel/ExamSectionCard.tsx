@@ -36,11 +36,11 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
     const isReg = section.status === 'registered';
     const sectionState = isReg ? { type: 'registered' as const } : getSectionState(section, now);
 
-    const canUnregister = (() => {
+    const isAfterDeadline = (() => {
         const deadline = section.registeredTerm?.deregistrationDeadline;
-        if (!deadline) return isReg;
+        if (!deadline) return false;
         const deadlineDate = parseRegistrationStart(deadline);
-        return isReg && !!deadlineDate && now <= deadlineDate;
+        return isReg && !!deadlineDate && now > deadlineDate;
     })();
 
     const subjectName = (language === 'en' && subject.nameEn) ? subject.nameEn : (subject.nameCs || subject.name);
@@ -69,14 +69,23 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                    {canUnregister && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onUnregister(section); }}
-                            disabled={isProcessing}
-                            className="btn btn-sm btn-error btn-outline"
+                    {isReg && (
+                        <div 
+                            className={isAfterDeadline ? "tooltip tooltip-left md:tooltip-top cursor-not-allowed" : ""}
+                            data-tip={isAfterDeadline ? t('exams.afterDeadlineCannotDeregister') : undefined}
                         >
-                            {isProcessing ? <span className="loading loading-spinner loading-xs" /> : t('exams.unregister')}
-                        </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); if (!isAfterDeadline) onUnregister(section); }}
+                                disabled={isProcessing || isAfterDeadline}
+                                className={`btn btn-sm ${isAfterDeadline ? 'btn-outline btn-neutral opacity-40 cursor-not-allowed' : 'btn-error btn-outline'}`}
+                            >
+                                {isProcessing ? (
+                                    <span className="loading loading-spinner loading-xs" />
+                                ) : (
+                                    t('exams.unregister')
+                                )}
+                            </button>
+                        </div>
                     )}
 
                     {section.terms.length > 0 && (

@@ -2,6 +2,8 @@ import { Calendar, Clock, MapPin, AlertCircle } from 'lucide-react';
 import { getDayOfWeek } from './utils';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { ExamSection } from '../../types/exams';
+import { useAppStore } from '../../store/useAppStore';
+import { parseRegistrationStart } from '../../utils/termUtils';
 
 interface RegisteredTermDetailsProps {
     section: ExamSection;
@@ -12,8 +14,15 @@ interface RegisteredTermDetailsProps {
 
 export function RegisteredTermDetails({ section, classmatesCount: _classmatesCount, classmatesOpen: _classmatesOpen, onToggleClassmates: _onToggleClassmates }: RegisteredTermDetailsProps) {
     const { t, language } = useTranslation();
+    const now = useAppStore(s => s.now);
     const term = section.registeredTerm;
     if (!term) return null;
+
+    const isAfterDeadline = (() => {
+        if (!term.deregistrationDeadline) return false;
+        const deadlineDate = parseRegistrationStart(term.deregistrationDeadline);
+        return !!deadlineDate && now > deadlineDate;
+    })();
 
     return (
         <div className="text-xs text-base-content/60 flex flex-col gap-1 mt-1">
@@ -35,9 +44,16 @@ export function RegisteredTermDetails({ section, classmatesCount: _classmatesCou
                 )}
             </div>
             {term.deregistrationDeadline && (
-                <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-warning/80 mt-1">
-                    <AlertCircle size={10} />
-                    <span>{t('exams.unregisterDeadline')} {term.deregistrationDeadline}</span>
+                <div className={`flex flex-wrap items-center gap-1.5 text-[10px] uppercase font-bold mt-1 ${isAfterDeadline ? 'text-base-content/30' : 'text-warning/80'}`}>
+                    <AlertCircle size={10} className="shrink-0" />
+                    <span className={isAfterDeadline ? 'line-through' : ''}>
+                        {t('exams.unregisterDeadline')} {term.deregistrationDeadline}
+                    </span>
+                    {isAfterDeadline && (
+                        <span className="badge badge-xs bg-error/10 text-error/80 border-none font-bold normal-case tracking-normal shrink-0">
+                            {t('exams.afterDeadlineCannotDeregister')}
+                        </span>
+                    )}
                 </div>
             )}
         </div>

@@ -58,22 +58,34 @@ export function TimelineDrawer({ exam, onUnregister, onChangeTerm, isProcessing 
         <div className="border-t border-base-200 bg-base-50/40 px-4 py-3 animate-in slide-in-from-top-1 duration-150">
             <div className="flex items-center gap-3 flex-wrap">
                 {deadline ? (
-                    <span className={`flex items-center gap-1.5 text-xs font-semibold ${urgencyText[urgency]} ${urgency === 'critical' ? 'animate-pulse' : ''}`}>
-                        <AlertCircle size={12} />
-                        {t('exams.unregisterDeadline')} {deadline}
+                    <span className={`flex flex-wrap items-center gap-1.5 text-xs font-semibold ${urgency === 'expired' ? 'text-base-content/30' : urgencyText[urgency]} ${urgency === 'critical' ? 'animate-pulse' : ''}`}>
+                        <AlertCircle size={12} className="shrink-0" />
+                        <span className={urgency === 'expired' ? 'line-through' : ''}>{t('exams.unregisterDeadline')} {deadline}</span>
+                        {urgency === 'expired' && (
+                            <span className="badge badge-xs bg-error/10 text-error/80 border-none font-bold normal-case tracking-normal shrink-0">
+                                {t('exams.afterDeadlineCannotDeregister')}
+                            </span>
+                        )}
                     </span>
                 ) : <span />}
 
-                {urgency !== 'expired' && onUnregister && (
-                    <button
-                        onClick={() => onUnregister(section)}
-                        disabled={isProcessing}
-                        className="btn btn-xs btn-error btn-outline gap-1 ml-auto"
+                {onUnregister && (
+                    <div 
+                        className={urgency === 'expired' ? "tooltip tooltip-left cursor-not-allowed ml-auto" : "ml-auto"}
+                        data-tip={urgency === 'expired' ? t('exams.afterDeadlineCannotDeregister') : undefined}
                     >
-                        {isProcessing
-                            ? <span className="loading loading-spinner loading-xs" />
-                            : <><LogOut size={12} />{t('exams.unregister')}</>}
-                    </button>
+                        <button
+                            onClick={() => { if (urgency !== 'expired') onUnregister(section); }}
+                            disabled={isProcessing || urgency === 'expired'}
+                            className={`btn btn-xs gap-1 ${urgency === 'expired' ? 'btn-outline btn-neutral opacity-40 cursor-not-allowed' : 'btn-error btn-outline'}`}
+                        >
+                            {isProcessing ? (
+                                <span className="loading loading-spinner loading-xs" />
+                            ) : (
+                                <><LogOut size={12} />{t('exams.unregister')}</>
+                            )}
+                        </button>
+                    </div>
                 )}
             </div>
 

@@ -184,6 +184,7 @@
     "noTermsYet": "Bez termínů",
     "clearAll": "Vymazat vše",
     "unregister": "Odhlásit se",
+    "afterDeadlineCannotDeregister": "Po termínu, nelze se odhlásit",
     "changeTerm": "Změnit termín",
     "select": "Vybrat",
     "clickToRegister": "Klikni pro přihlášení:",

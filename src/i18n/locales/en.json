@@ -151,6 +151,7 @@
     "noTermsYet": "No terms yet",
     "clearAll": "Clear all",
     "unregister": "Unregister",
+    "afterDeadlineCannotDeregister": "After deadline, cannot deregister",
     "changeTerm": "Change term",
     "select": "Select",
     "clickToRegister": "Click to register:",

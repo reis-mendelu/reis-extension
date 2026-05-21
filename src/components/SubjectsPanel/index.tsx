@@ -128,18 +128,25 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
             />
           </div>
 
-          <div className="px-4 pt-3 grid grid-cols-2 gap-3 items-start">
-            <HardestUpcomingCard entries={hardest} onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
-            <ZameraniComparisonCard
-              insights={zameraniStats}
-              picks={picks.effectivePicks}
-              onTogglePick={picks.togglePick}
-              minRequired={plan.zameraniMinimum}
-              subjectSemesters={subjectSemesters}
-              onOpenSubject={onOpenSubject}
-              onSearchSubject={onSearchSubject}
-            />
-          </div>
+          {/* Insights Grid */}
+          {(hardest.length > 0 || zameraniStats.length >= 2) && (
+            <div className={`px-4 pt-3 grid gap-3 items-start ${
+              hardest.length > 0 && zameraniStats.length >= 2
+                ? "grid-cols-1 md:grid-cols-2"
+                : "grid-cols-1"
+            }`}>
+              <HardestUpcomingCard entries={hardest} onOpenSubject={onOpenSubject} onSearchSubject={onSearchSubject} />
+              <ZameraniComparisonCard
+                insights={zameraniStats}
+                picks={picks.effectivePicks}
+                onTogglePick={picks.togglePick}
+                minRequired={plan.zameraniMinimum}
+                subjectSemesters={subjectSemesters}
+                onOpenSubject={onOpenSubject}
+                onSearchSubject={onSearchSubject}
+              />
+            </div>
+          )}
 
           <div className="px-4 pt-4 pb-4">
             <div className="flex flex-col gap-2">
