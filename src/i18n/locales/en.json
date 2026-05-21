@@ -672,7 +672,14 @@
     "search": "Search...",
     "noneFound": "No classmates found",
     "loadingAll": "Loading classmates...",
-    "loadingSeminar": "Loading seminar classmates..."
+    "loadingSeminar": "Loading seminar classmates...",
+    "contact": "Contact",
+    "studies": "Studies",
+    "universityEmail": "University e-mail",
+    "privateEmail": "Private e-mail",
+    "copyEmail": "Copy e-mail",
+    "copy": "Copy",
+    "copied": "Copied!"
   },
   "teachingWeek": {
     "label": "week {current}"

@@ -27,6 +27,7 @@ import { createPulseSlice } from './slices/createPulseSlice';
 import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
 import { createNotificationSlice } from './slices/createNotificationSlice';
 import { createSearchSlice } from './slices/createSearchSlice';
+import { createPersonProfileSlice } from './slices/createPersonProfileSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
@@ -59,6 +60,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createCustomEventsSlice(...a),
   ...createNotificationSlice(...a),
   ...createSearchSlice(...a),
+  ...createPersonProfileSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates

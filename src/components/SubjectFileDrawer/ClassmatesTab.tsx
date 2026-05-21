@@ -5,6 +5,8 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { ClassmatesListSkeleton } from './ClassmatesListSkeleton';
 import { useAppStore } from '../../store/useAppStore';
 import { ISBacklink } from './ISBacklink';
+import { ClassmatePersonDrawer } from '../Classmates/ClassmatePersonDrawer';
+import type { Classmate } from '../../types/classmates';
 
 interface ClassmatesTabProps {
     courseCode: string;
@@ -13,6 +15,7 @@ interface ClassmatesTabProps {
 export function ClassmatesTab({ courseCode }: ClassmatesTabProps) {
     const { t, language } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
+    const [selected, setSelected] = useState<Classmate | null>(null);
     const { classmates, isLoading, error } = useClassmates(courseCode);
     const subjectInfo = useAppStore(s => courseCode ? s.subjects?.data[courseCode] : undefined);
     const studium = useAppStore(s => s.studiumId);
@@ -65,11 +68,10 @@ export function ClassmatesTab({ courseCode }: ClassmatesTabProps) {
             <div className="grid grid-cols-1 gap-3">
                 {filteredClassmates.map((student) => (
                     <div key={student.personId} className="flex items-center justify-between p-3 rounded-xl border border-base-200 bg-base-100 hover:border-primary/20 hover:shadow-sm transition-all group">
-                        <a
-                            href={`https://is.mendelu.cz/auth/lide/clovek.pl?id=${student.personId}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-4 group/profile flex-1"
+                        <button
+                            type="button"
+                            onClick={() => setSelected(student)}
+                            className="flex items-center gap-4 group/profile flex-1 text-left"
                         >
                             <div className="avatar">
                                 <div className="w-14 h-14 rounded-full ring-1 ring-base-200 ring-offset-base-100 ring-offset-2 group-hover/profile:ring-primary/40 transition-all">
@@ -103,7 +105,7 @@ export function ClassmatesTab({ courseCode }: ClassmatesTabProps) {
                                     )}
                                 </div>
                             </div>
-                        </a>
+                        </button>
                         <div className="flex items-center gap-2">
                             {student.messageUrl ? (
                                 <a
@@ -147,6 +149,7 @@ export function ClassmatesTab({ courseCode }: ClassmatesTabProps) {
                     {classmatesUrl && <ISBacklink href={classmatesUrl} />}
                 </div>
             )}
+            <ClassmatePersonDrawer classmate={selected} onClose={() => setSelected(null)} />
         </div>
     );
 }

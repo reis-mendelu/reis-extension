@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Mail, Search, Users } from 'lucide-react';
 import { useExamClassmates } from '../../hooks/data/useExamClassmates';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { Classmate } from '../../types/classmates';
+import { ClassmatePersonDrawer } from '../Classmates/ClassmatePersonDrawer';
 
 interface ExamClassmatesStripProps {
     terminId: string | undefined;
@@ -43,15 +44,13 @@ function Avatar({ classmate }: { classmate: Classmate }) {
     );
 }
 
-function ClassmateChip({ classmate }: { classmate: Classmate }) {
+function ClassmateChip({ classmate, onOpen }: { classmate: Classmate; onOpen: (c: Classmate) => void }) {
     return (
         <div className="group flex items-center gap-2 px-2 py-1.5 rounded-lg border border-base-200 bg-base-100 hover:border-primary/20 hover:bg-primary/[0.02] transition-colors">
-            <a
-                href={`https://is.mendelu.cz/auth/lide/clovek.pl?id=${classmate.personId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={e => e.stopPropagation()}
-                className="flex-1 min-w-0 flex items-center gap-2"
+            <button
+                type="button"
+                onClick={e => { e.stopPropagation(); onOpen(classmate); }}
+                className="flex-1 min-w-0 flex items-center gap-2 text-left"
                 title={classmate.name}
             >
                 <Avatar classmate={classmate} />
@@ -61,7 +60,7 @@ function ClassmateChip({ classmate }: { classmate: Classmate }) {
                         <div className="text-[10px] text-base-content/40 truncate leading-tight">{classmate.studyInfo}</div>
                     )}
                 </div>
-            </a>
+            </button>
             {classmate.messageUrl && (
                 <a
                     href={`https://is.mendelu.cz${classmate.messageUrl}`}
@@ -83,6 +82,7 @@ export function ExamClassmatesStrip({ terminId }: ExamClassmatesStripProps) {
     const { classmates, isLoading } = useExamClassmates(terminId);
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState('');
+    const [selected, setSelected] = useState<Classmate | null>(null);
 
     const filtered = useMemo(() => {
         const list = classmates ?? [];
@@ -151,11 +151,12 @@ export function ExamClassmatesStrip({ terminId }: ExamClassmatesStripProps) {
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-64 overflow-y-auto">
                         {filtered.map(c => (
-                            <ClassmateChip key={c.personId} classmate={c} />
+                            <ClassmateChip key={c.personId} classmate={c} onOpen={setSelected} />
                         ))}
                     </div>
                 </div>
             )}
+            <ClassmatePersonDrawer classmate={selected} onClose={() => setSelected(null)} />
         </div>
     );
 }

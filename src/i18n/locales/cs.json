@@ -674,7 +674,14 @@
     "search": "Vyhledat...",
     "noneFound": "Žádní spolužáci nenalezeni",
     "loadingAll": "Načítání spolužáků...",
-    "loadingSeminar": "Načítání spolužáků ze cvičení..."
+    "loadingSeminar": "Načítání spolužáků ze cvičení...",
+    "contact": "Kontakt",
+    "studies": "Studium",
+    "universityEmail": "Univerzitní e-mail",
+    "privateEmail": "Soukromý e-mail",
+    "copyEmail": "Kopírovat e-mail",
+    "copy": "Kopírovat",
+    "copied": "Zkopírováno!"
   },
   "teachingWeek": {
     "label": "{current}. týden"
