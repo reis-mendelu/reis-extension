@@ -29,16 +29,9 @@ export function ClassmatePersonDetail({
                     </h3>
                     <div className="rounded-xl border border-base-200 bg-base-100 p-4">
                         {profile?.programmeName ? (
-                            <>
-                                <div className="text-sm font-semibold leading-snug">
-                                    {profile.programmeName}
-                                </div>
-                                {profile.programmeCode && (
-                                    <div className="text-[11px] font-mono text-base-content/40 mt-0.5">
-                                        {profile.programmeCode}
-                                    </div>
-                                )}
-                            </>
+                            <div className="text-sm font-semibold leading-snug">
+                                {profile.programmeName}
+                            </div>
                         ) : (
                             studyInfoFromClassmate && (
                                 <p className="text-sm text-base-content/70">{studyInfoFromClassmate}</p>
