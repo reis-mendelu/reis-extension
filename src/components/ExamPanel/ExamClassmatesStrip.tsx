@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronDown, ChevronUp, Mail, Search, Users } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, Users } from 'lucide-react';
 import { useExamClassmates } from '../../hooks/data/useExamClassmates';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { Classmate } from '../../types/classmates';
@@ -46,33 +46,26 @@ function Avatar({ classmate }: { classmate: Classmate }) {
 
 function ClassmateChip({ classmate, onOpen }: { classmate: Classmate; onOpen: (c: Classmate) => void }) {
     return (
-        <div className="group flex items-center gap-2 px-2 py-1.5 rounded-lg border border-base-200 bg-base-100 hover:border-primary/20 hover:bg-primary/[0.02] transition-colors">
-            <button
-                type="button"
-                onClick={e => { e.stopPropagation(); onOpen(classmate); }}
-                className="flex-1 min-w-0 flex items-center gap-2 text-left"
-                title={classmate.name}
-            >
-                <Avatar classmate={classmate} />
-                <div className="flex-1 min-w-0">
-                    <div className="text-xs font-semibold truncate leading-tight">{classmate.name}</div>
-                    {classmate.studyInfo && (
-                        <div className="text-[10px] text-base-content/40 truncate leading-tight">{classmate.studyInfo}</div>
-                    )}
-                </div>
-            </button>
-            {classmate.messageUrl && (
-                <a
-                    href={`https://is.mendelu.cz${classmate.messageUrl}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={e => e.stopPropagation()}
-                    className="btn btn-ghost btn-xs btn-circle text-base-content/30 hover:text-primary opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                    title={classmate.name}
-                >
-                    <Mail size={12} />
-                </a>
-            )}
+        <div
+            role="button"
+            tabIndex={0}
+            onClick={e => { e.stopPropagation(); onOpen(classmate); }}
+            onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onOpen(classmate);
+                }
+            }}
+            title={classmate.name}
+            className="group flex items-center gap-2 px-2 py-1.5 rounded-lg border border-base-200 bg-base-100 hover:border-primary/20 hover:bg-primary/[0.02] transition-colors cursor-pointer text-left"
+        >
+            <Avatar classmate={classmate} />
+            <div className="flex-1 min-w-0">
+                <div className="text-xs font-semibold truncate leading-tight">{classmate.name}</div>
+                {classmate.studyInfo && (
+                    <div className="text-[10px] text-base-content/40 truncate leading-tight">{classmate.studyInfo}</div>
+                )}
+            </div>
         </div>
     );
 }

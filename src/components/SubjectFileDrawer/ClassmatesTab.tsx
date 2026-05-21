@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, Mail, User, Users } from 'lucide-react';
+import { Search, User, Users } from 'lucide-react';
 import { useClassmates } from '../../hooks/data/useClassmates';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ClassmatesListSkeleton } from './ClassmatesListSkeleton';
@@ -67,12 +67,20 @@ export function ClassmatesTab({ courseCode }: ClassmatesTabProps) {
         return (
             <div className="grid grid-cols-1 gap-3">
                 {filteredClassmates.map((student) => (
-                    <div key={student.personId} className="flex items-center justify-between p-3 rounded-xl border border-base-200 bg-base-100 hover:border-primary/20 hover:shadow-sm transition-all group">
-                        <button
-                            type="button"
-                            onClick={() => setSelected(student)}
-                            className="flex items-center gap-4 group/profile flex-1 text-left"
-                        >
+                    <div
+                        key={student.personId}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setSelected(student)}
+                        onKeyDown={e => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setSelected(student);
+                            }
+                        }}
+                        className="flex items-center justify-between p-3 rounded-xl border border-base-200 bg-base-100 hover:border-primary/20 hover:shadow-sm transition-all group cursor-pointer text-left"
+                    >
+                        <div className="flex items-center gap-4 group/profile flex-1">
                             <div className="avatar">
                                 <div className="w-14 h-14 rounded-full ring-1 ring-base-200 ring-offset-base-100 ring-offset-2 group-hover/profile:ring-primary/40 transition-all">
                                     {student.photoUrl && (
@@ -105,23 +113,6 @@ export function ClassmatesTab({ courseCode }: ClassmatesTabProps) {
                                     )}
                                 </div>
                             </div>
-                        </button>
-                        <div className="flex items-center gap-2">
-                            {student.messageUrl ? (
-                                <a
-                                    href={`https://is.mendelu.cz${student.messageUrl}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="btn btn-circle btn-sm btn-ghost text-base-content/40 hover:text-primary hover:bg-primary/10"
-                                    title={student.name}
-                                >
-                                    <Mail size={24} strokeWidth={1.5} />
-                                </a>
-                            ) : (
-                                <span className="btn btn-circle btn-sm btn-ghost text-base-content/20 cursor-not-allowed">
-                                    <Mail size={24} strokeWidth={1.5} />
-                                </span>
-                            )}
                         </div>
                     </div>
                 ))}
