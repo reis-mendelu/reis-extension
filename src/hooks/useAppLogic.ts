@@ -198,6 +198,7 @@ export function useAppLogic() {
                 }
 
                 if (r.classmates) {
+                    // Must await: fetchAllClassmates() reads the same IDB store.
                     await IndexedDBService.setMany(
                         'classmates',
                         Object.entries(r.classmates).map(([c, cl]) => [c, cl] as const)

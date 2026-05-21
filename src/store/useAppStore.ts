@@ -97,6 +97,7 @@ export const initializeStore = async () => {
         s2.fetchAllFiles();
         s2.fetchAllClassmates();
         await s2.hydrateLastFilesFetchedAt();
+        await s2.hydrateLastClassmatesFetchedAt();
         s2.fetchZaznamnik();
         s2.loadFeedbackState();
         s2.loadPinnedPages();

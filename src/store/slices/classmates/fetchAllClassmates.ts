@@ -8,16 +8,17 @@ interface FetchAllInput {
 }
 
 /**
- * Load every enrolled course's cached classmates from IDB and return them
- * keyed by courseCode. Mirrors loadAllFilesFromCache — eager batch read,
- * no per-component lazy fetch, no race against invalidation.
+ * Returns null when subjects are unknown (cold boot). Callers MUST skip set()
+ * in that case — an empty map would clobber concurrent writes.
  */
-export async function loadAllClassmatesFromCache({ subjects }: FetchAllInput): Promise<Record<string, ClassmatesData>> {
+export async function loadAllClassmatesFromCache(
+    { subjects }: FetchAllInput,
+): Promise<Record<string, ClassmatesData> | null> {
     try {
         const subjectsData = subjects?.data
             ?? ((await IndexedDBService.get('subjects', 'current')) as SubjectsData | null)?.data;
         const courseCodes = subjectsData ? Object.keys(subjectsData) : [];
-        if (courseCodes.length === 0) return {};
+        if (courseCodes.length === 0) return null;
 
         const entries = await Promise.all(
             courseCodes.map(async (code) => [code, await IndexedDBService.get('classmates', code)] as const)
@@ -30,6 +31,6 @@ export async function loadAllClassmatesFromCache({ subjects }: FetchAllInput): P
         return map;
     } catch (e) {
         logError('ClassmatesSlice.loadAllClassmatesFromCache', e);
-        return {};
+        return null;
     }
 }

@@ -83,7 +83,13 @@ export interface FilesSlice {
 export interface ClassmatesSlice {
     /** courseCode → flat list of seminar classmates */
     classmates: Record<string, ClassmatesData>;
+    classmatesLoading: Record<string, boolean>;
+    lastClassmatesFetchedAt: Record<string, number>;
+    classmatesError: Record<string, string>;
+    fetchClassmatesPriority: (courseCode: string) => Promise<void>;
     fetchAllClassmates: () => Promise<void>;
+    refreshClassmatesForSubject: (courseCode: string) => Promise<void>;
+    hydrateLastClassmatesFetchedAt: () => Promise<void>;
 }
 
 export interface SubjectsSlice {

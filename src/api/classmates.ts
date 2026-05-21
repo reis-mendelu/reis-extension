@@ -1,4 +1,5 @@
 import { fetchWithAuth, BASE_URL } from './client';
+import { logError } from '../utils/reportError';
 import type { Classmate } from '../types/classmates';
 
 const SPOLUZACI_URL = `${BASE_URL}/auth/student/spoluzaci.pl`;
@@ -11,8 +12,13 @@ const SPOLUZACI_URL = `${BASE_URL}/auth/student/spoluzaci.pl`;
  *  - Photo from img[src*="foto.pl"]
  *  - Message URL from a[href*="nova_zprava.pl"]
  *  - Study info from a td whose text looks like a study programme label
+ *
+ * Guard: if the table exists with multiple rows but zero classmates are parsed,
+ * that's a signal IS Mendelu changed the row structure — report it via telemetry
+ * so we can debug from data instead of intuition. Per CLAUDE.md parser rules,
+ * we do NOT relax the parser; we report and return [].
  */
-function parseClassmatesPage(doc: Document): Classmate[] {
+export function parseClassmatesPage(doc: Document): Classmate[] {
     const table = doc.querySelector('#tmtab_1');
     if (!table) return [];
 
@@ -49,55 +55,100 @@ function parseClassmatesPage(doc: Document): Classmate[] {
         results.push({ personId, name, photoUrl, studyInfo, messageUrl });
     });
 
+    // Guard: table present with content rows, but parser extracted nothing.
+    // Distinguishes "empty seminar" (no rows) from "parser broken" (rows present,
+    // none parsed). Reports once per call; does not throw.
+    if (results.length === 0 && rows.length > 1) {
+        const hasContent = Array.from(rows).slice(1).some(
+            r => (r.textContent?.trim().length ?? 0) > 0
+        );
+        if (hasContent) {
+            logError(
+                'Parser.parseClassmatesPage',
+                new Error('table#tmtab_1 has rows but zero classmates parsed'),
+                { rowCount: rows.length },
+            );
+        }
+    }
+
     return results;
 }
 
 /**
- * Fetch the spoluzaci overview page and extract seminar group IDs per predmetId.
- *
- * Mirrors the scraper's group-discovery phase:
- *   /auth/student/spoluzaci.pl?studium=X;obdobi=Y;lang=cz
- *
- * Returns a map of predmetId → skupinaId.
- * The caller (syncService) matches predmetId to courseCode via subjects store
- * (subject.subjectId === predmetId).
+ * Map of predmetId → skupinaId from the spoluzaci overview page.
+ * Memoized per (studiumId,obdobi) with a 60s TTL plus inflight dedup so
+ * refreshing N subjects in a row doesn't re-fetch the same global page N times.
  */
+interface GroupMapEntry {
+    expiresAt: number;
+    promise: Promise<Record<string, string>>;
+}
+const groupMapCache = new Map<string, GroupMapEntry>();
+const GROUP_MAP_TTL_MS = 60_000;
+
+export function __resetSeminarGroupCache(): void {
+    groupMapCache.clear();
+}
+
 export async function fetchSeminarGroupIds(
     studiumId: string,
     obdobi: string,
 ): Promise<Record<string, string>> {
-    const url = `${SPOLUZACI_URL}?studium=${studiumId};obdobi=${obdobi};lang=cz`;
-    const response = await fetchWithAuth(url);
-    const html = await response.text();
-
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-
-    const result: Record<string, string> = {};
-
-    // Links look like: spoluzaci.pl?predmet=162570;;studium=...;skupina=178894;lang=cz
-    // We only want links that have both predmet= and skupina= (seminar group links).
-    const links = Array.from(doc.querySelectorAll<HTMLAnchorElement>('a[href*="skupina="]'));
-
-    for (const link of links) {
-        const href = link.getAttribute('href') ?? '';
-        // Skip teacher and email views
-        if (href.includes('vyucujici=') || href.includes('email=')) continue;
-
-        const skupinaMatch = href.match(/skupina=(\d+)/);
-        const predmetMatch = href.match(/predmet=(\d+)/);
-        if (!skupinaMatch || !predmetMatch) continue;
-
-        const predmetId = predmetMatch[1];
-        const skupinaId = skupinaMatch[1];
-
-        // Only keep the first skupina found per predmet (the student's seminar group)
-        if (!result[predmetId]) {
-            result[predmetId] = skupinaId;
-        }
+    const cacheKey = `${studiumId}|${obdobi}`;
+    const existing = groupMapCache.get(cacheKey);
+    if (existing && existing.expiresAt > Date.now()) {
+        return existing.promise;
     }
 
-    return result;
+    const promise = fetchSeminarGroupIdsImpl(studiumId, obdobi).catch((e) => {
+        groupMapCache.delete(cacheKey);
+        throw e;
+    });
+    groupMapCache.set(cacheKey, { expiresAt: Date.now() + GROUP_MAP_TTL_MS, promise });
+    return promise;
+}
+
+async function fetchSeminarGroupIdsImpl(
+    studiumId: string,
+    obdobi: string,
+): Promise<Record<string, string>> {
+    const url = `${SPOLUZACI_URL}?studium=${studiumId};obdobi=${obdobi};lang=cz`;
+    try {
+        const response = await fetchWithAuth(url);
+        const html = await response.text();
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        const result: Record<string, string> = {};
+
+        // Links look like: spoluzaci.pl?predmet=162570;;studium=...;skupina=178894;lang=cz
+        // We only want links that have both predmet= and skupina= (seminar group links).
+        const links = Array.from(doc.querySelectorAll<HTMLAnchorElement>('a[href*="skupina="]'));
+
+        for (const link of links) {
+            const href = link.getAttribute('href') ?? '';
+            // Skip teacher and email views
+            if (href.includes('vyucujici=') || href.includes('email=')) continue;
+
+            const skupinaMatch = href.match(/skupina=(\d+)/);
+            const predmetMatch = href.match(/predmet=(\d+)/);
+            if (!skupinaMatch || !predmetMatch) continue;
+
+            const predmetId = predmetMatch[1];
+            const skupinaId = skupinaMatch[1];
+
+            // Only keep the first skupina found per predmet (the student's seminar group)
+            if (!result[predmetId]) {
+                result[predmetId] = skupinaId;
+            }
+        }
+
+        return result;
+    } catch (e) {
+        logError('Api.fetchSeminarGroupIds', e, { studiumId, obdobi });
+        throw e;
+    }
 }
 
 /**
@@ -119,30 +170,35 @@ export async function fetchClassmates(
 ): Promise<Classmate[]> {
     const firstUrl = `${SPOLUZACI_URL}?predmet=${predmetId};;studium=${studiumId};obdobi=${obdobi};skupina=${skupinaId};lang=cz`;
 
-    const response = await fetchWithAuth(firstUrl);
-    const html = await response.text();
+    try {
+        const response = await fetchWithAuth(firstUrl);
+        const html = await response.text();
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
 
-    // Collect pagination hrefs whose link text is "41–80" style
-    const paginationLinks: string[] = Array.from(
-        doc.querySelectorAll<HTMLAnchorElement>('a[href*="spoluzaci.pl"]')
-    )
-        .filter(a => /^\d+–\d+$/.test(a.textContent?.trim() ?? ''))
-        .map(a => {
-            const href = a.getAttribute('href') ?? '';
-            return href.startsWith('http') ? href : `${BASE_URL}${href}`;
-        });
+        // Collect pagination hrefs whose link text is "41–80" style
+        const paginationLinks: string[] = Array.from(
+            doc.querySelectorAll<HTMLAnchorElement>('a[href*="spoluzaci.pl"]')
+        )
+            .filter(a => /^\d+–\d+$/.test(a.textContent?.trim() ?? ''))
+            .map(a => {
+                const href = a.getAttribute('href') ?? '';
+                return href.startsWith('http') ? href : `${BASE_URL}${href}`;
+            });
 
-    const all: Classmate[] = parseClassmatesPage(doc);
+        const all: Classmate[] = parseClassmatesPage(doc);
 
-    for (const link of paginationLinks) {
-        const r = await fetchWithAuth(link);
-        const h = await r.text();
-        const d = new DOMParser().parseFromString(h, 'text/html');
-        all.push(...parseClassmatesPage(d));
+        for (const link of paginationLinks) {
+            const r = await fetchWithAuth(link);
+            const h = await r.text();
+            const d = new DOMParser().parseFromString(h, 'text/html');
+            all.push(...parseClassmatesPage(d));
+        }
+
+        return all;
+    } catch (e) {
+        logError('Api.fetchClassmates', e, { predmetId, skupinaId });
+        throw e;
     }
-
-    return all;
 }
