@@ -40,8 +40,8 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
 
     return (
         <div onClick={() => !disabled && onSelect()}
-                className={`relative flex flex-col w-full rounded-lg border transition-all text-left overflow-hidden ${(isArmed || isFiring) ? 'bg-warning/10 border-warning shadow-[0_0_10px_rgba(251,189,35,0.3)]' : isFuture ? 'bg-warning/5 border-warning/30' : (isFull || isClosed || isBlocked) ? 'bg-base-200 border-transparent opacity-60' : 'bg-base-100 border-transparent hover:border-primary shadow-sm cursor-pointer'}`}>
-            {attemptAccent && <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${attemptAccent}`} />}
+                className={`relative flex flex-col w-full rounded-lg border transition-all text-left ${(isArmed || isFiring) ? 'bg-warning/10 border-warning shadow-[0_0_10px_rgba(251,189,35,0.3)]' : isFuture ? 'bg-warning/5 border-warning/30' : (isFull || isClosed || isBlocked) ? 'bg-base-200 border-transparent opacity-60' : 'bg-base-100 border-transparent hover:border-primary shadow-sm cursor-pointer'}`}>
+            {attemptAccent && <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-lg ${attemptAccent}`} />}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 w-full p-2.5">
                 {/* Date */}
                 <div className="flex items-baseline gap-1.5 min-w-[58px]">
