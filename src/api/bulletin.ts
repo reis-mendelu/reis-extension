@@ -25,7 +25,13 @@ export function parseBulletinHtml(html: string): BulletinPost[] {
 
         // Locate cells by content, not by column index: CZ locale omits the
         // ordinal column that EN includes, so fixed indices break across locales.
-        const titleCell = Array.from(row.querySelectorAll(':scope > td')).find(c => c.querySelector('font'));
+        // Specifically: the title cell is the one whose <font> wraps breadcrumb
+        // folder anchors (<a href*="slozka.pl?id=">). Matching on bare <font>
+        // would mis-fire on any unrelated <font> tag IS Mendelu might add later.
+        const titleCell = Array.from(row.querySelectorAll(':scope > td')).find(c => {
+            const font = c.querySelector('font');
+            return !!font && !!font.querySelector('a[href*="slozka.pl?id="]');
+        });
         if (!titleCell) continue;
 
         const title = extractTitle(titleCell);

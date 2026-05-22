@@ -44,6 +44,24 @@ describe('parseBulletinHtml', () => {
         expect(posts[0].url).toMatch(/klic=1000/);
     });
 
+    it('ignores stray <font> in unrelated cells and locks onto breadcrumb-bearing cell', () => {
+        // An earlier cell has a <font> badge ("Nové") that is NOT the breadcrumb;
+        // the parser must skip it and land on the cell whose <font> wraps slozka.pl?id= anchors.
+        const row = `<tr>
+            <td><input name="oznacene" value="1"></td>
+            <td><font size="-2">Nové</font></td>
+            <td>The Real Title<br><font size="-2"><a href="slozka.pl?id=17">Inzerce</a> / <a href="slozka.pl?id=78">Ubytování</a></font></td>
+            <td><a href="/auth/lide/clovek.pl?id=1">Author</a></td>
+            <td>21.05.2026</td>
+            <td><a href="slozka.pl?zobrazeni=1;klic=1"><img></a></td>
+        </tr>`;
+        const html = `<html><body><table id="tmtab_1"><tbody>${row}</tbody></table></body></html>`;
+        const posts = parseBulletinHtml(html);
+        expect(posts).toHaveLength(1);
+        expect(posts[0].title).toBe('The Real Title');
+        expect(posts[0].categories).toEqual(['Inzerce', 'Ubytování']);
+    });
+
     it('parses CZ-locale rows that omit the leading ordinal column (6 cells)', () => {
         // Real row markup pulled from a CZ-locale browser session.
         const row = `<tr class=" uis-hl-table lbn">
