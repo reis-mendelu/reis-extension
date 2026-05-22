@@ -697,8 +697,11 @@
   },
   "bulletin": {
     "title": "Bulletin Board",
-    "empty": "No posts",
-    "showMore": "more",
-    "dismiss": "Hide bulletin board"
+    "empty": "No new posts",
+    "showAll": "Show all",
+    "expand": "Expand bulletin board",
+    "collapse": "Collapse bulletin board",
+    "loading": "Loading…",
+    "error": "Failed to load"
   }
 }

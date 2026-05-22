@@ -13,7 +13,6 @@ import { syncOdevzdavarny } from "../services/sync/syncOdevzdavarny";
 import { fetchSeminarGroupIds, fetchClassmates } from "../api/classmates";
 import { mergePastSubjects } from "../services/sync/mergePastSubjects";
 import { syncPastSemesters } from "../services/sync/syncPastSemesters";
-import { fetchBulletin } from "../api/bulletin";
 
 import { getUserParams } from "../utils/userParams";
 import { fetchFullSemesterSchedule } from "./dataFetchers";
@@ -82,14 +81,8 @@ export async function syncAllData() {
             })
             : Promise.resolve(null);
 
-        // Phase 2a-III: Bulletin board — fast, independent fetch from IS main page
-        const bulletinPromise = fetchBulletin().then(posts => {
-            if (posts.length > 0) cachedData = { ...cachedData, bulletin: posts };
-            return posts;
-        }).catch(() => []);
-
         // Phase 2b: Full schedule + exams in parallel (subjects/studyPlan/studyStats re-uses already-started promises)
-        const [fullSchedule, exams, subjects, studyPlan, studyStats, cvicneTests, odevzdavarnyResult, pastSubjects, bulletinResult] = await Promise.allSettled([
+        const [fullSchedule, exams, subjects, studyPlan, studyStats, cvicneTests, odevzdavarnyResult, pastSubjects] = await Promise.allSettled([
             fetchFullSemesterSchedule(),
             fetchDualLanguageExams(),
             subjectsPromise,
@@ -98,7 +91,6 @@ export async function syncAllData() {
             cvicneTestsPromise,
             odevzdavarnyPromise,
             pastSubjectsPromise,
-            bulletinPromise,
         ]);
 
         if (
@@ -139,7 +131,6 @@ export async function syncAllData() {
             studyStats: studyStats.status === "fulfilled" && studyStats.value ? studyStats.value : cachedData.studyStats,
             cvicneTests: cvicneTests.status === "fulfilled" && cvicneTests.value?.tests?.length ? cvicneTests.value.tests : cachedData.cvicneTests,
             odevzdavarny: odevzdavarnyResult.status === "fulfilled" && odevzdavarnyResult.value?.assignments?.length ? odevzdavarnyResult.value.assignments : cachedData.odevzdavarny,
-            bulletin: bulletinResult.status === "fulfilled" && bulletinResult.value?.length ? bulletinResult.value : cachedData.bulletin,
             files: cachedData.files || {},
             lastSync: Date.now(),
         };
@@ -155,7 +146,6 @@ export async function syncAllData() {
             studyStats: cachedData.studyStats,
             cvicneTests: cachedData.cvicneTests,
             odevzdavarny: cachedData.odevzdavarny,
-            bulletin: cachedData.bulletin,
             isSyncing: true,
             lastSync: cachedData.lastSync,
         }));

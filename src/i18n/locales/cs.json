@@ -699,8 +699,11 @@
   },
   "bulletin": {
     "title": "Vývěska",
-    "empty": "Žádné příspěvky",
-    "showMore": "další",
-    "dismiss": "Skrýt vývěsku"
+    "empty": "Žádné nové příspěvky",
+    "showAll": "Zobrazit vše",
+    "expand": "Rozbalit vývěsku",
+    "collapse": "Sbalit vývěsku",
+    "loading": "Načítání…",
+    "error": "Nepodařilo se načíst"
   }
 }

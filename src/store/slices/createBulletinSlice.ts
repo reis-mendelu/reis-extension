@@ -1,34 +1,53 @@
 import type { BulletinSlice, AppSlice } from '../types';
 import type { BulletinPost } from '../../types/bulletin';
 import { IndexedDBService } from '../../services/storage';
+import { fetchBulletin } from '../../api/bulletin';
+import { logError } from '../../utils/reportError';
 
-export const createBulletinSlice: AppSlice<BulletinSlice> = (set) => ({
+const TTL_MS = 30 * 60 * 1000;
+
+export const createBulletinSlice: AppSlice<BulletinSlice> = (set, get) => ({
     bulletinPosts: [],
-    bulletinDismissed: false,
+    bulletinFetchedAt: null,
+    bulletinExpanded: false,
+    bulletinLoading: false,
+    bulletinError: false,
 
-    fetchBulletin: async () => {
+    hydrateBulletin: async () => {
         try {
-            const data = await IndexedDBService.get('meta', 'bulletin_posts');
-            if (Array.isArray(data) && data.length > 0) {
-                set({ bulletinPosts: data as BulletinPost[] });
-            }
-            const dismissed = await IndexedDBService.get('meta', 'bulletin_dismissed');
-            if (dismissed === true) {
-                set({ bulletinDismissed: true });
-            }
+            const posts = await IndexedDBService.get('meta', 'bulletin_posts');
+            const fetchedAt = await IndexedDBService.get('meta', 'bulletin_fetched_at');
+            const expanded = await IndexedDBService.get('meta', 'bulletin_expanded');
+            set({
+                bulletinPosts: Array.isArray(posts) ? (posts as BulletinPost[]) : [],
+                bulletinFetchedAt: typeof fetchedAt === 'number' ? fetchedAt : null,
+                bulletinExpanded: expanded === true,
+            });
         } catch {
             // IDB read failure is non-critical
         }
     },
 
-    setBulletin: (posts: BulletinPost[]) => {
-        set({ bulletinPosts: posts, bulletinDismissed: false });
-        // Clear the persisted dismissed flag so new posts always re-surface
-        IndexedDBService.set('meta', 'bulletin_dismissed', false).catch(() => {});
+    setBulletinExpanded: async (expanded: boolean) => {
+        set({ bulletinExpanded: expanded });
+        await IndexedDBService.set('meta', 'bulletin_expanded', expanded);
     },
 
-    dismissBulletin: async () => {
-        set({ bulletinDismissed: true });
-        await IndexedDBService.set('meta', 'bulletin_dismissed', true);
+    loadBulletinIfStale: async () => {
+        const { bulletinFetchedAt, bulletinLoading } = get();
+        if (bulletinLoading) return;
+        if (bulletinFetchedAt && Date.now() - bulletinFetchedAt < TTL_MS) return;
+
+        set({ bulletinLoading: true, bulletinError: false });
+        try {
+            const posts = await fetchBulletin();
+            const fetchedAt = Date.now();
+            set({ bulletinPosts: posts, bulletinFetchedAt: fetchedAt, bulletinLoading: false });
+            await IndexedDBService.set('meta', 'bulletin_posts', posts);
+            await IndexedDBService.set('meta', 'bulletin_fetched_at', fetchedAt);
+        } catch (e) {
+            set({ bulletinLoading: false, bulletinError: true });
+            logError('BulletinSlice.loadBulletinIfStale', e);
+        }
     },
 });

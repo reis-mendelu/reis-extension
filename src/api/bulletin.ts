@@ -1,10 +1,9 @@
 import { fetchWithAuth, BASE_URL } from './client';
 import type { BulletinPost } from '../types/bulletin';
 
-const BULLETIN_URL = `${BASE_URL}/auth/vyveska/index.pl`;
-
-// Navigation/UI strings that are not post titles
-const SKIP_TEXTS = new Set(['další', 'more', 'předchozí', 'previous', 'přidat inzerát', 'add notice', 'vývěska', 'bulletin board', 'odebrat', 'remove', 'zpět', 'back']);
+const BULLETIN_URL = `${BASE_URL}/auth/vyveska/nove_prispevky.pl?zalozka=2`;
+const BULLETIN_BASE = `${BASE_URL}/auth/vyveska/`;
+const MAX_POSTS = 10;
 
 export async function fetchBulletin(): Promise<BulletinPost[]> {
     const response = await fetchWithAuth(BULLETIN_URL);
@@ -16,35 +15,53 @@ export function parseBulletinHtml(html: string): BulletinPost[] {
     if (!html || typeof html !== 'string') return [];
 
     const doc = new DOMParser().parseFromString(html, 'text/html');
+    const table = doc.querySelector('table#tmtab_1');
+    if (!table) return [];
+
     const posts: BulletinPost[] = [];
-    const seen = new Set<string>();
+    const rows = table.querySelectorAll('tbody > tr');
+    for (const row of rows) {
+        if (posts.length >= MAX_POSTS) break;
 
-    // The dedicated Vývěska page contains only post links — no section hunting needed.
-    // IS Mendelu post hrefs contain "vyveska" in the path.
-    const links = doc.querySelectorAll('a[href]');
-    for (const link of links) {
-        const rawText = link.textContent?.trim() ?? '';
-        if (!rawText || rawText.length < 5) continue;
-        if (SKIP_TEXTS.has(rawText.toLowerCase())) continue;
+        const cells = row.querySelectorAll(':scope > td');
+        if (cells.length < 7) continue;
 
-        const href = link.getAttribute('href') ?? '';
-        if (!href || !href.includes('vyveska')) continue;
-        if (seen.has(href)) continue;
-        seen.add(href);
+        const titleCell = cells[3];
+        const viewCell = cells[6];
+        if (!titleCell || !viewCell) continue;
 
-        const url = href.startsWith('http') ? href : `${BASE_URL}${href.startsWith('/') ? '' : '/'}${href}`;
-        const parentText = link.parentElement?.textContent ?? '';
-        const categories = extractCategories(parentText, rawText);
+        const title = extractTitle(titleCell);
+        if (!title) continue;
 
-        posts.push({ title: rawText, categories, url });
+        const viewAnchor = viewCell.querySelector('a[href]');
+        const href = viewAnchor?.getAttribute('href');
+        if (!href) continue;
+
+        const url = href.startsWith('http') ? href : `${BULLETIN_BASE}${href.replace(/^\.?\//, '')}`;
+        const categories = extractCategories(titleCell);
+
+        posts.push({ title, categories, url });
     }
 
     return posts;
 }
 
-function extractCategories(parentText: string, linkText: string): string[] {
-    const afterLink = parentText.substring(parentText.indexOf(linkText) + linkText.length);
-    const match = afterLink.match(/\(([^)]+)\)/);
-    if (!match) return [];
-    return match[1].split('/').map(c => c.trim()).filter(Boolean);
+function extractTitle(cell: Element): string {
+    // Title is the first text node before the <br>+<font> breadcrumb.
+    for (const node of Array.from(cell.childNodes)) {
+        if (node.nodeType === 1 && (node as Element).tagName === 'BR') break;
+        if (node.nodeType === 3) {
+            const text = node.textContent?.trim();
+            if (text) return text;
+        }
+    }
+    return '';
+}
+
+function extractCategories(cell: Element): string[] {
+    const font = cell.querySelector('font');
+    if (!font) return [];
+    return Array.from(font.querySelectorAll('a'))
+        .map(a => a.textContent?.trim() ?? '')
+        .filter(Boolean);
 }

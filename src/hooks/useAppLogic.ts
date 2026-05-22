@@ -35,7 +35,6 @@ interface SyncedData {
     studyStats?: unknown;
     cvicneTests?: any[];
     odevzdavarny?: any[];
-    bulletin?: any[];
     lastSync?: string;
     isSyncing?: boolean;
 }
@@ -115,16 +114,10 @@ export function useAppLogic() {
             if (r.schedule) {
                 useAppStore.getState().setSchedule(r.schedule as any);
             }
-            if (r.bulletin) {
-                useAppStore.getState().setBulletin(r.bulletin as any);
-            }
 
             try {
                 if (r.schedule) {
                     await IndexedDBService.set('schedule', 'current', r.schedule);
-                }
-                if (r.bulletin) {
-                    await IndexedDBService.set('meta', 'bulletin_posts', r.bulletin);
                 }
 
 
