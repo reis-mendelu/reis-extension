@@ -183,29 +183,31 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
     }
   },
 
-  fetchExamNotePriority: async (terminId, lang) => {
-    const key = `${terminId}:${lang}`;
+  fetchExamNotePriority: async (terminId) => {
     const { examNotesLoading, lastExamNotesFetchedAt, examNotesError, studiumId, obdobiId } = get();
-    if (examNotesLoading[key]) return;
-    const fetchedAt = lastExamNotesFetchedAt[key];
-    const ttl = examNotesError[key] ? NOTE_ERROR_TTL_MS : NOTE_TTL_MS;
+    if (examNotesLoading[terminId]) return;
+    const fetchedAt = lastExamNotesFetchedAt[terminId];
+    const ttl = examNotesError[terminId] ? NOTE_ERROR_TTL_MS : NOTE_TTL_MS;
     if (fetchedAt && Date.now() - fetchedAt < ttl) return;
     if (!studiumId || !obdobiId) return;
 
     set((state) => ({
-      examNotesLoading: { ...state.examNotesLoading, [key]: true },
+      examNotesLoading: { ...state.examNotesLoading, [terminId]: true },
     }));
 
     await acquireNoteFetchSlot();
     try {
-      const note = await fetchTermNote(terminId, studiumId, obdobiId, lang);
+      // Always fetch CZ — teacher-authored note text isn't translated by IS,
+      // and querying the EN page hides the teacher's CZ note even though the
+      // student needs to read it regardless of their UI language.
+      const note = await fetchTermNote(terminId, studiumId, obdobiId, 'cz');
       set((state) => {
         const nextErr = { ...state.examNotesError };
-        delete nextErr[key];
+        delete nextErr[terminId];
         return {
-          examNotes: { ...state.examNotes, [key]: note },
-          examNotesLoading: { ...state.examNotesLoading, [key]: false },
-          lastExamNotesFetchedAt: { ...state.lastExamNotesFetchedAt, [key]: Date.now() },
+          examNotes: { ...state.examNotes, [terminId]: note },
+          examNotesLoading: { ...state.examNotesLoading, [terminId]: false },
+          lastExamNotesFetchedAt: { ...state.lastExamNotesFetchedAt, [terminId]: Date.now() },
           examNotesError: nextErr,
         };
       });
@@ -214,9 +216,9 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
       // Stamp fetchedAt on error too so the 5-min backoff applies — without
       // this, every TermTile remount during an auth-expired window refires.
       set((state) => ({
-        examNotesLoading: { ...state.examNotesLoading, [key]: false },
-        examNotesError: { ...state.examNotesError, [key]: msg },
-        lastExamNotesFetchedAt: { ...state.lastExamNotesFetchedAt, [key]: Date.now() },
+        examNotesLoading: { ...state.examNotesLoading, [terminId]: false },
+        examNotesError: { ...state.examNotesError, [terminId]: msg },
+        lastExamNotesFetchedAt: { ...state.lastExamNotesFetchedAt, [terminId]: Date.now() },
       }));
     } finally {
       releaseNoteFetchSlot();
