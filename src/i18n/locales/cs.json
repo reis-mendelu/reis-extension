@@ -675,5 +675,11 @@
   },
   "teachingWeek": {
     "label": "{current}. týden"
+  },
+  "bulletin": {
+    "title": "Vývěska",
+    "empty": "Žádné příspěvky",
+    "showMore": "další",
+    "dismiss": "Skrýt vývěsku"
   }
 }

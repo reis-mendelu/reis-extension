@@ -673,5 +673,11 @@
   },
   "teachingWeek": {
     "label": "week {current}"
+  },
+  "bulletin": {
+    "title": "Bulletin Board",
+    "empty": "No posts",
+    "showMore": "more",
+    "dismiss": "Hide bulletin board"
   }
 }
