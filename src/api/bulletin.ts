@@ -41,7 +41,7 @@ export function parseBulletinHtml(html: string): BulletinPost[] {
         const href = viewAnchor?.getAttribute('href');
         if (!href) continue;
 
-        const url = href.startsWith('http') ? href : `${BULLETIN_BASE}${href.replace(/^\.?\//, '')}`;
+        const url = resolveBulletinHref(href);
         const categories = extractCategories(titleCell);
 
         posts.push({ title, categories, url });
@@ -67,4 +67,11 @@ function extractCategories(cell: Element): string[] {
     return Array.from(font.querySelectorAll('a'))
         .map(a => a.textContent?.trim() ?? '')
         .filter(Boolean);
+}
+
+function resolveBulletinHref(href: string): string {
+    if (/^https?:\/\//i.test(href)) return href;
+    if (href.startsWith('//')) return `https:${href}`;
+    if (href.startsWith('/')) return `${BASE_URL}${href}`;
+    return `${BULLETIN_BASE}${href.replace(/^\.\//, '')}`;
 }

@@ -44,6 +44,31 @@ describe('parseBulletinHtml', () => {
         expect(posts[0].url).toMatch(/klic=1000/);
     });
 
+    it('resolves absolute, protocol-relative, and page-relative hrefs without doubling the path', () => {
+        const rows = [
+            { href: 'slozka.pl?zobrazeni=1;klic=1', expectStart: 'https://is.mendelu.cz/auth/vyveska/slozka.pl' },
+            { href: '/auth/vyveska/slozka.pl?zobrazeni=1;klic=2', expectStart: 'https://is.mendelu.cz/auth/vyveska/slozka.pl' },
+            { href: '//is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=3', expectStart: 'https://is.mendelu.cz/auth/vyveska/slozka.pl' },
+            { href: 'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=4', expectStart: 'https://is.mendelu.cz/auth/vyveska/slozka.pl' },
+        ].map(({ href }, i) => `<tr>
+            <td><input name="oznacene" value="${i}"></td>
+            <td><img></td>
+            <td>Title ${i}<br><font size="-2"><a href="slozka.pl?id=1">Cat</a></font></td>
+            <td><a href="/auth/lide/clovek.pl?id=1">A</a></td>
+            <td>01/01/2026</td>
+            <td><a href="${href}"><img></a></td>
+        </tr>`).join('');
+        const html = `<html><body><table id="tmtab_1"><tbody>${rows}</tbody></table></body></html>`;
+        const posts = parseBulletinHtml(html);
+        expect(posts).toHaveLength(4);
+        expect(posts.map(p => p.url)).toEqual([
+            'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=1',
+            'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=2',
+            'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=3',
+            'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=4',
+        ]);
+    });
+
     it('ignores stray <font> in unrelated cells and locks onto breadcrumb-bearing cell', () => {
         // An earlier cell has a <font> badge ("Nové") that is NOT the breadcrumb;
         // the parser must skip it and land on the cell whose <font> wraps slozka.pl?id= anchors.
