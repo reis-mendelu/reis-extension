@@ -23,17 +23,15 @@ export function parseBulletinHtml(html: string): BulletinPost[] {
     for (const row of rows) {
         if (posts.length >= MAX_POSTS) break;
 
-        const cells = row.querySelectorAll(':scope > td');
-        if (cells.length < 7) continue;
-
-        const titleCell = cells[3];
-        const viewCell = cells[6];
-        if (!titleCell || !viewCell) continue;
+        // Locate cells by content, not by column index: CZ locale omits the
+        // ordinal column that EN includes, so fixed indices break across locales.
+        const titleCell = Array.from(row.querySelectorAll(':scope > td')).find(c => c.querySelector('font'));
+        if (!titleCell) continue;
 
         const title = extractTitle(titleCell);
         if (!title) continue;
 
-        const viewAnchor = viewCell.querySelector('a[href]');
+        const viewAnchor = row.querySelector('a[href*="slozka.pl?zobrazeni="]');
         const href = viewAnchor?.getAttribute('href');
         if (!href) continue;
 
@@ -47,7 +45,6 @@ export function parseBulletinHtml(html: string): BulletinPost[] {
 }
 
 function extractTitle(cell: Element): string {
-    // Title is the first text node before the <br>+<font> breadcrumb.
     for (const node of Array.from(cell.childNodes)) {
         if (node.nodeType === 1 && (node as Element).tagName === 'BR') break;
         if (node.nodeType === 3) {

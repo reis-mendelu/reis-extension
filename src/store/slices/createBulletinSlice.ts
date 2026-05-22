@@ -18,9 +18,13 @@ export const createBulletinSlice: AppSlice<BulletinSlice> = (set, get) => ({
             const posts = await IndexedDBService.get('meta', 'bulletin_posts');
             const fetchedAt = await IndexedDBService.get('meta', 'bulletin_fetched_at');
             const expanded = await IndexedDBService.get('meta', 'bulletin_expanded');
+            const hydratedPosts = Array.isArray(posts) ? (posts as BulletinPost[]) : [];
+            // Don't trust a cached "fresh" timestamp when we have no posts —
+            // an empty result is never worth caching; force a retry on next expand.
+            const hydratedFetchedAt = hydratedPosts.length > 0 && typeof fetchedAt === 'number' ? fetchedAt : null;
             set({
-                bulletinPosts: Array.isArray(posts) ? (posts as BulletinPost[]) : [],
-                bulletinFetchedAt: typeof fetchedAt === 'number' ? fetchedAt : null,
+                bulletinPosts: hydratedPosts,
+                bulletinFetchedAt: hydratedFetchedAt,
                 bulletinExpanded: expanded === true,
             });
         } catch {
@@ -41,7 +45,7 @@ export const createBulletinSlice: AppSlice<BulletinSlice> = (set, get) => ({
         set({ bulletinLoading: true, bulletinError: false });
         try {
             const posts = await fetchBulletin();
-            const fetchedAt = Date.now();
+            const fetchedAt = posts.length > 0 ? Date.now() : null;
             set({ bulletinPosts: posts, bulletinFetchedAt: fetchedAt, bulletinLoading: false });
             await IndexedDBService.set('meta', 'bulletin_posts', posts);
             await IndexedDBService.set('meta', 'bulletin_fetched_at', fetchedAt);
