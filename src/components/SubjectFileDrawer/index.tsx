@@ -26,6 +26,11 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
 
     const phSections = zaznamnikData?.ph.sections;
     const vtTests = zaznamnikData?.vt.tests;
+    const maxZaznamnikCols = useMemo(() => {
+        if (!phSections) return 0;
+        return phSections.reduce((max, s) => Math.max(max, ...s.arches.map(a => a.columns.length)), 0);
+    }, [phSections]);
+
     const tabCounts = useMemo(() => {
         const phCount = phSections?.reduce((n, s) => n + s.arches.filter(a => !a.empty).length, 0) ?? 0;
         const vtCount = vtTests?.length ?? 0;
@@ -134,6 +139,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     } = state;
 
     const hasPdf = activePdfUrl !== null;
+    const needsWideDrawer = activeTab === 'zaznamnik' && maxZaznamnikCols >= 5;
 
     if (!isOpen) return null;
 
@@ -170,7 +176,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
         >
             <div className="absolute inset-0 bg-black/15 animate-in fade-in" onClick={handleClose} />
             <div className="w-full flex justify-end items-start h-full pt-0 pb-0 sm:pt-10 sm:pb-10 relative z-10 pointer-events-none">
-                <div role="dialog" className={`bg-base-100 shadow-2xl rounded-2xl flex flex-col h-full animate-in slide-in-from-right pointer-events-auto border border-base-300 transition-[width] duration-300 relative ${hasPdf ? 'w-full sm:w-[90vw]' : 'w-full sm:w-[600px]'}`}>
+                <div role="dialog" className={`bg-base-100 shadow-2xl rounded-2xl flex flex-col h-full animate-in slide-in-from-right pointer-events-auto border border-base-300 transition-[width] duration-300 relative ${hasPdf ? 'w-full sm:w-[90vw]' : needsWideDrawer ? 'w-full sm:w-[800px]' : 'w-full sm:w-[600px]'}`}>
                     {/* Loading overlay — shown during fetch regardless of hasPdf state */}
                     {isPdfLoading && (
                         <div className="absolute inset-0 z-20 flex items-center justify-center bg-base-100/50 rounded-2xl">

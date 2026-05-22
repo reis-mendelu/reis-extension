@@ -31,13 +31,15 @@ export function PhArchView({ sections }: Props) {
                                     {arch.values[0]}
                                 </p>
                             ) : (
-                                <div className="grid gap-x-4 gap-y-0.5" style={{ gridTemplateColumns: `repeat(${arch.columns.length}, minmax(0, 1fr))` }}>
-                                    {arch.columns.map((col, ci) => (
-                                        <p key={ci} className="text-[10px] text-base-content/40 truncate">{col}</p>
-                                    ))}
-                                    {arch.values.map((val, vi) => (
-                                        <p key={vi} className="text-[12px] font-medium text-base-content truncate">{val}</p>
-                                    ))}
+                                <div className="overflow-x-auto w-full custom-scrollbar pb-1">
+                                    <div className="grid gap-x-3 gap-y-0.5 w-full" style={{ gridTemplateColumns: `repeat(${arch.columns.length}, minmax(40px, 1fr))` }}>
+                                        {arch.columns.map((col, ci) => (
+                                            <p key={ci} className="text-[10px] text-base-content/40 truncate" title={col}>{col}</p>
+                                        ))}
+                                        {arch.values.map((val, vi) => (
+                                            <p key={vi} className="text-[12px] font-medium text-base-content truncate" title={val}>{val}</p>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>
