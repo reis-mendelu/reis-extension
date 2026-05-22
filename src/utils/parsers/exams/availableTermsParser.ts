@@ -65,7 +65,11 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
         const capacityStr = cols[dateIndex + 4]?.textContent?.trim() || '';
 
         const teacherId = cols[dateIndex + 3]?.querySelector('a[href*="clovek.pl"]')?.getAttribute('href')?.match(/id=(\d+)/)?.[1] || '';
+        // "Druh (forma)" cell looks like "zkouška (písemná a ústní)" — split into
+        // section name + form. Some terms have no form ("zkouška") and emit just the name.
         const sectionName = sectionNameRaw.split('(')[0].trim();
+        const formMatch = sectionNameRaw.match(/\(([^)]+)\)/);
+        const sectionForm = formMatch?.[1].trim() || undefined;
         const normalizedDateStr = normalizeDateString(dateStr, isEn);
         const [datePart, timePart] = normalizedDateStr.split(' ');
         // Strip trailing "(n)" waitlist suffix before parsing: "0/12(8)" → occupied=0, total=12
@@ -139,6 +143,9 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
             canRegisterNow: !!row.querySelector('a[href*="prihlasit_ihned=1"]') && !isFull,
             roomCs: isEn ? undefined : room,
             roomEn: isEn ? room : undefined,
+            sectionForm,
+            sectionFormCs: isEn ? undefined : sectionForm,
+            sectionFormEn: isEn ? sectionForm : undefined,
             watchdogUrl,
             blockReasonUrl,
             detailUrl

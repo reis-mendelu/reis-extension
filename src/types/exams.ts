@@ -29,6 +29,9 @@ export interface ExamTerm {
     deregistrationDeadline?: string;  // When deregistration closes (format: "DD.MM.YYYY HH:MM")
     attemptTypes?: ('regular' | 'retake1' | 'retake2' | 'retake3')[];  // One or more attempt types (e.g. a term can serve as both regular and retake)
     canRegisterNow?: boolean;  // True if registration link is available now
+    sectionForm?: string;      // Form qualifier from "Druh (forma)" cell — e.g. "písemná", "písemná a ústní", "e-test"
+    sectionFormCs?: string;    // Localized form (Czech)
+    sectionFormEn?: string;    // Localized form (English)
     watchdogUrl?: string;      // IS Mendelu "hlídací pes" activation link (aktivace=1), present only when watchable
     blockReasonUrl?: string;   // IS Mendelu "Zobrazit důvod" link (zobraz_duvod=1), present only when blocked
     detailUrl?: string;        // IS Mendelu "Podrobnosti" link (terminy_info.pl)

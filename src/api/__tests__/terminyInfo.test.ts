@@ -9,7 +9,7 @@ vi.mock('../client', () => ({
     fetchWithAuth: vi.fn(),
 }));
 
-import { parseExamClassmatesPage } from '../terminyInfo';
+import { parseExamClassmatesPage, parseTermNotePage, isTermDetailPage } from '../terminyInfo';
 import { logError } from '../../utils/reportError';
 
 const wrapDoc = (tableHtml: string): Document =>
@@ -85,5 +85,100 @@ describe('parseExamClassmatesPage', () => {
         expect(result).toEqual([]);
         expect(logError).toHaveBeenCalledTimes(1);
         expect(vi.mocked(logError).mock.calls[0][0]).toBe('Parser.parseExamClassmatesPage');
+    });
+});
+
+// --- parseTermNotePage --------------------------------------------------------
+// Markup samples taken verbatim from /root/reis-dev/reis-scraper/terminy-info-*.html
+// (real IS Mendelu pages fetched 2026-05).
+
+const NOTE_PAGE = (poznRow: string) => wrapDoc(`
+    <table>
+        <tr><th>Informace o termínu</th></tr>
+        <tr><td><b>Termín pro předmět:</b></td><td>Databázové systémy</td></tr>
+        ${poznRow}
+    </table>
+`);
+
+describe('parseTermNotePage', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('extracts single-paragraph red-emphasized note', () => {
+        const doc = NOTE_PAGE(`
+            <tr><td class="odsazena"><b>Poznámka:</b></td>
+                <td class="odsazena" style="text-align: justify">
+                    <span style="color: red;">Zkouška se koná v posluchárně A01 v budově A!</span>
+                </td>
+            </tr>
+        `);
+        const result = parseTermNotePage(doc);
+        expect(result).toEqual({
+            text: 'Zkouška se koná v posluchárně A01 v budově A!',
+            isEmphasized: true,
+        });
+    });
+
+    it('preserves newlines in multi-paragraph notes', () => {
+        const doc = NOTE_PAGE(`
+            <tr><td><b>Poznámka:</b></td>
+                <td><span style="color: red;">Nejprve proběhne praktická část.
+Není povoleno používat AI.</span></td>
+            </tr>
+        `);
+        const result = parseTermNotePage(doc);
+        expect(result?.text).toContain('Nejprve proběhne praktická část.');
+        expect(result?.text).toContain('Není povoleno používat AI.');
+        expect(result?.isEmphasized).toBe(true);
+    });
+
+    it('returns null for the "-- nezadáno --" empty sentinel', () => {
+        const doc = NOTE_PAGE(`
+            <tr><td><b>Poznámka:</b></td><td>-- nezadáno --</td></tr>
+        `);
+        expect(parseTermNotePage(doc)).toBeNull();
+    });
+
+    it('returns null for the EN "-- not specified --" sentinel', () => {
+        const doc = NOTE_PAGE(`
+            <tr><td><b>Poznámka:</b></td><td>-- not specified --</td></tr>
+        `);
+        expect(parseTermNotePage(doc)).toBeNull();
+    });
+
+    it('returns null when no Poznámka row exists at all', () => {
+        const doc = wrapDoc(`
+            <table>
+                <tr><th>Informace o termínu</th></tr>
+                <tr><td><b>Termín pro předmět:</b></td><td>X</td></tr>
+            </table>
+        `);
+        expect(parseTermNotePage(doc)).toBeNull();
+    });
+
+    it('handles plain (non-emphasized) note text', () => {
+        const doc = NOTE_PAGE(`
+            <tr><td><b>Poznámka:</b></td><td>Bring student ID.</td></tr>
+        `);
+        expect(parseTermNotePage(doc)).toEqual({
+            text: 'Bring student ID.',
+            isEmphasized: false,
+        });
+    });
+});
+
+describe('isTermDetailPage', () => {
+    it('accepts a page containing "Informace o termínu"', () => {
+        const doc = wrapDoc(`<h1>Informace o termínu</h1>`);
+        expect(isTermDetailPage(doc)).toBe(true);
+    });
+
+    it('accepts the EN equivalent', () => {
+        const doc = wrapDoc(`<h1>Term information</h1>`);
+        expect(isTermDetailPage(doc)).toBe(true);
+    });
+
+    it('rejects a login-redirect page', () => {
+        const doc = wrapDoc(`<form id="login">…</form>`);
+        expect(isTermDetailPage(doc)).toBe(false);
     });
 });

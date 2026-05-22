@@ -54,6 +54,12 @@ export interface ExamSlice {
   refreshExamClassmatesForTermin: (terminId: string) => Promise<void>;
   fetchAllExamClassmates: () => Promise<void>;
   hydrateLastExamClassmatesFetchedAt: () => Promise<void>;
+  /** terminId → teacher's Poznámka. null = fetched-no-note. undefined = not fetched. In-memory only (session-bound TTL). */
+  examNotes: Record<string, import('../api/terminyInfo').TermNote | null>;
+  examNotesLoading: Record<string, boolean>;
+  examNotesError: Record<string, string>;
+  lastExamNotesFetchedAt: Record<string, number>;
+  fetchExamNotePriority: (terminId: string) => Promise<void>;
 }
 
 export interface ZaznamnikSlice {

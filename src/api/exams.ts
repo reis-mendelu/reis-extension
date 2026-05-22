@@ -99,6 +99,7 @@ export async function fetchDualLanguageExams(): Promise<ExamSubject[]> {
                             const czTerm = czSection.terms.find(t => t.id === enTerm.id);
                             if (czTerm) {
                                 czTerm.roomEn = enTerm.roomEn;
+                                czTerm.sectionFormEn = enTerm.sectionFormEn;
                             }
                         });
 

@@ -208,6 +208,7 @@
     "watchdogActivated": "Hlídač aktivován. IS pošle e-mail, až bude termín volný.",
     "watchdogDeactivated": "Hlídač deaktivován.",
     "watchdogFailed": "Hlídače se nepodařilo aktivovat.",
+    "loadingNote": "Načítání poznámky...",
     "countdown": "Za",
     "autoRegArm": "Zapnout auto-rezervaci",
     "autoRegArmed": "Automatizováno",

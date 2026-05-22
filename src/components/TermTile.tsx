@@ -5,6 +5,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useAppStore } from '../store/useAppStore';
 import { SNIPER_WINDOW_MS } from './ExamPanel/useAutoRegistration';
 import { TermBuiltinActions, TermDetailLink } from './ExamPanel/TermBuiltinActions';
+import { TermNoteBlock } from './ExamPanel/TermNoteBlock';
 
 const attemptAccentClass: Record<string, string> = {
     regular: 'bg-success/50',
@@ -76,6 +77,10 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                             {(language === 'en' && term.roomEn) ? term.roomEn : (term.roomCs || term.room)}
                         </span>
                     )}
+                    {(() => {
+                        const form = (language === 'en' && term.sectionFormEn) ? term.sectionFormEn : (term.sectionFormCs || term.sectionForm);
+                        return form ? <span className="text-[10px] italic truncate opacity-40">{form}</span> : null;
+                    })()}
                     {term.teacher && (term.teacherId ? (
                         <a
                             href={`https://is.mendelu.cz/auth/lide/clovek.pl?id=${term.teacherId};lang=${language === 'en' ? 'en' : 'cz'}`}
@@ -150,6 +155,9 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                 </div>
 
             </div>
+
+            {/* Teacher's Poznámka (lazy-fetched on mount; hidden when absent) */}
+            <TermNoteBlock terminId={term.id} />
 
             {/* Deadlines + IS detail link */}
             {(term.registrationEnd || term.detailUrl) && (

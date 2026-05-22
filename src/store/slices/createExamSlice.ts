@@ -9,6 +9,9 @@ import {
     EXAM_CLASSMATES_LAST_FETCHED_KEY,
     type FetchExamClassmatesResult,
 } from './exams/fetchExamClassmatesForTermin';
+import { fetchTermNote } from '../../api/terminyInfo';
+
+const NOTE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 type SetState = Parameters<AppSlice<ExamSlice>>[0];
 type GetState = Parameters<AppSlice<ExamSlice>>[1];
@@ -72,6 +75,10 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
   examClassmatesLoading: {},
   lastExamClassmatesFetchedAt: {},
   examClassmatesError: {},
+  examNotes: {},
+  examNotesLoading: {},
+  examNotesError: {},
+  lastExamNotesFetchedAt: {},
 
   fetchExamClassmatesPriority: async (terminId) => {
     const { examClassmates, examClassmatesLoading, studiumId, obdobiId } = get();
@@ -147,6 +154,38 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
       }
     } catch (e) {
       logError('ExamSlice.hydrateLastExamClassmatesFetchedAt', e);
+    }
+  },
+
+  fetchExamNotePriority: async (terminId) => {
+    const { examNotesLoading, lastExamNotesFetchedAt, studiumId, obdobiId } = get();
+    if (examNotesLoading[terminId]) return;
+    const fetchedAt = lastExamNotesFetchedAt[terminId];
+    if (fetchedAt && Date.now() - fetchedAt < NOTE_TTL_MS) return;
+    if (!studiumId || !obdobiId) return;
+
+    set((state) => ({
+      examNotesLoading: { ...state.examNotesLoading, [terminId]: true },
+    }));
+
+    try {
+      const note = await fetchTermNote(terminId, studiumId, obdobiId, 'cz');
+      set((state) => {
+        const nextErr = { ...state.examNotesError };
+        delete nextErr[terminId];
+        return {
+          examNotes: { ...state.examNotes, [terminId]: note },
+          examNotesLoading: { ...state.examNotesLoading, [terminId]: false },
+          lastExamNotesFetchedAt: { ...state.lastExamNotesFetchedAt, [terminId]: Date.now() },
+          examNotesError: nextErr,
+        };
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      set((state) => ({
+        examNotesLoading: { ...state.examNotesLoading, [terminId]: false },
+        examNotesError: { ...state.examNotesError, [terminId]: msg },
+      }));
     }
   },
 

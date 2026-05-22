@@ -3,6 +3,64 @@ import { logError } from '../utils/reportError';
 import type { Classmate } from '../types/classmates';
 
 /**
+ * Teacher's "Poznámka" (note) attached to an exam term in IS Mendelu.
+ * `isEmphasized` mirrors IS's own red-text styling — teachers use it to flag
+ * critical rules (e.g. "AI use = automatic F"). Preserve that signal in the UI.
+ */
+export interface TermNote {
+    text: string;
+    isEmphasized: boolean;
+}
+
+/**
+ * True if the doc looks like a real terminy_info.pl detail page (not a login
+ * redirect or error stub). Used to gate caching — we never persist a parse
+ * result from a page that didn't actually load.
+ */
+export function isTermDetailPage(doc: Document): boolean {
+    const html = doc.documentElement.textContent ?? '';
+    return html.includes('Informace o termínu') || html.includes('Term information');
+}
+
+/**
+ * Parse the teacher's Poznámka block from a terminy_info.pl detail page.
+ *
+ * Real markup (verified against 5 IS Mendelu samples, 2026-05):
+ *   <td><b>Poznámka:</b></td>
+ *   <td>[-- nezadáno --]  OR  <span style="color: red;">…note text…</span>  OR  plain text</td>
+ *
+ * Returns null when no Poznámka row, or when the value is an IS empty sentinel
+ * ("-- nezadáno --" / "-- not specified --" / any "-- … --"). Tolerant to
+ * variations in whitespace, colons, and inline styling.
+ */
+export function parseTermNotePage(doc: Document): TermNote | null {
+    const labels = doc.querySelectorAll('td b');
+    for (let i = 0; i < labels.length; i++) {
+        const label = labels[i];
+        const labelText = label.textContent?.trim() ?? '';
+        if (!labelText.startsWith('Poznámk') && !labelText.startsWith('Note')) continue;
+
+        const labelCell = label.closest('td');
+        const valueCell = labelCell?.nextElementSibling as Element | null;
+        if (!valueCell) continue;
+
+        // Normalize NBSPs to regular spaces; collapse only trailing whitespace.
+        const raw = (valueCell.textContent ?? '').replace(/ /g, ' ');
+        const text = raw.replace(/[ \t]+$/gm, '').trim();
+
+        if (!text) return null;
+        // IS empty sentinel: "-- nezadáno --", "-- not specified --", etc.
+        if (/^--\s.+\s--$/.test(text)) return null;
+
+        const isEmphasized = !!valueCell.querySelector(
+            'span[style*="color: red"], span[style*="color:red"]'
+        );
+        return { text, isEmphasized };
+    }
+    return null;
+}
+
+/**
  * Parse one exam-classmates page.
  *
  * Row layout (live, 5 cells): [order, name(link), studyInfo, date, emailLink].
@@ -83,6 +141,32 @@ export async function fetchExamClassmates(
         return parseExamClassmatesPage(doc);
     } catch (e) {
         logError('Api.fetchExamClassmates', e, { terminId });
+        throw e;
+    }
+}
+
+/**
+ * Fetch the teacher's Poznámka for a single exam term. Throws if the page
+ * doesn't look like a real detail page (e.g. session expired → login redirect)
+ * so the caller knows not to cache the result. Returns null when the page
+ * loaded fine but no note is set on this term.
+ */
+export async function fetchTermNote(
+    terminId: string,
+    studiumId: string,
+    obdobiId: string,
+    lang: 'cz' | 'en' = 'cz',
+): Promise<TermNote | null> {
+    const url = `${BASE_URL}/auth/student/terminy_info.pl?termin=${terminId};studium=${studiumId};obdobi=${obdobiId};lang=${lang}`;
+    try {
+        const res = await fetchWithAuth(url);
+        const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+        if (!isTermDetailPage(doc)) {
+            throw new Error('terminy_info.pl did not return a detail page (likely auth redirect)');
+        }
+        return parseTermNotePage(doc);
+    } catch (e) {
+        logError('Api.fetchTermNote', e, { terminId });
         throw e;
     }
 }

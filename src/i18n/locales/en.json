@@ -175,6 +175,7 @@
     "watchdogActivated": "Watchdog activated. IS will email you when the term opens.",
     "watchdogDeactivated": "Watchdog deactivated.",
     "watchdogFailed": "Couldn't activate the watchdog.",
+    "loadingNote": "Loading note...",
     "countdown": "In",
     "autoRegArm": "Enable auto-register",
     "autoRegArmed": "Automated",
