@@ -181,7 +181,7 @@ Není povoleno používat AI.</span></td>
 describe('isTermDetailPage', () => {
     // Markup pattern verified against real IS Mendelu detail pages (2026-05).
     const CZ_CRUMB = `<li class="breadcrumb-item active" aria-current="page"><span>Informace o&nbsp;termínu</span></li>`;
-    const EN_CRUMB = `<li class="breadcrumb-item active" aria-current="page"><span>Term information</span></li>`;
+    const EN_CRUMB = `<li class="breadcrumb-item active" aria-current="page"><span>Information about exam date</span></li>`;
 
     it('accepts a real CZ detail-page breadcrumb', () => {
         expect(isTermDetailPage(wrapDoc(CZ_CRUMB))).toBe(true);

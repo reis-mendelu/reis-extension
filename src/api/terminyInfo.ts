@@ -25,7 +25,7 @@ export interface TermNote {
 export function isTermDetailPage(doc: Document): boolean {
     const crumb = doc.querySelector('li.breadcrumb-item.active[aria-current="page"] span');
     const text = (crumb?.textContent ?? '').replace(/ /g, ' ').trim();
-    return text === 'Informace o termínu' || text === 'Term information';
+    return text === 'Informace o termínu' || text === 'Information about exam date';
 }
 
 /**
@@ -44,7 +44,8 @@ export function parseTermNotePage(doc: Document): TermNote | null {
     for (let i = 0; i < labels.length; i++) {
         const label = labels[i];
         const labelText = label.textContent?.trim() ?? '';
-        if (!labelText.startsWith('Poznámk') && !labelText.startsWith('Note')) continue;
+        // Exact label match per real CZ + EN samples (terminy-info-339715{,_-en}.html).
+        if (labelText !== 'Poznámka:' && labelText !== 'Note:') continue;
 
         const labelCell = label.closest('td');
         const valueCell = labelCell?.nextElementSibling as Element | null;
