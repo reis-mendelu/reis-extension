@@ -2,6 +2,42 @@ import type { ScrapedExamSubject, ScrapedExamSection } from './types';
 import { normalizeDateString } from './utils';
 import { logError } from '../../reportError';
 
+const IS_BASE = 'https://is.mendelu.cz';
+
+function absoluteIsUrl(href: string | null | undefined): string | undefined {
+    if (!href) return undefined;
+    if (href.startsWith('http')) return href;
+    if (href.startsWith('/')) return `${IS_BASE}${href}`;
+    // Operace-cell anchors (Podrobnosti) emit bare-relative hrefs like
+    // "terminy_info.pl?termin=…" — the source page lives at /auth/student/,
+    // which is where the browser would resolve them. Anchor explicitly there
+    // rather than at the IS root (which 404s).
+    return `${IS_BASE}/auth/student/${href}`;
+}
+
+function findActionHref(row: Element, sysid: string): string | undefined {
+    // Iterate all img[sysid] anchors in the row and match by attribute value.
+    // Mirrors the attempt-type icon iteration pattern below (lines ~70) which
+    // is known to work under happy-dom; querySelector with attribute-value
+    // selectors plus .closest() proved unreliable.
+    const anchors = row.querySelectorAll('a');
+    for (let i = 0; i < anchors.length; i++) {
+        const img = anchors[i].querySelector('img[sysid]');
+        if (img && img.getAttribute('sysid') === sysid) {
+            return absoluteIsUrl(anchors[i].getAttribute('href'));
+        }
+    }
+    return undefined;
+}
+
+// IS Mendelu swaps the watchdog icon (and its sysid) depending on state:
+// activation uses one img, deactivation uses another (with X over the dog).
+// Match by the href's `aktivace=` parameter instead so we catch both states.
+function findWatchdogHref(row: Element): string | undefined {
+    const anchor = row.querySelector('a[href*="aktivace="]');
+    return absoluteIsUrl(anchor?.getAttribute('href') ?? undefined);
+}
+
 export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: string, n: string) => ScrapedExamSubject, getOrCreateSection: (s: ScrapedExamSubject, n: string) => ScrapedExamSection, lang: string = 'cz') {
     const isEn = lang === 'en';
     const table2 = doc.querySelector('#table_2');
@@ -74,6 +110,17 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
             if (attemptTypes.length > 0) break;
         }
 
+        // IS Mendelu built-in action links from the Operace cell.
+        // Wrapped in try/catch so a DOM oddity here can never break the whole term parse.
+        let watchdogUrl: string | undefined, blockReasonUrl: string | undefined, detailUrl: string | undefined;
+        try {
+            watchdogUrl = findWatchdogHref(row);
+            blockReasonUrl = findActionHref(row, 'studevid-nesplnene-povinnosti');
+            detailUrl = findActionHref(row, 'prohlizeni-info');
+        } catch (e) {
+            logError('Parser.parseAvailableTerms.actions', e, { code, name, termId });
+        }
+
         const subject = getOrCreateSubject(code, name);
         const section = getOrCreateSection(subject, sectionName);
         section.terms.push({
@@ -91,7 +138,10 @@ export function parseAvailableTerms(doc: Document, getOrCreateSubject: (c: strin
             attemptTypes: attemptTypes.length > 0 ? attemptTypes : undefined,
             canRegisterNow: !!row.querySelector('a[href*="prihlasit_ihned=1"]') && !isFull,
             roomCs: isEn ? undefined : room,
-            roomEn: isEn ? room : undefined
+            roomEn: isEn ? room : undefined,
+            watchdogUrl,
+            blockReasonUrl,
+            detailUrl
         });
     });
 }

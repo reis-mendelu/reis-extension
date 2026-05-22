@@ -156,6 +156,29 @@ export async function registerExam(termId: string): Promise<ExamActionResult> {
     }
 }
 
+/**
+ * Trigger IS Mendelu's built-in "hlídací pes" (watchdog) for an exam term.
+ * The watchdog URL comes from the parser — it's the canonical aktivace=1 link
+ * emitted by IS Mendelu in the Operace cell of blocked terms. IS Mendelu then
+ * emails the student when the term becomes available.
+ *
+ * We just GET the URL and let IS do the work; success is signalled by a 2xx
+ * HTTP response. The follow-up exam refresh will pick up any state change.
+ */
+export async function triggerWatchdog(watchdogUrl: string): Promise<ExamActionResult> {
+    try {
+        const response = await fetchWithAuth(watchdogUrl);
+        if (!response.ok) {
+            logError('Api.triggerWatchdog', new Error(`HTTP ${response.status}`), { watchdogUrl });
+            return { success: false, error: 'Aktivace hlídače se nepodařila.' };
+        }
+        return { success: true };
+    } catch (error) {
+        logError('Api.triggerWatchdog', error, { watchdogUrl });
+        return { success: false, error: 'Chyba připojení. Zkuste to znovu.' };
+    }
+}
+
 export async function unregisterExam(termId: string): Promise<ExamActionResult> {
     try {
         const params = await getUserParams();

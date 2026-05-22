@@ -70,6 +70,52 @@ const ROW_FULL_WAITLIST_CAPACITY = `
     <td><a href="/auth/student/terminy_info.pl?termin=999003">Info</a></td>
 </tr>`;
 
+// Blocked-with-watchdog row: real-world Operace cell from termin-seznam.html with
+// Podrobnosti + Zobrazit důvod + Hlídat termín anchors all present.
+// Podrobnosti uses the *relative* href form IS Mendelu actually emits — the page
+// lives at /auth/student/, so the browser resolves it there. Anchoring it at the
+// IS root would 404.
+const ROW_BLOCKED_WITH_BUILTIN_ACTIONS = `
+<tr class="uis-hl-table lbn">
+    <td>1.</td>
+    <td>EBC-MT</td>
+    <td>Marketing</td>
+    <td nowrap="1">28.04.2026 15:00 (út)</td>
+    <td nowrap="1">Studovna PEF (ČP)</td>
+    <td nowrap="1">zkouška</td>
+    <td nowrap="nowrap"><a href="/auth/lide/clovek.pl?id=55555">A. Krejčíř</a></td>
+    <td align="center" nowrap="1">5/20</td>
+    <td align="center"><img alt="řádný" title="řádný"></td>
+    <td align="center">11.04.2026 10:00<br>27.04.2026 23:00<br>27.04.2026 23:00</td>
+    <td>
+        <a href="terminy_info.pl?termin=336593;studium=149707;obdobi=812;lang=cz"><img src="/img.pl?unid=23" alt="Podrobnosti" title="Podrobnosti" sysid="prohlizeni-info"></a>
+        <a href="/auth/student/terminy_seznam.pl?termin=336593;studium=149707;obdobi=812;zobraz_duvod=1;lang=cz"><img src="/img.pl?unid=71537" alt="Zobrazit důvod" title="Zobrazit důvod" sysid="studevid-nesplnene-povinnosti"></a>
+        <a href="/auth/student/terminy_seznam.pl?termin=336593;studium=149707;obdobi=812;aktivace=1;lang=cz"><img src="/img.pl?unid=13345" alt="Hlídat termín" title="Hlídat termín" sysid="terminy-pes"></a>
+    </td>
+</tr>`;
+
+// Armed watchdog row: IS Mendelu swaps the icon to a deactivation variant
+// (dog with X) and emits aktivace=2 in the href. The icon's sysid may differ
+// from "terminy-pes" — the parser must find the watchdog by href, not by sysid.
+const ROW_ARMED_WATCHDOG = `
+<tr class="uis-hl-table lbn">
+    <td>1.</td>
+    <td>EBC-IV</td>
+    <td>Internet věcí</td>
+    <td nowrap="1">02.06.2026 09:00 (út)</td>
+    <td nowrap="1">Q17 (ČP)</td>
+    <td nowrap="1">zkouška</td>
+    <td nowrap="nowrap"><a href="/auth/lide/clovek.pl?id=66666">V. Kebo</a></td>
+    <td align="center" nowrap="1">15/15</td>
+    <td align="center"><img alt="řádný" title="řádný"></td>
+    <td align="center">01.06.2026 09:00<br>01.06.2026 09:00<br>01.06.2026 09:00</td>
+    <td>
+        <a href="terminy_info.pl?termin=339178;studium=149707;obdobi=812;lang=cz"><img src="/img.pl?unid=23" alt="Podrobnosti" title="Podrobnosti" sysid="prohlizeni-info"></a>
+        <a href="/auth/student/terminy_seznam.pl?termin=339178;studium=149707;obdobi=812;zobraz_duvod=1;lang=cz"><img src="/img.pl?unid=71537" alt="Zobrazit důvod" title="Zobrazit důvod" sysid="studevid-nesplnene-povinnosti"></a>
+        <a href="/auth/student/terminy_seznam.pl?termin=339178;studium=149707;obdobi=812;aktivace=2;lang=cz"><img src="/img.pl?unid=99999" alt="Zrušit hlídače" title="Zrušit hlídače" sysid="terminy-pes-aktivni"></a>
+    </td>
+</tr>`;
+
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }));
 vi.mock('@/utils/reportError', () => ({ reportError }));
 
@@ -100,5 +146,44 @@ describe('availableTermsParser — capacity formats', () => {
         expect(terms).toHaveLength(1);
         expect(terms[0].capacity).toEqual({ occupied: 12, total: 12, raw: '12/12(3)' });
         expect(terms[0].full).toBe(true);
+    });
+});
+
+describe('availableTermsParser — IS Mendelu built-in action links', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('extracts watchdog, block-reason, and detail URLs when IS Mendelu emits them', () => {
+        const result = parseExamData(wrapInPage(ROW_BLOCKED_WITH_BUILTIN_ACTIONS), 'cz');
+        const terms = result.flatMap(s => s.sections.flatMap(sec => sec.terms));
+        expect(terms).toHaveLength(1);
+        const term = terms[0];
+        expect(term.watchdogUrl).toBe(
+            'https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=336593;studium=149707;obdobi=812;aktivace=1;lang=cz'
+        );
+        expect(term.blockReasonUrl).toBe(
+            'https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=336593;studium=149707;obdobi=812;zobraz_duvod=1;lang=cz'
+        );
+        expect(term.detailUrl).toBe(
+            'https://is.mendelu.cz/auth/student/terminy_info.pl?termin=336593;studium=149707;obdobi=812;lang=cz'
+        );
+    });
+
+    it('omits URLs when IS Mendelu does not emit the anchors (standard enrollable row)', () => {
+        const result = parseExamData(wrapInPage(ROW_NORMAL_CAPACITY), 'cz');
+        const terms = result.flatMap(s => s.sections.flatMap(sec => sec.terms));
+        expect(terms).toHaveLength(1);
+        expect(terms[0].watchdogUrl).toBeUndefined();
+        expect(terms[0].blockReasonUrl).toBeUndefined();
+        // detail URL absent on this fixture (no <img sysid="prohlizeni-info"> in the Info cell)
+        expect(terms[0].detailUrl).toBeUndefined();
+    });
+
+    it('captures aktivace=2 deactivation URL on armed terms (icon swaps, sysid may differ)', () => {
+        const result = parseExamData(wrapInPage(ROW_ARMED_WATCHDOG), 'cz');
+        const terms = result.flatMap(s => s.sections.flatMap(sec => sec.terms));
+        expect(terms).toHaveLength(1);
+        expect(terms[0].watchdogUrl).toBe(
+            'https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=339178;studium=149707;obdobi=812;aktivace=2;lang=cz'
+        );
     });
 });

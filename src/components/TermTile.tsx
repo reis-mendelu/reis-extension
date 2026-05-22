@@ -4,6 +4,7 @@ import { getDayOfWeek, parseRegistrationStart, formatCountdown } from '../utils/
 import { useTranslation } from '../hooks/useTranslation';
 import { useAppStore } from '../store/useAppStore';
 import { SNIPER_WINDOW_MS } from './ExamPanel/useAutoRegistration';
+import { TermBuiltinActions, TermDetailLink } from './ExamPanel/TermBuiltinActions';
 
 const attemptAccentClass: Record<string, string> = {
     regular: 'bg-success/50',
@@ -65,8 +66,8 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                     </div>
                 )}
 
-                {/* Time & Room */}
-                <div className="flex items-baseline gap-1.5">
+                {/* Time, Room & Teacher */}
+                <div className="flex items-baseline gap-1.5 min-w-0">
                     <span className={`text-sm font-bold ${disabled ? 'opacity-30' : 'opacity-90'}`}>
                         {term.time}
                     </span>
@@ -75,6 +76,19 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                             {(language === 'en' && term.roomEn) ? term.roomEn : (term.roomCs || term.room)}
                         </span>
                     )}
+                    {term.teacher && (term.teacherId ? (
+                        <a
+                            href={`https://is.mendelu.cz/auth/lide/clovek.pl?id=${term.teacherId};lang=${language === 'en' ? 'en' : 'cz'}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            className="link link-hover text-[10px] truncate text-base-content/40 hover:text-primary"
+                        >
+                            {term.teacher}
+                        </a>
+                    ) : (
+                        <span className="text-[10px] truncate opacity-25">{term.teacher}</span>
+                    ))}
                 </div>
 
                 {/* Action Section: Stabilized & Context-Aware */}
@@ -109,7 +123,10 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                             {isProcessing ? (
                                 <span className="loading loading-spinner loading-sm text-primary" />
                             ) : (isClosed || isBlocked) ? (
-                                <span className="text-[10px] font-bold opacity-30 uppercase tracking-wider">{t('exams.closed')}</span>
+                                <div className="flex items-center gap-2 flex-wrap justify-end">
+                                    <span className="text-[10px] font-bold opacity-30 uppercase tracking-wider">{t('exams.closed')}</span>
+                                    <TermBuiltinActions term={term} />
+                                </div>
                             ) : term.capacity ? (
                                 <>
                                     <div className="flex items-center gap-2">
@@ -122,6 +139,7 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                                             {isFull ? t('exams.full') : term.capacity.raw}
                                         </span>
                                     </div>
+                                    {isFull && <TermBuiltinActions term={term} />}
                                     {!isFull && (
                                         <span className="btn btn-primary btn-sm px-4 font-bold">{t('exams.register')}</span>
                                     )}
@@ -133,10 +151,10 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
 
             </div>
 
-            {/* Deadlines */}
-            {term.registrationEnd && (
+            {/* Deadlines + IS detail link */}
+            {(term.registrationEnd || term.detailUrl) && (
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 pb-2 text-[10px] font-medium border-t border-base-content/5 pt-1.5">
-                    {sameDeadline ? (
+                    {term.registrationEnd && (sameDeadline ? (
                         <span className="text-base-content/40">{t('exams.registerAndUnregisterDeadline')} <b className="text-base-content/60">{term.registrationEnd}</b></span>
                     ) : (
                         <>
@@ -145,7 +163,8 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                                 <span className="text-base-content/40">{t('exams.unregisterDeadline')} <b className="text-base-content/60">{term.deregistrationDeadline}</b></span>
                             )}
                         </>
-                    )}
+                    ))}
+                    <TermDetailLink term={term} />
                 </div>
             )}
         </div>
