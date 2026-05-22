@@ -210,9 +210,7 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
             <span className="tabular-nums font-bold text-base-content/70 w-12 text-right">{course.credits}</span>
             <ErasmusVerifyDot
               courseCode={course.code}
-              courseName={course.name}
               optionId={option.id}
-              plan={plan}
               rowIndex={i}
             />
             <button

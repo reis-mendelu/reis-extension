@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { Folder, Check, ExternalLink, PanelRightOpen, StickyNote, Download, Loader2 } from 'lucide-react';
+import { Folder, Check, PanelRightOpen, StickyNote, Download, Loader2 } from 'lucide-react';
 
 type DownloadPhase = 'idle' | 'loading' | 'done';
 
@@ -44,7 +44,6 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useDocumentNoteKeys } from '../../hooks/data/useDocumentNoteKeys';
 import { DocumentNote } from './DocumentNote';
 import { parseIsDate } from './utils/fileDate';
-import { cleanFileName } from '../../utils/fileUrl';
 import { ISBacklink } from './ISBacklink';
 
 const typeBadgeConfig: Record<string, string> = {

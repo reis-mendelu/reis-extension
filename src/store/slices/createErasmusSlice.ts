@@ -59,13 +59,15 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
       }
       const url = `${HEI_API_BASE}/country/${alpha2}/hei`;
       loggers.ui.debug(`[fetchUniversities] fetching via proxy:`, url);
-      const json = await fetchJsonViaProxy<any>(url);
+      const json = await fetchJsonViaProxy<unknown>(url);
       loggers.ui.debug(`[fetchUniversities] response keys:`, json && typeof json === 'object' ? Object.keys(json) : typeof json);
-      const items: any[] = Array.isArray(json?.data) ? json.data : [];
-      const parsed: University[] = items.map((item: any) => {
+      type HeiAttrs = { name?: { lang: string; string: string }[]; other_id?: { type: string; value: string }[]; city?: string; website_url?: string };
+      type HeiItem = { attributes?: HeiAttrs };
+      const items: HeiItem[] = Array.isArray((json as { data?: unknown })?.data) ? ((json as { data: HeiItem[] }).data) : [];
+      const parsed: University[] = items.map((item) => {
         const attrs = item.attributes || {};
-        const nameObj = attrs.name?.find((n: any) => n.lang === 'en') || attrs.name?.[0];
-        const erasmusCode = attrs.other_id?.find((id: any) => id.type === 'erasmus')?.value;
+        const nameObj = attrs.name?.find((n) => n.lang === 'en') || attrs.name?.[0];
+        const erasmusCode = attrs.other_id?.find((id) => id.type === 'erasmus')?.value;
         return {
           name: nameObj?.string || 'Unknown Institution',
           erasmusCode: erasmusCode || '',
@@ -322,7 +324,7 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
       if (tableAOptions && tableAOptions.length > 0) {
         set({ erasmusTableAOptions: tableAOptions });
       } else {
-        const oldTableA = await IndexedDBService.get('meta', TABLE_A_COURSES_KEY) as any[] | null;
+        const oldTableA = await IndexedDBService.get('meta', TABLE_A_COURSES_KEY) as unknown[] | null;
         if (oldTableA && oldTableA.length > 0) {
            const initial = [{ id: 'opt-initial', institutionName: '', erasmusCode: '', country: '', link: '', courses: oldTableA }];
            set({ erasmusTableAOptions: initial });
@@ -345,7 +347,7 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
       const pdfs = await IndexedDBService.get('meta', UPLOADED_PDFS_KEY) as Record<string, { text: string; base64: string }> | null;
       if (pdfs) set({ erasmusUploadedPdfs: pdfs });
 
-      const uiState = await IndexedDBService.get('meta', ERASMUS_UI_STATE_KEY) as { activeTab?: any; planPhase?: any } | null;
+      const uiState = await IndexedDBService.get('meta', ERASMUS_UI_STATE_KEY) as { activeTab?: 'plan' | 'explore'; planPhase?: 'select' | 'review' } | null;
       if (uiState) {
         if (uiState.activeTab) set({ erasmusActiveTab: uiState.activeTab });
         if (uiState.planPhase) set({ erasmusPlanPhase: uiState.planPhase });

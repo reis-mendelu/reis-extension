@@ -54,6 +54,7 @@ export function parsePersonProfile(html: string, personId: number): PersonProfil
     let programmeName: string | null = null;
     const boldTds = Array.from(doc.querySelectorAll('td.odsazena b'));
     for (const b of boldTds) {
+        // eslint-disable-next-line no-irregular-whitespace
         const text = (b.textContent ?? '').replace(/ /g, ' ').trim();
         const m = text.match(/^([A-Z]\d{4}[A-Z]\d{6})\s+(.+)$/);
         if (m) {

@@ -76,6 +76,7 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
     );
   }
 
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const nextIndex = sortedExams.findIndex(e => parseDateTime(e.term.date, e.term.time).getTime() >= now);
 

@@ -5,17 +5,14 @@ import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { compareSyllabiAI } from '@/api/claude';
 import { buildMendeluText } from '@/api/syllabusTransfer';
-import type { StudyPlan } from '@/types/studyPlan';
 
 interface ErasmusVerifyDotProps {
   courseCode: string;
-  courseName: string;
   optionId: string;
-  plan: StudyPlan;
   rowIndex: number;
 }
 
-export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan, rowIndex }: ErasmusVerifyDotProps) {
+export function ErasmusVerifyDot({ courseCode, optionId, rowIndex }: ErasmusVerifyDotProps) {
   const { t } = useTranslation();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -187,7 +184,7 @@ export function ErasmusVerifyDot({ courseCode, courseName, optionId, plan: _plan
       setAiError(err instanceof Error ? err.message : 'Unknown error');
       setLocalStatus('error');
     }
-  }, [pdfData, targetBCode, fetchSyllabus, courseCode, courseName, setErasmusVerdict, setErasmusAiResult]);
+  }, [pdfData, targetBCode, fetchSyllabus, courseCode, setErasmusVerdict, setErasmusAiResult]);
 
   const similarityPct = aiResult ? Math.round(aiResult.similarity * 100) : null;
 

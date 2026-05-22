@@ -2,7 +2,8 @@ import { Info } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
 import { isCompulsoryGroup, isCoreElectiveGroup, isElectiveGroup } from '@/utils/studyPlanUtils';
-import type { SemesterBlock, SubjectStatus } from '@/types/studyPlan';
+import { isTransferableCourse } from './isTransferableCourse';
+import type { SemesterBlock } from '@/types/studyPlan';
 
 interface Props {
   block: SemesterBlock;
@@ -14,19 +15,6 @@ interface Props {
 }
 
 const isRecognizedCode = (code: string) => (code || '').startsWith('EXA-UP');
-
-/**
- * Universal rule to filter out "rubbish" from Erasmus selection:
- * 1. 0 credit subjects are milestones, state exams, or markers (not transferable).
- * 2. Explicit "zaměření" (specialization) markers.
- */
-export const isTransferableCourse = (s: SubjectStatus) => {
-  if (!s) return false;
-  if (s.credits === 0) return false;
-  const name = (s.name || '').toLowerCase();
-  if (name.startsWith('zaměření:') || name.startsWith('specialization:')) return false;
-  return true;
-};
 
 function SelectableRow({ subject, failRate, selected, isRecognized, onToggle, onOpen }: {
   subject: SubjectStatus;

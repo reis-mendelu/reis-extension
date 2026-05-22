@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ExamTerm } from '../../../types/exams';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { getDeadlineUrgency, formatDeadlineCountdown } from './TimelineDrawer';
+import { getDeadlineUrgency, formatDeadlineCountdown } from './deadlineUtils';
 
 interface ExamItemProps {
   term: ExamTerm;

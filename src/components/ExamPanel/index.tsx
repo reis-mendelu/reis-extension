@@ -97,6 +97,7 @@ export function ExamPanel() {
     // instead of returning null (which would blank the entire panel).
     useEffect(() => {
         if (timelineSelectedId && !realExams.some(e => e.section.id === timelineSelectedId)) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setTimelineSelectedId(null);
         }
     }, [timelineSelectedId, realExams]);

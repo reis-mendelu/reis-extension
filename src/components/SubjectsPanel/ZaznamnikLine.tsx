@@ -64,6 +64,7 @@ export function ZaznamnikLine({ courseCode, subjectId, className }: ZaznamnikLin
 
     const upcomingDeadlines = useMemo(() => {
         if (!subjectId || !allAssignments) return [];
+        // eslint-disable-next-line react-hooks/purity
         const now = Date.now();
         const cutoff = now + 21 * 24 * 60 * 60 * 1000;
         return allAssignments

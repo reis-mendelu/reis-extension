@@ -18,7 +18,7 @@ export const createScheduleSlice: AppSlice<ScheduleSlice> = (set, get) => ({
         IndexedDBService.get('meta', 'schedule_week_start'),
       ]);
 
-      set((_state) => ({
+      set(() => ({
         schedule: {
           data: data || [],
           status: 'success',

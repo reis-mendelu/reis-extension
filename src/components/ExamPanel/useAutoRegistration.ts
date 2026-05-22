@@ -20,6 +20,7 @@ export const SNIPER_WINDOW_MS = 60 * 60 * 1000; // 60 minutes window for auto-re
 export function useAutoRegistration() {
     const { t } = useTranslation();
     const tRef = useRef(t);
+    // eslint-disable-next-line react-hooks/refs
     tRef.current = t;
     const [armedTerms, setArmedTerms] = useState<Map<string, ArmedTerm>>(new Map());
     const [firingTerms, setFiringTerms] = useState<Set<string>>(new Set());
@@ -32,6 +33,7 @@ export function useAutoRegistration() {
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const firingRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
     const armedTermsRef = useRef<Map<string, ArmedTerm>>(armedTerms);
+    // eslint-disable-next-line react-hooks/refs
     armedTermsRef.current = armedTerms;
 
     useEffect(() => {
@@ -168,7 +170,7 @@ export function useAutoRegistration() {
 
         // Check if another term for the same section is already armed
         const existingSectionTermId = Array.from(armedTerms.entries())
-            .find(([_, armed]) => armed.section.id === section.id)?.[0];
+            .find(([, armed]) => armed.section.id === section.id)?.[0];
 
         if (existingSectionTermId && existingSectionTermId !== term.id) {
             disarm(existingSectionTermId);

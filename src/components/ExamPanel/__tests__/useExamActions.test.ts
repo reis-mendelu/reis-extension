@@ -48,7 +48,7 @@ vi.mock('../../../store/useAppStore', () => {
     fetchExams: mockFetchExams,
     triggerExamsRefresh: mockTriggerExamsRefresh,
   };
-  const mockUseAppStore = vi.fn((selector) => selector(mockState)) as any;
+  const mockUseAppStore = vi.fn((selector: (s: typeof mockState) => unknown) => selector(mockState)) as ((selector: (s: typeof mockState) => unknown) => unknown) & { getState: () => typeof mockState };
   mockUseAppStore.getState = () => mockState;
   return {
     useAppStore: mockUseAppStore,

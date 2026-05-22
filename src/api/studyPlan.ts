@@ -368,6 +368,7 @@ function extractUnnamedZameraniSubjects(doc: Document, lang: Lang): ZamerangSubj
     const result: ZamerangSubjectRef[][] = [];
     for (const li of Array.from(ul.querySelectorAll('li'))) {
         if (li.querySelector('strong')) continue;
+        // eslint-disable-next-line no-irregular-whitespace
         const text = (li.textContent || '').replace(/ /g, ' ').trim();
         const subjects = parseZameraniSubjectList(text);
         if (subjects.length > 0) result.push(subjects);

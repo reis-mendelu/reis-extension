@@ -52,6 +52,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     useEffect(() => {
         const courseCode = lesson?.courseCode;
         if (!isOpen || !courseCode) return;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLastVisitedAt(undefined);
         const key = `file_last_visit_${courseCode}`;
         IndexedDBService.get('meta', key).then(prev => {

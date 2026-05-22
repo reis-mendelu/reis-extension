@@ -42,7 +42,7 @@ export const createNotificationSlice: AppSlice<NotificationSlice> = (set, get) =
                 },
             }));
             await IndexedDBService.set('meta', 'notifications_cache', data);
-        } catch (error) {
+        } catch {
             set((state) => ({ notifications: { ...state.notifications, status: 'error' } }));
         }
     },
