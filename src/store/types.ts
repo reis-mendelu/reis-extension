@@ -9,6 +9,7 @@ import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { SyncStatus } from '../services/sync';
 import type { ErasmusCountryData, ErasmusConfig, University } from '../types/erasmus';
 import type { AIComparisonResult } from '../api/claude';
+import type { BulletinPost } from '../types/bulletin';
 import type { PinnedPage } from './slices/createPinnedPagesSlice';
 import type { OutletMenu } from '../types/menuTypes';
 import type { PageCategory } from '../data/pages/types';
@@ -358,7 +359,18 @@ export interface NotificationSlice {
     loadNotificationState: () => Promise<void>;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & import('./slices/createSearchSlice').SearchSlice & import('./slices/createPersonProfileSlice').PersonProfileSlice;
+export interface BulletinSlice {
+    bulletinPosts: BulletinPost[];
+    bulletinFetchedAt: number | null;
+    bulletinExpanded: boolean;
+    bulletinLoading: boolean;
+    bulletinError: boolean;
+    hydrateBulletin: () => Promise<void>;
+    setBulletinExpanded: (expanded: boolean) => Promise<void>;
+    loadBulletinIfStale: () => Promise<void>;
+}
+
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & BulletinSlice & import('./slices/createSearchSlice').SearchSlice & import('./slices/createPersonProfileSlice').PersonProfileSlice;
 
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

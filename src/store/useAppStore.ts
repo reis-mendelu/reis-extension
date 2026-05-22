@@ -28,6 +28,7 @@ import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
 import { createNotificationSlice } from './slices/createNotificationSlice';
 import { createSearchSlice } from './slices/createSearchSlice';
 import { createPersonProfileSlice } from './slices/createPersonProfileSlice';
+import { createBulletinSlice } from './slices/createBulletinSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
@@ -61,6 +62,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createNotificationSlice(...a),
   ...createSearchSlice(...a),
   ...createPersonProfileSlice(...a),
+  ...createBulletinSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
@@ -108,6 +110,7 @@ export const initializeStore = async () => {
         s2.loadCalendarCustomEvents();
         s2.fetchTeachingWeek();
         s2.loadRecentSearches();
+        s2.hydrateBulletin();
         // Predictive prefetch — files for subjects scheduled today.
         // Guarded by 60s SWR + max 6 subjects in prefetchTodaySubjectsImpl.
         useAppStore.getState().prefetchTodaySubjects();

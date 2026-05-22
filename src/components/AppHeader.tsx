@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { BulletinBanner } from './Bulletin/BulletinBanner';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { SearchBar } from './SearchBar/index';
 import { MobileSearchOverlay } from './SearchBar/MobileSearchOverlay';
@@ -119,8 +120,8 @@ export function AppHeader({
               </div>
             )}
   
-            <div className="flex-1" />
-  
+            {currentView === 'calendar' ? <BulletinBanner inline /> : <div className="flex-1" />}
+
             <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 ml-auto z-10">
               {/* Narrow/mobile: search icon button */}
               <button
