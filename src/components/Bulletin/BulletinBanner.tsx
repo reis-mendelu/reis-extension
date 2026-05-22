@@ -80,12 +80,12 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 title={cat ? `${post.title} · ${cat}` : post.title}
-                                className={`flex items-center gap-2 px-3 py-1.5 hover:bg-base-200/60 transition-colors group/post ${
+                                className={`flex items-start gap-2 px-3 py-1.5 hover:bg-base-200/60 transition-colors group/post ${
                                     i < posts.length - 1 ? 'border-b border-base-300/50' : ''
                                 }`}
                             >
-                                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-opacity opacity-70 group-hover/post:opacity-100 ${dotColor(cat)}`} />
-                                <span className="flex-1 text-xs text-base-content/80 group-hover/post:text-base-content transition-colors truncate">
+                                <span className={`w-1.5 h-1.5 mt-1 rounded-full flex-shrink-0 transition-opacity opacity-70 group-hover/post:opacity-100 ${dotColor(cat)}`} />
+                                <span className="flex-1 text-xs text-base-content/80 group-hover/post:text-base-content transition-colors truncate group-hover/post:whitespace-normal group-hover/post:overflow-visible group-hover/post:break-words">
                                     {post.title}
                                 </span>
                             </a>
