@@ -5,7 +5,6 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useAppStore } from '../store/useAppStore';
 import { SNIPER_WINDOW_MS } from './ExamPanel/useAutoRegistration';
 import { TermBuiltinActions, TermDetailLink } from './ExamPanel/TermBuiltinActions';
-import { TermNoteBlock } from './ExamPanel/TermNoteBlock';
 
 const attemptAccentClass: Record<string, string> = {
     regular: 'bg-success/50',
@@ -155,9 +154,6 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                 </div>
 
             </div>
-
-            {/* Teacher's Poznámka (lazy-fetched on mount; hidden when absent) */}
-            <TermNoteBlock terminId={term.id} />
 
             {/* Deadlines + IS detail link */}
             {(term.registrationEnd || term.detailUrl) && (

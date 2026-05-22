@@ -16,10 +16,16 @@ export interface TermNote {
  * True if the doc looks like a real terminy_info.pl detail page (not a login
  * redirect or error stub). Used to gate caching — we never persist a parse
  * result from a page that didn't actually load.
+ *
+ * Anchors on the active breadcrumb element rather than a substring search,
+ * since the substring also appears in sidebar/nav chrome on degraded pages
+ * — caching null from one of those would hide a real Poznámka for 6h.
+ * Verified against 5 real IS Mendelu samples (2026-05).
  */
 export function isTermDetailPage(doc: Document): boolean {
-    const html = doc.documentElement.textContent ?? '';
-    return html.includes('Informace o termínu') || html.includes('Term information');
+    const crumb = doc.querySelector('li.breadcrumb-item.active[aria-current="page"] span');
+    const text = (crumb?.textContent ?? '').replace(/ /g, ' ').trim();
+    return text === 'Informace o termínu' || text === 'Term information';
 }
 
 /**
@@ -49,8 +55,10 @@ export function parseTermNotePage(doc: Document): TermNote | null {
         const text = raw.replace(/[ \t]+$/gm, '').trim();
 
         if (!text) return null;
-        // IS empty sentinel: "-- nezadáno --", "-- not specified --", etc.
-        if (/^--\s.+\s--$/.test(text)) return null;
+        // IS empty sentinels — exact match only. The previous structural regex
+        // /^--\s.+\s--$/ also matched teacher-authored emphasis like '-- READ THIS --'
+        // and silently hid those notes.
+        if (text === '-- nezadáno --' || text === '-- not specified --') return null;
 
         const isEmphasized = !!valueCell.querySelector(
             'span[style*="color: red"], span[style*="color:red"]'

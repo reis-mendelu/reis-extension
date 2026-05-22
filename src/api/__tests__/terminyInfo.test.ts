@@ -164,21 +164,51 @@ Není povoleno používat AI.</span></td>
             isEmphasized: false,
         });
     });
+
+    it('does NOT treat a teacher note wrapped in dashes as an empty sentinel', () => {
+        // Regression: the old /^--\s.+\s--$/ regex falsely matched any
+        // dash-wrapped emphasis a teacher might write.
+        const doc = NOTE_PAGE(`
+            <tr><td><b>Poznámka:</b></td><td>-- READ THIS --</td></tr>
+        `);
+        expect(parseTermNotePage(doc)).toEqual({
+            text: '-- READ THIS --',
+            isEmphasized: false,
+        });
+    });
 });
 
 describe('isTermDetailPage', () => {
-    it('accepts a page containing "Informace o termínu"', () => {
-        const doc = wrapDoc(`<h1>Informace o termínu</h1>`);
-        expect(isTermDetailPage(doc)).toBe(true);
+    // Markup pattern verified against real IS Mendelu detail pages (2026-05).
+    const CZ_CRUMB = `<li class="breadcrumb-item active" aria-current="page"><span>Informace o&nbsp;termínu</span></li>`;
+    const EN_CRUMB = `<li class="breadcrumb-item active" aria-current="page"><span>Term information</span></li>`;
+
+    it('accepts a real CZ detail-page breadcrumb', () => {
+        expect(isTermDetailPage(wrapDoc(CZ_CRUMB))).toBe(true);
     });
 
-    it('accepts the EN equivalent', () => {
-        const doc = wrapDoc(`<h1>Term information</h1>`);
-        expect(isTermDetailPage(doc)).toBe(true);
+    it('accepts a real EN detail-page breadcrumb', () => {
+        expect(isTermDetailPage(wrapDoc(EN_CRUMB))).toBe(true);
     });
 
     it('rejects a login-redirect page', () => {
-        const doc = wrapDoc(`<form id="login">…</form>`);
+        expect(isTermDetailPage(wrapDoc(`<form id="login">…</form>`))).toBe(false);
+    });
+
+    it('rejects a page that mentions the title in chrome but lacks the active breadcrumb', () => {
+        // Defensive: a sidebar/nav link that happens to contain the title string
+        // should not be enough to mark this as a detail page.
+        const doc = wrapDoc(`
+            <nav><a href="/terminy">Informace o&nbsp;termínu</a></nav>
+            <div>session expired</div>
+        `);
+        expect(isTermDetailPage(doc)).toBe(false);
+    });
+
+    it('rejects an inactive breadcrumb (different page with the chip in nav history)', () => {
+        const doc = wrapDoc(`
+            <li class="breadcrumb-item"><span>Informace o&nbsp;termínu</span></li>
+        `);
         expect(isTermDetailPage(doc)).toBe(false);
     });
 });

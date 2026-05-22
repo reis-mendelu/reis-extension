@@ -11,7 +11,33 @@ import {
 } from './exams/fetchExamClassmatesForTermin';
 import { fetchTermNote } from '../../api/terminyInfo';
 
-const NOTE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const NOTE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours on success
+const NOTE_ERROR_TTL_MS = 5 * 60 * 1000; // 5 minutes after error — prevents remount-refetch storm
+
+// Cap parallel terminy_info.pl fetches. A student with N expanded sections can
+// mount 50+ TermTiles at once; without a cap, IS Mendelu sees that as a burst.
+const MAX_CONCURRENT_NOTE_FETCHES = 3;
+let activeNoteFetches = 0;
+const noteFetchQueue: (() => void)[] = [];
+
+function acquireNoteFetchSlot(): Promise<void> {
+  if (activeNoteFetches < MAX_CONCURRENT_NOTE_FETCHES) {
+    activeNoteFetches++;
+    return Promise.resolve();
+  }
+  return new Promise<void>(resolve => {
+    noteFetchQueue.push(() => {
+      activeNoteFetches++;
+      resolve();
+    });
+  });
+}
+
+function releaseNoteFetchSlot(): void {
+  activeNoteFetches--;
+  const next = noteFetchQueue.shift();
+  if (next) next();
+}
 
 type SetState = Parameters<AppSlice<ExamSlice>>[0];
 type GetState = Parameters<AppSlice<ExamSlice>>[1];
@@ -157,35 +183,43 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
     }
   },
 
-  fetchExamNotePriority: async (terminId) => {
-    const { examNotesLoading, lastExamNotesFetchedAt, studiumId, obdobiId } = get();
-    if (examNotesLoading[terminId]) return;
-    const fetchedAt = lastExamNotesFetchedAt[terminId];
-    if (fetchedAt && Date.now() - fetchedAt < NOTE_TTL_MS) return;
+  fetchExamNotePriority: async (terminId, lang) => {
+    const key = `${terminId}:${lang}`;
+    const { examNotesLoading, lastExamNotesFetchedAt, examNotesError, studiumId, obdobiId } = get();
+    if (examNotesLoading[key]) return;
+    const fetchedAt = lastExamNotesFetchedAt[key];
+    const ttl = examNotesError[key] ? NOTE_ERROR_TTL_MS : NOTE_TTL_MS;
+    if (fetchedAt && Date.now() - fetchedAt < ttl) return;
     if (!studiumId || !obdobiId) return;
 
     set((state) => ({
-      examNotesLoading: { ...state.examNotesLoading, [terminId]: true },
+      examNotesLoading: { ...state.examNotesLoading, [key]: true },
     }));
 
+    await acquireNoteFetchSlot();
     try {
-      const note = await fetchTermNote(terminId, studiumId, obdobiId, 'cz');
+      const note = await fetchTermNote(terminId, studiumId, obdobiId, lang);
       set((state) => {
         const nextErr = { ...state.examNotesError };
-        delete nextErr[terminId];
+        delete nextErr[key];
         return {
-          examNotes: { ...state.examNotes, [terminId]: note },
-          examNotesLoading: { ...state.examNotesLoading, [terminId]: false },
-          lastExamNotesFetchedAt: { ...state.lastExamNotesFetchedAt, [terminId]: Date.now() },
+          examNotes: { ...state.examNotes, [key]: note },
+          examNotesLoading: { ...state.examNotesLoading, [key]: false },
+          lastExamNotesFetchedAt: { ...state.lastExamNotesFetchedAt, [key]: Date.now() },
           examNotesError: nextErr,
         };
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      // Stamp fetchedAt on error too so the 5-min backoff applies — without
+      // this, every TermTile remount during an auth-expired window refires.
       set((state) => ({
-        examNotesLoading: { ...state.examNotesLoading, [terminId]: false },
-        examNotesError: { ...state.examNotesError, [terminId]: msg },
+        examNotesLoading: { ...state.examNotesLoading, [key]: false },
+        examNotesError: { ...state.examNotesError, [key]: msg },
+        lastExamNotesFetchedAt: { ...state.lastExamNotesFetchedAt, [key]: Date.now() },
       }));
+    } finally {
+      releaseNoteFetchSlot();
     }
   },
 

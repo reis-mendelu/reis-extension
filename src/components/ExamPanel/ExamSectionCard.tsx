@@ -3,6 +3,7 @@ import type { ExamSubject, ExamSection, ExamTerm } from '../../types/exams';
 import { TermTile } from '../TermTile';
 import { RegisteredTermDetails } from './RegisteredTermDetails';
 import { ExamClassmatesStrip } from './ExamClassmatesStrip';
+import { TermNoteBlock } from './TermNoteBlock';
 import { TermsSummary } from './TermsSummary';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
@@ -102,6 +103,16 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                     )}
                 </div>
             </div>
+
+            {/*
+              Teacher's Poznámka is written per druh (exam type) and is identical
+              across all termins in this section in practice (verified against 3
+              consecutive DB-systems termins in real IS data). Fetch once per
+              section rather than per-term.
+            */}
+            {(section.registeredTerm?.id || section.terms[0]?.id) && (
+                <TermNoteBlock terminId={(section.registeredTerm?.id ?? section.terms[0]?.id) as string} />
+            )}
 
             {isReg && section.registeredTerm?.id && !section.registeredTerm.id.includes('-') && (
                 <div className="px-3 pb-3 -mt-1">
