@@ -37,6 +37,7 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
     const setExpanded = useAppStore(s => s.setBulletinExpanded);
     const loadIfStale = useAppStore(s => s.loadBulletinIfStale);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const prevIsMobile = useRef(isMobile);
 
     useEffect(() => {
         // Wait until hydrate finishes before consulting the cache; otherwise a
@@ -44,6 +45,15 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
         // default state (fetchedAt=null) and races the IDB-restored values.
         if (expanded && hydrated) void loadIfStale();
     }, [expanded, hydrated, loadIfStale]);
+
+    // Collapse on viewport handoff so a rotate/resize doesn't auto-open the
+    // dropdown or overlay in the other surface without an explicit user gesture.
+    useEffect(() => {
+        if (prevIsMobile.current !== isMobile) {
+            prevIsMobile.current = isMobile;
+            if (expanded) void setExpanded(false);
+        }
+    }, [isMobile, expanded, setExpanded]);
 
     useEffect(() => {
         if (!expanded || isMobile) return;
