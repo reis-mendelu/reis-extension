@@ -28,18 +28,16 @@ export function TermNoteBlock({ terminId }: { terminId: string }) {
     return (
         <div
             onClick={e => e.stopPropagation()}
-            className={`px-3 py-2 border-t text-xs leading-relaxed ${
-                note.isEmphasized
-                    ? 'bg-error/5 border-error/20 text-base-content/90'
-                    : 'bg-base-200/30 border-base-200/60 text-base-content/75'
-            }`}
+            className="px-3 py-2 border-t text-xs leading-relaxed bg-base-200/30 border-base-200/60"
         >
             <div className="flex items-start gap-1.5">
                 <AlertTriangle
-                    size={13}
-                    className={`mt-0.5 shrink-0 ${note.isEmphasized ? 'text-error' : 'text-base-content/40'}`}
+                    size={11}
+                    className={`mt-0.5 shrink-0 ${note.isEmphasized ? 'text-error/80' : 'text-base-content/40'}`}
                 />
-                <div className="whitespace-pre-wrap">{note.text}</div>
+                <div className={`whitespace-pre-wrap ${note.isEmphasized ? 'text-error/85 font-medium' : 'text-base-content/75'}`}>
+                    {note.text}
+                </div>
             </div>
         </div>
     );
