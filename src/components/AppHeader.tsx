@@ -87,7 +87,10 @@ export function AppHeader({
 
     return (
       <>
-        <div className="flex-shrink-0 z-30 bg-base-200/90 backdrop-blur-md border-b border-base-300 px-4 pt-5 pb-3">
+        <div
+          className="flex-shrink-0 z-30 bg-base-200/90 backdrop-blur-md border-b border-base-300 px-4 pb-3"
+          style={{ paddingTop: 'calc(1.25rem + var(--safe-top, 0px))' }}
+        >
           <div className="relative flex items-center justify-between gap-2 md:gap-4 w-full">
             {currentView === 'calendar' && (
               <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 z-10">

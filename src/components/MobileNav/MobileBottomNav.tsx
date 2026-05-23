@@ -4,6 +4,7 @@ import type { AppView } from '../../types/app';
 import type { MenuItem } from '../menuConfig';
 import { useMenuItems } from '../../hooks/ui/useMenuItems';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useAppStore } from '../../store/useAppStore';
 import { MobileNavSheet } from './MobileNavSheet';
 import { MobileProfileSheet } from './MobileProfileSheet';
 
@@ -30,6 +31,7 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
   const hookItems = useMenuItems();
   const menuItems = items || hookItems;
   const { t } = useTranslation();
+  const keyboardOpen = useAppStore((s) => s.keyboardOpen);
 
   const viceMenuItem: MenuItem = {
       id: 'vice',
@@ -106,7 +108,10 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-40 hidden touch:flex bg-base-200 border-t border-base-300">
+      <nav
+        className={`fixed bottom-0 left-0 right-0 z-40 hidden touch:flex bg-base-200 border-t border-base-300 transition-transform ${keyboardOpen ? 'translate-y-full' : ''}`}
+        style={{ paddingBottom: 'var(--safe-bottom, 0px)' }}
+      >
         <div className="flex items-center justify-around h-16 px-1 w-full">
           {tabs.map(tab => (
             <button

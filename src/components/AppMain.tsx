@@ -29,7 +29,7 @@ export function AppMain({
         <main className="flex-1 flex flex-col transition-all duration-300 overflow-hidden">
             <AppHeader currentView={currentView} currentDate={currentDate} dateRangeLabel={dateRangeLabel} onPrevWeek={handlePrevWeek} onNextWeek={handleNextWeek} onToday={handleToday} onOpenSubject={handleOpenSubjectFromSearch} searchPrefillRef={searchPrefillRef} setCurrentView={setCurrentView} openFeedback={openFeedback} />
             <NpsBanner />
-            <div className="flex-1 pt-3 px-4 pb-1 touch:pb-16 overflow-hidden flex flex-col">
+            <div className="flex-1 pt-3 px-4 pb-1 touch:pb-16 data-[keyboard-open=true]:touch:pb-1 overflow-hidden flex flex-col">
                 <div className="flex-1 bg-base-100 rounded-lg touch:rounded-t-lg touch:rounded-b-none shadow-sm border border-base-300 overflow-hidden">
                     {currentView === 'calendar' && <WeeklyCalendar key={currentDate.toISOString()} initialDate={currentDate} onPrevWeek={handlePrevWeek} onNextWeek={handleNextWeek} />}
                     {currentView === 'exams' && <ExamPanel />}
