@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import type React from 'react';
 import { Drawer, DrawerContent } from './drawer';
 import { useAppStore } from '../../store/useAppStore';
 import { logError } from '../../utils/reportError';
@@ -30,8 +31,9 @@ export function AdaptiveDrawer({
     const isNarrow = useAppStore((s) => s.isNarrow);
     const isPhone = isTouch && isNarrow;
 
-    if (!open) return null;
-
+    // Phone branch: vaul needs to observe open: true→false on a mounted host
+    // to play its exit animation and to let an in-flight swipe-to-dismiss
+    // complete. Don't short-circuit here.
     if (isPhone) {
         return (
             <Drawer open={open} onOpenChange={(o: boolean) => { if (!o) onClose(); }} dismissible>
@@ -49,8 +51,22 @@ export function AdaptiveDrawer({
         );
     }
 
+    // Desktop branch: the slide-in-from-right animation is enter-only, so
+    // unmounting on close has no animation regression.
+    if (!open) return null;
+
+    // Isolate touch gestures from any ancestor swipe listener (e.g. WeeklyCalendar's
+    // useSwipe on a touch laptop / tablet, where `isTouch && !isNarrow` lands in
+    // this desktop branch). Restored from the pre-AdaptiveDrawer SubjectFileDrawer.
+    const stopTouch = (e: React.TouchEvent) => e.stopPropagation();
+
     return (
-        <div className="fixed inset-0 z-50 flex justify-end items-stretch p-0 sm:p-4 isolate">
+        <div
+            className="fixed inset-0 z-50 flex justify-end items-stretch p-0 sm:p-4 isolate"
+            onTouchStart={stopTouch}
+            onTouchMove={stopTouch}
+            onTouchEnd={stopTouch}
+        >
             <div className="absolute inset-0 bg-black/15 animate-in fade-in" onClick={onClose} />
             <div className="w-full flex justify-end items-start h-full pt-0 pb-0 sm:pt-10 sm:pb-10 relative z-10 pointer-events-none">
                 <div

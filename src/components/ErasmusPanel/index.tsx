@@ -203,24 +203,25 @@ export function ErasmusPanel({ onOpenSubject, onSearchSubject }: ErasmusPanelPro
         </div>
       )}
 
-      {drawerOpen && (
-        <ErasmusDrawer
-          filteredReports={filteredReports}
-          displayedReports={displayedReports}
-          countryName={countryName}
-          schools={schools}
-          schoolFilter={schoolFilter}
-          setSchoolFilter={setSchoolFilter}
-          facultyFilter={facultyFilter}
-          setFacultyFilter={setFacultyFilter}
-          userParams={userParams}
-          showAll={showAll}
-          setShowAll={setShowAll}
-          loading={loading}
-          config={config}
-          onClose={handleClose}
-        />
-      )}
+      {/* Always mounted so AdaptiveDrawer (vaul on phone) can observe
+          open: true→false and play its exit animation. */}
+      <ErasmusDrawer
+        isOpen={drawerOpen}
+        filteredReports={filteredReports}
+        displayedReports={displayedReports}
+        countryName={countryName}
+        schools={schools}
+        schoolFilter={schoolFilter}
+        setSchoolFilter={setSchoolFilter}
+        facultyFilter={facultyFilter}
+        setFacultyFilter={setFacultyFilter}
+        userParams={userParams}
+        showAll={showAll}
+        setShowAll={setShowAll}
+        loading={loading}
+        config={config}
+        onClose={handleClose}
+      />
     </div>
   );
 }

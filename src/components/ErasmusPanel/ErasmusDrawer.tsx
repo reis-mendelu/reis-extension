@@ -23,6 +23,7 @@ const FACULTY_ABBREV_TO_NAME: Record<string, string> = {
 };
 
 interface ErasmusDrawerProps {
+  isOpen: boolean;
   countryName: string;
   filteredReports: ErasmusReport[];
   displayedReports: ErasmusReport[];
@@ -40,14 +41,14 @@ interface ErasmusDrawerProps {
 }
 
 export function ErasmusDrawer({
-  countryName, filteredReports, displayedReports, schools,
+  isOpen, countryName, filteredReports, displayedReports, schools,
   schoolFilter, setSchoolFilter, facultyFilter, setFacultyFilter,
   userParams, showAll, setShowAll, loading, config, onClose,
 }: ErasmusDrawerProps) {
   const { t } = useTranslation();
 
   return (
-    <AdaptiveDrawer open onClose={onClose}>
+    <AdaptiveDrawer open={isOpen} onClose={onClose}>
           {/* Header */}
           <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-base-300">
             <div className="flex-1 min-w-0">
