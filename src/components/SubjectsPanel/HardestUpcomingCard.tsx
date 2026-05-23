@@ -26,7 +26,7 @@ function Row({ entry, onOpen, onSearch }: { entry: HardestEntry; onOpen: Props['
   return (
     <button onClick={handleClick} className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-base-200 transition-colors text-left">
       {semesters.length > 0 && (
-        <span className="font-mono text-[10px] text-base-content/40 whitespace-nowrap shrink-0">{semesters.join('·')}. sem.</span>
+        <span className="font-mono text-[10px] text-base-content/40 whitespace-nowrap shrink-0">{semesters.join('·')}.<span className="hidden md:inline"> sem.</span></span>
       )}
       <span className="flex-1 text-sm truncate">{displayName}</span>
       <span className={`flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium shrink-0 ${rateClass(stat.rate)}`}>

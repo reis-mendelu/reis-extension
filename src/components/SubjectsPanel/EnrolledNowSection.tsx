@@ -35,8 +35,9 @@ function SubjectSlot({ subject, semLabel, failRates, subjectSemesters, subjectTo
 } & Omit<Props, 'plan'>) {
   return (
     <div className="flex items-center gap-1">
-      <span className="text-[9px] font-mono text-base-content/25 shrink-0 w-10 text-right">
+      <span className="text-[9px] font-mono text-base-content/25 shrink-0 w-6 md:w-10 text-right">
         {semLabel ?? '–'}
+        {semLabel && <span className="hidden md:inline"> sem.</span>}
       </span>
       <div className="flex-1 min-w-0">
         <SubjectRow
@@ -63,7 +64,7 @@ export function EnrolledNowSection({ plan, failRates, subjectSemesters, subjectT
 
   for (const block of plan.blocks) {
     const semNums = block.title.match(/^(\d+)/);
-    const semLabel = semNums ? `${semNums[1]}. ${t('subjects.semesterShort')}` : null;
+    const semLabel = semNums ? `${semNums[1]}.` : null;
     for (const group of block.groups) {
       for (const s of group.subjects) {
         if (isZameraniCode(s.code)) continue;

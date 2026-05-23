@@ -99,7 +99,7 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
         <div className={`w-1 h-8 rounded-full ${cfg.indicator} shrink-0`} />
         <span className="text-sm font-semibold flex-1 text-left">{cleanTitle}</span>
         {totalCredits > 0 && (state !== 'future' || open) && (
-          <span className="text-[11px] text-base-content/40 shrink-0">{totalCredits} kr.</span>
+          <span className="text-[11px] text-base-content/40 shrink-0">{totalCredits}<span className="hidden md:inline"> kr.</span></span>
         )}
         <span className={cfg.badgeCls}>
           {fulfilledCount}/{totalCount}

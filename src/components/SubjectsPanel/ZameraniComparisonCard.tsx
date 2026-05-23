@@ -48,7 +48,7 @@ function ZameraniRow({ insight, open, picked, subjectSemesters, onToggle, onTogg
         </span>
         <span className="flex-1 flex items-center gap-2 min-w-0">
           <span className="flex-1 text-sm font-medium truncate">{cleanName}</span>
-          {insight.totalCredits > 0 && <span className="text-[10px] text-base-content/40 font-mono shrink-0">{insight.totalCredits} kr.</span>}
+          {insight.totalCredits > 0 && <span className="text-[10px] text-base-content/40 font-mono shrink-0">{insight.totalCredits}<span className="hidden md:inline"> kr.</span></span>}
           <ChevronDown className={`w-3.5 h-3.5 text-base-content/40 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`} />
         </span>
       </button>
@@ -60,12 +60,12 @@ function ZameraniRow({ insight, open, picked, subjectSemesters, onToggle, onTogg
           {insight.subjects.map(s => {
             const handleClick = () => s.id ? onOpen(s.code, s.name, s.id, undefined, 'stats') : onSearch(s.code);
             const sems = subjectSemesters?.get(s.code);
-            const semLabel = sems?.length ? `${sems.join('+')}. sem.` : null;
+            const semLabel = sems?.length ? `${sems.join('+')}.` : null;
             return (
               <button key={s.code} onClick={handleClick} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-base-200 transition-colors text-left">
                 <span className="font-mono text-[10px] text-base-content/50 shrink-0">{s.code}</span>
                 <span className="flex-1 text-[11px] truncate">{s.name}</span>
-                {semLabel && <span className="text-[10px] text-base-content/40 shrink-0">{semLabel}</span>}
+                {semLabel && <span className="text-[10px] text-base-content/40 shrink-0">{semLabel}<span className="hidden md:inline"> sem.</span></span>}
                 <span className={`flex items-center justify-center h-4 px-1 rounded text-[10px] font-medium shrink-0 ${rateClass(s.stat?.rate ?? null)}`}>
                   {s.stat ? `${s.stat.rate}%` : '—'}
                 </span>
