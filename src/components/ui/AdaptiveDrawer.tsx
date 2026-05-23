@@ -1,0 +1,86 @@
+import { useEffect, useRef, type ReactNode } from 'react';
+import { Drawer, DrawerContent } from './drawer';
+import { useAppStore } from '../../store/useAppStore';
+import { logError } from '../../utils/reportError';
+
+interface AdaptiveDrawerProps {
+    open: boolean;
+    onClose: () => void;
+    /** Optional Tailwind width class for the desktop side-drawer branch (e.g. `sm:w-[800px]`). */
+    width?: string;
+    children: ReactNode;
+}
+
+/**
+ * Routes between two drawer styles based on the viewport slice:
+ *   - phone (isTouch && isNarrow) → vaul bottom sheet, full-viewport-height minus
+ *     the safe-area-inset-top, swipe-to-close, focus-into-view on inputs
+ *   - everything else (desktop, tablet, narrow desktop) → existing fixed-overlay
+ *     side drawer that all four call sites previously inlined
+ * The four existing drawers (Exam, Erasmus, ClassmatePerson, SubjectFile) wrap
+ * their inner content with this; the choice is invisible to them.
+ */
+export function AdaptiveDrawer({
+    open,
+    onClose,
+    width = 'sm:w-[600px]',
+    children,
+}: AdaptiveDrawerProps) {
+    const isTouch = useAppStore((s) => s.isTouch);
+    const isNarrow = useAppStore((s) => s.isNarrow);
+    const isPhone = isTouch && isNarrow;
+
+    if (!open) return null;
+
+    if (isPhone) {
+        return (
+            <Drawer open={open} onOpenChange={(o: boolean) => { if (!o) onClose(); }} dismissible>
+                <DrawerContent
+                    data-vaul-drawer-direction="bottom"
+                    className="flex flex-col"
+                    style={{
+                        height: 'calc(var(--app-vh, 100dvh) - var(--safe-top, 0px))',
+                        maxHeight: 'calc(var(--app-vh, 100dvh) - var(--safe-top, 0px))',
+                    }}
+                >
+                    <FocusIntoView>{children}</FocusIntoView>
+                </DrawerContent>
+            </Drawer>
+        );
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 flex justify-end items-stretch p-0 sm:p-4 isolate">
+            <div className="absolute inset-0 bg-black/15 animate-in fade-in" onClick={onClose} />
+            <div className="w-full flex justify-end items-start h-full pt-0 pb-0 sm:pt-10 sm:pb-10 relative z-10 pointer-events-none">
+                <div
+                    role="dialog"
+                    className={`bg-base-100 shadow-2xl rounded-2xl flex flex-col h-full animate-in slide-in-from-right pointer-events-auto border border-base-300 relative w-full ${width}`}
+                >
+                    {children}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function FocusIntoView({ children }: { children: ReactNode }) {
+    const ref = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const root = ref.current;
+        if (!root) return;
+        const handler = (e: FocusEvent) => {
+            try {
+                const t = e.target as HTMLElement | null;
+                if (!t || typeof t.matches !== 'function') return;
+                if (!t.matches('input, textarea, [contenteditable]')) return;
+                t.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            } catch (err) {
+                logError('AdaptiveDrawer.focusScroll', err);
+            }
+        };
+        root.addEventListener('focusin', handler);
+        return () => root.removeEventListener('focusin', handler);
+    }, []);
+    return <div ref={ref} className="flex flex-col flex-1 min-h-0">{children}</div>;
+}
