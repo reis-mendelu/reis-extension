@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Pin, ExternalLink, X, ArrowUpRight } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -7,8 +7,6 @@ import { MobileBulletinOverlay } from './MobileBulletinOverlay';
 
 const VYVESKA_URL = 'https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl?zalozka=2';
 
-// Dot color keyed by the post's most specific category. Same info the chip
-// carried, in ~6px instead of ~80px per row.
 const DOT_COLOR: Record<string, string> = {
     'Ubytování': 'bg-info',
     'Housing':   'bg-info',
@@ -39,6 +37,7 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
     const hydrated = useAppStore(s => s.bulletinHydrated);
     const setExpanded = useAppStore(s => s.setBulletinExpanded);
     const loadIfStale = useAppStore(s => s.loadBulletinIfStale);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         // Wait until hydrate finishes before consulting the cache; otherwise a
@@ -46,6 +45,26 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
         // default state (fetchedAt=null) and races the IDB-restored values.
         if (expanded && hydrated) void loadIfStale();
     }, [expanded, hydrated, loadIfStale]);
+
+    useEffect(() => {
+        if (!expanded || isMobile) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                void setExpanded(false);
+            }
+        };
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                void setExpanded(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('keydown', handleEscape);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [expanded, isMobile, setExpanded]);
 
     if (!inline) return null;
 
@@ -72,82 +91,89 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
         );
     }
 
-    if (!expanded) {
-        return (
-            <div className="flex-1 flex items-center min-w-0 px-3">
-                <button
-                    type="button"
-                    onClick={() => { void setExpanded(true); }}
-                    aria-label={t('bulletin.expand')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-base-100/60 border border-base-300 rounded-lg hover:bg-base-200/60 transition-colors"
-                >
-                    <Pin className="w-3 h-3 text-primary flex-shrink-0" />
-                    <span className="text-xs font-semibold text-base-content whitespace-nowrap">{t('bulletin.title')}</span>
-                </button>
-            </div>
-        );
-    }
-
     return (
-        <div className="flex-1 flex items-stretch min-w-0 px-3">
-            <div className="flex w-full bg-base-100/60 border border-base-300 rounded-lg overflow-hidden">
-                <div className="flex-1 flex flex-col overflow-y-auto min-w-0" style={{ maxHeight: '64px' }}>
-                    {loading && posts.length === 0 && (
-                        <div className="h-8 flex items-center px-3 text-xs text-base-content/50">{t('bulletin.loading')}</div>
-                    )}
-                    {!loading && error && posts.length === 0 && (
-                        <div className="h-8 flex items-center px-3 text-xs text-error/80">{t('bulletin.error')}</div>
-                    )}
-                    {!loading && !error && posts.length === 0 && (
-                        <div className="h-8 flex items-center px-3 text-xs text-base-content/50">{t('bulletin.empty')}</div>
-                    )}
-                    {posts.map((post, i) => {
-                        const cat = post.categories[post.categories.length - 1] ?? post.categories[0];
-                        return (
+        <div className="relative flex-1 flex items-center min-w-0 px-3" ref={dropdownRef}>
+            <button
+                type="button"
+                onClick={() => { void setExpanded(!expanded); }}
+                aria-label={expanded ? t('bulletin.collapse') : t('bulletin.expand')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 bg-base-100/60 border border-base-300 rounded-lg hover:bg-base-200/60 transition-all ${
+                    expanded ? 'bg-base-200/80 border-primary/40 text-primary' : ''
+                }`}
+            >
+                <Pin className="w-3 h-3 text-primary flex-shrink-0" />
+                <span className="text-xs font-semibold text-base-content whitespace-nowrap">{t('bulletin.title')}</span>
+            </button>
+
+            {expanded && (
+                <div className="absolute left-3 top-11 z-50 w-96 bg-base-100 border border-base-300 rounded-xl shadow-xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-1 duration-200">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-base-300/80 bg-base-200/40">
+                        <div className="flex items-center gap-2">
+                            <Pin className="w-3.5 h-3.5 text-primary" />
+                            <span className="text-xs font-bold text-base-content">{t('bulletin.title')}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
                             <a
-                                key={`${post.url}-${i}`}
-                                href={post.url}
+                                href={VYVESKA_URL}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                title={cat ? `${post.title} · ${cat}` : post.title}
-                                className={`h-8 flex items-center justify-between gap-2 px-3 hover:bg-base-200/60 transition-colors group/post ${
-                                    i < posts.length - 1 ? 'border-b border-base-300/50' : ''
-                                }`}
+                                aria-label={t('bulletin.showAll')}
+                                title={t('bulletin.showAll')}
+                                className="p-1 hover:bg-base-300 rounded-lg text-base-content/40 hover:text-primary transition-all"
                             >
-                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all group-hover/post:scale-125 ${dotColor(cat)}`} />
-                                    <span className="flex-1 text-xs text-base-content/75 group-hover/post:text-base-content transition-colors truncate">
-                                        {post.title}
-                                    </span>
-                                </div>
-                                <ArrowUpRight className="w-3.5 h-3.5 text-base-content/30 opacity-0 group-hover/post:opacity-100 group-hover/post:translate-x-0.5 transition-all duration-200 flex-shrink-0" />
+                                <ExternalLink className="w-3.5 h-3.5" />
                             </a>
-                        );
-                    })}
+                            <button
+                                type="button"
+                                onClick={() => { void setExpanded(false); }}
+                                aria-label={t('bulletin.collapse')}
+                                className="p-1 hover:bg-base-300 rounded-lg text-base-content/40 hover:text-base-content/85 transition-all"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
+                    {/* List */}
+                    <div className="max-h-80 overflow-y-auto divide-y divide-base-300/50">
+                        {loading && posts.length === 0 && (
+                            <div className="p-4 text-center text-xs text-base-content/50">{t('bulletin.loading')}</div>
+                        )}
+                        {!loading && error && posts.length === 0 && (
+                            <div className="p-4 text-center text-xs text-error/85">{t('bulletin.error')}</div>
+                        )}
+                        {!loading && !error && posts.length === 0 && (
+                            <div className="p-4 text-center text-xs text-base-content/50">{t('bulletin.empty')}</div>
+                        )}
+                        {posts.map((post, i) => {
+                            const cat = post.categories[post.categories.length - 1] ?? post.categories[0];
+                            return (
+                                <a
+                                    key={`${post.url}-${i}`}
+                                    href={post.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title={cat ? `${post.title} · ${cat}` : post.title}
+                                    className="flex items-start gap-2.5 px-4 py-2.5 hover:bg-base-200/50 transition-colors group/post"
+                                >
+                                    <span className={`w-1.5 h-1.5 mt-1.5 rounded-full flex-shrink-0 transition-transform group-hover/post:scale-125 ${dotColor(cat)}`} />
+                                    <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                                        {cat && (
+                                            <span className="text-[9px] font-bold uppercase tracking-wider text-base-content/40">
+                                                {cat}
+                                            </span>
+                                        )}
+                                        <span className="text-xs font-medium text-base-content/80 group-hover/post:text-base-content leading-snug transition-colors line-clamp-2">
+                                            {post.title}
+                                        </span>
+                                    </div>
+                                    <ArrowUpRight className="w-3.5 h-3.5 mt-2 text-base-content/30 opacity-0 group-hover/post:opacity-100 group-hover/post:translate-x-0.5 transition-all duration-200 flex-shrink-0" />
+                                </a>
+                            );
+                        })}
+                    </div>
                 </div>
-
-                <div className="flex items-stretch flex-shrink-0 border-l border-base-300">
-                    <a
-                        href={VYVESKA_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={t('bulletin.showAll')}
-                        title={t('bulletin.showAll')}
-                        className="flex items-center justify-center w-8 text-base-content/40 hover:text-primary hover:bg-base-200/60 transition-colors"
-                    >
-                        <ExternalLink className="w-3 h-3" />
-                    </a>
-                    <button
-                        type="button"
-                        onClick={() => { void setExpanded(false); }}
-                        aria-label={t('bulletin.collapse')}
-                        title={t('bulletin.collapse')}
-                        className="flex items-center justify-center w-8 text-base-content/40 hover:text-base-content/80 hover:bg-base-200/60 transition-colors"
-                    >
-                        <X className="w-3 h-3" />
-                    </button>
-                </div>
-            </div>
+            )}
         </div>
     );
 }

@@ -59,6 +59,22 @@ describe('BulletinBanner', () => {
 
       expect(useAppStore.getState().bulletinExpanded).toBe(true);
     });
+
+    it('should close dropdown on click outside', () => {
+      useAppStore.setState({ bulletinExpanded: true });
+      render(
+        <div>
+          <div data-testid="outside">Outside</div>
+          <BulletinBanner inline />
+        </div>
+      );
+
+      expect(screen.getByText('Test Post 1')).toBeInTheDocument();
+
+      fireEvent.mouseDown(screen.getByTestId('outside'));
+
+      expect(useAppStore.getState().bulletinExpanded).toBe(false);
+    });
   });
 
   describe('Mobile View', () => {
