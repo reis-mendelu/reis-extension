@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -40,6 +40,19 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     storageState: path.join(__dirname, 'storageState.json'),
   },
+  projects: [
+    {
+      name: 'desktop',
+      use: {},
+    },
+    {
+      name: 'firefox-android',
+      use: {
+        ...devices['Pixel 7'],
+        browserName: 'firefox',
+      },
+    },
+  ],
   // Output directories for test artifacts
   outputDir: './e2e/test-results',
 });
