@@ -5,6 +5,7 @@ import type { ErasmusConfig } from '@/types/erasmus';
 import type { UserParams } from '@/utils/userParams';
 import { GraduationCap, X, Filter, ChevronDown, Mail } from 'lucide-react';
 import { toast } from 'sonner';
+import { AdaptiveDrawer } from '@/components/ui/AdaptiveDrawer';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -46,13 +47,7 @@ export function ErasmusDrawer({
   const { t } = useTranslation();
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end items-stretch p-0 sm:p-4 isolate">
-      <div className="absolute inset-0 bg-black/15 animate-in fade-in" onClick={onClose} />
-      <div className="w-full flex justify-end items-start h-full pt-0 pb-0 sm:pt-10 sm:pb-10 relative z-10 pointer-events-none">
-        <div
-          role="dialog"
-          className="bg-base-100 shadow-2xl rounded-2xl flex flex-col h-full animate-in slide-in-from-right pointer-events-auto border border-base-300 w-full sm:w-[600px]"
-        >
+    <AdaptiveDrawer open onClose={onClose}>
           {/* Header */}
           <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-base-300">
             <div className="flex-1 min-w-0">
@@ -172,8 +167,6 @@ export function ErasmusDrawer({
               </div>
             )}
           </div>
-        </div>
-      </div>
-    </div>
+    </AdaptiveDrawer>
   );
 }
