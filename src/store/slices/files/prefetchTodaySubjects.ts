@@ -23,7 +23,7 @@ export function prefetchTodaySubjectsImpl({
     refreshFilesForSubject,
     now = Date.now(),
 }: PrefetchInput): Set<string> {
-    const codes = todaysCourseCodes(schedule);
+    const codes = todaysCourseCodes(schedule, new Date(now));
     const fired = new Set<string>();
     for (const code of codes) {
         if (fired.size >= PREFETCH_MAX) break;

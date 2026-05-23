@@ -49,7 +49,7 @@ describe('examParser', () => {
                 <td>01.01.2026 10:00</td><td>Room</td><td>zkouška</td><td>Teacher</td>
                 <td>5/20</td><td>Regular</td>
                 <td>15.12.2025 08:00<br>31.12.2025 23:59<br>28.12.2025 23:59</td>
-                <td>Info</td>
+                <td><a href="terminy_info.pl?termin=123">Info</a></td>
             </tr>
             </tbody></table>
             </body></html>
@@ -70,7 +70,7 @@ describe('examParser', () => {
                 <td>01.01.2026 10:00</td><td>Room</td><td>zkouška</td><td>Teacher</td>
                 <td>5/20</td><td>Regular</td>
                 <td>--<br>16.02.2026 11:00<br>16.02.2026 11:00</td>
-                <td>Info</td>
+                <td><a href="terminy_info.pl?termin=123">Info</a></td>
             </tr>
             </tbody></table>
             </body></html>
