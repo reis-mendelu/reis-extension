@@ -114,7 +114,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
 
     if (isMobile) {
         return (
-            <>
+            <div className="flex h-full overflow-hidden flex-col font-inter bg-base-100">
                 <DailyView
                     weekDates={weekDates}
                     lessonsByDay={lessonsByDay}
@@ -159,7 +159,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                         }}
                     />
                 )}
-            </>
+            </div>
         );
     }
 
