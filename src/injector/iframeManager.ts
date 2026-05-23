@@ -18,7 +18,7 @@ export function injectIframe() {
 
     const viewport = document.createElement("meta");
     viewport.name = "viewport";
-    viewport.content = "width=device-width, initial-scale=1.0";
+    viewport.content = "width=device-width, initial-scale=1.0, viewport-fit=cover";
     document.head.appendChild(viewport);
 
     iframeElement = document.createElement("iframe");
