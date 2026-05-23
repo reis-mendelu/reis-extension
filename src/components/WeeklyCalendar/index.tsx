@@ -114,19 +114,52 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
 
     if (isMobile) {
         return (
-            <DailyView
-                weekDates={weekDates}
-                lessonsByDay={lessonsByDay}
-                holidaysByDay={holidaysByDay}
-                todayIndex={todayIndex}
-                showSkeleton={showSkeleton}
-                language={language}
-                onPrevWeek={onPrevWeek}
-                onNextWeek={onNextWeek}
-                isOutsideTeachingPeriod={isOutsideTeachingPeriod}
-                onEventClick={handleEventClick}
-                onCreateEvent={(date, startTime, endTime, anchor) => setPendingCreate({ date, startTime, endTime, anchor })}
-            />
+            <>
+                <DailyView
+                    weekDates={weekDates}
+                    lessonsByDay={lessonsByDay}
+                    holidaysByDay={holidaysByDay}
+                    todayIndex={todayIndex}
+                    showSkeleton={showSkeleton}
+                    language={language}
+                    onPrevWeek={onPrevWeek}
+                    onNextWeek={onNextWeek}
+                    isOutsideTeachingPeriod={isOutsideTeachingPeriod}
+                    onEventClick={handleEventClick}
+                    onCreateEvent={(date, startTime, endTime, anchor) => setPendingCreate({ date, startTime, endTime, anchor })}
+                />
+                <SubjectFileDrawer lesson={selected} isOpen={!!selected} onClose={() => setSelected(null)} />
+                {pendingCreate && (
+                    <CustomEventModal
+                        mode="create"
+                        initialDate={pendingCreate.date}
+                        initialStart={pendingCreate.startTime}
+                        initialEnd={pendingCreate.endTime}
+                        anchor={pendingCreate.anchor}
+                        onClose={() => setPendingCreate(null)}
+                        onSave={(data: Omit<CalendarCustomEvent, 'id'>) => {
+                            addCalendarCustomEvent({ id: crypto.randomUUID(), ...data });
+                            setPendingCreate(null);
+                        }}
+                    />
+                )}
+                {editingCustomEvent && (
+                    <CustomEventModal
+                        mode="edit"
+                        event={editingCustomEvent.event}
+                        anchor={editingCustomEvent.anchor}
+                        onClose={() => setEditingCustomEvent(null)}
+                        onSave={(data: Omit<CalendarCustomEvent, 'id'>) => {
+                            updateCalendarCustomEvent(editingCustomEvent.event.id, data);
+                            setEditingCustomEvent(null);
+                        }}
+                        onDelete={() => {
+                            removeCalendarCustomEvent(editingCustomEvent.event.id);
+                            setEditingCustomEvent(null);
+                        }}
+                    />
+                )}
+            </>
         );
     }
 
