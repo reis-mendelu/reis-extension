@@ -90,7 +90,7 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
              t('subjects.progressionDanger')}
           </span>
           <span className="ml-auto text-xs text-base-content/50 font-medium">
-            {creditsAcquired} / {creditsRequired} {t('subjects.credits')}
+            {creditsAcquired} / {creditsRequired}<span className="hidden md:inline"> {t('subjects.credits')}</span>
           </span>
         </div>
 
@@ -105,7 +105,8 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
             {zameraniMin !== undefined && zameraniMin > 0 ? (
               <span className="flex items-center gap-1.5 text-[10px] text-base-content/60">
                 <Layers className="w-3 h-3 shrink-0" />
-                {t('subjects.zameraniProgress', { touched: zameraniTouched, min: zameraniMin })}
+                <span className="md:hidden">{zameraniTouched} / {zameraniMin}</span>
+                <span className="hidden md:inline">{t('subjects.zameraniProgress', { touched: zameraniTouched, min: zameraniMin })}</span>
               </span>
             ) : (studyStats && progressionInfo && progressionInfo.threshold > 0) ? (
               <span>

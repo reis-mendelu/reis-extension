@@ -89,9 +89,17 @@ export function ZameraniComparisonCard({ insights, picks, onTogglePick, minRequi
         <Layers className="w-4 h-4 text-primary shrink-0" />
         <span className="text-sm font-semibold flex-1">{t('subjects.insights.zameraniTitle')}</span>
         <span className="text-[10px] text-base-content/50 font-medium mr-1">
-          {minRequired && minRequired > 0
-            ? t('subjects.zameraniPickProgress', { picked: picks.size, min: minRequired })
-            : t('subjects.zameraniPickProgressNoMin', { picked: picks.size })}
+          {minRequired && minRequired > 0 ? (
+            <>
+              <span className="md:hidden">{picks.size} / {minRequired}</span>
+              <span className="hidden md:inline">{t('subjects.zameraniPickProgress', { picked: picks.size, min: minRequired })}</span>
+            </>
+          ) : (
+            <>
+              <span className="md:hidden">{picks.size}</span>
+              <span className="hidden md:inline">{t('subjects.zameraniPickProgressNoMin', { picked: picks.size })}</span>
+            </>
+          )}
         </span>
         <ChevronDown className={`w-4 h-4 text-base-content/40 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
