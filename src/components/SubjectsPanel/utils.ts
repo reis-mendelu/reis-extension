@@ -69,3 +69,44 @@ export function buildSubjectSemesters(plan: { blocks: SemesterBlock[] } | null |
     [...map.entries()].map(([code, sems]) => [code, [...sems].sort((a, b) => a - b).map(String)]),
   );
 }
+
+export function cleanGroupName(name: string): string {
+  return name
+    .replace(/^(Skupina předmětů|Skupiny předmětů|Skupina)\s*:\s*/i, '')
+    .replace(/^(A group of courses|Groups of courses|Group)\s*:\s*/i, '')
+    .trim();
+}
+
+export function shortenStatusText(text: string): string {
+  if (!text) return '';
+  const clean = text.trim();
+  
+  // Czech
+  if (/^splněna$/i.test(clean)) return 'Splněno';
+  
+  // "nesplněna, chybí 5 předmětů" -> "Chybí 5 pr."
+  // "nesplněna, chybí 12 kreditů" -> "Chybí 12 kr."
+  const czMatch = clean.match(/nesplněna,\s*chybí\s*(\d+)\s*(předmět[ůye]*|kredit[ůye]*)/i);
+  if (czMatch) {
+    const num = czMatch[1];
+    const unit = czMatch[2].toLowerCase();
+    if (unit.startsWith('před')) return `Chybí ${num} pr.`;
+    if (unit.startsWith('kred')) return `Chybí ${num} kr.`;
+  }
+  
+  // English
+  if (/^fulfilled$/i.test(clean)) return 'Fulfilled';
+  const enMatch = clean.match(/not\s*fulfilled,\s*(\d+)\s*(courses?|credits?)\s*missing/i);
+  if (enMatch) {
+    const num = enMatch[1];
+    const unit = enMatch[2].toLowerCase();
+    if (unit.startsWith('cour')) return `${num} missing`;
+    if (unit.startsWith('cred')) return `${num} cr. missing`;
+  }
+
+  // Fallbacks
+  return clean
+    .replace(/^nesplněna,\s*chybí\s*/i, 'Chybí ')
+    .replace(/^not\s*fulfilled,\s*/i, 'Missing ');
+}
+

@@ -3,7 +3,7 @@ import type { SemesterBlock, Zamerani, SubjectStatus } from '@/types/studyPlan';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { ZameraniProgress } from './SubjectsPanelHeader';
 import { SubjectRow } from './SubjectRow';
-import { getSemesterState, isRealCredits, isZameraniCode, normalizeZameraniName, type SemesterState } from './utils';
+import { getSemesterState, isRealCredits, isZameraniCode, normalizeZameraniName, type SemesterState, cleanGroupName, shortenStatusText } from './utils';
 
 interface SemesterSectionProps {
   block: SemesterBlock;
@@ -121,21 +121,27 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
             const liveProgress = group.minCount !== undefined
               ? `${Math.min(fulfilledInGroup, group.minCount)}/${group.minCount}`
               : null;
-            return (
-              <div key={gi} className={gi > 0 ? 'mt-2' : ''}>
-                {(block.groups.length > 1 || statusText) && (
-                  <div className="px-3 py-1 flex items-baseline justify-between gap-2">
-                    <span className="text-[11px] text-base-content/40 font-medium uppercase tracking-wider truncate">{group.name}</span>
-                    <span className="flex items-center gap-2 shrink-0">
-                      {liveProgress && (
-                        <span className="text-[10px] font-mono text-base-content/50">{liveProgress}</span>
-                      )}
-                      {statusText && (
-                        <span className={`text-[10px] font-medium ${statusCls}`}>{statusText}</span>
-                      )}
-                    </span>
-                  </div>
-                )}
+             const displayGroupName = cleanGroupName(group.name);
+             return (
+               <div key={gi} className={gi > 0 ? 'mt-2' : ''}>
+                 {(block.groups.length > 1 || statusText) && (
+                   <div className="px-3 py-1 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                     <span className="text-[11px] text-base-content/40 font-medium uppercase tracking-wider truncate max-w-[65%] md:max-w-none" title={group.name}>
+                       {displayGroupName}
+                     </span>
+                     <span className="flex items-center gap-2 shrink-0 ml-auto">
+                       {liveProgress && (
+                         <span className="text-[10px] font-mono text-base-content/50">{liveProgress}</span>
+                       )}
+                       {statusText && (
+                         <span className={`text-[10px] font-medium ${statusCls}`}>
+                           <span className="md:hidden">{shortenStatusText(statusText)}</span>
+                           <span className="hidden md:inline">{statusText}</span>
+                         </span>
+                       )}
+                     </span>
+                   </div>
+                 )}
                 {showPickPrompt ? (
                   <div className="mx-3 my-1 flex items-center gap-2 px-3 py-2 rounded-md border border-dashed border-base-300 text-[11px] text-base-content/50">
                     <Layers className="w-3.5 h-3.5 text-primary/60 shrink-0" />
