@@ -151,8 +151,8 @@ export function DailyView({
               return (
                 <div key={dayIndex} id={`day-block-${dayIndex}`} className="flex flex-col">
                   {/* Sticky Day Header */}
-                  <div className="bg-base-200/90 backdrop-blur-md sticky top-0 py-2.5 px-4 z-10 border-b border-base-300 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                  <div className="bg-base-200/90 backdrop-blur-md sticky top-0 py-2.5 px-4 z-10 border-b border-base-300 flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <span className="font-bold text-sm text-base-content">
                         {localizedDayName}, {parseInt(dateInfo.day)}. {parseInt(dateInfo.month)}.
                       </span>
@@ -163,7 +163,9 @@ export function DailyView({
                       )}
                     </div>
                     {holiday && (
-                      <span className="text-[11px] font-semibold text-error bg-error/10 px-2 py-0.5 rounded-full max-w-[150px] truncate" title={holiday}>
+                      // No truncation: long Czech holiday names ("Den vzniku samostatného…")
+                      // were unreadable on touch where `title` doesn't surface. Wrap instead.
+                      <span className="text-[11px] font-semibold text-error bg-error/10 px-2 py-0.5 rounded-lg text-right leading-tight whitespace-normal break-words min-w-0" title={holiday}>
                         {holiday}
                       </span>
                     )}
@@ -174,7 +176,9 @@ export function DailyView({
                     {sortedLessons.length === 0 ? (
                       <div className="py-4 text-center border border-dashed border-base-300 rounded-xl bg-base-100/50">
                         <span className="text-xs text-base-content/40 font-medium">
-                          {language === 'en' ? 'No events scheduled' : 'Žádné události'}
+                          {holiday
+                            ? (language === 'en' ? 'Public holiday' : 'Státní svátek')
+                            : (language === 'en' ? 'No events scheduled' : 'Žádné události')}
                         </span>
                       </div>
                     ) : (
