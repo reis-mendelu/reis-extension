@@ -14,7 +14,7 @@ interface SwipeOptions {
  */
 export function useSwipe(
     ref: RefObject<HTMLElement | null>,
-    opts: SwipeOptions,
+    { onLeft, onRight }: SwipeOptions,
 ) {
     useEffect(() => {
         const el = ref.current;
@@ -45,8 +45,8 @@ export function useSwipe(
             const angle = Math.abs(Math.atan2(dy, dx) * 180 / Math.PI);
             const offHorizontal = angle > 90 ? 180 - angle : angle;
             if (offHorizontal > MAX_ANGLE_DEG) return;
-            if (dx < 0) opts.onLeft?.();
-            else opts.onRight?.();
+            if (dx < 0) onLeft?.();
+            else onRight?.();
         };
 
         el.addEventListener('pointerdown', onDown);
@@ -57,5 +57,5 @@ export function useSwipe(
             el.removeEventListener('pointerup', onUp);
             el.removeEventListener('scroll', onScroll, { capture: true });
         };
-    }, [ref, opts.onLeft, opts.onRight]);
+    }, [ref, onLeft, onRight]);
 }
