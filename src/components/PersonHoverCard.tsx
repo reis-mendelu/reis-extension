@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, ExternalLink } from 'lucide-react';
 import { fetchPersonProfile } from '../api/search/searchService';
+import { useAppStore } from '../store/useAppStore';
 import type { Person } from '../api/search/types';
 
 interface PersonHoverCardProps {
@@ -56,6 +57,7 @@ export function PersonHoverCard({ personId, children, className }: PersonHoverCa
     const [profile, setProfile] = useState<Person | null>(null);
     const [loading, setLoading] = useState(false);
     const [pos, setPos] = useState<CardPosition | null>(null);
+    const isTouch = useAppStore((s) => s.isTouch);
 
     const anchorRef = useRef<HTMLSpanElement>(null);
     const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -67,29 +69,40 @@ export function PersonHoverCard({ personId, children, className }: PersonHoverCa
         if (leaveTimer.current) clearTimeout(leaveTimer.current);
     };
 
+    const openCard = useCallback(() => {
+        if (!anchorRef.current) return;
+        const rect = anchorRef.current.getBoundingClientRect();
+        setPos(computePosition(rect));
+        setVisible(true);
+
+        // Lazy-fetch profile if not yet loaded
+        if (!profile && !loading) {
+            setLoading(true);
+            fetchPersonProfile(personId).then((p: Person | null) => {
+                setProfile(p);
+                setLoading(false);
+            });
+        }
+    }, [personId, profile, loading]);
+
     const handleMouseEnter = useCallback(() => {
         cancelTimers();
-        hoverTimer.current = setTimeout(() => {
-            if (!anchorRef.current) return;
-            const rect = anchorRef.current.getBoundingClientRect();
-            setPos(computePosition(rect));
-            setVisible(true);
-
-            // Lazy-fetch profile if not yet loaded
-            if (!profile && !loading) {
-                setLoading(true);
-                fetchPersonProfile(personId).then((p: Person | null) => {
-                    setProfile(p);
-                    setLoading(false);
-                });
-            }
-        }, HOVER_DELAY_MS);
-    }, [personId, profile, loading]);
+        hoverTimer.current = setTimeout(openCard, HOVER_DELAY_MS);
+    }, [openCard]);
 
     const handleMouseLeave = useCallback(() => {
         cancelTimers();
         leaveTimer.current = setTimeout(() => setVisible(false), 150);
     }, []);
+
+    const handleTouchClick = useCallback(() => {
+        cancelTimers();
+        if (visible) {
+            setVisible(false);
+        } else {
+            openCard();
+        }
+    }, [visible, openCard]);
 
     // Keep card open while hovering the card itself
     const handleCardEnter = () => {
@@ -218,8 +231,9 @@ export function PersonHoverCard({ personId, children, className }: PersonHoverCa
         <>
             <span
                 ref={anchorRef}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
+                onMouseEnter={isTouch ? undefined : handleMouseEnter}
+                onMouseLeave={isTouch ? undefined : handleMouseLeave}
+                onClick={isTouch ? handleTouchClick : undefined}
                 className={className}
             >
                 {children}
