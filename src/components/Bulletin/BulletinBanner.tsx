@@ -91,15 +91,15 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
     return (
         <div className="flex-1 flex items-stretch min-w-0 px-3">
             <div className="flex w-full bg-base-100/60 border border-base-300 rounded-lg overflow-hidden">
-                <div className="flex-1 flex flex-col overflow-y-auto min-w-0" style={{ maxHeight: '96px' }}>
+                <div className="flex-1 flex flex-col overflow-y-auto min-w-0" style={{ maxHeight: '64px' }}>
                     {loading && posts.length === 0 && (
-                        <div className="flex items-center px-3 py-1.5 text-xs text-base-content/50">{t('bulletin.loading')}</div>
+                        <div className="flex items-center px-3 py-1 text-xs text-base-content/50">{t('bulletin.loading')}</div>
                     )}
                     {!loading && error && posts.length === 0 && (
-                        <div className="flex items-center px-3 py-1.5 text-xs text-error/80">{t('bulletin.error')}</div>
+                        <div className="flex items-center px-3 py-1 text-xs text-error/80">{t('bulletin.error')}</div>
                     )}
                     {!loading && !error && posts.length === 0 && (
-                        <div className="flex items-center px-3 py-1.5 text-xs text-base-content/50">{t('bulletin.empty')}</div>
+                        <div className="flex items-center px-3 py-1 text-xs text-base-content/50">{t('bulletin.empty')}</div>
                     )}
                     {posts.map((post, i) => {
                         const cat = post.categories[post.categories.length - 1] ?? post.categories[0];
@@ -110,7 +110,7 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 title={cat ? `${post.title} · ${cat}` : post.title}
-                                className={`flex items-start gap-2 px-3 py-1.5 hover:bg-base-200/60 transition-colors group/post ${
+                                className={`flex items-start gap-2 px-3 py-1 hover:bg-base-200/60 transition-colors group/post ${
                                     i < posts.length - 1 ? 'border-b border-base-300/50' : ''
                                 }`}
                             >
