@@ -25,16 +25,12 @@ function zameraniAcronym(norm: string): string {
   return norm.split(/\s+/).map(w => w[0]?.toUpperCase() ?? '').join('');
 }
 
-// IS Mendelu uses 999 as a sentinel "credits unknown / pass-through" value.
-const isSentinelCredits = (credits: number) => credits >= 999;
-
 export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, onOpenSubject, onSearchSubject, zamerani, zameraniProgress, subjectSemesters, subjectToZameranis }: SubjectRowProps) {
   const { t } = useTranslation();
   const hasId = subject.id !== '';
   const displayName = useCourseName(subject.code, subject.name);
   const timeline = useTimeline(subject.code);
   const isZamerani = isZameraniCode(subject.code);
-  const showCredits = !isSentinelCredits(subject.credits) && !isZamerani;
   const typeLabel = subject.type?.trim();
   const zameraniMembership = subjectToZameranis?.get(subject.code);
   const zameraniTag = zameraniMembership?.length ? zameraniAcronym(zameraniMembership[0]) : null;
@@ -65,7 +61,6 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
             <span className="text-[9px] text-base-content/30 shrink-0">{subject.fulfillmentDate}</span>
           )}
           {timeline && <span className="text-[9px] font-bold text-primary/60 shrink-0">{timeline.formatted}</span>}
-          {showCredits && <span className="text-[10px] shrink-0 font-medium">{subject.credits}<span className="hidden md:inline"> kr.</span></span>}
         </button>
       </div>
     );
@@ -128,7 +123,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
       onClick={handleClick}
       onMouseEnter={hover.onMouseEnter}
       onMouseLeave={hover.onMouseLeave}
-      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-base-200 transition-colors text-left group"
+      className="w-full flex items-center gap-1.5 md:gap-3 px-2 md:px-3 py-2 md:py-2.5 rounded-lg hover:bg-base-200 transition-colors text-left group"
     >
       <div className="flex-1 min-w-0 flex flex-col">
         <span className="text-sm truncate font-medium">{displayName}</span>
@@ -158,27 +153,27 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
       {zameraniTag && (
         <span className="text-[9px] font-mono tracking-widest text-primary/50 bg-primary/8 px-1.5 py-0.5 rounded shrink-0">{zameraniTag}</span>
       )}
-      {showCredits && (
-        <span className="text-xs text-base-content/50 shrink-0">{subject.credits}<span className="hidden md:inline"> kr.</span></span>
-      )}
       {subject.isFulfilled && subject.fulfillmentDate ? (
         <span className="flex items-center gap-1 text-[10px] text-success/70 shrink-0"><CheckCircle2 className="w-3 h-3" /><span className="font-mono">{subject.fulfillmentDate}</span></span>
       ) : subject.isFulfilled ? (
         <CheckCircle2 className="w-3.5 h-3.5 text-success/70 shrink-0" />
       ) : null}
       {subject.enrollmentCount >= 2 && !subject.isFulfilled && (
-        <span className="badge badge-sm badge-error gap-1" title={t('subjects.repeatWarning')}>
+        <span className="badge badge-sm badge-error gap-1 shrink-0" title={t('subjects.repeatWarning')}>
           <AlertTriangle className="w-3 h-3" />
           {subject.enrollmentCount}x
         </span>
       )}
       {!hideStatus && !subject.isFulfilled && (
         subject.isEnrolled ? (
-          <span className="badge badge-sm badge-primary badge-outline">{subject.rawStatusText}</span>
+          <span className="badge badge-sm badge-primary badge-outline shrink-0">{subject.rawStatusText}</span>
         ) : !hasId ? (
-          <span className="badge badge-sm badge-ghost gap-1 text-base-content/40"><Search className="w-3 h-3" /><span className="hidden md:inline">{t('subjects.searchToOpen')}</span></span>
+          <span className="badge badge-sm md:badge-ghost gap-1 text-base-content/40 bg-transparent border-none p-0 md:bg-base-content/5 md:px-2 shrink-0">
+            <Search className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">{t('subjects.searchToOpen')}</span>
+          </span>
         ) : (
-          <span className="badge badge-sm badge-ghost text-base-content/40 hidden md:inline-flex">{subject.rawStatusText || t('subjects.notFulfilled')}</span>
+          <span className="badge badge-sm badge-ghost text-base-content/40 hidden md:inline-flex shrink-0">{subject.rawStatusText || t('subjects.notFulfilled')}</span>
         )
       )}
     </button>
