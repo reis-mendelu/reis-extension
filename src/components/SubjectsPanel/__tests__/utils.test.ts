@@ -18,6 +18,12 @@ describe('SubjectsPanel utils', () => {
       expect(cleanGroupName('A group of elective courses')).toBe('Elective courses');
     });
 
+    it('strips trailing min constraints correctly', () => {
+      expect(cleanGroupName('Skupina předmětů povinně volitelných (min. 2 př.)')).toBe('Povinně volitelných');
+      expect(cleanGroupName('Skupina: Oborové (min. 12 kr.)')).toBe('Oborové');
+      expect(cleanGroupName('Group: Core (min 3 courses)')).toBe('Core');
+    });
+
     it('keeps other names intact and capitalizes them', () => {
       expect(cleanGroupName('obecné předměty')).toBe('Obecné předměty');
     });

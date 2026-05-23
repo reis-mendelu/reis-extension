@@ -74,6 +74,7 @@ export function cleanGroupName(name: string): string {
   const cleaned = name
     .replace(/^(Skupina předmětů|Skupiny předmětů|Skupina)\s*(:|-)?\s*/i, '')
     .replace(/^(A group of courses|Groups of courses|A group of|Group)\s*(:|-)?\s*/i, '')
+    .replace(/\s*\(\s*min\.?.*?\)\s*$/i, '')
     .trim();
   if (!cleaned) return name;
   return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
