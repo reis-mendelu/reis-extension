@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { Pin, ExternalLink, X, ArrowUpRight } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useIsMobile } from '../ui/use-mobile';
 import { MobileBulletinOverlay } from './MobileBulletinOverlay';
 
 const VYVESKA_URL = 'https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl?zalozka=2';
@@ -29,7 +28,7 @@ function dotColor(cat: string | undefined): string {
 
 export function BulletinBanner({ inline = false }: { inline?: boolean }) {
     const { t } = useTranslation();
-    const isMobile = useIsMobile();
+    const isMobile = useAppStore(s => s.isNarrow);
     const posts = useAppStore(s => s.bulletinPosts);
     const expanded = useAppStore(s => s.bulletinExpanded);
     const loading = useAppStore(s => s.bulletinLoading);

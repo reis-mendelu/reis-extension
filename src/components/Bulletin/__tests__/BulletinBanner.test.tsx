@@ -2,19 +2,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BulletinBanner } from '../BulletinBanner';
 import { useAppStore } from '../../../store/useAppStore';
-import { useIsMobile } from '../../ui/use-mobile';
-
-// Mock useIsMobile hook
-vi.mock('../../ui/use-mobile', () => ({
-  useIsMobile: vi.fn(),
-}));
 
 describe('BulletinBanner', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Configure app store state
+    // Configure app store state. BulletinBanner reads s.isNarrow for mobile gating.
     useAppStore.setState({
       language: 'en',
+      isNarrow: false,
       bulletinPosts: [
         { title: 'Test Post 1', categories: ['Inzerce'], url: 'https://example.com/1' },
         { title: 'Test Post 2', categories: ['Ubytování', 'Ostatní'], url: 'https://example.com/2' }
@@ -32,7 +27,7 @@ describe('BulletinBanner', () => {
 
   describe('Desktop View', () => {
     beforeEach(() => {
-      vi.mocked(useIsMobile).mockReturnValue(false);
+      useAppStore.setState({ isNarrow: false });
     });
 
     it('should render collapsed button by default when inline is true', () => {
@@ -79,7 +74,7 @@ describe('BulletinBanner', () => {
 
   describe('Mobile View', () => {
     beforeEach(() => {
-      vi.mocked(useIsMobile).mockReturnValue(true);
+      useAppStore.setState({ isNarrow: true });
     });
 
     it('should render collapsed button by default and not render inline list even if expanded is true', () => {
