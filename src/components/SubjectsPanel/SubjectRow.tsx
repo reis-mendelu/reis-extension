@@ -65,7 +65,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
             <span className="text-[9px] text-base-content/30 shrink-0">{subject.fulfillmentDate}</span>
           )}
           {timeline && <span className="text-[9px] font-bold text-primary/60 shrink-0">{timeline.formatted}</span>}
-          {showCredits && <span className="text-[10px] shrink-0 font-medium">{subject.credits} kr.</span>}
+          {showCredits && <span className="text-[10px] shrink-0 font-medium">{subject.credits}<span className="hidden md:inline"> kr.</span></span>}
         </button>
       </div>
     );
@@ -139,9 +139,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
           </div>
         )}
       </div>
-      {typeLabel && (
-        <span className="text-[10px] font-mono uppercase text-base-content/40 shrink-0">{typeLabel}</span>
-      )}
+      {typeLabel && <span className="hidden md:inline text-[10px] font-mono uppercase text-base-content/40 shrink-0">{typeLabel}</span>}
       {failRate != null && !subject.isFulfilled && (
         <span
           className={`flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium tracking-wide shrink-0 relative group/fail cursor-pointer transition-colors ${
@@ -161,13 +159,10 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
         <span className="text-[9px] font-mono tracking-widest text-primary/50 bg-primary/8 px-1.5 py-0.5 rounded shrink-0">{zameraniTag}</span>
       )}
       {showCredits && (
-        <span className="text-xs text-base-content/50 shrink-0">{subject.credits} kr.</span>
+        <span className="text-xs text-base-content/50 shrink-0">{subject.credits}<span className="hidden md:inline"> kr.</span></span>
       )}
       {subject.isFulfilled && subject.fulfillmentDate ? (
-        <span className="flex items-center gap-1 text-[10px] text-success/70 shrink-0">
-          <CheckCircle2 className="w-3 h-3" />
-          <span className="font-mono">{subject.fulfillmentDate}</span>
-        </span>
+        <span className="flex items-center gap-1 text-[10px] text-success/70 shrink-0"><CheckCircle2 className="w-3 h-3" /><span className="font-mono">{subject.fulfillmentDate}</span></span>
       ) : subject.isFulfilled ? (
         <CheckCircle2 className="w-3.5 h-3.5 text-success/70 shrink-0" />
       ) : null}
@@ -181,12 +176,9 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
         subject.isEnrolled ? (
           <span className="badge badge-sm badge-primary badge-outline">{subject.rawStatusText}</span>
         ) : !hasId ? (
-          <span className="badge badge-sm badge-ghost gap-1 text-base-content/40">
-            <Search className="w-3 h-3" />
-            {t('subjects.searchToOpen')}
-          </span>
+          <span className="badge badge-sm badge-ghost gap-1 text-base-content/40"><Search className="w-3 h-3" /><span className="hidden md:inline">{t('subjects.searchToOpen')}</span></span>
         ) : (
-          <span className="badge badge-sm badge-ghost text-base-content/40">{subject.rawStatusText || t('subjects.notFulfilled')}</span>
+          <span className="badge badge-sm badge-ghost text-base-content/40 hidden md:inline-flex">{subject.rawStatusText || t('subjects.notFulfilled')}</span>
         )
       )}
     </button>
