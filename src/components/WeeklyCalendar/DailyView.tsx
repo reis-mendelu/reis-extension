@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { CalendarEventCard } from '../CalendarEventCard';
 import { SubjectFileDrawer } from '../SubjectFileDrawer';
 import { HOURS, getEventStyle, organizeLessons, timeToPercent } from './utils';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useHintStatus } from '../../hooks/ui/useHintStatus';
+import { useSwipe } from '../../hooks/useSwipe';
 import type { BlockLesson, LessonWithRow, DateInfo } from '../../types/calendarTypes';
 
 const TOTAL_HOURS = 13;
@@ -20,13 +21,18 @@ interface DailyViewProps {
   isOutsideTeachingPeriod: boolean;
 }
 
-export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton, language, isOutsideTeachingPeriod }: DailyViewProps) {
+export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton, language, onPrevWeek, onNextWeek, isOutsideTeachingPeriod }: DailyViewProps) {
   const { t } = useTranslation();
   const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
   const defaultDay = todayIndex >= 0 && todayIndex < 5 ? todayIndex : 0;
   const [selectedDay, setSelectedDay] = useState(defaultDay);
   const [selected, setSelected] = useState<LessonWithRow | null>(null);
   const { isSeen, markSeen } = useHintStatus('calendar_event_click');
+  const swipeRef = useRef<HTMLDivElement>(null);
+  useSwipe(swipeRef, {
+    onLeft: () => onNextWeek?.(),
+    onRight: () => onPrevWeek?.(),
+  });
 
   const lessons = useMemo(() => lessonsByDay[selectedDay] || [], [lessonsByDay, selectedDay]);
   const holiday = holidaysByDay[selectedDay];
@@ -47,7 +53,7 @@ export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, 
   };
 
   return (
-    <div className="flex h-full overflow-hidden flex-col font-inter bg-base-100">
+    <div ref={swipeRef} className="flex h-full overflow-hidden flex-col font-inter bg-base-100">
       {/* Day picker tabs */}
       <div className="flex border-b border-base-300 bg-base-100 flex-shrink-0 h-[48px]">
         {[0, 1, 2, 3, 4].map((i) => {
