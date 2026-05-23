@@ -63,15 +63,20 @@ describe('useCalendarData', () => {
         const mockLessons = [
             { id: '1', date: '20260209', startTime: '08:00', endTime: '09:00', courseName: 'Monday Lesson' }, // Monday
             { id: '2', date: '20260212', startTime: '10:00', endTime: '11:00', courseName: 'Thursday Lesson' }, // Thursday
+            { id: '3', date: '20260214', startTime: '12:00', endTime: '13:00', courseName: 'Saturday Lesson' }, // Saturday
         ];
         vi.mocked(useSchedule).mockReturnValue({ schedule: mockLessons as any, isLoaded: true, weekStart: null, status: 'success', isSyncing: false } as UseScheduleResult);
 
         const { result } = renderHook(() => useCalendarData(mockInitialDate));
 
+        expect(result.current.weekDates).toHaveLength(7);
+        expect(result.current.lessonsByDay).toHaveLength(7);
         expect(result.current.lessonsByDay[0]).toHaveLength(1); // Monday
         expect(result.current.lessonsByDay[3]).toHaveLength(1); // Thursday
+        expect(result.current.lessonsByDay[5]).toHaveLength(1); // Saturday
         expect(result.current.lessonsByDay[0][0].courseName).toBe('Monday Lesson');
         expect(result.current.lessonsByDay[3][0].courseName).toBe('Thursday Lesson');
+        expect(result.current.lessonsByDay[5][0].courseName).toBe('Saturday Lesson');
     });
 
     it('should update localization when language changes', () => {

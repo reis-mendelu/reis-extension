@@ -27,7 +27,7 @@ export function useCalendarData(initialDate: Date) {
         const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
         const dates: DateInfo[] = [];
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 7; i++) {
             const d = new Date(startOfWeek);
             d.setDate(startOfWeek.getDate() + i);
             dates.push({
@@ -129,7 +129,7 @@ export function useCalendarData(initialDate: Date) {
     }, [storedSchedule, examLessons, customEvents, weekDateStrings, hiddenItems]);
 
     const lessonsByDay = useMemo(() => {
-        const grouped: Record<number, BlockLesson[]> = { 0: [], 1: [], 2: [], 3: [], 4: [] };
+        const grouped: Record<number, BlockLesson[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
         scheduleData.forEach(lesson => {
             const year = parseInt(lesson.date.substring(0, 4));
             const month = parseInt(lesson.date.substring(4, 6)) - 1;
@@ -137,9 +137,9 @@ export function useCalendarData(initialDate: Date) {
             const date = new Date(year, month, day);
             const dayOfWeek = date.getDay();
             const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-            if (dayIndex >= 0 && dayIndex < 5) grouped[dayIndex].push(lesson);
+            if (dayIndex >= 0 && dayIndex < 7) grouped[dayIndex].push(lesson);
         });
-        return [grouped[0], grouped[1], grouped[2], grouped[3], grouped[4]];
+        return [grouped[0], grouped[1], grouped[2], grouped[3], grouped[4], grouped[5], grouped[6]];
     }, [scheduleData]);
 
     const holidaysByDay = useMemo(() => {

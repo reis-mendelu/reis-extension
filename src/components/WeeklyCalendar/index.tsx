@@ -32,8 +32,8 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     const [selected, setSelected] = useState<BlockLesson | null>(null);
     const { isSeen, markSeen } = useHintStatus('calendar_event_click');
 
-    const [pendingCreate, setPendingCreate] = useState<{ date: string, startTime: string, endTime: string, anchor: { x: number; y: number } } | null>(null);
-    const [editingCustomEvent, setEditingCustomEvent] = useState<{ event: CalendarCustomEvent; anchor: { x: number; y: number } } | null>(null);
+    const [pendingCreate, setPendingCreate] = useState<{ date: string, startTime: string, endTime: string, anchor?: { x: number; y: number } } | null>(null);
+    const [editingCustomEvent, setEditingCustomEvent] = useState<{ event: CalendarCustomEvent; anchor?: { x: number; y: number } } | null>(null);
     const addCalendarCustomEvent = useAppStore(state => state.addCalendarCustomEvent);
     const updateCalendarCustomEvent = useAppStore(state => state.updateCalendarCustomEvent);
     const removeCalendarCustomEvent = useAppStore(state => state.removeCalendarCustomEvent);
@@ -102,7 +102,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
         return null;
     }, [lessonsByDay, todayIndex, showSkeleton, isSeen]);
 
-    const handleEventClick = (lesson: BlockLesson, anchor: { x: number; y: number }) => {
+    const handleEventClick = (lesson: BlockLesson, anchor?: { x: number; y: number }) => {
         if (lesson.isCustom && lesson.customEventId) {
             const event = useAppStore.getState().customEvents.find((ce: CalendarCustomEvent) => ce.id === lesson.customEventId);
             if (event) setEditingCustomEvent({ event, anchor });
@@ -124,6 +124,8 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                 onPrevWeek={onPrevWeek}
                 onNextWeek={onNextWeek}
                 isOutsideTeachingPeriod={isOutsideTeachingPeriod}
+                onEventClick={handleEventClick}
+                onCreateEvent={(date, startTime, endTime, anchor) => setPendingCreate({ date, startTime, endTime, anchor })}
             />
         );
     }

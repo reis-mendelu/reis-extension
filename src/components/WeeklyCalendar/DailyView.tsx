@@ -1,13 +1,9 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { CalendarEventCard } from '../CalendarEventCard';
-import { SubjectFileDrawer } from '../SubjectFileDrawer';
-import { HOURS, getEventStyle, organizeLessons, timeToPercent } from './utils';
+import { useMemo, useEffect, useState, useRef } from 'react';
+import { Calendar } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useHintStatus } from '../../hooks/ui/useHintStatus';
 import { useSwipe } from '../../hooks/useSwipe';
-import type { BlockLesson, LessonWithRow, DateInfo } from '../../types/calendarTypes';
-
-const TOTAL_HOURS = 13;
+import { CalendarEventCard } from '../CalendarEventCard';
+import type { BlockLesson, DateInfo } from '../../types/calendarTypes';
 
 interface DailyViewProps {
   weekDates: DateInfo[];
@@ -19,143 +15,190 @@ interface DailyViewProps {
   onPrevWeek?: () => void;
   onNextWeek?: () => void;
   isOutsideTeachingPeriod: boolean;
+  onEventClick: (lesson: BlockLesson, anchor: { x: number; y: number }) => void;
+  onCreateEvent?: (date: string, startTime: string, endTime: string, anchor: { x: number; y: number }) => void;
 }
 
-export function DailyView({ weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton, language, onPrevWeek, onNextWeek, isOutsideTeachingPeriod }: DailyViewProps) {
+export function DailyView({
+  weekDates,
+  lessonsByDay,
+  holidaysByDay,
+  todayIndex,
+  showSkeleton,
+  language,
+  onPrevWeek,
+  onNextWeek,
+  isOutsideTeachingPeriod,
+  onEventClick
+}: DailyViewProps) {
   const { t } = useTranslation();
-  const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-  const defaultDay = todayIndex >= 0 && todayIndex < 5 ? todayIndex : 0;
-  const [selectedDay, setSelectedDay] = useState(defaultDay);
-  const [selected, setSelected] = useState<LessonWithRow | null>(null);
-  const { isSeen, markSeen } = useHintStatus('calendar_event_click');
   const swipeRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Swipe to change weeks
   useSwipe(swipeRef, {
     onLeft: () => onNextWeek?.(),
     onRight: () => onPrevWeek?.(),
   });
 
-  const lessons = useMemo(() => lessonsByDay[selectedDay] || [], [lessonsByDay, selectedDay]);
-  const holiday = holidaysByDay[selectedDay];
-  const { lessons: organizedLessons } = useMemo(() => organizeLessons(lessons), [lessons]);
-
-  const [now, setNow] = useState(new Date());
+  const [, setNow] = useState(new Date());
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(interval);
   }, []);
-  const isSelectedToday = selectedDay === todayIndex;
-  const showTimeLine = isSelectedToday && now.getHours() >= 7 && now.getHours() < 21;
-  const timeLineTop = timeToPercent(`${now.getHours()}:${now.getMinutes()}`);
 
-  const handleEventClick = (lesson: LessonWithRow) => {
-    setSelected(lesson);
-    if (!isSeen) markSeen();
-  };
+  // Automatically scroll to today's block when viewed week changes
+  useEffect(() => {
+    if (todayIndex >= 0) {
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`day-block-${todayIndex}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  }, [weekDates, todayIndex]);
+
+  // Format week range title (e.g. "12. 5. – 18. 5. 2026")
+  const weekRangeTitle = useMemo(() => {
+    if (!weekDates || weekDates.length === 0) return '';
+    const start = weekDates[0];
+    const end = weekDates[6] || weekDates[weekDates.length - 1];
+    if (!start || !end) return '';
+
+    if (start.year !== end.year) {
+      return `${start.day}. ${start.month}. ${start.year} – ${end.day}. ${end.month}. ${end.year}`;
+    }
+    if (start.month !== end.month) {
+      return `${start.day}. ${start.month}. – ${end.day}. ${end.month}. ${end.year}`;
+    }
+    return `${start.day}. – ${end.day}. ${start.month}. ${start.year}`;
+  }, [weekDates]);
+
+  // Check if the entire week is empty
+  const isWeekEmpty = useMemo(() => {
+    return lessonsByDay.every(dayLessons => !dayLessons || dayLessons.length === 0);
+  }, [lessonsByDay]);
+
+  // Skeleton loading view
+  if (showSkeleton) {
+    return (
+      <div className="flex h-full flex-col font-inter bg-base-100 p-4 space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex flex-col gap-3 p-4 border border-base-200 rounded-2xl bg-base-200/50 animate-pulse">
+            <div className="h-4 w-1/4 bg-base-300 rounded" />
+            <div className="h-6 w-3/4 bg-base-300 rounded" />
+            <div className="h-4 w-1/2 bg-base-300 rounded" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div ref={swipeRef} className="flex h-full overflow-hidden flex-col font-inter bg-base-100">
-      {/* Day picker tabs */}
-      <div className="flex border-b border-base-300 bg-base-100 flex-shrink-0 h-[48px]">
-        {[0, 1, 2, 3, 4].map((i) => {
-          const dateInfo = weekDates[i];
-          const isToday = i === todayIndex;
-          const isActive = i === selectedDay;
-          const dayHoliday = holidaysByDay[i];
-          return (
-            <button
-              key={i}
-              onClick={() => setSelectedDay(i)}
-              className={`flex-1 py-1 px-1 text-center transition-colors
-                ${isActive ? 'bg-primary/10 border-b-2 border-primary' : ''}
-                ${isToday && !isActive ? 'bg-current-day-header' : ''}`}
-            >
-              <div className="flex flex-col items-center justify-center h-full">
-                <div className={`text-lg font-semibold leading-tight ${dayHoliday ? 'text-error' : isActive ? 'text-primary' : isToday ? 'text-current-day' : 'text-base-content'}`}>
-                  {dateInfo?.day}
-                </div>
-                <div className={`text-[11px] leading-tight ${dayHoliday ? 'text-error' : 'text-base-content/70'}`}>
-                  {t(`days.${dayKeys[i]}`)}
-                </div>
-              </div>
-            </button>
-          );
-        })}
+    <div ref={swipeRef} className="flex h-full overflow-hidden flex-col font-inter bg-base-100 relative">
+      {/* Top Navigation Bar (Chevrons removed as requested; week swiping is default) */}
+      <div className="flex items-center justify-center py-3 border-b border-base-300 bg-base-100 flex-shrink-0">
+        <span className="text-sm font-bold text-base-content font-inter tracking-wide">
+          {weekRangeTitle}
+        </span>
       </div>
 
-      {/* Day content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="flex h-full min-h-[780px]">
-          {/* Time gutter */}
-          <div className="w-12 flex-shrink-0 border-r border-base-300 bg-base-200 relative">
-            {HOURS.map((hour, i) => (
-              <div key={hour} className="absolute left-0 right-0 text-xs text-base-content/80 text-right pr-1"
-                   style={{ top: `${(i / TOTAL_HOURS) * 100}%`, height: `${100 / TOTAL_HOURS}%` }}>
-                {hour}
-              </div>
-            ))}
+      {/* Agenda list scroll area */}
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pb-6">
+        {isWeekEmpty ? (
+          <div className="flex flex-col items-center justify-center text-center p-8 mt-12 space-y-4">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <Calendar size={28} />
+            </div>
+            <div className="max-w-xs space-y-1">
+              <h3 className="font-bold text-base text-base-content">
+                {language === 'en' ? 'Nothing Scheduled' : 'Nic se neděje'}
+              </h3>
+              <p className="text-xs text-base-content/50 leading-relaxed">
+                {t(isOutsideTeachingPeriod ? 'calendar.outsideSemester' : 'calendar.emptyWeek')}
+              </p>
+            </div>
           </div>
+        ) : (
+          <div className="flex flex-col">
+            {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => {
+              const dateInfo = weekDates[dayIndex];
+              if (!dateInfo) return null;
 
-          {/* Single day column */}
-          <div className="flex-1 relative">
-            {/* Grid lines */}
-            {HOURS.map((hour, i) => (
-              <div key={hour} className="absolute left-0 right-0 border-t border-base-300"
-                   style={{ top: `${(i / TOTAL_HOURS) * 100}%` }} />
-            ))}
+              const dayLessons = lessonsByDay[dayIndex] || [];
+              const holiday = holidaysByDay[dayIndex];
+              const isToday = dayIndex === todayIndex;
 
-            {holiday && (
-              <div className="absolute inset-0 flex items-center justify-center bg-error/10 z-20">
-                <div className="flex flex-col items-center text-center p-4">
-                  <span className="text-3xl mb-2">🇨🇿</span>
-                  <h3 className="text-lg font-bold text-error">{holiday}</h3>
-                </div>
-              </div>
-            )}
+              // Hide empty days unless it's a holiday or it's today
+              if (dayLessons.length === 0 && !holiday && !isToday) {
+                return null;
+              }
 
-            {!holiday && !showSkeleton && lessons.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                <p className="text-base-content/40 text-sm font-medium">{t(isOutsideTeachingPeriod ? 'calendar.outsideSemester' : 'calendar.emptyWeek')}</p>
-              </div>
-            )}
+              // Sort lessons chronologically by start time
+              const sortedLessons = [...dayLessons].sort((a, b) =>
+                a.startTime.localeCompare(b.startTime)
+              );
 
-            {!holiday && showSkeleton && (
-              <>
-                {[{ top: '7%', height: '15%' }, { top: '30%', height: '12%' }, { top: '50%', height: '11%' }].map((pos, i) => (
-                  <div key={i} className="absolute w-[94%] left-[3%] rounded-lg skeleton bg-base-300" style={pos} />
-                ))}
-              </>
-            )}
+              const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+              const localizedDayName = t(`days.${dayNames[dayIndex]}`);
 
-            {showTimeLine && (
-              <div className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
-                   style={{ top: `${timeLineTop}%` }}>
-                <div className="w-2.5 h-2.5 rounded-full bg-error -ml-[5px] shrink-0" />
-                <div className="flex-1 h-[2px] bg-error" />
-              </div>
-            )}
-
-            {!holiday && !showSkeleton && organizedLessons.map((lesson) => {
-              const style = getEventStyle(lesson.startTime, lesson.endTime);
-              const cols = lesson.maxColumns || 1;
               return (
-                <div
-                  key={lesson.id}
-                  className="absolute"
-                  style={{
-                    ...style,
-                    left: `${(lesson.row / cols) * 100}%`,
-                    width: `${100 / cols}%`,
-                  }}
-                >
-                  <CalendarEventCard lesson={lesson} onClick={() => handleEventClick(lesson)} language={language} />
+                <div key={dayIndex} id={`day-block-${dayIndex}`} className="flex flex-col">
+                  {/* Sticky Day Header */}
+                  <div className="bg-base-200/90 backdrop-blur-md sticky top-0 py-2.5 px-4 z-10 border-b border-base-300 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-base-content">
+                        {localizedDayName}, {parseInt(dateInfo.day)}. {parseInt(dateInfo.month)}.
+                      </span>
+                      {isToday && (
+                        <span className="badge badge-primary badge-sm font-bold text-[10px] text-white py-1 px-1.5 uppercase tracking-wide">
+                          {language === 'en' ? 'Today' : 'Dnes'}
+                        </span>
+                      )}
+                    </div>
+                    {holiday && (
+                      <span className="text-[11px] font-semibold text-error bg-error/10 px-2 py-0.5 rounded-full max-w-[150px] truncate" title={holiday}>
+                        {holiday}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Day Content */}
+                  <div className="p-3 space-y-3">
+                    {sortedLessons.length === 0 ? (
+                      <div className="py-4 text-center border border-dashed border-base-300 rounded-xl bg-base-100/50">
+                        <span className="text-xs text-base-content/40 font-medium">
+                          {language === 'en' ? 'No events scheduled' : 'Žádné události'}
+                        </span>
+                      </div>
+                    ) : (
+                      sortedLessons.map((lesson) => {
+                        return (
+                          <div key={lesson.id} className="h-20 min-h-[5rem] relative">
+                            <CalendarEventCard
+                              lesson={lesson as any}
+                              onClick={(e) => onEventClick(lesson, { x: e.clientX, y: e.clientY })}
+                              language={language}
+                            />
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
-        </div>
+        )}
       </div>
-
-      <SubjectFileDrawer lesson={selected} isOpen={!!selected} onClose={() => setSelected(null)} />
     </div>
   );
 }
+
+export default DailyView;
