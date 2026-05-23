@@ -22,6 +22,17 @@ html, body, #root {
   --app-vh: 100dvh;
 }
 
+/* Density rescale on phone (touch + narrow). Bumps typography only; spacing
+ * is intentionally untouched to avoid shifting pixel-tight layouts (calendar grid,
+ * timeline math). See docs/superpowers/specs/2026-05-23-mobile-architecture-design.md */
+@media (pointer: coarse) and (max-width: 767px) {
+  :root {
+    --text-xs: 0.8125rem;
+    --text-sm: 0.9375rem;
+    --text-base: 1.0625rem;
+  }
+}
+
 /* Enable both light and dark Mendelu themes */
 @plugin "daisyui" {
   themes: mendelu-dark --default, mendelu;
