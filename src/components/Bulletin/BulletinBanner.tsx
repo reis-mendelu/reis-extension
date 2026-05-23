@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Pin, ExternalLink, X } from 'lucide-react';
+import { Pin, ExternalLink, X, ArrowUpRight } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useIsMobile } from '../ui/use-mobile';
@@ -93,13 +93,13 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
             <div className="flex w-full bg-base-100/60 border border-base-300 rounded-lg overflow-hidden">
                 <div className="flex-1 flex flex-col overflow-y-auto min-w-0" style={{ maxHeight: '64px' }}>
                     {loading && posts.length === 0 && (
-                        <div className="flex items-center px-3 py-1 text-xs text-base-content/50">{t('bulletin.loading')}</div>
+                        <div className="h-8 flex items-center px-3 text-xs text-base-content/50">{t('bulletin.loading')}</div>
                     )}
                     {!loading && error && posts.length === 0 && (
-                        <div className="flex items-center px-3 py-1 text-xs text-error/80">{t('bulletin.error')}</div>
+                        <div className="h-8 flex items-center px-3 text-xs text-error/80">{t('bulletin.error')}</div>
                     )}
                     {!loading && !error && posts.length === 0 && (
-                        <div className="flex items-center px-3 py-1 text-xs text-base-content/50">{t('bulletin.empty')}</div>
+                        <div className="h-8 flex items-center px-3 text-xs text-base-content/50">{t('bulletin.empty')}</div>
                     )}
                     {posts.map((post, i) => {
                         const cat = post.categories[post.categories.length - 1] ?? post.categories[0];
@@ -110,14 +110,17 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 title={cat ? `${post.title} · ${cat}` : post.title}
-                                className={`flex items-start gap-2 px-3 py-1 hover:bg-base-200/60 transition-colors group/post ${
+                                className={`h-8 flex items-center justify-between gap-2 px-3 hover:bg-base-200/60 transition-colors group/post ${
                                     i < posts.length - 1 ? 'border-b border-base-300/50' : ''
                                 }`}
                             >
-                                <span className={`w-1.5 h-1.5 mt-1 rounded-full flex-shrink-0 transition-opacity opacity-70 group-hover/post:opacity-100 ${dotColor(cat)}`} />
-                                <span className="flex-1 text-xs text-base-content/80 group-hover/post:text-base-content transition-colors truncate group-hover/post:whitespace-normal group-hover/post:overflow-visible group-hover/post:break-words">
-                                    {post.title}
-                                </span>
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all group-hover/post:scale-125 ${dotColor(cat)}`} />
+                                    <span className="flex-1 text-xs text-base-content/75 group-hover/post:text-base-content transition-colors truncate">
+                                        {post.title}
+                                    </span>
+                                </div>
+                                <ArrowUpRight className="w-3.5 h-3.5 text-base-content/30 opacity-0 group-hover/post:opacity-100 group-hover/post:translate-x-0.5 transition-all duration-200 flex-shrink-0" />
                             </a>
                         );
                     })}
