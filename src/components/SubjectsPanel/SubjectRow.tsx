@@ -25,12 +25,16 @@ function zameraniAcronym(norm: string): string {
   return norm.split(/\s+/).map(w => w[0]?.toUpperCase() ?? '').join('');
 }
 
+// IS Mendelu uses 999 as a sentinel "credits unknown / pass-through" value.
+const isSentinelCredits = (credits: number) => credits >= 999;
+
 export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, onOpenSubject, onSearchSubject, zamerani, zameraniProgress, subjectSemesters, subjectToZameranis }: SubjectRowProps) {
   const { t } = useTranslation();
   const hasId = subject.id !== '';
   const displayName = useCourseName(subject.code, subject.name);
   const timeline = useTimeline(subject.code);
   const isZamerani = isZameraniCode(subject.code);
+  const showCredits = !isSentinelCredits(subject.credits) && !isZamerani;
   const typeLabel = subject.type?.trim();
   const zameraniMembership = subjectToZameranis?.get(subject.code);
   const zameraniTag = zameraniMembership?.length ? zameraniAcronym(zameraniMembership[0]) : null;
@@ -61,6 +65,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
             <span className="text-[9px] text-base-content/30 shrink-0">{subject.fulfillmentDate}</span>
           )}
           {timeline && <span className="text-[9px] font-bold text-primary/60 shrink-0">{timeline.formatted}</span>}
+          {showCredits && <span className="hidden md:inline text-[10px] shrink-0 font-medium">{subject.credits} kr.</span>}
         </button>
       </div>
     );
@@ -152,6 +157,9 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
       )}
       {zameraniTag && (
         <span className="text-[9px] font-mono tracking-widest text-primary/50 bg-primary/8 px-1.5 py-0.5 rounded shrink-0">{zameraniTag}</span>
+      )}
+      {showCredits && (
+        <span className="hidden md:inline text-xs text-base-content/50 shrink-0">{subject.credits} kr.</span>
       )}
       {subject.isFulfilled && subject.fulfillmentDate ? (
         <span className="flex items-center gap-1 text-[10px] text-success/70 shrink-0"><CheckCircle2 className="w-3 h-3" /><span className="font-mono">{subject.fulfillmentDate}</span></span>
