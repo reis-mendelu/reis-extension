@@ -28,9 +28,7 @@ export function TermNoteBlock({ terminId }: { terminId: string }) {
     return (
         <div
             onClick={e => e.stopPropagation()}
-            className={`px-3 py-2 border-t text-xs leading-relaxed bg-base-200/30 border-base-200/60 ${
-                note.isEmphasized ? 'border-l-2 border-warning' : ''
-            }`}
+            className="px-3 py-2 border-t text-xs leading-relaxed bg-base-200/30 border-base-200/60"
         >
             <div className="flex items-start gap-1.5">
                 <AlertTriangle
