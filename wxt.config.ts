@@ -43,6 +43,9 @@ export default defineConfig({
           optional: [],
         },
       },
+      gecko_android: {
+        strict_min_version: '140.0',
+      },
     },
     content_security_policy: {
       extension_pages: "script-src 'self'; object-src 'self'",
