@@ -33,12 +33,16 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
     const expanded = useAppStore(s => s.bulletinExpanded);
     const loading = useAppStore(s => s.bulletinLoading);
     const error = useAppStore(s => s.bulletinError);
+    const hydrated = useAppStore(s => s.bulletinHydrated);
     const setExpanded = useAppStore(s => s.setBulletinExpanded);
     const loadIfStale = useAppStore(s => s.loadBulletinIfStale);
 
     useEffect(() => {
-        if (expanded) void loadIfStale();
-    }, [expanded, loadIfStale]);
+        // Wait until hydrate finishes before consulting the cache; otherwise a
+        // user click during the hydrate microtask fires loadIfStale against
+        // default state (fetchedAt=null) and races the IDB-restored values.
+        if (expanded && hydrated) void loadIfStale();
+    }, [expanded, hydrated, loadIfStale]);
 
     if (!inline) return null;
 

@@ -12,6 +12,7 @@ export const createBulletinSlice: AppSlice<BulletinSlice> = (set, get) => ({
     bulletinExpanded: false,
     bulletinLoading: false,
     bulletinError: false,
+    bulletinHydrated: false,
 
     hydrateBulletin: async () => {
         try {
@@ -26,9 +27,11 @@ export const createBulletinSlice: AppSlice<BulletinSlice> = (set, get) => ({
                 bulletinPosts: hydratedPosts,
                 bulletinFetchedAt: hydratedFetchedAt,
                 bulletinExpanded: expanded === true,
+                bulletinHydrated: true,
             });
         } catch {
-            // IDB read failure is non-critical
+            // IDB read failure is non-critical — mark hydrated anyway so the UI unblocks.
+            set({ bulletinHydrated: true });
         }
     },
 

@@ -365,6 +365,7 @@ export interface BulletinSlice {
     bulletinExpanded: boolean;
     bulletinLoading: boolean;
     bulletinError: boolean;
+    bulletinHydrated: boolean;
     hydrateBulletin: () => Promise<void>;
     setBulletinExpanded: (expanded: boolean) => Promise<void>;
     loadBulletinIfStale: () => Promise<void>;
