@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { Pin, ExternalLink, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useIsMobile } from '../ui/use-mobile';
+import { MobileBulletinOverlay } from './MobileBulletinOverlay';
 
 const VYVESKA_URL = 'https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl?zalozka=2';
 
@@ -29,6 +31,7 @@ function dotColor(cat: string | undefined): string {
 
 export function BulletinBanner({ inline = false }: { inline?: boolean }) {
     const { t } = useTranslation();
+    const isMobile = useIsMobile();
     const posts = useAppStore(s => s.bulletinPosts);
     const expanded = useAppStore(s => s.bulletinExpanded);
     const loading = useAppStore(s => s.bulletinLoading);
@@ -45,6 +48,29 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
     }, [expanded, hydrated, loadIfStale]);
 
     if (!inline) return null;
+
+    if (isMobile) {
+        return (
+            <div className="flex-1 flex items-center min-w-0 px-3">
+                <button
+                    type="button"
+                    onClick={() => { void setExpanded(true); }}
+                    aria-label={t('bulletin.expand')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-base-100/60 border border-base-300 rounded-lg hover:bg-base-200/60 transition-colors"
+                >
+                    <Pin className="w-3 h-3 text-primary flex-shrink-0" />
+                    <span className="text-xs font-semibold text-base-content whitespace-nowrap">{t('bulletin.title')}</span>
+                </button>
+                <MobileBulletinOverlay
+                    isOpen={expanded}
+                    onClose={() => { void setExpanded(false); }}
+                    posts={posts}
+                    loading={loading}
+                    error={error}
+                />
+            </div>
+        );
+    }
 
     if (!expanded) {
         return (
