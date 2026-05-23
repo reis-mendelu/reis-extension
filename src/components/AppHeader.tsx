@@ -39,11 +39,12 @@ export function AppHeader({
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [prefillQuery, setPrefillQuery] = useState('');
   const desktopPrefillRef = useRef<((query: string) => void) | null>(null);
+  const isNarrow = useAppStore(s => s.isNarrow);
 
   useEffect(() => {
     if (!searchPrefillRef) return;
     searchPrefillRef.current = (q: string) => {
-      if (window.innerWidth < 768) {
+      if (isNarrow) {
         setPrefillQuery(q);
         setMobileSearchOpen(true);
       } else {
@@ -55,16 +56,16 @@ export function AppHeader({
         searchPrefillRef.current = null;
       }
     };
-  }, [searchPrefillRef]);
+  }, [searchPrefillRef, isNarrow]);
 
   useEffect(() => {
-    const openIfMobile = () => { if (window.innerWidth < 768) setMobileSearchOpen(true); };
+    const openIfMobile = () => { if (isNarrow) setMobileSearchOpen(true); };
     const onKey = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key === 'k') openIfMobile(); };
     const onMsg = (e: MessageEvent) => { if (e.data?.type === 'REIS_OPEN_SEARCH') openIfMobile(); };
     document.addEventListener('keydown', onKey);
     window.addEventListener('message', onMsg);
     return () => { document.removeEventListener('keydown', onKey); window.removeEventListener('message', onMsg); };
-  }, []);
+  }, [isNarrow]);
   const teachingWeekData = useAppStore(s => s.teachingWeekData);
   const viewedWeek = useMemo(() => {
     if (!teachingWeekData || !currentDate) return null;
