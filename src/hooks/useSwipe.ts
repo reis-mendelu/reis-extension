@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 
 const MIN_DISTANCE_PX = 50;
 const MAX_ANGLE_DEG = 30;
@@ -11,11 +11,21 @@ interface SwipeOptions {
 /**
  * Horizontal swipe detector using Pointer Events. Single consumer at introduction
  * (WeeklyCalendar week navigation). Cancels on scroll inside the target element.
+ *
+ * Callbacks are captured in a ref so callers can pass inline arrows without
+ * forcing the effect to re-bind listeners every render — a mid-gesture re-render
+ * would otherwise tear down the pointerdown closure before pointerup arrives.
  */
 export function useSwipe(
     ref: RefObject<HTMLElement | null>,
     { onLeft, onRight }: SwipeOptions,
 ) {
+    const callbacks = useRef({ onLeft, onRight });
+    useLayoutEffect(() => {
+        callbacks.current.onLeft = onLeft;
+        callbacks.current.onRight = onRight;
+    });
+
     useEffect(() => {
         const el = ref.current;
         if (!el) return;
@@ -45,8 +55,8 @@ export function useSwipe(
             const angle = Math.abs(Math.atan2(dy, dx) * 180 / Math.PI);
             const offHorizontal = angle > 90 ? 180 - angle : angle;
             if (offHorizontal > MAX_ANGLE_DEG) return;
-            if (dx < 0) onLeft?.();
-            else onRight?.();
+            if (dx < 0) callbacks.current.onLeft?.();
+            else callbacks.current.onRight?.();
         };
 
         el.addEventListener('pointerdown', onDown);
@@ -57,5 +67,5 @@ export function useSwipe(
             el.removeEventListener('pointerup', onUp);
             el.removeEventListener('scroll', onScroll, { capture: true });
         };
-    }, [ref, onLeft, onRight]);
+    }, [ref]);
 }

@@ -52,4 +52,25 @@ describe('useSwipe', () => {
         expect(onLeft).not.toHaveBeenCalled();
         expect(onRight).not.toHaveBeenCalled();
     });
+
+    it('survives parent re-render between pointerdown and pointerup (stable listener identity)', () => {
+        // Regression: previously effect deps included onLeft/onRight, so inline
+        // callbacks at call sites tore down the pointerdown closure mid-gesture.
+        const target = document.createElement('div');
+        document.body.appendChild(target);
+        const firstLeft = vi.fn();
+        const secondLeft = vi.fn();
+        const { rerender } = renderHook(({ cb }: { cb: () => void }) => {
+            const ref = useRef(target);
+            useSwipe(ref, { onLeft: cb });
+        }, { initialProps: { cb: firstLeft } });
+
+        dispatchPointer(target, 'pointerdown', 200, 100);
+        rerender({ cb: secondLeft }); // new identity, simulates parent re-render
+        dispatchPointer(target, 'pointerup', 80, 110);
+
+        // Pointer tracking must persist across the re-render and call the latest cb.
+        expect(firstLeft).not.toHaveBeenCalled();
+        expect(secondLeft).toHaveBeenCalledOnce();
+    });
 });
