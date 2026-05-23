@@ -3,20 +3,23 @@ import { cleanGroupName, shortenStatusText } from '../utils';
 
 describe('SubjectsPanel utils', () => {
   describe('cleanGroupName', () => {
-    it('strips Czech prefixes correctly', () => {
+    it('strips Czech prefixes with colon/dash/space correctly', () => {
       expect(cleanGroupName('Skupina předmětů: Povinné předměty')).toBe('Povinné předměty');
       expect(cleanGroupName('Skupiny předmětů: Volitelné')).toBe('Volitelné');
       expect(cleanGroupName('Skupina: Oborové')).toBe('Oborové');
+      expect(cleanGroupName('Skupina předmětů povinně volitelných')).toBe('Povinně volitelných');
+      expect(cleanGroupName('Skupina předmětů - Volitelné')).toBe('Volitelné');
     });
 
-    it('strips English prefixes correctly', () => {
+    it('strips English prefixes with colon/dash/space correctly', () => {
       expect(cleanGroupName('A group of courses: Compulsory')).toBe('Compulsory');
       expect(cleanGroupName('Groups of courses: Electives')).toBe('Electives');
       expect(cleanGroupName('Group: Core')).toBe('Core');
+      expect(cleanGroupName('A group of elective courses')).toBe('Elective courses');
     });
 
-    it('keeps other names intact', () => {
-      expect(cleanGroupName('Obecné předměty')).toBe('Obecné předměty');
+    it('keeps other names intact and capitalizes them', () => {
+      expect(cleanGroupName('obecné předměty')).toBe('Obecné předměty');
     });
   });
 

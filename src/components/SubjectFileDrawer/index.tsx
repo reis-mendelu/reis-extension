@@ -7,6 +7,7 @@ import { useSubjectFileDrawerState } from './useSubjectFileDrawerState';
 import { SubjectFileDrawerContent } from './SubjectFileDrawerContent';
 const PdfViewer = lazy(() => import('./PdfViewer').then(m => ({ default: m.PdfViewer })));
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../ui/resizable';
+import { AdaptiveDrawer } from '../ui/AdaptiveDrawer';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ParsedFile } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -140,8 +141,11 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
 
     const hasPdf = activePdfUrl !== null;
     const needsWideDrawer = activeTab === 'zaznamnik' && maxZaznamnikCols >= 5;
-
-    if (!isOpen) return null;
+    const drawerWidth = hasPdf
+        ? 'sm:w-[90vw]'
+        : needsWideDrawer
+            ? 'sm:w-[800px]'
+            : 'sm:w-[600px]';
 
     const fileListContent = (
         <>
@@ -169,41 +173,32 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     );
 
     return (
-        <div className="fixed inset-0 z-50 flex justify-end items-stretch p-0 sm:p-4 isolate"
-             onTouchStart={(e) => e.stopPropagation()}
-             onTouchMove={(e) => e.stopPropagation()}
-             onTouchEnd={(e) => e.stopPropagation()}
-        >
-            <div className="absolute inset-0 bg-black/15 animate-in fade-in" onClick={handleClose} />
-            <div className="w-full flex justify-end items-start h-full pt-0 pb-0 sm:pt-10 sm:pb-10 relative z-10 pointer-events-none">
-                <div role="dialog" className={`bg-base-100 shadow-2xl rounded-2xl flex flex-col h-full animate-in slide-in-from-right pointer-events-auto border border-base-300 transition-[width] duration-300 relative ${hasPdf ? 'w-full sm:w-[90vw]' : needsWideDrawer ? 'w-full sm:w-[800px]' : 'w-full sm:w-[600px]'}`}>
-                    {/* Loading overlay — shown during fetch regardless of hasPdf state */}
-                    {isPdfLoading && (
-                        <div className="absolute inset-0 z-20 flex items-center justify-center bg-base-100/50 rounded-2xl">
-                            <span className="loading loading-spinner loading-lg text-primary" />
-                        </div>
-                    )}
-                    {hasPdf ? (
-                        <ResizablePanelGroup direction="horizontal" className="h-full rounded-2xl">
-                            <ResizablePanel defaultSize={35} minSize={20} className="flex flex-col">
-                                {fileListContent}
-                            </ResizablePanel>
-                            <ResizableHandle withHandle />
-                            <ResizablePanel defaultSize={65} minSize={30}>
-                                <Suspense fallback={
-                                    <div className="flex justify-center items-center h-full bg-base-300/30">
-                                        <span className="loading loading-spinner loading-lg text-primary" />
-                                    </div>
-                                }>
-                                    <PdfViewer blobUrl={activePdfUrl} onClose={handleClosePdf} />
-                                </Suspense>
-                            </ResizablePanel>
-                        </ResizablePanelGroup>
-                    ) : (
-                        fileListContent
-                    )}
+        <AdaptiveDrawer open={isOpen} onClose={handleClose} width={drawerWidth}>
+            {/* Loading overlay — shown during fetch regardless of hasPdf state */}
+            {isPdfLoading && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-base-100/50 rounded-2xl">
+                    <span className="loading loading-spinner loading-lg text-primary" />
                 </div>
-            </div>
-        </div>
+            )}
+            {hasPdf ? (
+                <ResizablePanelGroup direction="horizontal" className="h-full rounded-2xl">
+                    <ResizablePanel defaultSize={35} minSize={20} className="flex flex-col">
+                        {fileListContent}
+                    </ResizablePanel>
+                    <ResizableHandle withHandle />
+                    <ResizablePanel defaultSize={65} minSize={30}>
+                        <Suspense fallback={
+                            <div className="flex justify-center items-center h-full bg-base-300/30">
+                                <span className="loading loading-spinner loading-lg text-primary" />
+                            </div>
+                        }>
+                            <PdfViewer blobUrl={activePdfUrl} onClose={handleClosePdf} />
+                        </Suspense>
+                    </ResizablePanel>
+                </ResizablePanelGroup>
+            ) : (
+                fileListContent
+            )}
+        </AdaptiveDrawer>
     );
 }
