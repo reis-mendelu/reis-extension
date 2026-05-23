@@ -98,14 +98,14 @@ export function AppHeader({
                 <div className="flex items-center bg-base-300 rounded-lg p-1">
                   <button
                     onClick={onPrevWeek}
-                    className="p-1 hover:bg-base-100 rounded-md shadow-sm transition-all text-base-content/70 hover:text-primary"
+                    className="p-1 touch:min-h-[var(--size-tap)] touch:min-w-[var(--size-tap)] touch:flex touch:items-center touch:justify-center hover:bg-base-100 rounded-md shadow-sm transition-all text-base-content/70 hover:text-primary"
                     aria-label="Previous week"
                   >
                     <ChevronLeft size={20} />
                   </button>
                   <button
                     onClick={onNextWeek}
-                    className="p-1 hover:bg-base-100 rounded-md shadow-sm transition-all text-base-content/70 hover:text-primary"
+                    className="p-1 touch:min-h-[var(--size-tap)] touch:min-w-[var(--size-tap)] touch:flex touch:items-center touch:justify-center hover:bg-base-100 rounded-md shadow-sm transition-all text-base-content/70 hover:text-primary"
                     aria-label="Next week"
                   >
                     <ChevronRight size={20} />
