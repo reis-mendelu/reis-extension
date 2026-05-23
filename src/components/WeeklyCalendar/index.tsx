@@ -27,7 +27,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     const pendingTimeSelection = useAppStore((state) => state.pendingTimeSelection);
     const setPendingTimeSelection = useAppStore((state) => state.setPendingTimeSelection);
     const isMobile = useIsMobile();
-    const { weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton: dataLoading, scheduleData, isOutsideTeachingPeriod } = useCalendarData(initialDate);
+    const { weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton: dataLoading, weekdayScheduleData, isOutsideTeachingPeriod } = useCalendarData(initialDate);
     const { t } = useTranslation();
     const [selected, setSelected] = useState<BlockLesson | null>(null);
     const { isSeen, markSeen } = useHintStatus('calendar_event_click');
@@ -229,7 +229,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                             <CalendarHint show={!isSeen} eventPosition={targetEventPosition || undefined} onDismiss={markSeen} />
                             <WeeklyCalendarGrid />
                             <CurrentTimeIndicator todayIndex={todayIndex} />
-                            {!showSkeleton && scheduleData.length === 0 && <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none"><p className="text-base-content/40 text-sm font-medium">{t(isOutsideTeachingPeriod ? 'calendar.outsideSemester' : 'calendar.emptyWeek')}</p></div>}
+                            {!showSkeleton && weekdayScheduleData.length === 0 && <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none"><p className="text-base-content/40 text-sm font-medium">{t(isOutsideTeachingPeriod ? 'calendar.outsideSemester' : 'calendar.emptyWeek')}</p></div>}
                             {[0, 1, 2, 3, 4].map(i => {
                                 const wd = weekDates[i];
                                 const dayKey = wd ? `${wd.year}${wd.month.padStart(2, '0')}${wd.day.padStart(2, '0')}` : null;

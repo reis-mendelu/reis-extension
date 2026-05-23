@@ -159,6 +159,15 @@ export function useCalendarData(initialDate: Date) {
         });
     }, [teachingWeekData, weekDates, isScheduleLoaded]);
 
+    // Desktop grid is intentionally Mon–Fri (5 cols). Expose a weekday-only
+    // view so a weekend customEvent can't fool the desktop empty-week check
+    // (and won't be invisibly dropped at the consumer either — the mobile
+    // DailyView still reads the full 7-day `lessonsByDay`).
+    const weekdayScheduleData = useMemo(
+        () => scheduleData.filter(l => weekDateStrings.slice(0, 5).includes(l.date)),
+        [scheduleData, weekDateStrings]
+    );
+
     return {
         weekDates,
         lessonsByDay,
@@ -168,6 +177,7 @@ export function useCalendarData(initialDate: Date) {
             !isScheduleLoaded || (!handshakeDone && !handshakeTimedOut) || isSyncing
         ),
         scheduleData,
+        weekdayScheduleData,
         isOutsideTeachingPeriod,
         isScheduleLoaded,
         isExamsLoaded
