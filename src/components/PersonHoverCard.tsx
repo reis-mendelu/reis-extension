@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Mail, ExternalLink } from 'lucide-react';
 import { fetchPersonProfile } from '../api/search/searchService';
 import { useAppStore } from '../store/useAppStore';
+import { logError } from '../utils/reportError';
 import type { Person } from '../api/search/types';
 
 interface PersonHoverCardProps {
@@ -78,10 +79,17 @@ export function PersonHoverCard({ personId, children, className }: PersonHoverCa
         // Lazy-fetch profile if not yet loaded
         if (!profile && !loading) {
             setLoading(true);
-            fetchPersonProfile(personId).then((p: Person | null) => {
-                setProfile(p);
-                setLoading(false);
-            });
+            fetchPersonProfile(personId)
+                .then((p: Person | null) => {
+                    setProfile(p);
+                    setLoading(false);
+                })
+                .catch((err: unknown) => {
+                    // Clear loading so the next open re-attempts the fetch instead
+                    // of being stuck on a permanent spinner.
+                    setLoading(false);
+                    logError('PersonHoverCard.fetchProfile', err, { personId });
+                });
         }
     }, [personId, profile, loading]);
 
@@ -114,6 +122,22 @@ export function PersonHoverCard({ personId, children, className }: PersonHoverCa
     };
 
     useEffect(() => () => cancelTimers(), []);
+
+    // Touch users have no hover-leave; without an outside-tap dismiss the card
+    // sticks on screen until the same anchor is tapped again. Listen on the
+    // document while open and close when the tap lands outside both surfaces.
+    useEffect(() => {
+        if (!isTouch || !visible) return;
+        const onDocPointerDown = (e: PointerEvent) => {
+            const target = e.target as Node | null;
+            if (!target) return;
+            if (anchorRef.current?.contains(target)) return;
+            if (cardRef.current?.contains(target)) return;
+            setVisible(false);
+        };
+        document.addEventListener('pointerdown', onDocPointerDown);
+        return () => document.removeEventListener('pointerdown', onDocPointerDown);
+    }, [isTouch, visible]);
 
     const email = profile?.email;
     const messageUrl = email
