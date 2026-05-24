@@ -5,40 +5,7 @@
  */
 
 import { useState } from 'react';
-import { Folder, Check, PanelRightOpen, StickyNote, Download, Loader2 } from 'lucide-react';
-
-type DownloadPhase = 'idle' | 'loading' | 'done';
-
-function DownloadButton({ href, title }: { href: string; title: string }) {
-    const [phase, setPhase] = useState<DownloadPhase>('idle');
-
-    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-        e.stopPropagation();
-        if (phase !== 'idle') return;
-        setPhase('loading');
-        setTimeout(() => setPhase('done'), 1400);
-        setTimeout(() => setPhase('idle'), 2100);
-    };
-
-    return (
-        <a
-            href={href}
-            download
-            onClick={handleClick}
-            className={[
-                'relative p-1.5 rounded-md transition-all duration-200 focus:outline-none',
-                phase === 'idle'    ? 'text-base-content/40 hover:bg-base-300 hover:text-base-content/70' : '',
-                phase === 'loading' ? 'text-primary bg-primary/10 cursor-default' : '',
-                phase === 'done'    ? 'text-success bg-success/10' : '',
-            ].join(' ')}
-            title={title}
-        >
-            {phase === 'idle' && <Download size={14} />}
-            {phase === 'loading' && <Loader2 size={14} className="animate-spin" />}
-            {phase === 'done' && <Check size={14} />}
-        </a>
-    );
-}
+import { Folder, Check, PanelRightOpen, StickyNote } from 'lucide-react';
 import type { FileListProps } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDocumentNoteKeys } from '../../hooks/data/useDocumentNoteKeys';
@@ -154,7 +121,6 @@ export function FileList({
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                                <DownloadButton href={subFile.link} title={t('course.footer.download') || 'Download'} />
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
