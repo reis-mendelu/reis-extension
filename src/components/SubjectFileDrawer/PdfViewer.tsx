@@ -34,9 +34,12 @@ interface PdfViewerProps {
 // browsers crash the canvas well before that. Mount only the visible pages plus
 // a small buffer (see computeRenderWindow); off-screen pages keep a sized
 // placeholder so the scroll height stays stable.
-const PAGE_BUFFER = 2;
+const PAGE_BUFFER = 3;
 // Hard ceiling on simultaneously-mounted page canvases (under pdf.js's ~25).
 const MAX_RENDERED = 20;
+// Vertical lead so pages mount before scrolling into view; large enough to
+// hide fast-fling blank flashes, still bounded by MAX_RENDERED.
+const ROOT_MARGIN = '600px 0px';
 
 export function PdfViewer({ blobUrl, onClose }: PdfViewerProps) {
     const [numPages, setNumPages] = useState<number>(0);
@@ -72,7 +75,7 @@ export function PdfViewer({ blobUrl, onClose }: PdfViewerProps) {
                     return next;
                 });
             },
-            { root, rootMargin: '300px 0px' },
+            { root, rootMargin: ROOT_MARGIN },
         );
         observerRef.current = io;
         return () => { io.disconnect(); observerRef.current = null; };

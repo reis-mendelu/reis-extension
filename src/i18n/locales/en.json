@@ -297,6 +297,10 @@
       "searchOnlyInSchedule": "Files are only available for subjects in your schedule.",
       "noFilesAvailable": "No files available."
     },
+    "pdf": {
+      "loadFailed": "Couldn't open the PDF.",
+      "back": "Back to files"
+    },
     "dragHint": "Drag to select multiple files",
     "clickHint": "Click to view materials",
     "badge": {

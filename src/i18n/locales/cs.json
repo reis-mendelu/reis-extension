@@ -298,6 +298,10 @@
       "searchOnlyInSchedule": "Soubory jsou dostupné jen pro předměty v rozvrhu.",
       "noFilesAvailable": "Žádné soubory nejsou k dispozici."
     },
+    "pdf": {
+      "loadFailed": "PDF se nepodařilo otevřít.",
+      "back": "Zpět na soubory"
+    },
     "dragHint": "Tažením vyber více souborů",
     "clickHint": "Klikni pro zobrazení materiálů",
     "badge": {
