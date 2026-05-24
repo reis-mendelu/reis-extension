@@ -39,6 +39,16 @@ function getExtVersion(): string {
     try { return chrome?.runtime?.getManifest?.().version ?? '0.0.0'; } catch { return '0.0.0'; }
 }
 
+// After an extension update, an orphaned iframe keeps running but loses its
+// chrome.runtime binding: chrome.runtime.id goes undefined and IDB/chrome.* ops
+// fail with "connection is closing" / "Extension context invalidated". These
+// reports are unactionable noise — the context is dead and cannot be fixed from
+// within. (Empirically ~77% of the IDB-closing telemetry, all reporting
+// ext_version 0.0.0 because getManifest() throws.) Drop them at the funnel.
+function isContextAlive(): boolean {
+    try { return Boolean(chrome?.runtime?.id); } catch { return false; }
+}
+
 let _send: ((context: string, err: unknown) => void) | null = null;
 
 export function initTelemetry(getEnabled: () => boolean): void {
@@ -48,6 +58,7 @@ export function initTelemetry(getEnabled: () => boolean): void {
     _send = (context: string, err: unknown): void => {
         if (!getEnabled()) return;
         if (typeof navigator !== 'undefined' && navigator.webdriver) return;
+        if (!isContextAlive()) return; // extension context invalidated — unactionable
         if (import.meta.env?.DEV && import.meta.env?.MODE !== 'test') return;
 
         const rawMessage = err instanceof Error ? err.message : String(err);

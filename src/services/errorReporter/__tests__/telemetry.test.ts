@@ -64,6 +64,22 @@ describe('sendTelemetry', () => {
         expect(supabase.rpc).not.toHaveBeenCalled();
     });
 
+    it('skips when the extension context is invalidated (chrome.runtime.id missing)', async () => {
+        // After an extension update, an orphaned iframe loses chrome.runtime.id.
+        // IDB and chrome.* ops then fail with "connection is closing" — reporting
+        // is unactionable noise we cannot fix from the dead context. Drop it.
+        const original = chrome.runtime.id;
+        (chrome.runtime as { id?: string }).id = undefined;
+        try {
+            sendTelemetry('SubjectsSlice.fetchSubjects',
+                new Error("Failed to execute 'transaction' on 'IDBDatabase': The database connection is closing."));
+            await flush();
+            expect(supabase.rpc).not.toHaveBeenCalled();
+        } finally {
+            (chrome.runtime as { id?: string }).id = original;
+        }
+    });
+
     it('sanitizes the error message — strips 6-digit UIC', async () => {
         sendTelemetry('Parser.x', new Error('user 123456 failed'));
         await flush();
