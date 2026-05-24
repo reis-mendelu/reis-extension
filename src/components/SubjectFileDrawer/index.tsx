@@ -1,12 +1,11 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useFileActions } from '../../hooks/ui/useFileActions';
 import { DrawerHeader } from './DrawerHeader';
 import { IndexedDBService } from '../../services/storage';
 import { cleanFolderName } from '../../utils/fileUrl';
 import { useSubjectFileDrawerState } from './useSubjectFileDrawerState';
 import { SubjectFileDrawerContent } from './SubjectFileDrawerContent';
-const PdfViewer = lazy(() => import('./PdfViewer').then(m => ({ default: m.PdfViewer })));
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../ui/resizable';
+import { PdfDrawerLayout } from './PdfDrawerLayout';
 import { AdaptiveDrawer } from '../ui/AdaptiveDrawer';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ParsedFile } from '../../types/documents';
@@ -24,6 +23,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     const { t } = useTranslation();
     const classmatesCount = useAppStore(s => lesson?.courseCode ? s.classmates[lesson.courseCode]?.length : undefined);
     const zaznamnikData = useAppStore(s => lesson?.courseCode ? s.zaznamnik?.[lesson.courseCode] : undefined);
+    const isPhone = useAppStore(s => s.isTouch && s.isNarrow);
 
     const phSections = zaznamnikData?.ph.sections;
     const vtTests = zaznamnikData?.vt.tests;
@@ -181,21 +181,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
                 </div>
             )}
             {hasPdf ? (
-                <ResizablePanelGroup direction="horizontal" className="h-full rounded-2xl">
-                    <ResizablePanel defaultSize={35} minSize={20} className="flex flex-col">
-                        {fileListContent}
-                    </ResizablePanel>
-                    <ResizableHandle withHandle />
-                    <ResizablePanel defaultSize={65} minSize={30}>
-                        <Suspense fallback={
-                            <div className="flex justify-center items-center h-full bg-base-300/30">
-                                <span className="loading loading-spinner loading-lg text-primary" />
-                            </div>
-                        }>
-                            <PdfViewer blobUrl={activePdfUrl} onClose={handleClosePdf} />
-                        </Suspense>
-                    </ResizablePanel>
-                </ResizablePanelGroup>
+                <PdfDrawerLayout isPhone={isPhone} activePdfUrl={activePdfUrl} onClosePdf={handleClosePdf} fileList={fileListContent} />
             ) : (
                 fileListContent
             )}
