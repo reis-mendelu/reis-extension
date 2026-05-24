@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { Folder, Check, PanelRightOpen, StickyNote } from 'lucide-react';
+import { Folder, Check, StickyNote } from 'lucide-react';
 import type { FileListProps } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDocumentNoteKeys } from '../../hooks/data/useDocumentNoteKeys';
@@ -85,6 +85,8 @@ export function FileList({
                                                 if (ignoreClickRef.current) return;
                                                 if (e.ctrlKey || e.metaKey) {
                                                     onToggleSelect(subFile.link, e);
+                                                } else if (isPdfFile(subFile) && onViewPdf) {
+                                                    onViewPdf(subFile.link);
                                                 } else {
                                                     onOpenFile(subFile.link);
                                                 }
@@ -134,18 +136,6 @@ export function FileList({
                                                         <span className="absolute top-1 right-1 w-[5px] h-[5px] rounded-full bg-primary" />
                                                     )}
                                                 </button>
-                                                {isPdfFile(subFile) && onViewPdf && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onViewPdf(subFile.link);
-                                                        }}
-                                                        className="p-1.5 rounded-md hover:bg-base-300 text-base-content/40 hover:text-primary transition-colors focus:outline-none"
-                                                        title={t('course.footer.openInSidebar') || 'Open in Sidebar'}
-                                                    >
-                                                        <PanelRightOpen size={16} />
-                                                    </button>
-                                                )}
                                                 <FileTypeBadge type={subFile.type} />
                                             </div>
                                         </div>
