@@ -27,9 +27,21 @@ Two tables. Use the right one for the question.
 
 Columns on `error_reports`: `id, error_type, error_message, file_path, line_number, ext_version, browser_name, browser_version, created_at, resolved_at, session_id, stack_excerpt, client_ts, fingerprint`.
 
-Columns on `error_groups`: `fingerprint, error_type, message_template, sample_message, first_seen, last_seen, occurrence_count, last_ext_version, resolved_at, resolved_in_version`.
+Columns on `error_groups`: `fingerprint, error_type, message_template, sample_message, first_seen, last_seen, occurrence_count, last_ext_version, resolved_at, resolved_in_version, fix_staged_version, fix_target`.
+
+The last two are the **staging ledger** (added `20260524120000_error_groups_fix_staging.sql`). They let the skill automate honest resolution across invocations:
+
+| `resolved_at` | `fix_staged_version` | Meaning |
+|---|---|---|
+| NULL | NULL | Open, untouched. |
+| NULL | set | **Staged** — a fix was authored against that ext_version, awaiting a later release to verify. Phase 0 reconciles these. |
+| set | set | Resolved (verified). `resolved_in_version` records where it went quiet. |
+
+`fix_target` is `'code'` (bug fixed at source) or `'filter'` (noise dropped at the telemetry funnel). It decides how Phase 0 verifies — see Phase 0.
 
 Both have RLS deny-all. Query via the Supabase linked project: `npx supabase db query --linked "<SQL>"`.
+
+**The `ext_version = '0.0.0'` sentinel.** `getExtVersion()` returns `'0.0.0'` only when `chrome.runtime.getManifest()` throws — i.e. the **extension context was invalidated** (an update unplugged a still-open iframe). It is the single most useful discriminator in IDB/chrome-API error triage: `0.0.0` events are environmentally dead (unfixable from inside; the `isContextAlive()` funnel guard now drops them), live-version events are real bugs. **Always split IDB/`connection is closing` groups by `ext_version='0.0.0'` before deciding anything.**
 
 ## Inversion first — read this before any query
 
@@ -39,8 +51,48 @@ What kills the triage:
 2. **Marking-as-resolved for queue cleanliness.** If the underlying bug still fires, you've created false confidence. Only resolve what's *structurally* fixed (filtered, code-fixed at root, or genuinely unreachable).
 3. **Treating "occurrence_count = 28" as severity.** 28 events from 1 looping user is a UX nuisance; 28 events from 28 users is a real bug. Always join to `session_id` count.
 4. **Touching parsers to silence parser errors.** See `CLAUDE.md` — parsers require a real IS Mendelu HTML sample. Suppress lints, fix fixtures, never relax guards.
-5. **Adding new telemetry fields to "help debug" without updating PRIVACY.md §6.** Every disclosed field is a contract.
+5. **Adding new telemetry fields to "help debug" without updating PRIVACY.md §6.** Every disclosed field is a contract. (Internal bookkeeping columns like `fix_staged_version` are *not* transmitted, so they don't touch the contract — but a *client-sent* field always does.)
 6. **Trusting recency.** A bug that fired once last week isn't necessarily small; a bug that fires daily isn't necessarily new. Check `first_seen` vs ext_version timeline.
+7. **Fixing the minority while declaring victory.** A symptom can have two roots in different proportions (e.g. `connection is closing` is ~77% dead-context, ~23% live-connection). Before writing a fix, **state what fraction of the group it eliminates** — split by `ext_version`. A clean fix for the wrong 23% is still a loss.
+8. **Believing green tests prove the root is addressed.** The unit harness (`fake-indexeddb`, happy-dom) *cannot* reproduce extension-context invalidation — the dominant cause. Passing tests prove the path you could simulate, and are silent on the one you couldn't. Verify against the *actual* production failure mode, not the convenient one.
+
+## Phase 0 — Reconcile staged fixes (run this FIRST, every invocation)
+
+Before triaging anything new, close the loop on fixes a prior run staged. This is the automation: a fix is staged in one invocation and auto-resolved in a later one once telemetry proves it took. **Never skip — that is how the queue stays honest without a human re-checking.**
+
+1. Read the current shipped version: `node -p "require('./package.json').version"`. Call it `SHIPPED`.
+2. List staged groups:
+   ```sql
+   SELECT fingerprint, error_type, sample_message, fix_staged_version, fix_target
+   FROM error_groups
+   WHERE resolved_at IS NULL AND fix_staged_version IS NOT NULL;
+   ```
+3. For each staged group, decide if a **newer release actually shipped and reached users**. A release shipped iff `SHIPPED` (semver) > `fix_staged_version` AND telemetry shows events on a version newer than `fix_staged_version`. If no newer version has reached users yet, **leave it staged** — there is nothing to verify. Find the rollout cutoff:
+   ```sql
+   SELECT min(created_at) AS rollout FROM error_reports
+   WHERE fingerprint = '<fp>'
+     AND ext_version <> '0.0.0'
+     AND string_to_array(ext_version,'.')::int[] > string_to_array('<fix_staged_version>','.')::int[];
+   -- if NULL, fall back to the global rollout: min(created_at) where ext_version = '<SHIPPED>'
+   ```
+   Compare versions semver-safe with `string_to_array(v,'.')::int[]`, never as text — `'5.0.10' < '5.0.9'` lexically.
+4. Count occurrences **after the cutoff** that the fix should have eliminated:
+   - `fix_target = 'filter'`: count **all** events since cutoff (including `ext_version='0.0.0'`) — the funnel now drops them client-side, so any arrival is a regression.
+     ```sql
+     SELECT count(*) FROM error_reports
+     WHERE fingerprint = '<fp>' AND created_at >= '<rollout>';
+     ```
+   - `fix_target = 'code'`: count events since cutoff on the fixed-or-newer version.
+     ```sql
+     SELECT count(*) FROM error_reports
+     WHERE fingerprint = '<fp>' AND created_at >= '<rollout>'
+       AND ext_version <> '0.0.0'
+       AND string_to_array(ext_version,'.')::int[] >= string_to_array('<fix_staged_version>','.')::int[];
+     ```
+5. Act on the count:
+   - **0 → resolve.** `UPDATE error_groups SET resolved_at = now(), resolved_in_version = '<SHIPPED>' WHERE fingerprint = '<fp>';` (keep `fix_staged_version`/`fix_target` as the audit trail).
+   - **> 0 → the fix did not take.** Do **not** resolve. Clear staging so it re-enters normal triage, and report it as a regression: `UPDATE error_groups SET fix_staged_version = NULL, fix_target = NULL WHERE fingerprint = '<fp>';`
+6. Report what reconciliation closed vs. reopened, then continue to Phase 1.
 
 ## Phase 1 — Triage (what's open)
 
@@ -102,58 +154,47 @@ Three categories. Pick one before writing code:
 
 | Category | When | Where to fix |
 |---|---|---|
-| **Filter** | Error is an expected UX state (auth missing, host page navigated, user not logged in). Reporting it is noise. | `src/services/errorReporter/telemetry.ts` → extend `isExpectedError()` pattern list. Never filter at individual call sites — central funnel only. |
-| **Root-fix** | A real bug. Unguarded `.map`, missing retry, race condition. | At the offending file. NO bundled refactoring (see CLAUDE.md iron rules). |
-| **Accept** | Environmental / unfixable. Version downgrade. Stale chunk hash after extension update. Genuine network drop. | Document in resolved_in_version notes; mark resolved with a reason. |
+| **Filter** | Error is an expected UX state (auth missing, host page navigated, user not logged in) **or a dead-context report** (`isContextAlive()` false / `ext_version='0.0.0'`). Reporting it is unactionable noise. | `src/services/errorReporter/telemetry.ts` → extend `isExpectedError()` / the funnel guards. Never filter at individual call sites — central funnel only. → stage as `fix_target='filter'`. |
+| **Root-fix** | A real bug. Unguarded `.map`, missing retry, race condition. | At the offending file. NO bundled refactoring (see CLAUDE.md iron rules). → stage as `fix_target='code'`. |
+| **Accept** | Environmental / unfixable *and not even worth a filter*. Version downgrade (`VersionError`). Stale chunk hash. Genuine one-off network drop. | Resolve immediately with a reason in `resolved_in_version` — there is nothing to ship, so nothing to stage. |
+
+**Before writing code, state the fix's coverage.** Split the group by `ext_version` and say out loud what fraction this fix eliminates (see inversion #7). If a single symptom has two roots in different proportions, you likely need *two* fixes (e.g. a funnel filter for the dead-context majority **and** a root-fix for the live minority) — categorize and stage each.
 
 If the fix touches more than 2 files, you've probably chosen the wrong category. Stop, re-read Phase 2.
 
-## Phase 4 — Mark resolved (honest accounting)
+## Phase 4 — Stage the fix (do NOT resolve here)
 
-Only after the fix is shipped *and* the underlying behavior no longer reaches `report_error_v2`. The two acceptable patterns:
+A fix made *this* invocation has not shipped — the version in `package.json` is still being worked on, and the broken behavior still reaches `report_error_v2` from every user not yet on the new build. Resolving now is the false-confidence trap (inversion #2). **Stage instead; Phase 0 of a later run resolves it once a release proves it took.**
 
-**A. Group-level (preferred):**
+Stamp the group(s) with the version the fix was authored against (current `package.json`) and the category from Phase 3:
+
 ```sql
 UPDATE error_groups
-SET resolved_at = now(), resolved_in_version = '<x.y.z>'
-WHERE fingerprint = '<fp>';
+SET fix_staged_version = '<current package.json version>',
+    fix_target = '<code|filter>'      -- from Phase 3
+WHERE resolved_at IS NULL AND <fingerprint or precise sample_message condition>;
 ```
 
-**B. Event-level batch (for filter-style fixes that affect many fingerprints, e.g., HTTP 403):**
+Prefer matching by a precise `sample_message LIKE` condition over transcribing fingerprints — one filter fix often covers many fingerprints, and content-matching catches the ones below your triage `LIMIT`.
+
+**The only category that resolves immediately is Accept** — there is nothing to ship, so nothing to verify:
 ```sql
-UPDATE error_reports SET resolved_at = now()
-WHERE resolved_at IS NULL AND <precise condition matching the filter>;
--- Then re-derive groups:
-UPDATE error_groups g SET resolved_at = now()
-WHERE g.resolved_at IS NULL
-  AND NOT EXISTS (
-    SELECT 1 FROM error_reports r
-    WHERE r.fingerprint = g.fingerprint AND r.resolved_at IS NULL
-  );
+UPDATE error_groups
+SET resolved_at = now(), resolved_in_version = '<reason, e.g. accept:chunk-hash-stale>'
+WHERE fingerprint = '<fp>';
 ```
 
 **Anti-patterns to refuse:**
+- Resolving a code/filter fix the same session you wrote it. It hasn't shipped. Stage it.
 - Mark-all-resolved-because-the-queue-is-noisy. Don't.
-- Mark resolved without `resolved_in_version`. Future-you needs to know which release the fix was in.
-- Mark a Sync retry as resolved because you deduped it. Real retries still fire on real failures — the underlying bug isn't gone.
+- Staging without `fix_target`. Phase 0 can't verify without knowing how.
+- Staging a Sync retry as fixed because you deduped it. Real retries still fire on real failures — the underlying bug isn't gone.
 
-## Phase 5 — Verify the fix actually shipped
+## Phase 5 — Verification is Phase 0
 
-After the next release that includes the fix, check for *new* occurrences post-release date:
+There is no separate manual verify step. Staged fixes are reconciled automatically by **Phase 0** on the next invocation after a release: it date-gates on the rollout, counts residual occurrences per `fix_target`, and either resolves (0) or reopens (>0). This is deliberate — verification is a *gate on resolution*, not an optional afterthought, so the queue can never show a "resolved" group that is still firing.
 
-```sql
-SELECT count(*), max(created_at)
-FROM error_reports
-WHERE fingerprint = '<fp>'
-  AND created_at > '<release date>'
-  AND ext_version >= '<fix version>';
-```
-
-If count > 0 on the fix version, the fix didn't take. Reopen the group:
-```sql
-UPDATE error_groups SET resolved_at = NULL, resolved_in_version = NULL
-WHERE fingerprint = '<fp>';
-```
+To force a check sooner (e.g. right after a release), just re-run the skill — Phase 0 runs first.
 
 ## Privacy guardrails
 
@@ -172,8 +213,8 @@ Before adding ANY new query that pulls more than the disclosed columns, or any n
 | `Api.fetch*` Failed to fetch | Tab navigated mid-fetch OR IS Mendelu down | Check session_id count — single session = AbortError noise. |
 | `SyncService.syncClassmates*` | Per-subject failure after group map succeeded | Real per-subject issue. Check which subject (stack). |
 | `Sync.fetchSeminarGroupIds.retry` | Group-map fetch failed twice | Network or IS Mendelu API change. |
-| `IDBDatabase.*: connection is closing` | IDB singleton not self-healing on `onversionchange`/`onclose` | Architecture issue — DO NOT patch with try/catch; fix `IndexedDBService`. |
-| `*Slice.fetch*` (IDB error) | Fallout from the same root as above | Same fix, single source. |
+| `IDBDatabase.*: connection is closing` | **Two roots — split by `ext_version='0.0.0'` first.** `0.0.0` = dead extension context (majority, ~77%); live version = connection not self-healed. | `0.0.0` → **filter** (`isContextAlive()` funnel guard drops it — unfixable from inside). Live → **code** fix in `IndexedDBService` (lazy `getDB()` + `blocking`/`terminated` reset + retry-once). Both authored against 5.0.4 and staged (`fix_target='filter'`); Phase 0 verifies after the next release. |
+| `*Slice.fetch*` (IDB error) | Fallout from the same two roots as above | Same two fixes, single source each. Don't patch per-slice. |
 | `ErasmusSlice.fetchUniversities` | HEI API or CDN hiccup | Retry policy lives in `messageHandler.ts` BG fetch path. |
 | Dynamic import `Failed to fetch ... chunks/*` | Old page open after extension update; chunk hash changed | Accept. Cannot fix from the new build. |
 | `VersionError` IDB version (18) < (19) | User installed older version after newer | Accept. |
