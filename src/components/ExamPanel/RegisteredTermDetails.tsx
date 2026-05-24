@@ -7,9 +7,10 @@ import { parseRegistrationStart } from '../../utils/termUtils';
 
 interface RegisteredTermDetailsProps {
     section: ExamSection;
+    isCollapsed?: boolean;
 }
 
-export function RegisteredTermDetails({ section }: RegisteredTermDetailsProps) {
+export function RegisteredTermDetails({ section, isCollapsed = false }: RegisteredTermDetailsProps) {
     const { t, language } = useTranslation();
     const now = useAppStore(s => s.now);
     const term = section.registeredTerm;
@@ -40,7 +41,7 @@ export function RegisteredTermDetails({ section }: RegisteredTermDetailsProps) {
                     </span>
                 )}
             </div>
-            {term.deregistrationDeadline && (
+            {term.deregistrationDeadline && !(isCollapsed && isAfterDeadline) && (
                 <div className={`flex flex-wrap items-center gap-1.5 text-[10px] uppercase font-bold mt-1 ${isAfterDeadline ? 'text-base-content/30' : 'text-warning/80'}`}>
                     <AlertCircle size={10} className="shrink-0" />
                     <span className={isAfterDeadline ? 'line-through' : ''}>

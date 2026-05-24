@@ -42,7 +42,8 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
         <div onClick={() => !disabled && onSelect()}
                 className={`relative flex flex-col w-full rounded-lg border transition-all text-left ${(isArmed || isFiring) ? 'bg-warning/10 border-warning shadow-[0_0_10px_rgba(251,189,35,0.3)]' : isFuture ? 'bg-warning/5 border-warning/30' : (isFull || isClosed || isBlocked) ? 'bg-base-200 border-transparent opacity-60' : 'bg-base-100 border-transparent hover:border-primary shadow-sm cursor-pointer'}`}>
             {attemptAccent && <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-lg ${attemptAccent}`} />}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 w-full p-2.5">
+            {/* Desktop Layout */}
+            <div className="hidden md:flex flex-wrap items-center gap-x-3 gap-y-1.5 w-full p-2.5">
                 {/* Date */}
                 <div className="flex items-baseline gap-1.5 min-w-[58px]">
                     <span className={`text-sm font-bold tracking-tight ${disabled ? 'text-base-content/30 line-through' : 'text-base-content'}`}>
@@ -152,12 +153,145 @@ export function TermTile({ term, section, isArmed, isFiring, onToggleArm, onSele
                         </div>
                     )}
                 </div>
+            </div>
 
+            {/* Mobile Layout */}
+            <div className="flex md:hidden flex-col gap-2 w-full p-2.5 text-xs">
+                {/* Row 1: Date, Time, Room, and Attempt badges */}
+                <div className="flex items-center justify-between w-full">
+                    <div className="flex items-baseline gap-1">
+                        <span className={`text-sm font-extrabold tracking-tight ${disabled ? 'text-base-content/30 line-through' : 'text-base-content'}`}>
+                            {term.date.split('.').slice(0, 2).join('.')}
+                        </span>
+                        <span className="text-[9px] font-bold uppercase tracking-wider opacity-35">
+                            {getDayOfWeek(term.date, t)}
+                        </span>
+                        <span className="opacity-25 mx-0.5">•</span>
+                        <span className={`text-sm font-extrabold ${disabled ? 'opacity-30' : 'opacity-90'}`}>
+                            {term.time}
+                        </span>
+                        {term.room && (
+                            <>
+                                <span className="opacity-25 mx-0.5">•</span>
+                                <span className="text-[11px] font-bold text-primary">
+                                    {(language === 'en' && term.roomEn) ? term.roomEn : (term.roomCs || term.room)}
+                                </span>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Attempt badges */}
+                    {term.attemptTypes && term.attemptTypes.length > 0 && (
+                        <div className="flex items-center gap-1 shrink-0">
+                            {term.attemptTypes.map(type => (
+                                <div key={type} className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${attemptPillClass(type)}`} title={t(`successRate.${type}`)}>
+                                    {type === 'regular'
+                                        ? <CircleCheck size={9} className={attemptIconClass(type)} />
+                                        : <><RotateCcw size={9} className={attemptIconClass(type)} /><span className={`text-[8px] font-black leading-none ${attemptIconClass(type)}`}>{type === 'retake1' ? '1' : type === 'retake2' ? '2' : '3'}</span></>}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Row 2: Form & Teacher (left) and Open in IS (right) */}
+                {(term.teacher || term.sectionForm || term.sectionFormCs || term.sectionFormEn || term.detailUrl) && (
+                    <div className="flex items-center justify-between gap-1.5 text-[10px] text-base-content/40 leading-none w-full">
+                        <div className="flex items-center gap-1.5 truncate">
+                            {(() => {
+                                const form = (language === 'en' && term.sectionFormEn) ? term.sectionFormEn : (term.sectionFormCs || term.sectionForm);
+                                return form ? <span className="italic opacity-80">{form}</span> : null;
+                            })()}
+                            {term.teacher && (
+                                <>
+                                    {((language === 'en' && term.sectionFormEn) || term.sectionFormCs || term.sectionForm) ? <span className="opacity-50">•</span> : null}
+                                    {term.teacherId ? (
+                                        <a
+                                            href={`https://is.mendelu.cz/auth/lide/clovek.pl?id=${term.teacherId};lang=${language === 'en' ? 'en' : 'cz'}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={e => e.stopPropagation()}
+                                            className="link link-hover font-semibold text-base-content/50 hover:text-primary truncate max-w-[140px]"
+                                        >
+                                            {term.teacher}
+                                        </a>
+                                    ) : (
+                                        <span className="truncate max-w-[140px]">{term.teacher}</span>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                        <TermDetailLink term={term} />
+                    </div>
+                )}
+
+                {/* Row 3: Capacity and Primary Actions */}
+                <div className="flex items-center justify-between gap-2 mt-0.5 pt-1.5 border-t border-base-content/5 w-full">
+                    {/* Left: Capacity info */}
+                    <div className="flex items-center gap-1.5">
+                        {term.capacity ? (
+                            <>
+                                <span className={`text-[11px] font-bold ${isFull ? 'text-error/70' : 'opacity-65'}`}>
+                                    {isFull ? t('exams.full') : term.capacity.raw}
+                                </span>
+                                {!isFull && (
+                                    <progress
+                                        className="progress w-10 h-1 progress-primary opacity-60"
+                                        value={Math.min(100, (term.capacity.occupied / term.capacity.total) * 100)}
+                                        max="100"
+                                    />
+                                )}
+                            </>
+                        ) : null}
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-2">
+                        {isFuture ? (
+                            <div className="flex items-center gap-2">
+                                <div className={`flex flex-col items-end ${isWithinSniperWindow ? 'text-warning' : 'text-base-content/30'}`}>
+                                    <span className="text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
+                                        {t('exams.opening')} {formatCountdown(msRemaining)}
+                                    </span>
+                                </div>
+                                {onToggleArm && section && isWithinSniperWindow && (
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); onToggleArm(); }}
+                                        className={`btn btn-xs h-7 ${isArmed ? 'btn-warning shadow-lg shadow-warning/20' : 'btn-outline border-warning/30 hover:bg-warning hover:border-warning'} ${isFiring ? 'animate-pulse' : ''} gap-1 px-2 whitespace-nowrap`}
+                                    >
+                                        <Zap size={10} className={isArmed ? 'fill-current' : ''} />
+                                        <span className="text-[9px] font-bold uppercase tracking-wider">
+                                            {isFiring ? t('exams.autoRegFiring') : isArmed ? t('exams.autoRegArmed') : t('exams.autoRegArm')}
+                                        </span>
+                                    </button>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                {isProcessing ? (
+                                    <span className="loading loading-spinner loading-xs text-primary" />
+                                ) : (isClosed || isBlocked) ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[9px] font-bold opacity-30 uppercase tracking-wider">{t('exams.closed')}</span>
+                                        <TermBuiltinActions term={term} />
+                                    </div>
+                                ) : term.capacity ? (
+                                    <div className="flex items-center gap-2">
+                                        {isFull && <TermBuiltinActions term={term} />}
+                                        {!isFull && (
+                                            <span className="btn btn-primary btn-xs px-3 font-bold h-7 flex items-center justify-center">{t('exams.register')}</span>
+                                        )}
+                                    </div>
+                                ) : null}
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* Deadlines + IS detail link */}
             {(term.registrationEnd || term.detailUrl) && (
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 pb-2 text-[10px] font-medium border-t border-base-content/5 pt-1.5">
+                <div className="hidden md:flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 pb-2 text-[10px] font-medium border-t border-base-content/5 pt-1.5">
                     {term.registrationEnd && (sameDeadline ? (
                         <span className="text-base-content/40">{t('exams.registerAndUnregisterDeadline')} <b className="text-base-content/60">{term.registrationEnd}</b></span>
                     ) : (

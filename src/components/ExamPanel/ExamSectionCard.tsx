@@ -64,7 +64,7 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                         {!isReg && <SectionStatePill state={sectionState} t={t} />}
                     </div>
                     {isReg && section.registeredTerm ? (
-                        <RegisteredTermDetails section={section} />
+                        <RegisteredTermDetails section={section} isCollapsed={!isExpanded} />
                     ) : (
                         section.terms.length > 0 && !isExpanded && <TermsSummary terms={section.terms} sectionState={sectionState} />
                     )}
@@ -73,7 +73,7 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                 <div className="flex items-center gap-2 shrink-0 pt-0.5">
                     {isReg && (
                         <div 
-                            className={isAfterDeadline ? "tooltip tooltip-left md:tooltip-top cursor-not-allowed" : ""}
+                            className={`hidden md:inline-flex ${isAfterDeadline ? "tooltip tooltip-left md:tooltip-top cursor-not-allowed" : ""}`}
                             data-tip={isAfterDeadline ? t('exams.afterDeadlineCannotDeregister') : undefined}
                         >
                             <button
@@ -104,6 +104,28 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
                 </div>
             </div>
 
+            {/* Mobile Unregister Button (Safeguard) */}
+            {isReg && (
+                <div className="block md:hidden px-3 pb-3 -mt-1">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); if (!isAfterDeadline) onUnregister(section); }}
+                        disabled={isProcessing || isAfterDeadline}
+                        className={`btn btn-sm w-full ${isAfterDeadline ? 'btn-outline btn-neutral opacity-40 cursor-not-allowed' : 'btn-error btn-outline'}`}
+                    >
+                        {isProcessing ? (
+                            <span className="loading loading-spinner loading-xs" />
+                        ) : (
+                            t('exams.unregister')
+                        )}
+                    </button>
+                    {isAfterDeadline && (
+                        <p className="text-[10px] text-error mt-1 text-center font-bold">
+                            {t('exams.afterDeadlineCannotDeregister')}
+                        </p>
+                    )}
+                </div>
+            )}
+
             {/*
               Teacher's Poznámka is written per druh (exam type) and is identical
               across all termins in this section in practice (verified against 3
@@ -111,11 +133,13 @@ export function ExamSectionCard({ subject, section, isExpanded, isProcessing, on
               section rather than per-term.
             */}
             {(section.registeredTerm?.id || section.terms[0]?.id) && (
-                <TermNoteBlock terminId={(section.registeredTerm?.id ?? section.terms[0]?.id) as string} />
+                <div className={!isExpanded ? "hidden md:block" : ""}>
+                    <TermNoteBlock terminId={(section.registeredTerm?.id ?? section.terms[0]?.id) as string} />
+                </div>
             )}
 
             {isReg && section.registeredTerm?.id && !section.registeredTerm.id.includes('-') && (
-                <div className="px-3 pb-3 -mt-1">
+                <div className={`px-3 pb-3 -mt-1 ${!isExpanded ? "hidden md:block" : ""}`}>
                     <ExamClassmatesStrip terminId={section.registeredTerm.id} />
                 </div>
             )}
