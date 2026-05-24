@@ -44,8 +44,8 @@ export function TermBreakdown({ terms, isCredit }: TermBreakdownProps) {
                 const segments = getSegments(term, isCredit);
 
                 return (
-                    <div key={term.term} className="flex items-center gap-3">
-                        <span className="text-2xs font-semibold text-base-content/60 w-20 text-right shrink-0">{label}</span>
+                    <div key={term.term} className="flex items-center gap-2 sm:gap-3">
+                        <span className="text-2xs font-semibold text-base-content/60 w-16 sm:w-20 text-right shrink-0">{label}</span>
                         <div className="flex-1 h-2 bg-base-content/8 rounded-full overflow-hidden flex opacity-85">
                             {segments.map(seg => (
                                 <div
@@ -58,7 +58,7 @@ export function TermBreakdown({ terms, isCredit }: TermBreakdownProps) {
                                 />
                             ))}
                         </div>
-                        <span className="text-2xs font-bold text-base-content/70 w-16 shrink-0">
+                        <span className="text-2xs font-bold text-base-content/70 w-14 sm:w-16 shrink-0">
                             {rate}% <span className="font-normal text-base-content/40">({total})</span>
                         </span>
                     </div>

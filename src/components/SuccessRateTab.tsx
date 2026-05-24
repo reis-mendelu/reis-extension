@@ -48,7 +48,7 @@ export function SuccessRateTab({ courseCode, facultyCode }: { courseCode: string
     return (
         <div className="flex flex-col h-full px-4 py-3 select-none font-inter overflow-y-auto">
             <div className="text-center mb-6 flex items-center justify-center gap-2">
-                <span className="text-sm opacity-50 font-bold uppercase tracking-wider">{total} {t('successRate.students')} {isCredit ? ` (${t('successRate.credit')})` : ` (${t('successRate.exam')})`}</span>
+                <span className="text-xs sm:text-sm opacity-50 font-bold uppercase tracking-wider">{total} {t('successRate.students')} {isCredit ? ` (${t('successRate.credit')})` : ` (${t('successRate.exam')})`}</span>
             </div>
             <GradeBarChart grades={grades} order={order} colors={colors} max={max} />
             {individualTerms.length > 0 && <TermBreakdown terms={individualTerms} isCredit={isCredit} />}
