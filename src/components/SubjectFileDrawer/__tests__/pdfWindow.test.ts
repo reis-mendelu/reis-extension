@@ -24,4 +24,17 @@ describe('computeRenderWindow', () => {
     it('never exceeds the document length', () => {
         expect(sorted(computeRenderWindow(new Set([0]), 1, 2))).toEqual([0]);
     });
+
+    it('does not cap when the window is within maxRendered', () => {
+        expect(computeRenderWindow(new Set([5]), 100, 2, 20).size).toBe(5);
+    });
+
+    it('caps the window to maxRendered, keeping the topmost (lowest) indices in view', () => {
+        const visible = new Set<number>();
+        for (let i = 10; i <= 40; i++) visible.add(i); // 31 short pages on screen at once
+        const r = computeRenderWindow(visible, 100, 2, 20);
+        expect(r.size).toBe(20);
+        // window starts at minVisible - buffer = 8, contiguous
+        expect(sorted(r)).toEqual(Array.from({ length: 20 }, (_, k) => 8 + k));
+    });
 });

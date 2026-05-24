@@ -35,6 +35,8 @@ interface PdfViewerProps {
 // a small buffer (see computeRenderWindow); off-screen pages keep a sized
 // placeholder so the scroll height stays stable.
 const PAGE_BUFFER = 2;
+// Hard ceiling on simultaneously-mounted page canvases (under pdf.js's ~25).
+const MAX_RENDERED = 20;
 
 export function PdfViewer({ blobUrl, onClose }: PdfViewerProps) {
     const [numPages, setNumPages] = useState<number>(0);
@@ -43,8 +45,12 @@ export function PdfViewer({ blobUrl, onClose }: PdfViewerProps) {
     const [visible, setVisible] = useState<Set<number>>(new Set());
     const containerRef = useRef<HTMLDivElement>(null);
     const observerRef = useRef<IntersectionObserver | null>(null);
-    // Page height at scale 1, used to size placeholders for unmounted pages.
+    // Per-page heights at scale 1, learned as pages render; `baseHeight` (page 1)
+    // is the fallback for pages that have not been mounted/measured yet. Sizing
+    // placeholders from real per-page heights keeps the scroll height accurate
+    // for mixed-geometry PDFs (e.g. a portrait cover before landscape slides).
     const [baseHeight, setBaseHeight] = useState(0);
+    const [pageHeights, setPageHeights] = useState<Map<number, number>>(new Map());
 
     useEffect(() => {
         getWorkerReady().then(() => setReady(true)).catch(() => {});
@@ -72,10 +78,14 @@ export function PdfViewer({ blobUrl, onClose }: PdfViewerProps) {
         return () => { io.disconnect(); observerRef.current = null; };
     }, []);
 
+    // Returns a cleanup (React 19) so the observer stops tracking a page wrapper
+    // when it unmounts — otherwise the observer retains detached nodes.
     const registerPage = useCallback((el: HTMLDivElement | null, idx: number) => {
         if (!el) return;
         el.dataset.pageIndex = String(idx);
-        observerRef.current?.observe(el);
+        const io = observerRef.current;
+        io?.observe(el);
+        return () => io?.unobserve(el);
     }, []);
 
     const onDocumentLoadSuccess = useCallback(async (pdf: PDFDocumentProxy) => {
@@ -93,8 +103,11 @@ export function PdfViewer({ blobUrl, onClose }: PdfViewerProps) {
         }, 350);
     }, []);
 
-    const renderSet = computeRenderWindow(visible, numPages, PAGE_BUFFER);
-    const placeholderHeight = baseHeight ? baseHeight * scale : 800;
+    const renderSet = computeRenderWindow(visible, numPages, PAGE_BUFFER, MAX_RENDERED);
+    const placeholderFor = (i: number) => {
+        const h = pageHeights.get(i) ?? baseHeight;
+        return h ? h * scale : 800;
+    };
 
     return (
         <div className="flex flex-col h-full">
@@ -128,11 +141,15 @@ export function PdfViewer({ blobUrl, onClose }: PdfViewerProps) {
                     {Array.from({ length: numPages }, (_, i) => (
                         <div key={i} ref={(el) => registerPage(el, i)}
                             className="mb-4 flex justify-center"
-                            style={renderSet.has(i) ? undefined : { minHeight: placeholderHeight }}>
+                            style={renderSet.has(i) ? undefined : { minHeight: placeholderFor(i) }}>
                             {renderSet.has(i) && (
                                 <Page pageNumber={i + 1} scale={scale}
                                     className="shadow-lg mx-auto"
-                                    renderTextLayer={false} renderAnnotationLayer={false} />
+                                    renderTextLayer={false} renderAnnotationLayer={false}
+                                    onLoadSuccess={(page) => setPageHeights(prev => {
+                                        if (prev.get(i) === page.originalHeight) return prev;
+                                        return new Map(prev).set(i, page.originalHeight);
+                                    })} />
                             )}
                         </div>
                     ))}

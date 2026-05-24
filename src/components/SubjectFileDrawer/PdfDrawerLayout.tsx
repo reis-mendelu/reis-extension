@@ -28,7 +28,7 @@ export function PdfDrawerLayout({ isPhone, activePdfUrl, onClosePdf, fileList }:
     if (isPhone) {
         return (
             <Suspense fallback={pdfFallback}>
-                <PdfViewer blobUrl={activePdfUrl} onClose={onClosePdf} />
+                <PdfViewer key={activePdfUrl} blobUrl={activePdfUrl} onClose={onClosePdf} />
             </Suspense>
         );
     }
@@ -41,7 +41,7 @@ export function PdfDrawerLayout({ isPhone, activePdfUrl, onClosePdf, fileList }:
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={65} minSize={30}>
                 <Suspense fallback={pdfFallback}>
-                    <PdfViewer blobUrl={activePdfUrl} onClose={onClosePdf} />
+                    <PdfViewer key={activePdfUrl} blobUrl={activePdfUrl} onClose={onClosePdf} />
                 </Suspense>
             </ResizablePanel>
         </ResizablePanelGroup>

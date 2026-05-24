@@ -8,11 +8,17 @@
  * page blanks or crashes the canvas. Windowing keeps the live canvas count
  * bounded regardless of document length. Before any page has intersected
  * (initial mount), falls back to the window around page 0 so something renders.
+ *
+ * `maxRendered` is a hard ceiling on simultaneously-mounted pages: with many
+ * short pages, dozens can intersect the viewport at once and the union would
+ * otherwise blow past the canvas budget. When exceeded, keep the topmost
+ * (lowest-index) contiguous block in view and leave the rest as placeholders.
  */
 export function computeRenderWindow(
     visible: Set<number>,
     numPages: number,
     buffer: number,
+    maxRendered = Infinity,
 ): Set<number> {
     const anchors = visible.size > 0 ? visible : new Set([0]);
     const window = new Set<number>();
@@ -21,5 +27,7 @@ export function computeRenderWindow(
             if (i >= 0 && i < numPages) window.add(i);
         }
     }
-    return window;
+    if (window.size <= maxRendered) return window;
+    const kept = [...window].sort((a, b) => a - b).slice(0, maxRendered);
+    return new Set(kept);
 }
