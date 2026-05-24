@@ -60,9 +60,9 @@ export function WelcomeModal() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 30 }}
                         transition={{ duration: 0.4, type: "spring", bounce: 0.3 }}
-                        className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] w-full transition-all duration-300 ${step === 1 ? 'max-w-sm sm:max-w-lg' : 'max-w-sm md:max-w-2xl lg:max-w-3xl'}`}
+                        className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] w-[calc(100%-2rem)] transition-all duration-300 ${step === 1 ? 'max-w-sm sm:max-w-lg' : 'max-w-sm md:max-w-2xl lg:max-w-3xl'}`}
                     >
-                        <div className="bg-base-100 rounded-3xl shadow-2xl border border-base-200 p-6 sm:p-8 flex flex-col gap-4">
+                        <div className="bg-base-100 rounded-3xl shadow-2xl border border-base-200 p-6 sm:p-8 flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
                             <AnimatePresence mode="wait">
                                 {step === 1 ? (
                                     <motion.div
@@ -118,10 +118,10 @@ export function WelcomeModal() {
                                         <div className="w-full md:w-1/2 flex items-center justify-center">
                                             <div className="relative group">
                                                 <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-accent/20 rounded-3xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-                                                <img 
-                                                    src="/calendar_phone.png" 
-                                                    alt="Phone Sync" 
-                                                    className="w-full max-w-[280px] h-auto rounded-2xl shadow-2xl border border-white/10 relative z-10"
+                                                <img
+                                                    src="/calendar_phone.png"
+                                                    alt="Phone Sync"
+                                                    className="w-auto h-auto max-h-[38vh] sm:w-full sm:max-w-[280px] sm:max-h-none rounded-2xl shadow-2xl border border-white/10 relative z-10"
                                                 />
                                             </div>
                                         </div>
