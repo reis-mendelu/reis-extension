@@ -9,6 +9,7 @@
  */
 
 import { createLogger } from '../utils/logger';
+import { fetchWithAuth } from './client';
 
 const logger = createLogger('OutlookSync');
 
@@ -25,9 +26,10 @@ export async function checkOutlookSyncStatus(): Promise<boolean> {
             SOURCES.map(async (id) => {
                 const label = id === 1 ? 'Výuka' : 'Zkoušky';
 
-                const response = await fetch(`${SYNC_URL}?editace=1;zdroj=${id};lang=cz`, {
-                    credentials: 'include'
-                });
+                // Route through fetchWithAuth: in the iframe (no auth cookies)
+                // this proxies via the content script; Firefox blocks a direct
+                // cross-origin authenticated fetch from the extension origin.
+                const response = await fetchWithAuth(`${SYNC_URL}?editace=1;zdroj=${id};lang=cz`);
 
                 if (!response.ok) {
                     logger.warn(`Failed to fetch ${label}: ${response.status}`);
@@ -66,10 +68,9 @@ export async function setOutlookSyncStatus(enabled: boolean): Promise<boolean> {
             SOURCES.map(async (id) => {
                 const label = id === 1 ? 'Výuka' : 'Zkoušky';
 
-                const response = await fetch(SYNC_URL, {
+                const response = await fetchWithAuth(SYNC_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    credentials: 'include',
                     body: `lang=cz&editace=1&zdroj=${id}&prenos_o365=${enabled ? 1 : 0}&ulozit=Uložit`
                 });
 
