@@ -18,9 +18,10 @@ export default defineConfig({
       48: 'reIS_logo_48.png',
       128: 'reIS_logo_128.png',
     },
-    permissions: ['storage', 'unlimitedStorage', 'alarms'],
+    permissions: ['storage', 'unlimitedStorage', 'alarms', 'identity'],
     host_permissions: [
       'https://is.mendelu.cz/*',
+      'https://www.googleapis.com/*',
       'https://webiskam.mendelu.cz/*',
       'https://raw.githubusercontent.com/reis-mendelu/reis-data/*',
       'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main/*',

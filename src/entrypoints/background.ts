@@ -25,6 +25,41 @@ export default defineBackground(() => {
     return true; // keep the message channel open for async sendResponse
   });
 
+  // Google OAuth identity must run here: chrome.identity is NOT exposed to the
+  // extension iframe embedded in is.mendelu.cz, but the SW has full access.
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type === 'GOOGLE_IDENTITY_DIAG') {
+      sendResponse({
+        hasIdentity: !!chrome.identity,
+        hasLaunch: !!chrome.identity?.launchWebAuthFlow,
+      });
+      return false;
+    }
+
+    if (message?.type === 'GOOGLE_GET_REDIRECT_URL') {
+      try {
+        sendResponse({ success: true, url: chrome.identity.getRedirectURL() });
+      } catch (e) {
+        sendResponse({ success: false, error: String(e) });
+      }
+      return false;
+    }
+
+    if (message?.type === 'GOOGLE_LAUNCH_WEB_AUTH_FLOW') {
+      if (!chrome.identity?.launchWebAuthFlow) {
+        sendResponse({ success: false, error: 'chrome.identity.launchWebAuthFlow is unavailable in this browser' });
+        return false;
+      }
+      chrome.identity
+        .launchWebAuthFlow({ url: message.url, interactive: true })
+        .then((redirect) => sendResponse({ success: true, redirect }))
+        .catch((e) => sendResponse({ success: false, error: String(e) }));
+      return true; // async
+    }
+
+    return false;
+  });
+
   // Register a periodic alarm to poke any open IS Mendelu tab to re-sync.
   // Cannot fetch IS Mendelu from the SW directly (no session cookies), so the
   // alarm only nudges a tab that already has them.

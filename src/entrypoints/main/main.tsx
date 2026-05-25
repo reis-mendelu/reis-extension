@@ -14,6 +14,7 @@ import App from '@/App.tsx'
 import { AppShell } from '@/components/AppShell'
 import { installErrorReporter } from '@/services/errorReporter/reporter'
 import { initTelemetry } from '@/services/errorReporter/telemetry'
+import { GoogleDevPanel } from '@/components/GoogleDevPanel'
 import { useAppStore } from '@/store/useAppStore'
 
 installErrorReporter(() => useAppStore.getState().errorReportingEnabled)
@@ -23,6 +24,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AppShell>
       <App />
+      <GoogleDevPanel />
     </AppShell>
   </StrictMode>,
 )
