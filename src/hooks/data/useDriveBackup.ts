@@ -7,7 +7,7 @@
  * completed pass updates the UI without a reload.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadManifest, clearManifest } from '../../services/drive/driveManifest';
 import { isConnected, connectGoogle, disconnectGoogle } from '../../api/googleAuth';
 import { syncService } from '../../services/sync';
@@ -17,6 +17,11 @@ export interface UseDriveBackupResult {
     connected: boolean | null;
     /** webViewLink of the reIS root folder, once a backup has created it. */
     rootLink: string | null;
+    /**
+     * Link to open in Drive: the current subject's folder when `courseCode` is
+     * given and that folder exists, otherwise the reIS root.
+     */
+    folderLink: string | null;
     /** Epoch ms of the last completed backup pass (0 = never). */
     lastSync: number;
     /** Epoch ms the current failure streak began; null when the last pass was healthy. */
@@ -35,9 +40,10 @@ export interface UseDriveBackupResult {
 
 const STORAGE_KEYS = ['reis_drive_manifest', 'reis_google_tokens'];
 
-export function useDriveBackup(): UseDriveBackupResult {
+export function useDriveBackup(courseCode?: string): UseDriveBackupResult {
     const [connected, setConnected] = useState<boolean | null>(null);
     const [rootLink, setRootLink] = useState<string | null>(null);
+    const [folders, setFolders] = useState<Record<string, string>>({});
     const [lastSync, setLastSync] = useState(0);
     const [failingSince, setFailingSince] = useState<number | null>(null);
     const [fileCount, setFileCount] = useState(0);
@@ -47,10 +53,21 @@ export function useDriveBackup(): UseDriveBackupResult {
         const [linked, manifest] = await Promise.all([isConnected(), loadManifest()]);
         setConnected(linked);
         setRootLink(manifest.rootWebViewLink);
+        setFolders(manifest.folders);
         setLastSync(manifest.lastSync);
         setFailingSince(manifest.failingSince);
         setFileCount(Object.keys(manifest.files).length);
     }, []);
+
+    // The subject folder is the top-level manifest folder named "<CODE> - …".
+    // Build its Drive URL from the stored id; fall back to the reIS root.
+    const folderLink = useMemo(() => {
+        if (courseCode) {
+            const key = Object.keys(folders).find((k) => !k.includes('/') && k.startsWith(`${courseCode} -`));
+            if (key) return `https://drive.google.com/drive/folders/${folders[key]}`;
+        }
+        return rootLink;
+    }, [courseCode, folders, rootLink]);
 
     const connect = useCallback(async () => {
         setBusy(true);
@@ -88,5 +105,5 @@ export function useDriveBackup(): UseDriveBackupResult {
         return () => chrome.storage.onChanged.removeListener(onChanged);
     }, [refresh]);
 
-    return { connected, rootLink, lastSync, failingSince, fileCount, busy, connect, disconnect, refresh };
+    return { connected, rootLink, folderLink, lastSync, failingSince, fileCount, busy, connect, disconnect, refresh };
 }

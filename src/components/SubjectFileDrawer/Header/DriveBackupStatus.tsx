@@ -18,8 +18,8 @@ function relativeTime(deltaMs: number, locale: string): string {
  * Compact, icon-only Drive backup indicator for the file drawer header.
  * Detail lives in the tooltip so it costs the crowded header just one icon.
  */
-export function DriveBackupStatus() {
-    const { connected, rootLink, lastSync, failingSince, busy, connect } = useDriveBackup();
+export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
+    const { connected, folderLink, lastSync, failingSince, busy, connect } = useDriveBackup(courseCode);
     const { t, language } = useTranslation();
     const locale = language === 'cz' ? 'cs' : 'en';
 
@@ -51,10 +51,10 @@ export function DriveBackupStatus() {
     const tone = failing ? 'text-warning' : 'text-base-content/50';
     const icon = failing ? <AlertTriangle size={14} /> : <HardDrive size={14} />;
 
-    if (rootLink) {
+    if (folderLink) {
         return (
             <a
-                href={rootLink}
+                href={folderLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 title={status}

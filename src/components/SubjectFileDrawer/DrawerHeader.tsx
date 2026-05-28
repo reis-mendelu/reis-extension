@@ -65,7 +65,7 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
                 </div>
                 <div className="flex items-center gap-2">
                     {activeTab === 'files' && courseCode && <FilesFreshness courseCode={courseCode} />}
-                    {activeTab === 'files' && <DriveBackupStatus />}
+                    {activeTab === 'files' && <DriveBackupStatus courseCode={courseCode} />}
                     <HeaderActions selectedCount={selectedCount} isDownloading={isDownloading} downloadProgress={downloadProgress} onDownload={onDownload} onClose={onClose} />
                 </div>
             </div>
