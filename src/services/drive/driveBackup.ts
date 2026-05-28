@@ -14,7 +14,7 @@ import type { ParsedFile } from '../../types/documents';
 import { fetchWithAuth } from '../../api/client';
 import { isConnected } from '../../api/googleAuth';
 import { uploadFile, updateFileContent, ensureFolder, findFileByProperty, deleteFile } from '../../api/googleDrive';
-import { loadManifest, saveManifest, clearManifest } from './driveManifest';
+import { loadManifest, saveManifest, clearManifest, acquireBackupLock, releaseBackupLock } from './driveManifest';
 import { flattenSubjectFiles, diffManifest, folderKey, linkHash, type DriveManifest } from './driveDiff';
 import { logError } from '../../utils/reportError';
 
@@ -47,6 +47,14 @@ function log(msg: string) {
 
 async function fetchBytes(link: string): Promise<Blob> {
     const res = await fetchWithAuth(link);
+    // IS download links 302 to login.pl on an expired session; fetch follows
+    // the redirect to a 200 HTML page, which fetchWithAuth (401/403-only guard)
+    // lets through. Uploading that page would silently corrupt the backup, so
+    // reject anything that came back as an HTML document — real attachments
+    // (pdf/docx/zip/…) never are.
+    if (/login\.pl/i.test(res.url) || /text\/html/i.test(res.headers.get('content-type') || '')) {
+        throw new Error('expected a file but got an HTML page (likely an expired IS session)');
+    }
     return await res.blob();
 }
 
@@ -102,6 +110,9 @@ export async function syncDriveBackup(
         log(`skip: throttled (last sync ${Math.round((Date.now() - manifest.lastSync) / 1000)}s ago)`);
         return null;
     }
+
+    // Cross-tab guard: another IS Mendelu tab may already be backing up.
+    if (!(await acquireBackupLock())) { log('skip: another tab holds the backup lock'); return null; }
 
     log(`start: ${subjects.length} subject(s)`);
     running = true;
@@ -175,5 +186,6 @@ export async function syncDriveBackup(
         return { uploaded, updated, skipped, reused };
     } finally {
         running = false;
+        await releaseBackupLock();
     }
 }

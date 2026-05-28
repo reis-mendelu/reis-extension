@@ -152,6 +152,33 @@ export async function connectGoogle(): Promise<GoogleTokens> {
     return tokens;
 }
 
+// In-flight refresh, shared so a burst of concurrent Drive ops (uploads run at
+// pLimit(3)) collapses to a single proxy call instead of stampeding it.
+let refreshInFlight: Promise<string> | null = null;
+
+async function refreshAccessToken(tokens: GoogleTokens): Promise<string> {
+    let data: Record<string, unknown>;
+    try {
+        data = await callProxy({ action: 'refresh', refresh_token: tokens.refresh_token });
+    } catch (e) {
+        // A revoked/expired refresh token (Google `invalid_grant`) can never
+        // recover by retrying — the only fix is re-consent. Clear the stored
+        // tokens so isConnected() flips to false and the user is re-prompted,
+        // instead of every backup silently failing while the UI says "connected".
+        if (e instanceof Error && /invalid_grant/i.test(e.message)) {
+            await disconnectGoogle();
+        }
+        throw e;
+    }
+    const updated: GoogleTokens = {
+        ...tokens,
+        access_token: data.access_token as string,
+        expiry: Date.now() + (data.expires_in as number) * 1000,
+    };
+    await writeTokens(updated);
+    return updated.access_token;
+}
+
 /** Return a valid access token, refreshing through the proxy if needed. */
 export async function getAccessToken(): Promise<string> {
     const tokens = await readTokens();
@@ -161,14 +188,10 @@ export async function getAccessToken(): Promise<string> {
         return tokens.access_token;
     }
 
-    const data = await callProxy({ action: 'refresh', refresh_token: tokens.refresh_token });
-    const updated: GoogleTokens = {
-        ...tokens,
-        access_token: data.access_token as string,
-        expiry: Date.now() + (data.expires_in as number) * 1000,
-    };
-    await writeTokens(updated);
-    return updated.access_token;
+    if (!refreshInFlight) {
+        refreshInFlight = refreshAccessToken(tokens).finally(() => { refreshInFlight = null; });
+    }
+    return refreshInFlight;
 }
 
 export async function isConnected(): Promise<boolean> {
