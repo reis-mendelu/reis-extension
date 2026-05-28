@@ -26,6 +26,8 @@ export interface UseDriveBackupResult {
     lastSync: number;
     /** Epoch ms the current failure streak began; null when the last pass was healthy. */
     failingSince: number | null;
+    /** True while a backup pass is actively running. */
+    syncing: boolean;
     /** Number of files mirrored to Drive. */
     fileCount: number;
     /** True while a connect/disconnect is in flight. */
@@ -34,6 +36,8 @@ export interface UseDriveBackupResult {
     connect: () => Promise<void>;
     /** Unlink Google (stops future backups; leaves already-uploaded files in Drive). */
     disconnect: () => Promise<void>;
+    /** Kick a backup now from cached listings (no full IS re-crawl). */
+    backupNow: () => void;
     /** Re-read status from storage. */
     refresh: () => Promise<void>;
 }
@@ -46,6 +50,7 @@ export function useDriveBackup(courseCode?: string): UseDriveBackupResult {
     const [folders, setFolders] = useState<Record<string, string>>({});
     const [lastSync, setLastSync] = useState(0);
     const [failingSince, setFailingSince] = useState<number | null>(null);
+    const [syncing, setSyncing] = useState(false);
     const [fileCount, setFileCount] = useState(0);
     const [busy, setBusy] = useState(false);
 
@@ -56,6 +61,7 @@ export function useDriveBackup(courseCode?: string): UseDriveBackupResult {
         setFolders(manifest.folders);
         setLastSync(manifest.lastSync);
         setFailingSince(manifest.failingSince);
+        setSyncing(manifest.syncing);
         setFileCount(Object.keys(manifest.files).length);
     }, []);
 
@@ -73,7 +79,7 @@ export function useDriveBackup(courseCode?: string): UseDriveBackupResult {
         setBusy(true);
         try {
             await connectGoogle();
-            syncService.triggerSync(); // start the first backup immediately
+            syncService.triggerDriveBackup(); // back up now from cached listings, no full re-crawl
         } finally {
             await refresh();
             setBusy(false);
@@ -95,6 +101,14 @@ export function useDriveBackup(courseCode?: string): UseDriveBackupResult {
         }
     }, [refresh]);
 
+    const backupNow = useCallback(() => {
+        // Optimistic spinner: the manifest's syncing flag follows once the
+        // content script picks up the message, but reflect intent immediately
+        // so the click never feels dead.
+        setSyncing(true);
+        syncService.triggerDriveBackup();
+    }, []);
+
     useEffect(() => {
         refresh();
         if (typeof chrome === 'undefined' || !chrome.storage?.onChanged) return;
@@ -105,5 +119,5 @@ export function useDriveBackup(courseCode?: string): UseDriveBackupResult {
         return () => chrome.storage.onChanged.removeListener(onChanged);
     }, [refresh]);
 
-    return { connected, rootLink, folderLink, lastSync, failingSince, fileCount, busy, connect, disconnect, refresh };
+    return { connected, rootLink, folderLink, lastSync, failingSince, syncing, fileCount, busy, connect, disconnect, backupNow, refresh };
 }

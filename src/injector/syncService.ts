@@ -172,38 +172,37 @@ export async function syncAllData() {
 
         // Fire-and-forget: mirror current-semester files to Google Drive (only if linked).
         // Reuses the listings already fetched into cachedData.files — no extra IS crawling.
-        try {
-            const subjectsData = (cachedData.subjects as SubjectsData | undefined)?.data;
-            const filesData = cachedData.files as Record<string, ParsedFile[]> | undefined;
-            if (import.meta.env.VITE_GOOGLE_DEV === 'true') {
-                console.info('[reIS Drive] setup check:', {
-                    currentCodes: currentSemesterCodes.length,
-                    hasSubjects: !!subjectsData,
-                    hasFiles: !!filesData,
-                    fileKeys: filesData ? Object.keys(filesData).length : 0,
-                });
-            }
-            if (currentSemesterCodes.length && subjectsData && filesData) {
-                const backupSubjects = currentSemesterCodes
-                    .map((code): DriveBackupSubject | null => {
-                        const info = subjectsData[code];
-                        const files = filesData[code];
-                        if (!info || !files?.length) return null;
-                        const folderName = `${code} - ${info.displayName || info.fullName || ''}`.trim();
-                        return { code, folderName, files };
-                    })
-                    .filter((s): s is DriveBackupSubject => s !== null);
-                if (backupSubjects.length) {
-                    syncDriveBackup(backupSubjects).catch((e) => logError('Drive.backup', e));
-                }
-            }
-        } catch (e) {
-            logError('Drive.backup.setup', e);
-        }
+        runDriveBackupNow();
     } catch (e) {
         sendToIframe(Messages.syncUpdate({ isSyncing: false, error: String(e), lastSync: cachedData.lastSync }));
-    } finally { 
+    } finally {
         isSyncing = false;
+    }
+}
+
+/**
+ * Mirror the current semester's already-fetched file listings to Google Drive.
+ * Fire-and-forget from the periodic sync, and awaited directly when the user
+ * connects (so the first backup starts immediately, without a full IS re-crawl).
+ * No-op when nothing is cached yet — the next sync will pick it up.
+ */
+export async function runDriveBackupNow(): Promise<void> {
+    try {
+        const subjectsData = (cachedData.subjects as SubjectsData | undefined)?.data;
+        const filesData = cachedData.files as Record<string, ParsedFile[]> | undefined;
+        if (!currentSemesterCodes.length || !subjectsData || !filesData) return;
+        const backupSubjects = currentSemesterCodes
+            .map((code): DriveBackupSubject | null => {
+                const info = subjectsData[code];
+                const files = filesData[code];
+                if (!info || !files?.length) return null;
+                const folderName = `${code} - ${info.displayName || info.fullName || ''}`.trim();
+                return { code, folderName, files };
+            })
+            .filter((s): s is DriveBackupSubject => s !== null);
+        if (backupSubjects.length) await syncDriveBackup(backupSubjects);
+    } catch (e) {
+        logError('Drive.backup', e);
     }
 }
 

@@ -20,18 +20,20 @@ function relativeTime(deltaMs: number, locale: string): string {
  * status and "open folder" live in the file drawer instead.
  */
 export function GoogleDriveToggle() {
-    const { connected, lastSync, failingSince, busy, connect, disconnect } = useDriveBackup();
+    const { connected, lastSync, failingSince, syncing, busy, connect, disconnect } = useDriveBackup();
     const { t, language } = useTranslation();
     const locale = language === 'cz' ? 'cs' : 'en';
 
     if (connected === null) return null;
 
-    const failing = failingSince !== null;
-    const status = failing
-        ? t('drive.failingSince', { time: relativeTime(Date.now() - failingSince, locale) })
-        : lastSync
-            ? t('drive.lastBackup', { time: relativeTime(Date.now() - lastSync, locale) })
-            : t('drive.pending');
+    const failing = !syncing && failingSince !== null;
+    const status = syncing
+        ? t('drive.syncing')
+        : failingSince !== null
+            ? t('drive.failingSince', { time: relativeTime(Date.now() - failingSince, locale) })
+            : lastSync
+                ? t('drive.lastBackup', { time: relativeTime(Date.now() - lastSync, locale) })
+                : t('drive.pending');
 
     return (
         <div className="flex items-center justify-between gap-3 px-1 py-2 rounded-lg hover:bg-base-200">

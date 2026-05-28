@@ -20,6 +20,8 @@ class SyncServiceClass {
     async getStatus(): Promise<SyncStatus> { return { isSyncing: this.isSyncing, lastSync: await IndexedDBService.get('meta', 'last_sync'), error: await IndexedDBService.get('meta', 'sync_error') }; }
     setIsSyncing(v: boolean) { this.isSyncing = v; this.notifyListeners(); }
     triggerSync(payload?: unknown) { window.parent.postMessage({ type: 'REIS_ACTION', id: crypto.randomUUID(), action: 'trigger_sync', payload: payload || {} }, '*'); }
+    /** Kick a Drive backup immediately using already-cached file listings (no full IS re-crawl). */
+    triggerDriveBackup() { window.parent.postMessage({ type: 'REIS_ACTION', id: crypto.randomUUID(), action: 'trigger_drive_backup', payload: {} }, '*'); }
     triggerExamRefresh() { window.parent.postMessage({ type: 'REIS_ACTION', id: crypto.randomUUID(), action: 'refresh_exams', payload: {} }, '*'); }
     triggerRefresh(a?: string) { this.notifyListeners(a); }
     private notifyListeners(a?: string) { this.listeners.forEach(cb => { try { cb(a); } catch { /* listener error */ } }); }

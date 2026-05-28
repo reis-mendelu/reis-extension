@@ -19,7 +19,7 @@ function relativeTime(deltaMs: number, locale: string): string {
  * Detail lives in the tooltip so it costs the crowded header just one icon.
  */
 export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
-    const { connected, folderLink, lastSync, failingSince, busy, connect } = useDriveBackup(courseCode);
+    const { connected, folderLink, lastSync, failingSince, syncing, busy, connect, backupNow } = useDriveBackup(courseCode);
     const { t, language } = useTranslation();
     const locale = language === 'cz' ? 'cs' : 'en';
 
@@ -42,15 +42,22 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
     }
 
     const failing = failingSince !== null;
-    const status = failing
-        ? t('drive.failingSince', { time: relativeTime(Date.now() - failingSince, locale) })
-        : lastSync
-            ? t('drive.lastBackup', { time: relativeTime(Date.now() - lastSync, locale) })
-            : t('drive.pending');
+    const status = syncing
+        ? t('drive.syncing')
+        : failing
+            ? t('drive.failingSince', { time: relativeTime(Date.now() - failingSince, locale) })
+            : lastSync
+                ? t('drive.lastBackup', { time: relativeTime(Date.now() - lastSync, locale) })
+                : t('drive.pending');
 
-    const tone = failing ? 'text-warning' : 'text-base-content/50';
-    const icon = failing ? <AlertTriangle size={14} /> : <HardDrive size={14} />;
+    const tone = !syncing && failing ? 'text-warning' : 'text-base-content/50';
+    const icon = syncing
+        ? <span className="loading loading-spinner loading-xs" />
+        : failing
+            ? <AlertTriangle size={14} />
+            : <HardDrive size={14} />;
 
+    // Folder exists → open it in Drive.
     if (folderLink) {
         return (
             <a
@@ -65,9 +72,18 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
             </a>
         );
     }
+    // No folder yet (just connected, or never backed up): tapping must DO
+    // something — kick a backup — rather than be a dead icon.
     return (
-        <span title={status} aria-label={status} className={`btn btn-ghost btn-xs btn-circle no-animation ${tone}`}>
+        <button
+            type="button"
+            onClick={backupNow}
+            disabled={syncing}
+            title={syncing ? status : t('drive.backUp')}
+            aria-label={syncing ? status : t('drive.backUp')}
+            className={`btn btn-ghost btn-xs btn-circle ${tone}`}
+        >
             {icon}
-        </span>
+        </button>
     );
 }

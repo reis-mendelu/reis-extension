@@ -82,6 +82,19 @@
     "foodDebit": "Inkaso za stravu",
     "skmDocuments": "Dokumenty SKM"
   },
+  "drive": {
+    "title": "Záloha na Google Disk",
+    "openFolder": "Otevřít složku",
+    "connect": "Připojit",
+    "connected": "Připojeno",
+    "connectHint": "Zálohujte studijní soubory na Google Disk",
+    "backUp": "Zálohovat na Disk",
+    "disconnect": "Odpojit",
+    "lastBackup": "Zálohováno {time}",
+    "failingSince": "Záloha selhává od {time}",
+    "pending": "Zatím nezálohováno",
+    "syncing": "Zálohuji…"
+  },
   "sidebar": {
     "profile": "Profil",
     "is": "Student",
@@ -449,7 +462,9 @@
     "syncTitle": "Sync do mobilu (Outlook)",
     "syncDescription": "1. Otevři Outlook na mobilu\n2. Přejdi na záložku \"Kalendář\"",
     "syncToggle": "Aktivovat Sync",
-    "syncCoffeeBreak": "Sync trvá přibližně 15 min."
+    "syncCoffeeBreak": "Sync trvá přibližně 15 min.",
+    "driveTitle": "Zálohovat soubory na Disk",
+    "driveDescription": "Zrcadli studijní materiály z tohoto semestru na svůj Google Disk."
   },
   "subjects": {
     "title": "Moje předměty",

@@ -32,12 +32,13 @@ export interface DriveBackupResult {
     skipped: number;
     /** Files already present in Drive (found via appProperties) — manifest healed, not re-uploaded. */
     reused: number;
+    /** Files that failed to download/upload this pass — a non-zero count marks the pass unhealthy. */
+    failed: number;
 }
 
 const ROOT_FOLDER_NAME = 'reIS';
 const limit = pLimit(3);
 const IS_DEV = import.meta.env.VITE_GOOGLE_DEV === 'true';
-const THROTTLE_MS = IS_DEV ? 0 : 6 * 60 * 60 * 1000;
 
 let running = false;
 
@@ -96,30 +97,31 @@ async function ensureFolderPath(manifest: DriveManifest, segments: string[]): Pr
 
 /**
  * Back up the given subjects' files to Drive. No-op (returns null) if not linked
- * to Google or if throttled. Per-file failures are logged, never fatal.
+ * to Google. Diffs against the manifest and uploads only deltas, so it's cheap to
+ * run on every sync — there's no time throttle, the work scales with what changed.
+ * Per-file failures are logged and counted, never fatal; a non-zero count marks
+ * the pass unhealthy so the UI never claims a clean backup that lost files.
  */
 export async function syncDriveBackup(
     subjects: DriveBackupSubject[],
-    opts: { force?: boolean } = {},
 ): Promise<DriveBackupResult | null> {
     if (running) { log('skip: already running'); return null; }
     if (!(await isConnected())) { log('skip: not connected to Google'); return null; }
 
     const manifest = await loadManifest();
-    if (!opts.force && Date.now() - manifest.lastSync < THROTTLE_MS) {
-        log(`skip: throttled (last sync ${Math.round((Date.now() - manifest.lastSync) / 1000)}s ago)`);
-        return null;
-    }
 
     // Cross-tab guard: another IS Mendelu tab may already be backing up.
     if (!(await acquireBackupLock())) { log('skip: another tab holds the backup lock'); return null; }
 
     log(`start: ${subjects.length} subject(s)`);
     running = true;
+    manifest.syncing = true;
+    await saveManifest(manifest);
     let uploaded = 0;
     let updated = 0;
     let skipped = 0;
     let reused = 0;
+    let failed = 0;
     try {
         if (!manifest.rootFolderId) {
             manifest.rootFolderId = await ensureFolder(ROOT_FOLDER_NAME);
@@ -166,6 +168,7 @@ export async function syncDriveBackup(
                         manifest.files[item.isLink] = { driveFileId: file.id, date: item.date };
                         uploaded++;
                     } catch (e) {
+                        failed++;
                         logError('Drive.upload', e, { name: item.fileName });
                     }
                 }));
@@ -177,6 +180,7 @@ export async function syncDriveBackup(
                         manifest.files[item.isLink] = { driveFileId, date: item.date };
                         updated++;
                     } catch (e) {
+                        failed++;
                         logError('Drive.update', e, { name: item.fileName });
                     }
                 }));
@@ -186,11 +190,18 @@ export async function syncDriveBackup(
         }
 
         manifest.lastSync = Date.now();
-        manifest.failingSince = null;
-        manifest.lastError = null;
+        if (failed > 0) {
+            // Some files didn't make it — keep the streak open so the UI shows a
+            // warning instead of a clean "backed up just now" that lost files.
+            manifest.failingSince = manifest.failingSince ?? Date.now();
+            manifest.lastError = `${failed} file(s) failed to upload`;
+        } else {
+            manifest.failingSince = null;
+            manifest.lastError = null;
+        }
         await saveManifest(manifest);
-        log(`done — uploaded ${uploaded}, updated ${updated}, reused ${reused}, skipped ${skipped}`);
-        return { uploaded, updated, skipped, reused };
+        log(`done — uploaded ${uploaded}, updated ${updated}, reused ${reused}, skipped ${skipped}, failed ${failed}`);
+        return { uploaded, updated, skipped, reused, failed };
     } catch (e) {
         // Pass-level failure (auth/root/network) — record it so the UI can show
         // "backup failing since …" instead of silently appearing healthy. The
@@ -201,6 +212,8 @@ export async function syncDriveBackup(
         throw e;
     } finally {
         running = false;
+        manifest.syncing = false;
+        await saveManifest(manifest).catch(() => {});
         await releaseBackupLock();
     }
 }

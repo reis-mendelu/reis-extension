@@ -82,6 +82,19 @@
     "foodDebit": "Food Debit",
     "skmDocuments": "SKM Documents"
   },
+  "drive": {
+    "title": "Google Drive backup",
+    "openFolder": "Open folder",
+    "connect": "Connect",
+    "connected": "Connected",
+    "connectHint": "Back up your study files to Google Drive",
+    "backUp": "Back up to Drive",
+    "disconnect": "Disconnect",
+    "lastBackup": "Backed up {time}",
+    "failingSince": "Backup failing since {time}",
+    "pending": "No backup yet",
+    "syncing": "Backing up…"
+  },
   "sidebar": {
     "profile": "Profile",
     "is": "Student",
@@ -447,7 +460,9 @@
     "syncTitle": "Sync to Phone (Outlook)",
     "syncDescription": "1. Open Outlook on your phone\n2. Go to the \"Calendar\" tab",
     "syncToggle": "Activate Sync",
-    "syncCoffeeBreak": "Sync takes about 15 min."
+    "syncCoffeeBreak": "Sync takes about 15 min.",
+    "driveTitle": "Back up files to Drive",
+    "driveDescription": "Mirror this semester's study materials to your Google Drive."
   },
   "subjects": {
     "title": "My Subjects",

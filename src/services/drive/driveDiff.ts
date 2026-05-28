@@ -33,6 +33,8 @@ export interface DriveManifest {
     failingSince: number | null;
     /** Message of the most recent pass-level failure, for diagnostics; null when healthy. */
     lastError: string | null;
+    /** True while a backup pass is actively running — lets the UI show a spinner. */
+    syncing: boolean;
 }
 
 export interface DriveDiff {
@@ -42,7 +44,7 @@ export interface DriveDiff {
 }
 
 export function emptyManifest(): DriveManifest {
-    return { rootFolderId: null, rootWebViewLink: null, folders: {}, files: {}, lastSync: 0, failingSince: null, lastError: null };
+    return { rootFolderId: null, rootWebViewLink: null, folders: {}, files: {}, lastSync: 0, failingSince: null, lastError: null, syncing: false };
 }
 
 /** Manifest key for a folder path. */
