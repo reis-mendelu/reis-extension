@@ -159,6 +159,30 @@ Exactly 7 fields leave the device — `p_error_type`, `p_error_message`, `p_file
 - Table: `error_reports` — RLS enabled, zero policies (deny-all for direct row access).
 - RPC: `report_error(...)` — `SECURITY DEFINER`, grants `EXECUTE` to `anon` role, enforces 500 reports/hour server-side rate limit per `(browser, version)` window. Migration: `supabase/migrations/20260506120000_error_reports_rate_limit.sql`.
 
+## Google Drive Backup (Phase 1)
+
+One-way mirror of the student's **current-semester** IS files into their own Google Drive. Phase 0 (OAuth plumbing) and Phase 1 (file backup) are done; Phase 2 (notes → one Google Doc per subject) is **strictly one-way, drawer-as-source — never build bidirectional sync**.
+
+- **Scope = `drive.file` only** — non-sensitive, no Google verification/CASA. The app can see only files it created. Never escalate to `drive`/`drive.readonly`/`documents`.
+- **Auth:** `launchWebAuthFlow` + PKCE, run in the **background SW** (`chrome.identity` is not exposed to the iframe). Token exchange/refresh goes through the **Supabase `google-oauth` Edge Function**, which holds `GOOGLE_CLIENT_SECRET` — the secret never ships in the bundle. Tokens live in `chrome.storage.local`.
+- **Where it runs:** the **content script** (`syncService.ts` → `syncDriveBackup`), the only context with IS cookies (binary `fetchWithAuth`), the Google token, and the googleapis host permission. It reuses listings already in `cachedData.files` — no extra IS crawling.
+- **Idempotency (the core invariant):** the manifest (`reis_drive_manifest` in `chrome.storage.local`) is a **cache, not the source of truth**. Folders are **find-or-create by name+parent**; files are deduped by an **`appProperties.reisLink` hash** checked before upload. An interrupted run therefore cannot create duplicates. **Never dedupe files by filename** — IS legitimately serves many files with the same display name (e.g. several "Materiály"); only the IS-link hash is unique. Structure mirrors IS one level: `reIS/<CODE - name>/<subfolder?>/<file>`.
+
+| Role | File |
+|------|------|
+| Pure diff/flatten/hash logic | `src/services/drive/driveDiff.ts` (tested) |
+| Manifest persistence | `src/services/drive/driveManifest.ts` |
+| Orchestrator (content script) | `src/services/drive/driveBackup.ts` |
+| Drive REST (find/ensure/upload/delete) | `src/api/googleDrive.ts` |
+| OAuth + token refresh via proxy | `src/api/googleAuth.ts` |
+| Dev-only test panel + repave | `src/components/GoogleDevPanel.tsx` |
+
+**Dev surface:** `GoogleDevPanel` renders only under `wxt dev` or `VITE_GOOGLE_DEV=true` (auto-hidden in store builds), bottom-right of the is.mendelu.cz iframe. Its **Reset backup** button calls `resetDriveBackup()` — deletes the `reIS` root (cascades) and clears the manifest for a clean repave. Console eval is CSP-blocked on extension pages; use the panel buttons.
+
+> **Operational gotcha:** the OAuth **consent screen must be "In production"** (not "Testing"), or every user's refresh token expires after 7 days and the backup silently stops. `drive.file` is non-sensitive, so Production needs no review.
+
+**Before shipping to real users** (a backup's worst failure is silent): verify the consent screen is in Production; verify drive.file reinstall access (disconnect→reconnect must `reuse`, not re-upload); add a `chrome.storage` TTL lock for the cross-tab race the per-instance `running` guard misses; rate-limit the proxy; surface last-success/failing-since in the UI.
+
 ## Parser Rules
 
 IS Mendelu HTML parsers (`src/api/documents/parser.ts`, `src/api/ukoly.ts`, `src/api/osnovy.ts`, `src/utils/parsers/`) are **extremely brittle** and must almost never be altered.
