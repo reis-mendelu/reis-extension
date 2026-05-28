@@ -1,5 +1,5 @@
-const SUPABASE_URL = 'https://zvbpgkmnrqyprtkyxkwn.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2YnBna21ucnF5cHJ0a3l4a3duIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NDU5NjYsImV4cCI6MjA4NDMyMTk2Nn0.8eaGOhlZHUf9uOlb6vL_P5D61bILFdgSu245kaIhMvQ';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/services/supabase/config';
+
 const PROXY_ENDPOINT = `${SUPABASE_URL}/functions/v1/claude-proxy`;
 
 export interface AIComparisonResult {
@@ -25,7 +25,7 @@ async function askClaude(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
         'x-reis-extension-secret': import.meta.env.VITE_EXTENSION_SECRET || 'reis-secret',
       },
       body: JSON.stringify({ prompt, systemInstruction, pdfBase64, foreignText }),

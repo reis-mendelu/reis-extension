@@ -10,8 +10,8 @@
  * and sufficient for both Drive uploads and the Docs API on app-created files.
  */
 
-const SUPABASE_URL = 'https://zvbpgkmnrqyprtkyxkwn.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2YnBna21ucnF5cHJ0a3l4a3duIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NDU5NjYsImV4cCI6MjA4NDMyMTk2Nn0.8eaGOhlZHUf9uOlb6vL_P5D61bILFdgSu245kaIhMvQ';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/services/supabase/config';
+
 const OAUTH_PROXY = `${SUPABASE_URL}/functions/v1/google-oauth`;
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
@@ -66,7 +66,7 @@ async function callProxy(body: Record<string, unknown>): Promise<Record<string, 
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'apikey': SUPABASE_PUBLISHABLE_KEY,
             'x-reis-extension-secret': import.meta.env.VITE_EXTENSION_SECRET || 'reis-secret',
         },
         body: JSON.stringify(body),
