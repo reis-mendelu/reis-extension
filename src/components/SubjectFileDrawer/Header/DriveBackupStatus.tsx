@@ -14,7 +14,10 @@ function relativeTime(deltaMs: number, locale: string): string {
     return rtf.format(-Math.round(deltaMs / DAY), 'day');
 }
 
-/** Compact Drive backup indicator for the file drawer header (files tab). */
+/**
+ * Compact, icon-only Drive backup indicator for the file drawer header.
+ * Detail lives in the tooltip so it costs the crowded header just one icon.
+ */
 export function DriveBackupStatus() {
     const { connected, rootLink, lastSync, failingSince, busy, connect } = useDriveBackup();
     const { t, language } = useTranslation();
@@ -22,7 +25,7 @@ export function DriveBackupStatus() {
 
     if (connected === null) return null;
 
-    // Not linked yet — offer a one-tap connect right where the files live.
+    // Not linked — one-tap connect, right where the files live.
     if (!connected) {
         return (
             <button
@@ -30,10 +33,10 @@ export function DriveBackupStatus() {
                 onClick={connect}
                 disabled={busy}
                 title={t('drive.connectHint')}
-                className="btn btn-ghost btn-xs gap-1.5 text-xs text-base-content/50 disabled:opacity-50"
+                aria-label={t('drive.backUp')}
+                className="btn btn-ghost btn-xs btn-circle text-base-content/50 disabled:opacity-50"
             >
-                {busy ? <span className="loading loading-spinner loading-xs" /> : <HardDrive size={13} />}
-                <span className="hidden md:inline">{t('drive.backUp')}</span>
+                {busy ? <span className="loading loading-spinner loading-xs" /> : <HardDrive size={14} />}
             </button>
         );
     }
@@ -45,22 +48,26 @@ export function DriveBackupStatus() {
             ? t('drive.lastBackup', { time: relativeTime(Date.now() - lastSync, locale) })
             : t('drive.pending');
 
-    const className = `flex items-center gap-1.5 text-xs ${failing ? 'text-warning' : 'text-base-content/50'}`;
-    const icon = failing ? <AlertTriangle size={13} /> : <HardDrive size={13} />;
+    const tone = failing ? 'text-warning' : 'text-base-content/50';
+    const icon = failing ? <AlertTriangle size={14} /> : <HardDrive size={14} />;
 
-    // Connected: link straight to the Drive folder when we have it, else just show status.
     if (rootLink) {
         return (
-            <a href={rootLink} target="_blank" rel="noopener noreferrer" title={status} className={`${className} hover:opacity-100`}>
+            <a
+                href={rootLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={status}
+                aria-label={status}
+                className={`btn btn-ghost btn-xs btn-circle ${tone}`}
+            >
                 {icon}
-                <span className="hidden md:inline">{status}</span>
             </a>
         );
     }
     return (
-        <span title={status} className={className}>
+        <span title={status} aria-label={status} className={`btn btn-ghost btn-xs btn-circle no-animation ${tone}`}>
             {icon}
-            <span className="hidden md:inline">{status}</span>
         </span>
     );
 }
