@@ -5,16 +5,12 @@ import { usePersonProfile } from '../../hooks/data/usePersonProfile';
 import { ISBacklink } from '../SubjectFileDrawer/ISBacklink';
 import { ClassmatePersonDetail } from './ClassmatePersonDetail';
 import { AdaptiveDrawer } from '../ui/AdaptiveDrawer';
+import { PersonPhoto } from '../ui/PersonPhoto';
 import type { Classmate } from '../../types/classmates';
 
 interface ClassmatePersonDrawerProps {
     classmate: Classmate | null;
     onClose: () => void;
-}
-
-function normalizePhotoUrl(url: string): string {
-    if (!url) return '';
-    return url.startsWith('http') ? url : `https://is.mendelu.cz${url}`;
 }
 
 export function ClassmatePersonDrawer({ classmate, onClose }: ClassmatePersonDrawerProps) {
@@ -49,24 +45,16 @@ export function ClassmatePersonDrawer({ classmate, onClose }: ClassmatePersonDra
                 <div className="bg-gradient-to-b from-base-200/40 to-transparent px-6 pt-10 pb-6 flex flex-col items-center">
                     <div className="avatar mb-4">
                         <div className="w-32 h-32 rounded-full ring-1 ring-base-200 ring-offset-base-100 ring-offset-2">
-                            {classmate?.photoUrl ? (
-                                <img
-                                    src={normalizePhotoUrl(classmate.photoUrl)}
-                                    alt={classmate.name}
-                                    className="w-full h-full object-cover scale-[1.05]"
-                                    onError={e => {
-                                        const fb = e.currentTarget.nextElementSibling as HTMLElement | null;
-                                        if (fb) fb.style.display = 'flex';
-                                        e.currentTarget.style.display = 'none';
-                                    }}
-                                />
-                            ) : null}
-                            <div
-                                className="bg-neutral text-neutral-content w-full h-full items-center justify-center"
-                                style={{ display: classmate?.photoUrl ? 'none' : 'flex' }}
-                            >
-                                <User size={48} strokeWidth={1.5} />
-                            </div>
+                            <PersonPhoto
+                                personId={classmate?.personId}
+                                alt={classmate?.name ?? ''}
+                                className="w-full h-full object-cover scale-[1.05]"
+                                fallback={
+                                    <div className="bg-neutral text-neutral-content w-full h-full flex items-center justify-center">
+                                        <User size={48} strokeWidth={1.5} />
+                                    </div>
+                                }
+                            />
                         </div>
                     </div>
 
@@ -81,7 +69,7 @@ export function ClassmatePersonDrawer({ classmate, onClose }: ClassmatePersonDra
                 <ClassmatePersonDetail
                     profile={profile}
                     isLoading={isLoading}
-                    studyInfoFromClassmate={classmate?.studyInfo}
+                    studyInfoFromClassmate={classmate?.studyInfo ?? ''}
                 />
 
                 <div className="px-4 pb-4">

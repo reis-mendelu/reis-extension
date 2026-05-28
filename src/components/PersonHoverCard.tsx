@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mail, ExternalLink } from 'lucide-react';
+import { Mail, ExternalLink, UserRound } from 'lucide-react';
 import { fetchPersonProfile } from '../api/search/searchService';
 import { useAppStore } from '../store/useAppStore';
 import { logError } from '../utils/reportError';
+import { PersonPhoto } from './ui/PersonPhoto';
 import type { Person } from '../api/search/types';
 
 interface PersonHoverCardProps {
@@ -21,15 +22,9 @@ interface CardPosition {
     flip: boolean;
 }
 
-const PHOTO_BASE = 'https://is.mendelu.cz/auth/lide/foto.pl';
 const PROFILE_BASE = 'https://is.mendelu.cz/auth/lide/clovek.pl';
 const HOVER_DELAY_MS = 450;
 const CARD_WIDTH = 360;
-
-/** Returns the photo URL for any IS person by their numeric ID */
-function photoUrl(id: string) {
-    return `${PHOTO_BASE}?id=${id};lang=cz`;
-}
 
 const CARD_ESTIMATED_HEIGHT = 90;
 
@@ -167,31 +162,16 @@ export function PersonHoverCard({ personId, children, className }: PersonHoverCa
                     {/* Avatar */}
                     <div className="avatar flex-shrink-0">
                         <div className="w-14 h-14 rounded-full ring-1 ring-base-200 ring-offset-2 ring-offset-base-100 overflow-hidden">
-                            {(() => {
-                                const isNumeric = /^\d+$/.test(personId);
-                                const photoId = profile?.id || (isNumeric ? personId : null);
-                                
-                                if (!photoId) {
-                                    return (
-                                        <div className="w-full h-full flex items-center justify-center bg-neutral text-neutral-content">
-                                            <svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/><circle cx='12' cy='7' r='4'/></svg>
-                                        </div>
-                                    );
+                            <PersonPhoto
+                                personId={profile?.id || (/^\d+$/.test(personId) ? personId : null)}
+                                alt=""
+                                className="w-full h-full object-cover scale-[1.05]"
+                                fallback={
+                                    <div className="w-full h-full flex items-center justify-center bg-neutral text-neutral-content">
+                                        <UserRound size={24} strokeWidth={1.5} />
+                                    </div>
                                 }
-
-                                return (
-                                    <img
-                                        src={photoUrl(photoId)}
-                                        alt=""
-                                        className="w-full h-full object-cover scale-[1.05]"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                            (e.target as HTMLImageElement).parentElement!.innerHTML =
-                                                '<div class="w-full h-full flex items-center justify-center bg-neutral text-neutral-content"><svg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\'/><circle cx=\'12\' cy=\'7\' r=\'4\'/></svg></div>';
-                                        }}
-                                    />
-                                );
-                            })()}
+                            />
                         </div>
                     </div>
 

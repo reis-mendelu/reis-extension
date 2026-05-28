@@ -6,6 +6,7 @@ import { ClassmatesListSkeleton } from './ClassmatesListSkeleton';
 import { useAppStore } from '../../store/useAppStore';
 import { ISBacklink } from './ISBacklink';
 import { ClassmatePersonDrawer } from '../Classmates/ClassmatePersonDrawer';
+import { PersonPhoto } from '../ui/PersonPhoto';
 import type { Classmate } from '../../types/classmates';
 
 interface ClassmatesTabProps {
@@ -83,21 +84,16 @@ export function ClassmatesTab({ courseCode }: ClassmatesTabProps) {
                         <div className="flex items-center gap-4 group/profile flex-1">
                             <div className="avatar">
                                 <div className="w-14 h-14 rounded-full ring-1 ring-base-200 ring-offset-base-100 ring-offset-2 group-hover/profile:ring-primary/40 transition-all">
-                                    {student.photoUrl && (
-                                        <img
-                                            src={student.photoUrl.startsWith('http') ? student.photoUrl : `https://is.mendelu.cz${student.photoUrl}`}
-                                            alt={student.name}
-                                            className="w-full h-full object-cover scale-[1.05]"
-                                            onError={(e) => {
-                                                const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
-                                                if (fallback) fallback.style.display = 'flex';
-                                                e.currentTarget.style.display = 'none';
-                                            }}
-                                        />
-                                    )}
-                                    <div className="bg-neutral text-neutral-content w-full h-full items-center justify-center" style={{ display: student.photoUrl ? 'none' : 'flex' }}>
-                                        <User size={24} strokeWidth={1.5} />
-                                    </div>
+                                    <PersonPhoto
+                                        personId={student.personId}
+                                        alt={student.name}
+                                        className="w-full h-full object-cover scale-[1.05]"
+                                        fallback={
+                                            <div className="bg-neutral text-neutral-content w-full h-full flex items-center justify-center">
+                                                <User size={24} strokeWidth={1.5} />
+                                            </div>
+                                        }
+                                    />
                                 </div>
                             </div>
                             <div className="flex flex-col">

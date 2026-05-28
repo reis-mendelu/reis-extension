@@ -55,7 +55,16 @@ async function handleDataRequest(dataType: DataRequestType) {
     } catch (e) { sendToIframe(Messages.data(dataType, null, String(e))); }
 }
 
-async function handleFetchRequest(id: string, url: string, options?: { method?: string; headers?: Record<string, string>; body?: string }) {
+function blobToDataUrl(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error ?? new Error('FileReader failed'));
+        reader.readAsDataURL(blob);
+    });
+}
+
+async function handleFetchRequest(id: string, url: string, options?: { method?: string; headers?: Record<string, string>; body?: string; responseType?: 'text' | 'image' }) {
     try {
         let text: string;
         if (url.startsWith('https://is.mendelu.cz')) {
@@ -68,7 +77,18 @@ async function handleFetchRequest(id: string, url: string, options?: { method?: 
                 throw new Error(`HTTP ${response.status}`);
             }
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            text = await response.text();
+            if (options?.responseType === 'image') {
+                // Photos (foto.pl) are binary and live behind /auth/. Fetching here
+                // in the content script (first-party, credentialed) sidesteps the
+                // cross-origin cookie loss that breaks a direct iframe <img> on
+                // Firefox. Hand back a self-contained data: URL. A non-image body
+                // means the session lapsed → fail so the caller shows its fallback.
+                const contentType = response.headers.get('content-type') ?? '';
+                if (!contentType.startsWith('image/')) throw new Error(`Not an image (${contentType})`);
+                text = await blobToDataUrl(await response.blob());
+            } else {
+                text = await response.text();
+            }
         } else {
             // Up to 3 attempts: handles SW wake-up (null result) and transient
             // CDN/HEI API hiccups (success: false on 5xx or network blips).

@@ -4,6 +4,7 @@ import { useExamClassmates } from '../../hooks/data/useExamClassmates';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { Classmate } from '../../types/classmates';
 import { ClassmatePersonDrawer } from '../Classmates/ClassmatePersonDrawer';
+import { PersonPhoto } from '../ui/PersonPhoto';
 
 interface ExamClassmatesStripProps {
     terminId: string | undefined;
@@ -20,25 +21,16 @@ function Avatar({ classmate }: { classmate: Classmate }) {
     return (
         <div className="avatar">
             <div className="w-6 h-6 rounded-full ring-1 ring-base-100 bg-base-200">
-                {classmate.photoUrl ? (
-                    <img
-                        src={classmate.photoUrl}
-                        alt={classmate.name}
-                        loading="lazy"
-                        className="w-full h-full object-cover"
-                        onError={e => {
-                            const fb = e.currentTarget.nextElementSibling as HTMLElement | null;
-                            if (fb) fb.style.display = 'flex';
-                            e.currentTarget.style.display = 'none';
-                        }}
-                    />
-                ) : null}
-                <div
-                    className="bg-primary/10 text-primary text-[9px] font-black w-full h-full items-center justify-center"
-                    style={{ display: classmate.photoUrl ? 'none' : 'flex' }}
-                >
-                    {initials(classmate.name)}
-                </div>
+                <PersonPhoto
+                    personId={classmate.personId}
+                    alt={classmate.name}
+                    className="w-full h-full object-cover"
+                    fallback={
+                        <div className="bg-primary/10 text-primary text-[9px] font-black w-full h-full flex items-center justify-center">
+                            {initials(classmate.name)}
+                        </div>
+                    }
+                />
             </div>
         </div>
     );

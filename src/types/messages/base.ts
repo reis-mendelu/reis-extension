@@ -10,7 +10,7 @@ export interface SyncedData { schedule?: unknown; exams?: unknown; subjects?: un
 
 export interface ReadyMessage { type: 'REIS_READY'; }
 export interface RequestDataMessage { type: 'REIS_REQUEST_DATA'; dataType: DataRequestType; }
-export interface FetchRequestMessage { type: 'REIS_FETCH'; id: string; url: string; options?: { method?: string; headers?: Record<string, string>; body?: string; }; }
+export interface FetchRequestMessage { type: 'REIS_FETCH'; id: string; url: string; options?: { method?: string; headers?: Record<string, string>; body?: string; responseType?: 'text' | 'image'; }; }
 export interface ActionRequestMessage { type: 'REIS_ACTION'; id: string; action: ActionType; payload: unknown; }
 
 export interface DataResponseMessage { type: 'REIS_DATA'; dataType: DataRequestType; data: unknown; error?: string; }
