@@ -143,3 +143,51 @@ export async function updateFileContent(fileId: string, content: Blob): Promise<
     if (!res.ok) throw new Error(`Drive update failed: ${data?.error?.message || res.statusText}`);
     return data as DriveFile;
 }
+
+const DOC_MIME = 'application/vnd.google-apps.document';
+
+/**
+ * Create a native Google Doc by uploading HTML and letting Drive convert it
+ * (target mimeType = Google Doc). Stays within `drive.file` — no Docs API.
+ */
+export async function uploadDoc(
+    name: string,
+    html: string,
+    parents?: string[],
+    appProperties?: Record<string, string>,
+): Promise<DriveFile> {
+    const token = await getAccessToken();
+
+    const metadata: Record<string, unknown> = { name, mimeType: DOC_MIME };
+    if (parents && parents.length) metadata.parents = parents;
+    if (appProperties) metadata.appProperties = appProperties;
+
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    form.append('file', new Blob([html], { type: 'text/html' }));
+
+    const res = await fetch(UPLOAD_ENDPOINT, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(`Drive doc create failed: ${data?.error?.message || res.statusText}`);
+    return data as DriveFile;
+}
+
+/** Replace a Google Doc's body by uploading new HTML for Drive to re-convert. */
+export async function updateDocContent(fileId: string, html: string): Promise<DriveFile> {
+    const token = await getAccessToken();
+    const res = await fetch(
+        `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media&fields=id,name,webViewLink`,
+        {
+            method: 'PATCH',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'text/html' },
+            body: html,
+        },
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(`Drive doc update failed: ${data?.error?.message || res.statusText}`);
+    return data as DriveFile;
+}
