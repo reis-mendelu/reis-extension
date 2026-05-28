@@ -186,9 +186,19 @@ export async function syncDriveBackup(
         }
 
         manifest.lastSync = Date.now();
+        manifest.failingSince = null;
+        manifest.lastError = null;
         await saveManifest(manifest);
         log(`done — uploaded ${uploaded}, updated ${updated}, reused ${reused}, skipped ${skipped}`);
         return { uploaded, updated, skipped, reused };
+    } catch (e) {
+        // Pass-level failure (auth/root/network) — record it so the UI can show
+        // "backup failing since …" instead of silently appearing healthy. The
+        // streak start is kept until a pass succeeds.
+        manifest.lastError = e instanceof Error ? e.message : String(e);
+        manifest.failingSince = manifest.failingSince ?? Date.now();
+        await saveManifest(manifest).catch(() => {});
+        throw e;
     } finally {
         running = false;
         await releaseBackupLock();

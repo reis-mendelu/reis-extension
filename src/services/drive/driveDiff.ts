@@ -29,6 +29,10 @@ export interface DriveManifest {
     files: Record<string, { driveFileId: string; date: string }>;
     /** Epoch ms of the last completed backup pass. */
     lastSync: number;
+    /** Epoch ms of the first failure in the current failing streak; null when the last pass succeeded. */
+    failingSince: number | null;
+    /** Message of the most recent pass-level failure, for diagnostics; null when healthy. */
+    lastError: string | null;
 }
 
 export interface DriveDiff {
@@ -38,7 +42,7 @@ export interface DriveDiff {
 }
 
 export function emptyManifest(): DriveManifest {
-    return { rootFolderId: null, rootWebViewLink: null, folders: {}, files: {}, lastSync: 0 };
+    return { rootFolderId: null, rootWebViewLink: null, folders: {}, files: {}, lastSync: 0, failingSince: null, lastError: null };
 }
 
 /** Manifest key for a folder path. */
