@@ -20,11 +20,15 @@ import { sendToIframe } from "./iframeManager";
 import { SYNC_INTERVAL } from "./config";
 import type { SyncedData } from "../types/messages";
 import { IndexedDBService } from "../services/storage/IndexedDBService";
+import { syncDriveBackup, type DriveBackupSubject } from "../services/drive/driveBackup";
+import { logError } from "../utils/reportError";
+import type { ParsedFile, SubjectsData } from "../types/documents";
 
 
 const limit = pLimit(3);
 export let cachedData: SyncedData = { lastSync: 0 };
 export let isSyncing = false;
+let currentSemesterCodes: string[] = [];
 let syncIntervalId: ReturnType<typeof setInterval> | null = null;
 
 export async function syncAllData() {
@@ -42,6 +46,9 @@ export async function syncAllData() {
             .then(result => {
                 if (result) {
                     cachedData = { ...cachedData, subjects: result.subjects, attendance: result.attendance };
+                    // Capture current-semester codes BEFORE mergePastSubjects adds past ones —
+                    // the Drive backup is scoped to the current semester only.
+                    currentSemesterCodes = result.subjects?.data ? Object.keys(result.subjects.data) : [];
                 }
                 return result;
             });
@@ -161,6 +168,37 @@ export async function syncAllData() {
         // Fire-and-forget: fetch past semesters once, permanently cache in IDB
         if (studium && userParams?.obdobi && subjects.status === "fulfilled" && subjects.value?.availablePeriods.length) {
             syncPastSemesters(studium, userParams.obdobi, subjects.value.availablePeriods).catch(() => {});
+        }
+
+        // Fire-and-forget: mirror current-semester files to Google Drive (only if linked).
+        // Reuses the listings already fetched into cachedData.files — no extra IS crawling.
+        try {
+            const subjectsData = (cachedData.subjects as SubjectsData | undefined)?.data;
+            const filesData = cachedData.files as Record<string, ParsedFile[]> | undefined;
+            if (import.meta.env.VITE_GOOGLE_DEV === 'true') {
+                console.info('[reIS Drive] setup check:', {
+                    currentCodes: currentSemesterCodes.length,
+                    hasSubjects: !!subjectsData,
+                    hasFiles: !!filesData,
+                    fileKeys: filesData ? Object.keys(filesData).length : 0,
+                });
+            }
+            if (currentSemesterCodes.length && subjectsData && filesData) {
+                const backupSubjects = currentSemesterCodes
+                    .map((code): DriveBackupSubject | null => {
+                        const info = subjectsData[code];
+                        const files = filesData[code];
+                        if (!info || !files?.length) return null;
+                        const folderName = `${code} - ${info.displayName || info.fullName || ''}`.trim();
+                        return { code, folderName, files };
+                    })
+                    .filter((s): s is DriveBackupSubject => s !== null);
+                if (backupSubjects.length) {
+                    syncDriveBackup(backupSubjects).catch((e) => logError('Drive.backup', e));
+                }
+            }
+        } catch (e) {
+            logError('Drive.backup.setup', e);
         }
     } catch (e) {
         sendToIframe(Messages.syncUpdate({ isSyncing: false, error: String(e), lastSync: cachedData.lastSync }));

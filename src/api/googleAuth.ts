@@ -84,6 +84,9 @@ async function callProxy(body: Record<string, unknown>): Promise<Record<string, 
 }
 
 async function readTokens(): Promise<GoogleTokens | null> {
+    // chrome.storage is torn down in an invalidated content-script context
+    // (extension reloaded but the page wasn't). Fail soft instead of throwing.
+    if (typeof chrome === 'undefined' || !chrome.storage?.local) return null;
     const res = await chrome.storage.local.get(TOKEN_KEY);
     return (res[TOKEN_KEY] as GoogleTokens) ?? null;
 }
