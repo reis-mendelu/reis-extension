@@ -6,6 +6,7 @@ import { CourseMeta } from './Header/CourseMeta';
 import { EditableCourseTitle } from './Header/EditableCourseTitle';
 import { HeaderTabs } from './Header/HeaderTabs';
 import { FilesFreshness } from './Header/FilesFreshness';
+import { DriveBackupStatus } from './Header/DriveBackupStatus';
 import { ZaznamnikLine } from '../SubjectsPanel/ZaznamnikLine';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTimeline } from '../../hooks/useTimeline';
@@ -64,6 +65,7 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
                 </div>
                 <div className="flex items-center gap-2">
                     {activeTab === 'files' && courseCode && <FilesFreshness courseCode={courseCode} />}
+                    {activeTab === 'files' && <DriveBackupStatus />}
                     <HeaderActions selectedCount={selectedCount} isDownloading={isDownloading} downloadProgress={downloadProgress} onDownload={onDownload} onClose={onClose} />
                 </div>
             </div>

@@ -28,14 +28,6 @@ export default defineBackground(() => {
   // Google OAuth identity must run here: chrome.identity is NOT exposed to the
   // extension iframe embedded in is.mendelu.cz, but the SW has full access.
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message?.type === 'GOOGLE_IDENTITY_DIAG') {
-      sendResponse({
-        hasIdentity: !!chrome.identity,
-        hasLaunch: !!chrome.identity?.launchWebAuthFlow,
-      });
-      return false;
-    }
-
     if (message?.type === 'GOOGLE_GET_REDIRECT_URL') {
       try {
         sendResponse({ success: true, url: chrome.identity.getRedirectURL() });

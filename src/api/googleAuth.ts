@@ -51,17 +51,12 @@ async function challengeFromVerifier(verifier: string): Promise<string> {
  * Ask the background SW for the redirect URI Google must have registered.
  * Routed through the SW because `chrome.identity` is not exposed to the iframe.
  */
-export async function getRedirectURL(): Promise<string> {
+async function getRedirectURL(): Promise<string> {
     const res = await chrome.runtime.sendMessage({ type: 'GOOGLE_GET_REDIRECT_URL' });
     if (!res?.success || !res.url) {
         throw new Error(res?.error || 'Could not get redirect URL from background SW.');
     }
     return res.url as string;
-}
-
-/** Diagnostic: does this browser's background SW expose chrome.identity? */
-export async function identityDiag(): Promise<{ hasIdentity: boolean; hasLaunch: boolean }> {
-    return await chrome.runtime.sendMessage({ type: 'GOOGLE_IDENTITY_DIAG' });
 }
 
 // --- proxy + storage ------------------------------------------------------
@@ -200,11 +195,4 @@ export async function isConnected(): Promise<boolean> {
 
 export async function disconnectGoogle(): Promise<void> {
     await chrome.storage.local.remove(TOKEN_KEY);
-}
-
-/** TEST-ONLY: backdate the access token so the next getAccessToken() forces a refresh. */
-export async function expireAccessTokenForTest(): Promise<void> {
-    const tokens = await readTokens();
-    if (!tokens) throw new Error('Not connected to Google.');
-    await writeTokens({ ...tokens, expiry: Date.now() - 1000 });
 }

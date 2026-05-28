@@ -5,6 +5,7 @@ import { ReisLogo } from '../ReisLogo';
 import { IndexedDBService } from '../../services/storage';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useOutlookSync } from '../../hooks/data/useOutlookSync';
+import { useDriveBackup } from '../../hooks/data/useDriveBackup';
 import { useAppStore } from '../../store/useAppStore';
 import { logError } from '../../utils/reportError';
 
@@ -14,6 +15,7 @@ export function WelcomeModal() {
     const { t, language } = useTranslation();
     const setLanguage = useAppStore(state => state.setLanguage);
     const { isEnabled, toggle, isLoading } = useOutlookSync();
+    const { connected: driveConnected, connect: driveConnect, busy: driveBusy } = useDriveBackup();
 
     useEffect(() => {
         async function checkWelcome() {
@@ -163,6 +165,24 @@ export function WelcomeModal() {
                                                         </motion.div>
                                                     )}
                                                 </AnimatePresence>
+
+                                                <div className="w-full flex items-center justify-between gap-3 py-3.5 px-5 bg-base-200/80 backdrop-blur-sm rounded-2xl border border-base-300/50 shadow-inner">
+                                                    <div className="flex flex-col items-start text-left">
+                                                        <span className="text-sm font-bold tracking-tight">{t('onboarding.driveTitle')}</span>
+                                                        <span className="text-xs text-base-content/60 leading-snug">{t('onboarding.driveDescription')}</span>
+                                                    </div>
+                                                    {driveConnected ? (
+                                                        <span className="badge badge-success gap-1 shrink-0"><Check className="w-3 h-3" />{t('drive.connected')}</span>
+                                                    ) : (
+                                                        <button
+                                                            onClick={driveConnect}
+                                                            disabled={driveBusy || driveConnected === null}
+                                                            className="btn btn-primary btn-sm rounded-xl shrink-0"
+                                                        >
+                                                            {driveBusy ? <span className="loading loading-spinner loading-xs" /> : t('drive.connect')}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <button
