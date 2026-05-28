@@ -7,7 +7,8 @@ vi.mock('../../../services/storage/IndexedDBService', () => ({
     IndexedDBService: {
         get: vi.fn(),
         set: vi.fn(),
-        delete: vi.fn()
+        delete: vi.fn(),
+        getAllWithKeys: vi.fn().mockResolvedValue([])
     }
 }));
 
@@ -92,5 +93,28 @@ describe('createNotesSlice', () => {
             expect.objectContaining({ note: 'hello', fileName: 'Lecture 1.pdf' }),
         );
         vi.useRealTimers();
+    });
+
+    it('pushNotesSnapshot posts a grouped REIS_ACTION:push_notes to the parent', async () => {
+        vi.mocked(IndexedDBService.getAllWithKeys).mockResolvedValueOnce([
+            { key: 'BIK-DBS:/auth/dok/1', value: { note: 'hi', updatedAt: 1, fileName: 'L1.pdf' } },
+            { key: 'BIK-DBS:/auth/dok/2', value: { note: '   ', updatedAt: 1, fileName: 'L2.pdf' } }, // empty → skipped
+            { key: 'EBC-AJ:/auth/dok/9', value: { note: 'ok', updatedAt: 1, fileName: 'U.pdf' } },
+        ]);
+        const postSpy = vi.spyOn(window.parent, 'postMessage').mockImplementation(() => {});
+
+        await state.pushNotesSnapshot();
+
+        expect(postSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'REIS_ACTION',
+                action: 'push_notes',
+                payload: {
+                    'BIK-DBS': { '/auth/dok/1': { note: 'hi', fileName: 'L1.pdf' } },
+                    'EBC-AJ': { '/auth/dok/9': { note: 'ok', fileName: 'U.pdf' } },
+                },
+            }),
+            '*',
+        );
     });
 });

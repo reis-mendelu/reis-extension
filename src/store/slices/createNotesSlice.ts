@@ -38,6 +38,7 @@ export const createNotesSlice: AppSlice<NotesSlice> = (set, get) => {
             window.dispatchEvent(new CustomEvent('document-note-changed', {
                 detail: { courseCode, fileLink, hasNote: !!value.trim() }
             }));
+            void get().pushNotesSnapshot();
         })
         .catch((error) => {
             logError('useDocumentNote.save', error);
@@ -123,6 +124,28 @@ export const createNotesSlice: AppSlice<NotesSlice> = (set, get) => {
             });
         },
 
-        pushNotesSnapshot: async () => {}
+        pushNotesSnapshot: async () => {
+            try {
+                const entries = await IndexedDBService.getAllWithKeys('document_notes');
+                const snapshot: Record<string, Record<string, { note: string; fileName: string }>> = {};
+                for (const { key, value } of entries) {
+                    if (!value?.note?.trim()) continue; // never ship empty notes
+                    const idx = key.indexOf(':');
+                    if (idx < 0) continue;
+                    const courseCode = key.slice(0, idx);
+                    const fileLink = key.slice(idx + 1);
+                    (snapshot[courseCode] ??= {})[fileLink] = {
+                        note: value.note,
+                        fileName: value.fileName ?? '',
+                    };
+                }
+                window.parent.postMessage(
+                    { type: 'REIS_ACTION', id: crypto.randomUUID(), action: 'push_notes', payload: snapshot },
+                    '*',
+                );
+            } catch (error) {
+                logError('Notes.pushSnapshot', error);
+            }
+        }
     };
 };
