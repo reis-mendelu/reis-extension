@@ -21,6 +21,8 @@ export interface DriveSyncItem {
 export interface DriveManifest {
     /** Drive id of the top-level 'reIS' folder, or null until created. */
     rootFolderId: string | null;
+    /** webViewLink of the 'reIS' root folder — lets the UI offer "open in Drive". */
+    rootWebViewLink: string | null;
     /** folderKey(pathSegments) → Drive folder id. */
     folders: Record<string, string>;
     /** isLink → mirrored file state. */
@@ -36,7 +38,7 @@ export interface DriveDiff {
 }
 
 export function emptyManifest(): DriveManifest {
-    return { rootFolderId: null, folders: {}, files: {}, lastSync: 0 };
+    return { rootFolderId: null, rootWebViewLink: null, folders: {}, files: {}, lastSync: 0 };
 }
 
 /** Manifest key for a folder path. */

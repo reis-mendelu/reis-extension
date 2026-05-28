@@ -13,7 +13,7 @@ import pLimit from 'p-limit';
 import type { ParsedFile } from '../../types/documents';
 import { fetchWithAuth } from '../../api/client';
 import { isConnected } from '../../api/googleAuth';
-import { uploadFile, updateFileContent, ensureFolder, findFileByProperty, deleteFile } from '../../api/googleDrive';
+import { uploadFile, updateFileContent, ensureFolder, findFileByProperty, deleteFile, getFileLink } from '../../api/googleDrive';
 import { loadManifest, saveManifest, clearManifest, acquireBackupLock, releaseBackupLock } from './driveManifest';
 import { flattenSubjectFiles, diffManifest, folderKey, linkHash, type DriveManifest } from './driveDiff';
 import { logError } from '../../utils/reportError';
@@ -124,6 +124,11 @@ export async function syncDriveBackup(
         if (!manifest.rootFolderId) {
             manifest.rootFolderId = await ensureFolder(ROOT_FOLDER_NAME);
             await saveManifest(manifest);
+        }
+        // Capture the root's "open in Drive" link once, so the UI can link to it.
+        if (!manifest.rootWebViewLink) {
+            manifest.rootWebViewLink = await getFileLink(manifest.rootFolderId).catch(() => null);
+            if (manifest.rootWebViewLink) await saveManifest(manifest);
         }
 
         for (const subject of subjects) {

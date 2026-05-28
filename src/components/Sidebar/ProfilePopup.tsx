@@ -6,6 +6,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useSpolkySettings } from '../../hooks/useSpolkySettings';
 import { SpolkySection } from './Profile/SpolkySection';
 import { OutlookSyncToggle } from './Profile/OutlookSyncToggle';
+import { GoogleDriveSection } from './Profile/GoogleDriveSection';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
@@ -143,6 +144,7 @@ export function ProfilePopup({ isOpen, onOpenFeedback, isIskam }: { isOpen: bool
             <div className="py-1 border-b border-base-200">
                 <SpolkySection expanded={spolkyOpen} onToggle={() => setSpolkyOpen(!spolkyOpen)} isSub={isSubscribed} onToggleAssoc={toggleAssociation} />
                 <OutlookSyncToggle enabled={isEnabled} loading={syncLoading} onToggle={tSync} />
+                <GoogleDriveSection />
             </div>
         )}
 

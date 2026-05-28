@@ -65,6 +65,17 @@ export async function ensureFolder(name: string, parentId?: string): Promise<str
     return await createFolder(name, parentId);
 }
 
+/** Fetch a file/folder's webViewLink (the URL that opens it in the Drive UI). */
+export async function getFileLink(fileId: string): Promise<string | null> {
+    const token = await getAccessToken();
+    const res = await fetch(`${FILES_ENDPOINT}/${fileId}?fields=webViewLink`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(`Drive get link failed: ${data?.error?.message || res.statusText}`);
+    return (data.webViewLink as string) ?? null;
+}
+
 /** Find a non-trashed file previously stamped with this appProperties value. */
 export async function findFileByProperty(key: string, value: string): Promise<string | null> {
     const q = `appProperties has { key='${escapeQ(key)}' and value='${escapeQ(value)}' } and trashed = false`;
