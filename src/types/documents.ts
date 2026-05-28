@@ -127,6 +127,8 @@ export interface GradeHistory {
 export interface DocumentNote {
     note: string;
     updatedAt: number;
+    /** Display name of the IS file, kept so orphaned notes keep their heading in the Drive Doc. */
+    fileName?: string;
 }
 
 export interface SyllabusRequirements {

@@ -94,6 +94,18 @@ export interface FilesSlice {
     speculativeRefreshFiles: (courseCode: string) => void;
 }
 
+export interface NotesSlice {
+    documentNotes: Record<string, string>;
+    documentNotesLoading: Record<string, boolean>;
+    documentNotesSaving: Record<string, boolean>;
+    documentNotesError: Record<string, boolean>;
+    fetchDocumentNote: (courseCode: string, fileLink: string) => Promise<void>;
+    setDocumentNote: (courseCode: string, fileLink: string, value: string, fileName: string) => void;
+    flushDocumentNotes: () => void;
+    /** Push a snapshot of all notes to the content script for Drive backup. */
+    pushNotesSnapshot: () => Promise<void>;
+}
+
 export interface ClassmatesSlice {
     /** courseCode → flat list of seminar classmates */
     classmates: Record<string, ClassmatesData>;
@@ -381,7 +393,7 @@ export interface ViewportSlice {
         'isTouch' | 'isNarrow' | 'isPortrait' | 'keyboardOpen' | 'viewportHeight'>>) => void;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & BulletinSlice & ViewportSlice & import('./slices/createSearchSlice').SearchSlice & import('./slices/createPersonProfileSlice').PersonProfileSlice;
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & NotesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & BulletinSlice & ViewportSlice & import('./slices/createSearchSlice').SearchSlice & import('./slices/createPersonProfileSlice').PersonProfileSlice;
 
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;
