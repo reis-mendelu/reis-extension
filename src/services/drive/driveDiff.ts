@@ -27,6 +27,8 @@ export interface DriveManifest {
     folders: Record<string, string>;
     /** isLink → mirrored file state. */
     files: Record<string, { driveFileId: string; date: string }>;
+    /** courseCode → backed-up notes Doc + sidecar state. */
+    notes: Record<string, { docId: string; docHash: string; jsonId: string }>;
     /** Epoch ms of the last completed backup pass. */
     lastSync: number;
     /** Epoch ms of the first failure in the current failing streak; null when the last pass succeeded. */
@@ -44,7 +46,7 @@ export interface DriveDiff {
 }
 
 export function emptyManifest(): DriveManifest {
-    return { rootFolderId: null, rootWebViewLink: null, folders: {}, files: {}, lastSync: 0, failingSince: null, lastError: null, syncing: false };
+    return { rootFolderId: null, rootWebViewLink: null, folders: {}, files: {}, notes: {}, lastSync: 0, failingSince: null, lastError: null, syncing: false };
 }
 
 /** Manifest key for a folder path. */
