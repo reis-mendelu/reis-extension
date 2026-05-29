@@ -1,6 +1,6 @@
 import { Messages, isIframeMessage } from "../types/messages";
 import { iframeElement, sendToIframe, markIframeReady } from "./iframeManager";
-import { cachedData, syncAllData, runDriveBackupNow, isSyncing, refreshExams } from "./syncService";
+import { cachedData, syncAllData, runDriveBackupNow, runNotesBackupNow, setNotesSnapshot, isSyncing, refreshExams } from "./syncService";
 import { fetchFullSemesterSchedule } from "./dataFetchers";
 import { fetchExamData, registerExam, unregisterExam } from "../api/exams";
 import { fetchSubjects } from "../api/subjects";
@@ -120,6 +120,11 @@ async function handleAction(id: string, action: string, payload: unknown) {
                 break;
             case "trigger_drive_backup":
                 await runDriveBackupNow();
+                result = { success: true };
+                break;
+            case "push_notes":
+                setNotesSnapshot(payload as Record<string, Record<string, { note: string; fileName: string }>>);
+                await runNotesBackupNow();
                 result = { success: true };
                 break;
             case "refresh_exams":

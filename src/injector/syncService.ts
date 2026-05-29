@@ -21,6 +21,8 @@ import { SYNC_INTERVAL } from "./config";
 import type { SyncedData } from "../types/messages";
 import { IndexedDBService } from "../services/storage/IndexedDBService";
 import { syncDriveBackup, type DriveBackupSubject } from "../services/drive/driveBackup";
+import { syncDriveNotesBackup } from "../services/drive/driveNotesBackup";
+import type { SubjectNotes } from "../services/drive/notesDoc";
 import { logError } from "../utils/reportError";
 import type { ParsedFile, SubjectsData } from "../types/documents";
 
@@ -28,6 +30,11 @@ import type { ParsedFile, SubjectsData } from "../types/documents";
 const limit = pLimit(3);
 export let cachedData: SyncedData = { lastSync: 0 };
 export let isSyncing = false;
+
+/** Latest notes snapshot pushed from the iframe (it owns the notes IDB). */
+export function setNotesSnapshot(notes: Record<string, Record<string, { note: string; fileName: string }>>) {
+    cachedData = { ...cachedData, notes };
+}
 let currentSemesterCodes: string[] = [];
 let syncIntervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -201,8 +208,30 @@ export async function runDriveBackupNow(): Promise<void> {
             })
             .filter((s): s is DriveBackupSubject => s !== null);
         if (backupSubjects.length) await syncDriveBackup(backupSubjects);
+        await runNotesBackupNow();
     } catch (e) {
         logError('Drive.backup', e);
+    }
+}
+
+/** Mirror the iframe-pushed notes snapshot to per-subject Google Docs + sidecars. */
+export async function runNotesBackupNow(): Promise<void> {
+    try {
+        const notes = cachedData.notes;
+        const subjectsData = (cachedData.subjects as SubjectsData | undefined)?.data;
+        if (!notes || !subjectsData) return;
+        const subjectNotes: SubjectNotes[] = Object.entries(notes)
+            .map(([code, fileMap]): SubjectNotes | null => {
+                const files = Object.entries(fileMap).map(([fileLink, v]) => ({ fileLink, fileName: v.fileName, note: v.note }));
+                if (!files.length) return null;
+                const info = subjectsData[code];
+                const folderName = info ? `${code} - ${info.displayName || info.fullName || ''}`.trim() : code;
+                return { code, folderName, title: `Poznámky – ${code}`, files };
+            })
+            .filter((s): s is SubjectNotes => s !== null);
+        if (subjectNotes.length) await syncDriveNotesBackup(subjectNotes);
+    } catch (e) {
+        logError('Drive.notesBackup', e);
     }
 }
 
