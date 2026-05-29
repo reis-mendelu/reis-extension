@@ -68,6 +68,8 @@ export function useAppLogic() {
         let unsub: (() => void) | undefined;
         initializeStore().then(unsubscribe => {
             unsub = unsubscribe;
+            // Back up any existing notes once on startup (one-way mirror to Drive).
+            void useAppStore.getState().pushNotesSnapshot();
         });
         return () => { unsub?.(); };
     }, []);
