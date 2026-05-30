@@ -96,7 +96,7 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
     if (tabId === 'dashboard') return currentView === 'calendar';
     if (tabId === 'iskam-dashboard') return currentView === 'iskam-dashboard';
     if (tabId === 'exams') return currentView === 'exams';
-    if (tabId === 'subjects') return currentView === 'subjects';
+    if (tabId === 'subjects') return currentView === 'subjects' || currentView === 'studyPlan';
     if (tabId === 'is') return activeSheetId === 'is';
     if (tabId === 'vice') return activeSheetId === 'vice' || profileOpen;
     return false;

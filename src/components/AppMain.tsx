@@ -3,6 +3,7 @@ import { AppHeader } from './AppHeader'
 import { WeeklyCalendar } from './WeeklyCalendar/index'
 import { ExamPanel } from './ExamPanel'
 import { SubjectsPanel } from './SubjectsPanel'
+import { StudyPlanPage } from './SubjectsPanel/StudyPlanPage'
 import { ErasmusPanel } from './ErasmusPanel'
 import { NpsBanner } from './Feedback/NpsBanner'
 import { useAppStore } from '../store/useAppStore'
@@ -40,7 +41,8 @@ export function AppMain({
                 <div className="flex-1 bg-base-100 rounded-lg touch:rounded-t-lg touch:rounded-b-none shadow-sm border border-base-300 overflow-hidden">
                     {currentView === 'calendar' && <WeeklyCalendar key={currentDate.toISOString()} initialDate={currentDate} onPrevWeek={handlePrevWeek} onNextWeek={handleNextWeek} />}
                     {currentView === 'exams' && <ExamPanel />}
-                    {currentView === 'subjects' && <SubjectsPanel onOpenSubject={handleOpenSubjectFromSearch} onSearchSubject={(name) => searchPrefillRef?.current?.(name)} />}
+                    {currentView === 'subjects' && <SubjectsPanel onOpenSubject={handleOpenSubjectFromSearch} onSearchSubject={(name) => searchPrefillRef?.current?.(name)} onOpenStudyPlan={() => setCurrentView?.('studyPlan')} />}
+                    {currentView === 'studyPlan' && <StudyPlanPage onBack={() => setCurrentView?.('subjects')} onOpenSubject={handleOpenSubjectFromSearch} onSearchSubject={(name) => searchPrefillRef?.current?.(name)} />}
                     {currentView === 'erasmus' && <ErasmusPanel onOpenSubject={handleOpenSubjectFromSearch} onSearchSubject={(name) => searchPrefillRef?.current?.(name)} />}
                 </div>
             </div>

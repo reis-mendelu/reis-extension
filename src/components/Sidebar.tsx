@@ -27,6 +27,7 @@ export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, onOpenSubje
   const isItemActive = (id: string) => {
     if (currentView === 'calendar' && id === 'dashboard') return true;
     if (currentView === 'iskam-dashboard' && id === 'iskam-dashboard') return true;
+    if (currentView === 'studyPlan' && id === 'subjects') return true;
     return currentView === id;
   };
 
