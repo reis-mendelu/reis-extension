@@ -74,10 +74,19 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
         : justFinished ? <CircleCheck size={14} />
             : view.tone === 'muted' ? <HardDrive size={14} /> : <AlertTriangle size={14} />;
 
-    const className = `btn btn-ghost btn-xs gap-1.5 px-2 ${tone}`;
+    // Minimalism: when the backup is healthy the label is pure reassurance and
+    // duplicated the FilesFreshness timestamp beside it. Collapse the healthy
+    // state to a quiet, unboxed icon (matches the refresh glyph); the timestamp
+    // stays in the tooltip/aria. The non-healthy and actionable states keep their
+    // visible label — that legibility is the whole point of the indicator. The
+    // justFinished flash keeps its "Up to date" label as the transient reward.
+    const isQuiet = view.kind === 'healthy' && !justFinished;
+    const className = isQuiet
+        ? `btn btn-ghost btn-xs btn-circle interactive ${tone}`
+        : `btn btn-ghost btn-xs gap-1.5 px-2 ${tone}`;
     const content = (
         <>
-            {label && <span className="hidden @md:inline whitespace-nowrap text-xs font-normal">{label}</span>}
+            {!isQuiet && label && <span className="hidden @md:inline whitespace-nowrap text-xs font-normal">{label}</span>}
             {icon}
         </>
     );

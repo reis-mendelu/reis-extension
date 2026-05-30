@@ -34,19 +34,19 @@ export function FilesFreshness({ courseCode }: Props) {
         return rel ? `${t('course.freshness.updated')} ${rel}` : t('course.freshness.updatedJustNow');
     }, [fetchedAt, now, locale, t]);
 
+    // Minimalism: the "updated N ago" prose is low-stakes reassurance that ate a
+    // full sentence of header width next to the Drive status. Collapse to the
+    // refresh glyph alone; the timestamp survives in the tooltip on hover.
     return (
-        <div className="flex items-center gap-1.5 text-xs text-base-content/50">
-            {label && <span className="hidden @md:inline whitespace-nowrap">{label}</span>}
-            <button
-                type="button"
-                onClick={() => refresh(courseCode)}
-                disabled={isLoading}
-                title={t('course.freshness.refresh')}
-                aria-label={t('course.freshness.refresh')}
-                className="btn btn-ghost btn-xs btn-circle interactive disabled:opacity-50"
-            >
-                <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
-            </button>
-        </div>
+        <button
+            type="button"
+            onClick={() => refresh(courseCode)}
+            disabled={isLoading}
+            title={label ? `${label} · ${t('course.freshness.refresh')}` : t('course.freshness.refresh')}
+            aria-label={t('course.freshness.refresh')}
+            className="btn btn-ghost btn-xs btn-circle interactive text-base-content/50 disabled:opacity-50"
+        >
+            <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
+        </button>
     );
 }
