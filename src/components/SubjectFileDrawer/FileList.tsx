@@ -4,12 +4,10 @@
  * Renders the file grid with selection support.
  */
 
-import { useState } from 'react';
-import { Folder, Check, StickyNote } from 'lucide-react';
+import { Folder, Download, PanelRightOpen, StickyNote } from 'lucide-react';
 import type { FileListProps } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDocumentNoteKeys } from '../../hooks/data/useDocumentNoteKeys';
-import { DocumentNote } from './DocumentNote';
 import { parseIsDate } from './utils/fileDate';
 import { ISBacklink } from './ISBacklink';
 
@@ -49,12 +47,13 @@ export function FileList({
     onToggleSelect,
     onOpenFile,
     onViewPdf,
+    onOpenNote,
+    onDownloadSingle,
     folderUrl,
     lastVisitedAt
 }: FileListProps) {
     const { t, language } = useTranslation();
-    const [expandedNoteLink, setExpandedNoteLink] = useState<string | null>(null);
-    const { noteKeys, updateKey } = useDocumentNoteKeys(courseCode);
+    const { noteKeys } = useDocumentNoteKeys(courseCode);
 
     if (groups.length === 0) {
         return (
@@ -80,7 +79,27 @@ export function FileList({
                                     return (
                                         <div key={subFile.link} className="space-y-1">
                                         <div
-                                            ref={el => { if (el) fileRefs.current.set(subFile.link, el); }}
+                                            ref={el => {
+                                                if (el) {
+                                                    fileRefs.current.set(subFile.link, el);
+                                                } else {
+                                                    fileRefs.current.delete(subFile.link);
+                                                }
+                                            }}
+                                            tabIndex={0}
+                                            onKeyDown={(e) => {
+                                                if (ignoreClickRef.current) return;
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    if (e.ctrlKey || e.metaKey) {
+                                                        onToggleSelect(subFile.link, e as any);
+                                                    } else if (isPdfFile(subFile) && onViewPdf) {
+                                                        onViewPdf(subFile.link);
+                                                    } else {
+                                                        onOpenFile(subFile.link);
+                                                    }
+                                                }
+                                            }}
                                             onClick={(e) => {
                                                 if (ignoreClickRef.current) return;
                                                 if (e.ctrlKey || e.metaKey) {
@@ -93,21 +112,20 @@ export function FileList({
                                             }}
                                             className={`
                                                 flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer group hover:shadow-sm
+                                                focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none
                                                 ${isSelected 
                                                     ? 'bg-primary/10 border-primary/20 shadow-sm' 
                                                     : 'bg-base-100 border-transparent hover:bg-base-200/50 hover:border-base-300'
                                                 }
                                             `}
                                         >
-                                            <div 
-                                                className={`
-                                                    w-5 h-5 rounded border flex items-center justify-center transition-colors interactive
-                                                    ${isSelected ? 'bg-primary border-primary' : 'border-base-content/30 group-hover:border-primary/50'}
-                                                `}
-                                                onClick={(e) => onToggleSelect(subFile.link, e)}
-                                            >
-                                                {isSelected && <Check size={12} className="text-primary-content" />}
-                                            </div>
+                                            <input 
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={(e) => onToggleSelect(subFile.link, e as any)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="checkbox checkbox-xs checkbox-primary interactive shrink-0"
+                                            />
                                             
                                             <div className="flex-1 min-w-0">
                                                 <div className={`font-medium truncate flex items-center gap-2 ${isSelected ? 'text-primary' : 'text-base-content'}`}>
@@ -121,27 +139,50 @@ export function FileList({
                                                     {file.file_comment && <span className="truncate">{file.file_comment}</span>}
                                                 </div>
                                             </div>
-
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setExpandedNoteLink(prev => prev === subFile.link ? null : subFile.link);
-                                                    }}
-                                                    className="relative p-1.5 rounded-md hover:bg-base-300 text-base-content/40 hover:text-base-content/70 transition-colors focus:outline-none"
-                                                    title={t('course.documentNote.add')}
-                                                >
-                                                    <StickyNote size={14} />
-                                                    {noteKeys.has(subFile.link) && (
-                                                        <span className="absolute top-1 right-1 w-[5px] h-[5px] rounded-full bg-primary" />
-                                                    )}
-                                                </button>
+ 
+                                            <div className="flex items-center gap-1">
+                                                {onOpenNote && (() => {
+                                                    const hasNote = noteKeys.has(subFile.link);
+                                                    return (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onOpenNote(subFile.link, file.files.length > 1 ? `${file.file_name} (${j + 1})` : file.file_name);
+                                                        }}
+                                                        className={`btn btn-ghost btn-xs btn-square ${hasNote ? 'text-primary hover:text-primary' : 'text-base-content/40 hover:text-base-content/70'}`}
+                                                        title={hasNote ? t('course.documentNote.edit') : t('course.documentNote.add')}
+                                                    >
+                                                        <StickyNote size={14} className={hasNote ? 'fill-primary/15' : ''} />
+                                                    </button>
+                                                    );
+                                                })()}
+                                                {onDownloadSingle && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onDownloadSingle(subFile.link);
+                                                        }}
+                                                        className="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-base-content/70"
+                                                        title={t('course.footer.download') || 'Download'}
+                                                    >
+                                                        <Download size={14} />
+                                                    </button>
+                                                )}
+                                                {isPdfFile(subFile) && onViewPdf && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onViewPdf(subFile.link);
+                                                        }}
+                                                        className="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-primary"
+                                                        title={t('course.footer.openInSidebar') || 'Open in Sidebar'}
+                                                    >
+                                                        <PanelRightOpen size={14} />
+                                                    </button>
+                                                )}
                                                 <FileTypeBadge type={subFile.type} />
                                             </div>
                                         </div>
-                                        {expandedNoteLink === subFile.link && (
-                                            <DocumentNote courseCode={courseCode} fileLink={subFile.link} onNoteChange={updateKey} />
-                                        )}
                                     </div>
                                     );
                                 })}

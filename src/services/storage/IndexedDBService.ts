@@ -143,6 +143,9 @@ class IndexedDBServiceImpl {
                 },
                 // Browser closed the connection unexpectedly. Force a reopen.
                 terminated: () => { this.dbPromise = null; },
+            }).catch(err => {
+                this.dbPromise = null;
+                throw err;
             });
         }
         return this.dbPromise;

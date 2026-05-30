@@ -5,6 +5,7 @@ import { createExamSlice } from './slices/createExamSlice';
 import { createSyllabusSlice } from './slices/createSyllabusSlice';
 import { createZaznamnikSlice } from './slices/createZaznamnikSlice';
 import { createFilesSlice } from './slices/createFilesSlice';
+import { createNotesSlice } from './slices/createNotesSlice';
 import { createClassmatesSlice } from './slices/createClassmatesSlice';
 import { createSubjectsSlice } from './slices/createSubjectsSlice';
 import { createSyncSlice } from './slices/createSyncSlice';
@@ -40,6 +41,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createSyllabusSlice(...a),
   ...createZaznamnikSlice(...a),
   ...createFilesSlice(...a),
+  ...createNotesSlice(...a),
   ...createClassmatesSlice(...a),
   ...createSubjectsSlice(...a),
   ...createSyncSlice(...a),

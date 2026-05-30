@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Loader2, ZoomIn, ZoomOut, X } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, X, StickyNote } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 // Dynamic import() of ES modules fails under chrome-extension:// protocol.
@@ -28,6 +28,8 @@ function getWorkerReady(): Promise<void> {
 interface PdfViewerProps {
     blobUrl: string;
     onClose: () => void;
+    onToggleNotes?: () => void;
+    hasNotesOpen?: boolean;
 }
 
 // pdf.js advises against mounting more than ~25 page canvases at once; mobile
@@ -41,7 +43,7 @@ const MAX_RENDERED = 20;
 // hide fast-fling blank flashes, still bounded by MAX_RENDERED.
 const ROOT_MARGIN = '600px 0px';
 
-export function PdfViewer({ blobUrl, onClose }: PdfViewerProps) {
+export function PdfViewer({ blobUrl, onClose, onToggleNotes, hasNotesOpen }: PdfViewerProps) {
     const [numPages, setNumPages] = useState<number>(0);
     const [scale, setScale] = useState(1.0);
     const [ready, setReady] = useState(false);
@@ -130,10 +132,20 @@ export function PdfViewer({ blobUrl, onClose }: PdfViewerProps) {
                         </>
                     )}
                 </div>
-                <div />
-                <button className="btn btn-ghost btn-xs btn-square" onClick={onClose}>
-                    <X size={14} />
-                </button>
+                <div className="flex items-center gap-1">
+                    {onToggleNotes && (
+                        <button
+                            className={`btn btn-ghost btn-xs btn-square ${hasNotesOpen ? 'text-primary' : 'text-base-content/40 hover:text-base-content/75'}`}
+                            onClick={onToggleNotes}
+                            title="Toggle study notes"
+                        >
+                            <StickyNote size={14} />
+                        </button>
+                    )}
+                    <button className="btn btn-ghost btn-xs btn-square" onClick={onClose}>
+                        <X size={14} />
+                    </button>
+                </div>
             </div>
             <div ref={containerRef} className="flex-1 overflow-auto bg-base-300/30">
                 {!ready ? (
