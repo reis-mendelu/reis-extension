@@ -115,7 +115,7 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
   const firstCurrentIdx = plan.blocks.findIndex((block) => getSemesterState(block) === 'current');
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full flex flex-col overflow-hidden">
       <SubjectsPanelHeader
         creditsAcquired={plan.creditsAcquired}
         creditsRequired={plan.creditsRequired}
@@ -125,8 +125,7 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
         enrolledCredits={enrolledCredits}
       />
 
-      <>
-          <div className="px-4 pt-3 pb-0">
+      <div className="px-4 pt-3 pb-0 shrink-0">
             <EnrolledNowSection
               plan={plan}
               failRates={failRates}
@@ -137,16 +136,16 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
             />
           </div>
 
-          <div className="px-4 pt-3 pb-4">
+          <div className="px-4 pt-3 pb-4 flex-1 min-h-0 flex flex-col">
             <button
               onClick={() => setShowFullPlan(v => !v)}
-              className="btn btn-ghost btn-sm w-full justify-between text-base-content/60 font-medium"
+              className="btn btn-ghost btn-sm w-full justify-between text-base-content/60 font-medium shrink-0"
             >
               <span>{t('subjects.studyPlan')}</span>
               <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showFullPlan ? 'rotate-180' : ''}`} />
             </button>
             {showFullPlan && (
-            <div className="flex flex-col gap-2 mt-2 animate-in fade-in slide-in-from-top-1 duration-150">
+            <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-2 mt-2 animate-in fade-in slide-in-from-top-1 duration-150">
               {/* Insights Grid — forward-looking, lives inside the gated plan */}
               {(hardest.length > 0 || zameraniStats.length >= 2) && (
                 <div className={`grid gap-3 items-start ${
@@ -190,7 +189,6 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
             </div>
             )}
           </div>
-      </>
     </div>
   );
 }
