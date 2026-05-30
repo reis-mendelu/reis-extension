@@ -1,4 +1,5 @@
-import { BookOpen, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
+import { BookOpen, CheckCircle2, ChevronDown } from 'lucide-react';
 import type { StudyPlan, SubjectStatus } from '@/types/studyPlan';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SubjectRow } from './SubjectRow';
@@ -57,6 +58,10 @@ function SubjectSlot({ subject, semLabel, failRates, subjectSemesters, subjectTo
 
 export function EnrolledNowSection({ plan, failRates, subjectSemesters, subjectToZameranis, onOpenSubject, onSearchSubject }: Props) {
   const { t } = useTranslation();
+  // Passed subjects are non-actionable (already done), so they stay collapsed by
+  // default — the count lives in the header, so no progress signal is lost. Auto-expand
+  // when nothing is in progress, so the section is never empty at semester's end.
+  const [showPassed, setShowPassed] = useState(false);
 
   const inProgress: { subject: SubjectStatus; semLabel: string | null }[] = [];
   const passed: { subject: SubjectStatus; semLabel: string | null }[] = [];
@@ -110,17 +115,25 @@ export function EnrolledNowSection({ plan, failRates, subjectSemesters, subjectT
         {passed.length > 0 && (
           <>
             {inProgress.length > 0 && (
-              <div className="flex items-center gap-2 px-3 my-0.5">
+              <button
+                onClick={() => setShowPassed(v => !v)}
+                className="w-full flex items-center gap-2 px-3 my-0.5 group"
+              >
                 <div className="h-px flex-1 bg-success/15" />
-                <span className="text-[9px] text-success/40 uppercase tracking-wider font-medium">{t('subjects.fulfilled')}</span>
+                <span className="flex items-center gap-1 text-[9px] text-success/40 group-hover:text-success/70 uppercase tracking-wider font-medium transition-colors">
+                  {passed.length} {t('subjects.fulfilled')}
+                  <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showPassed ? 'rotate-180' : ''}`} />
+                </span>
                 <div className="h-px flex-1 bg-success/15" />
+              </button>
+            )}
+            {(inProgress.length === 0 || showPassed) && (
+              <div className="opacity-60 grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                {passed.map(({ subject, semLabel }) => (
+                  <SubjectSlot key={subject.code} subject={subject} semLabel={semLabel} {...slotProps} />
+                ))}
               </div>
             )}
-            <div className="opacity-60 grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-0.5">
-              {passed.map(({ subject, semLabel }) => (
-                <SubjectSlot key={subject.code} subject={subject} semLabel={semLabel} {...slotProps} />
-              ))}
-            </div>
           </>
         )}
       </div>
