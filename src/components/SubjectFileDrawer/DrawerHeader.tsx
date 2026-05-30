@@ -38,9 +38,9 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
     const timeline = useTimeline(courseCode || '');
 
     return (
-        <div className="px-4 sm:px-6 py-4 border-b border-base-300 bg-base-100 z-20">
-            <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
+        <div className="@container px-4 sm:px-6 py-4 border-b border-base-300 bg-base-100 z-20">
+            <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-3 min-w-0">
                     {!isSearch ? (<>
                         {badge && <span className={`px-2 py-0.5 rounded text-xs font-bold ${badge.cls}`}>{badge.label}</span>}
                         {'date' in (lesson ?? {}) && (lesson as BlockLesson)?.date && <span className="px-2 py-0.5 rounded text-xs font-bold bg-base-300 text-base-content/70">{formatDate((lesson as BlockLesson).date, t)}</span>}
@@ -63,7 +63,7 @@ export function DrawerHeader({ lesson, courseId, courseInfo, subjectInfo, select
                         </span>
                     )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                     {activeTab === 'files' && courseCode && <FilesFreshness courseCode={courseCode} />}
                     {activeTab === 'files' && <DriveBackupStatus courseCode={courseCode} />}
                     <HeaderActions selectedCount={selectedCount} isDownloading={isDownloading} downloadProgress={downloadProgress} onDownload={onDownload} onClose={onClose} />

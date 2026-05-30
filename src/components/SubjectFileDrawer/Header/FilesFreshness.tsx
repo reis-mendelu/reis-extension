@@ -36,7 +36,7 @@ export function FilesFreshness({ courseCode }: Props) {
 
     return (
         <div className="flex items-center gap-1.5 text-xs text-base-content/50">
-            {label && <span className="hidden md:inline">{label}</span>}
+            {label && <span className="hidden @md:inline whitespace-nowrap">{label}</span>}
             <button
                 type="button"
                 onClick={() => refresh(courseCode)}
