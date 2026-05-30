@@ -100,10 +100,12 @@ export function EnrolledNowSection({ plan, failRates, subjectSemesters, subjectT
         </span>
       </div>
 
-      <div className="px-2 py-1.5 flex flex-col gap-0.5">
-        {inProgress.map(({ subject, semLabel }) => (
-          <SubjectSlot key={subject.code} subject={subject} semLabel={semLabel} {...slotProps} />
-        ))}
+      <div className="px-2 py-1.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-0.5">
+          {inProgress.map(({ subject, semLabel }) => (
+            <SubjectSlot key={subject.code} subject={subject} semLabel={semLabel} {...slotProps} />
+          ))}
+        </div>
 
         {passed.length > 0 && (
           <>
@@ -114,7 +116,7 @@ export function EnrolledNowSection({ plan, failRates, subjectSemesters, subjectT
                 <div className="h-px flex-1 bg-success/15" />
               </div>
             )}
-            <div className="opacity-60">
+            <div className="opacity-60 grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-0.5">
               {passed.map(({ subject, semLabel }) => (
                 <SubjectSlot key={subject.code} subject={subject} semLabel={semLabel} {...slotProps} />
               ))}
