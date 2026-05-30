@@ -1,4 +1,5 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -37,6 +38,14 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
   }, [plan]);
 
   const { openSemesters, currentSemesterRef, handleToggle } = useOpenSemesters(plan);
+
+  // Default view shows only the current semester (via EnrolledNowSection). The full
+  // semester-by-semester plan is gated behind this disclosure — collapsed by default,
+  // and intentionally NOT persisted, so every visit resets to the calm default. Seeing
+  // every future semester as a browsable menu inflates the consideration set and nudges
+  // students toward over-enrollment; one click of friction kills the impulse while
+  // keeping legitimate planning one tap away.
+  const [showFullPlan, setShowFullPlan] = useState(false);
 
   const zameraniLookup = useMemo(() => {
     const map = new Map<string, Zamerani>();
@@ -149,7 +158,15 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
           )}
 
           <div className="px-4 pt-4 pb-4">
-            <div className="flex flex-col gap-2">
+            <button
+              onClick={() => setShowFullPlan(v => !v)}
+              className="btn btn-ghost btn-sm w-full justify-between text-base-content/60 font-medium"
+            >
+              <span>{t('subjects.studyPlan')}</span>
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showFullPlan ? 'rotate-180' : ''}`} />
+            </button>
+            {showFullPlan && (
+            <div className="flex flex-col gap-2 mt-2 animate-in fade-in slide-in-from-top-1 duration-150">
               {plan.blocks.map((block, bi) => {
                 const hasSubjects = block.groups.flatMap(g => g.subjects).some(s => !isZameraniCode(s.code));
                 return (
@@ -172,6 +189,7 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
                 );
               })}
             </div>
+            )}
           </div>
       </>
     </div>
