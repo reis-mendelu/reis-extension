@@ -22,7 +22,7 @@ export function ExamDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
 
     return (
         <>
-            <AdaptiveDrawer open={isOpen} onClose={onClose}>
+            <AdaptiveDrawer open={isOpen} onClose={onClose} title="Zkoušky">
                 <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 bg-white border-b border-slate-100">
                     <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Zkoušky</h2>
                     <button onClick={onClose} className="btn btn-ghost btn-circle btn-sm -mr-2 text-slate-400 hover:text-slate-600"><X size={20} /></button>

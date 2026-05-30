@@ -31,7 +31,7 @@ export function ClassmatePersonDrawer({ classmate, onClose }: ClassmatePersonDra
         : '';
 
     return (
-        <AdaptiveDrawer open={!!classmate} onClose={onClose}>
+        <AdaptiveDrawer open={!!classmate} onClose={onClose} title={classmate?.name || t('common.close')}>
             <button
                 type="button"
                 onClick={onClose}

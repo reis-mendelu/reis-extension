@@ -48,7 +48,7 @@ export function ErasmusDrawer({
   const { t } = useTranslation();
 
   return (
-    <AdaptiveDrawer open={isOpen} onClose={onClose}>
+    <AdaptiveDrawer open={isOpen} onClose={onClose} title={countryName}>
           {/* Header */}
           <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-base-300">
             <div className="flex-1 min-w-0">
