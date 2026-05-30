@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { HardDrive, AlertTriangle, CircleCheck } from 'lucide-react';
 import { useDriveBackup } from '../../../hooks/data/useDriveBackup';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -55,6 +55,19 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
         return () => clearTimeout(id);
     }, [syncing, failingSince]);
 
+    // Tap-to-reveal: on no-hover devices the quiet healthy icon can't surface its
+    // "synced N ago" timestamp via a native tooltip. First tap expands the label
+    // (and briefly holds it) instead of jumping to Drive; a second tap navigates.
+    const noHover = useMemo(() => typeof window !== 'undefined' && !!window.matchMedia?.('(hover: none)').matches, []);
+    const [revealed, setRevealed] = useState(false);
+    const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => () => { if (collapseTimer.current) clearTimeout(collapseTimer.current); }, []);
+    const revealBriefly = () => {
+        setRevealed(true);
+        if (collapseTimer.current) clearTimeout(collapseTimer.current);
+        collapseTimer.current = setTimeout(() => setRevealed(false), 3000);
+    };
+
     if (connected === null) return null;
 
     const view = classifyDriveStatus({ connected, syncing, failingSince, lastSync, now });
@@ -80,13 +93,14 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
     // stays in the tooltip/aria. The non-healthy and actionable states keep their
     // visible label — that legibility is the whole point of the indicator. The
     // justFinished flash keeps its "Up to date" label as the transient reward.
-    const isQuiet = view.kind === 'healthy' && !justFinished;
-    const className = isQuiet
+    const isHealthyQuiet = view.kind === 'healthy' && !justFinished;
+    const collapsed = isHealthyQuiet && !revealed;
+    const className = collapsed
         ? `btn btn-ghost btn-xs btn-circle interactive ${tone}`
         : `btn btn-ghost btn-xs gap-1.5 px-2 ${tone}`;
     const content = (
         <>
-            {!isQuiet && label && <span className="hidden @md:inline whitespace-nowrap text-xs font-normal">{label}</span>}
+            {!collapsed && label && <span className="hidden @md:inline whitespace-nowrap text-xs font-normal">{label}</span>}
             {icon}
         </>
     );
@@ -108,10 +122,24 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
         );
     }
 
-    // Folder exists → open it in Drive.
+    // Folder exists → open it in Drive. On touch, the first tap of the collapsed
+    // healthy icon reveals the timestamp instead of navigating (second tap opens).
     if (folderLink) {
         return (
-            <a href={folderLink} target="_blank" rel="noopener noreferrer" title={label} aria-label={label} className={className}>
+            <a
+                href={folderLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={label}
+                aria-label={label}
+                className={className}
+                onClick={(e) => {
+                    if (noHover && collapsed) {
+                        e.preventDefault();
+                        revealBriefly();
+                    }
+                }}
+            >
                 {content}
             </a>
         );
