@@ -56,8 +56,8 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
     }, [syncing, failingSince]);
 
     // Tap-to-reveal: on no-hover devices the quiet healthy icon can't surface its
-    // "synced N ago" timestamp via a native tooltip. First tap expands the label
-    // (and briefly holds it) instead of jumping to Drive; a second tap navigates.
+    // tooltip on hover. First tap force-opens it (held briefly) instead of jumping
+    // to Drive; a second tap navigates.
     const noHover = useMemo(() => typeof window !== 'undefined' && !!window.matchMedia?.('(hover: none)').matches, []);
     const [revealed, setRevealed] = useState(false);
     const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -93,17 +93,18 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
     // stays in the tooltip/aria. The non-healthy and actionable states keep their
     // visible label — that legibility is the whole point of the indicator. The
     // justFinished flash keeps its "Up to date" label as the transient reward.
+    // Healthy state stays a quiet icon; the timestamp lives in a reIS-styled
+    // DaisyUI tooltip (data-tip) — instant on hover, themed, no slow native
+    // tooltip. On touch (no hover) a tap force-opens it via `tooltip-open` for a
+    // few seconds before the second tap navigates. Non-healthy/actionable states
+    // keep their inline label — that legibility is the point of the indicator.
     const isHealthyQuiet = view.kind === 'healthy' && !justFinished;
-    const collapsed = isHealthyQuiet && !revealed;
-    const className = collapsed
-        ? `btn btn-ghost btn-xs btn-circle interactive ${tone}`
+    const className = isHealthyQuiet
+        ? `btn btn-ghost btn-xs btn-circle interactive ${tone} tooltip tooltip-bottom${revealed ? ' tooltip-open' : ''}`
         : `btn btn-ghost btn-xs gap-1.5 px-2 ${tone}`;
-    // An explicit reveal (hover or tap) shows the label at any width; the default
-    // non-healthy states keep the wide-only label they had.
-    const labelClass = revealed ? 'inline' : 'hidden @md:inline';
     const content = (
         <>
-            {!collapsed && label && <span className={`${labelClass} whitespace-nowrap text-xs font-normal`}>{label}</span>}
+            {!isHealthyQuiet && label && <span className="hidden @md:inline whitespace-nowrap text-xs font-normal">{label}</span>}
             {icon}
         </>
     );
@@ -133,13 +134,11 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
                 href={folderLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                title={label}
                 aria-label={label}
+                data-tip={isHealthyQuiet ? label : undefined}
                 className={className}
-                onMouseEnter={() => { if (collapseTimer.current) clearTimeout(collapseTimer.current); setRevealed(true); }}
-                onMouseLeave={() => setRevealed(false)}
                 onClick={(e) => {
-                    if (noHover && collapsed) {
+                    if (noHover && isHealthyQuiet && !revealed) {
                         e.preventDefault();
                         revealBriefly();
                     }
