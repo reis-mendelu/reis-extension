@@ -92,6 +92,9 @@
     "disconnect": "Disconnect",
     "lastBackup": "Backed up {time}",
     "failingSince": "Backup failing since {time}",
+    "retrying": "Backup will retry",
+    "upToDate": "Up to date",
+    "reconnect": "Reconnect to fix backup",
     "pending": "No backup yet",
     "syncing": "Backing up…"
   },
