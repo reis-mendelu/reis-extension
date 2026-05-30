@@ -18,6 +18,9 @@ import { loadManifest, saveManifest, clearManifest, acquireBackupLock, releaseBa
 import { flattenSubjectFiles, diffManifest, folderKey, linkHash, type DriveManifest } from './driveDiff';
 import { logError } from '../../utils/reportError';
 
+/** Thrown when an IS download returns a login/HTML page — a pass-wide condition. */
+class IsSessionExpiredError extends Error {}
+
 const LINK_PROP = 'reisLink';
 
 export interface DriveBackupSubject {
@@ -54,7 +57,7 @@ async function fetchBytes(link: string): Promise<Blob> {
     // reject anything that came back as an HTML document — real attachments
     // (pdf/docx/zip/…) never are.
     if (/login\.pl/i.test(res.url) || /text\/html/i.test(res.headers.get('content-type') || '')) {
-        throw new Error('expected a file but got an HTML page (likely an expired IS session)');
+        throw new IsSessionExpiredError('expected a file but got an HTML page (likely an expired IS session)');
     }
     return await res.blob();
 }
@@ -133,6 +136,7 @@ export async function syncDriveBackup(
             if (manifest.rootWebViewLink) await saveManifest(manifest);
         }
 
+        let sessionExpired = false;
         for (const subject of subjects) {
             const items = flattenSubjectFiles(subject.folderName, subject.files);
             const diff = diffManifest(items, manifest);
@@ -148,6 +152,7 @@ export async function syncDriveBackup(
             const tasks: Promise<void>[] = [];
             for (const item of diff.create) {
                 tasks.push(limit(async () => {
+                    if (sessionExpired) { failed++; return; }
                     try {
                         const hash = await linkHash(item.isLink);
                         // Manifest says "new", but Drive may already have it (a prior
@@ -168,6 +173,7 @@ export async function syncDriveBackup(
                         manifest.files[item.isLink] = { driveFileId: file.id, date: item.date };
                         uploaded++;
                     } catch (e) {
+                        if (e instanceof IsSessionExpiredError) sessionExpired = true;
                         failed++;
                         logError('Drive.upload', e, { name: item.fileName });
                     }
@@ -175,11 +181,13 @@ export async function syncDriveBackup(
             }
             for (const { item, driveFileId } of diff.update) {
                 tasks.push(limit(async () => {
+                    if (sessionExpired) { failed++; return; }
                     try {
                         await updateFileContent(driveFileId, await fetchBytes(item.isLink));
                         manifest.files[item.isLink] = { driveFileId, date: item.date };
                         updated++;
                     } catch (e) {
+                        if (e instanceof IsSessionExpiredError) sessionExpired = true;
                         failed++;
                         logError('Drive.update', e, { name: item.fileName });
                     }
@@ -187,6 +195,7 @@ export async function syncDriveBackup(
             }
             await Promise.all(tasks);
             await saveManifest(manifest); // persist progress per subject
+            if (sessionExpired) break;
         }
 
         manifest.lastSync = Date.now();
