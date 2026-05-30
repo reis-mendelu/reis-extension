@@ -135,7 +135,6 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={label}
-                data-tip={isHealthyQuiet ? relativeTime(now - lastSync, locale) : undefined}
                 className={className}
                 onClick={(e) => {
                     if (noHover && isHealthyQuiet && !revealed) {
@@ -144,6 +143,11 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
                     }
                 }}
             >
+                {/* Real tooltip-content node (not data-tip ::before) so the text can be
+                    sized/weighted with normal utilities — small and non-bold. */}
+                {isHealthyQuiet && (
+                    <span className="tooltip-content text-xs! font-normal">{relativeTime(now - lastSync, locale)}</span>
+                )}
                 {content}
             </a>
         );
