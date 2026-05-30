@@ -135,7 +135,7 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={label}
-                data-tip={isHealthyQuiet ? label : undefined}
+                data-tip={isHealthyQuiet ? relativeTime(now - lastSync, locale) : undefined}
                 className={className}
                 onClick={(e) => {
                     if (noHover && isHealthyQuiet && !revealed) {
