@@ -18,8 +18,15 @@ import { loadManifest, saveManifest, clearManifest, acquireBackupLock, releaseBa
 import { flattenSubjectFiles, diffManifest, folderKey, linkHash, type DriveManifest } from './driveDiff';
 import { logError } from '../../utils/reportError';
 
-/** Thrown when an IS download returns a login/HTML page — a pass-wide condition. */
+/** Thrown when an IS download 302s to the login page — a pass-wide condition (re-auth needed). */
 class IsSessionExpiredError extends Error {}
+/**
+ * Thrown when an IS row is not a downloadable file — a 200 text/html body at a
+ * non-login URL (a web-link, sub-folder, or info page like "00 - Reading Week
+ * instrukce"). A per-entry condition: skip just this row, never abort the pass
+ * or mark the backup unhealthy.
+ */
+class NotADownloadableFileError extends Error {}
 
 const LINK_PROP = 'reisLink';
 
@@ -51,13 +58,19 @@ function log(msg: string) {
 
 async function fetchBytes(link: string): Promise<Blob> {
     const res = await fetchWithAuth(link);
-    // IS download links 302 to login.pl on an expired session; fetch follows
-    // the redirect to a 200 HTML page, which fetchWithAuth (401/403-only guard)
-    // lets through. Uploading that page would silently corrupt the backup, so
-    // reject anything that came back as an HTML document — real attachments
-    // (pdf/docx/zip/…) never are.
-    if (/login\.pl/i.test(res.url) || /text\/html/i.test(res.headers.get('content-type') || '')) {
-        throw new IsSessionExpiredError('expected a file but got an HTML page (likely an expired IS session)');
+    // fetchWithAuth (401/403-only guard) lets an HTML body through, so we must
+    // tell two HTML cases apart — uploading either would corrupt the backup:
+    //   1. Expired session: IS 302s the download to login.pl; fetch follows it
+    //      to a 200 login page. Pass-wide — re-auth fixes every file at once.
+    //   2. Not a file: the row is a web-link, sub-folder, or info page that
+    //      serves 200 text/html at a normal IS URL. Per-entry and permanent —
+    //      it must NOT look like a session failure or it would abort the pass
+    //      and trip a warning the user can never clear by re-authenticating.
+    if (/login\.pl/i.test(res.url)) {
+        throw new IsSessionExpiredError('expected a file but got the IS login page (expired session)');
+    }
+    if (/text\/html/i.test(res.headers.get('content-type') || '')) {
+        throw new NotADownloadableFileError('IS row is not a downloadable file (served an HTML page)');
     }
     return await res.blob();
 }
@@ -173,6 +186,8 @@ export async function syncDriveBackup(
                         manifest.files[item.isLink] = { driveFileId: file.id, date: item.date };
                         uploaded++;
                     } catch (e) {
+                        // A web-link/folder row isn't a file — skip it, don't fail the pass.
+                        if (e instanceof NotADownloadableFileError) { skipped++; return; }
                         if (e instanceof IsSessionExpiredError) sessionExpired = true;
                         failed++;
                         logError('Drive.upload', e, { name: item.fileName });
@@ -187,6 +202,8 @@ export async function syncDriveBackup(
                         manifest.files[item.isLink] = { driveFileId, date: item.date };
                         updated++;
                     } catch (e) {
+                        // A web-link/folder row isn't a file — skip it, don't fail the pass.
+                        if (e instanceof NotADownloadableFileError) { skipped++; return; }
                         if (e instanceof IsSessionExpiredError) sessionExpired = true;
                         failed++;
                         logError('Drive.update', e, { name: item.fileName });

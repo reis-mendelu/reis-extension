@@ -58,3 +58,37 @@ describe('syncDriveBackup expired-session abort', () => {
         expect(manifest.failingSince).toBeTruthy();
     });
 });
+
+describe('syncDriveBackup non-file (web-link / folder) row', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        manifest.files = {};
+        manifest.folders = {};
+        manifest.failingSince = null;
+        manifest.lastError = null;
+    });
+
+    it('skips an HTML-page row at a non-login URL without aborting, failing, or tripping the warning', async () => {
+        // AAA is a web-link/folder entry: 200 text/html at a normal IS URL.
+        fetchWithAuth.mockResolvedValueOnce({
+            url: 'https://is.mendelu.cz/auth/dok_server/slozka.pl?ds=123',
+            headers: { get: () => 'text/html; charset=utf-8' },
+            blob: async () => new Blob(['<!doctype html>']),
+        });
+        // BBB is a real binary attachment and must still be backed up.
+        fetchWithAuth.mockResolvedValueOnce({
+            url: 'https://is.mendelu.cz/auth/dok_server/slozka.pl?download=1',
+            headers: { get: () => 'application/pdf' },
+            blob: async () => new Blob(['%PDF']),
+        });
+
+        const r = await syncDriveBackup([subject('AAA', '/a'), subject('BBB', '/b')]);
+
+        expect(fetchWithAuth).toHaveBeenCalledTimes(2); // pass NOT aborted — BBB still fetched
+        expect(drive.uploadFile).toHaveBeenCalledTimes(1); // only the real file uploaded
+        expect(r?.failed).toBe(0); // non-file row is not a failure
+        expect(r?.uploaded).toBe(1);
+        expect(r?.skipped).toBe(1); // the web-link/folder row, skipped
+        expect(manifest.failingSince).toBeNull(); // no permanent warning in the drawer
+    });
+});
