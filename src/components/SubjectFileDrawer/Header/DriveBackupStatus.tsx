@@ -98,9 +98,12 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
     const className = collapsed
         ? `btn btn-ghost btn-xs btn-circle interactive ${tone}`
         : `btn btn-ghost btn-xs gap-1.5 px-2 ${tone}`;
+    // An explicit reveal (hover or tap) shows the label at any width; the default
+    // non-healthy states keep the wide-only label they had.
+    const labelClass = revealed ? 'inline' : 'hidden @md:inline';
     const content = (
         <>
-            {!collapsed && label && <span className="hidden @md:inline whitespace-nowrap text-xs font-normal">{label}</span>}
+            {!collapsed && label && <span className={`${labelClass} whitespace-nowrap text-xs font-normal`}>{label}</span>}
             {icon}
         </>
     );
@@ -133,6 +136,8 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
                 title={label}
                 aria-label={label}
                 className={className}
+                onMouseEnter={() => { if (collapseTimer.current) clearTimeout(collapseTimer.current); setRevealed(true); }}
+                onMouseLeave={() => setRevealed(false)}
                 onClick={(e) => {
                     if (noHover && collapsed) {
                         e.preventDefault();
