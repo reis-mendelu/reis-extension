@@ -3,6 +3,8 @@ import {
     renderSubjectNotesHtml,
     serializeSubjectNotesJson,
     notesContentHash,
+    renderEmptyNotesHtml,
+    serializeEmptyNotesJson,
     type SubjectNotes,
 } from '../notesDoc';
 
@@ -65,5 +67,18 @@ describe('notesContentHash', () => {
             files: [{ ...subject.files[0], note: '[]' }],
         }));
         expect(changed).not.toBe(a);
+    });
+});
+
+describe('empty reconciliation helpers', () => {
+    it('renders an empty body with no file headings', () => {
+        const html = renderEmptyNotesHtml();
+        expect(html).not.toContain('<h2>');
+        expect(html).toContain('<body>');
+    });
+    it('serializes an empty sidecar with no files', () => {
+        const parsed = JSON.parse(serializeEmptyNotesJson('AAA'));
+        expect(parsed.code).toBe('AAA');
+        expect(parsed.files).toEqual([]);
     });
 });

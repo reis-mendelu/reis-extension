@@ -21,6 +21,7 @@ vi.mock('../../../api/googleDrive', () => drive);
 
 import { syncDriveNotesBackup } from '../driveNotesBackup';
 import type { SubjectNotes } from '../notesDoc';
+import { notesContentHash, serializeEmptyNotesJson } from '../notesDoc';
 
 const subject: SubjectNotes = {
     code: 'BIK-DBS',
@@ -58,5 +59,37 @@ describe('syncDriveNotesBackup', () => {
         const r = await syncDriveNotesBackup([empty]);
         expect(drive.uploadDoc).not.toHaveBeenCalled();
         expect(r?.skipped).toBe(1);
+    });
+});
+
+describe('syncDriveNotesBackup deletion reconcile', () => {
+    beforeEach(() => { vi.clearAllMocks(); manifest.notes = {}; });
+
+    it('empties a subject in place when its only note is deleted', async () => {
+        manifest.notes['BIK-DBS'] = { docId: 'doc1', docHash: 'old', jsonId: 'json1' };
+        const emptied = { ...subject, files: [{ fileLink: '/x', fileName: 'L1.pdf', note: '' }] };
+        const r = await syncDriveNotesBackup([emptied]);
+        expect(drive.uploadDoc).not.toHaveBeenCalled();
+        expect(drive.updateDocContent).toHaveBeenCalledWith('doc1', expect.any(String));
+        expect(drive.updateFileContent).toHaveBeenCalledWith('json1', expect.anything());
+        const emptyHash = await notesContentHash(serializeEmptyNotesJson('BIK-DBS'));
+        expect(manifest.notes['BIK-DBS'].docHash).toBe(emptyHash);
+        expect(r?.cleared).toBe(1);
+    });
+
+    it('empties an orphan present in the manifest but absent from the snapshot', async () => {
+        manifest.notes['OLD'] = { docId: 'docO', docHash: 'x', jsonId: 'jsonO' };
+        const r = await syncDriveNotesBackup([]);
+        expect(drive.updateDocContent).toHaveBeenCalledWith('docO', expect.any(String));
+        expect(drive.updateFileContent).toHaveBeenCalledWith('jsonO', expect.anything());
+        expect(r?.cleared).toBe(1);
+    });
+
+    it('does not re-empty an already-empty subject (idempotent)', async () => {
+        const emptyHash = await notesContentHash(serializeEmptyNotesJson('OLD'));
+        manifest.notes['OLD'] = { docId: 'docO', docHash: emptyHash, jsonId: 'jsonO' };
+        const r = await syncDriveNotesBackup([]);
+        expect(drive.updateDocContent).not.toHaveBeenCalled();
+        expect(r?.cleared).toBe(0);
     });
 });

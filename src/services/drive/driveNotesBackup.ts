@@ -18,7 +18,8 @@ import {
 import { loadManifest, saveManifest } from './driveManifest';
 import { folderKey, type DriveManifest } from './driveDiff';
 import {
-    renderSubjectNotesHtml, serializeSubjectNotesJson, notesContentHash, type SubjectNotes,
+    renderSubjectNotesHtml, serializeSubjectNotesJson, notesContentHash,
+    renderEmptyNotesHtml, serializeEmptyNotesJson, type SubjectNotes,
 } from './notesDoc';
 import { logError } from '../../utils/reportError';
 
@@ -29,6 +30,7 @@ const NOTES_FOLDER = '.notes';
 export interface DriveNotesResult {
     written: number;
     skipped: number;
+    cleared: number;
     failed: number;
 }
 
@@ -48,6 +50,27 @@ async function ensureChildFolder(manifest: DriveManifest, name: string): Promise
     return id;
 }
 
+/**
+ * A subject's notes are all gone — mirror that by emptying its Doc + sidecar in
+ * place (keep the file handles, so re-adding a note reuses them). Idempotent:
+ * skips when the manifest already records the empty hash. Returns true if it
+ * actually wrote.
+ */
+async function reconcileEmpty(
+    manifest: DriveManifest,
+    code: string,
+    entry: { docId: string; docHash: string; jsonId: string },
+): Promise<boolean> {
+    const emptyJson = serializeEmptyNotesJson(code);
+    const emptyHash = await notesContentHash(emptyJson);
+    if (entry.docHash === emptyHash) return false;
+    await updateDocContent(entry.docId, renderEmptyNotesHtml());
+    await updateFileContent(entry.jsonId, new Blob([emptyJson], { type: 'application/json' }));
+    manifest.notes[code] = { docId: entry.docId, docHash: emptyHash, jsonId: entry.jsonId };
+    await saveManifest(manifest);
+    return true;
+}
+
 export async function syncDriveNotesBackup(subjects: SubjectNotes[]): Promise<DriveNotesResult | null> {
     if (!(await isConnected())) return null;
 
@@ -60,11 +83,19 @@ export async function syncDriveNotesBackup(subjects: SubjectNotes[]): Promise<Dr
 
     let written = 0;
     let skipped = 0;
+    let cleared = 0;
     let failed = 0;
+
+    const incoming = new Set(subjects.map((s) => s.code));
 
     for (const subject of subjects) {
         try {
-            if (!hasContent(subject)) { skipped++; continue; }
+            if (!hasContent(subject)) {
+                const entry = manifest.notes[subject.code];
+                if (entry && (await reconcileEmpty(manifest, subject.code, entry))) cleared++;
+                else skipped++;
+                continue;
+            }
 
             const json = serializeSubjectNotesJson(subject);
             const hash = await notesContentHash(json);
@@ -100,5 +131,16 @@ export async function syncDriveNotesBackup(subjects: SubjectNotes[]): Promise<Dr
         }
     }
 
-    return { written, skipped, failed };
+    // Orphans: recorded in the manifest but no longer in the snapshot at all.
+    for (const code of Object.keys(manifest.notes)) {
+        if (incoming.has(code)) continue;
+        try {
+            if (await reconcileEmpty(manifest, code, manifest.notes[code])) cleared++;
+        } catch (e) {
+            failed++;
+            logError('Drive.notesReconcile', e, { code });
+        }
+    }
+
+    return { written, skipped, cleared, failed };
 }

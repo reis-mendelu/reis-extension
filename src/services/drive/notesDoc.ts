@@ -68,6 +68,16 @@ export function renderSubjectNotesHtml(subject: SubjectNotes): string {
     return `<html><body>${parts.join('')}</body></html>`;
 }
 
+/** Body for a subject whose notes were all deleted — keeps the Doc, clears content. */
+export function renderEmptyNotesHtml(): string {
+    return `<html><body><p><i>${esc(BANNER)}</i></p></body></html>`;
+}
+
+/** Lossless empty sidecar for a subject with no notes (mirrors the drawer). */
+export function serializeEmptyNotesJson(code: string): string {
+    return serializeSubjectNotesJson({ code, folderName: '', title: '', files: [] });
+}
+
 /** Lossless JSON sidecar — the faithful restore source. Stores `note` verbatim. */
 export function serializeSubjectNotesJson(subject: SubjectNotes): string {
     return JSON.stringify({
