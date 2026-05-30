@@ -67,9 +67,9 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
   const Icon = cfg.Icon;
 
   return (
-    <div className="px-4 py-3 border-b border-base-300">
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <h2 className="text-lg font-semibold shrink-0 truncate" title={plan?.title}>
+    <div className="px-4 py-2.5 border-b border-base-300">
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <h2 className="text-base font-semibold shrink-0 truncate" title={plan?.title}>
           {plan?.title || t('subjects.title')}
         </h2>
         <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -81,8 +81,8 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
         </div>
       </div>
 
-      <div className={`rounded-lg border px-3.5 py-2.5 ${cfg.bg} ${cfg.border}`}>
-        <div className="flex items-center gap-2 mb-2">
+      <div className={`rounded-lg border px-3.5 py-2 ${cfg.bg} ${cfg.border}`}>
+        <div className="flex items-center gap-2 mb-1.5">
           <Icon className={`w-4 h-4 ${cfg.text} shrink-0`} />
           <span className={`text-sm font-semibold ${cfg.text}`}>
             {level === 'safe' ? t('subjects.progressionSafe') :
@@ -95,7 +95,7 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
         </div>
 
         {/* Progress bar */}
-        <div className="w-full h-1.5 bg-base-content/10 rounded-full overflow-hidden mb-2">
+        <div className="w-full h-1.5 bg-base-content/10 rounded-full overflow-hidden mb-1.5">
           <div className={`h-full rounded-full transition-all duration-500 ${cfg.bar}`} style={{ width: `${pct}%` }} />
         </div>
 

@@ -126,7 +126,7 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
       />
 
       <>
-          <div className="px-4 pt-4 pb-0">
+          <div className="px-4 pt-3 pb-0">
             <EnrolledNowSection
               plan={plan}
               failRates={failRates}
@@ -137,7 +137,7 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject }: SubjectsPanelP
             />
           </div>
 
-          <div className="px-4 pt-4 pb-4">
+          <div className="px-4 pt-3 pb-4">
             <button
               onClick={() => setShowFullPlan(v => !v)}
               className="btn btn-ghost btn-sm w-full justify-between text-base-content/60 font-medium"

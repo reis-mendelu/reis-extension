@@ -86,7 +86,7 @@ export function EnrolledNowSection({ plan, failRates, subjectSemesters, subjectT
 
   return (
     <div className="rounded-lg border border-primary/20 bg-primary/5 overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-primary/10">
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-primary/10">
         <BookOpen className="w-3.5 h-3.5 text-primary/70 shrink-0" />
         <span className="text-xs font-semibold text-primary/80 uppercase tracking-wider">{t('subjects.enrolledNow')}</span>
         <span className="ml-auto flex items-center gap-2">
