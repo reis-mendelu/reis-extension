@@ -91,6 +91,7 @@
     "backUp": "Back up to Drive",
     "disconnect": "Disconnect",
     "lastBackup": "Backed up {time}",
+    "lastBackupShort": "upd. {time}",
     "failingSince": "Backup failing since {time}",
     "retrying": "Backup will retry",
     "upToDate": "Up to date",

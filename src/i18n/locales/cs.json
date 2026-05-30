@@ -91,6 +91,7 @@
     "backUp": "Zálohovat na Disk",
     "disconnect": "Odpojit",
     "lastBackup": "Zálohováno {time}",
+    "lastBackupShort": "akt. {time}",
     "failingSince": "Záloha selhává od {time}",
     "retrying": "Záloha se zopakuje",
     "upToDate": "Aktuální",
