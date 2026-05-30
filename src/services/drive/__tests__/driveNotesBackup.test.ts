@@ -5,9 +5,15 @@ const manifest = emptyManifest();
 manifest.rootFolderId = 'root1';
 
 vi.mock('../../../api/googleAuth', () => ({ isConnected: vi.fn().mockResolvedValue(true) }));
+const lock = vi.hoisted(() => ({
+    acquireBackupLock: vi.fn(async () => true),
+    releaseBackupLock: vi.fn(async () => {}),
+}));
 vi.mock('../driveManifest', () => ({
     loadManifest: vi.fn(async () => manifest),
     saveManifest: vi.fn(async () => {}),
+    acquireBackupLock: lock.acquireBackupLock,
+    releaseBackupLock: lock.releaseBackupLock,
 }));
 const drive = vi.hoisted(() => ({
     ensureFolder: vi.fn(async (name: string) => `folder-${name}`),
@@ -91,5 +97,21 @@ describe('syncDriveNotesBackup deletion reconcile', () => {
         const r = await syncDriveNotesBackup([]);
         expect(drive.updateDocContent).not.toHaveBeenCalled();
         expect(r?.cleared).toBe(0);
+    });
+});
+
+describe('syncDriveNotesBackup locking', () => {
+    beforeEach(() => { vi.clearAllMocks(); manifest.notes = {}; });
+
+    it('skips entirely when the backup lock is held', async () => {
+        lock.acquireBackupLock.mockResolvedValueOnce(false);
+        const r = await syncDriveNotesBackup([subject]);
+        expect(r).toBeNull();
+        expect(drive.uploadDoc).not.toHaveBeenCalled();
+    });
+
+    it('releases the lock after a normal run', async () => {
+        await syncDriveNotesBackup([subject]);
+        expect(lock.releaseBackupLock).toHaveBeenCalledTimes(1);
     });
 });

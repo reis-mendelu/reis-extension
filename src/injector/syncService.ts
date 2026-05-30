@@ -23,6 +23,7 @@ import { IndexedDBService } from "../services/storage/IndexedDBService";
 import { syncDriveBackup, type DriveBackupSubject } from "../services/drive/driveBackup";
 import { syncDriveNotesBackup } from "../services/drive/driveNotesBackup";
 import type { SubjectNotes } from "../services/drive/notesDoc";
+import { singleFlight } from "../utils/singleFlight";
 import { logError } from "../utils/reportError";
 import type { ParsedFile, SubjectsData } from "../types/documents";
 
@@ -214,26 +215,32 @@ export async function runDriveBackupNow(): Promise<void> {
     }
 }
 
-/** Mirror the iframe-pushed notes snapshot to per-subject Google Docs + sidecars. */
-export async function runNotesBackupNow(): Promise<void> {
+/** One notes-backup pass over the latest snapshot. Passes an empty list through
+ *  too, so a subject whose notes were all deleted gets reconciled (emptied). */
+async function notesBackupPass(): Promise<void> {
     try {
         const notes = cachedData.notes;
+        if (!notes) return; // snapshot never pushed yet
         const subjectsData = (cachedData.subjects as SubjectsData | undefined)?.data;
-        if (!notes || !subjectsData) return;
         const subjectNotes: SubjectNotes[] = Object.entries(notes)
-            .map(([code, fileMap]): SubjectNotes | null => {
+            .map(([code, fileMap]): SubjectNotes => {
                 const files = Object.entries(fileMap).map(([fileLink, v]) => ({ fileLink, fileName: v.fileName, note: v.note }));
-                if (!files.length) return null;
-                const info = subjectsData[code];
+                const info = subjectsData?.[code];
                 const folderName = info ? `${code} - ${info.displayName || info.fullName || ''}`.trim() : code;
                 return { code, folderName, title: `Poznámky – ${code}`, files };
-            })
-            .filter((s): s is SubjectNotes => s !== null);
-        if (subjectNotes.length) await syncDriveNotesBackup(subjectNotes);
+            });
+        await syncDriveNotesBackup(subjectNotes); // [] still reconciles manifest orphans
     } catch (e) {
         logError('Drive.notesBackup', e);
     }
 }
+
+/**
+ * Mirror the iframe-pushed notes snapshot to per-subject Google Docs + sidecars.
+ * Coalesced: never overlaps itself, and always runs once more for the latest
+ * snapshot if a save arrived mid-pass.
+ */
+export const runNotesBackupNow: () => Promise<void> = singleFlight(notesBackupPass);
 
 async function syncSubjectDetails(subjectsValue: { data: Record<string, { folderUrl?: string; subjectId?: string; skupinaId?: string }> }, scheduleValue: { studyId?: string; periodId?: string }[] | null) {
     const subjectEntries = Object.entries(subjectsValue.data);

@@ -15,7 +15,7 @@ import { isConnected } from '../../api/googleAuth';
 import {
     ensureFolder, findFileByProperty, uploadDoc, updateDocContent, uploadFile, updateFileContent,
 } from '../../api/googleDrive';
-import { loadManifest, saveManifest } from './driveManifest';
+import { loadManifest, saveManifest, acquireBackupLock, releaseBackupLock } from './driveManifest';
 import { folderKey, type DriveManifest } from './driveDiff';
 import {
     renderSubjectNotesHtml, serializeSubjectNotesJson, notesContentHash,
@@ -73,7 +73,17 @@ async function reconcileEmpty(
 
 export async function syncDriveNotesBackup(subjects: SubjectNotes[]): Promise<DriveNotesResult | null> {
     if (!(await isConnected())) return null;
+    // Share the file backup's mutex: prevents a keystroke-triggered notes pass
+    // from racing the periodic one (and clobbering the manifest).
+    if (!(await acquireBackupLock())) return null;
+    try {
+        return await runNotesPass(subjects);
+    } finally {
+        await releaseBackupLock();
+    }
+}
 
+async function runNotesPass(subjects: SubjectNotes[]): Promise<DriveNotesResult> {
     const manifest = await loadManifest();
     manifest.notes ??= {};
     if (!manifest.rootFolderId) {
