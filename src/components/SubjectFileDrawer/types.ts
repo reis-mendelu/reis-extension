@@ -38,7 +38,6 @@ export interface FileListProps {
     onToggleSelect: (id: string, e: React.MouseEvent) => void;
     onOpenFile: (link: string) => void;
     onViewPdf?: (link: string) => void;
-    onOpenNote?: (link: string, name: string) => void;
     onDownloadSingle?: (link: string) => void;
     folderUrl?: string;
     lastVisitedAt?: number | null;
