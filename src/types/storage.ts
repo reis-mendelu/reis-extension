@@ -97,7 +97,10 @@ export const DocumentNoteSchema = z.custom<DocumentNote>();
 // 'note_images' store - normalized image blobs, keyed by content hash
 export const NoteImageSchema = z.object({
     hash: z.string(),
-    blob: z.instanceof(Blob),
+    // Blob is passed through without a runtime instanceof check — IndexedDB
+    // round-trips it natively, and a strict check is brittle across structured-
+    // clone realms (matches how ParsedFile/SubjectsData are handled here).
+    blob: z.custom<Blob>(),
     mime: z.string(),
     w: z.number(),
     h: z.number(),
