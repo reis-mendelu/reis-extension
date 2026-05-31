@@ -2,7 +2,14 @@ import type { NotesSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
 import { logError } from '../../utils/reportError';
 import { collectReferencedImages } from '../../services/notes/collectReferencedImages';
-import { sweepOrphans } from '../../services/notes/noteImageStore';
+import { sweepOrphans, getImage } from '../../services/notes/noteImageStore';
+import { blobToBase64 } from '../../services/notes/imageNormalize';
+import { renderSubjectNotesHtmlWithImages } from '../../services/drive/notesDoc';
+
+const imageBase64Lookup = async (hash: string): Promise<string | null> => {
+    const img = await getImage(hash);
+    return img ? blobToBase64(img.blob) : null;
+};
 
 const MAX_NOTE_LENGTH = 100000;
 const DEBOUNCE_MS = 800;
@@ -45,6 +52,24 @@ export const createNotesSlice: AppSlice<NotesSlice> = (set, get) => {
             void IndexedDBService.getAllWithKeys('document_notes')
                 .then((entries) => sweepOrphans(collectReferencedImages(entries.map((e) => ({ note: e.value.note ?? '' }))), Date.now()))
                 .catch((e) => logError('Notes.imageGc', e));
+            // If this subject's notes reference images, also push the base64-inlined
+            // HTML so the content script can back it up to Drive without ever
+            // reaching into the iframe's IDB. Lightweight snapshot stays text-only.
+            void IndexedDBService.getAllWithKeys('document_notes').then(async (entries) => {
+                const files = entries
+                    .filter((e) => e.key.startsWith(`${courseCode}:`) && e.value.note?.trim())
+                    .map((e) => ({ fileLink: e.key.slice(e.key.indexOf(':') + 1), fileName: e.value.fileName ?? '', note: e.value.note }));
+                const hasImages = files.some((f) => /"images":\["/.test(f.note));
+                if (!hasImages) return;
+                const html = await renderSubjectNotesHtmlWithImages(
+                    { code: courseCode, folderName: '', title: `Poznámky – ${courseCode}`, files },
+                    imageBase64Lookup,
+                );
+                window.parent.postMessage(
+                    { type: 'REIS_ACTION', id: crypto.randomUUID(), action: 'push_notes_html', payload: { code: courseCode, html } },
+                    '*',
+                );
+            }).catch((e) => logError('Notes.pushHtml', e));
         })
         .catch((error) => {
             logError('useDocumentNote.save', error);
