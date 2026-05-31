@@ -360,7 +360,9 @@
       "textPlaceholder": "Začni psát...",
       "heading1Placeholder": "Nadpis 1",
       "heading2Placeholder": "Nadpis 2",
-      "heading3Placeholder": "Nadpis 3"
+      "heading3Placeholder": "Nadpis 3",
+      "notesPlaceholder": "Poznámky…",
+      "deleteCard": "Smazat kartičku"
     },
     "teacherRating": {
       "strict": "přísný",

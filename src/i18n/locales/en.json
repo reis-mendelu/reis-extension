@@ -359,7 +359,9 @@
       "textPlaceholder": "Start typing...",
       "heading1Placeholder": "Heading 1",
       "heading2Placeholder": "Heading 2",
-      "heading3Placeholder": "Heading 3"
+      "heading3Placeholder": "Heading 3",
+      "notesPlaceholder": "Notes…",
+      "deleteCard": "Delete card"
     },
     "teacherRating": {
       "strict": "strict",
