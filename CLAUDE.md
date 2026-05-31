@@ -161,7 +161,7 @@ Exactly 7 fields leave the device — `p_error_type`, `p_error_message`, `p_file
 
 ## Google Drive Backup (Phase 1)
 
-One-way mirror of the student's **current-semester** IS files into their own Google Drive. Phase 0 (OAuth plumbing) and Phase 1 (file backup) are done; Phase 2 (notes → one Google Doc per subject) is **strictly one-way, drawer-as-source — never build bidirectional sync**.
+One-way mirror of the student's **current-semester** IS files into their own Google Drive. Phase 0 (OAuth plumbing), Phase 1 (file backup), and Phase 2 (notes → one Google Doc + JSON sidecar per subject) are all done. Phase 2 is **strictly one-way, drawer-as-source — never build bidirectional sync**.
 
 - **Scope = `drive.file` only** — non-sensitive, no Google verification/CASA. The app can see only files it created. Never escalate to `drive`/`drive.readonly`/`documents`.
 - **Auth:** `launchWebAuthFlow` + PKCE, run in the **background SW** (`chrome.identity` is not exposed to the iframe). Token exchange/refresh goes through the **Supabase `google-oauth` Edge Function**, which holds `GOOGLE_CLIENT_SECRET` — the secret never ships in the bundle. Tokens live in `chrome.storage.local`.
@@ -173,15 +173,16 @@ One-way mirror of the student's **current-semester** IS files into their own Goo
 | Pure diff/flatten/hash logic | `src/services/drive/driveDiff.ts` (tested) |
 | Manifest persistence | `src/services/drive/driveManifest.ts` |
 | Orchestrator (content script) | `src/services/drive/driveBackup.ts` |
+| Notes backup (Phase 2) + Docs renderer | `src/services/drive/driveNotesBackup.ts`, `src/services/drive/notesDoc.ts` |
 | Drive REST (find/ensure/upload/delete) | `src/api/googleDrive.ts` |
 | OAuth + token refresh via proxy | `src/api/googleAuth.ts` |
-| Dev-only test panel + repave | `src/components/GoogleDevPanel.tsx` |
+| Backup UI (status + connect) | `src/components/SubjectFileDrawer/Header/DriveBackupStatus.tsx`, `src/hooks/data/useDriveBackup.ts` |
 
-**Dev surface:** `GoogleDevPanel` renders only under `wxt dev` or `VITE_GOOGLE_DEV=true` (auto-hidden in store builds), bottom-right of the is.mendelu.cz iframe. Its **Reset backup** button calls `resetDriveBackup()` — deletes the `reIS` root (cascades) and clears the manifest for a clean repave. Console eval is CSP-blocked on extension pages; use the panel buttons.
+**Dev surface:** backup status/connect UI lives in the file drawer header (`DriveBackupStatus.tsx`); the standalone `GoogleDevPanel` was removed (the dev-panel era ended in commit `7a8ec01`). `resetDriveBackup()` (delete `reIS` root + clear manifest for a clean repave) still exists in `driveBackup.ts` but is no longer wired to UI — call it from a temporary hook if you need a repave. `VITE_GOOGLE_DEV=true` still gates dev-only behavior.
 
 > **Operational gotcha:** the OAuth **consent screen must be "In production"** (not "Testing"), or every user's refresh token expires after 7 days and the backup silently stops. `drive.file` is non-sensitive, so Production needs no review.
 
-**Before shipping to real users** (a backup's worst failure is silent): verify the consent screen is in Production; verify drive.file reinstall access (disconnect→reconnect must `reuse`, not re-upload); add a `chrome.storage` TTL lock for the cross-tab race the per-instance `running` guard misses; rate-limit the proxy; surface last-success/failing-since in the UI.
+**Before shipping to real users** (a backup's worst failure is silent): verify the consent screen is in Production; verify drive.file reinstall access (disconnect→reconnect must `reuse`, not re-upload); rate-limit the proxy. *(Done: cross-tab TTL lock via `acquireBackupLock`/`releaseBackupLock` in `driveManifest.ts`; last-success/failing-since surfaced in `DriveBackupStatus.tsx`.)*
 
 ## Parser Rules
 
@@ -192,7 +193,7 @@ IS Mendelu HTML parsers (`src/api/documents/parser.ts`, `src/api/ukoly.ts`, `src
 - Any parser change requires a real IS Mendelu HTML sample as evidence that the change is correct. Without it, revert.
 - Column index constants in parsers are load-bearing — a one-off change silently breaks production data.
 
-## Iron Rules (from `.agent/rules/charlie-munger.md`)
+## Iron Rules
 
 These are enforced by linting and project convention:
 
