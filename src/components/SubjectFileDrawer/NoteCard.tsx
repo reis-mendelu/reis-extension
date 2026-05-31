@@ -1,7 +1,11 @@
 import { useRef, useEffect, useCallback } from 'react';
-import { ChevronRight, Trash2 } from 'lucide-react';
+import { ChevronRight, Trash2, ImagePlus } from 'lucide-react';
+import { toast } from 'sonner';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { NoteCardData } from './utils/noteParser';
+import { normalizeImage } from '../../services/notes/imageNormalize';
+import { storeImage } from '../../services/notes/noteImageStore';
+import { useNoteImage } from './useNoteImage';
 
 interface NoteCardProps {
     card: NoteCardData;
@@ -53,6 +57,26 @@ export function NoteCard({ card, autoFocus, onChange, onEnterAnswer, onDelete }:
         }
     };
 
+    const addImages = useCallback(async (files: File[]) => {
+        const images = files.filter((f) => f.type.startsWith('image/'));
+        const hashes: string[] = [];
+        for (const file of images) {
+            try {
+                const norm = await normalizeImage(file);
+                hashes.push(await storeImage(norm));
+            } catch (err) {
+                if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+                    toast.error(t('course.documentNote.imageQuotaFull'));
+                    break;
+                }
+                /* skip a single undecodable image rather than break the note */
+            }
+        }
+        if (hashes.length) onChange({ images: [...card.images, ...hashes] });
+    }, [card.images, onChange, t]);
+
+    const removeImage = (hash: string) => onChange({ images: card.images.filter((h) => h !== hash) });
+
     return (
         <div className="group rounded-lg border border-base-300 bg-base-200/30 px-2 py-1.5">
             <div className="flex items-center gap-1.5">
@@ -87,12 +111,57 @@ export function NoteCard({ card, autoFocus, onChange, onEnterAnswer, onDelete }:
                         value={card.answer}
                         onChange={(e) => { grow(e.target); onChange({ answer: e.target.value }); }}
                         onKeyDown={handleAnswerKey}
+                        onPaste={(e) => {
+                            const files = [...e.clipboardData.items]
+                                .filter((i) => i.kind === 'file')
+                                .map((i) => i.getAsFile())
+                                .filter((f): f is File => !!f);
+                            if (files.length) { e.preventDefault(); void addImages(files); }
+                        }}
+                        onDrop={(e) => {
+                            if (e.dataTransfer.files.length) { e.preventDefault(); void addImages([...e.dataTransfer.files]); }
+                        }}
                         placeholder={t('course.documentNote.answerPlaceholder')}
                         rows={1}
                         className="w-full bg-transparent resize-none focus:outline-none text-sm text-base-content/80 leading-relaxed border-0 p-0"
                     />
+                    {card.images.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {card.images.map((h) => (
+                                <Thumb key={h} hash={h} onRemove={() => removeImage(h)} removeLabel={t('course.documentNote.removeImage')} />
+                            ))}
+                        </div>
+                    )}
+                    <label className="btn btn-ghost btn-xs gap-1 text-base-content/50 hover:text-primary mt-1 cursor-pointer">
+                        <ImagePlus size={13} />
+                        {t('course.documentNote.addImage')}
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => { if (e.target.files) { void addImages([...e.target.files]); e.target.value = ''; } }}
+                        />
+                    </label>
                 </div>
             )}
+        </div>
+    );
+}
+
+function Thumb({ hash, onRemove, removeLabel }: { hash: string; onRemove: () => void; removeLabel: string }) {
+    const url = useNoteImage(hash);
+    if (!url) return null;
+    return (
+        <div className="relative group/thumb">
+            <img src={url} alt="" className="max-h-32 rounded border border-base-300" />
+            <button
+                onClick={onRemove}
+                title={removeLabel}
+                className="btn btn-xs btn-circle btn-error absolute -top-2 -right-2 opacity-0 group-hover/thumb:opacity-100"
+            >
+                <Trash2 size={11} />
+            </button>
         </div>
     );
 }

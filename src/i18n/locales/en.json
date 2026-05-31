@@ -356,7 +356,10 @@
       "answerPlaceholder": "Write the answer...",
       "toggleTitle": "Collapse / expand answer",
       "notesPlaceholder": "Notes…",
-      "deleteCard": "Delete card"
+      "deleteCard": "Delete card",
+      "addImage": "Add image",
+      "removeImage": "Remove image",
+      "imageQuotaFull": "Storage is full — the image could not be saved."
     },
     "teacherRating": {
       "strict": "strict",

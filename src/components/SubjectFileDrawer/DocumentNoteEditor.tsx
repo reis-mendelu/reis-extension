@@ -38,7 +38,7 @@ export function DocumentNoteEditor({ courseCode, fileLink, fileName, onClose, sh
     }, [setNote, fileName]);
 
     const addCard = useCallback((afterId?: string) => {
-        const card: NoteCardData = { id: newCardId(), question: '', answer: '', collapsed: false };
+        const card: NoteCardData = { id: newCardId(), question: '', answer: '', collapsed: false, images: [] };
         focusCardRef.current = card.id;
         setData((prev) => {
             const cards = [...prev.cards];

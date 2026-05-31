@@ -357,7 +357,10 @@
       "answerPlaceholder": "Napiš odpověď...",
       "toggleTitle": "Sbalit / rozbalit odpověď",
       "notesPlaceholder": "Poznámky…",
-      "deleteCard": "Smazat kartičku"
+      "deleteCard": "Smazat kartičku",
+      "addImage": "Přidat obrázek",
+      "removeImage": "Odebrat obrázek",
+      "imageQuotaFull": "Úložiště je plné – obrázek se nepodařilo uložit."
     },
     "teacherRating": {
       "strict": "přísný",
