@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface StudyJamModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface StudyJamModalProps {
 }
 
 export function StudyJamModal({ isOpen, onClose }: StudyJamModalProps) {
+  const { t } = useTranslation();
   const [state, setState] = useState<'pitch' | 'success'>('pitch');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const suggestion = useAppStore(s => s.selectedStudyJamSuggestion);
@@ -53,13 +55,13 @@ export function StudyJamModal({ isOpen, onClose }: StudyJamModalProps) {
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="w-full max-w-[480px] bg-[#1c2128] rounded-3xl shadow-2xl border border-white/10 overflow-hidden relative z-10"
+            className="w-full max-w-[480px] bg-base-100 rounded-3xl shadow-2xl border border-base-300 overflow-hidden relative z-10"
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5 backdrop-blur-md">
-              <h3 className="font-semibold text-lg text-white">
-                reIS doučování — {suggestion.courseName}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-base-300/50 bg-base-200/50 backdrop-blur-md">
+              <h3 className="font-semibold text-lg text-base-content">
+                {t('studyJam.titlePrefix')} — {suggestion.courseName}
               </h3>
-              <button onClick={handleClose} className="btn btn-sm btn-ghost btn-circle text-gray-400 hover:text-white">
+              <button onClick={handleClose} aria-label={t('studyJam.close')} className="btn btn-sm btn-ghost btn-circle text-base-content/60 hover:text-base-content">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -74,41 +76,41 @@ export function StudyJamModal({ isOpen, onClose }: StudyJamModalProps) {
                     exit={{ opacity: 0, x: -20 }}
                     className="flex flex-col text-left space-y-6"
                   >
-                    <div className="space-y-4 text-[14px] text-gray-300 leading-relaxed">
+                    <div className="space-y-4 text-[14px] text-base-content/80 leading-relaxed">
                       {isTutor ? (
                         <>
-                          <p>Nechceš některého z prváků zachránit před jistou zkázou?</p>
-                          <ul className="list-disc pl-5 space-y-2 marker:text-gray-500">
-                            <li>Vysvětlování látky zvyšuje tvoje udržení znalostí o <strong>72%</strong></li>
-                            <li>Stačí <strong>jedna hodina</strong></li>
+                          <p>{t('studyJam.tutorIntro')}</p>
+                          <ul className="list-disc pl-5 space-y-2 marker:text-base-content/40">
+                            <li>{t('studyJam.tutorBenefitRetention')} <strong>72%</strong></li>
+                            <li>{t('studyJam.justNeed')} <strong>{t('studyJam.oneHour')}</strong></li>
                           </ul>
-                          <p>Spárujeme tě s někým, kdo potřebuje pomoc. Když vám to oběma sedne, můžete se domluvit na další.</p>
+                          <p>{t('studyJam.tutorOutro')}</p>
                         </>
                       ) : (
                         <>
-                          <p>Máme studenty, kteří {suggestion.courseName} zvládli a chtějí pomoct.</p>
-                          <ul className="list-disc pl-5 space-y-2 marker:text-gray-500">
-                            <li>Spárujeme tě s tutorem <strong>zdarma</strong></li>
-                            <li>Stačí <strong>jedna hodina</strong></li>
+                          <p>{t('studyJam.tuteeIntro', { course: suggestion.courseName })}</p>
+                          <ul className="list-disc pl-5 space-y-2 marker:text-base-content/40">
+                            <li>{t('studyJam.tuteeBenefitPair')} <strong>{t('studyJam.free')}</strong></li>
+                            <li>{t('studyJam.justNeed')} <strong>{t('studyJam.oneHour')}</strong></li>
                           </ul>
-                          <p>Přihlásíš se a my tě spojíme s někým, kdo ti pomůže.</p>
+                          <p>{t('studyJam.tuteeOutro')}</p>
                         </>
                       )}
                     </div>
 
                     <div className="flex gap-3 mt-2">
-                        <button 
+                        <button
                           onClick={handleDismiss}
-                          className="btn bg-[#374151] hover:bg-[#4b5563] text-gray-200 border-none flex-1 h-12 rounded-xl"
+                          className="btn bg-base-300 hover:bg-base-200 text-base-content border-none flex-1 h-12 rounded-xl"
                         >
-                          Nemám zájem
+                          {t('studyJam.decline')}
                         </button>
                         <button
                           onClick={handleOptIn}
                           disabled={isSubmitting}
-                          className="btn btn-primary flex-[1.5] text-white font-bold h-12 rounded-xl border-none"
+                          className="btn btn-primary flex-[1.5] text-primary-content font-bold h-12 rounded-xl border-none"
                         >
-                          {isSubmitting ? <span className="loading loading-spinner loading-sm"></span> : 'Jdu do toho!'}
+                          {isSubmitting ? <span className="loading loading-spinner loading-sm"></span> : t('studyJam.optIn')}
                         </button>
                     </div>
                   </motion.div>
@@ -125,15 +127,13 @@ export function StudyJamModal({ isOpen, onClose }: StudyJamModalProps) {
                       <CheckCircle2 className="w-10 h-10" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-white mb-2">Super, díky!</h2>
-                      <p className="text-gray-400">
-                        {isTutor
-                          ? 'Jakmile najdeme tutea, dáme ti vědět!'
-                          : 'Jakmile tě spárujeme s tutorem, dáme ti vědět!'}
+                      <h2 className="text-2xl font-bold text-base-content mb-2">{t('studyJam.successTitle')}</h2>
+                      <p className="text-base-content/60">
+                        {isTutor ? t('studyJam.successTutor') : t('studyJam.successTutee')}
                       </p>
                     </div>
-                    <button onClick={handleClose} className="btn btn-ghost w-full text-white border-white/10">
-                      Zavřít
+                    <button onClick={handleClose} className="btn btn-ghost w-full text-base-content border-base-300">
+                      {t('studyJam.close')}
                     </button>
                   </motion.div>
                 )}

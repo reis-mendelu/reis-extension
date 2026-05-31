@@ -231,21 +231,21 @@ export function ErasmusVerifyDot({ courseCode, optionId, rowIndex }: ErasmusVeri
                 {t('erasmus.verifyChoosePdf')} <span className="text-base-content/40 font-normal ml-1">{t('erasmus.verifyMax15Mb')}</span>
               </button>
               
-              <div className="divider my-0 text-[10px] text-base-content/30 h-4 uppercase">nebo</div>
-              
+              <div className="divider my-0 text-[10px] text-base-content/30 h-4 uppercase">{t('erasmus.pasteOr')}</div>
+
               <button
                 className="btn btn-ghost btn-sm w-full text-xs text-base-content/60 hover:bg-base-200"
                 onClick={() => setIsPastingSyllabus(true)}
               >
                 <Type size={12} className="mr-1 opacity-60" />
-                Vložit text sylabu ručně
+                {t('erasmus.pasteManually')}
               </button>
             </>
           ) : (
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center">
                 <span className="text-[10px] uppercase tracking-wider font-bold text-base-content/60 flex items-center gap-1">
-                  <Type size={10} /> Ruční vložení
+                  <Type size={10} /> {t('erasmus.pasteManualTitle')}
                 </span>
                 <button
                   onClick={() => setIsPastingSyllabus(false)} 
@@ -256,7 +256,7 @@ export function ErasmusVerifyDot({ courseCode, optionId, rowIndex }: ErasmusVeri
               </div>
               <textarea
                 className="w-full h-32 bg-base-200/50 border border-base-300 rounded-lg px-3 py-2 text-xs text-base-content placeholder:text-base-content/40 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"
-                placeholder="Zkopírujte sem obsah sylabu ze zahraniční univerzity..."
+                placeholder={t('erasmus.pastePlaceholder')}
                 value={pastedSyllabus}
                 onChange={(e) => setPastedSyllabus(e.target.value)}
               />
@@ -264,7 +264,7 @@ export function ErasmusVerifyDot({ courseCode, optionId, rowIndex }: ErasmusVeri
                 className="btn btn-primary btn-sm w-full text-xs shadow-sm"
                 disabled={pastedSyllabus.trim().length === 0}
                 onClick={() => {
-                  const fakeName = `Vložený text (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+                  const fakeName = `${t('erasmus.pastedTextLabel')} (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
                   addErasmusUploadedPdf(fakeName, pastedSyllabus.trim(), '');
                   setErasmusPdfAssignment(courseCode, fakeName);
                   setLocalStatus('idle');
@@ -274,7 +274,7 @@ export function ErasmusVerifyDot({ courseCode, optionId, rowIndex }: ErasmusVeri
                   setPastedSyllabus('');
                 }}
               >
-                Uložit a pokračovat
+                {t('erasmus.pasteSaveContinue')}
               </button>
             </div>
           )}

@@ -261,7 +261,6 @@
     "autoFill": "Auto-fill",
     "copiedToClipboard": "Email copied to clipboard"
   },
-
   "search": {
     "placeholder": "Search subjects, people, pages... ({shortcut}K)",
     "results": "Results",
@@ -308,7 +307,6 @@
       "noTestResults": "No test results.",
       "continuousAssessment": "Continuous Assessment"
     },
-
     "footer": {
       "other": "Other",
       "noFiles": "No files",
@@ -492,10 +490,8 @@
     "semester": "semester",
     "wholePlan": "Entire plan",
     "subjectCount": "subjects",
-
     "creditsLastTwo": "Last 2 semesters",
     "creditsLastTwoNeeded": "need 40",
-
     "progressionSafe": "On track",
     "progressionWarning": "Watch your progress!",
     "progressionDanger": "At risk!",
@@ -669,7 +665,13 @@
     "verifyAddCorresponding": "Add a corresponding Table B course at row {row} to enable verification.",
     "verifyChangePdf": "Change PDF",
     "verifyAutoApprovedInfo": "Automatically approved. The recognized subject (EXA-UP) serves as an elective block and does not require content match.",
-    "verifyDiscuss": "⚠ Discuss with coordinator:"
+    "verifyDiscuss": "⚠ Discuss with coordinator:",
+    "pasteOr": "or",
+    "pasteManually": "Paste syllabus text manually",
+    "pasteManualTitle": "Manual entry",
+    "pastePlaceholder": "Paste the syllabus content from the foreign university here...",
+    "pastedTextLabel": "Pasted text",
+    "pasteSaveContinue": "Save and continue"
   },
   "transfer": {
     "title": "Check credit transfer",
@@ -738,5 +740,23 @@
     "collapse": "Collapse bulletin board",
     "loading": "Loading…",
     "error": "Failed to load"
+  },
+  "studyJam": {
+    "titlePrefix": "reIS tutoring",
+    "tutorIntro": "Want to save a first-year from certain doom?",
+    "tutorBenefitRetention": "Explaining material boosts your knowledge retention by",
+    "justNeed": "All it takes is",
+    "oneHour": "one hour",
+    "tutorOutro": "We'll pair you with someone who needs help. If you both click, you can arrange more sessions.",
+    "tuteeIntro": "We have students who aced {course} and want to help.",
+    "tuteeBenefitPair": "We'll pair you with a tutor",
+    "free": "for free",
+    "tuteeOutro": "Sign up and we'll connect you with someone who can help.",
+    "decline": "Not interested",
+    "optIn": "I'm in!",
+    "successTitle": "Awesome, thanks!",
+    "successTutor": "We'll let you know as soon as we find a tutee!",
+    "successTutee": "We'll let you know as soon as we pair you with a tutor!",
+    "close": "Close"
   }
 }

@@ -143,7 +143,6 @@
     "autoFill": "Automaticky vyplnit",
     "copiedToClipboard": "Email byl zkopírován do schránky"
   },
-
   "search": {
     "placeholder": "Hledej předměty, lidi, stránky... ({shortcut}K)",
     "results": "Výsledky",
@@ -309,7 +308,6 @@
       "noTestResults": "Žádné výsledky testů.",
       "continuousAssessment": "Průběžné hodnocení"
     },
-
     "footer": {
       "other": "Ostatní",
       "noFiles": "Žádné soubory",
@@ -493,10 +491,8 @@
     "semester": "semestr",
     "wholePlan": "Celý plán",
     "subjectCount": "předmětů",
-
     "creditsLastTwo": "Posl. 2 semestry",
     "creditsLastTwoNeeded": "potřeba 40",
-
     "progressionSafe": "Postup OK",
     "progressionWarning": "Pozor na postup!",
     "progressionDanger": "Hrozí nesplnění!",
@@ -670,7 +666,13 @@
     "verifyAddCorresponding": "Přidej odpovídající kurz do Tabulky B na řádek {row} pro ověření.",
     "verifyChangePdf": "Změnit PDF",
     "verifyAutoApprovedInfo": "Automaticky schváleno. Uznaný předmět (EXA-UP) slouží jako volitelné kredity a nevyžaduje obsahovou shodu.",
-    "verifyDiscuss": "⚠ Probrat s koordinátorem:"
+    "verifyDiscuss": "⚠ Probrat s koordinátorem:",
+    "pasteOr": "nebo",
+    "pasteManually": "Vložit text sylabu ručně",
+    "pasteManualTitle": "Ruční vložení",
+    "pastePlaceholder": "Zkopírujte sem obsah sylabu ze zahraniční univerzity...",
+    "pastedTextLabel": "Vložený text",
+    "pasteSaveContinue": "Uložit a pokračovat"
   },
   "transfer": {
     "title": "Ověření přenosu předmětu",
@@ -739,5 +741,23 @@
     "collapse": "Sbalit vývěsku",
     "loading": "Načítání…",
     "error": "Nepodařilo se načíst"
+  },
+  "studyJam": {
+    "titlePrefix": "reIS doučování",
+    "tutorIntro": "Nechceš některého z prváků zachránit před jistou zkázou?",
+    "tutorBenefitRetention": "Vysvětlování látky zvyšuje tvoje udržení znalostí o",
+    "justNeed": "Stačí",
+    "oneHour": "jedna hodina",
+    "tutorOutro": "Spárujeme tě s někým, kdo potřebuje pomoc. Když vám to oběma sedne, můžete se domluvit na další.",
+    "tuteeIntro": "Máme studenty, kteří {course} zvládli a chtějí pomoct.",
+    "tuteeBenefitPair": "Spárujeme tě s tutorem",
+    "free": "zdarma",
+    "tuteeOutro": "Přihlásíš se a my tě spojíme s někým, kdo ti pomůže.",
+    "decline": "Nemám zájem",
+    "optIn": "Jdu do toho!",
+    "successTitle": "Super, díky!",
+    "successTutor": "Jakmile najdeme tutea, dáme ti vědět!",
+    "successTutee": "Jakmile tě spárujeme s tutorem, dáme ti vědět!",
+    "close": "Zavřít"
   }
 }

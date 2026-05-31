@@ -89,14 +89,15 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="w-full max-w-md bg-[#1c2128] rounded-2xl shadow-2xl border border-white/10 overflow-hidden relative z-10"
+            className="w-full max-w-md bg-base-100 rounded-2xl shadow-2xl border border-base-300 overflow-hidden relative z-10"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-              <h3 className="font-semibold text-lg text-white">{t('feedback.title')}</h3>
-              <button 
+            <div className="flex items-center justify-between px-6 py-4 border-b border-base-300/50">
+              <h3 className="font-semibold text-lg text-base-content">{t('feedback.title')}</h3>
+              <button
                 onClick={handleClose}
-                className="btn btn-sm btn-ghost btn-circle text-gray-400 hover:text-white"
+                aria-label={t('feedback.close')}
+                className="btn btn-sm btn-ghost btn-circle text-base-content/60 hover:text-base-content"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -106,11 +107,11 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
             <div className="p-6">
                {isSuccess ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
-                    <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 mb-2">
+                    <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center text-success mb-2">
                        <CheckCircle2 className="w-8 h-8" />
                     </div>
-                    <h3 className="text-xl font-bold text-white">{t('feedback.successTitle')}</h3>
-                    <p className="text-gray-400 max-w-xs">
+                    <h3 className="text-xl font-bold text-base-content">{t('feedback.successTitle')}</h3>
+                    <p className="text-base-content/60 max-w-xs">
                       {t('feedback.successText')}
                     </p>
                     <button 
@@ -125,26 +126,26 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     
                     {/* Type Selection */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-gray-400 ml-1">{t('feedback.typeLabel')}</label>
+                      <label className="text-sm font-medium text-base-content/60 ml-1">{t('feedback.typeLabel')}</label>
                       <div className="grid grid-cols-3 gap-2">
                          <button
                            type="button"
                            onClick={() => setType('bug')}
-                           className={`btn btn-sm border-0 ${type === 'bug' ? 'bg-error/20 text-error hover:bg-error/30' : 'bg-base-200 text-gray-400 hover:bg-base-300 hover:text-white'}`}
+                           className={`btn btn-sm border-0 ${type === 'bug' ? 'bg-error/20 text-error hover:bg-error/30' : 'bg-base-200 text-base-content/60 hover:bg-base-300 hover:text-base-content'}`}
                          >
                            {t('feedback.bug')}
                          </button>
                          <button
                            type="button"
                            onClick={() => setType('idea')}
-                           className={`btn btn-sm border-0 ${type === 'idea' ? 'bg-warning/20 text-warning hover:bg-warning/30' : 'bg-base-200 text-gray-400 hover:bg-base-300 hover:text-white'}`}
+                           className={`btn btn-sm border-0 ${type === 'idea' ? 'bg-warning/20 text-warning hover:bg-warning/30' : 'bg-base-200 text-base-content/60 hover:bg-base-300 hover:text-base-content'}`}
                          >
                            {t('feedback.idea')}
                          </button>
                          <button
                            type="button"
                            onClick={() => setType('other')}
-                           className={`btn btn-sm border-0 ${type === 'other' ? 'bg-neutral text-white hover:bg-neutral-focus' : 'bg-base-200 text-gray-400 hover:bg-base-300 hover:text-white'}`}
+                           className={`btn btn-sm border-0 ${type === 'other' ? 'bg-neutral text-neutral-content hover:bg-neutral/80' :'bg-base-200 text-base-content/60 hover:bg-base-300 hover:text-base-content'}`}
                          >
                            {t('feedback.other')}
                          </button>
@@ -154,14 +155,14 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     {/* Title */}
                     <div className="form-control">
                       <label className="label pt-0 pb-1">
-                        <span className="text-sm font-medium text-gray-400">{t('feedback.subject')}</span>
+                        <span className="text-sm font-medium text-base-content/60">{t('feedback.subject')}</span>
                       </label>
                       <input 
                         type="text" 
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder={t('feedback.subjectPlaceholder')}
-                        className="input input-bordered w-full bg-[#0d1117] border-white/10 focus:border-primary focus:outline-none focus:bg-[#0d1117] text-white transition-colors" 
+                        className="input input-bordered w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors"
                         required
                         autoFocus
                         onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
@@ -171,13 +172,13 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     {/* Message */}
                     <div className="form-control">
                       <label className="label pt-0 pb-1">
-                        <span className="text-sm font-medium text-gray-400">{t('feedback.description')}</span>
+                        <span className="text-sm font-medium text-base-content/60">{t('feedback.description')}</span>
                       </label>
                       <textarea 
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         placeholder={t('feedback.descriptionPlaceholder')}
-                        className="textarea textarea-bordered h-32 w-full bg-[#0d1117] border-white/10 focus:border-primary focus:outline-none focus:bg-[#0d1117] text-white transition-colors leading-relaxed resize-none" 
+                        className="textarea textarea-bordered h-32 w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors leading-relaxed resize-none"
                         required
                       />
                     </div>
@@ -185,14 +186,14 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     {/* Contact (Optional) */}
                     <div className="form-control">
                       <label className="label pt-0 pb-1">
-                        <span className="text-sm font-medium text-gray-400">{t('feedback.contact')}</span>
+                        <span className="text-sm font-medium text-base-content/60">{t('feedback.contact')}</span>
                       </label>
                       <input 
                         type="text" 
                         value={contact}
                         onChange={(e) => setContact(e.target.value)}
                         placeholder={t('feedback.contactPlaceholder')}
-                        className="input input-bordered w-full bg-[#0d1117] border-white/10 focus:border-primary focus:outline-none focus:bg-[#0d1117] text-white transition-colors" 
+                        className="input input-bordered w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors"
                         onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                       />
                     </div>
@@ -203,7 +204,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                         type="button"
                         onClick={handleSubmit} 
                         disabled={isSending || !title || !message}
-                        className="btn btn-primary w-full gap-2 font-semibold no-animation text-white"
+                        className="btn btn-primary w-full gap-2 font-semibold no-animation text-primary-content"
                       >
                         {isSending ? (
                           <>
@@ -219,7 +220,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                       </button>
                     </div>
                     
-                    <p className="text-[10px] text-center text-gray-500 mt-2">
+                    <p className="text-[10px] text-center text-base-content/50 mt-2">
                       {t('feedback.footer')}
                     </p>
 
