@@ -128,9 +128,11 @@ async function handleAction(id: string, action: string, payload: unknown) {
                 result = { success: true };
                 break;
             case "push_notes_html": {
+                // Cache-only: this message is posted right before push_notes, which
+                // is the single backup trigger. Triggering a backup here too would
+                // race the snapshot's text-only pass and get skipped by the hash diff.
                 const { code, html } = payload as { code: string; html: string };
                 setNotesHtmlOverride(code, html);
-                await runNotesBackupNow();
                 result = { success: true };
                 break;
             }

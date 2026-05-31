@@ -22,6 +22,7 @@ import type { SyncedData } from "../types/messages";
 import { IndexedDBService } from "../services/storage/IndexedDBService";
 import { syncDriveBackup, type DriveBackupSubject } from "../services/drive/driveBackup";
 import { syncDriveNotesBackup } from "../services/drive/driveNotesBackup";
+import { NOTES_ENABLED } from "../config/featureFlags";
 import type { SubjectNotes } from "../services/drive/notesDoc";
 import { singleFlight } from "../utils/singleFlight";
 import { logError } from "../utils/reportError";
@@ -225,6 +226,7 @@ export async function runDriveBackupNow(): Promise<void> {
 /** One notes-backup pass over the latest snapshot. Passes an empty list through
  *  too, so a subject whose notes were all deleted gets reconciled (emptied). */
 async function notesBackupPass(): Promise<void> {
+    if (!NOTES_ENABLED) return; // notes feature dormant — never back up to Drive
     try {
         const notes = cachedData.notes;
         if (!notes) return; // snapshot never pushed yet

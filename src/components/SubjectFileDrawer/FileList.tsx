@@ -12,6 +12,7 @@ import { useDocumentNoteKeys } from '../../hooks/data/useDocumentNoteKeys';
 import { parseIsDate } from './utils/fileDate';
 import { ISBacklink } from './ISBacklink';
 import { DocumentNoteEditor } from './DocumentNoteEditor';
+import { NOTES_ENABLED } from '../../config/featureFlags';
 
 const typeBadgeConfig: Record<string, string> = {
     pdf: 'badge-error',
@@ -143,7 +144,7 @@ export function FileList({
                                             </div>
  
                                             <div className="flex items-center gap-1">
-                                                {(() => {
+                                                {NOTES_ENABLED && (() => {
                                                     const hasNote = noteKeys.has(subFile.link);
                                                     const isExpanded = expandedLink === subFile.link;
                                                     return (
@@ -186,7 +187,7 @@ export function FileList({
                                                 <FileTypeBadge type={subFile.type} />
                                             </div>
                                         </div>
-                                            {expandedLink === subFile.link && (
+                                            {NOTES_ENABLED && expandedLink === subFile.link && (
                                                 <div
                                                     className="px-2 pb-2"
                                                     onClick={(e) => e.stopPropagation()}

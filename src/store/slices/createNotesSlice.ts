@@ -35,7 +35,7 @@ export const createNotesSlice: AppSlice<NotesSlice> = (set, get) => {
             ? IndexedDBService.set('document_notes', key, { note: value, updatedAt: Date.now(), fileName })
             : IndexedDBService.delete('document_notes', key);
 
-        op.then(() => {
+        op.then(async () => {
             if (pendingSaves[key] === value) {
                 delete pendingSaves[key];
             }
@@ -47,20 +47,20 @@ export const createNotesSlice: AppSlice<NotesSlice> = (set, get) => {
             window.dispatchEvent(new CustomEvent('document-note-changed', {
                 detail: { courseCode, fileLink, hasNote: !!value.trim() }
             }));
-            void get().pushNotesSnapshot();
             // Reclaim image blobs no note references any more (grace-period guarded).
             void IndexedDBService.getAllWithKeys('document_notes')
                 .then((entries) => sweepOrphans(collectReferencedImages(entries.map((e) => ({ note: e.value.note ?? '' }))), Date.now()))
                 .catch((e) => logError('Notes.imageGc', e));
-            // If this subject's notes reference images, also push the base64-inlined
-            // HTML so the content script can back it up to Drive without ever
-            // reaching into the iframe's IDB. Lightweight snapshot stays text-only.
-            void IndexedDBService.getAllWithKeys('document_notes').then(async (entries) => {
+            // Render this subject's HTML (base64-inlined when it has images) and
+            // CACHE it in the content script BEFORE the snapshot below triggers the
+            // backup — otherwise the snapshot's text-only pass records the content
+            // hash first and the image pass is skipped as a no-op. Cache-only: the
+            // push_notes that follows is the single backup trigger.
+            try {
+                const entries = await IndexedDBService.getAllWithKeys('document_notes');
                 const files = entries
                     .filter((e) => e.key.startsWith(`${courseCode}:`) && e.value.note?.trim())
                     .map((e) => ({ fileLink: e.key.slice(e.key.indexOf(':') + 1), fileName: e.value.fileName ?? '', note: e.value.note }));
-                const hasImages = files.some((f) => /"images":\["/.test(f.note));
-                if (!hasImages) return;
                 const html = await renderSubjectNotesHtmlWithImages(
                     { code: courseCode, folderName: '', title: `Poznámky – ${courseCode}`, files },
                     imageBase64Lookup,
@@ -69,7 +69,10 @@ export const createNotesSlice: AppSlice<NotesSlice> = (set, get) => {
                     { type: 'REIS_ACTION', id: crypto.randomUUID(), action: 'push_notes_html', payload: { code: courseCode, html } },
                     '*',
                 );
-            }).catch((e) => logError('Notes.pushHtml', e));
+            } catch (e) { logError('Notes.pushHtml', e); }
+            // Snapshot push (triggers the single notes-backup pass, now using the
+            // override cached just above).
+            void get().pushNotesSnapshot();
         })
         .catch((error) => {
             logError('useDocumentNote.save', error);
