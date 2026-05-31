@@ -29,11 +29,6 @@ export function DocumentNoteEditor({ courseCode, fileLink, fileName, onClose, sh
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isLoading, fileLink, courseCode]);
 
-    const save = useCallback((next: DocumentNoteData) => {
-        setData(next);
-        setNote(serializeNote(next), fileName);
-    }, [setNote, fileName]);
-
     const updateCard = useCallback((id: string, patch: Partial<NoteCardData>) => {
         setData((prev) => {
             const next = { ...prev, cards: prev.cards.map((c) => (c.id === id ? { ...c, ...patch } : c)) };
@@ -67,8 +62,12 @@ export function DocumentNoteEditor({ courseCode, fileLink, fileName, onClose, sh
     }, [setNote, fileName]);
 
     const setNotes = useCallback((notes: string) => {
-        save({ ...data, notes });
-    }, [data, save]);
+        setData((prev) => {
+            const next = { ...prev, notes };
+            setNote(serializeNote(next), fileName);
+            return next;
+        });
+    }, [setNote, fileName]);
 
     if (isLoading) {
         return (
