@@ -1,6 +1,8 @@
 import type { NotesSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
 import { logError } from '../../utils/reportError';
+import { collectReferencedImages } from '../../services/notes/collectReferencedImages';
+import { sweepOrphans } from '../../services/notes/noteImageStore';
 
 const MAX_NOTE_LENGTH = 100000;
 const DEBOUNCE_MS = 800;
@@ -39,6 +41,10 @@ export const createNotesSlice: AppSlice<NotesSlice> = (set, get) => {
                 detail: { courseCode, fileLink, hasNote: !!value.trim() }
             }));
             void get().pushNotesSnapshot();
+            // Reclaim image blobs no note references any more (grace-period guarded).
+            void IndexedDBService.getAllWithKeys('document_notes')
+                .then((entries) => sweepOrphans(collectReferencedImages(entries.map((e) => ({ note: e.value.note ?? '' }))), Date.now()))
+                .catch((e) => logError('Notes.imageGc', e));
         })
         .catch((error) => {
             logError('useDocumentNote.save', error);
