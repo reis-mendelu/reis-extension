@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { CheckSquare, Square, ExternalLink, X, LogOut } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function TutoringMatchCard() {
+    const { t } = useTranslation();
     const match = useAppStore(s => s.studyJamMatch);
     const hideStudyJamMatch = useAppStore(s => s.hideStudyJamMatch);
     const withdrawStudyJamMatch = useAppStore(s => s.withdrawStudyJamMatch);
@@ -19,8 +21,8 @@ export function TutoringMatchCard() {
     const teamsHandle = match.teamsHandle;
 
     const checklistItems = isTutee
-        ? ['Napsal/a jsem tutorovi na Teams', 'Potvrdili jsme čas schůzky']
-        : ['Odpověděl/a jsem tuteovi na Teams', 'Potvrdili jsme čas schůzky'];
+        ? [t('studyJam.checklistTutorWrote'), t('studyJam.checklistConfirmedTime')]
+        : [t('studyJam.checklistTuteeWrote'), t('studyJam.checklistConfirmedTime')];
 
     const toggle = (i: number) => setChecklist(prev => prev.map((v, idx) => idx === i ? !v : v));
 
@@ -29,7 +31,7 @@ export function TutoringMatchCard() {
             <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-success mb-0.5">
-                        {isTutee ? 'Tutor nalezen' : 'Tutee přiřazen'} — {match.courseName}
+                        {isTutee ? t('studyJam.matchTutorFound') : t('studyJam.matchTuteeAssigned')} — {match.courseName}
                     </p>
                     <p className="text-sm font-medium truncate">
                         {displayName}
@@ -45,7 +47,7 @@ export function TutoringMatchCard() {
                             className="btn btn-xs btn-success gap-1"
                         >
                             <ExternalLink size={11} />
-                            Napsat na Teams
+                            {t('studyJam.matchWriteTeams')}
                         </a>
                         {!confirmWithdraw ? (
                             <button
@@ -53,14 +55,14 @@ export function TutoringMatchCard() {
                                 className="btn btn-xs btn-ghost text-base-content/40 hover:text-error gap-1"
                             >
                                 <LogOut size={11} />
-                                Odhlásit se
+                                {t('studyJam.matchUnregister')}
                             </button>
                         ) : (
                             <button
                                 onClick={withdrawStudyJamMatch}
                                 className="btn btn-xs btn-error gap-1"
                             >
-                                Opravdu odhlásit?
+                                {t('studyJam.matchConfirmUnregister')}
                             </button>
                         )}
                     </div>
@@ -79,7 +81,7 @@ export function TutoringMatchCard() {
                         ))}
                     </div>
                 </div>
-                <button onClick={hideStudyJamMatch} className="opacity-50 hover:opacity-100 shrink-0 mt-0.5" title="Skrýt">
+                <button onClick={hideStudyJamMatch} className="opacity-50 hover:opacity-100 shrink-0 mt-0.5" title={t('studyJam.matchHide')} aria-label={t('studyJam.matchHide')}>
                     <X size={14} />
                 </button>
             </div>

@@ -46,7 +46,7 @@ export function ErasmusReportCard({ report }: Props) {
             <h4 className="font-semibold text-xs text-base-content/50 mb-1">{t('erasmus.finance')}</h4>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
               {report.finance.totalCostCZK && (
-                <div>{t('erasmus.totalCost')}: <strong>{report.finance.totalCostCZK} Kč</strong></div>
+                <div>{t('erasmus.totalCost')}: <strong>{report.finance.totalCostCZK} {t('common.czk')}</strong></div>
               )}
               {report.finance.grantCoveragePercent && (
                 <div>{t('erasmus.grantCoverage')}: <strong>{report.finance.grantCoveragePercent}%</strong></div>

@@ -141,7 +141,8 @@
     "view": "Zobrazit",
     "search": "Vyhledat",
     "autoFill": "Automaticky vyplnit",
-    "copiedToClipboard": "Email byl zkopírován do schránky"
+    "copiedToClipboard": "Email byl zkopírován do schránky",
+    "czk": "Kč"
   },
   "search": {
     "placeholder": "Hledej předměty, lidi, stránky... ({shortcut}K)",
@@ -158,7 +159,9 @@
     "pages": "Stránky",
     "people": "Lidé",
     "isPortalTooltip": "IS Rozcestník",
-    "filterPlaceholder": "Filtrovat..."
+    "filterPlaceholder": "Filtrovat...",
+    "select": "Vybrat",
+    "open": "Otevřít"
   },
   "calendar": {
     "emptyWeek": "Tento týden nic nemáš, pohodička",
@@ -176,7 +179,12 @@
       "noHiddenItems": "Zatím žádné skryté položky",
       "single": "Jedna událost",
       "all": "Všechny události"
-    }
+    },
+    "pickTutoringTime": "Vyberte čas pro doučování",
+    "selectedTime": "Vybráno: {time}",
+    "clickFreeSlot": "Klikněte na volné místo v kalendáři",
+    "pickTime": "Vyber čas:",
+    "publicHoliday": "Státní svátek"
   },
   "exams": {
     "title": "Moje zkoušky",
@@ -371,7 +379,9 @@
     "noData": "Žádná data hodnocení.",
     "noAssessment": "Tento předmět nemá průběžné hodnocení ani testy.",
     "phSection": "Průběžné hodnocení",
-    "vtSection": "Testy"
+    "vtSection": "Testy",
+    "isContinuous": "IS (průběžné hodnocení)",
+    "isTestResults": "IS (výsledky testů)"
   },
   "syllabus": {
     "conditions": "Podmínky ukončení",
@@ -758,6 +768,21 @@
     "successTitle": "Super, díky!",
     "successTutor": "Jakmile najdeme tutea, dáme ti vědět!",
     "successTutee": "Jakmile tě spárujeme s tutorem, dáme ti vědět!",
-    "close": "Zavřít"
+    "close": "Zavřít",
+    "matchTutorFound": "Tutor nalezen",
+    "matchTuteeAssigned": "Tutee přiřazen",
+    "matchUnregister": "Odhlásit se",
+    "matchConfirmUnregister": "Opravdu odhlásit?",
+    "matchHide": "Skrýt",
+    "checklistTutorWrote": "Napsal/a jsem tutorovi na Teams",
+    "checklistTuteeWrote": "Odpověděl/a jsem tuteovi na Teams",
+    "checklistConfirmedTime": "Potvrdili jsme čas schůzky",
+    "matchWriteTeams": "Napsat na Teams"
+  },
+  "customEvent": {
+    "titlePlaceholder": "Přidat název",
+    "locationPlaceholder": "Místnost nebo místo",
+    "addLocation": "Přidat místo",
+    "delete": "Smazat"
   }
 }

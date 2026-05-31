@@ -3,6 +3,7 @@ import { CalendarEventCard } from '../CalendarEventCard';
 import { organizeLessons, getEventStyle, DAYS } from './utils';
 import type { BlockLesson, DateInfo } from '../../types/calendarTypes';
 import { useAppStore } from '../../store/useAppStore';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface WeeklyCalendarDayProps {
     dayIndex: number;
@@ -20,6 +21,7 @@ interface WeeklyCalendarDayProps {
 export function WeeklyCalendarDay({
     dayIndex, date, lessons, holiday, isToday, showSkeleton, onEventClick, language, onCreateEvent, confirmedGhost
 }: WeeklyCalendarDayProps) {
+    const { t } = useTranslation();
     const { lessons: organizedLessons } = useMemo(() => organizeLessons(lessons), [lessons]);
     const isSelectingTime = useAppStore(s => s.isSelectingTime);
     const pendingTimeSelection = useAppStore(s => s.pendingTimeSelection);
@@ -161,7 +163,7 @@ export function WeeklyCalendarDay({
                     <div className="flex flex-col items-center text-center p-4">
                         <span className="text-3xl mb-2">🇨🇿</span>
                         <h3 className="text-lg font-bold text-error">{holiday}</h3>
-                        <span className="text-sm text-error/80 font-medium uppercase tracking-wider mt-1">Státní svátek</span>
+                        <span className="text-sm text-error/80 font-medium uppercase tracking-wider mt-1">{t('calendar.publicHoliday')}</span>
                     </div>
                 </div>
             )}

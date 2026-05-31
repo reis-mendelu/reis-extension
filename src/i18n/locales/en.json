@@ -142,8 +142,14 @@
       "hiddenItems": "Hidden Items",
       "noHiddenItems": "No hidden items yet",
       "single": "Single occurrence",
-      "all": "All occurrences"
-    }
+      "all": "All occurrences",
+      "recurring": "Hide all {course} lessons"
+    },
+    "pickTutoringTime": "Pick a time for tutoring",
+    "selectedTime": "Selected: {time}",
+    "clickFreeSlot": "Click a free slot in the calendar",
+    "pickTime": "Pick a time:",
+    "publicHoliday": "Public holiday"
   },
   "exams": {
     "title": "My Exams",
@@ -259,7 +265,8 @@
     "view": "View",
     "search": "Search",
     "autoFill": "Auto-fill",
-    "copiedToClipboard": "Email copied to clipboard"
+    "copiedToClipboard": "Email copied to clipboard",
+    "czk": "CZK"
   },
   "search": {
     "placeholder": "Search subjects, people, pages... ({shortcut}K)",
@@ -276,7 +283,9 @@
     "pages": "Pages",
     "people": "People",
     "isPortalTooltip": "IS Directory",
-    "filterPlaceholder": "Filter..."
+    "filterPlaceholder": "Filter...",
+    "select": "Select",
+    "open": "Open"
   },
   "course": {
     "setNickname": "Set nickname",
@@ -370,7 +379,9 @@
     "noData": "No assessment data.",
     "noAssessment": "This course has no continuous assessment or tests.",
     "phSection": "Continuous assessment",
-    "vtSection": "Tests"
+    "vtSection": "Tests",
+    "isContinuous": "IS (continuous assessment)",
+    "isTestResults": "IS (test results)"
   },
   "syllabus": {
     "conditions": "Completion requirements",
@@ -757,6 +768,21 @@
     "successTitle": "Awesome, thanks!",
     "successTutor": "We'll let you know as soon as we find a tutee!",
     "successTutee": "We'll let you know as soon as we pair you with a tutor!",
-    "close": "Close"
+    "close": "Close",
+    "matchTutorFound": "Tutor found",
+    "matchTuteeAssigned": "Tutee assigned",
+    "matchUnregister": "Unregister",
+    "matchConfirmUnregister": "Really unregister?",
+    "matchHide": "Hide",
+    "checklistTutorWrote": "I messaged the tutor on Teams",
+    "checklistTuteeWrote": "I replied to the tutee on Teams",
+    "checklistConfirmedTime": "We confirmed the meeting time",
+    "matchWriteTeams": "Message on Teams"
+  },
+  "customEvent": {
+    "titlePlaceholder": "Add title",
+    "locationPlaceholder": "Room or place",
+    "addLocation": "Add location",
+    "delete": "Delete"
   }
 }

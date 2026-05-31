@@ -179,11 +179,11 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                                 <MousePointerClick className="w-5 h-5 animate-pulse" />
                             </div>
                             <div className="flex-1 min-w-[200px]">
-                                <h4 className="font-bold text-base-content text-sm">Vyberte čas pro doučování</h4>
+                                <h4 className="font-bold text-base-content text-sm">{t('calendar.pickTutoringTime')}</h4>
                                 <p className="text-xs text-base-content/50">
                                     {pendingTimeSelection
-                                        ? `Vybráno: ${pendingTimeSelection.formattedTime}`
-                                        : "Klikněte na volné místo v kalendáři"}
+                                        ? t('calendar.selectedTime', { time: pendingTimeSelection.formattedTime })
+                                        : t('calendar.clickFreeSlot')}
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
@@ -194,7 +194,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                                     }}
                                     className="btn btn-sm btn-ghost text-base-content/50 hover:text-base-content"
                                 >
-                                    Zrušit
+                                    {t('common.cancel')}
                                 </button>
                                 {pendingTimeSelection && (
                                     <button

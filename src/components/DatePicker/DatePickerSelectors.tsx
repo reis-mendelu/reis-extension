@@ -1,4 +1,5 @@
 import type { ExamTerm } from '../../types/exams';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface DatePickerSelectorsProps {
     selectedDate: string | null;
@@ -9,11 +10,12 @@ interface DatePickerSelectorsProps {
 }
 
 export function DatePickerSelectors({ selectedDate, termsForDate, selectedTermId, onSelectTerm, onConfirm }: DatePickerSelectorsProps) {
+    const { t: tr } = useTranslation();
     if (!selectedDate) return null;
     return (
         <>
             <div className="px-3 pb-2 border-t border-base-300 pt-2 bg-base-100">
-                <div className="text-[10px] font-medium text-base-content/60 mb-1.5">Vyber čas:</div>
+                <div className="text-[10px] font-medium text-base-content/60 mb-1.5">{tr('calendar.pickTime')}</div>
                 <div className="flex flex-wrap gap-1.5">
                     {termsForDate.map((t) => (
                         <button key={t.id} onClick={() => onSelectTerm(t.id)} disabled={t.full}

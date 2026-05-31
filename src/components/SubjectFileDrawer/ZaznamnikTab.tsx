@@ -29,13 +29,13 @@ export function ZaznamnikTab({ courseCode }: ZaznamnikTabProps) {
             {subjectInfo!.hasPrubezne && (
                 <a href={buildUrl('prubezne=1')} target="_blank" rel="noopener noreferrer"
                     className="btn btn-ghost btn-sm gap-2 text-base-content/50 hover:text-primary normal-case font-bold">
-                    <span>IS (průběžné hodnocení)</span><ExternalLink size={14} />
+                    <span>{t('zaznamnik.isContinuous')}</span><ExternalLink size={14} />
                 </a>
             )}
             {subjectInfo!.hasTest && (
                 <a href={buildUrl('test=1')} target="_blank" rel="noopener noreferrer"
                     className="btn btn-ghost btn-sm gap-2 text-base-content/50 hover:text-primary normal-case font-bold">
-                    <span>IS (výsledky testů)</span><ExternalLink size={14} />
+                    <span>{t('zaznamnik.isTestResults')}</span><ExternalLink size={14} />
                 </a>
             )}
         </div>
