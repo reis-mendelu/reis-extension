@@ -101,3 +101,30 @@ describe('empty reconciliation helpers', () => {
         expect(parsed.files).toEqual([]);
     });
 });
+
+import { renderSubjectNotesHtmlWithImages } from '../notesDoc';
+
+describe('renderSubjectNotesHtmlWithImages', () => {
+    it('inlines a referenced image as a data:image/jpeg URI after the answer', async () => {
+        const subject = {
+            code: 'BIK-DBS', folderName: 'BIK-DBS - DB', title: 'Poznámky – BIK-DBS',
+            files: [{
+                fileLink: 'f1', fileName: 'Lecture 1',
+                note: JSON.stringify({ cards: [{ id: 'c1', question: 'Q', answer: 'A', collapsed: true, images: ['hashA'] }], notes: '' }),
+            }],
+        };
+        const lookup = async (h: string) => (h === 'hashA' ? 'AAAA' : null);
+        const html = await renderSubjectNotesHtmlWithImages(subject, lookup);
+        expect(html).toContain('<img src="data:image/jpeg;base64,AAAA"');
+    });
+
+    it('omits images that fail to resolve, keeping the text', async () => {
+        const subject = {
+            code: 'X', folderName: 'X', title: 'X',
+            files: [{ fileLink: 'f', fileName: 'F', note: JSON.stringify({ cards: [{ id: 'c', question: 'Q', answer: 'A', collapsed: true, images: ['gone'] }], notes: '' }) }],
+        };
+        const html = await renderSubjectNotesHtmlWithImages(subject, async () => null);
+        expect(html).toContain('Q');
+        expect(html).not.toContain('data:image');
+    });
+});

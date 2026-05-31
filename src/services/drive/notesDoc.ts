@@ -60,6 +60,34 @@ export function renderSubjectNotesHtml(subject: SubjectNotes): string {
     return `<html><body>${parts.join('')}</body></html>`;
 }
 
+/** Resolve a card image hash to raw base64 (no data: prefix), or null if missing. */
+export type ImageBase64Lookup = (hash: string) => Promise<string | null>;
+
+/** Like renderSubjectNotesHtml, but inlines card images as data:image/jpeg URIs.
+ *  Runs in the iframe (which owns the image blobs). */
+export async function renderSubjectNotesHtmlWithImages(
+    subject: SubjectNotes,
+    lookup: ImageBase64Lookup,
+): Promise<string> {
+    const parts: string[] = [`<h1>${esc(subject.title)}</h1>`, `<p><i>${esc(BANNER)}</i></p>`];
+    for (const f of subject.files) {
+        const data = parseNote(f.note);
+        const cards = data.cards.filter((c) => c.question.trim() || c.answer.trim() || c.images.length);
+        const notes = data.notes.trim();
+        if (!cards.length && !notes) continue;
+        parts.push(`<h2>${esc(f.fileName)}</h2>`);
+        for (const c of cards) {
+            parts.push(cardToHtml(c));
+            for (const hash of c.images) {
+                const b64 = await lookup(hash);
+                if (b64) parts.push(`<p><img src="data:image/jpeg;base64,${b64}"></p>`);
+            }
+        }
+        if (notes) parts.push(`<p>${withBreaks(notes)}</p>`);
+    }
+    return `<html><body>${parts.join('')}</body></html>`;
+}
+
 /** Body for a subject whose notes were all deleted — keeps the Doc, clears content. */
 export function renderEmptyNotesHtml(): string {
     return `<html><body><p><i>${esc(BANNER)}</i></p></body></html>`;
