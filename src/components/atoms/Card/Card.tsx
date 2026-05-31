@@ -20,9 +20,9 @@ export interface CardProps {
 }
 
 const variantClasses = {
-    widget: 'bg-white rounded-2xl shadow-sm border border-gray-100',
-    popup: 'bg-white rounded-xl shadow-popover-heavy border border-slate-200',
-    container: 'bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden',
+    widget: 'bg-base-100 rounded-2xl shadow-sm border border-base-300',
+    popup: 'bg-base-100 rounded-xl shadow-popover-heavy border border-base-300',
+    container: 'bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden',
 } as const;
 
 const paddingClasses = {
@@ -73,7 +73,7 @@ export function CardContent({ children, className }: { children: React.ReactNode
 
 export function CardFooter({ children, className }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={cn('mt-4 pt-4 border-t border-gray-50', className)}>
+        <div className={cn('mt-4 pt-4 border-t border-base-300', className)}>
             {children}
         </div>
     );

@@ -19,7 +19,7 @@ export function DragHint({ show }: DragHintProps) {
         <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
             {/* Animated lasso selection */}
             <div 
-                className="absolute border-2 border-emerald-500 bg-emerald-500/15 rounded-sm"
+                className="absolute border-2 border-success bg-success/15 rounded-sm"
                 style={{
                     animation: 'dragHintLasso 2s ease-in-out infinite',
                     top: '80px',
@@ -74,7 +74,7 @@ export function SelectionBox({ isDragging, style }: SelectionBoxProps) {
 
     return (
         <div 
-            className="absolute border border-emerald-500 bg-emerald-500/10 pointer-events-none z-50"
+            className="absolute border border-success bg-success/10 pointer-events-none z-50"
             style={{
                 left: style.left,
                 top: style.top,

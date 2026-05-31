@@ -35,7 +35,7 @@ export function CloseButton({
             type="button"
             onClick={onClick}
             className={cn(
-                'flex justify-center items-center text-gray-500 cursor-pointer hover:scale-90 transition-all',
+                'flex justify-center items-center text-base-content/60 cursor-pointer hover:scale-90 transition-all',
                 positioned && 'absolute right-2 top-2',
                 sizeClasses,
                 className

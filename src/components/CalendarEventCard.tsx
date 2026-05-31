@@ -111,21 +111,21 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
                 bg: 'bg-exam-bg/85',
                 border: 'border-l-exam-border',
                 outerBorder: 'border-exam-border/30',
-                text: 'text-gray-900',
+                text: 'text-base-content',
             };
         } else if (lesson.isSeminar === 'true') {
             return {
                 bg: 'bg-seminar-bg/85',
                 border: 'border-l-seminar-border',
                 outerBorder: 'border-seminar-border/30',
-                text: 'text-gray-900',
+                text: 'text-base-content',
             };
         } else {
             return {
                 bg: 'bg-lecture-bg/85',
                 border: 'border-l-lecture-border',
                 outerBorder: 'border-lecture-border/30',
-                text: 'text-gray-900',
+                text: 'text-base-content',
             };
         }
     };
@@ -218,14 +218,14 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
 
                 {/* Bottom row - Location and Time, pushed to bottom */}
                 {isLongEnough && (
-                    <div className="text-gray-600 text-sm mt-auto flex-shrink-0 flex items-center justify-between gap-2">
+                    <div className="text-base-content/60 text-sm mt-auto flex-shrink-0 flex items-center justify-between gap-2">
                         {room && !isCompact && (
                             <div className="flex items-center gap-1 min-w-0 flex-1">
                                 <MapPin size={12} className="flex-shrink-0" />
                                 <span className="truncate">{room}</span>
                             </div>
                         )}
-                        <div className="text-gray-500 whitespace-nowrap flex-shrink-0">
+                        <div className="text-base-content/60 whitespace-nowrap flex-shrink-0">
                             {isCompact ? lesson.startTime : `${lesson.startTime} - ${lesson.endTime}`}
                         </div>
                     </div>

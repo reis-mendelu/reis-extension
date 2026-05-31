@@ -15,21 +15,21 @@ export function ExamSubjectItem({ subject, processingId, onOpenPicker }: ExamSub
     const isReg = subject.sections.some((s: ExamSection) => s.status === 'registered');
     const displayName = useCourseName(subject.code, subject.name);
     return (
-        <AccordionItem value={subject.id} className="border-b border-slate-100 last:border-0">
+        <AccordionItem value={subject.id} className="border-b border-base-300 last:border-0">
             <AccordionHeader className="flex">
-                <AccordionTrigger className="flex flex-1 items-center justify-between px-6 py-4 bg-white hover:bg-slate-50 group data-[state=open]:bg-slate-50/50">
+                <AccordionTrigger className="flex flex-1 items-center justify-between px-6 py-4 bg-base-100 hover:bg-base-200 group data-[state=open]:bg-base-200/50">
                     <div className="flex flex-col items-start gap-0.5">
-                        <span className="font-semibold text-slate-900 text-base truncate max-w-[350px]">{displayName}</span>
-                        <span className="text-xs text-slate-500 font-medium">{subject.code}</span>
+                        <span className="font-semibold text-base-content text-base truncate max-w-[350px]">{displayName}</span>
+                        <span className="text-xs text-base-content/60 font-medium">{subject.code}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                        {!isReg && <div className="w-2 h-2 rounded-full bg-amber-500" />}
-                        <ChevronDown className="text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180" size={16} />
+                        {!isReg && <div className="w-2 h-2 rounded-full bg-warning" />}
+                        <ChevronDown className="text-base-content/50 transition-transform duration-200 group-data-[state=open]:rotate-180" size={16} />
                     </div>
                 </AccordionTrigger>
             </AccordionHeader>
             <AccordionContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-                <div className="px-6 py-4 bg-slate-50/50 space-y-2">
+                <div className="px-6 py-4 bg-base-200/50 space-y-2">
                     {subject.sections.map((sec: ExamSection) => (
                         <ExamSectionItem key={sec.id} section={sec} isProcessing={processingId === sec.id} onOpenPicker={onOpenPicker} />
                     ))}

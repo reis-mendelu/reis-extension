@@ -174,13 +174,13 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                         exit={{ opacity: 0, y: -20 }}
                         className="absolute top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-auto"
                     >
-                        <div className="bg-base-200 border border-white/10 shadow-2xl rounded-2xl p-4 flex items-center gap-4">
+                        <div className="bg-base-200 border border-base-300 shadow-2xl rounded-2xl p-4 flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success shrink-0">
                                 <MousePointerClick className="w-5 h-5 animate-pulse" />
                             </div>
                             <div className="flex-1 min-w-[200px]">
-                                <h4 className="font-bold text-white text-sm">Vyberte čas pro doučování</h4>
-                                <p className="text-xs text-gray-400">
+                                <h4 className="font-bold text-base-content text-sm">Vyberte čas pro doučování</h4>
+                                <p className="text-xs text-base-content/50">
                                     {pendingTimeSelection
                                         ? `Vybráno: ${pendingTimeSelection.formattedTime}`
                                         : "Klikněte na volné místo v kalendáři"}
@@ -192,7 +192,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                                         setPendingTimeSelection(null);
                                         setIsSelectingTime(false);
                                     }}
-                                    className="btn btn-sm btn-ghost text-gray-400 hover:text-white"
+                                    className="btn btn-sm btn-ghost text-base-content/50 hover:text-base-content"
                                 >
                                     Zrušit
                                 </button>
@@ -203,7 +203,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
                                             window.dispatchEvent(event);
                                             setPendingTimeSelection(null);
                                         }}
-                                        className="btn btn-sm btn-success border-none text-white font-medium px-4"
+                                        className="btn btn-sm btn-success border-none text-success-content font-medium px-4"
                                     >
                                         Potvrdit
                                     </button>

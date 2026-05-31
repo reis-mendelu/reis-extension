@@ -17,7 +17,7 @@ export function HeaderActions({ selectedCount, isDownloading, downloadProgress, 
         <div className="flex items-center gap-2">
             {selectedCount > 0 && (
                 <button onClick={onDownload} disabled={isDownloading}
-                        className="btn btn-sm btn-primary gap-2 interactive bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white disabled:opacity-75">
+                        className="btn btn-sm btn-primary gap-2 interactive bg-success hover:bg-success/90 border-success text-success-content disabled:opacity-75">
                     {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                     {downloadLabel}
                 </button>

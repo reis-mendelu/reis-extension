@@ -8,11 +8,11 @@ export function ExamSectionItem({ section, isProcessing, onOpenPicker }: { secti
     };
 
     return (
-        <div className="group flex items-center justify-between p-3 rounded-lg border border-transparent hover:bg-white hover:shadow-sm hover:border-slate-200 transition-all">
+        <div className="group flex items-center justify-between p-3 rounded-lg border border-transparent hover:bg-base-100 hover:shadow-sm hover:border-base-300 transition-all">
             <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="font-medium text-slate-900 text-sm capitalize truncate" title={section.name}>{section.name}</span>
+                <span className="font-medium text-base-content text-sm capitalize truncate" title={section.name}>{section.name}</span>
                 {section.status === 'registered' && section.registeredTerm && (
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-base-content/60">
                         {section.registeredTerm.date} {section.registeredTerm.time} ({getDOW(section.registeredTerm.date)})
                         {section.registeredTerm.room && ` • ${section.registeredTerm.room}`}
                     </span>
@@ -21,7 +21,7 @@ export function ExamSectionItem({ section, isProcessing, onOpenPicker }: { secti
             <div className="flex items-center gap-2 shrink-0">
                 <Button variant={section.status === 'registered' ? "ghost" : "default"} size="sm"
                         onClick={(e) => onOpenPicker(section, e.currentTarget)} disabled={isProcessing}
-                        className={section.status === 'registered' ? "text-rose-500 hover:bg-rose-50" : "bg-indigo-600 hover:bg-indigo-700 text-white"}>
+                        className={section.status === 'registered' ? "text-error hover:bg-error/10" : "bg-primary hover:bg-primary/90 text-primary-content"}>
                     {section.status === 'registered' ? 'Změnit' : 'Vyber datum'}
                 </Button>
             </div>

@@ -18,13 +18,13 @@ export function DatePickerCalendar({ currentDate, setCurrentDate, weeks, availab
     return (
         <div className="p-3">
             <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-slate-700 capitalize">{format(currentDate, 'LLLL', { locale: cs })}</span>
+                <span className="text-sm font-semibold text-base-content capitalize">{format(currentDate, 'LLLL', { locale: cs })}</span>
                 <div className="flex gap-0.5">
-                    <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))} className="w-6 h-6 flex items-center justify-center hover:bg-slate-200 rounded text-slate-500"><ChevronLeft size={14} /></button>
-                    <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))} className="w-6 h-6 flex items-center justify-center hover:bg-slate-200 rounded text-slate-500"><ChevronRight size={14} /></button>
+                    <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))} className="w-6 h-6 flex items-center justify-center hover:bg-base-200 rounded text-base-content/60"><ChevronLeft size={14} /></button>
+                    <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))} className="w-6 h-6 flex items-center justify-center hover:bg-base-200 rounded text-base-content/60"><ChevronRight size={14} /></button>
                 </div>
             </div>
-            <div className="grid grid-cols-7 gap-0">{daysOfWeek.map((d, i) => <div key={i} className="h-6 flex items-center justify-center text-[10px] font-medium text-slate-400 uppercase">{d}</div>)}</div>
+            <div className="grid grid-cols-7 gap-0">{daysOfWeek.map((d, i) => <div key={i} className="h-6 flex items-center justify-center text-[10px] font-medium text-base-content/50 uppercase">{d}</div>)}</div>
             <div className="flex flex-col">
                 {weeks.map((week, wi) => (
                     <div key={wi} className="grid grid-cols-7">
@@ -37,7 +37,7 @@ export function DatePickerCalendar({ currentDate, setCurrentDate, weeks, availab
                                 <div key={day.toString()} className={`flex flex-col items-center justify-start relative ${other ? 'h-12' : 'h-8'}`}>
                                     <button onClick={() => hasAvailable && onSelectDate(dateInfo.dateStr)} disabled={!hasAvailable}
                                             className={`w-7 h-7 flex items-center justify-center rounded-full text-xs transition-all relative
-                                            ${isSel ? 'bg-primary text-white font-bold shadow-sm' : hasAvailable ? 'bg-primary text-white font-bold hover:bg-primary/80 shadow-sm' : dateInfo?.isFull ? 'text-slate-300 line-through' : isToday(day) ? 'bg-slate-100 ring-2 ring-slate-400 text-slate-700 font-semibold' : isSameMonth(day, currentDate) ? 'text-slate-400' : 'text-slate-200'}`}>
+                                            ${isSel ? 'bg-primary text-primary-content font-bold shadow-sm' : hasAvailable ? 'bg-primary text-primary-content font-bold hover:bg-primary/80 shadow-sm' : dateInfo?.isFull ? 'text-base-content/40 line-through' : isToday(day) ? 'bg-base-200 ring-2 ring-base-300 text-base-content font-semibold' : isSameMonth(day, currentDate) ? 'text-base-content/50' : 'text-base-content/30'}`}>
                                         {format(day, 'd')}
                                     </button>
                                     {other && <div className="text-[7px] text-error font-medium mt-0.5 max-w-[32px] truncate text-center" title={other.label}>{other.label.split(' - ')[0]}</div>}

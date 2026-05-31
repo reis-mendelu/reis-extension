@@ -60,7 +60,7 @@ export function FileList({
 
     if (groups.length === 0) {
         return (
-            <div className="text-center py-12 text-slate-400 italic">
+            <div className="text-center py-12 text-base-content/50 italic">
                 {t('course.footer.noFiles')}
             </div>
         );
@@ -228,8 +228,8 @@ export function FileListSkeleton() {
                 <div key={i} className="space-y-3">
                     {/* Folder Header Skeleton */}
                     <div className="flex items-center gap-2 px-2">
-                        <div className="skeleton w-4 h-4 rounded-full bg-slate-200"></div>
-                        <div className="skeleton h-4 w-32 rounded bg-slate-200"></div>
+                        <div className="skeleton w-4 h-4 rounded-full bg-base-300"></div>
+                        <div className="skeleton h-4 w-32 rounded bg-base-300"></div>
                     </div>
                     {/* Files Grid Skeleton */}
                     <div className="grid grid-cols-1 gap-1">

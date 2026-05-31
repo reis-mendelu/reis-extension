@@ -19,8 +19,8 @@ export function SearchResultItem({ result, isRecent, isSelected, onMouseEnter, o
         </div>
       );
       case 'subject': return (
-        <div className="w-6 h-6 rounded bg-violet-500/20 flex items-center justify-center">
-          <BookOpen className="w-3.5 h-3.5 text-violet-600" />
+        <div className="w-6 h-6 rounded bg-primary/20 flex items-center justify-center">
+          <BookOpen className="w-3.5 h-3.5 text-primary" />
         </div>
       );
       case 'person': {

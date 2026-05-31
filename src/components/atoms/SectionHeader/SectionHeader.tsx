@@ -17,7 +17,7 @@ export function SectionHeader({ children, className }: SectionHeaderProps) {
     return (
         <h3
             className={cn(
-                'text-gray-500 text-sm font-medium uppercase tracking-wide mb-1',
+                'text-base-content/60 text-sm font-medium uppercase tracking-wide mb-1',
                 className
             )}
         >
