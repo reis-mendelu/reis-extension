@@ -14,8 +14,8 @@ describe('parseNote', () => {
     it('round-trips the new {cards,notes} format', () => {
         const data: DocumentNoteData = {
             cards: [
-                { id: 'c1', question: 'Q1?', answer: 'A1', collapsed: false },
-                { id: 'c2', question: 'Q2?', answer: '', collapsed: true },
+                { id: 'c1', question: 'Q1?', answer: 'A1', collapsed: false, images: [] },
+                { id: 'c2', question: 'Q2?', answer: '', collapsed: true, images: [] },
             ],
             notes: 'loose jotting',
         };
@@ -48,12 +48,49 @@ describe('parseNote', () => {
 
     it('serializeNote returns "" when there is no meaningful content', () => {
         expect(serializeNote({ cards: [], notes: '' })).toBe('');
-        expect(serializeNote({ cards: [{ id: 'c1', question: '', answer: '', collapsed: false }], notes: '   ' })).toBe('');
+        expect(serializeNote({ cards: [{ id: 'c1', question: '', answer: '', collapsed: false, images: [] }], notes: '   ' })).toBe('');
     });
 
     it('serializeNote persists when a card has content', () => {
-        const out = serializeNote({ cards: [{ id: 'c1', question: 'Q', answer: '', collapsed: false }], notes: '' });
+        const out = serializeNote({ cards: [{ id: 'c1', question: 'Q', answer: '', collapsed: false, images: [] }], notes: '' });
         expect(out).not.toBe('');
         expect(JSON.parse(out).cards[0].question).toBe('Q');
+    });
+});
+
+describe('noteParser images', () => {
+    it('round-trips card image hashes', () => {
+        const json = JSON.stringify({
+            cards: [{ id: 'c1', question: 'Q', answer: 'A', collapsed: true, images: ['abc', 'def'] }],
+            notes: '',
+        });
+        expect(parseNote(json).cards[0].images).toEqual(['abc', 'def']);
+    });
+    it('defaults images to [] for legacy cards without the field', () => {
+        const json = JSON.stringify({ cards: [{ id: 'c1', question: 'Q', answer: 'A', collapsed: true }], notes: '' });
+        expect(parseNote(json).cards[0].images).toEqual([]);
+    });
+    it('drops non-string entries from images', () => {
+        const json = JSON.stringify({
+            cards: [{ id: 'c1', question: 'Q', answer: 'A', collapsed: true, images: ['ok', 5, null, 'ok2'] }],
+            notes: '',
+        });
+        expect(parseNote(json).cards[0].images).toEqual(['ok', 'ok2']);
+    });
+    it('serializes images and never emits a data: payload', () => {
+        const out = serializeNote({
+            cards: [{ id: 'c1', question: 'Q', answer: 'A', collapsed: true, images: ['hash1'] }],
+            notes: '',
+        });
+        expect(out).toContain('hash1');
+        expect(out).not.toContain('data:');
+    });
+    it('throws if a card image somehow contains a data: URI (regression guard)', () => {
+        expect(() =>
+            serializeNote({
+                cards: [{ id: 'c1', question: 'Q', answer: '', collapsed: true, images: ['data:image/jpeg;base64,AAAA'] }],
+                notes: '',
+            }),
+        ).toThrow(/data:/);
     });
 });

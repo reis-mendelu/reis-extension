@@ -3,6 +3,7 @@ export interface NoteCardData {
     question: string;
     answer: string;
     collapsed: boolean;
+    images: string[];
 }
 
 export interface DocumentNoteData {
@@ -25,6 +26,9 @@ function coerce(obj: Record<string, unknown>): DocumentNoteData {
             question: typeof card.question === 'string' ? card.question : '',
             answer: typeof card.answer === 'string' ? card.answer : '',
             collapsed: card.collapsed !== false,
+            images: Array.isArray(card.images)
+                ? card.images.filter((h): h is string => typeof h === 'string')
+                : [],
         };
     });
     return { cards, notes: typeof obj.notes === 'string' ? obj.notes : '' };
@@ -42,6 +46,7 @@ function migrateBlocks(blocks: unknown[]): DocumentNoteData {
                 question: typeof b.question === 'string' ? b.question : '',
                 answer: typeof b.answer === 'string' ? b.answer : '',
                 collapsed: b.isCollapsed !== false,
+                images: [],
             });
         } else {
             // 'text' and 'heading' both flatten into the Notes box
@@ -68,7 +73,7 @@ function migratePlainText(text: string): DocumentNoteData {
                 answerLines.push(lines[i]);
                 i++;
             }
-            cards.push({ id: newId(), question, answer: answerLines.join('\n').trim(), collapsed: true });
+            cards.push({ id: newId(), question, answer: answerLines.join('\n').trim(), collapsed: true, images: [] });
         } else {
             const headingMatch = lines[i].match(/^\s*#{1,3}\s(.*)$/);
             notesParts.push(headingMatch ? headingMatch[1] : lines[i]);
@@ -98,7 +103,11 @@ export function parseNote(raw: string | null | undefined): DocumentNoteData {
 }
 
 export function serializeNote(data: DocumentNoteData): string {
-    const hasCard = data.cards.some((c) => c.question.trim() || c.answer.trim());
+    const hasCard = data.cards.some((c) => c.question.trim() || c.answer.trim() || c.images.length);
     if (!hasCard && !data.notes.trim()) return '';
-    return JSON.stringify({ cards: data.cards, notes: data.notes });
+    const json = JSON.stringify({ cards: data.cards, notes: data.notes });
+    // Invariant: image bytes never enter the note string (would blow the 100 KB
+    // cap and corrupt the note). References are content hashes only.
+    if (json.includes('data:')) throw new Error('serializeNote: data: URI in note payload is forbidden');
+    return json;
 }
