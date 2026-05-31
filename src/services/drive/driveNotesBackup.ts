@@ -71,19 +71,22 @@ async function reconcileEmpty(
     return true;
 }
 
-export async function syncDriveNotesBackup(subjects: SubjectNotes[]): Promise<DriveNotesResult | null> {
+export async function syncDriveNotesBackup(
+    subjects: SubjectNotes[],
+    htmlOverrides: Record<string, string> = {},
+): Promise<DriveNotesResult | null> {
     if (!(await isConnected())) return null;
     // Share the file backup's mutex: prevents a keystroke-triggered notes pass
     // from racing the periodic one (and clobbering the manifest).
     if (!(await acquireBackupLock())) return null;
     try {
-        return await runNotesPass(subjects);
+        return await runNotesPass(subjects, htmlOverrides);
     } finally {
         await releaseBackupLock();
     }
 }
 
-async function runNotesPass(subjects: SubjectNotes[]): Promise<DriveNotesResult> {
+async function runNotesPass(subjects: SubjectNotes[], htmlOverrides: Record<string, string>): Promise<DriveNotesResult> {
     const manifest = await loadManifest();
     manifest.notes ??= {};
     if (!manifest.rootFolderId) {
@@ -114,7 +117,9 @@ async function runNotesPass(subjects: SubjectNotes[]): Promise<DriveNotesResult>
 
             // --- Google Doc (readable) ---
             const subjectFolderId = await ensureChildFolder(manifest, subject.folderName);
-            const html = renderSubjectNotesHtml(subject);
+            // Prefer the iframe-rendered base64-inlined HTML (carries card images);
+            // fall back to the text-only render when no override was pushed.
+            const html = htmlOverrides[subject.code] ?? renderSubjectNotesHtml(subject);
             let docId = prev?.docId ?? (await findFileByProperty(DOC_PROP, subject.code));
             if (docId) {
                 await updateDocContent(docId, html);

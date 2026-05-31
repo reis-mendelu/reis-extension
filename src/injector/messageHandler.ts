@@ -1,6 +1,6 @@
 import { Messages, isIframeMessage } from "../types/messages";
 import { iframeElement, sendToIframe, markIframeReady } from "./iframeManager";
-import { cachedData, syncAllData, runDriveBackupNow, runNotesBackupNow, setNotesSnapshot, isSyncing, refreshExams } from "./syncService";
+import { cachedData, syncAllData, runDriveBackupNow, runNotesBackupNow, setNotesSnapshot, setNotesHtmlOverride, isSyncing, refreshExams } from "./syncService";
 import { fetchFullSemesterSchedule } from "./dataFetchers";
 import { fetchExamData, registerExam, unregisterExam } from "../api/exams";
 import { fetchSubjects } from "../api/subjects";
@@ -127,6 +127,13 @@ async function handleAction(id: string, action: string, payload: unknown) {
                 await runNotesBackupNow();
                 result = { success: true };
                 break;
+            case "push_notes_html": {
+                const { code, html } = payload as { code: string; html: string };
+                setNotesHtmlOverride(code, html);
+                await runNotesBackupNow();
+                result = { success: true };
+                break;
+            }
             case "refresh_exams":
                 await refreshExams();
                 result = { success: true };

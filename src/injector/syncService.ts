@@ -36,6 +36,13 @@ export let isSyncing = false;
 export function setNotesSnapshot(notes: Record<string, Record<string, { note: string; fileName: string }>>) {
     cachedData = { ...cachedData, notes };
 }
+
+/** Per-subject base64-inlined HTML pushed by the iframe for image-bearing notes.
+ *  Used in place of the text-only render so card images reach the Drive Doc. */
+const notesHtmlOverrides: Record<string, string> = {};
+export function setNotesHtmlOverride(code: string, html: string): void {
+    notesHtmlOverrides[code] = html;
+}
 let currentSemesterCodes: string[] = [];
 let syncIntervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -229,7 +236,7 @@ async function notesBackupPass(): Promise<void> {
                 const folderName = info ? `${code} - ${info.displayName || info.fullName || ''}`.trim() : code;
                 return { code, folderName, title: `Poznámky – ${code}`, files };
             });
-        await syncDriveNotesBackup(subjectNotes); // [] still reconciles manifest orphans
+        await syncDriveNotesBackup(subjectNotes, notesHtmlOverrides); // [] still reconciles manifest orphans
     } catch (e) {
         logError('Drive.notesBackup', e);
     }
