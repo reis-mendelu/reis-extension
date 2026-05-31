@@ -30,7 +30,6 @@ interface SubjectFileDrawerContentProps {
     toggleSelect: (id: string, e: React.MouseEvent) => void;
     openFile: (link: string) => void;
     onViewPdf?: (link: string) => void;
-    onOpenNote?: (link: string, name: string) => void;
     onDownloadSingle?: (link: string) => void;
     resolvedCourseId: string;
     syllabusResult: { syllabus: SyllabusRequirements | null; isLoading: boolean };
@@ -40,7 +39,7 @@ interface SubjectFileDrawerContentProps {
 
 export function SubjectFileDrawerContent({
     activeTab, lesson, files, isFilesLoading, isSyncing, isDragging, selectionBoxStyle, showDragHint,
-    groupedFiles, selectedIds, fileRefs, ignoreClickRef, toggleSelect, openFile, onViewPdf, onOpenNote, onDownloadSingle, resolvedCourseId, syllabusResult, folderUrl, lastVisitedAt
+    groupedFiles, selectedIds, fileRefs, ignoreClickRef, toggleSelect, openFile, onViewPdf, onDownloadSingle, resolvedCourseId, syllabusResult, folderUrl, lastVisitedAt
 }: SubjectFileDrawerContentProps) {
     const { t, language } = useTranslation();
 
@@ -76,9 +75,9 @@ export function SubjectFileDrawerContent({
                         )}
                     </div>
                  ) : (
-                    <FileList groups={groupedFiles} selectedIds={selectedIds} courseCode={lesson?.courseCode || ''}
+                    <FileList key={lesson?.courseCode || ''} groups={groupedFiles} selectedIds={selectedIds} courseCode={lesson?.courseCode || ''}
                                fileRefs={fileRefs} ignoreClickRef={ignoreClickRef} onToggleSelect={toggleSelect}
-                               onOpenFile={openFile} onViewPdf={onViewPdf} onOpenNote={onOpenNote} onDownloadSingle={onDownloadSingle} folderUrl={folderUrl} lastVisitedAt={lastVisitedAt} />
+                               onOpenFile={openFile} onViewPdf={onViewPdf} onDownloadSingle={onDownloadSingle} folderUrl={folderUrl} lastVisitedAt={lastVisitedAt} />
                  )}
             </>
         );

@@ -139,10 +139,6 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
         }
     }, [activeNoteFile, activePdfFile]);
 
-    const handleOpenNote = useCallback((link: string, name: string) => {
-        setActiveNoteFile({ link, name });
-    }, []);
-
     const handleClose = useCallback(() => {
         onClose();
     }, [onClose]);
@@ -160,7 +156,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     const hasPdf = activePdfUrl !== null;
     const hasNote = activeNoteFile !== null;
     const needsWideDrawer = activeTab === 'zaznamnik' && maxZaznamnikCols >= 5;
-    const drawerWidth = (hasPdf || hasNote) ? 'sm:w-[90vw]' : needsWideDrawer ? 'sm:w-[800px]' : 'sm:w-[600px]';
+    const drawerWidth = hasPdf ? 'sm:w-[90vw]' : needsWideDrawer ? 'sm:w-[800px]' : 'sm:w-[600px]';
 
     const fileListContent = (
         <>
@@ -175,8 +171,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
                         isSyncing={isSyncing} isDragging={isDragging} selectionBoxStyle={selectionBoxStyle}
                         showDragHint={showDragHint} groupedFiles={groupedFiles} selectedIds={selectedIds}
                         fileRefs={fileRefs} ignoreClickRef={ignoreClickRef} toggleSelect={toggleSelect}
-                        openFile={openFile} onViewPdf={handleViewPdf} 
-                        onOpenNote={handleOpenNote}
+                        openFile={openFile} onViewPdf={handleViewPdf}
                         onDownloadSingle={downloadSingle} resolvedCourseId={resolvedCourseId} syllabusResult={syllabusResult} 
                         folderUrl={state.subjectInfo?.folderUrl} lastVisitedAt={lastVisitedAt} />
                 </div>
@@ -201,7 +196,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     ) : null;
 
     const noteEditorView = activeNoteFile ? (
-        <DocumentNoteEditor courseCode={lesson?.courseCode || ''} fileLink={activeNoteFile.link} fileName={activeNoteFile.name} onClose={() => setActiveNoteFile(null)} />
+        <DocumentNoteEditor courseCode={lesson?.courseCode || ''} fileLink={activeNoteFile.link} fileName={activeNoteFile.name} onClose={() => setActiveNoteFile(null)} showHeader />
     ) : null;
 
     const renderContent = () => {
