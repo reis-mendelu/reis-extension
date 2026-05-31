@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  # UI/UX gate: lints ONLY the files changed in this PR with --max-warnings=0,
+  # so theme/i18n violations (and any other warning) hard-block new or edited code
+  # while the pre-existing backlog stays visible-but-non-blocking until swept.
+  ui-gate:
+    name: UI/UX gate (changed files)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Resolve base ref
+        id: base
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo "sha=$PR_BASE_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=$PUSH_BEFORE_SHA" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Lint changed TS/TSX files (zero warnings allowed)
+        env:
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+        run: |
+          BASE="$BASE_SHA"
+          # Fall back to merge-base; tolerate first-push empty/again-zero base.
+          if ! git cat-file -e "$BASE" 2>/dev/null; then
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || echo "")"
+          fi
+          if [ -n "$BASE" ]; then
+            CHANGED="$(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- '*.ts' '*.tsx' | grep -vE '\.(test|spec)\.(ts|tsx)$' || true)"
+          else
+            CHANGED=""
+          fi
+          if [ -z "$CHANGED" ]; then
+            echo "No non-test TS/TSX changes to lint."
+            exit 0
+          fi
+          echo "Linting changed files:"
+          echo "$CHANGED"
+          echo "$CHANGED" | xargs npx eslint --max-warnings=0
