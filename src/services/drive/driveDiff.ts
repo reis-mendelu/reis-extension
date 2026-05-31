@@ -28,7 +28,7 @@ export interface DriveManifest {
     /** isLink → mirrored file state. */
     files: Record<string, { driveFileId: string; date: string }>;
     /** courseCode → backed-up notes Doc + sidecar state. */
-    notes: Record<string, { docId: string; docHash: string; jsonId: string }>;
+    notes: Record<string, { docId: string; docHash: string; jsonId: string; imagesEmbedded?: boolean }>;
     /** Epoch ms of the last completed backup pass. */
     lastSync: number;
     /** Epoch ms of the first failure in the current failing streak; null when the last pass succeeded. */

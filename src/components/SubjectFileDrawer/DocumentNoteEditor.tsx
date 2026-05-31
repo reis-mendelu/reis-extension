@@ -3,7 +3,7 @@ import { X, Plus } from 'lucide-react';
 import { useDocumentNote } from '../../hooks/data/useDocumentNote';
 import { useTranslation } from '../../hooks/useTranslation';
 import { parseNote, serializeNote, type DocumentNoteData, type NoteCardData } from './utils/noteParser';
-import { NoteCard } from './NoteCard';
+import { NoteCard, type CardPatch } from './NoteCard';
 
 interface DocumentNoteEditorProps {
     courseCode: string;
@@ -29,9 +29,12 @@ export function DocumentNoteEditor({ courseCode, fileLink, fileName, onClose, sh
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isLoading, fileLink, courseCode]);
 
-    const updateCard = useCallback((id: string, patch: Partial<NoteCardData>) => {
+    const updateCard = useCallback((id: string, patch: CardPatch) => {
         setData((prev) => {
-            const next = { ...prev, cards: prev.cards.map((c) => (c.id === id ? { ...c, ...patch } : c)) };
+            const next = {
+                ...prev,
+                cards: prev.cards.map((c) => (c.id === id ? { ...c, ...(typeof patch === 'function' ? patch(c) : patch) } : c)),
+            };
             setNote(serializeNote(next), fileName);
             return next;
         });

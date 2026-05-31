@@ -9,7 +9,13 @@ export const GC_GRACE_MS = 60_000;
 export async function storeImage(img: { blob: Blob; mime: string; w: number; h: number }): Promise<string> {
     const hash = await hashBytes(await img.blob.arrayBuffer());
     const existing = await IndexedDBService.get('note_images', hash);
-    if (existing) return hash; // dedup — identical bytes already stored
+    if (existing) {
+        // Dedup — identical bytes already stored. Refresh createdAt so re-adding a
+        // long-lived blob restarts its grace window; otherwise an old (>grace)
+        // re-referenced image can be swept while its new note save is still in flight.
+        await IndexedDBService.set('note_images', hash, { ...existing, createdAt: Date.now() });
+        return hash;
+    }
     const record: NoteImage = { hash, blob: img.blob, mime: img.mime, w: img.w, h: img.h, createdAt: Date.now() };
     await IndexedDBService.set('note_images', hash, record);
     return hash;

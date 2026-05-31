@@ -88,6 +88,11 @@ export async function renderSubjectNotesHtmlWithImages(
     return `<html><body>${parts.join('')}</body></html>`;
 }
 
+/** True if any card in the subject's notes references an image hash. */
+export function subjectReferencesImages(subject: SubjectNotes): boolean {
+    return subject.files.some((f) => parseNote(f.note).cards.some((c) => c.images.length > 0));
+}
+
 /** Body for a subject whose notes were all deleted — keeps the Doc, clears content. */
 export function renderEmptyNotesHtml(): string {
     return `<html><body><p><i>${esc(BANNER)}</i></p></body></html>`;

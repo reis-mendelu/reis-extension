@@ -19,7 +19,7 @@ import { loadManifest, saveManifest, acquireBackupLock, releaseBackupLock } from
 import { folderKey, type DriveManifest } from './driveDiff';
 import {
     renderSubjectNotesHtml, serializeSubjectNotesJson, notesContentHash,
-    renderEmptyNotesHtml, serializeEmptyNotesJson, type SubjectNotes,
+    renderEmptyNotesHtml, serializeEmptyNotesJson, subjectReferencesImages, type SubjectNotes,
 } from './notesDoc';
 import { logError } from '../../utils/reportError';
 
@@ -113,13 +113,22 @@ async function runNotesPass(subjects: SubjectNotes[], htmlOverrides: Record<stri
             const json = serializeSubjectNotesJson(subject);
             const hash = await notesContentHash(json);
             const prev = manifest.notes[subject.code];
-            if (prev && prev.docHash === hash) { skipped++; continue; }
+            // The note JSON only carries image *hashes*, so docHash is identical
+            // whether or not the uploaded artifact actually inlined the images.
+            // Skip only when the content is unchanged AND either the subject has no
+            // images or the previously-uploaded Doc already embedded them — otherwise
+            // a text-only fallback would be recorded as "done" and the image upload
+            // skipped forever once the override finally arrives.
+            const hasImages = subjectReferencesImages(subject);
+            if (prev && prev.docHash === hash && (!hasImages || prev.imagesEmbedded)) { skipped++; continue; }
 
             // --- Google Doc (readable) ---
             const subjectFolderId = await ensureChildFolder(manifest, subject.folderName);
             // Prefer the iframe-rendered base64-inlined HTML (carries card images);
             // fall back to the text-only render when no override was pushed.
-            const html = htmlOverrides[subject.code] ?? renderSubjectNotesHtml(subject);
+            const override = htmlOverrides[subject.code];
+            const html = override ?? renderSubjectNotesHtml(subject);
+            const imagesEmbedded = hasImages && override !== undefined;
             let docId = prev?.docId ?? (await findFileByProperty(DOC_PROP, subject.code));
             if (docId) {
                 await updateDocContent(docId, html);
@@ -137,7 +146,7 @@ async function runNotesPass(subjects: SubjectNotes[], htmlOverrides: Record<stri
                 jsonId = (await uploadFile(`${subject.code}.json`, jsonBlob, [notesFolderId], { [JSON_PROP]: subject.code })).id;
             }
 
-            manifest.notes[subject.code] = { docId, docHash: hash, jsonId };
+            manifest.notes[subject.code] = { docId, docHash: hash, jsonId, imagesEmbedded };
             await saveManifest(manifest);
             written++;
         } catch (e) {

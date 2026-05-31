@@ -48,8 +48,19 @@ export const createNotesSlice: AppSlice<NotesSlice> = (set, get) => {
                 detail: { courseCode, fileLink, hasNote: !!value.trim() }
             }));
             // Reclaim image blobs no note references any more (grace-period guarded).
+            // Include not-yet-persisted edits (live Zustand + debounced saves) so the
+            // sweep can't delete an image a card already references but whose note
+            // write hasn't landed in IDB yet.
             void IndexedDBService.getAllWithKeys('document_notes')
-                .then((entries) => sweepOrphans(collectReferencedImages(entries.map((e) => ({ note: e.value.note ?? '' }))), Date.now()))
+                .then((entries) => {
+                    const inFlight = [...Object.values(get().documentNotes), ...Object.values(pendingSaves)]
+                        .map((note) => ({ note: note ?? '' }));
+                    const referenced = collectReferencedImages([
+                        ...entries.map((e) => ({ note: e.value.note ?? '' })),
+                        ...inFlight,
+                    ]);
+                    return sweepOrphans(referenced, Date.now());
+                })
                 .catch((e) => logError('Notes.imageGc', e));
             // Render this subject's HTML (base64-inlined when it has images) and
             // CACHE it in the content script BEFORE the snapshot below triggers the

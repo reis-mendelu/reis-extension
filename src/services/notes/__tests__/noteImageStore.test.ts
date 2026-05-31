@@ -23,6 +23,21 @@ describe('noteImageStore', () => {
         expect(all.filter((e) => e.key === a)).toHaveLength(1);
     });
 
+    it('refreshes createdAt on a dedup hit so a re-referenced old blob keeps grace protection', async () => {
+        const h = await storeImage({ blob: jpeg([4, 5]), mime: 'image/jpeg', w: 1, h: 1 });
+        // Backdate it well beyond the grace window (simulates a long-lived blob).
+        const img = await getImage(h);
+        await IndexedDBService.set('note_images', h, { ...img!, createdAt: 0 });
+        // Re-add the identical bytes (e.g. paste the same screenshot again) — dedup hit.
+        await storeImage({ blob: jpeg([4, 5]), mime: 'image/jpeg', w: 1, h: 1 });
+        const refreshed = await getImage(h);
+        expect(refreshed!.createdAt).toBeGreaterThan(0);
+        // It must now survive a sweep even while momentarily unreferenced.
+        const deleted = await sweepOrphans(new Set(), Date.now());
+        expect(deleted).toBe(0);
+        expect(await getImage(h)).toBeDefined();
+    });
+
     it('sweepOrphans deletes unreferenced blobs older than the grace window', async () => {
         const keep = await storeImage({ blob: jpeg([7]), mime: 'image/jpeg', w: 1, h: 1 });
         const drop = await storeImage({ blob: jpeg([8]), mime: 'image/jpeg', w: 1, h: 1 });

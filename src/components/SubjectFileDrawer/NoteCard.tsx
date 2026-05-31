@@ -7,10 +7,14 @@ import { normalizeImage } from '../../services/notes/imageNormalize';
 import { storeImage } from '../../services/notes/noteImageStore';
 import { useNoteImage } from './useNoteImage';
 
+/** A field patch, or an updater computed from the *current* card (avoids
+ *  clobbering concurrent edits when the patch is built after an async gap). */
+export type CardPatch = Partial<NoteCardData> | ((card: NoteCardData) => Partial<NoteCardData>);
+
 interface NoteCardProps {
     card: NoteCardData;
     autoFocus: boolean;
-    onChange: (patch: Partial<NoteCardData>) => void;
+    onChange: (patch: CardPatch) => void;
     onEnterAnswer: () => void; // Enter in the answer -> create the next card
     onDelete: () => void;
 }
@@ -72,10 +76,12 @@ export function NoteCard({ card, autoFocus, onChange, onEnterAnswer, onDelete }:
                 /* skip a single undecodable image rather than break the note */
             }
         }
-        if (hashes.length) onChange({ images: [...card.images, ...hashes] });
-    }, [card.images, onChange, t]);
+        // Derive from the live card inside the updater — image encoding above is
+        // async, so `card.images` captured here may be stale by now.
+        if (hashes.length) onChange((c) => ({ images: [...c.images, ...hashes] }));
+    }, [onChange, t]);
 
-    const removeImage = (hash: string) => onChange({ images: card.images.filter((h) => h !== hash) });
+    const removeImage = (hash: string) => onChange((c) => ({ images: c.images.filter((h) => h !== hash) }));
 
     return (
         <div className="group rounded-lg border border-base-300 bg-base-200/30 px-2 py-1.5">

@@ -66,6 +66,36 @@ describe('syncDriveNotesBackup', () => {
         expect(drive.uploadDoc).not.toHaveBeenCalled();
         expect(r?.skipped).toBe(1);
     });
+
+    const withImg: SubjectNotes = {
+        ...subject,
+        files: [{
+            fileLink: '/x', fileName: 'L1.pdf',
+            note: JSON.stringify({ cards: [{ id: 'a', question: 'q', answer: '', collapsed: false, images: ['hashAAA'] }], notes: '' }),
+        }],
+    };
+    const imgHtml = '<html><body><p><img src="data:image/jpeg;base64,AAAA"></p></body></html>';
+
+    it('re-uploads when a subject with images was first stored text-only (override arrives later)', async () => {
+        // Pass 1: no override → text-only fallback is uploaded and the hash is recorded.
+        await syncDriveNotesBackup([withImg]);
+        expect(drive.uploadDoc).toHaveBeenCalledTimes(1);
+        vi.clearAllMocks();
+        // Pass 2: identical note content, but now the image-inlined override is present.
+        const r = await syncDriveNotesBackup([withImg], { 'BIK-DBS': imgHtml });
+        // Must NOT skip — the stored Doc has no images yet.
+        expect(drive.updateDocContent).toHaveBeenCalledWith('doc1', expect.stringContaining('data:image/jpeg'));
+        expect(r?.skipped).toBe(0);
+        expect(r?.written).toBe(1);
+    });
+
+    it('skips a subject already stored WITH images when nothing changed', async () => {
+        await syncDriveNotesBackup([withImg], { 'BIK-DBS': imgHtml }); // imagesEmbedded recorded
+        vi.clearAllMocks();
+        const r = await syncDriveNotesBackup([withImg], { 'BIK-DBS': imgHtml });
+        expect(drive.updateDocContent).not.toHaveBeenCalled();
+        expect(r?.skipped).toBe(1);
+    });
 });
 
 describe('syncDriveNotesBackup deletion reconcile', () => {
