@@ -6,7 +6,7 @@ import { IskamMessages, Messages } from '../types/messages';
 import type { IskamData } from '../types/iskam';
 
 export let cachedIskamData: IskamData | null = null;
-let isSyncingIskam = false;
+export let isSyncingIskam = false;
 
 export async function syncIskamData(): Promise<void> {
     if (isSyncingIskam) return;

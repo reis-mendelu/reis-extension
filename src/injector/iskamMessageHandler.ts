@@ -1,5 +1,6 @@
-import { isIframeMessage, Messages } from '../types/messages';
+import { isIframeMessage, Messages, IskamMessages } from '../types/messages';
 import { iskamIframeElement, markIskamIframeReady, sendToIskamIframe } from './iskamInjector';
+import { cachedIskamData, isSyncingIskam } from './iskamSyncService';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
 import { fetchVolneKapacityBlock } from '../api/iskam/volneKapacity';
 
@@ -12,9 +13,12 @@ export async function handleIskamMessage(event: MessageEvent): Promise<void> {
     if (!isIframeMessage(data)) return;
 
     if (data.type === 'ISKAM_READY') {
-        // Flush queued messages (may include isSyncing:true and/or the final result).
-        // The queue is sufficient — no guarantee message needed.
+        // Flush queued messages (may include isSyncing:true and/or the final result),
+        // then re-send the current cached state as a guarantee. A reloaded iframe
+        // arrives after the queue was already drained, so without this re-seed it
+        // would be stuck on its IDB cache (mirrors the IS-side REIS_READY handler).
         markIskamIframeReady();
+        sendToIskamIframe(IskamMessages.iskamSyncUpdate(cachedIskamData, isSyncingIskam, null));
         return;
     }
 
