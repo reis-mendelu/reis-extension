@@ -10,13 +10,13 @@
  * letting Drive convert it — so the markup stays deliberately simple.
  */
 
-import { parseNoteToBlocks, type NoteBlock } from '../../components/SubjectFileDrawer/utils/noteParser';
+import { parseNote, type NoteCardData } from '../../components/SubjectFileDrawer/utils/noteParser';
 
 /** One annotated file, as shipped from the iframe. `note` is the raw stored value. */
 export interface FileNote {
     fileLink: string;
     fileName: string;
-    /** Serialized note blocks (JSON), or legacy plain text. Stored verbatim. */
+    /** Serialized note model (JSON {cards,notes}), or legacy format. Stored verbatim. */
     note: string;
 }
 
@@ -39,31 +39,23 @@ function withBreaks(s: string): string {
     return esc(s).replace(/\n/g, '<br>');
 }
 
-/** A block contributes nothing if all its text fields are blank. */
-function isEmptyBlock(b: NoteBlock): boolean {
-    if (b.type === 'toggle') return !(b.question || '').trim() && !(b.answer || '').trim();
-    return !(b.content || '').trim();
-}
-
-function blockToHtml(b: NoteBlock): string {
-    if (b.type === 'heading') {
-        const tag = b.level === 1 ? 'h3' : b.level === 2 ? 'h4' : 'h5';
-        return `<${tag}>${esc(b.content || '')}</${tag}>`;
-    }
-    if (b.type === 'toggle') {
-        return `<p><b>${esc(b.question || '')}</b></p><p>${withBreaks(b.answer || '')}</p>`;
-    }
-    return `<p>${withBreaks(b.content || '')}</p>`;
+function cardToHtml(c: NoteCardData): string {
+    const q = c.question.trim() ? `<p><b>${esc(c.question)}</b></p>` : '';
+    const a = c.answer.trim() ? `<p>${withBreaks(c.answer)}</p>` : '';
+    return q + a;
 }
 
 /** Render one subject's notes as simple HTML for Drive→Docs conversion. */
 export function renderSubjectNotesHtml(subject: SubjectNotes): string {
     const parts: string[] = [`<h1>${esc(subject.title)}</h1>`, `<p><i>${esc(BANNER)}</i></p>`];
     for (const f of subject.files) {
-        const blocks = parseNoteToBlocks(f.note).filter((b) => !isEmptyBlock(b));
-        if (!blocks.length) continue;
+        const data = parseNote(f.note);
+        const cards = data.cards.filter((c) => c.question.trim() || c.answer.trim());
+        const notes = data.notes.trim();
+        if (!cards.length && !notes) continue;
         parts.push(`<h2>${esc(f.fileName)}</h2>`);
-        for (const b of blocks) parts.push(blockToHtml(b));
+        for (const c of cards) parts.push(cardToHtml(c));
+        if (notes) parts.push(`<p>${withBreaks(notes)}</p>`);
     }
     return `<html><body>${parts.join('')}</body></html>`;
 }

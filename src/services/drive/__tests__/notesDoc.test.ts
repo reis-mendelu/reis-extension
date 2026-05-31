@@ -27,15 +27,34 @@ const subject: SubjectNotes = {
 };
 
 describe('renderSubjectNotesHtml', () => {
-    it('renders title, one-way banner, file heading and blocks, escaping HTML', () => {
+    it('migrates legacy blocks (toggle->card, heading/text->notes), escaping HTML', () => {
         const html = renderSubjectNotesHtml(subject);
         expect(html).toContain('<h1>Poznámky – BIK-DBS</h1>');
         expect(html).toContain('not saved back'); // one-way banner
         expect(html).toContain('<h2>Lecture 1.pdf</h2>');
-        expect(html).toContain('<h3>Normalization</h3>');
-        expect(html).toContain('Reduce &lt;redundancy&gt; &amp; anomalies'); // escaped
-        expect(html).toContain('<b>What is 3NF?</b>');
-        expect(html).toContain('No transitive deps');
+        expect(html).toContain('<b>What is 3NF?</b>'); // toggle question -> card
+        expect(html).toContain('No transitive deps'); // toggle answer
+        expect(html).toContain('Normalization'); // legacy heading -> notes text
+        expect(html).toContain('Reduce &lt;redundancy&gt; &amp; anomalies'); // legacy text -> notes, escaped
+        expect(html).not.toContain('<h3>'); // headings are no longer emitted
+    });
+
+    it('renders the new {cards,notes} format', () => {
+        const html = renderSubjectNotesHtml({
+            ...subject,
+            files: [{
+                fileLink: '/y',
+                fileName: 'New.pdf',
+                note: JSON.stringify({
+                    cards: [{ id: 'c1', question: 'Q?', answer: 'A.', collapsed: false }],
+                    notes: 'free <b>jot</b>',
+                }),
+            }],
+        });
+        expect(html).toContain('<h2>New.pdf</h2>');
+        expect(html).toContain('<b>Q?</b>');
+        expect(html).toContain('A.');
+        expect(html).toContain('free &lt;b&gt;jot&lt;/b&gt;'); // notes escaped
     });
 
     it('omits files whose note is empty/whitespace, and the file heading with it', () => {
