@@ -131,6 +131,15 @@ export interface DocumentNote {
     fileName?: string;
 }
 
+export interface NoteImage {
+    hash: string;       // SHA-256 hex — the IDB key
+    blob: Blob;         // normalized JPEG bytes
+    mime: string;       // 'image/jpeg'
+    w: number;
+    h: number;
+    createdAt: number;  // epoch ms — drives the GC grace-period exemption
+}
+
 export interface SyllabusRequirements {
     version?: number;
     language?: string;

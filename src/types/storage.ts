@@ -94,6 +94,16 @@ export const GradeHistorySchema = z.custom<GradeHistory>();
 // 'document_notes' store - DocumentNote
 export const DocumentNoteSchema = z.custom<DocumentNote>();
 
+// 'note_images' store - normalized image blobs, keyed by content hash
+export const NoteImageSchema = z.object({
+    hash: z.string(),
+    blob: z.instanceof(Blob),
+    mime: z.string(),
+    w: z.number(),
+    h: z.number(),
+    createdAt: z.number(),
+});
+
 // 'iskam' store - WebISKAM dashboard snapshot (konta + ubytovani + freshness)
 export const IskamDataSchema = z.object({
     konta: z.array(z.object({
@@ -195,6 +205,7 @@ export const StoreSchemas = {
     odevzdavarny: z.array(z.custom<Odevzdavarna>()),
     erasmus: z.custom<ErasmusCountryData>(),
     document_notes: DocumentNoteSchema,
+    note_images: NoteImageSchema,
     iskam: IskamDataSchema,
     zaznamnik: ZaznamnikSchema,
 };

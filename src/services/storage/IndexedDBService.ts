@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { SubjectsData, SyllabusRequirements, ParsedFile, GradeHistory, DocumentNote } from '../../types/documents';
+import type { SubjectsData, SyllabusRequirements, ParsedFile, GradeHistory, DocumentNote, NoteImage } from '../../types/documents';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ExamSubject } from '../../types/exams';
 import type { ClassmatesData } from '../../types/classmates';
@@ -77,6 +77,10 @@ interface ReisDB extends DBSchema {
         key: string;
         value: DocumentNote;
     };
+    note_images: {
+        key: string;
+        value: NoteImage;
+    };
     hidden_items: {
         key: string;
         value: HiddenItems;
@@ -96,7 +100,7 @@ interface ReisDB extends DBSchema {
 }
 
 const DB_NAME = 'reis_db';
-const DB_VERSION = 19;
+const DB_VERSION = 20;
 
 // True for the "database connection is closing" / InvalidStateError family that
 // a stale handle throws after the underlying connection was closed.
@@ -121,7 +125,7 @@ class IndexedDBServiceImpl {
                         'files', 'assessments', 'syllabuses', 'classmates',
                         'exams', 'schedule', 'subjects', 'success_rates', 'meta',
                         'grade_history', 'study_plan', 'cvicne_tests', 'odevzdavarny',
-                        'erasmus', 'document_notes', 'hidden_items', 'custom_events',
+                        'erasmus', 'document_notes', 'note_images', 'hidden_items', 'custom_events',
                         'iskam', 'zaznamnik'
                     ];
 
