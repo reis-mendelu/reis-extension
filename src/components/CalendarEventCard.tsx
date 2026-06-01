@@ -106,26 +106,30 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
 
     // Determine event type and colors using workspace tokens
     const getEventStyles = () => {
+        // Card backgrounds are fixed light tints (exam/lecture/seminar-bg) that do
+        // NOT follow the active DaisyUI theme, so the foreground must be a fixed dark
+        // color too — using text-base-content turns the text near-white on the
+        // default dark theme, making cards render blank/white.
         if (lesson.isExam) {
             return {
                 bg: 'bg-exam-bg/85',
                 border: 'border-l-exam-border',
                 outerBorder: 'border-exam-border/30',
-                text: 'text-base-content',
+                text: 'text-exam-text',
             };
         } else if (lesson.isSeminar === 'true') {
             return {
                 bg: 'bg-seminar-bg/85',
                 border: 'border-l-seminar-border',
                 outerBorder: 'border-seminar-border/30',
-                text: 'text-base-content',
+                text: 'text-seminar-text',
             };
         } else {
             return {
                 bg: 'bg-lecture-bg/85',
                 border: 'border-l-lecture-border',
                 outerBorder: 'border-lecture-border/30',
-                text: 'text-base-content',
+                text: 'text-lecture-text',
             };
         }
     };
@@ -157,7 +161,7 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
                     timeline.weeksLeft === 0
                         ? 'bg-error/15 text-error'
                         : timeline.weeksLeft <= 2
-                        ? 'bg-warning/15 text-warning-content'
+                        ? 'bg-warning/15 text-warning'
                         : 'bg-info/15 text-info'
                 }`}>
                     <Timer size={10} />
@@ -218,14 +222,14 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
 
                 {/* Bottom row - Location and Time, pushed to bottom */}
                 {isLongEnough && (
-                    <div className="text-base-content/60 text-sm mt-auto flex-shrink-0 flex items-center justify-between gap-2">
+                    <div className="text-content-secondary text-sm mt-auto flex-shrink-0 flex items-center justify-between gap-2">
                         {room && !isCompact && (
                             <div className="flex items-center gap-1 min-w-0 flex-1">
                                 <MapPin size={12} className="flex-shrink-0" />
                                 <span className="truncate">{room}</span>
                             </div>
                         )}
-                        <div className="text-base-content/60 whitespace-nowrap flex-shrink-0">
+                        <div className="text-content-secondary whitespace-nowrap flex-shrink-0">
                             {isCompact ? lesson.startTime : `${lesson.startTime} - ${lesson.endTime}`}
                         </div>
                     </div>
