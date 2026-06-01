@@ -30,6 +30,23 @@ const ROW_5 = (id: number, name: string, studyInfo: string, hasMessage = true) =
     </tr>
 `;
 
+// Real IS Mendelu layout (verified 2026-05): 7 columns with a "Fotografie" column
+// whose clovek.pl link wraps a photo <img> (empty textContent) before the name link.
+// Headers: ["Poř.","Poř.","Fotografie","Jméno","Identifikace studia","Přihlášen","E-mail"]
+const HEADER_7 = `<tr><th>Poř.</th><th>Poř.</th><th>Fotografie</th><th>Jméno</th><th>Identifikace studia</th><th>Přihlášen</th><th>E-mail</th></tr>`;
+
+const ROW_7 = (id: number, name: string, studyInfo: string, hasMessage = true) => `
+    <tr>
+        <td>1.</td>
+        <td>1</td>
+        <td><a href="/auth/lide/clovek.pl?id=${id};lang=cz"><img src="/auth/lide/foto.pl?id=${id}" alt="" /></a></td>
+        <td><a href="/auth/lide/clovek.pl?id=${id};lang=cz">${name}</a></td>
+        <td>${studyInfo}</td>
+        <td>14.04.2026 09:00</td>
+        <td>${hasMessage ? `<a href="/auth/posta/nova_zprava.pl?adresat=${id}"><img alt="x@y" /></a>` : ''}</td>
+    </tr>
+`;
+
 describe('parseExamClassmatesPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -69,6 +86,32 @@ describe('parseExamClassmatesPage', () => {
     it('returns [] without logging when table has only header (empty exam)', () => {
         const doc = wrapDoc(`<table>${HEADER_5}</table>`);
         expect(parseExamClassmatesPage(doc)).toEqual([]);
+        expect(logError).not.toHaveBeenCalled();
+    });
+
+    it('extracts classmates from real 7-column IS layout with photo link before name link', () => {
+        // Regression: querySelector returned the photo clovek.pl link (empty text),
+        // causing every row to be skipped and classmates to never show.
+        // Fixed by querySelectorAll + find-first-non-empty-text.
+        const doc = wrapDoc(`
+            <table>
+                ${HEADER_7}
+                ${ROW_7(338172, 'Jan Novák', 'PEF B-OI prez [sem 2, roč 1]')}
+                ${ROW_7(338173, 'Marie Svobodová', 'PEF B-EM komb [sem 4, roč 2]', false)}
+            </table>
+        `);
+
+        const result = parseExamClassmatesPage(doc);
+        expect(result).toHaveLength(2);
+        expect(result[0]).toMatchObject({
+            personId: 338172,
+            name: 'Jan Novák',
+            studyInfo: 'PEF B-OI prez [sem 2, roč 1]',
+        });
+        expect(result[0].photoUrl).toContain('foto.pl?id=338172');
+        expect(result[0].messageUrl).toContain('nova_zprava.pl?adresat=338172');
+        expect(result[1].personId).toBe(338173);
+        expect(result[1].messageUrl).toBeUndefined();
         expect(logError).not.toHaveBeenCalled();
     });
 

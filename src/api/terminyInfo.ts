@@ -97,17 +97,24 @@ export function parseExamClassmatesPage(doc: Document): Classmate[] {
             const cells = rows[i].getElementsByTagName('td');
             if (cells.length < 5) continue;
 
-            // Anchor on the clovek.pl link in any cell — tolerates both 5-cell
-            // (live) and 6-cell (scraper) layouts without column-index drift.
-            const nameLink = rows[i].querySelector<HTMLAnchorElement>('a[href*="clovek.pl"]');
+            // Real IS layout has a "Fotografie" column whose clovek.pl link wraps
+            // a photo <img> (empty textContent) before the name link — querySelector
+            // returns the photo link first, making name empty and skipping every row.
+            // Use querySelectorAll + find-first-non-empty to match the seminar-group
+            // parser (parseClassmatesPage) which already handles this correctly.
+            // Verified against live IS Mendelu terminy_info.pl?spoluzaci=1 (2026-05):
+            // headers ["Poř.","Poř.","Fotografie","Jméno",...], 2 clovek.pl links/row.
+            const allProfileLinks = Array.from(
+                rows[i].querySelectorAll<HTMLAnchorElement>('a[href*="clovek.pl"]'),
+            );
+            const nameLink = allProfileLinks.find(a => (a.textContent?.trim() ?? '').length > 0) ?? null;
             if (!nameLink) continue;
 
             const idMatch = nameLink.getAttribute('href')?.match(/id=(\d+)/);
             if (!idMatch) continue;
 
             const personId = parseInt(idMatch[1], 10);
-            const name = nameLink.textContent?.trim() ?? '';
-            if (!name) continue;
+            const name = nameLink.textContent!.trim();
 
             // studyInfo is the cell directly after the name's parent cell.
             const nameCell = nameLink.closest('td');
