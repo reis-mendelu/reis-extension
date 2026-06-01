@@ -266,6 +266,10 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
     }, 15_000);
   },
   setExams: (data) => {
+    // A transient/failed IS fetch resolves to [] (see fetchExamData), and a
+    // sync push would otherwise wipe the currently-displayed exams. Keep old
+    // data on screen until real new data is available to replace it.
+    if (data.length === 0 && get().exams.data.length > 0) return;
     set((state) => ({
         exams: { ...state.exams, data },
         lastExamsFetchedAt: Date.now(),

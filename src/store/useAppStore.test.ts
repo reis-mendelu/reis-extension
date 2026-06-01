@@ -6,7 +6,7 @@ import { useAppStore } from './useAppStore';
 vi.mock('../services/storage', () => ({
   IndexedDBService: {
     get: vi.fn(),
-    set: vi.fn(),
+    set: vi.fn(() => Promise.resolve()),
   },
 }));
 
@@ -57,12 +57,35 @@ describe('useAppStore Slices', () => {
     it('should fetch exams and handle success', async () => {
       const mockExams = [{ id: 'e1', name: 'Exam 1' }];
       vi.mocked(IndexedDBService.get).mockResolvedValue(mockExams);
-      
+
       await useAppStore.getState().fetchExams();
-      
+
       const state = useAppStore.getState();
       expect(state.exams.status).toBe('success');
       expect(state.exams.data).toEqual(mockExams);
+    });
+
+    it('keeps existing exams visible when a sync pushes an empty list', () => {
+      // A transient/failed IS fetch resolves to [] (see fetchExamData). That
+      // empty payload must NOT wipe already-displayed exams — old data stays
+      // until real new data replaces it.
+      const existing = [{ code: 'PEF', sections: [] }] as any;
+      useAppStore.setState({ exams: { data: existing, status: 'success', error: null } });
+
+      useAppStore.getState().setExams([]);
+
+      expect(useAppStore.getState().exams.data).toEqual(existing);
+    });
+
+    it('replaces exams when a sync pushes a non-empty list', () => {
+      useAppStore.setState({
+        exams: { data: [{ code: 'OLD', sections: [] }] as any, status: 'success', error: null },
+      });
+      const fresh = [{ code: 'NEW', sections: [] }] as any;
+
+      useAppStore.getState().setExams(fresh);
+
+      expect(useAppStore.getState().exams.data).toEqual(fresh);
     });
   });
 });

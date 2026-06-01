@@ -147,7 +147,7 @@ export async function syncAllData() {
         cachedData = {
             ...cachedData,
             schedule: fullSchedule.status === "fulfilled" && fullSchedule.value ? fullSchedule.value : cachedData.schedule,
-            exams: exams.status === "fulfilled" ? exams.value : cachedData.exams,
+            exams: exams.status === "fulfilled" && exams.value.length > 0 ? exams.value : cachedData.exams,
             subjects: subjects.status === "fulfilled" && subjects.value ? subjects.value.subjects : cachedData.subjects,
             attendance: subjects.status === "fulfilled" && subjects.value ? subjects.value.attendance : cachedData.attendance,
             studyPlan: studyPlan.status === "fulfilled" && studyPlan.value ? studyPlan.value : cachedData.studyPlan,
