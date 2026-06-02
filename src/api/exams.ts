@@ -45,6 +45,17 @@ function verifyRegistrationSuccess(html: string, termId: string): boolean {
     return hasUnregisterLink && !hasError;
 }
 
+/**
+ * Check if HTML response indicates successful UN-registration.
+ * After a successful unregister, IS Mendelu drops the odhlasit_ihned link for
+ * the term (it flips back to a prihlasit_ihned registration link). So success =
+ * the unregister link for this term is absent.
+ */
+function verifyUnregistrationSuccess(html: string, termId: string): boolean {
+    const stillRegistered = html.includes(`termin=${termId}`) && html.includes('odhlasit_ihned=1');
+    return !stillRegistered;
+}
+
 export async function fetchExamData(lang: string = 'cz'): Promise<ExamSubject[]> {
     try {
         const url = await getExamListUrl(lang);
@@ -188,11 +199,14 @@ export async function unregisterExam(termId: string): Promise<ExamActionResult> 
         }
         
         const url = `https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=${termId};studium=${params.studium};obdobi=${params.obdobi};odhlasit_ihned=1;lang=cz`;
-        await fetchWithAuth(url);
-        
-        // Assume success if no HTTP error
-        return { success: true };
-        
+        const response = await fetchWithAuth(url);
+        const html = await response.text();
+
+        if (verifyUnregistrationSuccess(html, termId)) {
+            return { success: true };
+        }
+        return { success: false, error: 'Odhlášení se nepodařilo ověřit. Zkontrolujte v IS.' };
+
     } catch (error) {
         logError('Api.unregisterExam', error);
         return { success: false, error: 'Chyba připojení. Zkuste to znovu.' };
