@@ -92,3 +92,37 @@ describe('syncDriveBackup non-file (web-link / folder) row', () => {
         expect(manifest.failingSince).toBeNull(); // no permanent warning in the drawer
     });
 });
+
+describe('syncDriveBackup quarantine of a permanently-failing file', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        manifest.files = {};
+        manifest.folders = {};
+        manifest.fileFails = {};
+        manifest.quarantined = 0;
+        manifest.failingSince = null;
+        manifest.lastError = null;
+        // A genuinely broken IS download: the fetch keeps rejecting (not a login
+        // page, not an HTML web-link row — a real, repeatable error).
+        fetchWithAuth.mockRejectedValue(new Error('boom'));
+    });
+
+    it('keeps the failure as a calm retry for the first passes, then stops alarming once quarantined', async () => {
+        const subj = [subject('AAA', '/x')];
+
+        const r1 = await syncDriveBackup(subj);
+        expect(r1?.failed).toBe(1);
+        expect(r1?.quarantined).toBe(0);
+        expect(manifest.failingSince).toBeTruthy(); // amber: will retry
+
+        await syncDriveBackup(subj); // second miss — still a retry
+        expect(manifest.quarantined).toBe(0);
+        expect(manifest.failingSince).toBeTruthy();
+
+        const r3 = await syncDriveBackup(subj); // third miss — now permanent
+        expect(r3?.quarantined).toBe(1);
+        expect(manifest.quarantined).toBe(1);
+        expect(manifest.failingSince).toBeNull(); // no longer a live streak
+        expect(manifest.lastError).toMatch(/can't be saved/);
+    });
+});

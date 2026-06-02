@@ -62,7 +62,10 @@ export async function releaseBackupLock(): Promise<void> {
 
 export async function loadManifest(): Promise<DriveManifest> {
     const res = await chrome.storage.local.get(KEY);
-    return (res[KEY] as DriveManifest) ?? emptyManifest();
+    const stored = res[KEY] as DriveManifest | undefined;
+    // Merge over defaults so a manifest written by an older version gains any
+    // newly-added fields (e.g. fileFails/quarantined) instead of arriving undefined.
+    return stored ? { ...emptyManifest(), ...stored } : emptyManifest();
 }
 
 export async function saveManifest(manifest: DriveManifest): Promise<void> {

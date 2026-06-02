@@ -30,6 +30,8 @@ export interface UseDriveBackupResult {
     syncing: boolean;
     /** Number of files mirrored to Drive. */
     fileCount: number;
+    /** Files deemed permanently un-mirrorable (a broken IS download) — reported, not alarmed. */
+    quarantined: number;
     /** True while a connect/disconnect is in flight. */
     busy: boolean;
     /** Run the Google consent flow, then kick a sync so the first backup starts. */
@@ -52,6 +54,7 @@ export function useDriveBackup(courseCode?: string): UseDriveBackupResult {
     const [failingSince, setFailingSince] = useState<number | null>(null);
     const [syncing, setSyncing] = useState(false);
     const [fileCount, setFileCount] = useState(0);
+    const [quarantined, setQuarantined] = useState(0);
     const [busy, setBusy] = useState(false);
 
     const refresh = useCallback(async () => {
@@ -63,6 +66,7 @@ export function useDriveBackup(courseCode?: string): UseDriveBackupResult {
         setFailingSince(manifest.failingSince);
         setSyncing(manifest.syncing);
         setFileCount(Object.keys(manifest.files).length);
+        setQuarantined(manifest.quarantined ?? 0);
     }, []);
 
     // The subject folder is the top-level manifest folder named "<CODE> - …".
@@ -119,5 +123,5 @@ export function useDriveBackup(courseCode?: string): UseDriveBackupResult {
         return () => chrome.storage.onChanged.removeListener(onChanged);
     }, [refresh]);
 
-    return { connected, rootLink, folderLink, lastSync, failingSince, syncing, fileCount, busy, connect, disconnect, backupNow, refresh };
+    return { connected, rootLink, folderLink, lastSync, failingSince, syncing, fileCount, quarantined, busy, connect, disconnect, backupNow, refresh };
 }

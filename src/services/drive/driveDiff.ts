@@ -27,6 +27,10 @@ export interface DriveManifest {
     folders: Record<string, string>;
     /** isLink → mirrored file state. */
     files: Record<string, { driveFileId: string; date: string }>;
+    /** isLink → consecutive failed-pass count, for files not yet mirrored. */
+    fileFails: Record<string, number>;
+    /** How many files have failed enough passes to be deemed permanently un-mirrorable. */
+    quarantined: number;
     /** courseCode → backed-up notes Doc + sidecar state. */
     notes: Record<string, { docId: string; docHash: string; jsonId: string; imagesEmbedded?: boolean }>;
     /** Epoch ms of the last completed backup pass. */
@@ -46,7 +50,7 @@ export interface DriveDiff {
 }
 
 export function emptyManifest(): DriveManifest {
-    return { rootFolderId: null, rootWebViewLink: null, folders: {}, files: {}, notes: {}, lastSync: 0, failingSince: null, lastError: null, syncing: false };
+    return { rootFolderId: null, rootWebViewLink: null, folders: {}, files: {}, fileFails: {}, quarantined: 0, notes: {}, lastSync: 0, failingSince: null, lastError: null, syncing: false };
 }
 
 /** Manifest key for a folder path. */

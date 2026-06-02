@@ -98,6 +98,7 @@
     "reconnect": "Připojit znovu a opravit zálohu",
     "pending": "Zatím nezálohováno",
     "firstSync": "Probíhá první synchronizace…",
+    "cantSave": "{count} soubor(ů) nelze uložit",
     "syncing": "Zálohuji…"
   },
   "sidebar": {

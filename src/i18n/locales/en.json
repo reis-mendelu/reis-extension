@@ -98,6 +98,7 @@
     "reconnect": "Reconnect to fix backup",
     "pending": "No backup yet",
     "firstSync": "First sync in progress…",
+    "cantSave": "{count} file(s) can't be saved",
     "syncing": "Backing up…"
   },
   "sidebar": {

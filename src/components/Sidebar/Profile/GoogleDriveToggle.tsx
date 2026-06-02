@@ -20,7 +20,7 @@ function relativeTime(deltaMs: number, locale: string): string {
  * status and "open folder" live in the file drawer instead.
  */
 export function GoogleDriveToggle() {
-    const { connected, lastSync, failingSince, syncing, busy, connect, disconnect } = useDriveBackup();
+    const { connected, lastSync, failingSince, syncing, quarantined, busy, connect, disconnect } = useDriveBackup();
     const { t, language } = useTranslation();
     const locale = language === 'cz' ? 'cs' : 'en';
 
@@ -46,6 +46,9 @@ export function GoogleDriveToggle() {
                             {failing && <AlertTriangle size={10} className="shrink-0" />}
                             {status}
                         </span>
+                    )}
+                    {connected && !failing && !syncing && quarantined > 0 && (
+                        <span className="text-[10px] opacity-50 truncate">{t('drive.cantSave', { count: quarantined })}</span>
                     )}
                 </div>
             </div>

@@ -44,7 +44,14 @@ export interface DriveBackupResult {
     reused: number;
     /** Files that failed to download/upload this pass — a non-zero count marks the pass unhealthy. */
     failed: number;
+    /** Files deemed permanently un-mirrorable (failed past the retry threshold) — reported, not alarmed. */
+    quarantined: number;
 }
+
+/** Consecutive failed passes after which a file is treated as permanently
+ *  un-mirrorable (a genuinely broken IS download), so it stops holding the whole
+ *  backup amber — one bad file must never train the user to ignore the warning. */
+const FAIL_THRESHOLD = 3;
 
 const ROOT_FOLDER_NAME = 'reIS';
 const limit = pLimit(3);
@@ -137,7 +144,19 @@ export async function syncDriveBackup(
     let updated = 0;
     let skipped = 0;
     let reused = 0;
-    let failed = 0;
+    // A failure is "transient" (will retry — legitimate amber) until a file has
+    // missed FAIL_THRESHOLD passes, at which point it's "permanent" and reported
+    // separately instead of keeping the whole backup amber forever.
+    let transientFailed = 0;
+    let permanentFailed = 0;
+    const recordFileFail = (isLink: string) => {
+        const n = (manifest.fileFails[isLink] ?? 0) + 1;
+        manifest.fileFails[isLink] = n;
+        if (n >= FAIL_THRESHOLD) permanentFailed++; else transientFailed++;
+    };
+    const clearFileFail = (isLink: string) => {
+        if (manifest.fileFails[isLink]) delete manifest.fileFails[isLink];
+    };
     try {
         if (!manifest.rootFolderId) {
             manifest.rootFolderId = await ensureFolder(ROOT_FOLDER_NAME);
@@ -165,7 +184,7 @@ export async function syncDriveBackup(
             const tasks: Promise<void>[] = [];
             for (const item of diff.create) {
                 tasks.push(limit(async () => {
-                    if (sessionExpired) { failed++; return; }
+                    if (sessionExpired) { transientFailed++; return; }
                     try {
                         const hash = await linkHash(item.isLink);
                         // Manifest says "new", but Drive may already have it (a prior
@@ -173,6 +192,7 @@ export async function syncDriveBackup(
                         const existingId = await findFileByProperty(LINK_PROP, hash);
                         if (existingId) {
                             manifest.files[item.isLink] = { driveFileId: existingId, date: item.date };
+                            clearFileFail(item.isLink);
                             reused++;
                             return;
                         }
@@ -184,28 +204,32 @@ export async function syncDriveBackup(
                             { [LINK_PROP]: hash },
                         );
                         manifest.files[item.isLink] = { driveFileId: file.id, date: item.date };
+                        clearFileFail(item.isLink);
                         uploaded++;
                     } catch (e) {
                         // A web-link/folder row isn't a file — skip it, don't fail the pass.
                         if (e instanceof NotADownloadableFileError) { skipped++; return; }
-                        if (e instanceof IsSessionExpiredError) sessionExpired = true;
-                        failed++;
+                        // Session expiry is pass-wide and re-auth fixes it — not the
+                        // file's fault, so it never counts toward quarantine.
+                        if (e instanceof IsSessionExpiredError) { sessionExpired = true; transientFailed++; }
+                        else recordFileFail(item.isLink);
                         logError('Drive.upload', e, { name: item.fileName });
                     }
                 }));
             }
             for (const { item, driveFileId } of diff.update) {
                 tasks.push(limit(async () => {
-                    if (sessionExpired) { failed++; return; }
+                    if (sessionExpired) { transientFailed++; return; }
                     try {
                         await updateFileContent(driveFileId, await fetchBytes(item.isLink));
                         manifest.files[item.isLink] = { driveFileId, date: item.date };
+                        clearFileFail(item.isLink);
                         updated++;
                     } catch (e) {
                         // A web-link/folder row isn't a file — skip it, don't fail the pass.
                         if (e instanceof NotADownloadableFileError) { skipped++; return; }
-                        if (e instanceof IsSessionExpiredError) sessionExpired = true;
-                        failed++;
+                        if (e instanceof IsSessionExpiredError) { sessionExpired = true; transientFailed++; }
+                        else recordFileFail(item.isLink);
                         logError('Drive.update', e, { name: item.fileName });
                     }
                 }));
@@ -216,18 +240,22 @@ export async function syncDriveBackup(
         }
 
         manifest.lastSync = Date.now();
-        if (failed > 0) {
-            // Some files didn't make it — keep the streak open so the UI shows a
-            // warning instead of a clean "backed up just now" that lost files.
+        manifest.quarantined = Object.values(manifest.fileFails).filter((n) => n >= FAIL_THRESHOLD).length;
+        if (transientFailed > 0) {
+            // Files that may still recover — keep the streak open so the UI shows a
+            // warning instead of a clean "synced just now" that quietly lost files.
             manifest.failingSince = manifest.failingSince ?? Date.now();
-            manifest.lastError = `${failed} file(s) failed to upload`;
+            manifest.lastError = `${transientFailed} file(s) failed to upload`;
         } else {
+            // Either fully healthy, or the only failures are permanently un-mirrorable
+            // files — report those as a calm aside, never as a live failure streak.
             manifest.failingSince = null;
-            manifest.lastError = null;
+            manifest.lastError = manifest.quarantined > 0 ? `${manifest.quarantined} file(s) can't be saved` : null;
         }
         await saveManifest(manifest);
-        log(`done — uploaded ${uploaded}, updated ${updated}, reused ${reused}, skipped ${skipped}, failed ${failed}`);
-        return { uploaded, updated, skipped, reused, failed };
+        const failed = transientFailed + permanentFailed;
+        log(`done — uploaded ${uploaded}, updated ${updated}, reused ${reused}, skipped ${skipped}, failed ${failed}, quarantined ${manifest.quarantined}`);
+        return { uploaded, updated, skipped, reused, failed, quarantined: manifest.quarantined };
     } catch (e) {
         // Pass-level failure (auth/root/network) — record it so the UI can show
         // "backup failing since …" instead of silently appearing healthy. The
