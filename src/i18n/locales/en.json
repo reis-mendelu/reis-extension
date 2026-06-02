@@ -149,7 +149,11 @@
     "selectedTime": "Selected: {time}",
     "clickFreeSlot": "Click a free slot in the calendar",
     "pickTime": "Pick a time:",
-    "publicHoliday": "Public holiday"
+    "publicHoliday": "Public holiday",
+    "examPeriodBanner": {
+      "label": "Exam period",
+      "action": "Register for exam dates"
+    }
   },
   "exams": {
     "title": "My Exams",
