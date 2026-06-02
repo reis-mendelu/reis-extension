@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadManifest, clearManifest } from '../../services/drive/driveManifest';
-import { isConnected, connectGoogle, disconnectGoogle } from '../../api/googleAuth';
+import { isConnected, connectGoogle, disconnectGoogle, getConnectedEmail } from '../../api/googleAuth';
 import { syncService } from '../../services/sync';
 
 export interface UseDriveBackupResult {
@@ -32,6 +32,8 @@ export interface UseDriveBackupResult {
     fileCount: number;
     /** Files deemed permanently un-mirrorable (a broken IS download) — reported, not alarmed. */
     quarantined: number;
+    /** Email of the connected Google account (null until known) — shows WHERE files go. */
+    accountEmail: string | null;
     /** True while a connect/disconnect is in flight. */
     busy: boolean;
     /** Run the Google consent flow, then kick a sync so the first backup starts. */
@@ -55,11 +57,13 @@ export function useDriveBackup(courseCode?: string): UseDriveBackupResult {
     const [syncing, setSyncing] = useState(false);
     const [fileCount, setFileCount] = useState(0);
     const [quarantined, setQuarantined] = useState(0);
+    const [accountEmail, setAccountEmail] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
 
     const refresh = useCallback(async () => {
-        const [linked, manifest] = await Promise.all([isConnected(), loadManifest()]);
+        const [linked, manifest, email] = await Promise.all([isConnected(), loadManifest(), getConnectedEmail()]);
         setConnected(linked);
+        setAccountEmail(email);
         setRootLink(manifest.rootWebViewLink);
         setFolders(manifest.folders);
         setLastSync(manifest.lastSync);
@@ -123,5 +127,5 @@ export function useDriveBackup(courseCode?: string): UseDriveBackupResult {
         return () => chrome.storage.onChanged.removeListener(onChanged);
     }, [refresh]);
 
-    return { connected, rootLink, folderLink, lastSync, failingSince, syncing, fileCount, quarantined, busy, connect, disconnect, backupNow, refresh };
+    return { connected, rootLink, folderLink, lastSync, failingSince, syncing, fileCount, quarantined, accountEmail, busy, connect, disconnect, backupNow, refresh };
 }

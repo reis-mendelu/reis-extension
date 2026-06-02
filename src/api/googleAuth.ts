@@ -26,6 +26,22 @@ export interface GoogleTokens {
     refresh_token: string;
     expiry: number; // epoch ms when access_token expires
     scope?: string;
+    /** Email of the connected Google account, so the UI can show WHERE files go. */
+    email?: string;
+}
+
+const DRIVE_ABOUT = 'https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)';
+
+/** Read the connected account's own email (allowed under drive.file). Best-effort. */
+async function fetchAccountEmail(accessToken: string): Promise<string | undefined> {
+    try {
+        const res = await fetch(DRIVE_ABOUT, { headers: { Authorization: `Bearer ${accessToken}` } });
+        if (!res.ok) return undefined;
+        const data = await res.json().catch(() => ({}));
+        return (data?.user?.emailAddress as string | undefined) || undefined;
+    } catch {
+        return undefined;
+    }
 }
 
 // --- PKCE helpers ---------------------------------------------------------
@@ -143,6 +159,7 @@ export async function connectGoogle(): Promise<GoogleTokens> {
         expiry: Date.now() + (data.expires_in as number) * 1000,
         scope: data.scope as string | undefined,
     };
+    tokens.email = await fetchAccountEmail(tokens.access_token);
     await writeTokens(tokens);
     return tokens;
 }
@@ -170,6 +187,8 @@ async function refreshAccessToken(tokens: GoogleTokens): Promise<string> {
         access_token: data.access_token as string,
         expiry: Date.now() + (data.expires_in as number) * 1000,
     };
+    // Backfill the account email for users connected before we started storing it.
+    if (!updated.email) updated.email = await fetchAccountEmail(updated.access_token);
     await writeTokens(updated);
     return updated.access_token;
 }
@@ -191,6 +210,11 @@ export async function getAccessToken(): Promise<string> {
 
 export async function isConnected(): Promise<boolean> {
     return (await readTokens()) !== null;
+}
+
+/** Email of the connected Google account, or null. Lets the UI show WHERE files go. */
+export async function getConnectedEmail(): Promise<string | null> {
+    return (await readTokens())?.email ?? null;
 }
 
 export async function disconnectGoogle(): Promise<void> {

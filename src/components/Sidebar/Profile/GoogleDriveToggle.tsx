@@ -1,6 +1,7 @@
 import { HardDrive, AlertTriangle } from 'lucide-react';
 import { useDriveBackup } from '../../../hooks/data/useDriveBackup';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useAppStore } from '../../../store/useAppStore';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -20,8 +21,9 @@ function relativeTime(deltaMs: number, locale: string): string {
  * status and "open folder" live in the file drawer instead.
  */
 export function GoogleDriveToggle() {
-    const { connected, lastSync, failingSince, syncing, quarantined, busy, connect, disconnect } = useDriveBackup();
+    const { connected, lastSync, failingSince, syncing, quarantined, accountEmail, busy, connect, disconnect } = useDriveBackup();
     const { t, language } = useTranslation();
+    const now = useAppStore(s => s.now).getTime();
     const locale = language === 'cz' ? 'cs' : 'en';
 
     if (connected === null) return null;
@@ -30,9 +32,9 @@ export function GoogleDriveToggle() {
     const status = syncing
         ? (lastSync ? t('drive.syncing') : t('drive.firstSync'))
         : failingSince !== null
-            ? t('drive.failingSince', { time: relativeTime(Date.now() - failingSince, locale) })
+            ? t('drive.failingSince', { time: relativeTime(now - failingSince, locale) })
             : lastSync
-                ? t('drive.lastBackup', { time: relativeTime(Date.now() - lastSync, locale) })
+                ? t('drive.lastBackup', { time: relativeTime(now - lastSync, locale) })
                 : t('drive.pending');
 
     return (
@@ -41,6 +43,9 @@ export function GoogleDriveToggle() {
                 <HardDrive size={16} className="text-base-content/50 shrink-0" />
                 <div className="flex flex-col min-w-0">
                     <span className="text-xs opacity-70">{t('drive.title')}</span>
+                    {connected && accountEmail && (
+                        <span className="text-[10px] opacity-50 truncate" title={accountEmail}>{accountEmail}</span>
+                    )}
                     {connected && (
                         <span className={`text-[10px] flex items-center gap-1 truncate ${failing ? 'text-warning' : 'opacity-50'}`}>
                             {failing && <AlertTriangle size={10} className="shrink-0" />}
