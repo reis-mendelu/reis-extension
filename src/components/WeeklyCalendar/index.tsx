@@ -29,7 +29,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     const pendingTimeSelection = useAppStore((state) => state.pendingTimeSelection);
     const setPendingTimeSelection = useAppStore((state) => state.setPendingTimeSelection);
     const isMobile = useIsMobile();
-    const { weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton: dataLoading, scheduleData, weekdayScheduleData, isOutsideTeachingPeriod } = useCalendarData(initialDate);
+    const { weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton: dataLoading, weekdayScheduleData, isOutsideTeachingPeriod, hasAnySchedule } = useCalendarData(initialDate);
     const { t } = useTranslation();
     const [selected, setSelected] = useState<BlockLesson | null>(null);
     const { isSeen, markSeen } = useHintStatus('calendar_event_click');
@@ -45,7 +45,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     // Show skeletons if either data is loading (initial) or language is still being determined
     const showSkeleton = dataLoading || isLanguageLoading;
 
-    const scheduleLoadFailed = !!handshakeTimedOut && !isSyncing && scheduleData.length === 0;
+    const scheduleLoadFailed = !!handshakeTimedOut && !isSyncing && !hasAnySchedule;
 
     const targetEventPosition = useMemo(() => {
         if (showSkeleton || isSeen) return null;

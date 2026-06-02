@@ -180,7 +180,8 @@ export function useCalendarData(initialDate: Date) {
         weekdayScheduleData,
         isOutsideTeachingPeriod,
         isScheduleLoaded,
-        isExamsLoaded
+        isExamsLoaded,
+        hasAnySchedule: (storedSchedule?.length ?? 0) > 0,
     };
 }
 

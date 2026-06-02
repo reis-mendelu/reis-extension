@@ -191,7 +191,6 @@
     "buildingWeekSub": "Tvůj rozvrh bude hotový za pár vteřin.",
     "buildingWeekFailed": "Rozvrh se nepodařilo načíst.",
     "retry": "Zkusit znovu",
-    "loadingMaterials": "načítám materiály…",
     "outlookNudgeTitle": "Chceš rozvrh v mobilu?",
     "outlookNudgeBody": "Synchronizuj rozvrh do kalendáře v Outlooku.",
     "outlookNudgeCta": "Nastavit sync"

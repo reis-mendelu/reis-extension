@@ -156,7 +156,6 @@
     "buildingWeekSub": "Your schedule will be ready in a few seconds.",
     "buildingWeekFailed": "Couldn't load your schedule.",
     "retry": "Try again",
-    "loadingMaterials": "loading materials…",
     "outlookNudgeTitle": "Want this on your phone?",
     "outlookNudgeBody": "Sync your schedule to your Outlook calendar.",
     "outlookNudgeCta": "Set up sync"
