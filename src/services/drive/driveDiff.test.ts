@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ParsedFile } from '../../types/documents';
-import { flattenSubjectFiles, diffManifest, emptyManifest, folderKey, linkHash } from './driveDiff';
+import { flattenSubjectFiles, diffManifest, emptyManifest, folderKey, linkHash, buildDriveFileName } from './driveDiff';
 
 function pf(partial: Partial<ParsedFile>): ParsedFile {
     return {
@@ -45,6 +45,52 @@ describe('flattenSubjectFiles', () => {
             pf({ files: [{ name: 'ok', type: 'pdf', link: 'OK' }] }),
         ]);
         expect(items.map((i) => i.isLink)).toEqual(['OK']);
+    });
+
+    it('folds the teacher comment into the Drive file name (teachers use it as the title)', () => {
+        const items = flattenSubjectFiles('SUB', [
+            pf({ file_name: 'dokument', file_comment: 'Přednáška 5 – Normalizace', files: [{ name: 'dokument', type: 'pdf', link: 'L' }] }),
+        ]);
+        expect(items[0].fileName).toBe('dokument — Přednáška 5 – Normalizace');
+    });
+
+    it('keeps the bare name when there is no comment', () => {
+        const items = flattenSubjectFiles('SUB', [
+            pf({ file_name: 'slides.pdf', file_comment: '', files: [{ name: 'slides.pdf', type: 'pdf', link: 'L' }] }),
+        ]);
+        expect(items[0].fileName).toBe('slides.pdf');
+    });
+});
+
+describe('buildDriveFileName', () => {
+    it('returns just the name when no comment is present', () => {
+        expect(buildDriveFileName('slides.pdf', '')).toBe('slides.pdf');
+        expect(buildDriveFileName('slides.pdf')).toBe('slides.pdf');
+    });
+
+    it('joins name and comment with an em dash', () => {
+        expect(buildDriveFileName('dokument', 'Lecture 5')).toBe('dokument — Lecture 5');
+    });
+
+    it('does not duplicate when the comment equals the name (case-insensitive)', () => {
+        expect(buildDriveFileName('Lecture 5', 'lecture 5')).toBe('Lecture 5');
+    });
+
+    it('falls back to the comment when the name is empty', () => {
+        expect(buildDriveFileName('', 'Only the comment')).toBe('Only the comment');
+    });
+
+    it('strips characters that break Drive desktop sync and collapses whitespace', () => {
+        expect(buildDriveFileName('a/b:c', 'note\nwith   gaps')).toBe('a b c — note with gaps');
+    });
+
+    it('clamps absurdly long names', () => {
+        const long = 'x'.repeat(500);
+        expect(buildDriveFileName('doc', long).length).toBeLessThanOrEqual(200);
+    });
+
+    it('never returns an empty string', () => {
+        expect(buildDriveFileName('', '')).toBe('soubor');
     });
 });
 

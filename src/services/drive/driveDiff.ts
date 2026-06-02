@@ -69,6 +69,38 @@ export async function linkHash(isLink: string): Promise<string> {
         .join('');
 }
 
+/** Max Drive file name we emit — comfortably under the 255-char limit Drive's
+ *  desktop/mobile sync clients impose on a single path segment. */
+const DRIVE_NAME_MAX = 200;
+
+/** Strip chars that break Drive desktop sync (Windows/macOS reserved) plus
+ *  control chars / newlines a free-text teacher comment may carry, then collapse
+ *  runs of whitespace. */
+function sanitizeForName(s: string): string {
+    // eslint-disable-next-line no-control-regex
+    return s.replace(/[\x00-\x1f<>:"/\\|?*]+/g, " ").replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Build the Drive file name for an IS attachment. IS exposes a document name AND
+ * a teacher "comment", and some teachers put the real title in the comment while
+ * leaving the name generic ("dokument"). The reIS file list already shows the
+ * comment beside the name and sorts by it, so we mirror that here: fold the
+ * comment into the name losslessly ("<name> — <comment>") instead of dropping it,
+ * so a student browsing the mirror in the Drive app on their phone sees the same
+ * meaningful label they see in reIS. Falls back to whichever half is present.
+ */
+export function buildDriveFileName(fileName: string, comment?: string): string {
+    const name = sanitizeForName(fileName || '');
+    const note = sanitizeForName(comment || '');
+    let out: string;
+    if (!note || note.toLowerCase() === name.toLowerCase()) out = name || note;
+    else if (!name) out = note;
+    else out = `${name} — ${note}`;
+    out = out.trim() || 'soubor';
+    return out.length > DRIVE_NAME_MAX ? out.slice(0, DRIVE_NAME_MAX).trim() : out;
+}
+
 /** Flatten a subject's parsed files into one item per downloadable attachment. */
 export function flattenSubjectFiles(subjectFolderName: string, parsedFiles: ParsedFile[]): DriveSyncItem[] {
     const items: DriveSyncItem[] = [];
@@ -79,7 +111,7 @@ export function flattenSubjectFiles(subjectFolderName: string, parsedFiles: Pars
             if (!att.link) continue;
             items.push({
                 isLink: att.link,
-                fileName: att.name || group.file_name,
+                fileName: buildDriveFileName(att.name || group.file_name, group.file_comment),
                 date: group.date || '',
                 pathSegments,
             });
