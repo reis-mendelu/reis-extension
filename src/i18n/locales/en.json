@@ -90,13 +90,14 @@
     "connectHint": "Back up your study files to Google Drive",
     "backUp": "Back up to Drive",
     "disconnect": "Disconnect",
-    "lastBackup": "Backed up {time}",
-    "lastBackupShort": "upd. {time}",
+    "lastBackup": "Synced from your computer {time}",
+    "lastBackupShort": "synced {time}",
     "failingSince": "Backup failing since {time}",
     "retrying": "Backup will retry",
     "upToDate": "Up to date",
     "reconnect": "Reconnect to fix backup",
     "pending": "No backup yet",
+    "firstSync": "First sync in progress…",
     "syncing": "Backing up…"
   },
   "sidebar": {

@@ -25,6 +25,10 @@ describe('classifyDriveStatus', () => {
             .toEqual({ kind: 'syncing', tone: 'muted' });
     });
 
+    it('calls the very first pass first-sync, not a generic sync', () => {
+        expect(base({ syncing: true, lastSync: 0 })).toEqual({ kind: 'first-sync', tone: 'muted' });
+    });
+
     it('is healthy after a completed pass', () => {
         expect(base()).toEqual({ kind: 'healthy', tone: 'muted' });
     });

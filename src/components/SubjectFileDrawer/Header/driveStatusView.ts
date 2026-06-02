@@ -15,7 +15,8 @@ const DAY = 24 * 60 * 60 * 1000;
 
 export type DriveStatusKind =
     | 'connect' // not linked — invite to back up
-    | 'syncing' // a pass is actively running
+    | 'first-sync' // first pass running, nothing mirrored yet — don't imply "done"
+    | 'syncing' // a pass is actively running over an existing mirror
     | 'pending' // linked, but no pass has completed yet
     | 'healthy' // last pass succeeded
     | 'retrying' // failing < 1 day — will self-heal, stay calm
@@ -40,8 +41,10 @@ export interface DriveStatusView {
 
 export function classifyDriveStatus(i: DriveStatusInput): DriveStatusView {
     if (!i.connected) return { kind: 'connect', tone: 'muted' };
-    // Active work wins over a stale streak: reflect what's happening now.
-    if (i.syncing) return { kind: 'syncing', tone: 'muted' };
+    // Active work wins over a stale streak: reflect what's happening now. The
+    // very first pass is called out separately so the UI never implies the phone
+    // has the files before a single one has landed.
+    if (i.syncing) return { kind: i.lastSync > 0 ? 'syncing' : 'first-sync', tone: 'muted' };
     if (i.failingSince !== null) {
         const age = i.now - i.failingSince;
         return age >= DAY

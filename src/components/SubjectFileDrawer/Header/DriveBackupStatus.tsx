@@ -74,15 +74,16 @@ export function DriveBackupStatus({ courseCode }: { courseCode?: string }) {
 
     const label = justFinished
         ? t('drive.upToDate')
-        : view.kind === 'syncing' ? t('drive.syncing')
-            : view.kind === 'connect' ? t('drive.backUp')
-                : view.kind === 'pending' ? t('drive.pending')
-                    : view.kind === 'retrying' ? t('drive.retrying')
-                        : view.kind === 'broken' ? t('drive.failingSince', { time: relativeTime(now - (failingSince ?? now), locale) })
-                            : t('drive.lastBackup', { time: relativeTime(now - lastSync, locale) });
+        : view.kind === 'first-sync' ? t('drive.firstSync')
+            : view.kind === 'syncing' ? t('drive.syncing')
+                : view.kind === 'connect' ? t('drive.backUp')
+                    : view.kind === 'pending' ? t('drive.pending')
+                        : view.kind === 'retrying' ? t('drive.retrying')
+                            : view.kind === 'broken' ? t('drive.failingSince', { time: relativeTime(now - (failingSince ?? now), locale) })
+                                : t('drive.lastBackup', { time: relativeTime(now - lastSync, locale) });
 
     const tone = justFinished ? 'text-success' : TONE_CLASS[view.tone];
-    const icon = view.kind === 'syncing'
+    const icon = view.kind === 'syncing' || view.kind === 'first-sync'
         ? <span className="loading loading-spinner loading-xs" />
         : justFinished ? <CircleCheck size={14} />
             : view.tone === 'muted' ? <HardDrive size={14} /> : <AlertTriangle size={14} />;

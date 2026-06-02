@@ -28,7 +28,7 @@ export function GoogleDriveToggle() {
 
     const failing = !syncing && failingSince !== null;
     const status = syncing
-        ? t('drive.syncing')
+        ? (lastSync ? t('drive.syncing') : t('drive.firstSync'))
         : failingSince !== null
             ? t('drive.failingSince', { time: relativeTime(Date.now() - failingSince, locale) })
             : lastSync

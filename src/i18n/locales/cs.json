@@ -90,13 +90,14 @@
     "connectHint": "Zálohujte studijní soubory na Google Disk",
     "backUp": "Zálohovat na Disk",
     "disconnect": "Odpojit",
-    "lastBackup": "Zálohováno {time}",
-    "lastBackupShort": "akt. {time}",
+    "lastBackup": "Synchronizováno z počítače {time}",
+    "lastBackupShort": "synch. {time}",
     "failingSince": "Záloha selhává od {time}",
     "retrying": "Záloha se zopakuje",
     "upToDate": "Aktuální",
     "reconnect": "Připojit znovu a opravit zálohu",
     "pending": "Zatím nezálohováno",
+    "firstSync": "Probíhá první synchronizace…",
     "syncing": "Zálohuji…"
   },
   "sidebar": {
