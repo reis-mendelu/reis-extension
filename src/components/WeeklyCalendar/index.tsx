@@ -15,6 +15,7 @@ import { CustomEventModal } from '../CustomEventModal';
 import { useHintStatus } from '../../hooks/ui/useHintStatus';
 import { useIsMobile } from '../../hooks/ui/useIsMobile';
 import { useTranslation } from '../../hooks/useTranslation';
+import { BuildingWeek } from './BuildingWeek';
 import type { BlockLesson, CalendarCustomEvent } from '../../types/calendarTypes';
 
 const TOTAL_HOURS = 14;
@@ -27,7 +28,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     const pendingTimeSelection = useAppStore((state) => state.pendingTimeSelection);
     const setPendingTimeSelection = useAppStore((state) => state.setPendingTimeSelection);
     const isMobile = useIsMobile();
-    const { weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton: dataLoading, weekdayScheduleData, isOutsideTeachingPeriod } = useCalendarData(initialDate);
+    const { weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton: dataLoading, scheduleData, weekdayScheduleData, isOutsideTeachingPeriod } = useCalendarData(initialDate);
     const { t } = useTranslation();
     const [selected, setSelected] = useState<BlockLesson | null>(null);
     const { isSeen, markSeen } = useHintStatus('calendar_event_click');
@@ -37,9 +38,13 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     const addCalendarCustomEvent = useAppStore(state => state.addCalendarCustomEvent);
     const updateCalendarCustomEvent = useAppStore(state => state.updateCalendarCustomEvent);
     const removeCalendarCustomEvent = useAppStore(state => state.removeCalendarCustomEvent);
+    const handshakeTimedOut = useAppStore((state) => state.syncStatus.handshakeTimedOut);
+    const isSyncing = useAppStore((state) => state.syncStatus.isSyncing);
 
     // Show skeletons if either data is loading (initial) or language is still being determined
     const showSkeleton = dataLoading || isLanguageLoading;
+
+    const scheduleLoadFailed = !!handshakeTimedOut && !isSyncing && scheduleData.length === 0;
 
     const targetEventPosition = useMemo(() => {
         if (showSkeleton || isSeen) return null;
@@ -111,6 +116,14 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
         setSelected(lesson);
         if (!isSeen) markSeen();
     };
+
+    if (dataLoading || scheduleLoadFailed) {
+        return (
+            <div className="h-full">
+                <BuildingWeek timedOut={scheduleLoadFailed} />
+            </div>
+        );
+    }
 
     if (isMobile) {
         return (
