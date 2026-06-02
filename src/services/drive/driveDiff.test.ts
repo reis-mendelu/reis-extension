@@ -38,6 +38,23 @@ describe('flattenSubjectFiles', () => {
         expect(items.map((i) => i.isLink)).toEqual(['A', 'B']);
     });
 
+    it('numbers attachments when one row carries several identically-named files', () => {
+        const items = flattenSubjectFiles('SUB', [
+            pf({ file_name: 'dokument', files: [
+                { name: 'dokument', type: 'pdf', link: 'A' },
+                { name: 'dokument', type: 'pdf', link: 'B' },
+            ] }),
+        ]);
+        expect(items.map((i) => i.fileName)).toEqual(['dokument (1)', 'dokument (2)']);
+    });
+
+    it('does not number a row that has a single attachment', () => {
+        const items = flattenSubjectFiles('SUB', [
+            pf({ file_name: 'dokument', files: [{ name: 'dokument', type: 'pdf', link: 'A' }] }),
+        ]);
+        expect(items[0].fileName).toBe('dokument');
+    });
+
     it('skips attachments with no link and groups with no files', () => {
         const items = flattenSubjectFiles('SUB', [
             pf({ files: [] }),
@@ -91,6 +108,18 @@ describe('buildDriveFileName', () => {
 
     it('never returns an empty string', () => {
         expect(buildDriveFileName('', '')).toBe('soubor');
+    });
+
+    it('appends a 1-based ordinal when an IS row has several attachments', () => {
+        expect(buildDriveFileName('dokument', '', 1)).toBe('dokument (1)');
+        expect(buildDriveFileName('dokument', 'Lecture 5', 2)).toBe('dokument — Lecture 5 (2)');
+    });
+
+    it('keeps the ordinal even when the base is clamped', () => {
+        const long = 'x'.repeat(500);
+        const out = buildDriveFileName('doc', long, 3);
+        expect(out.length).toBeLessThanOrEqual(200);
+        expect(out.endsWith(' (3)')).toBe(true);
     });
 });
 

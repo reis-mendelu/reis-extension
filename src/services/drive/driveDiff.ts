@@ -90,7 +90,7 @@ function sanitizeForName(s: string): string {
  * so a student browsing the mirror in the Drive app on their phone sees the same
  * meaningful label they see in reIS. Falls back to whichever half is present.
  */
-export function buildDriveFileName(fileName: string, comment?: string): string {
+export function buildDriveFileName(fileName: string, comment?: string, part?: number): string {
     const name = sanitizeForName(fileName || '');
     const note = sanitizeForName(comment || '');
     let out: string;
@@ -98,7 +98,12 @@ export function buildDriveFileName(fileName: string, comment?: string): string {
     else if (!name) out = note;
     else out = `${name} — ${note}`;
     out = out.trim() || 'soubor';
-    return out.length > DRIVE_NAME_MAX ? out.slice(0, DRIVE_NAME_MAX).trim() : out;
+    // One IS row can carry several identically-named attachments; on the phone
+    // they'd be an indistinguishable wall, so number them like the reIS list does.
+    const suffix = part ? ` (${part})` : '';
+    const room = DRIVE_NAME_MAX - suffix.length;
+    if (out.length > room) out = out.slice(0, room).trim();
+    return out + suffix;
 }
 
 /** Flatten a subject's parsed files into one item per downloadable attachment. */
@@ -107,15 +112,16 @@ export function flattenSubjectFiles(subjectFolderName: string, parsedFiles: Pars
     for (const group of parsedFiles) {
         const sub = group.subfolder?.trim();
         const pathSegments = sub ? [subjectFolderName, sub] : [subjectFolderName];
-        for (const att of group.files) {
-            if (!att.link) continue;
+        const multi = group.files.length > 1;
+        group.files.forEach((att, j) => {
+            if (!att.link) return;
             items.push({
                 isLink: att.link,
-                fileName: buildDriveFileName(att.name || group.file_name, group.file_comment),
+                fileName: buildDriveFileName(att.name || group.file_name, group.file_comment, multi ? j + 1 : undefined),
                 date: group.date || '',
                 pathSegments,
             });
-        }
+        });
     }
     return items;
 }
