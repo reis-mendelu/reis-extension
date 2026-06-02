@@ -12,6 +12,9 @@ import { CurrentTimeIndicator } from './CurrentTimeIndicator';
 import { WeeklyCalendarDay } from './WeeklyCalendarDay';
 import { DailyView } from './DailyView';
 import { CustomEventModal } from '../CustomEventModal';
+import { ExamHandoffBanner } from './ExamHandoffBanner';
+import { hasRegisterableTerms } from '../../utils/examRegistration';
+import { useExams } from '../../hooks/data/useExams';
 import { useHintStatus } from '../../hooks/ui/useHintStatus';
 import { useIsMobile } from '../../hooks/ui/useIsMobile';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -19,7 +22,7 @@ import type { BlockLesson, CalendarCustomEvent } from '../../types/calendarTypes
 
 const TOTAL_HOURS = 14;
 
-export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWeek }: { initialDate?: Date; onPrevWeek?: () => void; onNextWeek?: () => void }) {
+export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWeek, onOpenExams }: { initialDate?: Date; onPrevWeek?: () => void; onNextWeek?: () => void; onOpenExams?: () => void }) {
     const language = useAppStore((state) => state.language);
     const isLanguageLoading = useAppStore((state) => state.isLanguageLoading);
     const isSelectingTime = useAppStore((state) => state.isSelectingTime);
@@ -29,6 +32,8 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     const isMobile = useIsMobile();
     const { weekDates, lessonsByDay, holidaysByDay, todayIndex, showSkeleton: dataLoading, weekdayScheduleData, isOutsideTeachingPeriod } = useCalendarData(initialDate);
     const { t } = useTranslation();
+    const { exams } = useExams();
+    const showExamHandoff = onOpenExams != null && hasRegisterableTerms(exams);
     const [selected, setSelected] = useState<BlockLesson | null>(null);
     const { isSeen, markSeen } = useHintStatus('calendar_event_click');
 
@@ -115,6 +120,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     if (isMobile) {
         return (
             <div className="flex h-full overflow-hidden flex-col font-inter bg-base-100">
+                {showExamHandoff && <ExamHandoffBanner onOpenExams={onOpenExams!} />}
                 <DailyView
                     weekDates={weekDates}
                     lessonsByDay={lessonsByDay}
@@ -165,6 +171,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
 
     return (
         <div className="flex h-full overflow-hidden flex-col font-inter bg-base-100">
+            {showExamHandoff && <ExamHandoffBanner onOpenExams={onOpenExams!} />}
             {/* Study Jam Time Selection Hint Banner */}
             <AnimatePresence>
                 {isSelectingTime && (

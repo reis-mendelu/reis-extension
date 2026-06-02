@@ -20,12 +20,12 @@ export function ExamHandoffBanner({ onOpenExams }: ExamHandoffBannerProps) {
             className="btn btn-block btn-sm h-auto py-2 justify-between bg-primary/10 hover:bg-primary/15 border-none text-primary font-bold normal-case rounded-none"
         >
             <span className="flex items-center gap-2">
-                <GraduationCap size={16} className="shrink-0" />
+                <GraduationCap size={16} className="shrink-0" aria-hidden="true" />
                 {t('calendar.examPeriodBanner.label')}
             </span>
             <span className="flex items-center gap-1.5 text-xs">
                 {t('calendar.examPeriodBanner.action')}
-                <ArrowRight size={14} />
+                <ArrowRight size={14} aria-hidden="true" />
             </span>
         </button>
     );
