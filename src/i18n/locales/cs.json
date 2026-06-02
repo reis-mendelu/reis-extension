@@ -186,11 +186,7 @@
     "selectedTime": "Vybráno: {time}",
     "clickFreeSlot": "Klikněte na volné místo v kalendáři",
     "pickTime": "Vyber čas:",
-    "publicHoliday": "Státní svátek",
-    "examPeriodBanner": {
-      "label": "Zkouškové období",
-      "action": "Přihlásit se na termíny"
-    }
+    "publicHoliday": "Státní svátek"
   },
   "exams": {
     "title": "Moje zkoušky",
