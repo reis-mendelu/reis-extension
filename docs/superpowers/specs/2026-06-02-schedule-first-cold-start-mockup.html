@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="cs" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>reIS — Schedule-First Cold Start (storyboard mockup)</title>
+<!--
+  DESIGN MOCKUP ONLY — not production code.
+  Production uses DaisyUI semantic classes (no custom CSS, Inter font, mendelu theme).
+  This file replicates the real reIS tokens (#79be15 primary, #00548f accent,
+  mendelu-dark base) with utility classes so the cold-start journey can be SEEN
+  and judged before implementation. Class names mirror their DaisyUI equivalents
+  (btn-primary, card, badge, toggle) so the mapping to real components is 1:1.
+-->
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'sans-serif'] },
+        colors: {
+          primary: '#79be15', 'primary-content': '#ffffff',
+          accent: '#3b82f6', secondary: '#8DC843',
+          'base-100': '#1f2937', 'base-200': '#111827', 'base-300': '#0f172a',
+          'base-content': '#f3f4f6',
+          'lecture-bg': 'rgba(121,190,21,0.14)', 'lecture-bd': '#79be15',
+          'seminar-bg': 'rgba(59,130,246,0.14)', 'seminar-bd': '#3b82f6',
+          'exam-bg': 'rgba(220,38,38,0.14)', 'exam-bd': '#dc2626',
+        },
+        borderRadius: { box: '12px', field: '6px', selector: '8px' },
+        keyframes: {
+          shimmer: { '100%': { transform: 'translateX(100%)' } },
+          rise: { '0%': { opacity: 0, transform: 'translateY(8px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+          breathe: { '0%,100%': { opacity: .4 }, '50%': { opacity: 1 } },
+          grow: { '0%': { width: '0%' }, '100%': { width: '62%' } },
+        },
+        animation: {
+          rise: 'rise .5s cubic-bezier(.2,.7,.2,1) both',
+          breathe: 'breathe 1.8s ease-in-out infinite',
+          grow: 'grow 2.4s cubic-bezier(.3,.6,.3,1) infinite',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { background:
+      radial-gradient(900px 500px at 20% -10%, rgba(121,190,21,.10), transparent 60%),
+      radial-gradient(800px 500px at 100% 110%, rgba(59,130,246,.10), transparent 55%),
+      #0b1220; }
+  .panel { box-shadow: 0 24px 60px -20px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04); }
+  .shimmer { position: relative; overflow: hidden; }
+  .shimmer::after { content:''; position:absolute; inset:0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.07), transparent);
+    transform: translateX(-100%); animation: shimmer 1.4s infinite; }
+  /* staggered cascade for resolved class cards */
+  .cascade > * { animation: rise .5s cubic-bezier(.2,.7,.2,1) both; }
+  .cascade > *:nth-child(1){ animation-delay:.05s } .cascade > *:nth-child(2){ animation-delay:.18s }
+  .cascade > *:nth-child(3){ animation-delay:.31s } .cascade > *:nth-child(4){ animation-delay:.44s }
+</style>
+</head>
+<body class="font-sans text-base-content min-h-screen px-6 py-10">
+
+  <header class="max-w-6xl mx-auto mb-10">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-selector bg-primary grid place-items-center font-black text-primary-content shadow-lg shadow-primary/30">r</div>
+      <div>
+        <h1 class="text-xl font-extrabold tracking-tight">Schedule-First Cold Start</h1>
+        <p class="text-sm text-base-content/50">The first 30 seconds, as a storyboard · mendelu-dark theme</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- storyboard rail -->
+  <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+
+    <!-- ① WELCOME — asks deferred -->
+    <section class="flex flex-col gap-3">
+      <span class="text-xs font-bold uppercase tracking-widest text-base-content/40">① Open · 0s</span>
+      <div class="panel bg-base-100 rounded-box p-6 flex-1 flex flex-col">
+        <div class="flex-1 flex flex-col items-center text-center justify-center gap-4 py-6">
+          <div class="w-14 h-14 rounded-box bg-primary grid place-items-center font-black text-2xl text-primary-content shadow-lg shadow-primary/30 animate-rise">r</div>
+          <div>
+            <h2 class="text-2xl font-extrabold tracking-tight">Vítej v reISu!</h2>
+            <p class="text-sm text-base-content/60 mt-1 leading-relaxed">Vylepšená verze IS MENDELU.<br/>Od studentů pro studenty.</p>
+          </div>
+          <!-- segmented language toggle -->
+          <div class="inline-flex p-0.5 rounded-selector bg-base-300 border border-white/5">
+            <button class="px-4 py-1 text-xs font-bold rounded-field bg-primary text-primary-content shadow">CZ</button>
+            <button class="px-4 py-1 text-xs font-bold rounded-field text-base-content/50">EN</button>
+          </div>
+          <button class="w-full mt-1 py-2.5 rounded-field bg-primary text-primary-content font-bold tracking-wide shadow-lg shadow-primary/25 hover:brightness-105 transition">
+            Jdeme na to →
+          </button>
+          <p class="text-[11px] text-base-content/35">Žádné přihlašování. Vše běží u tebe v prohlížeči.</p>
+        </div>
+      </div>
+      <p class="text-xs text-base-content/45 leading-relaxed">One confident screen. <b class="text-base-content/70">No Outlook / Drive ask</b> — nothing is requested before value is shown.</p>
+    </section>
+
+    <!-- ② BUILDING YOUR WEEK -->
+    <section class="flex flex-col gap-3">
+      <span class="text-xs font-bold uppercase tracking-widest text-base-content/40">② Building · 0–2s</span>
+      <div class="panel bg-base-100 rounded-box p-4 flex-1 flex flex-col gap-3">
+        <!-- branded loading header -->
+        <div class="flex items-center gap-2.5 px-1">
+          <span class="relative flex h-2.5 w-2.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+          </span>
+          <div>
+            <p class="text-sm font-bold leading-none">Sestavujeme tvůj týden…</p>
+            <p class="text-[11px] text-base-content/45 mt-1">Pondělí 2. června</p>
+          </div>
+        </div>
+        <!-- thin progress -->
+        <div class="h-1 rounded-full bg-base-300 overflow-hidden"><div class="h-full bg-primary/80 animate-grow"></div></div>
+        <!-- weekday strip -->
+        <div class="grid grid-cols-5 gap-1 text-center text-[10px] font-bold text-base-content/40">
+          <div class="py-1 rounded-field bg-primary/15 text-primary">Po</div><div>Út</div><div>St</div><div>Čt</div><div>Pá</div>
+        </div>
+        <!-- timetable skeleton (assembling) -->
+        <div class="flex-1 flex flex-col gap-2 mt-1">
+          <div class="shimmer h-14 rounded-field bg-base-300/70"></div>
+          <div class="shimmer h-10 rounded-field bg-base-300/70"></div>
+          <div class="shimmer h-16 rounded-field bg-base-300/70"></div>
+          <div class="shimmer h-10 rounded-field bg-base-300/70"></div>
+        </div>
+      </div>
+      <p class="text-xs text-base-content/45 leading-relaxed">Branded <b class="text-base-content/70">"building your week"</b>, never a broken-looking skeleton. The wait reads as construction.</p>
+    </section>
+
+    <!-- ③ YOUR WEEK PAINTS -->
+    <section class="flex flex-col gap-3">
+      <span class="text-xs font-bold uppercase tracking-widest text-base-content/40">③ Your week · ~2s ✦</span>
+      <div class="panel bg-base-100 rounded-box p-4 flex-1 flex flex-col gap-3 ring-1 ring-primary/30">
+        <div class="flex items-center justify-between px-1">
+          <div>
+            <p class="text-sm font-bold leading-none">Pondělí 2. června</p>
+            <p class="text-[11px] text-base-content/45 mt-1">tvůj rozvrh</p>
+          </div>
+          <!-- honest streaming chip -->
+          <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-1 rounded-full bg-base-300 text-base-content/55">
+            <span class="w-1.5 h-1.5 rounded-full bg-primary animate-breathe"></span> načítám materiály…
+          </span>
+        </div>
+        <div class="grid grid-cols-5 gap-1 text-center text-[10px] font-bold text-base-content/40">
+          <div class="py-1 rounded-field bg-primary/15 text-primary">Po</div><div>Út</div><div>St</div><div>Čt</div><div>Pá</div>
+        </div>
+        <!-- resolved real class cards, staggered cascade -->
+        <div class="flex-1 flex flex-col gap-2 mt-1 cascade">
+          <div class="rounded-field bg-lecture-bg border-l-4 border-lecture-bd px-3 py-2">
+            <p class="text-xs font-bold">Matematika I</p>
+            <p class="text-[10px] text-base-content/55">8:00 · přednáška · Q01</p>
+          </div>
+          <div class="rounded-field bg-seminar-bg border-l-4 border-seminar-bd px-3 py-2">
+            <p class="text-xs font-bold">Programování</p>
+            <p class="text-[10px] text-base-content/55">10:00 · cvičení · T1.05</p>
+          </div>
+          <div class="rounded-field bg-lecture-bg border-l-4 border-lecture-bd px-3 py-2">
+            <p class="text-xs font-bold">Ekonomie</p>
+            <p class="text-[10px] text-base-content/55">13:00 · přednáška · Aula</p>
+          </div>
+          <!-- one still-streaming row -->
+          <div class="shimmer h-10 rounded-field bg-base-300/60"></div>
+        </div>
+      </div>
+      <p class="text-xs text-base-content/45 leading-relaxed">The <b class="text-primary">hook lands</b>: real classes cascade in while materials still stream behind an honest chip. This is the "I'm keeping this" moment.</p>
+    </section>
+
+    <!-- ④ OUTLOOK NUDGE -->
+    <section class="flex flex-col gap-3">
+      <span class="text-xs font-bold uppercase tracking-widest text-base-content/40">④ Post-paint · nudge</span>
+      <div class="panel bg-base-100 rounded-box p-4 flex-1 flex flex-col gap-3">
+        <div class="flex items-center justify-between px-1">
+          <p class="text-sm font-bold leading-none">Tvůj týden</p>
+          <span class="text-[11px] text-base-content/40">2.–6. 6.</span>
+        </div>
+        <!-- dismissible contextual nudge -->
+        <div class="relative rounded-field bg-accent/10 border border-accent/25 px-3 py-2.5 pr-8">
+          <button class="absolute top-2 right-2 text-base-content/35 hover:text-base-content/70 text-xs leading-none">✕</button>
+          <p class="text-xs font-bold flex items-center gap-1.5"><span>📱</span> Chceš rozvrh v mobilu?</p>
+          <p class="text-[11px] text-base-content/55 mt-0.5">Synchronizuj do kalendáře v Outlooku.</p>
+          <button class="mt-2 text-[11px] font-bold px-2.5 py-1 rounded-field bg-accent text-white">Nastavit sync</button>
+        </div>
+        <!-- the calm, fully-loaded week behind it -->
+        <div class="flex-1 flex flex-col gap-2 opacity-90">
+          <div class="rounded-field bg-lecture-bg border-l-4 border-lecture-bd px-3 py-2"><p class="text-xs font-bold">Matematika I</p><p class="text-[10px] text-base-content/55">8:00 · přednáška</p></div>
+          <div class="rounded-field bg-seminar-bg border-l-4 border-seminar-bd px-3 py-2"><p class="text-xs font-bold">Programování</p><p class="text-[10px] text-base-content/55">10:00 · cvičení</p></div>
+          <div class="rounded-field bg-exam-bg border-l-4 border-exam-bd px-3 py-2"><p class="text-xs font-bold">Statistika — zkouška</p><p class="text-[10px] text-base-content/55">14:00 · zápis otevřen</p></div>
+        </div>
+      </div>
+      <p class="text-xs text-base-content/45 leading-relaxed">The deferred Outlook ask returns <b class="text-base-content/70">in context</b>, dismissible. Drive ask stays in the file drawer. Asks earn their place after value.</p>
+    </section>
+
+  </div>
+
+  <footer class="max-w-6xl mx-auto mt-10 text-xs text-base-content/35 leading-relaxed border-t border-white/5 pt-5">
+    <p><b class="text-base-content/55">Design intent.</b> One memorable moment — the timetable assembling itself — carried entirely by DaisyUI semantic classes + motion/react in production (no custom CSS, no new fonts, Inter throughout). Green is the single confident accent; everything else is calm. The whole journey says <i>"this is fast, this is yours, this works"</i> before a stranger's attention is gone.</p>
+  </footer>
+
+</body>
+</html>
