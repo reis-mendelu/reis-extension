@@ -38,4 +38,29 @@ describe('unregisterExam verification', () => {
     const res = await unregisterExam('555');
     expect(res.success).toBe(false);
   });
+
+  it('returns success when only an UNRELATED exam remains registered', async () => {
+    // Target term 555 is now a register link; a different term 999 is still registered.
+    vi.mocked(client.fetchWithAuth).mockResolvedValue(htmlResponse(
+      '<a href="terminy_seznam.pl?termin=555;studium=111;prihlasit_ihned=1">register</a>' +
+      '<a href="terminy_seznam.pl?termin=999;studium=111;odhlasit_ihned=1">unregister other</a>'
+    ));
+    const res = await unregisterExam('555');
+    expect(res.success).toBe(true);
+  });
+
+  it('does not confuse a longer term id (5550) with the target (555)', async () => {
+    vi.mocked(client.fetchWithAuth).mockResolvedValue(htmlResponse(
+      '<a href="terminy_seznam.pl?termin=5550;studium=111;odhlasit_ihned=1">unregister 5550</a>'
+    ));
+    const res = await unregisterExam('555');
+    expect(res.success).toBe(true);
+  });
+
+  it('returns failure when network fetch rejects', async () => {
+    vi.mocked(client.fetchWithAuth).mockRejectedValue(new Error('network down'));
+    const res = await unregisterExam('555');
+    expect(res.success).toBe(false);
+    expect(res.error).toBeTruthy();
+  });
 });

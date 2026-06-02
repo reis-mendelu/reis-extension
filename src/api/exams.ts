@@ -52,7 +52,13 @@ function verifyRegistrationSuccess(html: string, termId: string): boolean {
  * the unregister link for this term is absent.
  */
 function verifyUnregistrationSuccess(html: string, termId: string): boolean {
-    const stillRegistered = html.includes(`termin=${termId}`) && html.includes('odhlasit_ihned=1');
+    // Anchor both tokens to the SAME link: the exam-list page lists every term
+    // for every subject, so a bare html.includes('odhlasit_ihned=1') would match
+    // an unrelated still-registered exam, and a bare termin=${termId} collides
+    // with longer ids (555 vs 5550). Require termin=<id> (word-bounded) followed
+    // by odhlasit_ihned=1 within the same href (no quote/space breaking out).
+    const escaped = termId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const stillRegistered = new RegExp(`termin=${escaped}\\b[^"'\\s]*odhlasit_ihned=1`).test(html);
     return !stillRegistered;
 }
 
