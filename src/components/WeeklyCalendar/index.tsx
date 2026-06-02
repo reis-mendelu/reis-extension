@@ -16,6 +16,7 @@ import { useHintStatus } from '../../hooks/ui/useHintStatus';
 import { useIsMobile } from '../../hooks/ui/useIsMobile';
 import { useTranslation } from '../../hooks/useTranslation';
 import { BuildingWeek } from './BuildingWeek';
+import { OutlookNudge } from './OutlookNudge';
 import type { BlockLesson, CalendarCustomEvent } from '../../types/calendarTypes';
 
 const TOTAL_HOURS = 14;
@@ -128,6 +129,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
     if (isMobile) {
         return (
             <div className="flex h-full overflow-hidden flex-col font-inter bg-base-100">
+                <OutlookNudge />
                 <DailyView
                     weekDates={weekDates}
                     lessonsByDay={lessonsByDay}
@@ -178,6 +180,7 @@ export function WeeklyCalendar({ initialDate = new Date(), onPrevWeek, onNextWee
 
     return (
         <div className="flex h-full overflow-hidden flex-col font-inter bg-base-100">
+            <OutlookNudge />
             {/* Study Jam Time Selection Hint Banner */}
             <AnimatePresence>
                 {isSelectingTime && (
