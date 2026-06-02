@@ -209,8 +209,10 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
                 </div>
             )}
             <div className="p-2 h-full flex flex-col text-sm overflow-hidden font-inter">
-                {/* Course title - always visible */}
-                <div className={`font-semibold ${styles.text} flex-shrink-0 truncate ${!lesson.isExam && !isCompact ? 'pr-8' : ''}`}>
+                {/* Course title - always visible. Fixed near-black (content-primary)
+                    rather than the colored type token, so the title reads black on the
+                    light green/blue/red card tints regardless of theme. */}
+                <div className={`font-semibold text-content-primary flex-shrink-0 truncate ${!lesson.isExam && !isCompact ? 'pr-8' : ''}`}>
                     {courseTitle}
                 </div>
                 {/* Additional course info - only for longer events */}
