@@ -122,6 +122,33 @@ install → open iframe
 - **Calendar Outlook nudge**: assert it renders only after schedule present, and that
   dismissal persists.
 
+## Visual design (decided)
+
+Storyboard mockup: `2026-06-02-schedule-first-cold-start-mockup.html` (companion file).
+Aesthetic direction: **calm competence** — restraint, not a bold redesign. Built entirely
+in DaisyUI semantic classes + motion/react (no custom CSS, no new fonts, Inter throughout,
+mendelu-dark default). MENDELU green (`#79be15`) is the single confident accent; everything
+else stays quiet. **The one memorable moment is the timetable assembling itself** — the wait
+reads as construction, not loading.
+
+The four frames of the journey:
+
+1. **Welcome (0s)** — one confident screen: logo, title, CZ/EN segmented toggle, single
+   "Jdeme na to →" primary button, reassurance caption ("nothing logged in, runs in your
+   browser"). **No Outlook/Drive ask.**
+2. **Building (0–2s)** — branded header with a pulsing green dot + "Sestavujeme tvůj
+   týden…", an honest thin progress bar, and a shimmering timetable skeleton. Never the
+   generic skeleton.
+3. **Your week (~2s) ✦** — the hook lands: real class cards **cascade in** (staggered
+   `rise`, lecture green / seminar blue / exam red) while an honest *"načítám materiály…"*
+   chip shows the rest still streaming. This is the "I'm keeping this" beat.
+4. **Post-paint nudge** — the deferred Outlook ask returns **in context** as a dismissible
+   card inside the calendar; Drive ask stays in the file drawer.
+
+Motion budget (one well-orchestrated moment, not scattered micro-interactions): ping dot
+on the building header, a single staggered cascade on first schedule paint, a breathing dot
+on the streaming chip. Respect `prefers-reduced-motion`.
+
 ## Out of scope (YAGNI)
 
 - Cached-shell / offline-instant first paint (Approach C) — returning-user payoff only.
