@@ -8,6 +8,28 @@
             "type": "command",
             "command": "python3 .claude/hooks/guard-parsers.py",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/guard-secrets.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/lint-on-edit.py",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/nudge-reviewers.py",
+            "timeout": 5
           }
         ]
       }

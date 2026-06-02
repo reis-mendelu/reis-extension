@@ -34,9 +34,9 @@ export let cachedData: SyncedData = { lastSync: 0 };
 
 // Emit the student's schedule the instant it resolves — before the rest of the
 // sync batch settles — so the calendar paints in ~1–3s on first open.
-export function emitScheduleFirst(schedule: unknown[], lastSync: number) {
+export function emitScheduleFirst(schedule: unknown[] | undefined, lastSync: number) {
     if (!schedule || schedule.length === 0) return;
-    sendToIframe(Messages.syncUpdate({ schedule: schedule as never, isSyncing: true, lastSync }));
+    sendToIframe(Messages.syncUpdate({ schedule, isSyncing: true, lastSync }));
 }
 export let isSyncing = false;
 
@@ -116,7 +116,7 @@ export async function syncAllData() {
         // before waiting for the rest of the batch to settle.
         const earlyLastSync = Date.now();
         const schedulePromise = fetchFullSemesterSchedule().then((s) => {
-            if (s) emitScheduleFirst(s as unknown[], earlyLastSync);
+            emitScheduleFirst(s as unknown[] | undefined, earlyLastSync);
             return s;
         });
         const [fullSchedule, exams, subjects, studyPlan, studyStats, cvicneTests, odevzdavarnyResult, pastSubjects] = await Promise.allSettled([
