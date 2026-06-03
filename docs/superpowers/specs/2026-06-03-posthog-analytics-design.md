@@ -89,7 +89,11 @@ component / store / content-script
   `distinct_id` for subsequent events, and flushes the buffer.
 - If identity never resolves in a session (pre-auth / cold start), events remain
   anonymous — still valid for in-session funnel analysis.
-- **Opt-out flag stored in Chrome Sync** (settings tier; follows devices).
+- Hashing reuses the existing precedent: `hashId` (SHA-256 hex) in
+  `src/api/feedback.ts`; identify timing mirrors the `trackDailyUsage` call in
+  `src/store/useAppStore.ts` (`getUserParams().then(p => …)`).
+- **Opt-out flag stored in IndexedDB `meta`** via the existing
+  `createErrorReportingSlice` (`errorReportingEnabled`) — *not* Chrome Sync.
   `distinct_id` derived fresh each load. No localStorage/cookies.
 
 ## 6. Event taxonomy
@@ -124,10 +128,12 @@ unions in `events.ts`; **never** pass IS-derived content strings.
 
 ## 8. Consent & PRIVACY.md
 
-- **Combined opt-out toggle, default on**, legitimate-interest basis — consistent
-  with the existing error-reporting opt-out. Surfaced as one **"Usage analytics &
-  diagnostics"** toggle in the profile/settings panel; it gates both this
-  analytics path and (going forward) error reporting.
+- **Combined opt-out toggle, default on**, legitimate-interest basis. We **reuse
+  the existing `errorReportingEnabled` flag** as the single combined gate (analytics
+  reads `useAppStore.getState().errorReportingEnabled`), preserving users' stored
+  opt-out choices — only the user-facing label changes to **"Usage analytics &
+  diagnostics"** in `ProfilePopup.tsx` and `MobileProfileSheet.tsx`. The internal
+  flag/IDB key keep their names to avoid a migration that would reset preferences.
 - **PRIVACY.md updates (required, part of implementation):**
   - Expand §3 ("Anonymous Usage Analytics") to describe behavioral product
     analytics via PostHog (EU), the explicit-events-only model, the hashed-ID
