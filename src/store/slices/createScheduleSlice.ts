@@ -1,6 +1,7 @@
 import type { ScheduleSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
+import { wouldWipePopulated } from '../guards';
 
 export const createScheduleSlice: AppSlice<ScheduleSlice> = (set, get) => ({
   schedule: {
@@ -35,7 +36,7 @@ export const createScheduleSlice: AppSlice<ScheduleSlice> = (set, get) => ({
     // A transient/failed IS fetch can resolve to [], and a sync push would
     // otherwise wipe the currently-displayed schedule. Keep old data on screen
     // until real new data is available to replace it (mirrors setExams).
-    if ((!data || data.length === 0) && get().schedule.data.length > 0) return;
+    if (wouldWipePopulated(data, get().schedule.data)) return;
     set((state) => ({
       schedule: { ...state.schedule, data: data || [] },
     }));

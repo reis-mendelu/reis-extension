@@ -2,6 +2,7 @@ import type { SubjectsSlice, AppSlice, CourseDeadline } from '../types';
 import type { SubjectAttendance } from '../../types/documents';
 import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
+import { wouldWipePopulated } from '../guards';
 
 export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
     subjects: null,
@@ -37,19 +38,17 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
         // A partial/failed sync can push empty (or null) subjects; that would
         // wipe the visible subject list. Keep the populated list until real data
         // arrives to replace it.
-        const incomingCount = data?.data ? Object.keys(data.data).length : 0;
-        const currentCount = get().subjects?.data ? Object.keys(get().subjects!.data).length : 0;
-        if (incomingCount === 0 && currentCount > 0) return;
+        if (wouldWipePopulated(data?.data, get().subjects?.data)) return;
         set({ subjects: data });
     },
     setAttendance: (data) => {
         // Empty {} from a transient fetch must not wipe populated attendance.
-        if (Object.keys(data).length === 0 && Object.keys(get().attendance).length > 0) return;
+        if (wouldWipePopulated(data, get().attendance)) return;
         set({ attendance: data });
         IndexedDBService.set('meta', 'current_attendance', data).catch(() => {});
     },
     setPastAttendance: (data) => {
-        if (Object.keys(data).length === 0 && Object.keys(get().pastAttendance).length > 0) return;
+        if (wouldWipePopulated(data, get().pastAttendance)) return;
         set({ pastAttendance: data });
     },
     setCourseNickname: (courseCode, nickname) => {
