@@ -33,11 +33,25 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
             set({ subjectsLoading: false });
         }
     },
+    setSubjects: (data) => {
+        // A partial/failed sync can push empty (or null) subjects; that would
+        // wipe the visible subject list. Keep the populated list until real data
+        // arrives to replace it.
+        const incomingCount = data?.data ? Object.keys(data.data).length : 0;
+        const currentCount = get().subjects?.data ? Object.keys(get().subjects!.data).length : 0;
+        if (incomingCount === 0 && currentCount > 0) return;
+        set({ subjects: data });
+    },
     setAttendance: (data) => {
+        // Empty {} from a transient fetch must not wipe populated attendance.
+        if (Object.keys(data).length === 0 && Object.keys(get().attendance).length > 0) return;
         set({ attendance: data });
         IndexedDBService.set('meta', 'current_attendance', data).catch(() => {});
     },
-    setPastAttendance: (data) => set({ pastAttendance: data }),
+    setPastAttendance: (data) => {
+        if (Object.keys(data).length === 0 && Object.keys(get().pastAttendance).length > 0) return;
+        set({ pastAttendance: data });
+    },
     setCourseNickname: (courseCode, nickname) => {
         const currentNicknames = get().courseNicknames;
         const newNicknames = { ...currentNicknames };
