@@ -47,8 +47,8 @@ export function useExamsData() {
     const showSkeleton = shouldShowExamsSkeleton({
         examsCount: exams.length,
         status,
-        handshakeDone: !!handshakeDone,
-        handshakeTimedOut: !!handshakeTimedOut,
+        handshakeDone: handshakeDone ?? false,
+        handshakeTimedOut: handshakeTimedOut ?? false,
         isSyncing,
         examsRefreshing,
     });

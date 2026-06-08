@@ -128,7 +128,7 @@ export function useAppLogic() {
                     await IndexedDBService.set('study_plan', 'current', r.studyPlan);
                     useAppStore.getState().setStudyPlan(r.studyPlan);
                 }
-                if (r.studyStats) {
+                if (r.studyStats && typeof r.studyStats === 'object') {
                     await IndexedDBService.set('meta', 'study_stats', r.studyStats);
                     useAppStore.getState().setStudyStats(r.studyStats as StudyStats);
                 }
