@@ -74,8 +74,8 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
         </h2>
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <a href={registrationsUrl} target="_blank" rel="noopener noreferrer"
-            className="btn btn-ghost btn-sm px-2.5 text-base-content/50 hover:text-primary gap-1.5">
-            <span className="text-xs uppercase whitespace-nowrap hidden md:inline">{t('sidebar.registrations')}</span>
+            className="btn btn-primary btn-sm px-3 gap-1.5 shadow-sm">
+            <span className="text-xs font-semibold whitespace-nowrap hidden md:inline">{t('sidebar.registrations')}</span>
             <ExternalLink size={14} />
           </a>
         </div>

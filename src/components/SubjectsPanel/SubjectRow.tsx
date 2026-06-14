@@ -1,4 +1,4 @@
-import { Search, CheckCircle2, AlertTriangle, Timer, Layers } from 'lucide-react';
+import { Search, CheckCircle2, AlertTriangle, Timer, Layers, XCircle } from 'lucide-react';
 import type { SubjectStatus, Zamerani } from '@/types/studyPlan';
 import type { ZameraniProgress } from './SubjectsPanelHeader';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -51,21 +51,28 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
   };
 
   if (compact) {
+    const isUnfulfilled = !subject.isFulfilled;
     return (
       <div className="flex flex-col">
         <button
           onClick={handleClick}
           onMouseEnter={hover.onMouseEnter}
           onMouseLeave={hover.onMouseLeave}
-          className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-base-200/50 transition-colors text-left text-base-content/40"
+          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-base-200/50 transition-colors text-left ${isUnfulfilled ? 'text-error/80' : 'text-base-content/40'}`}
         >
-          {subject.isFulfilled && <CheckCircle2 className="w-3.5 h-3.5 text-success/50 shrink-0" />}
-          <span className="flex-1 text-xs truncate">{displayName}</span>
-          {subject.fulfillmentDate && (
-            <span className="text-[9px] text-base-content/30 shrink-0">{subject.fulfillmentDate}</span>
-          )}
+          <span className="flex-1 text-sm font-medium truncate">{displayName}</span>
           {timeline && <span className="text-[9px] font-bold text-primary/60 shrink-0">{timeline.formatted}</span>}
-          {showCredits && <span className="hidden md:inline text-[10px] shrink-0 font-medium">{subject.credits} kr.</span>}
+          {showCredits && <span className="hidden md:inline text-xs text-base-content/50 shrink-0">{subject.credits} kr.</span>}
+          <span className="flex items-center gap-1 shrink-0">
+            {subject.isFulfilled ? (
+              <>
+                <CheckCircle2 className={`w-3 h-3 ${subject.fulfillmentDate ? 'text-success/50' : 'text-success/50'}`} />
+                {subject.fulfillmentDate && <span className="text-[10px] text-success/60 font-mono">{subject.fulfillmentDate}</span>}
+              </>
+            ) : (
+              <XCircle className="w-3 h-3 text-error/50" />
+            )}
+          </span>
         </button>
       </div>
     );

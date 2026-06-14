@@ -115,13 +115,14 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
             if (visible.length === 0 && !showPickPrompt) return null;
             const statusText = (group.statusDescription || '').trim();
             const statusIsFulfilled = /^SPLN[ĚE]N/i.test(statusText) || /^FULFILLED/i.test(statusText);
-            const statusCls = statusIsFulfilled ? 'text-success/70' : statusText ? 'text-warning/80' : 'text-base-content/40';
+            const statusCls = statusIsFulfilled ? 'text-success/70' : statusText ? 'text-error/90' : 'text-base-content/40';
             // Live progress derived from subjects — independent of the server's statusDescription.
             const fulfilledInGroup = group.subjects.filter(s => s.isFulfilled).length;
             const liveProgress = group.minCount !== undefined
               ? `${Math.min(fulfilledInGroup, group.minCount)}/${group.minCount}`
               : null;
-             const displayGroupName = cleanGroupName(group.name);
+              const displayGroupName = cleanGroupName(group.name);
+
              return (
                <div key={gi} className={gi > 0 ? 'mt-2' : ''}>
                  {(block.groups.length > 1 || statusText) && (
@@ -134,7 +135,7 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
                          <span className="text-[10px] font-mono text-base-content/50">{liveProgress}</span>
                        )}
                        {statusText && (
-                         <span className={`text-[10px] font-medium ${statusCls}`}>
+                         <span className={`text-[11px] font-medium uppercase tracking-wider ${statusCls}`}>
                            <span className="md:hidden">{shortenStatusText(statusText)}</span>
                            <span className="hidden md:inline">{statusText}</span>
                          </span>
@@ -147,21 +148,25 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
                     <Layers className="w-3.5 h-3.5 text-primary/60 shrink-0" />
                     <span>{t('subjects.zameraniPickPrompt')}</span>
                   </div>
-                ) : visible.map(s => (
-                  <SubjectRow
-                    key={s.code}
-                    subject={s}
-                    compact={isPast}
-                    failRate={failRates?.[s.code]}
-                    failRates={failRates}
-                    zamerani={zameraniLookup?.get(normalizeZameraniName(s.name)) ?? null}
-                    zameraniProgress={zameraniProgress?.get(normalizeZameraniName(s.name)) ?? null}
-                    subjectSemesters={subjectSemesters}
-                    subjectToZameranis={subjectToZameranis}
-                    onOpenSubject={onOpenSubject}
-                    onSearchSubject={onSearchSubject}
-                  />
-                ))}
+                ) : (
+                  <div className="bg-base-200/20 border border-base-300/40 rounded-xl p-2 flex flex-col gap-0.5 shadow-sm">
+                    {visible.map(s => (
+                      <SubjectRow
+                        key={s.code}
+                        subject={s}
+                        compact={isPast}
+                        failRate={failRates?.[s.code]}
+                        failRates={failRates}
+                        zamerani={zameraniLookup?.get(normalizeZameraniName(s.name)) ?? null}
+                        zameraniProgress={zameraniProgress?.get(normalizeZameraniName(s.name)) ?? null}
+                        subjectSemesters={subjectSemesters}
+                        subjectToZameranis={subjectToZameranis}
+                        onOpenSubject={onOpenSubject}
+                        onSearchSubject={onSearchSubject}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}

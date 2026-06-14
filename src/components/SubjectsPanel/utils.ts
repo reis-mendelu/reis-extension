@@ -71,11 +71,20 @@ export function buildSubjectSemesters(plan: { blocks: SemesterBlock[] } | null |
 }
 
 export function cleanGroupName(name: string): string {
-  const cleaned = name
+  let cleaned = name
     .replace(/^(Skupina předmětů|Skupiny předmětů|Skupina)\s*(:|-)?\s*/i, '')
     .replace(/^(A group of courses|Groups of courses|A group of|Group)\s*(:|-)?\s*/i, '')
     .replace(/\s*\(\s*min\.?.*?\)\s*$/i, '')
     .trim();
+
+  if (/^volitelných$/i.test(cleaned)) {
+    cleaned = 'Volitelné';
+  } else if (/^povinných$/i.test(cleaned)) {
+    cleaned = 'Povinné';
+  } else if (/^povinně volitelných$/i.test(cleaned) || /^povinně volitených$/i.test(cleaned)) {
+    cleaned = 'Povinně volitelné';
+  }
+
   if (!cleaned) return name;
   return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 }
