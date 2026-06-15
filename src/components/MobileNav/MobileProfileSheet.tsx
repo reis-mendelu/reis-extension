@@ -1,18 +1,17 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Moon, MessageSquarePlus, Languages, User, Mail, Hash, Building2, LogOut, Bug } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Moon, MessageSquarePlus, Languages, User, Mail, Hash, LogOut, Bug } from 'lucide-react';
+import { useState } from 'react';
 
 import { useOutlookSync } from '../../hooks/data';
 import { useTheme } from '../../hooks/useTheme';
 import { useSpolkySettings } from '../../hooks/useSpolkySettings';
 import { SpolkySection } from '../Sidebar/Profile/SpolkySection';
 import { OutlookSyncToggle } from '../Sidebar/Profile/OutlookSyncToggle';
-import { BalanceSection } from '../Sidebar/Profile/BalanceSection';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useIskamStore } from '../../store/iskamStore';
 import { useUserParams } from '../../hooks/useUserParams';
-import { openPopup, logout } from '../../api/proxyClient';
+import { logout } from '../../api/proxyClient';
 
 interface MobileProfileSheetProps {
   isOpen: boolean;
@@ -26,7 +25,6 @@ export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback, isIskam }:
   const { isDark, isLoading: tLoading, toggle: tTheme } = useTheme();
   const { isSubscribed, toggleAssociation } = useSpolkySettings();
   const [spolkyOpen, setSpolkyOpen] = useState(false);
-  const [isTopUpOpen, setIsTopUpOpen] = useState(false);
   const { t } = useTranslation();
   const language = useAppStore(state => state.language);
   const setLanguage = useAppStore(state => state.setLanguage);
@@ -36,12 +34,6 @@ export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback, isIskam }:
 
   const data = useIskamStore(s => s.data);
   const iskamProfile = data?.profile;
-
-  useEffect(() => {
-    const handler = (e: Event) => setIsTopUpOpen((e as CustomEvent<{ open: boolean }>).detail.open);
-    window.addEventListener('reis:popup-state', handler);
-    return () => window.removeEventListener('reis:popup-state', handler);
-  }, []);
 
   return (
     <AnimatePresence>
@@ -85,20 +77,6 @@ export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback, isIskam }:
                       <Hash size={16} className="text-base-content/30" />
                       <span className="opacity-70">{t('settings.studentId')}</span>
                       <span className="font-mono text-xs bg-base-300/50 px-2.5 py-1 rounded-lg border border-base-300/50 select-all ml-auto">{params.studentId}</span>
-                    </div>
-                    <BalanceSection
-                      isTopUpOpen={isTopUpOpen}
-                      onTopUp={() => openPopup('https://webiskam.mendelu.cz/Platby/NabitiKonta/0')}
-                    />
-                    <div className="flex items-center gap-3 text-base-content/60">
-                      <Building2 size={16} className="text-base-content/30" />
-                      <span className="opacity-70">{t('settings.dormAdmin')}</span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); openPopup('https://webiskam.mendelu.cz/InformaceOKlientovi'); }}
-                        className="font-mono text-xs bg-success/20 text-success px-2.5 py-1 rounded-lg border border-success/30 ml-auto hover:bg-success/30 transition-colors"
-                      >
-                        {isTopUpOpen ? <span className="loading loading-spinner loading-xs" /> : `${t('settings.open')} →`}
-                      </button>
                     </div>
                   </div>
                 )}

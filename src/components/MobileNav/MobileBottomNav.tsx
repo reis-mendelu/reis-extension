@@ -39,6 +39,11 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
       icon: <Settings className="w-5 h-5" />,
       children: [
           {
+              id: 'iskam-link',
+              label: 'ISKAM',
+              href: 'https://webiskam.mendelu.cz/',
+          },
+          {
               id: 'teams-link',
               label: 'Teams',
               href: 'https://teams.microsoft.com',

@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { Moon, MessageSquarePlus, Languages, LogOut, Bug } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useOutlookSync } from '../../hooks/data';
 import { useTheme } from '../../hooks/useTheme';
 import { useSpolkySettings } from '../../hooks/useSpolkySettings';
@@ -11,23 +11,15 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
 import { useIskamStore } from '../../store/iskamStore';
-import { User, Mail, Hash, Building2 } from 'lucide-react';
-import { openPopup, logout } from '../../api/proxyClient';
-import { BalanceSection } from './Profile/BalanceSection';
+import { User, Mail, Hash } from 'lucide-react';
+import { logout } from '../../api/proxyClient';
 import { HiddenItemsSection } from './Profile/HiddenItemsSection';
 
 export function ProfilePopup({ isOpen, onOpenFeedback, isIskam }: { isOpen: boolean; onOpenFeedback?: () => void; isIskam?: boolean }) {
   const { isEnabled, isLoading: syncLoading, toggle: tSync } = useOutlookSync(), { isDark, isLoading: tLoading, toggle: tTheme } = useTheme(), { isSubscribed, toggleAssociation } = useSpolkySettings(), [spolkyOpen, setSpolkyOpen] = useState(false);
-  const [isTopUpOpen, setIsTopUpOpen] = useState(false);
-  
   const data = useIskamStore(s => s.data);
   const iskamProfile = data?.profile;
 
-  useEffect(() => {
-    const handler = (e: Event) => setIsTopUpOpen((e as CustomEvent<{ open: boolean }>).detail.open);
-    window.addEventListener('reis:popup-state', handler);
-    return () => window.removeEventListener('reis:popup-state', handler);
-  }, []);
   const { t } = useTranslation();
   const language = useAppStore(state => state.language);
   const setLanguage = useAppStore(state => state.setLanguage);
@@ -58,20 +50,6 @@ export function ProfilePopup({ isOpen, onOpenFeedback, isIskam }: { isOpen: bool
                         <Hash size={16} className="text-base-content/30" />
                         <span className="opacity-70">{t('settings.studentId')}</span>
                         <span className="font-mono text-xs bg-base-300/50 px-2.5 py-1 rounded-lg border border-base-300/50 select-all ml-auto">{params.studentId}</span>
-                    </div>
-                    <BalanceSection
-                        isTopUpOpen={isTopUpOpen}
-                        onTopUp={() => openPopup('https://webiskam.mendelu.cz/Platby/NabitiKonta/0')}
-                    />
-                    <div className="flex items-center gap-3 text-base-content/60">
-                        <Building2 size={16} className="text-base-content/30" />
-                        <span className="opacity-70">{t('settings.dormAdmin')}</span>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); openPopup('https://webiskam.mendelu.cz/InformaceOKlientovi'); }}
-                            className="font-mono text-xs bg-success/20 text-success px-2.5 py-1 rounded-lg border border-success/30 ml-auto hover:bg-success/30 transition-colors"
-                        >
-                            {isTopUpOpen ? <span className="loading loading-spinner loading-xs" /> : `${t('settings.open')} →`}
-                        </button>
                     </div>
                 </div>
             )}
