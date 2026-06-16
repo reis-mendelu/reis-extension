@@ -13,7 +13,6 @@ describe.runIf(!!dir)('generate real eduroam profile (manual)', () => {
     const p12 = new Uint8Array(readFileSync(join(dir!, 'user-p12.p12')));
     const xml = generateEduroamMobileconfig({ rootCaDer: root, clientP12: p12 });
     writeFileSync(join(dir!, 'eduroam-reis.mobileconfig'), xml);
-    // eslint-disable-next-line no-console
     console.log('Wrote', join(dir!, 'eduroam-reis.mobileconfig'));
   });
 });
