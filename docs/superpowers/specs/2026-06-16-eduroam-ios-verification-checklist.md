@@ -1,16 +1,23 @@
 # eduroam iOS pipeline — iPad verification checklist
 
-Run this once the migration + `eduroam-receive` edge function are deployed to the
-`reis-notifications` Supabase project. Goal: a clear PASS that the desktop→iPad
-zero-knowledge pipeline installs and connects, on a real iPad.
+Goal: a clear PASS that the desktop→iPad zero-knowledge pipeline installs and
+connects, on a real iPad. The backend + transfer are already deployed and proven;
+only the on-device install remains.
 
-## Pre-req (deploy — one-time)
-- [ ] Migration `eduroam_transfers` applied (table + `put_eduroam_transfer` /
-      `take_eduroam_transfer` RPCs, RLS deny-all, anon `EXECUTE` on the two RPCs).
-- [ ] Edge function `eduroam-receive` deployed with `verify_jwt = false`.
-- [ ] Sanity: open `https://<ref>.supabase.co/functions/v1/eduroam-receive?id=test#test`
-      in any browser → page loads and shows *"This profile link was already used or
-      has expired"* (proves the page + RPC wiring work end to end).
+## Deploy + backend — DONE (2026-06-16)
+- [x] Migration `eduroam_transfers` applied (table + `put`/`take` burn RPCs,
+      RLS deny-all, anon `EXECUTE` on the two RPCs).
+- [x] Edge function `eduroam-receive` deployed (`verify_jwt=false`) as the JSON
+      one-time ciphertext API.
+- [x] Receiver page live at **https://receiver-henna.vercel.app** (public,
+      `text/html`, runs the decrypt JS).
+- [x] **Full automated round-trip verified live:** put via publishable key (204)
+      → edge API (200) → decrypt matches original → re-fetch burned (404).
+- [x] Stored row confirmed ciphertext-only + `consumed=true` (no plaintext server-side).
+
+So the desktop→server→ciphertext→decrypt chain is proven. The two things a real
+iPad still proves: (a) Safari renders the Vercel page + runs the decrypt, and
+(b) iOS installs the decrypted profile from Files.
 
 ## Stage A — generator installs on iPad (sanity, optional)
 Confirms the generated `.mobileconfig` is iOS-valid, independent of the transfer.
