@@ -6,7 +6,8 @@ const DEFAULT_SERVER_NAMES = ['aleph.mendelu.cz'];
 const DEFAULT_DISPLAY_NAME = 'MENDELU eduroam (reIS)';
 const DEFAULT_IDENTIFIER = 'cz.reis.eduroam';
 
-const newUuid = (): string => crypto.randomUUID().toUpperCase();
+// crypto.randomUUID() already returns a canonical lowercase RFC 4122 UUID.
+const newUuid = (): string => crypto.randomUUID();
 
 /**
  * Build a macOS .mobileconfig that installs the MENDELU root CA, the client

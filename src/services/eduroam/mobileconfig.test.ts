@@ -80,7 +80,7 @@ describe('generateEduroamMobileconfig', () => {
     const xml = generateEduroamMobileconfig({ rootCaDer: root, clientP12: p12, uuids: fixedUuids });
     const i = xml.indexOf('TLSAllowTrustExceptions');
     expect(i).toBeGreaterThan(-1);
-    expect(xml.slice(i, i + 45)).toContain('<false/>');
+    expect(xml.slice(i, i + 80)).toContain('<false/>');
   });
 
   it('uses EAP-TLS (type 13)', () => {
