@@ -36,6 +36,34 @@ describe('generateEduroamMobileconfig', () => {
     expect(xml.slice(i, i + 200)).toContain('<string>CA</string>');
   });
 
+  it('anchors the server CA to the same UUID declared by the CA payload', () => {
+    const xml = generateEduroamMobileconfig({ rootCaDer: root, clientP12: p12, uuids: fixedUuids });
+    // CA payload's own PayloadUUID (it follows the com.apple.security.root type).
+    const caTypeIdx = xml.indexOf('<string>com.apple.security.root</string>');
+    const caUuidIdx = xml.indexOf('<key>PayloadUUID</key>', caTypeIdx);
+    const caUuid = xml.slice(caUuidIdx, caUuidIdx + 120).match(/<string>([^<]+)<\/string>/)?.[1];
+    // The Wi-Fi anchor reference.
+    const anchorIdx = xml.indexOf('PayloadCertificateAnchorUUID');
+    const anchorUuid = xml.slice(anchorIdx, anchorIdx + 200).match(/<string>([^<]+)<\/string>/)?.[1];
+    expect(caUuid).toBeTruthy();
+    expect(anchorUuid).toBe(caUuid);
+  });
+
+  it('reflects caller-supplied serverNames in TLSTrustedServerNames', () => {
+    const xml = generateEduroamMobileconfig({
+      rootCaDer: root,
+      clientP12: p12,
+      serverNames: ['radius1.example.com', 'radius2.example.com'],
+      uuids: fixedUuids,
+    });
+    const i = xml.indexOf('<key>TLSTrustedServerNames</key>');
+    expect(i).toBeGreaterThan(-1);
+    const block = xml.slice(i, i + 250);
+    expect(block).toContain('<string>radius1.example.com</string>');
+    expect(block).toContain('<string>radius2.example.com</string>');
+    expect(xml).not.toContain('aleph.mendelu.cz');
+  });
+
   it('selects the client identity via PayloadCertificateUUID', () => {
     const xml = generateEduroamMobileconfig({ rootCaDer: root, clientP12: p12, uuids: fixedUuids });
     const i = xml.indexOf('<key>PayloadCertificateUUID</key>');
