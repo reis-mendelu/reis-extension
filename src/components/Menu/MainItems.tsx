@@ -1,4 +1,4 @@
-import { Home, Book, CalendarCheck, LayoutDashboard, ClipboardList, PenTool, User, Pin } from 'lucide-react';
+import { Home, Book, CalendarCheck, LayoutDashboard, ClipboardList, PenTool, User, Pin, Wifi } from 'lucide-react';
 import type { MenuItem } from '../menuConfig';
 import type { PinnedPage } from '../../store/slices/createPinnedPagesSlice';
 import { injectUserParams, type PageCategory } from '../../data/pages/types';
@@ -19,6 +19,7 @@ export const mainItems = (sid: string, oid: string, t: (key: string) => string, 
     { id: 'dashboard', label: t('sidebar.dashboard'), icon: <Home className="w-5 h-5" />, href: `https://is.mendelu.cz/auth/?lang=${lang}` },
     { id: 'exams', label: t('sidebar.exams'), icon: <CalendarCheck className="w-5 h-5" /> },
     { id: 'subjects', label: t('sidebar.subjects'), icon: <Book className="w-5 h-5" /> },
+    { id: 'eduroam', label: t('sidebar.eduroam'), icon: <Wifi className="w-5 h-5" /> },
     {
         id: 'is',
         label: t('sidebar.is'),

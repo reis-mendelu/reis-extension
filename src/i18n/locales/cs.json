@@ -122,6 +122,7 @@
     "studyPlans": "Přehled studijních plánů",
     "successRating": "Hodnocení úspěšnosti",
     "wifi": "Wi-Fi",
+    "eduroam": "eduroam",
     "contactCenter": "Kontaktní centrum",
     "slides": "snímků",
     "more": "Více",
@@ -549,6 +550,23 @@
     "switchToEnglish": "Switch to English",
     "openErasmus": "Otevřít Erasmus+",
     "openFeedback": "Odeslat zpětnou vazbu"
+  },
+  "eduroam": {
+    "title": "eduroam Wi-Fi",
+    "subtitle": "Nastavte eduroam na tomto Macu na pár kliknutí",
+    "macOnly": "Zatím pouze macOS — Windows, iOS a Android připravujeme.",
+    "openGuide": "Návod MENDELU",
+    "download": "Stáhnout eduroam profil",
+    "preparing": "Připravuji profil…",
+    "error": "Profil se nepodařilo připravit",
+    "downloaded": "Profil stažen.",
+    "step1": "Otevřete nastavení Profily:",
+    "openSettings": "Otevřít nastavení Profily",
+    "step2": "Dvojklikem na \"MENDELU eduroam (reIS)\" → Instalovat.",
+    "step3": "Až budete dotázáni na heslo certifikátu, vložte:",
+    "step4": "Mac se k eduroam připojí automaticky.",
+    "regenerate": "Stáhnout znovu",
+    "privacyNote": "Vše se generuje ve vašem zařízení. Váš soukromý klíč tento Mac nikdy neopustí."
   },
   "erasmus": {
     "title": "Erasmus+ Zkušenosti",

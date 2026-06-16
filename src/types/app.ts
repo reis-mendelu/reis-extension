@@ -1,4 +1,4 @@
-export type AppView = 'calendar' | 'exams' | 'settings' | 'timeline-demo' | 'subjects' | 'studyPlan' | 'erasmus' | 'iskam-dashboard';
+export type AppView = 'calendar' | 'exams' | 'settings' | 'timeline-demo' | 'subjects' | 'studyPlan' | 'erasmus' | 'eduroam' | 'iskam-dashboard';
 
 export interface SelectedSubject {
     courseCode: string;

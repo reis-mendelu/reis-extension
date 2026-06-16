@@ -5,6 +5,7 @@ import { ExamPanel } from './ExamPanel'
 import { SubjectsPanel } from './SubjectsPanel'
 import { StudyPlanPage } from './SubjectsPanel/StudyPlanPage'
 import { ErasmusPanel } from './ErasmusPanel'
+import { EduroamSetup } from './Eduroam/EduroamSetup'
 import { NpsBanner } from './Feedback/NpsBanner'
 import { useAppStore } from '../store/useAppStore'
 
@@ -44,6 +45,7 @@ export function AppMain({
                     {currentView === 'subjects' && <SubjectsPanel onOpenSubject={handleOpenSubjectFromSearch} onSearchSubject={(name) => searchPrefillRef?.current?.(name)} onOpenStudyPlan={() => setCurrentView?.('studyPlan')} />}
                     {currentView === 'studyPlan' && <StudyPlanPage onBack={() => setCurrentView?.('subjects')} onOpenSubject={handleOpenSubjectFromSearch} onSearchSubject={(name) => searchPrefillRef?.current?.(name)} />}
                     {currentView === 'erasmus' && <ErasmusPanel onOpenSubject={handleOpenSubjectFromSearch} onSearchSubject={(name) => searchPrefillRef?.current?.(name)} />}
+                    {currentView === 'eduroam' && <EduroamSetup />}
                 </div>
             </div>
         </main>

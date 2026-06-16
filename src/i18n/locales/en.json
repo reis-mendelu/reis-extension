@@ -122,6 +122,7 @@
     "studyPlans": "Study Plans Overview",
     "successRating": "Success Rating",
     "wifi": "Wi-Fi",
+    "eduroam": "eduroam",
     "contactCenter": "Contact Center",
     "slides": "slides",
     "more": "More",
@@ -549,6 +550,23 @@
     "switchToEnglish": "Switch to English",
     "openErasmus": "Open Erasmus+",
     "openFeedback": "Send Feedback"
+  },
+  "eduroam": {
+    "title": "eduroam Wi-Fi",
+    "subtitle": "Set up eduroam on this Mac in a few clicks",
+    "macOnly": "macOS only for now — Windows, iOS and Android are coming.",
+    "openGuide": "MENDELU guide",
+    "download": "Download eduroam profile",
+    "preparing": "Preparing profile…",
+    "error": "Couldn't prepare the profile",
+    "downloaded": "Profile downloaded.",
+    "step1": "Open the Profiles settings:",
+    "openSettings": "Open Profile settings",
+    "step2": "Double-click \"MENDELU eduroam (reIS)\" → Install.",
+    "step3": "When asked for the certificate password, paste:",
+    "step4": "Your Mac joins eduroam automatically.",
+    "regenerate": "Download again",
+    "privacyNote": "Everything is generated on your device. Your private key never leaves this Mac."
   },
   "erasmus": {
     "title": "Erasmus+ Experiences",

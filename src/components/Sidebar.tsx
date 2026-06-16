@@ -61,7 +61,8 @@ export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, onOpenSubje
                   else if (item.id === 'iskam-dashboard') onViewChange('iskam-dashboard');
                   else if (item.id === 'exams') onViewChange('exams'); 
                   else if (item.id === 'subjects') onViewChange('subjects'); 
-                  else if (item.id === 'erasmus') onViewChange('erasmus'); 
+                  else if (item.id === 'erasmus') onViewChange('erasmus');
+                  else if (item.id === 'eduroam') onViewChange('eduroam');
                   else if (item.href) window.open(item.href, '_blank'); 
               }} 
               onViewChange={onViewChange} 
