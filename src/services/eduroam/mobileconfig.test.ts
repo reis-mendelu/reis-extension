@@ -71,9 +71,21 @@ describe('generateEduroamMobileconfig', () => {
     expect(xml.slice(i, i + 80)).toContain('<string>P12</string>');
   });
 
-  it('omits the pkcs12 password (OS prompts at install)', () => {
+  it('omits the pkcs12 password by default (OS prompts at install)', () => {
     const xml = generateEduroamMobileconfig({ rootCaDer: root, clientP12: p12, uuids: fixedUuids });
     expect(xml).not.toContain('Password');
+  });
+
+  it('embeds the pkcs12 password when provided', () => {
+    const xml = generateEduroamMobileconfig({
+      rootCaDer: root,
+      clientP12: p12,
+      p12Password: 'wIp.num.7.uzo',
+      uuids: fixedUuids,
+    });
+    const i = xml.indexOf('<key>Password</key>');
+    expect(i).toBeGreaterThan(-1);
+    expect(xml.slice(i, i + 60)).toContain('<string>wIp.num.7.uzo</string>');
   });
 
   it('hard-enforces server validation (TLSAllowTrustExceptions false)', () => {

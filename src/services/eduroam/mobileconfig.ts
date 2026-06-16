@@ -35,15 +35,18 @@ export function generateEduroamMobileconfig(input: EduroamProfileInput): string 
     ['PayloadContent', pdata(bytesToBase64(rootCaDer))],
   ]);
 
-  const p12Payload = pdict([
+  const p12Entries: Array<[string, ReturnType<typeof pstr>]> = [
     ['PayloadType', pstr('com.apple.security.pkcs12')],
     ['PayloadVersion', pint(1)],
     ['PayloadIdentifier', pstr(`${identifier}.identity`)],
     ['PayloadUUID', pstr(ids.p12)],
     ['PayloadDisplayName', pstr('eduroam user certificate')],
     ['PayloadContent', pdata(bytesToBase64(clientP12))],
-    // Password key intentionally omitted -> OS prompts at install time.
-  ]);
+  ];
+  // Embed the password only when explicitly provided; otherwise omit it so the
+  // OS prompts at install and the downloaded profile is not a standalone credential.
+  if (input.p12Password) p12Entries.push(['Password', pstr(input.p12Password)]);
+  const p12Payload = pdict(p12Entries);
 
   const wifiPayload = pdict([
     ['PayloadType', pstr('com.apple.wifi.managed')],
