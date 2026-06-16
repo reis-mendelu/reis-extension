@@ -553,8 +553,10 @@
   },
   "eduroam": {
     "title": "eduroam Wi-Fi",
-    "subtitle": "Nastavte eduroam na tomto Macu na pár kliknutí",
-    "macOnly": "Zatím pouze macOS — Windows, iOS a Android připravujeme.",
+    "subtitle": "Nastavte eduroam na svém zařízení na pár kliknutí",
+    "targetIos": "iPhone / iPad",
+    "targetMac": "Mac",
+    "macHostHint": "Nejste na Macu — pro stažení přepněte na Mac, nebo použijte záložku iPhone / iPad.",
     "openGuide": "Návod MENDELU",
     "download": "Stáhnout eduroam profil",
     "preparing": "Připravuji profil…",
@@ -565,8 +567,15 @@
     "step2": "Dvojklikem na \"MENDELU eduroam (reIS)\" → Instalovat.",
     "step3": "Až budete dotázáni na heslo certifikátu, vložte:",
     "step4": "Mac se k eduroam připojí automaticky.",
-    "regenerate": "Stáhnout znovu",
-    "privacyNote": "Vše se generuje ve vašem zařízení. Váš soukromý klíč tento Mac nikdy neopustí."
+    "iosIntro": "Vygenerujte QR kód, naskenujte ho fotoaparátem na iPhonu nebo iPadu a nainstalujte profil.",
+    "iosGenerate": "Vytvořit QR kód",
+    "iosReady": "Naskenujte fotoaparátem na iPhonu / iPadu.",
+    "iosStep1": "Otevřete Fotoaparát, namiřte na QR kód a klepněte na odkaz (otevře se v Safari).",
+    "iosStep2": "Klepněte na Stáhnout / Uložit do Souborů, pak otevřete Nastavení — do ~8 minut klepněte nahoře na \"Stažený profil\".",
+    "iosStep3": "Klepněte na Instalovat, zadejte kód zařízení a poté toto heslo certifikátu:",
+    "iosStep4": "Zařízení se k eduroam připojí automaticky.",
+    "regenerate": "Začít znovu",
+    "privacyNote": "Vše se generuje ve vašem zařízení. Váš soukromý klíč ho nikdy neopustí — přenos vždy obsahuje pouze šifrovaná data."
   },
   "erasmus": {
     "title": "Erasmus+ Zkušenosti",

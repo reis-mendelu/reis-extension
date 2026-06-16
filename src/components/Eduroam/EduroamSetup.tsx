@@ -1,29 +1,17 @@
-import { useState } from 'react';
-import { Wifi, Download, ShieldCheck, Copy, Check, ExternalLink, Loader2, AlertTriangle } from 'lucide-react';
+import { Wifi, Smartphone, Laptop, AlertTriangle } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useEduroamSetup } from '../../hooks/data/useEduroamSetup';
-
-const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent);
+import { IosTransfer } from './IosTransfer';
+import { MacInstall } from './MacInstall';
 
 export function EduroamSetup() {
   const { t } = useTranslation();
   const language = useAppStore((s) => s.language);
-  const { status, password, error, run, openProfilesSettings, embedsPassword } = useEduroamSetup();
-  const [copied, setCopied] = useState(false);
+  const { status, target, selectTarget, password, qrDataUrl, error, run, openProfilesSettings } =
+    useEduroamSetup();
 
   const guideHref = `https://eduroam.mendelu.cz/?lang=${language === 'en' ? 'en' : 'cz'}`;
-
-  const copyPassword = async () => {
-    if (!password) return;
-    try {
-      await navigator.clipboard.writeText(password);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard blocked — user can still read the password */
-    }
-  };
 
   return (
     <div className="h-full overflow-y-auto p-6">
@@ -38,68 +26,43 @@ export function EduroamSetup() {
           </div>
         </div>
 
-        {!isMac && (
-          <div className="alert alert-info text-sm">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span>
-              {t('eduroam.macOnly')}{' '}
-              <a className="link" href={guideHref} target="_blank" rel="noopener noreferrer">
-                {t('eduroam.openGuide')}
-              </a>
-            </span>
-          </div>
-        )}
+        <div role="tablist" className="tabs tabs-boxed">
+          <button
+            role="tab"
+            className={`tab gap-2 ${target === 'ios' ? 'tab-active' : ''}`}
+            onClick={() => selectTarget('ios')}
+          >
+            <Smartphone className="w-4 h-4" /> {t('eduroam.targetIos')}
+          </button>
+          <button
+            role="tab"
+            className={`tab gap-2 ${target === 'mac' ? 'tab-active' : ''}`}
+            onClick={() => selectTarget('mac')}
+          >
+            <Laptop className="w-4 h-4" /> {t('eduroam.targetMac')}
+          </button>
+        </div>
 
         {status === 'error' && (
           <div className="alert alert-error text-sm">
             <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span>{t('eduroam.error')}{error ? `: ${error}` : ''}</span>
+            <span>
+              {t('eduroam.error')}
+              {error ? `: ${error}` : ''}
+            </span>
           </div>
         )}
 
-        {status !== 'done' && (
-          <button
-            className="btn btn-primary btn-lg gap-2"
-            disabled={!isMac || status === 'working'}
-            onClick={run}
-          >
-            {status === 'working' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-            {status === 'working' ? t('eduroam.preparing') : t('eduroam.download')}
-          </button>
-        )}
-
-        {status === 'done' && (
-          <div className="flex flex-col gap-4">
-            <div className="alert alert-success text-sm">
-              <ShieldCheck className="w-4 h-4 shrink-0" />
-              <span>{t('eduroam.downloaded')}</span>
-            </div>
-            <ol className="list-decimal list-inside space-y-3 text-sm">
-              <li>
-                {t('eduroam.step1')}
-                <button className="btn btn-sm btn-outline gap-2 mt-2 ml-1" onClick={openProfilesSettings}>
-                  <ExternalLink className="w-4 h-4" />
-                  {t('eduroam.openSettings')}
-                </button>
-              </li>
-              <li>{t('eduroam.step2')}</li>
-              {!embedsPassword && (
-                <li>
-                  {t('eduroam.step3')}
-                  {password && (
-                    <button className="btn btn-sm btn-ghost font-mono gap-2 mt-2 ml-1" onClick={copyPassword}>
-                      {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-                      {password}
-                    </button>
-                  )}
-                </li>
-              )}
-              <li>{t('eduroam.step4')}</li>
-            </ol>
-            <button className="btn btn-ghost btn-sm self-start" onClick={run}>
-              {t('eduroam.regenerate')}
-            </button>
-          </div>
+        {target === 'ios' ? (
+          <IosTransfer status={status} qrDataUrl={qrDataUrl} password={password} onGenerate={() => run('ios')} />
+        ) : (
+          <MacInstall
+            status={status}
+            password={password}
+            guideHref={guideHref}
+            onDownload={() => run('mac')}
+            onOpenSettings={openProfilesSettings}
+          />
         )}
 
         <p className="text-xs text-base-content/40">{t('eduroam.privacyNote')}</p>

@@ -553,8 +553,10 @@
   },
   "eduroam": {
     "title": "eduroam Wi-Fi",
-    "subtitle": "Set up eduroam on this Mac in a few clicks",
-    "macOnly": "macOS only for now — Windows, iOS and Android are coming.",
+    "subtitle": "Set up eduroam on your device in a few clicks",
+    "targetIos": "iPhone / iPad",
+    "targetMac": "Mac",
+    "macHostHint": "You're not on a Mac — switch to your Mac to download here, or use the iPhone / iPad tab.",
     "openGuide": "MENDELU guide",
     "download": "Download eduroam profile",
     "preparing": "Preparing profile…",
@@ -565,8 +567,15 @@
     "step2": "Double-click \"MENDELU eduroam (reIS)\" → Install.",
     "step3": "When asked for the certificate password, paste:",
     "step4": "Your Mac joins eduroam automatically.",
-    "regenerate": "Download again",
-    "privacyNote": "Everything is generated on your device. Your private key never leaves this Mac."
+    "iosIntro": "Generate a QR code, scan it with your iPhone or iPad camera, and install the profile.",
+    "iosGenerate": "Create QR code",
+    "iosReady": "Scan this with your iPhone / iPad camera.",
+    "iosStep1": "Open the Camera app, point it at the QR code, and tap the link (it opens in Safari).",
+    "iosStep2": "Tap Download / Save to Files, then open Settings — tap \"Profile Downloaded\" near the top within ~8 minutes.",
+    "iosStep3": "Tap Install, enter your passcode, then this certificate password:",
+    "iosStep4": "Your device joins eduroam automatically.",
+    "regenerate": "Start over",
+    "privacyNote": "Everything is generated on your device. Your private key never leaves it — the transfer only ever carries encrypted data."
   },
   "erasmus": {
     "title": "Erasmus+ Experiences",

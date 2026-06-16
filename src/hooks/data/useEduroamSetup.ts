@@ -1,39 +1,48 @@
 import { useState, useCallback } from 'react';
 import { saveAs } from 'file-saver';
+import QRCode from 'qrcode';
 import { fetchEduroamCertMaterial } from '../../api/eduroam';
 import { generateEduroamMobileconfig } from '../../services/eduroam/mobileconfig';
+import { encryptProfile } from '../../services/eduroam/transferCrypto';
+import { putTransfer, buildTransferUrl } from '../../api/eduroamTransfer';
 import { logError } from '../../utils/reportError';
 
 export type EduroamStatus = 'idle' | 'working' | 'done' | 'error';
+/** Which device the student is setting up — not necessarily the desktop's OS. */
+export type EduroamTarget = 'mac' | 'ios';
 
-// Embed the .p12 password into the profile? Default false: the downloaded file
-// is then NOT a standalone credential and macOS prompts for the password at
-// install (we show it with a copy button). Flip to true for one-tap install.
-const EMBED_PASSWORD = false;
+export const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent);
 
 // macOS deep link straight to the Profiles / Device Management pane.
 const PROFILES_SETTINGS_URL = 'x-apple.systempreferences:com.apple.preferences.configurationprofiles';
 
 export function useEduroamSetup() {
   const [status, setStatus] = useState<EduroamStatus>('idle');
+  const [target, setTarget] = useState<EduroamTarget>(isMac ? 'mac' : 'ios');
   const [password, setPassword] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const run = useCallback(async () => {
+  // The .p12 password is NEVER embedded: the macOS path prompts at install, and
+  // the iOS transfer path must keep the profile from being a standalone credential.
+  const run = useCallback(async (t: EduroamTarget) => {
     setStatus('working');
     setError(null);
     setPassword(null);
+    setQrDataUrl(null);
     try {
       const { rootCaDer, clientP12, password: extractionPw } = await fetchEduroamCertMaterial();
-      const xml = generateEduroamMobileconfig({
-        rootCaDer,
-        clientP12,
-        p12Password: EMBED_PASSWORD ? (extractionPw ?? undefined) : undefined,
-      });
-      saveAs(
-        new Blob([xml], { type: 'application/x-apple-aspen-config' }),
-        'eduroam-reis.mobileconfig',
-      );
+      const xml = generateEduroamMobileconfig({ rootCaDer, clientP12 });
+
+      if (t === 'ios') {
+        // Encrypt client-side; upload only ciphertext; the key rides in the QR fragment.
+        const { id, payload, keyB64url } = await encryptProfile(new TextEncoder().encode(xml));
+        await putTransfer(id, payload);
+        setQrDataUrl(await QRCode.toDataURL(buildTransferUrl(id, keyB64url), { margin: 2, width: 320 }));
+      } else {
+        saveAs(new Blob([xml], { type: 'application/x-apple-aspen-config' }), 'eduroam-reis.mobileconfig');
+      }
+
       setPassword(extractionPw);
       setStatus('done');
     } catch (e) {
@@ -41,6 +50,14 @@ export function useEduroamSetup() {
       setError((e as Error).message);
       setStatus('error');
     }
+  }, []);
+
+  const selectTarget = useCallback((t: EduroamTarget) => {
+    setTarget(t);
+    setStatus('idle');
+    setError(null);
+    setPassword(null);
+    setQrDataUrl(null);
   }, []);
 
   // Custom-scheme link: hand off to the OS without navigating the iframe.
@@ -54,10 +71,12 @@ export function useEduroamSetup() {
 
   return {
     status,
+    target,
+    selectTarget,
     password,
+    qrDataUrl,
     error,
     run,
     openProfilesSettings,
-    embedsPassword: EMBED_PASSWORD,
   };
 }
