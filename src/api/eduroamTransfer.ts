@@ -10,8 +10,10 @@ import { bytesToBase64 } from '@/services/eduroam/base64';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-/** Phone-side receiver page (HTTPS → secure context for Web Crypto). */
-export const RECEIVER_URL = `${SUPABASE_URL}/functions/v1/eduroam-receive`;
+// Phone-side receiver page (real text/html host — Supabase rewrites HTML to
+// text/plain, so the page lives on Vercel; it calls the eduroam-receive JSON API
+// for the ciphertext and decrypts with the key from the QR fragment).
+export const RECEIVER_URL = 'https://receiver-henna.vercel.app';
 
 /**
  * Upload the encrypted transfer payload (one-time, short-TTL). Throws on failure.
