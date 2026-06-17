@@ -3,7 +3,6 @@ import { saveAs } from 'file-saver';
 import QRCode from 'qrcode';
 import { fetchEduroamCertMaterial } from '../../api/eduroam';
 import { generateEduroamMobileconfig } from '../../services/eduroam/mobileconfig';
-import { encryptProfile } from '../../services/eduroam/transferCrypto';
 import { putTransfer, buildTransferUrl } from '../../api/eduroamTransfer';
 import { logError } from '../../utils/reportError';
 
@@ -35,10 +34,10 @@ export function useEduroamSetup() {
       const xml = generateEduroamMobileconfig({ rootCaDer, clientP12 });
 
       if (t === 'ios') {
-        // Encrypt client-side; upload only ciphertext; the key rides in the QR fragment.
-        const { id, payload, keyB64url } = await encryptProfile(new TextEncoder().encode(xml));
-        await putTransfer(id, payload);
-        setQrDataUrl(await QRCode.toDataURL(buildTransferUrl(id, keyB64url), { margin: 2, width: 320 }));
+        // Upload the profile to a one-time row; the QR points at the endpoint that
+        // serves it so iOS Safari shows the install prompt directly (no page).
+        const id = await putTransfer(new TextEncoder().encode(xml));
+        setQrDataUrl(await QRCode.toDataURL(buildTransferUrl(id), { margin: 2, width: 320 }));
       } else {
         saveAs(new Blob([xml], { type: 'application/x-apple-aspen-config' }), 'eduroam-reis.mobileconfig');
       }

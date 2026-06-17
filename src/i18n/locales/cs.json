@@ -571,7 +571,7 @@
     "iosGenerate": "Vytvořit QR kód",
     "iosReady": "Naskenujte fotoaparátem na iPhonu / iPadu.",
     "iosStep1": "Otevřete Fotoaparát, namiřte na QR kód a klepněte na odkaz (otevře se v Safari).",
-    "iosStep2": "Klepněte na Stáhnout / Uložit do Souborů, pak otevřete Nastavení — do ~8 minut klepněte nahoře na \"Stažený profil\".",
+    "iosStep2": "Po výzvě klepněte na Povolit pro stažení profilu, pak otevřete Nastavení — do ~8 minut klepněte nahoře na \"Stažený profil\".",
     "iosStep3": "Klepněte na Instalovat, zadejte kód zařízení a poté toto heslo certifikátu:",
     "iosStep4": "Zařízení se k eduroam připojí automaticky.",
     "regenerate": "Začít znovu",

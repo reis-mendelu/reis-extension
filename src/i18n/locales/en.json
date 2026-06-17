@@ -571,7 +571,7 @@
     "iosGenerate": "Create QR code",
     "iosReady": "Scan this with your iPhone / iPad camera.",
     "iosStep1": "Open the Camera app, point it at the QR code, and tap the link (it opens in Safari).",
-    "iosStep2": "Tap Download / Save to Files, then open Settings — tap \"Profile Downloaded\" near the top within ~8 minutes.",
+    "iosStep2": "Tap Allow when asked to download the profile, then open Settings — tap \"Profile Downloaded\" near the top within ~8 minutes.",
     "iosStep3": "Tap Install, enter your passcode, then this certificate password:",
     "iosStep4": "Your device joins eduroam automatically.",
     "regenerate": "Start over",

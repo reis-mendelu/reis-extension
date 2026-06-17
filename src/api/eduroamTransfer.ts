@@ -1,8 +1,9 @@
-// Desktop side of the zero-knowledge eduroam transfer. Uploads ONLY the encrypted
-// payload (iv‖ciphertext) to Supabase via the put_eduroam_transfer RPC; the AES key
-// is never sent here — it goes only into the QR URL fragment (see buildTransferUrl).
-// The phone fetches + burns the ciphertext through take_eduroam_transfer, served by
-// the eduroam-receive edge function.
+// Desktop side of the eduroam desktop→phone transfer (direct-install model).
+// Uploads the (password-protected) .mobileconfig to a one-time, short-TTL Supabase
+// row; the QR points straight at the eduroam-receive endpoint, which serves the
+// profile with Content-Type application/x-apple-aspen-config so iOS Safari shows the
+// install prompt directly — no page, no decrypt. Not zero-knowledge: Supabase briefly
+// holds the profile. Safe because the .p12 password is never uploaded (typed at install).
 
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/services/supabase/config';
@@ -10,33 +11,25 @@ import { bytesToBase64 } from '@/services/eduroam/base64';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// Phone-side receiver page (real text/html host — Supabase rewrites HTML to
-// text/plain, so the page lives on Vercel; it calls the eduroam-receive JSON API
-// for the ciphertext and decrypts with the key from the QR fragment).
-export const RECEIVER_URL = 'https://receiver-henna.vercel.app';
+/** Endpoint that serves the profile once (and burns it) for the phone to install. */
+export const RECEIVER_URL = `${SUPABASE_URL}/functions/v1/eduroam-receive`;
 
 /**
- * Upload the encrypted transfer payload (one-time, short-TTL). Throws on failure.
- * `payload` is `iv‖ciphertext‖tag` from encryptProfile — never the plaintext profile.
+ * Upload the profile bytes to a fresh one-time row (short TTL). Returns the random
+ * transfer id. The bytes are the password-protected profile — never the raw key.
  */
-export async function putTransfer(
-  id: string,
-  payload: Uint8Array,
-  ttlSeconds = 480,
-): Promise<void> {
+export async function putTransfer(profileBytes: Uint8Array, ttlSeconds = 480): Promise<string> {
+  const id = crypto.randomUUID();
   const { error } = await supabase.rpc('put_eduroam_transfer', {
     p_id: id,
-    p_payload: bytesToBase64(payload),
+    p_payload: bytesToBase64(profileBytes),
     p_ttl_seconds: ttlSeconds,
   });
   if (error) throw new Error(`eduroam transfer upload failed: ${error.message}`);
+  return id;
 }
 
-/**
- * The QR target: receiver page + transfer id in the query and the AES key in the
- * fragment. The fragment is never transmitted to any server, keeping the key
- * out of the request the phone makes for the ciphertext.
- */
-export function buildTransferUrl(id: string, keyB64url: string): string {
-  return `${RECEIVER_URL}?id=${encodeURIComponent(id)}#${keyB64url}`;
+/** The QR target: the receiver endpoint for this transfer id. */
+export function buildTransferUrl(id: string): string {
+  return `${RECEIVER_URL}?id=${encodeURIComponent(id)}`;
 }
