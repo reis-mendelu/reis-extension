@@ -1,10 +1,40 @@
 # Design — eduroam iOS / iPadOS installer + desktop→phone transfer pipeline (Phase 2)
 
 **Date:** 2026-06-16
-**Status:** Approved direction — building
+**Status:** ⚠️ SUPERSEDED IN PART — shipped & verified, but the model below changed.
 **Scope:** Get the existing eduroam `.mobileconfig` onto an iPhone/iPad from the
-desktop extension and installed, via a **zero-knowledge QR + Supabase one-time
-transfer**. Phase 1 (the macOS generator + in-app tool) is done and shipped.
+desktop extension and installed.
+
+> **⚠️ This document records the ORIGINAL zero-knowledge direction, which was
+> abandoned during implementation. Read this banner before trusting §3.1, §4, and §5.**
+>
+> **What actually shipped (the authoritative description is the verification
+> checklist `2026-06-16-eduroam-ios-verification-checklist.md` + memory
+> `eduroam-ios-pipeline-deployment`):**
+> - **NOT zero-knowledge.** The desktop uploads the assembled (password-protected)
+>   `.mobileconfig` to a one-time, short-TTL Supabase row; the QR points straight at
+>   the `eduroam-receive` edge function, which **serves the profile bytes** with
+>   `Content-Type: application/x-apple-aspen-config` so iOS shows the **install
+>   prompt directly** — no in-browser decrypt, no Files hop.
+> - **No `transferCrypto.ts`.** The AES-256-GCM fragment-key crypto in §4.2 was
+>   never shipped (and the file was deleted). The QR carries no key fragment.
+> - **The read is NON-BURNING** (migration `20260617120000`), not "return-once-then-
+>   burn" as §4.3 says: iOS double-fetches a config-profile URL (preflight + real
+>   install), so a first-read burn 404'd the install. Security now rests on the
+>   short TTL + the password-protected `.p12` (passphrase never uploaded/embedded,
+>   typed at install). The `consumed` column is vestigial.
+> - **Why the pivot:** iOS will not install a `.mobileconfig` from in-browser
+>   (`blob:`) bytes, and Supabase Edge Functions rewrite `text/html` to
+>   `text/plain`+`nosniff` (anti-phishing), which killed serving a decrypt *page*
+>   from Supabase. Serving the profile bytes with the Apple MIME does work. The
+>   developer accepted relaxing zero-knowledge for one-step UX (must work for
+>   iPad-without-a-Mac users).
+> - **Status:** deployed and **verified on a real iPhone, iPad, and Mac.**
+>
+> The sections below are retained for historical context (the rejected design and
+> the iOS research that still holds). Treat §3 findings as accurate; treat the §3.1
+> decision, §4 architecture, §4.2 crypto, §4.3 burn semantics, and §5 Stage B as
+> **superseded** by the banner above.
 
 ---
 

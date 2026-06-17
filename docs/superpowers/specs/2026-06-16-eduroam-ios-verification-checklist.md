@@ -1,8 +1,14 @@
 # eduroam iOS pipeline — iPad verification checklist
 
-Goal: a clear PASS that the desktop→iPad zero-knowledge pipeline installs and
-connects, on a real iPad. The backend + transfer are already deployed and proven;
-only the on-device install remains.
+**Status: ✅ COMPLETE (2026-06-17).** Verified end-to-end on a real iPhone, iPad,
+and Mac: QR → stock Camera → Safari → install prompt → installed → joined eduroam;
+re-scan returned the expired/used message. This is the "verified on iPad" signal the
+goal required. (Note: the pipeline is direct-install, **not** zero-knowledge — see
+the corrected iOS pipeline design doc.) Retained as the record of how it was tested.
+
+Goal: a clear PASS that the desktop→iPad pipeline installs and connects, on a real
+iPad. The backend + transfer were deployed and proven; the on-device install is now
+also confirmed.
 
 ## Model: direct install (UX-first, chosen 2026-06-16)
 QR → stock Camera → Safari navigates to the `eduroam-receive` endpoint → it serves
@@ -27,16 +33,16 @@ Confirms the generated `.mobileconfig` is iOS-valid, independent of the transfer
       Install → passcode → certificate password.
 - [ ] iPad joins `eduroam` with working connectivity.
 
-## Stage B — the transfer pipeline (the real test)
-- [ ] Load the rebuilt extension on the desktop; open eduroam → **iPhone / iPad** tab.
-- [ ] Tap **Create QR code** → a QR appears.
-- [ ] On the iPad, open the **stock Camera**, point at the QR, tap the link →
+## Stage B — the transfer pipeline (the real test) ✅
+- [x] Load the rebuilt extension on the desktop; open eduroam → **iPhone / iPad** tab.
+- [x] Tap **Create QR code** → a QR appears.
+- [x] On the iPad, open the **stock Camera**, point at the QR, tap the link →
       it opens in **Safari** (not an in-app browser).
-- [ ] Safari prompts **"This website is trying to download a configuration
+- [x] Safari prompts **"This website is trying to download a configuration
       profile"** → **Allow**.
-- [ ] Open **Settings** → **"Profile Downloaded"** near the top (within ~8 min) →
+- [x] Open **Settings** → **"Profile Downloaded"** near the top (within ~8 min) →
       **Install** → passcode → **certificate password** (copy button in reIS).
-- [ ] iPad joins `eduroam` with working connectivity.
+- [x] iPad joins `eduroam` with working connectivity.
 
 > ⚠️ The one empirical unknown: whether Safari shows the install prompt directly
 > from the QR navigation. If Safari only downloads the file (no install prompt) or
