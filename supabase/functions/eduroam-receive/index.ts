@@ -28,7 +28,9 @@ Deno.serve(async (req: Request) => {
   const id = new URL(req.url).searchParams.get('id');
   if (!id) return text('Missing id. Re-scan the QR code in reIS.', 400);
 
-  // take_eduroam_transfer atomically returns the stored profile once and burns the row.
+  // take_eduroam_transfer returns the stored profile while the row is unexpired.
+  // (Non-burning: iOS fetches a config-profile URL more than once, so a one-time
+  // burn would 404 the real install request — see the non_burning migration.)
   const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/take_eduroam_transfer`, {
     method: 'POST',
     headers: {
