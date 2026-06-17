@@ -11,6 +11,10 @@
 // intercepted profile is still an unopenable PKCS#12. The row is one-time (burned on
 // first GET) and short-lived.
 //
+// The `?fmt=` query param selects the served type: ios (default) = Apple config
+// profile (application/x-apple-aspen-config); android = application/eap-config for
+// the geteduroam app. The stored bytes are identical regardless of fmt.
+//
 // @ts-ignore - Deno types are resolved by the edge runtime, not the repo tsconfig
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 
@@ -45,15 +49,23 @@ Deno.serve(async (req: Request) => {
     return text('This eduroam profile link was already used or has expired. Generate a fresh QR code in reIS.', 404);
   }
 
-  // base64 → raw bytes, served as an Apple configuration profile so iOS installs it.
+  // base64 → raw bytes.
   const bin = atob(b64);
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
 
+  // Format hint from the QR URL selects the MIME/filename the phone receives.
+  // ios (default) = Apple config profile (unchanged); android = geteduroam .eap-config.
+  const fmt = new URL(req.url).searchParams.get('fmt') ?? 'ios';
+  const served =
+    fmt === 'android'
+      ? { contentType: 'application/eap-config', filename: 'eduroam.eap-config' }
+      : { contentType: 'application/x-apple-aspen-config', filename: 'eduroam-reis.mobileconfig' };
+
   return new Response(bytes, {
     headers: {
-      'Content-Type': 'application/x-apple-aspen-config',
-      'Content-Disposition': 'attachment; filename="eduroam-reis.mobileconfig"',
+      'Content-Type': served.contentType,
+      'Content-Disposition': `attachment; filename="${served.filename}"`,
       'Cache-Control': 'no-store',
     },
   });
