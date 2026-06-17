@@ -29,4 +29,16 @@ describe('eduroamTransfer', () => {
   it('builds the receiver URL with the transfer id', () => {
     expect(buildTransferUrl('abc-123')).toBe(`${RECEIVER_URL}?id=abc-123`);
   });
+
+  it('defaults to the iOS URL with no fmt param (back-compat)', () => {
+    const url = buildTransferUrl('abc');
+    expect(url).toContain('?id=abc');
+    expect(url).not.toContain('fmt=');
+  });
+
+  it('appends fmt=android for the Android target', () => {
+    const url = buildTransferUrl('abc', 'android');
+    expect(url).toContain('?id=abc');
+    expect(url).toContain('&fmt=android');
+  });
 });
