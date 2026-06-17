@@ -3,12 +3,13 @@ import { saveAs } from 'file-saver';
 import QRCode from 'qrcode';
 import { fetchEduroamCertMaterial } from '../../api/eduroam';
 import { generateEduroamMobileconfig } from '../../services/eduroam/mobileconfig';
+import { generateEapConfig } from '../../services/eduroam/eapConfig';
 import { putTransfer, buildTransferUrl } from '../../api/eduroamTransfer';
 import { logError } from '../../utils/reportError';
 
 export type EduroamStatus = 'idle' | 'working' | 'done' | 'error';
 /** Which device the student is setting up — not necessarily the desktop's OS. */
-export type EduroamTarget = 'mac' | 'ios';
+export type EduroamTarget = 'mac' | 'ios' | 'android';
 
 export const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent);
 
@@ -37,7 +38,13 @@ export function useEduroamSetup() {
         // Upload the profile to a one-time row; the QR points at the endpoint that
         // serves it so iOS Safari shows the install prompt directly (no page).
         const id = await putTransfer(new TextEncoder().encode(xml));
-        setQrDataUrl(await QRCode.toDataURL(buildTransferUrl(id), { margin: 2, width: 320 }));
+        setQrDataUrl(await QRCode.toDataURL(buildTransferUrl(id, 'ios'), { margin: 2, width: 320 }));
+      } else if (t === 'android') {
+        // Android uses an .eap-config (geteduroam), delivered via the same transfer;
+        // the receiver serves it as application/eap-config for fmt=android.
+        const eap = generateEapConfig({ rootCaDer, clientP12 });
+        const id = await putTransfer(new TextEncoder().encode(eap));
+        setQrDataUrl(await QRCode.toDataURL(buildTransferUrl(id, 'android'), { margin: 2, width: 320 }));
       } else {
         saveAs(new Blob([xml], { type: 'application/x-apple-aspen-config' }), 'eduroam-reis.mobileconfig');
       }
