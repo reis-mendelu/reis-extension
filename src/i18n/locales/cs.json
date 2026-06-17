@@ -574,8 +574,18 @@
     "iosStep2": "Po výzvě klepněte na Povolit pro stažení profilu, pak otevřete Nastavení — do ~8 minut klepněte nahoře na \"Stažený profil\".",
     "iosStep3": "Klepněte na Instalovat, zadejte kód zařízení a poté toto heslo certifikátu:",
     "iosStep4": "Zařízení se k eduroam připojí automaticky.",
+    "targetAndroid": "Android",
+    "androidIntro": "Vygenerujte QR kód, naskenujte ho telefonem s Androidem a otevřete soubor v aplikaci geteduroam.",
+    "getEduroam": "Nainstalujte aplikaci geteduroam (Google Play)",
+    "androidGenerate": "Vytvořit QR kód",
+    "androidReady": "Naskenujte fotoaparátem na telefonu s Androidem.",
+    "androidStep0": "Nejprve nainstalujte aplikaci geteduroam z Google Play (odkaz výše).",
+    "androidStep1": "Otevřete Fotoaparát (nebo QR čtečku), namiřte na QR kód a klepněte na odkaz.",
+    "androidStep2": "Nechte stáhnout soubor eduroam.eap-config a klepnutím ho otevřete v aplikaci geteduroam.",
+    "androidStep3": "Až se geteduroam zeptá na heslo certifikátu, zadejte:",
+    "androidStep4": "geteduroam nainstaluje profil a telefon se připojí k eduroam.",
     "regenerate": "Začít znovu",
-    "privacyNote": "Vše se generuje ve vašem zařízení. Váš soukromý klíč ho nikdy neopustí — přenos vždy obsahuje pouze šifrovaná data."
+    "privacyNote": "Vše se generuje ve vašem zařízení a váš soukromý klíč je chráněn heslem, které zadáte jen vy při instalaci. Přenosový odkaz je jednorázový a vyprší během několika minut."
   },
   "erasmus": {
     "title": "Erasmus+ Zkušenosti",

@@ -574,8 +574,18 @@
     "iosStep2": "Tap Allow when asked to download the profile, then open Settings — tap \"Profile Downloaded\" near the top within ~8 minutes.",
     "iosStep3": "Tap Install, enter your passcode, then this certificate password:",
     "iosStep4": "Your device joins eduroam automatically.",
+    "targetAndroid": "Android",
+    "androidIntro": "Generate a QR code, scan it with your Android phone, and open the file in the geteduroam app.",
+    "getEduroam": "Install the geteduroam app (Google Play)",
+    "androidGenerate": "Create QR code",
+    "androidReady": "Scan this with your Android phone camera.",
+    "androidStep0": "Install the geteduroam app from Google Play first (link above).",
+    "androidStep1": "Open the Camera (or a QR scanner), point it at the QR code, and tap the link.",
+    "androidStep2": "Let the eduroam.eap-config file download, then tap it to open it in geteduroam.",
+    "androidStep3": "When geteduroam asks for the certificate password, enter:",
+    "androidStep4": "geteduroam installs the profile and your phone joins eduroam.",
     "regenerate": "Start over",
-    "privacyNote": "Everything is generated on your device. Your private key never leaves it — the transfer only ever carries encrypted data."
+    "privacyNote": "Everything is generated on your device and your private key stays protected by a password only you enter on install. The transfer link is one-time and expires within minutes."
   },
   "erasmus": {
     "title": "Erasmus+ Experiences",

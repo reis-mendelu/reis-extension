@@ -1,8 +1,9 @@
-import { Wifi, Smartphone, Laptop, AlertTriangle } from 'lucide-react';
+import { Wifi, Smartphone, Laptop, Tablet, AlertTriangle } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useEduroamSetup } from '../../hooks/data/useEduroamSetup';
 import { IosTransfer } from './IosTransfer';
+import { AndroidTransfer } from './AndroidTransfer';
 import { MacInstall } from './MacInstall';
 
 export function EduroamSetup() {
@@ -36,6 +37,13 @@ export function EduroamSetup() {
           </button>
           <button
             role="tab"
+            className={`tab gap-2 ${target === 'android' ? 'tab-active' : ''}`}
+            onClick={() => selectTarget('android')}
+          >
+            <Tablet className="w-4 h-4" /> {t('eduroam.targetAndroid')}
+          </button>
+          <button
+            role="tab"
             className={`tab gap-2 ${target === 'mac' ? 'tab-active' : ''}`}
             onClick={() => selectTarget('mac')}
           >
@@ -53,9 +61,13 @@ export function EduroamSetup() {
           </div>
         )}
 
-        {target === 'ios' ? (
+        {target === 'ios' && (
           <IosTransfer status={status} qrDataUrl={qrDataUrl} password={password} onGenerate={() => run('ios')} />
-        ) : (
+        )}
+        {target === 'android' && (
+          <AndroidTransfer status={status} qrDataUrl={qrDataUrl} password={password} onGenerate={() => run('android')} />
+        )}
+        {target === 'mac' && (
           <MacInstall
             status={status}
             password={password}
