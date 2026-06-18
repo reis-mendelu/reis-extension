@@ -337,8 +337,12 @@ export function stopSyncService() {
 
 export async function refreshExams(): Promise<void> {
     const fresh = await fetchDualLanguageExams();
+    // Only overwrite the content-side cache with a non-empty result.
     if (fresh.length > 0) {
         cachedData = { ...cachedData, exams: fresh };
-        sendToIframe(Messages.syncUpdate({ exams: fresh, isSyncing, lastSync: cachedData.lastSync }));
     }
+    // Always push: a non-empty result replaces the list; an empty result is a
+    // no-op in the guarded setExams when exams already exist, but still clears
+    // the panel's "refreshing" spinner for students who genuinely have no exams.
+    sendToIframe(Messages.syncUpdate({ exams: fresh, isSyncing, lastSync: cachedData.lastSync }));
 }

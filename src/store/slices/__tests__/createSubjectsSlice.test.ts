@@ -6,7 +6,7 @@ import { IndexedDBService } from '../../../services/storage';
 vi.mock('../../../services/storage', () => ({
     IndexedDBService: {
         get: vi.fn(),
-        set: vi.fn()
+        set: vi.fn(() => Promise.resolve())
     }
 }));
 
@@ -18,7 +18,7 @@ describe('createSubjectsSlice', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         set = vi.fn((fn) => {
-            const result = typeof fn === 'function' ? fn({ subjects: null, subjectsLoading: false }) : fn;
+            const result = typeof fn === 'function' ? fn(slice) : fn;
             Object.assign(slice, result);
         });
         get = vi.fn(() => slice);
@@ -49,5 +49,52 @@ describe('createSubjectsSlice', () => {
 
         expect(slice.subjectsLoading).toBe(false);
         expect(slice.subjects).toBeNull();
+    });
+
+    describe('setSubjects', () => {
+        const subjects = (codes: string[]) => ({
+            version: 1,
+            lastUpdated: 'now',
+            data: Object.fromEntries(codes.map(c => [c, { code: c }])),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }) as any;
+
+        it('replaces subjects with incoming populated data', () => {
+            slice.setSubjects(subjects(['ABC']));
+            expect(Object.keys(slice.subjects!.data)).toEqual(['ABC']);
+        });
+
+        it('does NOT wipe populated subjects when incoming is empty/null (gap guard)', () => {
+            slice.setSubjects(subjects(['ABC', 'DEF']));
+            slice.setSubjects(null);
+            expect(Object.keys(slice.subjects!.data)).toHaveLength(2);
+            slice.setSubjects(subjects([]));
+            expect(Object.keys(slice.subjects!.data)).toHaveLength(2);
+        });
+    });
+
+    describe('setAttendance', () => {
+        const att = { ABC: [{ date: '1.1.' }] } as unknown as Parameters<typeof slice.setAttendance>[0];
+
+        it('stores incoming attendance', () => {
+            slice.setAttendance(att);
+            expect(slice.attendance).toEqual(att);
+        });
+
+        it('does NOT wipe populated attendance when incoming is empty (gap guard)', () => {
+            slice.setAttendance(att);
+            slice.setAttendance({});
+            expect(Object.keys(slice.attendance)).toHaveLength(1);
+        });
+    });
+
+    describe('setPastAttendance', () => {
+        const att = { ABC: [{ date: '1.1.' }] } as unknown as Parameters<typeof slice.setPastAttendance>[0];
+
+        it('does NOT wipe populated past attendance when incoming is empty (gap guard)', () => {
+            slice.setPastAttendance(att);
+            slice.setPastAttendance({});
+            expect(Object.keys(slice.pastAttendance)).toHaveLength(1);
+        });
     });
 });

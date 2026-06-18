@@ -27,4 +27,14 @@ export const createStudyPlanSlice: AppSlice<StudyPlanSlice> = (set) => ({
             // Ignore if stats fail to load from IDB
         }
     },
+    // Direct setters let a sync push paint immediately instead of waiting for the
+    // end-of-sync triggerRefresh → fetchStudyPlan/fetchStudyStats round-trip.
+    setStudyPlan: (plan) => {
+        if (!plan) return;
+        set({ studyPlanDual: plan, studyPlanLoaded: true });
+    },
+    setStudyStats: (stats) => {
+        if (!stats) return;
+        set({ studyStats: stats });
+    },
 });

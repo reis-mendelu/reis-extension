@@ -32,7 +32,7 @@ export interface ScheduleSlice {
     weekStart: Date | null;
   };
   fetchSchedule: () => Promise<void>;
-  setSchedule: (data: BlockLesson[]) => void;
+  setSchedule: (data: BlockLesson[] | undefined) => void;
 }
 
 export interface ExamSlice {
@@ -126,6 +126,7 @@ export interface SubjectsSlice {
     attendance: Record<string, SubjectAttendance[]>;
     pastAttendance: Record<string, SubjectAttendance[]>;
     fetchSubjects: () => Promise<void>;
+    setSubjects: (data: SubjectsData | null) => void;
     setAttendance: (data: Record<string, SubjectAttendance[]>) => void;
     setPastAttendance: (data: Record<string, SubjectAttendance[]>) => void;
     setCourseNickname: (courseCode: string, nickname: string | null) => void;
@@ -209,6 +210,8 @@ export interface StudyPlanSlice {
     studyStats: StudyStats | null;
     fetchStudyPlan: () => Promise<void>;
     fetchStudyStats: () => Promise<void>;
+    setStudyPlan: (plan: DualLanguageStudyPlan | null) => void;
+    setStudyStats: (stats: StudyStats | null) => void;
 }
 
 export interface ErasmusStudentInfo {

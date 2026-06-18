@@ -10,6 +10,7 @@ import {
     type FetchExamClassmatesResult,
 } from './exams/fetchExamClassmatesForTermin';
 import { fetchTermNote } from '../../api/terminyInfo';
+import { wouldWipePopulated } from '../guards';
 
 const NOTE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours on success
 const NOTE_ERROR_TTL_MS = 5 * 60 * 1000; // 5 minutes after error — prevents remount-refetch storm
@@ -269,7 +270,7 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
     // A transient/failed IS fetch resolves to [] (see fetchExamData), and a
     // sync push would otherwise wipe the currently-displayed exams. Keep old
     // data on screen until real new data is available to replace it.
-    if (data.length === 0 && get().exams.data.length > 0) return;
+    if (wouldWipePopulated(data, get().exams.data)) return;
     set((state) => ({
         exams: { ...state.exams, data },
         lastExamsFetchedAt: Date.now(),
