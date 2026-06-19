@@ -88,12 +88,7 @@ export function EduroamDrawer() {
           />
         )}
         {target === 'windows' && (
-          <WindowsInstall
-            status={status}
-            password={password}
-            guideHref={guideHref}
-            onDownload={() => run('windows')}
-          />
+          <WindowsInstall status={status} password={password} onDownload={() => run('windows')} />
         )}
 
         <p className="text-xs text-base-content/40">

@@ -1,11 +1,12 @@
 # eduroam Windows — on-device verification checklist
 
 **DoD:** the developer connects to eduroam on a real Windows PC through this pipeline
-and explicitly confirms it ("verified on my Windows"). Unit tests mimic the Windows
-*browser* (UA detection) deterministically, but the geteduroam install + RADIUS join
-can only be proven on real Windows.
+and explicitly confirms it ("verified on my Windows"). There is **no host detection** —
+the Windows segment is always available, the download is never gated, and the panel
+links only our geteduroam download (never the MENDELU guide). The geteduroam install +
+RADIUS join can only be proven on real Windows.
 
-1. [ ] Build the extension (`npm run build`) and load it on a Windows PC; open eduroam → the **Windows** segment is selected by default.
+1. [ ] Build the extension (`npm run build`) and load it on a Windows PC; open eduroam → click the **Windows** segment.
 2. [ ] The geteduroam download link (step 0) points to https://www.geteduroam.app/ ; install geteduroam for Windows.
 3. [ ] Click **Download eduroam profile** → `eduroam-reis.eap-config` lands in Downloads (no QR shown).
 4. [ ] Double-click the file → it opens in **geteduroam** (file association).

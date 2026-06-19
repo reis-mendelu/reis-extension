@@ -586,7 +586,6 @@
     "androidStep4": "geteduroam installs the profile and your phone joins eduroam.",
     "regenerate": "Start over",
     "targetWindows": "Windows",
-    "windowsHostHint": "You're not on Windows — switch to your Windows PC to download here, or use another tab.",
     "getEduroamWindows": "Install the geteduroam app (geteduroam.app)",
     "windowsDownloaded": "Profile downloaded.",
     "windowsStep0": "Install the geteduroam app for Windows first (link above).",

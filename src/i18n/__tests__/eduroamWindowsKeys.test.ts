@@ -4,7 +4,6 @@ import cs from '../locales/cs.json';
 
 const NEW_KEYS = [
   'targetWindows',
-  'windowsHostHint',
   'getEduroamWindows',
   'windowsDownloaded',
   'windowsStep0',

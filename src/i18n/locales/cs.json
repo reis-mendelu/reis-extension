@@ -586,7 +586,6 @@
     "androidStep4": "geteduroam nainstaluje profil a telefon se připojí k eduroam.",
     "regenerate": "Začít znovu",
     "targetWindows": "Windows",
-    "windowsHostHint": "Nejste na Windows — pro stažení přepněte na svůj počítač s Windows, nebo použijte jinou záložku.",
     "getEduroamWindows": "Nainstalujte aplikaci geteduroam (geteduroam.app)",
     "windowsDownloaded": "Profil stažen.",
     "windowsStep0": "Nejprve nainstalujte aplikaci geteduroam pro Windows (odkaz výše).",

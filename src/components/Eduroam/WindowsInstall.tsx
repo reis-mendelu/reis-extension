@@ -1,19 +1,18 @@
-import { Download, ShieldCheck, ExternalLink, Loader2, AlertTriangle } from 'lucide-react';
+import { Download, ShieldCheck, ExternalLink, Loader2 } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { PasswordChip } from './PasswordChip';
-import { isWindows, type EduroamStatus } from '../../hooks/data/useEduroamSetup';
+import type { EduroamStatus } from '../../hooks/data/useEduroamSetup';
 
 interface Props {
   status: EduroamStatus;
   password: string | null;
-  guideHref: string; // MENDELU guide — used only in the !isWindows hint (same as MacInstall)
   onDownload: () => void;
 }
 
 const GETEDUROAM_WINDOWS_URL = 'https://www.geteduroam.app/';
 
 /** Windows path: download the .eap-config on this PC and open it in geteduroam. */
-export function WindowsInstall({ status, password, guideHref, onDownload }: Props) {
+export function WindowsInstall({ status, password, onDownload }: Props) {
   const { t } = useTranslation();
 
   return (
@@ -27,22 +26,10 @@ export function WindowsInstall({ status, password, guideHref, onDownload }: Prop
         <ExternalLink className="w-4 h-4" /> {t('eduroam.getEduroamWindows')}
       </a>
 
-      {!isWindows && (
-        <div className="alert alert-info text-sm">
-          <AlertTriangle className="w-4 h-4 shrink-0" />
-          <span>
-            {t('eduroam.windowsHostHint')}{' '}
-            <a className="link" href={guideHref} target="_blank" rel="noopener noreferrer">
-              {t('eduroam.openGuide')}
-            </a>
-          </span>
-        </div>
-      )}
-
       {status !== 'done' && (
         <button
           className="btn btn-primary btn-lg gap-2"
-          disabled={!isWindows || status === 'working'}
+          disabled={status === 'working'}
           onClick={onDownload}
         >
           {status === 'working' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}

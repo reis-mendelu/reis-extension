@@ -12,16 +12,13 @@ export type EduroamStatus = 'idle' | 'working' | 'done' | 'error';
 export type EduroamTarget = 'mac' | 'ios' | 'android' | 'windows';
 
 export const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent);
-export const isWindows = typeof navigator !== 'undefined' && /Win/i.test(navigator.userAgent);
 
 // macOS deep link straight to the Profiles / Device Management pane.
 const PROFILES_SETTINGS_URL = 'x-apple.systempreferences:com.apple.preferences.configurationprofiles';
 
 export function useEduroamSetup() {
   const [status, setStatus] = useState<EduroamStatus>('idle');
-  const [target, setTarget] = useState<EduroamTarget>(
-    isWindows ? 'windows' : isMac ? 'mac' : 'ios',
-  );
+  const [target, setTarget] = useState<EduroamTarget>(isMac ? 'mac' : 'ios');
   const [password, setPassword] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
