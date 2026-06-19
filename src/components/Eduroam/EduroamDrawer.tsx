@@ -18,13 +18,11 @@ const SEGMENTS: { id: EduroamTarget; labelKey: string; icon: typeof Smartphone }
 /** Side-drawer host for the eduroam setup flow. Self-connects to the store. */
 export function EduroamDrawer() {
   const { t } = useTranslation();
-  const language = useAppStore((s) => s.language);
   const isOpen = useAppStore((s) => s.isEduroamOpen);
   const setOpen = useAppStore((s) => s.setIsEduroamOpen);
   const { status, target, selectTarget, password, qrDataUrl, error, run, reset, openProfilesSettings } =
     useEduroamSetup();
 
-  const guideHref = `https://eduroam.mendelu.cz/?lang=${language === 'en' ? 'en' : 'cz'}`;
   const close = () => {
     setOpen(false);
     reset();
@@ -82,7 +80,6 @@ export function EduroamDrawer() {
           <MacInstall
             status={status}
             password={password}
-            guideHref={guideHref}
             onDownload={() => run('mac')}
             onOpenSettings={openProfilesSettings}
           />

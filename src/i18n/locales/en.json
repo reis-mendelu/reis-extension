@@ -557,7 +557,6 @@
     "targetIos": "iPhone / iPad",
     "targetMac": "Mac",
     "macHostHint": "You're not on a Mac — switch to your Mac to download here, or use the iPhone / iPad tab.",
-    "openGuide": "MENDELU guide",
     "download": "Download eduroam profile",
     "preparing": "Preparing profile…",
     "error": "Couldn't prepare the profile",

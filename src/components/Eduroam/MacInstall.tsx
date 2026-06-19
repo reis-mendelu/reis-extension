@@ -6,13 +6,12 @@ import { isMac, type EduroamStatus } from '../../hooks/data/useEduroamSetup';
 interface Props {
   status: EduroamStatus;
   password: string | null;
-  guideHref: string;
   onDownload: () => void;
   onOpenSettings: () => void;
 }
 
 /** Mac path: download the profile on this Mac and install it via System Settings. */
-export function MacInstall({ status, password, guideHref, onDownload, onOpenSettings }: Props) {
+export function MacInstall({ status, password, onDownload, onOpenSettings }: Props) {
   const { t } = useTranslation();
 
   return (
@@ -20,12 +19,7 @@ export function MacInstall({ status, password, guideHref, onDownload, onOpenSett
       {!isMac && (
         <div className="alert alert-info text-sm">
           <AlertTriangle className="w-4 h-4 shrink-0" />
-          <span>
-            {t('eduroam.macHostHint')}{' '}
-            <a className="link" href={guideHref} target="_blank" rel="noopener noreferrer">
-              {t('eduroam.openGuide')}
-            </a>
-          </span>
+          <span>{t('eduroam.macHostHint')}</span>
         </div>
       )}
 
