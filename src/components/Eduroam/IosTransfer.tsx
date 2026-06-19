@@ -32,18 +32,22 @@ export function IosTransfer({ status, qrDataUrl, password, onGenerate }: Props) 
         <ShieldCheck className="w-4 h-4 shrink-0" />
         <span>{t('eduroam.iosReady')}</span>
       </div>
-      <div className="self-center bg-white p-3 rounded-xl">
-        <img src={qrDataUrl} alt="eduroam QR" width={240} height={240} />
+      <div className="self-center bg-base-200 rounded-box p-4 flex flex-col items-center gap-2">
+        <div className="bg-white p-3 rounded-xl">
+          <img src={qrDataUrl} alt="eduroam QR" width={220} height={220} />
+        </div>
       </div>
-      <ol className="list-decimal list-inside space-y-2 text-sm">
-        <li>{t('eduroam.iosStep1')}</li>
-        <li>{t('eduroam.iosStep2')}</li>
-        <li>
-          {t('eduroam.iosStep3')}
-          {password && <PasswordChip password={password} />}
+      <ul className="steps steps-vertical">
+        <li className="step step-primary text-sm text-left">{t('eduroam.iosStep1')}</li>
+        <li className="step step-primary text-sm text-left">{t('eduroam.iosStep2')}</li>
+        <li className="step step-primary text-sm text-left">
+          <span>
+            {t('eduroam.iosStep3')}
+            {password && <PasswordChip password={password} />}
+          </span>
         </li>
-        <li>{t('eduroam.iosStep4')}</li>
-      </ol>
+        <li className="step step-primary text-sm text-left">{t('eduroam.iosStep4')}</li>
+      </ul>
       <button className="btn btn-ghost btn-sm self-start" onClick={onGenerate}>
         {t('eduroam.regenerate')}
       </button>

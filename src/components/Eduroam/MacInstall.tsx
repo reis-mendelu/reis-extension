@@ -46,21 +46,25 @@ export function MacInstall({ status, password, guideHref, onDownload, onOpenSett
             <ShieldCheck className="w-4 h-4 shrink-0" />
             <span>{t('eduroam.downloaded')}</span>
           </div>
-          <ol className="list-decimal list-inside space-y-3 text-sm">
-            <li>
-              {t('eduroam.step1')}
-              <button className="btn btn-sm btn-outline gap-2 mt-2 ml-1" onClick={onOpenSettings}>
-                <ExternalLink className="w-4 h-4" />
-                {t('eduroam.openSettings')}
-              </button>
+          <ul className="steps steps-vertical">
+            <li className="step step-primary text-sm text-left">
+              <span>
+                {t('eduroam.step1')}
+                <button className="btn btn-sm btn-outline gap-2 mt-2 ml-1" onClick={onOpenSettings}>
+                  <ExternalLink className="w-4 h-4" />
+                  {t('eduroam.openSettings')}
+                </button>
+              </span>
             </li>
-            <li>{t('eduroam.step2')}</li>
-            <li>
-              {t('eduroam.step3')}
-              {password && <PasswordChip password={password} />}
+            <li className="step step-primary text-sm text-left">{t('eduroam.step2')}</li>
+            <li className="step step-primary text-sm text-left">
+              <span>
+                {t('eduroam.step3')}
+                {password && <PasswordChip password={password} />}
+              </span>
             </li>
-            <li>{t('eduroam.step4')}</li>
-          </ol>
+            <li className="step step-primary text-sm text-left">{t('eduroam.step4')}</li>
+          </ul>
           <button className="btn btn-ghost btn-sm self-start" onClick={onDownload}>
             {t('eduroam.regenerate')}
           </button>
