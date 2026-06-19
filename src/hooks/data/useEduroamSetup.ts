@@ -9,16 +9,19 @@ import { logError } from '../../utils/reportError';
 
 export type EduroamStatus = 'idle' | 'working' | 'done' | 'error';
 /** Which device the student is setting up — not necessarily the desktop's OS. */
-export type EduroamTarget = 'mac' | 'ios' | 'android';
+export type EduroamTarget = 'mac' | 'ios' | 'android' | 'windows';
 
 export const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent);
+export const isWindows = typeof navigator !== 'undefined' && /Win/i.test(navigator.userAgent);
 
 // macOS deep link straight to the Profiles / Device Management pane.
 const PROFILES_SETTINGS_URL = 'x-apple.systempreferences:com.apple.preferences.configurationprofiles';
 
 export function useEduroamSetup() {
   const [status, setStatus] = useState<EduroamStatus>('idle');
-  const [target, setTarget] = useState<EduroamTarget>(isMac ? 'mac' : 'ios');
+  const [target, setTarget] = useState<EduroamTarget>(
+    isWindows ? 'windows' : isMac ? 'mac' : 'ios',
+  );
   const [password, setPassword] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +48,11 @@ export function useEduroamSetup() {
         const eap = generateEapConfig({ rootCaDer, clientP12 });
         const id = await putTransfer(new TextEncoder().encode(eap));
         setQrDataUrl(await QRCode.toDataURL(buildTransferUrl(id, 'android'), { margin: 2, width: 320 }));
+      } else if (t === 'windows') {
+        // Windows: same .eap-config as Android, but reIS runs on this PC, so we
+        // save it straight to disk. geteduroam (Windows) opens it on double-click.
+        const eap = generateEapConfig({ rootCaDer, clientP12 });
+        saveAs(new Blob([eap], { type: 'application/eap-config' }), 'eduroam-reis.eap-config');
       } else {
         saveAs(new Blob([xml], { type: 'application/x-apple-aspen-config' }), 'eduroam-reis.mobileconfig');
       }
