@@ -585,6 +585,16 @@
     "androidStep3": "When geteduroam asks for the certificate password, enter:",
     "androidStep4": "geteduroam installs the profile and your phone joins eduroam.",
     "regenerate": "Start over",
+    "targetWindows": "Windows",
+    "windowsHostHint": "You're not on Windows — switch to your Windows PC to download here, or use another tab.",
+    "getEduroamWindows": "Install the geteduroam app (geteduroam.app)",
+    "windowsDownloaded": "Profile downloaded.",
+    "windowsStep0": "Install the geteduroam app for Windows first (link above).",
+    "windowsStep1": "Double-click the downloaded eduroam-reis.eap-config file to open it in geteduroam.",
+    "windowsStep2": "When geteduroam asks for the certificate password, enter:",
+    "windowsStep3": "geteduroam installs the profile and your PC joins eduroam.",
+    "privacyNoteLocal": "Everything is generated on your device and your private key stays protected by a password only you enter on install.",
+    "privacyNoteTransfer": "Everything is generated on your device and your private key stays protected by a password only you enter on install. The transfer link is one-time and expires within minutes.",
     "privacyNote": "Everything is generated on your device and your private key stays protected by a password only you enter on install. The transfer link is one-time and expires within minutes."
   },
   "erasmus": {

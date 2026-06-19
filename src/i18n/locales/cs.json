@@ -585,6 +585,16 @@
     "androidStep3": "Až se geteduroam zeptá na heslo certifikátu, zadejte:",
     "androidStep4": "geteduroam nainstaluje profil a telefon se připojí k eduroam.",
     "regenerate": "Začít znovu",
+    "targetWindows": "Windows",
+    "windowsHostHint": "Nejste na Windows — pro stažení přepněte na svůj počítač s Windows, nebo použijte jinou záložku.",
+    "getEduroamWindows": "Nainstalujte aplikaci geteduroam (geteduroam.app)",
+    "windowsDownloaded": "Profil stažen.",
+    "windowsStep0": "Nejprve nainstalujte aplikaci geteduroam pro Windows (odkaz výše).",
+    "windowsStep1": "Dvojklikem na stažený soubor eduroam-reis.eap-config ho otevřete v aplikaci geteduroam.",
+    "windowsStep2": "Až se geteduroam zeptá na heslo certifikátu, zadejte:",
+    "windowsStep3": "geteduroam nainstaluje profil a počítač se připojí k eduroam.",
+    "privacyNoteLocal": "Vše se generuje ve vašem zařízení a váš soukromý klíč zůstává chráněn heslem, které zadáte jen vy při instalaci.",
+    "privacyNoteTransfer": "Vše se generuje ve vašem zařízení a váš soukromý klíč je chráněn heslem, které zadáte jen vy při instalaci. Přenosový odkaz je jednorázový a vyprší během několika minut.",
     "privacyNote": "Vše se generuje ve vašem zařízení a váš soukromý klíč je chráněn heslem, které zadáte jen vy při instalaci. Přenosový odkaz je jednorázový a vyprší během několika minut."
   },
   "erasmus": {
