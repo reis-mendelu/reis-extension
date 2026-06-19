@@ -19,13 +19,22 @@ describe('EduroamDrawer', () => {
     expect(container.querySelector('[role="dialog"]')).toBeNull();
   });
 
-  it('renders the title and three device segments when open', () => {
+  it('renders the title and four device segments when open', () => {
     open();
     render(<EduroamDrawer />);
     expect(screen.getByText('eduroam Wi-Fi')).toBeTruthy();
     expect(screen.getByRole('tab', { name: /iPhone/i })).toBeTruthy();
     expect(screen.getByRole('tab', { name: /Android/i })).toBeTruthy();
     expect(screen.getByRole('tab', { name: /Mac/i })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: /Windows/i })).toBeTruthy();
+  });
+
+  it('switches to the Windows segment on click', () => {
+    open();
+    render(<EduroamDrawer />);
+    const windows = screen.getByRole('tab', { name: /Windows/i });
+    fireEvent.click(windows);
+    expect(windows.getAttribute('aria-selected')).toBe('true');
   });
 
   it('switches the active device segment on click', () => {

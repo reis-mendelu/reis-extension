@@ -594,8 +594,7 @@
     "windowsStep2": "Až se geteduroam zeptá na heslo certifikátu, zadejte:",
     "windowsStep3": "geteduroam nainstaluje profil a počítač se připojí k eduroam.",
     "privacyNoteLocal": "Vše se generuje ve vašem zařízení a váš soukromý klíč zůstává chráněn heslem, které zadáte jen vy při instalaci.",
-    "privacyNoteTransfer": "Vše se generuje ve vašem zařízení a váš soukromý klíč je chráněn heslem, které zadáte jen vy při instalaci. Přenosový odkaz je jednorázový a vyprší během několika minut.",
-    "privacyNote": "Vše se generuje ve vašem zařízení a váš soukromý klíč je chráněn heslem, které zadáte jen vy při instalaci. Přenosový odkaz je jednorázový a vyprší během několika minut."
+    "privacyNoteTransfer": "Vše se generuje ve vašem zařízení a váš soukromý klíč je chráněn heslem, které zadáte jen vy při instalaci. Přenosový odkaz je jednorázový a vyprší během několika minut."
   },
   "erasmus": {
     "title": "Erasmus+ Zkušenosti",

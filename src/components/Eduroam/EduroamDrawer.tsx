@@ -1,4 +1,4 @@
-import { Wifi, Smartphone, Laptop, Tablet, AlertTriangle, X } from 'lucide-react';
+import { Wifi, Smartphone, Laptop, Tablet, Monitor, AlertTriangle, X } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useEduroamSetup, type EduroamTarget } from '../../hooks/data/useEduroamSetup';
@@ -6,11 +6,13 @@ import { AdaptiveDrawer } from '../ui/AdaptiveDrawer';
 import { IosTransfer } from './IosTransfer';
 import { AndroidTransfer } from './AndroidTransfer';
 import { MacInstall } from './MacInstall';
+import { WindowsInstall } from './WindowsInstall';
 
 const SEGMENTS: { id: EduroamTarget; labelKey: string; icon: typeof Smartphone }[] = [
   { id: 'ios', labelKey: 'eduroam.targetIos', icon: Smartphone },
   { id: 'android', labelKey: 'eduroam.targetAndroid', icon: Tablet },
   { id: 'mac', labelKey: 'eduroam.targetMac', icon: Laptop },
+  { id: 'windows', labelKey: 'eduroam.targetWindows', icon: Monitor },
 ];
 
 /** Side-drawer host for the eduroam setup flow. Self-connects to the store. */
@@ -46,13 +48,13 @@ export function EduroamDrawer() {
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-5">
-        <div role="tablist" className="join w-full">
+        <div role="tablist" className="grid grid-cols-2 gap-2">
           {SEGMENTS.map(({ id, labelKey, icon: Icon }) => (
             <button
               key={id}
               role="tab"
               aria-selected={target === id}
-              className={`join-item btn flex-1 gap-2 ${target === id ? 'btn-primary' : 'btn-ghost border border-base-300'}`}
+              className={`btn gap-2 ${target === id ? 'btn-primary' : 'btn-ghost border border-base-300'}`}
               onClick={() => selectTarget(id)}
             >
               <Icon className="w-4 h-4" /> {t(labelKey)}
@@ -85,8 +87,18 @@ export function EduroamDrawer() {
             onOpenSettings={openProfilesSettings}
           />
         )}
+        {target === 'windows' && (
+          <WindowsInstall
+            status={status}
+            password={password}
+            guideHref={guideHref}
+            onDownload={() => run('windows')}
+          />
+        )}
 
-        <p className="text-xs text-base-content/40">{t('eduroam.privacyNote')}</p>
+        <p className="text-xs text-base-content/40">
+          {t(target === 'mac' || target === 'windows' ? 'eduroam.privacyNoteLocal' : 'eduroam.privacyNoteTransfer')}
+        </p>
       </div>
     </AdaptiveDrawer>
   );

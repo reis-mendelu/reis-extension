@@ -594,8 +594,7 @@
     "windowsStep2": "When geteduroam asks for the certificate password, enter:",
     "windowsStep3": "geteduroam installs the profile and your PC joins eduroam.",
     "privacyNoteLocal": "Everything is generated on your device and your private key stays protected by a password only you enter on install.",
-    "privacyNoteTransfer": "Everything is generated on your device and your private key stays protected by a password only you enter on install. The transfer link is one-time and expires within minutes.",
-    "privacyNote": "Everything is generated on your device and your private key stays protected by a password only you enter on install. The transfer link is one-time and expires within minutes."
+    "privacyNoteTransfer": "Everything is generated on your device and your private key stays protected by a password only you enter on install. The transfer link is one-time and expires within minutes."
   },
   "erasmus": {
     "title": "Erasmus+ Experiences",
