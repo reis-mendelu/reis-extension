@@ -66,6 +66,13 @@ export function useEduroamSetup() {
     setQrDataUrl(null);
   }, []);
 
+  const reset = useCallback(() => {
+    setStatus('idle');
+    setError(null);
+    setPassword(null);
+    setQrDataUrl(null);
+  }, []);
+
   // Custom-scheme link: hand off to the OS without navigating the iframe.
   const openProfilesSettings = useCallback(() => {
     const a = document.createElement('a');
@@ -83,6 +90,7 @@ export function useEduroamSetup() {
     qrDataUrl,
     error,
     run,
+    reset,
     openProfilesSettings,
   };
 }

@@ -19,11 +19,14 @@ export function EduroamDrawer() {
   const language = useAppStore((s) => s.language);
   const isOpen = useAppStore((s) => s.isEduroamOpen);
   const setOpen = useAppStore((s) => s.setIsEduroamOpen);
-  const { status, target, selectTarget, password, qrDataUrl, error, run, openProfilesSettings } =
+  const { status, target, selectTarget, password, qrDataUrl, error, run, reset, openProfilesSettings } =
     useEduroamSetup();
 
   const guideHref = `https://eduroam.mendelu.cz/?lang=${language === 'en' ? 'en' : 'cz'}`;
-  const close = () => setOpen(false);
+  const close = () => {
+    setOpen(false);
+    reset();
+  };
 
   return (
     <AdaptiveDrawer open={isOpen} onClose={close} width="sm:w-[560px]" title={t('eduroam.title')}>
