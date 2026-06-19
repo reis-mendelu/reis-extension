@@ -17,6 +17,7 @@ function rateClass(rate: number): string {
 }
 
 function Row({ entry, onOpen, onSearch }: { entry: HardestEntry; onOpen: Props['onOpenSubject']; onSearch: Props['onSearchSubject'] }) {
+  const { t } = useTranslation();
   const { subject, stat, semesters } = entry;
   const displayName = useCourseName(subject.code, subject.name);
   const handleClick = () => {
@@ -30,7 +31,7 @@ function Row({ entry, onOpen, onSearch }: { entry: HardestEntry; onOpen: Props['
       )}
       <span className="flex-1 text-sm truncate">{displayName}</span>
       <span className={`flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium shrink-0 ${rateClass(stat.rate)}`}>
-        {stat.rate}%
+        {t('subjects.failRateLabel')} {stat.rate}%
       </span>
     </button>
   );

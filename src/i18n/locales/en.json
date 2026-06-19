@@ -248,7 +248,7 @@
     "footer": "We automatically include technical info (version, browser) for faster fixes.",
     "toastSuccess": "Thanks for your feedback!",
     "toastError": "Couldn't send feedback.",
-    "npsQuestion": "Would you recommend reIS to a friend? (1-5)",
+    "npsQuestion": "Would you recommend reIS to a friend? (1 - worst, 5 - best)",
     "npsThank": "Thanks for the rating!",
     "sharePrompt": "Send it to a classmate still on raw IS.",
     "shareCopy": "Copy link",
@@ -511,7 +511,7 @@
     "repeatWarning": "2nd enrollment",
     "gpa": "GPA",
     "enrolledCreditsLabel": "cr. enrolled",
-    "failRateLabel": "fail",
+    "failRateLabel": "∅ failure rate",
     "needMore": "need {n} more",
     "notEnoughEnrolled": "not enough enrolled",
     "zamerani": "specialization",
@@ -533,6 +533,13 @@
       "zameraniTitle": "Specialization comparison",
       "zameraniSubtitle": "credit-weighted fail rate",
       "lowSampleHint": "{n} subjects with low data"
+    },
+    "averages": {
+      "title": "Study averages",
+      "term": "This term",
+      "study": "Whole study",
+      "avg": "average",
+      "weighted": "weighted avg."
     }
   },
   "commands": {

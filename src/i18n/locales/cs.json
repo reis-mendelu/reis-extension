@@ -283,7 +283,7 @@
     "footer": "Automaticky odesíláme technické info (verze, prohlížeč) pro rychlejší opravu.",
     "toastSuccess": "Díky za zpětnou vazbu!",
     "toastError": "Nepodařilo se odeslat zpětnou vazbu.",
-    "npsQuestion": "Doporučil/a bys reIS kamarádovi? (1-5)",
+    "npsQuestion": "Doporučil/a bys reIS kamarádovi? (1 - nejhorší, 5 - nejlepší)",
     "npsThank": "Díky za hodnocení!",
     "sharePrompt": "Pošli to spolužákovi, co ještě bojuje s IS.",
     "shareCopy": "Kopírovat odkaz",
@@ -511,7 +511,7 @@
     "repeatWarning": "2. zápis",
     "gpa": "Průměr",
     "enrolledCreditsLabel": "kr. zapsáno",
-    "failRateLabel": "neúsp.",
+    "failRateLabel": "∅ neúspěšnost",
     "needMore": "potřeba ještě {n}",
     "notEnoughEnrolled": "málo zapsáno",
     "zamerani": "zaměření",
@@ -533,6 +533,13 @@
       "zameraniTitle": "Srovnání zaměření",
       "zameraniSubtitle": "průměrná neúspěšnost vážená kredity",
       "lowSampleHint": "{n} předmětů má málo dat"
+    },
+    "averages": {
+      "title": "Studijní průměry",
+      "term": "Za tento semestr",
+      "study": "Za celé studium",
+      "avg": "průměr",
+      "weighted": "vážený průměr"
     }
   },
   "commands": {

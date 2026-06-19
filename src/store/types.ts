@@ -209,6 +209,7 @@ export interface StudyPlanSlice {
     studyStats: StudyStats | null;
     fetchStudyPlan: () => Promise<void>;
     fetchStudyStats: () => Promise<void>;
+    setStudyStats: (stats: StudyStats) => void;
 }
 
 export interface ErasmusStudentInfo {

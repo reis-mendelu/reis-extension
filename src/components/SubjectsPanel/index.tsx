@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
@@ -6,6 +5,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { SubjectsPanelHeader } from './SubjectsPanelHeader';
 import { SubjectsPanelSkeleton } from './SubjectsPanelSkeleton';
 import { EnrolledNowSection } from './EnrolledNowSection';
+import { StudyAveragesSection } from './StudyAveragesSection';
 import { useSubjectsData } from './useSubjectsData';
 
 interface SubjectsPanelProps {
@@ -22,12 +22,6 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject, onOpenStudyPlan 
   const handshakeDone = useAppStore(s => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore(s => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore(s => s.syncStatus.isSyncing);
-
-  useEffect(() => {
-    if (!plan) return;
-    const codes = plan.blocks.flatMap(b => b.groups.flatMap(g => g.subjects.map(s => s.code)));
-    if (codes.length > 0) useAppStore.getState().fetchSuccessRateBatch(codes);
-  }, [plan]);
 
   const { subjectSemesters, subjectToZameranis, zameraniProgress, failRates, enrolledCredits } = useSubjectsData(plan);
 
@@ -56,6 +50,9 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject, onOpenStudyPlan 
           onOpenSubject={onOpenSubject}
           onSearchSubject={onSearchSubject}
         />
+        <div className="mt-3">
+          <StudyAveragesSection studyStats={studyStats} />
+        </div>
       </div>
 
       <div className="px-4 pt-3 pb-4 shrink-0">

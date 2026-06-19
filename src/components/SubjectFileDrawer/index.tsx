@@ -30,6 +30,8 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     const zaznamnikData = useAppStore(s => lesson?.courseCode ? s.zaznamnik?.[lesson.courseCode] : undefined);
     const isPhone = useAppStore(s => s.isTouch && s.isNarrow);
 
+    const hasFiles = !!state.files?.length;
+
     const phSections = zaznamnikData?.ph.sections;
     const vtTests = zaznamnikData?.vt.tests;
     const maxZaznamnikCols = useMemo(() => {
@@ -49,19 +51,19 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
 
     const flushDocumentNotes = useAppStore(s => s.flushDocumentNotes);
 
-    // Handle drag hint display
+    // Handle drag hint display — use boolean dep so array re-references don't reset the timer
     useEffect(() => {
         let isCurrent = true;
         let t1: ReturnType<typeof setTimeout> | null = null;
         let t2: ReturnType<typeof setTimeout> | null = null;
 
-        if (isOpen && state.files?.length) {
+        if (isOpen && hasFiles) {
             IndexedDBService.get('meta', 'drag_hint_shown').then(seen => {
                 if (!isCurrent) return;
                 if (!seen) {
                     IndexedDBService.set('meta', 'drag_hint_shown', true);
                     t1 = setTimeout(() => { if (isCurrent) setShowDragHint(true); }, 800);
-                    t2 = setTimeout(() => { if (isCurrent) setShowDragHint(false); }, 4800);
+                    t2 = setTimeout(() => { if (isCurrent) setShowDragHint(false); }, 8800);
                 }
             });
         }
@@ -71,7 +73,12 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
             if (t1) clearTimeout(t1);
             if (t2) clearTimeout(t2);
         };
-    }, [isOpen, state.files]);
+    }, [isOpen, hasFiles]);
+
+    // Dismiss the drag hint the moment the user starts a drag selection
+    useEffect(() => {
+        if (state.isDragging) setShowDragHint(false);
+    }, [state.isDragging]);
 
     // Hydrate last visited timestamp and update it
     useEffect(() => {
@@ -169,7 +176,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
                 <div ref={contentRef} className="min-h-full pb-20 relative">
                     <SubjectFileDrawerContent activeTab={activeTab} lesson={lesson} files={files} isFilesLoading={isFilesLoading}
                         isSyncing={isSyncing} isDragging={isDragging} selectionBoxStyle={selectionBoxStyle}
-                        showDragHint={showDragHint} groupedFiles={groupedFiles} selectedIds={selectedIds}
+                        showDragHint={showDragHint && !isDragging} groupedFiles={groupedFiles} selectedIds={selectedIds}
                         fileRefs={fileRefs} ignoreClickRef={ignoreClickRef} toggleSelect={toggleSelect}
                         openFile={openFile} onViewPdf={handleViewPdf}
                         onDownloadSingle={downloadSingle} resolvedCourseId={resolvedCourseId} syllabusResult={syllabusResult} 

@@ -32,7 +32,7 @@ export function DragHint({ show }: DragHintProps) {
             <div 
                 className="absolute bg-neutral text-neutral-content text-sm px-3 py-2 rounded-lg shadow-lg flex items-center gap-2"
                 style={{
-                    animation: 'dragHintFade 4s ease-in-out forwards',
+                    animation: 'dragHintFade 8s ease-in-out forwards',
                     top: '200px',
                     left: '50%',
                     transform: 'translateX(-50%)',
