@@ -2,6 +2,7 @@ import { bytesToBase64 } from './base64';
 
 const DEFAULT_SERVER_NAMES = ['aleph.mendelu.cz'];
 const DEFAULT_IDENTIFIER = 'cz.reis.eduroam';
+const DEFAULT_DISPLAY_NAME = 'MENDELU eduroam (reIS)';
 
 export interface EapConfigInput {
   /** MENDELU root CA, DER bytes (server-validation anchor). */
@@ -12,6 +13,8 @@ export interface EapConfigInput {
   serverNames?: string[];
   /** EAPIdentityProvider ID. Default "cz.reis.eduroam". */
   identifier?: string;
+  /** Institution name geteduroam shows at import. Default "MENDELU eduroam (reIS)". */
+  displayName?: string;
 }
 
 function escapeXml(s: string): string {
@@ -33,13 +36,14 @@ export function generateEapConfig(input: EapConfigInput): string {
   const serverNames = input.serverNames ?? DEFAULT_SERVER_NAMES;
   if (serverNames.length === 0) throw new Error('serverNames is empty');
   const identifier = input.identifier ?? DEFAULT_IDENTIFIER;
+  const displayName = input.displayName ?? DEFAULT_DISPLAY_NAME;
 
   const serverIds = serverNames.map((n) => `          <ServerID>${escapeXml(n)}</ServerID>`).join('\n');
 
   return [
     '<?xml version="1.0" encoding="utf-8"?>',
     '<EAPIdentityProviderList xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="eap-metadata.xsd">',
-    `  <EAPIdentityProvider ID="${escapeXml(identifier)}" namespace="urn:RFC4282:realm">`,
+    `  <EAPIdentityProvider ID="${escapeXml(identifier)}" namespace="urn:RFC4282:realm" version="1">`,
     '    <AuthenticationMethods>',
     '      <AuthenticationMethod>',
     '        <EAPMethod>',
@@ -60,6 +64,11 @@ export function generateEapConfig(input: EapConfigInput): string {
     '        <MinRSNProto>CCMP</MinRSNProto>',
     '      </IEEE80211>',
     '    </CredentialApplicability>',
+    // ProviderInfo is optional in eap-metadata.xsd but REQUIRED by geteduroam's
+    // Android parser model; geteduroam also shows DisplayName at import time.
+    '    <ProviderInfo>',
+    `      <DisplayName>${escapeXml(displayName)}</DisplayName>`,
+    '    </ProviderInfo>',
     '  </EAPIdentityProvider>',
     '</EAPIdentityProviderList>',
     '',

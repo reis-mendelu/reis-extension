@@ -50,4 +50,24 @@ describe('generateEapConfig', () => {
     const xml = generateEapConfig({ rootCaDer: root, clientP12: p12, serverNames: ['a&b<c'] });
     expect(xml).toContain('<ServerID>a&amp;b&lt;c</ServerID>');
   });
+
+  // geteduroam's Android parser (Simple XML model) marks `version` and
+  // `ProviderInfo` as REQUIRED — stricter than the official eap-metadata.xsd,
+  // which lists both as optional. Omitting them parses fine against the schema
+  // but makes geteduroam reject the file as "Not a valid .eap-config file".
+  it('sets the required version attribute on EAPIdentityProvider', () => {
+    const xml = generateEapConfig({ rootCaDer: root, clientP12: p12 });
+    expect(xml).toMatch(/<EAPIdentityProvider\b[^>]*\bversion="1"/);
+  });
+
+  it('includes a ProviderInfo with a DisplayName (required by geteduroam)', () => {
+    const xml = generateEapConfig({ rootCaDer: root, clientP12: p12 });
+    expect(xml).toContain('<ProviderInfo>');
+    expect(xml).toMatch(/<DisplayName>[^<]+<\/DisplayName>/);
+  });
+
+  it('orders ProviderInfo after CredentialApplicability (XSD sequence)', () => {
+    const xml = generateEapConfig({ rootCaDer: root, clientP12: p12 });
+    expect(xml.indexOf('</CredentialApplicability>')).toBeLessThan(xml.indexOf('<ProviderInfo>'));
+  });
 });
