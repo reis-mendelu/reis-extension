@@ -53,6 +53,9 @@ export function EduroamTutorial({ target, status, qrDataUrl, password, onRun, on
   const { t } = useTranslation();
   const manual = EDUROAM_MANUAL[target];
   const [zoom, setZoom] = useState<string | null>(null);
+  // Phone screenshots are shown smaller so they don't dominate the panel
+  // (desktop captures stay wide); tap-to-zoom gives full detail either way.
+  const phone = target === 'ios' || target === 'android';
 
   return (
     <div className="mt-6">
@@ -108,7 +111,7 @@ export function EduroamTutorial({ target, status, qrDataUrl, password, onRun, on
                 type="button"
                 onClick={() => setZoom(step.img!)}
                 aria-label={t('eduroam.viewImage')}
-                className="block w-full cursor-zoom-in"
+                className={`block w-full cursor-zoom-in ${phone ? 'max-w-[300px]' : ''}`}
               >
                 <img
                   src={step.img}
