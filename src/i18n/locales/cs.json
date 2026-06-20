@@ -564,6 +564,8 @@
     "copied": "Zkopírováno!",
     "viewImage": "Zvětšit snímek",
     "closeImage": "Zavřít",
+    "connectStep": "Na fakultě se připoj k eduroam",
+    "connectHint": "Připojí se automaticky, jakmile budeš v dosahu sítě.",
     "restart": "Vybrat jiné zařízení",
     "footer": "Vytvořeno studenty pro studenty",
     "footerSub": "reIS · studentská iniciativa PEF MENDELU",

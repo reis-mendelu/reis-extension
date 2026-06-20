@@ -41,12 +41,10 @@ describe('EduroamTutorial', () => {
     expect(screen.getByText('abc-123')).toBeTruthy();
   });
 
-  it('shows the done banner only once status is done', () => {
+  it('always shows the final connect-on-campus step, even before download', () => {
     useAppStore.setState({ language: 'en' });
-    const { rerender } = render(<EduroamTutorial target="mac" {...base} />);
-    expect(screen.queryByText(/connect to eduroam automatically/i)).toBeNull();
-    rerender(<EduroamTutorial target="mac" {...base} status="done" />);
-    expect(screen.getByText(/connect to eduroam automatically/i)).toBeTruthy();
+    render(<EduroamTutorial target="mac" {...base} />);
+    expect(screen.getByText('Connect to eduroam on campus')).toBeTruthy();
   });
 
   it('calls onOpenSettings from the mac open-settings step', () => {

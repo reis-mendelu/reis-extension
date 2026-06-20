@@ -564,6 +564,8 @@
     "copied": "Copied!",
     "viewImage": "Enlarge screenshot",
     "closeImage": "Close",
+    "connectStep": "Connect to eduroam on campus",
+    "connectHint": "Your device joins automatically once you're in range of the network.",
     "restart": "Pick another device",
     "footer": "Built by students, for students",
     "footerSub": "reIS · a student initiative at PEF MENDELU",

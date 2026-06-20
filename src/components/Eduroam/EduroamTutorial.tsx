@@ -15,12 +15,15 @@ interface EduroamTutorialProps {
   onOpenSettings: () => void;
 }
 
-/** A numbered step row: badge + connector line + content column. */
-function NumberedRow({ n, last, children }: { n: number; last: boolean; children: ReactNode }) {
+/** A numbered step row: badge + connector line + content column. The final
+ *  row passes `done` to show a green check instead of a number. */
+function NumberedRow({ n, last, done, children }: { n?: number; last: boolean; done?: boolean; children: ReactNode }) {
   return (
     <div className="flex gap-3.5 mb-4">
       <div className="flex flex-col items-center shrink-0">
-        <span className="flex items-center justify-center w-7 h-7 rounded-full bg-base-100 border border-base-content/10 font-bold text-sm">{n}</span>
+        <span className={`flex items-center justify-center w-7 h-7 rounded-full font-bold text-sm ${done ? 'bg-success text-success-content' : 'bg-base-100 border border-base-content/10'}`}>
+          {done ? <Check className="w-4 h-4" /> : n}
+        </span>
         {!last && <div className="w-px flex-1 bg-gradient-to-b from-base-content/15 to-transparent mt-1 min-h-2" />}
       </div>
       <div className="flex-1 pb-1 flex flex-col gap-2.5">{children}</div>
@@ -75,14 +78,14 @@ export function EduroamTutorial({ target, status, qrDataUrl, password, onRun, on
         </NumberedRow>
       )}
 
-      {/* Numbered steps (offset by the install step where present) */}
+      {/* Numbered steps (offset by the install step where present). The final
+          "connect on campus" row below is always the last, so steps never are. */}
       {manual.steps.map((step, i) => {
-        const last = i === manual.steps.length - 1;
         const warn = t(manualKey(target, 'steps', i, 'warn'));
         const hasWarn = warn !== manualKey(target, 'steps', i, 'warn');
         const showQr = step.action === 'qr' && status === 'done' && qrDataUrl;
         return (
-          <NumberedRow key={i} n={i + 1 + (manual.doOnceUrl ? 1 : 0)} last={last}>
+          <NumberedRow key={i} n={i + 1 + (manual.doOnceUrl ? 1 : 0)} last={false}>
             <div className="text-base leading-relaxed">{t(manualKey(target, 'steps', i, 'text'))}</div>
 
             {hasWarn && (
@@ -125,13 +128,11 @@ export function EduroamTutorial({ target, status, qrDataUrl, password, onRun, on
         );
       })}
 
-      {/* Done banner — only once the profile/QR is actually ready */}
-      {status === 'done' && (
-        <div className="mt-1.5 flex items-center gap-2.5 p-4 rounded-box bg-primary/10 border border-primary/30">
-          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-content shrink-0"><Check className="w-4 h-4" /></span>
-          <span className="font-bold text-base">{t(manualKey(target, 'done', 'text'))}</span>
-        </div>
-      )}
+      {/* Final step: the real finish line — connect once you're on campus */}
+      <NumberedRow last done>
+        <div className="text-base leading-relaxed font-medium">{t('eduroam.connectStep')}</div>
+        <div className="text-sm text-base-content/60">{t('eduroam.connectHint')}</div>
+      </NumberedRow>
 
       {/* Tap-to-zoom lightbox */}
       {zoom && (
