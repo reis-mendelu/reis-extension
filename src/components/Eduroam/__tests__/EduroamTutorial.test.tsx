@@ -44,9 +44,9 @@ describe('EduroamTutorial', () => {
   it('shows the done banner only once status is done', () => {
     useAppStore.setState({ language: 'en' });
     const { rerender } = render(<EduroamTutorial target="mac" {...base} />);
-    expect(screen.queryByText(/Done — you're on eduroam/i)).toBeNull();
+    expect(screen.queryByText(/connect to eduroam automatically/i)).toBeNull();
     rerender(<EduroamTutorial target="mac" {...base} status="done" />);
-    expect(screen.getByText(/Done — you're on eduroam/i)).toBeTruthy();
+    expect(screen.getByText(/connect to eduroam automatically/i)).toBeTruthy();
   });
 
   it('calls onOpenSettings from the mac open-settings step', () => {

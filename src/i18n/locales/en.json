@@ -588,7 +588,7 @@
           { "text": "Allow the download, then open Settings → \"Profile Downloaded\"", "shot": "Settings with the \"Profile Downloaded\" row near the top", "warn": "iOS hides the profile in Settings and it's valid for ~8 min — be quick." },
           { "text": "Tap Install and enter the certificate password", "shot": "Install screen + the password field" }
         ],
-        "done": { "text": "Done — you're on eduroam", "shot": "Wi-Fi showing eduroam connected" }
+        "done": { "text": "Set up — you'll connect to eduroam automatically when you're on campus", "shot": "Wi-Fi showing eduroam connected" }
       },
       "android": {
         "hint": "geteduroam app",
@@ -598,7 +598,7 @@
           { "text": "Scan it, then tap the downloaded file to open it in geteduroam", "shot": "Download → opening the file in geteduroam" },
           { "text": "Enter the certificate password", "shot": "geteduroam password prompt" }
         ],
-        "done": { "text": "Done — you're on eduroam", "shot": "Phone connected to eduroam" }
+        "done": { "text": "Set up — you'll connect to eduroam automatically when you're on campus", "shot": "Phone connected to eduroam" }
       },
       "mac": {
         "hint": "Download a profile",
@@ -608,7 +608,7 @@
           { "text": "Double-click \"MENDELU eduroam (reIS)\" → Install", "shot": "The profile install dialog" },
           { "text": "Enter the certificate password", "shot": "The password field" }
         ],
-        "done": { "text": "Done — you're on eduroam", "shot": "Mac connected to eduroam" }
+        "done": { "text": "Set up — you'll connect to eduroam automatically when you're on campus", "shot": "Mac connected to eduroam" }
       },
       "windows": {
         "hint": "geteduroam app",
@@ -618,7 +618,7 @@
           { "text": "Double-click the downloaded file — it opens in geteduroam", "shot": "The file in Downloads opening geteduroam" },
           { "text": "Enter the certificate password", "shot": "geteduroam password prompt" }
         ],
-        "done": { "text": "Done — you're on eduroam", "shot": "PC connected to eduroam" }
+        "done": { "text": "Set up — you'll connect to eduroam automatically when you're on campus", "shot": "PC connected to eduroam" }
       }
     }
   },

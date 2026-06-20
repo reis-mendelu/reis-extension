@@ -36,12 +36,6 @@ export function EduroamDrawer() {
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-4 py-5">
-        {/* Hero */}
-        <div className="mb-7">
-          <h1 className="font-extrabold text-3xl leading-tight tracking-tight text-balance">{t('eduroam.heroTitle')}</h1>
-          <p className="text-base text-base-content/70 mt-2 max-w-[38ch]">{t('eduroam.heroSub')}</p>
-        </div>
-
         {status === 'error' && (
           <div className="alert alert-error text-sm mb-5">
             <AlertTriangle className="w-4 h-4 shrink-0" />

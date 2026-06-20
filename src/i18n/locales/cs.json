@@ -588,7 +588,7 @@
           { "text": "Povol stažení, pak Nastavení → \"Stažený profil\"", "shot": "Nastavení s řádkem \"Stažený profil\" nahoře", "warn": "iOS schová profil v Nastavení a platí jen ~8 minut — pospěš si." },
           { "text": "Klepni na Instalovat a zadej heslo certifikátu", "shot": "Obrazovka Instalovat + pole na heslo" }
         ],
-        "done": { "text": "Hotovo — jsi připojen k eduroam", "shot": "Wi-Fi ukazuje připojený eduroam" }
+        "done": { "text": "Hotovo — na fakultě se k eduroam připojíš automaticky", "shot": "Wi-Fi ukazuje připojený eduroam" }
       },
       "android": {
         "hint": "Aplikace geteduroam",
@@ -598,7 +598,7 @@
           { "text": "Naskenuj ho a klepni na stažený soubor, aby se otevřel v geteduroam", "shot": "Stažení → otevření souboru v geteduroam" },
           { "text": "Zadej heslo certifikátu", "shot": "Výzva geteduroam na heslo" }
         ],
-        "done": { "text": "Hotovo — jsi připojen k eduroam", "shot": "Telefon připojený k eduroam" }
+        "done": { "text": "Hotovo — na fakultě se k eduroam připojíš automaticky", "shot": "Telefon připojený k eduroam" }
       },
       "mac": {
         "hint": "Stáhni profil",
@@ -608,7 +608,7 @@
           { "text": "Dvojklik na \"MENDELU eduroam (reIS)\" → Instalovat", "shot": "Dialog instalace profilu" },
           { "text": "Zadej heslo certifikátu", "shot": "Pole na heslo" }
         ],
-        "done": { "text": "Hotovo — jsi připojen k eduroam", "shot": "Mac připojený k eduroam" }
+        "done": { "text": "Hotovo — na fakultě se k eduroam připojíš automaticky", "shot": "Mac připojený k eduroam" }
       },
       "windows": {
         "hint": "Aplikace geteduroam",
@@ -618,7 +618,7 @@
           { "text": "Dvojklik na stažený soubor — otevře se v geteduroam", "shot": "Soubor ve Stažených se otevírá v geteduroam" },
           { "text": "Zadej heslo certifikátu", "shot": "Výzva geteduroam na heslo" }
         ],
-        "done": { "text": "Hotovo — jsi připojen k eduroam", "shot": "PC připojené k eduroam" }
+        "done": { "text": "Hotovo — na fakultě se k eduroam připojíš automaticky", "shot": "PC připojené k eduroam" }
       }
     }
   },
