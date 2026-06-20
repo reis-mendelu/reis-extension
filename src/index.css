@@ -84,6 +84,9 @@ html, body, #root {
 
   /* Border size */
   --border: 1px;
+
+  /* Flat buttons — no depth bevel / light "ring" on filled controls */
+  --depth: 0;
 }
 
 /* Custom Mendelu dark theme for REIS extension */
@@ -125,6 +128,9 @@ html, body, #root {
 
   /* Border size */
   --border: 1px;
+
+  /* Flat buttons — no depth bevel / light "ring" on filled controls */
+  --depth: 0;
 }
 
 /* Tailwind v4: Custom tokens via @theme */
@@ -240,4 +246,29 @@ html, body, #root {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+/* ── Default button treatment: soft / tonal ──────────────────────────────
+ * Primary & secondary buttons use a low-emphasis tinted fill instead of the
+ * loud solid+bevel default. This is the project-wide default — writing the
+ * standard DaisyUI `btn btn-primary` / `btn btn-secondary` classes yields the
+ * soft look automatically; no extra modifier needed. Plain rules (outside any
+ * @layer) intentionally override DaisyUI's component layer. */
+.btn-primary {
+  background-color: color-mix(in oklab, var(--color-primary) 14%, transparent);
+  color: var(--color-primary);
+  border-color: color-mix(in oklab, var(--color-primary) 28%, transparent);
+}
+.btn-primary:hover {
+  background-color: color-mix(in oklab, var(--color-primary) 22%, transparent);
+  border-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
+}
+.btn-secondary {
+  background-color: color-mix(in oklab, var(--color-secondary) 14%, transparent);
+  color: var(--color-secondary);
+  border-color: color-mix(in oklab, var(--color-secondary) 28%, transparent);
+}
+.btn-secondary:hover {
+  background-color: color-mix(in oklab, var(--color-secondary) 22%, transparent);
+  border-color: color-mix(in oklab, var(--color-secondary) 40%, transparent);
 }
