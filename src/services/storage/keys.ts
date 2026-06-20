@@ -51,6 +51,9 @@ export const STORAGE_KEYS = {
     // Hidden items
     HIDDEN_ITEMS: 'reis_hidden_items',
     HIDE_HINT_SEEN: 'reis_hide_hint_seen',
+
+    // Campus map per-building room geometry TTL (keyed by buildingId)
+    MAP_ROOMS_LAST_SYNC: 'reis_map_rooms_sync',
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];
