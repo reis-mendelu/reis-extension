@@ -5,7 +5,6 @@ import { NavItem } from './Sidebar/NavItem';
 import { BottomActions } from './Sidebar/BottomActions';
 import { useMenuItems } from '../hooks/ui/useMenuItems';
 import type { MenuItem } from './menuConfig';
-import { useAppStore } from '../store/useAppStore';
 
 interface SidebarProps {
   currentView: AppView;
@@ -21,7 +20,6 @@ export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, onOpenSubje
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hookItems = useMenuItems();
   const menuItems = items || hookItems;
-  const setIsEduroamOpen = useAppStore((s) => s.setIsEduroamOpen);
 
   const handleEnter = (id: string) => { if (timeout.current) clearTimeout(timeout.current); setHovered(id); };
   const handleLeave = () => { timeout.current = setTimeout(() => setHovered(null), 300); };
@@ -64,8 +62,7 @@ export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, onOpenSubje
                   else if (item.id === 'exams') onViewChange('exams'); 
                   else if (item.id === 'subjects') onViewChange('subjects'); 
                   else if (item.id === 'erasmus') onViewChange('erasmus');
-                  else if (item.id === 'eduroam') setIsEduroamOpen(true);
-                  else if (item.href) window.open(item.href, '_blank'); 
+                  else if (item.href) window.open(item.href, '_blank');
               }} 
               onViewChange={onViewChange} 
               onOpenSubject={onOpenSubject} 
