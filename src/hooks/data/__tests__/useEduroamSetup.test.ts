@@ -9,6 +9,7 @@ vi.mock('../../../api/eduroam', () => ({
     clientP12: new Uint8Array(),
     password: 'pw123',
   }),
+  fetchEduroamPassword: vi.fn().mockResolvedValue('pw123'),
 }));
 
 vi.mock('../../../services/eduroam/mobileconfig', () => ({

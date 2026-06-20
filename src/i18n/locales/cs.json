@@ -562,6 +562,8 @@
     "pwdLabel": "Tvé heslo certifikátu",
     "copy": "Zkopírovat",
     "copied": "Zkopírováno!",
+    "viewImage": "Zvětšit snímek",
+    "closeImage": "Zavřít",
     "restart": "Vybrat jiné zařízení",
     "footer": "Vytvořeno studenty pro studenty",
     "footerSub": "reIS · studentská iniciativa PEF MENDELU",
@@ -593,7 +595,7 @@
         "doOnce": { "title": "Nainstaluj aplikaci geteduroam", "cta": "Stáhnout z Google Play" },
         "steps": [
           { "text": "Klepni na Vytvořit QR kód", "shot": "Vygenerovaný QR kód v panelu reIS" },
-          { "text": "Naskenuj ho, nech stáhnout soubor a otevři ho v geteduroam", "shot": "Stažení → otevření souboru v geteduroam" },
+          { "text": "Naskenuj ho a klepni na stažený soubor, aby se otevřel v geteduroam", "shot": "Stažení → otevření souboru v geteduroam" },
           { "text": "Zadej heslo certifikátu", "shot": "Výzva geteduroam na heslo" }
         ],
         "done": { "text": "Hotovo — jsi připojen k eduroam", "shot": "Telefon připojený k eduroam" }
@@ -601,7 +603,7 @@
       "mac": {
         "hint": "Stáhni profil",
         "steps": [
-          { "text": "Klikni na Stáhnout eduroam profil", "shot": "Tlačítko Stáhnout eduroam profil" },
+          { "text": "Klikni na Stáhnout eduroam profil a otevři stažený soubor", "shot": "Tlačítko Stáhnout eduroam profil" },
           { "text": "Otevři Nastavení → Profily", "shot": "Nastavení systému → Profily" },
           { "text": "Dvojklik na \"MENDELU eduroam (reIS)\" → Instalovat", "shot": "Dialog instalace profilu" },
           { "text": "Zadej heslo certifikátu", "shot": "Pole na heslo" }

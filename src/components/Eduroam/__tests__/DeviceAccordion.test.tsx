@@ -36,6 +36,16 @@ describe('DeviceAccordion', () => {
     expect(screen.getByText('Set up eduroam')).toBeTruthy();
   });
 
+  it('clicking the already-selected card goes back to the chooser via onRestart', () => {
+    useAppStore.setState({ language: 'en' });
+    const onRestart = vi.fn();
+    const onSelect = vi.fn();
+    render(<DeviceAccordion selected="ios" {...base} onRestart={onRestart} onSelect={onSelect} />);
+    fireEvent.click(screen.getByRole('button', { name: /iPhone/i }));
+    expect(onRestart).toHaveBeenCalledTimes(1);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   it('calls onRestart from the "pick another device" button', () => {
     useAppStore.setState({ language: 'en' });
     const onRestart = vi.fn();

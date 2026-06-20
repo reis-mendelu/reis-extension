@@ -41,6 +41,16 @@ async function getBytes(url: string): Promise<Uint8Array> {
   return new Uint8Array(await res.arrayBuffer());
 }
 
+/**
+ * Read just the extraction password from the cert page — no .p12 download, no
+ * generation. Returns null when no certificate exists yet (a fresh cert and its
+ * password only appear once fetchEduroamCertMaterial generates one). Lets the UI
+ * show the password before the student clicks Download.
+ */
+export async function fetchEduroamPassword(): Promise<string | null> {
+  return parseCertPage(await getText(`${CERT_URL}?lang=cz`)).password;
+}
+
 async function generateCert(): Promise<void> {
   const res = await fetch(CERT_URL, {
     method: 'POST',

@@ -1,6 +1,7 @@
 import { Smartphone, Tablet, Laptop, Monitor, ChevronRight, Check, RotateCcw, type LucideIcon } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { EduroamTutorial } from './EduroamTutorial';
+import { StepHeading } from './StepHeading';
 import type { EduroamTarget, EduroamStatus } from '../../hooks/data/useEduroamSetup';
 
 interface DeviceAccordionProps {
@@ -28,10 +29,7 @@ export function DeviceAccordion(props: DeviceAccordionProps) {
   return (
     <div>
       {/* Step 1 heading */}
-      <div className="flex items-center gap-2.5 mb-3.5">
-        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary font-bold text-[13px]">1</span>
-        <span className="font-semibold text-[15px] text-base-content/80">{t('eduroam.s1')}</span>
-      </div>
+      <StepHeading n={1} label={t('eduroam.s1')} />
 
       {DEVICES.map(({ id, labelKey, icon: Icon }) => {
         const isSel = selected === id;
@@ -39,19 +37,19 @@ export function DeviceAccordion(props: DeviceAccordionProps) {
         return (
           <div
             key={id}
-            className={`overflow-hidden rounded-2xl transition-all duration-300 ${collapsed ? 'max-h-0 opacity-0 mb-0 -translate-y-2 pointer-events-none' : 'max-h-32 opacity-100 mb-2.5'} ${isSel ? 'ring-2 ring-primary' : ''}`}
+            className={`overflow-hidden rounded-box transition-all duration-300 ${collapsed ? 'max-h-0 opacity-0 mb-0 -translate-y-2 pointer-events-none' : 'max-h-32 opacity-100 mb-2.5'}`}
           >
             <button
               aria-expanded={isSel}
-              onClick={() => onSelect(id)}
-              className="flex items-center gap-3.5 w-full p-4 bg-base-100 border border-base-content/10 rounded-2xl text-left"
+              onClick={() => (isSel ? onRestart() : onSelect(id))}
+              className={`flex items-center gap-3.5 w-full p-4 bg-base-100 border rounded-box text-left cursor-pointer ${isSel ? 'border-primary' : 'border-base-content/10'}`}
             >
-              <span className={`flex items-center justify-center w-11 h-11 shrink-0 rounded-xl ${isSel ? 'bg-primary/15 text-primary' : 'bg-base-300 text-base-content/70'}`}>
+              <span className={`flex items-center justify-center w-11 h-11 shrink-0 rounded-box ${isSel ? 'bg-primary/15 text-primary' : 'bg-base-300 text-base-content/70'}`}>
                 <Icon className="w-6 h-6" />
               </span>
               <span className="flex-1">
-                <span className="block font-bold text-[17px]">{t(labelKey)}</span>
-                <span className="block text-[13px] text-base-content/50 mt-0.5">{t(`eduroam.manual.${id}.hint`)}</span>
+                <span className="block font-bold text-lg">{t(labelKey)}</span>
+                <span className="block text-sm text-base-content/50 mt-0.5">{t(`eduroam.manual.${id}.hint`)}</span>
               </span>
               <span className={`flex items-center justify-center w-6 h-6 shrink-0 ${isSel ? 'text-primary' : 'text-base-content/40'}`}>
                 {isSel ? <Check className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}

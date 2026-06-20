@@ -7,6 +7,8 @@ export interface StepMeta {
   action?: EduroamAction;
   /** Renders the real PasswordChip when a password is available. */
   password?: boolean;
+  /** Public path to a screenshot shown under the step (only where we have one). */
+  img?: string;
 }
 
 export interface DeviceManual {
@@ -22,10 +24,19 @@ export const EDUROAM_MANUAL: Record<EduroamTarget, DeviceManual> = {
   },
   android: {
     doOnceUrl: 'https://play.google.com/store/apps/details?id=app.eduroam.geteduroam',
-    steps: [{ action: 'qr' }, {}, { password: true }],
+    steps: [
+      { action: 'qr' },
+      { img: '/eduroam/android/2.webp' },
+      { password: true, img: '/eduroam/android/3.webp' },
+    ],
   },
   mac: {
-    steps: [{ action: 'download' }, { action: 'openSettings' }, {}, { password: true }],
+    steps: [
+      { action: 'download', img: '/eduroam/mac/1.webp' },
+      { action: 'openSettings', img: '/eduroam/mac/2.webp' },
+      { img: '/eduroam/mac/3.webp' },
+      { password: true, img: '/eduroam/mac/4.webp' },
+    ],
   },
   windows: {
     doOnceUrl: 'https://www.geteduroam.app/',

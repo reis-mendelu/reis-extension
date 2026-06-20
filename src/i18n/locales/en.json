@@ -562,6 +562,8 @@
     "pwdLabel": "Your certificate password",
     "copy": "Copy",
     "copied": "Copied!",
+    "viewImage": "Enlarge screenshot",
+    "closeImage": "Close",
     "restart": "Pick another device",
     "footer": "Built by students, for students",
     "footerSub": "reIS · a student initiative at PEF MENDELU",
@@ -593,7 +595,7 @@
         "doOnce": { "title": "Install the geteduroam app", "cta": "Get it on Google Play" },
         "steps": [
           { "text": "Tap Create QR code", "shot": "The generated QR code in the reIS drawer" },
-          { "text": "Scan it, let the file download, open it in geteduroam", "shot": "Download → opening the file in geteduroam" },
+          { "text": "Scan it, then tap the downloaded file to open it in geteduroam", "shot": "Download → opening the file in geteduroam" },
           { "text": "Enter the certificate password", "shot": "geteduroam password prompt" }
         ],
         "done": { "text": "Done — you're on eduroam", "shot": "Phone connected to eduroam" }
@@ -601,7 +603,7 @@
       "mac": {
         "hint": "Download a profile",
         "steps": [
-          { "text": "Click Download eduroam profile", "shot": "The download button" },
+          { "text": "Click Download eduroam profile, then open the downloaded file", "shot": "The download button" },
           { "text": "Open Profile settings", "shot": "System Settings → Profiles" },
           { "text": "Double-click \"MENDELU eduroam (reIS)\" → Install", "shot": "The profile install dialog" },
           { "text": "Enter the certificate password", "shot": "The password field" }

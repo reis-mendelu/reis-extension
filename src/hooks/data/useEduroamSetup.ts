@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { saveAs } from 'file-saver';
 import QRCode from 'qrcode';
-import { fetchEduroamCertMaterial } from '../../api/eduroam';
+import { fetchEduroamCertMaterial, fetchEduroamPassword } from '../../api/eduroam';
 import { generateEduroamMobileconfig } from '../../services/eduroam/mobileconfig';
 import { generateEapConfig } from '../../services/eduroam/eapConfig';
 import { putTransfer, buildTransferUrl } from '../../api/eduroamTransfer';
@@ -69,6 +69,12 @@ export function useEduroamSetup() {
     setError(null);
     setPassword(null);
     setQrDataUrl(null);
+    // Prefetch the extraction password so the chip can show it before Download.
+    // Only populates when a cert already exists; first-time users get it from
+    // run(). Never overwrites a value run() may have already set.
+    void fetchEduroamPassword()
+      .then((pw) => { if (pw) setPassword((prev) => prev ?? pw); })
+      .catch((e) => logError('useEduroamSetup.prefetchPassword', e));
   }, []);
 
   const reset = useCallback(() => {
