@@ -554,45 +554,71 @@
   "eduroam": {
     "title": "eduroam Wi-Fi",
     "subtitle": "Set up eduroam on your device in a few clicks",
+    "heroTitle": "Get on eduroam in a few minutes",
+    "heroSub": "Pick your device — we'll walk you through the setup, step by step.",
+    "s1": "Pick your device",
+    "s2": "Set up eduroam",
+    "doOnce": "Do once",
+    "pwdLabel": "Your certificate password",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "restart": "Pick another device",
+    "footer": "Built by students, for students",
+    "footerSub": "reIS · a student initiative at PEF MENDELU",
     "targetIos": "iPhone / iPad",
+    "targetAndroid": "Android",
     "targetMac": "Mac",
-    "macHostHint": "You're not on a Mac — switch to your Mac to download here, or use the iPhone / iPad tab.",
+    "targetWindows": "Windows",
     "download": "Download eduroam profile",
+    "createQr": "Create QR code",
     "preparing": "Preparing profile…",
     "error": "Couldn't prepare the profile",
-    "downloaded": "Profile downloaded.",
-    "step1": "Open the Profiles settings:",
-    "openSettings": "Open Profile settings",
-    "step2": "Double-click \"MENDELU eduroam (reIS)\" → Install.",
-    "step3": "When asked for the certificate password, paste:",
-    "step4": "Your Mac joins eduroam automatically.",
-    "iosIntro": "Generate a QR code, scan it with your iPhone or iPad camera, and install the profile.",
-    "iosGenerate": "Create QR code",
-    "iosReady": "Scan this with your iPhone / iPad camera.",
-    "iosStep1": "Open the Camera app, point it at the QR code, and tap the link (it opens in Safari).",
-    "iosStep2": "Tap Allow when asked to download the profile, then open Settings — tap \"Profile Downloaded\" near the top within ~8 minutes.",
-    "iosStep3": "Tap Install, enter your passcode, then this certificate password:",
-    "iosStep4": "Your device joins eduroam automatically.",
-    "targetAndroid": "Android",
-    "androidIntro": "Generate a QR code, scan it with your Android phone, and open the file in the geteduroam app.",
-    "getEduroam": "Install the geteduroam app (Google Play)",
-    "androidGenerate": "Create QR code",
-    "androidReady": "Scan this with your Android phone camera.",
-    "androidStep0": "Install the geteduroam app from Google Play first (link above).",
-    "androidStep1": "Open the Camera (or a QR scanner), point it at the QR code, and tap the link.",
-    "androidStep2": "Let the eduroam.eap-config file download, then tap it to open it in geteduroam.",
-    "androidStep3": "When geteduroam asks for the certificate password, enter:",
-    "androidStep4": "geteduroam installs the profile and your phone joins eduroam.",
     "regenerate": "Start over",
-    "targetWindows": "Windows",
-    "getEduroamWindows": "Install the geteduroam app (geteduroam.app)",
-    "windowsDownloaded": "Profile downloaded.",
-    "windowsStep0": "Install the geteduroam app for Windows first (link above).",
-    "windowsStep1": "Double-click the downloaded eduroam-reis.eap-config file to open it in geteduroam.",
-    "windowsStep2": "When geteduroam asks for the certificate password, enter:",
-    "windowsStep3": "geteduroam installs the profile and your PC joins eduroam.",
-    "privacyNoteLocal": "Everything is generated on your device and your private key stays protected by a password only you enter on install.",
-    "privacyNoteTransfer": "Everything is generated on your device and your private key stays protected by a password only you enter on install. The transfer link is one-time and expires within minutes."
+    "openSettings": "Open Profiles settings",
+    "privacyNoteLocal": "Everything is generated on your device and your private key stays protected by a password only you enter at install time.",
+    "privacyNoteTransfer": "Everything is generated on your device and your private key is protected by a password only you enter at install time. The transfer link is one-time and expires within a few minutes.",
+    "manual": {
+      "ios": {
+        "hint": "Scan a QR code",
+        "steps": [
+          { "text": "Tap Create QR code", "shot": "The generated QR code in the reIS drawer" },
+          { "text": "Scan it with the Camera and tap the link", "shot": "Camera pointed at the QR + the tap banner" },
+          { "text": "Allow the download, then open Settings → \"Profile Downloaded\"", "shot": "Settings with the \"Profile Downloaded\" row near the top", "warn": "iOS hides the profile in Settings and it's valid for ~8 min — be quick." },
+          { "text": "Tap Install and enter the certificate password", "shot": "Install screen + the password field" }
+        ],
+        "done": { "text": "Done — you're on eduroam", "shot": "Wi-Fi showing eduroam connected" }
+      },
+      "android": {
+        "hint": "geteduroam app",
+        "doOnce": { "title": "Install the geteduroam app", "cta": "Get it on Google Play" },
+        "steps": [
+          { "text": "Tap Create QR code", "shot": "The generated QR code in the reIS drawer" },
+          { "text": "Scan it, let the file download, open it in geteduroam", "shot": "Download → opening the file in geteduroam" },
+          { "text": "Enter the certificate password", "shot": "geteduroam password prompt" }
+        ],
+        "done": { "text": "Done — you're on eduroam", "shot": "Phone connected to eduroam" }
+      },
+      "mac": {
+        "hint": "Download a profile",
+        "steps": [
+          { "text": "Click Download eduroam profile", "shot": "The download button" },
+          { "text": "Open Profile settings", "shot": "System Settings → Profiles" },
+          { "text": "Double-click \"MENDELU eduroam (reIS)\" → Install", "shot": "The profile install dialog" },
+          { "text": "Enter the certificate password", "shot": "The password field" }
+        ],
+        "done": { "text": "Done — you're on eduroam", "shot": "Mac connected to eduroam" }
+      },
+      "windows": {
+        "hint": "geteduroam app",
+        "doOnce": { "title": "Install geteduroam for Windows", "cta": "Open geteduroam.app" },
+        "steps": [
+          { "text": "Click Download eduroam profile", "shot": "The download button" },
+          { "text": "Double-click the downloaded file — it opens in geteduroam", "shot": "The file in Downloads opening geteduroam" },
+          { "text": "Enter the certificate password", "shot": "geteduroam password prompt" }
+        ],
+        "done": { "text": "Done — you're on eduroam", "shot": "PC connected to eduroam" }
+      }
+    }
   },
   "erasmus": {
     "title": "Erasmus+ Experiences",

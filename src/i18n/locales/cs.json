@@ -554,45 +554,71 @@
   "eduroam": {
     "title": "eduroam Wi-Fi",
     "subtitle": "Nastavte eduroam na svém zařízení na pár kliknutí",
+    "heroTitle": "Připoj se k eduroam za pár minut",
+    "heroSub": "Vyber zařízení — projdeme tě nastavením krok za krokem.",
+    "s1": "Vyber zařízení",
+    "s2": "Nastav eduroam",
+    "doOnce": "Udělej jednou",
+    "pwdLabel": "Tvé heslo certifikátu",
+    "copy": "Zkopírovat",
+    "copied": "Zkopírováno!",
+    "restart": "Vybrat jiné zařízení",
+    "footer": "Vytvořeno studenty pro studenty",
+    "footerSub": "reIS · studentská iniciativa PEF MENDELU",
     "targetIos": "iPhone / iPad",
+    "targetAndroid": "Android",
     "targetMac": "Mac",
-    "macHostHint": "Nejste na Macu — pro stažení přepněte na Mac, nebo použijte záložku iPhone / iPad.",
+    "targetWindows": "Windows",
     "download": "Stáhnout eduroam profil",
+    "createQr": "Vytvořit QR kód",
     "preparing": "Připravuji profil…",
     "error": "Profil se nepodařilo připravit",
-    "downloaded": "Profil stažen.",
-    "step1": "Otevřete nastavení Profily:",
-    "openSettings": "Otevřít nastavení Profily",
-    "step2": "Dvojklikem na \"MENDELU eduroam (reIS)\" → Instalovat.",
-    "step3": "Až budete dotázáni na heslo certifikátu, vložte:",
-    "step4": "Mac se k eduroam připojí automaticky.",
-    "iosIntro": "Vygenerujte QR kód, naskenujte ho fotoaparátem na iPhonu nebo iPadu a nainstalujte profil.",
-    "iosGenerate": "Vytvořit QR kód",
-    "iosReady": "Naskenujte fotoaparátem na iPhonu / iPadu.",
-    "iosStep1": "Otevřete Fotoaparát, namiřte na QR kód a klepněte na odkaz (otevře se v Safari).",
-    "iosStep2": "Po výzvě klepněte na Povolit pro stažení profilu, pak otevřete Nastavení — do ~8 minut klepněte nahoře na \"Stažený profil\".",
-    "iosStep3": "Klepněte na Instalovat, zadejte kód zařízení a poté toto heslo certifikátu:",
-    "iosStep4": "Zařízení se k eduroam připojí automaticky.",
-    "targetAndroid": "Android",
-    "androidIntro": "Vygenerujte QR kód, naskenujte ho telefonem s Androidem a otevřete soubor v aplikaci geteduroam.",
-    "getEduroam": "Nainstalujte aplikaci geteduroam (Google Play)",
-    "androidGenerate": "Vytvořit QR kód",
-    "androidReady": "Naskenujte fotoaparátem na telefonu s Androidem.",
-    "androidStep0": "Nejprve nainstalujte aplikaci geteduroam z Google Play (odkaz výše).",
-    "androidStep1": "Otevřete Fotoaparát (nebo QR čtečku), namiřte na QR kód a klepněte na odkaz.",
-    "androidStep2": "Nechte stáhnout soubor eduroam.eap-config a klepnutím ho otevřete v aplikaci geteduroam.",
-    "androidStep3": "Až se geteduroam zeptá na heslo certifikátu, zadejte:",
-    "androidStep4": "geteduroam nainstaluje profil a telefon se připojí k eduroam.",
     "regenerate": "Začít znovu",
-    "targetWindows": "Windows",
-    "getEduroamWindows": "Nainstalujte aplikaci geteduroam (geteduroam.app)",
-    "windowsDownloaded": "Profil stažen.",
-    "windowsStep0": "Nejprve nainstalujte aplikaci geteduroam pro Windows (odkaz výše).",
-    "windowsStep1": "Dvojklikem na stažený soubor eduroam-reis.eap-config ho otevřete v aplikaci geteduroam.",
-    "windowsStep2": "Až se geteduroam zeptá na heslo certifikátu, zadejte:",
-    "windowsStep3": "geteduroam nainstaluje profil a počítač se připojí k eduroam.",
+    "openSettings": "Otevřít nastavení Profily",
     "privacyNoteLocal": "Vše se generuje ve vašem zařízení a váš soukromý klíč zůstává chráněn heslem, které zadáte jen vy při instalaci.",
-    "privacyNoteTransfer": "Vše se generuje ve vašem zařízení a váš soukromý klíč je chráněn heslem, které zadáte jen vy při instalaci. Přenosový odkaz je jednorázový a vyprší během několika minut."
+    "privacyNoteTransfer": "Vše se generuje ve vašem zařízení a váš soukromý klíč je chráněn heslem, které zadáte jen vy při instalaci. Přenosový odkaz je jednorázový a vyprší během několika minut.",
+    "manual": {
+      "ios": {
+        "hint": "Naskenuj QR kód",
+        "steps": [
+          { "text": "Klepni na Vytvořit QR kód", "shot": "Vygenerovaný QR kód v panelu reIS" },
+          { "text": "Naskenuj ho Fotoaparátem a klepni na odkaz", "shot": "Fotoaparát míří na QR + banner s odkazem" },
+          { "text": "Povol stažení, pak Nastavení → \"Stažený profil\"", "shot": "Nastavení s řádkem \"Stažený profil\" nahoře", "warn": "iOS schová profil v Nastavení a platí jen ~8 minut — pospěš si." },
+          { "text": "Klepni na Instalovat a zadej heslo certifikátu", "shot": "Obrazovka Instalovat + pole na heslo" }
+        ],
+        "done": { "text": "Hotovo — jsi připojen k eduroam", "shot": "Wi-Fi ukazuje připojený eduroam" }
+      },
+      "android": {
+        "hint": "Aplikace geteduroam",
+        "doOnce": { "title": "Nainstaluj aplikaci geteduroam", "cta": "Stáhnout z Google Play" },
+        "steps": [
+          { "text": "Klepni na Vytvořit QR kód", "shot": "Vygenerovaný QR kód v panelu reIS" },
+          { "text": "Naskenuj ho, nech stáhnout soubor a otevři ho v geteduroam", "shot": "Stažení → otevření souboru v geteduroam" },
+          { "text": "Zadej heslo certifikátu", "shot": "Výzva geteduroam na heslo" }
+        ],
+        "done": { "text": "Hotovo — jsi připojen k eduroam", "shot": "Telefon připojený k eduroam" }
+      },
+      "mac": {
+        "hint": "Stáhni profil",
+        "steps": [
+          { "text": "Klikni na Stáhnout eduroam profil", "shot": "Tlačítko Stáhnout eduroam profil" },
+          { "text": "Otevři Nastavení → Profily", "shot": "Nastavení systému → Profily" },
+          { "text": "Dvojklik na \"MENDELU eduroam (reIS)\" → Instalovat", "shot": "Dialog instalace profilu" },
+          { "text": "Zadej heslo certifikátu", "shot": "Pole na heslo" }
+        ],
+        "done": { "text": "Hotovo — jsi připojen k eduroam", "shot": "Mac připojený k eduroam" }
+      },
+      "windows": {
+        "hint": "Aplikace geteduroam",
+        "doOnce": { "title": "Nainstaluj geteduroam pro Windows", "cta": "Otevřít geteduroam.app" },
+        "steps": [
+          { "text": "Klikni na Stáhnout eduroam profil", "shot": "Tlačítko Stáhnout eduroam profil" },
+          { "text": "Dvojklik na stažený soubor — otevře se v geteduroam", "shot": "Soubor ve Stažených se otevírá v geteduroam" },
+          { "text": "Zadej heslo certifikátu", "shot": "Výzva geteduroam na heslo" }
+        ],
+        "done": { "text": "Hotovo — jsi připojen k eduroam", "shot": "PC připojené k eduroam" }
+      }
+    }
   },
   "erasmus": {
     "title": "Erasmus+ Zkušenosti",
