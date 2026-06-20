@@ -129,7 +129,8 @@
     "addPin": "Add",
     "addPinTitle": "Pin a page",
     "pinNudge": "Pin your most-used IS pages here",
-    "pinLimitReached": "Maximum 6 pages"
+    "pinLimitReached": "Maximum 6 pages",
+    "map": "Map"
   },
   "calendar": {
     "emptyWeek": "Nothing this week, you're free",
@@ -859,5 +860,14 @@
     "locationPlaceholder": "Room or place",
     "addLocation": "Add location",
     "delete": "Delete"
+  },
+  "map": {
+    "title": "Map",
+    "searchPlaceholder": "Search a room or place…",
+    "noFloorPlan": "No floor plan available.",
+    "seats": "Seats",
+    "projector": "Projector",
+    "whiteboard": "Whiteboard",
+    "showOnMap": "Show on map"
   }
 }

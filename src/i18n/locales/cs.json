@@ -129,7 +129,8 @@
     "addPin": "Přidat",
     "addPinTitle": "Připnout stránku",
     "pinNudge": "Připni si sem nejpoužívanější IS stránky",
-    "pinLimitReached": "Maximum 6 stránek"
+    "pinLimitReached": "Maximum 6 stránek",
+    "map": "Mapa"
   },
   "common": {
     "loading": "Načítání...",
@@ -859,5 +860,14 @@
     "locationPlaceholder": "Místnost nebo místo",
     "addLocation": "Přidat místo",
     "delete": "Smazat"
+  },
+  "map": {
+    "title": "Mapa",
+    "searchPlaceholder": "Hledat místnost nebo místo…",
+    "noFloorPlan": "Žádný plán podlaží není k dispozici.",
+    "seats": "Míst",
+    "projector": "Projektor",
+    "whiteboard": "Tabule",
+    "showOnMap": "Zobrazit na mapě"
   }
 }
