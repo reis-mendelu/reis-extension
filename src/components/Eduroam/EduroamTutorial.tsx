@@ -131,7 +131,6 @@ export function EduroamTutorial({ target, status, qrDataUrl, password, onRun, on
       {/* Final step: the real finish line — connect once you're on campus */}
       <NumberedRow last done>
         <div className="text-base leading-relaxed font-medium">{t('eduroam.connectStep')}</div>
-        <div className="text-sm text-base-content/60">{t('eduroam.connectHint')}</div>
       </NumberedRow>
 
       {/* Tap-to-zoom lightbox */}

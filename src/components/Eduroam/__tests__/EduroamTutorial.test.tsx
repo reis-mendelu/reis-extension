@@ -44,7 +44,7 @@ describe('EduroamTutorial', () => {
   it('always shows the final connect-on-campus step, even before download', () => {
     useAppStore.setState({ language: 'en' });
     render(<EduroamTutorial target="mac" {...base} />);
-    expect(screen.getByText('Connect to eduroam on campus')).toBeTruthy();
+    expect(screen.getByText('Connect to the eduroam Wi-Fi on campus')).toBeTruthy();
   });
 
   it('calls onOpenSettings from the mac open-settings step', () => {
