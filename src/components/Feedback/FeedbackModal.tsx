@@ -204,7 +204,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                         type="button"
                         onClick={handleSubmit} 
                         disabled={isSending || !title || !message}
-                        className="btn btn-primary w-full gap-2 font-semibold no-animation text-primary-content"
+                        className="btn btn-primary w-full gap-2 font-semibold no-animation"
                       >
                         {isSending ? (
                           <>

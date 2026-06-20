@@ -87,6 +87,11 @@ html, body, #root {
 
   /* Flat buttons — no depth bevel / light "ring" on filled controls */
   --depth: 0;
+
+  /* Soft-button text: darkened on the light theme so brand green clears the
+   * contrast bar over its own pale tint (see .btn-primary/.btn-secondary). */
+  --btn-tonal-primary: color-mix(in oklab, var(--color-primary) 62%, black);
+  --btn-tonal-secondary: color-mix(in oklab, var(--color-secondary) 56%, black);
 }
 
 /* Custom Mendelu dark theme for REIS extension */
@@ -131,6 +136,11 @@ html, body, #root {
 
   /* Flat buttons — no depth bevel / light "ring" on filled controls */
   --depth: 0;
+
+  /* Soft-button text: on dark, the bright brand color reads well over the
+   * dark tint, so no darkening needed (see .btn-primary/.btn-secondary). */
+  --btn-tonal-primary: var(--color-primary);
+  --btn-tonal-secondary: var(--color-secondary);
 }
 
 /* Tailwind v4: Custom tokens via @theme */
@@ -256,7 +266,7 @@ html, body, #root {
  * @layer) intentionally override DaisyUI's component layer. */
 .btn-primary {
   background-color: color-mix(in oklab, var(--color-primary) 14%, transparent);
-  color: var(--color-primary);
+  color: var(--btn-tonal-primary);
   border-color: color-mix(in oklab, var(--color-primary) 28%, transparent);
 }
 .btn-primary:hover {
@@ -265,7 +275,7 @@ html, body, #root {
 }
 .btn-secondary {
   background-color: color-mix(in oklab, var(--color-secondary) 14%, transparent);
-  color: var(--color-secondary);
+  color: var(--btn-tonal-secondary);
   border-color: color-mix(in oklab, var(--color-secondary) 28%, transparent);
 }
 .btn-secondary:hover {
