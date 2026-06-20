@@ -48,7 +48,6 @@ buildings have interiors.
 
 ### Deferred (explicit follow-ups — NOT in v1)
 - IS "Pasportizace" join on `passportNumber` (handoff §5) — backfills name/capacity/equipment/occupants.
-- "Free room right now" (handoff §6.1) — join geometry + equipment + IS schedule occupancy.
 - Wayfinding / routing (handoff §6.2) — needs the dropped door/wall geometry + a graph.
 - PostGIS / Supabase move — the static hybrid needs none of it.
 
