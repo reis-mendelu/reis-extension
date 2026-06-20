@@ -1,32 +1,23 @@
-import { Wifi, Smartphone, Laptop, Tablet, Monitor, AlertTriangle, X } from 'lucide-react';
+import { useState } from 'react';
+import { Wifi, AlertTriangle, X } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useEduroamSetup, type EduroamTarget } from '../../hooks/data/useEduroamSetup';
 import { AdaptiveDrawer } from '../ui/AdaptiveDrawer';
-import { IosTransfer } from './IosTransfer';
-import { AndroidTransfer } from './AndroidTransfer';
-import { MacInstall } from './MacInstall';
-import { WindowsInstall } from './WindowsInstall';
-
-const SEGMENTS: { id: EduroamTarget; labelKey: string; icon: typeof Smartphone }[] = [
-  { id: 'ios', labelKey: 'eduroam.targetIos', icon: Smartphone },
-  { id: 'android', labelKey: 'eduroam.targetAndroid', icon: Tablet },
-  { id: 'mac', labelKey: 'eduroam.targetMac', icon: Laptop },
-  { id: 'windows', labelKey: 'eduroam.targetWindows', icon: Monitor },
-];
+import { DeviceAccordion } from './DeviceAccordion';
 
 /** Side-drawer host for the eduroam setup flow. Self-connects to the store. */
 export function EduroamDrawer() {
   const { t } = useTranslation();
   const isOpen = useAppStore((s) => s.isEduroamOpen);
   const setOpen = useAppStore((s) => s.setIsEduroamOpen);
-  const { status, target, selectTarget, password, qrDataUrl, error, run, reset, openProfilesSettings } =
-    useEduroamSetup();
+  const { status, password, qrDataUrl, error, run, reset, selectTarget, openProfilesSettings } = useEduroamSetup();
+  const [selected, setSelected] = useState<EduroamTarget | null>(null);
 
-  const close = () => {
-    setOpen(false);
-    reset();
-  };
+  const close = () => { setOpen(false); setSelected(null); reset(); };
+  const onSelect = (tg: EduroamTarget) => { setSelected(tg); selectTarget(tg); };
+  const onRestart = () => { setSelected(null); reset(); };
+  const isLocal = selected === 'mac' || selected === 'windows';
 
   return (
     <AdaptiveDrawer open={isOpen} onClose={close} width="sm:w-[560px]" title={t('eduroam.title')}>
@@ -45,52 +36,42 @@ export function EduroamDrawer() {
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-5">
-        <div role="tablist" className="grid grid-cols-2 gap-2">
-          {SEGMENTS.map(({ id, labelKey, icon: Icon }) => (
-            <button
-              key={id}
-              role="tab"
-              aria-selected={target === id}
-              className={`btn gap-2 ${target === id ? 'btn-primary' : 'btn-ghost border border-base-300'}`}
-              onClick={() => selectTarget(id)}
-            >
-              <Icon className="w-4 h-4" /> {t(labelKey)}
-            </button>
-          ))}
+      <div className="flex-1 overflow-y-auto px-4 py-5">
+        {/* Hero */}
+        <div className="mb-7">
+          <h1 className="font-extrabold text-[28px] leading-tight tracking-tight text-balance">{t('eduroam.heroTitle')}</h1>
+          <p className="text-[15px] text-base-content/70 mt-2 max-w-[38ch]">{t('eduroam.heroSub')}</p>
         </div>
 
         {status === 'error' && (
-          <div className="alert alert-error text-sm">
+          <div className="alert alert-error text-sm mb-5">
             <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span>
-              {t('eduroam.error')}
-              {error ? `: ${error}` : ''}
-            </span>
+            <span>{t('eduroam.error')}{error ? `: ${error}` : ''}</span>
           </div>
         )}
 
-        {target === 'ios' && (
-          <IosTransfer status={status} qrDataUrl={qrDataUrl} password={password} onGenerate={() => run('ios')} />
-        )}
-        {target === 'android' && (
-          <AndroidTransfer status={status} qrDataUrl={qrDataUrl} password={password} onGenerate={() => run('android')} />
-        )}
-        {target === 'mac' && (
-          <MacInstall
-            status={status}
-            password={password}
-            onDownload={() => run('mac')}
-            onOpenSettings={openProfilesSettings}
-          />
-        )}
-        {target === 'windows' && (
-          <WindowsInstall status={status} password={password} onDownload={() => run('windows')} />
+        <DeviceAccordion
+          selected={selected}
+          onSelect={onSelect}
+          onRestart={onRestart}
+          status={status}
+          qrDataUrl={qrDataUrl}
+          password={password}
+          onRun={() => selected && run(selected)}
+          onOpenSettings={openProfilesSettings}
+        />
+
+        {selected && (
+          <p className="text-xs text-base-content/40 mt-6">
+            {t(isLocal ? 'eduroam.privacyNoteLocal' : 'eduroam.privacyNoteTransfer')}
+          </p>
         )}
 
-        <p className="text-xs text-base-content/40">
-          {t(target === 'mac' || target === 'windows' ? 'eduroam.privacyNoteLocal' : 'eduroam.privacyNoteTransfer')}
-        </p>
+        {/* Footer */}
+        <div className="mt-12 pt-6 border-t border-base-content/[0.07] text-center">
+          <div className="font-semibold text-[13px] text-base-content/70">{t('eduroam.footer')}</div>
+          <div className="text-xs text-base-content/40 mt-1">{t('eduroam.footerSub')}</div>
+        </div>
       </div>
     </AdaptiveDrawer>
   );

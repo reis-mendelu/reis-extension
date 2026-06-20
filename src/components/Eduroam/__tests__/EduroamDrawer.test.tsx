@@ -13,36 +13,27 @@ function open() {
 }
 
 describe('EduroamDrawer', () => {
-  it('renders nothing when isEduroamOpen is false', () => {
+  it('renders nothing when closed', () => {
     useAppStore.setState({ isEduroamOpen: false, isTouch: false, isNarrow: false });
     const { container } = render(<EduroamDrawer />);
     expect(container.querySelector('[role="dialog"]')).toBeNull();
   });
 
-  it('renders the title and four device segments when open', () => {
+  it('renders the title and four device cards when open', () => {
     open();
     render(<EduroamDrawer />);
     expect(screen.getByText('eduroam Wi-Fi')).toBeTruthy();
-    expect(screen.getByRole('tab', { name: /iPhone/i })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: /Android/i })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: /Mac/i })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: /Windows/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /iPhone/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Windows/i })).toBeTruthy();
   });
 
-  it('switches to the Windows segment on click', () => {
+  it('expands a device tutorial on select and returns via "pick another device"', () => {
     open();
     render(<EduroamDrawer />);
-    const windows = screen.getByRole('tab', { name: /Windows/i });
-    fireEvent.click(windows);
-    expect(windows.getAttribute('aria-selected')).toBe('true');
-  });
-
-  it('switches the active device segment on click', () => {
-    open();
-    render(<EduroamDrawer />);
-    const android = screen.getByRole('tab', { name: /Android/i });
-    fireEvent.click(android);
-    expect(android.getAttribute('aria-selected')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: /Android/i }));
+    expect(screen.getByText('Set up eduroam')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Pick another device/i }));
+    expect(screen.queryByText('Set up eduroam')).toBeNull();
   });
 
   it('closes via the close button', () => {
