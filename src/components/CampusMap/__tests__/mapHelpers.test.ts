@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { categoryColorVar, shortLabel, lonLatToLatLng, ringToLatLng, searchPlaces } from '../mapHelpers';
+import { shortLabel, lonLatToLatLng, ringToLatLng, searchPlaces } from '../mapHelpers';
 import type { RoomIndexEntry, PoiFeature } from '../../../types/campusMap';
 
 describe('shortLabel', () => {
@@ -19,13 +19,6 @@ describe('coordinate flip', () => {
   });
   it('flips every vertex of a ring', () => {
     expect(ringToLatLng([[16.6, 49.2], [16.7, 49.3]])).toEqual([[49.2, 16.6], [49.3, 16.7]]);
-  });
-});
-
-describe('categoryColorVar', () => {
-  it('maps each category to a DaisyUI color var', () => {
-    expect(categoryColorVar('teaching')).toBe('--color-warning');
-    expect(categoryColorVar('structure')).toBe('--color-base-200');
   });
 });
 

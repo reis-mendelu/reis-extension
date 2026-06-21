@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
 import buildingsJson from '../../data/map/buildings.json';
 import poisJson from '../../data/map/pois.json';
-import { ringToLatLng, shortLabel, categoryColorVar } from './mapHelpers';
+import { ringToLatLng, shortLabel } from './mapHelpers';
 import type { BuildingsMeta, PoiFeature, RoomFeature } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
@@ -89,8 +89,10 @@ export function MapCanvas() {
       const poly = L.polygon(ringToLatLng(f.geometry.coordinates[0]), {
         color: isSel ? themeColor('--color-primary') : themeColor('--color-base-content'),
         weight: isSel ? 3 : struct ? 0.6 : 1,
-        fillColor: isSel ? themeColor('--color-primary') : themeColor(categoryColorVar(p.category)),
-        fillOpacity: isSel ? 0.6 : struct ? 0.35 : 0.8, interactive: !struct,
+        fillColor: isSel ? themeColor('--color-primary') : themeColor('--color-base-200'),
+        fillOpacity: isSel ? 0.6 : struct ? 0.35 : 0,
+        interactive: !struct,
+        bubblingMouseEvents: false,
       });
       if (!struct) {
         poly.on('click', () => select.selectMapRoom(p));

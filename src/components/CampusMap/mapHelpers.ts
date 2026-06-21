@@ -1,17 +1,4 @@
-import type { RoomCategory, RoomIndexEntry, PoiFeature, MapSelection } from '../../types/campusMap';
-
-const COLOR_VARS: Record<RoomCategory, string> = {
-  teaching: '--color-warning',
-  office: '--color-info',
-  service: '--color-base-300',
-  circulation: '--color-success',
-  structure: '--color-base-200',
-  other: '--color-secondary',
-};
-
-export function categoryColorVar(c: RoomCategory): string {
-  return COLOR_VARS[c] ?? COLOR_VARS.other;
-}
+import type { RoomIndexEntry, PoiFeature, MapSelection } from '../../types/campusMap';
 
 export function shortLabel(name: string): string {
   return name.match(/[NPS]\d+$/)?.[0] ?? name;
