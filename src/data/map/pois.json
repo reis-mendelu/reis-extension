@@ -1,1 +1,977 @@
-{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[16.62387,49.214519]},"properties":{"id":1562,"name":"Zastávka Provazníkova (směr Lesnická)","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.627679,49.217303]},"properties":{"id":1563,"name":"Zastávka Štefánikova čtvrť","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.614268,49.210706]},"properties":{"id":1565,"name":"V","type":"building","url":null,"phone":null,"email":null}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.589216,49.215675]},"properties":{"id":1566,"name":"Zastávka Tererova (směr ZŠ Jana Babáka)","type":"transportation_stop","url":"https://dpmb.cz/","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.618723,49.210347]},"properties":{"id":1567,"name":"Zastávka Zemědělská (směr Halasovo náměstí)","type":"transportation_stop","url":"https://dpmb.cz/","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.609491,49.209383]},"properties":{"id":1568,"name":"Zastávka Zimní stadion (směr Lesnická)","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.630584,49.216233]},"properties":{"id":1569,"name":"Koleje JAK Blok A","type":"dormitory","url":"http://skm.mendelu.cz/ubytovani/ubytovaci-zarizeni/27982-koleje-jak","phone":"+420 545 128 340","email":"skm.koleje.jak@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.62747,49.214846]},"properties":{"id":1570,"name":"Zastávka Merhautova (směr Tomkovo náměstí)","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.588386,49.214278]},"properties":{"id":1571,"name":"Parkoviště Jana Babáka","type":"parking","url":"http://skm.mendelu.cz/ubytovani/ubytovaci-zarizeni/27988-tauferovy-koleje","phone":"+420 541 422 051","email":"jitka.chebenova@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.616773,49.212103]},"properties":{"id":1572,"name":"T","type":"building","url":"http://www.ustavnabytku.cz/cz/","phone":"+420 545 134 169","email":"nabytek@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.61518,49.210739]},"properties":{"id":1573,"name":"O","type":"building","url":"http://skm.mendelu.cz/stravovani/stravovaci-zarizeni/28004-zamestnanecka-jidelna-v-arealu-univerzity-objekt-quot-o-quot","phone":"+420 545 135 155","email":"skm.menza.jak@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.617419,49.212466]},"properties":{"id":1574,"name":"Vedlejší brána z ulice Lesnická","type":"gate","url":"http://www.mendelu.cz","phone":"+420 545 135 000","email":"info@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.61438,49.210575]},"properties":{"id":1575,"name":"Laboratoř řízení kolejových vozidel","type":"building","url":"http://lrkv.pef.mendelu.cz/","phone":null,"email":"lrkv@pef.mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.609805,49.208787]},"properties":{"id":1578,"name":"Zastávka Zimní stadion (směr Jundrov)","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.616194,49.210631]},"properties":{"id":1579,"name":"J","type":"building","url":"http://af.mendelu.cz","phone":"+420 545 133 001","email":"vojtech.adam@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.618982,49.210817]},"properties":{"id":1581,"name":"Akademická vinotéka","type":"cafeteria","url":"http://www.akademickavinoteka.cz","phone":"+420 545 135 226","email":"jammik@volny.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.609534,49.208861]},"properties":{"id":1595,"name":"Zastávka Zimní stadion (směr Avion Shopping Park)","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.618433,49.210628]},"properties":{"id":1596,"name":"Zastávka Zemědělská (směr Hlavní nádraží)","type":"transportation_stop","url":"https://dpmb.cz/","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.617838,49.212902]},"properties":{"id":1597,"name":"Zastávka Lesnická (směr Zímní stadion)","type":"transportation_stop","url":"https://dpmb.cz/","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.619042,49.213086]},"properties":{"id":1614,"name":"Zastávka Lesnická (směr Merhautova)","type":"transportation_stop","url":"https://dpmb.cz/","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.588779,49.214859]},"properties":{"id":1615,"name":"Výdejna jídel Tauferovy koleje","type":"cafeteria","url":"http://skm.mendelu.cz/stravovani/stravovaci-zarizeni/28000-vydejna-jidel-tk","phone":"+420 541 422 061","email":"skm.menza@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.630004,49.215601]},"properties":{"id":1582,"name":"Koleje JAK Blok D","type":"dormitory","url":"http://skm.mendelu.cz/ubytovani/ubytovaci-zarizeni/27982-koleje-jak","phone":"+420 545 128 340","email":"skm.koleje.jak@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.617154,49.211493]},"properties":{"id":1583,"name":"L","type":"building","url":null,"phone":null,"email":null}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.627631,49.214994]},"properties":{"id":1584,"name":"Zastávka Merhautova (směr Lesnická)","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.630844,49.215418]},"properties":{"id":1585,"name":"Koleje JAK Blok B","type":"dormitory","url":"http://skm.mendelu.cz/ubytovani/ubytovaci-zarizeni/27982-koleje-jak","phone":"+420 545 128 340","email":"skm.koleje.jak@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.627797,49.217166]},"properties":{"id":1586,"name":"Zastávka Štefánikova čtvrť (směr Česká)","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.614118,49.218161]},"properties":{"id":1587,"name":"Fakulta regionálního rozvoje a mezinárodních studií","type":"building","url":"http://frrms.mendelu.cz","phone":"+420 545 136 306","email":"info.frrms@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.588826,49.214599]},"properties":{"id":1588,"name":"Tauferovy koleje","type":"dormitory","url":"http://skm.mendelu.cz/ubytovani/ubytovaci-zarizeni/27988-tauferovy-koleje","phone":"+420 541 422 051","email":"jitka.chebenova@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.614901,49.211051]},"properties":{"id":1591,"name":"R","type":"building","url":"http://utad.af.mendelu.cz/cz","phone":"+420 545 132 118 ","email":"jiri.cupera@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.615748,49.210473]},"properties":{"id":1592,"name":"D","type":"building","url":"http://ucb.af.mendelu.cz","phone":"+420 545 133 275","email":"gabriela.smejkalova@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.60973,49.210093]},"properties":{"id":1593,"name":"Zastávka Zimní stadion (směr Provazníkova)","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.629843,49.215537]},"properties":{"id":1598,"name":"Mateřská školka Hrášek","type":"building","url":"http://www.hrasekms.cz/","phone":"+420 545 128 355 ","email":"hrasekms@mendelu.cz "}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.614599,49.21039]},"properties":{"id":1601,"name":"X","type":"cafeteria","url":"http://skm.mendelu.cz/stravovani/stravovaci-zarizeni/28003-vydejna-jidel-v-arealu-univerzity-objekt-x","phone":"+420 545 128 380","email":"skm.menza@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.617438,49.212503]},"properties":{"id":1602,"name":"Zastávka Lesnická","type":"transportation_stop","url":"https://dpmb.cz/","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.612178,49.206527]},"properties":{"id":1603,"name":"Zastávka Schodová (směr Avion Shopping Park)","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.615496,49.216074]},"properties":{"id":1604,"name":"Zastávka Bieblova","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.614498,49.210876]},"properties":{"id":1609,"name":"P","type":"building","url":"https://www.ldf.mendelu.cz","phone":"+420 545 134 116","email":"libor.jankovsky@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.624004,49.214468]},"properties":{"id":1610,"name":"Zastávka Provazníkova (směr Merhautova)","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.631388,49.216166]},"properties":{"id":1611,"name":"Koleje JAK Blok C","type":"dormitory","url":"http://skm.mendelu.cz/ubytovani/ubytovaci-zarizeni/27982-koleje-jak","phone":"+420 545 128 340","email":"skm.koleje.jak@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.61525,49.21582]},"properties":{"id":1612,"name":"Zastávka Bieblova (směr Komín, sídliště)","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.615378,49.216018]},"properties":{"id":1613,"name":"Zastávka Bieblova (směr Útěchov)","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.615443,49.210929]},"properties":{"id":1599,"name":"Parkoviště v areálu univerzity","type":"parking","url":"http://mendelu.cz","phone":"+420 545 135 000","email":"info@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.614925,49.215936]},"properties":{"id":1607,"name":"Vstup do Arboreta od FRRMS","type":"gate","url":"http://www.mendelu.cz","phone":"+420 545 135 000","email":"info@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.614198,49.218173]},"properties":{"id":1616,"name":"Kolej Akademie","type":"dormitory","url":"http://skm.mendelu.cz/ubytovani/ubytovaci-zarizeni/27987-kolej-akademie","phone":"+420 545 136 117","email":"skm.koleje.akademie@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.631311,49.215151]},"properties":{"id":1617,"name":"Menza koleje","type":"cafeteria","url":"http://skm.mendelu.cz/stravovani/stravovaci-zarizeni/27997-menza-jak","phone":"+420 545 128 380","email":"skm.menza@mendelu.cz "}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.617131,49.210264]},"properties":{"id":1618,"name":"Hlavní brána","type":"gate","url":"http://www.mendelu.cz","phone":"+420 545 135 000","email":"info@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.612181,49.206734]},"properties":{"id":1619,"name":"Zastávka Schodová (směr Jundrov)","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.618457,49.210813]},"properties":{"id":1620,"name":"Zastávka Zemědělská (směr Haškova)","type":"transportation_stop","url":"https://dpmb.cz/","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.6172,49.210325]},"properties":{"id":1622,"name":"Vrátnice areálu Mendelovy univerzity.","type":"gatehouse","url":"http://www.mendelu.cz","phone":"+420 545 135 001","email":"info@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.588579,49.21517]},"properties":{"id":1623,"name":"Centrum sportovních aktivit MENDELU","type":"building","url":"http://csa.mendelu.cz","phone":"+420 541 212 698","email":"jakub.havel@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.613715,49.209242]},"properties":{"id":1624,"name":"Vjezd pro automobily u budovy Q","type":"gate","url":"http://www.mendelu.cz","phone":"+420 545 135 000","email":"info@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.629975,49.21534]},"properties":{"id":1625,"name":"Parkoviště u kolejí JAK","type":"parking","url":"http://skm.mendelu.cz/ubytovani/ubytovaci-zarizeni/27982-koleje-jak","phone":"+420 545 128 340","email":"skm.koleje.jak@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.589153,49.215889]},"properties":{"id":1626,"name":"Zastávka Tererova (směr Dobrovského)","type":"transportation_stop","url":"https://dpmb.cz/","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.618474,49.21058]},"properties":{"id":1627,"name":"Automat na lístky na MHD","type":"ticket_machine","url":"http://www.dpmb.cz/?seo=jizdne","phone":"+420 543 171 111","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.614874,49.210484]},"properties":{"id":1629,"name":"Studovna v budově X","type":"building","url":"http://mendelu.cz/","phone":"+420 545 131 111","email":"info@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.612948,49.210361]},"properties":{"id":1589,"name":"N","type":"building","url":"http://utp.af.mendelu.cz","phone":"+420 545 133 190 ","email":"alzbeta.jarosova@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.61393,49.211672]},"properties":{"id":1606,"name":"Botanická zahrada a arboretum v Brně","type":"garden","url":"http://arboretum.mendelu.cz","phone":"+420 545 223 606","email":"info.zahrada@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.615259,49.210584]},"properties":{"id":1577,"name":"Pizzerie v budově O","type":"cafeteria","url":"http://skm.mendelu.cz/stravovani/stravovaci-zarizeni/28005-pizzerie-quot-o-quot","phone":"+420 545 135 069","email":"skm.menza.jak@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.614452,49.211303]},"properties":{"id":1608,"name":"Vstup do Arboreta z areálu","type":"gate","url":"http://www.mendelu.cz","phone":"+420 545 135 000","email":"info@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.630924,49.216273]},"properties":{"id":1576,"name":"Parkoviště u kolejí JAK (zadní)","type":"parking","url":"http://skm.mendelu.cz/ubytovani/ubytovaci-zarizeni/27982-koleje-jak","phone":"+420 545 128 340","email":"skm.koleje.jak@mendelu.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.627529,49.216963]},"properties":{"id":1628,"name":"Zastávka Štefánikova čtvrť (směr Lesná)","type":"transportation_stop","url":"https://dpmb.cz","phone":"+420 543 174 317","email":"dpmb@dpmb.cz"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.615225,49.209479]},"properties":{"id":1590,"name":"Brána u budovy Q","type":"gate","url":"http://www.mendelu.cz","phone":"+420 545 135 000","email":"info@mendelu.cz"}}]}
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.62387,
+          49.214519
+        ]
+      },
+      "properties": {
+        "id": 1562,
+        "name": "Zastávka Provazníkova (směr Lesnická)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.627679,
+          49.217303
+        ]
+      },
+      "properties": {
+        "id": 1563,
+        "name": "Zastávka Štefánikova čtvrť",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.614268,
+          49.210706
+        ]
+      },
+      "properties": {
+        "id": 1565,
+        "name": "V",
+        "type": "building",
+        "url": null,
+        "phone": null,
+        "email": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.589216,
+          49.215675
+        ]
+      },
+      "properties": {
+        "id": 1566,
+        "name": "Zastávka Tererova (směr ZŠ Jana Babáka)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz/",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.618723,
+          49.210347
+        ]
+      },
+      "properties": {
+        "id": 1567,
+        "name": "Zastávka Zemědělská (směr Halasovo náměstí)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz/",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.609491,
+          49.209383
+        ]
+      },
+      "properties": {
+        "id": 1568,
+        "name": "Zastávka Zimní stadion (směr Lesnická)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.62747,
+          49.214846
+        ]
+      },
+      "properties": {
+        "id": 1570,
+        "name": "Zastávka Merhautova (směr Tomkovo náměstí)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.588386,
+          49.214278
+        ]
+      },
+      "properties": {
+        "id": 1571,
+        "name": "Parkoviště Jana Babáka",
+        "type": "parking",
+        "url": "http://skm.mendelu.cz/ubytovani/ubytovaci-zarizeni/27988-tauferovy-koleje",
+        "phone": "+420 541 422 051",
+        "email": "jitka.chebenova@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.616773,
+          49.212103
+        ]
+      },
+      "properties": {
+        "id": 1572,
+        "name": "T",
+        "type": "building",
+        "url": "http://www.ustavnabytku.cz/cz/",
+        "phone": "+420 545 134 169",
+        "email": "nabytek@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.61518,
+          49.210739
+        ]
+      },
+      "properties": {
+        "id": 1573,
+        "name": "O",
+        "type": "building",
+        "url": "http://skm.mendelu.cz/stravovani/stravovaci-zarizeni/28004-zamestnanecka-jidelna-v-arealu-univerzity-objekt-quot-o-quot",
+        "phone": "+420 545 135 155",
+        "email": "skm.menza.jak@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.617419,
+          49.212466
+        ]
+      },
+      "properties": {
+        "id": 1574,
+        "name": "Vedlejší brána z ulice Lesnická",
+        "type": "gate",
+        "url": "http://www.mendelu.cz",
+        "phone": "+420 545 135 000",
+        "email": "info@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.61438,
+          49.210575
+        ]
+      },
+      "properties": {
+        "id": 1575,
+        "name": "Laboratoř řízení kolejových vozidel",
+        "type": "building",
+        "url": "http://lrkv.pef.mendelu.cz/",
+        "phone": null,
+        "email": "lrkv@pef.mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.609805,
+          49.208787
+        ]
+      },
+      "properties": {
+        "id": 1578,
+        "name": "Zastávka Zimní stadion (směr Jundrov)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.616194,
+          49.210631
+        ]
+      },
+      "properties": {
+        "id": 1579,
+        "name": "J",
+        "type": "building",
+        "url": "http://af.mendelu.cz",
+        "phone": "+420 545 133 001",
+        "email": "vojtech.adam@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.618982,
+          49.210817
+        ]
+      },
+      "properties": {
+        "id": 1581,
+        "name": "Akademická vinotéka",
+        "type": "cafeteria",
+        "url": "http://www.akademickavinoteka.cz",
+        "phone": "+420 545 135 226",
+        "email": "jammik@volny.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.609534,
+          49.208861
+        ]
+      },
+      "properties": {
+        "id": 1595,
+        "name": "Zastávka Zimní stadion (směr Avion Shopping Park)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.618433,
+          49.210628
+        ]
+      },
+      "properties": {
+        "id": 1596,
+        "name": "Zastávka Zemědělská (směr Hlavní nádraží)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz/",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.617838,
+          49.212902
+        ]
+      },
+      "properties": {
+        "id": 1597,
+        "name": "Zastávka Lesnická (směr Zímní stadion)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz/",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.619042,
+          49.213086
+        ]
+      },
+      "properties": {
+        "id": 1614,
+        "name": "Zastávka Lesnická (směr Merhautova)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz/",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.588779,
+          49.214859
+        ]
+      },
+      "properties": {
+        "id": 1615,
+        "name": "Výdejna jídel Tauferovy koleje",
+        "type": "cafeteria",
+        "url": "http://skm.mendelu.cz/stravovani/stravovaci-zarizeni/28000-vydejna-jidel-tk",
+        "phone": "+420 541 422 061",
+        "email": "skm.menza@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.617154,
+          49.211493
+        ]
+      },
+      "properties": {
+        "id": 1583,
+        "name": "L",
+        "type": "building",
+        "url": null,
+        "phone": null,
+        "email": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.627631,
+          49.214994
+        ]
+      },
+      "properties": {
+        "id": 1584,
+        "name": "Zastávka Merhautova (směr Lesnická)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.627797,
+          49.217166
+        ]
+      },
+      "properties": {
+        "id": 1586,
+        "name": "Zastávka Štefánikova čtvrť (směr Česká)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.614901,
+          49.211051
+        ]
+      },
+      "properties": {
+        "id": 1591,
+        "name": "R",
+        "type": "building",
+        "url": "http://utad.af.mendelu.cz/cz",
+        "phone": "+420 545 132 118 ",
+        "email": "jiri.cupera@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.615748,
+          49.210473
+        ]
+      },
+      "properties": {
+        "id": 1592,
+        "name": "D",
+        "type": "building",
+        "url": "http://ucb.af.mendelu.cz",
+        "phone": "+420 545 133 275",
+        "email": "gabriela.smejkalova@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.60973,
+          49.210093
+        ]
+      },
+      "properties": {
+        "id": 1593,
+        "name": "Zastávka Zimní stadion (směr Provazníkova)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.629843,
+          49.215537
+        ]
+      },
+      "properties": {
+        "id": 1598,
+        "name": "Mateřská školka Hrášek",
+        "type": "building",
+        "url": "http://www.hrasekms.cz/",
+        "phone": "+420 545 128 355 ",
+        "email": "hrasekms@mendelu.cz "
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.614599,
+          49.21039
+        ]
+      },
+      "properties": {
+        "id": 1601,
+        "name": "X",
+        "type": "cafeteria",
+        "url": "http://skm.mendelu.cz/stravovani/stravovaci-zarizeni/28003-vydejna-jidel-v-arealu-univerzity-objekt-x",
+        "phone": "+420 545 128 380",
+        "email": "skm.menza@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.617438,
+          49.212503
+        ]
+      },
+      "properties": {
+        "id": 1602,
+        "name": "Zastávka Lesnická",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz/",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.612178,
+          49.206527
+        ]
+      },
+      "properties": {
+        "id": 1603,
+        "name": "Zastávka Schodová (směr Avion Shopping Park)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.615496,
+          49.216074
+        ]
+      },
+      "properties": {
+        "id": 1604,
+        "name": "Zastávka Bieblova",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.614498,
+          49.210876
+        ]
+      },
+      "properties": {
+        "id": 1609,
+        "name": "P",
+        "type": "building",
+        "url": "https://www.ldf.mendelu.cz",
+        "phone": "+420 545 134 116",
+        "email": "libor.jankovsky@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.624004,
+          49.214468
+        ]
+      },
+      "properties": {
+        "id": 1610,
+        "name": "Zastávka Provazníkova (směr Merhautova)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.61525,
+          49.21582
+        ]
+      },
+      "properties": {
+        "id": 1612,
+        "name": "Zastávka Bieblova (směr Komín, sídliště)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.615378,
+          49.216018
+        ]
+      },
+      "properties": {
+        "id": 1613,
+        "name": "Zastávka Bieblova (směr Útěchov)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.615443,
+          49.210929
+        ]
+      },
+      "properties": {
+        "id": 1599,
+        "name": "Parkoviště v areálu univerzity",
+        "type": "parking",
+        "url": "http://mendelu.cz",
+        "phone": "+420 545 135 000",
+        "email": "info@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.614925,
+          49.215936
+        ]
+      },
+      "properties": {
+        "id": 1607,
+        "name": "Vstup do Arboreta od FRRMS",
+        "type": "gate",
+        "url": "http://www.mendelu.cz",
+        "phone": "+420 545 135 000",
+        "email": "info@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.631311,
+          49.215151
+        ]
+      },
+      "properties": {
+        "id": 1617,
+        "name": "Menza koleje",
+        "type": "cafeteria",
+        "url": "http://skm.mendelu.cz/stravovani/stravovaci-zarizeni/27997-menza-jak",
+        "phone": "+420 545 128 380",
+        "email": "skm.menza@mendelu.cz "
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.617131,
+          49.210264
+        ]
+      },
+      "properties": {
+        "id": 1618,
+        "name": "Hlavní brána",
+        "type": "gate",
+        "url": "http://www.mendelu.cz",
+        "phone": "+420 545 135 000",
+        "email": "info@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.612181,
+          49.206734
+        ]
+      },
+      "properties": {
+        "id": 1619,
+        "name": "Zastávka Schodová (směr Jundrov)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.618457,
+          49.210813
+        ]
+      },
+      "properties": {
+        "id": 1620,
+        "name": "Zastávka Zemědělská (směr Haškova)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz/",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.6172,
+          49.210325
+        ]
+      },
+      "properties": {
+        "id": 1622,
+        "name": "Vrátnice areálu Mendelovy univerzity.",
+        "type": "gatehouse",
+        "url": "http://www.mendelu.cz",
+        "phone": "+420 545 135 001",
+        "email": "info@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.613715,
+          49.209242
+        ]
+      },
+      "properties": {
+        "id": 1624,
+        "name": "Vjezd pro automobily u budovy Q",
+        "type": "gate",
+        "url": "http://www.mendelu.cz",
+        "phone": "+420 545 135 000",
+        "email": "info@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.629975,
+          49.21534
+        ]
+      },
+      "properties": {
+        "id": 1625,
+        "name": "Parkoviště u kolejí JAK",
+        "type": "parking",
+        "url": "http://skm.mendelu.cz/ubytovani/ubytovaci-zarizeni/27982-koleje-jak",
+        "phone": "+420 545 128 340",
+        "email": "skm.koleje.jak@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.589153,
+          49.215889
+        ]
+      },
+      "properties": {
+        "id": 1626,
+        "name": "Zastávka Tererova (směr Dobrovského)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz/",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.618474,
+          49.21058
+        ]
+      },
+      "properties": {
+        "id": 1627,
+        "name": "Automat na lístky na MHD",
+        "type": "ticket_machine",
+        "url": "http://www.dpmb.cz/?seo=jizdne",
+        "phone": "+420 543 171 111",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.614874,
+          49.210484
+        ]
+      },
+      "properties": {
+        "id": 1629,
+        "name": "Studovna v budově X",
+        "type": "building",
+        "url": "http://mendelu.cz/",
+        "phone": "+420 545 131 111",
+        "email": "info@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.612948,
+          49.210361
+        ]
+      },
+      "properties": {
+        "id": 1589,
+        "name": "N",
+        "type": "building",
+        "url": "http://utp.af.mendelu.cz",
+        "phone": "+420 545 133 190 ",
+        "email": "alzbeta.jarosova@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.61393,
+          49.211672
+        ]
+      },
+      "properties": {
+        "id": 1606,
+        "name": "Botanická zahrada a arboretum v Brně",
+        "type": "garden",
+        "url": "http://arboretum.mendelu.cz",
+        "phone": "+420 545 223 606",
+        "email": "info.zahrada@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.615259,
+          49.210584
+        ]
+      },
+      "properties": {
+        "id": 1577,
+        "name": "Pizzerie v budově O",
+        "type": "cafeteria",
+        "url": "http://skm.mendelu.cz/stravovani/stravovaci-zarizeni/28005-pizzerie-quot-o-quot",
+        "phone": "+420 545 135 069",
+        "email": "skm.menza.jak@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.614452,
+          49.211303
+        ]
+      },
+      "properties": {
+        "id": 1608,
+        "name": "Vstup do Arboreta z areálu",
+        "type": "gate",
+        "url": "http://www.mendelu.cz",
+        "phone": "+420 545 135 000",
+        "email": "info@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.630924,
+          49.216273
+        ]
+      },
+      "properties": {
+        "id": 1576,
+        "name": "Parkoviště u kolejí JAK (zadní)",
+        "type": "parking",
+        "url": "http://skm.mendelu.cz/ubytovani/ubytovaci-zarizeni/27982-koleje-jak",
+        "phone": "+420 545 128 340",
+        "email": "skm.koleje.jak@mendelu.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.627529,
+          49.216963
+        ]
+      },
+      "properties": {
+        "id": 1628,
+        "name": "Zastávka Štefánikova čtvrť (směr Lesná)",
+        "type": "transportation_stop",
+        "url": "https://dpmb.cz",
+        "phone": "+420 543 174 317",
+        "email": "dpmb@dpmb.cz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.615225,
+          49.209479
+        ]
+      },
+      "properties": {
+        "id": 1590,
+        "name": "Brána u budovy Q",
+        "type": "gate",
+        "url": "http://www.mendelu.cz",
+        "phone": "+420 545 135 000",
+        "email": "info@mendelu.cz"
+      }
+    }
+  ]
+}

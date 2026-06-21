@@ -37,6 +37,12 @@ export interface PoiFeature {
 }
 export interface PoiCollection { type: 'FeatureCollection'; features: PoiFeature[]; }
 
+export interface Landmark {
+  id: number; name: string; type: string;
+  url: string | null; phone: string | null; email: string | null;
+  outline: { type: 'Polygon'; coordinates: number[][][] };
+}
+
 export interface RoomIndexEntry {
   code: string; name: string; buildingId: number;
   floorId: number; floorLevel: number | null; placeId: number;
@@ -46,4 +52,5 @@ export interface RoomIndexEntry {
 export type MapSelection =
   | { kind: 'room'; room: RoomProperties }
   | { kind: 'roomRef'; entry: RoomIndexEntry }   // from search/deep-link before geometry loads
-  | { kind: 'poi'; poi: PoiProperties; coord: [number, number] };
+  | { kind: 'poi'; poi: PoiProperties; coord: [number, number] }
+  | { kind: 'landmark'; landmark: Landmark };    // search result only; resolves to a poi selection on focus
