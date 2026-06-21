@@ -21,6 +21,28 @@ export function edgeAnchor(center: Point, target: Point, rect: Rect, pad: number
   return { x: center.x + dx * t, y: center.y + dy * t, angle };
 }
 
+export interface Box { left: number; top: number; right: number; bottom: number; }
+
+// The arrow stays on its screen edge, but if its anchor lands inside a panel it
+// would hide behind it — so slide it vertically clear: DOWN past a top-hugging
+// panel (search / Místa), UP past a bottom-hugging one (the detail panel). A
+// free-floating box exits toward its nearer edge. Clamped to the viewport.
+// Boxes are in container-relative px.
+export function nudgePastBoxes(p: Point, boxes: Box[], viewportHeight: number, pad: number): Point {
+  let y = p.y;
+  for (const b of boxes) {
+    const insideX = p.x >= b.left - pad && p.x <= b.right + pad;
+    const insideY = y >= b.top - pad && y <= b.bottom + pad;
+    if (!insideX || !insideY) continue;
+    const down = b.bottom + pad, up = b.top - pad;
+    const topHugging = b.top <= pad, bottomHugging = b.bottom >= viewportHeight - pad;
+    if (topHugging && !bottomHugging) y = down;
+    else if (bottomHugging && !topHugging) y = up;
+    else y = y - b.top < b.bottom - y ? up : down; // nearer edge
+  }
+  return { x: p.x, y: Math.max(pad, Math.min(y, viewportHeight - pad)) };
+}
+
 export interface LandmarkPoint { id: number; name: string; lat: number; lon: number; }
 export interface Cluster { ids: number[]; lat: number; lon: number; label: string; }
 
@@ -42,7 +64,9 @@ function clusterLabel(names: string[]): string {
     while (prefix && !n.startsWith(prefix)) prefix = prefix.slice(0, -1);
   }
   prefix = prefix.replace(/\s+\S*$/, '').trim(); // drop a partial trailing word
-  return prefix.length >= 3 ? prefix : `${names.length} places`;
+  // No meaningful shared prefix → show the real names (the arrow label needs to
+  // say WHERE it points); the UI truncates if long.
+  return prefix.length >= 3 ? prefix : names.join(' / ');
 }
 
 // Greedy single-pass clustering: a point joins the first existing cluster whose

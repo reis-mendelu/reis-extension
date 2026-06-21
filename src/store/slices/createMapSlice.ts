@@ -75,6 +75,17 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     });
   },
 
+  focusCampus: () => set({
+    activeBuildingId: null, activeFloorId: null, mapSelection: null,
+    mapFocusRequest: get().mapFocusRequest + 1,
+  }),
+
+  focusPoint: (name, coord) => set({
+    activeBuildingId: null, activeFloorId: null,
+    mapSelection: { kind: 'poi', poi: { id: -1, name, type: '', url: null, phone: null, email: null }, coord },
+    mapFocusRequest: get().mapFocusRequest + 1,
+  }),
+
   loadMapBuilding: async (id) => {
     if (get().roomsByBuilding[id]) return; // already in memory
     set({ mapLoadingBuilding: id });

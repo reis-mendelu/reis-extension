@@ -875,6 +875,10 @@
     "seats": "Seats",
     "projector": "Projector",
     "whiteboard": "Whiteboard",
-    "showOnMap": "Show on map"
+    "showOnMap": "Show on map",
+    "places": "Places",
+    "jakDorms": "JAK dormitories",
+    "mainCampus": "Main campus",
+    "alsoHere": "Also here"
   }
 }

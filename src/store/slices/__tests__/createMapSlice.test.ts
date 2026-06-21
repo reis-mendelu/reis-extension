@@ -46,6 +46,25 @@ describe('mapSlice', () => {
     expect(s.mapFocusRequest).toBe(before + 1);
   });
 
+  it('focusCampus returns to overview and bumps the focus request', () => {
+    useAppStore.getState().setMapBuilding(54678);
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusCampus();
+    const s = useAppStore.getState();
+    expect(s.activeBuildingId).toBeNull();
+    expect(s.mapSelection).toBeNull();
+    expect(s.mapFocusRequest).toBe(before + 1);
+  });
+
+  it('focusPoint sets a named poi selection at the coord and bumps the focus request', () => {
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusPoint('Koleje JAK', [16.62, 49.22]);
+    const s = useAppStore.getState();
+    expect(s.activeBuildingId).toBeNull();
+    expect(s.mapSelection).toMatchObject({ kind: 'poi', poi: { name: 'Koleje JAK' }, coord: [16.62, 49.22] });
+    expect(s.mapFocusRequest).toBe(before + 1);
+  });
+
   it('setMapSearchQuery populates results', () => {
     useAppStore.getState().setMapSearchQuery('Q01');
     expect(useAppStore.getState().mapSearchResults.length).toBeGreaterThan(0);

@@ -875,6 +875,10 @@
     "seats": "Míst",
     "projector": "Projektor",
     "whiteboard": "Tabule",
-    "showOnMap": "Zobrazit na mapě"
+    "showOnMap": "Zobrazit na mapě",
+    "places": "Místa",
+    "jakDorms": "Koleje JAK",
+    "mainCampus": "Hlavní kampus",
+    "alsoHere": "Také zde"
   }
 }

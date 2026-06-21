@@ -3,44 +3,62 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
 import buildingsJson from '../../data/map/buildings.json';
-import poisJson from '../../data/map/pois.json';
 import landmarksJson from '../../data/map/landmarks.json';
 import {
-  ringToLatLng, shortLabel, categoryStyle,
+  ringToLatLng, shortLabel, categoryStyle, landmarkGroupLabels,
   SELECTED_STYLE, STRUCTURE_STYLE, BUILDING_STYLE, SIBLING_STYLE,
 } from './mapHelpers';
 import { setMapInstance } from './mapInstance';
-import type { BuildingsMeta, PoiFeature, RoomFeature, Landmark } from '../../types/campusMap';
+import type { BuildingsMeta, RoomFeature, Landmark } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
-const POIS = (poisJson as unknown as { features: PoiFeature[] }).features;
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
-// Only cafeterias are drawn as dots. Everything else (bus stops, gates,
-// gatehouse, ticket machine, parking, generic letter buildings) stays in
-// pois.json for search but is removed from the map to cut clutter.
-const DRAWN_POI_TYPES = new Set(['cafeteria']);
+// FRRMS + Kolej Akademie are one building under two names → a combined "A / B"
+// tooltip. (Adjacent-but-separate places like Tauferovy/sports centre are NOT
+// merged — see landmarkGroupLabels.)
+const LANDMARK_LABELS = landmarkGroupLabels(LANDMARKS);
+// A few landmarks are official lettered campus buildings — FRRMS is "Z" on the
+// MENDELU map — and get a permanent centre letter like the drillable buildings
+// instead of the hover name. The Místa picker still carries the full pair name.
+const LANDMARK_LETTERS: Record<number, string> = { 1587: 'Z' };
 
-function themeColor(varName: string): string {
-  const v = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-  return v || '#cccccc';
+// Vector outlines added to the map right before an animated fly render at the
+// OLD zoom and are then CSS-scaled by the zoom animation, so they flash huge and
+// in the wrong place until `moveend` re-projects them. Hide the vector + label
+// panes for the duration of the fly so only the basemap animates; reveal once
+// the camera has settled.
+function flyAndReveal(map: L.Map, fly: () => void): void {
+  const panes = [map.getPane('overlayPane'), map.getPane('tooltipPane')]
+    .filter((p): p is HTMLElement => p != null);
+  for (const p of panes) p.style.visibility = 'hidden';
+  const reveal = () => { for (const p of panes) p.style.visibility = ''; };
+  map.once('moveend', reveal);
+  window.setTimeout(reveal, 900); // safety: a fly to ~the current view fires no moveend
+  fly();
 }
 
-// Landmarks (dorms / FRRMS / sports centre) draw as dashed secondary outlines
-// in both overview and floor-view. They are not drillable — a click opens the
+// Landmarks (dorms / FRRMS / sports centre) draw with the same blue campus
+// "clickable building" theme as real buildings — solid in overview, fainter
+// (sibling style) in floor-view. They are not drillable — a click opens the
 // shared POI detail panel (landmark metadata is poi-shaped).
-function drawLandmarks(layer: L.LayerGroup, select: ReturnType<typeof useAppStore.getState>) {
+function drawLandmarks(
+  layer: L.LayerGroup,
+  select: ReturnType<typeof useAppStore.getState>,
+  style: L.PathOptions,
+) {
   for (const l of LANDMARKS) {
-    const poly = L.polygon(ringToLatLng(l.outline.coordinates[0]), {
-      color: themeColor('--color-secondary'), weight: 1.5, dashArray: '4', fillOpacity: 0,
-      bubblingMouseEvents: false,
-    });
+    const poly = L.polygon(ringToLatLng(l.outline.coordinates[0]), style);
     poly.on('click', () => {
       const c = poly.getBounds().getCenter();
       select.selectMapPoi(
         { id: l.id, name: l.name, type: l.type, url: l.url, phone: l.phone, email: l.email },
         [c.lng, c.lat],
       );
-    }).bindTooltip(l.name).addTo(layer);
+    });
+    const letter = LANDMARK_LETTERS[l.id];
+    if (letter) poly.bindTooltip(letter, { permanent: true, direction: 'center', className: 'building-label' });
+    else poly.bindTooltip(LANDMARK_LABELS.get(l.id) ?? l.name);
+    poly.addTo(layer);
   }
 }
 
@@ -62,8 +80,17 @@ export function MapCanvas() {
   // init once
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
-    const map = L.map(ref.current, { zoomControl: true, attributionControl: true, minZoom: 14, maxZoom: 22 })
-      .fitBounds(META.campus.bounds as L.LatLngBoundsExpression);
+    const map = L.map(ref.current, {
+      zoomControl: true, attributionControl: true, minZoom: 14, maxZoom: 22,
+      // Keep Leaflet's default stepped zoom (zoomSnap 1) but make each wheel
+      // notch require more scroll (default 60 → 100 px per level) so it doesn't
+      // jump so aggressively. zoomSnap:0 (fractional) felt worse — floaty and
+      // blurry on intermediate tiles — so we slow the default instead.
+      wheelPxPerZoomLevel: 100,
+    }).fitBounds(META.campus.bounds as L.LatLngBoundsExpression);
+    // The search box + floor selector own the top-left now, so move the native
+    // +/- control to the bottom-right where it no longer sits under them.
+    map.zoomControl.setPosition('bottomright');
     // CartoDB Positron: clean grey basemap with no tree dots and minimal
     // labels. Free, keyless, retina-aware. maxNativeZoom 20 (one better than
     // OSM's 19) reduces upscaling blur at floor-zoom levels.
@@ -94,21 +121,14 @@ export function MapCanvas() {
           .bindTooltip(b.name, { permanent: true, direction: 'center', className: 'building-label' })
           .addTo(layer);
       }
-      for (const f of POIS.filter((p) => DRAWN_POI_TYPES.has(p.properties.type))) {
-        const [lon, lat] = f.geometry.coordinates;
-        L.circleMarker([lat, lon], { radius: 6, color: themeColor('--color-secondary'),
-          fillColor: themeColor('--color-secondary'), fillOpacity: 0.9, bubblingMouseEvents: false })
-          .on('click', () => select.selectMapPoi(f.properties, f.geometry.coordinates))
-          .bindTooltip(f.properties.name).addTo(layer);
-      }
-      drawLandmarks(layer, select);
+      drawLandmarks(layer, select, BUILDING_STYLE);
       // §6: rest at campus bounds, but fly to a chosen place's coord on
       // search/click (a poi/landmark selection) instead of refitting campus.
       if (select.mapSelection?.kind === 'poi') {
         const [lon, lat] = select.mapSelection.coord;
-        map.flyTo([lat, lon], 18);
+        flyAndReveal(map, () => map.flyTo([lat, lon], 18));
       } else {
-        map.flyToBounds(META.campus.bounds as L.LatLngBoundsExpression, { maxZoom: 18, padding: [40, 40] });
+        flyAndReveal(map, () => map.flyToBounds(META.campus.bounds as L.LatLngBoundsExpression, { maxZoom: 18, padding: [40, 40] }));
       }
       return;
     }
@@ -116,7 +136,7 @@ export function MapCanvas() {
     const fc = roomsByBuilding[activeBuildingId];
     const b = META.buildings.find((x) => x.id === activeBuildingId);
     if (!fc) { // geometry still loading — show the building while we wait
-      if (b) map.flyToBounds(b.bounds as L.LatLngBoundsExpression, { maxZoom: 21, padding: [50, 50] });
+      if (b) flyAndReveal(map, () => map.flyToBounds(b.bounds as L.LatLngBoundsExpression, { maxZoom: 21, padding: [50, 50] }));
       return;
     }
     // Sibling building outlines stay drawn in floor-view and ARE the
@@ -128,7 +148,7 @@ export function MapCanvas() {
         .bindTooltip(sib.name, { permanent: true, direction: 'center', className: 'building-label' })
         .addTo(layer);
     }
-    drawLandmarks(layer, select);
+    drawLandmarks(layer, select, SIBLING_STYLE);
     // Clicking the bare basemap (not an outline/room) returns to overview.
     const onMapClick = () => select.exitToCampus();
     map.on('click', onMapClick);
@@ -165,8 +185,12 @@ export function MapCanvas() {
       poly.addTo(layer);
       if (isSel) { poly.bringToFront(); targetBounds = poly.getBounds(); }
     }
-    if (targetBounds) map.flyToBounds(targetBounds, { maxZoom: 21, padding: [120, 120] });
-    else if (b) map.flyToBounds(b.bounds as L.LatLngBoundsExpression, { maxZoom: 21, padding: [50, 50] });
+    if (targetBounds) {
+      const tb = targetBounds;
+      flyAndReveal(map, () => map.flyToBounds(tb, { maxZoom: 21, padding: [120, 120] }));
+    } else if (b) {
+      flyAndReveal(map, () => map.flyToBounds(b.bounds as L.LatLngBoundsExpression, { maxZoom: 21, padding: [50, 50] }));
+    }
   }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq]);
 
   // Highlight the selected room in place on a plain map click — restyle the live

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { shortLabel, lonLatToLatLng, ringToLatLng, searchPlaces, polygonCentroid, categoryStyle } from '../mapHelpers';
+import { shortLabel, lonLatToLatLng, ringToLatLng, searchPlaces, polygonCentroid, categoryStyle, landmarkGroupLabels } from '../mapHelpers';
 import type { RoomIndexEntry, PoiFeature, Landmark } from '../../../types/campusMap';
 
 describe('categoryStyle', () => {
@@ -87,5 +87,37 @@ describe('searchPlaces', () => {
 describe('polygonCentroid', () => {
   it('averages the ring vertices to a [lon, lat] point', () => {
     expect(polygonCentroid([[0, 0], [2, 0], [2, 2], [0, 2]])).toEqual([1, 1]);
+  });
+});
+
+describe('landmarkGroupLabels', () => {
+  // A square ring (closed) around a given [lon, lat] centre, ~tiny footprint.
+  const sq = (lon: number, lat: number): number[][] => [
+    [lon - 0.0001, lat - 0.0001], [lon + 0.0001, lat - 0.0001],
+    [lon + 0.0001, lat + 0.0001], [lon - 0.0001, lat + 0.0001], [lon - 0.0001, lat - 0.0001],
+  ];
+  const mk = (id: number, name: string, lon: number, lat: number): Landmark => ({
+    id, name, type: 'building', url: null, phone: null, email: null,
+    outline: { type: 'Polygon', coordinates: [sq(lon, lat)] },
+  });
+
+  it('combines co-located landmarks (same building) into one "A / B" label', () => {
+    // FRRMS and Kolej Akademie share an identical outline (0 m apart).
+    const labels = landmarkGroupLabels([
+      mk(1, 'FRRMS', 16.61, 49.21),
+      mk(2, 'Kolej Akademie', 16.61, 49.21),
+    ]);
+    expect(labels.get(1)).toBe('FRRMS / Kolej Akademie');
+    expect(labels.get(2)).toBe('FRRMS / Kolej Akademie');
+  });
+
+  it('keeps distinct nearby buildings (JAK blocks, 65 m+ apart) separate', () => {
+    // ~0.001 deg lon ≈ 73 m at this latitude — beyond the 40 m threshold.
+    const labels = landmarkGroupLabels([
+      mk(10, 'Koleje JAK Blok A', 16.610, 49.210),
+      mk(11, 'Koleje JAK Blok B', 16.611, 49.210),
+    ]);
+    expect(labels.get(10)).toBe('Koleje JAK Blok A');
+    expect(labels.get(11)).toBe('Koleje JAK Blok B');
   });
 });

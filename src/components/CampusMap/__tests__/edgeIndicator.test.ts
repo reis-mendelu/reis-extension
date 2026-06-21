@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { edgeAnchor, clusterLandmarks, type LandmarkPoint } from '../edgeIndicator';
+import { edgeAnchor, clusterLandmarks, nudgePastBoxes, type LandmarkPoint } from '../edgeIndicator';
 
 const rect = { width: 400, height: 300 };
 const center = { x: 200, y: 150 };
@@ -62,5 +62,28 @@ describe('clusterLandmarks', () => {
     const clusters = clusterLandmarks(points, 150);
     const jak = clusters.find((c) => c.ids.includes(1569))!;
     expect(jak.label).toContain('Koleje JAK');
+  });
+});
+
+describe('nudgePastBoxes', () => {
+  const topPanel = { left: 100, top: 0, right: 200, bottom: 80 };       // Místa (top)
+  const bottomPanel = { left: 0, top: 520, right: 200, bottom: 600 };   // detail panel (bottom)
+
+  it('slides an anchor under a TOP panel down below it (x unchanged)', () => {
+    expect(nudgePastBoxes({ x: 150, y: 20 }, [topPanel], 600, 10)).toEqual({ x: 150, y: 90 });
+  });
+
+  it('slides an anchor over a BOTTOM panel up above it', () => {
+    expect(nudgePastBoxes({ x: 50, y: 560 }, [bottomPanel], 600, 10)).toEqual({ x: 50, y: 510 });
+  });
+
+  it('leaves an anchor clear of every panel untouched', () => {
+    expect(nudgePastBoxes({ x: 150, y: 300 }, [topPanel], 600, 10)).toEqual({ x: 150, y: 300 });
+    expect(nudgePastBoxes({ x: 400, y: 20 }, [topPanel], 600, 10)).toEqual({ x: 400, y: 20 });
+  });
+
+  it('clamps the pushed anchor to the viewport', () => {
+    const huge = { left: 0, top: 0, right: 200, bottom: 595 };
+    expect(nudgePastBoxes({ x: 50, y: 20 }, [huge], 600, 10).y).toBe(10); // escapes up, clamped to pad
   });
 });
