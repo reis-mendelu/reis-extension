@@ -6,6 +6,7 @@ import buildingsJson from '../../data/map/buildings.json';
 import poisJson from '../../data/map/pois.json';
 import landmarksJson from '../../data/map/landmarks.json';
 import { ringToLatLng, shortLabel } from './mapHelpers';
+import { setMapInstance } from './mapInstance';
 import type { BuildingsMeta, PoiFeature, RoomFeature, Landmark } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
@@ -68,7 +69,8 @@ export function MapCanvas() {
     }).addTo(map);
     layerRef.current.addTo(map);
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
+    setMapInstance(map);
+    return () => { setMapInstance(null); map.remove(); mapRef.current = null; };
   }, []);
 
   // draw campus overview or the active floor
