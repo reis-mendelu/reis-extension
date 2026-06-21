@@ -1,4 +1,4 @@
-﻿import { ChevronDown, CheckCircle2, BookOpen, Clock, Layers } from 'lucide-react';
+import { ChevronDown, CheckCircle2, BookOpen, Clock, Layers } from 'lucide-react';
 import type { SemesterBlock, Zamerani, SubjectStatus } from '@/types/studyPlan';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { ZameraniProgress } from './SubjectsPanelHeader';

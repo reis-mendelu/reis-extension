@@ -25,7 +25,7 @@ function parseStatsTable(table: HTMLTableElement): Record<string, string> {
     for (const row of Array.from(table.querySelectorAll('tr'))) {
         const cells = row.querySelectorAll('td');
         if (cells.length >= 2) {
-            // IS labels use a non-breaking space ( ) after single-letter
+            // IS labels use a non-breaking space (\u00A0) after single-letter
             // prepositions (e.g. "Průměr z odstudovaných"); normalize so the
             // plain-space lookup keys below match.
             const key = (cells[0].textContent || '').replace(/\s+/g, ' ').trim();

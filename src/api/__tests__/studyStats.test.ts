@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { parseStudyStats } from '../studyStats';
 
 // Real IS Mendelu labels put a non-breaking space after the single-letter
-// preposition "z" — "Průměr z odstudovaných...". Credit-count
+// preposition "z" — "Průměr z\u00A0odstudovaných...". Credit-count
 // labels have no such preposition, so they use plain spaces.
 const NBSP = ' ';
 const html = `

@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
 import { useFileActions } from '../../hooks/ui/useFileActions';
+import { logError } from '../../utils/reportError';
 import { DrawerHeader } from './DrawerHeader';
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
 import { useSubjectFileDrawerState } from './useSubjectFileDrawerState';
@@ -51,34 +52,46 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
 
     const flushDocumentNotes = useAppStore(s => s.flushDocumentNotes);
 
+    // Pending drag-hint timers, held in a ref so the drag-start effect below can
+    // cancel them (otherwise a timer queued before the drag could re-show the hint).
+    const dragHintTimers = useRef<{ t1: ReturnType<typeof setTimeout> | null; t2: ReturnType<typeof setTimeout> | null }>({ t1: null, t2: null });
+
+    const clearDragHintTimers = useCallback(() => {
+        if (dragHintTimers.current.t1) clearTimeout(dragHintTimers.current.t1);
+        if (dragHintTimers.current.t2) clearTimeout(dragHintTimers.current.t2);
+        dragHintTimers.current = { t1: null, t2: null };
+    }, []);
+
     // Handle drag hint display — use boolean dep so array re-references don't reset the timer
     useEffect(() => {
         let isCurrent = true;
-        let t1: ReturnType<typeof setTimeout> | null = null;
-        let t2: ReturnType<typeof setTimeout> | null = null;
 
         if (isOpen && hasFiles) {
             IndexedDBService.get('meta', 'drag_hint_shown').then(seen => {
                 if (!isCurrent) return;
                 if (!seen) {
-                    IndexedDBService.set('meta', 'drag_hint_shown', true);
-                    t1 = setTimeout(() => { if (isCurrent) setShowDragHint(true); }, 800);
-                    t2 = setTimeout(() => { if (isCurrent) setShowDragHint(false); }, 8800);
+                    IndexedDBService.set('meta', 'drag_hint_shown', true)
+                        .catch(err => logError('SubjectFileDrawer.dragHint.setSeen', err));
+                    dragHintTimers.current.t1 = setTimeout(() => { if (isCurrent) setShowDragHint(true); }, 800);
+                    dragHintTimers.current.t2 = setTimeout(() => { if (isCurrent) setShowDragHint(false); }, 8800);
                 }
-            });
+            }).catch(err => logError('SubjectFileDrawer.dragHint.getSeen', err));
         }
 
         return () => {
             isCurrent = false;
-            if (t1) clearTimeout(t1);
-            if (t2) clearTimeout(t2);
+            clearDragHintTimers();
         };
-    }, [isOpen, hasFiles]);
+    }, [isOpen, hasFiles, clearDragHintTimers]);
 
-    // Dismiss the drag hint the moment the user starts a drag selection
+    // Dismiss the drag hint the moment the user starts a drag selection — and
+    // cancel any pending show timer so it can't re-appear once the drag ends.
     useEffect(() => {
-        if (state.isDragging) setShowDragHint(false);
-    }, [state.isDragging]);
+        if (state.isDragging) {
+            clearDragHintTimers();
+            setShowDragHint(false);
+        }
+    }, [state.isDragging, clearDragHintTimers]);
 
     // Hydrate last visited timestamp and update it
     useEffect(() => {
