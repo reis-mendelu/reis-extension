@@ -127,3 +127,6 @@ debug-*.html
 audit-report.json
 .agent/
 supabase/.temp/
+
+# Vercel project link for the eduroam receiver page
+receiver/.vercel

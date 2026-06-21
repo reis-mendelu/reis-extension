@@ -122,13 +122,15 @@
     "studyPlans": "Přehled studijních plánů",
     "successRating": "Hodnocení úspěšnosti",
     "wifi": "Wi-Fi",
+    "eduroam": "Wi-Fi (eduroam)",
     "contactCenter": "Kontaktní centrum",
     "slides": "snímků",
     "more": "Více",
     "addPin": "Přidat",
     "addPinTitle": "Připnout stránku",
     "pinNudge": "Připni si sem nejpoužívanější IS stránky",
-    "pinLimitReached": "Maximum 6 stránek"
+    "pinLimitReached": "Maximum 6 stránek",
+    "map": "Mapa"
   },
   "common": {
     "loading": "Načítání...",
@@ -557,6 +559,78 @@
     "openErasmus": "Otevřít Erasmus+",
     "openFeedback": "Odeslat zpětnou vazbu"
   },
+  "eduroam": {
+    "title": "eduroam Wi-Fi",
+    "subtitle": "Nastavte eduroam na svém zařízení na pár kliknutí",
+    "heroTitle": "Připoj se k eduroam za pár minut",
+    "heroSub": "Vyber zařízení — projdeme tě nastavením krok za krokem.",
+    "s1": "Vyber zařízení",
+    "s2": "Nastav eduroam",
+    "doOnce": "Udělej jednou",
+    "pwdLabel": "Tvé heslo certifikátu",
+    "copy": "Zkopírovat",
+    "copied": "Zkopírováno!",
+    "viewImage": "Zvětšit snímek",
+    "closeImage": "Zavřít",
+    "connectStep": "Na fakultě se připoj k eduroam Wi-Fi",
+    "restart": "Vybrat jiné zařízení",
+    "footer": "Vytvořeno studenty pro studenty",
+    "footerSub": "reIS · studentská iniciativa PEF MENDELU",
+    "targetIos": "iPhone / iPad",
+    "targetAndroid": "Android",
+    "targetMac": "Mac",
+    "targetWindows": "Windows",
+    "download": "Stáhnout eduroam profil",
+    "createQr": "Vytvořit QR kód",
+    "preparing": "Připravuji profil…",
+    "error": "Profil se nepodařilo připravit",
+    "regenerate": "Začít znovu",
+    "openSettings": "Otevřít nastavení Profily",
+    "privacyNoteLocal": "Vše se generuje ve vašem zařízení a váš soukromý klíč zůstává chráněn heslem, které zadáte jen vy při instalaci.",
+    "privacyNoteTransfer": "Vše se generuje ve vašem zařízení a váš soukromý klíč je chráněn heslem, které zadáte jen vy při instalaci. Přenosový odkaz je jednorázový a vyprší během několika minut.",
+    "manual": {
+      "ios": {
+        "hint": "Naskenuj QR kód",
+        "steps": [
+          { "text": "Klepni na Vytvořit QR kód", "shot": "Vygenerovaný QR kód v panelu reIS" },
+          { "text": "Naskenuj ho Fotoaparátem a klepni na odkaz", "shot": "Fotoaparát míří na QR + banner s odkazem" },
+          { "text": "Povol stažení, pak Nastavení → \"Stažený profil\"", "shot": "Nastavení s řádkem \"Stažený profil\" nahoře", "warn": "iOS schová profil v Nastavení a platí jen ~8 minut — pospěš si." },
+          { "text": "Klepni na Instalovat a zadej heslo certifikátu", "shot": "Obrazovka Instalovat + pole na heslo" }
+        ],
+        "done": { "text": "Hotovo — na fakultě se k eduroam připojíš automaticky", "shot": "Wi-Fi ukazuje připojený eduroam" }
+      },
+      "android": {
+        "hint": "Aplikace geteduroam",
+        "doOnce": { "title": "Nainstaluj aplikaci geteduroam", "cta": "Stáhnout z Google Play" },
+        "steps": [
+          { "text": "Klepni na Vytvořit QR kód", "shot": "Vygenerovaný QR kód v panelu reIS" },
+          { "text": "Naskenuj ho a klepni na stažený soubor, aby se otevřel v geteduroam", "shot": "Stažení → otevření souboru v geteduroam" },
+          { "text": "Zadej heslo certifikátu", "shot": "Výzva geteduroam na heslo" }
+        ],
+        "done": { "text": "Hotovo — na fakultě se k eduroam připojíš automaticky", "shot": "Telefon připojený k eduroam" }
+      },
+      "mac": {
+        "hint": "Stáhni profil",
+        "steps": [
+          { "text": "Klikni na Stáhnout eduroam profil a otevři stažený soubor", "shot": "Tlačítko Stáhnout eduroam profil" },
+          { "text": "Otevři Nastavení → Profily", "shot": "Nastavení systému → Profily" },
+          { "text": "Dvojklik na \"MENDELU eduroam (reIS)\" → Instalovat", "shot": "Dialog instalace profilu" },
+          { "text": "Zadej heslo certifikátu", "shot": "Pole na heslo" }
+        ],
+        "done": { "text": "Hotovo — na fakultě se k eduroam připojíš automaticky", "shot": "Mac připojený k eduroam" }
+      },
+      "windows": {
+        "hint": "Aplikace geteduroam",
+        "doOnce": { "title": "Nainstaluj geteduroam pro Windows", "cta": "Otevřít geteduroam.app" },
+        "steps": [
+          { "text": "Klikni na Stáhnout eduroam profil", "shot": "Tlačítko Stáhnout eduroam profil" },
+          { "text": "Dvojklik na stažený soubor — otevře se v geteduroam", "shot": "Soubor ve Stažených se otevírá v geteduroam" },
+          { "text": "Zadej heslo certifikátu", "shot": "Výzva geteduroam na heslo" }
+        ],
+        "done": { "text": "Hotovo — na fakultě se k eduroam připojíš automaticky", "shot": "PC připojené k eduroam" }
+      }
+    }
+  },
   "erasmus": {
     "title": "Erasmus+ Zkušenosti",
     "selectCountry": "Klikni na zemi a prozkoumej recenze, náklady a tipy od studentů.",
@@ -793,5 +867,14 @@
     "locationPlaceholder": "Místnost nebo místo",
     "addLocation": "Přidat místo",
     "delete": "Smazat"
+  },
+  "map": {
+    "title": "Mapa",
+    "searchPlaceholder": "Hledat místnost nebo místo…",
+    "noFloorPlan": "Žádný plán podlaží není k dispozici.",
+    "seats": "Míst",
+    "projector": "Projektor",
+    "whiteboard": "Tabule",
+    "showOnMap": "Zobrazit na mapě"
   }
 }

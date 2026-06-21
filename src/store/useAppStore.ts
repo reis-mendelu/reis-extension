@@ -14,6 +14,7 @@ import { createI18nSlice } from './slices/createI18nSlice';
 import { createErrorReportingSlice } from './slices/createErrorReportingSlice';
 import { createSuccessRateSlice } from './slices/createSuccessRateSlice';
 import { createStudyJamsSlice } from './slices/createStudyJamsSlice';
+import { createEduroamSlice } from './slices/createEduroamSlice';
 import { createFeedbackSlice } from './slices/createFeedbackSlice';
 import { createStudyPlanSlice } from './slices/createStudyPlanSlice';
 import { createCvicneTestsSlice } from './slices/createCvicneTestsSlice';
@@ -31,6 +32,7 @@ import { createSearchSlice } from './slices/createSearchSlice';
 import { createPersonProfileSlice } from './slices/createPersonProfileSlice';
 import { createBulletinSlice } from './slices/createBulletinSlice';
 import { createViewportSlice } from './slices/createViewportSlice';
+import { createMapSlice } from './slices/createMapSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
@@ -50,6 +52,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createErrorReportingSlice(...a),
   ...createSuccessRateSlice(...a),
   ...createStudyJamsSlice(...a),
+  ...createEduroamSlice(...a),
   ...createFeedbackSlice(...a),
   ...createStudyPlanSlice(...a),
   ...createCvicneTestsSlice(...a),
@@ -67,6 +70,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createPersonProfileSlice(...a),
   ...createBulletinSlice(...a),
   ...createViewportSlice(...a),
+  ...createMapSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates

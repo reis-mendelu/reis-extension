@@ -84,6 +84,14 @@ html, body, #root {
 
   /* Border size */
   --border: 1px;
+
+  /* Flat buttons — no depth bevel / light "ring" on filled controls */
+  --depth: 0;
+
+  /* Soft-button text: darkened on the light theme so brand green clears the
+   * contrast bar over its own pale tint (see .btn-primary/.btn-secondary). */
+  --btn-tonal-primary: color-mix(in oklab, var(--color-primary) 62%, black);
+  --btn-tonal-secondary: color-mix(in oklab, var(--color-secondary) 56%, black);
 }
 
 /* Custom Mendelu dark theme for REIS extension */
@@ -125,6 +133,14 @@ html, body, #root {
 
   /* Border size */
   --border: 1px;
+
+  /* Flat buttons — no depth bevel / light "ring" on filled controls */
+  --depth: 0;
+
+  /* Soft-button text: on dark, the bright brand color reads well over the
+   * dark tint, so no darkening needed (see .btn-primary/.btn-secondary). */
+  --btn-tonal-primary: var(--color-primary);
+  --btn-tonal-secondary: var(--color-secondary);
 }
 
 /* Tailwind v4: Custom tokens via @theme */
@@ -240,4 +256,75 @@ html, body, #root {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+/* ── Default button treatment: soft / tonal ──────────────────────────────
+ * Primary & secondary buttons use a low-emphasis tinted fill instead of the
+ * loud solid+bevel default. This is the project-wide default — writing the
+ * standard DaisyUI `btn btn-primary` / `btn btn-secondary` classes yields the
+ * soft look automatically; no extra modifier needed. Plain rules (outside any
+ * @layer) intentionally override DaisyUI's component layer. */
+.btn-primary {
+  background-color: color-mix(in oklab, var(--color-primary) 14%, transparent);
+  color: var(--btn-tonal-primary);
+  border-color: color-mix(in oklab, var(--color-primary) 28%, transparent);
+}
+.btn-primary:hover {
+  background-color: color-mix(in oklab, var(--color-primary) 22%, transparent);
+  border-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
+}
+.btn-secondary {
+  background-color: color-mix(in oklab, var(--color-secondary) 14%, transparent);
+  color: var(--btn-tonal-secondary);
+  border-color: color-mix(in oklab, var(--color-secondary) 28%, transparent);
+}
+.btn-secondary:hover {
+  background-color: color-mix(in oklab, var(--color-secondary) 22%, transparent);
+  border-color: color-mix(in oklab, var(--color-secondary) 40%, transparent);
+}
+
+/* ── Campus map (Leaflet) overrides ──────────────────────────────────────
+ * The campus basemap is always light (CartoDB Positron) regardless of theme,
+ * so these are Leaflet-library overrides, not themed component styles. */
+
+/* Clicking an SVG room polygon focuses it; the browser then paints a focus ring
+ * around the element's bounding box — an ugly rectangle far bigger than the
+ * rotated room. Suppress it; selection is already shown by the orange fill. */
+.leaflet-interactive:focus,
+.leaflet-interactive:focus-visible {
+  outline: none;
+}
+
+/* Permanent room-number labels: bare text, no tooltip chrome, like MyMENDELU. */
+.leaflet-tooltip.room-label {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: #1f2937;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.leaflet-tooltip.room-label::before {
+  display: none;
+}
+
+/* Campus building names: bolder than room labels, with a white halo so they
+ * read on top of the blue building tint and the basemap. */
+.leaflet-tooltip.building-label {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.9), 0 0 3px rgba(255, 255, 255, 0.9);
+}
+.leaflet-tooltip.building-label::before {
+  display: none;
 }

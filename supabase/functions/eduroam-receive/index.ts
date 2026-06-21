@@ -1,0 +1,72 @@
+// Direct-install endpoint for the eduroam transfer (UX-first model).
+//
+// The desktop uploads the (password-protected) .mobileconfig to Supabase via
+// put_eduroam_transfer; the QR points straight here. iOS Safari navigates to this
+// URL, gets the profile with Content-Type application/x-apple-aspen-config, and
+// shows the install prompt directly — no intermediate page, no decrypt step.
+//
+// This is NOT zero-knowledge: Supabase briefly serves the assembled profile. It is
+// acceptable because the .p12 inside is password-protected and that extraction
+// password is never uploaded nor embedded — the student types it at install, so an
+// intercepted profile is still an unopenable PKCS#12. The row is one-time (burned on
+// first GET) and short-lived.
+//
+// The `?fmt=` query param selects the served type: ios (default) = Apple config
+// profile (application/x-apple-aspen-config); android = application/eap-config for
+// the geteduroam app. The stored bytes are identical regardless of fmt.
+//
+// @ts-ignore - Deno types are resolved by the edge runtime, not the repo tsconfig
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+
+// @ts-ignore
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+// @ts-ignore
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+function text(body: string, status: number): Response {
+  return new Response(body, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+}
+
+// @ts-ignore - Deno global is provided by the edge runtime
+Deno.serve(async (req: Request) => {
+  const id = new URL(req.url).searchParams.get('id');
+  if (!id) return text('Missing id. Re-scan the QR code in reIS.', 400);
+
+  // take_eduroam_transfer returns the stored profile while the row is unexpired.
+  // (Non-burning: iOS fetches a config-profile URL more than once, so a one-time
+  // burn would 404 the real install request — see the non_burning migration.)
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/take_eduroam_transfer`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+    },
+    body: JSON.stringify({ p_id: id }),
+  });
+  const b64 = r.ok ? await r.json() : null; // base64 profile, or null when missing/expired/used
+  if (!b64) {
+    return text('This eduroam profile link was already used or has expired. Generate a fresh QR code in reIS.', 404);
+  }
+
+  // base64 → raw bytes.
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+  // Format hint from the QR URL selects the MIME/filename the phone receives.
+  // ios (default) = Apple config profile (unchanged); android = geteduroam .eap-config.
+  const fmt = new URL(req.url).searchParams.get('fmt') ?? 'ios';
+  const served =
+    fmt === 'android'
+      ? { contentType: 'application/eap-config', filename: 'eduroam.eap-config' }
+      : { contentType: 'application/x-apple-aspen-config', filename: 'eduroam-reis.mobileconfig' };
+
+  return new Response(bytes, {
+    headers: {
+      'Content-Type': served.contentType,
+      'Content-Disposition': `attachment; filename="${served.filename}"`,
+      'Cache-Control': 'no-store',
+    },
+  });
+});

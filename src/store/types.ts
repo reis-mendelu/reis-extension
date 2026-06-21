@@ -15,6 +15,7 @@ import type { OutletMenu } from '../types/menuTypes';
 import type { PageCategory } from '../data/pages/types';
 import type { SpolekNotification } from '../services/spolky/types';
 import type { SubjectZaznamnik } from '../types/zaznamnik';
+import type { RoomsCollection, MapSelection, PoiProperties, RoomProperties } from '../types/campusMap';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type Theme = "mendelu" | "mendelu-dark";
@@ -171,6 +172,11 @@ export interface StudyJamSuggestion {
     courseCode: string;
     courseName: string;
     role: 'tutor' | 'tutee';
+}
+
+export interface EduroamSlice {
+    isEduroamOpen: boolean;
+    setIsEduroamOpen: (open: boolean) => void;
 }
 
 export interface StudyJamsSlice {
@@ -394,7 +400,28 @@ export interface ViewportSlice {
         'isTouch' | 'isNarrow' | 'isPortrait' | 'keyboardOpen' | 'viewportHeight'>>) => void;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & NotesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & BulletinSlice & ViewportSlice & import('./slices/createSearchSlice').SearchSlice & import('./slices/createPersonProfileSlice').PersonProfileSlice;
+export interface MapSlice {
+  activeBuildingId: number | null;
+  activeFloorId: number | null;
+  mapSelection: MapSelection | null;
+  roomsByBuilding: Record<number, RoomsCollection>;
+  mapLoadingBuilding: number | null;
+  mapSearchQuery: string;
+  mapSearchResults: MapSelection[];
+  mapFocusRequest: number;
+  setMapBuilding: (id: number) => void;
+  exitToCampus: () => void;
+  setMapFloor: (floorId: number) => void;
+  selectMapRoom: (room: RoomProperties) => void;
+  selectMapPoi: (poi: PoiProperties, coord: [number, number]) => void;
+  setMapSearchQuery: (q: string) => void;
+  focusRoomByCode: (code: string) => void;
+  focusPoiById: (id: number) => void;
+  focusLandmarkById: (id: number) => void;
+  loadMapBuilding: (id: number) => Promise<void>;
+}
+
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & NotesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & EduroamSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & BulletinSlice & ViewportSlice & import('./slices/createSearchSlice').SearchSlice & import('./slices/createPersonProfileSlice').PersonProfileSlice & MapSlice;
 
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

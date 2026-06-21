@@ -122,13 +122,15 @@
     "studyPlans": "Study Plans Overview",
     "successRating": "Success Rating",
     "wifi": "Wi-Fi",
+    "eduroam": "Wi-Fi (eduroam)",
     "contactCenter": "Contact Center",
     "slides": "slides",
     "more": "More",
     "addPin": "Add",
     "addPinTitle": "Pin a page",
     "pinNudge": "Pin your most-used IS pages here",
-    "pinLimitReached": "Maximum 6 pages"
+    "pinLimitReached": "Maximum 6 pages",
+    "map": "Map"
   },
   "calendar": {
     "emptyWeek": "Nothing this week, you're free",
@@ -557,6 +559,78 @@
     "openErasmus": "Open Erasmus+",
     "openFeedback": "Send Feedback"
   },
+  "eduroam": {
+    "title": "eduroam Wi-Fi",
+    "subtitle": "Set up eduroam on your device in a few clicks",
+    "heroTitle": "Get on eduroam in a few minutes",
+    "heroSub": "Pick your device — we'll walk you through the setup, step by step.",
+    "s1": "Pick your device",
+    "s2": "Set up eduroam",
+    "doOnce": "Do once",
+    "pwdLabel": "Your certificate password",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "viewImage": "Enlarge screenshot",
+    "closeImage": "Close",
+    "connectStep": "Connect to eduroam Wi-Fi on campus",
+    "restart": "Pick another device",
+    "footer": "Built by students, for students",
+    "footerSub": "reIS · a student initiative at PEF MENDELU",
+    "targetIos": "iPhone / iPad",
+    "targetAndroid": "Android",
+    "targetMac": "Mac",
+    "targetWindows": "Windows",
+    "download": "Download eduroam profile",
+    "createQr": "Create QR code",
+    "preparing": "Preparing profile…",
+    "error": "Couldn't prepare the profile",
+    "regenerate": "Start over",
+    "openSettings": "Open Profiles settings",
+    "privacyNoteLocal": "Everything is generated on your device and your private key stays protected by a password only you enter at install time.",
+    "privacyNoteTransfer": "Everything is generated on your device and your private key is protected by a password only you enter at install time. The transfer link is one-time and expires within a few minutes.",
+    "manual": {
+      "ios": {
+        "hint": "Scan a QR code",
+        "steps": [
+          { "text": "Tap Create QR code", "shot": "The generated QR code in the reIS drawer" },
+          { "text": "Scan it with the Camera and tap the link", "shot": "Camera pointed at the QR + the tap banner" },
+          { "text": "Allow the download, then open Settings → \"Profile Downloaded\"", "shot": "Settings with the \"Profile Downloaded\" row near the top", "warn": "iOS hides the profile in Settings and it's valid for ~8 min — be quick." },
+          { "text": "Tap Install and enter the certificate password", "shot": "Install screen + the password field" }
+        ],
+        "done": { "text": "Set up — you'll connect to eduroam automatically when you're on campus", "shot": "Wi-Fi showing eduroam connected" }
+      },
+      "android": {
+        "hint": "geteduroam app",
+        "doOnce": { "title": "Install the geteduroam app", "cta": "Get it on Google Play" },
+        "steps": [
+          { "text": "Tap Create QR code", "shot": "The generated QR code in the reIS drawer" },
+          { "text": "Scan it, then tap the downloaded file to open it in geteduroam", "shot": "Download → opening the file in geteduroam" },
+          { "text": "Enter the certificate password", "shot": "geteduroam password prompt" }
+        ],
+        "done": { "text": "Set up — you'll connect to eduroam automatically when you're on campus", "shot": "Phone connected to eduroam" }
+      },
+      "mac": {
+        "hint": "Download a profile",
+        "steps": [
+          { "text": "Click Download eduroam profile, then open the downloaded file", "shot": "The download button" },
+          { "text": "Open Profile settings", "shot": "System Settings → Profiles" },
+          { "text": "Double-click \"MENDELU eduroam (reIS)\" → Install", "shot": "The profile install dialog" },
+          { "text": "Enter the certificate password", "shot": "The password field" }
+        ],
+        "done": { "text": "Set up — you'll connect to eduroam automatically when you're on campus", "shot": "Mac connected to eduroam" }
+      },
+      "windows": {
+        "hint": "geteduroam app",
+        "doOnce": { "title": "Install geteduroam for Windows", "cta": "Open geteduroam.app" },
+        "steps": [
+          { "text": "Click Download eduroam profile", "shot": "The download button" },
+          { "text": "Double-click the downloaded file — it opens in geteduroam", "shot": "The file in Downloads opening geteduroam" },
+          { "text": "Enter the certificate password", "shot": "geteduroam password prompt" }
+        ],
+        "done": { "text": "Set up — you'll connect to eduroam automatically when you're on campus", "shot": "PC connected to eduroam" }
+      }
+    }
+  },
   "erasmus": {
     "title": "Erasmus+ Experiences",
     "selectCountry": "Click a country to discover student reviews, costs, and tips.",
@@ -793,5 +867,14 @@
     "locationPlaceholder": "Room or place",
     "addLocation": "Add location",
     "delete": "Delete"
+  },
+  "map": {
+    "title": "Map",
+    "searchPlaceholder": "Search a room or place…",
+    "noFloorPlan": "No floor plan available.",
+    "seats": "Seats",
+    "projector": "Projector",
+    "whiteboard": "Whiteboard",
+    "showOnMap": "Show on map"
   }
 }

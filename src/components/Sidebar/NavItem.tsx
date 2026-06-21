@@ -25,6 +25,7 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
   const [showPinHint, setShowPinHint] = useState(false);
   const pinnedPages = useAppStore(s => s.pinnedPages);
   const unpinPage = useAppStore(s => s.unpinPage);
+  const setIsEduroamOpen = useAppStore(s => s.setIsEduroamOpen);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -135,6 +136,9 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
                       } else if (child.isSubject && child.courseCode) {
                         e.preventDefault();
                         onOpenSubject?.(child.courseCode, child.label, child.subjectId);
+                      } else if (child.id === 'eduroam') {
+                        e.preventDefault();
+                        setIsEduroamOpen(true);
                       } else if (child.isFeature) {
                          e.preventDefault();
                       }

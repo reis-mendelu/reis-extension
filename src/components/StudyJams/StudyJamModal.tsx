@@ -108,7 +108,7 @@ export function StudyJamModal({ isOpen, onClose }: StudyJamModalProps) {
                         <button
                           onClick={handleOptIn}
                           disabled={isSubmitting}
-                          className="btn btn-primary flex-[1.5] text-primary-content font-bold h-12 rounded-xl border-none"
+                          className="btn btn-primary flex-[1.5] font-bold h-12 rounded-xl"
                         >
                           {isSubmitting ? <span className="loading loading-spinner loading-sm"></span> : t('studyJam.optIn')}
                         </button>

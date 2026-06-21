@@ -229,6 +229,15 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
                             <div className="flex items-center gap-1 min-w-0 flex-1">
                                 <MapPin size={12} className="flex-shrink-0" />
                                 <span className="truncate">{room}</span>
+                                <button
+                                    className="btn btn-ghost btn-xs gap-1 flex-shrink-0 px-1"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        useAppStore.getState().focusRoomByCode(room.replace(/\s*\([^)]*\)\s*$/, '').trim());
+                                    }}
+                                >
+                                    {t('map.showOnMap')}
+                                </button>
                             </div>
                         )}
                         <div className="text-content-secondary whitespace-nowrap flex-shrink-0">

@@ -19,7 +19,7 @@ export function DatePickerSelectors({ selectedDate, termsForDate, selectedTermId
                 <div className="flex flex-wrap gap-1.5">
                     {termsForDate.map((t) => (
                         <button key={t.id} onClick={() => onSelectTerm(t.id)} disabled={t.full}
-                                className={`btn btn-xs font-medium h-auto py-1 px-2 min-h-0 ${t.full ? 'bg-base-200 text-base-content/40' : selectedTermId === t.id ? 'btn-primary text-primary-content' : 'btn-ghost bg-base-100 text-base-content border-base-300 hover:bg-base-200'}`}>
+                                className={`btn btn-xs font-medium h-auto py-1 px-2 min-h-0 ${t.full ? 'bg-base-200 text-base-content/40' : selectedTermId === t.id ? 'btn-primary' : 'btn-ghost bg-base-100 text-base-content border-base-300 hover:bg-base-200'}`}>
                             {t.time}{t.capacity && <span className="ml-0.5 opacity-60">({String(t.capacity)})</span>}
                         </button>
                     ))}

@@ -53,6 +53,16 @@ export function useAppLogic() {
     const { isEnabled: outlookSyncEnabled } = useOutlookSync();
     useSpolkySettings();
 
+    // Deep-link bridge: switch to the map view when something requests a room
+    // focus (e.g. "Show on map" buttons). Subscribe imperatively so the view
+    // switch fires in the store callback (outside React's render cycle) and
+    // only on an actual bump of the counter — never on initial mount.
+    useEffect(() => {
+        return useAppStore.subscribe((state, prev) => {
+            if (state.mapFocusRequest !== prev.mapFocusRequest) setCurrentView('map');
+        });
+    }, []);
+
     useEffect(() => {
         outlookSyncService.init();
         syncGradeHistory()

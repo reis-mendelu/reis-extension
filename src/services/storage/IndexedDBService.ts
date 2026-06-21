@@ -97,10 +97,14 @@ interface ReisDB extends DBSchema {
         key: string;
         value: SubjectZaznamnik | null; // Key is courseCode
     };
+    map_rooms: {
+        key: string;        // String(buildingId), e.g. "0" for Q
+        value: import('../../types/campusMap').RoomsCollection;
+    };
 }
 
 const DB_NAME = 'reis_db';
-const DB_VERSION = 20;
+const DB_VERSION = 21;
 
 // True for the "database connection is closing" / InvalidStateError family that
 // a stale handle throws after the underlying connection was closed.
@@ -126,7 +130,7 @@ class IndexedDBServiceImpl {
                         'exams', 'schedule', 'subjects', 'success_rates', 'meta',
                         'grade_history', 'study_plan', 'cvicne_tests', 'odevzdavarny',
                         'erasmus', 'document_notes', 'note_images', 'hidden_items', 'custom_events',
-                        'iskam', 'zaznamnik'
+                        'iskam', 'zaznamnik', 'map_rooms'
                     ];
 
                     requiredStores.forEach(store => {

@@ -19,6 +19,7 @@ export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject, onO
   const [pinnerOpen, setPinnerOpen] = useState(false);
   const pinnedPages = useAppStore(s => s.pinnedPages);
   const unpinPage = useAppStore(s => s.unpinPage);
+  const setIsEduroamOpen = useAppStore(s => s.setIsEduroamOpen);
   const { t } = useTranslation();
 
   if (!item) return null;
@@ -32,6 +33,8 @@ export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject, onO
       onViewChange('subjects');
     } else if (child.isSubject && child.courseCode) {
       onOpenSubject?.(child.courseCode, child.label, child.subjectId);
+    } else if (child.id === 'eduroam') {
+      setIsEduroamOpen(true);
     } else if (child.id === 'profile-action') {
       onOpenProfile?.();
     } else if (child.href) {
