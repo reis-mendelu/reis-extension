@@ -30,11 +30,15 @@ export function MapCanvas() {
     if (!ref.current || mapRef.current) return;
     const map = L.map(ref.current, { zoomControl: true, attributionControl: true, minZoom: 14, maxZoom: 22 })
       .fitBounds(META.campus.bounds as L.LatLngBoundsExpression);
-    // Real street map of Brno underneath the campus overlay. OSM tiles cap at
-    // z19; allow upscaling beyond for indoor floor zoom levels.
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 22, maxNativeZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    // CartoDB Positron: clean grey basemap with no tree dots and minimal
+    // labels. Free, keyless, retina-aware. maxNativeZoom 20 (one better than
+    // OSM's 19) reduces upscaling blur at floor-zoom levels.
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd',
+      maxZoom: 22,
+      maxNativeZoom: 20,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
     }).addTo(map);
     layerRef.current.addTo(map);
     mapRef.current = map;
