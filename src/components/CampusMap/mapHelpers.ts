@@ -1,6 +1,26 @@
+import type { PathOptions } from 'leaflet';
 import type { RoomCategory, RoomIndexEntry, PoiFeature, MapSelection, Landmark } from '../../types/campusMap';
 
 export interface RoomStyle { fill: string; stroke: string; }
+
+// Leaflet polygon styles for the map. Fixed literals (the basemap is always
+// light) kept here with categoryStyle so all map styling lives in one place.
+// SELECTED = MyMENDELU-style solid orange (brand colors are green, so orange
+// stands out). BUILDING/SIBLING = blue "clickable building" tint; siblings are
+// fainter (base-content outlines were invisible in the dark app theme).
+export const SELECTED_STYLE: PathOptions = {
+  color: '#ea580c', weight: 3, fillColor: '#fb923c', fillOpacity: 0.85, bubblingMouseEvents: false,
+};
+export const STRUCTURE_STYLE: PathOptions = {
+  color: '#c2c8d0', weight: 0.8, fillColor: '#e3e6ea', fillOpacity: 0.5,
+  interactive: false, bubblingMouseEvents: false,
+};
+export const BUILDING_STYLE: PathOptions = {
+  color: '#2563eb', weight: 2, fillColor: '#3b82f6', fillOpacity: 0.25, bubblingMouseEvents: false,
+};
+export const SIBLING_STYLE: PathOptions = {
+  color: '#2563eb', weight: 1.5, fillColor: '#3b82f6', fillOpacity: 0.1, bubblingMouseEvents: false,
+};
 
 // The campus basemap is ALWAYS light (CartoDB Positron) regardless of the app's
 // DaisyUI theme, so these are fixed literals tuned to read on a light

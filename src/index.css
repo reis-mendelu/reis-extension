@@ -310,3 +310,21 @@ html, body, #root {
 .leaflet-tooltip.room-label::before {
   display: none;
 }
+
+/* Campus building names: bolder than room labels, with a white halo so they
+ * read on top of the blue building tint and the basemap. */
+.leaflet-tooltip.building-label {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.9), 0 0 3px rgba(255, 255, 255, 0.9);
+}
+.leaflet-tooltip.building-label::before {
+  display: none;
+}

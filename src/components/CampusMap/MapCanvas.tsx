@@ -5,21 +5,12 @@ import { useAppStore } from '../../store/useAppStore';
 import buildingsJson from '../../data/map/buildings.json';
 import poisJson from '../../data/map/pois.json';
 import landmarksJson from '../../data/map/landmarks.json';
-import { ringToLatLng, shortLabel, categoryStyle } from './mapHelpers';
+import {
+  ringToLatLng, shortLabel, categoryStyle,
+  SELECTED_STYLE, STRUCTURE_STYLE, BUILDING_STYLE, SIBLING_STYLE,
+} from './mapHelpers';
 import { setMapInstance } from './mapInstance';
 import type { BuildingsMeta, PoiFeature, RoomFeature, Landmark } from '../../types/campusMap';
-
-// MyMENDELU-style selection: the room's own polygon filled solid orange (the
-// theme's brand colors are green, so orange stands out against teaching-green
-// rooms). bubblingMouseEvents:false keeps a selected-room click from exiting.
-const SELECTED_STYLE: L.PathOptions = {
-  color: '#ea580c', weight: 3, fillColor: '#fb923c', fillOpacity: 0.85, bubblingMouseEvents: false,
-};
-// Walls/cores: faint gray, non-interactive — the building shell, not a room.
-const STRUCTURE_STYLE: L.PathOptions = {
-  color: '#c2c8d0', weight: 0.8, fillColor: '#e3e6ea', fillOpacity: 0.5,
-  interactive: false, bubblingMouseEvents: false,
-};
 
 const META = buildingsJson as BuildingsMeta;
 const POIS = (poisJson as unknown as { features: PoiFeature[] }).features;
@@ -98,10 +89,10 @@ export function MapCanvas() {
 
     if (activeBuildingId === null) {
       for (const b of META.buildings) {
-        L.polygon(ringToLatLng(b.outline.coordinates[0]), {
-          color: themeColor('--color-base-content'), weight: 1.5, fillOpacity: 0,
-          bubblingMouseEvents: false,
-        }).on('click', () => select.setMapBuilding(b.id)).bindTooltip(b.name).addTo(layer);
+        L.polygon(ringToLatLng(b.outline.coordinates[0]), BUILDING_STYLE)
+          .on('click', () => select.setMapBuilding(b.id))
+          .bindTooltip(b.name, { permanent: true, direction: 'center', className: 'building-label' })
+          .addTo(layer);
       }
       for (const f of POIS.filter((p) => DRAWN_POI_TYPES.has(p.properties.type))) {
         const [lon, lat] = f.geometry.coordinates;
@@ -132,10 +123,10 @@ export function MapCanvas() {
     // navigation: click one to refocus. No BuildingBar needed.
     for (const sib of META.buildings) {
       if (sib.id === activeBuildingId) continue;
-      L.polygon(ringToLatLng(sib.outline.coordinates[0]), {
-        color: themeColor('--color-base-content'), weight: 1, opacity: 0.4, fillOpacity: 0,
-        bubblingMouseEvents: false,
-      }).on('click', () => select.setMapBuilding(sib.id)).bindTooltip(sib.name).addTo(layer);
+      L.polygon(ringToLatLng(sib.outline.coordinates[0]), SIBLING_STYLE)
+        .on('click', () => select.setMapBuilding(sib.id))
+        .bindTooltip(sib.name, { permanent: true, direction: 'center', className: 'building-label' })
+        .addTo(layer);
     }
     drawLandmarks(layer, select);
     // Clicking the bare basemap (not an outline/room) returns to overview.
