@@ -41,7 +41,7 @@ Non-goals: indoor floor/room data changes; the search ranking logic; any IS Mend
 | Generic building dots (A/J/R/…), bus stops, gates, gatehouse, ticket machine, parking | Dropped from the map (still searchable) |
 | Basemap | CartoDB Positron `light_all` |
 | Building switching | Click sibling building outlines (floor-view keeps them drawn); **`BuildingBar` removed** |
-| Return to overview | Single ⌂ home button (not a button row) |
+| Return to overview | Click empty basemap (outside any outline) exits to overview |
 | Off-screen landmarks | Clustered edge arrows, click-to-fly; landmarks only |
 | Default camera (§6) | **Locked:** campus-focused at rest, fly-to-place on search/click |
 
@@ -101,9 +101,15 @@ tooltip = name) wired to `setMapBuilding(b.id)`. The active building's rooms ren
 (`bringToFront` already handles the selected room). Clicking sibling M while focused on Q
 refocuses to M — no filter bar needed. Landmark outlines (§5) likewise stay drawn in floor-view.
 
-**Remove `BuildingBar`:** delete `BuildingBar.tsx`, drop it from `CampusMapView.tsx`. Replace
-the home affordance it carried with a **single ⌂ icon button** (top-left, next to `RoomSearch`)
-calling `exitToCampus`. `FloorStack` (the floor selector) is unaffected and stays.
+**Remove `BuildingBar`:** delete `BuildingBar.tsx`, drop it from `CampusMapView.tsx`.
+`FloorStack` (the floor selector) is unaffected and stays.
+
+**Return to overview = click empty basemap.** While `activeBuildingId` is set, register a
+`map.on('click', exitToCampus)` handler; clear it in overview so a stray basemap click there
+does nothing. So clicks land on outlines/rooms (refocus/select), and clicks on the bare map
+exit. To keep an outline click from *also* bubbling to the map and immediately exiting, set
+`bubblingMouseEvents: false` on every interactive polygon (buildings, siblings, rooms,
+landmarks). No on-map button needed.
 
 ### 4. POI markers → cafeterias only (`MapCanvas.tsx`, overview POI loop)
 
@@ -216,8 +222,8 @@ landmarks only — campus buildings are always clustered together and don't need
 
 | File | Change |
 |------|--------|
-| `src/components/CampusMap/MapCanvas.tsx` | Positron tiles; rooms outline-only; building outlines; sibling outlines in floor-view; POI allowlist; landmark outlines; fly-to-coord; expose map instance |
-| `src/components/CampusMap/CampusMapView.tsx` | Drop `BuildingBar`; add ⌂ home button + `EdgeIndicators` |
+| `src/components/CampusMap/MapCanvas.tsx` | Positron tiles; rooms outline-only; building outlines; sibling outlines in floor-view; basemap-click-to-exit (+ `bubblingMouseEvents: false` on polygons); POI allowlist; landmark outlines; fly-to-coord; expose map instance |
+| `src/components/CampusMap/CampusMapView.tsx` | Drop `BuildingBar`; add `EdgeIndicators` |
 | `src/components/CampusMap/BuildingBar.tsx` | **Deleted** |
 | `src/components/CampusMap/EdgeIndicators.tsx` | **New** — clustered off-screen arrows |
 | `src/components/CampusMap/edgeIndicator.ts` | **New** — pure `edgeAnchor` ray-clamp + clustering helpers |
@@ -242,8 +248,9 @@ landmarks only — campus buildings are always clustered together and don't need
   `npm run build` (exit 0) + manual map check: rooms are outlines, only the searched room fills,
   basemap is clean grey Positron with no tree dots, only cafeteria dots remain, dorms/FRRMS/sports
   show as dashed outlines that open a detail panel and are findable in search; in floor-view the
-  sibling buildings stay drawn and clicking one refocuses; the ⌂ button returns to overview; and
-  off-screen landmarks show ~2–3 clustered edge arrows that fly there on click.
+  sibling buildings stay drawn and clicking one refocuses; clicking empty basemap returns to
+  overview (clicking an outline does not); and off-screen landmarks show ~2–3 clustered edge
+  arrows that fly there on click.
 - `npm run typecheck` + `npm run lint` clean.
 
 ## Risks / notes
