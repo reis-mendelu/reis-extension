@@ -25,7 +25,10 @@ function parseStatsTable(table: HTMLTableElement): Record<string, string> {
     for (const row of Array.from(table.querySelectorAll('tr'))) {
         const cells = row.querySelectorAll('td');
         if (cells.length >= 2) {
-            const key = (cells[0].textContent || '').trim();
+            // IS labels use a non-breaking space (\u00A0) after single-letter
+            // prepositions (e.g. "Průměr z odstudovaných"); normalize so the
+            // plain-space lookup keys below match.
+            const key = (cells[0].textContent || '').replace(/\s+/g, ' ').trim();
             const val = (cells[cells.length - 1].textContent || '').trim();
             if (key) map[key] = val;
         }
@@ -44,7 +47,7 @@ function extractSemesterStats(data: Record<string, string>): SemesterStats {
     };
 }
 
-function parseStudyStats(doc: Document): StudyStats | null {
+export function parseStudyStats(doc: Document): StudyStats | null {
     const tables = Array.from(doc.querySelectorAll('table')).filter(t =>
         (t.textContent || '').includes('kreditů za dané studijní období')
         || (t.textContent || '').includes('kreditů za celé studium')

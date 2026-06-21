@@ -124,9 +124,9 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
               const displayGroupName = cleanGroupName(group.name);
 
              return (
-               <div key={gi} className={gi > 0 ? 'mt-2' : ''}>
+               <div key={gi} className={gi > 0 ? 'mt-3' : ''}>
                  {(block.groups.length > 1 || statusText) && (
-                   <div className="px-3 py-1 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                   <div className="px-1 pb-1 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
                      <span className="text-[11px] text-base-content/40 font-medium uppercase tracking-wider truncate max-w-[65%] md:max-w-none" title={group.name}>
                        {displayGroupName}
                      </span>
@@ -144,12 +144,12 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
                    </div>
                  )}
                 {showPickPrompt ? (
-                  <div className="mx-3 my-1 flex items-center gap-2 px-3 py-2 rounded-md border border-dashed border-base-300 text-[11px] text-base-content/50">
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-dashed border-base-300 text-[11px] text-base-content/50">
                     <Layers className="w-3.5 h-3.5 text-primary/60 shrink-0" />
                     <span>{t('subjects.zameraniPickPrompt')}</span>
                   </div>
                 ) : (
-                  <div className="bg-base-200/20 border border-base-300/40 rounded-xl p-2 flex flex-col gap-0.5 shadow-sm">
+                  <div className="bg-base-200/30 border border-base-300/50 rounded-xl shadow-sm p-2 flex flex-col gap-0.5">
                     {visible.map(s => (
                       <SubjectRow
                         key={s.code}

@@ -72,13 +72,11 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
         <h2 className="text-base font-semibold shrink-0 truncate" title={plan?.title}>
           {plan?.title || t('subjects.title')}
         </h2>
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          <a href={registrationsUrl} target="_blank" rel="noopener noreferrer"
-            className="btn btn-primary btn-sm px-3 gap-1.5 shadow-sm">
-            <span className="text-xs font-semibold whitespace-nowrap hidden md:inline">{t('sidebar.registrations')}</span>
-            <ExternalLink size={14} />
-          </a>
-        </div>
+        <a href={registrationsUrl} target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-2 px-3 py-1.5 bg-base-200/30 border border-base-300/50 rounded-xl shadow-sm hover:bg-base-200/50 transition-colors shrink-0">
+          <span className="text-[11px] text-base-content/40 font-medium uppercase tracking-wider">{t('sidebar.registrations')}</span>
+          <ExternalLink size={13} className="text-base-content/40 shrink-0" />
+        </a>
       </div>
 
       <div className={`rounded-lg border px-3.5 py-2 ${cfg.bg} ${cfg.border}`}>

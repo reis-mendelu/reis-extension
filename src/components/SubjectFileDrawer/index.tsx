@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
 import { useFileActions } from '../../hooks/ui/useFileActions';
+import { logError } from '../../utils/reportError';
 import { DrawerHeader } from './DrawerHeader';
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
 import { useSubjectFileDrawerState } from './useSubjectFileDrawerState';
@@ -30,6 +31,8 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     const zaznamnikData = useAppStore(s => lesson?.courseCode ? s.zaznamnik?.[lesson.courseCode] : undefined);
     const isPhone = useAppStore(s => s.isTouch && s.isNarrow);
 
+    const hasFiles = !!state.files?.length;
+
     const phSections = zaznamnikData?.ph.sections;
     const vtTests = zaznamnikData?.vt.tests;
     const maxZaznamnikCols = useMemo(() => {
@@ -49,35 +52,56 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
 
     const flushDocumentNotes = useAppStore(s => s.flushDocumentNotes);
 
-    // Handle drag hint display
+    // Pending drag-hint timers, held in a ref so the drag-start effect below can
+    // cancel them (otherwise a timer queued before the drag could re-show the hint).
+    const dragHintTimers = useRef<{ t1: ReturnType<typeof setTimeout> | null; t2: ReturnType<typeof setTimeout> | null }>({ t1: null, t2: null });
+
+    const clearDragHintTimers = useCallback(() => {
+        if (dragHintTimers.current.t1) clearTimeout(dragHintTimers.current.t1);
+        if (dragHintTimers.current.t2) clearTimeout(dragHintTimers.current.t2);
+        dragHintTimers.current = { t1: null, t2: null };
+    }, []);
+
+    // Handle drag hint display — use boolean dep so array re-references don't reset the timer
     useEffect(() => {
         let isCurrent = true;
-        let t1: ReturnType<typeof setTimeout> | null = null;
-        let t2: ReturnType<typeof setTimeout> | null = null;
 
-        if (isOpen && state.files?.length) {
+        if (isOpen && hasFiles) {
             IndexedDBService.get('meta', 'drag_hint_shown').then(seen => {
                 if (!isCurrent) return;
                 if (!seen) {
-                    IndexedDBService.set('meta', 'drag_hint_shown', true);
-                    t1 = setTimeout(() => { if (isCurrent) setShowDragHint(true); }, 800);
-                    t2 = setTimeout(() => { if (isCurrent) setShowDragHint(false); }, 4800);
+                    IndexedDBService.set('meta', 'drag_hint_shown', true)
+                        .catch(err => logError('SubjectFileDrawer.dragHint.setSeen', err));
+                    dragHintTimers.current.t1 = setTimeout(() => { if (isCurrent) setShowDragHint(true); }, 800);
+                    dragHintTimers.current.t2 = setTimeout(() => { if (isCurrent) setShowDragHint(false); }, 8800);
                 }
-            });
+            }).catch(err => logError('SubjectFileDrawer.dragHint.getSeen', err));
         }
 
         return () => {
             isCurrent = false;
-            if (t1) clearTimeout(t1);
-            if (t2) clearTimeout(t2);
+            clearDragHintTimers();
         };
-    }, [isOpen, state.files]);
+    }, [isOpen, hasFiles, clearDragHintTimers]);
+
+    // Dismiss the drag hint the moment the user starts a drag selection — and
+    // cancel any pending show timer so it can't re-appear once the drag ends.
+    useEffect(() => {
+        if (state.isDragging) {
+            clearDragHintTimers();
+            // Intentional sync with external drag state from useSubjectFileDrawerState.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setShowDragHint(false);
+        }
+    }, [state.isDragging, clearDragHintTimers]);
 
     // Hydrate last visited timestamp and update it
     useEffect(() => {
         const courseCode = lesson?.courseCode;
         if (!isOpen || !courseCode) return;
         let isCurrent = true;
+        // Reset stale timestamp when switching subjects, before the async load below.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLastVisitedAt(undefined);
         const key = `file_last_visit_${courseCode}`;
         IndexedDBService.get('meta', key).then(prev => {
@@ -94,6 +118,8 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     // Consolidated cleanup when drawer closes to prevent state leakage
     useEffect(() => {
         if (!isOpen) {
+            // Reset transient drawer state in response to the isOpen prop closing.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setActivePdfFile(null);
             setActiveNoteFile(null);
             flushDocumentNotes();
@@ -169,7 +195,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
                 <div ref={contentRef} className="min-h-full pb-20 relative">
                     <SubjectFileDrawerContent activeTab={activeTab} lesson={lesson} files={files} isFilesLoading={isFilesLoading}
                         isSyncing={isSyncing} isDragging={isDragging} selectionBoxStyle={selectionBoxStyle}
-                        showDragHint={showDragHint} groupedFiles={groupedFiles} selectedIds={selectedIds}
+                        showDragHint={showDragHint && !isDragging} groupedFiles={groupedFiles} selectedIds={selectedIds}
                         fileRefs={fileRefs} ignoreClickRef={ignoreClickRef} toggleSelect={toggleSelect}
                         openFile={openFile} onViewPdf={handleViewPdf}
                         onDownloadSingle={downloadSingle} resolvedCourseId={resolvedCourseId} syllabusResult={syllabusResult} 

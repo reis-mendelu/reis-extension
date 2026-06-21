@@ -15,7 +15,7 @@ import { sendTelemetry } from '../services/errorReporter/telemetry';
 import { logError } from '../utils/reportError';
 
 import { isDualLanguageStudyPlan } from '../types/studyPlan';
-import type { DualLanguageStudyPlan } from '../types/studyPlan';
+import type { DualLanguageStudyPlan, StudyStats } from '../types/studyPlan';
 import type { BlockLesson } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
 import type { SubjectsData, ParsedFile, SyllabusRequirements, SubjectAttendance } from '../types/documents';
@@ -135,7 +135,10 @@ export function useAppLogic() {
 
 
                 if (r.studyPlan && isDualLanguageStudyPlan(r.studyPlan)) await IndexedDBService.set('study_plan', 'current', r.studyPlan);
-                if (r.studyStats) await IndexedDBService.set('meta', 'study_stats', r.studyStats);
+                if (r.studyStats) {
+                    useAppStore.getState().setStudyStats(r.studyStats as StudyStats);
+                    await IndexedDBService.set('meta', 'study_stats', r.studyStats);
+                }
                 if (r.cvicneTests?.length) {
                     const userParams = await IndexedDBService.get('meta', 'reis_user_params');
                     if (userParams?.studium) {
