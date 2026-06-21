@@ -4,11 +4,13 @@ import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
 import buildingsJson from '../../data/map/buildings.json';
 import poisJson from '../../data/map/pois.json';
+import landmarksJson from '../../data/map/landmarks.json';
 import { ringToLatLng, shortLabel } from './mapHelpers';
-import type { BuildingsMeta, PoiFeature, RoomFeature } from '../../types/campusMap';
+import type { BuildingsMeta, PoiFeature, RoomFeature, Landmark } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
 const POIS = (poisJson as unknown as { features: PoiFeature[] }).features;
+const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
 // Only cafeterias are drawn as dots. Everything else (bus stops, gates,
 // gatehouse, ticket machine, parking, generic letter buildings) stays in
 // pois.json for search but is removed from the map to cut clutter.
@@ -17,6 +19,25 @@ const DRAWN_POI_TYPES = new Set(['cafeteria']);
 function themeColor(varName: string): string {
   const v = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
   return v || '#cccccc';
+}
+
+// Landmarks (dorms / FRRMS / sports centre) draw as dashed secondary outlines
+// in both overview and floor-view. They are not drillable — a click opens the
+// shared POI detail panel (landmark metadata is poi-shaped).
+function drawLandmarks(layer: L.LayerGroup, select: ReturnType<typeof useAppStore.getState>) {
+  for (const l of LANDMARKS) {
+    const poly = L.polygon(ringToLatLng(l.outline.coordinates[0]), {
+      color: themeColor('--color-secondary'), weight: 1.5, dashArray: '4', fillOpacity: 0,
+      bubblingMouseEvents: false,
+    });
+    poly.on('click', () => {
+      const c = poly.getBounds().getCenter();
+      select.selectMapPoi(
+        { id: l.id, name: l.name, type: l.type, url: l.url, phone: l.phone, email: l.email },
+        [c.lng, c.lat],
+      );
+    }).bindTooltip(l.name).addTo(layer);
+  }
 }
 
 export function MapCanvas() {
@@ -71,7 +92,15 @@ export function MapCanvas() {
           .on('click', () => select.selectMapPoi(f.properties, f.geometry.coordinates))
           .bindTooltip(f.properties.name).addTo(layer);
       }
-      map.flyToBounds(META.campus.bounds as L.LatLngBoundsExpression, { maxZoom: 18, padding: [40, 40] });
+      drawLandmarks(layer, select);
+      // §6: rest at campus bounds, but fly to a chosen place's coord on
+      // search/click (a poi/landmark selection) instead of refitting campus.
+      if (select.mapSelection?.kind === 'poi') {
+        const [lon, lat] = select.mapSelection.coord;
+        map.flyTo([lat, lon], 18);
+      } else {
+        map.flyToBounds(META.campus.bounds as L.LatLngBoundsExpression, { maxZoom: 18, padding: [40, 40] });
+      }
       return;
     }
 
@@ -90,6 +119,7 @@ export function MapCanvas() {
         bubblingMouseEvents: false,
       }).on('click', () => select.setMapBuilding(sib.id)).bindTooltip(sib.name).addTo(layer);
     }
+    drawLandmarks(layer, select);
     // Clicking the bare basemap (not an outline/room) returns to overview.
     const onMapClick = () => select.exitToCampus();
     map.on('click', onMapClick);
