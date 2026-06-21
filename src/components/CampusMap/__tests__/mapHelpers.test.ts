@@ -52,6 +52,21 @@ describe('searchPlaces', () => {
     // The exact "Q01" must be the first result the student sees.
     expect(r[0]).toMatchObject({ kind: 'roomRef', entry: { name: 'Q01' } });
   });
+  it('ranks bare Q## lecture halls above dotted Q##.NN rooms', () => {
+    // "Q##" (no dot) are student lecture halls; "Q##.NN" are individual offices.
+    const mixed: RoomIndexEntry[] = [
+      { code: 'BA39P0109', name: 'Q01.09', buildingId: 0, floorId: 5, floorLevel: 0, placeId: 20 },
+      { code: 'BA39N0006', name: 'Q06', buildingId: 0, floorId: 9, floorLevel: 0, placeId: 21 },
+      { code: 'BA39P0143', name: 'Q01.43', buildingId: 0, floorId: 5, floorLevel: 0, placeId: 22 },
+      { code: 'BA39N0001', name: 'Q01', buildingId: 0, floorId: 9, floorLevel: 0, placeId: 23 },
+    ];
+    const names = searchPlaces('Q0', mixed, pois)
+      .filter((m): m is Extract<typeof m, { kind: 'roomRef' }> => m.kind === 'roomRef')
+      .map((m) => m.entry.name);
+    // Both bare halls come before either dotted room.
+    expect(names.indexOf('Q01')).toBeLessThan(names.indexOf('Q01.09'));
+    expect(names.indexOf('Q06')).toBeLessThan(names.indexOf('Q01.43'));
+  });
   it('matches a POI name', () => {
     const r = searchPlaces('frrm', index, pois);
     expect(r.some((m) => m.kind === 'poi' && m.poi.name === 'FRRMS')).toBe(true);

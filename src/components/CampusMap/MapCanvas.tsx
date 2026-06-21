@@ -67,23 +67,36 @@ export function MapCanvas() {
 
     const fc = roomsByBuilding[activeBuildingId];
     const b = META.buildings.find((x) => x.id === activeBuildingId);
-    if (b) map.flyToBounds(b.bounds as L.LatLngBoundsExpression, { maxZoom: 21, padding: [50, 50] });
-    if (!fc) return; // geometry still loading
+    if (!fc) { // geometry still loading — show the building while we wait
+      if (b) map.flyToBounds(b.bounds as L.LatLngBoundsExpression, { maxZoom: 21, padding: [50, 50] });
+      return;
+    }
+    // The selected room (from search/deep-link or a canvas click) gets a bold
+    // highlight and the camera flies straight to it — that's the "focus".
+    const sel = select.mapSelection;
+    const selectedId = sel?.kind === 'roomRef' ? sel.entry.placeId
+      : sel?.kind === 'room' ? sel.room.id : null;
     const feats = fc.features.filter((f) => f.properties.floorId === activeFloorId)
       .sort((a) => (a.properties.category === 'structure' ? -1 : 1));
+    let targetBounds: L.LatLngBounds | null = null;
     for (const f of feats as RoomFeature[]) {
       const p = f.properties, struct = p.category === 'structure';
+      const isSel = p.id === selectedId;
       const poly = L.polygon(ringToLatLng(f.geometry.coordinates[0]), {
-        color: themeColor('--color-base-content'), weight: struct ? 0.6 : 1,
-        fillColor: themeColor(categoryColorVar(p.category)),
-        fillOpacity: struct ? 0.35 : 0.8, interactive: !struct,
+        color: isSel ? themeColor('--color-primary') : themeColor('--color-base-content'),
+        weight: isSel ? 3 : struct ? 0.6 : 1,
+        fillColor: isSel ? themeColor('--color-primary') : themeColor(categoryColorVar(p.category)),
+        fillOpacity: isSel ? 0.6 : struct ? 0.35 : 0.8, interactive: !struct,
       });
       if (!struct) {
         poly.on('click', () => select.selectMapRoom(p));
         if (p.name) poly.bindTooltip(shortLabel(p.name), { permanent: false, direction: 'center' });
       }
       poly.addTo(layer);
+      if (isSel) { poly.bringToFront(); targetBounds = poly.getBounds(); }
     }
+    if (targetBounds) map.flyToBounds(targetBounds, { maxZoom: 21, padding: [120, 120] });
+    else if (b) map.flyToBounds(b.bounds as L.LatLngBoundsExpression, { maxZoom: 21, padding: [50, 50] });
   }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq]);
 
   return <div ref={ref} className="absolute inset-0" />;

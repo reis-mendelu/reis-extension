@@ -25,14 +25,24 @@ export function ringToLatLng(ring: number[][]): [number, number][] {
   return ring.map((c) => [c[1], c[0]] as [number, number]);
 }
 
+// Bare letter+number room names (e.g. "Q01", "Q6", "A12") are the shared
+// lecture halls / student rooms; dotted names ("Q01.43") are individual
+// offices. Students search for the former, so they rank higher.
+const BARE_HALL = /^[a-z]\d{1,3}$/;
+
 // Rank a candidate against the query so the student sees the most relevant hit
-// first: an exact match (typing "Q01" → the room *named* Q01, not its Q01.NN
-// children), then prefix matches, then loose substring matches.
-function matchRank(q: string, ...fields: string[]): number {
-  const f = fields.map((s) => s.toLowerCase());
-  if (f.some((s) => s === q)) return 0;
-  if (f.some((s) => s.startsWith(q))) return 1;
-  return 2;
+// first: exact match (typing "Q01" → the room *named* Q01) → bare lecture hall
+// prefix → other prefix → bare hall substring → loose substring.
+function matchRank(q: string, name: string, code: string): number {
+  const n = name.toLowerCase(), c = code.toLowerCase();
+  const exact = n === q || c === q;
+  const prefix = n.startsWith(q) || c.startsWith(q);
+  const hall = BARE_HALL.test(n);
+  if (exact) return 0;
+  if (prefix && hall) return 1;
+  if (prefix) return 2;
+  if (hall) return 3;
+  return 4;
 }
 
 export function searchPlaces(
@@ -45,7 +55,7 @@ export function searchPlaces(
     .map((entry) => ({ sel: { kind: 'roomRef', entry } as MapSelection, rank: matchRank(q, entry.name, entry.code) }));
   const places = pois
     .filter((f) => f.properties.name.toLowerCase().includes(q))
-    .map((f) => ({ sel: { kind: 'poi', poi: f.properties, coord: f.geometry.coordinates } as MapSelection, rank: matchRank(q, f.properties.name) }));
+    .map((f) => ({ sel: { kind: 'poi', poi: f.properties, coord: f.geometry.coordinates } as MapSelection, rank: matchRank(q, f.properties.name, '') }));
   // Array.prototype.sort is stable, so equal-rank items keep their source order.
   return [...rooms, ...places].sort((a, b) => a.rank - b.rank).map((x) => x.sel).slice(0, limit);
 }
