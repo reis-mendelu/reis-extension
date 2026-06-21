@@ -28,8 +28,14 @@ export function MapCanvas() {
   // init once
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
-    const map = L.map(ref.current, { zoomControl: true, attributionControl: false, minZoom: 14, maxZoom: 22 })
+    const map = L.map(ref.current, { zoomControl: true, attributionControl: true, minZoom: 14, maxZoom: 22 })
       .fitBounds(META.campus.bounds as L.LatLngBoundsExpression);
+    // Real street map of Brno underneath the campus overlay. OSM tiles cap at
+    // z19; allow upscaling beyond for indoor floor zoom levels.
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 22, maxNativeZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
     layerRef.current.addTo(map);
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };

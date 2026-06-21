@@ -21,7 +21,7 @@ export function DetailPanel() {
   }
 
   const r = sel.kind === 'room' ? sel.room : null;
-  const name = r ? (r.passportNumber ?? r.name) : sel.kind === 'roomRef' ? sel.entry.code : '';
+  const name = r ? r.name : sel.kind === 'roomRef' ? sel.entry.name : '';
   return (
     <div className="p-4 bg-base-100 border border-base-300 rounded-lg space-y-1">
       <h3 className="font-bold text-base-content">{name}</h3>

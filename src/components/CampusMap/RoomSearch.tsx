@@ -16,7 +16,7 @@ export function RoomSearch() {
       {results.length > 0 && (
         <ul className="absolute z-[1000] mt-1 w-full bg-base-100 border border-base-300 rounded-lg shadow-md max-h-64 overflow-auto">
           {results.map((m, i) => {
-            const label = m.kind === 'poi' ? m.poi.name : m.kind === 'roomRef' ? m.entry.code : '';
+            const label = m.kind === 'poi' ? m.poi.name : m.kind === 'roomRef' ? m.entry.name : '';
             return (
               <li key={i}>
                 <button className="w-full text-left px-3 py-1.5 hover:bg-base-200 text-sm"
