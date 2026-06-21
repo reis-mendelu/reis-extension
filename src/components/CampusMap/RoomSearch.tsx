@@ -8,6 +8,7 @@ export function RoomSearch() {
   const setQuery = useAppStore((s) => s.setMapSearchQuery);
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
   const focusPoiById = useAppStore((s) => s.focusPoiById);
+  const focusLandmarkById = useAppStore((s) => s.focusLandmarkById);
 
   return (
     <div className="relative w-64">
@@ -16,12 +17,13 @@ export function RoomSearch() {
       {results.length > 0 && (
         <ul className="absolute z-[1000] mt-1 w-full bg-base-100 border border-base-300 rounded-lg shadow-md max-h-64 overflow-auto">
           {results.map((m, i) => {
-            const label = m.kind === 'poi' ? m.poi.name : m.kind === 'roomRef' ? m.entry.name : '';
+            const label = m.kind === 'poi' ? m.poi.name : m.kind === 'roomRef' ? m.entry.name : m.kind === 'landmark' ? m.landmark.name : '';
             return (
               <li key={i}>
                 <button className="w-full text-left px-3 py-1.5 hover:bg-base-200 text-sm"
                   onClick={() => { if (m.kind === 'poi') focusPoiById(m.poi.id);
-                    else if (m.kind === 'roomRef') focusRoomByCode(m.entry.code); setQuery(''); }}>
+                    else if (m.kind === 'roomRef') focusRoomByCode(m.entry.code);
+                    else if (m.kind === 'landmark') focusLandmarkById(m.landmark.id); setQuery(''); }}>
                   {label}
                 </button>
               </li>

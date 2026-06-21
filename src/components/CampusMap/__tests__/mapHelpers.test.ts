@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { shortLabel, lonLatToLatLng, ringToLatLng, searchPlaces } from '../mapHelpers';
-import type { RoomIndexEntry, PoiFeature } from '../../../types/campusMap';
+import { shortLabel, lonLatToLatLng, ringToLatLng, searchPlaces, polygonCentroid } from '../mapHelpers';
+import type { RoomIndexEntry, PoiFeature, Landmark } from '../../../types/campusMap';
 
 describe('shortLabel', () => {
   it('strips building prefix from passport codes', () => {
@@ -29,9 +29,13 @@ describe('searchPlaces', () => {
   ];
   const pois = [{ type: 'Feature', geometry: { type: 'Point', coordinates: [16.6, 49.2] },
     properties: { id: 9, name: 'FRRMS', type: 'building', url: null, phone: null, email: null } }] as PoiFeature[];
+  const landmarks = [
+    { id: 1588, name: 'Tauferovy koleje', type: 'dormitory', url: null, phone: null, email: null,
+      outline: { type: 'Polygon', coordinates: [[[16.588, 49.214], [16.589, 49.214], [16.589, 49.215], [16.588, 49.214]]] } },
+  ] as Landmark[];
 
   it('matches a room code case-insensitively', () => {
-    const r = searchPlaces('q01', index, pois);
+    const r = searchPlaces('q01', index, pois, landmarks);
     expect(r[0]).toMatchObject({ kind: 'roomRef', entry: { code: 'Q01' } });
   });
   it('ranks an exact name match above substring children, regardless of index order', () => {
@@ -41,7 +45,7 @@ describe('searchPlaces', () => {
       { code: 'BA39P1014', name: 'Q01.14', buildingId: 0, floorId: 5, floorLevel: 0, placeId: 11 },
       { code: 'BA39N1009', name: 'Q01', buildingId: 0, floorId: 9, floorLevel: 0, placeId: 1 },
     ];
-    const r = searchPlaces('Q01', withChildren, pois);
+    const r = searchPlaces('Q01', withChildren, pois, landmarks);
     // The exact "Q01" must be the first result the student sees.
     expect(r[0]).toMatchObject({ kind: 'roomRef', entry: { name: 'Q01' } });
   });
@@ -53,7 +57,7 @@ describe('searchPlaces', () => {
       { code: 'BA39P0143', name: 'Q01.43', buildingId: 0, floorId: 5, floorLevel: 0, placeId: 22 },
       { code: 'BA39N0001', name: 'Q01', buildingId: 0, floorId: 9, floorLevel: 0, placeId: 23 },
     ];
-    const names = searchPlaces('Q0', mixed, pois)
+    const names = searchPlaces('Q0', mixed, pois, landmarks)
       .filter((m): m is Extract<typeof m, { kind: 'roomRef' }> => m.kind === 'roomRef')
       .map((m) => m.entry.name);
     // Both bare halls come before either dotted room.
@@ -61,10 +65,20 @@ describe('searchPlaces', () => {
     expect(names.indexOf('Q06')).toBeLessThan(names.indexOf('Q01.43'));
   });
   it('matches a POI name', () => {
-    const r = searchPlaces('frrm', index, pois);
+    const r = searchPlaces('frrm', index, pois, landmarks);
     expect(r.some((m) => m.kind === 'poi' && m.poi.name === 'FRRMS')).toBe(true);
   });
   it('returns [] for empty query', () => {
-    expect(searchPlaces('  ', index, pois)).toEqual([]);
+    expect(searchPlaces('  ', index, pois, landmarks)).toEqual([]);
+  });
+  it('finds a landmark by name', () => {
+    const r = searchPlaces('tauferovy', index, pois, landmarks);
+    expect(r.some((m) => m.kind === 'landmark' && m.landmark.name === 'Tauferovy koleje')).toBe(true);
+  });
+});
+
+describe('polygonCentroid', () => {
+  it('averages the ring vertices to a [lon, lat] point', () => {
+    expect(polygonCentroid([[0, 0], [2, 0], [2, 2], [0, 2]])).toEqual([1, 1]);
   });
 });

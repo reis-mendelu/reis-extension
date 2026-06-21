@@ -416,6 +416,7 @@ export interface MapSlice {
   setMapSearchQuery: (q: string) => void;
   focusRoomByCode: (code: string) => void;
   focusPoiById: (id: number) => void;
+  focusLandmarkById: (id: number) => void;
   loadMapBuilding: (id: number) => Promise<void>;
 }
 

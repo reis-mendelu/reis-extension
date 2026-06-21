@@ -1,4 +1,4 @@
-import type { RoomIndexEntry, PoiFeature, MapSelection } from '../../types/campusMap';
+import type { RoomIndexEntry, PoiFeature, MapSelection, Landmark } from '../../types/campusMap';
 
 export function shortLabel(name: string): string {
   return name.match(/[NPS]\d+$/)?.[0] ?? name;
@@ -10,6 +10,14 @@ export function lonLatToLatLng(c: [number, number]): [number, number] {
 
 export function ringToLatLng(ring: number[][]): [number, number][] {
   return ring.map((c) => [c[1], c[0]] as [number, number]);
+}
+
+// Average of a ring's vertices, returned as [lon, lat] (data convention).
+// Good enough for fly-to / cluster anchoring; not a true area centroid.
+export function polygonCentroid(ring: number[][]): [number, number] {
+  let lon = 0, lat = 0;
+  for (const [x, y] of ring) { lon += x; lat += y; }
+  return [lon / ring.length, lat / ring.length];
 }
 
 // Bare letter+number room names (e.g. "Q01", "Q6", "A12") are the shared
@@ -33,7 +41,7 @@ function matchRank(q: string, name: string, code: string): number {
 }
 
 export function searchPlaces(
-  query: string, index: RoomIndexEntry[], pois: PoiFeature[], limit = 12,
+  query: string, index: RoomIndexEntry[], pois: PoiFeature[], landmarks: Landmark[], limit = 12,
 ): MapSelection[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
@@ -43,6 +51,9 @@ export function searchPlaces(
   const places = pois
     .filter((f) => f.properties.name.toLowerCase().includes(q))
     .map((f) => ({ sel: { kind: 'poi', poi: f.properties, coord: f.geometry.coordinates } as MapSelection, rank: matchRank(q, f.properties.name, '') }));
+  const lands = landmarks
+    .filter((l) => l.name.toLowerCase().includes(q))
+    .map((l) => ({ sel: { kind: 'landmark', landmark: l } as MapSelection, rank: matchRank(q, l.name, '') }));
   // Array.prototype.sort is stable, so equal-rank items keep their source order.
-  return [...rooms, ...places].sort((a, b) => a.rank - b.rank).map((x) => x.sel).slice(0, limit);
+  return [...rooms, ...places, ...lands].sort((a, b) => a.rank - b.rank).map((x) => x.sel).slice(0, limit);
 }
