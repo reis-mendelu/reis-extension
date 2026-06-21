@@ -24,6 +24,10 @@ Two pieces of visual noise on the campus map (`src/components/CampusMap/`):
 - Replace the OSM raster basemap with **CartoDB Positron** (kills tree dots + most labels).
 - Keep **dorms, FRRMS, and the sports centre reachable** — and as building **outlines**, not dots.
   These have no polygon geometry today, so we **source footprints from OpenStreetMap**.
+- **Remove the `BuildingBar` filter row.** In floor-view, keep every other campus building drawn
+  as a faint outline; clicking one refocuses to it. Outlines become the navigation.
+- **Off-screen edge indicators:** when a landmark is outside the viewport, show a clustered
+  arrow at the screen edge pointing toward it; clicking it flies there.
 
 Non-goals: indoor floor/room data changes; the search ranking logic; any IS Mendelu scraping.
 
@@ -36,6 +40,10 @@ Non-goals: indoor floor/room data changes; the search ranking logic; any IS Mend
 | Dorms / FRRMS / sports centre | Outline landmarks sourced from OSM, clickable, searchable |
 | Generic building dots (A/J/R/…), bus stops, gates, gatehouse, ticket machine, parking | Dropped from the map (still searchable) |
 | Basemap | CartoDB Positron `light_all` |
+| Building switching | Click sibling building outlines (floor-view keeps them drawn); **`BuildingBar` removed** |
+| Return to overview | Single ⌂ home button (not a button row) |
+| Off-screen landmarks | Clustered edge arrows, click-to-fly; landmarks only |
+| Default camera (§6) | **Locked:** campus-focused at rest, fly-to-place on search/click |
 
 ---
 
@@ -76,13 +84,26 @@ become unused. Delete both, drop the import in `MapCanvas.tsx`, and remove the
 `categoryColorVar` test block in `mapHelpers.test.ts`. (`RoomCategory` type stays — still
 used elsewhere.)
 
-### 3. Campus building overview → outline (`MapCanvas.tsx`, overview loop)
+### 3. Campus building outlines + persistent navigation (`MapCanvas.tsx`)
 
 The 7 drillable campus buildings (A,B,C,E,M,Q,X from `buildings.json`) currently draw with
-`fillColor: --color-primary, fillOpacity: 0.18`. Change to a clean stroke:
+`fillColor: --color-primary, fillOpacity: 0.18` **only on the overview**; floor-view wipes them.
+Two changes:
 
+**Overview style → clean stroke:**
 - `color: --color-base-content`, `weight: 1.5`, `fillOpacity: 0` (still clickable → `setMapBuilding`).
 - Tooltip unchanged.
+
+**Floor-view keeps siblings drawn (the navigation):** when `activeBuildingId` is set, before
+drawing the active building's rooms, also draw **every other campus building** as a faint
+outline (`color: --color-base-content`, `weight: 1`, `opacity: 0.4`, `fillOpacity: 0`,
+tooltip = name) wired to `setMapBuilding(b.id)`. The active building's rooms render on top
+(`bringToFront` already handles the selected room). Clicking sibling M while focused on Q
+refocuses to M — no filter bar needed. Landmark outlines (§5) likewise stay drawn in floor-view.
+
+**Remove `BuildingBar`:** delete `BuildingBar.tsx`, drop it from `CampusMapView.tsx`. Replace
+the home affordance it carried with a **single ⌂ icon button** (top-left, next to `RoomSearch`)
+calling `exitToCampus`. `FloorStack` (the floor selector) is unaffected and stays.
 
 ### 4. POI markers → cafeterias only (`MapCanvas.tsx`, overview POI loop)
 
@@ -153,23 +174,41 @@ visually distinct from drillable buildings — dashed secondary:
 `focusPoiById` / a sibling `focusLandmarkById` resolves landmark ids too. Selecting a place
 should **fly the camera to its coordinate** — see §6.
 
-### 6. Overview camera (open decision → recommendation)
+### 6. Overview camera (locked)
 
 The landmarks span ~1.8 km (Tauferovy + sports centre are far west on Jana Babáka; the JAK
-dorms far east). **Fitting all 8 in the default overview would shrink the campus to a speck**
-— defeating a campus map.
+dorms far east). Fitting all 8 in the default overview would shrink the campus to a speck.
 
-**Recommendation:** keep the default overview **focused on the campus** (current
-`campus.bounds`), render all landmark outlines (visible once the user pans/zooms out), and
-make **search/click fly the camera to the chosen place's coordinate**. This delivers
-"reachable" + "outlines" without sacrificing campus focus. Concretely, the overview draw
-effect, when a poi/landmark selection has a `coord`, flies to that coord (e.g.
-`map.flyTo([lat, lon], 18)`) instead of always refitting `campus.bounds`.
+**Locked decision:** default overview stays **focused on the campus** (`campus.bounds`); all
+landmark outlines render (visible when panned to) and **search/click flies the camera to the
+chosen place's coord** (`map.flyTo([lat, lon], 18)` instead of always refitting
+`campus.bounds`). The off-screen edge indicators (§7) are what signal the far landmarks exist
+without zooming out. This supersedes the "overview zooms out to fit them" brainstorm framing.
 
-> This refines the "overview zooms out to fit them" framing from the brainstorm — the
-> zoom-to-place happens on demand (search/click) rather than permanently. **Please confirm at
-> review.** If you truly want all 8 in view at rest, the alternative is to fit the union of
-> campus + landmark bounds at init (campus becomes small).
+### 7. Off-screen edge indicators (`EdgeIndicators.tsx`, new)
+
+When a landmark sits outside the current viewport, show an arrow pinned to the screen edge,
+pointing toward it; clicking flies there. Prevents re-cluttering by **clustering**.
+
+**Component:** a new `EdgeIndicators` overlay rendered inside `CampusMapView` above the map
+(absolute, `pointer-events` only on the arrows). It takes the Leaflet map instance (exposed
+from `MapCanvas` via a ref/store) and the landmark list. On `move`/`zoom`/`moveend` it
+recomputes which clusters are off-screen and where their arrows sit.
+
+**Clustering:** group landmarks within ~150 m of each other into one indicator (collapses the
+4 Koleje JAK blocks → one "Koleje JAK" arrow; Tauferovy + sports centre → one arrow). Cluster
+position = centroid of members. Result: ~2–3 arrows max. The arrow label is the shared
+prefix or a member count (e.g. "Koleje JAK").
+
+**Geometry (pure, unit-tested helper `edgeIndicator.ts`):**
+`edgeAnchor(center, target, rect, pad)` → given the viewport center, the target's screen
+point (from `map.latLngToContainerPoint`), and the container rect, return the clamped edge
+position + rotation angle, or `null` if the target is on-screen. Standard ray–rectangle
+intersection; isolated so the fiddly math is testable without a DOM.
+
+**Render:** a small DaisyUI-styled chip/arrow (`btn btn-xs btn-circle` + a rotated `▲`/SVG)
+at the computed edge point. Click → `focusLandmarkById` (flies the camera). Arrows for
+landmarks only — campus buildings are always clustered together and don't need them.
 
 ---
 
@@ -177,24 +216,34 @@ effect, when a poi/landmark selection has a `coord`, flies to that coord (e.g.
 
 | File | Change |
 |------|--------|
-| `src/components/CampusMap/MapCanvas.tsx` | Positron tiles; rooms outline-only; building outlines; POI allowlist; landmark outlines; fly-to-coord |
+| `src/components/CampusMap/MapCanvas.tsx` | Positron tiles; rooms outline-only; building outlines; sibling outlines in floor-view; POI allowlist; landmark outlines; fly-to-coord; expose map instance |
+| `src/components/CampusMap/CampusMapView.tsx` | Drop `BuildingBar`; add ⌂ home button + `EdgeIndicators` |
+| `src/components/CampusMap/BuildingBar.tsx` | **Deleted** |
+| `src/components/CampusMap/EdgeIndicators.tsx` | **New** — clustered off-screen arrows |
+| `src/components/CampusMap/edgeIndicator.ts` | **New** — pure `edgeAnchor` ray-clamp + clustering helpers |
 | `src/components/CampusMap/mapHelpers.ts` | Remove `categoryColorVar`/`COLOR_VARS`; add landmarks to `searchPlaces` |
-| `src/store/slices/createMapSlice.ts` | Load `landmarks.json`; landmark search + focus |
+| `src/store/slices/createMapSlice.ts` | Load `landmarks.json`; landmark search + `focusLandmarkById` |
 | `src/types/campusMap.ts` | Add `Landmark` type |
 | `src/data/map/landmarks.json` | **New** — 8 footprint outlines + metadata |
 | `src/data/map/pois.json` | Remove the 8 landmark entries (moved to landmarks.json) |
 | `scripts/fetch-landmarks.mjs` | **New** — one-off Overpass fetch (dev-only) |
 | `src/components/CampusMap/__tests__/mapHelpers.test.ts` | Drop `categoryColorVar` test; add landmark search coverage |
+| `src/components/CampusMap/__tests__/edgeIndicator.test.ts` | **New** — `edgeAnchor` + clustering unit tests |
 
 ## Testing
 
 - **Unit (`mapHelpers.test.ts`):** keep `searchPlaces`/`matchRank`/`shortLabel`/`ringToLatLng`
   coverage; add a case proving a landmark (e.g. "tauferovy") is found and ranked. Remove the
   `categoryColorVar` block.
-- **Render:** `MapCanvas` is Leaflet/DOM-heavy and not unit-tested. Verify via `npm run build`
-  (exit 0) + manual map check: rooms are outlines, only the searched room fills, basemap is
-  the clean grey Positron with no tree dots, only cafeteria dots remain, and dorms/FRRMS/sports
-  show as dashed outlines that open a detail panel and are findable in search.
+- **Unit (`edgeIndicator.test.ts`):** `edgeAnchor` returns `null` for on-screen targets and a
+  clamped edge point + plausible angle for off-screen targets in each direction (N/E/S/W +
+  corners); clustering collapses the 4 JAK blocks into one indicator.
+- **Render:** `MapCanvas`/`EdgeIndicators` are Leaflet/DOM-heavy and not unit-tested. Verify via
+  `npm run build` (exit 0) + manual map check: rooms are outlines, only the searched room fills,
+  basemap is clean grey Positron with no tree dots, only cafeteria dots remain, dorms/FRRMS/sports
+  show as dashed outlines that open a detail panel and are findable in search; in floor-view the
+  sibling buildings stay drawn and clicking one refocuses; the ⌂ button returns to overview; and
+  off-screen landmarks show ~2–3 clustered edge arrows that fly there on click.
 - `npm run typecheck` + `npm run lint` clean.
 
 ## Risks / notes
@@ -205,3 +254,9 @@ effect, when a poi/landmark selection has a `coord`, flies to that coord (e.g.
   multi-building way. The script must log misses so they can be hand-checked rather than
   silently shipping a wrong polygon. Mirrors the "parser needs real evidence" project rule.
 - **`maxNativeZoom` change (19→20):** verify floor zoom still looks acceptable.
+- **Map-instance exposure:** `EdgeIndicators` needs the live Leaflet map. Expose it via a
+  small store field or a ref shared from `MapCanvas` — avoid prop-drilling and don't trigger
+  React re-renders on every map `move` (the overlay updates imperatively, like the existing
+  deep-link bridge in commit `6525c4b`).
+- **Edge-arrow jank:** recompute on `moveend` (not every `move` frame) if pan feels heavy;
+  the pure `edgeAnchor` keeps the hot path cheap.
