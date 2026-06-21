@@ -23,6 +23,7 @@ export function MapCanvas() {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup>(L.layerGroup());
+  const exitHandlerRef = useRef<((e: L.LeafletMouseEvent) => void) | null>(null);
 
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const activeFloorId = useAppStore((s) => s.activeFloorId);
@@ -54,12 +55,13 @@ export function MapCanvas() {
     const map = mapRef.current; if (!map) return;
     const layer = layerRef.current; layer.clearLayers();
     const select = useAppStore.getState();
+    if (exitHandlerRef.current) { map.off('click', exitHandlerRef.current); exitHandlerRef.current = null; }
 
     if (activeBuildingId === null) {
       for (const b of META.buildings) {
         L.polygon(ringToLatLng(b.outline.coordinates[0]), {
-          color: themeColor('--color-base-content'), weight: 1,
-          fillColor: themeColor('--color-primary'), fillOpacity: 0.18,
+          color: themeColor('--color-base-content'), weight: 1.5, fillOpacity: 0,
+          bubblingMouseEvents: false,
         }).on('click', () => select.setMapBuilding(b.id)).bindTooltip(b.name).addTo(layer);
       }
       for (const f of POIS.filter((p) => DRAWN_POI_TYPES.has(p.properties.type))) {
@@ -79,6 +81,19 @@ export function MapCanvas() {
       if (b) map.flyToBounds(b.bounds as L.LatLngBoundsExpression, { maxZoom: 21, padding: [50, 50] });
       return;
     }
+    // Sibling building outlines stay drawn in floor-view and ARE the
+    // navigation: click one to refocus. No BuildingBar needed.
+    for (const sib of META.buildings) {
+      if (sib.id === activeBuildingId) continue;
+      L.polygon(ringToLatLng(sib.outline.coordinates[0]), {
+        color: themeColor('--color-base-content'), weight: 1, opacity: 0.4, fillOpacity: 0,
+        bubblingMouseEvents: false,
+      }).on('click', () => select.setMapBuilding(sib.id)).bindTooltip(sib.name).addTo(layer);
+    }
+    // Clicking the bare basemap (not an outline/room) returns to overview.
+    const onMapClick = () => select.exitToCampus();
+    map.on('click', onMapClick);
+    exitHandlerRef.current = onMapClick;
     // The selected room (from search/deep-link or a canvas click) gets a bold
     // highlight and the camera flies straight to it — that's the "focus".
     const sel = select.mapSelection;
