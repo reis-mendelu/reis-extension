@@ -1,6 +1,7 @@
 import { User, Map as MapIcon, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useAppStore } from '../../../store/useAppStore';
 import type { BlockLesson } from '../../../types/calendarTypes';
 import type { CourseMetadata } from '../../../types/documents';
 import { PersonHoverCard } from '../../PersonHoverCard';
@@ -31,6 +32,14 @@ export function CourseMeta({ lesson, courseInfo, isSearchContext }: { lesson: Bl
                             <MapIcon size={14} /><span>{lesson.room}</span>
                         </button>
                     </MapHoverCard>
+                )}
+                {lesson?.room && (
+                    <button
+                        onClick={() => useAppStore.getState().focusRoomByCode(lesson.room)}
+                        className="btn btn-ghost btn-xs gap-1"
+                    >
+                        {t('map.showOnMap')}
+                    </button>
                 )}
                 {lesson?.startTime && <span className="flex items-center gap-1"><Clock size={14} /><span>{lesson.startTime} - {lesson.endTime}</span></span>}
                 </div>
