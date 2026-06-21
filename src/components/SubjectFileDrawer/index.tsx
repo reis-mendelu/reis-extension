@@ -89,6 +89,8 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     useEffect(() => {
         if (state.isDragging) {
             clearDragHintTimers();
+            // Intentional sync with external drag state from useSubjectFileDrawerState.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setShowDragHint(false);
         }
     }, [state.isDragging, clearDragHintTimers]);
@@ -98,6 +100,8 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
         const courseCode = lesson?.courseCode;
         if (!isOpen || !courseCode) return;
         let isCurrent = true;
+        // Reset stale timestamp when switching subjects, before the async load below.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLastVisitedAt(undefined);
         const key = `file_last_visit_${courseCode}`;
         IndexedDBService.get('meta', key).then(prev => {
@@ -114,6 +118,8 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
     // Consolidated cleanup when drawer closes to prevent state leakage
     useEffect(() => {
         if (!isOpen) {
+            // Reset transient drawer state in response to the isOpen prop closing.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setActivePdfFile(null);
             setActiveNoteFile(null);
             flushDocumentNotes();
