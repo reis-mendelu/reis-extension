@@ -9,6 +9,10 @@ import type { BuildingsMeta, PoiFeature, RoomFeature } from '../../types/campusM
 
 const META = buildingsJson as BuildingsMeta;
 const POIS = (poisJson as unknown as { features: PoiFeature[] }).features;
+// Only cafeterias are drawn as dots. Everything else (bus stops, gates,
+// gatehouse, ticket machine, parking, generic letter buildings) stays in
+// pois.json for search but is removed from the map to cut clutter.
+const DRAWN_POI_TYPES = new Set(['cafeteria']);
 
 function themeColor(varName: string): string {
   const v = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
@@ -58,10 +62,10 @@ export function MapCanvas() {
           fillColor: themeColor('--color-primary'), fillOpacity: 0.18,
         }).on('click', () => select.setMapBuilding(b.id)).bindTooltip(b.name).addTo(layer);
       }
-      for (const f of POIS) {
+      for (const f of POIS.filter((p) => DRAWN_POI_TYPES.has(p.properties.type))) {
         const [lon, lat] = f.geometry.coordinates;
         L.circleMarker([lat, lon], { radius: 6, color: themeColor('--color-secondary'),
-          fillColor: themeColor('--color-secondary'), fillOpacity: 0.9 })
+          fillColor: themeColor('--color-secondary'), fillOpacity: 0.9, bubblingMouseEvents: false })
           .on('click', () => select.selectMapPoi(f.properties, f.geometry.coordinates))
           .bindTooltip(f.properties.name).addTo(layer);
       }
