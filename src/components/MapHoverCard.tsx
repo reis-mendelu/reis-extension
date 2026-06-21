@@ -1,6 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { RoomThumbnail } from './CampusMap/RoomThumbnail';
+import { useAppStore } from '../store/useAppStore';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface MapHoverCardProps {
     roomName: string;
@@ -38,6 +41,7 @@ function computePosition(anchor: DOMRect): CardPosition {
 }
 
 export function MapHoverCard({ roomName, children, className }: MapHoverCardProps) {
+    const { t } = useTranslation();
     const [visible, setVisible] = useState(false);
     const [pos, setPos] = useState<CardPosition | null>(null);
 
@@ -74,7 +78,6 @@ export function MapHoverCard({ roomName, children, className }: MapHoverCardProp
     useEffect(() => () => cancelTimers(), []);
 
     const normalizedRoom = roomName.replace(/\s*\([^)]*\)\s*$/, '').trim() || roomName.trim();
-    const mapUrl = `https://mm.mendelu.cz/mapwidget/embed?placeName=${encodeURIComponent(normalizedRoom)}`;
 
     const card = (
         <AnimatePresence>
@@ -96,30 +99,20 @@ export function MapHoverCard({ roomName, children, className }: MapHoverCardProp
                     }}
                     className="bg-base-100 border border-base-300 rounded-xl shadow-popover-heavy overflow-hidden flex flex-col"
                 >
-                   <div className="flex-1 bg-base-200 relative">
-                        {/* Loading shimmer or background */}
-                        <div className="absolute inset-0 flex items-center justify-center text-base-content/20">
-                            <div className="loading loading-spinner loading-md"></div>
-                        </div>
-                        <iframe 
-                            src={mapUrl}
-                            className="w-full h-full relative z-10 border-0"
-                            title={`Map for room ${roomName}`}
-                        />
+                   <div className="flex-1 bg-base-200 relative flex">
+                        <RoomThumbnail roomName={normalizedRoom} />
                    </div>
                    <div className="px-3 py-2 bg-base-100 border-t border-base-300 flex items-center justify-between">
                         <span className="text-xs font-bold text-base-content/70 flex items-center gap-1.5">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
                             {normalizedRoom}
                         </span>
-                        <a 
-                            href={mapUrl.replace('/embed', '')} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
+                        <button
+                            onClick={() => useAppStore.getState().focusRoomByCode(normalizedRoom)}
                             className="text-[10px] uppercase tracking-wider font-bold text-primary hover:underline"
                         >
-                            Open Full Map
-                        </a>
+                            {t('map.showOnMap')}
+                        </button>
                    </div>
                 </motion.div>
             )}

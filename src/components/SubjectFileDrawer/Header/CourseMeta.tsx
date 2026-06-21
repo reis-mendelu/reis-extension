@@ -28,12 +28,12 @@ export function CourseMeta({ lesson, courseInfo, isSearchContext }: { lesson: Bl
                 )}
                 {lesson?.room?.startsWith('Q') && (
                     <MapHoverCard roomName={lesson.room} className="flex items-center">
-                        <button onClick={() => window.open(`https://mm.mendelu.cz/mapwidget/embed?placeName=${lesson.room}`, '_blank')} className="flex items-center gap-1 hover:text-success transition-colors">
+                        <button onClick={() => useAppStore.getState().focusRoomByCode(lesson.room)} className="flex items-center gap-1 hover:text-success transition-colors">
                             <MapIcon size={14} /><span>{lesson.room}</span>
                         </button>
                     </MapHoverCard>
                 )}
-                {lesson?.room && (
+                {lesson?.room && !lesson.room.startsWith('Q') && (
                     <button
                         onClick={() => useAppStore.getState().focusRoomByCode(lesson.room)}
                         className="btn btn-ghost btn-xs gap-1"
