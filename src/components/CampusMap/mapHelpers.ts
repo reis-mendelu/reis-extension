@@ -1,4 +1,24 @@
-import type { RoomIndexEntry, PoiFeature, MapSelection, Landmark } from '../../types/campusMap';
+import type { RoomCategory, RoomIndexEntry, PoiFeature, MapSelection, Landmark } from '../../types/campusMap';
+
+export interface RoomStyle { fill: string; stroke: string; }
+
+// The campus basemap is ALWAYS light (CartoDB Positron) regardless of the app's
+// DaisyUI theme, so these are fixed literals tuned to read on a light
+// background — theme vars like --color-base-content flip to near-white in dark
+// mode and vanish on the map. Soft fill + a matching stroke per category gives
+// the legible, MyMENDELU-style floor plan (green teaching, beige corridors, …).
+const CATEGORY_STYLE: Record<RoomCategory, RoomStyle> = {
+  teaching:    { fill: '#c8e6a0', stroke: '#7cb342' },
+  office:      { fill: '#cfe3f5', stroke: '#5a9bd4' },
+  service:     { fill: '#f3d6e6', stroke: '#d98cb3' },
+  circulation: { fill: '#ece1cb', stroke: '#cbb994' },
+  structure:   { fill: '#e3e6ea', stroke: '#c2c8d0' },
+  other:       { fill: '#e8edf2', stroke: '#c2c8d0' },
+};
+
+export function categoryStyle(c: RoomCategory): RoomStyle {
+  return CATEGORY_STYLE[c] ?? CATEGORY_STYLE.other;
+}
 
 export function shortLabel(name: string): string {
   return name.match(/[NPS]\d+$/)?.[0] ?? name;

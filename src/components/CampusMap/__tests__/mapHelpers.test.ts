@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { shortLabel, lonLatToLatLng, ringToLatLng, searchPlaces, polygonCentroid } from '../mapHelpers';
+import { shortLabel, lonLatToLatLng, ringToLatLng, searchPlaces, polygonCentroid, categoryStyle } from '../mapHelpers';
 import type { RoomIndexEntry, PoiFeature, Landmark } from '../../../types/campusMap';
+
+describe('categoryStyle', () => {
+  it('maps known categories to a fill + stroke pair', () => {
+    expect(categoryStyle('teaching')).toEqual({ fill: '#c8e6a0', stroke: '#7cb342' });
+    expect(categoryStyle('circulation')).toEqual({ fill: '#ece1cb', stroke: '#cbb994' });
+  });
+});
 
 describe('shortLabel', () => {
   it('strips building prefix from passport codes', () => {

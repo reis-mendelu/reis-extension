@@ -5,9 +5,21 @@ import { useAppStore } from '../../store/useAppStore';
 import buildingsJson from '../../data/map/buildings.json';
 import poisJson from '../../data/map/pois.json';
 import landmarksJson from '../../data/map/landmarks.json';
-import { ringToLatLng, shortLabel } from './mapHelpers';
+import { ringToLatLng, shortLabel, categoryStyle } from './mapHelpers';
 import { setMapInstance } from './mapInstance';
 import type { BuildingsMeta, PoiFeature, RoomFeature, Landmark } from '../../types/campusMap';
+
+// MyMENDELU-style selection: the room's own polygon filled solid orange (the
+// theme's brand colors are green, so orange stands out against teaching-green
+// rooms). bubblingMouseEvents:false keeps a selected-room click from exiting.
+const SELECTED_STYLE: L.PathOptions = {
+  color: '#ea580c', weight: 3, fillColor: '#fb923c', fillOpacity: 0.85, bubblingMouseEvents: false,
+};
+// Walls/cores: faint gray, non-interactive — the building shell, not a room.
+const STRUCTURE_STYLE: L.PathOptions = {
+  color: '#c2c8d0', weight: 0.8, fillColor: '#e3e6ea', fillOpacity: 0.5,
+  interactive: false, bubblingMouseEvents: false,
+};
 
 const META = buildingsJson as BuildingsMeta;
 const POIS = (poisJson as unknown as { features: PoiFeature[] }).features;
@@ -46,11 +58,15 @@ export function MapCanvas() {
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup>(L.layerGroup());
   const exitHandlerRef = useRef<((e: L.LeafletMouseEvent) => void) | null>(null);
+  // Live room polygons keyed by placeId, with their unselected base style — lets
+  // a plain map click re-highlight in place without a full redraw or camera move.
+  const roomPolysRef = useRef<Map<number, { poly: L.Polygon; base: L.PathOptions }>>(new Map());
 
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const activeFloorId = useAppStore((s) => s.activeFloorId);
   const roomsByBuilding = useAppStore((s) => s.roomsByBuilding);
   const focusReq = useAppStore((s) => s.mapFocusRequest);
+  const mapSelection = useAppStore((s) => s.mapSelection);
 
   // init once
   useEffect(() => {
@@ -133,21 +149,27 @@ export function MapCanvas() {
       : sel?.kind === 'room' ? sel.room.id : null;
     const feats = fc.features.filter((f) => f.properties.floorId === activeFloorId)
       .sort((a) => (a.properties.category === 'structure' ? -1 : 1));
+    roomPolysRef.current.clear();
     let targetBounds: L.LatLngBounds | null = null;
     for (const f of feats as RoomFeature[]) {
       const p = f.properties, struct = p.category === 'structure';
       const isSel = p.id === selectedId;
-      const poly = L.polygon(ringToLatLng(f.geometry.coordinates[0]), {
-        color: isSel ? themeColor('--color-primary') : themeColor('--color-base-content'),
-        weight: isSel ? 3 : struct ? 0.6 : 1,
-        fillColor: isSel ? themeColor('--color-primary') : themeColor('--color-base-200'),
-        fillOpacity: isSel ? 0.6 : struct ? 0.35 : 0,
-        interactive: !struct,
-        bubblingMouseEvents: false,
-      });
+      const st = categoryStyle(p.category);
+      const base: L.PathOptions = struct ? STRUCTURE_STYLE
+        : { color: st.stroke, weight: 1, fillColor: st.fill, fillOpacity: 0.6,
+            interactive: true, bubblingMouseEvents: false };
+      const poly = L.polygon(ringToLatLng(f.geometry.coordinates[0]), isSel ? SELECTED_STYLE : base);
       if (!struct) {
         poly.on('click', () => select.selectMapRoom(p));
-        if (p.name) poly.bindTooltip(shortLabel(p.name), { permanent: false, direction: 'center' });
+        roomPolysRef.current.set(p.id, { poly, base });
+        if (p.name) {
+          // Label sizable rooms permanently (MyMENDELU-style); tiny rooms only on
+          // hover, to avoid a wall of overlapping numbers.
+          const pb = poly.getBounds();
+          const big = pb.getNorthEast().distanceTo(pb.getSouthWest()) > 12;
+          poly.bindTooltip(shortLabel(p.name),
+            { permanent: big, direction: 'center', className: big ? 'room-label' : '' });
+        }
       }
       poly.addTo(layer);
       if (isSel) { poly.bringToFront(); targetBounds = poly.getBounds(); }
@@ -155,6 +177,18 @@ export function MapCanvas() {
     if (targetBounds) map.flyToBounds(targetBounds, { maxZoom: 21, padding: [120, 120] });
     else if (b) map.flyToBounds(b.bounds as L.LatLngBoundsExpression, { maxZoom: 21, padding: [50, 50] });
   }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq]);
+
+  // Highlight the selected room in place on a plain map click — restyle the live
+  // polygons without a full redraw or camera move (the heavy effect above only
+  // re-runs / flies on navigation + search focus, not on selection alone).
+  useEffect(() => {
+    const selId = mapSelection?.kind === 'room' ? mapSelection.room.id
+      : mapSelection?.kind === 'roomRef' ? mapSelection.entry.placeId : null;
+    for (const [id, { poly, base }] of roomPolysRef.current) {
+      if (id === selId) { poly.setStyle(SELECTED_STYLE); poly.bringToFront(); }
+      else poly.setStyle(base);
+    }
+  }, [mapSelection]);
 
   return <div ref={ref} className="absolute inset-0" />;
 }
