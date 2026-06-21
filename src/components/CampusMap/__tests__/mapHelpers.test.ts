@@ -41,6 +41,17 @@ describe('searchPlaces', () => {
     const r = searchPlaces('q01', index, pois);
     expect(r[0]).toMatchObject({ kind: 'roomRef', entry: { code: 'Q01' } });
   });
+  it('ranks an exact name match above substring children, regardless of index order', () => {
+    // Children listed first; the exact "Q01" hall is buried later in the array.
+    const withChildren: RoomIndexEntry[] = [
+      { code: 'BA39P1009', name: 'Q01.09', buildingId: 0, floorId: 5, floorLevel: 0, placeId: 10 },
+      { code: 'BA39P1014', name: 'Q01.14', buildingId: 0, floorId: 5, floorLevel: 0, placeId: 11 },
+      { code: 'BA39N1009', name: 'Q01', buildingId: 0, floorId: 9, floorLevel: 0, placeId: 1 },
+    ];
+    const r = searchPlaces('Q01', withChildren, pois);
+    // The exact "Q01" must be the first result the student sees.
+    expect(r[0]).toMatchObject({ kind: 'roomRef', entry: { name: 'Q01' } });
+  });
   it('matches a POI name', () => {
     const r = searchPlaces('frrm', index, pois);
     expect(r.some((m) => m.kind === 'poi' && m.poi.name === 'FRRMS')).toBe(true);
