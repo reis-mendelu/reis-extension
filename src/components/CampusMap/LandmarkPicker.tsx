@@ -61,7 +61,7 @@ export function LandmarkPicker() {
         {PLACE_GROUPS.map((g) =>
           row(String(g.ids[0]), g.label, g.ids.includes(selectedLandmark ?? -2), () => focusLandmark(g.ids[0])),
         )}
-        {row('jak', t('map.jakDorms'), false, () => focusPoint(t('map.jakDorms'), JAK_CENTROID))}
+        {row('jak', t('map.jakDorms'), selectedLandmark === -1, () => focusPoint(t('map.jakDorms'), JAK_CENTROID))}
         {row('campus', t('map.mainCampus'), false, () => focusCampus())}
       </ul>
     </div>

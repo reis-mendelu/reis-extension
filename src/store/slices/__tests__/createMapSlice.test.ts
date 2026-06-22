@@ -52,6 +52,7 @@ describe('mapSlice', () => {
     useAppStore.getState().focusCampus();
     const s = useAppStore.getState();
     expect(s.activeBuildingId).toBeNull();
+    expect(s.activeFloorId).toBeNull();
     expect(s.mapSelection).toBeNull();
     expect(s.mapFocusRequest).toBe(before + 1);
   });
@@ -61,6 +62,7 @@ describe('mapSlice', () => {
     useAppStore.getState().focusPoint('Koleje JAK', [16.62, 49.22]);
     const s = useAppStore.getState();
     expect(s.activeBuildingId).toBeNull();
+    expect(s.activeFloorId).toBeNull();
     expect(s.mapSelection).toMatchObject({ kind: 'poi', poi: { name: 'Koleje JAK' }, coord: [16.62, 49.22] });
     expect(s.mapFocusRequest).toBe(before + 1);
   });

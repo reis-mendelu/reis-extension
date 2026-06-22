@@ -42,9 +42,16 @@ export function EdgeIndicators({ occluders = [] }: EdgeIndicatorsProps) {
   const { t } = useTranslation();
   const [arrows, setArrows] = useState<Arrow[]>([]);
   // Keep the latest occluder refs reachable from the mount-once effect without
-  // re-subscribing to the map on every render.
+  // re-subscribing to the map on every render. A panel opening/closing (e.g. the
+  // detail panel) changes the occluders but fires no map event, so also nudge a
+  // recompute whenever they change — otherwise arrows stay stale behind the new
+  // panel until the user pans/zooms.
+  const scheduleRecomputeRef = useRef<(() => void) | null>(null);
   const occludersRef = useRef(occluders);
-  useEffect(() => { occludersRef.current = occluders; });
+  useEffect(() => {
+    occludersRef.current = occluders;
+    scheduleRecomputeRef.current?.();
+  }, [occluders]);
 
   useEffect(() => {
     let map: L.Map | null = null;
@@ -82,6 +89,7 @@ export function EdgeIndicators({ occluders = [] }: EdgeIndicatorsProps) {
       if (rafId !== null) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => { rafId = null; recompute(); });
     };
+    scheduleRecomputeRef.current = scheduleRecompute;
     const bind = (m: L.Map) => { m.on('moveend zoomend', recompute); scheduleRecompute(); };
     const unbind = (m: L.Map) => { m.off('moveend zoomend', recompute); };
     const unsub = subscribeMapInstance((m) => {
@@ -91,6 +99,7 @@ export function EdgeIndicators({ occluders = [] }: EdgeIndicatorsProps) {
       else scheduleRecompute();
     });
     return () => {
+      scheduleRecomputeRef.current = null;
       if (rafId !== null) cancelAnimationFrame(rafId);
       if (map) unbind(map);
       unsub();
