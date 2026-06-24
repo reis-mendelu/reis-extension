@@ -153,7 +153,14 @@
     "selectedTime": "Selected: {time}",
     "clickFreeSlot": "Click a free slot in the calendar",
     "pickTime": "Pick a time:",
-    "publicHoliday": "Public holiday"
+    "publicHoliday": "Public holiday",
+    "buildingWeek": "Building your week…",
+    "buildingWeekSub": "Your schedule will be ready in a few seconds.",
+    "buildingWeekFailed": "Couldn't load your schedule.",
+    "retry": "Try again",
+    "outlookNudgeTitle": "Want this on your phone?",
+    "outlookNudgeBody": "Sync your schedule to your Outlook calendar.",
+    "outlookNudgeCta": "Set up sync"
   },
   "exams": {
     "title": "My Exams",
@@ -489,7 +496,6 @@
     "syncTitle": "Sync to Phone (Outlook)",
     "syncDescription": "1. Open Outlook on your phone\n2. Go to the \"Calendar\" tab",
     "syncToggle": "Activate Sync",
-    "syncCoffeeBreak": "Sync takes about 15 min.",
     "driveTitle": "Back up files to Drive",
     "driveDescription": "Mirror this semester's study materials to your Google Drive."
   },

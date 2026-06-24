@@ -1,6 +1,9 @@
 # Claude Code — local-only settings (project-shared settings.json IS committed)
 .claude/settings.local.json
 
+# Local AI-tool scratch — never commit (regenerated per-dev)
+.antigravitycli/
+
 # Environment variables (NEVER commit credentials!)
 .env
 .env.local

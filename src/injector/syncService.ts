@@ -31,6 +31,13 @@ import type { ParsedFile, SubjectsData } from "../types/documents";
 
 const limit = pLimit(3);
 export let cachedData: SyncedData = { lastSync: 0 };
+
+// Emit the student's schedule the instant it resolves — before the rest of the
+// sync batch settles — so the calendar paints in ~1–3s on first open.
+export function emitScheduleFirst(schedule: unknown[] | undefined, lastSync: number) {
+    if (!schedule || schedule.length === 0) return;
+    sendToIframe(Messages.syncUpdate({ schedule, isSyncing: true, lastSync }));
+}
 export let isSyncing = false;
 
 /** Latest notes snapshot pushed from the iframe (it owns the notes IDB). */
@@ -105,8 +112,15 @@ export async function syncAllData() {
             : Promise.resolve(null);
 
         // Phase 2b: Full schedule + exams in parallel (subjects/studyPlan/studyStats re-uses already-started promises)
+        // Start schedule fetch early so we can emit it the moment it resolves,
+        // before waiting for the rest of the batch to settle.
+        const earlyLastSync = Date.now();
+        const schedulePromise = fetchFullSemesterSchedule().then((s) => {
+            emitScheduleFirst(s as unknown[] | undefined, earlyLastSync);
+            return s;
+        });
         const [fullSchedule, exams, subjects, studyPlan, studyStats, cvicneTests, odevzdavarnyResult, pastSubjects] = await Promise.allSettled([
-            fetchFullSemesterSchedule(),
+            schedulePromise,
             fetchDualLanguageExams(),
             subjectsPromise,
             studyPlanPromise,

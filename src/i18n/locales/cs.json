@@ -188,7 +188,14 @@
     "selectedTime": "Vybráno: {time}",
     "clickFreeSlot": "Klikněte na volné místo v kalendáři",
     "pickTime": "Vyber čas:",
-    "publicHoliday": "Státní svátek"
+    "publicHoliday": "Státní svátek",
+    "buildingWeek": "Sestavujeme tvůj týden…",
+    "buildingWeekSub": "Tvůj rozvrh bude hotový za pár vteřin.",
+    "buildingWeekFailed": "Rozvrh se nepodařilo načíst.",
+    "retry": "Zkusit znovu",
+    "outlookNudgeTitle": "Chceš rozvrh v mobilu?",
+    "outlookNudgeBody": "Synchronizuj rozvrh do kalendáře v Outlooku.",
+    "outlookNudgeCta": "Nastavit sync"
   },
   "exams": {
     "title": "Moje zkoušky",
@@ -489,7 +496,6 @@
     "syncTitle": "Sync do mobilu (Outlook)",
     "syncDescription": "1. Otevři Outlook na mobilu\n2. Přejdi na záložku \"Kalendář\"",
     "syncToggle": "Aktivovat Sync",
-    "syncCoffeeBreak": "Sync trvá přibližně 15 min.",
     "driveTitle": "Zálohovat soubory na Disk",
     "driveDescription": "Zrcadli studijní materiály z tohoto semestru na svůj Google Disk."
   },
