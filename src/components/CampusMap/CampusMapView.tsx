@@ -1,10 +1,11 @@
 import { useRef } from 'react';
 import { MapCanvas } from './MapCanvas';
 import { FloorStack } from './FloorStack';
-import { LandmarkPicker } from './LandmarkPicker';
+import { MapSidePanel } from './MapSidePanel';
 import { DetailPanel } from './DetailPanel';
 import { RoomSearch } from './RoomSearch';
 import { EdgeIndicators } from './EdgeIndicators';
+import { EventLayer } from './EventLayer';
 import { useAppStore } from '../../store/useAppStore';
 
 export function CampusMapView() {
@@ -20,6 +21,7 @@ export function CampusMapView() {
   return (
     <div className="relative isolate w-full h-full">
       <MapCanvas />
+      <EventLayer />
       <EdgeIndicators occluders={[leftPanelRef, placesPanelRef, detailPanelRef]} />
       {/* Floor selector moved off the right edge (it overlapped the Místa panel)
           into the left column under the search. */}
@@ -27,7 +29,7 @@ export function CampusMapView() {
         <RoomSearch />
         <FloorStack />
       </div>
-      <div ref={placesPanelRef} className="absolute top-3 right-3 z-[1000]"><LandmarkPicker /></div>
+      <div ref={placesPanelRef} className="absolute top-3 right-3 z-[1000]"><MapSidePanel /></div>
       {selection && (
         <div ref={detailPanelRef} className="absolute bottom-3 left-3 z-[1000] w-72"><DetailPanel /></div>
       )}

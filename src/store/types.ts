@@ -16,6 +16,7 @@ import type { PageCategory } from '../data/pages/types';
 import type { SpolekNotification } from '../services/spolky/types';
 import type { SubjectZaznamnik } from '../types/zaznamnik';
 import type { RoomsCollection, MapSelection, PoiProperties, RoomProperties } from '../types/campusMap';
+import type { MapEvent } from '../types/events';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type Theme = "mendelu" | "mendelu-dark";
@@ -423,6 +424,18 @@ export interface MapSlice {
   /** Fly to an arbitrary named coordinate without a real landmark/poi (e.g. the JAK dorm cluster centre). */
   focusPoint: (name: string, coord: [number, number]) => void;
   loadMapBuilding: (id: number) => Promise<void>;
+  // --- Society events on the map ---
+  mapEvents: MapEvent[];
+  mapEventsLoaded: boolean;
+  /** Which tab the top-right panel shows. */
+  mapPanelTab: 'places' | 'events';
+  /** Event scope: all societies, or only the student's faculty's societies. */
+  eventFilter: 'all' | 'faculty';
+  setMapPanelTab: (tab: 'places' | 'events') => void;
+  setEventFilter: (filter: 'all' | 'faculty') => void;
+  loadMapEvents: () => Promise<void>;
+  /** Select an event for the detail panel; flies to it when it has a coordinate. */
+  focusEventById: (id: string) => void;
 }
 
 export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & NotesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & EduroamSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & BulletinSlice & ViewportSlice & import('./slices/createSearchSlice').SearchSlice & import('./slices/createPersonProfileSlice').PersonProfileSlice & MapSlice;

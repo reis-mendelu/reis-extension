@@ -123,9 +123,12 @@ export function MapCanvas() {
       }
       drawLandmarks(layer, select, BUILDING_STYLE);
       // §6: rest at campus bounds, but fly to a chosen place's coord on
-      // search/click (a poi/landmark selection) instead of refitting campus.
-      if (select.mapSelection?.kind === 'poi') {
-        const [lon, lat] = select.mapSelection.coord;
+      // search/click (a poi/landmark/event selection) instead of refitting campus.
+      const sel = select.mapSelection;
+      const flyCoord = sel?.kind === 'poi' ? sel.coord
+        : sel?.kind === 'event' ? sel.event.coord : null;
+      if (flyCoord) {
+        const [lon, lat] = flyCoord;
         flyAndReveal(map, () => map.flyTo([lat, lon], 18));
       } else {
         flyAndReveal(map, () => map.flyToBounds(META.campus.bounds as L.LatLngBoundsExpression, { maxZoom: 18, padding: [40, 40] }));

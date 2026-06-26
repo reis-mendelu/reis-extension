@@ -879,6 +879,12 @@
     "places": "Místa",
     "jakDorms": "Koleje JAK",
     "mainCampus": "Hlavní kampus",
-    "alsoHere": "Také zde"
+    "alsoHere": "Také zde",
+    "events": "Akce",
+    "allSocieties": "Vše",
+    "myFaculty": "Moje fakulta",
+    "noEvents": "Žádné akce",
+    "moreHere": "dalších zde",
+    "moreInfo": "Více informací"
   }
 }

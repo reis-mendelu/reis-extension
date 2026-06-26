@@ -879,6 +879,12 @@
     "places": "Places",
     "jakDorms": "JAK dormitories",
     "mainCampus": "Main campus",
-    "alsoHere": "Also here"
+    "alsoHere": "Also here",
+    "events": "Events",
+    "allSocieties": "All",
+    "myFaculty": "My faculty",
+    "noEvents": "No events",
+    "moreHere": "more here",
+    "moreInfo": "More info"
   }
 }

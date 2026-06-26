@@ -1,4 +1,3 @@
-import { MapPin } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { landmarkGroupLabels, polygonCentroid } from './mapHelpers';
@@ -34,9 +33,9 @@ const JAK_CENTROID: [number, number] = (() => {
   return [cs.reduce((s, c) => s + c[0], 0) / n, cs.reduce((s, c) => s + c[1], 0) / n];
 })();
 
-// Compact top-right "discovery" panel: a handful of grouped destinations rather
-// than every place. Co-located places share a row; the JAK blocks and the whole
-// main campus each collapse to one row. Shown in both overview and floor-view.
+// The Places list: a handful of grouped destinations rather than every place.
+// Co-located places share a row; the JAK blocks and the whole main campus each
+// collapse to one row. Rendered as the body of the MapSidePanel "Places" tab.
 export function LandmarkPicker() {
   const selection = useAppStore((s) => s.mapSelection);
   const focusLandmark = useAppStore((s) => s.focusLandmarkById);
@@ -52,18 +51,12 @@ export function LandmarkPicker() {
   );
 
   return (
-    <div className="flex max-h-[80%] w-64 flex-col rounded-box border border-base-300 bg-base-100/95 shadow-popover-heavy backdrop-blur-sm">
-      <div className="flex items-center gap-1.5 border-b border-base-300 px-3 py-2 text-sm font-semibold">
-        <MapPin size={14} className="text-primary" />
-        {t('map.places')}
-      </div>
-      <ul className="menu menu-sm w-full flex-nowrap overflow-y-auto p-1">
-        {PLACE_GROUPS.map((g) =>
-          row(String(g.ids[0]), g.label, g.ids.includes(selectedLandmark ?? -2), () => focusLandmark(g.ids[0])),
-        )}
-        {row('jak', t('map.jakDorms'), selectedLandmark === -1, () => focusPoint(t('map.jakDorms'), JAK_CENTROID))}
-        {row('campus', t('map.mainCampus'), false, () => focusCampus())}
-      </ul>
-    </div>
+    <ul className="menu menu-sm w-full flex-nowrap overflow-y-auto p-1">
+      {PLACE_GROUPS.map((g) =>
+        row(String(g.ids[0]), g.label, g.ids.includes(selectedLandmark ?? -2), () => focusLandmark(g.ids[0])),
+      )}
+      {row('jak', t('map.jakDorms'), selectedLandmark === -1, () => focusPoint(t('map.jakDorms'), JAK_CENTROID))}
+      {row('campus', t('map.mainCampus'), false, () => focusCampus())}
+    </ul>
   );
 }

@@ -6,6 +6,7 @@ import poisJson from '../../data/map/pois.json';
 import landmarksJson from '../../data/map/landmarks.json';
 import { searchPlaces, polygonCentroid } from '../../components/CampusMap/mapHelpers';
 import { fetchBuildingRooms } from '../../api/campusMap';
+import { fetchMapEvents } from '../../api/mapEvents';
 import { logError } from '../../utils/reportError';
 
 const META = buildingsJson as BuildingsMeta;
@@ -24,6 +25,10 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   mapSearchQuery: '',
   mapSearchResults: [],
   mapFocusRequest: 0,
+  mapEvents: [],
+  mapEventsLoaded: false,
+  mapPanelTab: 'places',
+  eventFilter: 'all',
 
   setMapBuilding: (id) => {
     const b = buildingById(id);
@@ -97,5 +102,30 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     } finally {
       set({ mapLoadingBuilding: get().mapLoadingBuilding === id ? null : get().mapLoadingBuilding });
     }
+  },
+
+  setMapPanelTab: (tab) => set({ mapPanelTab: tab }),
+  setEventFilter: (filter) => set({ eventFilter: filter }),
+
+  loadMapEvents: async () => {
+    if (get().mapEventsLoaded) return;
+    try {
+      const events = await fetchMapEvents(get().language);
+      set({ mapEvents: events, mapEventsLoaded: true });
+    } catch (err) {
+      logError('MapSlice.loadMapEvents', err);
+    }
+  },
+
+  focusEventById: (id) => {
+    const event = get().mapEvents.find((e) => e.id === id);
+    if (!event) { logError('MapSlice.focusEventById', new Error(`unknown event ${id}`)); return; }
+    // Off-campus events have no pin and don't move the camera — they still open
+    // in the detail panel so the row is clickable everywhere.
+    set({
+      activeBuildingId: null, activeFloorId: null,
+      mapSelection: { kind: 'event', event },
+      mapFocusRequest: event.coord ? get().mapFocusRequest + 1 : get().mapFocusRequest,
+    });
   },
 });

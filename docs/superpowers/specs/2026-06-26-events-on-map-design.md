@@ -1,7 +1,7 @@
 # Events on the Campus Map — Frontend Design
 
 **Date:** 2026-06-26
-**Status:** Design approved, ready for plan
+**Status:** Implemented (frontend, mock data) — see `src/components/CampusMap/Event*.tsx`, `src/api/mapEvents.ts`, `src/data/societies.ts`. Society ids/logos reuse the existing spolky system.
 **Scope:** Frontend/design only. No backend integration. Event data is mocked behind a
 seam so the real source (organizer-authored events with picked coordinates) can drop in later.
 

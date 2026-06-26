@@ -1,6 +1,7 @@
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { landmarkGroupLabels } from './mapHelpers';
+import { EventDetailCard } from './EventDetailCard';
 import landmarksJson from '../../data/map/landmarks.json';
 import type { Landmark } from '../../types/campusMap';
 
@@ -21,6 +22,8 @@ export function DetailPanel() {
   const { t } = useTranslation();
   const sel = useAppStore((s) => s.mapSelection);
   if (!sel) return null;
+
+  if (sel.kind === 'event') return <EventDetailCard event={sel.event} />;
 
   if (sel.kind === 'poi') {
     const p = sel.poi;

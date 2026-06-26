@@ -13,7 +13,8 @@ const fc = (id: number, floorId: number): RoomsCollection => ({ type: 'FeatureCo
 
 beforeEach(() => {
   useAppStore.setState({ activeBuildingId: null, activeFloorId: null, mapSelection: null,
-    roomsByBuilding: {}, mapLoadingBuilding: null, mapSearchQuery: '', mapSearchResults: [], mapFocusRequest: 0 });
+    roomsByBuilding: {}, mapLoadingBuilding: null, mapSearchQuery: '', mapSearchResults: [], mapFocusRequest: 0,
+    mapEvents: [], mapEventsLoaded: false, mapPanelTab: 'places', eventFilter: 'all' });
   vi.mocked(fetchBuildingRooms).mockReset();
 });
 
@@ -70,5 +71,38 @@ describe('mapSlice', () => {
   it('setMapSearchQuery populates results', () => {
     useAppStore.getState().setMapSearchQuery('Q01');
     expect(useAppStore.getState().mapSearchResults.length).toBeGreaterThan(0);
+  });
+
+  it('setMapPanelTab and setEventFilter update state', () => {
+    useAppStore.getState().setMapPanelTab('events');
+    useAppStore.getState().setEventFilter('faculty');
+    expect(useAppStore.getState().mapPanelTab).toBe('events');
+    expect(useAppStore.getState().eventFilter).toBe('faculty');
+  });
+
+  it('loadMapEvents populates events once', async () => {
+    await useAppStore.getState().loadMapEvents();
+    expect(useAppStore.getState().mapEventsLoaded).toBe(true);
+    expect(useAppStore.getState().mapEvents.length).toBeGreaterThan(0);
+  });
+
+  it('focusEventById with a coord selects the event and bumps the focus request', async () => {
+    await useAppStore.getState().loadMapEvents();
+    const pinned = useAppStore.getState().mapEvents.find((e) => e.coord)!;
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusEventById(pinned.id);
+    const s = useAppStore.getState();
+    expect(s.mapSelection).toMatchObject({ kind: 'event', event: { id: pinned.id } });
+    expect(s.mapFocusRequest).toBe(before + 1);
+  });
+
+  it('focusEventById off-campus selects but does not move the camera', async () => {
+    await useAppStore.getState().loadMapEvents();
+    const off = useAppStore.getState().mapEvents.find((e) => !e.coord)!;
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusEventById(off.id);
+    const s = useAppStore.getState();
+    expect(s.mapSelection?.kind).toBe('event');
+    expect(s.mapFocusRequest).toBe(before);
   });
 });
