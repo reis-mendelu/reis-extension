@@ -17,7 +17,7 @@ surface for the same data — the bell stays as-is.
 
 | Question | Decision |
 |----------|----------|
-| Pin resting look | **Thumbnail pin** — event poster image in a **society-coloured** ring; falls back to the society's logo glyph when no image |
+| Pin resting look | **Floating balloon** — event poster image in a **society-coloured** ring (logo glyph fallback) that floats above/around the building, **tethered by a thin curved "rope" line** to a small anchor dot at the exact `[lng, lat]`. The bubble is offset off the footprint so it doesn't cover the building; the rope keeps it legibly tied to its spot |
 | Pin hover | Mini speech-bubble (title + date/time) above the pin |
 | Pin click | Flies the map to the pin + opens full event card in the **bottom-left detail panel** |
 | List placement | **Tabbed right panel** — the existing top-right "Places" panel gains `Events / Places` tabs |
@@ -107,7 +107,7 @@ basemap is always light even when the app theme is dark (see existing CampusMap 
 | `CampusMap/MapSidePanel.tsx` | Top-right panel shell with `Events / Places` tabs; renders `LandmarkPicker` or `EventsList`. Replaces the bare `LandmarkPicker` mount in `CampusMapView`. |
 | `CampusMap/EventsList.tsx` | Scrollable list for the Events tab: `All / My faculty` toggle, date-grouped rows, empty state. Row click → `focusEventById`. Unpinnable rows show a tag and don't fly. |
 | `CampusMap/EventLayer.tsx` | Renders one `EventPin` per pinnable event onto the Leaflet map (via the existing map instance), positioned at `event.coord`. Owns co-location clustering. |
-| `CampusMap/EventPin.tsx` | The thumbnail-in-ring marker; hover → mini speech-bubble; click → `focusEventById`. Selected pin gets a halo. |
+| `CampusMap/EventPin.tsx` | The floating thumbnail-in-ring balloon + its anchor dot, joined by a thin curved rope (SVG/quadratic line). The balloon sits at a small fixed offset (up/around) from the anchor so it floats near — not on — the building. Hover → mini speech-bubble; click → `focusEventById`. Selected balloon gets a halo. |
 | `CampusMap/EventDetailCard.tsx` | Body for the `kind: 'event'` branch added to `DetailPanel`: poster, title, date/time, clickable room (`focusRoomByCode`), organizer chip, "More info ↗" (`event.url`). |
 
 `CampusMapView.tsx` change: swap `<LandmarkPicker />` for `<MapSidePanel />`, and add
