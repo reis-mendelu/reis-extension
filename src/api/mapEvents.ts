@@ -1,5 +1,6 @@
-import type { MapEvent, FacultyKey } from '../types/events';
+import type { MapEvent, FacultyKey, EventCategory } from '../types/events';
 import { societyById } from '../data/societies';
+import { inferCategory } from '../data/eventCategories';
 
 // MOCK provider — the single seam the real backend replaces. Titles + dates are
 // real, taken from the ESN MENDELU / SU PEF / AU FRRMS public calendars; venues
@@ -26,6 +27,7 @@ interface Seed {
   time: string | null;
   venue: keyof typeof VENUE | null; // null = off-campus, list-only
   room?: string;
+  category?: EventCategory; // override; defaults to inferCategory(title)
 }
 
 // Soonest-first ordering is applied by the consumer; authoring order here is free.
@@ -73,6 +75,7 @@ function toEvent(s: Seed, i: number): MapEvent {
     coord,
     roomCode: s.room ?? null,
     venueKind: s.venue ? 'campus' : 'offcampus',
+    category: s.category ?? inferCategory(s.title),
   };
 }
 
