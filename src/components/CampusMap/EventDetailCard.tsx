@@ -1,4 +1,5 @@
 import { MapPin, ExternalLink, Clock } from 'lucide-react';
+import { CATEGORY_ICON } from '../../data/eventCategories';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { societyById } from '../../data/societies';
@@ -13,6 +14,7 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
   const allEvents = useAppStore((s) => s.mapEvents);
   const { t, language } = useTranslation();
   const soc = societyById(event.societyId);
+  const CategoryIcon = CATEGORY_ICON[event.category];
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const dateLabel = parseEventDate(event.date).toLocaleDateString(locale, {
     weekday: 'short', day: 'numeric', month: 'long',
@@ -34,6 +36,10 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
         <h3 className="font-bold leading-tight text-base-content">{event.title}</h3>
         <div className="flex items-center gap-1.5 text-sm text-base-content/70">
           <Clock size={13} /> <span>{dateLabel}{event.time ? ` · ${event.time}` : ''}</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-sm text-base-content/70">
+          <CategoryIcon size={13} style={{ color: soc.color }} />
+          <span>{t(`map.category.${event.category}`)}</span>
         </div>
         {event.roomCode ? (
           <button

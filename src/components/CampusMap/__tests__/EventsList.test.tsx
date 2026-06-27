@@ -45,4 +45,10 @@ describe('EventsList', () => {
     render(<EventsList />);
     expect(screen.getByText('No events')).toBeTruthy();
   });
+
+  it('renders a category icon on rows', () => {
+    const { container } = render(<EventsList />);
+    // Deskovky (SU PEF) is visible under the default 'all' filter → boardgames icon.
+    expect(container.querySelector('.lucide-dices')).toBeTruthy();
+  });
 });

@@ -885,6 +885,18 @@
     "myFaculty": "My faculty",
     "noEvents": "No events",
     "moreHere": "more here",
-    "moreInfo": "More info"
+    "moreInfo": "More info",
+    "category": {
+      "party": "Party",
+      "boardgames": "Board games",
+      "trip": "Trip",
+      "quiz": "Quiz",
+      "sports": "Sports",
+      "film": "Film",
+      "karaoke": "Karaoke",
+      "culture": "Culture",
+      "social": "Social",
+      "other": "Event"
+    }
   }
 }
