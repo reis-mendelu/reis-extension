@@ -93,17 +93,17 @@ describe('mapSlice', () => {
     expect(useAppStore.getState().mapEvents.length).toBeGreaterThan(0);
   });
 
-  it('focusEventById with a coord selects the event and bumps the focus request', async () => {
+  it('focusEventById selects the event without moving the camera (no focus bump)', async () => {
     await useAppStore.getState().loadMapEvents();
     const pinned = useAppStore.getState().mapEvents.find((e) => e.coord)!;
     const before = useAppStore.getState().mapFocusRequest;
     useAppStore.getState().focusEventById(pinned.id);
     const s = useAppStore.getState();
     expect(s.mapSelection).toMatchObject({ kind: 'event', event: { id: pinned.id } });
-    expect(s.mapFocusRequest).toBe(before + 1);
+    expect(s.mapFocusRequest).toBe(before); // never bumps — selecting an event doesn't fly/pan
   });
 
-  it('focusEventById off-campus selects but does not move the camera', async () => {
+  it('focusEventById off-campus also selects without moving the camera', async () => {
     await useAppStore.getState().loadMapEvents();
     const off = useAppStore.getState().mapEvents.find((e) => !e.coord)!;
     const before = useAppStore.getState().mapFocusRequest;

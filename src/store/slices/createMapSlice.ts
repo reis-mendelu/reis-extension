@@ -122,12 +122,12 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   focusEventById: (id) => {
     const event = get().mapEvents.find((e) => e.id === id);
     if (!event) { logError('MapSlice.focusEventById', new Error(`unknown event ${id}`)); return; }
-    // Off-campus events have no pin and don't move the camera — they still open
-    // in the detail panel so the row is clickable everywhere.
-    set({
-      activeBuildingId: null, activeFloorId: null,
-      mapSelection: { kind: 'event', event },
-      mapFocusRequest: event.coord ? get().mapFocusRequest + 1 : get().mapFocusRequest,
-    });
+    // Selecting an event NEVER moves the camera (unlike a building/place) — it only
+    // opens the detail panel and highlights the pin. We don't bump mapFocusRequest,
+    // and leaving activeBuildingId at null keeps the map redraw effect from re-
+    // running in the overview, so the screen stays exactly where it is. (Clicking
+    // an event from inside a building does flip activeBuildingId → overview, which
+    // necessarily reframes — but a plain pin click in overview moves nothing.)
+    set({ activeBuildingId: null, activeFloorId: null, mapSelection: { kind: 'event', event } });
   },
 });
