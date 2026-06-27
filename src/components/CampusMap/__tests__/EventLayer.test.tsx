@@ -25,8 +25,10 @@ beforeEach(() => {
     createdPane: false,
     getPane: () => undefined,
     createPane() { this.createdPane = true; return paneEl; },
-    // Pins are positioned by LAYER point now (they live inside the map pane).
+    // Resting layer point.
     latLngToLayerPoint: () => ({ x: 10, y: 20 }),
+    // Post-zoom target layer point (Leaflet rounds it).
+    _latLngToNewLayerPoint: () => ({ round: () => ({ x: 99, y: 88 }) }),
     // Record the handler under every space-separated event token.
     on: (evts: string, fn: () => void) => { evts.split(' ').forEach((e) => { handlers[e] = fn; }); },
     off: () => {},
@@ -41,28 +43,26 @@ beforeEach(() => {
 afterEach(() => { setMapInstance(null); });
 
 describe('EventLayer', () => {
-  it('renders pins inside a Leaflet pane so panning moves them for free', () => {
+  it('renders pins inside a Leaflet pane positioned by layer point', () => {
     render(<EventLayer />);
-    // A dedicated map pane is created and the pins are portaled into it — being
-    // a child of the map pane is what makes panning track for free (no JS).
+    // A dedicated map pane is created and pins are portaled into it — being a
+    // child of the map pane is what makes panning track for free (no JS).
     expect(fakeMap.createdPane).toBe(true);
-    expect(paneEl.querySelector('button')).toBeTruthy();
-    // The pane can't ride the (event-less) zoom animation, so the layer hides
-    // on zoom start and re-places on zoom end.
-    expect(handlers.zoomstart).toBeTruthy();
-    expect(handlers.zoomend).toBeTruthy();
+    const btn = paneEl.querySelector('button') as HTMLElement;
+    expect(btn).toBeTruthy();
+    expect(btn.style.transform).toContain('10px'); // resting layer point (10,20)
+    // Pins ride the zoom animation like native markers (no hiding).
+    expect(handlers.zoomanim).toBeTruthy();
   });
 
-  it('hides pins during a zoom animation and restores them on zoomend', () => {
+  it('animates pins to the post-zoom layer point during a zoom (no hiding)', () => {
     render(<EventLayer />);
-    const wrapper = paneEl.firstElementChild as HTMLElement;
-    expect(wrapper).toBeTruthy();
-    expect(wrapper.className).not.toContain('opacity-0');
-    // zoomstart hides the overlay so pins don't drift while the basemap scales.
-    act(() => { handlers.zoomstart(); });
-    expect((paneEl.firstElementChild as HTMLElement).className).toContain('opacity-0');
-    // zoomend re-places and shows them.
-    act(() => { handlers.zoomend(); });
-    expect((paneEl.firstElementChild as HTMLElement).className).not.toContain('opacity-0');
+    act(() => { handlers.zoomanim({ zoom: 19, center: { lat: 49, lng: 16 } }); });
+    const btn = paneEl.querySelector('button') as HTMLElement;
+    // Moved to the _latLngToNewLayerPoint target (99,88) so it glides with the map.
+    expect(btn.style.transform).toContain('99px');
+    expect(btn.style.transform).toContain('88px');
+    // Pins are never hidden during zoom anymore.
+    expect(paneEl.innerHTML).not.toContain('opacity-0');
   });
 });

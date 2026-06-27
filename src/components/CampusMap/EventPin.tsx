@@ -15,8 +15,9 @@ interface EventPinProps {
 // A society-coloured teardrop whose pointed tip sits on the exact spot — no rope,
 // no floating. The round head carries the society logo; a white badge (top-right)
 // shows the soonest event's type icon; a count badge (bottom-right) appears only
-// when several events share the venue. Wrapper is translated so its bottom tip
-// lands at (x, y).
+// when several events share the venue. (x, y) is a Leaflet LAYER point: the
+// button is translated there (its bottom tip), and the `leaflet-zoom-animated`
+// class lets that transform transition with the basemap during a zoom.
 export function EventPin({ group, x, y, selected, locale, onSelect }: EventPinProps) {
   const lead = group.events[0];
   const soc = societyById(lead.societyId);
@@ -26,8 +27,8 @@ export function EventPin({ group, x, y, selected, locale, onSelect }: EventPinPr
 
   return (
     <button
-      className="group pointer-events-auto absolute flex flex-col items-center"
-      style={{ left: x, top: y, transform: 'translate(-50%, -100%)' }}
+      className="group pointer-events-auto absolute left-0 top-0 flex flex-col items-center leaflet-zoom-animated"
+      style={{ transform: `translate(${x}px, ${y}px) translate(-50%, -100%)` }}
       title={lead.title}
       onClick={() => onSelect(lead.id)}
     >
@@ -51,9 +52,12 @@ export function EventPin({ group, x, y, selected, locale, onSelect }: EventPinPr
           <Icon size={11} color={soc.color} strokeWidth={2.5} />
         </span>
 
-        {/* Count badge (bottom-right) — only when co-located. */}
+        {/* Count badge (bottom-right) — only when co-located. Fixed literals,
+            not theme vars: this rides the always-light basemap, so a DaisyUI
+            semantic colour would be invisible in the (default) dark app theme. */}
         {count > 1 && (
           <span
+            // eslint-disable-next-line no-restricted-syntax -- map overlay: always-light basemap needs a fixed dark digit
             className="absolute -bottom-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-slate-800 ring-1 ring-black/10"
           >
             {count}

@@ -11,16 +11,22 @@ import { EventPin } from './EventPin';
 
 interface Placed { key: string; x: number; y: number; group: VenueGroup; }
 
+// Leaflet's private projection used by its own markers to animate on zoom.
+type ZoomAnimMap = {
+  _latLngToNewLayerPoint(latlng: L.LatLngExpression, zoom: number, center: L.LatLngExpression): L.Point;
+};
+
 // Dedicated Leaflet pane for our pins. A child of the map pane (z below tooltips),
 // so Leaflet translates it for free while panning — pins stay glued with no JS.
 const PANE_NAME = 'reisEvents';
 
 // HTML pins (not Leaflet markers) so the balloons can use Tailwind/DaisyUI and
 // hover bubbles, but rendered INTO a Leaflet pane via a portal. Positions are
-// LAYER points (relative to the map pane), so panning moves them for free; they
-// only change on zoom/resize. The pane can't ride the (event-less) zoom
-// animation, so the overlay hides during a zoom and re-places on zoomend.
-// Pins only show in campus overview, not floor-view.
+// LAYER points (relative to the map pane), so panning moves them for free. On a
+// zoom they ride the animation exactly like native markers: `zoomanim` moves
+// each pin to its post-zoom layer point and the `leaflet-zoom-animated` class
+// transitions the transform in sync with the basemap. zoomend/viewreset settle
+// the exact positions. Pins only show in campus overview, not floor-view.
 export function EventLayer() {
   const events = useAppStore((s) => s.mapEvents);
   const eventFilter = useAppStore((s) => s.eventFilter);
@@ -31,7 +37,6 @@ export function EventLayer() {
   const { subscribedFaculties } = useEventsFacultySettings();
   const { language } = useTranslation();
   const [placed, setPlaced] = useState<Placed[]>([]);
-  const [zooming, setZooming] = useState(false);
   const [pane, setPane] = useState<HTMLElement | null>(null);
 
   useEffect(() => { void loadMapEvents(); }, [loadMapEvents]);
@@ -58,24 +63,29 @@ export function EventLayer() {
     };
     scheduleRef.current = recompute;
     // Panning needs no handler — the pane is a child of the map pane and rides
-    // its transform. Layer points only shift on zoom/resize (`viewreset`). The
-    // pane can't follow the zoom animation, so hide on start, re-place on end.
-    const onZoomStart = () => setZooming(true);
-    const onZoomEnd = () => { setZooming(false); recompute(); };
+    // its transform. On a zoom, move each pin to its post-zoom layer point so the
+    // `leaflet-zoom-animated` transform transitions in sync with the basemap;
+    // zoomend/viewreset then settle the exact (rounded) positions.
+    const onZoomAnim = (e: L.ZoomAnimEvent) => {
+      if (!map) return;
+      const proj = map as unknown as ZoomAnimMap;
+      setPlaced(groupsRef.current.map((g) => {
+        const pt = proj._latLngToNewLayerPoint([g.coord[1], g.coord[0]], e.zoom, e.center).round();
+        return { key: g.key, x: pt.x, y: pt.y, group: g };
+      }));
+    };
     const bind = (m: L.Map) => {
       const p = m.getPane(PANE_NAME) ?? m.createPane(PANE_NAME);
       p.style.zIndex = '640';
       p.style.pointerEvents = 'none';
       setPane(p);
-      m.on('viewreset', recompute);
-      m.on('zoomstart', onZoomStart);
-      m.on('zoomend', onZoomEnd);
+      m.on('zoomanim', onZoomAnim);
+      m.on('zoomend viewreset', recompute);
       recompute();
     };
     const unbind = (m: L.Map) => {
-      m.off('viewreset', recompute);
-      m.off('zoomstart', onZoomStart);
-      m.off('zoomend', onZoomEnd);
+      m.off('zoomanim', onZoomAnim);
+      m.off('zoomend viewreset', recompute);
     };
     const unsub = subscribeMapInstance((m) => {
       if (map) unbind(map);
@@ -93,7 +103,7 @@ export function EventLayer() {
   const selectedId = selection?.kind === 'event' ? selection.event.id : null;
 
   return createPortal(
-    <div className={`pointer-events-none ${zooming ? 'opacity-0' : ''}`}>
+    <>
       {placed.map((p) => (
         <EventPin
           key={p.key}
@@ -105,7 +115,7 @@ export function EventLayer() {
           onSelect={focusEvent}
         />
       ))}
-    </div>,
+    </>,
     pane,
   );
 }
