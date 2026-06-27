@@ -52,8 +52,8 @@ export function EventLayer() {
       rafId = requestAnimationFrame(() => { rafId = null; recompute(); });
     };
     scheduleRef.current = schedule;
-    const bind = (m: L.Map) => { m.on('moveend zoomend', recompute); schedule(); };
-    const unbind = (m: L.Map) => { m.off('moveend zoomend', recompute); };
+    const bind = (m: L.Map) => { m.on('move zoom moveend zoomend', schedule); schedule(); };
+    const unbind = (m: L.Map) => { m.off('move zoom moveend zoomend', schedule); };
     const unsub = subscribeMapInstance((m) => {
       if (map) unbind(map);
       map = m;
