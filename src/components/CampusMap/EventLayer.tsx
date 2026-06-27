@@ -11,8 +11,9 @@ import { EventPin } from './EventPin';
 interface Placed { key: string; x: number; y: number; group: VenueGroup; }
 
 // HTML overlay (not Leaflet markers) so the balloons can use Tailwind/DaisyUI and
-// hover bubbles. Positions are recomputed from the live map on move/zoom — same
-// approach as EdgeIndicators. Pins only show in campus overview, not floor-view.
+// hover bubbles. Positions track the live map: continuously while panning, and
+// the overlay hides during the (event-less) zoom animation and re-places on
+// zoomend. Pins only show in campus overview, not floor-view.
 export function EventLayer() {
   const events = useAppStore((s) => s.mapEvents);
   const eventFilter = useAppStore((s) => s.eventFilter);
@@ -23,6 +24,7 @@ export function EventLayer() {
   const { subscribedFaculties } = useEventsFacultySettings();
   const { language } = useTranslation();
   const [placed, setPlaced] = useState<Placed[]>([]);
+  const [zooming, setZooming] = useState(false);
 
   useEffect(() => { void loadMapEvents(); }, [loadMapEvents]);
 
@@ -52,8 +54,24 @@ export function EventLayer() {
       rafId = requestAnimationFrame(() => { rafId = null; recompute(); });
     };
     scheduleRef.current = schedule;
-    const bind = (m: L.Map) => { m.on('move zoom moveend zoomend', schedule); schedule(); };
-    const unbind = (m: L.Map) => { m.off('move zoom moveend zoomend', schedule); };
+    // Panning fires continuous `move`, so the overlay can track it live. An
+    // animated zoom does NOT fire continuous events (only zoomanim at the start,
+    // then zoomend) and this overlay lives outside the map pane, so it cannot
+    // ride the zoom transform. Hide the pins for the duration of the zoom and
+    // re-place them exactly on zoomend — no drift, no mid-animation guessing.
+    const onZoomStart = () => setZooming(true);
+    const onZoomEnd = () => { setZooming(false); recompute(); };
+    const bind = (m: L.Map) => {
+      m.on('move moveend', schedule);
+      m.on('zoomstart', onZoomStart);
+      m.on('zoomend', onZoomEnd);
+      schedule();
+    };
+    const unbind = (m: L.Map) => {
+      m.off('move moveend', schedule);
+      m.off('zoomstart', onZoomStart);
+      m.off('zoomend', onZoomEnd);
+    };
     const unsub = subscribeMapInstance((m) => {
       if (map) unbind(map);
       map = m;
@@ -71,7 +89,7 @@ export function EventLayer() {
   const selectedId = selection?.kind === 'event' ? selection.event.id : null;
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-[950]">
+    <div className={`pointer-events-none absolute inset-0 z-[950] ${zooming ? 'opacity-0' : ''}`}>
       {placed.map((p) => (
         <EventPin
           key={p.key}
