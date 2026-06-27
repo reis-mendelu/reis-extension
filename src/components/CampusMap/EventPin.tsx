@@ -45,7 +45,7 @@ export function EventPin({ group, x, y, selected, locale, onSelect }: EventPinPr
 
         {/* Type badge (top-right). */}
         <span
-          className="absolute -right-1 -top-1 flex items-center justify-center rounded-full bg-white ring-1 ring-base-300"
+          className="absolute -right-1 -top-1 flex items-center justify-center rounded-full bg-white ring-1 ring-black/10"
           style={{ width: 18, height: 18 }}
         >
           <Icon size={11} color={soc.color} strokeWidth={2.5} />
@@ -54,7 +54,7 @@ export function EventPin({ group, x, y, selected, locale, onSelect }: EventPinPr
         {/* Count badge (bottom-right) — only when co-located. */}
         {count > 1 && (
           <span
-            className="absolute -bottom-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-base-content ring-1 ring-base-300"
+            className="absolute -bottom-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-slate-800 ring-1 ring-black/10"
           >
             {count}
           </span>
