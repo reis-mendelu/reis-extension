@@ -7,6 +7,10 @@ export interface EventOrganizer {
   color: string;
 }
 
+export type EventCategory =
+  | 'party' | 'boardgames' | 'trip' | 'quiz' | 'sports'
+  | 'film' | 'karaoke' | 'culture' | 'social' | 'other';
+
 export interface MendeluEvent {
   title: string;
   url: string;
@@ -54,6 +58,7 @@ export interface MapEvent extends MendeluEvent {
   coord: [number, number] | null; // [lng, lat]
   roomCode: string | null;
   venueKind: 'campus' | 'online' | 'offcampus';
+  category: EventCategory;
 }
 
 export const FACULTY_LABEL_TO_KEY: Record<string, FacultyKey> = {
