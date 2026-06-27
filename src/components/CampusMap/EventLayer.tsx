@@ -53,8 +53,13 @@ export function EventLayer() {
 
   useEffect(() => {
     let map: L.Map | null = null;
+    // Zoom at which `placed` was last computed — lets the `move` handler tell a
+    // pure pan (zoom unchanged → pane rides the transform, skip) apart from a
+    // fly's continuous zoom change (recompute each frame so pins stay glued).
+    let placedZoom = NaN;
     const recompute = () => {
       if (!map) { setPlaced([]); return; }
+      placedZoom = map.getZoom();
       const next: Placed[] = groupsRef.current.map((g) => {
         const pt = map!.latLngToLayerPoint([g.coord[1], g.coord[0]]);
         return { key: g.key, x: pt.x, y: pt.y, group: g };
@@ -62,8 +67,13 @@ export function EventLayer() {
       setPlaced(next);
     };
     scheduleRef.current = recompute;
-    // Panning needs no handler — the pane is a child of the map pane and rides
-    // its transform. On a zoom, move each pin to its post-zoom layer point so the
+    // Pure panning needs no handler — the pane is a child of the map pane and
+    // rides its transform. A `flyTo` (clicking an event) animates pan AND zoom
+    // but does NOT fire `zoomanim`; it fires `move` per frame with a changing
+    // zoom, so re-project on `move` whenever the zoom differs from what's drawn —
+    // that keeps fly'd pins glued while leaving plain drags on the free path.
+    const onMove = () => { if (map && map.getZoom() !== placedZoom) recompute(); };
+    // On a stepped zoom, move each pin to its post-zoom layer point so the
     // `leaflet-zoom-animated` transform transitions in sync with the basemap;
     // zoomend/viewreset then settle the exact (rounded) positions.
     const onZoomAnim = (e: L.ZoomAnimEvent) => {
@@ -80,11 +90,13 @@ export function EventLayer() {
       p.style.pointerEvents = 'none';
       setPane(p);
       m.on('zoomanim', onZoomAnim);
+      m.on('move', onMove);
       m.on('zoomend viewreset', recompute);
       recompute();
     };
     const unbind = (m: L.Map) => {
       m.off('zoomanim', onZoomAnim);
+      m.off('move', onMove);
       m.off('zoomend viewreset', recompute);
     };
     const unsub = subscribeMapInstance((m) => {

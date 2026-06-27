@@ -22,6 +22,13 @@ const LANDMARK_LABELS = landmarkGroupLabels(LANDMARKS);
 // instead of the hover name. The Místa picker still carries the full pair name.
 const LANDMARK_LETTERS: Record<number, string> = { 1587: 'Z' };
 
+// At the campus-overview resting zoom the lettered building names (X, Q, A…)
+// just clutter the basemap and collide with event pins, so they're hidden via the
+// `reis-hide-building-labels` class (src/index.css). They reappear the moment the
+// user zooms IN past the overview — the threshold is the zoom at which the whole
+// campus fits (computed live with `getBoundsZoom` so it tracks the real container
+// size, not a guessed constant). The drill interaction is a click, not the label.
+
 // Vector outlines added to the map right before an animated fly render at the
 // OLD zoom and are then CSS-scaled by the zoom animation, so they flash huge and
 // in the wrong place until `moveend` re-projects them. Hide the vector + label
@@ -102,6 +109,18 @@ export function MapCanvas() {
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
     }).addTo(map);
     layerRef.current.addTo(map);
+    // Show the lettered building names only when zoomed in past the overview.
+    // restZoom = the zoom at which the whole campus fits (matches flyToBounds'
+    // padding/maxZoom); hide labels at/below it, reveal them one notch in.
+    const campusBounds = L.latLngBounds(META.campus.bounds as L.LatLngBoundsLiteral);
+    const syncLabelVisibility = () => {
+      const restZoom = Math.min(18, Math.floor(map.getBoundsZoom(campusBounds, false, L.point(40, 40))));
+      // Reveal labels two notches past the overview (one deeper than the first
+      // zoom-in) — they should appear only once you're clearly inspecting buildings.
+      map.getContainer().classList.toggle('reis-hide-building-labels', map.getZoom() <= restZoom + 1);
+    };
+    syncLabelVisibility();
+    map.on('zoomend', syncLabelVisibility);
     mapRef.current = map;
     setMapInstance(map);
     return () => { setMapInstance(null); map.remove(); mapRef.current = null; };
@@ -122,6 +141,17 @@ export function MapCanvas() {
           .addTo(layer);
       }
       drawLandmarks(layer, select, BUILDING_STYLE);
+      // Clicking the bare basemap (not a building outline or an event pin) clears
+      // the current selection — same "click away to dismiss" as floor-view's exit.
+      // Building outlines are Leaflet layers (their click doesn't reach the map);
+      // event pins are HTML in our pane, so skip clicks that land inside it.
+      const onOverviewClick = (e: L.LeafletMouseEvent) => {
+        const t = e.originalEvent.target as HTMLElement | null;
+        if (t?.closest('.leaflet-reisEvents-pane')) return;
+        if (useAppStore.getState().mapSelection) select.clearMapSelection();
+      };
+      map.on('click', onOverviewClick);
+      exitHandlerRef.current = onOverviewClick;
       // §6: rest at campus bounds, but fly to a chosen place's coord on
       // search/click (a poi/landmark/event selection) instead of refitting campus.
       const sel = select.mapSelection;

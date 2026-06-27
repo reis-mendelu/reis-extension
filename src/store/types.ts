@@ -412,6 +412,8 @@ export interface MapSlice {
   mapFocusRequest: number;
   setMapBuilding: (id: number) => void;
   exitToCampus: () => void;
+  /** Clear the current selection (close the detail panel) without moving the camera — bare-map click in campus overview. */
+  clearMapSelection: () => void;
   setMapFloor: (floorId: number) => void;
   selectMapRoom: (room: RoomProperties) => void;
   selectMapPoi: (poi: PoiProperties, coord: [number, number]) => void;

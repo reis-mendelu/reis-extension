@@ -16,21 +16,26 @@ function group(events: MapEvent[]): VenueGroup {
 }
 
 describe('EventPin', () => {
-  it('renders the lead event type icon', () => {
+  it('renders the category emoji image as the pin face', () => {
     const { container } = render(
       <EventPin group={group([ev('Deskovky', 'boardgames')])} x={100} y={100} selected={false} locale="en-US" onSelect={() => {}} />,
     );
-    expect(container.querySelector('.lucide-dices')).toBeTruthy();
+    // A real full-colour emoji (bundled Twemoji svg) is the whole pin face.
+    const img = container.querySelector('img');
+    expect(img?.getAttribute('src')).toBe('/emoji/1f3b2.svg'); // 🎲 boardgames
   });
 
-  it('shows a count badge only when the group has more than one event', () => {
+  it('paints no count badge on the pin face; co-located events surface as "+N" in the hover bubble', () => {
     const { rerender } = render(
       <EventPin group={group([ev('a', 'party')])} x={0} y={0} selected={false} locale="en-US" onSelect={() => {}} />,
     );
     expect(screen.queryByText('2')).toBeNull();
+    expect(screen.queryByText(/\+1/)).toBeNull();
     rerender(
       <EventPin group={group([ev('a', 'party'), ev('b', 'quiz')])} x={0} y={0} selected={false} locale="en-US" onSelect={() => {}} />,
     );
-    expect(screen.getByText('2')).toBeTruthy();
+    // No always-on "2" badge — the extra event is summarised as "+1" in the bubble.
+    expect(screen.queryByText('2')).toBeNull();
+    expect(screen.getByText(/\+1/)).toBeTruthy();
   });
 });

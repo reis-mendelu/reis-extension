@@ -32,6 +32,13 @@ describe('mapSlice', () => {
     expect(useAppStore.getState().mapSelection).toBeNull();
   });
 
+  it('clearMapSelection drops the selection but keeps the camera (building/floor) untouched', () => {
+    useAppStore.setState({ activeBuildingId: null, activeFloorId: null, mapSelection: { kind: 'poi', poi: { id: 1, name: 'x', type: '', url: null, phone: null, email: null }, coord: [16.6, 49.2] } });
+    useAppStore.getState().clearMapSelection();
+    expect(useAppStore.getState().mapSelection).toBeNull();
+    expect(useAppStore.getState().activeBuildingId).toBeNull();
+  });
+
   it('loadMapBuilding caches geometry from the api', async () => {
     vi.mocked(fetchBuildingRooms).mockResolvedValue(fc(54678, 7));
     await useAppStore.getState().loadMapBuilding(54678);

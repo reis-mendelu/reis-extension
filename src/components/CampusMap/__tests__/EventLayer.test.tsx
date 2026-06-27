@@ -25,8 +25,11 @@ beforeEach(() => {
     createdPane: false,
     getPane: () => undefined,
     createPane() { this.createdPane = true; return paneEl; },
+    // Current zoom — lets EventLayer tell a pure pan from a fly's zoom change.
+    zoom: 17,
+    getZoom() { return this.zoom; },
     // Resting layer point.
-    latLngToLayerPoint: () => ({ x: 10, y: 20 }),
+    latLngToLayerPoint() { return { x: this.zoom === 17 ? 10 : 50, y: 20 }; },
     // Post-zoom target layer point (Leaflet rounds it).
     _latLngToNewLayerPoint: () => ({ round: () => ({ x: 99, y: 88 }) }),
     // Record the handler under every space-separated event token.
@@ -64,5 +67,17 @@ describe('EventLayer', () => {
     expect(btn.style.transform).toContain('88px');
     // Pins are never hidden during zoom anymore.
     expect(paneEl.innerHTML).not.toContain('opacity-0');
+  });
+
+  it('re-projects pins on move only when the zoom changed (fly), not on a pure pan', () => {
+    render(<EventLayer />);
+    const btn = () => paneEl.querySelector('button') as HTMLElement;
+    expect(btn().style.transform).toContain('10px'); // resting (zoom 17)
+    // Pure pan: same zoom → pane rides the transform, no re-projection.
+    act(() => { handlers.move(); });
+    expect(btn().style.transform).toContain('10px');
+    // Fly: zoom changed mid-flight → re-project to the new layer point.
+    act(() => { fakeMap.zoom = 18; handlers.move(); });
+    expect(btn().style.transform).toContain('50px');
   });
 });

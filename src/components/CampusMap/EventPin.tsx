@@ -1,88 +1,61 @@
 import type { VenueGroup } from './eventHelpers';
-import { societyById } from '../../data/societies';
 import { parseEventDate } from './eventHelpers';
-import { CATEGORY_ICON } from '../../data/eventCategories';
+import { CATEGORY_EMOJI_SRC, CATEGORY_COLOR } from '../../data/eventCategories';
 
 interface EventPinProps {
   group: VenueGroup;
-  x: number; // tip screen x (container px) = exact coordinate
-  y: number; // tip screen y
+  x: number; // centre screen x (container px) = exact coordinate
+  y: number; // centre screen y
   selected: boolean;
   locale: string;
   onSelect: (id: string) => void;
 }
 
-// A society-coloured teardrop whose pointed tip sits on the exact spot — no rope,
-// no floating. The round head carries the society logo; a white badge (top-right)
-// shows the soonest event's type icon; a count badge (bottom-right) appears only
-// when several events share the venue. (x, y) is a Leaflet LAYER point: the
-// button is translated there (its bottom tip), and the `leaflet-zoom-animated`
-// class lets that transform transition with the basemap during a zoom.
+// Exactly the Google-Maps place marker: a white circle with a lean light border
+// and a soft lift shadow, carrying ONE real full-colour emoji (a bundled Twemoji
+// SVG). The colour comes from the emoji itself, not a tint or coloured disc — and
+// there is NO society ring/outline (society shows in the side list + hover bubble
+// instead). No tail; the circle centres on the venue. No badges or always-on
+// label; the count/title only surface on hover. (x, y) is a Leaflet LAYER point:
+// the button centres there, and `leaflet-zoom-animated` lets that transform
+// transition with the basemap during a zoom.
 export function EventPin({ group, x, y, selected, locale, onSelect }: EventPinProps) {
   const lead = group.events[0];
-  const soc = societyById(lead.societyId);
   const count = group.events.length;
-  const Icon = CATEGORY_ICON[lead.category];
+  const emojiSrc = CATEGORY_EMOJI_SRC[lead.category];
+  const color = CATEGORY_COLOR[lead.category];
   const dateLabel = parseEventDate(lead.date).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
 
   return (
     <button
-      className="group pointer-events-auto absolute left-0 top-0 flex flex-col items-center leaflet-zoom-animated"
-      style={{ transform: `translate(${x}px, ${y}px) translate(-50%, -100%)` }}
+      className="group pointer-events-auto absolute left-0 top-0 flex items-center justify-center leaflet-zoom-animated"
+      style={{ transform: `translate(${x}px, ${y}px) translate(-50%, -50%)` }}
       title={lead.title}
       onClick={() => onSelect(lead.id)}
     >
-      {/* Head: society colour + logo, with badges. */}
+      {/* White circle, lean border + lift shadow, real colour emoji inside. */}
       <span
-        className="relative flex items-center justify-center rounded-full text-white shadow-md ring-2 ring-white transition-transform group-hover:scale-110"
+        className="relative flex items-center justify-center rounded-full bg-white transition-transform group-hover:scale-110"
         style={{
-          width: 38, height: 38, backgroundColor: soc.color,
-          boxShadow: selected ? `0 0 0 4px ${soc.color}55, 0 2px 8px rgba(0,0,0,.4)` : undefined,
+          width: 30, height: 30,
+          border: '1px solid rgba(0,0,0,0.12)',
+          boxShadow: selected
+            ? `0 0 0 2px ${color}, 0 1px 5px rgba(0,0,0,.3)`
+            : '0 1px 4px rgba(0,0,0,.28)',
         }}
       >
-        {lead.imageUrl || soc.logo
-          ? <img src={lead.imageUrl ?? soc.logo} alt="" className="h-full w-full rounded-full object-cover" />
-          : <span className="text-xs font-extrabold leading-none">{soc.glyph}</span>}
+        <img src={emojiSrc} alt="" width={18} height={18} draggable={false} />
 
-        {/* Type badge (top-right). */}
+        {/* Sneak-peek bubble on hover (above the circle): title, date, "+N more". */}
         <span
-          className="absolute -right-1 -top-1 flex items-center justify-center rounded-full bg-white ring-1 ring-black/10"
-          style={{ width: 18, height: 18 }}
-        >
-          <Icon size={11} color={soc.color} strokeWidth={2.5} />
-        </span>
-
-        {/* Count badge (bottom-right) — only when co-located. Fixed literals,
-            not theme vars: this rides the always-light basemap, so a DaisyUI
-            semantic colour would be invisible in the (default) dark app theme. */}
-        {count > 1 && (
-          <span
-            // eslint-disable-next-line no-restricted-syntax -- map overlay: always-light basemap needs a fixed dark digit
-            className="absolute -bottom-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-slate-800 ring-1 ring-black/10"
-          >
-            {count}
-          </span>
-        )}
-
-        {/* Sneak-peek bubble on hover (above the head). */}
-        <span
-          className="pointer-events-none absolute bottom-[46px] left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-base-100 px-2 py-1 text-left text-base-content shadow-popover-heavy group-hover:block"
+          className="pointer-events-none absolute bottom-[40px] left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-base-100 px-2 py-1 text-left text-base-content shadow-popover-heavy group-hover:block"
         >
           <span className="block text-[11px] font-bold leading-tight">{lead.title}</span>
-          <span className="block text-[10px] font-semibold leading-tight" style={{ color: soc.color }}>
+          <span className="block text-[10px] font-semibold leading-tight" style={{ color }}>
             {dateLabel}{lead.time ? ` · ${lead.time}` : ''}{count > 1 ? ` · +${count - 1}` : ''}
           </span>
         </span>
       </span>
-
-      {/* Pointer: solid society-colour triangle; its bottom point is the tip. */}
-      <span
-        style={{
-          width: 0, height: 0, marginTop: -1,
-          borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
-          borderTop: `8px solid ${soc.color}`,
-        }}
-      />
     </button>
   );
 }
