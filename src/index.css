@@ -328,3 +328,9 @@ html, body, #root {
 .leaflet-tooltip.building-label::before {
   display: none;
 }
+/* Hide the lettered building names at the campus-overview zoom — toggled from
+ * MapCanvas by zoom level so they don't clutter the map or collide with event
+ * pins; they reappear once the user zooms in to choose a building. */
+.reis-hide-building-labels .leaflet-tooltip.building-label {
+  display: none;
+}

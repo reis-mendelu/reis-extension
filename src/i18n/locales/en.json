@@ -875,6 +875,37 @@
     "seats": "Seats",
     "projector": "Projector",
     "whiteboard": "Whiteboard",
-    "showOnMap": "Show on map"
+    "showOnMap": "Show on map",
+    "places": "Places",
+    "jakDorms": "JAK dormitories",
+    "mainCampus": "Main campus",
+    "alsoHere": "Also here",
+    "events": "Events",
+    "allSocieties": "All",
+    "myFaculty": "My faculty",
+    "noEvents": "No events",
+    "thisWeek": "This week",
+    "nextWeek": "Next week",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "moreHere": "more here",
+    "moreInfo": "More info",
+    "hostedBy": "Hosted by",
+    "going": "going",
+    "interested": "interested",
+    "rsvpGoing": "Going",
+    "rsvpInterested": "Interested",
+    "category": {
+      "party": "Party",
+      "boardgames": "Board games",
+      "trip": "Trip",
+      "quiz": "Quiz",
+      "sports": "Sports",
+      "film": "Film",
+      "karaoke": "Karaoke",
+      "culture": "Culture",
+      "social": "Social",
+      "other": "Event"
+    }
   }
 }

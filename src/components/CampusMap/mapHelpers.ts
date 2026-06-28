@@ -60,6 +60,55 @@ export function polygonCentroid(ring: number[][]): [number, number] {
   return [lon / ring.length, lat / ring.length];
 }
 
+// Rough planar distance in metres between two [lon, lat] points — exact enough
+// for the ~tens-of-metres landmark grouping below.
+function metersBetween(a: [number, number], b: [number, number]): number {
+  const dx = (a[0] - b[0]) * Math.cos((a[1] * Math.PI) / 180) * 111320;
+  const dy = (a[1] - b[1]) * 111320;
+  return Math.hypot(dx, dy);
+}
+
+// Some landmarks are literally the same building under two IS identities: FRRMS
+// and Kolej Akademie have an identical outline. Those get a combined "A / B"
+// label so a hover/detail reveals both names. The threshold is tiny on purpose
+// (≈ identical centroid): merely adjacent buildings — Tauferovy koleje and the
+// sports centre (~35 m apart), the JAK blocks (65 m+) — are SEPARATE and must
+// keep their own names. Grouping is transitive. Returns a landmark-id → label map.
+export function landmarkGroupLabels(landmarks: Landmark[], thresholdM = 5): Map<number, string> {
+  // polygonCentroid is a vertex average, so a duplicated closing vertex skews it
+  // toward that point — and two identical buildings stored with different start
+  // vertices would then get different centroids and fail to merge. Drop the
+  // closing duplicate first so identical outlines always centroid-match.
+  const cents = landmarks.map((l) => {
+    const ring = l.outline.coordinates[0];
+    const last = ring[ring.length - 1];
+    const open = ring.length > 1 && ring[0][0] === last[0] && ring[0][1] === last[1]
+      ? ring.slice(0, -1)
+      : ring;
+    return polygonCentroid(open);
+  });
+  const parent = landmarks.map((_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  for (let i = 0; i < landmarks.length; i++) {
+    for (let j = i + 1; j < landmarks.length; j++) {
+      if (metersBetween(cents[i], cents[j]) <= thresholdM) parent[find(i)] = find(j);
+    }
+  }
+  const groups = new Map<number, number[]>();
+  landmarks.forEach((_, i) => {
+    const root = find(i);
+    const members = groups.get(root);
+    if (members) members.push(i);
+    else groups.set(root, [i]);
+  });
+  const labels = new Map<number, string>();
+  for (const members of groups.values()) {
+    const text = members.map((i) => landmarks[i].name).join(' / ');
+    for (const i of members) labels.set(landmarks[i].id, text);
+  }
+  return labels;
+}
+
 // Bare letter+number room names (e.g. "Q01", "Q6", "A12") are the shared
 // lecture halls / student rooms; dotted names ("Q01.43") are individual
 // offices. Students search for the former, so they rank higher.

@@ -13,7 +13,8 @@ const fc = (id: number, floorId: number): RoomsCollection => ({ type: 'FeatureCo
 
 beforeEach(() => {
   useAppStore.setState({ activeBuildingId: null, activeFloorId: null, mapSelection: null,
-    roomsByBuilding: {}, mapLoadingBuilding: null, mapSearchQuery: '', mapSearchResults: [], mapFocusRequest: 0 });
+    roomsByBuilding: {}, mapLoadingBuilding: null, mapSearchQuery: '', mapSearchResults: [], mapFocusRequest: 0,
+    mapEvents: [], mapEventsLoaded: false, mapPanelTab: 'places', eventFilter: 'all' });
   vi.mocked(fetchBuildingRooms).mockReset();
 });
 
@@ -31,6 +32,13 @@ describe('mapSlice', () => {
     expect(useAppStore.getState().mapSelection).toBeNull();
   });
 
+  it('clearMapSelection drops the selection but keeps the camera (building/floor) untouched', () => {
+    useAppStore.setState({ activeBuildingId: null, activeFloorId: null, mapSelection: { kind: 'poi', poi: { id: 1, name: 'x', type: '', url: null, phone: null, email: null }, coord: [16.6, 49.2] } });
+    useAppStore.getState().clearMapSelection();
+    expect(useAppStore.getState().mapSelection).toBeNull();
+    expect(useAppStore.getState().activeBuildingId).toBeNull();
+  });
+
   it('loadMapBuilding caches geometry from the api', async () => {
     vi.mocked(fetchBuildingRooms).mockResolvedValue(fc(54678, 7));
     await useAppStore.getState().loadMapBuilding(54678);
@@ -46,8 +54,84 @@ describe('mapSlice', () => {
     expect(s.mapFocusRequest).toBe(before + 1);
   });
 
+  it('focusCampus returns to overview and bumps the focus request', () => {
+    useAppStore.getState().setMapBuilding(54678);
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusCampus();
+    const s = useAppStore.getState();
+    expect(s.activeBuildingId).toBeNull();
+    expect(s.activeFloorId).toBeNull();
+    expect(s.mapSelection).toBeNull();
+    expect(s.mapFocusRequest).toBe(before + 1);
+  });
+
+  it('focusPoint sets a named poi selection at the coord and bumps the focus request', () => {
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusPoint('Koleje JAK', [16.62, 49.22]);
+    const s = useAppStore.getState();
+    expect(s.activeBuildingId).toBeNull();
+    expect(s.activeFloorId).toBeNull();
+    expect(s.mapSelection).toMatchObject({ kind: 'poi', poi: { name: 'Koleje JAK' }, coord: [16.62, 49.22] });
+    expect(s.mapFocusRequest).toBe(before + 1);
+  });
+
   it('setMapSearchQuery populates results', () => {
     useAppStore.getState().setMapSearchQuery('Q01');
     expect(useAppStore.getState().mapSearchResults.length).toBeGreaterThan(0);
+  });
+
+  it('setMapPanelTab and setEventFilter update state', () => {
+    useAppStore.getState().setMapPanelTab('events');
+    useAppStore.getState().setEventFilter('esn');
+    expect(useAppStore.getState().mapPanelTab).toBe('events');
+    expect(useAppStore.getState().eventFilter).toBe('esn');
+  });
+
+  it('loadMapEvents populates events once', async () => {
+    await useAppStore.getState().loadMapEvents();
+    expect(useAppStore.getState().mapEventsLoaded).toBe(true);
+    expect(useAppStore.getState().mapEvents.length).toBeGreaterThan(0);
+  });
+
+  it('focusEventById from a PIN click (no opts) selects without moving the camera', async () => {
+    await useAppStore.getState().loadMapEvents();
+    const pinned = useAppStore.getState().mapEvents.find((e) => e.coord)!;
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusEventById(pinned.id);
+    const s = useAppStore.getState();
+    expect(s.mapSelection).toMatchObject({ kind: 'event', event: { id: pinned.id } });
+    expect(s.mapFocusRequest).toBe(before); // pin click never bumps — you're already on the pin
+  });
+
+  it('focusEventById off-campus also selects without moving the camera', async () => {
+    await useAppStore.getState().loadMapEvents();
+    const off = { ...useAppStore.getState().mapEvents[0], id: 'off-1', coord: null };
+    useAppStore.setState({ mapEvents: [...useAppStore.getState().mapEvents, off] });
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusEventById('off-1');
+    const s = useAppStore.getState();
+    expect(s.mapSelection?.kind).toBe('event');
+    expect(s.mapFocusRequest).toBe(before);
+  });
+
+  it('focusEventById from a LIST click ({ fly: true }) flies to an on-campus event', async () => {
+    await useAppStore.getState().loadMapEvents();
+    const pinned = useAppStore.getState().mapEvents.find((e) => e.coord)!;
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusEventById(pinned.id, { fly: true });
+    const s = useAppStore.getState();
+    expect(s.mapSelection).toMatchObject({ kind: 'event', event: { id: pinned.id } });
+    expect(s.mapFocusRequest).toBe(before + 1); // list click flies → bumps focus
+  });
+
+  it('focusEventById from a LIST click does NOT fly for an off-campus event (no coord)', async () => {
+    await useAppStore.getState().loadMapEvents();
+    const off = { ...useAppStore.getState().mapEvents[0], id: 'off-2', coord: null };
+    useAppStore.setState({ mapEvents: [...useAppStore.getState().mapEvents, off] });
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusEventById('off-2', { fly: true });
+    const s = useAppStore.getState();
+    expect(s.mapSelection?.kind).toBe('event');
+    expect(s.mapFocusRequest).toBe(before); // no coordinate → nothing to fly to
   });
 });

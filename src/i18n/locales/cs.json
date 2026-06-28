@@ -875,6 +875,37 @@
     "seats": "Míst",
     "projector": "Projektor",
     "whiteboard": "Tabule",
-    "showOnMap": "Zobrazit na mapě"
+    "showOnMap": "Zobrazit na mapě",
+    "places": "Místa",
+    "jakDorms": "Koleje JAK",
+    "mainCampus": "Hlavní kampus",
+    "alsoHere": "Také zde",
+    "events": "Akce",
+    "allSocieties": "Vše",
+    "myFaculty": "Moje fakulta",
+    "noEvents": "Žádné akce",
+    "thisWeek": "Tento týden",
+    "nextWeek": "Příští týden",
+    "today": "Dnes",
+    "tomorrow": "Zítra",
+    "moreHere": "dalších zde",
+    "moreInfo": "Více informací",
+    "hostedBy": "Pořádá",
+    "going": "půjde",
+    "interested": "má zájem",
+    "rsvpGoing": "Půjdu",
+    "rsvpInterested": "Mám zájem",
+    "category": {
+      "party": "Párty",
+      "boardgames": "Deskovky",
+      "trip": "Výlet",
+      "quiz": "Kvíz",
+      "sports": "Sport",
+      "film": "Film",
+      "karaoke": "Karaoke",
+      "culture": "Kultura",
+      "social": "Společenská akce",
+      "other": "Akce"
+    }
   }
 }

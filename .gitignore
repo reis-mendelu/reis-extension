@@ -130,3 +130,6 @@ supabase/.temp/
 
 # Vercel project link for the eduroam receiver page
 receiver/.vercel
+
+# Brainstorming visual companion
+.superpowers/

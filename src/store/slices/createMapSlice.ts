@@ -6,6 +6,7 @@ import poisJson from '../../data/map/pois.json';
 import landmarksJson from '../../data/map/landmarks.json';
 import { searchPlaces, polygonCentroid } from '../../components/CampusMap/mapHelpers';
 import { fetchBuildingRooms } from '../../api/campusMap';
+import { fetchMapEvents } from '../../api/mapEvents';
 import { logError } from '../../utils/reportError';
 
 const META = buildingsJson as BuildingsMeta;
@@ -24,6 +25,11 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   mapSearchQuery: '',
   mapSearchResults: [],
   mapFocusRequest: 0,
+  mapEvents: [],
+  mapEventsLoaded: false,
+  mapEventsLanguage: null,
+  mapPanelTab: 'events',
+  eventFilter: 'all',
 
   setMapBuilding: (id) => {
     const b = buildingById(id);
@@ -33,6 +39,8 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   },
 
   exitToCampus: () => set({ activeBuildingId: null, activeFloorId: null, mapSelection: null }),
+
+  clearMapSelection: () => set({ mapSelection: null }),
 
   setMapFloor: (floorId) => set({ activeFloorId: floorId, mapSelection: null }),
 
@@ -75,6 +83,17 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     });
   },
 
+  focusCampus: () => set({
+    activeBuildingId: null, activeFloorId: null, mapSelection: null,
+    mapFocusRequest: get().mapFocusRequest + 1,
+  }),
+
+  focusPoint: (name, coord) => set({
+    activeBuildingId: null, activeFloorId: null,
+    mapSelection: { kind: 'poi', poi: { id: -1, name, type: '', url: null, phone: null, email: null }, coord },
+    mapFocusRequest: get().mapFocusRequest + 1,
+  }),
+
   loadMapBuilding: async (id) => {
     if (get().roomsByBuilding[id]) return; // already in memory
     set({ mapLoadingBuilding: id });
@@ -86,5 +105,40 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     } finally {
       set({ mapLoadingBuilding: get().mapLoadingBuilding === id ? null : get().mapLoadingBuilding });
     }
+  },
+
+  setMapPanelTab: (tab) => set({ mapPanelTab: tab }),
+  setEventFilter: (filter) => set({ eventFilter: filter }),
+
+  loadMapEvents: async () => {
+    const language = get().language;
+    // Cache is keyed by language, not a one-shot flag — otherwise a later
+    // language switch would never re-fetch the localized dataset.
+    if (get().mapEventsLoaded && get().mapEventsLanguage === language) return;
+    try {
+      const events = await fetchMapEvents(language);
+      set({ mapEvents: events, mapEventsLoaded: true, mapEventsLanguage: language });
+    } catch (err) {
+      logError('MapSlice.loadMapEvents', err);
+    }
+  },
+
+  focusEventById: (id, opts) => {
+    const event = get().mapEvents.find((e) => e.id === id);
+    if (!event) { logError('MapSlice.focusEventById', new Error(`unknown event ${id}`)); return; }
+    // A PIN click (no opts) never moves the camera — you're already looking at the
+    // pin, so we just open the detail panel and highlight it. Leaving
+    // activeBuildingId at null and not bumping mapFocusRequest keeps the redraw
+    // effect from re-running in the overview, so the screen stays put.
+    // A LIST click passes { fly: true }: for an on-campus event we bump
+    // mapFocusRequest so the canvas flies to its coordinate; off-campus events
+    // have no coord, so they only open the panel wherever the map already is.
+    const fly = opts?.fly === true && !!event.coord;
+    set({
+      activeBuildingId: null,
+      activeFloorId: null,
+      mapSelection: { kind: 'event', event },
+      ...(fly ? { mapFocusRequest: get().mapFocusRequest + 1 } : {}),
+    });
   },
 });
