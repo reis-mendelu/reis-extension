@@ -30,32 +30,24 @@ interface Seed {
   category?: EventCategory; // override; defaults to inferCategory(title)
 }
 
-// Soonest-first ordering is applied by the consumer; authoring order here is free.
+// ISO yyyy-mm-dd for `days` from today. The mock window is anchored to "now" so
+// the demo always shows upcoming events (this + next week) no matter when it runs.
+function isoInDays(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+// A tight 4-event window — this week + next week only — so the panel reads as a
+// short, near-term agenda rather than a whole-semester dump. Kept varied on
+// purpose: three societies, on- and off-campus, distinct categories/pins.
 const SEEDS: Seed[] = [
-  // ESN MENDELU — sport at the Tauferovy sports centre, socials at JAK dorms,
-  // trips / city parties off-campus.
-  { title: 'Country Presentation', societyId: 'esn', date: '2026-09-03', time: '17:00', venue: 'Q', room: 'Q01' },
-  { title: 'BU Karaoke', societyId: 'esn', date: '2026-10-05', time: '20:00', venue: 'JAK' },
-  { title: 'Beerpong', societyId: 'esn', date: '2026-10-08', time: '19:00', venue: 'JAK' },
-  { title: 'Trip to Ostrava', societyId: 'esn', date: '2026-10-10', time: '07:30', venue: null },
-  { title: 'Erasmus Cup: Basketball', societyId: 'esn', date: '2026-10-13', time: '18:00', venue: 'TAUF' },
-  { title: 'Tram Party', societyId: 'esn', date: '2026-10-22', time: '20:00', venue: null },
-  { title: 'Erasmus Cup: Volleyball', societyId: 'esn', date: '2026-10-27', time: '18:00', venue: 'TAUF' },
-  { title: 'International Student Ball', societyId: 'esn', date: '2026-11-19', time: '19:00', venue: null },
-  // SU PEF — in the PEF/Q building; pub crawl + escape room off-campus.
-  { title: 'Filmový klubík', societyId: 'supef', date: '2026-10-14', time: '19:00', venue: 'Q', room: 'Q01' },
-  { title: 'PEF Kvíz', societyId: 'supef', date: '2026-10-21', time: '18:00', venue: 'Q', room: 'Q01' },
-  { title: 'Tour de Pub', societyId: 'supef', date: '2026-10-28', time: '19:00', venue: null },
-  { title: 'Deskovky', societyId: 'supef', date: '2026-11-04', time: '17:00', venue: 'Q', room: 'Q23' },
-  { title: 'Beer Pong', societyId: 'supef', date: '2026-11-11', time: '19:00', venue: 'Q', room: 'Q01' },
-  { title: 'TINDELU', societyId: 'supef', date: '2026-11-25', time: '20:00', venue: 'Q', room: 'Q01' },
-  { title: 'Únikovka', societyId: 'supef', date: '2026-12-02', time: '18:00', venue: null },
-  // AU FRRMS — all at the FRRMS building.
-  { title: 'Akademické středy — ASY-Quiz', societyId: 'au_frrms', date: '2026-11-05', time: '18:00', venue: 'FRRMS' },
-  { title: 'Půlení semestru — NEON Party', societyId: 'au_frrms', date: '2026-11-11', time: '20:00', venue: 'FRRMS' },
-  { title: 'Tématické dny — Taiwanský den', societyId: 'au_frrms', date: '2026-11-12', time: '12:00', venue: 'FRRMS' },
-  { title: 'Deskovky', societyId: 'au_frrms', date: '2026-11-19', time: '17:00', venue: 'FRRMS' },
-  { title: 'Karaoke Night', societyId: 'au_frrms', date: '2026-11-26', time: '19:00', venue: 'FRRMS' },
+  // This week
+  { title: 'Erasmus Cup: Basketball', societyId: 'esn', date: isoInDays(2), time: '18:00', venue: 'TAUF' },
+  { title: 'PEF Kvíz', societyId: 'supef', date: isoInDays(4), time: '18:00', venue: 'Q', room: 'Q01' },
+  // Next week
+  { title: 'Tram Party', societyId: 'esn', date: isoInDays(9), time: '20:00', venue: null },
+  { title: 'Karaoke Night', societyId: 'au_frrms', date: isoInDays(11), time: '19:00', venue: 'FRRMS' },
 ];
 
 function toEvent(s: Seed, i: number): MapEvent {

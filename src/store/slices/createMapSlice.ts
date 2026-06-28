@@ -27,7 +27,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   mapFocusRequest: 0,
   mapEvents: [],
   mapEventsLoaded: false,
-  mapPanelTab: 'places',
+  mapPanelTab: 'events',
   eventFilter: 'all',
 
   setMapBuilding: (id) => {
@@ -119,15 +119,22 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     }
   },
 
-  focusEventById: (id) => {
+  focusEventById: (id, opts) => {
     const event = get().mapEvents.find((e) => e.id === id);
     if (!event) { logError('MapSlice.focusEventById', new Error(`unknown event ${id}`)); return; }
-    // Selecting an event NEVER moves the camera (unlike a building/place) — it only
-    // opens the detail panel and highlights the pin. We don't bump mapFocusRequest,
-    // and leaving activeBuildingId at null keeps the map redraw effect from re-
-    // running in the overview, so the screen stays exactly where it is. (Clicking
-    // an event from inside a building does flip activeBuildingId → overview, which
-    // necessarily reframes — but a plain pin click in overview moves nothing.)
-    set({ activeBuildingId: null, activeFloorId: null, mapSelection: { kind: 'event', event } });
+    // A PIN click (no opts) never moves the camera — you're already looking at the
+    // pin, so we just open the detail panel and highlight it. Leaving
+    // activeBuildingId at null and not bumping mapFocusRequest keeps the redraw
+    // effect from re-running in the overview, so the screen stays put.
+    // A LIST click passes { fly: true }: for an on-campus event we bump
+    // mapFocusRequest so the canvas flies to its coordinate; off-campus events
+    // have no coord, so they only open the panel wherever the map already is.
+    const fly = opts?.fly === true && !!event.coord;
+    set({
+      activeBuildingId: null,
+      activeFloorId: null,
+      mapSelection: { kind: 'event', event },
+      ...(fly ? { mapFocusRequest: get().mapFocusRequest + 1 } : {}),
+    });
   },
 });

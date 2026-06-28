@@ -154,16 +154,16 @@ export function MapCanvas() {
       exitHandlerRef.current = onOverviewClick;
       // §6: rest at campus bounds, but fly to a chosen place's coord on
       // search/click instead of refitting campus. A place/landmark (poi) zooms in
-      // to 18; an EVENT does NOT zoom — it only pans at the current zoom so the
-      // selected pin re-centres without the jarring zoom-in (events differ from
-      // buildings here, by request).
+      // to 18. An EVENT this effect runs for came from a LIST click (pin clicks
+      // don't bump focusReq), so we DO fly there: zoom to 18 when at overview, but
+      // never zoom back out if you're already deeper in.
       const sel = select.mapSelection;
       if (sel?.kind === 'poi') {
         const [lon, lat] = sel.coord;
         flyAndReveal(map, () => map.flyTo([lat, lon], 18));
       } else if (sel?.kind === 'event' && sel.event.coord) {
         const [lon, lat] = sel.event.coord;
-        flyAndReveal(map, () => map.flyTo([lat, lon], map.getZoom()));
+        flyAndReveal(map, () => map.flyTo([lat, lon], Math.max(map.getZoom(), 18)));
       } else {
         flyAndReveal(map, () => map.flyToBounds(META.campus.bounds as L.LatLngBoundsExpression, { maxZoom: 18, padding: [40, 40] }));
       }

@@ -33,6 +33,7 @@ import { createPersonProfileSlice } from './slices/createPersonProfileSlice';
 import { createBulletinSlice } from './slices/createBulletinSlice';
 import { createViewportSlice } from './slices/createViewportSlice';
 import { createMapSlice } from './slices/createMapSlice';
+import { createRsvpSlice } from './slices/createRsvpSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
@@ -71,6 +72,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createBulletinSlice(...a),
   ...createViewportSlice(...a),
   ...createMapSlice(...a),
+  ...createRsvpSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates

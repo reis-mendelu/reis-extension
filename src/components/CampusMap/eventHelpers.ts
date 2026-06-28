@@ -47,24 +47,54 @@ export function groupEventsByVenue(events: MapEvent[]): VenueGroup[] {
   return [...groups.values()];
 }
 
-// Section a sorted list into month headings ("October 2026") for the panel.
-export interface MonthSection {
-  label: string;
+// The panel only ever shows the next two weeks, so we section by "This week" /
+// "Next week" rather than by month — far easier to grasp than a date ("it's on
+// Thursday" beats "it's on the 9th"). `key` is a translation key the panel maps
+// to a localized heading; "later" is a safety bucket for anything further out.
+export type WeekSectionKey = 'thisWeek' | 'nextWeek' | 'later';
+export interface WeekSection {
+  key: WeekSectionKey;
   events: MapEvent[];
 }
 
-export function monthSections(events: MapEvent[], locale: string): MonthSection[] {
-  const sorted = sortByDate(events);
-  const sections: MonthSection[] = [];
-  let current: MonthSection | null = null;
-  for (const e of sorted) {
-    const label = parseEventDate(e.date).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
-    if (!current || current.label !== label) {
-      current = { label, events: [e] };
-      sections.push(current);
-    } else {
-      current.events.push(e);
-    }
+// Monday 00:00 of the week containing `ref` (CZ/EU convention — week starts Mon).
+function startOfWeek(ref: Date): Date {
+  const d = new Date(ref);
+  d.setHours(0, 0, 0, 0);
+  const dow = (d.getDay() + 6) % 7; // Mon=0 … Sun=6
+  d.setDate(d.getDate() - dow);
+  return d;
+}
+
+export function weekSections(events: MapEvent[], now: Date = new Date()): WeekSection[] {
+  const thisWeekStart = startOfWeek(now).getTime();
+  const nextWeekStart = thisWeekStart + 7 * 86400_000;
+  const weekAfterStart = thisWeekStart + 14 * 86400_000;
+  const bucketOf = (e: MapEvent): WeekSectionKey => {
+    const t = parseEventDate(e.date).getTime();
+    if (t < nextWeekStart) return 'thisWeek';
+    if (t < weekAfterStart) return 'nextWeek';
+    return 'later';
+  };
+
+  const buckets = new Map<WeekSectionKey, MapEvent[]>();
+  for (const e of sortByDate(events)) {
+    const k = bucketOf(e);
+    const arr = buckets.get(k);
+    if (arr) arr.push(e); else buckets.set(k, [e]);
   }
-  return sections;
+  const order: WeekSectionKey[] = ['thisWeek', 'nextWeek', 'later'];
+  return order.filter((k) => buckets.has(k)).map((k) => ({ key: k, events: buckets.get(k)! }));
+}
+
+// Relative, human day label for a row: "Today" / "Tomorrow" / weekday name
+// ("Thursday"). Within a two-week window the weekday alone is unambiguous.
+export function relativeDayLabel(
+  iso: string, locale: string, t: (key: string) => string, now: Date = new Date(),
+): string {
+  const start = new Date(now); start.setHours(0, 0, 0, 0);
+  const days = Math.round((parseEventDate(iso).getTime() - start.getTime()) / 86400_000);
+  if (days === 0) return t('map.today');
+  if (days === 1) return t('map.tomorrow');
+  return parseEventDate(iso).toLocaleDateString(locale, { weekday: 'long' });
 }

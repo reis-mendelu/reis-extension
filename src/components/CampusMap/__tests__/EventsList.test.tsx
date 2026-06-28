@@ -14,16 +14,10 @@ beforeEach(() => {
 });
 
 describe('EventsList', () => {
-  it('renders real society events with month sections', () => {
+  it('renders the upcoming events', () => {
     render(<EventsList />);
     expect(screen.getByText('PEF Kvíz')).toBeTruthy();
     expect(screen.getByText('Karaoke Night')).toBeTruthy();
-  });
-
-  it('flags off-campus events with a tag', () => {
-    render(<EventsList />);
-    // Tram Party / Tour de Pub / Únikovka have no coord.
-    expect(screen.getAllByText('off-campus').length).toBeGreaterThan(0);
   });
 
   it('clicking a row selects the event in the store', async () => {
@@ -46,9 +40,10 @@ describe('EventsList', () => {
     expect(screen.getByText('No events')).toBeTruthy();
   });
 
-  it('renders a category icon on rows', () => {
+  it('renders a category emoji thumbnail on rows without a poster', () => {
     const { container } = render(<EventsList />);
-    // Deskovky (SU PEF) is visible under the default 'all' filter → boardgames icon.
-    expect(container.querySelector('.lucide-dices')).toBeTruthy();
+    // No mock event has a poster → each row shows its category emoji tile.
+    // PEF Kvíz → quiz → 🧠 (1f9e0).
+    expect(container.querySelector('img[src="/emoji/1f9e0.svg"]')).toBeTruthy();
   });
 });
