@@ -12,7 +12,12 @@ const VENUE = {
   FRRMS: [16.614393, 49.218171] as [number, number], // FRRMS / Kolej Akademie
   TAUF: [16.588635, 49.215198] as [number, number], // Tauferovy sports centre
   JAK: [16.630567, 49.216291] as [number, number], // Koleje JAK
+  CESKA: [16.608389, 49.197889] as [number, number], // Česká tram stop, city centre — off-campus meet-up point
 };
+
+// Off-campus venues that still get a map pin (a real meet-up spot in the city),
+// as opposed to on-campus venues. Used to tag venueKind honestly.
+const OFFCAMPUS_VENUES = new Set<keyof typeof VENUE>(['CESKA']);
 
 const URLS: Record<string, string> = {
   esn: 'https://esn.mendelu.cz',
@@ -46,7 +51,7 @@ const SEEDS: Seed[] = [
   { title: 'Erasmus Cup: Basketball', societyId: 'esn', date: isoInDays(2), time: '18:00', venue: 'TAUF' },
   { title: 'PEF Kvíz', societyId: 'supef', date: isoInDays(4), time: '18:00', venue: 'Q', room: 'Q01' },
   // Next week
-  { title: 'Tram Party', societyId: 'esn', date: isoInDays(9), time: '20:00', venue: null },
+  { title: 'Tram Party', societyId: 'esn', date: isoInDays(9), time: '20:00', venue: 'CESKA' },
   { title: 'Karaoke Night', societyId: 'au_frrms', date: isoInDays(11), time: '19:00', venue: 'FRRMS' },
 ];
 
@@ -60,13 +65,13 @@ function toEvent(s: Seed, i: number): MapEvent {
     date: s.date,
     endDate: null,
     time: s.time,
-    location: s.room ?? (s.venue === 'TAUF' ? 'Sportovní centrum' : s.venue === 'JAK' ? 'Koleje JAK' : s.venue === 'FRRMS' ? 'FRRMS' : null),
+    location: s.room ?? (s.venue === 'TAUF' ? 'Sportovní centrum' : s.venue === 'JAK' ? 'Koleje JAK' : s.venue === 'FRRMS' ? 'FRRMS' : s.venue === 'CESKA' ? 'Česká (sraz)' : null),
     imageUrl: null,
     organizerKey: soc.facultyKey as FacultyKey,
     societyId: s.societyId,
     coord,
     roomCode: s.room ?? null,
-    venueKind: s.venue ? 'campus' : 'offcampus',
+    venueKind: s.venue == null || OFFCAMPUS_VENUES.has(s.venue) ? 'offcampus' : 'campus',
     category: s.category ?? inferCategory(s.title),
   };
 }

@@ -105,9 +105,10 @@ describe('mapSlice', () => {
 
   it('focusEventById off-campus also selects without moving the camera', async () => {
     await useAppStore.getState().loadMapEvents();
-    const off = useAppStore.getState().mapEvents.find((e) => !e.coord)!;
+    const off = { ...useAppStore.getState().mapEvents[0], id: 'off-1', coord: null };
+    useAppStore.setState({ mapEvents: [...useAppStore.getState().mapEvents, off] });
     const before = useAppStore.getState().mapFocusRequest;
-    useAppStore.getState().focusEventById(off.id);
+    useAppStore.getState().focusEventById('off-1');
     const s = useAppStore.getState();
     expect(s.mapSelection?.kind).toBe('event');
     expect(s.mapFocusRequest).toBe(before);
@@ -125,9 +126,10 @@ describe('mapSlice', () => {
 
   it('focusEventById from a LIST click does NOT fly for an off-campus event (no coord)', async () => {
     await useAppStore.getState().loadMapEvents();
-    const off = useAppStore.getState().mapEvents.find((e) => !e.coord)!;
+    const off = { ...useAppStore.getState().mapEvents[0], id: 'off-2', coord: null };
+    useAppStore.setState({ mapEvents: [...useAppStore.getState().mapEvents, off] });
     const before = useAppStore.getState().mapFocusRequest;
-    useAppStore.getState().focusEventById(off.id, { fly: true });
+    useAppStore.getState().focusEventById('off-2', { fly: true });
     const s = useAppStore.getState();
     expect(s.mapSelection?.kind).toBe('event');
     expect(s.mapFocusRequest).toBe(before); // no coordinate → nothing to fly to
