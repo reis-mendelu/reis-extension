@@ -53,17 +53,21 @@ export interface WeekSection {
   events: MapEvent[];
 }
 
-// Monday 00:00 of the week containing `ref` (CZ/EU convention — week starts Mon).
-function startOfWeek(ref: Date): Date {
+// 00:00 today, in local time.
+function startOfDay(ref: Date): Date {
   const d = new Date(ref);
   d.setHours(0, 0, 0, 0);
-  const dow = (d.getDay() + 6) % 7; // Mon=0 … Sun=6
-  d.setDate(d.getDate() - dow);
   return d;
 }
 
+// Rolling 7-day window from today: "this week" = the next 7 days, "next week" =
+// everything after. We intentionally do NOT bucket by the calendar (Mon–Sun) —
+// a calendar boundary lets "tomorrow" fall into the next bucket on weekends, so a
+// row could read "Tomorrow" under a "Next week" heading. A rolling window keeps
+// the label (relativeDayLabel) and the section perfectly in sync, and each
+// weekday appears once in the first window so a bare weekday is unambiguous.
 export function weekSections(events: MapEvent[], now: Date = new Date()): WeekSection[] {
-  const nextWeekStart = startOfWeek(now).getTime() + 7 * 86400_000;
+  const nextWeekStart = startOfDay(now).getTime() + 7 * 86400_000;
   const bucketOf = (e: MapEvent): WeekSectionKey =>
     parseEventDate(e.date).getTime() < nextWeekStart ? 'thisWeek' : 'nextWeek';
 
@@ -78,22 +82,21 @@ export function weekSections(events: MapEvent[], now: Date = new Date()): WeekSe
 }
 
 // Human day label for a row. "Today" / "Tomorrow" for the next two days; a bare
-// weekday ("Thursday") for the rest of THIS calendar week — unambiguous, reads as
-// "this Thursday". For next week a bare weekday would be ambiguous, so it gets an
-// explicit date too: "13. 1. (Tuesday)".
+// weekday ("Thursday") for the rest of the rolling this-week window (each weekday
+// is unique within 7 days, so it's unambiguous). Beyond that — the "Next week"
+// bucket — a bare weekday WOULD be ambiguous, so it gets an explicit date too:
+// "13. 1. (Tuesday)". Boundary matches weekSections exactly (day 7).
 export function relativeDayLabel(
   iso: string, locale: string, t: (key: string) => string, now: Date = new Date(),
 ): string {
-  const start = new Date(now); start.setHours(0, 0, 0, 0);
   const date = parseEventDate(iso);
-  const days = Math.round((date.getTime() - start.getTime()) / 86400_000);
+  const days = Math.round((date.getTime() - startOfDay(now).getTime()) / 86400_000);
   if (days === 0) return t('map.today');
   if (days === 1) return t('map.tomorrow');
 
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const weekday = cap(date.toLocaleDateString(locale, { weekday: 'long' }));
-  const nextWeekStart = startOfWeek(now).getTime() + 7 * 86400_000;
-  if (date.getTime() < nextWeekStart) return weekday; // this week — weekday is enough
+  if (days < 7) return weekday; // this-week window — weekday is enough
   const dm = date.toLocaleDateString(locale, { day: 'numeric', month: 'numeric' });
   return `${dm} (${weekday})`;
 }

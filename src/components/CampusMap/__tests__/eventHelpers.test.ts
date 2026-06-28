@@ -70,4 +70,15 @@ describe('eventHelpers', () => {
     expect(next).toContain('13');
     expect(next).toBe('1/13 (Tuesday)');
   });
+
+  it('weekend: "tomorrow" stays in This week and is never filed under Next week', () => {
+    const t = (k: string) => k;
+    const sun = new Date('2026-01-11T12:00:00'); // a Sunday
+    const tomorrow = '2026-01-12'; // Monday — would be a NEW calendar week
+    // label says tomorrow…
+    expect(relativeDayLabel(tomorrow, 'en-US', t, sun)).toBe('map.tomorrow');
+    // …and the bucket agrees: This week, not Next week (the old calendar bug)
+    const sections = weekSections([{ ...MOCK_MAP_EVENTS[0], id: 'a', date: tomorrow }], sun);
+    expect(sections[0].key).toBe('thisWeek');
+  });
 });

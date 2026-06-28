@@ -44,7 +44,9 @@ function isoLocal(d: Date): string {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
-// `days` from today (this-week side).
+// `days` from today. The list groups by a rolling 7-day window (see weekSections),
+// so 1–2 days out is always "this week" and 7+ days out is always "next week" —
+// no calendar-boundary spill, no empty "This week" on weekends.
 function inDays(days: number): string {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -52,26 +54,16 @@ function inDays(days: number): string {
   return isoLocal(d);
 }
 
-// Monday of next week + `offset`, so events reliably land in the *next* calendar
-// week regardless of which day the demo runs.
-function nextWeek(offset: number): string {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  const dow = (d.getDay() + 6) % 7; // Mon=0 … Sun=6
-  d.setDate(d.getDate() - dow + 7 + offset);
-  return isoLocal(d);
-}
-
 // A tight 4-event window — this week + next week — so the panel reads as a short,
 // near-term agenda rather than a whole-semester dump. Kept varied on purpose:
 // three societies, on- and off-campus, distinct categories/pins.
 const SEEDS: Seed[] = [
-  // This week (tomorrow + day after)
+  // This week (tomorrow + day after — always inside the rolling 7-day window)
   { title: 'Erasmus Cup: Basketball', societyId: 'esn', date: inDays(1), time: '18:00', venue: 'TAUF' },
   { title: 'PEF Kvíz', societyId: 'supef', date: inDays(2), time: '18:00', venue: 'Q', room: 'Q01' },
-  // Next week (Tue + Thu of next calendar week)
-  { title: 'Tram Party', societyId: 'esn', date: nextWeek(1), time: '20:00', venue: 'CESKA' },
-  { title: 'Karaoke Night', societyId: 'au_frrms', date: nextWeek(3), time: '19:00', venue: 'FRRMS' },
+  // Next week (8 + 10 days out — always in the second window)
+  { title: 'Tram Party', societyId: 'esn', date: inDays(8), time: '20:00', venue: 'CESKA' },
+  { title: 'Karaoke Night', societyId: 'au_frrms', date: inDays(10), time: '19:00', venue: 'FRRMS' },
 ];
 
 function toEvent(s: Seed, i: number): MapEvent {

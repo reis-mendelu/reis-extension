@@ -2,6 +2,7 @@ import { Check, Star, Users } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { socialFor } from '../../data/mockSocial';
+import { readableTextColor } from '../../utils/readableTextColor';
 
 // The social block of the event detail card: live going / interested counts and
 // the student's own Going / Interested toggle. We have no real attendee faces
@@ -16,6 +17,9 @@ export function EventRsvp({ eventId, accent }: { eventId: string; accent: string
   const { going, interested } = socialFor(eventId);
   const goingTotal = going + (status === 'going' ? 1 : 0);
   const interestedTotal = interested + (status === 'interested' ? 1 : 0);
+  // active fill = society colour; foreground picked for contrast (white fails on
+  // light brand colours like ESN cyan).
+  const activeStyle = { backgroundColor: accent, borderColor: accent, color: readableTextColor(accent) };
 
   return (
     <div className="space-y-2.5 pt-0.5">
@@ -29,15 +33,15 @@ export function EventRsvp({ eventId, accent }: { eventId: string; accent: string
       <div className="grid grid-cols-2 gap-1.5">
         <button
           onClick={() => setRsvp(eventId, 'going')}
-          className={`btn btn-sm gap-1.5 ${status === 'going' ? 'text-white' : 'btn-soft'}`}
-          style={status === 'going' ? { backgroundColor: accent, borderColor: accent } : undefined}
+          className={`btn btn-sm gap-1.5 ${status === 'going' ? '' : 'btn-soft'}`}
+          style={status === 'going' ? activeStyle : undefined}
         >
           <Check size={14} /> {t('map.rsvpGoing')}
         </button>
         <button
           onClick={() => setRsvp(eventId, 'interested')}
-          className={`btn btn-sm gap-1.5 ${status === 'interested' ? 'text-white' : 'btn-soft'}`}
-          style={status === 'interested' ? { backgroundColor: accent, borderColor: accent } : undefined}
+          className={`btn btn-sm gap-1.5 ${status === 'interested' ? '' : 'btn-soft'}`}
+          style={status === 'interested' ? activeStyle : undefined}
         >
           <Star size={14} /> {t('map.rsvpInterested')}
         </button>

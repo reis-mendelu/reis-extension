@@ -4,6 +4,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useEventsFacultySettings } from '../../hooks/useEventsFacultySettings';
 import { ALL_SOCIETIES } from '../../data/societies';
+import { readableTextColor } from '../../utils/readableTextColor';
 import { filterEvents, weekSections, relativeDayLabel } from './eventHelpers';
 import type { MapEvent } from '../../types/events';
 
@@ -16,7 +17,9 @@ function EventRow({ event, locale, t, selected, onClick }: {
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-base-200 ${selected ? 'bg-base-200' : ''}`}
+      className={`flex w-full items-center gap-3 border-l-2 px-3 py-2 text-left transition-colors ${
+        selected ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-base-200'
+      }`}
     >
       {/* poster thumbnail; falls back to a neutral tile with the colour emoji */}
       <span className="h-[52px] w-[52px] flex-shrink-0 overflow-hidden rounded-lg">
@@ -69,20 +72,32 @@ export function EventsList() {
   const societies = [...ALL_SOCIETIES].sort(
     (a, b) => (a.facultyKey === homeFaculty ? 0 : 1) - (b.facultyKey === homeFaculty ? 0 : 1),
   );
-  const chipCls = (id: string) =>
-    `btn btn-xs flex-shrink-0 whitespace-nowrap rounded-full ${filter === id ? 'btn-primary' : 'btn-ghost'}`;
+  const chipBase = 'btn btn-xs flex-shrink-0 whitespace-nowrap rounded-full';
 
   return (
     <div className="flex max-h-[60vh] flex-col">
-      <div className="flex gap-1.5 overflow-x-auto px-2 py-2">
-        <button onClick={() => setFilter('all')} className={chipCls('all')}>
+      <div className="custom-scrollbar flex gap-1.5 overflow-x-auto px-2 py-2">
+        {/* "Vše" keeps the brand primary; each society chip fills with its own
+            brand colour when active, so the colour legend pays off here */}
+        <button
+          onClick={() => setFilter('all')}
+          className={`${chipBase} ${filter === 'all' ? 'btn-primary' : 'btn-ghost'}`}
+        >
           {t('map.allSocieties')}
         </button>
-        {societies.map((s) => (
-          <button key={s.id} onClick={() => setFilter(s.id)} className={chipCls(s.id)}>
-            {s.shortName}
-          </button>
-        ))}
+        {societies.map((s) => {
+          const active = filter === s.id;
+          return (
+            <button
+              key={s.id}
+              onClick={() => setFilter(s.id)}
+              className={`${chipBase} ${active ? 'border-transparent' : 'btn-ghost'}`}
+              style={active ? { backgroundColor: s.color, color: readableTextColor(s.color) } : undefined}
+            >
+              {s.shortName}
+            </button>
+          );
+        })}
       </div>
       <div className="overflow-y-auto">
         {sections.length === 0 ? (
@@ -93,7 +108,7 @@ export function EventsList() {
         ) : (
           sections.map((s) => (
             <div key={s.key}>
-              <div className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-base-content/40">
+              <div className="border-l-2 border-transparent px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wide text-base-content/60">
                 {t(`map.${s.key}`)}
               </div>
               {s.events.map((e) => (
