@@ -20,8 +20,8 @@ const VENUE = {
 const OFFCAMPUS_VENUES = new Set<keyof typeof VENUE>(['CESKA']);
 
 const URLS: Record<string, string> = {
-  esn: 'https://esn.mendelu.cz',
-  supef: 'https://supef.cz',
+  esn: 'https://www.instagram.com/esnmendelubrno/',
+  supef: 'https://www.instagram.com/supefmendelu/',
   au_frrms: 'https://au.mendelu.cz',
 };
 
