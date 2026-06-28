@@ -46,7 +46,7 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
             <span>{dateLabel}{event.time ? ` · ${event.time}` : ''}</span>
           </div>
           <div className="flex items-center gap-1.5 text-sm text-base-content/70">
-            <img src={CATEGORY_EMOJI_SRC[event.category]} alt="" className="h-4 w-4 flex-shrink-0 animate-emoji-pop" />
+            <img src={CATEGORY_EMOJI_SRC[event.category]} alt="" className="h-4 w-4 flex-shrink-0" />
             <span>{t(`map.category.${event.category}`)}</span>
           </div>
           {event.roomCode ? (

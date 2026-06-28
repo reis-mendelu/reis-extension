@@ -24,12 +24,7 @@ function EventRow({ event, locale, t, selected, onClick }: {
           <img src={event.imageUrl} alt="" className="h-full w-full object-cover" />
         ) : (
           <span className="flex h-full w-full items-center justify-center bg-base-200">
-            {/* emoji only comes alive on the selected (clicked) row */}
-            <img
-              src={CATEGORY_EMOJI_SRC[event.category]}
-              alt=""
-              className={`h-7 w-7 ${selected ? 'animate-emoji-pop' : ''}`}
-            />
+            <img src={CATEGORY_EMOJI_SRC[event.category]} alt="" className="h-7 w-7" />
           </span>
         )}
       </span>
