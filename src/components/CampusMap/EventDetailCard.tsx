@@ -1,5 +1,5 @@
 import { MapPin, ExternalLink, Clock } from 'lucide-react';
-import { CATEGORY_ICON } from '../../data/eventCategories';
+import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { societyById } from '../../data/societies';
@@ -15,7 +15,6 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
   const focusRoom = useAppStore((s) => s.focusRoomByCode);
   const { t, language } = useTranslation();
   const soc = societyById(event.societyId);
-  const CategoryIcon = CATEGORY_ICON[event.category];
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const dateLabel = parseEventDate(event.date).toLocaleDateString(locale, {
     weekday: 'short', day: 'numeric', month: 'long',
@@ -47,7 +46,7 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
             <span>{dateLabel}{event.time ? ` · ${event.time}` : ''}</span>
           </div>
           <div className="flex items-center gap-1.5 text-sm text-base-content/70">
-            <CategoryIcon size={13} className="flex-shrink-0" />
+            <img src={CATEGORY_EMOJI_SRC[event.category]} alt="" className="h-4 w-4 flex-shrink-0 animate-emoji-pop" />
             <span>{t(`map.category.${event.category}`)}</span>
           </div>
           {event.roomCode ? (

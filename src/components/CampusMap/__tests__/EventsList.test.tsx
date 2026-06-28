@@ -28,18 +28,18 @@ describe('EventsList', () => {
 
   it('selecting a society chip filters the list to that society', async () => {
     render(<EventsList />);
-    // SU PEF chip → only SU PEF events (PEF Kvíz); other societies drop out.
-    await userEvent.click(screen.getByRole('button', { name: 'SU PEF' }));
+    // SUPEF chip → only SU PEF events (PEF Kvíz); other societies drop out.
+    await userEvent.click(screen.getByRole('button', { name: 'SUPEF' }));
     expect(useAppStore.getState().eventFilter).toBe('supef');
     expect(screen.getByText('PEF Kvíz')).toBeTruthy();
     expect(screen.queryByText('Karaoke Night')).toBeNull();
   });
 
-  it('my-faculty spolek chip (SU PEF) is ordered before the others', () => {
+  it('my-faculty spolek chip (SUPEF) is ordered before the others', () => {
     render(<EventsList />);
     const names = screen.getAllByRole('button').map((b) => b.textContent);
-    // subscribed faculties = mendelu + pef (mocked) → SU PEF leads the societies.
-    expect(names.indexOf('SU PEF')).toBeLessThan(names.indexOf('ESN'));
+    // subscribed faculties = mendelu + pef (mocked) → SUPEF leads the societies.
+    expect(names.indexOf('SUPEF')).toBeLessThan(names.indexOf('ESN'));
   });
 
   it('shows an empty state when there are no events', () => {

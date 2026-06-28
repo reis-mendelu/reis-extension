@@ -1,12 +1,13 @@
-import { Check, Star, User } from 'lucide-react';
+import { Check, Star, Users } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { socialFor } from '../../data/mockSocial';
 
-// The social block of the event detail card: an overlapping avatar stack, the
-// live going/interested counts, and the student's own Going / Interested toggle.
-// Counts come from the deterministic mock layer (socialFor); the displayed going
-// number reflects the user's own RSVP (+1 when going) so tapping feels alive.
+// The social block of the event detail card: live going / interested counts and
+// the student's own Going / Interested toggle. We have no real attendee faces
+// (mock phase), so instead of faking avatars the counts stand on their own —
+// honest and minimal. The displayed going number reflects the user's own RSVP
+// (+1 when going) so tapping feels alive.
 export function EventRsvp({ eventId, accent }: { eventId: string; accent: string }) {
   const status = useAppStore((s) => s.rsvp[eventId]);
   const setRsvp = useAppStore((s) => s.setRsvp);
@@ -18,26 +19,11 @@ export function EventRsvp({ eventId, accent }: { eventId: string; accent: string
 
   return (
     <div className="space-y-2.5 pt-0.5">
-      <div className="flex items-center gap-2.5">
-        {/* one anonymous attendee + a "+N" bubble for everyone else going */}
-        <div className="flex items-end">
-          <span
-            className="flex h-8 w-8 items-center justify-center rounded-full ring-2 ring-base-100"
-            style={{ backgroundColor: accent }}
-          >
-            <User size={15} className="text-white" fill="currentColor" />
-          </span>
-          {goingTotal > 1 && (
-            <span className="-ml-2.5 flex h-6 items-center justify-center rounded-full bg-base-300 px-1.5 text-[10px] font-bold text-base-content ring-2 ring-base-100">
-              +{goingTotal - 1}
-            </span>
-          )}
-        </div>
-        <span className="text-xs text-base-content/70">
-          <span className="font-bold text-base-content">{goingTotal}</span> {t('map.going')}
-          {' · '}
-          <span className="font-bold text-base-content">{interestedTotal}</span> {t('map.interested')}
-        </span>
+      <div className="flex items-center gap-2 text-sm text-base-content/70">
+        <Users size={16} className="flex-shrink-0 text-base-content/45" />
+        <span><span className="font-bold text-base-content">{goingTotal}</span> {t('map.going')}</span>
+        <span className="text-base-content/30">·</span>
+        <span><span className="font-bold text-base-content">{interestedTotal}</span> {t('map.interested')}</span>
       </div>
 
       <div className="grid grid-cols-2 gap-1.5">
