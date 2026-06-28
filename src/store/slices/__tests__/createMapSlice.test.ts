@@ -82,9 +82,9 @@ describe('mapSlice', () => {
 
   it('setMapPanelTab and setEventFilter update state', () => {
     useAppStore.getState().setMapPanelTab('events');
-    useAppStore.getState().setEventFilter('faculty');
+    useAppStore.getState().setEventFilter('esn');
     expect(useAppStore.getState().mapPanelTab).toBe('events');
-    expect(useAppStore.getState().eventFilter).toBe('faculty');
+    expect(useAppStore.getState().eventFilter).toBe('esn');
   });
 
   it('loadMapEvents populates events once', async () => {

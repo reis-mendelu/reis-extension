@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { sortByDate, filterEvents, groupEventsByVenue, weekSections, relativeDayLabel } from '../eventHelpers';
 import { MOCK_MAP_EVENTS } from '../../../api/mapEvents';
-import { societyById } from '../../../data/societies';
-import type { MapEvent, FacultyKey } from '../../../types/events';
-
-const facultyOf = (id: string): FacultyKey => societyById(id).facultyKey;
+import type { MapEvent } from '../../../types/events';
 
 describe('eventHelpers', () => {
   it('sortByDate orders soonest first by date then time', () => {
@@ -17,15 +14,13 @@ describe('eventHelpers', () => {
   });
 
   it('filterEvents "all" keeps everything', () => {
-    expect(filterEvents(MOCK_MAP_EVENTS, 'all', facultyOf, ['pef'])).toHaveLength(MOCK_MAP_EVENTS.length);
+    expect(filterEvents(MOCK_MAP_EVENTS, 'all')).toHaveLength(MOCK_MAP_EVENTS.length);
   });
 
-  it('filterEvents "faculty" keeps only subscribed faculties (incl. ESN/mendelu)', () => {
-    const out = filterEvents(MOCK_MAP_EVENTS, 'faculty', facultyOf, ['mendelu', 'pef']);
-    const ids = new Set(out.map((e) => e.societyId));
-    expect(ids.has('esn')).toBe(true); // mendelu
-    expect(ids.has('supef')).toBe(true); // pef
-    expect(ids.has('au_frrms')).toBe(false); // frrms not subscribed
+  it('filterEvents by societyId keeps only that society', () => {
+    const out = filterEvents(MOCK_MAP_EVENTS, 'supef');
+    expect(out.length).toBeGreaterThan(0);
+    expect(out.every((e) => e.societyId === 'supef')).toBe(true);
   });
 
   it('groupEventsByVenue excludes off-campus and keeps every pinnable event', () => {

@@ -1,4 +1,4 @@
-import type { MapEvent, FacultyKey } from '../../types/events';
+import type { MapEvent } from '../../types/events';
 
 // One map balloon = all events sharing a venue coordinate. The soonest event
 // supplies the balloon's society colour/glyph; `events` carries the rest for the
@@ -20,16 +20,11 @@ export function sortByDate(events: MapEvent[]): MapEvent[] {
   );
 }
 
-// 'all' → every event. 'faculty' → events whose authoring society belongs to a
-// faculty the student follows (ESN's mendelu key is always followed).
-export function filterEvents(
-  events: MapEvent[],
-  filter: 'all' | 'faculty',
-  facultyOf: (societyId: string) => FacultyKey,
-  subscribed: FacultyKey[],
-): MapEvent[] {
+// 'all' → every event. Otherwise `filter` is a societyId and only that society's
+// events are kept.
+export function filterEvents(events: MapEvent[], filter: string): MapEvent[] {
   if (filter === 'all') return events;
-  return events.filter((e) => subscribed.includes(facultyOf(e.societyId)));
+  return events.filter((e) => e.societyId === filter);
 }
 
 // Only pinnable (on-campus) events become balloons; off-campus events are

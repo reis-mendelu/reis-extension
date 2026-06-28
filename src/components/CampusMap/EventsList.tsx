@@ -3,7 +3,7 @@ import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useEventsFacultySettings } from '../../hooks/useEventsFacultySettings';
-import { societyById } from '../../data/societies';
+import { ALL_SOCIETIES } from '../../data/societies';
 import { filterEvents, weekSections, relativeDayLabel } from './eventHelpers';
 import type { MapEvent } from '../../types/events';
 
@@ -58,20 +58,29 @@ export function EventsList() {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
-  const visible = filterEvents(events, filter, (id) => societyById(id).facultyKey, subscribedFaculties);
+  const visible = filterEvents(events, filter);
   const sections = weekSections(visible);
   const selectedId = selection?.kind === 'event' ? selection.event.id : null;
 
+  // Society filter chips: "All" first, then the societies with the student's own
+  // faculty spolek (e.g. SU PEF for a PEF student) always leading. Stable sort
+  // keeps the remaining societies in their catalog order.
+  const homeFaculty = subscribedFaculties.find((k) => k !== 'mendelu');
+  const societies = [...ALL_SOCIETIES].sort(
+    (a, b) => (a.facultyKey === homeFaculty ? 0 : 1) - (b.facultyKey === homeFaculty ? 0 : 1),
+  );
+  const chipCls = (id: string) =>
+    `btn btn-xs flex-shrink-0 whitespace-nowrap rounded-full ${filter === id ? 'btn-primary' : 'btn-ghost'}`;
+
   return (
     <div className="flex max-h-[60vh] flex-col">
-      <div className="flex gap-1.5 px-2 py-2">
-        {(['all', 'faculty'] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`btn btn-xs rounded-full ${filter === f ? 'btn-primary' : 'btn-ghost'}`}
-          >
-            {f === 'all' ? t('map.allSocieties') : t('map.myFaculty')}
+      <div className="flex gap-1.5 overflow-x-auto px-2 py-2">
+        <button onClick={() => setFilter('all')} className={chipCls('all')}>
+          {t('map.allSocieties')}
+        </button>
+        {societies.map((s) => (
+          <button key={s.id} onClick={() => setFilter(s.id)} className={chipCls(s.id)}>
+            {s.name}
           </button>
         ))}
       </div>

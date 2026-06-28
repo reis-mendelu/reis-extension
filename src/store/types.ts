@@ -431,10 +431,10 @@ export interface MapSlice {
   mapEventsLoaded: boolean;
   /** Which tab the top-right panel shows. */
   mapPanelTab: 'places' | 'events';
-  /** Event scope: all societies, or only the student's faculty's societies. */
-  eventFilter: 'all' | 'faculty';
+  /** Event scope: 'all' societies, or a specific societyId. */
+  eventFilter: string;
   setMapPanelTab: (tab: 'places' | 'events') => void;
-  setEventFilter: (filter: 'all' | 'faculty') => void;
+  setEventFilter: (filter: string) => void;
   loadMapEvents: () => Promise<void>;
   /** Select an event for the detail panel. Pass `{ fly: true }` (list click) to also fly the camera to its coordinate; a pin click omits it and the camera stays put. */
   focusEventById: (id: string, opts?: { fly?: boolean }) => void;

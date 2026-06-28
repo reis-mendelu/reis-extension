@@ -26,12 +26,20 @@ describe('EventsList', () => {
     expect(useAppStore.getState().mapSelection?.kind).toBe('event');
   });
 
-  it('My-faculty filter updates the store and drops other-faculty societies', async () => {
+  it('selecting a society chip filters the list to that society', async () => {
     render(<EventsList />);
-    await userEvent.click(screen.getByRole('button', { name: 'My faculty' }));
-    expect(useAppStore.getState().eventFilter).toBe('faculty');
-    // AU FRRMS is frrms → not subscribed → hidden.
+    // SU PEF chip → only SU PEF events (PEF Kvíz); other societies drop out.
+    await userEvent.click(screen.getByRole('button', { name: 'SU PEF' }));
+    expect(useAppStore.getState().eventFilter).toBe('supef');
+    expect(screen.getByText('PEF Kvíz')).toBeTruthy();
     expect(screen.queryByText('Karaoke Night')).toBeNull();
+  });
+
+  it('my-faculty spolek chip (SU PEF) is ordered before the others', () => {
+    render(<EventsList />);
+    const names = screen.getAllByRole('button').map((b) => b.textContent);
+    // subscribed faculties = mendelu + pef (mocked) → SU PEF leads the societies.
+    expect(names.indexOf('SU PEF')).toBeLessThan(names.indexOf('ESN MENDELU'));
   });
 
   it('shows an empty state when there are no events', () => {

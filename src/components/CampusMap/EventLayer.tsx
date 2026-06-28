@@ -3,8 +3,6 @@ import { createPortal } from 'react-dom';
 import type L from 'leaflet';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useEventsFacultySettings } from '../../hooks/useEventsFacultySettings';
-import { societyById } from '../../data/societies';
 import { filterEvents, groupEventsByVenue, type VenueGroup } from './eventHelpers';
 import { subscribeMapInstance } from './mapInstance';
 import { EventPin } from './EventPin';
@@ -34,7 +32,6 @@ export function EventLayer() {
   const selection = useAppStore((s) => s.mapSelection);
   const focusEvent = useAppStore((s) => s.focusEventById);
   const loadMapEvents = useAppStore((s) => s.loadMapEvents);
-  const { subscribedFaculties } = useEventsFacultySettings();
   const { language } = useTranslation();
   const [placed, setPlaced] = useState<Placed[]>([]);
   const [pane, setPane] = useState<HTMLElement | null>(null);
@@ -42,9 +39,9 @@ export function EventLayer() {
   useEffect(() => { void loadMapEvents(); }, [loadMapEvents]);
 
   const groups = useMemo(() => {
-    const visible = filterEvents(events, eventFilter, (id) => societyById(id).facultyKey, subscribedFaculties);
+    const visible = filterEvents(events, eventFilter);
     return groupEventsByVenue(visible);
-  }, [events, eventFilter, subscribedFaculties]);
+  }, [events, eventFilter]);
 
   // Re-place pins when the visible groups change (filter toggle, data load).
   const groupsRef = useRef(groups);
