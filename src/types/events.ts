@@ -43,6 +43,8 @@ export const ALL_FACULTY_KEYS: FacultyKey[] = ['mendelu', 'pef', 'af', 'ldf', 'z
 export interface Society {
   id: string;
   name: string;
+  /** Short label for compact UI (filter chips, host line) — e.g. "ESN" vs "ESN MENDELU". */
+  shortName: string;
   color: string;
   glyph: string;       // short text fallback when the logo image is unavailable
   logo: string;        // runtime path to the shipped society logo (/spolky/<id>.jpg)

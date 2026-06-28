@@ -39,7 +39,7 @@ describe('EventsList', () => {
     render(<EventsList />);
     const names = screen.getAllByRole('button').map((b) => b.textContent);
     // subscribed faculties = mendelu + pef (mocked) → SU PEF leads the societies.
-    expect(names.indexOf('SU PEF')).toBeLessThan(names.indexOf('ESN MENDELU'));
+    expect(names.indexOf('SU PEF')).toBeLessThan(names.indexOf('ESN'));
   });
 
   it('shows an empty state when there are no events', () => {

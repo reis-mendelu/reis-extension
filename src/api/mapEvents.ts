@@ -12,7 +12,7 @@ const VENUE = {
   FRRMS: [16.614393, 49.218171] as [number, number], // FRRMS / Kolej Akademie
   TAUF: [16.588635, 49.215198] as [number, number], // Tauferovy sports centre
   JAK: [16.630567, 49.216291] as [number, number], // Koleje JAK
-  CESKA: [16.608389, 49.197889] as [number, number], // Česká tram stop, city centre — off-campus meet-up point
+  CESKA: [16.606389, 49.198056] as [number, number], // Česká tram stop (Česká/Joštova), city centre — off-campus meet-up point
 };
 
 // Off-campus venues that still get a map pin (a real meet-up spot in the city),

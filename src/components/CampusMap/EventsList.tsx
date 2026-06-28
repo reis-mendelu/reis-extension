@@ -80,7 +80,7 @@ export function EventsList() {
         </button>
         {societies.map((s) => (
           <button key={s.id} onClick={() => setFilter(s.id)} className={chipCls(s.id)}>
-            {s.name}
+            {s.shortName}
           </button>
         ))}
       </div>
