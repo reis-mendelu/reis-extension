@@ -8,9 +8,9 @@ describe('MOCK_MAP_EVENTS categories', () => {
 
   it('categorises known titles correctly', () => {
     const byTitle = (t: string) => MOCK_MAP_EVENTS.find((e) => e.title === t);
-    expect(byTitle('Deskovky')?.category).toBe('boardgames');
-    expect(byTitle('Trip to Ostrava')?.category).toBe('trip');
+    expect(byTitle('Erasmus Cup: Basketball')?.category).toBe('sports');
     expect(byTitle('Tram Party')?.category).toBe('party');
     expect(byTitle('PEF Kvíz')?.category).toBe('quiz');
+    expect(byTitle('Karaoke Night')?.category).toBe('karaoke');
   });
 });
