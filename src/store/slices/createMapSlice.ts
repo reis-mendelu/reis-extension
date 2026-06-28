@@ -27,6 +27,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   mapFocusRequest: 0,
   mapEvents: [],
   mapEventsLoaded: false,
+  mapEventsLanguage: null,
   mapPanelTab: 'events',
   eventFilter: 'all',
 
@@ -110,10 +111,13 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   setEventFilter: (filter) => set({ eventFilter: filter }),
 
   loadMapEvents: async () => {
-    if (get().mapEventsLoaded) return;
+    const language = get().language;
+    // Cache is keyed by language, not a one-shot flag — otherwise a later
+    // language switch would never re-fetch the localized dataset.
+    if (get().mapEventsLoaded && get().mapEventsLanguage === language) return;
     try {
-      const events = await fetchMapEvents(get().language);
-      set({ mapEvents: events, mapEventsLoaded: true });
+      const events = await fetchMapEvents(language);
+      set({ mapEvents: events, mapEventsLoaded: true, mapEventsLanguage: language });
     } catch (err) {
       logError('MapSlice.loadMapEvents', err);
     }

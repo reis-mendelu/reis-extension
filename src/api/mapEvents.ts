@@ -25,6 +25,18 @@ const URLS: Record<string, string> = {
   au_frrms: 'https://au.mendelu.cz',
 };
 
+type Lang = 'cz' | 'en';
+
+// Localized labels for the descriptive venues (the rooms like "Q01" are already
+// language-neutral). Event *titles* stay single strings on purpose — they're
+// proper event names (e.g. "PEF Kvíz", "Tram Party"), not translatable copy.
+const VENUE_LABELS: Partial<Record<keyof typeof VENUE, Record<Lang, string>>> = {
+  TAUF: { cz: 'Sportovní centrum', en: 'Sports centre' },
+  JAK: { cz: 'Koleje JAK', en: 'JAK dorms' },
+  FRRMS: { cz: 'FRRMS', en: 'FRRMS' },
+  CESKA: { cz: 'Česká (sraz)', en: 'Česká (meetup)' },
+};
+
 interface Seed {
   title: string;
   societyId: string;
@@ -66,7 +78,7 @@ const SEEDS: Seed[] = [
   { title: 'Karaoke Night', societyId: 'au_frrms', date: inDays(10), time: '19:00', venue: 'FRRMS' },
 ];
 
-function toEvent(s: Seed, i: number): MapEvent {
+function toEvent(s: Seed, i: number, language: Lang): MapEvent {
   const soc = societyById(s.societyId);
   const coord = s.venue ? VENUE[s.venue] : null;
   return {
@@ -76,7 +88,7 @@ function toEvent(s: Seed, i: number): MapEvent {
     date: s.date,
     endDate: null,
     time: s.time,
-    location: s.room ?? (s.venue === 'TAUF' ? 'Sportovní centrum' : s.venue === 'JAK' ? 'Koleje JAK' : s.venue === 'FRRMS' ? 'FRRMS' : s.venue === 'CESKA' ? 'Česká (sraz)' : null),
+    location: s.room ?? (s.venue ? VENUE_LABELS[s.venue]?.[language] ?? null : null),
     imageUrl: null,
     organizerKey: soc.facultyKey as FacultyKey,
     societyId: s.societyId,
@@ -87,10 +99,12 @@ function toEvent(s: Seed, i: number): MapEvent {
   };
 }
 
-export const MOCK_MAP_EVENTS: MapEvent[] = SEEDS.map(toEvent);
+// Default Czech dataset — used by tests and as the eager export; the runtime path
+// builds per-language via fetchMapEvents.
+export const MOCK_MAP_EVENTS: MapEvent[] = SEEDS.map((s, i) => toEvent(s, i, 'cz'));
 
-// Async to mirror the real network seam; returns the static dataset for now.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function fetchMapEvents(_language: string): Promise<MapEvent[]> {
-  return MOCK_MAP_EVENTS;
+// Async to mirror the real network seam; builds the dataset in the requested
+// language for now (so the English UI gets English venue labels).
+export async function fetchMapEvents(language: Lang): Promise<MapEvent[]> {
+  return SEEDS.map((s, i) => toEvent(s, i, language));
 }

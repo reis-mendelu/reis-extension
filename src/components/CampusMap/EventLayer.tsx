@@ -31,12 +31,11 @@ export function EventLayer() {
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const selection = useAppStore((s) => s.mapSelection);
   const focusEvent = useAppStore((s) => s.focusEventById);
-  const loadMapEvents = useAppStore((s) => s.loadMapEvents);
   const { language } = useTranslation();
   const [placed, setPlaced] = useState<Placed[]>([]);
   const [pane, setPane] = useState<HTMLElement | null>(null);
-
-  useEffect(() => { void loadMapEvents(); }, [loadMapEvents]);
+  // Events are loaded by the store (initializeStore + language handlers), not a
+  // fetch-in-useEffect here — this layer stays presentational over store state.
 
   const groups = useMemo(() => {
     const visible = filterEvents(events, eventFilter);

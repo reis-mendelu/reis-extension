@@ -429,6 +429,8 @@ export interface MapSlice {
   // --- Society events on the map ---
   mapEvents: MapEvent[];
   mapEventsLoaded: boolean;
+  /** Language the cached events were built in; a switch re-fetches. */
+  mapEventsLanguage: Language | null;
   /** Which tab the top-right panel shows. */
   mapPanelTab: 'places' | 'events';
   /** Event scope: 'all' societies, or a specific societyId. */
