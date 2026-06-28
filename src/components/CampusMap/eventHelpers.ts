@@ -47,11 +47,12 @@ export function groupEventsByVenue(events: MapEvent[]): VenueGroup[] {
   return [...groups.values()];
 }
 
-// The panel only ever shows the next two weeks, so we section by "This week" /
-// "Next week" rather than by month — far easier to grasp than a date ("it's on
-// Thursday" beats "it's on the 9th"). `key` is a translation key the panel maps
-// to a localized heading; "later" is a safety bucket for anything further out.
-export type WeekSectionKey = 'thisWeek' | 'nextWeek' | 'later';
+// The panel only ever shows this week and next week, so we section into exactly
+// those two — far easier to grasp than a date ("it's on Thursday" beats "it's on
+// the 9th"). `key` is a translation key the panel maps to a localized heading.
+// By contract no event is further out than next week, so anything past the
+// current calendar week falls under "Next week" (no third "later" bucket).
+export type WeekSectionKey = 'thisWeek' | 'nextWeek';
 export interface WeekSection {
   key: WeekSectionKey;
   events: MapEvent[];
@@ -67,15 +68,9 @@ function startOfWeek(ref: Date): Date {
 }
 
 export function weekSections(events: MapEvent[], now: Date = new Date()): WeekSection[] {
-  const thisWeekStart = startOfWeek(now).getTime();
-  const nextWeekStart = thisWeekStart + 7 * 86400_000;
-  const weekAfterStart = thisWeekStart + 14 * 86400_000;
-  const bucketOf = (e: MapEvent): WeekSectionKey => {
-    const t = parseEventDate(e.date).getTime();
-    if (t < nextWeekStart) return 'thisWeek';
-    if (t < weekAfterStart) return 'nextWeek';
-    return 'later';
-  };
+  const nextWeekStart = startOfWeek(now).getTime() + 7 * 86400_000;
+  const bucketOf = (e: MapEvent): WeekSectionKey =>
+    parseEventDate(e.date).getTime() < nextWeekStart ? 'thisWeek' : 'nextWeek';
 
   const buckets = new Map<WeekSectionKey, MapEvent[]>();
   for (const e of sortByDate(events)) {
@@ -83,7 +78,7 @@ export function weekSections(events: MapEvent[], now: Date = new Date()): WeekSe
     const arr = buckets.get(k);
     if (arr) arr.push(e); else buckets.set(k, [e]);
   }
-  const order: WeekSectionKey[] = ['thisWeek', 'nextWeek', 'later'];
+  const order: WeekSectionKey[] = ['thisWeek', 'nextWeek'];
   return order.filter((k) => buckets.has(k)).map((k) => ({ key: k, events: buckets.get(k)! }));
 }
 

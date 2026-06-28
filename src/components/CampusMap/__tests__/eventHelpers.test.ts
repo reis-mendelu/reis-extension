@@ -49,15 +49,17 @@ describe('eventHelpers', () => {
     expect(groupEventsByVenue([off])).toHaveLength(0);
   });
 
-  it('weekSections buckets events into this week / next week / later', () => {
+  it('weekSections buckets into this week / next week (anything past this week → next week)', () => {
     const ev = (id: string, date: string): MapEvent => ({ ...MOCK_MAP_EVENTS[0], id, date });
     const now = new Date('2026-01-05T12:00:00'); // a Monday
     const sections = weekSections(
       [ev('a', '2026-01-07'), ev('b', '2026-01-13'), ev('c', '2026-01-20')],
       now,
     );
-    expect(sections.map((s) => s.key)).toEqual(['thisWeek', 'nextWeek', 'later']);
-    expect(sections[0].events[0].id).toBe('a');
+    expect(sections.map((s) => s.key)).toEqual(['thisWeek', 'nextWeek']);
+    expect(sections[0].events.map((e) => e.id)).toEqual(['a']);
+    // both the next-calendar-week and the week-after events land under "next week"
+    expect(sections[1].events.map((e) => e.id)).toEqual(['b', 'c']);
   });
 
   it('relativeDayLabel returns Today / Tomorrow / weekday', () => {
