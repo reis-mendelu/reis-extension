@@ -7,8 +7,8 @@ import { ALL_SOCIETIES } from '../../data/societies';
 import { filterEvents, weekSections, relativeDayLabel } from './eventHelpers';
 import type { MapEvent } from '../../types/events';
 
-function EventRow({ event, locale, t, index, selected, onClick }: {
-  event: MapEvent; locale: string; t: (k: string) => string; index: number; selected: boolean; onClick: () => void;
+function EventRow({ event, locale, t, selected, onClick }: {
+  event: MapEvent; locale: string; t: (k: string) => string; selected: boolean; onClick: () => void;
 }) {
   const day = relativeDayLabel(event.date, locale, t);
   // "what it's about" reads from the title + a category cue; "where" from the
@@ -24,11 +24,11 @@ function EventRow({ event, locale, t, index, selected, onClick }: {
           <img src={event.imageUrl} alt="" className="h-full w-full object-cover" />
         ) : (
           <span className="flex h-full w-full items-center justify-center bg-base-200">
+            {/* emoji only comes alive on the selected (clicked) row */}
             <img
               src={CATEGORY_EMOJI_SRC[event.category]}
               alt=""
-              className="h-7 w-7 animate-emoji-pop"
-              style={{ animationDelay: `${(index % 6) * 0.55}s` }}
+              className={`h-7 w-7 ${selected ? 'animate-emoji-pop' : ''}`}
             />
           </span>
         )}
@@ -101,13 +101,12 @@ export function EventsList() {
               <div className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-base-content/40">
                 {t(`map.${s.key}`)}
               </div>
-              {s.events.map((e, i) => (
+              {s.events.map((e) => (
                 <EventRow
                   key={e.id}
                   event={e}
                   locale={locale}
                   t={t}
-                  index={i}
                   selected={e.id === selectedId}
                   onClick={() => focusEvent(e.id, { fly: true })}
                 />
