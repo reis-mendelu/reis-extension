@@ -77,14 +77,23 @@ export function weekSections(events: MapEvent[], now: Date = new Date()): WeekSe
   return order.filter((k) => buckets.has(k)).map((k) => ({ key: k, events: buckets.get(k)! }));
 }
 
-// Relative, human day label for a row: "Today" / "Tomorrow" / weekday name
-// ("Thursday"). Within a two-week window the weekday alone is unambiguous.
+// Human day label for a row. "Today" / "Tomorrow" for the next two days; a bare
+// weekday ("Thursday") for the rest of THIS calendar week — unambiguous, reads as
+// "this Thursday". For next week a bare weekday would be ambiguous, so it gets an
+// explicit date too: "13. 1. (Tuesday)".
 export function relativeDayLabel(
   iso: string, locale: string, t: (key: string) => string, now: Date = new Date(),
 ): string {
   const start = new Date(now); start.setHours(0, 0, 0, 0);
-  const days = Math.round((parseEventDate(iso).getTime() - start.getTime()) / 86400_000);
+  const date = parseEventDate(iso);
+  const days = Math.round((date.getTime() - start.getTime()) / 86400_000);
   if (days === 0) return t('map.today');
   if (days === 1) return t('map.tomorrow');
-  return parseEventDate(iso).toLocaleDateString(locale, { weekday: 'long' });
+
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const weekday = cap(date.toLocaleDateString(locale, { weekday: 'long' }));
+  const nextWeekStart = startOfWeek(now).getTime() + 7 * 86400_000;
+  if (date.getTime() < nextWeekStart) return weekday; // this week — weekday is enough
+  const dm = date.toLocaleDateString(locale, { day: 'numeric', month: 'numeric' });
+  return `${dm} (${weekday})`;
 }

@@ -30,7 +30,7 @@ function EventRow({ event, locale, t, selected, onClick }: {
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px] font-semibold text-base-content">{event.title}</span>
-        <span className="mt-0.5 block truncate text-[11px] capitalize text-base-content/60">
+        <span className="mt-0.5 block truncate text-[11px] text-base-content/60">
           {day}{event.time ? ` · ${event.time}` : ''}
         </span>
         {event.location && (

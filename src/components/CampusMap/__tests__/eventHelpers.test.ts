@@ -57,11 +57,17 @@ describe('eventHelpers', () => {
     expect(sections[1].events.map((e) => e.id)).toEqual(['b', 'c']);
   });
 
-  it('relativeDayLabel returns Today / Tomorrow / weekday', () => {
+  it('relativeDayLabel: Today / Tomorrow / this-week weekday / next-week date', () => {
     const t = (k: string) => k;
     const now = new Date('2026-01-05T12:00:00'); // Monday
     expect(relativeDayLabel('2026-01-05', 'en-US', t, now)).toBe('map.today');
     expect(relativeDayLabel('2026-01-06', 'en-US', t, now)).toBe('map.tomorrow');
+    // rest of this week → bare (capitalised) weekday
     expect(relativeDayLabel('2026-01-08', 'en-US', t, now)).toBe('Thursday');
+    // next week → explicit date + weekday, so it doesn't read as "this Tuesday"
+    const next = relativeDayLabel('2026-01-13', 'en-US', t, now);
+    expect(next).toContain('Tuesday');
+    expect(next).toContain('13');
+    expect(next).toBe('1/13 (Tuesday)');
   });
 });

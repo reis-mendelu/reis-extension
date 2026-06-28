@@ -35,24 +35,43 @@ interface Seed {
   category?: EventCategory; // override; defaults to inferCategory(title)
 }
 
-// ISO yyyy-mm-dd for `days` from today. The mock window is anchored to "now" so
-// the demo always shows upcoming events (this + next week) no matter when it runs.
-function isoInDays(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+// Local (not UTC) ISO yyyy-mm-dd — avoids the off-by-one toISOString gives near
+// midnight in CET. The mock window is anchored to "now" so the demo always shows
+// upcoming events no matter when it runs.
+function isoLocal(d: Date): string {
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
 }
 
-// A tight 4-event window — this week + next week only — so the panel reads as a
-// short, near-term agenda rather than a whole-semester dump. Kept varied on
-// purpose: three societies, on- and off-campus, distinct categories/pins.
+// `days` from today (this-week side).
+function inDays(days: number): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + days);
+  return isoLocal(d);
+}
+
+// Monday of next week + `offset`, so events reliably land in the *next* calendar
+// week regardless of which day the demo runs.
+function nextWeek(offset: number): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  const dow = (d.getDay() + 6) % 7; // Mon=0 … Sun=6
+  d.setDate(d.getDate() - dow + 7 + offset);
+  return isoLocal(d);
+}
+
+// A tight 4-event window — this week + next week — so the panel reads as a short,
+// near-term agenda rather than a whole-semester dump. Kept varied on purpose:
+// three societies, on- and off-campus, distinct categories/pins.
 const SEEDS: Seed[] = [
-  // This week
-  { title: 'Erasmus Cup: Basketball', societyId: 'esn', date: isoInDays(2), time: '18:00', venue: 'TAUF' },
-  { title: 'PEF Kvíz', societyId: 'supef', date: isoInDays(4), time: '18:00', venue: 'Q', room: 'Q01' },
-  // Next week
-  { title: 'Tram Party', societyId: 'esn', date: isoInDays(9), time: '20:00', venue: 'CESKA' },
-  { title: 'Karaoke Night', societyId: 'au_frrms', date: isoInDays(11), time: '19:00', venue: 'FRRMS' },
+  // This week (tomorrow + day after)
+  { title: 'Erasmus Cup: Basketball', societyId: 'esn', date: inDays(1), time: '18:00', venue: 'TAUF' },
+  { title: 'PEF Kvíz', societyId: 'supef', date: inDays(2), time: '18:00', venue: 'Q', room: 'Q01' },
+  // Next week (Tue + Thu of next calendar week)
+  { title: 'Tram Party', societyId: 'esn', date: nextWeek(1), time: '20:00', venue: 'CESKA' },
+  { title: 'Karaoke Night', societyId: 'au_frrms', date: nextWeek(3), time: '19:00', venue: 'FRRMS' },
 ];
 
 function toEvent(s: Seed, i: number): MapEvent {
