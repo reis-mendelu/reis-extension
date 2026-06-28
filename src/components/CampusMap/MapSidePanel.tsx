@@ -15,7 +15,11 @@ export function MapSidePanel() {
 
   const tabBtn = (key: 'places' | 'events', icon: ReactNode, label: string) => (
     <button
+      type="button"
       role="tab"
+      id={`map-tab-${key}`}
+      aria-selected={tab === key}
+      aria-controls="map-tabpanel"
       className={`tab gap-1.5 ${tab === key ? 'tab-active font-semibold' : ''}`}
       onClick={() => setTab(key)}
     >
@@ -29,7 +33,12 @@ export function MapSidePanel() {
         {tabBtn('events', <PartyPopper size={13} />, t('map.events'))}
         {tabBtn('places', <MapPin size={13} />, t('map.places'))}
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div
+        id="map-tabpanel"
+        role="tabpanel"
+        aria-labelledby={`map-tab-${tab}`}
+        className="min-h-0 flex-1 overflow-y-auto"
+      >
         {tab === 'places' ? <LandmarkPicker /> : <EventsList />}
       </div>
     </div>

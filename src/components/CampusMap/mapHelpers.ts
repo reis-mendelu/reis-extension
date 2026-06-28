@@ -75,7 +75,18 @@ function metersBetween(a: [number, number], b: [number, number]): number {
 // sports centre (~35 m apart), the JAK blocks (65 m+) — are SEPARATE and must
 // keep their own names. Grouping is transitive. Returns a landmark-id → label map.
 export function landmarkGroupLabels(landmarks: Landmark[], thresholdM = 5): Map<number, string> {
-  const cents = landmarks.map((l) => polygonCentroid(l.outline.coordinates[0]));
+  // polygonCentroid is a vertex average, so a duplicated closing vertex skews it
+  // toward that point — and two identical buildings stored with different start
+  // vertices would then get different centroids and fail to merge. Drop the
+  // closing duplicate first so identical outlines always centroid-match.
+  const cents = landmarks.map((l) => {
+    const ring = l.outline.coordinates[0];
+    const last = ring[ring.length - 1];
+    const open = ring.length > 1 && ring[0][0] === last[0] && ring[0][1] === last[1]
+      ? ring.slice(0, -1)
+      : ring;
+    return polygonCentroid(open);
+  });
   const parent = landmarks.map((_, i) => i);
   const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
   for (let i = 0; i < landmarks.length; i++) {

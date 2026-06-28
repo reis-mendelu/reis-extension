@@ -28,6 +28,7 @@ export function EventPin({ group, x, y, selected, locale, onSelect }: EventPinPr
 
   return (
     <button
+      type="button"
       className="group pointer-events-auto absolute left-0 top-0 flex items-center justify-center leaflet-zoom-animated"
       style={{ transform: `translate(${x}px, ${y}px) translate(-50%, -50%)` }}
       title={lead.title}

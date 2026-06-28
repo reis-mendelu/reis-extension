@@ -1,4 +1,5 @@
 import type { Society } from '../types/events';
+import { logError } from '../utils/reportError';
 
 // Static catalog of the student societies that author campus-map events. Ids +
 // logos reuse the existing spolky system (src/services/spolky/config.ts, logos
@@ -13,6 +14,11 @@ export const SOCIETIES: Record<string, Society> = {
 
 export const ALL_SOCIETIES: Society[] = Object.values(SOCIETIES);
 
+// Unknown ids fall back to ESN so the UI never crashes on a bad event, but we
+// log it — a missing catalog entry is bad data, not something to swallow silently.
 export function societyById(id: string): Society {
-  return SOCIETIES[id] ?? SOCIETIES.esn;
+  const society = SOCIETIES[id];
+  if (society) return society;
+  logError('societies.societyById', new Error(`unknown society id "${id}" — falling back to ESN`));
+  return SOCIETIES.esn;
 }
