@@ -42,7 +42,7 @@ export function AppMain({
                     {currentView === 'calendar' && <WeeklyCalendar key={currentDate.toISOString()} initialDate={currentDate} onPrevWeek={handlePrevWeek} onNextWeek={handleNextWeek} />}
                     {currentView === 'exams' && <ExamPanel />}
                     {currentView === 'subjects' && <SubjectsPanel onOpenSubject={handleOpenSubjectFromSearch} onSearchSubject={(name) => searchPrefillRef?.current?.(name)} onOpenStudyPlan={() => setCurrentView?.('studyPlan')} />}
-                    {currentView === 'studyPlan' && <StudyPlanPage onBack={() => setCurrentView?.('subjects')} onOpenSubject={handleOpenSubjectFromSearch} onSearchSubject={(name) => searchPrefillRef?.current?.(name)} />}
+                    {currentView === 'studyPlan' && <StudyPlanPage onBack={() => setCurrentView?.('subjects')} onOpenSubject={handleOpenSubjectFromSearch} />}
                     {currentView === 'erasmus' && <ErasmusPanel onOpenSubject={handleOpenSubjectFromSearch} onSearchSubject={(name) => searchPrefillRef?.current?.(name)} />}
                     {currentView === 'map' && <CampusMapView />}
                 </div>
