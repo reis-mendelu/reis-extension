@@ -11,7 +11,7 @@ interface SearchResultItemProps {
 }
 
 export function SearchResultItem({ result, isRecent, isSelected, onMouseEnter, onMouseDown }: SearchResultItemProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const getIcon = () => {
     if (isRecent) return <Clock className="w-4 h-4 text-base-content/40" />;
     if (result.type === 'person') {
@@ -42,7 +42,7 @@ export function SearchResultItem({ result, isRecent, isSelected, onMouseEnter, o
       <div className="flex flex-col min-w-0 flex-1">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-sm text-base-content truncate">{result.title}</span>
-          {result.isEnglishVariant && (
+          {result.isEnglishVariant && language === 'en' && (
             <span className="flex-shrink-0 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-info/15 text-info">
               {t('search.englishVariant')}
             </span>
