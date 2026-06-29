@@ -47,7 +47,6 @@ export function useSearch(query: string) {
   const [sections, setSections] = useState<SearchSection[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [scope, setScope] = useState<SearchScope>('faculty');
-  const [subjectsTruncated, setSubjectsTruncated] = useState(false);
   const { studiumId, userFaculty, userSemester } = useAppStore();
   const debounceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -87,7 +86,6 @@ export function useSearch(query: string) {
       setSections([]);
       setSelectedIndex(-1);
       setIsLoading(false);
-      setSubjectsTruncated(false);
       return;
     }
 
@@ -131,10 +129,9 @@ export function useSearch(query: string) {
     debounceTimeout.current = setTimeout(async () => {
       try {
         const searchQuery = query.toLowerCase();
-        const { people, subjects: searchSubjects, subjectsTruncated: truncated } = await executeSearch(query, isLang, effectiveSubjekt);
+        const { people, subjects: searchSubjects } = await executeSearch(query, isLang, effectiveSubjekt);
 
         if (!isMounted) return;
-        setSubjectsTruncated(truncated);
 
         const personResults: SearchResult[] = people.map((p, i) => ({
           id: p.id || `unknown-${i}`, title: p.name, type: 'person',
@@ -177,6 +174,6 @@ export function useSearch(query: string) {
   return {
     isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading,
     recentSearches, studiumId, saveToHistory,
-    scope, canWiden, widenToUniversity, subjectsTruncated, userFaculty,
+    scope, canWiden, widenToUniversity, userFaculty,
   };
 }

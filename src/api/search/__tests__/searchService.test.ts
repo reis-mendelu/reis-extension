@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { searchGlobal } from '../searchService';
 
-function bodyOf(call: [unknown, { body: string }]): URLSearchParams {
-  return new URLSearchParams(call[1].body);
+function bodyOf(call: unknown): URLSearchParams {
+  const [, init] = call as [unknown, { body: string }];
+  return new URLSearchParams(init.body);
 }
 
 const htmlResponse = (html: string) => ({ text: async () => html }) as unknown as Response;

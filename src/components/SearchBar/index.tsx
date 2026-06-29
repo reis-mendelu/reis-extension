@@ -185,14 +185,17 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: 
           </div>
         )}
         {!isEmptyQuery && canWiden && (
-          <button
-            type="button"
-            onMouseDown={(e) => { e.preventDefault(); widenToUniversity(); }}
-            className="w-full px-4 py-2 text-xs text-primary hover:bg-base-200 flex items-center justify-center gap-1.5 border-t border-base-300 transition-colors"
-          >
-            <Globe className="w-3.5 h-3.5" />
-            {t('search.widenToUniversity')}
-          </button>
+          <div className="flex items-center justify-between gap-2 px-4 py-2 border-t border-base-300">
+            <span className="text-[11px] text-base-content/50 truncate">{t('search.facultyScopeNote')}</span>
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); widenToUniversity(); }}
+              className="text-xs text-primary hover:underline flex items-center gap-1.5 shrink-0"
+            >
+              <Globe className="w-3.5 h-3.5" />
+              {t('search.widenToUniversity')}
+            </button>
+          </div>
         )}
         <SearchFooter />
       </div>
