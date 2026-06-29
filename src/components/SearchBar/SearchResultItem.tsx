@@ -1,5 +1,6 @@
 import { Clock, BookOpen, Briefcase } from 'lucide-react';
 import type { SearchResult } from './types';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface SearchResultItemProps {
   result: SearchResult;
@@ -10,6 +11,7 @@ interface SearchResultItemProps {
 }
 
 export function SearchResultItem({ result, isRecent, isSelected, onMouseEnter, onMouseDown }: SearchResultItemProps) {
+  const { t } = useTranslation();
   const getIcon = () => {
     if (isRecent) return <Clock className="w-4 h-4 text-base-content/40" />;
     if (result.type === 'person') {
@@ -40,6 +42,11 @@ export function SearchResultItem({ result, isRecent, isSelected, onMouseEnter, o
       <div className="flex flex-col min-w-0 flex-1">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-sm text-base-content truncate">{result.title}</span>
+          {result.isEnglishVariant && (
+            <span className="flex-shrink-0 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-info/15 text-info">
+              {t('search.englishVariant')}
+            </span>
+          )}
           {!isRecent && (
             <>
               <span className="text-base-content/40 flex-shrink-0">•</span>

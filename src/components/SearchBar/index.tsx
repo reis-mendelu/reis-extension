@@ -25,7 +25,7 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: 
   const defaultPlaceholder = t('search.placeholder', { shortcut: modifier });
   const finalPlaceholder = placeholder || (modifier ? defaultPlaceholder : defaultPlaceholder.replace(/\s*\(.*\)$/, ''));
   const [query, setQuery] = useState('');
-  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, saveToHistory, canWiden, widenToUniversity } = useSearch(query);
+  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, saveToHistory, scope, canScopeToFaculty, widenToUniversity, narrowToFaculty } = useSearch(query);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputWrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -184,16 +184,18 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: 
             {renderSearchResults()}
           </div>
         )}
-        {!isEmptyQuery && canWiden && (
+        {!isEmptyQuery && canScopeToFaculty && (
           <div className="flex items-center justify-between gap-2 px-4 py-2 border-t border-base-300">
-            <span className="text-[11px] text-base-content/50 truncate">{t('search.facultyScopeNote')}</span>
+            <span className="text-[11px] text-base-content/50 truncate">
+              {scope === 'faculty' ? t('search.facultyScopeNote') : t('search.universityScopeNote')}
+            </span>
             <button
               type="button"
-              onMouseDown={(e) => { e.preventDefault(); widenToUniversity(); }}
+              onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); if (scope === 'faculty') widenToUniversity(); else narrowToFaculty(); }}
               className="text-xs text-primary hover:underline flex items-center gap-1.5 shrink-0"
             >
               <Globe className="w-3.5 h-3.5" />
-              {t('search.widenToUniversity')}
+              {scope === 'faculty' ? t('search.widenToUniversity') : t('search.narrowToFaculty')}
             </button>
           </div>
         )}

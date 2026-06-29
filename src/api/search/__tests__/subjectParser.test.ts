@@ -43,6 +43,16 @@ describe('parseSubjectResults', () => {
     expect(s.faculty).toBe('N/A');
   });
 
+  it('parses the English search format (WS/SS semester, FBE faculty)', () => {
+    // Real IS sample: `EBC-ST Statistics` followed by `- SS 2025/2026 - FBE`
+    const html = `<html><body>${link('555', 'EBC-ST Statistics', ' - SS 2025/2026 - FBE')}</body></html>`;
+    const [s] = parseSubjectResults(html);
+    expect(s.code).toBe('EBC-ST');
+    expect(s.name).toBe('Statistics');
+    expect(s.semester).toBe('SS 2025/2026');
+    expect(s.faculty).toBe('FBE');
+  });
+
   it('returns an empty array when there are no subject links', () => {
     expect(parseSubjectResults('<html><body><p>nothing here</p></body></html>')).toEqual([]);
   });

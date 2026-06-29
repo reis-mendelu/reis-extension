@@ -1,35 +1,63 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { fuzzyIncludes } from '../../utils/searchUtils';
 import { facultySubjektId } from '../../api/search/facultySubjekt';
+import { isEnglishVariantCode, semesterRank } from '../../api/search/subjectVariant';
 import type { SearchResult, SearchSection } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 
-function sortByRelevance(results: SearchResult[], searchQuery: string, studyPlanCodes: Set<string>, userFaculty?: string | null, userSemester?: string | null): SearchResult[] {
+interface RelevanceCtx {
+  searchQuery: string;
+  studyPlanCodes: Set<string>;
+  userFaculty?: string | null;
+  userSemester?: string | null;
+  isLang: 'cz' | 'en';
+}
+
+function sortByRelevance(results: SearchResult[], ctx: RelevanceCtx): SearchResult[] {
   return [...results].sort((a, b) => {
-    const scoreA = getWithinSectionScore(a, searchQuery, studyPlanCodes, userFaculty, userSemester);
-    const scoreB = getWithinSectionScore(b, searchQuery, studyPlanCodes, userFaculty, userSemester);
+    const scoreA = getWithinSectionScore(a, ctx);
+    const scoreB = getWithinSectionScore(b, ctx);
     return scoreB !== scoreA ? scoreB - scoreA : a.title.localeCompare(b.title);
   });
 }
 
-function getWithinSectionScore(r: SearchResult, searchQuery: string, studyPlanCodes: Set<string>, userFaculty?: string | null, userSemester?: string | null): number {
+function getWithinSectionScore(r: SearchResult, ctx: RelevanceCtx): number {
   const titleLower = r.title.toLowerCase();
   const codeLower = r.subjectCode?.toLowerCase() ?? '';
   let score = 0;
 
-  if (titleLower === searchQuery) score += 500;
-  else if (titleLower.startsWith(searchQuery)) score += 400;
-  else if (codeLower === searchQuery) score += 300;
+  if (titleLower === ctx.searchQuery) score += 500;
+  else if (titleLower.startsWith(ctx.searchQuery)) score += 400;
+  else if (codeLower === ctx.searchQuery) score += 300;
 
   if (r.type === 'subject') {
     if (r.id.startsWith('enrolled-')) score += 50;
-    if (r.subjectCode && studyPlanCodes.has(r.subjectCode)) score += 30;
-    if (r.faculty && userFaculty && r.faculty === userFaculty) score += 20;
-    if (r.semester && userSemester && r.semester.includes(userSemester)) score += 10;
+    if (r.subjectCode && ctx.studyPlanCodes.has(r.subjectCode)) score += 30;
+    if (r.faculty && ctx.userFaculty && r.faculty === ctx.userFaculty) score += 20;
+    if (r.semester && ctx.userSemester && r.semester.includes(ctx.userSemester)) score += 10;
+    // In EN, students overwhelmingly want the English-taught ("v AJ") variant first.
+    if (ctx.isLang === 'en' && r.isEnglishVariant) score += 60;
   }
 
   return score;
+}
+
+/** Keep one result per subject code: enrolled wins, otherwise the latest semester. */
+function dedupeByCode(results: SearchResult[]): SearchResult[] {
+  const best = new Map<string, SearchResult>();
+  const passthrough: SearchResult[] = [];
+  for (const r of results) {
+    const code = r.subjectCode;
+    if (!code) { passthrough.push(r); continue; }
+    const cur = best.get(code);
+    if (!cur) { best.set(code, r); continue; }
+    const curEnrolled = cur.id.startsWith('enrolled-');
+    const rEnrolled = r.id.startsWith('enrolled-');
+    if (curEnrolled !== rEnrolled) { best.set(code, curEnrolled ? cur : r); continue; }
+    best.set(code, semesterRank(r.semester) > semesterRank(cur.semester) ? r : cur);
+  }
+  return [...best.values(), ...passthrough];
 }
 
 export type SearchScope = 'faculty' | 'all';
@@ -104,13 +132,15 @@ export function useSearch(query: string) {
             detail: code,
             subjectCode: code,
             subjectId: info.subjectId,
+            isEnglishVariant: isEnglishVariantCode(code),
           });
         }
       }
     }
 
+    const ctx = { searchQuery, studyPlanCodes, userFaculty, userSemester, isLang };
     const newSections: SearchSection[] = [
-      { key: 'subjects', label: t('search.subjects'), results: sortByRelevance(enrolledResults, searchQuery, studyPlanCodes, userFaculty, userSemester) },
+      { key: 'subjects', label: t('search.subjects'), results: sortByRelevance(enrolledResults, ctx) },
     ].filter(s => s.results.length > 0);
 
     setSections(newSections);
@@ -142,16 +172,19 @@ export function useSearch(query: string) {
         const subjectResults: SearchResult[] = searchSubjects.map(s => ({
           id: `subject-${s.id}`, title: s.name, type: 'subject',
           detail: [s.code, s.semester, s.faculty].filter(p => p && p !== 'N/A').join(' · '),
-          link: s.link, subjectCode: s.code, subjectId: s.id, faculty: s.faculty, semester: s.semester
+          link: s.link, subjectCode: s.code, subjectId: s.id, faculty: s.faculty, semester: s.semester,
+          isEnglishVariant: isEnglishVariantCode(s.code),
         }));
 
+        const ctx = { searchQuery, studyPlanCodes, userFaculty, userSemester, isLang };
         setSections(prev => {
           const enrolledCodes = new Set(
             prev.find(s => s.key === 'subjects')?.results.filter(r => r.id.startsWith('enrolled-')).map(r => r.subjectCode) ?? []
           );
           const networkSubjects = subjectResults.filter(s => !enrolledCodes.has(s.subjectCode));
           const existingSubjects = prev.find(s => s.key === 'subjects')?.results ?? [];
-          const mergedSubjects = sortByRelevance([...existingSubjects, ...networkSubjects], searchQuery, studyPlanCodes, userFaculty, userSemester);
+          // Collapse same-code rows (e.g. winter + summer of EBC-ST) to one, then rank.
+          const mergedSubjects = sortByRelevance(dedupeByCode([...existingSubjects, ...networkSubjects]), ctx);
 
           const newSections: SearchSection[] = [
             { key: 'subjects', label: t('search.subjects'), results: mergedSubjects },
@@ -170,10 +203,11 @@ export function useSearch(query: string) {
   }, [query, isLang, effectiveSubjekt]);
 
   const widenToUniversity = () => setScope('all');
+  const narrowToFaculty = () => setScope('faculty');
 
   return {
     isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading,
     recentSearches, studiumId, saveToHistory,
-    scope, canWiden, widenToUniversity, userFaculty,
+    scope, canWiden, canScopeToFaculty, widenToUniversity, narrowToFaculty, userFaculty,
   };
 }

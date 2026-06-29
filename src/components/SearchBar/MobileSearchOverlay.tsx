@@ -19,7 +19,7 @@ interface MobileSearchOverlayProps {
 export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQuery = '' }: MobileSearchOverlayProps) {
   const { t, language } = useTranslation();
   const [query, setQuery] = useState('');
-  const { setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory, canWiden, widenToUniversity } = useSearch(query);
+  const { setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory, scope, canScopeToFaculty, widenToUniversity, narrowToFaculty } = useSearch(query);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -149,16 +149,18 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQue
           </>
         ) : renderSearchResults()}
       </div>
-      {!isEmptyQuery && canWiden && (
+      {!isEmptyQuery && canScopeToFaculty && (
         <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-t border-base-300">
-          <span className="text-[11px] text-base-content/50 truncate">{t('search.facultyScopeNote')}</span>
+          <span className="text-[11px] text-base-content/50 truncate">
+            {scope === 'faculty' ? t('search.facultyScopeNote') : t('search.universityScopeNote')}
+          </span>
           <button
             type="button"
-            onMouseDown={(e) => { e.preventDefault(); widenToUniversity(); }}
+            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); if (scope === 'faculty') widenToUniversity(); else narrowToFaculty(); }}
             className="text-xs text-primary hover:underline flex items-center gap-1.5 shrink-0"
           >
             <Globe className="w-3.5 h-3.5" />
-            {t('search.widenToUniversity')}
+            {scope === 'faculty' ? t('search.widenToUniversity') : t('search.narrowToFaculty')}
           </button>
         </div>
       )}

@@ -291,7 +291,10 @@
     "select": "Select",
     "open": "Open",
     "facultyScopeNote": "Searching within your faculty",
-    "widenToUniversity": "Search across the whole university"
+    "universityScopeNote": "Searching the whole university",
+    "widenToUniversity": "Whole university",
+    "narrowToFaculty": "Only my faculty",
+    "englishVariant": "in English"
   },
   "course": {
     "setNickname": "Set nickname",

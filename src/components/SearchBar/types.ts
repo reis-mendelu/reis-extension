@@ -9,6 +9,7 @@
     subjectId?: string;
     faculty?: string;
     semester?: string;
+    isEnglishVariant?: boolean;
   }
 
   export interface SearchSection {
