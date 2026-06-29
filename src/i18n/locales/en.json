@@ -512,7 +512,7 @@
     "repeatWarning": "2nd enrollment",
     "gpa": "GPA",
     "enrolledCreditsLabel": "cr. enrolled",
-    "failRateLabel": "fail",
+    "failRateLabel": "avg. failure rate",
     "needMore": "need {n} more",
     "notEnoughEnrolled": "not enough enrolled",
     "zamerani": "specialization",

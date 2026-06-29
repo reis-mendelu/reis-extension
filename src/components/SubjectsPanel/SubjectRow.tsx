@@ -159,7 +159,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
           onClick={(e) => { e.stopPropagation(); if (hasId) onOpenSubject(subject.code, subject.name, subject.id, undefined, 'stats'); else onSearchSubject(subject.code); }}
         >
           <span className="group-hover/fail:hidden">{failRate}%</span>
-          <span className="hidden group-hover/fail:inline">{failRate}% {t('subjects.failRateLabel')}</span>
+          <span className="hidden group-hover/fail:inline whitespace-nowrap">{t('subjects.failRateLabel')} {failRate}%</span>
         </span>
       )}
       {zameraniTag && (
