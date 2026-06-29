@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSuccessRate } from '../hooks/data/useSuccessRate';
 import { AlertTriangle } from 'lucide-react';
 import { sortSemesters } from '../utils/semesterSort';
+import { pickFacultyStats } from './SuccessRate/pickFacultyStats';
 import { GradeBarChart } from './SuccessRate/GradeBarChart';
 import { SemesterSelector } from './SuccessRate/SemesterSelector';
 import { TermBreakdown } from './SuccessRate/TermBreakdown';
@@ -19,7 +20,7 @@ export function SuccessRateTab({ courseCode, facultyCode }: { courseCode: string
     if (!data?.stats?.length) return <div className="flex flex-col items-center justify-center h-full pt-16"><AlertTriangle className="w-8 h-8 opacity-40 mb-3" /><p className="text-sm opacity-60">{t('successRate.noData')}</p></div>;
 
     const allStats = sortSemesters(data.stats);
-    const filtered = facultyCode ? allStats.filter(s => s.semesterName.split(' - ').at(-1) === facultyCode) : allStats;
+    const filtered = pickFacultyStats(allStats, facultyCode);
     if (filtered.length === 0) return <div className="flex flex-col items-center justify-center h-full pt-16"><AlertTriangle className="w-8 h-8 opacity-40 mb-3" /><p className="text-sm opacity-60">{t('successRate.noData')}</p></div>;
     const stats = filtered.slice(0, 5), sIdx = Math.min(idx, stats.length - 1), current = stats[sIdx];
     const isCredit = current.type === 'credit', total = current.totalPass + current.totalFail;
