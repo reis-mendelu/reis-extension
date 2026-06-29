@@ -165,7 +165,9 @@
     "isPortalTooltip": "IS Rozcestník",
     "filterPlaceholder": "Filtrovat...",
     "select": "Vybrat",
-    "open": "Otevřít"
+    "open": "Otevřít",
+    "facultyScopeNote": "Hledám v rámci tvé fakulty",
+    "widenToUniversity": "Hledat napříč celou univerzitou"
   },
   "calendar": {
     "emptyWeek": "Tento týden nic nemáš, pohodička",

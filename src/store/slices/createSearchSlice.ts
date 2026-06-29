@@ -9,7 +9,7 @@ export interface SearchSlice {
     recentSearches: SearchResult[];
     loadRecentSearches: () => Promise<void>;
     saveRecentSearch: (result: SearchResult, label: string) => Promise<void>;
-    executeSearch: (query: string) => ReturnType<typeof searchGlobal>;
+    executeSearch: (query: string, lang?: 'cz' | 'en', subjekt?: string) => ReturnType<typeof searchGlobal>;
 }
 
 export const createSearchSlice: AppSlice<SearchSlice> = (set, get) => ({
@@ -32,5 +32,5 @@ export const createSearchSlice: AppSlice<SearchSlice> = (set, get) => ({
         } catch { /* non-critical */ }
     },
 
-    executeSearch: (query) => searchGlobal(query),
+    executeSearch: (query, lang = 'cz', subjekt) => searchGlobal(query, lang, subjekt),
 });

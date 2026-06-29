@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { fuzzyIncludes } from '../../utils/searchUtils';
+import { facultySubjektId } from '../../api/search/facultySubjekt';
 import type { SearchResult, SearchSection } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
@@ -31,6 +32,8 @@ function getWithinSectionScore(r: SearchResult, searchQuery: string, studyPlanCo
   return score;
 }
 
+export type SearchScope = 'faculty' | 'all';
+
 export function useSearch(query: string) {
   const { t, language } = useTranslation();
   const subjects = useAppStore(s => s.subjects);
@@ -43,8 +46,17 @@ export function useSearch(query: string) {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [sections, setSections] = useState<SearchSection[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [scope, setScope] = useState<SearchScope>('faculty');
+  const [subjectsTruncated, setSubjectsTruncated] = useState(false);
   const { studiumId, userFaculty, userSemester } = useAppStore();
   const debounceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isLang: 'cz' | 'en' = language === 'en' ? 'en' : 'cz';
+  const facultySubjekt = facultySubjektId(userFaculty);
+  // Only meaningful to scope/widen when we actually know the student's faculty.
+  const canScopeToFaculty = !!facultySubjekt;
+  const effectiveSubjekt = scope === 'faculty' ? facultySubjekt : undefined;
+  const canWiden = canScopeToFaculty && scope === 'faculty';
 
   const studyPlanCodes = useMemo(() => {
     const codes = new Set<string>();
@@ -66,12 +78,16 @@ export function useSearch(query: string) {
   const saveToHistory = (result: SearchResult) =>
     saveRecentSearch(result, t('search.recentlySearched'));
 
+  // A fresh query starts from the default (faculty) scope.
+  useEffect(() => { setScope('faculty'); }, [query]);
+
   // Instant local results (enrolled subjects)
   useEffect(() => {
     if (query.trim().length < 2) {
       setSections([]);
       setSelectedIndex(-1);
       setIsLoading(false);
+      setSubjectsTruncated(false);
       return;
     }
 
@@ -103,9 +119,10 @@ export function useSearch(query: string) {
     setSelectedIndex(0);
     setIsLoading(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+  }, [query, language]);
 
-  // Debounced network results (subjects + people) — merge into sections
+  // Debounced network results (subjects + people) — merge into sections.
+  // Re-runs when language or scope change so EN names / faculty filter apply immediately.
   useEffect(() => {
     let isMounted = true;
     if (query.trim().length < 2) return () => { isMounted = false; };
@@ -114,9 +131,10 @@ export function useSearch(query: string) {
     debounceTimeout.current = setTimeout(async () => {
       try {
         const searchQuery = query.toLowerCase();
-        const { people, subjects: searchSubjects } = await executeSearch(query);
+        const { people, subjects: searchSubjects, subjectsTruncated: truncated } = await executeSearch(query, isLang, effectiveSubjekt);
 
         if (!isMounted) return;
+        setSubjectsTruncated(truncated);
 
         const personResults: SearchResult[] = people.map((p, i) => ({
           id: p.id || `unknown-${i}`, title: p.name, type: 'person',
@@ -152,7 +170,13 @@ export function useSearch(query: string) {
       if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+  }, [query, isLang, effectiveSubjekt]);
 
-  return { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory };
+  const widenToUniversity = () => setScope('all');
+
+  return {
+    isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading,
+    recentSearches, studiumId, saveToHistory,
+    scope, canWiden, widenToUniversity, subjectsTruncated, userFaculty,
+  };
 }

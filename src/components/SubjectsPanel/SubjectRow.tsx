@@ -46,7 +46,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
     if (hasId) {
       onOpenSubject(subject.code, subject.name, subject.id, undefined, undefined, subject.isFulfilled);
     } else {
-      onSearchSubject(subject.code);
+      onSearchSubject(displayName);
     }
   };
 
@@ -156,7 +156,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
               ? 'bg-warning/15 text-warning-content hover:bg-warning/20'
               : 'bg-base-content/5 text-base-content/40 hover:bg-base-content/10'
           }`}
-          onClick={(e) => { e.stopPropagation(); if (hasId) onOpenSubject(subject.code, subject.name, subject.id, undefined, 'stats'); else onSearchSubject(subject.code); }}
+          onClick={(e) => { e.stopPropagation(); if (hasId) onOpenSubject(subject.code, subject.name, subject.id, undefined, 'stats'); else onSearchSubject(displayName); }}
         >
           {t('subjects.failRateLabel')} {failRate}%
         </span>

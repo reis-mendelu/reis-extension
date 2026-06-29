@@ -4,6 +4,29 @@ import { parseMendeluProfileResult } from './peopleParserProfile';
 import { parseSubjectResults } from './subjectParser';
 
 const BASE_LIDE_URL = 'https://is.mendelu.cz/auth/lide/';
+const HLEDANI_URL = 'https://is.mendelu.cz/auth/hledani/index.pl';
+
+/** Max records the catalog search returns per area. Higher = fewer truncated subject lists. */
+export const SUBJECT_RESULT_CAP = 100;
+
+/** Single POST to the IS catalog search (`hledani`) for the given areas, returning raw HTML. */
+async function postHledani(query: string, lang: 'cz' | 'en', oblasti: string[], subjekt?: string): Promise<string> {
+    const formData = new URLSearchParams();
+    formData.append('lang', lang);
+    formData.append('vzorek', query);
+    formData.append('vyhledat', 'Vyhledat');
+    for (const o of oblasti) formData.append('oblasti', o);
+    formData.append('pocet', String(SUBJECT_RESULT_CAP));
+    if (subjekt) formData.append('subjekt', subjekt);
+
+    const response = await fetch(HLEDANI_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString(),
+        credentials: 'include',
+    });
+    return await response.text();
+}
 
 /**
  * Fetch a single person profile directly by their IS student ID.
@@ -88,30 +111,42 @@ export async function searchSubjectsCatalog(query: string, limit = 50): Promise<
     }
 }
 
-export async function searchGlobal(query: string): Promise<{ people: Person[]; subjects: Subject[] }> {
-    const formData = new URLSearchParams();
-    formData.append('lang', 'cz');
-    formData.append('vzorek', query);
-    formData.append('vyhledat', 'Vyhledat');
-    formData.append('oblasti', 'lide');
-    formData.append('oblasti', 'predmety');
-    formData.append('pocet', '50');
-
+/**
+ * Global catalog search for people + subjects.
+ *
+ * - `lang` selects the language of subject names ('cz' | 'en').
+ * - `subjekt` (an IS workplace id) restricts SUBJECT results to one faculty. People are
+ *   always searched university-wide, so faculty scoping never hides a person — when a
+ *   faculty is given the two areas are fetched as separate parallel requests.
+ */
+export async function searchGlobal(
+    query: string,
+    lang: 'cz' | 'en' = 'cz',
+    subjekt?: string,
+): Promise<{ people: Person[]; subjects: Subject[]; subjectsTruncated: boolean }> {
     try {
-        const response = await fetch('https://is.mendelu.cz/auth/hledani/index.pl', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: formData.toString(),
-            credentials: 'include',
-        });
+        if (!subjekt) {
+            const html = await postHledani(query, lang, ['lide', 'predmety']);
+            const subjects = parseSubjectResults(html);
+            return {
+                people: parseGlobalPeopleResults(html),
+                subjects,
+                subjectsTruncated: subjects.length >= SUBJECT_RESULT_CAP,
+            };
+        }
 
-        const html = await response.text();
-        const people = parseGlobalPeopleResults(html);
-        const subjects = parseSubjectResults(html);
-
-        return { people, subjects };
+        const [peopleHtml, subjectHtml] = await Promise.all([
+            postHledani(query, lang, ['lide']),
+            postHledani(query, lang, ['predmety'], subjekt),
+        ]);
+        const subjects = parseSubjectResults(subjectHtml);
+        return {
+            people: parseGlobalPeopleResults(peopleHtml),
+            subjects,
+            subjectsTruncated: subjects.length >= SUBJECT_RESULT_CAP,
+        };
     } catch {
         const people = await searchPeople(query);
-        return { people, subjects: [] };
+        return { people, subjects: [], subjectsTruncated: false };
     }
 }

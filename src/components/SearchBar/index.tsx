@@ -1,4 +1,4 @@
-import { Search, X, LayoutGrid } from 'lucide-react';
+import { Search, X, LayoutGrid, Globe } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { IsPortalPopover } from './IsPortalPopover';
@@ -25,7 +25,7 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: 
   const defaultPlaceholder = t('search.placeholder', { shortcut: modifier });
   const finalPlaceholder = placeholder || (modifier ? defaultPlaceholder : defaultPlaceholder.replace(/\s*\(.*\)$/, ''));
   const [query, setQuery] = useState('');
-  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, saveToHistory } = useSearch(query);
+  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, saveToHistory, canWiden, widenToUniversity } = useSearch(query);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputWrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -183,6 +183,16 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: 
           <div className="max-h-[min(500px,60vh)] overflow-y-auto pb-2">
             {renderSearchResults()}
           </div>
+        )}
+        {!isEmptyQuery && canWiden && (
+          <button
+            type="button"
+            onMouseDown={(e) => { e.preventDefault(); widenToUniversity(); }}
+            className="w-full px-4 py-2 text-xs text-primary hover:bg-base-200 flex items-center justify-center gap-1.5 border-t border-base-300 transition-colors"
+          >
+            <Globe className="w-3.5 h-3.5" />
+            {t('search.widenToUniversity')}
+          </button>
         )}
         <SearchFooter />
       </div>

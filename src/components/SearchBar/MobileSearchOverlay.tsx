@@ -1,4 +1,4 @@
-import { Search, X, ArrowLeft, LayoutGrid } from 'lucide-react';
+import { Search, X, ArrowLeft, LayoutGrid, Globe } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { injectUserParams } from '../../data/pagesData';
 import { IsPortalPopover } from './IsPortalPopover';
@@ -19,7 +19,7 @@ interface MobileSearchOverlayProps {
 export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQuery = '' }: MobileSearchOverlayProps) {
   const { t, language } = useTranslation();
   const [query, setQuery] = useState('');
-  const { setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query);
+  const { setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory, canWiden, widenToUniversity } = useSearch(query);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -149,6 +149,16 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQue
           </>
         ) : renderSearchResults()}
       </div>
+      {!isEmptyQuery && canWiden && (
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); widenToUniversity(); }}
+          className="w-full px-4 py-2.5 text-xs text-primary hover:bg-base-200 flex items-center justify-center gap-1.5 border-t border-base-300 transition-colors"
+        >
+          <Globe className="w-3.5 h-3.5" />
+          {t('search.widenToUniversity')}
+        </button>
+      )}
       <SearchFooter />
       <IsPortalPopover isOpen={isPortalOpen} onClose={() => setIsPortalOpen(false)} />
     </div>
