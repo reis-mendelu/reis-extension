@@ -5,7 +5,9 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useSpeculativeHover } from '@/hooks/data/useSpeculativeHover';
+import { useAppStore } from '@/store/useAppStore';
 import { isZameraniCode } from './utils';
+import { resolvePredmetId } from './resolvePredmetId';
 
 interface SubjectRowProps {
   subject: SubjectStatus;
@@ -30,7 +32,12 @@ const isSentinelCredits = (credits: number) => credits >= 999;
 
 export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, onOpenSubject, onSearchSubject, zamerani, zameraniProgress, subjectSemesters, subjectToZameranis }: SubjectRowProps) {
   const { t } = useTranslation();
-  const hasId = subject.id !== '';
+  // Not-enrolled subjects have no IS id from the plan, but the success-rate data we
+  // already fetch carries the subject's `predmet` id — use it (when valid) so the row
+  // opens the SubjectDrawer directly instead of falling back to search.
+  const successRate = useAppStore(s => s.successRates[subject.code]);
+  const resolvedId = subject.id || resolvePredmetId(successRate) || '';
+  const hasId = resolvedId !== '';
   const displayName = useCourseName(subject.code, subject.name);
   const timeline = useTimeline(subject.code);
   const isZamerani = isZameraniCode(subject.code);
@@ -44,7 +51,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
   const handleClick = () => {
     if (isZamerani) return; // pseudo-row, not openable
     if (hasId) {
-      onOpenSubject(subject.code, subject.name, subject.id, undefined, undefined, subject.isFulfilled);
+      onOpenSubject(subject.code, subject.name, resolvedId, undefined, undefined, subject.isFulfilled);
     } else {
       onSearchSubject(displayName);
     }
@@ -156,7 +163,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
               ? 'bg-warning/15 text-warning-content hover:bg-warning/20'
               : 'bg-base-content/5 text-base-content/40 hover:bg-base-content/10'
           }`}
-          onClick={(e) => { e.stopPropagation(); if (hasId) onOpenSubject(subject.code, subject.name, subject.id, undefined, 'stats'); else onSearchSubject(displayName); }}
+          onClick={(e) => { e.stopPropagation(); if (hasId) onOpenSubject(subject.code, subject.name, resolvedId, undefined, 'stats'); else onSearchSubject(displayName); }}
         >
           <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover/fail:max-w-[140px] group-hover/fail:opacity-100 group-hover/fail:mr-1">{t('subjects.failRateLabel')}</span>
           {failRate}%
