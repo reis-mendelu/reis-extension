@@ -1,7 +1,4 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { injectUserParams } from '../../data/pagesData';
-import { pagesData } from '../../data/pages';
-import { pageKeywords } from '../../data/pages/keywords';
 import { fuzzyIncludes } from '../../utils/searchUtils';
 import type { SearchResult, SearchSection } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -34,35 +31,19 @@ function getWithinSectionScore(r: SearchResult, searchQuery: string, studyPlanCo
   return score;
 }
 
-export function useSearch(query: string, actions: SearchResult[] = []) {
+export function useSearch(query: string) {
   const { t, language } = useTranslation();
   const subjects = useAppStore(s => s.subjects);
-  const navPages = useAppStore(s => s.navPages);
   const recentSearches = useAppStore(s => s.recentSearches);
   const saveRecentSearch = useAppStore(s => s.saveRecentSearch);
   const executeSearch = useAppStore(s => s.executeSearch);
-
-  const pages = useMemo(() => {
-    if (!navPages) return pagesData;
-    const merged = [...navPages];
-    const seenIds = new Set(navPages.flatMap(cat => cat.children.map(p => p.id)));
-    pagesData.forEach(cat => {
-      const extra = cat.children.filter(p => !seenIds.has(p.id));
-      if (extra.length > 0) {
-        const existing = merged.find(c => c.id === cat.id);
-        if (existing) existing.children.push(...extra);
-        else merged.push({ ...cat, children: [...extra] });
-      }
-    });
-    return merged;
-  }, [navPages]);
 
   const studyPlan = useAppStore(s => s.studyPlanDual);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [sections, setSections] = useState<SearchSection[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { studiumId, obdobiId, facultyId, userFaculty, userSemester } = useAppStore();
+  const { studiumId, userFaculty, userSemester } = useAppStore();
   const debounceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const studyPlanCodes = useMemo(() => {
@@ -85,7 +66,7 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
   const saveToHistory = (result: SearchResult) =>
     saveRecentSearch(result, t('search.recentlySearched'));
 
-  // Instant local results (actions + enrolled subjects + pages)
+  // Instant local results (enrolled subjects)
   useEffect(() => {
     if (query.trim().length < 2) {
       setSections([]);
@@ -95,11 +76,6 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
     }
 
     const searchQuery = query.toLowerCase();
-
-    const matchedActions = actions.filter(a => {
-      const targets = [a.title, ...(a.keywords || [])];
-      return targets.some(target => fuzzyIncludes(target, searchQuery));
-    });
 
     const enrolledResults: SearchResult[] = [];
     if (subjects?.data) {
@@ -119,36 +95,15 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
       }
     }
 
-    const pageResults: SearchResult[] = [];
-    pages.forEach(cat => cat.children.forEach(p => {
-      const keywords = pageKeywords[p.id] ?? [];
-      const itemLabel = (language === 'en' && p.labelEn) ? p.labelEn : p.label;
-      const catLabel = (language === 'en' && cat.labelEn) ? cat.labelEn : cat.label;
-      const matchesLabel = fuzzyIncludes(itemLabel, searchQuery);
-      const matchesKeyword = keywords.some(kw => kw.toLowerCase().includes(searchQuery));
-
-      if (matchesLabel || matchesKeyword) {
-        pageResults.push({
-          id: p.id,
-          title: itemLabel,
-          type: 'page',
-          detail: catLabel,
-          link: injectUserParams(p.href, studiumId ?? undefined, language === 'en' ? 'en' : 'cz', obdobiId ?? undefined, facultyId ?? undefined)
-        });
-      }
-    }));
-
     const newSections: SearchSection[] = [
-      { key: 'actions', label: t('commands.quickActions'), results: matchedActions },
       { key: 'subjects', label: t('search.subjects'), results: sortByRelevance(enrolledResults, searchQuery, studyPlanCodes, userFaculty, userSemester) },
-      { key: 'pages', label: t('search.pages'), results: pageResults },
     ].filter(s => s.results.length > 0);
 
     setSections(newSections);
     setSelectedIndex(0);
     setIsLoading(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, actions]);
+  }, [query]);
 
   // Debounced network results (subjects + people) — merge into sections
   useEffect(() => {
@@ -184,9 +139,7 @@ export function useSearch(query: string, actions: SearchResult[] = []) {
           const mergedSubjects = sortByRelevance([...existingSubjects, ...networkSubjects], searchQuery, studyPlanCodes, userFaculty, userSemester);
 
           const newSections: SearchSection[] = [
-            prev.find(s => s.key === 'actions'),
             { key: 'subjects', label: t('search.subjects'), results: mergedSubjects },
-            prev.find(s => s.key === 'pages'),
             { key: 'people', label: t('search.people'), results: personResults },
           ].filter((s): s is SearchSection => !!s && s.results.length > 0);
 

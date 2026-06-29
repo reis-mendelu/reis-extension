@@ -3,7 +3,6 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { IsPortalPopover } from './IsPortalPopover';
 import { injectUserParams } from '../../data/pagesData';
-import { pagesData } from '../../data/pages';
 import { useSearch } from './useSearch';
 import { useAppStore } from '../../store/useAppStore';
 import { SearchResultItem } from './SearchResultItem';
@@ -17,17 +16,16 @@ interface SearchBarProps {
   onSearch?: (query: string) => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string, facultyCode?: string) => void;
   prefillRef?: React.MutableRefObject<((query: string) => void) | null>;
-  actions?: SearchResult[];
 }
 
-export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, actions = [] }: SearchBarProps) {
+export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: SearchBarProps) {
   const { t, language } = useTranslation();
   const { studiumId, obdobiId, facultyId } = useAppStore();
   const modifier = getModifierKey();
   const defaultPlaceholder = t('search.placeholder', { shortcut: modifier });
   const finalPlaceholder = placeholder || (modifier ? defaultPlaceholder : defaultPlaceholder.replace(/\s*\(.*\)$/, ''));
   const [query, setQuery] = useState('');
-  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, saveToHistory } = useSearch(query, actions);
+  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, saveToHistory } = useSearch(query);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputWrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -94,34 +92,20 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
   }, [isOpen]);
 
   const handleSelect = (result: SearchResult) => {
-    if (result.type === 'action' && result.onExecute) {
-      result.onExecute();
-    } else {
-      saveToHistory(result);
-      if (result.type === 'subject' && onOpenSubject) {
-        onOpenSubject(result.subjectCode!, result.title, result.subjectId, result.faculty);
-      } else if (result.link) {
-        window.open(injectUserParams(result.link, studiumId, language === 'en' ? 'en' : 'cz', obdobiId, facultyId), '_blank');
-      }
-
-      if (onSearch) onSearch(result.title);
+    saveToHistory(result);
+    if (result.type === 'subject' && onOpenSubject) {
+      onOpenSubject(result.subjectCode!, result.title, result.subjectId, result.faculty);
+    } else if (result.link) {
+      window.open(injectUserParams(result.link, studiumId, language === 'en' ? 'en' : 'cz', obdobiId, facultyId), '_blank');
     }
+
+    if (onSearch) onSearch(result.title);
     setQuery(''); setIsOpen(false); setSelectedIndex(-1);
   };
 
   const isEmptyQuery = query.trim() === '';
 
-  const browseItems: SearchResult[] = isEmptyQuery
-    ? [
-        ...recentSearches,
-        ...actions,
-        ...pagesData.flatMap(cat => cat.children.map(p => {
-            const itemLabel = (language === 'en' && p.labelEn) ? p.labelEn : p.label;
-            const catLabel = (language === 'en' && cat.labelEn) ? cat.labelEn : cat.label;
-            return { id: p.id, title: itemLabel, type: 'page' as const, detail: catLabel, link: p.href, category: catLabel };
-        })),
-      ]
-    : [];
+  const browseItems: SearchResult[] = isEmptyQuery ? recentSearches : [];
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) { if (e.key === 'Enter' && query.trim() !== '') setIsOpen(true); return; }
@@ -183,7 +167,7 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
       >
         {isEmptyQuery ? (
           <div className="max-h-[min(500px,60vh)] overflow-y-auto pb-2">
-            {recentSearches.length > 0 && (
+            {recentSearches.length > 0 ? (
               <div>
                 <div className="px-4 py-1.5 text-xs font-semibold text-base-content/50 uppercase tracking-wider mt-1 sticky top-0 bg-base-100 z-10">{t('search.recent')}</div>
                 {recentSearches.map((result, index) => (
@@ -191,37 +175,9 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, ac
                     onMouseEnter={() => setSelectedIndex(index)} onMouseDown={(e) => { e.preventDefault(); handleSelect(result); }} />
                 ))}
               </div>
+            ) : (
+              <div className="px-4 py-8 text-center text-sm text-base-content/50">{t('search.recentHint')}</div>
             )}
-            {actions.length > 0 && (
-              <div>
-                <div className="px-4 py-1.5 text-xs font-semibold text-base-content/50 uppercase tracking-wider mt-1 sticky top-0 bg-base-100 z-10">{t('commands.quickActions')}</div>
-                {actions.map((action, i) => {
-                  const globalIdx = recentSearches.length + i;
-                  return (
-                    <SearchResultItem key={action.id} result={action} isRecent={false} isSelected={selectedIndex === globalIdx}
-                      onMouseEnter={() => setSelectedIndex(globalIdx)} onMouseDown={(e) => { e.preventDefault(); handleSelect(action); }} />
-                  );
-                })}
-              </div>
-            )}
-            {pagesData.map(cat => {
-              const catOffset = recentSearches.length + actions.length + pagesData.slice(0, pagesData.indexOf(cat)).reduce((sum, c) => sum + c.children.length, 0);
-              const catLabel = (language === 'en' && cat.labelEn) ? cat.labelEn : cat.label;
-              return (
-                <div key={cat.id}>
-                  <div className="px-4 py-1.5 text-xs font-semibold text-base-content/50 uppercase tracking-wider mt-1 sticky top-0 bg-base-100 z-10">{catLabel}</div>
-                  {cat.children.map((p, i) => {
-                    const idx = catOffset + i;
-                    const itemLabel = (language === 'en' && p.labelEn) ? p.labelEn : p.label;
-                    return (
-                      <SearchResultItem key={p.id} result={{ id: p.id, title: itemLabel, type: 'page', detail: catLabel, link: p.href, category: catLabel }}
-                        isRecent={false} isSelected={selectedIndex === idx}
-                        onMouseEnter={() => setSelectedIndex(idx)} onMouseDown={(e) => { e.preventDefault(); handleSelect(browseItems[idx]); }} />
-                    );
-                  })}
-                </div>
-              );
-            })}
           </div>
         ) : (
           <div className="max-h-[min(500px,60vh)] overflow-y-auto pb-2">

@@ -13,14 +13,13 @@ interface MobileSearchOverlayProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string, faculty?: string) => void;
-  actions?: SearchResult[];
   prefillQuery?: string;
 }
 
-export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = [], prefillQuery = '' }: MobileSearchOverlayProps) {
+export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQuery = '' }: MobileSearchOverlayProps) {
   const { t, language } = useTranslation();
   const [query, setQuery] = useState('');
-  const { setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query, actions);
+  const { setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -45,16 +44,11 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = 
   }, [isOpen, onClose]);
 
   const handleSelect = (result: SearchResult) => {
-    if (result.type === 'action' && result.onExecute) {
-      result.onExecute();
-    } else {
-      saveToHistory(result);
-      if (result.type === 'subject' && onOpenSubject) {
-        onOpenSubject(result.subjectCode!, result.title, result.subjectId, result.faculty);
-      } else if (result.link) {
-        window.open(injectUserParams(result.link, studiumId, language === 'en' ? 'en' : 'cz'), '_blank');
-      }
-
+    saveToHistory(result);
+    if (result.type === 'subject' && onOpenSubject) {
+      onOpenSubject(result.subjectCode!, result.title, result.subjectId, result.faculty);
+    } else if (result.link) {
+      window.open(injectUserParams(result.link, studiumId, language === 'en' ? 'en' : 'cz'), '_blank');
     }
     setQuery('');
     onClose();

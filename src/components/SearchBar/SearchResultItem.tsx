@@ -1,4 +1,4 @@
-import { Clock, FileText, BookOpen, Briefcase, Zap } from 'lucide-react';
+import { Clock, FileText, BookOpen, Briefcase } from 'lucide-react';
 import type { SearchResult } from './types';
 
 interface SearchResultItemProps {
@@ -13,11 +13,6 @@ export function SearchResultItem({ result, isRecent, isSelected, onMouseEnter, o
   const getIcon = () => {
     if (isRecent) return <Clock className="w-4 h-4 text-base-content/40" />;
     switch (result.type) {
-      case 'page': return (
-        <div className="w-6 h-6 rounded bg-success/20 flex items-center justify-center">
-          <FileText className="w-3.5 h-3.5 text-success" />
-        </div>
-      );
       case 'subject': return (
         <div className="w-6 h-6 rounded bg-primary/20 flex items-center justify-center">
           <BookOpen className="w-3.5 h-3.5 text-primary" />
@@ -32,11 +27,6 @@ export function SearchResultItem({ result, isRecent, isSelected, onMouseEnter, o
           </div>
         );
       }
-      case 'action': return (
-        <div className="w-6 h-6 rounded bg-warning/20 flex items-center justify-center">
-          <Zap className="w-3.5 h-3.5 text-warning" />
-        </div>
-      );
       default: return (
         <div className="w-6 h-6 rounded bg-base-200 flex items-center justify-center">
           <FileText className="w-3.5 h-3.5 text-base-content/60" />

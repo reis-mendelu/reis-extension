@@ -6,9 +6,7 @@ import { MobileSearchOverlay } from './SearchBar/MobileSearchOverlay';
 import { useTranslation } from '../hooks/useTranslation';
 import { NotificationFeed } from './NotificationFeed';
 import { useAppStore } from '../store/useAppStore';
-import { getCommandActions } from './SearchBar/actions';
 import { getWeekForDate } from '../api/teachingWeek';
-import type { AppView } from '../types/app';
 
 interface AppHeaderProps {
   currentView: string;
@@ -19,8 +17,6 @@ interface AppHeaderProps {
   onToday: () => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string) => void;
   searchPrefillRef?: React.MutableRefObject<((query: string) => void) | null>;
-  setCurrentView?: (view: AppView) => void;
-  openFeedback?: () => void;
 }
 
 export function AppHeader({
@@ -32,8 +28,6 @@ export function AppHeader({
   onToday,
   onOpenSubject,
   searchPrefillRef,
-  setCurrentView,
-  openFeedback,
 }: AppHeaderProps) {
   const { t } = useTranslation();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -71,21 +65,6 @@ export function AppHeader({
     if (!teachingWeekData || !currentDate) return null;
     return getWeekForDate(teachingWeekData, currentDate);
   }, [teachingWeekData, currentDate]);
-  const theme = useAppStore(s => s.theme);
-  const setTheme = useAppStore(s => s.setTheme);
-  const language = useAppStore(s => s.language);
-  const setLanguage = useAppStore(s => s.setLanguage);
-
-  const actions = useMemo(() => getCommandActions({
-    setCurrentView: setCurrentView || (() => {}),
-    setTheme,
-    setLanguage,
-    openFeedback: openFeedback || (() => {}),
-    theme,
-    language,
-    t,
-  }), [setCurrentView, setTheme, setLanguage, openFeedback, theme, language, t]);
-
     return (
       <>
         <div
@@ -138,7 +117,7 @@ export function AppHeader({
   
               {/* Desktop Search Bar */}
               <div className="hidden md:flex items-center w-[300px] lg:w-[450px] xl:w-[600px]">
-                <SearchBar onOpenSubject={onOpenSubject} prefillRef={desktopPrefillRef} actions={actions} />
+                <SearchBar onOpenSubject={onOpenSubject} prefillRef={desktopPrefillRef} />
               </div>
   
               <div className="flex items-center gap-1">
@@ -155,7 +134,6 @@ export function AppHeader({
           setPrefillQuery('');
         }}
         onOpenSubject={onOpenSubject}
-        actions={actions}
         prefillQuery={prefillQuery}
       />
     </>
