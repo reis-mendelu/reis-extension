@@ -14,9 +14,10 @@ The people + subjects search currently lives in the global `AppHeader`, visible 
 ## Decisions (from brainstorming)
 
 - **Task split:** I add search to the Study Plan page; **Tonda owns removing it from `AppHeader`**. I do **not** touch `AppHeader.tsx`, to avoid colliding with his in-flight work.
-- **Entry points:** search is **study-plan-only, no global jump**. ⌘K and the host-page `REIS_OPEN_SEARCH` trigger only do anything while the Study Plan is mounted (their listeners live inside `SearchBar`). "Click to search" actions on other panels are dropped.
+- **Entry points:** search is **study-plan-only, no global jump**. ⌘K and the host-page `REIS_OPEN_SEARCH` trigger only do anything while the Study Plan is mounted (their listeners live inside `SearchBar`).
 - **Placement:** desktop — inline in the Study Plan header, right of the title; mobile (`isNarrow`) — a full-width search row directly under the title.
 - **Unresolved no-id rows on the Study Plan:** fall back to the on-page search (today's prefill behavior).
+- **Erasmus / Subjects-panel no-id rows: out of scope.** Their "Click to search" wiring is left as-is and is not redesigned here. Once Tonda removes the header search, those clicks silently no-op (nothing registers into the global ref); fixing that UI is deferred to the later Erasmus work.
 
 ## Architecture
 
@@ -26,9 +27,9 @@ Reuse the existing `SearchBar` / `useSearch` unchanged — all the hard logic (f
 
 | Unit | Change | Responsibility |
 |------|--------|----------------|
-| `StudyPlanPage.tsx` | **edit** | Mount `<SearchBar>` in its header; own a local `prefillRef`; build its own `onSearchSubject` that targets that ref. |
-| `AppMain.tsx` | **edit** | Stop routing `onSearchSubject` for Subjects/Erasmus to the global `searchPrefillRef` (pass nothing → those rows go non-interactive). Stop passing `onSearchSubject` to `StudyPlanPage` (it self-wires). |
-| `SubjectRow.tsx` | **edit** | Make `onSearchSubject` **optional**; when absent and the row has no id, render it non-interactive (display-only, no "Search to open" affordance). |
+| `StudyPlanPage.tsx` | **edit** | Mount `<SearchBar>` in its header; own a local `prefillRef`; build its own `onSearchSubject` that targets that ref and pass it to the `SubjectRow`s it renders. |
+| `AppMain.tsx` | **edit** | Stop passing `onSearchSubject` to `StudyPlanPage` (it self-wires now). Subjects/Erasmus wiring left unchanged. |
+| `SubjectRow.tsx` | **untouched** | `onSearchSubject` stays required; the Study Plan simply supplies a local implementation instead of the global one. |
 | `AppHeader.tsx` | **untouched** | Tonda removes the header `SearchBar` + `MobileSearchOverlay`. |
 | `SearchBar/*`, `useSearch.ts` | **untouched** | Reused verbatim. |
 
@@ -38,7 +39,7 @@ Reuse the existing `SearchBar` / `useSearch` unchanged — all the hard logic (f
 
 **After (Study Plan):** `StudyPlanPage` creates `const localPrefillRef = useRef<((q: string) => void) | null>(null)`, passes it to its `<SearchBar prefillRef={localPrefillRef} onOpenSubject={onOpenSubject} />`, and constructs `onSearchSubject = (name) => localPrefillRef.current?.(name)` for the `SubjectRow`s it renders. The page's own no-id "Click to search" therefore fills the on-page search.
 
-**After (Subjects / Erasmus):** `AppMain` passes **no** `onSearchSubject`. Their no-id rows are non-interactive. (In practice the Subjects panel renders enrolled rows that have ids → direct-open, so this mainly affects Erasmus.)
+**After (Subjects / Erasmus):** unchanged — `AppMain` keeps wiring their `onSearchSubject` to the global `searchPrefillRef`. Once Tonda removes the header search, nothing registers into that ref, so those clicks silently no-op. Redesigning those rows is deferred (out of scope).
 
 The global `searchPrefillRef` plumbed from `useAppLogic` → `AppMain` → `AppHeader` becomes orphaned once Tonda removes the header search. Leaving it in place is harmless; cleaning it up is Tonda's removal change, not this one.
 
@@ -60,8 +61,7 @@ No new network or async paths — `SearchBar`/`useSearch` own their own loading/
 Per CLAUDE.md (test-first):
 
 - **`StudyPlanPage` test** (new): renders the page with a plan fixture and asserts (a) the search input is present in the header, and (b) clicking a no-id `SubjectRow`'s "Click to search" invokes the local prefill (search receives the subject name). Use the existing store/test harness pattern.
-- **`SubjectRow` test** (extend or add): with `onSearchSubject` omitted and a no-id subject, the row renders **non-interactive** (no search button / no `onSearchSubject` call on click).
-- Existing `useSearch` and search-engine tests are unaffected (engine unchanged).
+- Existing `useSearch` and search-engine tests are unaffected (engine unchanged); `SubjectRow` is untouched.
 
 ## Out of scope (separate follow-up spec)
 
@@ -69,6 +69,7 @@ Resolving no-id subjects to a real IS `predmetId` so they open the `SubjectDrawe
 
 ## Out of scope (other)
 
+- **Erasmus / Subjects-panel no-id "Click to search" rows** — left as-is; they no-op after the header search is gone, to be redesigned in the later Erasmus work.
 - `AppHeader` searchbar removal (Tonda).
 - Any change to `SearchBar`/`useSearch` internals.
 - Cleanup of the now-orphaned global `searchPrefillRef` plumbing (folds into Tonda's removal).
