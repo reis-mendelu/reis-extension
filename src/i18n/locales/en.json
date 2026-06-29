@@ -289,7 +289,12 @@
     "isPortalTooltip": "IS Directory",
     "filterPlaceholder": "Filter...",
     "select": "Select",
-    "open": "Open"
+    "open": "Open",
+    "facultyScopeNote": "Searching within your faculty",
+    "universityScopeNote": "Searching the whole university",
+    "widenToUniversity": "Whole university",
+    "narrowToFaculty": "Only my faculty",
+    "englishVariant": "in English"
   },
   "course": {
     "setNickname": "Set nickname",

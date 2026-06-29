@@ -32,7 +32,8 @@ export function parseSubjectResults(htmlString: string): Subject[] {
         seenIds.add(id);
 
         const nextText = link.nextSibling?.textContent ?? '';
-        const semesterMatch = nextText.match(/(ZS|LS)\s+\d{4}\/\d{4}/);
+        // CZ search labels semesters ZS/LS; EN search labels them WS/SS (winter/summer).
+        const semesterMatch = nextText.match(/(ZS|LS|WS|SS)\s+\d{4}\/\d{4}/);
         const semester = semesterMatch ? semesterMatch[0] : '';
         const facultyMatch = nextText.match(/- ([A-Z]{2,5})$/);
         const faculty = facultyMatch ? facultyMatch[1] : 'N/A';

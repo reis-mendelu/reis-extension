@@ -1,4 +1,4 @@
-import { Search, X, ArrowLeft, LayoutGrid } from 'lucide-react';
+import { Search, X, ArrowLeft, LayoutGrid, Globe } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { injectUserParams } from '../../data/pagesData';
 import { IsPortalPopover } from './IsPortalPopover';
@@ -13,14 +13,13 @@ interface MobileSearchOverlayProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string, faculty?: string) => void;
-  actions?: SearchResult[];
   prefillQuery?: string;
 }
 
-export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = [], prefillQuery = '' }: MobileSearchOverlayProps) {
+export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQuery = '' }: MobileSearchOverlayProps) {
   const { t, language } = useTranslation();
   const [query, setQuery] = useState('');
-  const { setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory } = useSearch(query, actions);
+  const { setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory, scope, canScopeToFaculty, widenToUniversity, narrowToFaculty } = useSearch(query);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -45,16 +44,11 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = 
   }, [isOpen, onClose]);
 
   const handleSelect = (result: SearchResult) => {
-    if (result.type === 'action' && result.onExecute) {
-      result.onExecute();
-    } else {
-      saveToHistory(result);
-      if (result.type === 'subject' && onOpenSubject) {
-        onOpenSubject(result.subjectCode!, result.title, result.subjectId, result.faculty);
-      } else if (result.link) {
-        window.open(injectUserParams(result.link, studiumId, language === 'en' ? 'en' : 'cz'), '_blank');
-      }
-
+    saveToHistory(result);
+    if (result.type === 'subject' && onOpenSubject) {
+      onOpenSubject(result.subjectCode!, result.title, result.subjectId, result.faculty);
+    } else if (result.link) {
+      window.open(injectUserParams(result.link, studiumId, language === 'en' ? 'en' : 'cz'), '_blank');
     }
     setQuery('');
     onClose();
@@ -155,6 +149,21 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, actions = 
           </>
         ) : renderSearchResults()}
       </div>
+      {!isEmptyQuery && canScopeToFaculty && (
+        <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-t border-base-300">
+          <span className="text-[11px] text-base-content/50 truncate">
+            {scope === 'faculty' ? t('search.facultyScopeNote') : t('search.universityScopeNote')}
+          </span>
+          <button
+            type="button"
+            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); if (scope === 'faculty') widenToUniversity(); else narrowToFaculty(); }}
+            className="text-xs text-primary hover:underline flex items-center gap-1.5 shrink-0"
+          >
+            <Globe className="w-3.5 h-3.5" />
+            {scope === 'faculty' ? t('search.widenToUniversity') : t('search.narrowToFaculty')}
+          </button>
+        </div>
+      )}
       <SearchFooter />
       <IsPortalPopover isOpen={isPortalOpen} onClose={() => setIsPortalOpen(false)} />
     </div>
