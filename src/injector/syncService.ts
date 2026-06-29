@@ -6,6 +6,7 @@ import { fetchDualLanguagePastSubjects } from "../api/pastSubjects";
 import { fetchFilesFromFolder } from "../api/documents";
 import { fetchDualLanguageStudyPlan } from "../api/studyPlan";
 import { fetchStudyStats } from "../api/studyStats";
+import { fetchStudyComparison } from "../api/studyComparison";
 import { fetchSyllabus } from "../api/syllabus";
 import { syncZaznamnik } from "../services/sync/syncZaznamnik";
 import { syncCvicneTests } from "../services/sync/syncCvicneTests";
@@ -88,6 +89,13 @@ export async function syncAllData() {
             })
             : Promise.resolve(null);
 
+        const studyComparisonPromise = (studium && userParams?.obdobi)
+            ? fetchStudyComparison(studium, userParams.obdobi).then(c => {
+                if (c) cachedData = { ...cachedData, studyComparison: c };
+                return c;
+            })
+            : Promise.resolve(null);
+
         const cvicneTestsPromise = studium ? syncCvicneTests(studium).then(result => {
             if (result) {
                 cachedData = { ...cachedData, cvicneTests: result.tests };
@@ -105,7 +113,7 @@ export async function syncAllData() {
             : Promise.resolve(null);
 
         // Phase 2b: Full schedule + exams in parallel (subjects/studyPlan/studyStats re-uses already-started promises)
-        const [fullSchedule, exams, subjects, studyPlan, studyStats, cvicneTests, odevzdavarnyResult, pastSubjects] = await Promise.allSettled([
+        const [fullSchedule, exams, subjects, studyPlan, studyStats, cvicneTests, odevzdavarnyResult, pastSubjects, studyComparison] = await Promise.allSettled([
             fetchFullSemesterSchedule(),
             fetchDualLanguageExams(),
             subjectsPromise,
@@ -114,6 +122,7 @@ export async function syncAllData() {
             cvicneTestsPromise,
             odevzdavarnyPromise,
             pastSubjectsPromise,
+            studyComparisonPromise,
         ]);
 
         if (
@@ -152,6 +161,7 @@ export async function syncAllData() {
             attendance: subjects.status === "fulfilled" && subjects.value ? subjects.value.attendance : cachedData.attendance,
             studyPlan: studyPlan.status === "fulfilled" && studyPlan.value ? studyPlan.value : cachedData.studyPlan,
             studyStats: studyStats.status === "fulfilled" && studyStats.value ? studyStats.value : cachedData.studyStats,
+            studyComparison: studyComparison.status === "fulfilled" && studyComparison.value ? studyComparison.value : cachedData.studyComparison,
             cvicneTests: cvicneTests.status === "fulfilled" && cvicneTests.value?.tests?.length ? cvicneTests.value.tests : cachedData.cvicneTests,
             odevzdavarny: odevzdavarnyResult.status === "fulfilled" && odevzdavarnyResult.value?.assignments?.length ? odevzdavarnyResult.value.assignments : cachedData.odevzdavarny,
             files: cachedData.files || {},
@@ -167,6 +177,7 @@ export async function syncAllData() {
             attendance: cachedData.attendance,
             studyPlan: cachedData.studyPlan,
             studyStats: cachedData.studyStats,
+            studyComparison: cachedData.studyComparison,
             cvicneTests: cachedData.cvicneTests,
             odevzdavarny: cachedData.odevzdavarny,
             isSyncing: true,

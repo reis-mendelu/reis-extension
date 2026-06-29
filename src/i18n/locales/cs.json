@@ -150,6 +150,8 @@
   },
   "search": {
     "placeholder": "Hledej předměty, lidi, stránky... ({shortcut}K)",
+    "peoplePlaceholder": "Hledat lidi...",
+    "peopleHint": "Začni psát jméno...",
     "results": "Výsledky",
     "recent": "Nedávná vyhledávání",
     "loading": "Načítání výsledků...",
@@ -542,11 +544,19 @@
       "lowSampleHint": "{n} předmětů má málo dat"
     },
     "averages": {
-      "title": "Studijní průměry",
-      "term": "Za tento semestr",
+      "title": "Studijní průměr",
+      "term": "Tento semestr",
       "study": "Za celé studium",
       "avg": "průměr",
-      "weighted": "vážený průměr"
+      "weighted": "vážený průměr",
+      "weightedShort": "Vážený průměr",
+      "weightedInfo": "Vážený průměr zohledňuje počet kreditů jednotlivých předmětů."
+    },
+    "comparison": {
+      "title": "Srovnání v ročníku",
+      "rank": "Pořadí v ročníku",
+      "top": "Patříš mezi {pct} % nejlepších studentů!",
+      "beat": "Překonáváš {pct} % studentů ve svém ročníku."
     }
   },
   "commands": {

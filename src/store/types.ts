@@ -3,7 +3,7 @@ import type { BlockLesson, HiddenItems, CalendarCustomEvent } from '../types/cal
 import type { ExamSubject } from '../types/exams';
 import type { SyllabusRequirements, ParsedFile, SubjectsData, SubjectSuccessRate, SubjectAttendance } from '../types/documents';
 import type { ClassmatesData, Classmate } from '../types/classmates';
-import type { DualLanguageStudyPlan, StudyStats } from '../types/studyPlan';
+import type { DualLanguageStudyPlan, StudyStats, StudyComparison } from '../types/studyPlan';
 import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { SyncStatus } from '../services/sync';
@@ -214,9 +214,12 @@ export interface StudyPlanSlice {
     /** true once the first fetchStudyPlan() call has fully resolved */
     studyPlanLoaded: boolean;
     studyStats: StudyStats | null;
+    studyComparison: StudyComparison | null;
     fetchStudyPlan: () => Promise<void>;
     fetchStudyStats: () => Promise<void>;
     setStudyStats: (stats: StudyStats) => void;
+    fetchStudyComparison: () => Promise<void>;
+    setStudyComparison: (c: StudyComparison) => void;
 }
 
 export interface ErasmusStudentInfo {

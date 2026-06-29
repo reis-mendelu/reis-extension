@@ -60,8 +60,7 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
   const pct = creditsRequired > 0 ? Math.min(100, Math.round((creditsAcquired / creditsRequired) * 100)) : 0;
   const progressionInfo = studyStats ? getProgressionInfo(studyStats) : null;
   const hasDetailLine = (studyStats && progressionInfo && progressionInfo.threshold > 0) ||
-    (enrolledCredits != null && enrolledCredits > 0) ||
-    (studyStats != null && studyStats.gpaTotal > 0);
+    (enrolledCredits != null && enrolledCredits > 0);
   const level = progressionInfo?.level ?? 'safe';
   const cfg = levelConfig[level];
   const Icon = cfg.Icon;
@@ -73,7 +72,7 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
           {plan?.title || t('subjects.title')}
         </h2>
         <a href={registrationsUrl} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-2 px-3 py-1.5 bg-base-200/30 border border-base-300/50 rounded-xl shadow-sm hover:bg-base-200/50 transition-colors shrink-0">
+          className="flex items-center gap-2 px-3 py-1.5 bg-base-200/30 border border-base-300/50 rounded-lg shadow-sm hover:bg-base-200/50 transition-colors shrink-0">
           <span className="text-[11px] text-base-content/40 font-medium uppercase tracking-wider">{t('sidebar.registrations')}</span>
           <ExternalLink size={13} className="text-base-content/40 shrink-0" />
         </a>
@@ -123,9 +122,6 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
             <span className="flex items-center gap-2 ml-auto">
               {enrolledCredits != null && enrolledCredits > 0 && (
                 <span>{enrolledCredits} {t('subjects.enrolledCreditsLabel')}</span>
-              )}
-              {studyStats && studyStats.gpaTotal > 0 && (
-                <span>{t('subjects.gpa')}: {studyStats.weightedGpaTotal.toFixed(2)}</span>
               )}
             </span>
           </div>

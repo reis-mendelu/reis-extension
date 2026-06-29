@@ -274,6 +274,8 @@
   },
   "search": {
     "placeholder": "Search subjects, people, pages... ({shortcut}K)",
+    "peoplePlaceholder": "Search people...",
+    "peopleHint": "Start typing a name...",
     "results": "Results",
     "recent": "Recent searches",
     "loading": "Loading results...",
@@ -542,11 +544,19 @@
       "lowSampleHint": "{n} subjects with low data"
     },
     "averages": {
-      "title": "Study averages",
+      "title": "Study average",
       "term": "This term",
       "study": "Whole study",
       "avg": "average",
-      "weighted": "weighted avg."
+      "weighted": "weighted avg.",
+      "weightedShort": "Weighted average",
+      "weightedInfo": "Weighted by the credits of each course."
+    },
+    "comparison": {
+      "title": "Year-group ranking",
+      "rank": "Year-group rank",
+      "top": "You're in the top {pct}% of students!",
+      "beat": "You're ahead of {pct}% of students in your year."
     }
   },
   "commands": {

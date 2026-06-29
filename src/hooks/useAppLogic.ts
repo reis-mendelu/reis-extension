@@ -15,7 +15,7 @@ import { sendTelemetry } from '../services/errorReporter/telemetry';
 import { logError } from '../utils/reportError';
 
 import { isDualLanguageStudyPlan } from '../types/studyPlan';
-import type { DualLanguageStudyPlan, StudyStats } from '../types/studyPlan';
+import type { DualLanguageStudyPlan, StudyStats, StudyComparison } from '../types/studyPlan';
 import type { BlockLesson } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
 import type { SubjectsData, ParsedFile, SyllabusRequirements, SubjectAttendance } from '../types/documents';
@@ -34,6 +34,7 @@ interface SyncedData {
     pastAttendance?: Record<string, SubjectAttendance[]>;
     studyPlan?: DualLanguageStudyPlan;
     studyStats?: unknown;
+    studyComparison?: unknown;
     cvicneTests?: any[];
     odevzdavarny?: any[];
     lastSync?: string;
@@ -138,6 +139,10 @@ export function useAppLogic() {
                 if (r.studyStats) {
                     useAppStore.getState().setStudyStats(r.studyStats as StudyStats);
                     await IndexedDBService.set('meta', 'study_stats', r.studyStats);
+                }
+                if (r.studyComparison) {
+                    useAppStore.getState().setStudyComparison(r.studyComparison as StudyComparison);
+                    await IndexedDBService.set('meta', 'study_comparison', r.studyComparison);
                 }
                 if (r.cvicneTests?.length) {
                     const userParams = await IndexedDBService.get('meta', 'reis_user_params');

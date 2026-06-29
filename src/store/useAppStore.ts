@@ -106,6 +106,7 @@ export const initializeStore = async () => {
         const s2 = useAppStore.getState();
         s2.fetchStudyPlan();
         s2.fetchStudyStats();
+        s2.fetchStudyComparison();
         s2.fetchCvicneTests();
         s2.fetchOdevzdavarny();
         s2.fetchAllFiles();
@@ -157,6 +158,7 @@ export const initializeStore = async () => {
         st.fetchSubjects();
         st.fetchStudyPlan();
         st.fetchStudyStats();
+        st.fetchStudyComparison();
         st.fetchCvicneTests();
         st.fetchOdevzdavarny();
     });

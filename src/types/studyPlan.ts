@@ -75,6 +75,20 @@ export interface StudyStats {
   weightedGpaTotal: number;
 }
 
+/** Percentile standing from the E-index "Srovnání studijních výsledků" page (Mode 3). */
+export interface StudyComparison {
+  /** Your position in the cohort, e.g. 34. */
+  rank: number;
+  /** Cohort size, e.g. 549. */
+  total: number;
+  /** IS "Percentil" = rank/total*100 (lower is better). */
+  percentile: number;
+  /** Your study-average ("Průměr", Czech scale, lower is better). */
+  gpa: number;
+  /** The next-better average ahead of you ("Nejbližší lepší průměr"). */
+  nextBetterGpa: number;
+}
+
 export function isDualLanguageStudyPlan(val: unknown): val is DualLanguageStudyPlan {
     return val !== null && typeof val === 'object' && 'cz' in (val as Record<string, unknown>) && 'en' in (val as Record<string, unknown>);
 }

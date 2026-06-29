@@ -19,6 +19,7 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject, onOpenStudyPlan 
   const plan = useStudyPlan();
   const studyPlanLoaded = useAppStore(s => s.studyPlanLoaded);
   const studyStats = useAppStore(s => s.studyStats);
+  const studyComparison = useAppStore(s => s.studyComparison);
   const handshakeDone = useAppStore(s => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore(s => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore(s => s.syncStatus.isSyncing);
@@ -51,7 +52,7 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject, onOpenStudyPlan 
           onSearchSubject={onSearchSubject}
         />
         <div className="mt-3">
-          <StudyAveragesSection studyStats={studyStats} />
+          <StudyAveragesSection studyStats={studyStats} comparison={studyComparison} />
         </div>
       </div>
 

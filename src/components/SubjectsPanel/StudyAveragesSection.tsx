@@ -1,8 +1,11 @@
-import type { StudyStats } from '@/types/studyPlan';
+import { Info, Trophy } from 'lucide-react';
+import type { StudyStats, StudyComparison } from '@/types/studyPlan';
+import { percentileStanding } from '@/api/studyComparison';
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface Props {
   studyStats: StudyStats | null;
+  comparison?: StudyComparison | null;
 }
 
 // IS Mendelu grade averages use a Czech decimal comma (lower is better).
@@ -11,45 +14,71 @@ function formatGpa(value: number): string {
   return value.toFixed(2).replace('.', ',');
 }
 
-function Stat({ value, label }: { value: number; label: string }) {
+function formatPct(value: number): string {
+  return value.toFixed(2).replace('.', ',');
+}
+
+function Row({ label, value, info }: { label: string; value: string; info?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 text-center">
-      <span className="text-lg font-semibold tabular-nums leading-none">{formatGpa(value)}</span>
-      <span className="text-[10px] text-base-content/50 leading-tight">{label}</span>
+    <div className="flex items-center gap-2 text-sm">
+      <span className="text-base-content/60 shrink-0 flex items-center gap-1">
+        {label}
+        {info && (
+          <span className="tooltip tooltip-right flex" data-tip={info}>
+            <Info className="w-3.5 h-3.5 text-base-content/40" />
+          </span>
+        )}
+      </span>
+      <span className="flex-1 border-b border-dotted border-base-content/25" />
+      <span className="font-semibold tabular-nums shrink-0">{value}</span>
     </div>
   );
 }
 
-export function StudyAveragesSection({ studyStats }: Props) {
+export function StudyAveragesSection({ studyStats, comparison }: Props) {
   const { t } = useTranslation();
   if (!studyStats) return null;
 
   const period = studyStats.currentSemester.gpa;
   const total = studyStats.gpaTotal;
   const weighted = studyStats.weightedGpaTotal;
+  const hasAverages = ![period, total, weighted].every(v => v <= 0);
 
-  // Nothing to show for students with no graded subjects yet.
-  if ([period, total, weighted].every(v => v <= 0)) return null;
+  // Nothing to show for students with no graded subjects and no ranking yet.
+  if (!hasAverages && !comparison) return null;
+
+  const standing = comparison ? percentileStanding(comparison.percentile) : null;
+  const sentence = standing
+    ? standing.tier === 'top'
+      ? t('subjects.comparison.top', { pct: formatPct(standing.pct) })
+      : t('subjects.comparison.beat', { pct: formatPct(standing.pct) })
+    : null;
 
   return (
-    <div className="bg-base-200/30 border border-base-300/50 rounded-xl shadow-sm overflow-hidden">
+    <div className="max-w-xl mx-auto bg-base-200/30 border border-base-300/50 rounded-xl shadow-sm overflow-hidden">
       <div className="px-4 py-2 border-b border-base-300/30">
         <span className="block text-center text-xs text-base-content/40 font-medium uppercase tracking-wider">{t('subjects.averages.title')}</span>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x divide-base-300/40">
-        {/* Current term — single average */}
-        <div className="flex flex-col gap-1.5 px-3 py-2">
-          <span className="text-xs text-base-content/55 font-semibold uppercase tracking-wider text-center">{t('subjects.averages.term')}</span>
-          <Stat value={period} label={t('subjects.averages.avg')} />
-        </div>
-        {/* Whole study — classic + weighted */}
-        <div className="flex flex-col gap-1.5 px-3 py-2">
-          <span className="text-xs text-base-content/55 font-semibold uppercase tracking-wider text-center">{t('subjects.averages.study')}</span>
-          <div className="grid grid-cols-2">
-            <Stat value={total} label={t('subjects.averages.avg')} />
-            <Stat value={weighted} label={t('subjects.averages.weighted')} />
+      <div className="px-4 py-2.5 flex flex-col gap-2">
+        {hasAverages && (
+          <>
+            <Row label={t('subjects.averages.term')} value={formatGpa(period)} />
+            <Row label={t('subjects.averages.study')} value={formatGpa(total)} />
+            <Row label={t('subjects.averages.weightedShort')} value={formatGpa(weighted)} info={t('subjects.averages.weightedInfo')} />
+          </>
+        )}
+        {comparison && standing && (
+          <div className={`flex items-center flex-wrap gap-x-3 gap-y-1 ${hasAverages ? 'mt-1 pt-2 border-t border-base-300/30' : ''}`}>
+            <span className={`flex items-center gap-2 text-sm font-medium ${standing.tier === 'top' ? 'text-success' : 'text-base-content/70'}`}>
+              <Trophy className="w-4 h-4 shrink-0" />
+              {sentence}
+            </span>
+            <span className="ml-auto flex items-baseline gap-1.5 shrink-0">
+              <span className="text-xs text-base-content/55 font-medium uppercase tracking-wider">{t('subjects.comparison.rank')}</span>
+              <span className="text-sm font-semibold tabular-nums">{comparison.rank}. / {comparison.total}</span>
+            </span>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

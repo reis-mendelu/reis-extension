@@ -1,4 +1,4 @@
-import { Search, X, ArrowLeft, LayoutGrid, Globe } from 'lucide-react';
+import { X, ArrowLeft, LayoutGrid, Globe, UserSearch } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { injectUserParams } from '../../data/pagesData';
 import { IsPortalPopover } from './IsPortalPopover';
@@ -104,7 +104,7 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQue
           <ArrowLeft size={20} />
         </button>
         <div className="flex-1 flex items-center h-10 px-3 bg-base-200 rounded-lg">
-          <Search className="w-4 h-4 mr-2 text-base-content/50" />
+          <UserSearch className="w-4 h-4 mr-2 text-base-content/50" />
           <input
             ref={inputRef}
             type="text"
