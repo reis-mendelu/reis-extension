@@ -30,9 +30,8 @@ function Row({ entry, onOpen, onSearch }: { entry: HardestEntry; onOpen: Props['
         <span className="font-mono text-[10px] text-base-content/40 whitespace-nowrap shrink-0">{semesters.join('·')}.<span className="hidden md:inline"> sem.</span></span>
       )}
       <span className="flex-1 text-sm truncate">{displayName}</span>
-      <span className={`flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium shrink-0 group/rate ${rateClass(stat.rate)}`}>
-        <span className="group-hover/rate:hidden">{stat.rate}%</span>
-        <span className="hidden group-hover/rate:inline whitespace-nowrap">{t('subjects.failRateLabel')} {stat.rate}%</span>
+      <span className={`flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium shrink-0 ${rateClass(stat.rate)}`}>
+        {t('subjects.failRateLabel')} {stat.rate}%
       </span>
     </button>
   );

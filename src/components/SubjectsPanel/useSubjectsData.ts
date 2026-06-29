@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import type { StudyPlan, Zamerani } from '@/types/studyPlan';
 import { computeFailRate } from './computeFailRate';
@@ -12,6 +12,16 @@ import { isRealCredits, normalizeZameraniName, buildSubjectSemesters, buildSubje
  */
 export function useSubjectsData(plan: StudyPlan | null) {
   const successRates = useAppStore(s => s.successRates);
+
+  // Ensure success rates are fetched for every subject in the plan. Lives here
+  // (the shared derivation point) so both the current-semester panel and the
+  // full study-plan page load their own data regardless of mount order. The
+  // batch fetch is idempotent, so calling it from both surfaces is safe.
+  useEffect(() => {
+    if (!plan) return;
+    const codes = plan.blocks.flatMap(b => b.groups.flatMap(g => g.subjects.map(s => s.code)));
+    if (codes.length > 0) useAppStore.getState().fetchSuccessRateBatch(codes);
+  }, [plan]);
 
   const zameraniLookup = useMemo(() => {
     const map = new Map<string, Zamerani>();

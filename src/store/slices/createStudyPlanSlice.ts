@@ -27,4 +27,5 @@ export const createStudyPlanSlice: AppSlice<StudyPlanSlice> = (set) => ({
             // Ignore if stats fail to load from IDB
         }
     },
+    setStudyStats: (stats) => set({ studyStats: stats }),
 });

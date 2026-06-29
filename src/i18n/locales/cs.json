@@ -129,7 +129,8 @@
     "addPin": "Přidat",
     "addPinTitle": "Připnout stránku",
     "pinNudge": "Připni si sem nejpoužívanější IS stránky",
-    "pinLimitReached": "Maximum 6 stránek"
+    "pinLimitReached": "Maximum 6 stránek",
+    "map": "Mapa"
   },
   "common": {
     "loading": "Načítání...",
@@ -284,7 +285,7 @@
     "footer": "Automaticky odesíláme technické info (verze, prohlížeč) pro rychlejší opravu.",
     "toastSuccess": "Díky za zpětnou vazbu!",
     "toastError": "Nepodařilo se odeslat zpětnou vazbu.",
-    "npsQuestion": "Doporučil/a bys reIS kamarádovi? (1-5)",
+    "npsQuestion": "Doporučil/a bys reIS kamarádovi? (1 - nejhorší, 5 - nejlepší)",
     "npsThank": "Díky za hodnocení!",
     "sharePrompt": "Pošli to spolužákovi, co ještě bojuje s IS.",
     "shareCopy": "Kopírovat odkaz",
@@ -534,6 +535,13 @@
       "zameraniTitle": "Srovnání zaměření",
       "zameraniSubtitle": "průměrná neúspěšnost vážená kredity",
       "lowSampleHint": "{n} předmětů má málo dat"
+    },
+    "averages": {
+      "title": "Studijní průměry",
+      "term": "Za tento semestr",
+      "study": "Za celé studium",
+      "avg": "průměr",
+      "weighted": "vážený průměr"
     }
   },
   "commands": {
@@ -584,42 +592,103 @@
       "ios": {
         "hint": "Naskenuj QR kód",
         "steps": [
-          { "text": "Klepni na Vytvořit QR kód", "shot": "Vygenerovaný QR kód v panelu reIS" },
-          { "text": "Naskenuj ho Fotoaparátem a klepni na odkaz", "shot": "Fotoaparát míří na QR + banner s odkazem" },
-          { "text": "Povol stažení, pak Nastavení → \"Stažený profil\"", "shot": "Nastavení s řádkem \"Stažený profil\" nahoře", "warn": "iOS schová profil v Nastavení a platí jen ~8 minut — pospěš si." },
-          { "text": "Klepni na Instalovat a zadej heslo certifikátu", "shot": "Obrazovka Instalovat + pole na heslo" }
+          {
+            "text": "Klepni na Vytvořit QR kód",
+            "shot": "Vygenerovaný QR kód v panelu reIS"
+          },
+          {
+            "text": "Naskenuj ho Fotoaparátem a klepni na odkaz",
+            "shot": "Fotoaparát míří na QR + banner s odkazem"
+          },
+          {
+            "text": "Povol stažení, pak Nastavení → \"Stažený profil\"",
+            "shot": "Nastavení s řádkem \"Stažený profil\" nahoře",
+            "warn": "iOS schová profil v Nastavení a platí jen ~8 minut — pospěš si."
+          },
+          {
+            "text": "Klepni na Instalovat a zadej heslo certifikátu",
+            "shot": "Obrazovka Instalovat + pole na heslo"
+          }
         ],
-        "done": { "text": "Hotovo — na fakultě se k eduroam připojíš automaticky", "shot": "Wi-Fi ukazuje připojený eduroam" }
+        "done": {
+          "text": "Hotovo — na fakultě se k eduroam připojíš automaticky",
+          "shot": "Wi-Fi ukazuje připojený eduroam"
+        }
       },
       "android": {
         "hint": "Aplikace geteduroam",
-        "doOnce": { "title": "Nainstaluj aplikaci geteduroam", "cta": "Stáhnout z Google Play" },
+        "doOnce": {
+          "title": "Nainstaluj aplikaci geteduroam",
+          "cta": "Stáhnout z Google Play"
+        },
         "steps": [
-          { "text": "Klepni na Vytvořit QR kód", "shot": "Vygenerovaný QR kód v panelu reIS" },
-          { "text": "Naskenuj ho a klepni na stažený soubor, aby se otevřel v geteduroam", "shot": "Stažení → otevření souboru v geteduroam" },
-          { "text": "Zadej heslo certifikátu", "shot": "Výzva geteduroam na heslo" }
+          {
+            "text": "Klepni na Vytvořit QR kód",
+            "shot": "Vygenerovaný QR kód v panelu reIS"
+          },
+          {
+            "text": "Naskenuj ho a klepni na stažený soubor, aby se otevřel v geteduroam",
+            "shot": "Stažení → otevření souboru v geteduroam"
+          },
+          {
+            "text": "Zadej heslo certifikátu",
+            "shot": "Výzva geteduroam na heslo"
+          }
         ],
-        "done": { "text": "Hotovo — na fakultě se k eduroam připojíš automaticky", "shot": "Telefon připojený k eduroam" }
+        "done": {
+          "text": "Hotovo — na fakultě se k eduroam připojíš automaticky",
+          "shot": "Telefon připojený k eduroam"
+        }
       },
       "mac": {
         "hint": "Stáhni profil",
         "steps": [
-          { "text": "Klikni na Stáhnout eduroam profil a otevři stažený soubor", "shot": "Tlačítko Stáhnout eduroam profil" },
-          { "text": "Otevři Nastavení → Profily", "shot": "Nastavení systému → Profily" },
-          { "text": "Dvojklik na \"MENDELU eduroam (reIS)\" → Instalovat", "shot": "Dialog instalace profilu" },
-          { "text": "Zadej heslo certifikátu", "shot": "Pole na heslo" }
+          {
+            "text": "Klikni na Stáhnout eduroam profil a otevři stažený soubor",
+            "shot": "Tlačítko Stáhnout eduroam profil"
+          },
+          {
+            "text": "Otevři Nastavení → Profily",
+            "shot": "Nastavení systému → Profily"
+          },
+          {
+            "text": "Dvojklik na \"MENDELU eduroam (reIS)\" → Instalovat",
+            "shot": "Dialog instalace profilu"
+          },
+          {
+            "text": "Zadej heslo certifikátu",
+            "shot": "Pole na heslo"
+          }
         ],
-        "done": { "text": "Hotovo — na fakultě se k eduroam připojíš automaticky", "shot": "Mac připojený k eduroam" }
+        "done": {
+          "text": "Hotovo — na fakultě se k eduroam připojíš automaticky",
+          "shot": "Mac připojený k eduroam"
+        }
       },
       "windows": {
         "hint": "Aplikace geteduroam",
-        "doOnce": { "title": "Nainstaluj geteduroam pro Windows", "cta": "Otevřít geteduroam.app" },
+        "doOnce": {
+          "title": "Nainstaluj geteduroam pro Windows",
+          "cta": "Otevřít geteduroam.app"
+        },
         "steps": [
-          { "text": "Klikni na Stáhnout eduroam profil", "shot": "Tlačítko Stáhnout eduroam profil" },
-          { "text": "Dvojklik na stažený soubor — otevře se v geteduroam", "shot": "Soubor ve Stažených se otevírá v geteduroam" },
-          { "text": "Zadej heslo certifikátu", "shot": "Výzva geteduroam na heslo" }
+          {
+            "text": "Klikni na Stáhnout eduroam profil",
+            "shot": "Tlačítko Stáhnout eduroam profil"
+          },
+          {
+            "text": "Dvojklik na stažený soubor — otevře se v geteduroam",
+            "shot": "Soubor ve Stažených se otevírá v geteduroam"
+          },
+          {
+            "text": "Zadej heslo certifikátu",
+            "shot": "Výzva geteduroam na heslo"
+          }
         ],
-        "done": { "text": "Hotovo — na fakultě se k eduroam připojíš automaticky", "shot": "PC připojené k eduroam" }
+        "done": {
+          "text": "Hotovo — na fakultě se k eduroam připojíš automaticky",
+          "shot": "PC připojené k eduroam"
+        }
       }
     }
   },
@@ -859,5 +928,45 @@
     "locationPlaceholder": "Místnost nebo místo",
     "addLocation": "Přidat místo",
     "delete": "Smazat"
+  },
+  "map": {
+    "title": "Mapa",
+    "searchPlaceholder": "Hledat místnost nebo místo…",
+    "noFloorPlan": "Žádný plán podlaží není k dispozici.",
+    "seats": "Míst",
+    "projector": "Projektor",
+    "whiteboard": "Tabule",
+    "showOnMap": "Zobrazit na mapě",
+    "places": "Místa",
+    "jakDorms": "Koleje JAK",
+    "mainCampus": "Hlavní kampus",
+    "alsoHere": "Také zde",
+    "events": "Akce",
+    "allSocieties": "Vše",
+    "myFaculty": "Moje fakulta",
+    "noEvents": "Žádné akce",
+    "thisWeek": "Tento týden",
+    "nextWeek": "Příští týden",
+    "today": "Dnes",
+    "tomorrow": "Zítra",
+    "moreHere": "dalších zde",
+    "moreInfo": "Více informací",
+    "hostedBy": "Pořádá",
+    "going": "půjde",
+    "interested": "má zájem",
+    "rsvpGoing": "Půjdu",
+    "rsvpInterested": "Mám zájem",
+    "category": {
+      "party": "Párty",
+      "boardgames": "Deskovky",
+      "trip": "Výlet",
+      "quiz": "Kvíz",
+      "sports": "Sport",
+      "film": "Film",
+      "karaoke": "Karaoke",
+      "culture": "Kultura",
+      "social": "Společenská akce",
+      "other": "Akce"
+    }
   }
 }

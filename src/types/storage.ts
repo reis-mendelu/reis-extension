@@ -211,6 +211,7 @@ export const StoreSchemas = {
     note_images: NoteImageSchema,
     iskam: IskamDataSchema,
     zaznamnik: ZaznamnikSchema,
+    map_rooms: z.custom<import('../types/campusMap').RoomsCollection>(),
 };
 
 export type StoreName = keyof typeof StoreSchemas;

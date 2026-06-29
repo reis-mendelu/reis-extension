@@ -15,6 +15,8 @@ import type { OutletMenu } from '../types/menuTypes';
 import type { PageCategory } from '../data/pages/types';
 import type { SpolekNotification } from '../services/spolky/types';
 import type { SubjectZaznamnik } from '../types/zaznamnik';
+import type { RoomsCollection, MapSelection, PoiProperties, RoomProperties } from '../types/campusMap';
+import type { MapEvent } from '../types/events';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type Theme = "mendelu" | "mendelu-dark";
@@ -214,6 +216,7 @@ export interface StudyPlanSlice {
     studyStats: StudyStats | null;
     fetchStudyPlan: () => Promise<void>;
     fetchStudyStats: () => Promise<void>;
+    setStudyStats: (stats: StudyStats) => void;
 }
 
 export interface ErasmusStudentInfo {
@@ -398,7 +401,48 @@ export interface ViewportSlice {
         'isTouch' | 'isNarrow' | 'isPortrait' | 'keyboardOpen' | 'viewportHeight'>>) => void;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & NotesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & EduroamSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & BulletinSlice & ViewportSlice & import('./slices/createSearchSlice').SearchSlice & import('./slices/createPersonProfileSlice').PersonProfileSlice;
+export interface MapSlice {
+  activeBuildingId: number | null;
+  activeFloorId: number | null;
+  mapSelection: MapSelection | null;
+  roomsByBuilding: Record<number, RoomsCollection>;
+  mapLoadingBuilding: number | null;
+  mapSearchQuery: string;
+  mapSearchResults: MapSelection[];
+  mapFocusRequest: number;
+  setMapBuilding: (id: number) => void;
+  exitToCampus: () => void;
+  /** Clear the current selection (close the detail panel) without moving the camera — bare-map click in campus overview. */
+  clearMapSelection: () => void;
+  setMapFloor: (floorId: number) => void;
+  selectMapRoom: (room: RoomProperties) => void;
+  selectMapPoi: (poi: PoiProperties, coord: [number, number]) => void;
+  setMapSearchQuery: (q: string) => void;
+  focusRoomByCode: (code: string) => void;
+  focusPoiById: (id: number) => void;
+  focusLandmarkById: (id: number) => void;
+  /** Fly back to the whole-campus overview (Místa "Hlavní kampus"). */
+  focusCampus: () => void;
+  /** Fly to an arbitrary named coordinate without a real landmark/poi (e.g. the JAK dorm cluster centre). */
+  focusPoint: (name: string, coord: [number, number]) => void;
+  loadMapBuilding: (id: number) => Promise<void>;
+  // --- Society events on the map ---
+  mapEvents: MapEvent[];
+  mapEventsLoaded: boolean;
+  /** Language the cached events were built in; a switch re-fetches. */
+  mapEventsLanguage: Language | null;
+  /** Which tab the top-right panel shows. */
+  mapPanelTab: 'places' | 'events';
+  /** Event scope: 'all' societies, or a specific societyId. */
+  eventFilter: string;
+  setMapPanelTab: (tab: 'places' | 'events') => void;
+  setEventFilter: (filter: string) => void;
+  loadMapEvents: () => Promise<void>;
+  /** Select an event for the detail panel. Pass `{ fly: true }` (list click) to also fly the camera to its coordinate; a pin click omits it and the camera stays put. */
+  focusEventById: (id: string, opts?: { fly?: boolean }) => void;
+}
+
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & NotesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & EduroamSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & BulletinSlice & ViewportSlice & import('./slices/createSearchSlice').SearchSlice & import('./slices/createPersonProfileSlice').PersonProfileSlice & MapSlice & import('./slices/createRsvpSlice').RsvpSlice;
 
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

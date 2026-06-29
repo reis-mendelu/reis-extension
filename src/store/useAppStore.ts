@@ -32,6 +32,8 @@ import { createSearchSlice } from './slices/createSearchSlice';
 import { createPersonProfileSlice } from './slices/createPersonProfileSlice';
 import { createBulletinSlice } from './slices/createBulletinSlice';
 import { createViewportSlice } from './slices/createViewportSlice';
+import { createMapSlice } from './slices/createMapSlice';
+import { createRsvpSlice } from './slices/createRsvpSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
@@ -69,6 +71,8 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createPersonProfileSlice(...a),
   ...createBulletinSlice(...a),
   ...createViewportSlice(...a),
+  ...createMapSlice(...a),
+  ...createRsvpSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
@@ -117,6 +121,7 @@ export const initializeStore = async () => {
         s2.fetchTeachingWeek();
         s2.loadRecentSearches();
         s2.hydrateBulletin();
+        s2.loadMapEvents();
         // Predictive prefetch — files for subjects scheduled today.
         // Guarded by 60s SWR + max 6 subjects in prefetchTodaySubjectsImpl.
         useAppStore.getState().prefetchTodaySubjects();
@@ -138,7 +143,7 @@ export const initializeStore = async () => {
             return;
         }
         if (type === 'LANGUAGE_UPDATE') {
-            st.loadLanguage();
+            st.loadLanguage().then(() => useAppStore.getState().loadMapEvents());
             st.fetchAllFiles();
             useAppStore.setState({ menu: null });
             return;
@@ -165,7 +170,7 @@ export const initializeStore = async () => {
     // Cross-tab language listener — use loadLanguage() and re-fetch files for the new language
     const bcLang = new BroadcastChannel('reis_language_sync');
     bcLang.onmessage = () => {
-        useAppStore.getState().loadLanguage();
+        useAppStore.getState().loadLanguage().then(() => useAppStore.getState().loadMapEvents());
         useAppStore.getState().fetchAllFiles();
         // Clear menu so it re-fetches with the new language
         useAppStore.setState({ menu: null });

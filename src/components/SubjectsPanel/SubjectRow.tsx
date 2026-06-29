@@ -149,7 +149,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
       {typeLabel && <span className="hidden md:inline text-[10px] font-mono uppercase text-base-content/40 shrink-0">{typeLabel}</span>}
       {failRate != null && !subject.isFulfilled && (
         <span
-          className={`flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium tracking-wide shrink-0 relative group/fail cursor-pointer transition-colors ${
+          className={`flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium tracking-wide shrink-0 cursor-pointer transition-colors ${
             failRate >= 25
               ? 'bg-error/10 text-error hover:bg-error/15'
               : failRate >= 20
@@ -158,8 +158,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
           }`}
           onClick={(e) => { e.stopPropagation(); if (hasId) onOpenSubject(subject.code, subject.name, subject.id, undefined, 'stats'); else onSearchSubject(subject.code); }}
         >
-          <span className="group-hover/fail:hidden">{failRate}%</span>
-          <span className="hidden group-hover/fail:inline whitespace-nowrap">{t('subjects.failRateLabel')} {failRate}%</span>
+          {t('subjects.failRateLabel')} {failRate}%
         </span>
       )}
       {zameraniTag && (

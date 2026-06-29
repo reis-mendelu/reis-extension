@@ -282,3 +282,55 @@ html, body, #root {
   background-color: color-mix(in oklab, var(--color-secondary) 22%, transparent);
   border-color: color-mix(in oklab, var(--color-secondary) 40%, transparent);
 }
+
+/* ── Campus map (Leaflet) overrides ──────────────────────────────────────
+ * The campus basemap is always light (CartoDB Positron) regardless of theme,
+ * so these are Leaflet-library overrides, not themed component styles. */
+
+/* Clicking an SVG room polygon focuses it; the browser then paints a focus ring
+ * around the element's bounding box — an ugly rectangle far bigger than the
+ * rotated room. Suppress it; selection is already shown by the orange fill. */
+.leaflet-interactive:focus,
+.leaflet-interactive:focus-visible {
+  outline: none;
+}
+
+/* Permanent room-number labels: bare text, no tooltip chrome, like MyMENDELU. */
+.leaflet-tooltip.room-label {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: #1f2937;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.leaflet-tooltip.room-label::before {
+  display: none;
+}
+
+/* Campus building names: bolder than room labels, with a white halo so they
+ * read on top of the blue building tint and the basemap. */
+.leaflet-tooltip.building-label {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.9), 0 0 3px rgba(255, 255, 255, 0.9);
+}
+.leaflet-tooltip.building-label::before {
+  display: none;
+}
+/* Hide the lettered building names at the campus-overview zoom — toggled from
+ * MapCanvas by zoom level so they don't clutter the map or collide with event
+ * pins; they reappear once the user zooms in to choose a building. */
+.reis-hide-building-labels .leaflet-tooltip.building-label {
+  display: none;
+}

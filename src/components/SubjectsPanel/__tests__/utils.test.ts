@@ -7,7 +7,9 @@ describe('SubjectsPanel utils', () => {
       expect(cleanGroupName('Skupina předmětů: Povinné předměty')).toBe('Povinné předměty');
       expect(cleanGroupName('Skupiny předmětů: Volitelné')).toBe('Volitelné');
       expect(cleanGroupName('Skupina: Oborové')).toBe('Oborové');
-      expect(cleanGroupName('Skupina předmětů povinně volitelných')).toBe('Povinně volitelných');
+      // IS serves the genitive ("…povinně volitelných"); we normalize to the
+      // clean nominative display form (group-rename feature, commit d853ccc).
+      expect(cleanGroupName('Skupina předmětů povinně volitelných')).toBe('Povinně volitelné');
       expect(cleanGroupName('Skupina předmětů - Volitelné')).toBe('Volitelné');
     });
 
@@ -19,7 +21,7 @@ describe('SubjectsPanel utils', () => {
     });
 
     it('strips trailing min constraints correctly', () => {
-      expect(cleanGroupName('Skupina předmětů povinně volitelných (min. 2 př.)')).toBe('Povinně volitelných');
+      expect(cleanGroupName('Skupina předmětů povinně volitelných (min. 2 př.)')).toBe('Povinně volitelné');
       expect(cleanGroupName('Skupina: Oborové (min. 12 kr.)')).toBe('Oborové');
       expect(cleanGroupName('Group: Core (min 3 courses)')).toBe('Core');
     });

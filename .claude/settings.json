@@ -15,5 +15,9 @@
   },
   "worktree": {
     "bgIsolation": "none"
+  },
+  "enabledPlugins": {
+    "code-review@claude-plugins-official": true,
+    "supabase@claude-plugins-official": true
   }
 }
