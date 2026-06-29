@@ -124,9 +124,9 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
               const displayGroupName = cleanGroupName(group.name);
 
              return (
-               <div key={gi} className={gi > 0 ? 'mt-3' : ''}>
+               <div key={gi} className={`${gi > 0 ? 'mt-3' : ''} bg-base-200/30 border border-base-300/50 rounded-xl shadow-sm overflow-hidden`}>
                  {(block.groups.length > 1 || statusText) && (
-                   <div className="px-1 pb-1 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                   <div className="px-3 py-1.5 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 border-b border-base-300/30">
                      <span className="text-[11px] text-base-content/40 font-medium uppercase tracking-wider truncate max-w-[65%] md:max-w-none" title={group.name}>
                        {displayGroupName}
                      </span>
@@ -149,7 +149,7 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
                     <span>{t('subjects.zameraniPickPrompt')}</span>
                   </div>
                 ) : (
-                  <div className="bg-base-200/30 border border-base-300/50 rounded-xl shadow-sm p-2 flex flex-col gap-0.5">
+                  <div className="p-2 flex flex-col gap-0.5">
                     {visible.map(s => (
                       <SubjectRow
                         key={s.code}
