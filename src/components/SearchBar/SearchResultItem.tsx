@@ -1,4 +1,4 @@
-import { Clock, FileText, BookOpen, Briefcase } from 'lucide-react';
+import { Clock, BookOpen, Briefcase } from 'lucide-react';
 import type { SearchResult } from './types';
 
 interface SearchResultItemProps {
@@ -12,27 +12,20 @@ interface SearchResultItemProps {
 export function SearchResultItem({ result, isRecent, isSelected, onMouseEnter, onMouseDown }: SearchResultItemProps) {
   const getIcon = () => {
     if (isRecent) return <Clock className="w-4 h-4 text-base-content/40" />;
-    switch (result.type) {
-      case 'subject': return (
-        <div className="w-6 h-6 rounded bg-primary/20 flex items-center justify-center">
-          <BookOpen className="w-3.5 h-3.5 text-primary" />
-        </div>
-      );
-      case 'person': {
-        const bg = result.personType === 'student' ? 'bg-info/20' : result.personType === 'teacher' ? 'bg-secondary/20' : 'bg-base-200';
-        const color = result.personType === 'student' ? 'text-info' : result.personType === 'teacher' ? 'text-secondary' : 'text-base-content/60';
-        return (
-          <div className={`w-6 h-6 rounded-full ${bg} flex items-center justify-center`}>
-            <Briefcase className={`w-3.5 h-3.5 ${color}`} />
-          </div>
-        );
-      }
-      default: return (
-        <div className="w-6 h-6 rounded bg-base-200 flex items-center justify-center">
-          <FileText className="w-3.5 h-3.5 text-base-content/60" />
+    if (result.type === 'person') {
+      const bg = result.personType === 'student' ? 'bg-info/20' : result.personType === 'teacher' ? 'bg-secondary/20' : 'bg-base-200';
+      const color = result.personType === 'student' ? 'text-info' : result.personType === 'teacher' ? 'text-secondary' : 'text-base-content/60';
+      return (
+        <div className={`w-6 h-6 rounded-full ${bg} flex items-center justify-center`}>
+          <Briefcase className={`w-3.5 h-3.5 ${color}`} />
         </div>
       );
     }
+    return (
+      <div className="w-6 h-6 rounded bg-primary/20 flex items-center justify-center">
+        <BookOpen className="w-3.5 h-3.5 text-primary" />
+      </div>
+    );
   };
 
   return (
