@@ -80,6 +80,29 @@ describe('useSearch — faculty scope + language wiring', () => {
     expect(result.current.sections.find(s => s.key === 'subjects')!.results[0].semester).toBe('LS 2025/2026');
   });
 
+  it('omits the people section when subjectsOnly is set', async () => {
+    setup({ language: 'cz', userFaculty: 'PEF' });
+    mockExecuteSearch.mockResolvedValue({
+      people: [{ id: 'p1', name: 'Jan Novák', type: 'teacher', link: 'x' }],
+      subjects: [subj('1', 'EBC-ST', 'Statistika', 'LS 2025/2026')],
+      subjectsTruncated: false,
+    });
+    const { result } = renderHook(() => useSearch('statistika', true));
+    await waitFor(() => expect(result.current.sections.find(s => s.key === 'subjects')?.results.length).toBe(1));
+    expect(result.current.sections.find(s => s.key === 'people')).toBeUndefined();
+  });
+
+  it('keeps the people section by default (subjectsOnly off)', async () => {
+    setup({ language: 'cz', userFaculty: 'PEF' });
+    mockExecuteSearch.mockResolvedValue({
+      people: [{ id: 'p1', name: 'Jan Novák', type: 'teacher', link: 'x' }],
+      subjects: [subj('1', 'EBC-ST', 'Statistika', 'LS 2025/2026')],
+      subjectsTruncated: false,
+    });
+    const { result } = renderHook(() => useSearch('statistika'));
+    await waitFor(() => expect(result.current.sections.find(s => s.key === 'people')?.results.length).toBe(1));
+  });
+
   it('ranks the English-taught (v AJ) variant first in EN mode', async () => {
     setup({ language: 'en', userFaculty: 'PEF' });
     mockExecuteSearch.mockResolvedValue({

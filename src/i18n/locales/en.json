@@ -274,6 +274,7 @@
   },
   "search": {
     "placeholder": "Search subjects, people, pages... ({shortcut}K)",
+    "placeholderSubjects": "Search subjects...",
     "results": "Results",
     "recent": "Recent searches",
     "loading": "Loading results...",

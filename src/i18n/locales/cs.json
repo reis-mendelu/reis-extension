@@ -150,6 +150,7 @@
   },
   "search": {
     "placeholder": "Hledej předměty, lidi, stránky... ({shortcut}K)",
+    "placeholderSubjects": "Hledej předměty...",
     "results": "Výsledky",
     "recent": "Nedávná vyhledávání",
     "loading": "Načítání výsledků...",

@@ -62,7 +62,7 @@ function dedupeByCode(results: SearchResult[]): SearchResult[] {
 
 export type SearchScope = 'faculty' | 'all';
 
-export function useSearch(query: string) {
+export function useSearch(query: string, subjectsOnly = false) {
   const { t, language } = useTranslation();
   const subjects = useAppStore(s => s.subjects);
   const recentSearches = useAppStore(s => s.recentSearches);
@@ -188,7 +188,7 @@ export function useSearch(query: string) {
 
           const newSections: SearchSection[] = [
             { key: 'subjects', label: t('search.subjects'), results: mergedSubjects },
-            { key: 'people', label: t('search.people'), results: personResults },
+            ...(subjectsOnly ? [] : [{ key: 'people', label: t('search.people'), results: personResults }]),
           ].filter((s): s is SearchSection => !!s && s.results.length > 0);
 
           return newSections;
