@@ -155,6 +155,9 @@ export function useSearch(query: string, subjectsOnly = false) {
     let isMounted = true;
     if (query.trim().length < 2) return () => { isMounted = false; };
 
+    // Show loading on every (re)fetch — including widening to the whole university,
+    // where the query is unchanged so the instant-results effect doesn't re-run.
+    setIsLoading(true);
     if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
     debounceTimeout.current = setTimeout(async () => {
       try {
