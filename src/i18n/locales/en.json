@@ -276,6 +276,7 @@
     "placeholder": "Search subjects, people, pages... ({shortcut}K)",
     "peoplePlaceholder": "Search people...",
     "peopleHint": "Start typing a name...",
+    "placeholderSubjects": "Search subjects...",
     "results": "Results",
     "recent": "Recent searches",
     "loading": "Loading results...",

@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useCallback } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { SearchBar } from '../SearchBar/index';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -16,11 +17,14 @@ import { getSemesterState, isZameraniCode } from './utils';
 interface StudyPlanPageProps {
   onBack: () => void;
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => void;
-  onSearchSubject: (name: string) => void;
 }
 
-export function StudyPlanPage({ onBack, onOpenSubject, onSearchSubject }: StudyPlanPageProps) {
+export function StudyPlanPage({ onBack, onOpenSubject }: StudyPlanPageProps) {
   const { t } = useTranslation();
+  const searchPrefillRef = useRef<((query: string) => void) | null>(null);
+  const onSearchSubject = useCallback((name: string) => {
+    searchPrefillRef.current?.(name);
+  }, []);
   const plan = useStudyPlan();
   const successRates = useAppStore(s => s.successRates);
   const { zameraniLookup, subjectSemesters, subjectToZameranis, zameraniProgress, failRates } = useSubjectsData(plan);
@@ -37,11 +41,21 @@ export function StudyPlanPage({ onBack, onOpenSubject, onSearchSubject }: StudyP
   );
 
   const header = (
-    <div className="px-4 py-2.5 border-b border-base-300 shrink-0 flex items-center gap-2">
-      <button onClick={onBack} className="btn btn-ghost btn-sm btn-circle text-base-content/60" aria-label={t('common.back')}>
-        <ArrowLeft className="w-4 h-4" />
-      </button>
-      <h2 className="text-base font-semibold truncate" title={plan?.title}>{t('subjects.studyPlan')}</h2>
+    <div className="px-4 py-2.5 border-b border-base-300 shrink-0 flex flex-col gap-2 md:flex-row md:items-center">
+      <div className="flex items-center gap-2 min-w-0">
+        <button onClick={onBack} className="btn btn-ghost btn-sm btn-circle text-base-content/60" aria-label={t('common.back')}>
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <h2 className="text-base font-semibold truncate" title={plan?.title}>{t('subjects.studyPlan')}</h2>
+      </div>
+      <div className="w-full md:ml-auto md:w-[30rem] shrink-0">
+        <SearchBar
+          minimal
+          subjectsOnly
+          onOpenSubject={(code, name, id, faculty) => onOpenSubject(code, name ?? code, id ?? '', faculty)}
+          prefillRef={searchPrefillRef}
+        />
+      </div>
     </div>
   );
 

@@ -62,7 +62,7 @@ function dedupeByCode(results: SearchResult[]): SearchResult[] {
 
 export type SearchScope = 'faculty' | 'all';
 
-export function useSearch(query: string) {
+export function useSearch(query: string, subjectsOnly = false) {
   const { t, language } = useTranslation();
   const subjects = useAppStore(s => s.subjects);
   const recentSearches = useAppStore(s => s.recentSearches);
@@ -155,6 +155,9 @@ export function useSearch(query: string) {
     let isMounted = true;
     if (query.trim().length < 2) return () => { isMounted = false; };
 
+    // Show loading on every (re)fetch — including widening to the whole university,
+    // where the query is unchanged so the instant-results effect doesn't re-run.
+    setIsLoading(true);
     if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
     debounceTimeout.current = setTimeout(async () => {
       try {
@@ -188,7 +191,7 @@ export function useSearch(query: string) {
 
           const newSections: SearchSection[] = [
             { key: 'subjects', label: t('search.subjects'), results: mergedSubjects },
-            { key: 'people', label: t('search.people'), results: personResults },
+            ...(subjectsOnly ? [] : [{ key: 'people', label: t('search.people'), results: personResults }]),
           ].filter((s): s is SearchSection => !!s && s.results.length > 0);
 
           return newSections;

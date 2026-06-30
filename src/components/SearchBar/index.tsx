@@ -1,4 +1,4 @@
-import { X, LayoutGrid, Globe, UserSearch } from 'lucide-react';
+import { Search, X, LayoutGrid, Globe, Loader2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { IsPortalPopover } from './IsPortalPopover';
@@ -16,16 +16,22 @@ interface SearchBarProps {
   onSearch?: (query: string) => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string, facultyCode?: string) => void;
   prefillRef?: React.MutableRefObject<((query: string) => void) | null>;
+  /** Minimal chrome (Study Plan): input + results + the faculty/university scope toggle.
+   * Drops the IS-portal launcher, footer hints, recent-searches, and ⌘K badge. */
+  minimal?: boolean;
+  /** Restrict results to subjects only (no people). Study Plan search opens subjects. */
+  subjectsOnly?: boolean;
 }
 
-export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: SearchBarProps) {
+export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, minimal, subjectsOnly }: SearchBarProps) {
   const { t, language } = useTranslation();
   const { studiumId, obdobiId, facultyId } = useAppStore();
   const modifier = getModifierKey();
   const defaultPlaceholder = t('search.placeholder', { shortcut: modifier });
-  const finalPlaceholder = placeholder || (modifier ? defaultPlaceholder : defaultPlaceholder.replace(/\s*\(.*\)$/, ''));
+  const finalPlaceholder = placeholder
+    || (subjectsOnly ? t('search.placeholderSubjects') : (modifier ? defaultPlaceholder : defaultPlaceholder.replace(/\s*\(.*\)$/, '')));
   const [query, setQuery] = useState('');
-  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, saveToHistory, scope, canScopeToFaculty, widenToUniversity, narrowToFaculty } = useSearch(query);
+  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, saveToHistory, scope, canScopeToFaculty, widenToUniversity, narrowToFaculty } = useSearch(query, subjectsOnly);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputWrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -153,14 +159,19 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: 
     });
   };
 
-  const dropdownContent = isOpen && dropdownPos && (
+  // In minimal mode there is no recent-searches list, so an empty query shows nothing.
+  const showDropdown = isOpen && dropdownPos && !(minimal && isEmptyQuery);
+
+  const dropdownContent = showDropdown && (
     <>
       <div className="fixed inset-0 bg-black/20 z-40 animate-in fade-in duration-150" onMouseDown={() => setIsOpen(false)} />
       <div
         ref={dropdownRef}
         className="fixed z-50 bg-base-100 border border-base-300 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2 duration-200"
         style={(() => {
-          const width = Math.min(Math.max(dropdownPos.width, 500), window.innerWidth - 32);
+          // Minimal mode matches the input width (consistent size); full mode floors at 500px.
+          const target = minimal ? dropdownPos.width : Math.max(dropdownPos.width, 500);
+          const width = Math.min(target, window.innerWidth - 32);
           const left = Math.max(16, Math.min(dropdownPos.left, window.innerWidth - width - 16));
           return { top: dropdownPos.top + 4, left, width };
         })()}
@@ -199,15 +210,16 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: 
             </button>
           </div>
         )}
-        <SearchFooter />
+        {!minimal && <SearchFooter />}
       </div>
     </>
   );
 
   return (
-    <div className="w-full flex items-center justify-end">
-      <div className="flex items-center gap-2 w-full max-w-md lg:max-w-2xl">
+    <div className={minimal ? 'w-full' : 'w-full flex items-center justify-end'}>
+      <div className={minimal ? 'w-full' : 'flex items-center gap-2 w-full max-w-md lg:max-w-2xl'}>
         {/* Portal Launcher Trigger */}
+        {!minimal && (
         <div className="relative group/launcher flex-shrink-0">
           <button
             onClick={() => setIsPortalOpen(true)}
@@ -215,7 +227,7 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: 
           >
             <LayoutGrid className="w-5 h-5 group-hover:scale-110 transition-transform" />
           </button>
-          
+
           {/* Custom Premium Tooltip */}
           <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-3 py-2 bg-primary text-primary-content text-[11px] font-bold rounded-lg shadow-xl opacity-0 group-hover:launcher:opacity-100 translate-y-1 group-hover:launcher:translate-y-0 pointer-events-none transition-all duration-300 whitespace-nowrap z-[100] scale-95 group-hover:launcher:scale-100 origin-top">
             {t('search.isPortalTooltip')}
@@ -223,18 +235,21 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: 
             <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rotate-45" />
           </div>
         </div>
+        )}
 
         <div ref={inputWrapRef} className="relative w-full">
           <div className={`relative flex items-center w-full bg-base-100 rounded-xl border shadow-sm transition-all duration-200 z-50 ${isOpen ? 'border-primary shadow-[0_0_0_3px_rgba(121,190,21,0.15)]' : 'border-base-300 hover:border-base-content/30'}`}>
             <div className="flex-1 flex items-center h-12 px-4">
-              <UserSearch className={`w-5 h-5 mr-3 transition-colors ${isOpen ? 'text-base-content' : 'text-base-content/50'}`} />
+              {isLoading
+                ? <Loader2 className="w-5 h-5 mr-3 animate-spin text-base-content" />
+                : <Search className={`w-5 h-5 mr-3 transition-colors ${isOpen ? 'text-base-content' : 'text-base-content/50'}`} />}
               <input ref={inputRef} type="text" value={query} onChange={(e) => { setQuery(e.target.value); setIsOpen(true); }}
                 onFocus={() => setIsOpen(true)} onKeyDown={handleKeyDown} placeholder={finalPlaceholder}
                 className="w-full bg-transparent text-sm text-base-content placeholder-base-content/50 focus:outline-none" />
               {query ? (
                 <button onClick={() => { setQuery(''); inputRef.current?.focus(); }} className="p-1 hover:bg-base-200 rounded-full"><X className="w-4 h-4 text-base-content/50" /></button>
               ) : (
-                modifier && (
+                !minimal && modifier && (
                   <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-base-content/40 bg-base-200 border border-base-300 rounded flex-shrink-0">
                     <span className={modifier === '⌘' ? 'text-xs' : 'text-[10px]'}>{modifier}</span>K
                   </kbd>
@@ -246,7 +261,7 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef }: 
         </div>
       </div>
 
-      <IsPortalPopover isOpen={isPortalOpen} onClose={() => setIsPortalOpen(false)} />
+      {!minimal && <IsPortalPopover isOpen={isPortalOpen} onClose={() => setIsPortalOpen(false)} />}
     </div>
   );
 }

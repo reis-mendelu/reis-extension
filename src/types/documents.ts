@@ -82,6 +82,10 @@ export interface SubjectSuccessRate {
     courseCode: string;
     stats: SemesterStats[];
     lastUpdated: string;
+    /** IS `predmet` id from reis-data (e.g. "160301"). Present in the CDN JSON; used to
+     * open not-enrolled study-plan subjects directly in the SubjectDrawer. May be a stale
+     * (older-semester) instance or, rarely, junk — always validate before use. */
+    predmetId?: string;
 }
 
 export interface SuccessRateData {
