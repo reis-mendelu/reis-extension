@@ -19,7 +19,6 @@ import { createFeedbackSlice } from './slices/createFeedbackSlice';
 import { createStudyPlanSlice } from './slices/createStudyPlanSlice';
 import { createCvicneTestsSlice } from './slices/createCvicneTestsSlice';
 import { createErasmusSlice } from './slices/createErasmusSlice';
-import { createPinnedPagesSlice } from './slices/createPinnedPagesSlice';
 import { createMenuSlice } from './slices/createMenuSlice';
 import { createHiddenItemsSlice } from './slices/createHiddenItemsSlice';
 import { createTeachingWeekSlice } from './slices/createTeachingWeekSlice';
@@ -58,7 +57,6 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createStudyPlanSlice(...a),
   ...createCvicneTestsSlice(...a),
   ...createErasmusSlice(...a),
-  ...createPinnedPagesSlice(...a),
   ...createMenuSlice(...a),
   ...createHiddenItemsSlice(...a),
   ...createTeachingWeekSlice(...a),
@@ -116,7 +114,6 @@ export const initializeStore = async () => {
         await s2.hydrateLastExamClassmatesFetchedAt();
         s2.fetchZaznamnik();
         s2.loadFeedbackState();
-        s2.loadPinnedPages();
         s2.loadHiddenItems();
         s2.loadCalendarCustomEvents();
         s2.fetchTeachingWeek();

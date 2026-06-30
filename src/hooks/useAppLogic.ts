@@ -117,7 +117,6 @@ export function useAppLogic() {
             }
             if (d.type === 'REIS_NAV_MENU') {
                 useAppStore.getState().setNavPages(d.categories);
-                useAppStore.getState().migratePinnedIds(d.categories);
                 return;
             }
 

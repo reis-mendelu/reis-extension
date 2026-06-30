@@ -10,7 +10,6 @@ import type { SyncStatus } from '../services/sync';
 import type { ErasmusCountryData, ErasmusConfig, University } from '../types/erasmus';
 import type { AIComparisonResult } from '../api/claude';
 import type { BulletinPost } from '../types/bulletin';
-import type { PinnedPage } from './slices/createPinnedPagesSlice';
 import type { OutletMenu } from '../types/menuTypes';
 import type { PageCategory } from '../data/pages/types';
 import type { SpolekNotification } from '../services/spolky/types';
@@ -308,14 +307,6 @@ export interface UseThemeResult {
   setTheme: (theme: Theme) => void;
 }
 
-export interface PinnedPagesSlice {
-  pinnedPages: PinnedPage[];
-  loadPinnedPages: () => Promise<void>;
-  pinPage: (page: PinnedPage) => Promise<void>;
-  unpinPage: (id: string) => Promise<void>;
-  migratePinnedIds: (navPages: PageCategory[]) => Promise<void>;
-}
-
 export interface MenuSlice {
   menu: OutletMenu[] | null;
   menuLoading: boolean;
@@ -445,7 +436,7 @@ export interface MapSlice {
   focusEventById: (id: string, opts?: { fly?: boolean }) => void;
 }
 
-export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & NotesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & EduroamSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & PinnedPagesSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & BulletinSlice & ViewportSlice & import('./slices/createSearchSlice').SearchSlice & import('./slices/createPersonProfileSlice').PersonProfileSlice & MapSlice & import('./slices/createRsvpSlice').RsvpSlice;
+export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & NotesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & EduroamSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & BulletinSlice & ViewportSlice & import('./slices/createSearchSlice').SearchSlice & import('./slices/createPersonProfileSlice').PersonProfileSlice & MapSlice & import('./slices/createRsvpSlice').RsvpSlice;
 
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;
