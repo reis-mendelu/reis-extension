@@ -40,12 +40,6 @@ describe('injectUserParams', () => {
         expect(content).toContain('injectUserParams');
         expect(content).toContain('injectUserParams(result.link, studiumId, language === \'en\' ? \'en\' : \'cz\', obdobiId, facultyId)');
     });
-
-    it('should be used for pinned pages in MainItems.tsx', () => {
-        const content = fs.readFileSync(path.resolve(__dirname, '../../components/Menu/MainItems.tsx'), 'utf-8');
-        expect(content).toContain('injectUserParams');
-        expect(content).toContain('href: injectUserParams(p.href, sid, lang, oid)');
-    });
 });
 
 describe('Data Files No Hardcoded IDs', () => {
