@@ -48,7 +48,7 @@ export function StudyPlanPage({ onBack, onOpenSubject }: StudyPlanPageProps) {
         </button>
         <h2 className="text-base font-semibold truncate" title={plan?.title}>{t('subjects.studyPlan')}</h2>
       </div>
-      <div className="w-full md:ml-auto md:w-80 shrink-0">
+      <div className="w-full md:ml-auto md:w-[30rem] shrink-0">
         <SearchBar
           minimal
           subjectsOnly
