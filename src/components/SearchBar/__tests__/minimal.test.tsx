@@ -4,7 +4,7 @@ import { SearchBar } from '../index';
 import { useAppStore } from '../../../store/useAppStore';
 
 beforeEach(() => {
-  useAppStore.setState({ language: 'cs', studiumId: '', obdobiId: '', facultyId: '' });
+  useAppStore.setState({ language: 'cz', studiumId: '', obdobiId: '', facultyId: '' });
 });
 
 describe('SearchBar minimal mode', () => {
