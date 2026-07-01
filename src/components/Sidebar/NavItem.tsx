@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronRight, ExternalLink, Search } from 'lucide-react';
+import { ChevronRight, ExternalLink, Search, UserSearch } from 'lucide-react';
 import type { MenuItem } from '../menuConfig';
 import type { AppView } from '../../types/app';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { IsPortalPopover } from '../SearchBar/IsPortalPopover';
+import { PeopleSearchPopover } from '../SearchBar/PeopleSearchPopover';
 
 interface NavItemProps {
   item: MenuItem;
@@ -20,6 +21,7 @@ interface NavItemProps {
 
 export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave, onClick, onViewChange, onOpenSubject }: NavItemProps) {
   const [portalOpen, setPortalOpen] = useState(false);
+  const [peoplePortalOpen, setPeoplePortalOpen] = useState(false);
   const setIsEduroamOpen = useAppStore(s => s.setIsEduroamOpen);
   const { t } = useTranslation();
 
@@ -121,19 +123,29 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
             </div>
 
             {item.id === 'is' && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setPortalOpen(true); }}
-                className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-base-content/40 hover:bg-base-200 hover:text-primary transition-colors relative"
-              >
-                <Search className="w-4 h-4" />
-                <span>{t('sidebar.addPin')}</span>
-              </button>
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setPortalOpen(true); }}
+                  className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-base-content/40 hover:bg-base-200 hover:text-primary transition-colors relative"
+                >
+                  <Search className="w-4 h-4" />
+                  <span>{t('sidebar.addPin')}</span>
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setPeoplePortalOpen(true); }}
+                  className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-base-content/40 hover:bg-base-200 hover:text-primary transition-colors relative"
+                >
+                  <UserSearch className="w-4 h-4" />
+                  <span>{t('sidebar.people')}</span>
+                </button>
+              </>
             )}
           </motion.div>
         )}
       </AnimatePresence>
 
       <IsPortalPopover isOpen={portalOpen} onClose={() => setPortalOpen(false)} />
+      <PeopleSearchPopover isOpen={peoplePortalOpen} onClose={() => setPeoplePortalOpen(false)} />
     </div>
   );
 }
