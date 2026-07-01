@@ -126,10 +126,8 @@
     "contactCenter": "Kontaktní centrum",
     "slides": "snímků",
     "more": "Více",
-    "addPin": "Přidat",
-    "addPinTitle": "Připnout stránku",
-    "pinNudge": "Připni si sem nejpoužívanější IS stránky",
-    "pinLimitReached": "Maximum 6 stránek",
+    "isPages": "IS stránky",
+    "people": "Lidé",
     "map": "Mapa"
   },
   "common": {

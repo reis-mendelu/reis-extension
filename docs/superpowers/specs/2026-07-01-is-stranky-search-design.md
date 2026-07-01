@@ -13,24 +13,24 @@ Approaches considered:
 2. Fold page search into the global header search (`SearchBar/useSearch.ts`) as a third result section — rejected, drags a static local page list into the subject/people search's debounced-network/relevance-scoring machinery for no benefit.
 3. Hybrid (standalone component surfaced inside the global search overlay) — rejected, biggest lift for a feature usage shows is low-value.
 
-## Component & rename
+## Component & rename — reuse `IsPortalPopover`, don't build a new modal
 
-- `src/components/Sidebar/PagePinnerModal.tsx` → renamed `src/components/Sidebar/IsPagesSearchModal.tsx` (stays ≤200 lines per project convention).
-- Modal title: i18n key `sidebar.addPinTitle` → repurposed to read "IS stránky" (same string cs/en — it's a Czech IS-system proper name, not translated).
-- Trigger row in `NavItem.tsx` and `MobileNavSheet.tsx`: currently `Plus` icon + `t('sidebar.addPin')` ("Přidat"/"Add"). Becomes a `Search` (lucide) icon + label "IS stránky", reusing the `sidebar.addPinTitle` key (or repointing `sidebar.addPin` to "IS stránky" — implementer's call, just keep cs/en in sync).
+**Deviation from the original plan (discovered while mapping files for implementation):** the codebase already has `src/components/SearchBar/IsPortalPopover.tsx`, wired to the global header search bar's grid-icon launcher (`SearchBar/index.tsx`, `SearchBar/MobileSearchOverlay.tsx`). It already does exactly what this spec needs: fuzzy-filters every category in `pagesData`, and on click resolves `injectUserParams(href, studiumId, lang)` and `window.open(url, '_blank')` **without closing**. Building a second, near-identical modal (`IsPagesSearchModal`) would duplicate ~150 lines of UI for no behavioral difference. Decision: **delete `PagePinnerModal.tsx` outright and point the Sidebar/mobile trigger at the existing `IsPortalPopover`** instead of creating a new component.
+
+- `src/components/Sidebar/PagePinnerModal.tsx` is deleted, not renamed.
+- Trigger row in `NavItem.tsx` and `MobileNavSheet.tsx`: currently `Plus` icon + `t('sidebar.addPin')` ("Přidat"/"Add"), opens `PagePinnerModal`. Becomes a `Search` (lucide) icon + label "IS stránky" (repoint the `sidebar.addPin` key to that string), opens `IsPortalPopover` via the same local `pinnerOpen`/`setPinnerOpen` state already in both files (renamed to `portalOpen`/`setPortalOpen` for clarity) — same pattern `SearchBar/index.tsx` already uses (`isPortalOpen`/`setIsPortalOpen`).
+- `IsPortalPopover` has no modal title bar of its own (the triggering button already carries the label) — so no separate "title" string is needed; `sidebar.addPinTitle` key is deleted rather than repurposed.
 - Remove: the pin-limit hint (`sidebar.pinLimitReached`), the first-time nudge tooltip (`showPinHint` state, `pin_hint_dismissed` IndexedDB key, `sidebar.pinNudge` string) — there's no pin limit or pin concept left to nudge about.
-- i18n cleanup: drop `pinNudge` and `pinLimitReached` keys from `src/i18n/locales/cs.json` and `en.json`; update `addPinTitle`/`addPin` values to "IS stránky" (cs and en).
+- i18n cleanup: drop `addPinTitle`, `pinNudge`, `pinLimitReached` keys from `src/i18n/locales/cs.json` and `en.json`; update `addPin` value to "IS stránky" (same string cs/en — it's a Czech IS-system proper name, not translated).
+- `IsPortalPopover` itself is unmodified — it already resolves `studiumId`/`language` from the store internally, so the Sidebar/mobile trigger sites don't need to plumb those through.
 
 ## Behavior
 
-- Same fuzzy-search-over-categories UI as today: `fuzzyIncludes` filters `navPages ?? pagesData` per category, grouped under category headers, exactly as `PagePinnerModal` does now.
-- Each result row becomes a plain clickable item (no `Check`/pin icon). On click:
-  1. Resolve the URL: `injectUserParams(page.href, studiumId, lang, obdobiId)` (the modal needs `studiumId`/`obdobiId` from the store — currently only `MainItems.tsx` does this resolution for pinned children; the modal itself must now pull these the same way).
-  2. `window.open(url, '_blank', 'noopener,noreferrer')`.
-  3. **Modal stays open** — no auto-close after a click, so the user can open several pages in one search session.
-- The search input keeps its value/focus between clicks (no auto-clear) — re-searching is just editing the existing query.
-- Esc / backdrop click still closes the modal, unchanged from today.
-- The modal's open/close trigger wiring (`pinnerOpen` state in `NavItem.tsx`/`MobileNavSheet.tsx`) is unchanged — only the label/icon on the row that opens it changes.
+All of this is existing, already-shipped behavior in `IsPortalPopover` — nothing to build, only to point the Sidebar/mobile trigger at it:
+- Fuzzy-filters every category in `pagesData` as the user types (accent-insensitive `strip()` + `includes()`), grouped under category headers with icons.
+- Each result is a plain clickable item. On click: `injectUserParams(href, studiumId, language === 'en' ? 'en' : 'cz')` → `window.open(finalUrl, '_blank')`. **Stays open** after a click (no `onClose()` call in `handleLinkClick`), so the user can open several pages in one session.
+- Filter input keeps its value between clicks; Esc isn't wired but the `X` close button and backdrop click close it.
+- One behavior gap vs. the old pin-modal flow: `IsPortalPopover` doesn't use `navPages` (the live-scraped category list with corrected ids/labels) — it always reads the static `pagesData` import. This already matches how the global search's grid-icon launcher behaves today, so it's an accepted pre-existing characteristic, not a regression introduced by this change.
 
 ## Data/state removal
 
@@ -49,10 +49,10 @@ Delete entirely:
 
 ## Testing
 
-Per project convention (test-first, no `useEffect` for data fetching, etc.):
-- Rewrite the existing `PagePinnerModal` test suite (move/rename to `IsPagesSearchModal`) to cover: fuzzy search filters pages across categories; clicking a result calls `window.open` with the `injectUserParams`-resolved URL; the modal does **not** close after a click; Esc/backdrop-click still closes it.
-- Delete `createPinnedPagesSlice`'s test file along with the slice.
-- Update any `MainItems.tsx` / `NavItem.tsx` / `MobileNavSheet.tsx` tests that assert pin/unpin behavior or the 6-item cap — remove those assertions; add/keep coverage that the "Student" flyout renders exactly its 4 static children.
+Neither `PagePinnerModal.tsx` nor `createPinnedPagesSlice.ts` has an existing test file (verified — none found under `__tests__`), so there's nothing to delete on that front. `IsPortalPopover` itself is untouched, so its existing behavior needs no new tests. What does need attention:
+- `src/utils/__tests__/noHardcodedIds.test.ts` has a hard assertion (`should be used for pinned pages in MainItems.tsx`) checking that the literal string `href: injectUserParams(p.href, sid, lang, oid)` exists in `MainItems.tsx`. That line is deleted as part of this change (the `is` category's `children` goes back to its 4 static entries), so this test must be updated — delete that specific `it(...)` block; the sibling assertion covering `SearchBar/index.tsx`'s `injectUserParams` usage is untouched and still valid.
+- Any test asserting on `MenuItem.isPinned`, `pinnedPages`, or the 6-item cap (search the test suite for these before starting, since none were found during design-time exploration but the codebase may have changed) must be removed.
+- New coverage isn't required for `NavItem.tsx`/`MobileNavSheet.tsx`'s trigger-row change beyond what TypeScript + the build already enforce, since the row now just flips a boolean and renders an existing, already-tested-by-shipping component.
 
 ## Out of scope
 

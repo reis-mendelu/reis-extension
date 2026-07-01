@@ -1,11 +1,10 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ExternalLink, Plus, X } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import type { MenuItem } from '../menuConfig';
 import type { AppView } from '../../types/app';
 import { useAppStore } from '../../store/useAppStore';
-import { useTranslation } from '../../hooks/useTranslation';
-import { PagePinnerModal } from '../Sidebar/PagePinnerModal';
+import { IsSearchTriggers, IsSearchPopovers, type IsSearchTarget } from '../SearchBar/IsSearchTriggers';
 
 interface MobileNavSheetProps {
   item: MenuItem | null;
@@ -16,15 +15,10 @@ interface MobileNavSheetProps {
 }
 
 export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject, onOpenProfile }: MobileNavSheetProps) {
-  const [pinnerOpen, setPinnerOpen] = useState(false);
-  const pinnedPages = useAppStore(s => s.pinnedPages);
-  const unpinPage = useAppStore(s => s.unpinPage);
+  const [isSearchOpen, setIsSearchOpen] = useState<IsSearchTarget>(null);
   const setIsEduroamOpen = useAppStore(s => s.setIsEduroamOpen);
-  const { t } = useTranslation();
 
   if (!item) return null;
-
-  const canAddMore = pinnedPages.length < 6;
 
   const handleChildClick = (child: NonNullable<MenuItem['children']>[number]) => {
     if (child.id === 'zapisy-zkousky') {
@@ -97,31 +91,18 @@ export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject, onO
                               <span className="text-[10px] text-base-content/40 truncate">{child.subtitle}</span>
                             )}
                           </div>
-                          {!child.isFeature && !child.isSubject && !child.isPinned && (
+                          {!child.isFeature && !child.isSubject && (
                             <ExternalLink className="w-3 h-3 text-base-content/30" />
                           )}
                         </button>
-                        {child.isPinned && (
-                          <button
-                            onClick={() => unpinPage(child.id)}
-                            className="btn btn-ghost btn-xs btn-circle hover:bg-error/20 hover:text-error border-none transition-all shrink-0"
-                            aria-label="Unpin"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        )}
                       </div>
                     ))}
 
-                    {/* Add pin button for IS menu on mobile */}
-                    {item.id === 'is' && canAddMore && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setPinnerOpen(true); }}
-                          className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-base-content/40 hover:bg-base-200 hover:text-primary transition-colors w-full text-left"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>{t('sidebar.addPin')}</span>
-                        </button>
+                    {item.id === 'is' && (
+                      <IsSearchTriggers
+                        onOpen={setIsSearchOpen}
+                        buttonClassName="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-base-content/40 hover:bg-base-200 hover:text-primary transition-colors w-full text-left"
+                      />
                     )}
                   </div>
                 )}
@@ -131,7 +112,7 @@ export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject, onO
         )}
       </AnimatePresence>
 
-      <PagePinnerModal open={pinnerOpen} onClose={() => setPinnerOpen(false)} />
+      <IsSearchPopovers open={isSearchOpen} onClose={() => setIsSearchOpen(null)} />
     </>
   );
 }

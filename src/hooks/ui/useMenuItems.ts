@@ -11,12 +11,10 @@ export function useMenuItems(): MenuItem[] {
   const language = useAppStore(state => state.language);
   const examStatus = useAppStore(state => state.exams.status);
   const examsData = useAppStore(state => state.exams.data);
-  const pinnedPages = useAppStore(state => state.pinnedPages);
-  const navPages = useAppStore(state => state.navPages);
   const now = useAppStore(state => state.now);
   const { t } = useTranslation();
 
-  const items = getMainMenuItems(params?.studium ?? '', params?.obdobi ?? '', t, language, pinnedPages, navPages);
+  const items = getMainMenuItems(params?.studium ?? '', params?.obdobi ?? '', t, language);
 
   let badgeCount = 0;
   const threshold = new Date(now.getTime() + 48 * 60 * 60 * 1000);

@@ -1,13 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronRight, ExternalLink, Plus, X } from 'lucide-react';
+import { ChevronRight, ExternalLink } from 'lucide-react';
 import type { MenuItem } from '../menuConfig';
 import type { AppView } from '../../types/app';
 import { useAppStore } from '../../store/useAppStore';
-import { useTranslation } from '../../hooks/useTranslation';
-import { PagePinnerModal } from './PagePinnerModal';
-import { IndexedDBService } from '../../services/storage';
-import { logError } from '../../utils/reportError';
+import { IsSearchTriggers, IsSearchPopovers, type IsSearchTarget } from '../SearchBar/IsSearchTriggers';
 
 interface NavItemProps {
   item: MenuItem;
@@ -21,23 +18,8 @@ interface NavItemProps {
 }
 
 export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave, onClick, onViewChange, onOpenSubject }: NavItemProps) {
-  const [pinnerOpen, setPinnerOpen] = useState(false);
-  const [showPinHint, setShowPinHint] = useState(false);
-  const pinnedPages = useAppStore(s => s.pinnedPages);
-  const unpinPage = useAppStore(s => s.unpinPage);
+  const [isSearchOpen, setIsSearchOpen] = useState<IsSearchTarget>(null);
   const setIsEduroamOpen = useAppStore(s => s.setIsEduroamOpen);
-  const { t } = useTranslation();
-
-  useEffect(() => {
-    if (item.id === 'is' && isHovered && pinnedPages.length === 0) {
-      IndexedDBService.get('meta', 'pin_hint_dismissed').then(dismissed => {
-        if (!dismissed) setShowPinHint(true);
-      }).catch(e => logError('NavItem.checkPinHint', e));
-    }
-  }, [item.id, isHovered, pinnedPages.length]);
-
-  const hasPinnedChildren = item.id === 'is' && item.children?.some(c => c.isPinned);
-  const canAddMore = pinnedPages.length < 6;
 
   return (
     <div
@@ -60,8 +42,8 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
           {item.icon}
           {item.badge !== undefined && (
             <span className={`absolute -top-2 -right-3 font-bold px-1 rounded text-[10px] leading-[14px] shadow-sm transition-all duration-300
-              ${item.badge > 0 
-                ? 'bg-neutral text-neutral-content scale-110 shadow-neutral/20' 
+              ${item.badge > 0
+                ? 'bg-neutral text-neutral-content scale-110 shadow-neutral/20'
                 : 'bg-base-content/10 text-base-content/50'
               }`}>
               {item.badge}
@@ -96,110 +78,57 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
                   </div>
                 ))
               ) : item.children.map((child) => (
-                child.isPinned ? (
-                  <div
-                    key={child.id}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/70 hover:bg-base-200 hover:text-primary transition-colors group/item"
-                  >
-                    <a
-                      href={child.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
-                    >
-                      <span className="text-base-content/50 group-hover/item:text-primary transition-colors">
-                        {child.icon || <ChevronRight className="w-4 h-4" />}
-                      </span>
-                      <span className="font-medium truncate flex-1">{child.label}</span>
-                    </a>
-                    <button
-                      onClick={() => unpinPage(child.id)}
-                      className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover/item:opacity-100 hover:bg-error/20 hover:text-error border-none transition-all shrink-0"
-                      aria-label="Unpin"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <a
-                    key={child.id}
-                    href={child.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => {
-                      if (child.id === 'zapisy-zkousky') {
-                        e.preventDefault();
-                        onViewChange('exams');
-                      } else if (child.id === 'studijni-plany') {
-                        e.preventDefault();
-                        onViewChange('subjects');
-                      } else if (child.isSubject && child.courseCode) {
-                        e.preventDefault();
-                        onOpenSubject?.(child.courseCode, child.label, child.subjectId);
-                      } else if (child.id === 'eduroam') {
-                        e.preventDefault();
-                        setIsEduroamOpen(true);
-                      } else if (child.isFeature) {
-                         e.preventDefault();
-                      }
-                    }}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/70 hover:bg-base-200 hover:text-primary transition-colors group/item cursor-pointer"
-                  >
-                    <span className="text-base-content/50 group-hover/item:text-primary transition-colors">
-                      {child.icon || <ChevronRight className="w-4 h-4" />}
-                    </span>
-                    <div className="flex-1 flex flex-col min-w-0">
-                      <span className="font-medium truncate">{child.label}</span>
-                      {child.subtitle && (
-                        <span className="text-[10px] text-base-content/40 truncate">{child.subtitle}</span>
-                      )}
-                    </div>
-                    {!child.isFeature && !child.isSubject && (
-                      <ExternalLink className="w-3 h-3 text-base-content/30 group-hover/item:text-base-content/50" />
+                <a
+                  key={child.id}
+                  href={child.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    if (child.id === 'zapisy-zkousky') {
+                      e.preventDefault();
+                      onViewChange('exams');
+                    } else if (child.id === 'studijni-plany') {
+                      e.preventDefault();
+                      onViewChange('subjects');
+                    } else if (child.isSubject && child.courseCode) {
+                      e.preventDefault();
+                      onOpenSubject?.(child.courseCode, child.label, child.subjectId);
+                    } else if (child.id === 'eduroam') {
+                      e.preventDefault();
+                      setIsEduroamOpen(true);
+                    } else if (child.isFeature) {
+                       e.preventDefault();
+                    }
+                  }}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/70 hover:bg-base-200 hover:text-primary transition-colors group/item cursor-pointer"
+                >
+                  <span className="text-base-content/50 group-hover/item:text-primary transition-colors">
+                    {child.icon || <ChevronRight className="w-4 h-4" />}
+                  </span>
+                  <div className="flex-1 flex flex-col min-w-0">
+                    <span className="font-medium truncate">{child.label}</span>
+                    {child.subtitle && (
+                      <span className="text-[10px] text-base-content/40 truncate">{child.subtitle}</span>
                     )}
-                  </a>
-                )
+                  </div>
+                  {!child.isFeature && !child.isSubject && (
+                    <ExternalLink className="w-3 h-3 text-base-content/30 group-hover/item:text-base-content/50" />
+                  )}
+                </a>
               ))}
             </div>
 
-            {/* Add pin button for IS popover */}
-            {item.id === 'is' && canAddMore && (
-              <>
-                {hasPinnedChildren && <div className="divider my-0 h-1" />}
-                <button
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    setPinnerOpen(true); 
-                    if (showPinHint) {
-                      setShowPinHint(false);
-                      IndexedDBService.set('meta', 'pin_hint_dismissed', true).catch(e => logError('NavItem.dismissPinHint', e));
-                    }
-                  }}
-                  className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-base-content/40 hover:bg-base-200 hover:text-primary transition-colors relative"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>{t('sidebar.addPin')}</span>
-                  <AnimatePresence>
-                    {showPinHint && (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -10 }}
-                        className="absolute left-full ml-4 top-1/2 -translate-y-1/2 bg-primary text-primary-content px-3 py-2 rounded-lg text-xs font-semibold shadow-xl whitespace-nowrap z-[100] flex items-center gap-2 pointer-events-none"
-                      >
-                        <div className="absolute w-2 h-2 bg-primary rotate-45 -left-1 top-1/2 -translate-y-1/2" />
-                        {t('sidebar.pinNudge')}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </button>
-              </>
+            {item.id === 'is' && (
+              <IsSearchTriggers
+                onOpen={setIsSearchOpen}
+                buttonClassName="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-base-content/40 hover:bg-base-200 hover:text-primary transition-colors relative"
+              />
             )}
           </motion.div>
         )}
       </AnimatePresence>
 
-      <PagePinnerModal open={pinnerOpen} onClose={() => setPinnerOpen(false)} />
+      <IsSearchPopovers open={isSearchOpen} onClose={() => setIsSearchOpen(null)} />
     </div>
   );
 }

@@ -126,10 +126,8 @@
     "contactCenter": "Contact Center",
     "slides": "slides",
     "more": "More",
-    "addPin": "Add",
-    "addPinTitle": "Pin a page",
-    "pinNudge": "Pin your most-used IS pages here",
-    "pinLimitReached": "Maximum 6 pages",
+    "isPages": "IS Pages",
+    "people": "People",
     "map": "Map"
   },
   "calendar": {
