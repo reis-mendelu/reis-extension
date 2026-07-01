@@ -30,7 +30,7 @@ Approaches considered:
   1. `saveToHistory(result)` — same call `PeopleSearchBar` already makes, so a pick here also shows up in the header search's "recently searched" list. Consistent cross-surface behavior, no new state needed (uses the existing `createSearchSlice` `recentSearches`/`saveRecentSearch`).
   2. `injectUserParams(result.link, studiumId, language === 'en' ? 'en' : 'cz')` → `window.open(url, '_blank')`.
   3. **Popover stays open** after the click (same as `IsPortalPopover`'s behavior for this plan's earlier feature) — unlike `PeopleSearchBar`, which collapses after a pick. This lets a user look up several people in one sitting.
-- Esc and backdrop-click close the popover. The query is **not** cleared between clicks or on close-then-reopen (matches `IsPortalPopover`'s existing behavior for its own input — no special-casing here).
+- Backdrop-click and the `X` button close the popover (verified: `IsPortalPopover` has no Escape-key handler either, so this popover matches that precedent exactly rather than adding new behavior). The query is **not** cleared between clicks or on close-then-reopen (matches `IsPortalPopover`'s existing behavior for its own input — no special-casing here).
 
 ## Sidebar wiring
 
