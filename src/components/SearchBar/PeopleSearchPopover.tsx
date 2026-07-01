@@ -25,6 +25,13 @@ export function PeopleSearchPopover({ isOpen, onClose }: PeopleSearchPopoverProp
   };
 
   const hasQuery = query.trim().length >= 2;
+  const emptyMessage = !hasQuery
+    ? t('search.peoplePlaceholder')
+    : isLoading
+      ? t('search.loading')
+      : people.length === 0
+        ? t('search.empty')
+        : null;
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-[12vh]">
@@ -64,17 +71,9 @@ export function PeopleSearchPopover({ isOpen, onClose }: PeopleSearchPopoverProp
             a consistent feel; growth only extends downward from the input
             above, since the card is top-anchored rather than centered */}
         <div className="flex-1 overflow-y-auto px-5 pb-5">
-          {!hasQuery ? (
+          {emptyMessage ? (
             <div className="py-8 text-center text-sm text-base-content/50">
-              {t('search.peoplePlaceholder')}
-            </div>
-          ) : isLoading ? (
-            <div className="py-8 text-center text-sm text-base-content/50">
-              {t('search.loading')}
-            </div>
-          ) : people.length === 0 ? (
-            <div className="py-8 text-center text-sm text-base-content/50">
-              {t('search.empty')}
+              {emptyMessage}
             </div>
           ) : (
             <div className="flex flex-col gap-1">
