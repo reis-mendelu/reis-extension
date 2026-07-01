@@ -27,15 +27,18 @@ export function PeopleSearchPopover({ isOpen, onClose }: PeopleSearchPopoverProp
   const hasQuery = query.trim().length >= 2;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-[12vh]">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
         onClick={onClose}
       />
 
-      {/* Content Container */}
-      <div className="relative w-full max-w-md max-h-[90vh] bg-base-100 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-300">
+      {/* Content Container — anchored near the top (not vertically centered) so
+          the input's screen position is fixed; the results area below it can
+          only grow downward as the query/results change, never shifting the
+          input itself */}
+      <div className="relative w-full max-w-md max-h-[76vh] bg-base-100 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-300">
         {/* Header: query input + close */}
         <div className="flex items-center gap-3 px-5 pt-5 pb-3">
           <div className="relative flex-1">
@@ -57,9 +60,10 @@ export function PeopleSearchPopover({ isOpen, onClose }: PeopleSearchPopoverProp
           </button>
         </div>
 
-        {/* Results — always reserves the same minimum height so the centered
-            card doesn't resize (and jump position) as soon as typing starts */}
-        <div className="flex-1 overflow-y-auto px-5 pb-5 min-h-[220px]">
+        {/* Results — always renders a state (hint/loading/empty/results) for
+            a consistent feel; growth only extends downward from the input
+            above, since the card is top-anchored rather than centered */}
+        <div className="flex-1 overflow-y-auto px-5 pb-5">
           {!hasQuery ? (
             <div className="py-8 text-center text-sm text-base-content/50">
               {t('search.peoplePlaceholder')}
