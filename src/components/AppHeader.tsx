@@ -1,7 +1,6 @@
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { BulletinBanner } from './Bulletin/BulletinBanner';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { PeopleSearchBar } from './SearchBar/PeopleSearchBar';
 import { MobileSearchOverlay } from './SearchBar/MobileSearchOverlay';
 import { useTranslation } from '../hooks/useTranslation';
 import { NotificationFeed } from './NotificationFeed';
@@ -114,12 +113,7 @@ export function AppHeader({
               >
                 <Search size={20} />
               </button>
-  
-              {/* Desktop: expanding people search bar */}
-              <div className="hidden md:flex items-center">
-                <PeopleSearchBar />
-              </div>
-  
+
               <div className="flex items-center gap-1">
                 <NotificationFeed />
               </div>
