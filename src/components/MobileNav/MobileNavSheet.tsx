@@ -1,11 +1,12 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ExternalLink, Search } from 'lucide-react';
+import { ExternalLink, Search, UserSearch } from 'lucide-react';
 import { useState } from 'react';
 import type { MenuItem } from '../menuConfig';
 import type { AppView } from '../../types/app';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { IsPortalPopover } from '../SearchBar/IsPortalPopover';
+import { PeopleSearchPopover } from '../SearchBar/PeopleSearchPopover';
 
 interface MobileNavSheetProps {
   item: MenuItem | null;
@@ -17,6 +18,7 @@ interface MobileNavSheetProps {
 
 export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject, onOpenProfile }: MobileNavSheetProps) {
   const [portalOpen, setPortalOpen] = useState(false);
+  const [peoplePortalOpen, setPeoplePortalOpen] = useState(false);
   const setIsEduroamOpen = useAppStore(s => s.setIsEduroamOpen);
   const { t } = useTranslation();
 
@@ -101,6 +103,7 @@ export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject, onO
                     ))}
 
                     {item.id === 'is' && (
+                      <>
                         <button
                           onClick={(e) => { e.stopPropagation(); setPortalOpen(true); }}
                           className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-base-content/40 hover:bg-base-200 hover:text-primary transition-colors w-full text-left"
@@ -108,6 +111,14 @@ export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject, onO
                           <Search className="w-4 h-4" />
                           <span>{t('sidebar.addPin')}</span>
                         </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setPeoplePortalOpen(true); }}
+                          className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-base-content/40 hover:bg-base-200 hover:text-primary transition-colors w-full text-left"
+                        >
+                          <UserSearch className="w-4 h-4" />
+                          <span>{t('sidebar.people')}</span>
+                        </button>
+                      </>
                     )}
                   </div>
                 )}
@@ -118,6 +129,7 @@ export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject, onO
       </AnimatePresence>
 
       <IsPortalPopover isOpen={portalOpen} onClose={() => setPortalOpen(false)} />
+      <PeopleSearchPopover isOpen={peoplePortalOpen} onClose={() => setPeoplePortalOpen(false)} />
     </>
   );
 }
