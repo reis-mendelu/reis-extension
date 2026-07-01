@@ -61,6 +61,7 @@ export function PeopleSearchPopover({ isOpen, onClose }: PeopleSearchPopoverProp
           </div>
           <button
             onClick={onClose}
+            aria-label={t('common.close')}
             className="p-2.5 hover:bg-base-200 rounded-xl transition-colors text-base-content/50 hover:text-base-content"
           >
             <X className="w-5 h-5" />
