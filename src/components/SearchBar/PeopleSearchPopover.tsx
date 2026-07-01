@@ -24,7 +24,7 @@ export function PeopleSearchPopover({ isOpen, onClose }: PeopleSearchPopoverProp
     if (r.link) window.open(injectUserParams(r.link, studiumId, language === 'en' ? 'en' : 'cz'), '_blank');
   };
 
-  const showResults = query.trim().length >= 2;
+  const hasQuery = query.trim().length >= 2;
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -57,36 +57,39 @@ export function PeopleSearchPopover({ isOpen, onClose }: PeopleSearchPopoverProp
           </button>
         </div>
 
-        {/* Results */}
-        <div className="flex-1 overflow-y-auto px-5 pb-5">
-          {showResults && (
-            isLoading ? (
-              <div className="py-8 text-center text-sm text-base-content/50">
-                {t('search.loading')}
-              </div>
-            ) : people.length === 0 ? (
-              <div className="py-8 text-center text-sm text-base-content/50">
-                {t('search.empty')}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1">
-                {people.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => handlePick(p)}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-base-200 transition-colors"
-                  >
-                    <span className="w-8 h-8 rounded-full bg-base-200 flex items-center justify-center shrink-0 text-base-content/50">
-                      <User className="w-4 h-4" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm truncate">{p.title}</span>
-                      {p.detail && <span className="block text-[11px] text-base-content/50 truncate">{p.detail}</span>}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )
+        {/* Results — always reserves the same minimum height so the centered
+            card doesn't resize (and jump position) as soon as typing starts */}
+        <div className="flex-1 overflow-y-auto px-5 pb-5 min-h-[220px]">
+          {!hasQuery ? (
+            <div className="py-8 text-center text-sm text-base-content/50">
+              {t('search.peoplePlaceholder')}
+            </div>
+          ) : isLoading ? (
+            <div className="py-8 text-center text-sm text-base-content/50">
+              {t('search.loading')}
+            </div>
+          ) : people.length === 0 ? (
+            <div className="py-8 text-center text-sm text-base-content/50">
+              {t('search.empty')}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1">
+              {people.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => handlePick(p)}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-base-200 transition-colors"
+                >
+                  <span className="w-8 h-8 rounded-full bg-base-200 flex items-center justify-center shrink-0 text-base-content/50">
+                    <User className="w-4 h-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm truncate">{p.title}</span>
+                    {p.detail && <span className="block text-[11px] text-base-content/50 truncate">{p.detail}</span>}
+                  </span>
+                </button>
+              ))}
+            </div>
           )}
         </div>
       </div>
