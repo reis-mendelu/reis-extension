@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadManifest, clearManifest } from '../../services/drive/driveManifest';
 import { isConnected, connectGoogle, disconnectGoogle, getConnectedEmail } from '../../api/googleAuth';
 import { syncService } from '../../services/sync';
+import { logError } from '../../utils/reportError';
 
 export interface UseDriveBackupResult {
     /** Whether Google is linked (token present). null while first loading. */
@@ -88,6 +89,8 @@ export function useDriveBackup(courseCode?: string): UseDriveBackupResult {
         try {
             await connectGoogle();
             syncService.triggerDriveBackup(); // back up now from cached listings, no full re-crawl
+        } catch (err) {
+            logError('useDriveBackup.connect', err);
         } finally {
             await refresh();
             setBusy(false);
