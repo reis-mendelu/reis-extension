@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import type { StudyPlan } from '@/types/studyPlan';
 import type { SubjectsData } from '@/types/documents';
 
@@ -92,5 +92,19 @@ describe('SubjectsPanel Erasmus fallback', () => {
     renderPanel();
     expect(screen.queryByTestId('enrolled-now')).toBeNull();
     expect(screen.queryByText(/exchange studies/i)).toBeNull();
+  });
+
+  it('does not collapse the fallback back to a skeleton when a periodic background resync flips isSyncing', () => {
+    setStore({ plan: null, subjects });
+    renderPanel();
+    expect(screen.getByTestId('enrolled-now').textContent).toBe('EBC-ST');
+
+    act(() => {
+      useAppStore.setState({
+        syncStatus: { ...useAppStore.getState().syncStatus, isSyncing: true },
+      });
+    });
+
+    expect(screen.getByTestId('enrolled-now').textContent).toBe('EBC-ST');
   });
 });

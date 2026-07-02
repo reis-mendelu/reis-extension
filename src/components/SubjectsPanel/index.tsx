@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { ChevronRight, Info } from 'lucide-react';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
@@ -34,12 +34,17 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject, onOpenStudyPlan 
   // The fallback must wait until the plan has actually settled (loaded, handshake
   // resolved, not mid-sync) — otherwise regular students see the exchange caption
   // flash during cold load, since the subjects store (Tier 1) populates before the
-  // study plan (Tier 2 microtask).
+  // study plan (Tier 2 microtask). Latch: background resyncs flip isSyncing every
+  // few minutes; once settled once, later isSyncing:true phases must not collapse
+  // the fallback back to a skeleton mid-session for Erasmus students.
   const planSettled = studyPlanLoaded && (handshakeDone || handshakeTimedOut) && !isSyncing;
+  const settledOnce = useRef(false);
+  if (planSettled) settledOnce.current = true;
+  const gateOpen = planSettled || settledOnce.current;
   const fallbackPlan = useMemo(() => {
-    if (!planSettled || planUsable || !subjects || Object.keys(subjects.data).length === 0) return null;
+    if (!gateOpen || planUsable || !subjects || Object.keys(subjects.data).length === 0) return null;
     return buildFallbackPlan(subjects, language === 'en' ? 'en' : 'cs');
-  }, [planSettled, planUsable, subjects, language]);
+  }, [gateOpen, planUsable, subjects, language]);
 
   const effectivePlan = planUsable ? plan : fallbackPlan;
   const { subjectSemesters, subjectToZameranis, zameraniProgress, failRates, enrolledCredits } = useSubjectsData(effectivePlan);
