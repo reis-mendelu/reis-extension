@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronRight, Info } from 'lucide-react';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
@@ -38,9 +38,9 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject, onOpenStudyPlan 
   // few minutes; once settled once, later isSyncing:true phases must not collapse
   // the fallback back to a skeleton mid-session for Erasmus students.
   const planSettled = studyPlanLoaded && (handshakeDone || handshakeTimedOut) && !isSyncing;
-  const settledOnce = useRef(false);
-  if (planSettled) settledOnce.current = true;
-  const gateOpen = planSettled || settledOnce.current;
+  const [settledOnce, setSettledOnce] = useState(false);
+  if (planSettled && !settledOnce) setSettledOnce(true);
+  const gateOpen = planSettled || settledOnce;
   const fallbackPlan = useMemo(() => {
     if (!gateOpen || planUsable || !subjects || Object.keys(subjects.data).length === 0) return null;
     return buildFallbackPlan(subjects, language === 'en' ? 'en' : 'cs');
