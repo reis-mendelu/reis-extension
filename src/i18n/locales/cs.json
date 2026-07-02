@@ -504,6 +504,7 @@
     "credits": "kreditů",
     "studyPlan": "Studijní plán",
     "noData": "Žádná data o studijním plánu",
+    "noPlanExchange": "Studijní plán není pro výměnná studia dostupný — zobrazujeme tvoje zapsané předměty.",
     "loading": "Načítání...",
     "fulfilled": "Splněno",
     "notFulfilled": "Nesplněno",
