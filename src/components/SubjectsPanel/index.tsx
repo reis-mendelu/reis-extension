@@ -1,4 +1,5 @@
-import { ChevronRight } from 'lucide-react';
+import { useMemo } from 'react';
+import { ChevronRight, Info } from 'lucide-react';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -7,6 +8,7 @@ import { SubjectsPanelSkeleton } from './SubjectsPanelSkeleton';
 import { EnrolledNowSection } from './EnrolledNowSection';
 import { StudyAveragesSection } from './StudyAveragesSection';
 import { useSubjectsData } from './useSubjectsData';
+import { buildFallbackPlan } from './buildFallbackPlan';
 
 interface SubjectsPanelProps {
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => void;
@@ -20,31 +22,61 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject, onOpenStudyPlan 
   const studyPlanLoaded = useAppStore(s => s.studyPlanLoaded);
   const studyStats = useAppStore(s => s.studyStats);
   const studyComparison = useAppStore(s => s.studyComparison);
+  const subjects = useAppStore(s => s.subjects);
+  const language = useAppStore(s => s.language);
   const handshakeDone = useAppStore(s => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore(s => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore(s => s.syncStatus.isSyncing);
 
-  const { subjectSemesters, subjectToZameranis, zameraniProgress, failRates, enrolledCredits } = useSubjectsData(plan);
+  // Erasmus/exchange students have no KontrolaPlanu, so the plan never
+  // materializes — fall back to the subjects store (student/list.pl).
+  const planUsable = !!plan && plan.blocks.some(b => b.groups.some(g => g.subjects.length > 0));
+  const fallbackPlan = useMemo(() => {
+    if (planUsable || !subjects || Object.keys(subjects.data).length === 0) return null;
+    return buildFallbackPlan(subjects, language === 'en' ? 'en' : 'cs');
+  }, [planUsable, subjects, language]);
 
-  if (!plan) {
+  const effectivePlan = planUsable ? plan : fallbackPlan;
+  const { subjectSemesters, subjectToZameranis, zameraniProgress, failRates, enrolledCredits } = useSubjectsData(effectivePlan);
+
+  if (!effectivePlan) {
     if (!studyPlanLoaded || (!handshakeDone && !handshakeTimedOut) || isSyncing) return <SubjectsPanelSkeleton />;
     return <div className="flex items-center justify-center h-full text-base-content/50">{t('subjects.noData')}</div>;
+  }
+
+  if (!planUsable) {
+    return (
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="px-4 pt-4 pb-0 shrink-0">
+          <div className="flex items-start gap-2 text-xs text-base-content/50 pb-3">
+            <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <span>{t('subjects.noPlanExchange')}</span>
+          </div>
+          <EnrolledNowSection
+            plan={effectivePlan}
+            failRates={failRates}
+            onOpenSubject={onOpenSubject}
+            onSearchSubject={onSearchSubject}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <SubjectsPanelHeader
-        creditsAcquired={plan.creditsAcquired}
-        creditsRequired={plan.creditsRequired}
+        creditsAcquired={effectivePlan.creditsAcquired}
+        creditsRequired={effectivePlan.creditsRequired}
         studyStats={studyStats}
-        plan={plan}
+        plan={effectivePlan}
         zameraniProgress={zameraniProgress}
         enrolledCredits={enrolledCredits}
       />
 
       <div className="px-4 pt-3 pb-0 shrink-0">
         <EnrolledNowSection
-          plan={plan}
+          plan={effectivePlan}
           failRates={failRates}
           subjectSemesters={subjectSemesters}
           subjectToZameranis={subjectToZameranis}
