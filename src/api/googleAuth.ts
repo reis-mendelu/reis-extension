@@ -14,7 +14,12 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/services/supabase/conf
 
 const OAUTH_PROXY = `${SUPABASE_URL}/functions/v1/google-oauth`;
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+// Public OAuth client identifier (PKCE flow) — safe to ship in the bundle,
+// same posture as SUPABASE_PUBLISHABLE_KEY. Must match the GOOGLE_CLIENT_ID
+// secret in the google-oauth Edge Function ("reIS Drive Sync (web)" client,
+// project reis-drive-sync). VITE_GOOGLE_CLIENT_ID overrides it for dev only.
+export const GOOGLE_CLIENT_ID =
+    import.meta.env.VITE_GOOGLE_CLIENT_ID || '597918706361-sheu52ugm4qmn6uund3rieac3njclokh.apps.googleusercontent.com';
 const GOOGLE_AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
 const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
