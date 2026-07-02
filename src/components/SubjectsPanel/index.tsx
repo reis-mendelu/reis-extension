@@ -31,10 +31,15 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject, onOpenStudyPlan 
   // Erasmus/exchange students have no KontrolaPlanu, so the plan never
   // materializes — fall back to the subjects store (student/list.pl).
   const planUsable = !!plan && plan.blocks.some(b => b.groups.some(g => g.subjects.length > 0));
+  // The fallback must wait until the plan has actually settled (loaded, handshake
+  // resolved, not mid-sync) — otherwise regular students see the exchange caption
+  // flash during cold load, since the subjects store (Tier 1) populates before the
+  // study plan (Tier 2 microtask).
+  const planSettled = studyPlanLoaded && (handshakeDone || handshakeTimedOut) && !isSyncing;
   const fallbackPlan = useMemo(() => {
-    if (planUsable || !subjects || Object.keys(subjects.data).length === 0) return null;
+    if (!planSettled || planUsable || !subjects || Object.keys(subjects.data).length === 0) return null;
     return buildFallbackPlan(subjects, language === 'en' ? 'en' : 'cs');
-  }, [planUsable, subjects, language]);
+  }, [planSettled, planUsable, subjects, language]);
 
   const effectivePlan = planUsable ? plan : fallbackPlan;
   const { subjectSemesters, subjectToZameranis, zameraniProgress, failRates, enrolledCredits } = useSubjectsData(effectivePlan);

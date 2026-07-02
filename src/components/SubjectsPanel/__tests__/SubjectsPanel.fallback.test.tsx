@@ -40,11 +40,11 @@ const emptyPlan: StudyPlan = {
   blocks: [{ title: '1. semestr', groups: [{ name: 'G', statusDescription: '', subjects: [] }] }],
 };
 
-function setStore(overrides: { plan?: StudyPlan | null; subjects?: SubjectsData | null }) {
+function setStore(overrides: { plan?: StudyPlan | null; subjects?: SubjectsData | null; studyPlanLoaded?: boolean }) {
   useAppStore.setState({
     language: 'en',
     studyPlanDual: overrides.plan ? { cz: overrides.plan, en: overrides.plan } : null,
-    studyPlanLoaded: true,
+    studyPlanLoaded: overrides.studyPlanLoaded ?? true,
     subjects: overrides.subjects ?? null,
     syncStatus: { ...useAppStore.getState().syncStatus, handshakeDone: true, handshakeTimedOut: false, isSyncing: false },
   });
@@ -85,5 +85,12 @@ describe('SubjectsPanel Erasmus fallback', () => {
     renderPanel();
     expect(screen.getByText('No study plan data')).toBeTruthy();
     expect(screen.queryByTestId('enrolled-now')).toBeNull();
+  });
+
+  it('renders the skeleton, not the fallback, when subjects are present but the plan has not settled yet', () => {
+    setStore({ plan: null, subjects, studyPlanLoaded: false });
+    renderPanel();
+    expect(screen.queryByTestId('enrolled-now')).toBeNull();
+    expect(screen.queryByText(/exchange studies/i)).toBeNull();
   });
 });
