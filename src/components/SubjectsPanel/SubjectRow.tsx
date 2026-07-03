@@ -55,7 +55,8 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
   const badge = gradeBadge(grade);
   // A failing grade on a still-enrolled subject is unresolved, not a dead end — surface
   // which attempt this was (fact from IS, not a computed "attempts remaining" guess).
-  const showAttempt = badge?.kind === 'letter' && !badge.passed && subject.isEnrolled && !subject.isFulfilled && grade?.attempt;
+  const isUnresolvedFail = badge?.kind === 'letter' && !badge.passed && subject.isEnrolled && !subject.isFulfilled;
+  const attemptNumber = isUnresolvedFail ? grade?.attempt ?? null : null;
   const badgeEl = badge ? (
     <span className="flex items-baseline gap-1 shrink-0">
       <span
@@ -68,8 +69,8 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
             ? t('subjects.grade.credited')
             : t('subjects.grade.completed')}
       </span>
-      {showAttempt && (
-        <span className="text-[10px] text-error/60 font-normal">{t('subjects.grade.attempt', { n: grade.attempt })}</span>
+      {attemptNumber != null && (
+        <span className="text-[10px] text-error/60 font-normal">{t('subjects.grade.attempt', { n: attemptNumber })}</span>
       )}
     </span>
   ) : null;
