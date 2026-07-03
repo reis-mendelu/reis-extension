@@ -295,7 +295,15 @@
     "npsThank": "Díky za hodnocení!",
     "sharePrompt": "Pošli to spolužákovi, co ještě bojuje s IS.",
     "shareCopy": "Kopírovat odkaz",
-    "shareCopied": "Zkopírováno!"
+    "shareCopied": "Zkopírováno!",
+    "reasonPrompt": "Co bylo špatně?",
+    "reason": {
+      "missing_feature": "Nemá to co potřebuji",
+      "bug": "Nefunguje to",
+      "confusing": "Nepřehledné",
+      "slow": "Pomalé",
+      "other": "Jiné"
+    }
   },
   "course": {
     "setNickname": "Nastavit přezdívku",
