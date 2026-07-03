@@ -60,7 +60,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
   const badgeEl = badge ? (
     <span className="flex items-baseline gap-1 shrink-0">
       <span
-        className={`text-sm font-mono font-medium ${badge.kind === 'letter' && !badge.passed ? 'text-error/80' : 'text-success/80'}`}
+        className={`text-sm font-mono font-medium ${badge.kind === 'letter' && !badge.passed ? 'text-error/60' : 'text-success/60'}`}
         title={grade?.gradeText}
       >
         {badge.kind === 'letter'
@@ -97,7 +97,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
           onClick={handleClick}
           onMouseEnter={hover.onMouseEnter}
           onMouseLeave={hover.onMouseLeave}
-          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-base-200/50 transition-colors text-left ${isUnfulfilled ? 'text-error/80' : 'text-base-content/40'}`}
+          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-base-200/50 transition-colors text-left ${isUnfulfilled ? 'text-error/60' : 'text-base-content/40'}`}
         >
           <span className="flex-1 text-sm font-medium truncate">{displayName}</span>
           {timeline && <span className="text-[9px] font-bold text-primary/60 shrink-0">{timeline.formatted}</span>}
@@ -107,8 +107,8 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
           <span className="flex items-center gap-1 shrink-0">
             {subject.isFulfilled ? (
               <>
-                <CheckCircle2 className={`w-4 h-4 ${subject.fulfillmentDate ? 'text-success/70' : 'text-success/70'}`} />
-                {subject.fulfillmentDate && <span className="text-[11px] text-success/80 font-mono font-medium">{subject.fulfillmentDate}</span>}
+                <CheckCircle2 className="w-4 h-4 text-success/50" />
+                {subject.fulfillmentDate && <span className="text-[11px] text-success/60 font-mono font-medium">{subject.fulfillmentDate}</span>}
               </>
             ) : (
               <XCircle className="w-3 h-3 text-error/50" />
@@ -211,9 +211,9 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
         <span className="hidden md:inline text-xs text-base-content/50 shrink-0">{subject.credits} kr.</span>
       )}
       {subject.isFulfilled && subject.fulfillmentDate ? (
-        <span className="flex items-center gap-1.5 text-[11px] text-success/80 shrink-0"><CheckCircle2 className="w-4 h-4" /><span className="font-mono font-medium">{subject.fulfillmentDate}</span></span>
+        <span className="flex items-center gap-1.5 text-[11px] text-success/60 shrink-0"><CheckCircle2 className="w-4 h-4" /><span className="font-mono font-medium">{subject.fulfillmentDate}</span></span>
       ) : subject.isFulfilled ? (
-        <CheckCircle2 className="w-4 h-4 text-success/80 shrink-0" />
+        <CheckCircle2 className="w-4 h-4 text-success/60 shrink-0" />
       ) : null}
       {subject.enrollmentCount >= 2 && !subject.isFulfilled && (
         <span className="badge badge-sm badge-error gap-1 shrink-0" title={t('subjects.repeatWarning')}>
