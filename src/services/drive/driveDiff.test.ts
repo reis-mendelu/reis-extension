@@ -136,9 +136,9 @@ describe('diffManifest', () => {
         expect(d.skip).toBe(0);
     });
 
-    it('skips files whose date is unchanged', () => {
+    it('skips files whose date and stored name are both unchanged', () => {
         const m = emptyManifest();
-        m.files['A'] = { driveFileId: 'drvA', date: 'd1' };
+        m.files['A'] = { driveFileId: 'drvA', date: 'd1', fileName: 'a' };
         const d = diffManifest(items, m);
         expect(d.skip).toBe(1);
         expect(d.create.map((i) => i.isLink)).toEqual(['B']);
@@ -146,10 +146,48 @@ describe('diffManifest', () => {
 
     it('marks a file for update when its date changed, carrying the existing Drive id', () => {
         const m = emptyManifest();
-        m.files['A'] = { driveFileId: 'drvA', date: 'OLD' };
+        m.files['A'] = { driveFileId: 'drvA', date: 'OLD', fileName: 'a' };
         const d = diffManifest(items, m);
         expect(d.update).toEqual([{ item: items[0], driveFileId: 'drvA' }]);
         expect(d.create.map((i) => i.isLink)).toEqual(['B']);
+    });
+
+    it('marks a file for rename when its date is unchanged but the computed name differs from what is stored', () => {
+        const m = emptyManifest();
+        m.files['A'] = { driveFileId: 'drvA', date: 'd1', fileName: 'old-name.pdf' };
+        const d = diffManifest(items, m);
+        expect(d.rename).toEqual([{ item: items[0], driveFileId: 'drvA' }]);
+        expect(d.update).toEqual([]);
+        expect(d.create.map((i) => i.isLink)).toEqual(['B']);
+    });
+
+    it('treats a manifest entry with no stored fileName (pre-fix backup) as needing a rename', () => {
+        // Files uploaded before fileName tracking existed have no stored name at
+        // all — this is the one-time backfill path that fixes stale duplicate
+        // names (e.g. several bare "Prezentace" attachments) without re-fetching content.
+        const m = emptyManifest();
+        m.files['A'] = { driveFileId: 'drvA', date: 'd1' };
+        const d = diffManifest(items, m);
+        expect(d.rename).toEqual([{ item: items[0], driveFileId: 'drvA' }]);
+    });
+
+    it('skips a file when both date and stored fileName are unchanged', () => {
+        const m = emptyManifest();
+        m.files['A'] = { driveFileId: 'drvA', date: 'd1', fileName: 'a' };
+        m.files['B'] = { driveFileId: 'drvB', date: 'd1', fileName: 'b' };
+        const d = diffManifest(items, m);
+        expect(d.rename).toEqual([]);
+        expect(d.update).toEqual([]);
+        expect(d.create).toEqual([]);
+        expect(d.skip).toBe(2);
+    });
+
+    it('prefers update over rename when both the date and the name changed', () => {
+        const m = emptyManifest();
+        m.files['A'] = { driveFileId: 'drvA', date: 'OLD', fileName: 'old-name.pdf' };
+        const d = diffManifest(items, m);
+        expect(d.update).toEqual([{ item: items[0], driveFileId: 'drvA' }]);
+        expect(d.rename).toEqual([]);
     });
 });
 

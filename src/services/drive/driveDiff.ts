@@ -25,8 +25,10 @@ export interface DriveManifest {
     rootWebViewLink: string | null;
     /** folderKey(pathSegments) → Drive folder id. */
     folders: Record<string, string>;
-    /** isLink → mirrored file state. */
-    files: Record<string, { driveFileId: string; date: string }>;
+    /** isLink → mirrored file state. `fileName` is optional for back-compat with
+     *  manifests written before name tracking existed — absent means "unknown",
+     *  which diffManifest treats as needing a rename to backfill it. */
+    files: Record<string, { driveFileId: string; date: string; fileName?: string }>;
     /** isLink → consecutive failed-pass count, for files not yet mirrored. */
     fileFails: Record<string, number>;
     /** How many files have failed enough passes to be deemed permanently un-mirrorable. */
@@ -46,6 +48,9 @@ export interface DriveManifest {
 export interface DriveDiff {
     create: DriveSyncItem[];
     update: { item: DriveSyncItem; driveFileId: string }[];
+    /** Content unchanged, but the computed name no longer matches what's stored —
+     *  a cheap metadata-only rename, no re-fetch/re-upload of bytes needed. */
+    rename: { item: DriveSyncItem; driveFileId: string }[];
     skip: number;
 }
 
@@ -130,10 +135,11 @@ export function flattenSubjectFiles(subjectFolderName: string, parsedFiles: Pars
     return items;
 }
 
-/** Split items into create / update / skip relative to what the manifest already mirrors. */
+/** Split items into create / update / rename / skip relative to what the manifest already mirrors. */
 export function diffManifest(items: DriveSyncItem[], manifest: DriveManifest): DriveDiff {
     const create: DriveSyncItem[] = [];
     const update: { item: DriveSyncItem; driveFileId: string }[] = [];
+    const rename: { item: DriveSyncItem; driveFileId: string }[] = [];
     let skip = 0;
 
     for (const item of items) {
@@ -142,10 +148,12 @@ export function diffManifest(items: DriveSyncItem[], manifest: DriveManifest): D
             create.push(item);
         } else if (existing.date !== item.date) {
             update.push({ item, driveFileId: existing.driveFileId });
+        } else if (existing.fileName !== item.fileName) {
+            rename.push({ item, driveFileId: existing.driveFileId });
         } else {
             skip++;
         }
     }
 
-    return { create, update, skip };
+    return { create, update, rename, skip };
 }

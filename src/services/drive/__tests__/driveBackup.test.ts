@@ -18,6 +18,7 @@ const drive = vi.hoisted(() => ({
     findFileByProperty: vi.fn(async () => null),
     uploadFile: vi.fn(async () => ({ id: 'f1', name: 'f' })),
     updateFileContent: vi.fn(async () => ({ id: 'f1', name: 'f' })),
+    renameFile: vi.fn(async () => ({ id: 'f1', name: 'f' })),
     deleteFile: vi.fn(async () => {}),
     getFileLink: vi.fn(async () => null),
 }));
@@ -124,5 +125,40 @@ describe('syncDriveBackup quarantine of a permanently-failing file', () => {
         expect(manifest.quarantined).toBe(1);
         expect(manifest.failingSince).toBeNull(); // no longer a live streak
         expect(manifest.lastError).toMatch(/can't be saved/);
+    });
+});
+
+describe('syncDriveBackup rename-only pass (stale pre-fix Drive name)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        manifest.files = {};
+        manifest.folders = { 'AAA - Name': 'folder-AAA - Name' };
+        manifest.failingSince = null;
+        manifest.lastError = null;
+    });
+
+    it('renames the Drive file in place, without re-fetching or re-uploading content, when only the computed name changed', async () => {
+        // Same date as the subject's file (see subject() above), but the Drive
+        // file still carries whatever name it was uploaded with before the
+        // multi-attachment numbering / comment-folding fix existed.
+        manifest.files['/a'] = { driveFileId: 'existingId', date: '1. 1. 2026', fileName: 'old-name.pdf' };
+
+        const r = await syncDriveBackup([subject('AAA', '/a')]);
+
+        expect(fetchWithAuth).not.toHaveBeenCalled();
+        expect(drive.uploadFile).not.toHaveBeenCalled();
+        expect(drive.updateFileContent).not.toHaveBeenCalled();
+        expect(drive.renameFile).toHaveBeenCalledWith('existingId', 'L1.pdf');
+        expect(r?.renamed).toBe(1);
+        expect(manifest.files['/a']).toEqual({ driveFileId: 'existingId', date: '1. 1. 2026', fileName: 'L1.pdf' });
+    });
+
+    it('backfills the stored name for a manifest entry with none at all (files synced before name tracking existed)', async () => {
+        manifest.files['/a'] = { driveFileId: 'existingId', date: '1. 1. 2026' };
+
+        const r = await syncDriveBackup([subject('AAA', '/a')]);
+
+        expect(drive.renameFile).toHaveBeenCalledWith('existingId', 'L1.pdf');
+        expect(r?.renamed).toBe(1);
     });
 });
