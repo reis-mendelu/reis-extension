@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Repos: `reis-extension` (this worktree, branch `worktree-society-map-events`) and `../reis-admin` (branch `society-map-events`, based on `origin/main`). Every reis-admin task below runs with `cwd` = `/Users/dominik-personal/Documents/reis-admin`.
+- Repos: `reis-extension` (this worktree, branch `worktree-society-map-events`) and `../reis-admin` (branch `society-map-events`, based on `origin/main`). Every reis-admin task below runs with `cwd` = `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events` — a DEDICATED WORKTREE, not the bare `/Users/dominik-personal/Documents/reis-admin` checkout, which is shared with unrelated concurrent work and must not be touched.
 - No image upload capability (out of scope, per spec).
 - No moderation/approval queue (out of scope, per spec) — RLS trusts any active `spolky_accounts` row.
 - No in-extension creation UI (out of scope, per spec) — reis-admin only.
@@ -58,7 +58,7 @@
 ### Task 1: Supabase migration — `spolky_events` table + RLS
 
 **Files:**
-- Create: `/Users/dominik-personal/Documents/reis-admin/supabase/migrations/20260703120000_add_spolky_events.sql`
+- Create: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/supabase/migrations/20260703120000_add_spolky_events.sql`
 
 **Interfaces:**
 - Produces: table `public.spolky_events` with columns `id, association_id, title, category, date, end_date, time, venue_kind, room_code, coord_lng, coord_lat, location, url, created_at, updated_at` — every later task's SQL/TS type must match these names exactly.
@@ -156,7 +156,7 @@ Call `mcp__claude_ai_Supabase__list_tables` with `project_id: "zvbpgkmnrqyprtkyx
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /Users/dominik-personal/Documents/reis-admin
+cd /Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events
 git add supabase/migrations/20260703120000_add_spolky_events.sql
 git commit -m "feat(events): add spolky_events table with association-scoped RLS"
 ```
@@ -166,7 +166,7 @@ git commit -m "feat(events): add spolky_events table with association-scoped RLS
 ### Task 2: reis-admin database types
 
 **Files:**
-- Modify: `/Users/dominik-personal/Documents/reis-admin/src/lib/database.types.ts`
+- Modify: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/lib/database.types.ts`
 
 **Interfaces:**
 - Consumes: the exact column set from Task 1.
@@ -236,7 +236,7 @@ Insert alphabetically (after `spolky_accounts`, matching the file's existing ord
 - [ ] **Step 2: Typecheck**
 
 ```bash
-cd /Users/dominik-personal/Documents/reis-admin
+cd /Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events
 npx tsc --noEmit
 ```
 
@@ -254,7 +254,7 @@ git commit -m "feat(events): add spolky_events to database.types.ts"
 ### Task 3: Add Leaflet + Vitest tooling to reis-admin
 
 **Files:**
-- Modify: `/Users/dominik-personal/Documents/reis-admin/package.json`
+- Modify: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/package.json`
 
 **Interfaces:**
 - Produces: `leaflet`/`@types/leaflet` importable by Task 6/8; `vitest` runnable by Tasks 4 and 5.
@@ -262,7 +262,7 @@ git commit -m "feat(events): add spolky_events to database.types.ts"
 - [ ] **Step 1: Install dependencies**
 
 ```bash
-cd /Users/dominik-personal/Documents/reis-admin
+cd /Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events
 npm install --save-exact leaflet@1.9.4
 npm install --save-dev --save-exact @types/leaflet@1.9.21 vitest@3.2.4
 ```
@@ -295,9 +295,9 @@ git commit -m "chore: add leaflet + vitest for the events feature"
 ### Task 4: Copy static map data + style constants into reis-admin
 
 **Files:**
-- Create: `/Users/dominik-personal/Documents/reis-admin/src/data/map/buildings.json` (copy of reis-extension's file, byte-identical)
-- Create: `/Users/dominik-personal/Documents/reis-admin/src/data/map/rooms-index.json` (copy of reis-extension's file, byte-identical)
-- Create: `/Users/dominik-personal/Documents/reis-admin/src/features/events/mapStyles.ts`
+- Create: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/data/map/buildings.json` (copy of reis-extension's file, byte-identical)
+- Create: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/data/map/rooms-index.json` (copy of reis-extension's file, byte-identical)
+- Create: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/features/events/mapStyles.ts`
 
 **Interfaces:**
 - Produces: `BUILDING_STYLE`, `SELECTED_STYLE`, `ringToLatLng(ring: number[][]): [number, number][]` — consumed by Task 6 (`CampusPickerMap.tsx`).
@@ -306,9 +306,9 @@ git commit -m "chore: add leaflet + vitest for the events feature"
 
 ```bash
 cp /Users/dominik-personal/Documents/reis-extension/src/data/map/buildings.json \
-   /Users/dominik-personal/Documents/reis-admin/src/data/map/buildings.json
+   /Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/data/map/buildings.json
 cp /Users/dominik-personal/Documents/reis-extension/src/data/map/rooms-index.json \
-   /Users/dominik-personal/Documents/reis-admin/src/data/map/rooms-index.json
+   /Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/data/map/rooms-index.json
 ```
 
 - [ ] **Step 2: Write `mapStyles.ts`**
@@ -340,7 +340,7 @@ export function ringToLatLng(ring: number[][]): [number, number][] {
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /Users/dominik-personal/Documents/reis-admin
+cd /Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events
 git add src/data/map/buildings.json src/data/map/rooms-index.json src/features/events/mapStyles.ts
 git commit -m "feat(events): add campus map data + style constants"
 ```
@@ -350,8 +350,8 @@ git commit -m "feat(events): add campus map data + style constants"
 ### Task 5: Pure location-resolution logic (TDD)
 
 **Files:**
-- Create: `/Users/dominik-personal/Documents/reis-admin/src/features/events/locationResolvers.ts`
-- Test: `/Users/dominik-personal/Documents/reis-admin/src/features/events/locationResolvers.test.ts`
+- Create: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/features/events/locationResolvers.ts`
+- Test: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/features/events/locationResolvers.test.ts`
 
 **Interfaces:**
 - Consumes: `Building` shape `{ id: number; name: string; center: [number, number] }` (subset of `buildings.json`'s per-building objects), `RoomIndexEntry` shape `{ code: string; name: string; buildingId: number }` (subset of `rooms-index.json`'s entries).
@@ -399,7 +399,7 @@ describe('roomsForBuilding', () => {
 - [ ] **Step 2: Run to verify it fails**
 
 ```bash
-cd /Users/dominik-personal/Documents/reis-admin
+cd /Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events
 npx vitest run src/features/events/locationResolvers.test.ts
 ```
 
@@ -458,8 +458,8 @@ git commit -m "feat(events): add pure building/room location resolvers"
 ### Task 6: Nominatim address search (TDD)
 
 **Files:**
-- Create: `/Users/dominik-personal/Documents/reis-admin/src/features/events/nominatim.ts`
-- Test: `/Users/dominik-personal/Documents/reis-admin/src/features/events/nominatim.test.ts`
+- Create: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/features/events/nominatim.ts`
+- Test: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/features/events/nominatim.test.ts`
 
 **Interfaces:**
 - Produces: `GeocodeResult { label: string; coord: [number, number] }`, `parseNominatimResults(raw: unknown[]): GeocodeResult[]` (pure, tested), `searchAddress(query: string): Promise<GeocodeResult[]>` (network wrapper, not unit-tested) — consumed by Task 7 (`EventForm.tsx`).
@@ -489,7 +489,7 @@ describe('parseNominatimResults', () => {
 - [ ] **Step 2: Run to verify it fails**
 
 ```bash
-cd /Users/dominik-personal/Documents/reis-admin
+cd /Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events
 npx vitest run src/features/events/nominatim.test.ts
 ```
 
@@ -560,7 +560,7 @@ git commit -m "feat(events): add Brno-bounded Nominatim address search"
 ### Task 7: `CampusPickerMap.tsx` — raw-Leaflet picker
 
 **Files:**
-- Create: `/Users/dominik-personal/Documents/reis-admin/src/features/events/CampusPickerMap.tsx`
+- Create: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/features/events/CampusPickerMap.tsx`
 
 **Interfaces:**
 - Consumes: `BUILDING_STYLE`, `SELECTED_STYLE`, `PIN_COLOR`, `ringToLatLng` (Task 4); `buildings.json` (Task 4).
@@ -678,7 +678,7 @@ export default function CampusPickerMap({
 - [ ] **Step 2: Typecheck**
 
 ```bash
-cd /Users/dominik-personal/Documents/reis-admin
+cd /Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events
 npx tsc --noEmit
 ```
 
@@ -696,7 +696,7 @@ git commit -m "feat(events): add raw-Leaflet campus/city location picker"
 ### Task 8: Duplicated `EventCategory` union + Czech labels
 
 **Files:**
-- Create: `/Users/dominik-personal/Documents/reis-admin/src/features/events/eventCategories.ts`
+- Create: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/features/events/eventCategories.ts`
 
 **Interfaces:**
 - Produces: `EventCategory` type, `CATEGORY_LABELS: Record<EventCategory, string>` — consumed by Task 9 (`EventForm.tsx`).
@@ -728,7 +728,7 @@ export const CATEGORY_LABELS: Record<EventCategory, string> = {
 - [ ] **Step 2: Commit**
 
 ```bash
-cd /Users/dominik-personal/Documents/reis-admin
+cd /Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events
 git add src/features/events/eventCategories.ts
 git commit -m "feat(events): add duplicated EventCategory union + Czech labels"
 ```
@@ -738,7 +738,7 @@ git commit -m "feat(events): add duplicated EventCategory union + Czech labels"
 ### Task 9: `EventForm.tsx`
 
 **Files:**
-- Create: `/Users/dominik-personal/Documents/reis-admin/src/features/events/EventForm.tsx`
+- Create: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/features/events/EventForm.tsx`
 
 **Interfaces:**
 - Consumes: `supabase` (`@/lib/supabase`), `Tables` (`@/lib/database.types`, Task 2), `DatePicker` (`@/components/DatePicker`), `toLocalDateString` (`@/lib/utils`), `resolveBuildingCoord`/`roomsForBuilding` (Task 5), `searchAddress`/`GeocodeResult` (Task 6), `CampusPickerMap` (Task 7), `EventCategory`/`CATEGORY_LABELS` (Task 8), `buildingsJson`/`roomsIndexJson` (Task 4).
@@ -1004,7 +1004,7 @@ export default function EventForm({ associationId, onRefresh, editingEvent, onCa
 - [ ] **Step 2: Typecheck**
 
 ```bash
-cd /Users/dominik-personal/Documents/reis-admin
+cd /Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events
 npx tsc --noEmit
 ```
 
@@ -1030,7 +1030,7 @@ git commit -m "feat(events): add event creation form with dual location modes"
 ### Task 10: `EventList.tsx`
 
 **Files:**
-- Create: `/Users/dominik-personal/Documents/reis-admin/src/features/events/EventList.tsx`
+- Create: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/features/events/EventList.tsx`
 
 **Interfaces:**
 - Consumes: `Tables<'spolky_events'>` (Task 2).
@@ -1101,7 +1101,7 @@ export default function EventList({ events, onRefresh, onEdit }: EventListProps)
 - [ ] **Step 2: Typecheck**
 
 ```bash
-cd /Users/dominik-personal/Documents/reis-admin
+cd /Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events
 npx tsc --noEmit
 ```
 
@@ -1119,10 +1119,10 @@ git commit -m "feat(events): add event list with edit/delete"
 ### Task 11: `EventsView` (`index.tsx`) + route/nav wiring
 
 **Files:**
-- Create: `/Users/dominik-personal/Documents/reis-admin/src/features/events/index.tsx`
-- Modify: `/Users/dominik-personal/Documents/reis-admin/src/App.tsx`
-- Modify: `/Users/dominik-personal/Documents/reis-admin/src/components/Sidebar.tsx`
-- Modify: `/Users/dominik-personal/Documents/reis-admin/src/components/AppLayout.tsx`
+- Create: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/features/events/index.tsx`
+- Modify: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/App.tsx`
+- Modify: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/components/Sidebar.tsx`
+- Modify: `/Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events/src/components/AppLayout.tsx`
 
 **Interfaces:**
 - Consumes: `EventForm` (Task 9), `EventList` (Task 10).
@@ -1233,7 +1233,7 @@ Add a line inside the `inferredView === ...` title block, alongside the existing
 - [ ] **Step 5: Typecheck**
 
 ```bash
-cd /Users/dominik-personal/Documents/reis-admin
+cd /Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events
 npx tsc --noEmit
 ```
 
@@ -1518,7 +1518,7 @@ git commit -m "chore(events): delete dead inferCategory mock seam"
 cd /Users/dominik-personal/Documents/reis-extension/.claude/worktrees/society-map-events
 npm run typecheck && npm run lint && npx vitest run
 
-cd /Users/dominik-personal/Documents/reis-admin
+cd /Users/dominik-personal/Documents/reis-admin/.claude/worktrees/society-map-events
 npx tsc --noEmit && npx vitest run
 ```
 
