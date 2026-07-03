@@ -554,7 +554,8 @@
     },
     "grade": {
       "credited": "credited",
-      "completed": "completed"
+      "completed": "completed",
+      "attempt": "attempt {n}"
     },
     "comparison": {
       "title": "Year-group ranking",

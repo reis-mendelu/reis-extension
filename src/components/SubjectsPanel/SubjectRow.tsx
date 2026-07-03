@@ -53,16 +53,24 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
   const hover = useSpeculativeHover(subject.code, !isZamerani && hasId);
   const grade = useCourseGrade(resolvedId, subject.code);
   const badge = gradeBadge(grade);
+  // A failing grade on a still-enrolled subject is unresolved, not a dead end — surface
+  // which attempt this was (fact from IS, not a computed "attempts remaining" guess).
+  const showAttempt = badge?.kind === 'letter' && !badge.passed && subject.isEnrolled && !subject.isFulfilled && grade?.attempt;
   const badgeEl = badge ? (
-    <span
-      className={`text-sm font-mono font-medium shrink-0 ${badge.kind === 'letter' && !badge.passed ? 'text-error' : 'text-success'}`}
-      title={grade?.gradeText}
-    >
-      {badge.kind === 'letter'
-        ? badge.text
-        : badge.kind === 'credited'
-          ? t('subjects.grade.credited')
-          : t('subjects.grade.completed')}
+    <span className="flex items-baseline gap-1 shrink-0">
+      <span
+        className={`text-sm font-mono font-medium ${badge.kind === 'letter' && !badge.passed ? 'text-error' : 'text-success'}`}
+        title={grade?.gradeText}
+      >
+        {badge.kind === 'letter'
+          ? badge.text
+          : badge.kind === 'credited'
+            ? t('subjects.grade.credited')
+            : t('subjects.grade.completed')}
+      </span>
+      {showAttempt && (
+        <span className="text-[10px] text-error/60 font-normal">{t('subjects.grade.attempt', { n: grade.attempt })}</span>
+      )}
     </span>
   ) : null;
   // A subject counts as "successfully graded" for a passing letter (A–E) or a záp/zak completion.

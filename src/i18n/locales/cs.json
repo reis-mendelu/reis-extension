@@ -554,7 +554,8 @@
     },
     "grade": {
       "credited": "započteno",
-      "completed": "zakončeno"
+      "completed": "zakončeno",
+      "attempt": "{n}. pokus"
     },
     "comparison": {
       "title": "Srovnání v ročníku",
