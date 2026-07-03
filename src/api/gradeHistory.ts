@@ -8,7 +8,7 @@ export async function fetchGradeHistory(
     obdobi: string
 ): Promise<GradeHistory | null> {
     try {
-        const base = `${BASE_URL}/auth/student/pruchod_studiem.pl?vyber=vsechna_obdobi;studium=${studium};obdobi=${obdobi}`;
+        const base = `${BASE_URL}/auth/student/pruchod_studiem.pl?vyber=podrobne_vsechna_obdobi;studium=${studium};obdobi=${obdobi}`;
         const [czRes, enRes] = await Promise.all([
             fetchWithAuth(`${base};lang=cz`),
             fetchWithAuth(`${base};lang=en`),
@@ -68,13 +68,15 @@ function parseGradeHistory(html: string, studium: string): GradeHistory {
             const predmetId = predmetMatch?.[1] ?? '';
             const courseName = courseLink.textContent?.trim().replace(/\u00a0/g, ' ') ?? '';
 
-            // Column layout (12 cols): 0=Po\u0159, 1=K\u00f3d, 2=P\u0159edm\u011bt, 3=Povinnost,
-            // 4=Jaz, 5=Uk (examType), 6=Pokus (attempt), 7=V\u00fdsledek (grade),
-            // 8=Zad\u00e1no, 9=Zadal, 10=Kredity, 11=Zp\u016fsob.
+            // Column layout of "Podrobny prehled za cele studium"
+            // (podrobne_vsechna_obdobi, 11 cols, no leading Por cell):
+            // 0=Kod, 1=Predmet, 2=Povinnost, 3=Jaz, 4=Uk (examType),
+            // 5=Pokus (attempt), 6=Vysledek (grade), 7=Zadano, 8=Zadal,
+            // 9=Kredity, 10=Zpusob.
             const cells = row.querySelectorAll('td');
-            const courseCode = cells[1]?.textContent?.trim().replace(/\u00a0/g, ' ') || undefined;
-            const examType = cells[5]?.textContent?.trim() ?? '';
-            const attemptText = cells[6]?.textContent?.trim() ?? '';
+            const courseCode = cells[0]?.textContent?.trim().replace(/\u00a0/g, ' ') || undefined;
+            const examType = cells[4]?.textContent?.trim() ?? '';
+            const attemptText = cells[5]?.textContent?.trim() ?? '';
             const attempt = parseOptionalInt(attemptText, 'attempt', 'parseGradeHistory');
 
             const gradeDiv = row.querySelector('div.flex-container');
@@ -82,7 +84,7 @@ function parseGradeHistory(html: string, studium: string): GradeHistory {
             const letterMatch = gradeText.match(/\(([A-F])\)$/i);
             const gradeLetter = letterMatch ? letterMatch[1].toUpperCase() : '';
 
-            const creditsText = cells[10]?.textContent?.trim() ?? '';
+            const creditsText = cells[9]?.textContent?.trim() ?? '';
             const credits = parseOptionalInt(creditsText, 'credits', 'parseGradeHistory');
 
             if (predmetId && courseName) {

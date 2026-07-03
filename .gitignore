@@ -29,6 +29,7 @@ dist
 .wxt
 dist-ssr
 *.local
+coverage
 
 # Editor directories and files
 .vscode/*

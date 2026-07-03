@@ -67,7 +67,7 @@ export function useAppLogic() {
     useEffect(() => {
         outlookSyncService.init();
         syncGradeHistory()
-            .then(() => useAppStore.getState().loadStudyJamSuggestions())
+            .then(() => { useAppStore.getState().loadStudyJamSuggestions(); useAppStore.getState().loadGradeHistory(); })
             .catch(() => {});
 
         // Hydrate past attendance from iframe-side IDB cache
@@ -247,7 +247,7 @@ export function useAppLogic() {
                     useAppStore.getState().fetchAllClassmates();
                     useAppStore.getState().fetchAllExamClassmates();
                     syncGradeHistory()
-                        .then(() => useAppStore.getState().loadStudyJamSuggestions())
+                        .then(() => { useAppStore.getState().loadStudyJamSuggestions(); useAppStore.getState().loadGradeHistory(); })
                         .catch(() => {});
                     syncService.triggerRefresh();
                 }

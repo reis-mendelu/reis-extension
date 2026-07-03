@@ -2,20 +2,25 @@ import { describe, it, expect } from 'vitest';
 import { percentileStanding } from '../studyComparison';
 
 describe('percentileStanding', () => {
-  // IS reports "Percentil" = rank/total*100 (lower is better). The summary
-  // sentence pivots at the 50th percentile: top half is framed as "top X%",
-  // bottom half as "you beat (100-X)%".
-  it('frames the top half as "top X%" (percentile <= 50)', () => {
+  // IS reports "Percentil" = rank/total*100 (lower is better). Only the top
+  // quartile gets the celebratory "top X%" framing; everyone else sees the
+  // more modest "you beat (100-X)%" framing — merely being above-average
+  // (e.g. top 44%) isn't worth a trophy.
+  it('frames the top quartile as "top X%" (percentile <= 25)', () => {
     expect(percentileStanding(6.19)).toEqual({ tier: 'top', pct: 6.19 });
   });
 
-  it('frames the bottom half as the share you beat (percentile > 50)', () => {
+  it('frames everything past the top quartile as the share you beat (percentile > 25)', () => {
     // 55.58 -> 100 - 55.58 = 44.42 (matches IS "44,42 % studentů")
     expect(percentileStanding(55.58)).toEqual({ tier: 'bottom', pct: 44.42 });
   });
 
-  it('treats exactly the 50th percentile as top half', () => {
-    expect(percentileStanding(50)).toEqual({ tier: 'top', pct: 50 });
+  it('frames a merely above-average standing (percentile 44.18) as "beat", not "top"', () => {
+    expect(percentileStanding(44.18)).toEqual({ tier: 'bottom', pct: 55.82 });
+  });
+
+  it('treats exactly the 25th percentile as top quartile', () => {
+    expect(percentileStanding(25)).toEqual({ tier: 'top', pct: 25 });
   });
 
   it('rounds the beaten share to 2 decimals (no float dust)', () => {

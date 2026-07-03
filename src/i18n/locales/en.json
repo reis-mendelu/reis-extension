@@ -552,6 +552,11 @@
       "weightedShort": "Weighted average",
       "weightedInfo": "Weighted by the credits of each course."
     },
+    "grade": {
+      "credited": "credited",
+      "completed": "completed",
+      "attempt": "attempt {n}"
+    },
     "comparison": {
       "title": "Year-group ranking",
       "rank": "Year-group rank",

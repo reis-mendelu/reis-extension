@@ -5,6 +5,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useSpeculativeHover } from '@/hooks/data/useSpeculativeHover';
+import { useCourseGrade } from '@/hooks/data/useCourseGrade';
+import { gradeBadge } from '@/utils/gradeLookup';
 import { useAppStore } from '@/store/useAppStore';
 import { isZameraniCode } from './utils';
 import { resolvePredmetId } from './resolvePredmetId';
@@ -17,6 +19,8 @@ interface SubjectRowProps {
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => void;
   onSearchSubject: (name: string) => void;
   hideStatus?: boolean;
+  /** In the study plan, hide the completion type (zk/záp/zak) on subjects that already have a successful grade. */
+  hideTypeWhenGraded?: boolean;
   zamerani?: Zamerani | null;
   zameraniProgress?: ZameraniProgress | null;
   subjectSemesters?: Map<string, string[]>;
@@ -30,7 +34,7 @@ function zameraniAcronym(norm: string): string {
 // IS Mendelu uses 999 as a sentinel "credits unknown / pass-through" value.
 const isSentinelCredits = (credits: number) => credits >= 999;
 
-export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, onOpenSubject, onSearchSubject, zamerani, zameraniProgress, subjectSemesters, subjectToZameranis }: SubjectRowProps) {
+export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, hideTypeWhenGraded, onOpenSubject, onSearchSubject, zamerani, zameraniProgress, subjectSemesters, subjectToZameranis }: SubjectRowProps) {
   const { t } = useTranslation();
   // Not-enrolled subjects have no IS id from the plan, but the success-rate data we
   // already fetch carries the subject's `predmet` id — use it (when valid) so the row
@@ -47,6 +51,34 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
   const zameraniTag = zameraniMembership?.length ? zameraniAcronym(zameraniMembership[0]) : null;
 
   const hover = useSpeculativeHover(subject.code, !isZamerani && hasId);
+  const grade = useCourseGrade(resolvedId, subject.code);
+  const badge = gradeBadge(grade);
+  // A failing grade on a still-enrolled subject is unresolved, not a dead end — surface
+  // which attempt this was (fact from IS, not a computed "attempts remaining" guess).
+  const isUnresolvedFail = badge?.kind === 'letter' && !badge.passed && subject.isEnrolled && !subject.isFulfilled;
+  const attemptNumber = isUnresolvedFail ? grade?.attempt ?? null : null;
+  const badgeEl = badge ? (
+    <span className="flex items-baseline gap-1 shrink-0">
+      <span
+        className={`text-sm font-mono font-medium ${badge.kind === 'letter' && !badge.passed ? 'text-error/60' : 'text-success/60'}`}
+        title={grade?.gradeText}
+      >
+        {badge.kind === 'letter'
+          ? badge.text
+          : badge.kind === 'credited'
+            ? t('subjects.grade.credited')
+            : t('subjects.grade.completed')}
+      </span>
+      {attemptNumber != null && (
+        <span className="text-[10px] text-error/60 font-normal">{t('subjects.grade.attempt', { n: attemptNumber })}</span>
+      )}
+    </span>
+  ) : null;
+  // A subject counts as "successfully graded" for a passing letter (A–E) or a záp/zak completion.
+  const hasSuccessGrade = !!badge && (badge.kind !== 'letter' || badge.passed);
+  const typeEl = typeLabel && !(hideTypeWhenGraded && hasSuccessGrade) ? (
+    <span className="hidden md:inline text-[10px] font-mono uppercase text-base-content/40 shrink-0">{typeLabel}</span>
+  ) : null;
 
   const handleClick = () => {
     if (isZamerani) return; // pseudo-row, not openable
@@ -65,16 +97,18 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
           onClick={handleClick}
           onMouseEnter={hover.onMouseEnter}
           onMouseLeave={hover.onMouseLeave}
-          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-base-200/50 transition-colors text-left ${isUnfulfilled ? 'text-error/80' : 'text-base-content/40'}`}
+          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-base-200/50 transition-colors text-left ${isUnfulfilled ? 'text-error/60' : 'text-base-content/40'}`}
         >
           <span className="flex-1 text-sm font-medium truncate">{displayName}</span>
           {timeline && <span className="text-[9px] font-bold text-primary/60 shrink-0">{timeline.formatted}</span>}
+          {badgeEl}
+          {typeEl}
           {showCredits && <span className="hidden md:inline text-xs text-base-content/50 shrink-0">{subject.credits} kr.</span>}
           <span className="flex items-center gap-1 shrink-0">
             {subject.isFulfilled ? (
               <>
-                <CheckCircle2 className={`w-4 h-4 ${subject.fulfillmentDate ? 'text-success/70' : 'text-success/70'}`} />
-                {subject.fulfillmentDate && <span className="text-[11px] text-success/80 font-mono font-medium">{subject.fulfillmentDate}</span>}
+                <CheckCircle2 className="w-4 h-4 text-success/50" />
+                {subject.fulfillmentDate && <span className="text-[11px] text-base-content/45 font-mono font-medium">{subject.fulfillmentDate}</span>}
               </>
             ) : (
               <XCircle className="w-3 h-3 text-error/50" />
@@ -153,8 +187,9 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
           </div>
         )}
       </div>
-      {typeLabel && <span className="hidden md:inline text-[10px] font-mono uppercase text-base-content/40 shrink-0">{typeLabel}</span>}
-      {failRate != null && !subject.isFulfilled && (
+      {badgeEl}
+      {typeEl}
+      {failRate != null && !subject.isFulfilled && !badge && (
         <span
           className={`group/fail flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium tracking-wide shrink-0 cursor-pointer transition-colors ${
             failRate >= 25
@@ -176,9 +211,9 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
         <span className="hidden md:inline text-xs text-base-content/50 shrink-0">{subject.credits} kr.</span>
       )}
       {subject.isFulfilled && subject.fulfillmentDate ? (
-        <span className="flex items-center gap-1.5 text-[11px] text-success/80 shrink-0"><CheckCircle2 className="w-4 h-4" /><span className="font-mono font-medium">{subject.fulfillmentDate}</span></span>
+        <span className="flex items-center gap-1.5 text-[11px] shrink-0"><CheckCircle2 className="w-4 h-4 text-success/50" /><span className="font-mono font-medium text-base-content/45">{subject.fulfillmentDate}</span></span>
       ) : subject.isFulfilled ? (
-        <CheckCircle2 className="w-4 h-4 text-success/80 shrink-0" />
+        <CheckCircle2 className="w-4 h-4 text-success/50 shrink-0" />
       ) : null}
       {subject.enrollmentCount >= 2 && !subject.isFulfilled && (
         <span className="badge badge-sm badge-error gap-1 shrink-0" title={t('subjects.repeatWarning')}>

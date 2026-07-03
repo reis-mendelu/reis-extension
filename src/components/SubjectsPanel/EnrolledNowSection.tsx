@@ -3,23 +3,7 @@ import { BookOpen, CheckCircle2, ChevronDown, XCircle } from 'lucide-react';
 import type { StudyPlan, SubjectStatus } from '@/types/studyPlan';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SubjectRow } from './SubjectRow';
-import { isZameraniCode } from './utils';
-
-// Winter semester: Sep 1 – Jan 31. Summer semester: Feb 1 – Aug 31.
-function isThisSemester(fulfillmentDate?: string): boolean {
-  if (!fulfillmentDate) return false;
-  const parts = fulfillmentDate.split('.');
-  if (parts.length < 3) return false;
-  const date = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
-  const now = new Date();
-  const isSummer = now.getMonth() >= 1 && now.getMonth() <= 7;
-  const semStart = isSummer
-    ? new Date(now.getFullYear(), 1, 1)
-    : now.getMonth() >= 8
-      ? new Date(now.getFullYear(), 8, 1)
-      : new Date(now.getFullYear() - 1, 8, 1);
-  return date >= semStart && date <= now;
-}
+import { isZameraniCode, isThisSemester } from './utils';
 
 interface Props {
   plan: StudyPlan;
@@ -95,12 +79,12 @@ export function EnrolledNowSection({ plan, failRates, subjectSemesters, subjectT
         <BookOpen className="w-3.5 h-3.5 text-primary/70 shrink-0" />
         <span className="text-xs font-semibold text-primary/80 uppercase tracking-wider">{t('subjects.enrolledNow')}</span>
         <span className="ml-auto flex items-center gap-3">
-          <span className="flex items-center gap-1.5 text-xs text-error/80 font-mono font-medium">
+          <span className="flex items-center gap-1.5 text-xs text-error/80 font-mono font-normal">
             <XCircle className="w-3.5 h-3.5" />
             {inProgress.length}
           </span>
           {passed.length > 0 && (
-            <span className="flex items-center gap-1.5 text-xs text-success/80 font-mono font-medium">
+            <span className="flex items-center gap-1.5 text-xs text-success/80 font-mono font-normal">
               <CheckCircle2 className="w-3.5 h-3.5" />
               {passed.length}
             </span>
@@ -120,7 +104,7 @@ export function EnrolledNowSection({ plan, failRates, subjectSemesters, subjectT
             {inProgress.length > 0 && (
               <button
                 onClick={() => setShowPassed(v => !v)}
-                className="w-full flex items-center gap-2 px-3 my-0.5 group"
+                className="w-full flex items-center gap-2 px-3 mt-2 mb-1 group"
               >
                 <div className="h-px flex-1 bg-success/15" />
                 <span className="flex items-center gap-1 text-[9px] text-success/40 group-hover:text-success/70 uppercase tracking-wider font-medium transition-colors">
