@@ -3,29 +3,7 @@ import { BookOpen, CheckCircle2, ChevronDown, XCircle } from 'lucide-react';
 import type { StudyPlan, SubjectStatus } from '@/types/studyPlan';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SubjectRow } from './SubjectRow';
-import { isZameraniCode } from './utils';
-
-// Winter semester: Sep 1 – Jan 31. Summer semester: Feb 1 – Aug 31.
-// fulfillmentDate is DD.MM.YYYY in Czech (dot separator) but MM/DD/YYYY in
-// English (slash separator, US month-first order) — verified against real
-// IS Mendelu output for the same record: CZ "14.01.2026" == EN "01/14/2026".
-export function isThisSemester(fulfillmentDate?: string): boolean {
-  if (!fulfillmentDate) return false;
-  const isSlash = fulfillmentDate.includes('/');
-  const parts = fulfillmentDate.split(/[./]/);
-  if (parts.length < 3) return false;
-  const [a, b, year] = parts;
-  const [day, month] = isSlash ? [b, a] : [a, b];
-  const date = new Date(Number(year), Number(month) - 1, Number(day));
-  const now = new Date();
-  const isSummer = now.getMonth() >= 1 && now.getMonth() <= 7;
-  const semStart = isSummer
-    ? new Date(now.getFullYear(), 1, 1)
-    : now.getMonth() >= 8
-      ? new Date(now.getFullYear(), 8, 1)
-      : new Date(now.getFullYear() - 1, 8, 1);
-  return date >= semStart && date <= now;
-}
+import { isZameraniCode, isThisSemester } from './utils';
 
 interface Props {
   plan: StudyPlan;
