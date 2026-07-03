@@ -108,7 +108,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
             {subject.isFulfilled ? (
               <>
                 <CheckCircle2 className="w-4 h-4 text-success/50" />
-                {subject.fulfillmentDate && <span className="text-[11px] text-success/60 font-mono font-medium">{subject.fulfillmentDate}</span>}
+                {subject.fulfillmentDate && <span className="text-[11px] text-base-content/45 font-mono font-medium">{subject.fulfillmentDate}</span>}
               </>
             ) : (
               <XCircle className="w-3 h-3 text-error/50" />
@@ -211,9 +211,9 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
         <span className="hidden md:inline text-xs text-base-content/50 shrink-0">{subject.credits} kr.</span>
       )}
       {subject.isFulfilled && subject.fulfillmentDate ? (
-        <span className="flex items-center gap-1.5 text-[11px] text-success/60 shrink-0"><CheckCircle2 className="w-4 h-4" /><span className="font-mono font-medium">{subject.fulfillmentDate}</span></span>
+        <span className="flex items-center gap-1.5 text-[11px] shrink-0"><CheckCircle2 className="w-4 h-4 text-success/50" /><span className="font-mono font-medium text-base-content/45">{subject.fulfillmentDate}</span></span>
       ) : subject.isFulfilled ? (
-        <CheckCircle2 className="w-4 h-4 text-success/60 shrink-0" />
+        <CheckCircle2 className="w-4 h-4 text-success/50 shrink-0" />
       ) : null}
       {subject.enrollmentCount >= 2 && !subject.isFulfilled && (
         <span className="badge badge-sm badge-error gap-1 shrink-0" title={t('subjects.repeatWarning')}>

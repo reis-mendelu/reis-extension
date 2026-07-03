@@ -115,7 +115,7 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
             if (visible.length === 0 && !showPickPrompt) return null;
             const statusText = (group.statusDescription || '').trim();
             const statusIsFulfilled = /^SPLN[ĚE]N/i.test(statusText) || /^FULFILLED/i.test(statusText);
-            const statusCls = statusIsFulfilled ? 'text-success/70' : statusText ? 'text-error/90' : 'text-base-content/40';
+            const statusCls = statusIsFulfilled ? 'text-success/70' : statusText ? 'text-error/70' : 'text-base-content/40';
             // Live progress derived from subjects — independent of the server's statusDescription.
             const fulfilledInGroup = group.subjects.filter(s => s.isFulfilled).length;
             const liveProgress = group.minCount !== undefined
@@ -135,7 +135,7 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
                          <span className="text-[10px] font-mono text-base-content/50">{liveProgress}</span>
                        )}
                        {statusText && (
-                         <span className={`text-[11px] font-medium uppercase tracking-wider ${statusCls}`}>
+                         <span className={`text-[11px] font-medium ${statusCls}`}>
                            <span className="md:hidden">{shortenStatusText(statusText)}</span>
                            <span className="hidden md:inline">{statusText}</span>
                          </span>
