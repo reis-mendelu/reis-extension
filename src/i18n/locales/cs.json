@@ -552,6 +552,10 @@
       "weightedShort": "Vážený průměr",
       "weightedInfo": "Vážený průměr zohledňuje počet kreditů jednotlivých předmětů."
     },
+    "grade": {
+      "credited": "započteno",
+      "completed": "zakončeno"
+    },
     "comparison": {
       "title": "Srovnání v ročníku",
       "rank": "Pořadí v ročníku",

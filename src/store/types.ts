@@ -4,6 +4,7 @@ import type { ExamSubject } from '../types/exams';
 import type { SyllabusRequirements, ParsedFile, SubjectsData, SubjectSuccessRate, SubjectAttendance } from '../types/documents';
 import type { ClassmatesData, Classmate } from '../types/classmates';
 import type { DualLanguageStudyPlan, StudyStats, StudyComparison } from '../types/studyPlan';
+import type { GradeHistory } from '../types/documents';
 import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { SyncStatus } from '../services/sync';
@@ -214,11 +215,14 @@ export interface StudyPlanSlice {
     studyPlanLoaded: boolean;
     studyStats: StudyStats | null;
     studyComparison: StudyComparison | null;
+    gradeHistory: GradeHistory | null;
     fetchStudyPlan: () => Promise<void>;
     fetchStudyStats: () => Promise<void>;
     setStudyStats: (stats: StudyStats) => void;
     fetchStudyComparison: () => Promise<void>;
     setStudyComparison: (c: StudyComparison) => void;
+    loadGradeHistory: () => Promise<void>;
+    setGradeHistory: (g: GradeHistory) => void;
 }
 
 export interface ErasmusStudentInfo {

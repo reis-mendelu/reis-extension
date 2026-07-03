@@ -2,12 +2,14 @@ import type { AppSlice, StudyPlanSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import { isDualLanguageStudyPlan } from '../../types/studyPlan';
 import type { StudyStats, StudyComparison } from '../../types/studyPlan';
+import type { GradeHistory } from '../../types/documents';
 
 export const createStudyPlanSlice: AppSlice<StudyPlanSlice> = (set) => ({
     studyPlanDual: null,
     studyPlanLoaded: false,
     studyStats: null,
     studyComparison: null,
+    gradeHistory: null,
     fetchStudyPlan: async () => {
         try {
             const stored = await IndexedDBService.get('study_plan', 'current');
@@ -38,4 +40,13 @@ export const createStudyPlanSlice: AppSlice<StudyPlanSlice> = (set) => ({
         }
     },
     setStudyComparison: (c) => set({ studyComparison: c }),
+    loadGradeHistory: async () => {
+        try {
+            const stored = await IndexedDBService.get('grade_history', 'all') as GradeHistory | null;
+            if (stored) set({ gradeHistory: stored });
+        } catch {
+            // Ignore if grades fail to load from IDB
+        }
+    },
+    setGradeHistory: (g) => set({ gradeHistory: g }),
 });

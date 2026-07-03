@@ -155,6 +155,7 @@ export function SemesterSection({ block, open, dimmed, failRates, zameraniLookup
                         key={s.code}
                         subject={s}
                         compact={isPast}
+                        hideTypeWhenGraded
                         failRate={failRates?.[s.code]}
                         failRates={failRates}
                         zamerani={zameraniLookup?.get(normalizeZameraniName(s.name)) ?? null}

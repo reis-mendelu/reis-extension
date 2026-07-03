@@ -105,6 +105,7 @@ export const initializeStore = async () => {
         s2.fetchStudyPlan();
         s2.fetchStudyStats();
         s2.fetchStudyComparison();
+        s2.loadGradeHistory();
         s2.fetchCvicneTests();
         s2.fetchOdevzdavarny();
         s2.fetchAllFiles();
@@ -156,6 +157,7 @@ export const initializeStore = async () => {
         st.fetchStudyPlan();
         st.fetchStudyStats();
         st.fetchStudyComparison();
+        st.loadGradeHistory();
         st.fetchCvicneTests();
         st.fetchOdevzdavarny();
     });
