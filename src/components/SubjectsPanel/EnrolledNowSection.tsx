@@ -6,11 +6,17 @@ import { SubjectRow } from './SubjectRow';
 import { isZameraniCode } from './utils';
 
 // Winter semester: Sep 1 – Jan 31. Summer semester: Feb 1 – Aug 31.
-function isThisSemester(fulfillmentDate?: string): boolean {
+// fulfillmentDate is DD.MM.YYYY in Czech (dot separator) but MM/DD/YYYY in
+// English (slash separator, US month-first order) — verified against real
+// IS Mendelu output for the same record: CZ "14.01.2026" == EN "01/14/2026".
+export function isThisSemester(fulfillmentDate?: string): boolean {
   if (!fulfillmentDate) return false;
-  const parts = fulfillmentDate.split('.');
+  const isSlash = fulfillmentDate.includes('/');
+  const parts = fulfillmentDate.split(/[./]/);
   if (parts.length < 3) return false;
-  const date = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+  const [a, b, year] = parts;
+  const [day, month] = isSlash ? [b, a] : [a, b];
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
   const now = new Date();
   const isSummer = now.getMonth() >= 1 && now.getMonth() <= 7;
   const semStart = isSummer
