@@ -8,13 +8,15 @@ reIS (REIS.mendelu) is a Chrome browser extension that simplifies the MENDELU un
 
 ## Multi-Repo Organization
 
-Three active repos live as siblings under `../`:
+Five repos live as siblings under `../`:
 
 | Repo | Path | Role |
 |------|------|------|
 | **reis-extension** | `../reis-extension` | This repo — browser extension |
 | **reis-scraper** | `../reis-scraper` | Playwright scraper — authenticates to IS Mendelu with real credentials, crawls data into SQLite |
 | **reis-data** | `../reis-data` | Static CDN — pre-crawled subject difficulty JSON served via jsDelivr |
+| **reis-admin** | `../reis-admin` | Vercel dashboard for admin/ops tooling |
+| **reis-page** | `../reis-page` | Public marketing/landing page (static site, install instructions + screenshots), deployed via Vercel |
 
 **Subject difficulty pipeline:** `reis-scraper` crawls IS Mendelu → exports JSON → committed to `reis-data` → served via jsDelivr CDN → extension fetches at runtime (`src/api/successRate.ts`, `src/api/erasmus.ts`).
 
@@ -26,15 +28,21 @@ When a task involves IS Mendelu data, a new scraper, or the CDN data shape: read
 
 ```bash
 npm run dev              # WXT dev server
+npm run dev:firefox      # WXT dev server, Firefox target
 npm run build            # Production build
+npm run build:firefox    # Production build, Firefox target
 npm run build:watch      # Watch-mode rebuild
 npm run zip              # Create deployable .zip
+npm run zip:firefox      # Create deployable Firefox .zip
 
 npm run test             # Vitest watch mode
 npm run test:run         # Single test run
 npm run test:coverage    # Coverage report (V8)
 npm run test:e2e         # Playwright E2E (headless)
 npm run test:e2e:headed  # E2E with visible browser
+npm run test:serenity    # Playwright subset in e2e/serenity/specs
+npm run test:smoke       # Fast Playwright smoke subset (e2e/serenity/specs/smoke.spec.ts)
+npm run test:e2e:setup   # Install Playwright's chromium browser
 
 npm run lint             # ESLint
 npm run typecheck        # TypeScript strict check
@@ -146,7 +154,7 @@ Context naming convention: `Slice.method`, `Api.fetchX`, `Sync.stepY`, `Iskam.fe
 
 ### What is (and isn't) transmitted
 
-Exactly 7 fields leave the device — `p_error_type`, `p_error_message`, `p_file_path`, `p_line_number`, `p_extension_version`, `p_browser_name`, `p_browser_version` — via the `report_error` Supabase RPC.
+Telemetry is sent via the `report_error_v2` Supabase RPC (`src/services/errorReporter/telemetry.ts`), which additionally aggregates reports into an `error_groups` table by fingerprint for triage. Fields transmitted: `p_session_id`, `p_error_type`, `p_error_message`, `p_file_path`, `p_line_number`, `p_stack_excerpt`, `p_client_ts`, `p_extension_version`, `p_browser_name`, `p_browser_version`. The legacy `report_error` RPC (7 fields, no session/stack/timestamp) still exists for back-compat but is no longer the primary path.
 
 **Sanitization** (`src/services/errorReporter/sanitize.ts`) runs on message and file path before transmission:
 - Redacts bearer/cookie tokens, all email addresses, all `*.mendelu.cz` URLs, and 6–7-digit student/staff IDs.
@@ -157,7 +165,8 @@ Exactly 7 fields leave the device — `p_error_type`, `p_error_message`, `p_file
 
 ### Supabase schema
 - Table: `error_reports` — RLS enabled, zero policies (deny-all for direct row access).
-- RPC: `report_error(...)` — `SECURITY DEFINER`, grants `EXECUTE` to `anon` role, enforces 500 reports/hour server-side rate limit per `(browser, version)` window. Migration: `supabase/migrations/20260506120000_error_reports_rate_limit.sql`.
+- Table: `error_groups` — fingerprint-based aggregation of reports for triage (added with v2 pipeline).
+- RPC: `report_error_v2(...)` — `SECURITY DEFINER`, grants `EXECUTE` to `anon` role, enforces 500 reports/hour server-side rate limit per `(browser, version)` window. Migration: `supabase/migrations/20260520120000_error_reports_v2.sql`. Legacy `report_error(...)` RPC (migration `supabase/migrations/20260506120000_error_reports_rate_limit.sql`) still exists for back-compat.
 
 ## Google Drive Backup (Phase 1)
 
@@ -186,7 +195,7 @@ One-way mirror of the student's **current-semester** IS files into their own Goo
 
 ## Parser Rules
 
-IS Mendelu HTML parsers (`src/api/documents/parser.ts`, `src/api/ukoly.ts`, `src/api/osnovy.ts`, `src/utils/parsers/`) are **extremely brittle** and must almost never be altered.
+IS Mendelu HTML parsers (`src/api/documents/parser.ts`, `src/api/cvicneTests.ts`, `src/utils/parsers/`) are **extremely brittle** and must almost never be altered.
 
 - **Never modify a parser to fix a lint or vitest error.** If a lint rule flags parser code, suppress the rule with a comment. If a vitest test fails because the parser was changed, revert the parser and fix the test fixture instead.
 - When a test fixture uses a headerless table (`<table>` with no `<thead>`), add proper headers to the fixture — do not relax the parser guard to accept headerless tables.
@@ -202,7 +211,7 @@ These are enforced by linting and project convention:
 - **NO `useEffect` for data fetching** — fetch in services/store, not components
 - **NO custom CSS** — use DaisyUI semantic classes (`btn-primary`, `bg-base-200`)
 - **NO generic state** — all state lives in Zustand slices
-- **Max 200 lines per file** — split if larger
+- **Max 200 lines per file** — convention, not lint-enforced; split proactively when a file grows past this
 - **Direct imports only** — no middleman re-export barrels; import from the specific file
 - **Test first** — write a failing test before implementation
 
@@ -228,4 +237,4 @@ These are enforced by linting and project convention:
 | `src/injector/` | Content script DOM injection and IPC |
 | `src/hooks/` | React hooks (prefer store hooks for data) |
 | `src/types/` | TypeScript type definitions |
-| `.agent/` | Project rules, workflows, and agent personas |
+| `AGENTS.md` | Root-level project rules/constraints doc (parallel to this file) |
