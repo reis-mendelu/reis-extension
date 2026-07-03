@@ -64,6 +64,7 @@ describe('SubjectRow — failing-grade attempt indicator', () => {
     const fulfilledAfterRetake: SubjectStatus = { ...enrolledFailing, isEnrolled: false, isFulfilled: true };
     seedGrade('123456', 'F', 1);
     renderRow(fulfilledAfterRetake);
+    expect(screen.getByText('F')).toBeInTheDocument(); // the historical grade itself still renders
     expect(screen.queryByText(/subjects\.grade\.attempt/)).not.toBeInTheDocument();
   });
 });
