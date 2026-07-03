@@ -741,19 +741,20 @@ git commit -m "feat(events): add duplicated EventCategory union + Czech labels"
 - Create: `/Users/dominik-personal/Documents/reis-admin/src/features/events/EventForm.tsx`
 
 **Interfaces:**
-- Consumes: `supabase` (`@/lib/supabase`), `DatePicker` (`@/components/DatePicker`), `toLocalDateString` (`@/lib/utils`), `resolveBuildingCoord`/`roomsForBuilding` (Task 5), `searchAddress`/`GeocodeResult` (Task 6), `CampusPickerMap` (Task 7), `EventCategory`/`CATEGORY_LABELS` (Task 8), `buildingsJson`/`roomsIndexJson` (Task 4).
-- Produces: `<EventForm associationId={string} onRefresh={() => void} />` — consumed by Task 11 (`index.tsx`).
+- Consumes: `supabase` (`@/lib/supabase`), `Tables` (`@/lib/database.types`, Task 2), `DatePicker` (`@/components/DatePicker`), `toLocalDateString` (`@/lib/utils`), `resolveBuildingCoord`/`roomsForBuilding` (Task 5), `searchAddress`/`GeocodeResult` (Task 6), `CampusPickerMap` (Task 7), `EventCategory`/`CATEGORY_LABELS` (Task 8), `buildingsJson`/`roomsIndexJson` (Task 4).
+- Produces: `<EventForm associationId={string} onRefresh={() => void} editingEvent={Tables<'spolky_events'> | null} onCancelEdit={() => void} />` — consumed by Task 11 (`index.tsx`). When `editingEvent` is non-null the form opens pre-filled and submits an `update` instead of an `insert`; both Create and Edit use one form so every field (including location) stays editable after publish, per spec.
 - Manual verification only (no automated test — see Task 7's rationale, same applies to this form).
 
 - [ ] **Step 1: Write the component**
 
 ```tsx
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Plus, X, Send } from 'lucide-react';
 import { toLocalDateString } from '@/lib/utils';
 import DatePicker from '@/components/DatePicker';
+import { Tables } from '@/lib/database.types';
 import buildingsJson from '../../data/map/buildings.json';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import { resolveBuildingCoord, roomsForBuilding, type BuildingLite, type RoomIndexEntry } from './locationResolvers';
@@ -767,26 +768,61 @@ const ROOMS = roomsIndexJson as RoomIndexEntry[];
 interface EventFormProps {
   associationId: string | null;
   onRefresh: () => void;
+  editingEvent?: Tables<'spolky_events'> | null;
+  onCancelEdit?: () => void;
 }
 
 type LocationMode = 'campus' | 'offcampus';
 
-export default function EventForm({ associationId, onRefresh }: EventFormProps) {
+const EMPTY_STATE = {
+  title: '', category: 'other' as EventCategory, date: '', endDate: '', time: '', url: '',
+  mode: 'campus' as LocationMode, buildingId: null as number | null, roomCode: '',
+  pin: null as [number, number] | null, addressLabel: '',
+};
+
+export default function EventForm({ associationId, onRefresh, editingEvent, onCancelEdit }: EventFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState<EventCategory>('other');
-  const [date, setDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [time, setTime] = useState('');
-  const [url, setUrl] = useState('');
-  const [mode, setMode] = useState<LocationMode>('campus');
-  const [buildingId, setBuildingId] = useState<number | null>(null);
-  const [roomCode, setRoomCode] = useState<string>('');
-  const [pin, setPin] = useState<[number, number] | null>(null);
+  const [title, setTitle] = useState(EMPTY_STATE.title);
+  const [category, setCategory] = useState<EventCategory>(EMPTY_STATE.category);
+  const [date, setDate] = useState(EMPTY_STATE.date);
+  const [endDate, setEndDate] = useState(EMPTY_STATE.endDate);
+  const [time, setTime] = useState(EMPTY_STATE.time);
+  const [url, setUrl] = useState(EMPTY_STATE.url);
+  const [mode, setMode] = useState<LocationMode>(EMPTY_STATE.mode);
+  const [buildingId, setBuildingId] = useState<number | null>(EMPTY_STATE.buildingId);
+  const [roomCode, setRoomCode] = useState<string>(EMPTY_STATE.roomCode);
+  const [pin, setPin] = useState<[number, number] | null>(EMPTY_STATE.pin);
   const [addressQuery, setAddressQuery] = useState('');
   const [addressResults, setAddressResults] = useState<GeocodeResult[]>([]);
-  const [addressLabel, setAddressLabel] = useState('');
+  const [addressLabel, setAddressLabel] = useState(EMPTY_STATE.addressLabel);
   const [submitting, setSubmitting] = useState(false);
+
+  // Pre-fill and auto-expand when an event is handed in for editing. A room's
+  // buildingId isn't stored on the row itself, so it's re-derived from the
+  // stored room_code via the same ROOMS index the picker uses.
+  useEffect(() => {
+    if (!editingEvent) return;
+    setTitle(editingEvent.title);
+    setCategory(editingEvent.category as EventCategory);
+    setDate(editingEvent.date);
+    setEndDate(editingEvent.end_date ?? '');
+    setTime(editingEvent.time ?? '');
+    setUrl(editingEvent.url ?? '');
+    setMode(editingEvent.venue_kind as LocationMode);
+    setRoomCode(editingEvent.room_code ?? '');
+    setBuildingId(
+      editingEvent.room_code
+        ? (ROOMS.find((r) => r.name === editingEvent.room_code)?.buildingId ?? null)
+        : null,
+    );
+    setPin(
+      editingEvent.coord_lng != null && editingEvent.coord_lat != null
+        ? [editingEvent.coord_lng, editingEvent.coord_lat]
+        : null,
+    );
+    setAddressLabel(editingEvent.location ?? '');
+    setIsExpanded(true);
+  }, [editingEvent]);
 
   const roomOptions = useMemo(
     () => (buildingId != null ? roomsForBuilding(buildingId, ROOMS) : []),
@@ -804,10 +840,12 @@ export default function EventForm({ associationId, onRefresh }: EventFormProps) 
   };
 
   const resetForm = () => {
-    setTitle(''); setCategory('other'); setDate(''); setEndDate(''); setTime(''); setUrl('');
-    setMode('campus'); setBuildingId(null); setRoomCode(''); setPin(null);
-    setAddressQuery(''); setAddressResults([]); setAddressLabel('');
+    setTitle(EMPTY_STATE.title); setCategory(EMPTY_STATE.category); setDate(EMPTY_STATE.date);
+    setEndDate(EMPTY_STATE.endDate); setTime(EMPTY_STATE.time); setUrl(EMPTY_STATE.url);
+    setMode(EMPTY_STATE.mode); setBuildingId(EMPTY_STATE.buildingId); setRoomCode(EMPTY_STATE.roomCode);
+    setPin(EMPTY_STATE.pin); setAddressQuery(''); setAddressResults([]); setAddressLabel(EMPTY_STATE.addressLabel);
     setIsExpanded(false);
+    onCancelEdit?.();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -819,25 +857,29 @@ export default function EventForm({ associationId, onRefresh }: EventFormProps) 
       : pin;
     const location = mode === 'campus' ? (roomCode || null) : (addressLabel || null);
 
+    const payload = {
+      association_id: associationId,
+      title,
+      category,
+      date,
+      end_date: endDate || null,
+      time: time || null,
+      venue_kind: mode,
+      room_code: mode === 'campus' ? (roomCode || null) : null,
+      coord_lng: coord ? coord[0] : null,
+      coord_lat: coord ? coord[1] : null,
+      location,
+      url: url || null,
+    };
+
     setSubmitting(true);
     try {
-      const { error } = await supabase.from('spolky_events').insert([{
-        association_id: associationId,
-        title,
-        category,
-        date,
-        end_date: endDate || null,
-        time: time || null,
-        venue_kind: mode,
-        room_code: mode === 'campus' ? (roomCode || null) : null,
-        coord_lng: coord ? coord[0] : null,
-        coord_lat: coord ? coord[1] : null,
-        location,
-        url: url || null,
-      }]);
+      const { error } = editingEvent
+        ? await supabase.from('spolky_events').update(payload).eq('id', editingEvent.id)
+        : await supabase.from('spolky_events').insert([payload]);
       if (error) throw error;
 
-      toast.success('Událost vytvořena');
+      toast.success(editingEvent ? 'Uloženo' : 'Událost vytvořena');
       resetForm();
       onRefresh();
     } catch (error: unknown) {
@@ -861,7 +903,7 @@ export default function EventForm({ associationId, onRefresh }: EventFormProps) 
     <div className="card bg-base-100 shadow-md border border-base-content/10">
       <div className="card-body p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="card-title text-xl">Nová událost</h2>
+          <h2 className="card-title text-xl">{editingEvent ? 'Upravit událost' : 'Nová událost'}</h2>
           <button onClick={resetForm} className="btn btn-ghost btn-sm btn-square"><X size={20} /></button>
         </div>
 
@@ -949,7 +991,7 @@ export default function EventForm({ associationId, onRefresh }: EventFormProps) 
           <div className="card-actions justify-end pt-2 border-t border-base-200">
             <button type="button" onClick={resetForm} className="btn btn-ghost" disabled={submitting}>Zrušit</button>
             <button type="submit" className="btn btn-primary gap-2 px-8" disabled={submitting || !title || !date}>
-              {submitting ? <span className="loading loading-spinner"></span> : (<><Send size={18} /> Vytvořit</>)}
+              {submitting ? <span className="loading loading-spinner"></span> : (<><Send size={18} /> {editingEvent ? 'Uložit' : 'Vytvořit'}</>)}
             </button>
           </div>
         </form>
@@ -974,7 +1016,7 @@ Expected: no new errors.
 npm run dev
 ```
 
-Log in as a society account, open the new events view (built in Task 11), click "Vytvořit novou událost", confirm: (a) campus mode — clicking a building highlights it orange and populates the room dropdown; submitting inserts a row with `venue_kind='campus'`, a non-null `room_code`, and `coord_lng`/`coord_lat` equal to the building's `center`; (b) offcampus mode — clicking the map or picking an address result drops a green marker; submitting inserts a row with `venue_kind='offcampus'`, `room_code=null`, and `coord_lng`/`coord_lat` from the pin.
+Log in as a society account, open the new events view (built in Task 11), click "Vytvořit novou událost", confirm: (a) campus mode — clicking a building highlights it orange and populates the room dropdown; submitting inserts a row with `venue_kind='campus'`, a non-null `room_code`, and `coord_lng`/`coord_lat` equal to the building's `center`; (b) offcampus mode — clicking the map or picking an address result drops a green marker; submitting inserts a row with `venue_kind='offcampus'`, `room_code=null`, and `coord_lng`/`coord_lat` from the pin. Then, from the list (Task 10/11), click "Upravit" on an existing event of each kind and confirm the form re-opens pre-filled with the correct mode/building/room or pin/address, and saving updates the same row (`id` unchanged) rather than creating a new one.
 
 - [ ] **Step 4: Commit**
 
@@ -992,14 +1034,13 @@ git commit -m "feat(events): add event creation form with dual location modes"
 
 **Interfaces:**
 - Consumes: `Tables<'spolky_events'>` (Task 2).
-- Produces: `<EventList events onRefresh />` — consumed by Task 11 (`index.tsx`).
+- Produces: `<EventList events onRefresh onEdit={(event: Tables<'spolky_events'>) => void} />` — consumed by Task 11 (`index.tsx`). "Upravit" hands the full row up to the parent, which passes it to `EventForm` as `editingEvent` (Task 9) — this list does not edit anything itself.
 - Manual verification only (same rationale as Tasks 7/9).
 
 - [ ] **Step 1: Write the component**
 
 ```tsx
-import { useState } from 'react';
-import { Trash2, Pencil, Check, X, CalendarOff } from 'lucide-react';
+import { Trash2, Pencil, CalendarOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Tables } from '@/lib/database.types';
@@ -1007,18 +1048,10 @@ import { Tables } from '@/lib/database.types';
 interface EventListProps {
   events: Tables<'spolky_events'>[];
   onRefresh: () => void;
+  onEdit: (event: Tables<'spolky_events'>) => void;
 }
 
-interface EditState {
-  id: string;
-  title: string;
-  date: string;
-}
-
-export default function EventList({ events, onRefresh }: EventListProps) {
-  const [editing, setEditing] = useState<EditState | null>(null);
-  const [saving, setSaving] = useState(false);
-
+export default function EventList({ events, onRefresh, onEdit }: EventListProps) {
   const handleDelete = async (id: string) => {
     if (!confirm('Opravdu smazat tuto událost?')) return;
     try {
@@ -1028,28 +1061,6 @@ export default function EventList({ events, onRefresh }: EventListProps) {
       onRefresh();
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : 'Chyba mazání');
-    }
-  };
-
-  const startEdit = (e: Tables<'spolky_events'>) => setEditing({ id: e.id, title: e.title, date: e.date });
-  const cancelEdit = () => setEditing(null);
-
-  const saveEdit = async () => {
-    if (!editing || !editing.title || !editing.date) return;
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from('spolky_events')
-        .update({ title: editing.title, date: editing.date })
-        .eq('id', editing.id);
-      if (error) throw error;
-      toast.success('Uloženo');
-      setEditing(null);
-      onRefresh();
-    } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : 'Chyba při ukládání');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -1069,47 +1080,17 @@ export default function EventList({ events, onRefresh }: EventListProps) {
           <tr><th>Událost</th><th className="w-28">Datum</th><th>Místo</th><th className="w-24"></th><th className="w-10"></th></tr>
         </thead>
         <tbody>
-          {events.map((e) => {
-            const isEditing = editing?.id === e.id;
-            if (isEditing) {
-              return (
-                <tr key={e.id} className="bg-base-200/50">
-                  <td>
-                    <input
-                      type="text" value={editing.title}
-                      onChange={(ev) => setEditing({ ...editing, title: ev.target.value })}
-                      className="input input-sm input-bordered w-full" maxLength={80} autoFocus
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="date" value={editing.date}
-                      onChange={(ev) => setEditing({ ...editing, date: ev.target.value })}
-                      className="input input-sm input-bordered w-full"
-                    />
-                  </td>
-                  <td></td>
-                  <td>
-                    <button className="btn btn-sm btn-primary gap-1" onClick={saveEdit} disabled={saving}>
-                      {saving ? <span className="loading loading-spinner loading-sm" /> : <Check size={16} />} Uložit
-                    </button>
-                  </td>
-                  <td><button className="btn btn-sm btn-ghost btn-square" onClick={cancelEdit}><X size={16} /></button></td>
-                </tr>
-              );
-            }
-            return (
-              <tr key={e.id}>
-                <td className="font-medium">{e.title}</td>
-                <td className="text-sm text-base-content/70">
-                  {new Date(e.date).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' })}
-                </td>
-                <td className="text-sm text-base-content/70">{e.room_code || e.location || '—'}</td>
-                <td><button className="btn btn-ghost btn-xs gap-1" onClick={() => startEdit(e)}><Pencil size={12} /> Upravit</button></td>
-                <td><button className="btn btn-ghost btn-xs btn-square text-error" onClick={() => handleDelete(e.id)}><Trash2 size={14} /></button></td>
-              </tr>
-            );
-          })}
+          {events.map((e) => (
+            <tr key={e.id}>
+              <td className="font-medium">{e.title}</td>
+              <td className="text-sm text-base-content/70">
+                {new Date(e.date).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' })}
+              </td>
+              <td className="text-sm text-base-content/70">{e.room_code || e.location || '—'}</td>
+              <td><button className="btn btn-ghost btn-xs gap-1" onClick={() => onEdit(e)}><Pencil size={12} /> Upravit</button></td>
+              <td><button className="btn btn-ghost btn-xs btn-square text-error" onClick={() => handleDelete(e.id)}><Trash2 size={14} /></button></td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
@@ -1167,6 +1148,7 @@ interface EventsViewProps {
 export default function EventsView({ associationId, isReisAdmin, isGhosting }: EventsViewProps) {
   const [events, setEvents] = useState<Tables<'spolky_events'>[]>([]);
   const [loading, setLoading] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Tables<'spolky_events'> | null>(null);
 
   const fetchEvents = useCallback(async () => {
     if (!isReisAdmin && !associationId) return;
@@ -1193,7 +1175,12 @@ export default function EventsView({ associationId, isReisAdmin, isGhosting }: E
 
   return (
     <div className="space-y-6">
-      <EventForm associationId={associationId} onRefresh={fetchEvents} />
+      <EventForm
+        associationId={associationId}
+        onRefresh={fetchEvents}
+        editingEvent={editingEvent}
+        onCancelEdit={() => setEditingEvent(null)}
+      />
 
       <div className="space-y-4">
         <h3 className="font-bold text-xl px-1 flex items-center gap-2">
@@ -1205,7 +1192,7 @@ export default function EventsView({ associationId, isReisAdmin, isGhosting }: E
             <div className="skeleton h-20 w-full rounded-box opacity-20"></div>
           </div>
         ) : (
-          <EventList events={events} onRefresh={fetchEvents} />
+          <EventList events={events} onRefresh={fetchEvents} onEdit={setEditingEvent} />
         )}
       </div>
     </div>
