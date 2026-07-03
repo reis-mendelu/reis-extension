@@ -120,7 +120,7 @@ export function EnrolledNowSection({ plan, failRates, subjectSemesters, subjectT
             {inProgress.length > 0 && (
               <button
                 onClick={() => setShowPassed(v => !v)}
-                className="w-full flex items-center gap-2 px-3 my-0.5 group"
+                className="w-full flex items-center gap-2 px-3 mt-2 mb-1 group"
               >
                 <div className="h-px flex-1 bg-success/15" />
                 <span className="flex items-center gap-1 text-[9px] text-success/40 group-hover:text-success/70 uppercase tracking-wider font-medium transition-colors">
