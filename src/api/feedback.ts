@@ -11,7 +11,6 @@ export async function submitFeedback(
     feedbackType: 'nps' | 'one_change',
     value: string,
     semesterCode: string,
-    reason?: string,
 ): Promise<boolean> {
     const hashedId = await hashId(studentId);
     const { error } = await supabase.rpc('submit_feedback', {
@@ -21,7 +20,6 @@ export async function submitFeedback(
         p_feedback_type: feedbackType,
         p_value: value,
         p_semester_code: semesterCode,
-        p_reason: reason ?? null,
     });
     if (error) return false;
 

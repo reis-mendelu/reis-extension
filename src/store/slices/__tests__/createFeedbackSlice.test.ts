@@ -109,7 +109,7 @@ describe('createFeedbackSlice', () => {
 
         await slice.submitNps(4);
 
-        expect(submitFeedback).toHaveBeenCalledWith('stu123', 'nps', '4', '2026S', undefined);
+        expect(submitFeedback).toHaveBeenCalledWith('stu123', 'nps', '4', '2026S');
         expect(IndexedDBService.set).toHaveBeenCalledWith('meta', 'reis_feedback', expect.objectContaining({
             npsSubmittedSemester: '2026S',
         }));

@@ -55,7 +55,7 @@ export const createFeedbackSlice: AppSlice<FeedbackSlice> = (set) => ({
         set({ feedbackEligible: true });
     },
 
-    submitNps: async (rating: number, reason?: string) => {
+    submitNps: async (rating: number) => {
         const userParams = await getUserParams();
         if (!userParams) return;
 
@@ -65,7 +65,6 @@ export const createFeedbackSlice: AppSlice<FeedbackSlice> = (set) => ({
             'nps',
             String(rating),
             currentSemester,
-            reason,
         );
 
         const record = await IndexedDBService.get('meta', FEEDBACK_KEY) as Record<string, unknown> | undefined;
