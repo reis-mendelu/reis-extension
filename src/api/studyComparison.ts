@@ -3,9 +3,9 @@ import { logError } from '../utils/reportError';
 import type { StudyComparison } from '../types/studyPlan';
 
 export interface PercentileStanding {
-  /** 'top' when in the better half (percentile <= 50), else 'bottom'. */
+  /** 'top' only for genuinely strong standing (top quartile), else 'bottom'. */
   tier: 'top' | 'bottom';
-  /** Top half: the percentile itself ("top X%"). Bottom half: the share you beat (100 - percentile). */
+  /** Top tier: the percentile itself ("top X%"). Otherwise: the share you beat (100 - percentile). */
   pct: number;
 }
 
@@ -15,12 +15,13 @@ function round2(n: number): number {
 
 /**
  * Maps an IS "Percentil" value (rank/total*100, lower is better) to the
- * two-phase summary used in the E-index comparison. IS pivots at the 50th
- * percentile: the better half reads "top X%", the worse half reads as the
- * share of students you match-or-beat (100 - percentile).
+ * two-phase summary used in the E-index comparison. Only the top quartile
+ * (percentile <= 25) gets the celebratory "top X%" framing — merely being
+ * above the 50th percentile isn't an achievement worth a trophy. Everyone
+ * else sees the more modest "beat X% of students" framing.
  */
 export function percentileStanding(percentile: number): PercentileStanding {
-  if (percentile <= 50) return { tier: 'top', pct: round2(percentile) };
+  if (percentile <= 25) return { tier: 'top', pct: round2(percentile) };
   return { tier: 'bottom', pct: round2(100 - percentile) };
 }
 

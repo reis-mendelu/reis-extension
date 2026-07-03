@@ -101,10 +101,10 @@ export function SubjectsPanel({ onOpenSubject, onSearchSubject, onOpenStudyPlan 
       <div className="px-4 pt-3 pb-4 shrink-0">
         <button
           onClick={onOpenStudyPlan}
-          className="btn btn-ghost btn-sm w-full justify-between text-base-content/60 font-medium"
+          className="max-w-xl mx-auto w-full flex items-center justify-between gap-2 px-4 py-2 rounded-xl border border-base-300/50 bg-base-200/30 hover:bg-base-200/50 transition-colors text-sm text-base-content/70 font-medium"
         >
           <span>{t('subjects.studyPlan')}</span>
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-4 h-4 text-base-content/40" />
         </button>
       </div>
     </div>

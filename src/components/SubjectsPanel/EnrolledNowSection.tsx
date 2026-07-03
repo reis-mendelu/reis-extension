@@ -95,12 +95,12 @@ export function EnrolledNowSection({ plan, failRates, subjectSemesters, subjectT
         <BookOpen className="w-3.5 h-3.5 text-primary/70 shrink-0" />
         <span className="text-xs font-semibold text-primary/80 uppercase tracking-wider">{t('subjects.enrolledNow')}</span>
         <span className="ml-auto flex items-center gap-3">
-          <span className="flex items-center gap-1.5 text-xs text-error/80 font-mono font-medium">
+          <span className="flex items-center gap-1.5 text-xs text-error/80 font-mono font-normal">
             <XCircle className="w-3.5 h-3.5" />
             {inProgress.length}
           </span>
           {passed.length > 0 && (
-            <span className="flex items-center gap-1.5 text-xs text-success/80 font-mono font-medium">
+            <span className="flex items-center gap-1.5 text-xs text-success/80 font-mono font-normal">
               <CheckCircle2 className="w-3.5 h-3.5" />
               {passed.length}
             </span>

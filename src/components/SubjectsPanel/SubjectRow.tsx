@@ -55,7 +55,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
   const badge = gradeBadge(grade);
   const badgeEl = badge ? (
     <span
-      className={`text-sm font-mono font-bold shrink-0 ${badge.kind === 'letter' && !badge.passed ? 'text-error' : 'text-success'}`}
+      className={`text-sm font-mono font-medium shrink-0 ${badge.kind === 'letter' && !badge.passed ? 'text-error' : 'text-success'}`}
       title={grade?.gradeText}
     >
       {badge.kind === 'letter'
