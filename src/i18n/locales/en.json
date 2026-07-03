@@ -252,15 +252,7 @@
     "npsThank": "Thanks for the rating!",
     "sharePrompt": "Send it to a classmate still on raw IS.",
     "shareCopy": "Copy link",
-    "shareCopied": "Copied!",
-    "reasonPrompt": "What went wrong?",
-    "reason": {
-      "missing_feature": "Doesn't have what I need",
-      "bug": "Doesn't work",
-      "confusing": "Confusing",
-      "slow": "Too slow",
-      "other": "Other"
-    }
+    "shareCopied": "Copied!"
   },
   "common": {
     "loading": "Loading...",
