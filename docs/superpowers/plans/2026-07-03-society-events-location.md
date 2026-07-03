@@ -237,7 +237,7 @@ Insert alphabetically (after `spolky_accounts`, matching the file's existing ord
 
 ```bash
 cd /Users/dominik-personal/Documents/reis-admin
-npx tsc -b --noEmit
+npx tsc --noEmit
 ```
 
 Expected: no new errors.
@@ -679,7 +679,7 @@ export default function CampusPickerMap({
 
 ```bash
 cd /Users/dominik-personal/Documents/reis-admin
-npx tsc -b --noEmit
+npx tsc --noEmit
 ```
 
 Expected: no new errors.
@@ -1005,7 +1005,7 @@ export default function EventForm({ associationId, onRefresh, editingEvent, onCa
 
 ```bash
 cd /Users/dominik-personal/Documents/reis-admin
-npx tsc -b --noEmit
+npx tsc --noEmit
 ```
 
 Expected: no new errors.
@@ -1102,7 +1102,7 @@ export default function EventList({ events, onRefresh, onEdit }: EventListProps)
 
 ```bash
 cd /Users/dominik-personal/Documents/reis-admin
-npx tsc -b --noEmit
+npx tsc --noEmit
 ```
 
 Expected: no new errors.
@@ -1234,7 +1234,7 @@ Add a line inside the `inferredView === ...` title block, alongside the existing
 
 ```bash
 cd /Users/dominik-personal/Documents/reis-admin
-npx tsc -b --noEmit
+npx tsc --noEmit
 ```
 
 Expected: no new errors.
@@ -1519,7 +1519,7 @@ cd /Users/dominik-personal/Documents/reis-extension/.claude/worktrees/society-ma
 npm run typecheck && npm run lint && npx vitest run
 
 cd /Users/dominik-personal/Documents/reis-admin
-npx tsc -b --noEmit && npx vitest run
+npx tsc --noEmit && npx vitest run
 ```
 
 Then manually: create an event in reis-admin for each location mode, open the reis-extension campus map (`npm run dev`, load the extension, navigate to IS Mendelu), and confirm both events render as pins in the correct place with the correct society color/category emoji, and the "fly to room" click works for the campus-mode event.
