@@ -109,12 +109,21 @@ describe('createFeedbackSlice', () => {
 
         await slice.submitNps(4);
 
-        expect(submitFeedback).toHaveBeenCalledWith('stu123', 'nps', '4', '2026S');
+        expect(submitFeedback).toHaveBeenCalledWith('stu123', 'nps', '4', '2026S', undefined);
         expect(IndexedDBService.set).toHaveBeenCalledWith('meta', 'reis_feedback', expect.objectContaining({
             npsSubmittedSemester: '2026S',
         }));
         expect(slice.feedbackEligible).toBe(false);
         expect(slice.feedbackDismissed).toBe(true);
+    });
+
+    it('submitNps should pass the reason through to submitFeedback when provided', async () => {
+        const { submitFeedback } = await import('../../../api/feedback');
+        vi.mocked(IndexedDBService.get).mockResolvedValue({ sessionsUntilEligible: 0 });
+
+        await slice.submitNps(2, 'bug');
+
+        expect(submitFeedback).toHaveBeenCalledWith('stu123', 'nps', '2', '2026S', 'bug');
     });
 
     it('dismissFeedback should persist dismissedSemester', async () => {
