@@ -51,7 +51,7 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
   const zameraniTag = zameraniMembership?.length ? zameraniAcronym(zameraniMembership[0]) : null;
 
   const hover = useSpeculativeHover(subject.code, !isZamerani && hasId);
-  const grade = useCourseGrade(subject.id, subject.code);
+  const grade = useCourseGrade(resolvedId, subject.code);
   const badge = gradeBadge(grade);
   const badgeEl = badge ? (
     <span
