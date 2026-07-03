@@ -18,8 +18,8 @@ path = (payload.get("tool_input") or {}).get("file_path", "") or ""
 
 PROTECTED = (
     r"src/api/documents/parser\.ts$",
-    r"src/api/ukoly\.ts$",
-    r"src/api/osnovy\.ts$",
+    r"src/api/cvicneTests\.ts$",
+    r"src/api/search/\w*[Pp]arser\w*\.ts$",
     r"src/utils/parsers/",
 )
 if not any(re.search(p, path) for p in PROTECTED):
