@@ -12,13 +12,13 @@ import type { MapEvent } from '../../../../types/events';
 export const MOCK_MAP_EVENTS: MapEvent[] = [
   {
     id: 'mock-0', title: 'Erasmus Cup: Basketball', url: 'https://www.instagram.com/esnmendelubrno/',
-    date: '2026-07-10', endDate: null, time: '18:00', location: 'Sports centre', imageUrl: null,
+    date: '2026-07-10', endDate: null, time: '18:00', location: 'Sportovní centrum', imageUrl: null,
     organizerKey: 'mendelu', societyId: 'esn', coord: [16.588635, 49.215198], roomCode: null,
     venueKind: 'campus', category: 'sports',
   },
   {
     id: 'mock-1', title: 'PEF Kvíz', url: 'https://www.instagram.com/supefmendelu/',
-    date: '2026-07-11', endDate: null, time: '18:00', location: null, imageUrl: null,
+    date: '2026-07-11', endDate: null, time: '18:00', location: 'Q01', imageUrl: null,
     organizerKey: 'pef', societyId: 'supef', coord: [16.614247, 49.209592], roomCode: 'Q01',
     venueKind: 'campus', category: 'quiz',
   },
