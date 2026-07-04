@@ -7,7 +7,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EventsList } from '../EventsList';
 import { useAppStore } from '../../../store/useAppStore';
-import { MOCK_MAP_EVENTS } from '../../../api/mapEvents';
+import { MOCK_MAP_EVENTS } from './fixtures/mockMapEvents';
 
 beforeEach(() => {
   useAppStore.setState({ mapEvents: MOCK_MAP_EVENTS, eventFilter: 'all', mapSelection: null, language: 'en' });

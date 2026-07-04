@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { sortByDate, filterEvents, groupEventsByVenue, weekSections, relativeDayLabel } from '../eventHelpers';
-import { MOCK_MAP_EVENTS } from '../../../api/mapEvents';
+import { MOCK_MAP_EVENTS } from './fixtures/mockMapEvents';
 import type { MapEvent } from '../../../types/events';
 
 describe('eventHelpers', () => {

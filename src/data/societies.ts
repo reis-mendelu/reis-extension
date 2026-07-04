@@ -10,6 +10,9 @@ export const SOCIETIES: Record<string, Society> = {
   esn: { id: 'esn', name: 'ESN MENDELU', shortName: 'ESN', color: '#00AEEF', glyph: '✷', logo: '/spolky/esn.jpg', facultyKey: 'mendelu' },
   supef: { id: 'supef', name: 'SU PEF', shortName: 'SUPEF', color: '#0046a0', glyph: 'SU', logo: '/spolky/supef.jpg', facultyKey: 'pef' },
   au_frrms: { id: 'au_frrms', name: 'AU FRRMS', shortName: 'AU FRRMS', color: '#c32897', glyph: 'AU', logo: '/spolky/au_frrms.jpg', facultyKey: 'frrms' },
+  af: { id: 'af', name: 'AF Spolek', shortName: 'AF', color: '#c87800', glyph: 'AF', logo: '/spolky/af.jpg', facultyKey: 'af' },
+  ldf: { id: 'ldf', name: 'LDF Spolek', shortName: 'LDF', color: '#0a5028', glyph: 'LDF', logo: '/spolky/ldf.jpg', facultyKey: 'ldf' },
+  zf: { id: 'zf', name: 'ZF Spolek', shortName: 'ZF', color: '#8c0a00', glyph: 'ZF', logo: '/spolky/zf.jpg', facultyKey: 'zf' },
 };
 
 export const ALL_SOCIETIES: Society[] = Object.values(SOCIETIES);
