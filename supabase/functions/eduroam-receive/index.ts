@@ -55,12 +55,17 @@ Deno.serve(async (req: Request) => {
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
 
   // Format hint from the QR URL selects the MIME/filename the phone receives.
-  // ios (default) = Apple config profile (unchanged); android = geteduroam .eap-config.
+  // ios (default) = Apple config profile (unchanged); android = geteduroam .eap-config;
+  // p12 = the raw password-protected PKCS#12 for the manual Android EAP-TLS path
+  // (Android's cert installer handles application/x-pkcs12 and prompts for the
+  // extraction password — same posture as ios, the password is never uploaded).
   const fmt = new URL(req.url).searchParams.get('fmt') ?? 'ios';
   const served =
     fmt === 'android'
       ? { contentType: 'application/eap-config', filename: 'eduroam.eap-config' }
-      : { contentType: 'application/x-apple-aspen-config', filename: 'eduroam-reis.mobileconfig' };
+      : fmt === 'p12'
+        ? { contentType: 'application/x-pkcs12', filename: 'eduroam.p12' }
+        : { contentType: 'application/x-apple-aspen-config', filename: 'eduroam-reis.mobileconfig' };
 
   return new Response(bytes, {
     headers: {

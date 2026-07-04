@@ -7,6 +7,8 @@ export interface StepMeta {
   action?: EduroamAction;
   /** Renders the real PasswordChip when a password is available. */
   password?: boolean;
+  /** Renders the manual Wi-Fi field-values block (Android manual EAP-TLS setup). */
+  fields?: boolean;
   /** Public path to a screenshot shown under the step (only where we have one). */
   img?: string;
 }
@@ -22,12 +24,14 @@ export const EDUROAM_MANUAL: Record<EduroamTarget, DeviceManual> = {
   ios: {
     steps: [{ action: 'qr' }, {}, {}, { password: true }],
   },
+  // Manual EAP-TLS path (no geteduroam): deliver the .p12, install it, then add
+  // the eduroam network by hand. Reliable at MENDELU (geteduroam isn't in eduroam
+  // discovery) and yields a normal saved network that lasts the cert's full year.
   android: {
-    doOnceUrl: 'https://play.google.com/store/apps/details?id=app.eduroam.geteduroam',
     steps: [
       { action: 'qr' },
-      { img: '/eduroam/android/2.webp' },
-      { password: true, img: '/eduroam/android/3.webp' },
+      { password: true },
+      { fields: true },
     ],
   },
   mac: {

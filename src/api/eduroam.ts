@@ -3,6 +3,8 @@
 // credentials, same as file downloads). All assembly stays client-side; the
 // private key is never sent anywhere. See src/services/eduroam for the generator.
 
+import { parseCertNotAfter, parseCertSubjectCN } from '../services/eduroam/certExpiry';
+
 const CERT_URL = 'https://is.mendelu.cz/auth/wifi/certifikat.pl';
 
 export interface EduroamCertMaterial {
@@ -14,6 +16,10 @@ export interface EduroamCertMaterial {
   password: string | null;
   /** True when no cert existed and a fresh one had to be generated. */
   generated: boolean;
+  /** Client-cert expiry, parsed from the DER cert; null if it can't be read. */
+  validUntil: Date | null;
+  /** EAP-TLS identity = the cert's subject CN (`<login>@mendelu.cz`); null if unreadable. */
+  identity: string | null;
 }
 
 /**
@@ -77,10 +83,20 @@ export async function fetchEduroamCertMaterial(): Promise<EduroamCertMaterial> {
     if (!hasCert) throw new Error('eduroam: certificate generation did not produce a certificate');
   }
 
-  const [rootCaDer, clientP12] = await Promise.all([
+  const [rootCaDer, clientP12, userDer] = await Promise.all([
     getBytes(`${CERT_URL}?get=root-der;lang=cz`),
     getBytes(`${CERT_URL}?get=user-p12;lang=cz`),
+    // The unencrypted DER cert lets us read the expiry without the .p12 password.
+    getBytes(`${CERT_URL}?get=user-der;lang=cz`).catch(() => null),
   ]);
 
-  return { rootCaDer, clientP12, password, generated };
+  let validUntil: Date | null = null;
+  let identity: string | null = null;
+  if (userDer) {
+    // Both are nice-to-haves parsed from the DER cert; never fail setup over them.
+    try { validUntil = parseCertNotAfter(userDer); } catch { validUntil = null; }
+    try { identity = parseCertSubjectCN(userDer); } catch { identity = null; }
+  }
+
+  return { rootCaDer, clientP12, password, generated, validUntil, identity };
 }

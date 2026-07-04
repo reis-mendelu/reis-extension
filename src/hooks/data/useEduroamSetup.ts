@@ -20,6 +20,7 @@ export function useEduroamSetup() {
   const [status, setStatus] = useState<EduroamStatus>('idle');
   const [target, setTarget] = useState<EduroamTarget>(isMac ? 'mac' : 'ios');
   const [password, setPassword] = useState<string | null>(null);
+  const [identity, setIdentity] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,9 +30,10 @@ export function useEduroamSetup() {
     setStatus('working');
     setError(null);
     setPassword(null);
+    setIdentity(null);
     setQrDataUrl(null);
     try {
-      const { rootCaDer, clientP12, password: extractionPw } = await fetchEduroamCertMaterial();
+      const { rootCaDer, clientP12, password: extractionPw, validUntil, identity: certIdentity } = await fetchEduroamCertMaterial();
       const xml = generateEduroamMobileconfig({ rootCaDer, clientP12 });
 
       if (t === 'ios') {
@@ -40,21 +42,24 @@ export function useEduroamSetup() {
         const id = await putTransfer(new TextEncoder().encode(xml));
         setQrDataUrl(await QRCode.toDataURL(buildTransferUrl(id, 'ios'), { margin: 2, width: 320 }));
       } else if (t === 'android') {
-        // Android uses an .eap-config (geteduroam), delivered via the same transfer;
-        // the receiver serves it as application/eap-config for fmt=android.
-        const eap = generateEapConfig({ rootCaDer, clientP12 });
-        const id = await putTransfer(new TextEncoder().encode(eap));
-        setQrDataUrl(await QRCode.toDataURL(buildTransferUrl(id, 'android'), { margin: 2, width: 320 }));
+        // Manual EAP-TLS path: deliver the password-protected .p12 itself so the
+        // student installs the cert and adds the eduroam network by hand. This is
+        // the reliable route at MENDELU — geteduroam breaks (MENDELU isn't in the
+        // eduroam discovery catalogue), whereas a hand-added network is a normal
+        // saved network that lasts the cert's full ~365 days on any Android version.
+        const id = await putTransfer(clientP12);
+        setQrDataUrl(await QRCode.toDataURL(buildTransferUrl(id, 'p12'), { margin: 2, width: 320 }));
       } else if (t === 'windows') {
         // Windows: same .eap-config as Android, but reIS runs on this PC, so we
         // save it straight to disk. geteduroam (Windows) opens it on double-click.
-        const eap = generateEapConfig({ rootCaDer, clientP12 });
+        const eap = generateEapConfig({ rootCaDer, clientP12, validUntil: validUntil ?? undefined });
         saveAs(new Blob([eap], { type: 'application/eap-config' }), 'eduroam-reis.eap-config');
       } else {
         saveAs(new Blob([xml], { type: 'application/x-apple-aspen-config' }), 'eduroam-reis.mobileconfig');
       }
 
       setPassword(extractionPw);
+      setIdentity(certIdentity);
       setStatus('done');
     } catch (e) {
       logError('useEduroamSetup.run', e);
@@ -68,6 +73,7 @@ export function useEduroamSetup() {
     setStatus('idle');
     setError(null);
     setPassword(null);
+    setIdentity(null);
     setQrDataUrl(null);
     // Prefetch the extraction password so the chip can show it before Download.
     // Only populates when a cert already exists; first-time users get it from
@@ -81,6 +87,7 @@ export function useEduroamSetup() {
     setStatus('idle');
     setError(null);
     setPassword(null);
+    setIdentity(null);
     setQrDataUrl(null);
   }, []);
 
@@ -98,6 +105,7 @@ export function useEduroamSetup() {
     target,
     selectTarget,
     password,
+    identity,
     qrDataUrl,
     error,
     run,

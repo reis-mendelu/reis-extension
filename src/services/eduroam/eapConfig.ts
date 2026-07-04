@@ -1,4 +1,5 @@
 import { bytesToBase64 } from './base64';
+import { formatValidUntil } from './certExpiry';
 
 const DEFAULT_SERVER_NAMES = ['aleph.mendelu.cz'];
 const DEFAULT_IDENTIFIER = 'cz.reis.eduroam';
@@ -15,6 +16,12 @@ export interface EapConfigInput {
   identifier?: string;
   /** Institution name geteduroam shows at import. Default "MENDELU eduroam (reIS)". */
   displayName?: string;
+  /**
+   * Client-certificate expiry. When provided, emitted as `<ValidUntil>` so
+   * geteduroam knows the real expiry and reminds the student to renew ~5 days
+   * before it — instead of the network dying silently at ~day 366.
+   */
+  validUntil?: Date;
 }
 
 function escapeXml(s: string): string {
@@ -44,6 +51,9 @@ export function generateEapConfig(input: EapConfigInput): string {
     '<?xml version="1.0" encoding="utf-8"?>',
     '<EAPIdentityProviderList xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="eap-metadata.xsd">',
     `  <EAPIdentityProvider ID="${escapeXml(identifier)}" namespace="urn:RFC4282:realm" version="1">`,
+    // ValidUntil is first in the eap-metadata.xsd sequence (before
+    // AuthenticationMethods). geteduroam parses it with SERVER_DATE_FORMAT.
+    ...(input.validUntil ? [`    <ValidUntil>${formatValidUntil(input.validUntil)}</ValidUntil>`] : []),
     '    <AuthenticationMethods>',
     '      <AuthenticationMethod>',
     '        <EAPMethod>',

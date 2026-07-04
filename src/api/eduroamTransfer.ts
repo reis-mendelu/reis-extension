@@ -30,13 +30,14 @@ export async function putTransfer(profileBytes: Uint8Array, ttlSeconds = 480): P
 }
 
 /** Which on-phone format the receiver should serve this transfer as. */
-export type TransferFormat = 'ios' | 'android';
+export type TransferFormat = 'ios' | 'android' | 'p12';
 
 /**
  * The QR target: the receiver endpoint for this transfer id. `fmt` selects the
  * response MIME/filename on the receiver (`ios` = Apple config profile, the
- * default and unchanged; `android` = `.eap-config` for geteduroam). The hint is
- * not a secret — the uploaded bytes are identical regardless.
+ * default and unchanged; `android` = `.eap-config` for geteduroam; `p12` = the
+ * raw password-protected PKCS#12 for the manual Android EAP-TLS path). The hint
+ * is not a secret — the uploaded bytes are whatever was put for this id.
  */
 export function buildTransferUrl(id: string, fmt: TransferFormat = 'ios'): string {
   const base = `${RECEIVER_URL}?id=${encodeURIComponent(id)}`;

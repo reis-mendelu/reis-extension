@@ -11,6 +11,7 @@ interface DeviceAccordionProps {
   status: EduroamStatus;
   qrDataUrl: string | null;
   password: string | null;
+  identity: string | null;
   onRun: () => void;
   onOpenSettings: () => void;
 }

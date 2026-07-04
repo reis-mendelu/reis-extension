@@ -34,4 +34,16 @@ describe('generateEapConfig — XSD validity', () => {
     // execFileSync throws (non-zero exit) if the document does not validate.
     expect(() => execFileSync('xmllint', ['--noout', '--schema', xsd, file], { stdio: 'pipe' })).not.toThrow();
   });
+
+  it.runIf(hasXmllint())('validates with a ValidUntil element (still valid xs:dateTime)', () => {
+    const xml = generateEapConfig({
+      rootCaDer: new Uint8Array(Array.from({ length: 32 }, (_, i) => i + 1)),
+      clientP12: new Uint8Array(Array.from({ length: 64 }, (_, i) => (i * 7) & 0xff)),
+      validUntil: new Date('2027-07-04T09:42:47.000Z'),
+    });
+    expect(xml).toContain('<ValidUntil>2027-07-04T09:42:47</ValidUntil>');
+    const file = join(mkdtempSync(join(tmpdir(), 'eap-')), 'sample.eap-config');
+    writeFileSync(file, xml);
+    expect(() => execFileSync('xmllint', ['--noout', '--schema', xsd, file], { stdio: 'pipe' })).not.toThrow();
+  });
 });

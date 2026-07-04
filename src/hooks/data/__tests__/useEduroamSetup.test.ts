@@ -2,12 +2,15 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { saveAs } from 'file-saver';
 import { useEduroamSetup } from '../useEduroamSetup';
+import { putTransfer, buildTransferUrl } from '../../../api/eduroamTransfer';
 
 vi.mock('../../../api/eduroam', () => ({
   fetchEduroamCertMaterial: vi.fn().mockResolvedValue({
     rootCaDer: new Uint8Array(),
     clientP12: new Uint8Array(),
     password: 'pw123',
+    validUntil: null,
+    identity: 'xtest@mendelu.cz',
   }),
   fetchEduroamPassword: vi.fn().mockResolvedValue('pw123'),
 }));
@@ -69,5 +72,21 @@ describe('useEduroamSetup', () => {
     expect(result.current.password).toBe('pw123');
     expect(result.current.qrDataUrl).toBeNull();
     expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), 'eduroam-reis.eap-config');
+  });
+
+  it("run('android') transfers the raw .p12 for manual install (fmt=p12)", async () => {
+    const { result } = renderHook(() => useEduroamSetup());
+
+    await act(async () => {
+      await result.current.run('android');
+    });
+
+    expect(result.current.status).toBe('done');
+    expect(result.current.qrDataUrl).toBe('data:image/png;base64,zz');
+    expect(result.current.password).toBe('pw123'); // still shown, for the cert install prompt
+    expect(result.current.identity).toBe('xtest@mendelu.cz'); // exact EAP-TLS Identity to type
+    // Delivers the PKCS#12 bytes themselves (not an .eap-config) and points the QR at fmt=p12.
+    expect(putTransfer).toHaveBeenCalledWith(expect.any(Uint8Array));
+    expect(buildTransferUrl).toHaveBeenCalledWith('tid', 'p12');
   });
 });

@@ -6,17 +6,37 @@ import { useAppStore } from '../../../store/useAppStore';
 afterEach(() => { cleanup(); useAppStore.setState({ language: 'en' }); });
 
 const base = {
-  status: 'idle' as const, qrDataUrl: null, password: null,
+  status: 'idle' as const, qrDataUrl: null, password: null, identity: null,
   onRun: () => {}, onOpenSettings: () => {},
 };
 
 describe('EduroamTutorial', () => {
-  it('renders the do-once block only for android/windows', () => {
+  it('renders the geteduroam do-once block only for windows, not android', () => {
+    useAppStore.setState({ language: 'en' });
+    const { rerender } = render(<EduroamTutorial target="windows" {...base} />);
+    expect(screen.getByText('Install geteduroam for Windows')).toBeTruthy();
+    // Android is the manual EAP-TLS flow now — no geteduroam anywhere.
+    rerender(<EduroamTutorial target="android" {...base} />);
+    expect(screen.queryByText(/geteduroam/i)).toBeNull();
+  });
+
+  it('android shows the manual Wi-Fi field values (EAP method / Identity)', () => {
+    useAppStore.setState({ language: 'en' });
+    render(<EduroamTutorial target="android" {...base} />);
+    expect(screen.getByText('EAP method')).toBeTruthy();
+    expect(screen.getByText('TLS')).toBeTruthy();
+    expect(screen.getByText('Identity')).toBeTruthy();
+  });
+
+  it('android fills the real identity when the cert CN was read', () => {
     useAppStore.setState({ language: 'en' });
     const { rerender } = render(<EduroamTutorial target="android" {...base} />);
-    expect(screen.getByText('Install the geteduroam app')).toBeTruthy();
-    rerender(<EduroamTutorial target="ios" {...base} />);
-    expect(screen.queryByText(/geteduroam app$/)).toBeNull();
+    // Fallback hint before we know the login.
+    expect(screen.getByText('your login@mendelu.cz')).toBeTruthy();
+    // Real value once identity is resolved.
+    rerender(<EduroamTutorial target="android" {...base} identity="xnovak@mendelu.cz" />);
+    expect(screen.getByText('xnovak@mendelu.cz')).toBeTruthy();
+    expect(screen.queryByText('your login@mendelu.cz')).toBeNull();
   });
 
   it('calls onRun when the action button is clicked', () => {

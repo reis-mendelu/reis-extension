@@ -11,6 +11,8 @@ interface EduroamTutorialProps {
   status: EduroamStatus;
   qrDataUrl: string | null;
   password: string | null;
+  /** The cert's subject CN = the exact EAP-TLS Identity to type (Android manual flow). */
+  identity: string | null;
   onRun: () => void;
   onOpenSettings: () => void;
 }
@@ -52,7 +54,7 @@ function ActionButton({ action, status, onRun, onOpenSettings }: {
   );
 }
 
-export function EduroamTutorial({ target, status, qrDataUrl, password, onRun, onOpenSettings }: EduroamTutorialProps) {
+export function EduroamTutorial({ target, status, qrDataUrl, password, identity, onRun, onOpenSettings }: EduroamTutorialProps) {
   const { t } = useTranslation();
   const manual = EDUROAM_MANUAL[target];
   const [zoom, setZoom] = useState<string | null>(null);
@@ -97,6 +99,21 @@ export function EduroamTutorial({ target, status, qrDataUrl, password, onRun, on
 
             {step.password && password && (
               <PasswordChip password={password} label={t('eduroam.pwdLabel')} />
+            )}
+
+            {step.fields && (
+              <dl className="rounded-field bg-base-200 border border-base-content/10 p-3 text-sm flex flex-col gap-1.5">
+                {(['network', 'security', 'eap', 'caCert', 'userCert', 'identity'] as const).map((k) => (
+                  <div key={k} className="flex justify-between gap-3">
+                    <dt className="text-base-content/60 shrink-0">{t(manualKey(target, 'fields', k, 'label'))}</dt>
+                    <dd className="font-medium text-right break-all">
+                      {/* Show the student's real identity (cert CN) when we could read it,
+                          otherwise the generic "your login@mendelu.cz" hint. */}
+                      {k === 'identity' && identity ? identity : t(manualKey(target, 'fields', k, 'value'))}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
             )}
 
             {step.action && !showQr && (

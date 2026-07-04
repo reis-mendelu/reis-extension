@@ -31,13 +31,19 @@ describe('EDUROAM_MANUAL', () => {
     }
   });
 
-  it('only mac has an openSettings step; only android+windows have doOnceUrl', () => {
+  it('only mac has an openSettings step; only windows has doOnceUrl', () => {
     expect(EDUROAM_MANUAL.mac.steps.some((s) => s.action === 'openSettings')).toBe(true);
     expect(EDUROAM_MANUAL.ios.steps.some((s) => s.action === 'openSettings')).toBe(false);
-    expect(EDUROAM_MANUAL.android.doOnceUrl).toBeTruthy();
+    // Android is now the manual EAP-TLS flow — no geteduroam app to install.
+    expect(EDUROAM_MANUAL.android.doOnceUrl).toBeUndefined();
     expect(EDUROAM_MANUAL.windows.doOnceUrl).toBeTruthy();
     expect(EDUROAM_MANUAL.ios.doOnceUrl).toBeUndefined();
     expect(EDUROAM_MANUAL.mac.doOnceUrl).toBeUndefined();
+  });
+
+  it('android manual flow has a fields step and no doOnce', () => {
+    expect(EDUROAM_MANUAL.android.steps.some((s) => s.fields)).toBe(true);
+    expect(EDUROAM_MANUAL.android.doOnceUrl).toBeUndefined();
   });
 
   it('every referenced i18n key resolves to a string in both locales', () => {

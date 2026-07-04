@@ -70,4 +70,28 @@ describe('generateEapConfig', () => {
     const xml = generateEapConfig({ rootCaDer: root, clientP12: p12 });
     expect(xml.indexOf('</CredentialApplicability>')).toBeLessThan(xml.indexOf('<ProviderInfo>'));
   });
+
+  it('omits ValidUntil when no expiry is supplied', () => {
+    const xml = generateEapConfig({ rootCaDer: root, clientP12: p12 });
+    expect(xml).not.toContain('<ValidUntil>');
+  });
+
+  it('emits ValidUntil in geteduroam SERVER_DATE_FORMAT when expiry is supplied', () => {
+    const xml = generateEapConfig({
+      rootCaDer: root,
+      clientP12: p12,
+      validUntil: new Date('2027-07-04T09:42:47.000Z'),
+    });
+    // UTC, no trailing Z, no milliseconds — matches AndroidConfigParser.
+    expect(xml).toContain('<ValidUntil>2027-07-04T09:42:47</ValidUntil>');
+  });
+
+  it('orders ValidUntil before AuthenticationMethods (XSD sequence)', () => {
+    const xml = generateEapConfig({
+      rootCaDer: root,
+      clientP12: p12,
+      validUntil: new Date('2027-07-04T09:42:47.000Z'),
+    });
+    expect(xml.indexOf('<ValidUntil>')).toBeLessThan(xml.indexOf('<AuthenticationMethods>'));
+  });
 });

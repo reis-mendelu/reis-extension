@@ -12,7 +12,9 @@ const FLAT_KEYS = [
 
 // device -> number of steps in the manual
 const DEVICE_STEPS: Record<string, number> = { ios: 4, android: 3, mac: 4, windows: 3 };
-const DO_ONCE_DEVICES = ['android', 'windows'] as const;
+// Android is now the manual EAP-TLS flow (no geteduroam app), so only Windows
+// keeps a do-once install-the-app step.
+const DO_ONCE_DEVICES = ['windows'] as const;
 
 function leaf(obj: unknown, path: string): unknown {
   return path.split('.').reduce<unknown>(

@@ -636,27 +636,32 @@
         }
       },
       "android": {
-        "hint": "Aplikace geteduroam",
-        "doOnce": {
-          "title": "Nainstaluj aplikaci geteduroam",
-          "cta": "Stáhnout z Google Play"
-        },
+        "hint": "Ruční nastavení (nejspolehlivější)",
         "steps": [
           {
-            "text": "Klepni na Vytvořit QR kód",
+            "text": "Klepni na Vytvořit QR kód, naskenuj ho a stáhni soubor s certifikátem",
             "shot": "Vygenerovaný QR kód v panelu reIS"
           },
           {
-            "text": "Naskenuj ho a klepni na stažený soubor, aby se otevřel v geteduroam",
-            "shot": "Stažení → otevření souboru v geteduroam"
+            "text": "Otevři stažený soubor a nainstaluj certifikát — po výzvě zadej toto heslo a pojmenuj ho libovolně",
+            "shot": "Výzva Androidu k instalaci certifikátu"
           },
           {
-            "text": "Zadej heslo certifikátu",
-            "shot": "Výzva geteduroam na heslo"
+            "text": "Ručně přidej Wi-Fi síť s názvem eduroam a těmito hodnotami, pak dej Připojit:",
+            "shot": "Ruční dialog Wi-Fi (EAP) v Androidu",
+            "warn": "Uživatelský certifikát musí být ten, který jsi právě nainstaloval (obsahuje tvůj klíč) — na to se snadno zapomene. Když je Připojit šedé, chybí pole Identita."
           }
         ],
+        "fields": {
+          "network": { "label": "Název sítě (SSID)", "value": "eduroam" },
+          "security": { "label": "Zabezpečení", "value": "WPA/WPA2/WPA3-Enterprise" },
+          "eap": { "label": "Metoda EAP", "value": "TLS" },
+          "caCert": { "label": "Certifikát CA", "value": "Neověřovat" },
+          "userCert": { "label": "Uživatelský certifikát", "value": "nainstalovaný certifikát" },
+          "identity": { "label": "Identita", "value": "tvůj login@mendelu.cz" }
+        },
         "done": {
-          "text": "Hotovo — na fakultě se k eduroam připojíš automaticky",
+          "text": "Připoj se — tato uložená síť zůstane a připojí tě, kdykoli jsi na fakultě",
           "shot": "Telefon připojený k eduroam"
         }
       },

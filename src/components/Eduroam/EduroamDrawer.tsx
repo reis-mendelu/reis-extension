@@ -11,7 +11,7 @@ export function EduroamDrawer() {
   const { t } = useTranslation();
   const isOpen = useAppStore((s) => s.isEduroamOpen);
   const setOpen = useAppStore((s) => s.setIsEduroamOpen);
-  const { status, password, qrDataUrl, error, run, reset, selectTarget, openProfilesSettings } = useEduroamSetup();
+  const { status, password, identity, qrDataUrl, error, run, reset, selectTarget, openProfilesSettings } = useEduroamSetup();
   const [selected, setSelected] = useState<EduroamTarget | null>(null);
 
   const close = () => { setOpen(false); setSelected(null); reset(); };
@@ -50,6 +50,7 @@ export function EduroamDrawer() {
           status={status}
           qrDataUrl={qrDataUrl}
           password={password}
+          identity={identity}
           onRun={() => selected && run(selected)}
           onOpenSettings={openProfilesSettings}
         />

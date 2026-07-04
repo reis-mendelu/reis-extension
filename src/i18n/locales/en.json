@@ -636,27 +636,32 @@
         }
       },
       "android": {
-        "hint": "geteduroam app",
-        "doOnce": {
-          "title": "Install the geteduroam app",
-          "cta": "Get it on Google Play"
-        },
+        "hint": "Manual setup (most reliable)",
         "steps": [
           {
-            "text": "Tap Create QR code",
+            "text": "Tap Create QR code, scan it, and download the certificate file",
             "shot": "The generated QR code in the reIS drawer"
           },
           {
-            "text": "Scan it, then tap the downloaded file to open it in geteduroam",
-            "shot": "Download → opening the file in geteduroam"
+            "text": "Open the downloaded file to install the certificate — enter this password when asked, and give it any name",
+            "shot": "Android's install-certificate prompt"
           },
           {
-            "text": "Enter the certificate password",
-            "shot": "geteduroam password prompt"
+            "text": "Add a Wi-Fi network named eduroam by hand with these settings, then Connect:",
+            "shot": "Android's manual Wi-Fi (EAP) dialog",
+            "warn": "The User certificate must be the one you just installed (it holds your key) — that's the field that's easy to miss. If Connect stays greyed out, the Identity field is empty."
           }
         ],
+        "fields": {
+          "network": { "label": "Network name (SSID)", "value": "eduroam" },
+          "security": { "label": "Security", "value": "WPA/WPA2/WPA3-Enterprise" },
+          "eap": { "label": "EAP method", "value": "TLS" },
+          "caCert": { "label": "CA certificate", "value": "Don't validate" },
+          "userCert": { "label": "User certificate", "value": "the cert you installed" },
+          "identity": { "label": "Identity", "value": "your login@mendelu.cz" }
+        },
         "done": {
-          "text": "Set up — you'll connect to eduroam automatically when you're on campus",
+          "text": "Connect — this saved network stays put and works whenever you're on campus",
           "shot": "Phone connected to eduroam"
         }
       },

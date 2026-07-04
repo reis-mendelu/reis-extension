@@ -6,7 +6,7 @@ import { useAppStore } from '../../../store/useAppStore';
 afterEach(() => { cleanup(); useAppStore.setState({ language: 'en' }); });
 
 const base = {
-  status: 'idle' as const, qrDataUrl: null, password: null,
+  status: 'idle' as const, qrDataUrl: null, password: null, identity: null,
   onSelect: () => {}, onRestart: () => {}, onRun: () => {}, onOpenSettings: () => {},
 };
 
