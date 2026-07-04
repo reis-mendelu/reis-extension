@@ -5,6 +5,7 @@ import type { MenuItem } from '../menuConfig';
 import type { AppView } from '../../types/app';
 import { useAppStore } from '../../store/useAppStore';
 import { IsSearchTriggers, IsSearchPopovers, type IsSearchTarget } from '../SearchBar/IsSearchTriggers';
+import { downloadConfirmation } from '../../api/confirmationOfStudy';
 
 interface NavItemProps {
   item: MenuItem;
@@ -96,6 +97,9 @@ export function NavItem({ item, isActive, isHovered, onMouseEnter, onMouseLeave,
                     } else if (child.id === 'eduroam') {
                       e.preventDefault();
                       setIsEduroamOpen(true);
+                    } else if (child.id === 'potvrzeni-studia') {
+                      e.preventDefault();
+                      if (child.href) downloadConfirmation(child.href);
                     } else if (child.isFeature) {
                        e.preventDefault();
                     }
