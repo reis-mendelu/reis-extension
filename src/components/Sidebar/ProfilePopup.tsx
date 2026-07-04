@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Moon, MessageSquarePlus, Languages, LogOut, Bug } from 'lucide-react';
+import { Moon, MessageSquarePlus, Languages, LogOut, Bug, ScrollText, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
+import { StudyDocumentsPopover } from './StudyDocumentsPopover';
 import { useOutlookSync } from '../../hooks/data';
 import { useTheme } from '../../hooks/useTheme';
 import { useSpolkySettings } from '../../hooks/useSpolkySettings';
@@ -16,7 +17,7 @@ import { logout } from '../../api/proxyClient';
 import { HiddenItemsSection } from './Profile/HiddenItemsSection';
 
 export function ProfilePopup({ isOpen, onOpenFeedback, isIskam }: { isOpen: boolean; onOpenFeedback?: () => void; isIskam?: boolean }) {
-  const { isEnabled, isLoading: syncLoading, toggle: tSync } = useOutlookSync(), { isDark, isLoading: tLoading, toggle: tTheme } = useTheme(), { isSubscribed, toggleAssociation } = useSpolkySettings(), [spolkyOpen, setSpolkyOpen] = useState(false);
+  const { isEnabled, isLoading: syncLoading, toggle: tSync } = useOutlookSync(), { isDark, isLoading: tLoading, toggle: tTheme } = useTheme(), { isSubscribed, toggleAssociation } = useSpolkySettings(), [spolkyOpen, setSpolkyOpen] = useState(false), [docsOpen, setDocsOpen] = useState(false);
   const data = useIskamStore(s => s.data);
   const iskamProfile = data?.profile;
 
@@ -70,6 +71,21 @@ export function ProfilePopup({ isOpen, onOpenFeedback, isIskam }: { isOpen: bool
                 </div>
             )}
         </div>
+
+        {/* Study documents — quick print/download (IS Mendelu only) */}
+        {!isIskam && (
+            <div className="py-1 border-b border-base-200">
+                <button
+                    onClick={() => setDocsOpen(true)}
+                    className="w-full flex items-center gap-3 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors group"
+                >
+                    <ScrollText size={16} className="text-base-content/50 group-hover:text-primary transition-colors" />
+                    <span className="text-xs font-medium opacity-70 group-hover:opacity-100">{t('studyDocs.trigger')}</span>
+                    <ChevronRight size={14} className="ml-auto text-base-content/30 group-hover:text-base-content/60" />
+                </button>
+            </div>
+        )}
+
         {/* Preferences Section */}
         <div className="py-1 border-b border-base-200">
             <div className="flex items-center justify-between gap-3 px-1 py-2 hover:bg-base-200 rounded-lg group transition-colors">
@@ -147,6 +163,8 @@ export function ProfilePopup({ isOpen, onOpenFeedback, isIskam }: { isOpen: bool
             </div>
 
         </div>
-    </motion.div></AnimatePresence>
+    </motion.div>
+    <StudyDocumentsPopover isOpen={docsOpen} onClose={() => setDocsOpen(false)} />
+    </AnimatePresence>
   );
 }

@@ -82,6 +82,16 @@
     "foodDebit": "Inkaso za stravu",
     "skmDocuments": "Dokumenty SKM"
   },
+  "studyDocs": {
+    "trigger": "Potvrzení o studiu",
+    "title": "Studijní dokumenty",
+    "sealedTitle": "Elektronicky pečetěné dokumenty",
+    "sealedHint": "Oficiální dokument s elektronickou pečetí. Po vygenerování jej do hodiny najdeš v Úložišti dokumentů.",
+    "plainTitle": "Tisk dokumentů",
+    "plainHint": "Otevře se PDF k okamžitému stažení nebo tisku.",
+    "storageLink": "Otevřít Úložiště dokumentů",
+    "unavailable": "Studijní údaje se načítají…"
+  },
   "drive": {
     "title": "Záloha na Google Disk",
     "openFolder": "Otevřít složku",

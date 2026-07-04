@@ -82,6 +82,16 @@
     "foodDebit": "Food Debit",
     "skmDocuments": "SKM Documents"
   },
+  "studyDocs": {
+    "trigger": "Proof of study",
+    "title": "Study documents",
+    "sealedTitle": "E-sealed documents",
+    "sealedHint": "Official document with an electronic seal. Once generated, you'll find it in Document storage within an hour.",
+    "plainTitle": "Print documents",
+    "plainHint": "Opens a PDF for instant download or printing.",
+    "storageLink": "Open Document storage",
+    "unavailable": "Loading your study data…"
+  },
   "drive": {
     "title": "Google Drive backup",
     "openFolder": "Open folder",
