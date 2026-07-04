@@ -10,7 +10,7 @@ import { render, act } from '@testing-library/react';
 import { EventLayer } from '../EventLayer';
 import { setMapInstance } from '../mapInstance';
 import { useAppStore } from '../../../store/useAppStore';
-import { MOCK_MAP_EVENTS } from '../../../api/mapEvents';
+import { MOCK_MAP_EVENTS } from './fixtures/mockMapEvents';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let handlers: Record<string, (...a: any[]) => void>;

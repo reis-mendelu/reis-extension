@@ -116,7 +116,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     // language switch would never re-fetch the localized dataset.
     if (get().mapEventsLoaded && get().mapEventsLanguage === language) return;
     try {
-      const events = await fetchMapEvents(language);
+      const events = await fetchMapEvents();
       set({ mapEvents: events, mapEventsLoaded: true, mapEventsLanguage: language });
     } catch (err) {
       logError('MapSlice.loadMapEvents', err);

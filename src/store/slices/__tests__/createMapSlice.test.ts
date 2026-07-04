@@ -1,9 +1,25 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../../../api/campusMap', () => ({ fetchBuildingRooms: vi.fn() }));
+vi.mock('../../../api/mapEvents', () => ({ fetchMapEvents: vi.fn() }));
 import { fetchBuildingRooms } from '../../../api/campusMap';
+import { fetchMapEvents } from '../../../api/mapEvents';
 import { useAppStore } from '../../useAppStore';
 import type { RoomsCollection } from '../../../types/campusMap';
+import type { MapEvent } from '../../../types/events';
+
+// Fixture standing in for the real Supabase-backed fetchMapEvents (Task 13) —
+// one on-campus event (has a coord, so it's pin-able) and one off-campus
+// event (no coord), matching the variety the store-level tests exercise.
+const MOCK_EVENTS: MapEvent[] = [
+  { id: 'ev-1', title: 'PEF Kvíz', url: '', date: '2026-07-10', endDate: null, time: '18:00',
+    location: null, imageUrl: null, organizerKey: 'pef', societyId: 'supef',
+    coord: [16.614247, 49.209592], roomCode: 'Q01', venueKind: 'campus', category: 'quiz' },
+  { id: 'ev-2', title: 'Tram Party', url: 'https://www.instagram.com/esnmendelubrno/',
+    date: '2026-07-17', endDate: null, time: '20:00', location: 'Česká (sraz)', imageUrl: null,
+    organizerKey: 'mendelu', societyId: 'esn', coord: null, roomCode: null,
+    venueKind: 'offcampus', category: 'party' },
+];
 
 const fc = (id: number, floorId: number): RoomsCollection => ({ type: 'FeatureCollection',
   features: [{ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[16.6, 49.2]]] },
@@ -16,6 +32,8 @@ beforeEach(() => {
     roomsByBuilding: {}, mapLoadingBuilding: null, mapSearchQuery: '', mapSearchResults: [], mapFocusRequest: 0,
     mapEvents: [], mapEventsLoaded: false, mapPanelTab: 'places', eventFilter: 'all' });
   vi.mocked(fetchBuildingRooms).mockReset();
+  vi.mocked(fetchMapEvents).mockReset();
+  vi.mocked(fetchMapEvents).mockResolvedValue(MOCK_EVENTS);
 });
 
 describe('mapSlice', () => {
