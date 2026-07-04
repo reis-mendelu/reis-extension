@@ -50,6 +50,27 @@ npm run typecheck        # TypeScript strict check
 
 Run a single test file: `npx vitest run src/store/slices/__tests__/someSlice.test.ts`
 
+## Live UI testing with Chrome MCP
+
+Chrome MCP (`claude-in-chrome`) **cannot** drive the normal extension: reIS renders
+inside a `chrome-extension://` iframe, and one extension may not access another
+extension's frame, so every screenshot/JS/click on `is.mendelu.cz` throws
+`Cannot access a chrome-extension:// URL of different extension`. Workaround: serve
+the **real** iframe app from a web origin, which MCP *can* introspect.
+
+- **Quick UI check (Tier 1, no extension, mock data):**
+  `npm run iframe-dev` → point Chrome MCP at `http://localhost:5199/main.html`.
+  Renders the full styled app with mock data; drive/screenshot/click it directly.
+- **Full real-data (Tier 2):** `npm run iframe-dev` **and** `npm run build:mcp`
+  (sets `VITE_IFRAME_ORIGIN=http://localhost:5199`) → load `.output/chrome-mv3`
+  unpacked → visit `is.mendelu.cz/auth/`. The content script frames localhost so
+  MCP can see it; real synced data flows via postMessage.
+
+`VITE_IFRAME_ORIGIN` gates `resolveIframeSrc()`/`resolveIframeOrigin()` in
+`src/injector/iframeManager.ts` — the **normal `npm run build` is unaffected**
+(packaged `chrome-extension://` iframe). Full detail:
+`docs/superpowers/specs/2026-07-04-mcp-web-origin-iframe-design.md`.
+
 ## Release
 
 Pushing a `v*` tag triggers `.github/workflows/publish.yml` → builds Chrome + Firefox zips → submits to all three stores via `wxt submit`. Use `/release` to automate the full flow.

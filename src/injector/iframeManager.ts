@@ -1,5 +1,30 @@
 import { IFRAME_ID } from './config';
 
+/**
+ * Resolve the iframe's source URL. Normally the packaged extension page
+ * (`chrome-extension://…/main.html`). In the `build:mcp` build
+ * (`VITE_IFRAME_ORIGIN` set, e.g. `http://localhost:5199`) the app is served
+ * from a plain http origin instead, because Chrome MCP (claude-in-chrome) is
+ * itself an extension and cannot screenshot/script a *different* extension's
+ * `chrome-extension://` frame. Serving the UI from a web origin makes it
+ * introspectable. See docs/superpowers/specs/2026-07-04-mcp-web-origin-iframe-design.md
+ */
+export function resolveIframeSrc(): string {
+    const origin = import.meta.env.VITE_IFRAME_ORIGIN;
+    return origin ? `${origin}/main.html` : chrome.runtime.getURL('main.html');
+}
+
+/**
+ * The origin the iframe messages arrive from, used by the content-script message
+ * handlers to validate `event.origin`. Must match {@link resolveIframeSrc}'s
+ * origin — the packaged extension origin normally, or the `VITE_IFRAME_ORIGIN`
+ * web origin in the `build:mcp` build.
+ */
+export function resolveIframeOrigin(): string {
+    const origin = import.meta.env.VITE_IFRAME_ORIGIN;
+    return origin || chrome.runtime.getURL('').replace(/\/$/, '');
+}
+
 export let iframeElement: HTMLIFrameElement | null = null;
 let iframeReady = false;
 let messageQueue: unknown[] = [];
@@ -23,7 +48,7 @@ export function injectIframe() {
 
     iframeElement = document.createElement("iframe");
     iframeElement.id = IFRAME_ID;
-    iframeElement.src = chrome.runtime.getURL("main.html");
+    iframeElement.src = resolveIframeSrc();
 
     Object.assign(iframeElement.style, {
         position: "fixed", top: "0", left: "0", width: "100%", height: "100%",

@@ -1,5 +1,5 @@
 import { Messages, isIframeMessage } from "../types/messages";
-import { iframeElement, sendToIframe, markIframeReady } from "./iframeManager";
+import { iframeElement, sendToIframe, markIframeReady, resolveIframeOrigin } from "./iframeManager";
 import { cachedData, syncAllData, runDriveBackupNow, runNotesBackupNow, setNotesSnapshot, setNotesHtmlOverride, isSyncing, refreshExams } from "./syncService";
 import { fetchFullSemesterSchedule } from "./dataFetchers";
 import { fetchExamData, registerExam, unregisterExam } from "../api/exams";
@@ -9,7 +9,7 @@ import { scrapedNavMenu } from "./sniper";
 
 let topUpPopupRef: Window | null = null;
 
-const IFRAME_ORIGIN = chrome.runtime.getURL('').replace(/\/$/, '');
+const IFRAME_ORIGIN = resolveIframeOrigin();
 
 export async function handleMessage(event: MessageEvent) {
     if (event.origin !== IFRAME_ORIGIN) return;

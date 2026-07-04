@@ -1,4 +1,8 @@
 @import "tailwindcss";
+/* Explicit source so Tailwind scans the app when the Vite root isn't the repo
+   root (e.g. the dev-iframe/ MCP-debug server). Additive — a no-op for the
+   normal WXT build, which already auto-detects src/. */
+@source "./**/*.{ts,tsx,html}";
 
 /* Mobile = touch device + narrow viewport. Desktop split-screen stays desktop. */
 @custom-variant touch (@media (pointer: coarse) and (max-width: 767px));

@@ -22,7 +22,9 @@
     "test:serenity": "xvfb-run -a playwright test e2e/serenity/specs",
     "test:smoke": "xvfb-run -a playwright test e2e/serenity/specs/smoke.spec.ts",
     "test:e2e:setup": "playwright install chromium",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "iframe-dev": "VITE_USE_MOCK_DATA=true vite --config dev-iframe/vite.config.ts",
+    "build:mcp": "VITE_IFRAME_ORIGIN=http://localhost:5199 wxt build"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
