@@ -6,8 +6,8 @@ import { SubjectsDataSchema } from './schemas/subjects.schema';
 import { FilesSchema } from './schemas/files.schema';
 import { SuccessRatesSchema } from './schemas/successRates.schema';
 import { MetaSchema } from './schemas/meta.schema';
+import { ClassmatesSchema } from './schemas/classmates.schema';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
-import type { ClassmatesData } from '../types/classmates';
 import type { StudyPlan, DualLanguageStudyPlan } from '../types/studyPlan';
 import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
@@ -70,9 +70,6 @@ export const ScheduleSchema = z.array(BlockLessonSchema);
 
 // 'subjects' store - SubjectsData
 export const SubjectsSchema = SubjectsDataSchema;
-
-// 'classmates' store - { all: Classmate[], seminar: Classmate[] }
-export const ClassmatesSchema = z.custom<ClassmatesData>();
 
 // 'grade_history' store - GradeHistory
 export const GradeHistorySchema = z.custom<GradeHistory>();
