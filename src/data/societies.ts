@@ -13,6 +13,9 @@ export const SOCIETIES: Record<string, Society> = {
   af: { id: 'af', name: 'AF Spolek', shortName: 'AF', color: '#c87800', glyph: 'AF', logo: '/spolky/af.jpg', facultyKey: 'af' },
   ldf: { id: 'ldf', name: 'LDF Spolek', shortName: 'LDF', color: '#0a5028', glyph: 'LDF', logo: '/spolky/ldf.jpg', facultyKey: 'ldf' },
   zf: { id: 'zf', name: 'ZF Spolek', shortName: 'ZF', color: '#8c0a00', glyph: 'ZF', logo: '/spolky/zf.jpg', facultyKey: 'zf' },
+  // The reIS team itself (reis_admin role). Campus-wide like ESN. No shipped
+  // logo asset, so an empty `logo` makes consumers fall back to the glyph.
+  reis: { id: 'reis', name: 'reIS', shortName: 'reIS', color: '#79be15', glyph: 'reIS', logo: '', facultyKey: 'mendelu' },
 };
 
 export const ALL_SOCIETIES: Society[] = Object.values(SOCIETIES);

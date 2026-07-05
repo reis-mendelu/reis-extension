@@ -10,7 +10,10 @@ export interface RoomStyle { fill: string; stroke: string; }
 export function roomCodeToCoord(
   code: string, index: RoomIndexEntry[], buildings: BuildingsMeta,
 ): [number, number] | null {
-  const entry = index.find((e) => e.code === code || e.name === code);
+  // Room code is free text in the authoring UI, so normalize both sides —
+  // a stray case/whitespace difference must not silently drop the pin.
+  const needle = code.trim().toLowerCase();
+  const entry = index.find((e) => e.code.toLowerCase() === needle || e.name.toLowerCase() === needle);
   if (!entry) return null;
   const b = buildings.buildings.find((x) => x.id === entry.buildingId);
   if (!b) return null;

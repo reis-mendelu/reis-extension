@@ -11,6 +11,9 @@ describe('roomCodeToCoord', () => {
   it('matches by index code as well as display name', () => {
     expect(roomCodeToCoord('BA39N1009', index, buildings)).toEqual([16.6142, 49.2096]);
   });
+  it('normalizes case and whitespace before matching', () => {
+    expect(roomCodeToCoord('  q01 ', index, buildings)).toEqual([16.6142, 49.2096]);
+  });
   it('returns null for an unknown code', () => {
     expect(roomCodeToCoord('ZZZ', index, buildings)).toBeNull();
   });

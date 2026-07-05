@@ -15,7 +15,7 @@ export function SocietyLoginForm() {
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
-    if (busy || !email || !password) return;
+    if (busy || !email.trim() || !password) return;
     setBusy(true); setError(false);
     try {
       const res = await adminLogin(email, password);
@@ -42,7 +42,7 @@ export function SocietyLoginForm() {
                value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={onKey} />
       </label>
       {error && <p className="text-error text-sm">{t('admin.loginError')}</p>}
-      <button type="button" className="btn btn-primary" disabled={busy || !email || !password} onClick={submit}>{t('admin.login')}</button>
+      <button type="button" className="btn btn-primary" disabled={busy || !email.trim() || !password} onClick={submit}>{t('admin.login')}</button>
     </div>
   );
 }
