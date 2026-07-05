@@ -112,6 +112,29 @@ After first implementation, two changes:
    the 9 inner buildings/greenhouses (fetched the same grounds-poly way, with a
    `keepAsArea` flag). `remotePlaceCenter` includes `area` in its bbox.
 
+## Revision 2026-07-05 (arboretum drill-in + inner map)
+
+Two changes to the arboretum, mirroring the campus-faculty drill interaction:
+
+1. **Drill-in reveal.** At the campus overview the arboretum shows only its faint
+   green garden boundary (`area`). Clicking it — or picking it from Místa — flies
+   in and reveals the inner map; clicking bare basemap collapses it again. The
+   "drilled" state is **derived from the selection** (a site is drilled when it is
+   the selected poi), so no new store state is needed — every drill transition
+   already bumps `mapFocusRequest`, and the draw effect reads the selection at run
+   time. Sites without an `area` (Lednice/Žabčice/Křtiny) are far off-screen and
+   always show their footprints.
+
+2. **Meaningful inner content.** `RemotePlace` gains optional `paths`
+   (footpath polylines) and `pois` (labelled `{name,lon,lat}` points). For the
+   arboretum: the real OSM footpath network (32 ways, ~3.8 km, `PATH_STYLE` dotted
+   grey), the 9 buildings, and 8 labelled points (`POI_MARKER_STYLE` purple dots).
+   Two greenhouses + two viewpoints are exact OSM features; five collection labels
+   (Alpinum/skalka, garden for the blind, rose collection, water cascade, meteo
+   station) are **approximate** — OSM has no geometry for them, so they were placed
+   from the official 5-section layout (arboretum.mendelu.cz) and snapped onto the
+   nearest path vertex so they sit inside the garden on the walkable network.
+
 ## Out of scope
 
 - No routing/directions, no travel time, no distance display.
