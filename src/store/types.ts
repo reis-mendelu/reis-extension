@@ -463,7 +463,9 @@ export interface MapSlice {
   clearDraftCoord: () => void;
   /** True while the event-composer overlay is open. */
   composerOpen: boolean;
-  openComposer: () => void;
+  /** Id of the societyMapEvents entry being edited, or null when composing a new event. */
+  editEventId: string | null;
+  openComposer: (editId?: string) => void;
   closeComposer: () => void;
 }
 

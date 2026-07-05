@@ -6,8 +6,9 @@ import { EventComposer } from '../EventComposer';
 vi.mock('../../../api/societyPosts', async (orig) => ({
   ...(await orig<typeof import('../../../api/societyPosts')>()),
   createPost: vi.fn().mockResolvedValue({ id: 'new1' }),
+  updatePost: vi.fn().mockResolvedValue({}),
 }));
-import { createPost } from '../../../api/societyPosts';
+import { createPost, updatePost } from '../../../api/societyPosts';
 
 describe('EventComposer (create)', () => {
   beforeEach(() => {
@@ -38,5 +39,28 @@ describe('EventComposer (create)', () => {
     expect(assoc).toBe('supef');
     expect(input).toMatchObject({ title: 'Spring Party', date: '2026-07-10', venueKind: 'offcampus', coordLng: 16.61, coordLat: 49.21 });
     await waitFor(() => expect(onDone).toHaveBeenCalled());
+  });
+});
+
+describe('EventComposer (edit)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('edits an existing event via updatePost', async () => {
+    useAppStore.setState({
+      adminAssociationId: 'supef',
+      societyMapEvents: [{
+        id: 'e9', title: 'Old', url: '', date: '2026-07-10', endDate: null, time: null,
+        location: null, imageUrl: null, organizerKey: 'pef', societyId: 'supef', coord: [16.6, 49.2],
+        roomCode: null, venueKind: 'offcampus', category: 'party',
+      }],
+      editEventId: 'e9', draftCoord: [16.6, 49.2], language: 'en',
+    });
+    render(<EventComposer onDone={() => {}} />);
+    expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe('Old');
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'New' } });
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledWith('e9', expect.objectContaining({ title: 'New' })));
   });
 });

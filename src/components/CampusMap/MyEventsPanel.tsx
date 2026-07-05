@@ -44,7 +44,7 @@ export function MyEventsPanel() {
     <div className="flex max-h-[70vh] flex-col">
       <div className="flex items-center justify-between px-3 py-2">
         <span className="text-sm font-bold">{t('map.myEvents')}</span>
-        <button type="button" className="btn btn-primary btn-xs gap-1" onClick={openComposer}>
+        <button type="button" className="btn btn-primary btn-xs gap-1" onClick={() => openComposer()}>
           <Plus size={13} /> {t('map.createEvent')}
         </button>
       </div>

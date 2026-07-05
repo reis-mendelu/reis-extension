@@ -1003,6 +1003,8 @@
     "rsvpInterested": "Mám zájem",
     "myEvents": "Moje akce",
     "createEvent": "Vytvořit akci",
+    "editEvent": "Upravit akci",
+    "saveChanges": "Uložit změny",
     "liveNow": "Živě",
     "scheduled": "Naplánované",
     "past": "Proběhlé",

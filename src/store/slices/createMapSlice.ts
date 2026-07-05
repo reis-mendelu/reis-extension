@@ -45,6 +45,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   placingEvent: false,
   draftCoord: null,
   composerOpen: false,
+  editEventId: null,
 
   setMapBuilding: (id) => {
     const b = buildingById(id);
@@ -155,8 +156,11 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   placeDraftCoord: (coord) => set({ draftCoord: coord, placingEvent: false }),
   clearDraftCoord: () => set({ draftCoord: null }),
 
-  openComposer: () => set({ composerOpen: true, draftCoord: null }),
-  closeComposer: () => set({ composerOpen: false, placingEvent: false, draftCoord: null }),
+  openComposer: (editId) => {
+    const ev = editId ? get().societyMapEvents.find((e) => e.id === editId) : null;
+    set({ composerOpen: true, editEventId: editId ?? null, draftCoord: ev?.coord ?? null });
+  },
+  closeComposer: () => set({ composerOpen: false, editEventId: null, placingEvent: false, draftCoord: null }),
 
   loadMapEvents: async () => {
     if (get().mapEventsLoaded) return;

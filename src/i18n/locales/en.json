@@ -1003,6 +1003,8 @@
     "rsvpInterested": "Interested",
     "myEvents": "My events",
     "createEvent": "Create event",
+    "editEvent": "Edit event",
+    "saveChanges": "Save changes",
     "liveNow": "Live now",
     "scheduled": "Scheduled",
     "past": "Past",
