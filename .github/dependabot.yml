@@ -5,6 +5,33 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    # These major bumps are blocked by third-party peer-dependency ranges, not by
+    # our code — they fail `npm ci` with ERESOLVE and can't merge until the named
+    # upstream package widens its peer range. Ignored so they stop reopening every
+    # week. Lift the matching entry once the blocker below ships a release, then
+    # let Dependabot reoffer it.
+    ignore:
+      # typescript 6 — typescript-eslint peers `typescript ">=4.8.4 <6.0.0"`.
+      # Lift when typescript-eslint supports TS 6.
+      - dependency-name: "typescript"
+        versions: ["6.x"]
+      # @eslint/js 10 drags in eslint 10, which conflicts with the eslint peer
+      # range used transitively by typescript-eslint. Lift when typescript-eslint
+      # supports eslint 10.
+      - dependency-name: "@eslint/js"
+        versions: ["10.x"]
+      # vite 8 — @wxt-dev/module-react and @tailwindcss/vite peers cap at vite 7.
+      # (vite 7 is still allowed through; only 8 is blocked.) Lift when both
+      # WXT and the Tailwind vite plugin list `^8`.
+      - dependency-name: "vite"
+        versions: ["8.x"]
+      # vitest 4 — @vitest/coverage-v8 4 pins `vitest@4` exactly, and vitest 4
+      # broke our test suite when trialed. Both must move together. Lift when we
+      # do the deliberate vitest 4 migration.
+      - dependency-name: "vitest"
+        versions: ["4.x"]
+      - dependency-name: "@vitest/coverage-v8"
+        versions: ["4.x"]
     groups:
       # Batch low-risk bumps into one PR each to cut noise. Majors are excluded
       # from groups so they arrive individually for careful review (they have
