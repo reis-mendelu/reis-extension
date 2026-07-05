@@ -5,6 +5,9 @@ import {
 
 const NOW = new Date('2026-07-06T09:00:00'); // local midnight anchor = 2026-07-06
 
+const localISO = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 describe('eventWindow', () => {
   it('PUBLIC_WINDOW_DAYS is 14', () => {
     expect(PUBLIC_WINDOW_DAYS).toBe(14);
@@ -28,6 +31,6 @@ describe('eventWindow', () => {
   });
   it('goLiveDate is the first day the event enters the public window', () => {
     // 2026-08-15 is day 40; it becomes public when daysUntil === 13 → 2026-08-02.
-    expect(goLiveDate('2026-08-15', NOW).toISOString().slice(0, 10)).toBe('2026-08-02');
+    expect(localISO(goLiveDate('2026-08-15', NOW))).toBe('2026-08-02');
   });
 });

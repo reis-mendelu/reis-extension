@@ -36,6 +36,6 @@ export function isScheduledEvent(iso: string, now: Date = new Date()): boolean {
 export function goLiveDate(iso: string, now: Date = new Date()): Date {
   void now;
   const d = startOfDay(parseEventDate(iso));
-  d.setDate(d.getDate() - (PUBLIC_WINDOW_DAYS - 2));
+  d.setDate(d.getDate() - (PUBLIC_WINDOW_DAYS - 1));
   return d;
 }
