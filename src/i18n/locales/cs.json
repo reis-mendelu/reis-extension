@@ -1051,6 +1051,7 @@
     "addPost": "Přidat příspěvek",
     "logout": "Odhlásit",
     "saveError": "Nepodařilo se uložit — zkuste to znovu",
-    "manageButton": "Spravovat spolek"
+    "manageButton": "Spravovat spolek",
+    "reisAdminNote": "Přihlášen jako reIS admin. Akce se spravují u konkrétního spolku."
   }
 }

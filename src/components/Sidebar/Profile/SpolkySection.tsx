@@ -13,7 +13,7 @@ interface SpolkySectionProps {
 
 export function SpolkySection({ expanded, onToggle, isSub, onToggleAssoc }: SpolkySectionProps) {
     const { t } = useTranslation();
-    const openAdminOverlay = useAppStore((s) => s.openAdminOverlay);
+    const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
     return (
         <div>
             <button onClick={onToggle} className="w-full flex items-center justify-between px-1 py-2 hover:bg-base-200 rounded-lg group">
@@ -23,7 +23,7 @@ export function SpolkySection({ expanded, onToggle, isSub, onToggleAssoc }: Spol
             <AnimatePresence>{expanded && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden"><div className="space-y-1 mb-2 px-1 max-h-40 overflow-y-auto custom-scrollbar">
                 {Object.values(ASSOCIATION_PROFILES).map((p) => <label key={p.id} className="flex items-center justify-between px-2 py-1.5 hover:bg-base-200 rounded-md cursor-pointer"><span className="text-[xs] opacity-90">{p.name}</span><input type="checkbox" className="checkbox checkbox-xs checkbox-primary" checked={isSub(p.id)} onChange={() => onToggleAssoc(p.id)} /></label>)}
             </div>
-                <button onClick={openAdminOverlay} className="w-full flex items-center justify-between px-2 py-1.5 mt-1 hover:bg-base-200 rounded-md text-xs opacity-60 hover:opacity-100 transition-colors">
+                <button onClick={openSocietyAdmin} className="w-full flex items-center justify-between px-2 py-1.5 mt-1 hover:bg-base-200 rounded-md text-xs opacity-60 hover:opacity-100 transition-colors">
                     <span className="flex items-center gap-2"><Shield size={14} className="text-base-content/50" />{t('admin.manageButton') as string}</span>
                     <span aria-hidden="true">→</span>
                 </button>

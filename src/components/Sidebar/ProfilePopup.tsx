@@ -26,8 +26,8 @@ export function ProfilePopup({ isOpen, onOpenFeedback, isIskam }: { isOpen: bool
   const setLanguage = useAppStore(state => state.setLanguage);
   const errorReportingEnabled = useAppStore(state => state.errorReportingEnabled);
   const setErrorReportingEnabled = useAppStore(state => state.setErrorReportingEnabled);
-  const openAdminOverlay = useAppStore(s => s.openAdminOverlay);
-  const onBadge = useTripleClick(openAdminOverlay);
+  const openSocietyAdmin = useAppStore(s => s.openSocietyAdmin);
+  const onBadge = useTripleClick(openSocietyAdmin);
   const { params } = useUserParams();
   
   if (!isOpen) return null;

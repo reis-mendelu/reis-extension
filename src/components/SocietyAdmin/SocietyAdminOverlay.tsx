@@ -1,7 +1,6 @@
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { SocietyLoginForm } from './SocietyLoginForm';
-import { SocietyPostManager } from './SocietyPostManager';
 
 export function SocietyAdminOverlay() {
   const open = useAppStore((s) => s.adminOverlayOpen);
@@ -13,12 +12,16 @@ export function SocietyAdminOverlay() {
   return (
     <div className="modal modal-open" role="dialog">
       <div className="modal-box max-w-md">
-        <div className="flex items-center justify-between mb-3">
+        <div className="mb-3 flex items-center justify-between">
           <h3 className="font-bold">{t('admin.title_panel')}</h3>
           <button className="btn btn-ghost btn-sm" onClick={close}>✕</button>
         </div>
-        {session ? <SocietyPostManager /> : <SocietyLoginForm />}
-        {session && <button className="btn btn-ghost btn-sm mt-4" onClick={logout}>{t('admin.logout')}</button>}
+        {session ? (
+          <>
+            <p className="text-sm text-base-content/70">{t('admin.reisAdminNote')}</p>
+            <button className="btn btn-ghost btn-sm mt-4" onClick={() => void logout()}>{t('admin.logout')}</button>
+          </>
+        ) : <SocietyLoginForm />}
       </div>
       <div className="modal-backdrop" onClick={close} />
     </div>

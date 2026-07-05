@@ -1051,6 +1051,7 @@
     "addPost": "Add post",
     "logout": "Log out",
     "saveError": "Could not save — please try again",
-    "manageButton": "Manage society"
+    "manageButton": "Manage society",
+    "reisAdminNote": "Signed in as reIS admin. Manage events under a specific society."
   }
 }

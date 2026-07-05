@@ -12,8 +12,18 @@ describe('SocietyAdminOverlay', () => {
     expect(container).toBeEmptyDOMElement();
   });
   it('shows the login form when open and logged out', () => {
-    useAppStore.setState({ adminOverlayOpen: true });
+    useAppStore.setState({ adminOverlayOpen: true, adminSession: null, language: 'cz' });
     render(<SocietyAdminOverlay />);
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/e-mail/i)).toBeInTheDocument();
+  });
+  it('shows the reis-admin note (not a post manager) for a reis_admin session', () => {
+    useAppStore.setState({
+      adminOverlayOpen: true,
+      adminSession: { user: { email: 'reis.mendelu@gmail.com' } } as never,
+      adminRole: 'reis_admin',
+      language: 'cz',
+    });
+    render(<SocietyAdminOverlay />);
+    expect(screen.getByText('Přihlášen jako reIS admin. Akce se spravují u konkrétního spolku.')).toBeInTheDocument();
   });
 });
