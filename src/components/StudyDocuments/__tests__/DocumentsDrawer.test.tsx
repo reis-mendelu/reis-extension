@@ -42,6 +42,15 @@ describe('DocumentsDrawer', () => {
     await waitFor(() => expect(screen.getByLabelText('done')).toBeTruthy());
   });
 
+  it('shows the error status when the download rejects', async () => {
+    vi.spyOn(proxy, 'downloadDocument').mockRejectedValue(new Error('boom'));
+    render(<DocumentsDrawer />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Potvrzení o studiu'));
+    });
+    await waitFor(() => expect(screen.getByLabelText('error')).toBeTruthy());
+  });
+
   it('disables the Žádost link when studium is empty', () => {
     vi.mocked(useUserParams).mockReturnValue({ params: { studium: '' }, loading: false } as never);
     render(<DocumentsDrawer />);

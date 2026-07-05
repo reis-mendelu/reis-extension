@@ -13,9 +13,15 @@ export async function downloadDocumentInPage(url: string, filename: string): Pro
     (err as Error & { sessionExpired?: boolean }).sessionExpired = true;
     throw err;
   }
+  if (!res.ok) {
+    // Non-2xx that isn't 401/403 (e.g. an IS 5xx error page) is a transient
+    // failure, NOT a session problem — throw un-tagged so the caller shows a
+    // row error instead of force-navigating a still-logged-in user to login.
+    throw new Error(`HTTP ${res.status}`);
+  }
   const contentType = res.headers.get('content-type') ?? '';
   if (!contentType.includes('application/pdf')) {
-    // A non-PDF 200 means the session lapsed and IS served a login/HTML page.
+    // A non-PDF 2xx means the session lapsed and IS served a login/HTML page.
     const err = new Error(`Not a PDF (${contentType || 'unknown'})`);
     (err as Error & { sessionExpired?: boolean }).sessionExpired = true;
     throw err;

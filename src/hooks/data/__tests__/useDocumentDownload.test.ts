@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act, waitFor, cleanup } from '@testing-library/react';
 import { useDocumentDownload } from '../useDocumentDownload';
 import * as proxy from '../../../api/proxyClient';
 
 describe('useDocumentDownload', () => {
   beforeEach(() => vi.useRealTimers());
-  afterEach(() => vi.restoreAllMocks());
+  // cleanup() unmounts each hook so its done→idle timer-clearing effect runs —
+  // otherwise the 2s setTimeout leaks and can fire mid-way through a later test.
+  afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
   it('drives a row loading → done on success', async () => {
     vi.spyOn(proxy, 'downloadDocument').mockResolvedValue(undefined);

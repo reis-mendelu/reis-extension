@@ -53,6 +53,21 @@ describe('downloadDocumentInPage', () => {
     expect((caught as { sessionExpired?: boolean }).sessionExpired).toBeUndefined();
   });
 
+  it('rejects a transient IS 5xx without a sessionExpired flag (no login redirect)', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('<html>500 error</html>', { status: 500, headers: { 'content-type': 'text/html' } }),
+    );
+    let caught: unknown;
+    try {
+      await downloadDocumentInPage('https://is.mendelu.cz/x', 'f.pdf');
+    } catch (e) {
+      caught = e;
+    }
+    expect((caught as Error).message).toBe('HTTP 500');
+    expect((caught as { sessionExpired?: boolean }).sessionExpired).toBeUndefined();
+    expect(clickSpy).not.toHaveBeenCalled();
+  });
+
   it('rejects a non-IS URL without fetching', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     await expect(downloadDocumentInPage('https://evil.example.com/x', 'f.pdf')).rejects.toThrow('Refusing non-IS document URL');
