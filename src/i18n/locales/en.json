@@ -991,5 +991,17 @@
       "social": "Social",
       "other": "Event"
     }
+  },
+  "admin": {
+    "handle": "Society handle",
+    "password": "Password",
+    "login": "Log in",
+    "loginError": "Invalid handle or password",
+    "title_panel": "Society posts",
+    "title": "Title",
+    "body": "Description",
+    "roomCode": "Room code",
+    "addPost": "Add post",
+    "logout": "Log out"
   }
 }

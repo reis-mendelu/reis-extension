@@ -34,6 +34,8 @@ export interface SpolkyEventRow {
   coord_lat: number | null;
   location: string | null;
   url: string | null;
+  created_by: string | null;
+  visible_from: string | null;
 }
 
 // Pure camelCase → snake_case mapping, unit-testable without the network.
@@ -76,7 +78,7 @@ export async function createPost(
 
 export async function updatePost(
   id: string,
-  patch: Partial<ReturnType<typeof toRow>>,
+  patch: Partial<Omit<ReturnType<typeof toRow>, 'association_id' | 'created_by'>>,
 ): Promise<{ error?: string }> {
   const { error } = await adminAuthClient.from('spolky_events').update(patch).eq('id', id);
   if (error) {

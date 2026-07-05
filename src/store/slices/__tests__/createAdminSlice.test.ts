@@ -4,10 +4,15 @@ const signIn = vi.fn();
 const getSession = vi.fn();
 const signOut = vi.fn(async () => ({ error: null }));
 const maybeSingle = vi.fn();
+const order = vi.fn(async () => ({ data: [] as unknown[], error: null }));
 vi.mock('../../../services/admin/authClient', () => ({
   adminAuthClient: {
     auth: { signInWithPassword: (...a: unknown[]) => signIn(...a), getSession: () => getSession(), signOut: () => signOut() },
-    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: () => maybeSingle() }) }) }),
+    from: () => ({
+      select: () => ({
+        eq: () => ({ maybeSingle: () => maybeSingle(), order: () => order() }),
+      }),
+    }),
   },
 }));
 
@@ -18,7 +23,7 @@ describe('createAdminSlice', () => {
   let set: ReturnType<typeof vi.fn>;
   let get: ReturnType<typeof vi.fn>;
   beforeEach(() => {
-    signIn.mockReset(); getSession.mockReset(); maybeSingle.mockReset();
+    signIn.mockReset(); getSession.mockReset(); maybeSingle.mockReset(); order.mockClear();
     set = vi.fn((u) => { state = { ...state, ...(typeof u === 'function' ? u(state) : u) }; });
     get = vi.fn(() => state);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68,5 +73,20 @@ describe('createAdminSlice', () => {
     maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'esn' } });
     await state.loadAdminSession();
     expect(state.adminAssociationId).toBe('esn');
+  });
+
+  it('loadSocietyPosts populates societyPosts for the logged-in association', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    order.mockResolvedValueOnce({ data: [{ id: 'p1', association_id: 'supef', title: 'X', date: '2026-07-10' }], error: null } as any);
+    set({ adminAssociationId: 'supef' });
+    await state.loadSocietyPosts();
+    expect(state.societyPosts).toHaveLength(1);
+    expect(state.societyPosts[0].id).toBe('p1');
+  });
+
+  it('loadSocietyPosts clears posts when there is no association', async () => {
+    set({ adminAssociationId: null });
+    await state.loadSocietyPosts();
+    expect(state.societyPosts).toEqual([]);
   });
 });

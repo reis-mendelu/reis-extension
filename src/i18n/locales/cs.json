@@ -991,5 +991,17 @@
       "social": "Společenská akce",
       "other": "Akce"
     }
+  },
+  "admin": {
+    "handle": "Zkratka spolku",
+    "password": "Heslo",
+    "login": "Přihlásit",
+    "loginError": "Neplatná zkratka nebo heslo",
+    "title_panel": "Příspěvky spolku",
+    "title": "Název",
+    "body": "Popis",
+    "roomCode": "Místnost",
+    "addPost": "Přidat příspěvek",
+    "logout": "Odhlásit"
   }
 }
