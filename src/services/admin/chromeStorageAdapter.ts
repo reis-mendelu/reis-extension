@@ -3,6 +3,11 @@
  * survives reloads). Replaces the default localStorage store, which the project
  * bans (Iron Rule). supabase-js awaits these, so async is fine.
  */
+/* eslint-disable no-restricted-syntax -- this adapter intentionally uses
+   chrome.storage.local directly: it is the string get/set/remove KV that
+   backs the supabase-js auth session (must survive reloads, be iframe-
+   accessible, and NOT be localStorage). StorageService is a typed IDB
+   wrapper, not a drop-in for supabase-js's storage contract. */
 export const chromeStorageAdapter = {
   getItem: async (key: string): Promise<string | null> => {
     // Real chrome.storage.local.get() always resolves an object (never
