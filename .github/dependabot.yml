@@ -15,9 +15,11 @@ updates:
       # Lift when typescript-eslint supports TS 6.
       - dependency-name: "typescript"
         versions: ["6.x"]
-      # @eslint/js 10 drags in eslint 10, which conflicts with the eslint peer
-      # range used transitively by typescript-eslint. Lift when typescript-eslint
-      # supports eslint 10.
+      # eslint 10 / @eslint/js 10 conflict with the eslint peer range used
+      # transitively by typescript-eslint. Both must move together. Lift when
+      # typescript-eslint supports eslint 10.
+      - dependency-name: "eslint"
+        versions: ["10.x"]
       - dependency-name: "@eslint/js"
         versions: ["10.x"]
       # vite 8 — @wxt-dev/module-react and @tailwindcss/vite peers cap at vite 7.
