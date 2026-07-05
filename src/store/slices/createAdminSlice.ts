@@ -57,7 +57,10 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   },
   adminLogout: async () => {
     try { await adminAuthClient.auth.signOut(); } catch (e) { logError('Admin.logout', e); }
-    set({ adminSession: null, adminRole: null, adminAssociationId: null, adminOverlayOpen: false, societyPosts: [] });
+    set({
+      adminSession: null, adminRole: null, adminAssociationId: null, adminOverlayOpen: false,
+      societyPosts: [], societyMapEvents: [], mapMode: 'student',
+    });
   },
   loadAdminSession: async () => {
     const { data } = await adminAuthClient.auth.getSession();
@@ -73,8 +76,9 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   },
   loadSocietyPosts: async () => {
     const associationId = get().adminAssociationId;
-    if (!associationId) { set({ societyPosts: [] }); return; }
+    if (!associationId) { set({ societyPosts: [] }); get().refreshSocietyMapEvents(); return; }
     const posts = await listMyPosts(associationId);
     set({ societyPosts: posts });
+    get().refreshSocietyMapEvents();
   },
 });

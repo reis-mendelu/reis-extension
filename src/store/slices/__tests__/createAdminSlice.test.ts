@@ -16,7 +16,24 @@ vi.mock('../../../services/admin/authClient', () => ({
   },
 }));
 
+// listMyPosts is mocked at the module level (spread-original so createPost/
+// updatePost/deletePost/toRow keep their real implementations for other
+// tests). Local-harness tests below use a minimal AdminSlice-only get()/set()
+// pair, so loadSocietyPosts's new get().refreshSocietyMapEvents() call (a
+// MapSlice method) is stubbed onto `state` — the "admin ↔ map wiring" suite
+// exercises the real wiring against the full useAppStore instead.
+vi.mock('../../../api/societyPosts', async (orig) => ({
+  ...(await orig<typeof import('../../../api/societyPosts')>()),
+  listMyPosts: vi.fn().mockResolvedValue([{
+    id: 'e1', association_id: 'supef', title: 'X', body: null, category: 'party',
+    date: '2026-07-10', end_date: null, time: null, venue_kind: 'offcampus', room_code: null,
+    coord_lng: 16.6, coord_lat: 49.2, location: null, url: null, created_by: null, visible_from: null,
+  }]),
+}));
+
 import { createAdminSlice, type AdminSlice } from '../createAdminSlice';
+import { listMyPosts } from '../../../api/societyPosts';
+import { useAppStore } from '../../useAppStore';
 
 describe('createAdminSlice', () => {
   let state: AdminSlice;
@@ -24,10 +41,17 @@ describe('createAdminSlice', () => {
   let get: ReturnType<typeof vi.fn>;
   beforeEach(() => {
     signIn.mockReset(); getSession.mockReset(); signOut.mockClear(); maybeSingle.mockReset(); order.mockClear();
+    vi.mocked(listMyPosts).mockClear();
     set = vi.fn((u) => { state = { ...state, ...(typeof u === 'function' ? u(state) : u) }; });
     get = vi.fn(() => state);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    state = createAdminSlice(set, get, {} as any);
+    state = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...createAdminSlice(set, get, {} as any),
+      // refreshSocietyMapEvents lives on MapSlice; this local harness only
+      // constructs AdminSlice, so stub it — loadSocietyPosts now calls it.
+      refreshSocietyMapEvents: vi.fn(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
   });
 
   it('starts logged out with overlay closed', () => {
@@ -93,8 +117,14 @@ describe('createAdminSlice', () => {
   });
 
   it('loadSocietyPosts populates societyPosts for the logged-in association', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    order.mockResolvedValueOnce({ data: [{ id: 'p1', association_id: 'supef', title: 'X', date: '2026-07-10' }], error: null } as any);
+    // listMyPosts is mocked at the module level (see top of file); override its
+    // resolved value for this one call so the propagation assertion below still
+    // pins the exact row id, same as before the module-level mock existed.
+    vi.mocked(listMyPosts).mockResolvedValueOnce([{
+      id: 'p1', association_id: 'supef', title: 'X', body: null, category: 'other',
+      date: '2026-07-10', end_date: null, time: null, venue_kind: 'campus', room_code: null,
+      coord_lng: null, coord_lat: null, location: null, url: null, created_by: null, visible_from: null,
+    }]);
     set({ adminAssociationId: 'supef' });
     await state.loadSocietyPosts();
     expect(state.societyPosts).toHaveLength(1);
@@ -105,5 +135,20 @@ describe('createAdminSlice', () => {
     set({ adminAssociationId: null });
     await state.loadSocietyPosts();
     expect(state.societyPosts).toEqual([]);
+  });
+});
+
+describe('admin ↔ map wiring', () => {
+  it('refreshes society map events after loading posts', async () => {
+    useAppStore.setState({ adminAssociationId: 'supef' });
+    await useAppStore.getState().loadSocietyPosts();
+    expect(useAppStore.getState().societyMapEvents.length).toBeGreaterThan(0);
+  });
+
+  it('logout resets map mode to student', async () => {
+    useAppStore.setState({ mapMode: 'society', adminRole: 'association', adminAssociationId: 'supef' });
+    await useAppStore.getState().adminLogout();
+    expect(useAppStore.getState().mapMode).toBe('student');
+    expect(useAppStore.getState().societyMapEvents).toEqual([]);
   });
 });
