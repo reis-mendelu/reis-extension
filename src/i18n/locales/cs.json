@@ -986,6 +986,7 @@
     "mainCampus": "Hlavní kampus",
     "alsoHere": "Také zde",
     "events": "Akce",
+    "mode": { "student": "Studentský pohled", "society": "Režim spolku" },
     "allSocieties": "Vše",
     "myFaculty": "Moje fakulta",
     "noEvents": "Žádné akce",
