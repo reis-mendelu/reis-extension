@@ -1,9 +1,21 @@
+import { z } from 'zod';
 import type { SpolekNotification, AssociationProfile } from './types';
 import { FACULTY_TO_ASSOCIATION, ASSOCIATION_PROFILES } from './config';
 import { supabase } from './supabaseClient';
 import { logError } from '../../utils/reportError';
 
-// ... rest of imports
+// Runtime shape of a `notifications` row. Supabase results are `any`-typed, so
+// we validate before rendering user-facing content rather than trusting the DB.
+const NotificationRowSchema = z.object({
+  id: z.string(),
+  association_id: z.string(),
+  title: z.string(),
+  body: z.string().nullable(),
+  link: z.string().nullable(),
+  created_at: z.string(),
+  expires_at: z.string(),
+  priority: z.string(),
+});
 
 /**
  * Track that notifications were viewed (when bell icon opened)
@@ -56,18 +68,13 @@ export async function fetchNotifications(): Promise<SpolekNotification[]> {
       return [];
     }
 
-interface SupabaseNotification {
-  id: string;
-  association_id: string;
-  title: string;
-  body: string | null;
-  link: string | null;
-  created_at: string;
-  expires_at: string;
-  priority: string;
-}
+    const parsed = z.array(NotificationRowSchema).safeParse(data ?? []);
+    if (!parsed.success) {
+      logError('Spolky.fetchNotifications', parsed.error);
+      return [];
+    }
 
-    return (data || []).map((n: SupabaseNotification) => ({
+    return parsed.data.map((n) => ({
       id: n.id,
       associationId: n.association_id,
       title: n.title,
