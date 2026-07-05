@@ -33,6 +33,7 @@ import { createBulletinSlice } from './slices/createBulletinSlice';
 import { createViewportSlice } from './slices/createViewportSlice';
 import { createMapSlice } from './slices/createMapSlice';
 import { createRsvpSlice } from './slices/createRsvpSlice';
+import { createAdminSlice } from './slices/createAdminSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
@@ -71,6 +72,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createViewportSlice(...a),
   ...createMapSlice(...a),
   ...createRsvpSlice(...a),
+  ...createAdminSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
@@ -98,6 +100,7 @@ export const initializeStore = async () => {
     s.loadLanguage();
     s.loadErrorReportingEnabled();
     s.loadContext();
+    s.loadAdminSession();
 
     // Tier 2: Background data — deferred to avoid thundering-herd on IDB at startup
     queueMicrotask(async () => {
