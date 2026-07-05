@@ -6,6 +6,7 @@ import { fetchExamData, registerExam, unregisterExam } from "../api/exams";
 import { fetchSubjects } from "../api/subjects";
 import type { DataRequestType } from "../types/messages";
 import { scrapedNavMenu } from "./sniper";
+import { downloadDocumentInPage } from "./documentDownloader";
 
 let topUpPopupRef: Window | null = null;
 
@@ -139,6 +140,17 @@ async function handleAction(id: string, action: string, payload: unknown) {
             case "refresh_exams":
                 await refreshExams();
                 result = { success: true };
+                break;
+            case "download_document":
+                // First-party fetch on is.mendelu.cz so the SameSite cookie rides
+                // along; on a non-PDF (session lapsed) redirect to login.
+                try {
+                    await downloadDocumentInPage(p.url, p.filename);
+                    result = { success: true };
+                } catch (e) {
+                    window.location.href = "https://is.mendelu.cz/system/login.pl?lang=cz";
+                    throw e;
+                }
                 break;
             case "open_url": {
                 if (topUpPopupRef && !topUpPopupRef.closed) {
