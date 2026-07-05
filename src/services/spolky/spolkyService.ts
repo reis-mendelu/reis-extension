@@ -17,7 +17,7 @@ export async function trackNotificationsViewed(notificationIds: string[]): Promi
     // We use Promise.all to run them in parallel
     await Promise.all(
       notificationIds.map((id) =>
-        supabase.rpc('increment_notification_view', { row_id: id })
+        supabase.rpc('increment_post_view', { row_id: id })
       )
     );
   } catch (error) {
@@ -33,7 +33,7 @@ export async function trackNotificationClick(notificationId: string): Promise<vo
   if (!notificationId) return;
 
   try {
-    await supabase.rpc('increment_notification_click', { row_id: notificationId });
+    await supabase.rpc('increment_post_click', { row_id: notificationId });
   } catch (error) {
     logError('Spolky.trackNotificationClick', error);
   }
@@ -45,11 +45,11 @@ export async function trackNotificationClick(notificationId: string): Promise<vo
 export async function fetchNotifications(): Promise<SpolekNotification[]> {
   try {
     const { data, error } = await supabase
-      .from('notifications')
+      .from('spolky_events')
       .select('*')
-      .gt('expires_at', new Date().toISOString())
+      .gte('date', new Date().toISOString().slice(0, 10))
       .or('visible_from.is.null,visible_from.lte.' + new Date().toISOString())
-      .order('created_at', { ascending: false })
+      .order('date', { ascending: true })
       .limit(50);
 
     if (error) {
@@ -61,10 +61,10 @@ interface SupabaseNotification {
   association_id: string;
   title: string;
   body: string | null;
-  link: string | null;
+  url: string | null;
   created_at: string;
-  expires_at: string;
-  priority: string;
+  date: string;
+  end_date: string | null;
 }
 
     return (data || []).map((n: SupabaseNotification) => ({
@@ -72,10 +72,10 @@ interface SupabaseNotification {
       associationId: n.association_id,
       title: n.title,
       body: n.body || n.title,
-      link: n.link || undefined,
+      link: n.url || undefined,
       createdAt: n.created_at,
-      expiresAt: n.expires_at,
-      priority: n.priority as 'normal' | 'high'
+      expiresAt: n.end_date || n.date,   // events use their date as natural expiry
+      priority: 'normal' as const,
     }));
   } catch {
     return [];

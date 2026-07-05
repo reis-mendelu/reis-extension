@@ -15,13 +15,13 @@ describe('spolkyService', () => {
   });
 
   describe('trackNotificationsViewed', () => {
-    it('should call increment_notification_view RPC for each notification ID', async () => {
+    it('should call increment_post_view RPC for each notification ID', async () => {
       const notificationIds = ['id1', 'id2'];
       await trackNotificationsViewed(notificationIds);
 
       expect(supabase.rpc).toHaveBeenCalledTimes(2);
-      expect(supabase.rpc).toHaveBeenCalledWith('increment_notification_view', { row_id: 'id1' });
-      expect(supabase.rpc).toHaveBeenCalledWith('increment_notification_view', { row_id: 'id2' });
+      expect(supabase.rpc).toHaveBeenCalledWith('increment_post_view', { row_id: 'id1' });
+      expect(supabase.rpc).toHaveBeenCalledWith('increment_post_view', { row_id: 'id2' });
     });
 
     it('should not call RPC if notificationIds is empty', async () => {
@@ -36,19 +36,19 @@ describe('spolkyService', () => {
 
         await trackNotificationsViewed(['id1']);
         
-        expect(supabase.rpc).toHaveBeenCalledWith('increment_notification_view', { row_id: 'id1' });
+        expect(supabase.rpc).toHaveBeenCalledWith('increment_post_view', { row_id: 'id1' });
         expect(consoleSpy).toHaveBeenCalled();
         consoleSpy.mockRestore();
     });
   });
 
   describe('trackNotificationClick', () => {
-    it('should call increment_notification_click RPC for the notification ID', async () => {
+    it('should call increment_post_click RPC for the notification ID', async () => {
       const notificationId = 'id1';
       await trackNotificationClick(notificationId);
 
       expect(supabase.rpc).toHaveBeenCalledTimes(1);
-      expect(supabase.rpc).toHaveBeenCalledWith('increment_notification_click', { row_id: 'id1' });
+      expect(supabase.rpc).toHaveBeenCalledWith('increment_post_click', { row_id: 'id1' });
     });
 
     it('should not call RPC if notificationId is empty', async () => {
@@ -62,7 +62,7 @@ describe('spolkyService', () => {
 
         await trackNotificationClick('id1');
         
-        expect(supabase.rpc).toHaveBeenCalledWith('increment_notification_click', { row_id: 'id1' });
+        expect(supabase.rpc).toHaveBeenCalledWith('increment_post_click', { row_id: 'id1' });
         expect(consoleSpy).toHaveBeenCalled();
         consoleSpy.mockRestore();
     });
