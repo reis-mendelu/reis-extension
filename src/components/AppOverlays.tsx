@@ -3,6 +3,7 @@ import { SubjectFileDrawer } from './SubjectFileDrawer'
 import { FeedbackModal } from './Feedback/FeedbackModal'
 import { StudyJamModal } from './StudyJams/StudyJamModal'
 import { EduroamDrawer } from './Eduroam/EduroamDrawer'
+import { DocumentsDrawer } from './StudyDocuments/DocumentsDrawer'
 import { useAppStore } from '../store/useAppStore'
 import type { SelectedSubject } from '../types/app';
 interface AppOverlaysProps {
@@ -25,6 +26,7 @@ export function AppOverlays({
             <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
             <StudyJamModal isOpen={isStudyJamOpen} onClose={() => setIsStudyJamOpen(false)} />
             <EduroamDrawer />
+            <DocumentsDrawer />
         </>
     );
 }

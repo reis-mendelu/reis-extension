@@ -1,6 +1,5 @@
-import { Home, Book, CalendarCheck, LayoutDashboard, ClipboardList, PenTool, User, Wifi, Map, FileCheck2 } from 'lucide-react';
+import { Home, Book, CalendarCheck, LayoutDashboard, ClipboardList, PenTool, User, Wifi, Map, FileText } from 'lucide-react';
 import type { MenuItem } from '../menuConfig';
-import { buildConfirmationUrl } from '../../api/confirmationOfStudy';
 
 export const mainItems = (sid: string, oid: string, t: (key: string) => string, lang: string = 'cz'): MenuItem[] => [
     { id: 'dashboard', label: t('sidebar.dashboard'), icon: <Home className="w-5 h-5" />, href: `https://is.mendelu.cz/auth/?lang=${lang}` },
@@ -13,7 +12,7 @@ export const mainItems = (sid: string, oid: string, t: (key: string) => string, 
         icon: <User className="w-5 h-5" />,
         expandable: true,
         children: [
-            { id: 'potvrzeni-studia', label: t('sidebar.confirmation'), icon: <FileCheck2 className="w-4 h-4" />, href: buildConfirmationUrl(sid, lang), isFeature: true },
+            { id: 'dokumenty', label: t('sidebar.documents'), icon: <FileText className="w-4 h-4" />, isFeature: true },
             { id: 'eduroam', label: t('sidebar.eduroam'), icon: <Wifi className="w-4 h-4" />, isFeature: true },
             { id: 'portal-studenta', label: t('sidebar.portal'), icon: <LayoutDashboard className="w-4 h-4" />, href: `https://is.mendelu.cz/auth/student/moje_studium.pl?lang=${lang}` },
             { id: 'zaznamniky', label: t('sidebar.notebooks'), icon: <ClipboardList className="w-4 h-4" />, href: `https://is.mendelu.cz/auth/student/list.pl?studium=${sid};obdobi=${oid};lang=${lang}` },
