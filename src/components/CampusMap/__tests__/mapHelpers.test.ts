@@ -1,6 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { shortLabel, lonLatToLatLng, ringToLatLng, searchPlaces, polygonCentroid, categoryStyle, landmarkGroupLabels } from '../mapHelpers';
-import type { RoomIndexEntry, PoiFeature, Landmark } from '../../../types/campusMap';
+import { shortLabel, lonLatToLatLng, ringToLatLng, searchPlaces, polygonCentroid, categoryStyle, landmarkGroupLabels, roomCodeToCoord } from '../mapHelpers';
+import type { RoomIndexEntry, BuildingsMeta, PoiFeature, Landmark } from '../../../types/campusMap';
+
+describe('roomCodeToCoord', () => {
+  const index = [{ code: 'BA39N1009', name: 'Q01', buildingId: 0, floorId: 5, floorLevel: 0, placeId: 546 }] as unknown as RoomIndexEntry[];
+  const buildings = { buildings: [{ id: 0, name: 'Q', center: [49.2096, 16.6142] }], campus: {} } as unknown as BuildingsMeta;
+  it('resolves a room code to its building centre as [lng, lat]', () => {
+    expect(roomCodeToCoord('Q01', index, buildings)).toEqual([16.6142, 49.2096]);
+  });
+  it('matches by index code as well as display name', () => {
+    expect(roomCodeToCoord('BA39N1009', index, buildings)).toEqual([16.6142, 49.2096]);
+  });
+  it('returns null for an unknown code', () => {
+    expect(roomCodeToCoord('ZZZ', index, buildings)).toBeNull();
+  });
+});
 
 describe('categoryStyle', () => {
   it('maps known categories to a fill + stroke pair', () => {

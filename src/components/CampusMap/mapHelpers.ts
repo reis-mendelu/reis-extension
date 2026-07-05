@@ -1,7 +1,21 @@
 import type { PathOptions } from 'leaflet';
-import type { RoomCategory, RoomIndexEntry, PoiFeature, MapSelection, Landmark, RemotePlace } from '../../types/campusMap';
+import type { RoomCategory, RoomIndexEntry, BuildingsMeta, PoiFeature, MapSelection, Landmark, RemotePlace } from '../../types/campusMap';
 
 export interface RoomStyle { fill: string; stroke: string; }
+
+// Campus events store only a room code (no coordinate); resolve the code to its
+// building's centre so the event can be pinned on the overview. buildings.json
+// stores `center` as [lat, lng] while MapEvent coords are [lng, lat] — hence the
+// swap. Returns null for an unknown code so the caller leaves it unpinned.
+export function roomCodeToCoord(
+  code: string, index: RoomIndexEntry[], buildings: BuildingsMeta,
+): [number, number] | null {
+  const entry = index.find((e) => e.code === code || e.name === code);
+  if (!entry) return null;
+  const b = buildings.buildings.find((x) => x.id === entry.buildingId);
+  if (!b) return null;
+  return [b.center[1], b.center[0]];
+}
 
 // Leaflet polygon styles for the map. Fixed literals (the basemap is always
 // light) kept here with categoryStyle so all map styling lives in one place.

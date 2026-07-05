@@ -5,7 +5,7 @@ import roomsIndexJson from '../../data/map/rooms-index.json';
 import poisJson from '../../data/map/pois.json';
 import landmarksJson from '../../data/map/landmarks.json';
 import remotePlacesJson from '../../data/map/remotePlaces.json';
-import { searchPlaces, polygonCentroid, remotePlaceCenter } from '../../components/CampusMap/mapHelpers';
+import { searchPlaces, polygonCentroid, remotePlaceCenter, roomCodeToCoord } from '../../components/CampusMap/mapHelpers';
 import { fetchBuildingRooms } from '../../api/campusMap';
 import { fetchMapEvents } from '../../api/mapEvents';
 import { logError } from '../../utils/reportError';
@@ -129,7 +129,14 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     if (get().mapEventsLoaded) return;
     try {
       const events = await fetchMapEvents();
-      set({ mapEvents: events, mapEventsLoaded: true });
+      // Campus events carry a room code but no coordinate; resolve it to the
+      // building centre here (where the map data lives) so they can be pinned.
+      const located = events.map((e) =>
+        e.coord || e.venueKind !== 'campus' || !e.roomCode
+          ? e
+          : { ...e, coord: roomCodeToCoord(e.roomCode, INDEX, META) },
+      );
+      set({ mapEvents: located, mapEventsLoaded: true });
     } catch (err) {
       logError('MapSlice.loadMapEvents', err);
     }
