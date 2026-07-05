@@ -1,6 +1,37 @@
 import { describe, it, expect } from 'vitest';
-import { shortLabel, lonLatToLatLng, ringToLatLng, searchPlaces, polygonCentroid, categoryStyle, landmarkGroupLabels } from '../mapHelpers';
-import type { RoomIndexEntry, PoiFeature, Landmark } from '../../../types/campusMap';
+import {
+  shortLabel,
+  lonLatToLatLng,
+  ringToLatLng,
+  searchPlaces,
+  polygonCentroid,
+  categoryStyle,
+  landmarkGroupLabels,
+  roomCodeToCoord,
+} from '../mapHelpers';
+import type { RoomIndexEntry, BuildingsMeta, PoiFeature, Landmark } from '../../../types/campusMap';
+
+describe('roomCodeToCoord', () => {
+  const index = [
+    { code: 'BA39N1009', name: 'Q01', buildingId: 0, floorId: 5, floorLevel: 0, placeId: 546 },
+  ] as unknown as RoomIndexEntry[];
+  const buildings = {
+    buildings: [{ id: 0, name: 'Q', center: [49.2096, 16.6142] }],
+    campus: {},
+  } as unknown as BuildingsMeta;
+  it('resolves a room code to its building centre as [lng, lat]', () => {
+    expect(roomCodeToCoord('Q01', index, buildings)).toEqual([16.6142, 49.2096]);
+  });
+  it('matches by index code as well as display name', () => {
+    expect(roomCodeToCoord('BA39N1009', index, buildings)).toEqual([16.6142, 49.2096]);
+  });
+  it('normalizes case and whitespace before matching', () => {
+    expect(roomCodeToCoord('  q01 ', index, buildings)).toEqual([16.6142, 49.2096]);
+  });
+  it('returns null for an unknown code', () => {
+    expect(roomCodeToCoord('ZZZ', index, buildings)).toBeNull();
+  });
+});
 
 describe('categoryStyle', () => {
   it('maps known categories to a fill + stroke pair', () => {
@@ -25,20 +56,57 @@ describe('coordinate flip', () => {
     expect(lonLatToLatLng([16.61, 49.21])).toEqual([49.21, 16.61]);
   });
   it('flips every vertex of a ring', () => {
-    expect(ringToLatLng([[16.6, 49.2], [16.7, 49.3]])).toEqual([[49.2, 16.6], [49.3, 16.7]]);
+    expect(
+      ringToLatLng([
+        [16.6, 49.2],
+        [16.7, 49.3],
+      ])
+    ).toEqual([
+      [49.2, 16.6],
+      [49.3, 16.7],
+    ]);
   });
 });
 
 describe('searchPlaces', () => {
   const index: RoomIndexEntry[] = [
     { code: 'Q01', name: 'Q01', buildingId: 0, floorId: 9, floorLevel: 0, placeId: 1 },
-    { code: 'BA04N3047', name: 'BA04N3047', buildingId: 54678, floorId: 7, floorLevel: 3, placeId: 2 },
+    {
+      code: 'BA04N3047',
+      name: 'BA04N3047',
+      buildingId: 54678,
+      floorId: 7,
+      floorLevel: 3,
+      placeId: 2,
+    },
   ];
-  const pois = [{ type: 'Feature', geometry: { type: 'Point', coordinates: [16.6, 49.2] },
-    properties: { id: 9, name: 'FRRMS', type: 'building', url: null, phone: null, email: null } }] as PoiFeature[];
+  const pois = [
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [16.6, 49.2] },
+      properties: { id: 9, name: 'FRRMS', type: 'building', url: null, phone: null, email: null },
+    },
+  ] as PoiFeature[];
   const landmarks = [
-    { id: 1588, name: 'Tauferovy koleje', type: 'dormitory', url: null, phone: null, email: null,
-      outline: { type: 'Polygon', coordinates: [[[16.588, 49.214], [16.589, 49.214], [16.589, 49.215], [16.588, 49.214]]] } },
+    {
+      id: 1588,
+      name: 'Tauferovy koleje',
+      type: 'dormitory',
+      url: null,
+      phone: null,
+      email: null,
+      outline: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [16.588, 49.214],
+            [16.589, 49.214],
+            [16.589, 49.215],
+            [16.588, 49.214],
+          ],
+        ],
+      },
+    },
   ] as Landmark[];
 
   it('matches a room code case-insensitively', () => {
@@ -80,24 +148,41 @@ describe('searchPlaces', () => {
   });
   it('finds a landmark by name', () => {
     const r = searchPlaces('tauferovy', index, pois, landmarks);
-    expect(r.some((m) => m.kind === 'landmark' && m.landmark.name === 'Tauferovy koleje')).toBe(true);
+    expect(r.some((m) => m.kind === 'landmark' && m.landmark.name === 'Tauferovy koleje')).toBe(
+      true
+    );
   });
 });
 
 describe('polygonCentroid', () => {
   it('averages the ring vertices to a [lon, lat] point', () => {
-    expect(polygonCentroid([[0, 0], [2, 0], [2, 2], [0, 2]])).toEqual([1, 1]);
+    expect(
+      polygonCentroid([
+        [0, 0],
+        [2, 0],
+        [2, 2],
+        [0, 2],
+      ])
+    ).toEqual([1, 1]);
   });
 });
 
 describe('landmarkGroupLabels', () => {
   // A square ring (closed) around a given [lon, lat] centre, ~tiny footprint.
   const sq = (lon: number, lat: number): number[][] => [
-    [lon - 0.0001, lat - 0.0001], [lon + 0.0001, lat - 0.0001],
-    [lon + 0.0001, lat + 0.0001], [lon - 0.0001, lat + 0.0001], [lon - 0.0001, lat - 0.0001],
+    [lon - 0.0001, lat - 0.0001],
+    [lon + 0.0001, lat - 0.0001],
+    [lon + 0.0001, lat + 0.0001],
+    [lon - 0.0001, lat + 0.0001],
+    [lon - 0.0001, lat - 0.0001],
   ];
   const mk = (id: number, name: string, lon: number, lat: number): Landmark => ({
-    id, name, type: 'building', url: null, phone: null, email: null,
+    id,
+    name,
+    type: 'building',
+    url: null,
+    phone: null,
+    email: null,
     outline: { type: 'Polygon', coordinates: [sq(lon, lat)] },
   });
 
@@ -114,8 +199,8 @@ describe('landmarkGroupLabels', () => {
   it('keeps distinct nearby buildings (JAK blocks, 65 m+ apart) separate', () => {
     // ~0.001 deg lon ≈ 73 m at this latitude — beyond the 40 m threshold.
     const labels = landmarkGroupLabels([
-      mk(10, 'Koleje JAK Blok A', 16.610, 49.210),
-      mk(11, 'Koleje JAK Blok B', 16.611, 49.210),
+      mk(10, 'Koleje JAK Blok A', 16.61, 49.21),
+      mk(11, 'Koleje JAK Blok B', 16.611, 49.21),
     ]);
     expect(labels.get(10)).toBe('Koleje JAK Blok A');
     expect(labels.get(11)).toBe('Koleje JAK Blok B');

@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../../../api/campusMap', () => ({ fetchBuildingRooms: vi.fn() }));
-vi.mock('../../../api/mapEvents', () => ({ fetchMapEvents: vi.fn() }));
+vi.mock('../../../api/mapEvents', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../api/mapEvents')>();
+  return { ...actual, fetchMapEvents: vi.fn() };
+});
 import { fetchBuildingRooms } from '../../../api/campusMap';
 import { fetchMapEvents } from '../../../api/mapEvents';
 import { useAppStore } from '../../useAppStore';
@@ -12,25 +15,82 @@ import type { MapEvent } from '../../../types/events';
 // one on-campus event (has a coord, so it's pin-able) and one off-campus
 // event (no coord), matching the variety the store-level tests exercise.
 const MOCK_EVENTS: MapEvent[] = [
-  { id: 'ev-1', title: 'PEF Kvíz', url: '', date: '2026-07-10', endDate: null, time: '18:00',
-    location: null, imageUrl: null, organizerKey: 'pef', societyId: 'supef',
-    coord: [16.614247, 49.209592], roomCode: 'Q01', venueKind: 'campus', category: 'quiz' },
-  { id: 'ev-2', title: 'Tram Party', url: 'https://www.instagram.com/esnmendelubrno/',
-    date: '2026-07-17', endDate: null, time: '20:00', location: 'Česká (sraz)', imageUrl: null,
-    organizerKey: 'mendelu', societyId: 'esn', coord: null, roomCode: null,
-    venueKind: 'offcampus', category: 'party' },
+  {
+    id: 'ev-1',
+    title: 'PEF Kvíz',
+    url: '',
+    date: '2026-07-10',
+    endDate: null,
+    time: '18:00',
+    location: null,
+    imageUrl: null,
+    organizerKey: 'pef',
+    societyId: 'supef',
+    coord: [16.614247, 49.209592],
+    roomCode: 'Q01',
+    venueKind: 'campus',
+    category: 'quiz',
+  },
+  {
+    id: 'ev-2',
+    title: 'Tram Party',
+    url: 'https://www.instagram.com/esnmendelubrno/',
+    date: '2026-07-17',
+    endDate: null,
+    time: '20:00',
+    location: 'Česká (sraz)',
+    imageUrl: null,
+    organizerKey: 'mendelu',
+    societyId: 'esn',
+    coord: null,
+    roomCode: null,
+    venueKind: 'offcampus',
+    category: 'party',
+  },
 ];
 
-const fc = (id: number, floorId: number): RoomsCollection => ({ type: 'FeatureCollection',
-  features: [{ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[16.6, 49.2]]] },
-    properties: { id: 1, buildingId: id, floorId, floorLevel: 0, name: 'Q01', type: 't',
-      category: 'teaching', label: 'l', passportNumber: null, seats: null,
-      hasProjector: false, hasWhiteboard: false, code: null } }] });
+const fc = (id: number, floorId: number): RoomsCollection => ({
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      geometry: { type: 'Polygon', coordinates: [[[16.6, 49.2]]] },
+      properties: {
+        id: 1,
+        buildingId: id,
+        floorId,
+        floorLevel: 0,
+        name: 'Q01',
+        type: 't',
+        category: 'teaching',
+        label: 'l',
+        passportNumber: null,
+        seats: null,
+        hasProjector: false,
+        hasWhiteboard: false,
+        code: null,
+      },
+    },
+  ],
+});
 
 beforeEach(() => {
-  useAppStore.setState({ activeBuildingId: null, activeFloorId: null, mapSelection: null,
-    roomsByBuilding: {}, mapLoadingBuilding: null, mapSearchQuery: '', mapSearchResults: [], mapFocusRequest: 0,
-    mapEvents: [], mapEventsLoaded: false, mapPanelTab: 'places', eventFilter: 'all' });
+  useAppStore.setState({
+    activeBuildingId: null,
+    activeFloorId: null,
+    mapSelection: null,
+    roomsByBuilding: {},
+    mapLoadingBuilding: null,
+    mapSearchQuery: '',
+    mapSearchResults: [],
+    mapFocusRequest: 0,
+    mapEvents: [],
+    mapEventsLoaded: false,
+    mapPanelTab: 'places',
+    eventFilter: 'all',
+    placingEvent: false,
+    draftCoord: null,
+  });
   vi.mocked(fetchBuildingRooms).mockReset();
   vi.mocked(fetchMapEvents).mockReset();
   vi.mocked(fetchMapEvents).mockResolvedValue(MOCK_EVENTS);
@@ -51,7 +111,15 @@ describe('mapSlice', () => {
   });
 
   it('clearMapSelection drops the selection but keeps the camera (building/floor) untouched', () => {
-    useAppStore.setState({ activeBuildingId: null, activeFloorId: null, mapSelection: { kind: 'poi', poi: { id: 1, name: 'x', type: '', url: null, phone: null, email: null }, coord: [16.6, 49.2] } });
+    useAppStore.setState({
+      activeBuildingId: null,
+      activeFloorId: null,
+      mapSelection: {
+        kind: 'poi',
+        poi: { id: 1, name: 'x', type: '', url: null, phone: null, email: null },
+        coord: [16.6, 49.2],
+      },
+    });
     useAppStore.getState().clearMapSelection();
     expect(useAppStore.getState().mapSelection).toBeNull();
     expect(useAppStore.getState().activeBuildingId).toBeNull();
@@ -89,7 +157,11 @@ describe('mapSlice', () => {
     const s = useAppStore.getState();
     expect(s.activeBuildingId).toBeNull();
     expect(s.activeFloorId).toBeNull();
-    expect(s.mapSelection).toMatchObject({ kind: 'poi', poi: { name: 'Koleje JAK' }, coord: [16.62, 49.22] });
+    expect(s.mapSelection).toMatchObject({
+      kind: 'poi',
+      poi: { name: 'Koleje JAK' },
+      coord: [16.62, 49.22],
+    });
     expect(s.mapFocusRequest).toBe(before + 1);
   });
 
@@ -101,7 +173,12 @@ describe('mapSlice', () => {
     expect(s.activeFloorId).toBeNull();
     expect(s.mapSelection).toMatchObject({
       kind: 'poi',
-      poi: { id: -102, name: 'Zahradnická fakulta – Lednice', type: 'Valtická 337, Lednice', url: 'https://zf.mendelu.cz/' },
+      poi: {
+        id: -102,
+        name: 'Zahradnická fakulta – Lednice',
+        type: 'Valtická 337, Lednice',
+        url: 'https://zf.mendelu.cz/',
+      },
     });
     // Coord is the footprint centroid, near Lednice (lon ~16.80, lat ~48.80).
     const coord = (s.mapSelection as { coord: [number, number] }).coord;
@@ -178,5 +255,155 @@ describe('mapSlice', () => {
     const s = useAppStore.getState();
     expect(s.mapSelection?.kind).toBe('event');
     expect(s.mapFocusRequest).toBe(before); // no coordinate → nothing to fly to
+  });
+});
+
+describe('map mode + society events', () => {
+  it('defaults to student mode with no society events', () => {
+    const s = useAppStore.getState();
+    expect(s.mapMode).toBe('student');
+    expect(s.societyMapEvents).toEqual([]);
+  });
+
+  it('setMapMode stays student when no society is logged in', () => {
+    useAppStore.setState({ adminRole: null, adminAssociationId: null });
+    useAppStore.getState().setMapMode('society');
+    expect(useAppStore.getState().mapMode).toBe('student');
+  });
+
+  it('setMapMode enters society mode for a logged-in association', () => {
+    useAppStore.setState({ adminRole: 'association', adminAssociationId: 'supef' });
+    useAppStore.getState().setMapMode('society');
+    expect(useAppStore.getState().mapMode).toBe('society');
+    useAppStore.getState().setMapMode('student');
+    expect(useAppStore.getState().mapMode).toBe('student');
+  });
+
+  it('refreshSocietyMapEvents maps societyPosts to located MapEvents', () => {
+    useAppStore.setState({
+      societyPosts: [
+        {
+          id: 'e1',
+          association_id: 'supef',
+          title: 'Party',
+          body: null,
+          category: 'party',
+          date: '2026-07-10',
+          end_date: null,
+          time: '20:00',
+          venue_kind: 'offcampus',
+          room_code: null,
+          coord_lng: 16.61,
+          coord_lat: 49.21,
+          location: 'Bar',
+          url: null,
+          created_by: null,
+          visible_from: null,
+        },
+      ],
+    });
+    useAppStore.getState().refreshSocietyMapEvents();
+    const evs = useAppStore.getState().societyMapEvents;
+    expect(evs).toHaveLength(1);
+    expect(evs[0]).toMatchObject({ id: 'e1', title: 'Party', coord: [16.61, 49.21] });
+  });
+});
+
+describe('focusEventById resolves against the active pool', () => {
+  it('society mode: resolves a scheduled/past event from societyMapEvents (not mapEvents)', () => {
+    const scheduled: MapEvent = {
+      id: 'sch1',
+      title: 'Future Society Event',
+      url: '',
+      date: '2027-01-01',
+      endDate: null,
+      time: '18:00',
+      location: null,
+      imageUrl: null,
+      organizerKey: 'pef',
+      societyId: 'supef',
+      coord: [16.614247, 49.209592],
+      roomCode: 'Q01',
+      venueKind: 'campus',
+      category: 'quiz',
+    };
+    useAppStore.setState({ mapMode: 'society', societyMapEvents: [scheduled], mapEvents: [] });
+    useAppStore.getState().focusEventById('sch1');
+    const s = useAppStore.getState();
+    expect(s.mapSelection?.kind).toBe('event');
+    expect((s.mapSelection as { event: MapEvent }).event.id).toBe('sch1');
+  });
+
+  it('student mode: resolves from mapEvents (not societyMapEvents)', () => {
+    const pub: MapEvent = {
+      id: 'pub1',
+      title: 'Public Event',
+      url: '',
+      date: '2026-08-01',
+      endDate: null,
+      time: '18:00',
+      location: null,
+      imageUrl: null,
+      organizerKey: 'mendelu',
+      societyId: 'esn',
+      coord: [16.614247, 49.209592],
+      roomCode: 'Q01',
+      venueKind: 'campus',
+      category: 'quiz',
+    };
+    useAppStore.setState({ mapMode: 'student', mapEvents: [pub], societyMapEvents: [] });
+    useAppStore.getState().focusEventById('pub1');
+    const s = useAppStore.getState();
+    expect(s.mapSelection?.kind).toBe('event');
+    expect((s.mapSelection as { event: MapEvent }).event.id).toBe('pub1');
+  });
+});
+
+describe('click-to-place', () => {
+  it('arms and captures a coordinate', () => {
+    const s = useAppStore.getState();
+    s.beginPlacing();
+    expect(useAppStore.getState().placingEvent).toBe(true);
+    useAppStore.getState().placeDraftCoord([16.6, 49.2]);
+    const st = useAppStore.getState();
+    expect(st.placingEvent).toBe(false);
+    expect(st.draftCoord).toEqual([16.6, 49.2]);
+  });
+  it('cancel clears the armed state without a coordinate', () => {
+    useAppStore.getState().beginPlacing();
+    useAppStore.getState().cancelPlacing();
+    expect(useAppStore.getState().placingEvent).toBe(false);
+    expect(useAppStore.getState().draftCoord).toBeNull();
+  });
+
+  it('beginPlacing returns to the campus overview so floor drill-in cannot swallow the click', () => {
+    useAppStore.setState({
+      activeBuildingId: 123,
+      activeFloorId: 5,
+      mapFocusRequest: 0,
+      placingEvent: false,
+    });
+    useAppStore.getState().beginPlacing();
+    const s = useAppStore.getState();
+    expect(s.placingEvent).toBe(true);
+    expect(s.activeBuildingId).toBeNull();
+    expect(s.mapFocusRequest).toBe(1);
+  });
+});
+
+describe('composer open/close', () => {
+  it('openComposer sets composerOpen true; closeComposer resets composerOpen, placingEvent, draftCoord', () => {
+    const s = useAppStore.getState();
+    s.openComposer();
+    expect(useAppStore.getState().composerOpen).toBe(true);
+    // Arm placement AND seed a draft coord so we can prove closeComposer resets BOTH.
+    useAppStore.setState({ draftCoord: [16.6, 49.2] });
+    s.beginPlacing(); // placingEvent -> true, draftCoord untouched
+    expect(useAppStore.getState().placingEvent).toBe(true);
+    s.closeComposer();
+    const st = useAppStore.getState();
+    expect(st.composerOpen).toBe(false);
+    expect(st.placingEvent).toBe(false); // genuinely reset by closeComposer
+    expect(st.draftCoord).toBeNull(); // genuinely reset by closeComposer
   });
 });

@@ -12,6 +12,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useIskamStore } from '../../store/iskamStore';
 import { useUserParams } from '../../hooks/useUserParams';
 import { logout } from '../../api/proxyClient';
+import { useTripleClick } from '../../hooks/ui/useTripleClick';
 
 interface MobileProfileSheetProps {
   isOpen: boolean;
@@ -20,19 +21,26 @@ interface MobileProfileSheetProps {
   isIskam?: boolean;
 }
 
-export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback, isIskam }: MobileProfileSheetProps) {
+export function MobileProfileSheet({
+  isOpen,
+  onClose,
+  onOpenFeedback,
+  isIskam,
+}: MobileProfileSheetProps) {
   const { isEnabled, isLoading: syncLoading, toggle: tSync } = useOutlookSync();
   const { isDark, isLoading: tLoading, toggle: tTheme } = useTheme();
   const { isSubscribed, toggleAssociation } = useSpolkySettings();
   const [spolkyOpen, setSpolkyOpen] = useState(false);
   const { t } = useTranslation();
-  const language = useAppStore(state => state.language);
-  const setLanguage = useAppStore(state => state.setLanguage);
-  const errorReportingEnabled = useAppStore(state => state.errorReportingEnabled);
-  const setErrorReportingEnabled = useAppStore(state => state.setErrorReportingEnabled);
+  const language = useAppStore((state) => state.language);
+  const setLanguage = useAppStore((state) => state.setLanguage);
+  const errorReportingEnabled = useAppStore((state) => state.errorReportingEnabled);
+  const setErrorReportingEnabled = useAppStore((state) => state.setErrorReportingEnabled);
+  const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
+  const onBadge = useTripleClick(openSocietyAdmin);
   const { params } = useUserParams();
 
-  const data = useIskamStore(s => s.data);
+  const data = useIskamStore((s) => s.data);
   const iskamProfile = data?.profile;
 
   return (
@@ -59,7 +67,7 @@ export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback, isIskam }:
             <div className="flex-1 overflow-y-auto px-4 pb-6">
               <div className="pt-1 pb-3 border-b border-base-200">
                 <h3 className="font-bold text-base mb-3">{t('sidebar.profile')}</h3>
-                
+
                 {/* IS MENDELU Profile Info */}
                 {params && !isIskam && (
                   <div className="flex flex-col gap-2.5 text-xs">
@@ -75,8 +83,12 @@ export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback, isIskam }:
                     )}
                     <div className="flex items-center gap-3 text-base-content/60">
                       <Hash size={16} className="text-base-content/30" />
-                      <span className="opacity-70">{t('settings.studentId')}</span>
-                      <span className="font-mono text-xs bg-base-300/50 px-2.5 py-1 rounded-lg border border-base-300/50 select-all ml-auto">{params.studentId}</span>
+                      <span onClick={onBadge} className="opacity-70">
+                        {t('settings.studentId')}
+                      </span>
+                      <span className="font-mono text-xs bg-base-300/50 px-2.5 py-1 rounded-lg border border-base-300/50 select-all ml-auto">
+                        {params.studentId}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -86,7 +98,9 @@ export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback, isIskam }:
                   <div className="flex flex-col gap-2.5 text-xs">
                     <div className="flex items-center gap-3 text-base-content/90">
                       <User size={16} className="text-base-content/40" />
-                      <span className="font-semibold text-sm truncate">{iskamProfile.fullName}</span>
+                      <span className="font-semibold text-sm truncate">
+                        {iskamProfile.fullName}
+                      </span>
                     </div>
                     {iskamProfile.email && (
                       <div className="flex items-center gap-3 text-base-content/60">
@@ -105,8 +119,18 @@ export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback, isIskam }:
                     <span className="text-xs opacity-70">{t('settings.language')}</span>
                   </div>
                   <div className="join bg-base-300/50 p-0.5 rounded-lg border border-base-300">
-                    <button onClick={() => setLanguage('cz')} className={`join-item btn btn-xs border-none h-6 min-h-0 ${language === 'cz' ? 'btn-primary shadow-sm' : 'btn-ghost opacity-50 hover:opacity-100'}`}>CZ</button>
-                    <button onClick={() => setLanguage('en')} className={`join-item btn btn-xs border-none h-6 min-h-0 ${language === 'en' ? 'btn-primary shadow-sm' : 'btn-ghost opacity-50 hover:opacity-100'}`}>EN</button>
+                    <button
+                      onClick={() => setLanguage('cz')}
+                      className={`join-item btn btn-xs border-none h-6 min-h-0 ${language === 'cz' ? 'btn-primary shadow-sm' : 'btn-ghost opacity-50 hover:opacity-100'}`}
+                    >
+                      CZ
+                    </button>
+                    <button
+                      onClick={() => setLanguage('en')}
+                      className={`join-item btn btn-xs border-none h-6 min-h-0 ${language === 'en' ? 'btn-primary shadow-sm' : 'btn-ghost opacity-50 hover:opacity-100'}`}
+                    >
+                      EN
+                    </button>
                   </div>
                 </div>
                 <label className="flex items-center justify-between gap-3 px-1 py-2 cursor-pointer hover:bg-base-200 rounded-lg">
@@ -114,14 +138,22 @@ export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback, isIskam }:
                     <Moon size={16} className="text-base-content/50" />
                     <span className="text-xs opacity-70">{t('settings.darkMode')}</span>
                   </div>
-                  <input type="checkbox" className="toggle toggle-primary toggle-sm" checked={isDark} disabled={tLoading} onChange={tTheme} />
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-primary toggle-sm"
+                    checked={isDark}
+                    disabled={tLoading}
+                    onChange={tTheme}
+                  />
                 </label>
                 <label className="flex items-center justify-between gap-3 px-1 py-2 cursor-pointer hover:bg-base-200 rounded-lg">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <Bug size={16} className="text-base-content/50 shrink-0" />
                     <div className="flex flex-col min-w-0">
                       <span className="text-xs opacity-70">{t('settings.errorReporting')}</span>
-                      <span className="text-[10px] opacity-50 truncate">{t('settings.errorReportingDesc')}</span>
+                      <span className="text-[10px] opacity-50 truncate">
+                        {t('settings.errorReportingDesc')}
+                      </span>
                     </div>
                   </div>
                   <input
@@ -135,30 +167,45 @@ export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback, isIskam }:
 
               {!isIskam && (
                 <div className="py-1 border-b border-base-200">
-                  <SpolkySection expanded={spolkyOpen} onToggle={() => setSpolkyOpen(!spolkyOpen)} isSub={isSubscribed} onToggleAssoc={toggleAssociation} />
+                  <SpolkySection
+                    expanded={spolkyOpen}
+                    onToggle={() => setSpolkyOpen(!spolkyOpen)}
+                    isSub={isSubscribed}
+                    onToggleAssoc={toggleAssociation}
+                  />
                   <OutlookSyncToggle enabled={isEnabled} loading={syncLoading} onToggle={tSync} />
                 </div>
               )}
 
               <div className="py-1">
                 {!isIskam && onOpenFeedback && (
-                  <button onClick={() => { onClose(); onOpenFeedback(); }} className="w-full flex items-center gap-3 px-1 py-1.5 hover:bg-base-200 rounded-lg transition-colors">
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onOpenFeedback();
+                    }}
+                    className="w-full flex items-center gap-3 px-1 py-1.5 hover:bg-base-200 rounded-lg transition-colors"
+                  >
                     <MessageSquarePlus size={16} className="text-base-content/50" />
-                    <span className="text-xs font-medium opacity-70">{t('settings.reportBug')}</span>
+                    <span className="text-xs font-medium opacity-70">
+                      {t('settings.reportBug')}
+                    </span>
                   </button>
                 )}
-                
-                <div className="flex items-center gap-3 px-1 py-1.5 text-base-content/60">
-                    <LogOut size={16} className="text-base-content/30" />
-                    <span className="text-xs font-medium opacity-70">{t('settings.logout')}</span>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); logout(); }}
-                        className="font-mono text-xs bg-error/20 text-error px-2.5 py-1 rounded-lg border border-error/30 ml-auto hover:bg-error/30 transition-colors"
-                    >
-                        {t('settings.logout')} →
-                    </button>
-                </div>
 
+                <div className="flex items-center gap-3 px-1 py-1.5 text-base-content/60">
+                  <LogOut size={16} className="text-base-content/30" />
+                  <span className="text-xs font-medium opacity-70">{t('settings.logout')}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      logout();
+                    }}
+                    className="font-mono text-xs bg-error/20 text-error px-2.5 py-1 rounded-lg border border-error/30 ml-auto hover:bg-error/30 transition-colors"
+                  >
+                    {t('settings.logout')} →
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

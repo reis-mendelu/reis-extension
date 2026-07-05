@@ -2,6 +2,7 @@ import type { MapEvent, EventCategory } from '../types/events';
 import { societyById } from '../data/societies';
 import { supabase } from '../services/spolky/supabaseClient';
 import { logError } from '../utils/reportError';
+import { isPublicEvent } from '../components/CampusMap/eventWindow';
 
 interface SpolkyEventRow {
   id: string;
@@ -54,5 +55,8 @@ export async function fetchMapEvents(): Promise<MapEvent[]> {
     return [];
   }
 
-  return (data ?? []).map((row) => toMapEvent(row as SpolkyEventRow));
+  return (data ?? [])
+    .map((row) => row as SpolkyEventRow)
+    .filter((row) => isPublicEvent(row.date)) // hide past + far-future from the public map/feed
+    .map(toMapEvent);
 }
