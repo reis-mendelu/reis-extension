@@ -1,10 +1,14 @@
 import * as T from './messages/base';
+import { IframeToContentSchema, ContentToIframeSchema } from './messages/schema';
 
 export * from './messages/base';
 export type { ActionType, DataRequestType } from './messages/base';
 
-export function isIframeMessage(d: unknown): d is T.IframeToContentMessage { return typeof d === 'object' && d !== null && 'type' in d && ['REIS_READY', 'REIS_REQUEST_DATA', 'REIS_FETCH', 'REIS_ACTION', 'ISKAM_READY', 'ISKAM_FETCH_BLOCK'].includes((d as any).type); }
-export function isContentMessage(d: unknown): d is T.ContentToIframeMessage { return typeof d === 'object' && d !== null && 'type' in d && ['REIS_DATA', 'REIS_FETCH_RESULT', 'REIS_ACTION_RESULT', 'REIS_SYNC_UPDATE', 'REIS_POPUP_STATE', 'REIS_NAV_MENU', 'ISKAM_SYNC_UPDATE', 'ISKAM_BLOCK_RESULT', 'REIS_TELEMETRY_ERROR'].includes((d as any).type); }
+// Runtime-validated at the trust boundary via Zod (see ./messages/schema.ts):
+// the envelope + primitive fields are checked, so a malformed message is
+// dropped rather than cast blindly. Type predicates keep call sites unchanged.
+export function isIframeMessage(d: unknown): d is T.IframeToContentMessage { return IframeToContentSchema.safeParse(d).success; }
+export function isContentMessage(d: unknown): d is T.ContentToIframeMessage { return ContentToIframeSchema.safeParse(d).success; }
 
 export const Messages = {
     ready: (): T.ReadyMessage => ({ type: 'REIS_READY' }),

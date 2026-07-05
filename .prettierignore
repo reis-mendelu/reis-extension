@@ -1,0 +1,8 @@
+node_modules
+dist
+.output
+.wxt
+coverage
+package-lock.json
+.agent
+*.md

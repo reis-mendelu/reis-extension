@@ -3,7 +3,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
 import { isCompulsoryGroup, isCoreElectiveGroup, isElectiveGroup } from '@/utils/studyPlanUtils';
 import { isTransferableCourse } from './isTransferableCourse';
-import type { SemesterBlock } from '@/types/studyPlan';
+import type { SemesterBlock, SubjectStatus } from '@/types/studyPlan';
 
 interface Props {
   block: SemesterBlock;

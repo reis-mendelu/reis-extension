@@ -324,7 +324,7 @@ export const createErasmusSlice: AppSlice<ErasmusSlice> = (set, get) => ({
       if (tableAOptions && tableAOptions.length > 0) {
         set({ erasmusTableAOptions: tableAOptions });
       } else {
-        const oldTableA = await IndexedDBService.get('meta', TABLE_A_COURSES_KEY) as unknown[] | null;
+        const oldTableA = await IndexedDBService.get('meta', TABLE_A_COURSES_KEY) as ErasmusUniversityOption['courses'] | null;
         if (oldTableA && oldTableA.length > 0) {
            const initial = [{ id: 'opt-initial', institutionName: '', erasmusCode: '', country: '', link: '', courses: oldTableA }];
            set({ erasmusTableAOptions: initial });

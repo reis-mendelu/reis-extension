@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   # UI/UX gate: lints ONLY the files changed in this PR with --max-warnings=0,
   # so theme/i18n violations (and any other warning) hard-block new or edited code
@@ -13,11 +16,11 @@ jobs:
     name: UI/UX gate (changed files)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: npm
@@ -58,3 +61,32 @@ jobs:
           echo "Linting changed files:"
           echo "$CHANGED"
           echo "$CHANGED" | xargs npx eslint --max-warnings=0
+
+  # Full type check across the whole project (tsc -b). Unlike the lint gate this
+  # covers ALL files, so a type error in an unchanged file can no longer merge.
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+
+  # Full unit-test suite. The iskam parser specs read HTML fixtures from the
+  # gitignored .agent/ dir (real IS Mendelu HTML, intentionally not committed),
+  # so they are excluded here — they can only run locally with those fixtures.
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run --exclude '**/parsers/iskam/__tests__/**'

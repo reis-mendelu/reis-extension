@@ -1,4 +1,17 @@
+import { z } from 'zod';
 import { supabase } from '../services/spolky/supabaseClient';
+import { logError } from '../utils/reportError';
+
+// Supabase results are `any`-typed; validate row shapes before use so a schema
+// drift or bad row can't corrupt UI state. On failure we fall back to the same
+// empty/null result as the error path.
+const KillerCourseSchema = z.object({ course_code: z.string(), course_name: z.string() });
+const RoleSchema = z.enum(['tutor', 'tutee']);
+const TutoringMatchSchema = z.object({
+    tutor_student_id: z.string(), tutee_student_id: z.string(), course_code: z.string(),
+});
+const AvailabilitySchema = z.object({ course_code: z.string(), role: RoleSchema });
+const DismissalSchema = z.object({ course_code: z.string() });
 
 export async function fetchKillerCourses(): Promise<{ course_code: string; course_name: string }[]> {
     const { data, error } = await supabase
@@ -7,7 +20,9 @@ export async function fetchKillerCourses(): Promise<{ course_code: string; cours
         .eq('is_active', true);
     if (error) return [];
 
-    return data ?? [];
+    const parsed = z.array(KillerCourseSchema).safeParse(data ?? []);
+    if (!parsed.success) { logError('Api.fetchKillerCourses', parsed.error); return []; }
+    return parsed.data;
 }
 
 export async function registerAvailability(
@@ -34,9 +49,11 @@ export async function fetchMyTutoringMatch(
         .or(`tutor_student_id.eq.${studentId},tutee_student_id.eq.${studentId}`)
         .limit(1)
         .maybeSingle();
-    if (error) return null;
+    if (error || data == null) return null;
 
-    return data as { tutor_student_id: string; tutee_student_id: string; course_code: string } | null;
+    const parsed = TutoringMatchSchema.safeParse(data);
+    if (!parsed.success) { logError('Api.fetchMyTutoringMatch', parsed.error); return null; }
+    return parsed.data;
 }
 
 export async function fetchMyAvailability(studentId: string): Promise<{ course_code: string; role: 'tutor' | 'tutee' }[]> {
@@ -46,7 +63,9 @@ export async function fetchMyAvailability(studentId: string): Promise<{ course_c
         .eq('student_id', studentId);
     if (error) return [];
 
-    return data as { course_code: string; role: 'tutor' | 'tutee' }[] ?? [];
+    const parsed = z.array(AvailabilitySchema).safeParse(data ?? []);
+    if (!parsed.success) { logError('Api.fetchMyAvailability', parsed.error); return []; }
+    return parsed.data;
 }
 
 export async function deleteAvailability(studentId: string, courseCode: string): Promise<void> {
@@ -84,5 +103,7 @@ export async function fetchMyDismissals(studentId: string): Promise<string[]> {
         .eq('student_id', studentId);
     if (error) return [];
 
-    return (data as { course_code: string }[] ?? []).map(r => r.course_code);
+    const parsed = z.array(DismissalSchema).safeParse(data ?? []);
+    if (!parsed.success) { logError('Api.fetchMyDismissals', parsed.error); return []; }
+    return parsed.data.map(r => r.course_code);
 }

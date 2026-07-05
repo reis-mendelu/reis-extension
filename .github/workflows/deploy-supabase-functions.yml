@@ -8,6 +8,9 @@ on:
       - 'supabase/functions/**'
   workflow_dispatch: # Allows manual triggering from the GitHub Actions UI
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -18,10 +21,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v2
         with:
           version: latest
 

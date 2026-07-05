@@ -4,8 +4,10 @@
  * a cross-site fetch from the iframe app would get a login page instead.
  * Resolves only once the blob is saved, giving the UI a true completion signal.
  */
+import { isIsMendeluUrl } from './isMendeluUrl';
+
 export async function downloadDocumentInPage(url: string, filename: string): Promise<void> {
-  if (!url.startsWith('https://is.mendelu.cz')) throw new Error('Refusing non-IS document URL');
+  if (!isIsMendeluUrl(url)) throw new Error('Refusing non-IS document URL');
   const res = await fetch(url, { credentials: 'include' });
   if (res.status === 401 || res.status === 403) {
     // Genuine session-expiry — the caller redirects to login on this signal only.

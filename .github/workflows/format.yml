@@ -1,0 +1,58 @@
+name: Format
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # Prettier check on ONLY the files changed in this PR — same incremental
+  # philosophy as the lint gate. Enforces formatting on new/edited code while
+  # the pre-existing (unformatted) backlog stays tolerated until swept.
+  format-gate:
+    name: Format (changed files)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Resolve base ref
+        id: base
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo "sha=$PR_BASE_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=$PUSH_BEFORE_SHA" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Prettier --check changed files
+        env:
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+        run: |
+          BASE="$BASE_SHA"
+          if ! git cat-file -e "$BASE" 2>/dev/null; then
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || echo "")"
+          fi
+          if [ -n "$BASE" ]; then
+            CHANGED="$(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- '*.ts' '*.tsx' '*.json' '*.css' | grep -vE 'package-lock\.json$' || true)"
+          else
+            CHANGED=""
+          fi
+          if [ -z "$CHANGED" ]; then
+            echo "No formattable changes."
+            exit 0
+          fi
+          echo "Checking formatting on:"
+          echo "$CHANGED"
+          echo "$CHANGED" | xargs npx prettier --check
