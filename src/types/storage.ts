@@ -2,12 +2,12 @@ import { z } from 'zod';
 import type {
   ParsedFile,
   SyllabusRequirements,
-  SubjectsData,
   GradeHistory,
   DocumentNote,
 } from '../types/documents';
 import { ExamSubjectSchema } from './schemas/exams.schema';
 import { BlockLessonSchema } from './schemas/schedule.schema';
+import { SubjectsDataSchema } from './schemas/subjects.schema';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
 import type { ClassmatesData } from '../types/classmates';
 import type { StudyPlan, DualLanguageStudyPlan } from '../types/studyPlan';
@@ -49,7 +49,6 @@ export const HiddenItemsSchema = z.object({
     })
   ),
 });
-export const SubjectsDataSchema = z.custom<SubjectsData>();
 export const StudyPlanSchema = z.union([z.custom<StudyPlan>(), z.custom<DualLanguageStudyPlan>()]);
 
 // --- Storage Value Schemas ---
