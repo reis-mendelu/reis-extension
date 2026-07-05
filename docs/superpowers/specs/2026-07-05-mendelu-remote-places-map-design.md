@@ -76,6 +76,28 @@ zoom 18.
   address in `type`, and bumps `mapFocusRequest`; unknown id logs an error and
   leaves state unchanged.
 
+## Revision 2026-07-05 (user feedback)
+
+After first implementation, two changes:
+
+1. **No edge-indicator arrows** for the remote sites — reverted the
+   `EdgeIndicators` additions. Arrows remain for on-campus landmarks + the
+   main-campus "way back" only.
+2. **Real building footprints instead of green point markers.** `RemotePlace`
+   now carries an `outline` polygon (dropped `lat`/`lon`); the sites draw as blue
+   `BUILDING_STYLE` polygons like campus buildings/landmarks (via
+   `drawRemotePlaces` = polygon, not `circleMarker`). Focus flies to the outline
+   centroid (`polygonCentroid`). Footprints sourced from OpenStreetMap by pinned
+   way ID via `scripts/fetch-remote-places.mjs`:
+   - arboretum → way 44368231 (named garden area)
+   - Lednice ZF → way 54053791 (main faculty building)
+   - Žabčice ŠZP → way 835010329 (named farmyard areal)
+   - Křtiny ŠLP → way 61229872 (Zámek Křtiny building)
+
+   Arboretum + Žabčice are inherently areas (garden / farm complex); Lednice +
+   Křtiny are single buildings. Tests updated to validate the outline rings and
+   the centroid-based focus coord.
+
 ## Out of scope
 
 - No routing/directions, no travel time, no distance display.
