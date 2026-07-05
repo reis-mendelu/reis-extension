@@ -42,7 +42,7 @@ describe('EventPin', () => {
   it('renders a faded style when scheduled', () => {
     const group = { key: 'k', coord: [16.6, 49.2] as [number, number], events: [{
       id: 'x', title: 'Future', url: '', date: '2026-12-01', endDate: null, time: null, location: null,
-      imageUrl: null, organizerKey: 'pef', societyId: 'supef', coord: [16.6, 49.2] as [number, number],
+      imageUrl: null, organizerKey: 'pef' as const, societyId: 'supef', coord: [16.6, 49.2] as [number, number],
       roomCode: null, venueKind: 'offcampus' as const, category: 'party' as const,
     }] };
     const { container } = render(<EventPin group={group} x={0} y={0} selected={false} scheduled locale="en-US" onSelect={() => {}} />);
