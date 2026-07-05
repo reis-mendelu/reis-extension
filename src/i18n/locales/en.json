@@ -1016,6 +1016,8 @@
     "changePlace": "Change place",
     "publish": "Publish event",
     "clickToPlace": "Click the map where your event is",
+    "edit": "Edit",
+    "delete": "Delete",
     "category": {
       "party": "Party",
       "boardgames": "Board games",

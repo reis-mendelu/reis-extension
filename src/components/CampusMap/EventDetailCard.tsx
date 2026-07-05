@@ -5,6 +5,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { societyById } from '../../data/societies';
 import { parseEventDate } from './eventHelpers';
 import { EventRsvp } from './EventRsvp';
+import { deletePost } from '../../api/societyPosts';
 import type { MapEvent } from '../../types/events';
 
 // Bottom-left detail body for a selected society event. Minimal and info-first:
@@ -13,12 +14,21 @@ import type { MapEvent } from '../../types/events';
 // decorative colour band — the avatar carries the brand, the text carries the job.
 export function EventDetailCard({ event }: { event: MapEvent }) {
   const focusRoom = useAppStore((s) => s.focusRoomByCode);
+  const mode = useAppStore((s) => s.mapMode);
+  const myAssoc = useAppStore((s) => s.adminAssociationId);
+  const openComposer = useAppStore((s) => s.openComposer);
+  const loadSocietyPosts = useAppStore((s) => s.loadSocietyPosts);
   const { t, language } = useTranslation();
   const soc = societyById(event.societyId);
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const dateLabel = parseEventDate(event.date).toLocaleDateString(locale, {
     weekday: 'short', day: 'numeric', month: 'long',
   });
+  const mine = mode === 'society' && event.societyId === myAssoc;
+  const removeEvent = async () => {
+    await deletePost(event.id);
+    await loadSocietyPosts();
+  };
 
   return (
     <div className="overflow-hidden rounded-lg border border-base-300 bg-base-100">
@@ -66,6 +76,13 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
         <div className="border-t border-base-300 pt-3">
           <EventRsvp eventId={event.id} accent={soc.color} />
         </div>
+
+        {mine && (
+          <div className="flex gap-2 border-t border-base-300 pt-3">
+            <button type="button" className="btn btn-outline btn-sm flex-1" onClick={() => openComposer(event.id)}>{t('map.edit')}</button>
+            <button type="button" className="btn btn-outline btn-error btn-sm flex-1" onClick={removeEvent}>{t('map.delete')}</button>
+          </div>
+        )}
 
         {event.url && (
           <a
