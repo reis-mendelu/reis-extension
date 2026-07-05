@@ -19,4 +19,12 @@ describe('MiniCalendar', () => {
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     expect(onChange).toHaveBeenCalledWith('2026-07-15');
   });
+
+  it('closes the popover when clicking outside', () => {
+    render(<MiniCalendar value={null} onChange={() => {}} placeholder="Pick a date" t={t} locale="cs-CZ" />);
+    fireEvent.click(screen.getByText('Pick a date'));
+    expect(screen.getAllByRole('button').length).toBeGreaterThan(10);
+    fireEvent.mouseDown(document.body);
+    expect(screen.getAllByRole('button').length).toBe(1);
+  });
 });

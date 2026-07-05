@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toISO, parseISO, monthMatrix, addMonths } from './calendar';
 
@@ -14,11 +14,23 @@ export function MiniCalendar({ value, onChange, placeholder, t, locale }: {
   const parsed = value ? parseISO(value) : null;
   const [view, setView] = useState(() => parsed ?? { y: new Date().getFullYear(), m0: new Date().getMonth() });
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const label = value ? new Date(`${value}T00:00:00`).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) : placeholder;
   const monthLabel = new Date(view.y, view.m0, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [open]);
+
   return (
-    <div className="dropdown w-full">
+    <div className="dropdown w-full" ref={containerRef}>
       <button
         type="button" tabIndex={0}
         className={`input input-bordered flex w-full items-center gap-2 ${value ? '' : 'text-base-content/50'}`}

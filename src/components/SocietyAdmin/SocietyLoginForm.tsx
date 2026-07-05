@@ -20,7 +20,7 @@ export function SocietyLoginForm() {
     try {
       const res = await adminLogin(email, password);
       if (res.error) { setError(true); return; }
-      if (useAppStore.getState().adminRole === 'association') useAppStore.getState().enterSocietyMode();
+      if (useAppStore.getState().adminRole === 'association' && useAppStore.getState().adminAssociationId) useAppStore.getState().enterSocietyMode();
     } catch {
       setError(true);
     } finally {
