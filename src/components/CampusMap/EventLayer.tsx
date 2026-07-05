@@ -6,6 +6,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { filterEvents, groupEventsByVenue, type VenueGroup } from './eventHelpers';
 import { subscribeMapInstance } from './mapInstance';
 import { EventPin } from './EventPin';
+import { isScheduledEvent } from './eventWindow';
 
 interface Placed { key: string; x: number; y: number; group: VenueGroup; }
 
@@ -122,6 +123,7 @@ export function EventLayer() {
           x={p.x}
           y={p.y}
           selected={p.group.events.some((e) => e.id === selectedId)}
+          scheduled={mode === 'society' && isScheduledEvent(p.group.events[0].date)}
           locale={language === 'en' ? 'en-US' : 'cs-CZ'}
           onSelect={focusEvent}
         />
