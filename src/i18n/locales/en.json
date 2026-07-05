@@ -1002,6 +1002,8 @@
     "rsvpGoing": "Going",
     "rsvpInterested": "Interested",
     "myEvents": "My events",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
     "createEvent": "Create event",
     "editEvent": "Edit event",
     "saveChanges": "Save changes",

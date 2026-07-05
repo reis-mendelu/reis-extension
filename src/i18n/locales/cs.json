@@ -1002,6 +1002,8 @@
     "rsvpGoing": "Půjdu",
     "rsvpInterested": "Mám zájem",
     "myEvents": "Moje akce",
+    "prevMonth": "Předchozí měsíc",
+    "nextMonth": "Další měsíc",
     "createEvent": "Vytvořit akci",
     "editEvent": "Upravit akci",
     "saveChanges": "Uložit změny",
