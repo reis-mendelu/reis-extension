@@ -1014,10 +1014,10 @@
     }
   },
   "admin": {
-    "handle": "Zkratka spolku",
+    "email": "E-mail",
     "password": "Heslo",
     "login": "Přihlásit",
-    "loginError": "Neplatná zkratka nebo heslo",
+    "loginError": "Neplatný e-mail nebo heslo",
     "title_panel": "Příspěvky spolku",
     "title": "Název",
     "body": "Popis",

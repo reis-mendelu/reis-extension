@@ -42,9 +42,9 @@ describe('createAdminSlice', () => {
   });
 
   it('login success sets session, role and association', async () => {
-    signIn.mockResolvedValue({ data: { session: { user: { email: 'supef@societies.reis.invalid' } } }, error: null });
+    signIn.mockResolvedValue({ data: { session: { user: { email: 'admin@supef.cz' } } }, error: null });
     maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'supef' } });
-    const res = await state.adminLogin('supef', 'pw');
+    const res = await state.adminLogin('admin@supef.cz', 'pw');
     expect(res.error).toBeUndefined();
     expect(state.adminRole).toBe('association');
     expect(state.adminAssociationId).toBe('supef');
@@ -53,24 +53,24 @@ describe('createAdminSlice', () => {
 
   it('login failure returns an error and stays logged out', async () => {
     signIn.mockResolvedValue({ data: { session: null }, error: { message: 'bad' } });
-    const res = await state.adminLogin('supef', 'wrong');
+    const res = await state.adminLogin('admin@supef.cz', 'wrong');
     expect(res.error).toBeDefined();
     expect(state.adminSession).toBeNull();
   });
 
   it('valid password but unprovisioned account fails and stays logged out', async () => {
-    signIn.mockResolvedValue({ data: { session: { user: { email: 'ghost@societies.reis.invalid' } } }, error: null });
+    signIn.mockResolvedValue({ data: { session: { user: { email: 'ghost@nowhere.cz' } } }, error: null });
     maybeSingle.mockResolvedValue({ data: null });
-    const res = await state.adminLogin('ghost', 'pw');
+    const res = await state.adminLogin('ghost@nowhere.cz', 'pw');
     expect(res.error).toBeDefined();
     expect(state.adminSession).toBeNull();
     expect(signOut).toHaveBeenCalledTimes(1);
   });
 
   it('logout clears everything', async () => {
-    signIn.mockResolvedValue({ data: { session: { user: { email: 'x@societies.reis.invalid' } } }, error: null });
+    signIn.mockResolvedValue({ data: { session: { user: { email: 'admin@esn.cz' } } }, error: null });
     maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'esn' } });
-    await state.adminLogin('esn', 'pw');
+    await state.adminLogin('admin@esn.cz', 'pw');
     await state.adminLogout();
     expect(state.adminSession).toBeNull();
     expect(state.adminRole).toBeNull();
@@ -78,14 +78,14 @@ describe('createAdminSlice', () => {
   });
 
   it('loadAdminSession hydrates from a persisted session', async () => {
-    getSession.mockResolvedValue({ data: { session: { user: { email: 'esn@societies.reis.invalid' } } } });
+    getSession.mockResolvedValue({ data: { session: { user: { email: 'admin@esn.cz' } } } });
     maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'esn' } });
     await state.loadAdminSession();
     expect(state.adminAssociationId).toBe('esn');
   });
 
   it('loadAdminSession signs out when the persisted session has no provisioned account', async () => {
-    getSession.mockResolvedValue({ data: { session: { user: { email: 'ghost@societies.reis.invalid' } } } });
+    getSession.mockResolvedValue({ data: { session: { user: { email: 'ghost@nowhere.cz' } } } });
     maybeSingle.mockResolvedValue({ data: null });
     await state.loadAdminSession();
     expect(state.adminSession).toBeNull();

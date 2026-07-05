@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { handleToEmail } from '../societyLogin';
+import { normalizeEmail } from '../societyLogin';
 
-describe('handleToEmail', () => {
-  it('maps a handle to the synthetic society email', () => {
-    expect(handleToEmail('supef')).toBe('supef@societies.reis.invalid');
+describe('normalizeEmail', () => {
+  it('lowercases and trims the address', () => {
+    expect(normalizeEmail('  Admin@SUPEF.cz ')).toBe('admin@supef.cz');
   });
-  it('lowercases and trims', () => {
-    expect(handleToEmail('  ESN ')).toBe('esn@societies.reis.invalid');
+  it('leaves an already-clean address unchanged', () => {
+    expect(normalizeEmail('admin@esn.cz')).toBe('admin@esn.cz');
   });
 });

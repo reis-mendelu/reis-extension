@@ -14,6 +14,6 @@ describe('SocietyAdminOverlay', () => {
   it('shows the login form when open and logged out', () => {
     useAppStore.setState({ adminOverlayOpen: true });
     render(<SocietyAdminOverlay />);
-    expect(screen.getByLabelText(/handle/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
   });
 });

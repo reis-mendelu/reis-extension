@@ -1,7 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import type { AppSlice } from '../types';
 import { adminAuthClient } from '../../services/admin/authClient';
-import { handleToEmail } from '../../services/admin/societyLogin';
+import { normalizeEmail } from '../../services/admin/societyLogin';
 import { listMyPosts, type SpolkyEventRow } from '../../api/societyPosts';
 import { logError } from '../../utils/reportError';
 
@@ -15,7 +15,7 @@ export interface AdminSlice {
   societyPosts: SpolkyEventRow[];
   openAdminOverlay: () => void;
   closeAdminOverlay: () => void;
-  adminLogin: (handle: string, password: string) => Promise<{ error?: string }>;
+  adminLogin: (email: string, password: string) => Promise<{ error?: string }>;
   adminLogout: () => Promise<void>;
   loadAdminSession: () => Promise<void>;
   loadSocietyPosts: () => Promise<void>;
@@ -42,8 +42,8 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   societyPosts: [],
   openAdminOverlay: () => { set({ adminOverlayOpen: true }); void get().loadSocietyPosts(); },
   closeAdminOverlay: () => set({ adminOverlayOpen: false }),
-  adminLogin: async (handle, password) => {
-    const email = handleToEmail(handle);
+  adminLogin: async (emailInput, password) => {
+    const email = normalizeEmail(emailInput);
     const { data, error } = await adminAuthClient.auth.signInWithPassword({ email, password });
     if (error || !data.session) return { error: 'invalid_credentials' };
     const { role, associationId } = await resolveAccount(email);

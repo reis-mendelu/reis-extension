@@ -1,10 +1,9 @@
 /**
- * Society accounts log in by handle (== association_id, e.g. "supef"). Supabase
- * Auth keys on email, so we map the handle to a fixed synthetic address that
- * never receives mail (RFC 2606 `.invalid`). The society never sees this string.
+ * Society accounts log in with the real email on their Supabase Auth account
+ * (e.g. "admin@supef.cz") — the same credentials they use for the ops dashboard.
+ * We only normalize casing/whitespace before sign-in: Supabase treats emails
+ * case-insensitively, but copy-paste can introduce stray spaces or capitals.
  */
-export const SOCIETY_EMAIL_DOMAIN = 'societies.reis.invalid';
-
-export function handleToEmail(handle: string): string {
-  return `${handle.trim().toLowerCase()}@${SOCIETY_EMAIL_DOMAIN}`;
+export function normalizeEmail(input: string): string {
+  return input.trim().toLowerCase();
 }

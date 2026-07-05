@@ -1014,10 +1014,10 @@
     }
   },
   "admin": {
-    "handle": "Society handle",
+    "email": "Email",
     "password": "Password",
     "login": "Log in",
-    "loginError": "Invalid handle or password",
+    "loginError": "Invalid email or password",
     "title_panel": "Society posts",
     "title": "Title",
     "body": "Description",
