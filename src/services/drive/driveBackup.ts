@@ -13,7 +13,7 @@ import pLimit from 'p-limit';
 import type { ParsedFile } from '../../types/documents';
 import { fetchWithAuth } from '../../api/client';
 import { isConnected } from '../../api/googleAuth';
-import { uploadFile, updateFileContent, ensureFolder, findFileByProperty, deleteFile, getFileLink } from '../../api/googleDrive';
+import { uploadFile, updateFileContent, renameFile, ensureFolder, findFileByProperty, deleteFile, getFileLink } from '../../api/googleDrive';
 import { loadManifest, saveManifest, clearManifest, acquireBackupLock, releaseBackupLock } from './driveManifest';
 import { flattenSubjectFiles, diffManifest, folderKey, linkHash, type DriveManifest } from './driveDiff';
 import { logError } from '../../utils/reportError';
@@ -39,6 +39,9 @@ export interface DriveBackupSubject {
 export interface DriveBackupResult {
     uploaded: number;
     updated: number;
+    /** Already-mirrored files whose content is unchanged but whose Drive name was
+     *  stale (e.g. a pre-fix duplicate name) — renamed in place, no re-upload. */
+    renamed: number;
     skipped: number;
     /** Files already present in Drive (found via appProperties) — manifest healed, not re-uploaded. */
     reused: number;
@@ -142,6 +145,7 @@ export async function syncDriveBackup(
     await saveManifest(manifest);
     let uploaded = 0;
     let updated = 0;
+    let renamed = 0;
     let skipped = 0;
     let reused = 0;
     // A failure is "transient" (will retry — legitimate amber) until a file has
@@ -173,8 +177,8 @@ export async function syncDriveBackup(
             const items = flattenSubjectFiles(subject.folderName, subject.files);
             const diff = diffManifest(items, manifest);
             skipped += diff.skip;
-            log(`${subject.code}: ${items.length} files → +${diff.create.length} new, ~${diff.update.length} changed, =${diff.skip} skip`);
-            if (!diff.create.length && !diff.update.length) continue;
+            log(`${subject.code}: ${items.length} files → +${diff.create.length} new, ~${diff.update.length} changed, #${diff.rename.length} renamed, =${diff.skip} skip`);
+            if (!diff.create.length && !diff.update.length && !diff.rename.length) continue;
 
             // Pre-create folders sequentially so parallel uploads can't race-create duplicates.
             for (const { pathSegments } of [...diff.create, ...diff.update.map((u) => u.item)]) {
@@ -191,7 +195,7 @@ export async function syncDriveBackup(
                         // interrupted run). Reuse it instead of uploading a duplicate.
                         const existingId = await findFileByProperty(LINK_PROP, hash);
                         if (existingId) {
-                            manifest.files[item.isLink] = { driveFileId: existingId, date: item.date };
+                            manifest.files[item.isLink] = { driveFileId: existingId, date: item.date, fileName: item.fileName };
                             clearFileFail(item.isLink);
                             reused++;
                             return;
@@ -203,7 +207,7 @@ export async function syncDriveBackup(
                             parentId ? [parentId] : undefined,
                             { [LINK_PROP]: hash },
                         );
-                        manifest.files[item.isLink] = { driveFileId: file.id, date: item.date };
+                        manifest.files[item.isLink] = { driveFileId: file.id, date: item.date, fileName: item.fileName };
                         clearFileFail(item.isLink);
                         uploaded++;
                     } catch (e) {
@@ -222,7 +226,7 @@ export async function syncDriveBackup(
                     if (sessionExpired) { transientFailed++; return; }
                     try {
                         await updateFileContent(driveFileId, await fetchBytes(item.isLink));
-                        manifest.files[item.isLink] = { driveFileId, date: item.date };
+                        manifest.files[item.isLink] = { driveFileId, date: item.date, fileName: item.fileName };
                         clearFileFail(item.isLink);
                         updated++;
                     } catch (e) {
@@ -231,6 +235,21 @@ export async function syncDriveBackup(
                         if (e instanceof IsSessionExpiredError) { sessionExpired = true; transientFailed++; }
                         else recordFileFail(item.isLink);
                         logError('Drive.update', e, { name: item.fileName });
+                    }
+                }));
+            }
+            for (const { item, driveFileId } of diff.rename) {
+                // Metadata-only Drive call — never touches IS, so it can't hit an
+                // expired-IS-session condition the way create/update's fetchBytes can.
+                tasks.push(limit(async () => {
+                    try {
+                        await renameFile(driveFileId, item.fileName);
+                        manifest.files[item.isLink] = { driveFileId, date: item.date, fileName: item.fileName };
+                        clearFileFail(item.isLink);
+                        renamed++;
+                    } catch (e) {
+                        recordFileFail(item.isLink);
+                        logError('Drive.rename', e, { name: item.fileName });
                     }
                 }));
             }
@@ -254,8 +273,8 @@ export async function syncDriveBackup(
         }
         await saveManifest(manifest);
         const failed = transientFailed + permanentFailed;
-        log(`done — uploaded ${uploaded}, updated ${updated}, reused ${reused}, skipped ${skipped}, failed ${failed}, quarantined ${manifest.quarantined}`);
-        return { uploaded, updated, skipped, reused, failed, quarantined: manifest.quarantined };
+        log(`done — uploaded ${uploaded}, updated ${updated}, renamed ${renamed}, reused ${reused}, skipped ${skipped}, failed ${failed}, quarantined ${manifest.quarantined}`);
+        return { uploaded, updated, renamed, skipped, reused, failed, quarantined: manifest.quarantined };
     } catch (e) {
         // Pass-level failure (auth/root/network) — record it so the UI can show
         // "backup failing since …" instead of silently appearing healthy. The

@@ -132,6 +132,19 @@ export async function deleteFile(fileId: string): Promise<void> {
     }
 }
 
+/** Rename an existing Drive file in place (metadata-only, no content re-upload). */
+export async function renameFile(fileId: string, name: string): Promise<DriveFile> {
+    const token = await getAccessToken();
+    const res = await fetch(`${FILES_ENDPOINT}/${fileId}?fields=id,name,webViewLink`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(`Drive rename failed: ${data?.error?.message || res.statusText}`);
+    return data as DriveFile;
+}
+
 /** Replace the content of an existing Drive file (used when the IS file changed). */
 export async function updateFileContent(fileId: string, content: Blob): Promise<DriveFile> {
     const token = await getAccessToken();
