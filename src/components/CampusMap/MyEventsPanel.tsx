@@ -23,6 +23,7 @@ function Row({ event, sub, onClick }: { event: MapEvent; sub: string; onClick: (
 export function MyEventsPanel() {
   const events = useAppStore((s) => s.societyMapEvents);
   const focusEvent = useAppStore((s) => s.focusEventById);
+  const openComposer = useAppStore((s) => s.openComposer);
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
@@ -43,8 +44,7 @@ export function MyEventsPanel() {
     <div className="flex max-h-[70vh] flex-col">
       <div className="flex items-center justify-between px-3 py-2">
         <span className="text-sm font-bold">{t('map.myEvents')}</span>
-        {/* TODO(B4): wire to openComposer once the composer overlay lands. */}
-        <button type="button" className="btn btn-primary btn-xs gap-1" onClick={() => {}}>
+        <button type="button" className="btn btn-primary btn-xs gap-1" onClick={openComposer}>
           <Plus size={13} /> {t('map.createEvent')}
         </button>
       </div>

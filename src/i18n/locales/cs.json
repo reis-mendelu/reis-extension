@@ -1013,6 +1013,7 @@
     "selectPlace": "Vybrat místo na mapě",
     "changePlace": "Změnit místo",
     "publish": "Zveřejnit akci",
+    "clickToPlace": "Klikněte na mapu, kde akce je",
     "category": {
       "party": "Párty",
       "boardgames": "Deskovky",

@@ -461,6 +461,10 @@ export interface MapSlice {
   /** Record a picked coordinate and leave placing mode. */
   placeDraftCoord: (coord: [number, number]) => void;
   clearDraftCoord: () => void;
+  /** True while the event-composer overlay is open. */
+  composerOpen: boolean;
+  openComposer: () => void;
+  closeComposer: () => void;
 }
 
 export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & NotesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & EduroamSlice & DocumentsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & BulletinSlice & ViewportSlice & import('./slices/createSearchSlice').SearchSlice & import('./slices/createPersonProfileSlice').PersonProfileSlice & MapSlice & import('./slices/createRsvpSlice').RsvpSlice & import('./slices/createAdminSlice').AdminSlice;

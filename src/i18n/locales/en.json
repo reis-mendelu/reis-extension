@@ -1013,6 +1013,7 @@
     "selectPlace": "Select place on map",
     "changePlace": "Change place",
     "publish": "Publish event",
+    "clickToPlace": "Click the map where your event is",
     "category": {
       "party": "Party",
       "boardgames": "Board games",

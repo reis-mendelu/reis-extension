@@ -239,3 +239,17 @@ describe('click-to-place', () => {
     expect(useAppStore.getState().draftCoord).toBeNull();
   });
 });
+
+describe('composer open/close', () => {
+  it('openComposer sets composerOpen true; closeComposer resets composerOpen, placingEvent, draftCoord', () => {
+    useAppStore.getState().openComposer();
+    expect(useAppStore.getState().composerOpen).toBe(true);
+    useAppStore.getState().beginPlacing();
+    useAppStore.getState().placeDraftCoord([16.6, 49.2]);
+    useAppStore.getState().closeComposer();
+    const st = useAppStore.getState();
+    expect(st.composerOpen).toBe(false);
+    expect(st.placingEvent).toBe(false);
+    expect(st.draftCoord).toBeNull();
+  });
+});
