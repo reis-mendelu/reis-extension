@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { SyllabusRequirements, GradeHistory, DocumentNote } from '../types/documents';
+import type { SyllabusRequirements, DocumentNote } from '../types/documents';
 import { ExamSubjectSchema } from './schemas/exams.schema';
 import { BlockLessonSchema } from './schemas/schedule.schema';
 import { SubjectsDataSchema } from './schemas/subjects.schema';
@@ -7,6 +7,7 @@ import { FilesSchema } from './schemas/files.schema';
 import { SuccessRatesSchema } from './schemas/successRates.schema';
 import { MetaSchema } from './schemas/meta.schema';
 import { ClassmatesSchema } from './schemas/classmates.schema';
+import { GradeHistorySchema } from './schemas/gradeHistory.schema';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
 import type { StudyPlan, DualLanguageStudyPlan } from '../types/studyPlan';
 import type { CvicnyTest } from '../api/cvicneTests';
@@ -70,9 +71,6 @@ export const ScheduleSchema = z.array(BlockLessonSchema);
 
 // 'subjects' store - SubjectsData
 export const SubjectsSchema = SubjectsDataSchema;
-
-// 'grade_history' store - GradeHistory
-export const GradeHistorySchema = z.custom<GradeHistory>();
 
 // 'document_notes' store - DocumentNote
 export const DocumentNoteSchema = z.custom<DocumentNote>();
