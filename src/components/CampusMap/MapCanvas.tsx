@@ -74,7 +74,12 @@ export function MapCanvas() {
       const onOverviewClick = (e: L.LeafletMouseEvent) => {
         const t = e.originalEvent.target as HTMLElement | null;
         if (t?.closest('.leaflet-reisEvents-pane')) return;
-        const sel = useAppStore.getState().mapSelection;
+        const state = useAppStore.getState();
+        if (state.placingEvent) {                       // click-to-place: capture [lng,lat]
+          state.placeDraftCoord([e.latlng.lng, e.latlng.lat]);
+          return;
+        }
+        const sel = state.mapSelection;
         // Exiting a drilled-in remote site collapses it again (redraw) via
         // focusCampus; a plain selection just clears.
         if (sel?.kind === 'poi' && REMOTE_IDS.has(sel.poi.id)) select.focusCampus();
