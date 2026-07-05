@@ -135,6 +135,22 @@ Two changes to the arboretum, mirroring the campus-faculty drill interaction:
    from the official 5-section layout (arboretum.mendelu.cz) and snapped onto the
    nearest path vertex so they sit inside the garden on the walkable network.
 
+## Revision 2026-07-05 (arboretum polish + data-source finding)
+
+- **Fit-to-bounds on drill-in.** Focusing a remote site now `flyToBounds` of its
+  extent (`remotePlaceBounds`, `maxZoom 18`, padding) instead of `flyTo(center, 18)`
+  — the arboretum no longer over-zooms past its own size; it frames the whole
+  garden. `remotePlaceExtent` prefers the `area` boundary when present.
+- **Buildings trimmed.** The arboretum keeps only the 5-polygon greenhouse complex
+  (within ~66 m of the greenhouse cluster); the 4 scattered outbuildings (162–492 m
+  away, "random spots") were dropped.
+- **No georeferenced source for the ~40 sub-collections.** Confirmed the official
+  "site map" (arboretum.mendelu.cz) is a static JPG with no coordinates / KML /
+  GeoJSON, and OSM has **zero** tagged trees and no named sub-sections inside the
+  boundary (only paths + greenhouses + 2 viewpoints + 1 firepit). So the 5-section
+  collection markers remain hand-placed approximations; going finer would require
+  manually georeferencing the static plan image.
+
 ## Out of scope
 
 - No routing/directions, no travel time, no distance display.
