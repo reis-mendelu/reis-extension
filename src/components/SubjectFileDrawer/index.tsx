@@ -231,7 +231,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
         }
         if (pdfView && noteEditorView) {
             return (
-                <ResizablePanelGroup direction="horizontal" className="h-full rounded-2xl">
+                <ResizablePanelGroup orientation="horizontal" className="h-full rounded-2xl">
                     <ResizablePanel defaultSize={50} minSize={25}>{pdfView}</ResizablePanel>
                     <ResizableHandle withHandle />
                     <ResizablePanel defaultSize={50} minSize={25}>{noteEditorView}</ResizablePanel>
@@ -241,7 +241,7 @@ export function SubjectFileDrawer({ lesson, isOpen, onClose }: { lesson: BlockLe
         const rightSide = pdfView || noteEditorView;
         if (rightSide) {
             return (
-                <ResizablePanelGroup direction="horizontal" className="h-full rounded-2xl">
+                <ResizablePanelGroup orientation="horizontal" className="h-full rounded-2xl">
                     <ResizablePanel defaultSize={35} minSize={20} className="flex flex-col">{fileListContent}</ResizablePanel>
                     <ResizableHandle withHandle />
                     <ResizablePanel defaultSize={65} minSize={30}>{rightSide}</ResizablePanel>

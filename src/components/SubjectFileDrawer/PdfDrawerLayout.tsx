@@ -53,7 +53,7 @@ export function PdfDrawerLayout({ isPhone, activePdfUrl, onClosePdf, fileList }:
     }
 
     return (
-        <ResizablePanelGroup direction="horizontal" className="h-full rounded-2xl">
+        <ResizablePanelGroup orientation="horizontal" className="h-full rounded-2xl">
             <ResizablePanel defaultSize={35} minSize={20} className="flex flex-col">
                 {fileList}
             </ResizablePanel>
