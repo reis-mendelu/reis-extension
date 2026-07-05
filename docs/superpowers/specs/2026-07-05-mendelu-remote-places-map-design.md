@@ -106,6 +106,12 @@ After first implementation, two changes:
    (mapHelpers) normalize both — draw iterates every ring, focus flies to the
    bounding-box centre so a multi-building campus frames on its middle.
 
+   **Arboretum inner map:** the arboretum is a garden with buildings inside it,
+   so it now carries an optional `area` (the garden boundary, drawn faintly in a
+   green `GARDEN_STYLE` behind the buildings) plus an `outline` MultiPolygon of
+   the 9 inner buildings/greenhouses (fetched the same grounds-poly way, with a
+   `keepAsArea` flag). `remotePlaceCenter` includes `area` in its bbox.
+
 ## Out of scope
 
 - No routing/directions, no travel time, no distance display.
