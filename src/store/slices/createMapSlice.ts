@@ -151,7 +151,11 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     set({ societyMapEvents: rows.map((r) => locateEvent(toMapEvent(r))) });
   },
 
-  beginPlacing: () => set({ placingEvent: true, mapSelection: null }),
+  beginPlacing: () => set({
+    placingEvent: true, mapSelection: null,
+    activeBuildingId: null, activeFloorId: null,
+    mapFocusRequest: get().mapFocusRequest + 1,
+  }),
   cancelPlacing: () => set({ placingEvent: false }),
   placeDraftCoord: (coord) => set({ draftCoord: coord, placingEvent: false }),
   clearDraftCoord: () => set({ draftCoord: null }),

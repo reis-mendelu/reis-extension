@@ -1026,6 +1026,7 @@
     "selectDate": "Pick a date",
     "edit": "Edit",
     "delete": "Delete",
+    "deleteConfirm": "Delete for good?",
     "category": {
       "party": "Party",
       "boardgames": "Board games",

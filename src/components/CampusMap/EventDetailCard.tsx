@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MapPin, ExternalLink, Clock } from 'lucide-react';
 import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
 import { useAppStore } from '../../store/useAppStore';
@@ -18,6 +19,7 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
   const myAssoc = useAppStore((s) => s.adminAssociationId);
   const openComposer = useAppStore((s) => s.openComposer);
   const loadSocietyPosts = useAppStore((s) => s.loadSocietyPosts);
+  const clearMapSelection = useAppStore((s) => s.clearMapSelection);
   const { t, language } = useTranslation();
   const soc = societyById(event.societyId);
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
@@ -25,8 +27,16 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
     weekday: 'short', day: 'numeric', month: 'long',
   });
   const mine = mode === 'society' && event.societyId === myAssoc;
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const removeEvent = async () => {
-    await deletePost(event.id);
+    if (deleting) return;
+    if (!confirming) { setConfirming(true); return; }
+    setDeleting(true);
+    const res = await deletePost(event.id);
+    setDeleting(false);
+    if (res.error) { setConfirming(false); return; }
+    clearMapSelection();
     await loadSocietyPosts();
   };
 
@@ -80,7 +90,9 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
         {mine && (
           <div className="flex gap-2 border-t border-base-300 pt-3">
             <button type="button" className="btn btn-outline btn-sm flex-1" onClick={() => openComposer(event.id)}>{t('map.edit')}</button>
-            <button type="button" className="btn btn-outline btn-error btn-sm flex-1" onClick={removeEvent}>{t('map.delete')}</button>
+            <button type="button" className="btn btn-outline btn-error btn-sm flex-1" disabled={deleting} onClick={removeEvent}>
+              {confirming ? t('map.deleteConfirm') : t('map.delete')}
+            </button>
           </div>
         )}
 

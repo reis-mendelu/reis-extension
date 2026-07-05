@@ -95,4 +95,28 @@ describe('EventLayer', () => {
     const btn = paneEl.querySelector('button[title="Society Party"]') as HTMLElement;
     expect(btn).toBeTruthy();
   });
+
+  it('marks a mixed venue group scheduled if ANY event is scheduled (society mode)', () => {
+    // Two events sharing the same coord (same venue group): one this-week (live),
+    // one 30+ days out (scheduled). sortByDate puts the live one first, so the old
+    // `events[0]` code would miss the scheduled flag entirely.
+    useAppStore.setState({
+      mapMode: 'society',
+      societyMapEvents: [
+        {
+          id: 's-live', title: 'Live Now', url: '', date: '2026-07-10', endDate: null, time: null,
+          location: null, imageUrl: null, organizerKey: 'pef', societyId: 'supef',
+          coord: [16.61, 49.21], roomCode: null, venueKind: 'offcampus', category: 'party',
+        },
+        {
+          id: 's-future', title: 'Far Future', url: '', date: '2026-09-15', endDate: null, time: null,
+          location: null, imageUrl: null, organizerKey: 'pef', societyId: 'supef',
+          coord: [16.61, 49.21], roomCode: null, venueKind: 'offcampus', category: 'party',
+        },
+      ],
+      mapEvents: [], eventFilter: 'all', activeBuildingId: null,
+    });
+    render(<EventLayer />);
+    expect(paneEl.querySelector('[data-scheduled="true"]')).toBeTruthy();
+  });
 });

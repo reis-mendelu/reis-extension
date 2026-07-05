@@ -266,6 +266,15 @@ describe('click-to-place', () => {
     expect(useAppStore.getState().placingEvent).toBe(false);
     expect(useAppStore.getState().draftCoord).toBeNull();
   });
+
+  it('beginPlacing returns to the campus overview so floor drill-in cannot swallow the click', () => {
+    useAppStore.setState({ activeBuildingId: 123, activeFloorId: 5, mapFocusRequest: 0, placingEvent: false });
+    useAppStore.getState().beginPlacing();
+    const s = useAppStore.getState();
+    expect(s.placingEvent).toBe(true);
+    expect(s.activeBuildingId).toBeNull();
+    expect(s.mapFocusRequest).toBe(1);
+  });
 });
 
 describe('composer open/close', () => {

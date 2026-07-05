@@ -1026,6 +1026,7 @@
     "selectDate": "Vyberte datum",
     "edit": "Upravit",
     "delete": "Smazat",
+    "deleteConfirm": "Opravdu smazat?",
     "category": {
       "party": "Párty",
       "boardgames": "Deskovky",
