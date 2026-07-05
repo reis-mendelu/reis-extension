@@ -86,7 +86,7 @@
     "fake-indexeddb": "^6.2.5",
     "globals": "^17.7.0",
     "happy-dom": "^20.0.11",
-    "jsdom": "^27.0.1",
+    "jsdom": "^29.1.1",
     "postcss": "^8.5.16",
     "prettier": "^3.9.4",
     "typescript": "~5.9.3",
