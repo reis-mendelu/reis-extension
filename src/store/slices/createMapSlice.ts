@@ -173,7 +173,8 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   },
 
   focusEventById: (id, opts) => {
-    const event = get().mapEvents.find((e) => e.id === id);
+    const pool = get().mapMode === 'society' ? get().societyMapEvents : get().mapEvents;
+    const event = pool.find((e) => e.id === id);
     if (!event) { logError('MapSlice.focusEventById', new Error(`unknown event ${id}`)); return; }
     // A PIN click (no opts) never moves the camera — you're already looking at the
     // pin, so we just open the detail panel and highlight it. Leaving

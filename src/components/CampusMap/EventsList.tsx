@@ -55,6 +55,8 @@ export function EventsList() {
   const mode = useAppStore((s) => s.mapMode);
   const publicEvents = useAppStore((s) => s.mapEvents);
   const societyEvents = useAppStore((s) => s.societyMapEvents);
+  // MapSidePanel renders MyEventsPanel in society mode, so this list is student-only
+  // in practice; the mode check keeps the source correct if that ever changes.
   const events = mode === 'society' ? societyEvents : publicEvents;
   const filter = useAppStore((s) => s.eventFilter);
   const setFilter = useAppStore((s) => s.setEventFilter);

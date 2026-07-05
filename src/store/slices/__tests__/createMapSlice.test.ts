@@ -222,6 +222,34 @@ describe('map mode + society events', () => {
   });
 });
 
+describe('focusEventById resolves against the active pool', () => {
+  it('society mode: resolves a scheduled/past event from societyMapEvents (not mapEvents)', () => {
+    const scheduled: MapEvent = {
+      id: 'sch1', title: 'Future Society Event', url: '', date: '2027-01-01', endDate: null,
+      time: '18:00', location: null, imageUrl: null, organizerKey: 'pef', societyId: 'supef',
+      coord: [16.614247, 49.209592], roomCode: 'Q01', venueKind: 'campus', category: 'quiz',
+    };
+    useAppStore.setState({ mapMode: 'society', societyMapEvents: [scheduled], mapEvents: [] });
+    useAppStore.getState().focusEventById('sch1');
+    const s = useAppStore.getState();
+    expect(s.mapSelection?.kind).toBe('event');
+    expect((s.mapSelection as { event: MapEvent }).event.id).toBe('sch1');
+  });
+
+  it('student mode: resolves from mapEvents (not societyMapEvents)', () => {
+    const pub: MapEvent = {
+      id: 'pub1', title: 'Public Event', url: '', date: '2026-08-01', endDate: null,
+      time: '18:00', location: null, imageUrl: null, organizerKey: 'mendelu', societyId: 'esn',
+      coord: [16.614247, 49.209592], roomCode: 'Q01', venueKind: 'campus', category: 'quiz',
+    };
+    useAppStore.setState({ mapMode: 'student', mapEvents: [pub], societyMapEvents: [] });
+    useAppStore.getState().focusEventById('pub1');
+    const s = useAppStore.getState();
+    expect(s.mapSelection?.kind).toBe('event');
+    expect((s.mapSelection as { event: MapEvent }).event.id).toBe('pub1');
+  });
+});
+
 describe('click-to-place', () => {
   it('arms and captures a coordinate', () => {
     const s = useAppStore.getState();

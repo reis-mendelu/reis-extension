@@ -33,4 +33,12 @@ describe('EventDetailCard society controls', () => {
     fireEvent.click(screen.getByRole('button', { name: /delete/i }));
     await waitFor(() => expect(deletePost).toHaveBeenCalledWith('e1'));
   });
+
+  it('hides edit/delete for another society\'s event in society mode (cross-tenant isolation)', () => {
+    useAppStore.setState({ mapMode: 'society', adminAssociationId: 'supef' });
+    const otherEvent: MapEvent = { ...ev, societyId: 'esn' };
+    render(<EventDetailCard event={otherEvent} />);
+    expect(screen.queryByRole('button', { name: /delete/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /edit/i })).toBeNull();
+  });
 });
