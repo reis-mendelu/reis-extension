@@ -210,7 +210,7 @@ export interface FeedbackSlice {
     feedbackEligible: boolean;
     feedbackDismissed: boolean;
     loadFeedbackState: () => Promise<void>;
-    submitNps: (rating: number) => Promise<void>;
+    submitNps: (rating: number, reason?: string) => Promise<void>;
     dismissFeedback: () => Promise<void>;
 }
 
