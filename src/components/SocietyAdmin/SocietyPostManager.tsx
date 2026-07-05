@@ -16,28 +16,36 @@ export function SocietyPostManager() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
 
-  const add = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!associationId) return;
+  const add = async () => {
+    if (!associationId || busy) return;
     setBusy(true);
-    const res = await createPost(form, associationId, email);
-    setBusy(false);
-    if (res.error) { setError(true); return; }
-    setError(false);
-    setForm(EMPTY);
-    await loadSocietyPosts();
+    try {
+      const res = await createPost(form, associationId, email);
+      if (res.error) { setError(true); return; }
+      setError(false);
+      setForm(EMPTY);
+      await loadSocietyPosts();
+    } catch {
+      setError(true);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const remove = async (id: string) => {
-    const res = await deletePost(id);
-    setError(!!res.error);
-    await loadSocietyPosts();
+    try {
+      const res = await deletePost(id);
+      setError(!!res.error);
+      await loadSocietyPosts();
+    } catch {
+      setError(true);
+    }
   };
 
   return (
     <div className="flex flex-col gap-4">
       {error && <p className="text-error text-sm">{t('admin.saveError')}</p>}
-      <form onSubmit={add} className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2">
         <input className="input input-bordered" placeholder={t('admin.title')} value={form.title}
                onChange={(e) => setForm({ ...form, title: e.target.value })} />
         <textarea className="textarea textarea-bordered" placeholder={t('admin.body')} value={form.body}
@@ -56,8 +64,8 @@ export function SocietyPostManager() {
           <input className="input input-bordered" placeholder={t('admin.roomCode')} value={form.roomCode ?? ''}
                  onChange={(e) => setForm({ ...form, roomCode: e.target.value })} />
         )}
-        <button className="btn btn-primary btn-sm" disabled={busy}>{t('admin.addPost')}</button>
-      </form>
+        <button type="button" className="btn btn-primary btn-sm" disabled={busy || !form.title || !form.date} onClick={add}>{t('admin.addPost')}</button>
+      </div>
       <ul className="flex flex-col gap-1">
         {posts.map((p) => (
           <li key={p.id} className="flex items-center justify-between gap-2 text-sm">

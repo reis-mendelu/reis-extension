@@ -1024,6 +1024,7 @@
     "roomCode": "Místnost",
     "addPost": "Přidat příspěvek",
     "logout": "Odhlásit",
-    "saveError": "Nepodařilo se uložit — zkuste to znovu"
+    "saveError": "Nepodařilo se uložit — zkuste to znovu",
+    "manageButton": "Spravovat spolek"
   }
 }

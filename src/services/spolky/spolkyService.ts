@@ -46,7 +46,7 @@ export async function fetchNotifications(): Promise<SpolekNotification[]> {
   try {
     const { data, error } = await supabase
       .from('spolky_events')
-      .select('*')
+      .select('id, association_id, title, body, url, created_at, date, end_date')
       .gte('date', new Date().toISOString().slice(0, 10))
       .or('visible_from.is.null,visible_from.lte.' + new Date().toISOString())
       .order('date', { ascending: true })

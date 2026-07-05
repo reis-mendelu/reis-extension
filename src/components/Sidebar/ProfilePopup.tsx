@@ -51,8 +51,8 @@ export function ProfilePopup({ isOpen, onOpenFeedback, isIskam }: { isOpen: bool
                     )}
                     <div className="flex items-center gap-3 text-base-content/60">
                         <Hash size={16} className="text-base-content/30" />
-                        <span className="opacity-70">{t('settings.studentId')}</span>
-                        <span onClick={onBadge} title="" className="font-mono text-xs bg-base-300/50 px-2.5 py-1 rounded-lg border border-base-300/50 select-all ml-auto">{params.studentId}</span>
+                        <span onClick={onBadge} className="opacity-70">{t('settings.studentId')}</span>
+                        <span className="font-mono text-xs bg-base-300/50 px-2.5 py-1 rounded-lg border border-base-300/50 select-all ml-auto">{params.studentId}</span>
                     </div>
                 </div>
             )}
