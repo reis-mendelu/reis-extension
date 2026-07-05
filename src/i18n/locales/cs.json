@@ -52,6 +52,17 @@
       "groupOstatni": "Ostatní"
     }
   },
+  "documents": {
+    "title": "Studijní dokumenty",
+    "items": {
+      "confirmationCz": "Potvrzení o studiu",
+      "confirmationEn": "Confirmation of study",
+      "overviewCz": "Přehled studia",
+      "overviewEn": "Study overview",
+      "regArch": "Tisk registračního archu",
+      "zadost": "Žádost na studijní oddělení"
+    }
+  },
   "menu": {
     "title": "Jídelníček",
     "unavailable": "Menu není k dispozici"
@@ -114,7 +125,7 @@
     "portal": "Portál studenta",
     "teacherList": "List záznamníku učitele",
     "tests": "Testy",
-    "confirmation": "Potvrzení o studiu",
+    "documents": "Studijní dokumenty",
     "eIndex": "E-index",
     "practiceTests": "Cvičné testy",
     "assignments": "Odevzdávárna",

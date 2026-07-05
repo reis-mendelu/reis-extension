@@ -52,6 +52,17 @@
       "groupOstatni": "Other"
     }
   },
+  "documents": {
+    "title": "Study documents",
+    "items": {
+      "confirmationCz": "Confirmation of study (Czech)",
+      "confirmationEn": "Confirmation of study (English)",
+      "overviewCz": "Study overview (Czech)",
+      "overviewEn": "Study overview (English)",
+      "regArch": "Print the registration sheet",
+      "zadost": "Request to the study department"
+    }
+  },
   "menu": {
     "title": "Today's Menu",
     "unavailable": "Menu not available"
@@ -114,7 +125,7 @@
     "portal": "Student Portal",
     "teacherList": "Teacher's Record List",
     "tests": "Tests",
-    "confirmation": "Confirmation of Study",
+    "documents": "Study documents",
     "eIndex": "E-index",
     "practiceTests": "Practice Tests",
     "assignments": "Assignments / Dropbox",

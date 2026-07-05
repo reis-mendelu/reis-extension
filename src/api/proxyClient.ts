@@ -35,6 +35,15 @@ export async function executeAction<T = unknown>(action: ActionType, payload: un
 export function requestData(t: string) { window.parent.postMessage(Messages.requestData(t as DataRequestType), '*'); }
 export function openPopup(url: string): Promise<void> { return executeAction('open_url', { url }); }
 
+/**
+ * Download an IS study document. The content script performs the first-party
+ * fetch (SameSite cookie); the returned promise resolves only when the file is
+ * actually saved, so callers can show real completion.
+ */
+export function downloadDocument(url: string, filename: string): Promise<void> {
+  return executeAction('download_document', { url, filename });
+}
+
 export async function logout(): Promise<void> {
     clearUserParamsCache();
     try {

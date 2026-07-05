@@ -5,7 +5,6 @@ import type { MenuItem } from '../menuConfig';
 import type { AppView } from '../../types/app';
 import { useAppStore } from '../../store/useAppStore';
 import { IsSearchTriggers, IsSearchPopovers, type IsSearchTarget } from '../SearchBar/IsSearchTriggers';
-import { downloadConfirmation } from '../../api/confirmationOfStudy';
 
 interface MobileNavSheetProps {
   item: MenuItem | null;
@@ -18,6 +17,7 @@ interface MobileNavSheetProps {
 export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject, onOpenProfile }: MobileNavSheetProps) {
   const [isSearchOpen, setIsSearchOpen] = useState<IsSearchTarget>(null);
   const setIsEduroamOpen = useAppStore(s => s.setIsEduroamOpen);
+  const setIsDocumentsOpen = useAppStore(s => s.setIsDocumentsOpen);
 
   if (!item) return null;
 
@@ -30,8 +30,8 @@ export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject, onO
       onOpenSubject?.(child.courseCode, child.label, child.subjectId);
     } else if (child.id === 'eduroam') {
       setIsEduroamOpen(true);
-    } else if (child.id === 'potvrzeni-studia') {
-      if (child.href) downloadConfirmation(child.href);
+    } else if (child.id === 'dokumenty') {
+      setIsDocumentsOpen(true);
     } else if (child.id === 'profile-action') {
       onOpenProfile?.();
     } else if (child.href) {
