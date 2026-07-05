@@ -2,9 +2,11 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { landmarkGroupLabels, polygonCentroid } from './mapHelpers';
 import landmarksJson from '../../data/map/landmarks.json';
-import type { Landmark } from '../../types/campusMap';
+import remotePlacesJson from '../../data/map/remotePlaces.json';
+import type { Landmark, RemotePlace } from '../../types/campusMap';
 
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
+const REMOTE = (remotePlacesJson as { places: RemotePlace[] }).places;
 const isJak = (l: Landmark) => l.name.startsWith('Koleje JAK');
 const JAK = LANDMARKS.filter(isJak);
 const NON_JAK = LANDMARKS.filter((l) => !isJak(l));
@@ -41,6 +43,7 @@ export function LandmarkPicker() {
   const focusLandmark = useAppStore((s) => s.focusLandmarkById);
   const focusPoint = useAppStore((s) => s.focusPoint);
   const focusCampus = useAppStore((s) => s.focusCampus);
+  const focusRemotePlace = useAppStore((s) => s.focusRemotePlaceById);
   const { t } = useTranslation();
   const selectedLandmark = selection?.kind === 'poi' ? selection.poi.id : null;
 
@@ -49,14 +52,20 @@ export function LandmarkPicker() {
       <button className={`justify-start ${active ? 'menu-active' : ''}`} onClick={run}>{label}</button>
     </li>
   );
+  const title = (key: string, label: string) => <li key={key} className="menu-title">{label}</li>;
 
   return (
     <ul className="menu menu-sm w-full flex-nowrap overflow-y-auto p-1">
+      {title('t-campus', t('map.placesCampus'))}
       {PLACE_GROUPS.map((g) =>
         row(String(g.ids[0]), g.label, g.ids.includes(selectedLandmark ?? -2), () => focusLandmark(g.ids[0])),
       )}
       {row('jak', t('map.jakDorms'), selectedLandmark === -1, () => focusPoint(t('map.jakDorms'), JAK_CENTROID))}
       {row('campus', t('map.mainCampus'), false, () => focusCampus())}
+      {title('t-other', t('map.placesOther'))}
+      {REMOTE.map((p) =>
+        row(String(p.id), p.shortName, selectedLandmark === p.id, () => focusRemotePlace(p.id)),
+      )}
     </ul>
   );
 }

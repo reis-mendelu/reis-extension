@@ -52,6 +52,17 @@
       "groupOstatni": "Ostatní"
     }
   },
+  "documents": {
+    "title": "Studijní dokumenty",
+    "items": {
+      "confirmationCz": "Potvrzení o studiu",
+      "confirmationEn": "Confirmation of study",
+      "overviewCz": "Přehled studia",
+      "overviewEn": "Study overview",
+      "regArch": "Tisk registračního archu",
+      "zadost": "Žádost na studijní oddělení"
+    }
+  },
   "menu": {
     "title": "Jídelníček",
     "unavailable": "Menu není k dispozici"
@@ -114,7 +125,7 @@
     "portal": "Portál studenta",
     "teacherList": "List záznamníku učitele",
     "tests": "Testy",
-    "confirmation": "Potvrzení o studiu",
+    "documents": "Studijní dokumenty",
     "eIndex": "E-index",
     "practiceTests": "Cvičné testy",
     "assignments": "Odevzdávárna",
@@ -298,7 +309,15 @@
     "npsThank": "Díky za hodnocení!",
     "sharePrompt": "Pošli to spolužákovi, co ještě bojuje s IS.",
     "shareCopy": "Kopírovat odkaz",
-    "shareCopied": "Zkopírováno!"
+    "shareCopied": "Zkopírováno!",
+    "reasonPrompt": "Co bylo špatně?",
+    "reason": {
+      "missing_feature": "Nemá to co potřebuji",
+      "bug": "Nefunguje to",
+      "confusing": "Nepřehledné",
+      "slow": "Pomalé",
+      "other": "Jiné"
+    }
   },
   "course": {
     "setNickname": "Nastavit přezdívku",
@@ -961,6 +980,8 @@
     "whiteboard": "Tabule",
     "showOnMap": "Zobrazit na mapě",
     "places": "Místa",
+    "placesCampus": "Kampus",
+    "placesOther": "Další pracoviště",
     "jakDorms": "Koleje JAK",
     "mainCampus": "Hlavní kampus",
     "alsoHere": "Také zde",

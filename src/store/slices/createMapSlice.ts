@@ -1,10 +1,11 @@
 import type { AppSlice, MapSlice } from '../types';
-import type { BuildingsMeta, RoomIndexEntry, PoiFeature, MapSelection, Landmark } from '../../types/campusMap';
+import type { BuildingsMeta, RoomIndexEntry, PoiFeature, MapSelection, Landmark, RemotePlace } from '../../types/campusMap';
 import buildingsJson from '../../data/map/buildings.json';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import poisJson from '../../data/map/pois.json';
 import landmarksJson from '../../data/map/landmarks.json';
-import { searchPlaces, polygonCentroid } from '../../components/CampusMap/mapHelpers';
+import remotePlacesJson from '../../data/map/remotePlaces.json';
+import { searchPlaces, polygonCentroid, remotePlaceCenter } from '../../components/CampusMap/mapHelpers';
 import { fetchBuildingRooms } from '../../api/campusMap';
 import { fetchMapEvents } from '../../api/mapEvents';
 import { logError } from '../../utils/reportError';
@@ -13,6 +14,7 @@ const META = buildingsJson as BuildingsMeta;
 const INDEX = roomsIndexJson as RoomIndexEntry[];
 const POIS = (poisJson as unknown as { features: PoiFeature[] }).features;
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
+const REMOTE = (remotePlacesJson as { places: RemotePlace[] }).places;
 
 const buildingById = (id: number) => META.buildings.find((b) => b.id === id) ?? null;
 
@@ -78,6 +80,20 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     set({
       activeBuildingId: null, activeFloorId: null,
       mapSelection: { kind: 'poi', poi: { id: l.id, name: l.name, type: l.type, url: l.url, phone: l.phone, email: l.email }, coord },
+      mapFocusRequest: get().mapFocusRequest + 1,
+    });
+  },
+
+  focusRemotePlaceById: (id) => {
+    const p = REMOTE.find((x) => x.id === id);
+    if (!p) { logError('MapSlice.focusRemotePlaceById', new Error(`unknown remote place ${id}`)); return; }
+    // Reuse the poi selection kind: the overview effect flies to the footprint
+    // centre and DetailPanel renders name (title) / address (type slot) /
+    // website (url).
+    const coord = remotePlaceCenter(p);
+    set({
+      activeBuildingId: null, activeFloorId: null,
+      mapSelection: { kind: 'poi', poi: { id: p.id, name: p.name, type: p.address ?? '', url: p.url, phone: null, email: null }, coord },
       mapFocusRequest: get().mapFocusRequest + 1,
     });
   },
