@@ -1,13 +1,9 @@
 import { z } from 'zod';
-import type {
-  ParsedFile,
-  SyllabusRequirements,
-  GradeHistory,
-  DocumentNote,
-} from '../types/documents';
+import type { SyllabusRequirements, GradeHistory, DocumentNote } from '../types/documents';
 import { ExamSubjectSchema } from './schemas/exams.schema';
 import { BlockLessonSchema } from './schemas/schedule.schema';
 import { SubjectsDataSchema } from './schemas/subjects.schema';
+import { FilesSchema } from './schemas/files.schema';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
 import type { ClassmatesData } from '../types/classmates';
 import type { StudyPlan, DualLanguageStudyPlan } from '../types/studyPlan';
@@ -19,7 +15,6 @@ import type { SubjectZaznamnik } from './zaznamnik';
 
 // --- Base Types using Zod ---
 
-export const ParsedFileSchema = z.custom<ParsedFile>();
 export const SyllabusRequirementsSchema = z.custom<SyllabusRequirements>();
 export const CalendarCustomEventSchema = z.object({
   id: z.string(),
@@ -52,15 +47,6 @@ export const HiddenItemsSchema = z.object({
 export const StudyPlanSchema = z.union([z.custom<StudyPlan>(), z.custom<DualLanguageStudyPlan>()]);
 
 // --- Storage Value Schemas ---
-
-// 'files' store - can be legacy array or dual-language object
-export const FilesSchema = z.union([
-  z.array(ParsedFileSchema),
-  z.object({
-    cz: z.array(ParsedFileSchema),
-    en: z.array(ParsedFileSchema),
-  }),
-]);
 
 // 'assessments' store - Legacy, kept for backward compatibility
 export const AssessmentsSchema = z.array(z.unknown());
