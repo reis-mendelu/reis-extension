@@ -32,6 +32,12 @@ updates:
         versions: ["4.x"]
       - dependency-name: "@vitest/coverage-v8"
         versions: ["4.x"]
+      # @playwright/test > 1.60 — @serenity-js/playwright-test (latest 3.44.0)
+      # peers `@playwright/test ~1.60.0`, so 1.61+ fails npm ci. Block minor/major
+      # (1.60.x patches still flow) and drop it from the dev group so the group's
+      # other members can still merge. Lift when Serenity widens its peer range.
+      - dependency-name: "@playwright/test"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
     groups:
       # Batch low-risk bumps into one PR each to cut noise. Majors are excluded
       # from groups so they arrive individually for careful review (they have
