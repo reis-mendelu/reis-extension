@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../../../api/campusMap', () => ({ fetchBuildingRooms: vi.fn() }));
-vi.mock('../../../api/mapEvents', () => ({ fetchMapEvents: vi.fn() }));
+vi.mock('../../../api/mapEvents', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../api/mapEvents')>();
+  return { ...actual, fetchMapEvents: vi.fn() };
+});
 import { fetchBuildingRooms } from '../../../api/campusMap';
 import { fetchMapEvents } from '../../../api/mapEvents';
 import { useAppStore } from '../../useAppStore';
@@ -178,5 +181,42 @@ describe('mapSlice', () => {
     const s = useAppStore.getState();
     expect(s.mapSelection?.kind).toBe('event');
     expect(s.mapFocusRequest).toBe(before); // no coordinate → nothing to fly to
+  });
+});
+
+describe('map mode + society events', () => {
+  it('defaults to student mode with no society events', () => {
+    const s = useAppStore.getState();
+    expect(s.mapMode).toBe('student');
+    expect(s.societyMapEvents).toEqual([]);
+  });
+
+  it('setMapMode stays student when no society is logged in', () => {
+    useAppStore.setState({ adminRole: null, adminAssociationId: null });
+    useAppStore.getState().setMapMode('society');
+    expect(useAppStore.getState().mapMode).toBe('student');
+  });
+
+  it('setMapMode enters society mode for a logged-in association', () => {
+    useAppStore.setState({ adminRole: 'association', adminAssociationId: 'supef' });
+    useAppStore.getState().setMapMode('society');
+    expect(useAppStore.getState().mapMode).toBe('society');
+    useAppStore.getState().setMapMode('student');
+    expect(useAppStore.getState().mapMode).toBe('student');
+  });
+
+  it('refreshSocietyMapEvents maps societyPosts to located MapEvents', () => {
+    useAppStore.setState({
+      societyPosts: [{
+        id: 'e1', association_id: 'supef', title: 'Party', body: null, category: 'party',
+        date: '2026-07-10', end_date: null, time: '20:00', venue_kind: 'offcampus',
+        room_code: null, coord_lng: 16.61, coord_lat: 49.21, location: 'Bar', url: null,
+        created_by: null, visible_from: null,
+      }],
+    });
+    useAppStore.getState().refreshSocietyMapEvents();
+    const evs = useAppStore.getState().societyMapEvents;
+    expect(evs).toHaveLength(1);
+    expect(evs[0]).toMatchObject({ id: 'e1', title: 'Party', coord: [16.61, 49.21] });
   });
 });

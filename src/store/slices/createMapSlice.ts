@@ -1,5 +1,6 @@
 import type { AppSlice, MapSlice } from '../types';
 import type { BuildingsMeta, RoomIndexEntry, PoiFeature, MapSelection, Landmark, RemotePlace } from '../../types/campusMap';
+import type { MapEvent } from '../../types/events';
 import buildingsJson from '../../data/map/buildings.json';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import poisJson from '../../data/map/pois.json';
@@ -7,7 +8,7 @@ import landmarksJson from '../../data/map/landmarks.json';
 import remotePlacesJson from '../../data/map/remotePlaces.json';
 import { searchPlaces, polygonCentroid, remotePlaceCenter, roomCodeToCoord } from '../../components/CampusMap/mapHelpers';
 import { fetchBuildingRooms } from '../../api/campusMap';
-import { fetchMapEvents } from '../../api/mapEvents';
+import { fetchMapEvents, toMapEvent } from '../../api/mapEvents';
 import { logError } from '../../utils/reportError';
 
 const META = buildingsJson as BuildingsMeta;
@@ -17,6 +18,14 @@ const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
 const REMOTE = (remotePlacesJson as { places: RemotePlace[] }).places;
 
 const buildingById = (id: number) => META.buildings.find((b) => b.id === id) ?? null;
+
+// Campus events carry a room code but no coordinate; resolve it to the building
+// centre so they can be pinned. Off-campus/online events keep their own coord (or none).
+function locateEvent(e: MapEvent): MapEvent {
+  return e.coord || e.venueKind !== 'campus' || !e.roomCode
+    ? e
+    : { ...e, coord: roomCodeToCoord(e.roomCode, INDEX, META) };
+}
 
 export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   activeBuildingId: null,
@@ -31,6 +40,8 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   mapEventsLoaded: false,
   mapPanelTab: 'events',
   eventFilter: 'all',
+  mapMode: 'student',
+  societyMapEvents: [],
 
   setMapBuilding: (id) => {
     const b = buildingById(id);
@@ -125,18 +136,22 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   setMapPanelTab: (tab) => set({ mapPanelTab: tab }),
   setEventFilter: (filter) => set({ eventFilter: filter }),
 
+  setMapMode: (mode) => {
+    if (mode === 'society' && !get().adminAssociationId) return; // gate: society only
+    set({ mapMode: mode, mapSelection: null });
+    if (mode === 'society') get().refreshSocietyMapEvents();
+  },
+
+  refreshSocietyMapEvents: () => {
+    const rows = get().societyPosts;
+    set({ societyMapEvents: rows.map((r) => locateEvent(toMapEvent(r))) });
+  },
+
   loadMapEvents: async () => {
     if (get().mapEventsLoaded) return;
     try {
       const events = await fetchMapEvents();
-      // Campus events carry a room code but no coordinate; resolve it to the
-      // building centre here (where the map data lives) so they can be pinned.
-      const located = events.map((e) =>
-        e.coord || e.venueKind !== 'campus' || !e.roomCode
-          ? e
-          : { ...e, coord: roomCodeToCoord(e.roomCode, INDEX, META) },
-      );
-      set({ mapEvents: located, mapEventsLoaded: true });
+      set({ mapEvents: events.map(locateEvent), mapEventsLoaded: true });
     } catch (err) {
       logError('MapSlice.loadMapEvents', err);
     }

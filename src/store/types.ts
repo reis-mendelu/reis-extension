@@ -443,6 +443,15 @@ export interface MapSlice {
   loadMapEvents: () => Promise<void>;
   /** Select an event for the detail panel. Pass `{ fly: true }` (list click) to also fly the camera to its coordinate; a pin click omits it and the camera stays put. */
   focusEventById: (id: string, opts?: { fly?: boolean }) => void;
+  // --- Society authoring mode ---
+  /** 'student' = public map; 'society' = the logged-in association's own events + authoring. */
+  mapMode: 'student' | 'society';
+  /** The logged-in association's own events (all dates), mapped from societyPosts. */
+  societyMapEvents: MapEvent[];
+  /** Switch map mode. Ignored (stays 'student') unless a society is logged in. */
+  setMapMode: (mode: 'student' | 'society') => void;
+  /** Rebuild societyMapEvents from the current societyPosts. Called after posts load/change. */
+  refreshSocietyMapEvents: () => void;
 }
 
 export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & NotesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & EduroamSlice & DocumentsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & BulletinSlice & ViewportSlice & import('./slices/createSearchSlice').SearchSlice & import('./slices/createPersonProfileSlice').PersonProfileSlice & MapSlice & import('./slices/createRsvpSlice').RsvpSlice & import('./slices/createAdminSlice').AdminSlice;
