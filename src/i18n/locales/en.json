@@ -1018,6 +1018,12 @@
     "changePlace": "Change place",
     "publish": "Publish event",
     "clickToPlace": "Click the map where your event is",
+    "venueLabel": "Where",
+    "venueOffcampus": "In town",
+    "venueCampus": "Campus",
+    "searchRoom": "Search room or building…",
+    "noRoomFound": "Nothing found.",
+    "selectDate": "Pick a date",
     "edit": "Edit",
     "delete": "Delete",
     "category": {

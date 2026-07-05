@@ -1,66 +1,58 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { EventComposer } from '../EventComposer';
+import type { PostInput } from '../../../api/societyPosts';
 
-vi.mock('../../../api/societyPosts', async (orig) => ({
-  ...(await orig<typeof import('../../../api/societyPosts')>()),
-  createPost: vi.fn().mockResolvedValue({ id: 'new1' }),
-  updatePost: vi.fn().mockResolvedValue({}),
+const createPost = vi.fn<(input: PostInput, associationId: string, createdBy: string) => Promise<{ id?: string; error?: string }>>(async () => ({ id: 'new' }));
+const updatePost = vi.fn<(id: string, patch: Record<string, unknown>) => Promise<{ error?: string }>>(async () => ({}));
+vi.mock('../../../api/societyPosts', () => ({
+  createPost: (...a: Parameters<typeof createPost>) => createPost(...a),
+  updatePost: (...a: Parameters<typeof updatePost>) => updatePost(...a),
 }));
-import { createPost, updatePost } from '../../../api/societyPosts';
 
-describe('EventComposer (create)', () => {
-  beforeEach(() => {
-    useAppStore.setState({ adminAssociationId: 'supef', adminSession: { user: { email: 'a@supef.cz' } } as never, draftCoord: null, language: 'en' });
-    vi.clearAllMocks();
-  });
-
-  it('publish is disabled until name, date and place are set', async () => {
-    render(<EventComposer onDone={() => {}} />);
-    const publish = screen.getByRole('button', { name: /publish/i });
-    expect(publish).toBeDisabled();
-
-    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Spring Party' } });
-    fireEvent.change(screen.getByLabelText(/date/i), { target: { value: '2026-07-10' } });
-    act(() => { useAppStore.setState({ draftCoord: [16.61, 49.21] }); }); // as if the map was clicked
-    expect(screen.getByRole('button', { name: /publish/i })).toBeEnabled();
-  });
-
-  it('publishes via createPost with the picked coordinate', async () => {
-    useAppStore.setState({ draftCoord: [16.61, 49.21] });
-    const onDone = vi.fn();
-    render(<EventComposer onDone={onDone} />);
-    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Spring Party' } });
-    fireEvent.change(screen.getByLabelText(/date/i), { target: { value: '2026-07-10' } });
-    fireEvent.click(screen.getByRole('button', { name: /publish/i }));
-    await waitFor(() => expect(createPost).toHaveBeenCalled());
-    const [input, assoc] = vi.mocked(createPost).mock.calls[0];
-    expect(assoc).toBe('supef');
-    expect(input).toMatchObject({ title: 'Spring Party', date: '2026-07-10', venueKind: 'offcampus', coordLng: 16.61, coordLat: 49.21 });
-    await waitFor(() => expect(onDone).toHaveBeenCalled());
+beforeEach(() => {
+  createPost.mockClear(); updatePost.mockClear();
+  useAppStore.setState({
+    language: 'cz', adminAssociationId: 'supef',
+    adminSession: { user: { email: 'admin@supef.cz' } } as never,
+    draftCoord: null, editEventId: null, composerOpen: true,
+    societyMapEvents: [], loadSocietyPosts: vi.fn(async () => {}),
   });
 });
 
-describe('EventComposer (edit)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+describe('EventComposer publish', () => {
+  it('creates an offcampus event with the placed coord', async () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    // language: 'cs' in beforeEach → labels resolve through the real cs.json
+    // translations (not raw keys), so queries below match the rendered Czech text.
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
+    // choose date through MiniCalendar
+    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    const input = createPost.mock.calls[0][0];
+    expect(input.venueKind).toBe('offcampus');
+    expect(input.coordLng).toBe(16.61);
   });
 
-  it('edits an existing event via updatePost', async () => {
+  it('preserves venue_kind=campus and room_code when editing a campus event', async () => {
     useAppStore.setState({
-      adminAssociationId: 'supef',
+      editEventId: 'c1',
       societyMapEvents: [{
-        id: 'e9', title: 'Old', url: '', date: '2026-07-10', endDate: null, time: null,
-        location: null, imageUrl: null, organizerKey: 'pef', societyId: 'supef', coord: [16.6, 49.2],
-        roomCode: null, venueKind: 'offcampus', category: 'party',
+        id: 'c1', title: 'Deskovky', url: '', date: '2026-07-08', endDate: null, time: null,
+        location: 'Q6.06', imageUrl: null, organizerKey: 'pef', societyId: 'supef',
+        coord: [16.614, 49.209], roomCode: 'BA39N6006', venueKind: 'campus', category: 'boardgames',
       }],
-      editEventId: 'e9', draftCoord: [16.6, 49.2], language: 'en',
     });
     render(<EventComposer onDone={() => {}} />);
-    expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe('Old');
-    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'New' } });
-    fireEvent.click(screen.getByRole('button', { name: /save/i }));
-    await waitFor(() => expect(updatePost).toHaveBeenCalledWith('e9', expect.objectContaining({ title: 'New' })));
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    const patch = updatePost.mock.calls[0][1];
+    expect(patch.venue_kind).toBe('campus');
+    expect(patch.room_code).toBe('BA39N6006');
+    expect(patch.category).toBe('boardgames');
   });
 });

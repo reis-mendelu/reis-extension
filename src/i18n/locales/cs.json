@@ -1018,6 +1018,12 @@
     "changePlace": "Změnit místo",
     "publish": "Zveřejnit akci",
     "clickToPlace": "Klikněte na mapu, kde akce je",
+    "venueLabel": "Kde",
+    "venueOffcampus": "Ve městě",
+    "venueCampus": "Kampus",
+    "searchRoom": "Hledat místnost nebo budovu…",
+    "noRoomFound": "Nic nenalezeno.",
+    "selectDate": "Vyberte datum",
     "edit": "Upravit",
     "delete": "Smazat",
     "category": {
