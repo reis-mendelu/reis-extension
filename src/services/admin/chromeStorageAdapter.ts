@@ -5,7 +5,12 @@
  */
 export const chromeStorageAdapter = {
   getItem: async (key: string): Promise<string | null> => {
-    const res = await chrome.storage.local.get(key);
+    // Real chrome.storage.local.get() always resolves an object (never
+    // undefined), even for a missing key — but bare `vi.fn()` test mocks
+    // without an implementation resolve `undefined`. Guard defensively so an
+    // unrelated test file that never configured the chrome mock doesn't crash
+    // supabase-js's background session load (see authClient.ts).
+    const res = (await chrome.storage.local.get(key)) ?? {};
     return (res[key] as string | undefined) ?? null;
   },
   setItem: async (key: string, value: string): Promise<void> => {
