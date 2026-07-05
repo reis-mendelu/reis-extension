@@ -1,5 +1,5 @@
 import type { PathOptions } from 'leaflet';
-import type { RoomCategory, RoomIndexEntry, PoiFeature, MapSelection, Landmark } from '../../types/campusMap';
+import type { RoomCategory, RoomIndexEntry, PoiFeature, MapSelection, Landmark, RemotePlace } from '../../types/campusMap';
 
 export interface RoomStyle { fill: string; stroke: string; }
 
@@ -21,6 +21,20 @@ export const BUILDING_STYLE: PathOptions = {
 export const SIBLING_STYLE: PathOptions = {
   color: '#2563eb', weight: 1.5, fillColor: '#3b82f6', fillOpacity: 0.1, bubblingMouseEvents: false,
 };
+// Faint green fill for a remote site's grounds boundary (arboretum garden) — sits
+// behind the blue building footprints so the greenhouses/buildings read on top.
+export const GARDEN_STYLE: PathOptions = {
+  color: '#4d7c0f', weight: 1.5, fillColor: '#84cc16', fillOpacity: 0.12, bubblingMouseEvents: false,
+};
+// Dotted grey line for the arboretum footpath network (drill-in inner map).
+// Non-interactive so a click falls through to select the garden.
+export const PATH_STYLE: PathOptions = {
+  color: '#9ca3af', weight: 1.2, opacity: 0.9, dashArray: '1 4', interactive: false,
+};
+// Purple dot for a labelled point of interest (collection / greenhouse / viewpoint).
+export const POI_MARKER_STYLE = {
+  radius: 4, color: '#ffffff', weight: 1.5, fillColor: '#7c3aed', fillOpacity: 1, bubblingMouseEvents: false,
+} as const;
 
 // The campus basemap is ALWAYS light (CartoDB Positron) regardless of the app's
 // DaisyUI theme, so these are fixed literals tuned to read on a light
@@ -58,6 +72,43 @@ export function polygonCentroid(ring: number[][]): [number, number] {
   let lon = 0, lat = 0;
   for (const [x, y] of ring) { lon += x; lat += y; }
   return [lon / ring.length, lat / ring.length];
+}
+
+// A RemotePlace outline is either one polygon (areal / château) or a MultiPolygon
+// of every building on a campus. Return the outer ring of each polygon (the
+// building footprints we draw) as a flat list.
+export function remotePlaceRings(outline: RemotePlace['outline']): number[][][] {
+  return outline.type === 'MultiPolygon'
+    ? outline.coordinates.map((poly) => poly[0])
+    : [outline.coordinates[0]];
+}
+
+// Bounding box of a whole place (grounds boundary + buildings), for both its
+// centre and its Leaflet bounds. Prefers the `area` when present so a drilled
+// site frames its full garden, not just the building cluster.
+function remotePlaceExtent(place: RemotePlace): { minX: number; minY: number; maxX: number; maxY: number } {
+  const rings = place.area ? [place.area.coordinates[0]] : remotePlaceRings(place.outline);
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const ring of rings) {
+    for (const [x, y] of ring) {
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+// Centre [lon, lat] of a place — used to select it (detail card, in-place click).
+export function remotePlaceCenter(place: RemotePlace): [number, number] {
+  const { minX, minY, maxX, maxY } = remotePlaceExtent(place);
+  return [(minX + maxX) / 2, (minY + maxY) / 2];
+}
+
+// Leaflet bounds [[south, west], [north, east]] — fly-to fits the whole site
+// (garden / campus) instead of over-zooming to a fixed level on its centre.
+export function remotePlaceBounds(place: RemotePlace): [[number, number], [number, number]] {
+  const { minX, minY, maxX, maxY } = remotePlaceExtent(place);
+  return [[minY, minX], [maxY, maxX]];
 }
 
 // Rough planar distance in metres between two [lon, lat] points — exact enough

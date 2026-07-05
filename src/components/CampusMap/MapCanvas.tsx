@@ -4,15 +4,20 @@ import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
 import buildingsJson from '../../data/map/buildings.json';
 import landmarksJson from '../../data/map/landmarks.json';
+import remotePlacesJson from '../../data/map/remotePlaces.json';
 import {
   ringToLatLng, shortLabel, categoryStyle, landmarkGroupLabels,
-  SELECTED_STYLE, STRUCTURE_STYLE, BUILDING_STYLE, SIBLING_STYLE,
+  remotePlaceRings, remotePlaceCenter, remotePlaceBounds,
+  SELECTED_STYLE, STRUCTURE_STYLE, BUILDING_STYLE, SIBLING_STYLE, GARDEN_STYLE,
+  PATH_STYLE, POI_MARKER_STYLE,
 } from './mapHelpers';
 import { setMapInstance } from './mapInstance';
-import type { BuildingsMeta, RoomFeature, Landmark } from '../../types/campusMap';
+import type { BuildingsMeta, RoomFeature, Landmark, RemotePlace } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
+const REMOTE = (remotePlacesJson as { places: RemotePlace[] }).places;
+const REMOTE_IDS = new Set(REMOTE.map((p) => p.id));
 // FRRMS + Kolej Akademie are one building under two names → a combined "A / B"
 // tooltip. (Adjacent-but-separate places like Tauferovy/sports centre are NOT
 // merged — see landmarkGroupLabels.)
@@ -66,6 +71,57 @@ function drawLandmarks(
     if (letter) poly.bindTooltip(letter, { permanent: true, direction: 'center', className: 'building-label' });
     else poly.bindTooltip(LANDMARK_LABELS.get(l.id) ?? l.name);
     poly.addTo(layer);
+  }
+}
+
+// The off-campus MENDELU sites drawn as their real OSM footprints, in the same
+// blue campus-building theme as landmarks. Sites with a grounds boundary (`area`,
+// the arboretum garden) DRILL IN like a campus faculty: collapsed they show only
+// the garden outline; clicking them reveals the inner map (footpaths + buildings
+// + labelled collections). `drilledId` is the currently-selected site's id.
+// Sites without an `area` (Lednice/Žabčice/Křtiny) are far off-screen, so they
+// always show their footprints. Any part of a site selects the whole site.
+function drawRemotePlaces(
+  layer: L.LayerGroup,
+  select: ReturnType<typeof useAppStore.getState>,
+  drilledId: number | null,
+) {
+  for (const p of REMOTE) {
+    const [clon, clat] = remotePlaceCenter(p);
+    const drilled = drilledId === p.id;
+    const collapsible = !!p.area;
+    // Collapsed garden: a click drills in (fly + reveal). Otherwise a click just
+    // selects the site in place (no camera move).
+    const select_ = () => select.selectMapPoi(
+      { id: p.id, name: p.name, type: p.address ?? '', url: p.url, phone: null, email: null },
+      [clon, clat],
+    );
+    const enter = () => select.focusRemotePlaceById(p.id);
+
+    if (p.area) {
+      L.polygon(ringToLatLng(p.area.coordinates[0]), GARDEN_STYLE)
+        .on('click', drilled ? select_ : enter)
+        .bindTooltip(p.shortName)
+        .addTo(layer);
+    }
+    // Inner detail only when drilled in (or for the always-shown far sites).
+    if (drilled || !collapsible) {
+      if (p.paths) for (const path of p.paths) {
+        L.polyline(ringToLatLng(path), PATH_STYLE).addTo(layer);
+      }
+      for (const ring of remotePlaceRings(p.outline)) {
+        L.polygon(ringToLatLng(ring), BUILDING_STYLE)
+          .on('click', select_)
+          .bindTooltip(p.shortName)
+          .addTo(layer);
+      }
+      if (p.pois) for (const poi of p.pois) {
+        L.circleMarker([poi.lat, poi.lon], POI_MARKER_STYLE)
+          .on('click', select_)
+          .bindTooltip(poi.name, { permanent: true, direction: 'right', className: 'room-label' })
+          .addTo(layer);
+      }
+    }
   }
 }
 
@@ -141,6 +197,12 @@ export function MapCanvas() {
           .addTo(layer);
       }
       drawLandmarks(layer, select, BUILDING_STYLE);
+      // A remote site is "drilled in" when it is the selected poi — then its inner
+      // map (paths / buildings / collections) is revealed instead of just the
+      // collapsed garden outline.
+      const drilledRemoteId = select.mapSelection?.kind === 'poi'
+        && REMOTE_IDS.has(select.mapSelection.poi.id) ? select.mapSelection.poi.id : null;
+      drawRemotePlaces(layer, select, drilledRemoteId);
       // Clicking the bare basemap (not a building outline or an event pin) clears
       // the current selection — same "click away to dismiss" as floor-view's exit.
       // Building outlines are Leaflet layers (their click doesn't reach the map);
@@ -148,7 +210,11 @@ export function MapCanvas() {
       const onOverviewClick = (e: L.LeafletMouseEvent) => {
         const t = e.originalEvent.target as HTMLElement | null;
         if (t?.closest('.leaflet-reisEvents-pane')) return;
-        if (useAppStore.getState().mapSelection) select.clearMapSelection();
+        const sel = useAppStore.getState().mapSelection;
+        // Exiting a drilled-in remote site collapses it again (redraw) via
+        // focusCampus; a plain selection just clears.
+        if (sel?.kind === 'poi' && REMOTE_IDS.has(sel.poi.id)) select.focusCampus();
+        else if (sel) select.clearMapSelection();
       };
       map.on('click', onOverviewClick);
       exitHandlerRef.current = onOverviewClick;
@@ -159,8 +225,15 @@ export function MapCanvas() {
       // never zoom back out if you're already deeper in.
       const sel = select.mapSelection;
       if (sel?.kind === 'poi') {
-        const [lon, lat] = sel.coord;
-        flyAndReveal(map, () => map.flyTo([lat, lon], 18));
+        // A remote site (arboretum/Lednice/…) fits its whole extent so it never
+        // over-zooms past its own size; a plain poi (landmark) zooms to 18.
+        const rp = REMOTE.find((p) => p.id === sel.poi.id);
+        if (rp) {
+          flyAndReveal(map, () => map.flyToBounds(remotePlaceBounds(rp) as L.LatLngBoundsExpression, { maxZoom: 18, padding: [50, 50] }));
+        } else {
+          const [lon, lat] = sel.coord;
+          flyAndReveal(map, () => map.flyTo([lat, lon], 18));
+        }
       } else if (sel?.kind === 'event' && sel.event.coord) {
         const [lon, lat] = sel.event.coord;
         flyAndReveal(map, () => map.flyTo([lat, lon], Math.max(map.getZoom(), 18)));
