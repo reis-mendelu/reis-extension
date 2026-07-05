@@ -1002,6 +1002,7 @@
     "body": "Popis",
     "roomCode": "Místnost",
     "addPost": "Přidat příspěvek",
-    "logout": "Odhlásit"
+    "logout": "Odhlásit",
+    "saveError": "Nepodařilo se uložit — zkuste to znovu"
   }
 }

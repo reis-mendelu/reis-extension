@@ -22,11 +22,12 @@ export interface AdminSlice {
 }
 
 async function resolveAccount(email: string): Promise<{ role: AdminRole | null; associationId: string | null }> {
-  const { data } = await adminAuthClient
+  const { data, error } = await adminAuthClient
     .from('spolky_accounts')
     .select('role, association_id')
     .eq('email', email)
     .maybeSingle();
+  if (error) logError('Admin.resolveAccount', error);
   return { role: (data?.role as AdminRole) ?? null, associationId: data?.association_id ?? null };
 }
 
@@ -46,6 +47,10 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     const { data, error } = await adminAuthClient.auth.signInWithPassword({ email, password });
     if (error || !data.session) return { error: 'invalid_credentials' };
     const { role, associationId } = await resolveAccount(email);
+    if (role === null) {
+      try { await adminAuthClient.auth.signOut(); } catch (e) { logError('Admin.login.signOut', e); }
+      return { error: 'account_unavailable' };
+    }
     set({ adminSession: data.session, adminRole: role, adminAssociationId: associationId });
     await get().loadSocietyPosts();
     return {};
@@ -60,6 +65,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     const email = data.session.user.email ?? '';
     const { role, associationId } = await resolveAccount(email);
     set({ adminSession: data.session, adminRole: role, adminAssociationId: associationId });
+    await get().loadSocietyPosts();
   },
   loadSocietyPosts: async () => {
     const associationId = get().adminAssociationId;

@@ -1002,6 +1002,7 @@
     "body": "Description",
     "roomCode": "Room code",
     "addPost": "Add post",
-    "logout": "Log out"
+    "logout": "Log out",
+    "saveError": "Could not save — please try again"
   }
 }

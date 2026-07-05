@@ -69,9 +69,9 @@ export async function createPost(
     .insert(toRow(input, associationId, createdBy))
     .select('id')
     .single();
-  if (error) {
+  if (error || !data) {
     logError('Admin.createPost', error);
-    return { error: error.message };
+    return { error: error?.message ?? 'unknown_error' };
   }
   return { id: (data as { id: string }).id };
 }

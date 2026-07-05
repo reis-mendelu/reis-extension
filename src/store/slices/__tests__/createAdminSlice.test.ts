@@ -58,6 +58,15 @@ describe('createAdminSlice', () => {
     expect(state.adminSession).toBeNull();
   });
 
+  it('valid password but unprovisioned account fails and stays logged out', async () => {
+    signIn.mockResolvedValue({ data: { session: { user: { email: 'ghost@societies.reis.invalid' } } }, error: null });
+    maybeSingle.mockResolvedValue({ data: null });
+    const res = await state.adminLogin('ghost', 'pw');
+    expect(res.error).toBeDefined();
+    expect(state.adminSession).toBeNull();
+    expect(signOut).toHaveBeenCalled();
+  });
+
   it('logout clears everything', async () => {
     signIn.mockResolvedValue({ data: { session: { user: { email: 'x@societies.reis.invalid' } } }, error: null });
     maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'esn' } });

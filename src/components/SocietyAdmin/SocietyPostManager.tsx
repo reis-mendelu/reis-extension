@@ -14,6 +14,7 @@ export function SocietyPostManager() {
   const { t } = useTranslation();
   const [form, setForm] = useState<PostInput>(EMPTY);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,13 +22,21 @@ export function SocietyPostManager() {
     setBusy(true);
     const res = await createPost(form, associationId, email);
     setBusy(false);
-    if (!res.error) { setForm(EMPTY); await loadSocietyPosts(); }
+    if (res.error) { setError(true); return; }
+    setError(false);
+    setForm(EMPTY);
+    await loadSocietyPosts();
   };
 
-  const remove = async (id: string) => { await deletePost(id); await loadSocietyPosts(); };
+  const remove = async (id: string) => {
+    const res = await deletePost(id);
+    setError(!!res.error);
+    await loadSocietyPosts();
+  };
 
   return (
     <div className="flex flex-col gap-4">
+      {error && <p className="text-error text-sm">{t('admin.saveError')}</p>}
       <form onSubmit={add} className="flex flex-col gap-2">
         <input className="input input-bordered" placeholder={t('admin.title')} value={form.title}
                onChange={(e) => setForm({ ...form, title: e.target.value })} />
