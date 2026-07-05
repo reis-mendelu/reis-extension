@@ -1001,6 +1001,13 @@
     "interested": "má zájem",
     "rsvpGoing": "Půjdu",
     "rsvpInterested": "Mám zájem",
+    "myEvents": "Moje akce",
+    "createEvent": "Vytvořit akci",
+    "liveNow": "Živě",
+    "scheduled": "Naplánované",
+    "past": "Proběhlé",
+    "goesLive": "zveřejní se",
+    "noOwnEvents": "Zatím žádné akce — vytvořte první.",
     "category": {
       "party": "Párty",
       "boardgames": "Deskovky",

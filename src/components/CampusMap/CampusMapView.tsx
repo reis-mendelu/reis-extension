@@ -6,6 +6,7 @@ import { DetailPanel } from './DetailPanel';
 import { RoomSearch } from './RoomSearch';
 import { EdgeIndicators } from './EdgeIndicators';
 import { EventLayer } from './EventLayer';
+import { MapModeToggle } from './MapModeToggle';
 import { useAppStore } from '../../store/useAppStore';
 
 export function CampusMapView() {
@@ -28,6 +29,7 @@ export function CampusMapView() {
       <div ref={leftPanelRef} className="absolute top-3 left-3 z-[1000] flex flex-col items-start gap-2">
         <RoomSearch />
         <FloorStack />
+        <MapModeToggle />
       </div>
       <div ref={placesPanelRef} className="absolute top-3 right-3 z-[1000]"><MapSidePanel /></div>
       {selection && (
