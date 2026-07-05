@@ -31,24 +31,49 @@ const limit = vi.fn();
 
 function makeBuilder() {
   const builder = {
-    select: (...args: unknown[]) => { select(...args); return builder; },
-    gte: (...args: unknown[]) => { gte(...args); return builder; },
-    or: (...args: unknown[]) => { or(...args); return builder; },
-    order: (...args: unknown[]) => { order(...args); return builder; },
-    limit: (...args: unknown[]) => { limit(...args); return Promise.resolve({ data: [sampleRow, fallbackRow], error: null }); },
+    select: (...args: unknown[]) => {
+      select(...args);
+      return builder;
+    },
+    gte: (...args: unknown[]) => {
+      gte(...args);
+      return builder;
+    },
+    or: (...args: unknown[]) => {
+      or(...args);
+      return builder;
+    },
+    order: (...args: unknown[]) => {
+      order(...args);
+      return builder;
+    },
+    limit: (...args: unknown[]) => {
+      limit(...args);
+      return Promise.resolve({ data: [sampleRow, fallbackRow], error: null });
+    },
   };
   return builder;
 }
 
 vi.mock('../supabaseClient', () => ({
-  supabase: { from: (...args: unknown[]) => { from(...args); return makeBuilder(); } },
+  supabase: {
+    from: (...args: unknown[]) => {
+      from(...args);
+      return makeBuilder();
+    },
+  },
 }));
 
 import { fetchNotifications } from '../spolkyService';
 
 describe('fetchNotifications (repointed to spolky_events)', () => {
   beforeEach(() => {
-    from.mockClear(); select.mockClear(); gte.mockClear(); or.mockClear(); order.mockClear(); limit.mockClear();
+    from.mockClear();
+    select.mockClear();
+    gte.mockClear();
+    or.mockClear();
+    order.mockClear();
+    limit.mockClear();
   });
 
   it('queries spolky_events with the upcoming-date filter and maps rows to notifications', async () => {

@@ -24,26 +24,42 @@ beforeEach(() => {
   fakeMap = {
     createdPane: false,
     getPane: () => undefined,
-    createPane() { this.createdPane = true; return paneEl; },
+    createPane() {
+      this.createdPane = true;
+      return paneEl;
+    },
     // Current zoom — lets EventLayer tell a pure pan from a fly's zoom change.
     zoom: 17,
-    getZoom() { return this.zoom; },
+    getZoom() {
+      return this.zoom;
+    },
     // Resting layer point.
-    latLngToLayerPoint() { return { x: this.zoom === 17 ? 10 : 50, y: 20 }; },
+    latLngToLayerPoint() {
+      return { x: this.zoom === 17 ? 10 : 50, y: 20 };
+    },
     // Post-zoom target layer point (Leaflet rounds it).
     _latLngToNewLayerPoint: () => ({ round: () => ({ x: 99, y: 88 }) }),
     // Record the handler under every space-separated event token.
-    on: (evts: string, fn: () => void) => { evts.split(' ').forEach((e) => { handlers[e] = fn; }); },
+    on: (evts: string, fn: () => void) => {
+      evts.split(' ').forEach((e) => {
+        handlers[e] = fn;
+      });
+    },
     off: () => {},
   };
   useAppStore.setState({
-    mapEvents: MOCK_MAP_EVENTS, eventFilter: 'all',
-    activeBuildingId: null, mapSelection: null, language: 'en',
+    mapEvents: MOCK_MAP_EVENTS,
+    eventFilter: 'all',
+    activeBuildingId: null,
+    mapSelection: null,
+    language: 'en',
   });
   setMapInstance(fakeMap);
 });
 
-afterEach(() => { setMapInstance(null); });
+afterEach(() => {
+  setMapInstance(null);
+});
 
 describe('EventLayer', () => {
   it('renders pins inside a Leaflet pane positioned by layer point', () => {
@@ -60,7 +76,9 @@ describe('EventLayer', () => {
 
   it('animates pins to the post-zoom layer point during a zoom (no hiding)', () => {
     render(<EventLayer />);
-    act(() => { handlers.zoomanim({ zoom: 19, center: { lat: 49, lng: 16 } }); });
+    act(() => {
+      handlers.zoomanim({ zoom: 19, center: { lat: 49, lng: 16 } });
+    });
     const btn = paneEl.querySelector('button') as HTMLElement;
     // Moved to the _latLngToNewLayerPoint target (99,88) so it glides with the map.
     expect(btn.style.transform).toContain('99px');
@@ -74,22 +92,42 @@ describe('EventLayer', () => {
     const btn = () => paneEl.querySelector('button') as HTMLElement;
     expect(btn().style.transform).toContain('10px'); // resting (zoom 17)
     // Pure pan: same zoom → pane rides the transform, no re-projection.
-    act(() => { handlers.move(); });
+    act(() => {
+      handlers.move();
+    });
     expect(btn().style.transform).toContain('10px');
     // Fly: zoom changed mid-flight → re-project to the new layer point.
-    act(() => { fakeMap.zoom = 18; handlers.move(); });
+    act(() => {
+      fakeMap.zoom = 18;
+      handlers.move();
+    });
     expect(btn().style.transform).toContain('50px');
   });
 
   it('renders the society events when in society mode', () => {
     useAppStore.setState({
       mapMode: 'society',
-      societyMapEvents: [{
-        id: 's1', title: 'Society Party', url: '', date: '2026-07-10', endDate: null, time: null,
-        location: null, imageUrl: null, organizerKey: 'pef', societyId: 'supef',
-        coord: [16.61, 49.21], roomCode: null, venueKind: 'offcampus', category: 'party',
-      }],
-      mapEvents: [], eventFilter: 'all', activeBuildingId: null,
+      societyMapEvents: [
+        {
+          id: 's1',
+          title: 'Society Party',
+          url: '',
+          date: '2026-07-10',
+          endDate: null,
+          time: null,
+          location: null,
+          imageUrl: null,
+          organizerKey: 'pef',
+          societyId: 'supef',
+          coord: [16.61, 49.21],
+          roomCode: null,
+          venueKind: 'offcampus',
+          category: 'party',
+        },
+      ],
+      mapEvents: [],
+      eventFilter: 'all',
+      activeBuildingId: null,
     });
     render(<EventLayer />);
     const btn = paneEl.querySelector('button[title="Society Party"]') as HTMLElement;
@@ -104,17 +142,41 @@ describe('EventLayer', () => {
       mapMode: 'society',
       societyMapEvents: [
         {
-          id: 's-live', title: 'Live Now', url: '', date: '2026-07-10', endDate: null, time: null,
-          location: null, imageUrl: null, organizerKey: 'pef', societyId: 'supef',
-          coord: [16.61, 49.21], roomCode: null, venueKind: 'offcampus', category: 'party',
+          id: 's-live',
+          title: 'Live Now',
+          url: '',
+          date: '2026-07-10',
+          endDate: null,
+          time: null,
+          location: null,
+          imageUrl: null,
+          organizerKey: 'pef',
+          societyId: 'supef',
+          coord: [16.61, 49.21],
+          roomCode: null,
+          venueKind: 'offcampus',
+          category: 'party',
         },
         {
-          id: 's-future', title: 'Far Future', url: '', date: '2026-09-15', endDate: null, time: null,
-          location: null, imageUrl: null, organizerKey: 'pef', societyId: 'supef',
-          coord: [16.61, 49.21], roomCode: null, venueKind: 'offcampus', category: 'party',
+          id: 's-future',
+          title: 'Far Future',
+          url: '',
+          date: '2026-09-15',
+          endDate: null,
+          time: null,
+          location: null,
+          imageUrl: null,
+          organizerKey: 'pef',
+          societyId: 'supef',
+          coord: [16.61, 49.21],
+          roomCode: null,
+          venueKind: 'offcampus',
+          category: 'party',
         },
       ],
-      mapEvents: [], eventFilter: 'all', activeBuildingId: null,
+      mapEvents: [],
+      eventFilter: 'all',
+      activeBuildingId: null,
     });
     render(<EventLayer />);
     expect(paneEl.querySelector('[data-scheduled="true"]')).toBeTruthy();

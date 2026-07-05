@@ -29,19 +29,26 @@ export function MapSidePanel() {
   const soc = assocId ? societyById(assocId) : null;
 
   const select = (key: TabKey) => {
-    if (key === 'mine') { setMode('society'); return; }
+    if (key === 'mine') {
+      setMode('society');
+      return;
+    }
     if (isSociety) setMode('student');
     setTab(key);
   };
 
   const tabBtn = (key: TabKey, icon: ReactNode, label: string) => (
     <button
-      type="button" role="tab" id={`map-tab-${key}`}
-      aria-selected={active === key} aria-controls="map-tabpanel"
+      type="button"
+      role="tab"
+      id={`map-tab-${key}`}
+      aria-selected={active === key}
+      aria-controls="map-tabpanel"
       className={`tab gap-1.5 ${active === key ? 'tab-active font-semibold' : ''}`}
       onClick={() => select(key)}
     >
-      {icon}{label}
+      {icon}
+      {label}
     </button>
   );
 
@@ -50,8 +57,8 @@ export function MapSidePanel() {
       <div role="tablist" className="tabs tabs-box tabs-sm m-1 mb-0 shrink-0">
         {tabBtn('events', <PartyPopper size={13} />, t('map.events'))}
         {tabBtn('places', <MapPin size={13} />, t('map.places'))}
-        {role === 'association' && tabBtn('mine',
-          <Sparkles size={13} style={{ color: soc?.color }} />, t('map.myEvents'))}
+        {role === 'association' &&
+          tabBtn('mine', <Sparkles size={13} style={{ color: soc?.color }} />, t('map.myEvents'))}
       </div>
       <div
         id="map-tabpanel"

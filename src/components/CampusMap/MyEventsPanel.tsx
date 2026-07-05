@@ -30,14 +30,25 @@ export function MyEventsPanel() {
   const past = sortByDate(events.filter((e) => isPastEvent(e.date))).reverse();
   const scheduled = sortByDate(events.filter((e) => isScheduledEvent(e.date)));
   const live = sortByDate(events.filter((e) => !isPastEvent(e.date) && !isScheduledEvent(e.date)));
-  const goLive = (e: MapEvent) => `${t('map.goesLive')} ${goLiveDate(e.date).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}`;
+  const goLive = (e: MapEvent) =>
+    `${t('map.goesLive')} ${goLiveDate(e.date).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}`;
 
   const section = (label: string, rows: MapEvent[], subline?: (e: MapEvent) => string) =>
     rows.length > 0 && (
       <div>
-        <div className="px-3 pb-1 pt-3 text-[11px] font-bold uppercase tracking-wide text-base-content/60">{label}</div>
+        <div className="px-3 pb-1 pt-3 text-[11px] font-bold uppercase tracking-wide text-base-content/60">
+          {label}
+        </div>
         {rows.map((e) => (
-          <EventRow key={e.id} event={e} locale={locale} t={t} selected={false} subline={subline?.(e)} onClick={() => focusEvent(e.id, { fly: true })} />
+          <EventRow
+            key={e.id}
+            event={e}
+            locale={locale}
+            t={t}
+            selected={false}
+            subline={subline?.(e)}
+            onClick={() => focusEvent(e.id, { fly: true })}
+          />
         ))}
       </div>
     );
@@ -45,11 +56,18 @@ export function MyEventsPanel() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center gap-2 border-b border-base-300 px-3 py-2.5">
-        <span className="flex h-6 w-6 items-center justify-center rounded-md text-[10px] font-bold text-white" style={{ backgroundColor: soc?.color ?? 'var(--fallback-p,#0046a0)' }}>
+        <span
+          className="flex h-6 w-6 items-center justify-center rounded-md text-[10px] font-bold text-white"
+          style={{ backgroundColor: soc?.color ?? 'var(--fallback-p,#0046a0)' }}
+        >
           {soc?.shortName?.slice(0, 2).toUpperCase() ?? '•'}
         </span>
         <span className="text-sm font-bold">{soc?.name ?? t('map.myEvents')}</span>
-        <button type="button" className="btn btn-primary btn-xs ml-auto gap-1" onClick={() => openComposer()}>
+        <button
+          type="button"
+          className="btn btn-primary btn-xs ml-auto gap-1"
+          onClick={() => openComposer()}
+        >
           <Plus size={13} /> {t('map.createEvent')}
         </button>
       </div>
@@ -60,11 +78,19 @@ export function MyEventsPanel() {
         {section(t('map.liveNow'), live)}
         {section(t('map.scheduled'), scheduled, goLive)}
         {section(t('map.past'), past)}
-        {events.length === 0 && <p className="px-3 py-6 text-center text-sm text-base-content/60">{t('map.noOwnEvents')}</p>}
+        {events.length === 0 && (
+          <p className="px-3 py-6 text-center text-sm text-base-content/60">
+            {t('map.noOwnEvents')}
+          </p>
+        )}
       </div>
 
       <div className="border-t border-base-300 px-3 py-2">
-        <button type="button" className="btn btn-ghost btn-xs gap-1.5 text-base-content/60" onClick={() => void adminLogout()}>
+        <button
+          type="button"
+          className="btn btn-ghost btn-xs gap-1.5 text-base-content/60"
+          onClick={() => void adminLogout()}
+        >
           <LogOut size={13} /> {t('admin.logout')}
         </button>
       </div>

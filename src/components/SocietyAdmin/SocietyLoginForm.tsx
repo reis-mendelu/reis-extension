@@ -16,11 +16,19 @@ export function SocietyLoginForm() {
 
   const submit = async () => {
     if (busy || !email.trim() || !password) return;
-    setBusy(true); setError(false);
+    setBusy(true);
+    setError(false);
     try {
       const res = await adminLogin(email, password);
-      if (res.error) { setError(true); return; }
-      if (useAppStore.getState().adminRole === 'association' && useAppStore.getState().adminAssociationId) useAppStore.getState().enterSocietyMode();
+      if (res.error) {
+        setError(true);
+        return;
+      }
+      if (
+        useAppStore.getState().adminRole === 'association' &&
+        useAppStore.getState().adminAssociationId
+      )
+        useAppStore.getState().enterSocietyMode();
     } catch {
       setError(true);
     } finally {
@@ -28,22 +36,46 @@ export function SocietyLoginForm() {
     }
   };
 
-  const onKey = (e: React.KeyboardEvent) => { if (e.key === 'Enter') submit(); };
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') submit();
+  };
 
   return (
     <div className="flex flex-col gap-3">
       <label className="flex flex-col gap-1 text-sm">
         <span className="opacity-70">{t('admin.email')}</span>
-        <input aria-label={t('admin.email')} type="email" autoComplete="username" className="input input-bordered" value={email}
-               onChange={(e) => setEmail(e.target.value)} onKeyDown={onKey} autoFocus />
+        <input
+          aria-label={t('admin.email')}
+          type="email"
+          autoComplete="username"
+          className="input input-bordered"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={onKey}
+          autoFocus
+        />
       </label>
       <label className="flex flex-col gap-1 text-sm">
         <span className="opacity-70">{t('admin.password')}</span>
-        <input aria-label={t('admin.password')} type="password" autoComplete="current-password" className="input input-bordered"
-               value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={onKey} />
+        <input
+          aria-label={t('admin.password')}
+          type="password"
+          autoComplete="current-password"
+          className="input input-bordered"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={onKey}
+        />
       </label>
       {error && <p className="text-error text-sm">{t('admin.loginError')}</p>}
-      <button type="button" className="btn btn-primary" disabled={busy || !email.trim() || !password} onClick={submit}>{t('admin.login')}</button>
+      <button
+        type="button"
+        className="btn btn-primary"
+        disabled={busy || !email.trim() || !password}
+        onClick={submit}
+      >
+        {t('admin.login')}
+      </button>
     </div>
   );
 }

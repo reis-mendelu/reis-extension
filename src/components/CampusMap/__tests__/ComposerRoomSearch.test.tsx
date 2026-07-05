@@ -20,7 +20,14 @@ describe('ComposerRoomSearch', () => {
 
   it('shows the selected room with a change button', () => {
     const onClear = vi.fn();
-    render(<ComposerRoomSearch selected={{ code: 'X', name: 'Q6.06' }} onSelect={() => {}} onClear={onClear} t={t} />);
+    render(
+      <ComposerRoomSearch
+        selected={{ code: 'X', name: 'Q6.06' }}
+        onSelect={() => {}}
+        onClear={onClear}
+        t={t}
+      />
+    );
     expect(screen.getByText(/Q6\.06/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'map.changePlace' }));
     expect(onClear).toHaveBeenCalledOnce();

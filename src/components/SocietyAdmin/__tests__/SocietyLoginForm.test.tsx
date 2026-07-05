@@ -11,7 +11,12 @@ describe('SocietyLoginForm', () => {
   it('enters society mode after a successful association login', async () => {
     const adminLogin = vi.fn(async () => ({}));
     const enterSocietyMode = vi.fn();
-    useAppStore.setState({ adminLogin, enterSocietyMode, adminRole: 'association', adminAssociationId: 'supef' });
+    useAppStore.setState({
+      adminLogin,
+      enterSocietyMode,
+      adminRole: 'association',
+      adminAssociationId: 'supef',
+    });
     render(<SocietyLoginForm />);
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'admin@supef.cz' } });
     fireEvent.change(screen.getByLabelText('Heslo'), { target: { value: 'x' } });
@@ -28,7 +33,9 @@ describe('SocietyLoginForm', () => {
     const enterSocietyMode = vi.fn();
     useAppStore.setState({ adminLogin, enterSocietyMode });
     render(<SocietyLoginForm />);
-    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'admin@reis.mendelu.cz' } });
+    fireEvent.change(screen.getByLabelText('E-mail'), {
+      target: { value: 'admin@reis.mendelu.cz' },
+    });
     fireEvent.change(screen.getByLabelText('Heslo'), { target: { value: 'x' } });
     fireEvent.click(screen.getByRole('button', { name: 'Přihlásit' }));
     await waitFor(() => expect(adminLogin).toHaveBeenCalledOnce());
@@ -38,7 +45,12 @@ describe('SocietyLoginForm', () => {
   it('does not enter society mode for an association login with a null association id', async () => {
     const adminLogin = vi.fn(async () => ({}));
     const enterSocietyMode = vi.fn();
-    useAppStore.setState({ adminLogin, enterSocietyMode, adminRole: 'association', adminAssociationId: null });
+    useAppStore.setState({
+      adminLogin,
+      enterSocietyMode,
+      adminRole: 'association',
+      adminAssociationId: null,
+    });
     render(<SocietyLoginForm />);
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'admin@supef.cz' } });
     fireEvent.change(screen.getByLabelText('Heslo'), { target: { value: 'x' } });

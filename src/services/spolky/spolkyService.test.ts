@@ -30,15 +30,15 @@ describe('spolkyService', () => {
     });
 
     it('should handle RPC errors gracefully', async () => {
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.rpc as any).mockRejectedValueOnce(new Error('RPC Error'));
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase.rpc as any).mockRejectedValueOnce(new Error('RPC Error'));
 
-        await trackNotificationsViewed(['id1']);
-        
-        expect(supabase.rpc).toHaveBeenCalledWith('increment_post_view', { row_id: 'id1' });
-        expect(consoleSpy).toHaveBeenCalled();
-        consoleSpy.mockRestore();
+      await trackNotificationsViewed(['id1']);
+
+      expect(supabase.rpc).toHaveBeenCalledWith('increment_post_view', { row_id: 'id1' });
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
     });
   });
 
@@ -55,16 +55,16 @@ describe('spolkyService', () => {
       await trackNotificationClick('');
       expect(supabase.rpc).not.toHaveBeenCalled();
     });
-     it('should handle RPC errors gracefully', async () => {
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.rpc as any).mockRejectedValueOnce(new Error('RPC Error'));
+    it('should handle RPC errors gracefully', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase.rpc as any).mockRejectedValueOnce(new Error('RPC Error'));
 
-        await trackNotificationClick('id1');
-        
-        expect(supabase.rpc).toHaveBeenCalledWith('increment_post_click', { row_id: 'id1' });
-        expect(consoleSpy).toHaveBeenCalled();
-        consoleSpy.mockRestore();
+      await trackNotificationClick('id1');
+
+      expect(supabase.rpc).toHaveBeenCalledWith('increment_post_click', { row_id: 'id1' });
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
     });
   });
 });

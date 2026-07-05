@@ -7,7 +7,11 @@ const maybeSingle = vi.fn();
 const order = vi.fn(async () => ({ data: [] as unknown[], error: null }));
 vi.mock('../../../services/admin/authClient', () => ({
   adminAuthClient: {
-    auth: { signInWithPassword: (...a: unknown[]) => signIn(...a), getSession: () => getSession(), signOut: () => signOut() },
+    auth: {
+      signInWithPassword: (...a: unknown[]) => signIn(...a),
+      getSession: () => getSession(),
+      signOut: () => signOut(),
+    },
     from: () => ({
       select: () => ({
         eq: () => ({ maybeSingle: () => maybeSingle(), order: () => order() }),
@@ -24,11 +28,26 @@ vi.mock('../../../services/admin/authClient', () => ({
 // exercises the real wiring against the full useAppStore instead.
 vi.mock('../../../api/societyPosts', async (orig) => ({
   ...(await orig<typeof import('../../../api/societyPosts')>()),
-  listMyPosts: vi.fn().mockResolvedValue([{
-    id: 'e1', association_id: 'supef', title: 'X', body: null, category: 'party',
-    date: '2026-07-10', end_date: null, time: null, venue_kind: 'offcampus', room_code: null,
-    coord_lng: 16.6, coord_lat: 49.2, location: null, url: null, created_by: null, visible_from: null,
-  }]),
+  listMyPosts: vi.fn().mockResolvedValue([
+    {
+      id: 'e1',
+      association_id: 'supef',
+      title: 'X',
+      body: null,
+      category: 'party',
+      date: '2026-07-10',
+      end_date: null,
+      time: null,
+      venue_kind: 'offcampus',
+      room_code: null,
+      coord_lng: 16.6,
+      coord_lat: 49.2,
+      location: null,
+      url: null,
+      created_by: null,
+      visible_from: null,
+    },
+  ]),
 }));
 
 import { createAdminSlice, type AdminSlice } from '../createAdminSlice';
@@ -40,9 +59,15 @@ describe('createAdminSlice', () => {
   let set: ReturnType<typeof vi.fn>;
   let get: ReturnType<typeof vi.fn>;
   beforeEach(() => {
-    signIn.mockReset(); getSession.mockReset(); signOut.mockClear(); maybeSingle.mockReset(); order.mockClear();
+    signIn.mockReset();
+    getSession.mockReset();
+    signOut.mockClear();
+    maybeSingle.mockReset();
+    order.mockClear();
     vi.mocked(listMyPosts).mockClear();
-    set = vi.fn((u) => { state = { ...state, ...(typeof u === 'function' ? u(state) : u) }; });
+    set = vi.fn((u) => {
+      state = { ...state, ...(typeof u === 'function' ? u(state) : u) };
+    });
     get = vi.fn(() => state);
     state = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -61,12 +86,17 @@ describe('createAdminSlice', () => {
   });
 
   it('opens and closes the overlay', () => {
-    state.openAdminOverlay();  expect(state.adminOverlayOpen).toBe(true);
-    state.closeAdminOverlay(); expect(state.adminOverlayOpen).toBe(false);
+    state.openAdminOverlay();
+    expect(state.adminOverlayOpen).toBe(true);
+    state.closeAdminOverlay();
+    expect(state.adminOverlayOpen).toBe(false);
   });
 
   it('login success sets session, role and association', async () => {
-    signIn.mockResolvedValue({ data: { session: { user: { email: 'admin@supef.cz' } } }, error: null });
+    signIn.mockResolvedValue({
+      data: { session: { user: { email: 'admin@supef.cz' } } },
+      error: null,
+    });
     maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'supef' } });
     const res = await state.adminLogin('admin@supef.cz', 'pw');
     expect(res.error).toBeUndefined();
@@ -83,7 +113,10 @@ describe('createAdminSlice', () => {
   });
 
   it('valid password but unprovisioned account fails and stays logged out', async () => {
-    signIn.mockResolvedValue({ data: { session: { user: { email: 'ghost@nowhere.cz' } } }, error: null });
+    signIn.mockResolvedValue({
+      data: { session: { user: { email: 'ghost@nowhere.cz' } } },
+      error: null,
+    });
     maybeSingle.mockResolvedValue({ data: null });
     const res = await state.adminLogin('ghost@nowhere.cz', 'pw');
     expect(res.error).toBeDefined();
@@ -92,7 +125,10 @@ describe('createAdminSlice', () => {
   });
 
   it('logout clears everything', async () => {
-    signIn.mockResolvedValue({ data: { session: { user: { email: 'admin@esn.cz' } } }, error: null });
+    signIn.mockResolvedValue({
+      data: { session: { user: { email: 'admin@esn.cz' } } },
+      error: null,
+    });
     maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'esn' } });
     await state.adminLogin('admin@esn.cz', 'pw');
     await state.adminLogout();
@@ -120,11 +156,26 @@ describe('createAdminSlice', () => {
     // listMyPosts is mocked at the module level (see top of file); override its
     // resolved value for this one call so the propagation assertion below still
     // pins the exact row id, same as before the module-level mock existed.
-    vi.mocked(listMyPosts).mockResolvedValueOnce([{
-      id: 'p1', association_id: 'supef', title: 'X', body: null, category: 'other',
-      date: '2026-07-10', end_date: null, time: null, venue_kind: 'campus', room_code: null,
-      coord_lng: null, coord_lat: null, location: null, url: null, created_by: null, visible_from: null,
-    }]);
+    vi.mocked(listMyPosts).mockResolvedValueOnce([
+      {
+        id: 'p1',
+        association_id: 'supef',
+        title: 'X',
+        body: null,
+        category: 'other',
+        date: '2026-07-10',
+        end_date: null,
+        time: null,
+        venue_kind: 'campus',
+        room_code: null,
+        coord_lng: null,
+        coord_lat: null,
+        location: null,
+        url: null,
+        created_by: null,
+        visible_from: null,
+      },
+    ]);
     set({ adminAssociationId: 'supef' });
     await state.loadSocietyPosts();
     expect(state.societyPosts).toHaveLength(1);
@@ -146,7 +197,11 @@ describe('admin ↔ map wiring', () => {
   });
 
   it('logout resets map mode to student', async () => {
-    useAppStore.setState({ mapMode: 'society', adminRole: 'association', adminAssociationId: 'supef' });
+    useAppStore.setState({
+      mapMode: 'society',
+      adminRole: 'association',
+      adminAssociationId: 'supef',
+    });
     await useAppStore.getState().adminLogout();
     expect(useAppStore.getState().mapMode).toBe('student');
     expect(useAppStore.getState().societyMapEvents).toEqual([]);
@@ -154,13 +209,24 @@ describe('admin ↔ map wiring', () => {
 });
 
 describe('enterSocietyMode / openSocietyAdmin', () => {
-  beforeEach(() => useAppStore.setState({
-    adminRole: null, adminAssociationId: null, adminOverlayOpen: false,
-    mapMode: 'student', mapFocusRequest: 0, societyPosts: [], societyMapEvents: [],
-  }));
+  beforeEach(() =>
+    useAppStore.setState({
+      adminRole: null,
+      adminAssociationId: null,
+      adminOverlayOpen: false,
+      mapMode: 'student',
+      mapFocusRequest: 0,
+      societyPosts: [],
+      societyMapEvents: [],
+    })
+  );
 
   it('enterSocietyMode flips to society mode, closes overlay, requests map focus', () => {
-    useAppStore.setState({ adminRole: 'association', adminAssociationId: 'supef', adminOverlayOpen: true });
+    useAppStore.setState({
+      adminRole: 'association',
+      adminAssociationId: 'supef',
+      adminOverlayOpen: true,
+    });
     useAppStore.getState().enterSocietyMode();
     const s = useAppStore.getState();
     expect(s.mapMode).toBe('society');

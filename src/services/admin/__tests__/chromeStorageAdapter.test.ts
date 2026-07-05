@@ -6,11 +6,17 @@ describe('chromeStorageAdapter', () => {
     const store: Record<string, unknown> = {};
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (globalThis as any).chrome = {
-      storage: { local: {
-        get: async (k: string) => ({ [k]: store[k] }),
-        set: async (obj: Record<string, unknown>) => { Object.assign(store, obj); },
-        remove: async (k: string) => { delete store[k]; },
-      } },
+      storage: {
+        local: {
+          get: async (k: string) => ({ [k]: store[k] }),
+          set: async (obj: Record<string, unknown>) => {
+            Object.assign(store, obj);
+          },
+          remove: async (k: string) => {
+            delete store[k];
+          },
+        },
+      },
     };
   });
 

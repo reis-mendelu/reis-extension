@@ -7,7 +7,14 @@ import type { MapEvent } from '../../types/events';
 // organizer's own-events panel (MyEventsPanel). `subline` lets the caller
 // override the default "day · time" line — e.g. MyEventsPanel shows a
 // "goes live" countdown for scheduled events instead.
-export function EventRow({ event, locale, t, selected, onClick, subline }: {
+export function EventRow({
+  event,
+  locale,
+  t,
+  selected,
+  onClick,
+  subline,
+}: {
   event: MapEvent;
   locale: string;
   t: (k: string) => string;
@@ -15,7 +22,8 @@ export function EventRow({ event, locale, t, selected, onClick, subline }: {
   onClick: () => void;
   subline?: string;
 }) {
-  const day = subline ?? `${relativeDayLabel(event.date, locale, t)}${event.time ? ` · ${event.time}` : ''}`;
+  const day =
+    subline ?? `${relativeDayLabel(event.date, locale, t)}${event.time ? ` · ${event.time}` : ''}`;
   return (
     <button
       onClick={onClick}
@@ -34,7 +42,9 @@ export function EventRow({ event, locale, t, selected, onClick, subline }: {
         )}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] font-semibold text-base-content">{event.title}</span>
+        <span className="block truncate text-[13px] font-semibold text-base-content">
+          {event.title}
+        </span>
         <span className="mt-0.5 block truncate text-[11px] text-base-content/60">{day}</span>
         {event.location && (
           <span className="mt-0.5 flex items-center gap-1 text-[11px] text-base-content/60">

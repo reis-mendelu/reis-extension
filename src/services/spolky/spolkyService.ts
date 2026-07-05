@@ -29,9 +29,7 @@ export async function trackNotificationsViewed(notificationIds: string[]): Promi
     // Call Supabase RPC to increment view counts for each notification
     // We use Promise.all to run them in parallel
     await Promise.all(
-      notificationIds.map((id) =>
-        supabase.rpc('increment_post_view', { row_id: id })
-      )
+      notificationIds.map((id) => supabase.rpc('increment_post_view', { row_id: id }))
     );
   } catch (error) {
     logError('Spolky.trackNotificationsViewed', error);
@@ -82,7 +80,7 @@ export async function fetchNotifications(): Promise<SpolekNotification[]> {
       body: n.body || n.title,
       link: n.url || undefined,
       createdAt: n.created_at,
-      expiresAt: n.end_date || n.date,   // events use their date as natural expiry
+      expiresAt: n.end_date || n.date, // events use their date as natural expiry
       priority: 'normal' as const,
     }));
   } catch {
@@ -97,10 +95,10 @@ export async function fetchNotifications(): Promise<SpolekNotification[]> {
  */
 export function getUserAssociation(facultyId: string | null): AssociationProfile | null {
   if (!facultyId) return null;
-  
+
   const associationId = FACULTY_TO_ASSOCIATION[facultyId as keyof typeof FACULTY_TO_ASSOCIATION];
   if (!associationId) return null;
-  
+
   return ASSOCIATION_PROFILES[associationId] || null;
 }
 
@@ -126,5 +124,3 @@ export function filterNotificationsByFaculty(
     return subscribedAssociations.includes(assocId);
   });
 }
-
-

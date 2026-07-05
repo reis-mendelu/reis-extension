@@ -6,8 +6,8 @@ export type VenueKind = 'campus' | 'online' | 'offcampus';
 export interface PostInput {
   title: string;
   body: string;
-  category: string;            // EventCategory value
-  date: string;                // YYYY-MM-DD
+  category: string; // EventCategory value
+  date: string; // YYYY-MM-DD
   endDate?: string | null;
   time?: string | null;
   venueKind: VenueKind;
@@ -62,7 +62,7 @@ export function toRow(input: PostInput, associationId: string, createdBy: string
 export async function createPost(
   input: PostInput,
   associationId: string,
-  createdBy: string,
+  createdBy: string
 ): Promise<{ id?: string; error?: string }> {
   const { data, error } = await adminAuthClient
     .from('spolky_events')
@@ -78,7 +78,7 @@ export async function createPost(
 
 export async function updatePost(
   id: string,
-  patch: Partial<Omit<ReturnType<typeof toRow>, 'association_id' | 'created_by'>>,
+  patch: Partial<Omit<ReturnType<typeof toRow>, 'association_id' | 'created_by'>>
 ): Promise<{ error?: string }> {
   const { error } = await adminAuthClient.from('spolky_events').update(patch).eq('id', id);
   if (error) {

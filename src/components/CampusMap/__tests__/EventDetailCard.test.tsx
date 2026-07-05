@@ -7,9 +7,22 @@ import type { MapEvent } from '../../../types/events';
 vi.mock('../../../api/societyPosts', () => ({ deletePost: vi.fn().mockResolvedValue({}) }));
 import { deletePost } from '../../../api/societyPosts';
 
-const ev: MapEvent = { id: 'e1', title: 'Mine', url: '', date: '2026-07-10', endDate: null, time: null,
-  location: null, imageUrl: null, organizerKey: 'pef', societyId: 'supef', coord: [16.6, 49.2],
-  roomCode: null, venueKind: 'offcampus', category: 'party' };
+const ev: MapEvent = {
+  id: 'e1',
+  title: 'Mine',
+  url: '',
+  date: '2026-07-10',
+  endDate: null,
+  time: null,
+  location: null,
+  imageUrl: null,
+  organizerKey: 'pef',
+  societyId: 'supef',
+  coord: [16.6, 49.2],
+  roomCode: null,
+  venueKind: 'offcampus',
+  category: 'party',
+};
 const mineEvent = ev;
 
 describe('EventDetailCard society controls', () => {
@@ -43,8 +56,11 @@ describe('EventDetailCard society controls', () => {
     const clearMapSelection = vi.fn();
     vi.mocked(deletePost).mockResolvedValueOnce({ error: 'boom' } as never);
     useAppStore.setState({
-      mapMode: 'society', adminAssociationId: 'supef', language: 'cz',
-      loadSocietyPosts, clearMapSelection,
+      mapMode: 'society',
+      adminAssociationId: 'supef',
+      language: 'cz',
+      loadSocietyPosts,
+      clearMapSelection,
     });
     render(<EventDetailCard event={mineEvent} />);
     fireEvent.click(screen.getByRole('button', { name: 'Smazat' })); // arm confirm (cs: map.delete)
@@ -54,7 +70,7 @@ describe('EventDetailCard society controls', () => {
     expect(clearMapSelection).not.toHaveBeenCalled();
   });
 
-  it('hides edit/delete for another society\'s event in society mode (cross-tenant isolation)', () => {
+  it("hides edit/delete for another society's event in society mode (cross-tenant isolation)", () => {
     useAppStore.setState({ mapMode: 'society', adminAssociationId: 'supef' });
     const otherEvent: MapEvent = { ...ev, societyId: 'esn' };
     render(<EventDetailCard event={otherEvent} />);

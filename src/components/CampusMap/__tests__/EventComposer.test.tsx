@@ -4,20 +4,33 @@ import { useAppStore } from '../../../store/useAppStore';
 import { EventComposer } from '../EventComposer';
 import type { PostInput } from '../../../api/societyPosts';
 
-const createPost = vi.fn<(input: PostInput, associationId: string, createdBy: string) => Promise<{ id?: string; error?: string }>>(async () => ({ id: 'new' }));
-const updatePost = vi.fn<(id: string, patch: Record<string, unknown>) => Promise<{ error?: string }>>(async () => ({}));
+const createPost = vi.fn<
+  (
+    input: PostInput,
+    associationId: string,
+    createdBy: string
+  ) => Promise<{ id?: string; error?: string }>
+>(async () => ({ id: 'new' }));
+const updatePost = vi.fn<
+  (id: string, patch: Record<string, unknown>) => Promise<{ error?: string }>
+>(async () => ({}));
 vi.mock('../../../api/societyPosts', () => ({
   createPost: (...a: Parameters<typeof createPost>) => createPost(...a),
   updatePost: (...a: Parameters<typeof updatePost>) => updatePost(...a),
 }));
 
 beforeEach(() => {
-  createPost.mockClear(); updatePost.mockClear();
+  createPost.mockClear();
+  updatePost.mockClear();
   useAppStore.setState({
-    language: 'cz', adminAssociationId: 'supef',
+    language: 'cz',
+    adminAssociationId: 'supef',
     adminSession: { user: { email: 'admin@supef.cz' } } as never,
-    draftCoord: null, editEventId: null, composerOpen: true,
-    societyMapEvents: [], loadSocietyPosts: vi.fn(async () => {}),
+    draftCoord: null,
+    editEventId: null,
+    composerOpen: true,
+    societyMapEvents: [],
+    loadSocietyPosts: vi.fn(async () => {}),
   });
 });
 
@@ -41,11 +54,24 @@ describe('EventComposer publish', () => {
   it('preserves venue_kind=campus and room_code when editing a campus event', async () => {
     useAppStore.setState({
       editEventId: 'c1',
-      societyMapEvents: [{
-        id: 'c1', title: 'Deskovky', url: '', date: '2026-07-08', endDate: null, time: null,
-        location: 'Q6.06', imageUrl: null, organizerKey: 'pef', societyId: 'supef',
-        coord: [16.614, 49.209], roomCode: 'BA39N6006', venueKind: 'campus', category: 'boardgames',
-      }],
+      societyMapEvents: [
+        {
+          id: 'c1',
+          title: 'Deskovky',
+          url: '',
+          date: '2026-07-08',
+          endDate: null,
+          time: null,
+          location: 'Q6.06',
+          imageUrl: null,
+          organizerKey: 'pef',
+          societyId: 'supef',
+          coord: [16.614, 49.209],
+          roomCode: 'BA39N6006',
+          venueKind: 'campus',
+          category: 'boardgames',
+        },
+      ],
     });
     render(<EventComposer onDone={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));

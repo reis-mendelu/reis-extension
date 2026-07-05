@@ -7,15 +7,71 @@ import { logError } from '../utils/reportError';
 // blue, AU FRRMS the FRRMS magenta. Each maps to a faculty so the map's "My
 // faculty" filter can include/exclude it (ESN is MENDELU-wide → always shown).
 export const SOCIETIES: Record<string, Society> = {
-  esn: { id: 'esn', name: 'ESN MENDELU', shortName: 'ESN', color: '#00AEEF', glyph: '✷', logo: '/spolky/esn.jpg', facultyKey: 'mendelu' },
-  supef: { id: 'supef', name: 'SU PEF', shortName: 'SUPEF', color: '#0046a0', glyph: 'SU', logo: '/spolky/supef.jpg', facultyKey: 'pef' },
-  au_frrms: { id: 'au_frrms', name: 'AU FRRMS', shortName: 'AU FRRMS', color: '#c32897', glyph: 'AU', logo: '/spolky/au_frrms.jpg', facultyKey: 'frrms' },
-  af: { id: 'af', name: 'AF Spolek', shortName: 'AF', color: '#c87800', glyph: 'AF', logo: '/spolky/af.jpg', facultyKey: 'af' },
-  ldf: { id: 'ldf', name: 'LDF Spolek', shortName: 'LDF', color: '#0a5028', glyph: 'LDF', logo: '/spolky/ldf.jpg', facultyKey: 'ldf' },
-  zf: { id: 'zf', name: 'ZF Spolek', shortName: 'ZF', color: '#8c0a00', glyph: 'ZF', logo: '/spolky/zf.jpg', facultyKey: 'zf' },
+  esn: {
+    id: 'esn',
+    name: 'ESN MENDELU',
+    shortName: 'ESN',
+    color: '#00AEEF',
+    glyph: '✷',
+    logo: '/spolky/esn.jpg',
+    facultyKey: 'mendelu',
+  },
+  supef: {
+    id: 'supef',
+    name: 'SU PEF',
+    shortName: 'SUPEF',
+    color: '#0046a0',
+    glyph: 'SU',
+    logo: '/spolky/supef.jpg',
+    facultyKey: 'pef',
+  },
+  au_frrms: {
+    id: 'au_frrms',
+    name: 'AU FRRMS',
+    shortName: 'AU FRRMS',
+    color: '#c32897',
+    glyph: 'AU',
+    logo: '/spolky/au_frrms.jpg',
+    facultyKey: 'frrms',
+  },
+  af: {
+    id: 'af',
+    name: 'AF Spolek',
+    shortName: 'AF',
+    color: '#c87800',
+    glyph: 'AF',
+    logo: '/spolky/af.jpg',
+    facultyKey: 'af',
+  },
+  ldf: {
+    id: 'ldf',
+    name: 'LDF Spolek',
+    shortName: 'LDF',
+    color: '#0a5028',
+    glyph: 'LDF',
+    logo: '/spolky/ldf.jpg',
+    facultyKey: 'ldf',
+  },
+  zf: {
+    id: 'zf',
+    name: 'ZF Spolek',
+    shortName: 'ZF',
+    color: '#8c0a00',
+    glyph: 'ZF',
+    logo: '/spolky/zf.jpg',
+    facultyKey: 'zf',
+  },
   // The reIS team itself (reis_admin role). Campus-wide like ESN. No shipped
   // logo asset, so an empty `logo` makes consumers fall back to the glyph.
-  reis: { id: 'reis', name: 'reIS', shortName: 'reIS', color: '#79be15', glyph: 'reIS', logo: '', facultyKey: 'mendelu' },
+  reis: {
+    id: 'reis',
+    name: 'reIS',
+    shortName: 'reIS',
+    color: '#79be15',
+    glyph: 'reIS',
+    logo: '',
+    facultyKey: 'mendelu',
+  },
 };
 
 export const ALL_SOCIETIES: Society[] = Object.values(SOCIETIES);

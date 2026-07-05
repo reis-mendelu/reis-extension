@@ -25,7 +25,9 @@ export interface AdminSlice {
   loadSocietyPosts: () => Promise<void>;
 }
 
-async function resolveAccount(email: string): Promise<{ role: AdminRole | null; associationId: string | null }> {
+async function resolveAccount(
+  email: string
+): Promise<{ role: AdminRole | null; associationId: string | null }> {
   const { data, error } = await adminAuthClient
     .from('spolky_accounts')
     .select('role, association_id')
@@ -44,7 +46,10 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   adminAssociationId: null,
   adminOverlayOpen: false,
   societyPosts: [],
-  openAdminOverlay: () => { set({ adminOverlayOpen: true }); void get().loadSocietyPosts(); },
+  openAdminOverlay: () => {
+    set({ adminOverlayOpen: true });
+    void get().loadSocietyPosts();
+  },
   closeAdminOverlay: () => set({ adminOverlayOpen: false }),
   enterSocietyMode: () => {
     set({ adminOverlayOpen: false });
@@ -62,7 +67,11 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     if (error || !data.session) return { error: 'invalid_credentials' };
     const { role, associationId } = await resolveAccount(email);
     if (role === null) {
-      try { await adminAuthClient.auth.signOut(); } catch (e) { logError('Admin.login.signOut', e); }
+      try {
+        await adminAuthClient.auth.signOut();
+      } catch (e) {
+        logError('Admin.login.signOut', e);
+      }
       return { error: 'account_unavailable' };
     }
     set({ adminSession: data.session, adminRole: role, adminAssociationId: associationId });
@@ -70,10 +79,19 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     return {};
   },
   adminLogout: async () => {
-    try { await adminAuthClient.auth.signOut(); } catch (e) { logError('Admin.logout', e); }
+    try {
+      await adminAuthClient.auth.signOut();
+    } catch (e) {
+      logError('Admin.logout', e);
+    }
     set({
-      adminSession: null, adminRole: null, adminAssociationId: null, adminOverlayOpen: false,
-      societyPosts: [], societyMapEvents: [], mapMode: 'student',
+      adminSession: null,
+      adminRole: null,
+      adminAssociationId: null,
+      adminOverlayOpen: false,
+      societyPosts: [],
+      societyMapEvents: [],
+      mapMode: 'student',
     });
   },
   loadAdminSession: async () => {
@@ -82,7 +100,11 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     const email = data.session.user.email ?? '';
     const { role, associationId } = await resolveAccount(email);
     if (role === null) {
-      try { await adminAuthClient.auth.signOut(); } catch (e) { logError('Admin.loadSession.signOut', e); }
+      try {
+        await adminAuthClient.auth.signOut();
+      } catch (e) {
+        logError('Admin.loadSession.signOut', e);
+      }
       return;
     }
     set({ adminSession: data.session, adminRole: role, adminAssociationId: associationId });
@@ -90,7 +112,11 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   },
   loadSocietyPosts: async () => {
     const associationId = get().adminAssociationId;
-    if (!associationId) { set({ societyPosts: [] }); get().refreshSocietyMapEvents(); return; }
+    if (!associationId) {
+      set({ societyPosts: [] });
+      get().refreshSocietyMapEvents();
+      return;
+    }
     const posts = await listMyPosts(associationId);
     set({ societyPosts: posts });
     get().refreshSocietyMapEvents();

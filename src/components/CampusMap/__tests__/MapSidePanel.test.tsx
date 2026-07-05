@@ -14,9 +14,17 @@ import { MapSidePanel } from '../MapSidePanel';
 
 beforeEach(() => {
   useAppStore.setState({
-    language: 'cz', mapMode: 'student', mapPanelTab: 'events', adminRole: null, adminAssociationId: null,
-    mapEvents: [], societyMapEvents: [], eventFilter: 'all', mapSelection: null,
-    setMapMode: vi.fn(), setMapPanelTab: vi.fn(),
+    language: 'cz',
+    mapMode: 'student',
+    mapPanelTab: 'events',
+    adminRole: null,
+    adminAssociationId: null,
+    mapEvents: [],
+    societyMapEvents: [],
+    eventFilter: 'all',
+    mapSelection: null,
+    setMapMode: vi.fn(),
+    setMapPanelTab: vi.fn(),
   });
 });
 
@@ -44,7 +52,12 @@ describe('MapSidePanel tabs', () => {
 
   it('clicking Events from society mode returns to student mode', () => {
     const setMapMode = vi.fn();
-    useAppStore.setState({ adminRole: 'association', adminAssociationId: 'supef', mapMode: 'society', setMapMode });
+    useAppStore.setState({
+      adminRole: 'association',
+      adminAssociationId: 'supef',
+      mapMode: 'society',
+      setMapMode,
+    });
     render(<MapSidePanel />);
     // Exact "Akce" (not a substring match) so it doesn't also match "Moje akce".
     screen.getByRole('tab', { name: 'Akce' }).click();

@@ -24,18 +24,26 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
   const soc = societyById(event.societyId);
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const dateLabel = parseEventDate(event.date).toLocaleDateString(locale, {
-    weekday: 'short', day: 'numeric', month: 'long',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'long',
   });
   const mine = mode === 'society' && event.societyId === myAssoc;
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const removeEvent = async () => {
     if (deleting) return;
-    if (!confirming) { setConfirming(true); return; }
+    if (!confirming) {
+      setConfirming(true);
+      return;
+    }
     setDeleting(true);
     const res = await deletePost(event.id);
     setDeleting(false);
-    if (res.error) { setConfirming(false); return; }
+    if (res.error) {
+      setConfirming(false);
+      return;
+    }
     clearMapSelection();
     await loadSocietyPosts();
   };
@@ -49,13 +57,19 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
             className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-base-300"
             style={{ backgroundColor: soc.color }}
           >
-            {soc.logo
-              ? <img src={soc.logo} alt="" className="h-full w-full object-cover" />
-              : <span className="text-sm font-extrabold text-white">{soc.glyph}</span>}
+            {soc.logo ? (
+              <img src={soc.logo} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-sm font-extrabold text-white">{soc.glyph}</span>
+            )}
           </span>
           <div className="min-w-0">
-            <h3 className="line-clamp-2 font-bold leading-tight text-base-content">{event.title}</h3>
-            <span className="text-xs text-base-content/60">{t('map.hostedBy')} {soc.shortName}</span>
+            <h3 className="line-clamp-2 font-bold leading-tight text-base-content">
+              {event.title}
+            </h3>
+            <span className="text-xs text-base-content/60">
+              {t('map.hostedBy')} {soc.shortName}
+            </span>
           </div>
         </div>
 
@@ -63,10 +77,17 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-sm text-base-content/70">
             <Clock size={13} className="flex-shrink-0" />
-            <span>{dateLabel}{event.time ? ` · ${event.time}` : ''}</span>
+            <span>
+              {dateLabel}
+              {event.time ? ` · ${event.time}` : ''}
+            </span>
           </div>
           <div className="flex items-center gap-1.5 text-sm text-base-content/70">
-            <img src={CATEGORY_EMOJI_SRC[event.category]} alt="" className="h-4 w-4 flex-shrink-0" />
+            <img
+              src={CATEGORY_EMOJI_SRC[event.category]}
+              alt=""
+              className="h-4 w-4 flex-shrink-0"
+            />
             <span>{t(`map.category.${event.category}`)}</span>
           </div>
           {event.roomCode ? (
@@ -89,8 +110,19 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
 
         {mine && (
           <div className="flex gap-2 border-t border-base-300 pt-3">
-            <button type="button" className="btn btn-outline btn-sm flex-1" onClick={() => openComposer(event.id)}>{t('map.edit')}</button>
-            <button type="button" className="btn btn-outline btn-error btn-sm flex-1" disabled={deleting} onClick={removeEvent}>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm flex-1"
+              onClick={() => openComposer(event.id)}
+            >
+              {t('map.edit')}
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline btn-error btn-sm flex-1"
+              disabled={deleting}
+              onClick={removeEvent}
+            >
               {confirming ? t('map.deleteConfirm') : t('map.delete')}
             </button>
           </div>
@@ -98,7 +130,9 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
 
         {event.url && (
           <a
-            href={event.url} target="_blank" rel="noopener noreferrer"
+            href={event.url}
+            target="_blank"
+            rel="noopener noreferrer"
             className="btn btn-primary btn-sm btn-block"
           >
             {t('map.moreInfo')} <ExternalLink size={13} />

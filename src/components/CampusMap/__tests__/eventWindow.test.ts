@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
-  PUBLIC_WINDOW_DAYS, daysUntilEvent, isPastEvent, isPublicEvent, isScheduledEvent, goLiveDate,
+  PUBLIC_WINDOW_DAYS,
+  daysUntilEvent,
+  isPastEvent,
+  isPublicEvent,
+  isScheduledEvent,
+  goLiveDate,
 } from '../eventWindow';
 
 const NOW = new Date('2026-07-06T09:00:00'); // local midnight anchor = 2026-07-06
@@ -21,11 +26,11 @@ describe('eventWindow', () => {
     expect(isPastEvent('2026-07-05', NOW)).toBe(true);
     expect(isPublicEvent('2026-07-05', NOW)).toBe(false);
 
-    expect(isPublicEvent('2026-07-06', NOW)).toBe(true);   // today
-    expect(isPublicEvent('2026-07-19', NOW)).toBe(true);    // day 13, last public day
+    expect(isPublicEvent('2026-07-06', NOW)).toBe(true); // today
+    expect(isPublicEvent('2026-07-19', NOW)).toBe(true); // day 13, last public day
     expect(isScheduledEvent('2026-07-19', NOW)).toBe(false);
 
-    expect(isPublicEvent('2026-07-20', NOW)).toBe(false);   // day 14, no longer public
+    expect(isPublicEvent('2026-07-20', NOW)).toBe(false); // day 14, no longer public
     expect(isScheduledEvent('2026-07-20', NOW)).toBe(true);
     expect(isScheduledEvent('2026-08-15', NOW)).toBe(true);
   });

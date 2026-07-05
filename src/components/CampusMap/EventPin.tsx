@@ -22,12 +22,23 @@ interface EventPinProps {
 // label; the count/title only surface on hover. (x, y) is a Leaflet LAYER point:
 // the button centres there, and `leaflet-zoom-animated` lets that transform
 // transition with the basemap during a zoom.
-export function EventPin({ group, x, y, selected, scheduled = false, locale, onSelect }: EventPinProps) {
+export function EventPin({
+  group,
+  x,
+  y,
+  selected,
+  scheduled = false,
+  locale,
+  onSelect,
+}: EventPinProps) {
   const lead = group.events[0];
   const count = group.events.length;
   const emojiSrc = CATEGORY_EMOJI_SRC[lead.category];
   const color = CATEGORY_COLOR[lead.category];
-  const dateLabel = parseEventDate(lead.date).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+  const dateLabel = parseEventDate(lead.date).toLocaleDateString(locale, {
+    day: 'numeric',
+    month: 'short',
+  });
 
   return (
     <button
@@ -42,7 +53,8 @@ export function EventPin({ group, x, y, selected, scheduled = false, locale, onS
         data-scheduled={scheduled}
         className="relative flex items-center justify-center rounded-full bg-white transition-transform group-hover:scale-110"
         style={{
-          width: 30, height: 30,
+          width: 30,
+          height: 30,
           opacity: scheduled ? 0.65 : 1,
           border: scheduled ? '1.5px dashed rgba(0,0,0,0.3)' : '1px solid rgba(0,0,0,0.12)',
           boxShadow: selected
@@ -53,12 +65,12 @@ export function EventPin({ group, x, y, selected, scheduled = false, locale, onS
         <img src={emojiSrc} alt="" width={18} height={18} draggable={false} />
 
         {/* Sneak-peek bubble on hover (above the circle): title, date, "+N more". */}
-        <span
-          className="pointer-events-none absolute bottom-[40px] left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-base-100 px-2 py-1 text-left text-base-content shadow-popover-heavy group-hover:block"
-        >
+        <span className="pointer-events-none absolute bottom-[40px] left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-base-100 px-2 py-1 text-left text-base-content shadow-popover-heavy group-hover:block">
           <span className="block text-[11px] font-bold leading-tight">{lead.title}</span>
           <span className="block text-[10px] font-semibold leading-tight" style={{ color }}>
-            {dateLabel}{lead.time ? ` · ${lead.time}` : ''}{count > 1 ? ` · +${count - 1}` : ''}
+            {dateLabel}
+            {lead.time ? ` · ${lead.time}` : ''}
+            {count > 1 ? ` · +${count - 1}` : ''}
           </span>
         </span>
       </span>

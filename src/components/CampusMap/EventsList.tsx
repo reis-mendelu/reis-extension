@@ -35,7 +35,7 @@ export function EventsList() {
   // keeps the remaining societies in their catalog order.
   const homeFaculty = subscribedFaculties.find((k) => k !== 'mendelu');
   const societies = [...ALL_SOCIETIES].sort(
-    (a, b) => (a.facultyKey === homeFaculty ? 0 : 1) - (b.facultyKey === homeFaculty ? 0 : 1),
+    (a, b) => (a.facultyKey === homeFaculty ? 0 : 1) - (b.facultyKey === homeFaculty ? 0 : 1)
   );
   const chipBase = 'btn btn-xs flex-shrink-0 whitespace-nowrap rounded-full';
 
@@ -57,7 +57,9 @@ export function EventsList() {
               key={s.id}
               onClick={() => setFilter(s.id)}
               className={`${chipBase} ${active ? 'border-transparent' : 'btn-ghost'}`}
-              style={active ? { backgroundColor: s.color, color: readableTextColor(s.color) } : undefined}
+              style={
+                active ? { backgroundColor: s.color, color: readableTextColor(s.color) } : undefined
+              }
             >
               {s.shortName}
             </button>
