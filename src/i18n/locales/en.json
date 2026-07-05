@@ -1008,6 +1008,11 @@
     "past": "Past",
     "goesLive": "goes live",
     "noOwnEvents": "No events yet — create your first.",
+    "eventName": "Event name",
+    "eventDate": "Date",
+    "selectPlace": "Select place on map",
+    "changePlace": "Change place",
+    "publish": "Publish event",
     "category": {
       "party": "Party",
       "boardgames": "Board games",

@@ -1008,6 +1008,11 @@
     "past": "Proběhlé",
     "goesLive": "zveřejní se",
     "noOwnEvents": "Zatím žádné akce — vytvořte první.",
+    "eventName": "Název akce",
+    "eventDate": "Datum",
+    "selectPlace": "Vybrat místo na mapě",
+    "changePlace": "Změnit místo",
+    "publish": "Zveřejnit akci",
     "category": {
       "party": "Párty",
       "boardgames": "Deskovky",
