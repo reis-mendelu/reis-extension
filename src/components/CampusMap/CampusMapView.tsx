@@ -48,7 +48,7 @@ export function CampusMapView() {
         </div>
       )}
       {placing && (
-        <div className="absolute top-3 left-1/2 z-[1001] flex -translate-x-1/2 items-center gap-3 rounded-full bg-primary px-4 py-2 text-primary-content shadow-popover-heavy">
+        <div className="absolute bottom-6 left-1/2 z-[1001] flex -translate-x-1/2 items-center gap-3 rounded-full bg-primary px-4 py-2 text-primary-content shadow-popover-heavy">
           <span className="text-sm font-semibold">{t('map.clickToPlace')}</span>
           <button type="button" className="btn btn-ghost btn-xs" onClick={cancelPlacing}>{t('common.cancel')}</button>
         </div>

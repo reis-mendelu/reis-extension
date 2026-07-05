@@ -242,14 +242,17 @@ describe('click-to-place', () => {
 
 describe('composer open/close', () => {
   it('openComposer sets composerOpen true; closeComposer resets composerOpen, placingEvent, draftCoord', () => {
-    useAppStore.getState().openComposer();
+    const s = useAppStore.getState();
+    s.openComposer();
     expect(useAppStore.getState().composerOpen).toBe(true);
-    useAppStore.getState().beginPlacing();
-    useAppStore.getState().placeDraftCoord([16.6, 49.2]);
-    useAppStore.getState().closeComposer();
+    // Arm placement AND seed a draft coord so we can prove closeComposer resets BOTH.
+    useAppStore.setState({ draftCoord: [16.6, 49.2] });
+    s.beginPlacing();                                   // placingEvent -> true, draftCoord untouched
+    expect(useAppStore.getState().placingEvent).toBe(true);
+    s.closeComposer();
     const st = useAppStore.getState();
     expect(st.composerOpen).toBe(false);
-    expect(st.placingEvent).toBe(false);
-    expect(st.draftCoord).toBeNull();
+    expect(st.placingEvent).toBe(false);                // genuinely reset by closeComposer
+    expect(st.draftCoord).toBeNull();                   // genuinely reset by closeComposer
   });
 });
