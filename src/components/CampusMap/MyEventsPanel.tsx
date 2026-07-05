@@ -43,7 +43,7 @@ export function MyEventsPanel() {
     );
 
   return (
-    <div className="flex max-h-[80vh] flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center gap-2 border-b border-base-300 px-3 py-2.5">
         <span className="flex h-6 w-6 items-center justify-center rounded-md text-[10px] font-bold text-white" style={{ backgroundColor: soc?.color ?? 'var(--fallback-p,#0046a0)' }}>
           {soc?.shortName?.slice(0, 2).toUpperCase() ?? '•'}
