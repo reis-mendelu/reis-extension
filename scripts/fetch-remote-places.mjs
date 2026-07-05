@@ -12,7 +12,7 @@
 //    as a spatial filter to collect ALL building footprints inside it → one
 //    MultiPolygon drawn building-by-building like the main campus.
 
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
@@ -109,5 +109,29 @@ for (const s of SITES) {
   await new Promise((r) => setTimeout(r, 1200)); // be polite to Overpass
 }
 
-writeFileSync(new URL('../src/data/map/remotePlaces.json', import.meta.url), JSON.stringify({ places: out }, null, 2) + '\n');
+// `paths` and `pois` (the arboretum footpath network + labelled points) are
+// hand-curated and live ONLY in the committed JSON — this OSM fetch never
+// produces them. Read the existing file and merge them back per-id, or every
+// regeneration would silently drop them.
+const target = new URL('../src/data/map/remotePlaces.json', import.meta.url);
+const PRESERVE = ['paths', 'pois'];
+let prevById = new Map();
+try {
+  const prev = JSON.parse(readFileSync(target, 'utf8'));
+  prevById = new Map((prev.places || []).map((p) => [p.id, p]));
+} catch { /* first run — nothing to preserve */ }
+for (const place of out) {
+  const prev = prevById.get(place.id);
+  if (!prev) continue;
+  for (const key of PRESERVE) {
+    if (prev[key] !== undefined) {
+      place[key] = prev[key];
+      console.log(`  preserved hand-curated ${key} on ${place.shortName}`);
+    }
+  }
+}
+// NOTE: `outline`/`area` ARE regenerated from OSM here, so any manual footprint
+// trimming (e.g. the arboretum kept only the greenhouse complex) must be
+// re-applied by hand after a regeneration.
+writeFileSync(target, JSON.stringify({ places: out }, null, 2) + '\n');
 console.log(`Wrote ${out.length}/${SITES.length} remote-place footprints.`);
