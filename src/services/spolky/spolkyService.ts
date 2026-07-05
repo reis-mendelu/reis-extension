@@ -14,7 +14,9 @@ const NotificationRowSchema = z.object({
   link: z.string().nullable(),
   created_at: z.string(),
   expires_at: z.string(),
-  priority: z.string(),
+  // Constrain to the domain values; an unexpected DB value degrades to 'normal'
+  // rather than failing the whole array parse (which would drop every notification).
+  priority: z.enum(['normal', 'high']).catch('normal'),
 });
 
 /**
@@ -82,7 +84,7 @@ export async function fetchNotifications(): Promise<SpolekNotification[]> {
       link: n.link || undefined,
       createdAt: n.created_at,
       expiresAt: n.expires_at,
-      priority: n.priority as 'normal' | 'high'
+      priority: n.priority
     }));
   } catch {
     return [];
