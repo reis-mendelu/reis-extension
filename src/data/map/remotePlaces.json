@@ -1738,61 +1738,6 @@
           "name": "Správní budova",
           "lon": 16.614536,
           "lat": 49.215447
-        },
-        {
-          "name": "Sbírka lomikamenů",
-          "lon": 16.612426,
-          "lat": 49.215311
-        },
-        {
-          "name": "Alpinkový skleník",
-          "lon": 16.611573,
-          "lat": 49.214921
-        },
-        {
-          "name": "Sbírka vrb",
-          "lon": 16.613871,
-          "lat": 49.213931
-        },
-        {
-          "name": "Vodní kaskáda",
-          "lon": 16.614403,
-          "lat": 49.213255
-        },
-        {
-          "name": "Denivky",
-          "lon": 16.614215,
-          "lat": 49.214642
-        },
-        {
-          "name": "Alpinum",
-          "lon": 16.614265,
-          "lat": 49.212289
-        },
-        {
-          "name": "Meteostanice",
-          "lon": 16.614971,
-          "lat": 49.212473
-        },
-        {
-          "name": "Zahrada Vysočiny",
-          "lon": 16.614835,
-          "lat": 49.212887
-        },
-        {
-          "name": "Zahrada pro nevidomé",
-          "lon": 16.614114,
-          "lat": 49.211522
-        },
-        {
-          "name": "Zahrada miniatur",
-          "lon": 16.612964,
-          "lat": 49.21145
-        },
-        {
-          "name": "Růže",
-          "lon": 16.613568,
-          "lat": 49.211799
         }
       ]
     },

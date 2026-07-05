@@ -160,6 +160,20 @@ Two changes to the arboretum, mirroring the campus-faculty drill interaction:
   vertex** (7–76 m from estimate) so they sit on walkways inside the garden. Still
   approximate — no georeferenced source exists — but positioned from the real plan.
 
+## Revision 2026-07-05 (accuracy over coverage — drop approximate markers)
+
+The hand-georeferenced collection highlights read as inaccurate on the live map
+(the plan is stylised/rotated; a hand transform lands markers ±50–100 m off, which
+is visible at drill zoom). **Reverted the arboretum POIs to only genuinely-real
+OSM features:** the two building labels **Skleníky** (greenhouse) and **Správní
+budova** (admin building), each sitting on its real OSM footprint. All 11
+approximate collection markers were removed. The rest of the inner map is
+unchanged and remains fully real geometry — the garden boundary (`area`), the
+five greenhouse-complex footprints (`outline`), and the 32-way footpath network
+(`paths`). Principle: show only what we can place accurately; an empty-but-correct
+map beats a full-but-wrong one. (OSM's only other real interior POIs are 2
+viewpoints + 1 firepit — available to add back if wanted.)
+
 ## Out of scope
 
 - No routing/directions, no travel time, no distance display.
