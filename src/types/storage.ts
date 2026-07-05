@@ -1,9 +1,5 @@
 import { z } from 'zod';
-import type {
-  SyllabusRequirements,
-  GradeHistory,
-  DocumentNote,
-} from '../types/documents';
+import type { SyllabusRequirements, GradeHistory, DocumentNote } from '../types/documents';
 import { ExamSubjectSchema } from './schemas/exams.schema';
 import { BlockLessonSchema } from './schemas/schedule.schema';
 import { SubjectsDataSchema } from './schemas/subjects.schema';

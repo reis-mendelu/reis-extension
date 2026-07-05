@@ -9,7 +9,9 @@ const realFile: ParsedFile = {
   file_comment: 'Úvodní prezentace',
   author: 'Jan Novák',
   date: '01.09.2026',
-  files: [{ name: 'prezentace1.pdf', type: 'pdf', link: 'https://is.mendelu.cz/dok_server/file.pl?id=1' }],
+  files: [
+    { name: 'prezentace1.pdf', type: 'pdf', link: 'https://is.mendelu.cz/dok_server/file.pl?id=1' },
+  ],
 };
 
 describe('ParsedFileSchema', () => {
@@ -18,7 +20,11 @@ describe('ParsedFileSchema', () => {
   });
 
   it('accepts unknown/future IS fields via passthrough', () => {
-    const withExtra = { ...realFile, futureField: 'x', files: [{ ...realFile.files[0], brandNewFlag: true }] };
+    const withExtra = {
+      ...realFile,
+      futureField: 'x',
+      files: [{ ...realFile.files[0], brandNewFlag: true }],
+    };
     expect(ParsedFileSchema.safeParse(withExtra).success).toBe(true);
   });
 
