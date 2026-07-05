@@ -58,7 +58,7 @@
     "@serenity-js/console-reporter": "^3.37.1",
     "@serenity-js/core": "^3.37.1",
     "@serenity-js/playwright": "^3.37.1",
-    "@serenity-js/playwright-test": "^3.37.1",
+    "@serenity-js/playwright-test": "^3.44.0",
     "@serenity-js/web": "^3.37.1",
     "@tailwindcss/vite": "^4.1.18",
     "@testing-library/jest-dom": "^6.9.1",
