@@ -13,7 +13,7 @@ export function MapModeToggle() {
   const btn = (key: 'student' | 'society', label: string) => (
     <button
       type="button"
-      aria-selected={mode === key}
+      aria-pressed={mode === key}
       className={`tab gap-1.5 ${mode === key ? 'tab-active font-semibold' : ''}`}
       onClick={() => setMode(key)}
     >
