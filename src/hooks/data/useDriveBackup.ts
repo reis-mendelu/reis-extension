@@ -7,6 +7,10 @@
  * completed pass updates the UI without a reload.
  */
 
+/* eslint-disable no-restricted-syntax --
+   Reads token/manifest state reactively via chrome.storage.onChanged; that
+   shared device-local store is the source of truth here, not StorageService. */
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadManifest, clearManifest } from '../../services/drive/driveManifest';
 import { isConnected, connectGoogle, disconnectGoogle, getConnectedEmail } from '../../api/googleAuth';

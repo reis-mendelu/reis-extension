@@ -10,6 +10,10 @@
  * and sufficient for both Drive uploads and the Docs API on app-created files.
  */
 
+/* eslint-disable no-restricted-syntax --
+   OAuth tokens deliberately live in chrome.storage.local (device-local, shared
+   with the content script), not IndexedDB — StorageService is the wrong home. */
+
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/services/supabase/config';
 
 const OAUTH_PROXY = `${SUPABASE_URL}/functions/v1/google-oauth`;
