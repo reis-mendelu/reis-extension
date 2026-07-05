@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { MyEventsPanel } from '../MyEventsPanel';
@@ -35,5 +35,51 @@ describe('MyEventsPanel', () => {
     expect(screen.getByText(/live now/i)).toBeInTheDocument();
     expect(screen.getByText(/scheduled/i)).toBeInTheDocument();
     expect(screen.getByText(/past/i)).toBeInTheDocument();
+  });
+});
+
+describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
+  beforeEach(() => {
+    // Real strings, not translation keys: useTranslation() is not mocked in this
+    // suite. With language 'cz', "map.createEvent" renders as "Vytvořit akci",
+    // "admin.logout" as "Odhlásit", and the composer's name input placeholder is
+    // "Název akce" — query those literal strings, not the i18n keys.
+    useAppStore.setState({
+      language: 'cz', adminAssociationId: 'supef', composerOpen: false, editEventId: null,
+      societyMapEvents: [{
+        id: 'e1', title: 'Spring Party', url: '', date: '2026-07-10', endDate: null, time: '20:00',
+        location: 'Klub', imageUrl: null, organizerKey: 'pef', societyId: 'supef',
+        coord: [16.6, 49.2], roomCode: null, venueKind: 'offcampus', category: 'party',
+      }],
+      openComposer: vi.fn(), adminLogout: vi.fn(async () => {}),
+    });
+  });
+
+  it('renders own events as rich rows with the thumbnail', () => {
+    render(<MyEventsPanel />);
+    expect(screen.getByText('Spring Party')).toBeInTheDocument();
+    expect(document.querySelector('img[src="/emoji/1f389.svg"]')).toBeTruthy();
+  });
+
+  it('Create calls openComposer with no id', () => {
+    const openComposer = vi.fn();
+    useAppStore.setState({ openComposer });
+    render(<MyEventsPanel />);
+    screen.getByRole('button', { name: 'Vytvořit akci' }).click();
+    expect(openComposer).toHaveBeenCalledWith();
+  });
+
+  it('shows the inline composer when composerOpen', () => {
+    useAppStore.setState({ composerOpen: true, closeComposer: vi.fn() });
+    render(<MyEventsPanel />);
+    expect(screen.getByPlaceholderText('Název akce')).toBeInTheDocument();
+  });
+
+  it('logout calls adminLogout', () => {
+    const adminLogout = vi.fn(async () => {});
+    useAppStore.setState({ adminLogout });
+    render(<MyEventsPanel />);
+    screen.getByRole('button', { name: 'Odhlásit' }).click();
+    expect(adminLogout).toHaveBeenCalledOnce();
   });
 });
