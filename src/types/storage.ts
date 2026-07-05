@@ -7,7 +7,8 @@ import type {
   DocumentNote,
 } from '../types/documents';
 import { ExamSubjectSchema } from './schemas/exams.schema';
-import type { BlockLesson, CalendarCustomEvent } from '../types/calendarTypes';
+import { BlockLessonSchema } from './schemas/schedule.schema';
+import type { CalendarCustomEvent } from '../types/calendarTypes';
 import type { ClassmatesData } from '../types/classmates';
 import type { StudyPlan, DualLanguageStudyPlan } from '../types/studyPlan';
 import type { CvicnyTest } from '../api/cvicneTests';
@@ -20,7 +21,6 @@ import type { SubjectZaznamnik } from './zaznamnik';
 
 export const ParsedFileSchema = z.custom<ParsedFile>();
 export const SyllabusRequirementsSchema = z.custom<SyllabusRequirements>();
-export const BlockLessonSchema = z.custom<BlockLesson>();
 export const CalendarCustomEventSchema = z.object({
   id: z.string(),
   title: z.string(),
