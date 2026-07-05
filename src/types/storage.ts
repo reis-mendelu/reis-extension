@@ -8,8 +8,8 @@ import { SuccessRatesSchema } from './schemas/successRates.schema';
 import { MetaSchema } from './schemas/meta.schema';
 import { ClassmatesSchema } from './schemas/classmates.schema';
 import { GradeHistorySchema } from './schemas/gradeHistory.schema';
+import { StudyPlanOrDualLanguageSchema } from './schemas/studyPlan.schema';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
-import type { StudyPlan, DualLanguageStudyPlan } from '../types/studyPlan';
 import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { ErasmusCountryData } from '../types/erasmus';
@@ -47,8 +47,6 @@ export const HiddenItemsSchema = z.object({
     })
   ),
 });
-export const StudyPlanSchema = z.union([z.custom<StudyPlan>(), z.custom<DualLanguageStudyPlan>()]);
-
 // --- Storage Value Schemas ---
 
 // 'assessments' store - Legacy, kept for backward compatibility
@@ -198,7 +196,7 @@ export const StoreSchemas = {
   success_rates: SuccessRatesSchema,
   meta: MetaSchema,
   grade_history: GradeHistorySchema,
-  study_plan: StudyPlanSchema,
+  study_plan: StudyPlanOrDualLanguageSchema,
   cvicne_tests: z.array(z.custom<CvicnyTest>()),
   odevzdavarny: z.array(z.custom<Odevzdavarna>()),
   erasmus: z.custom<ErasmusCountryData>(),
