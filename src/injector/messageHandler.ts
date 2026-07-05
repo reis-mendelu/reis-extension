@@ -7,6 +7,7 @@ import { fetchSubjects } from "../api/subjects";
 import type { DataRequestType } from "../types/messages";
 import { scrapedNavMenu } from "./sniper";
 import { downloadDocumentInPage } from "./documentDownloader";
+import { isIsMendeluUrl } from "./isMendeluUrl";
 
 let topUpPopupRef: Window | null = null;
 
@@ -68,7 +69,7 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 async function handleFetchRequest(id: string, url: string, options?: { method?: string; headers?: Record<string, string>; body?: string; responseType?: 'text' | 'image' }) {
     try {
         let text: string;
-        if (url.startsWith('https://is.mendelu.cz')) {
+        if (isIsMendeluUrl(url)) {
             const response = await fetch(url, {
                 method: options?.method ?? "GET", headers: options?.headers,
                 body: options?.body, credentials: "include",
