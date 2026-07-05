@@ -94,9 +94,17 @@ After first implementation, two changes:
    - Žabčice ŠZP → way 835010329 (named farmyard areal)
    - Křtiny ŠLP → way 61229872 (Zámek Křtiny building)
 
-   Arboretum + Žabčice are inherently areas (garden / farm complex); Lednice +
-   Křtiny are single buildings. Tests updated to validate the outline rings and
-   the centroid-based focus coord.
+   Arboretum + Žabčice are inherently areas (garden / farm complex); Křtiny is
+   the château building. Tests updated to validate the outline rings and the
+   centre-based focus coord.
+
+   **Follow-up:** the Lednice faculty is a whole campus, not one building. Its
+   entry is now a **MultiPolygon of all 25 building footprints** inside the ZF
+   grounds (OSM way 242749779 used as a `poly:` spatial filter), each drawn as
+   its own blue building like the main campus. `RemotePlace.outline` is a
+   `Polygon | MultiPolygon` union; `remotePlaceRings`/`remotePlaceCenter`
+   (mapHelpers) normalize both — draw iterates every ring, focus flies to the
+   bounding-box centre so a multi-building campus frames on its middle.
 
 ## Out of scope
 
