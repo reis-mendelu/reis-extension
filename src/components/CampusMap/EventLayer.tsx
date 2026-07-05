@@ -26,7 +26,10 @@ const PANE_NAME = 'reisEvents';
 // transitions the transform in sync with the basemap. zoomend/viewreset settle
 // the exact positions. Pins only show in campus overview, not floor-view.
 export function EventLayer() {
-  const events = useAppStore((s) => s.mapEvents);
+  const mode = useAppStore((s) => s.mapMode);
+  const publicEvents = useAppStore((s) => s.mapEvents);
+  const societyEvents = useAppStore((s) => s.societyMapEvents);
+  const events = mode === 'society' ? societyEvents : publicEvents;
   const eventFilter = useAppStore((s) => s.eventFilter);
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const selection = useAppStore((s) => s.mapSelection);

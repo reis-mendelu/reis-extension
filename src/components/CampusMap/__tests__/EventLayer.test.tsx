@@ -80,4 +80,19 @@ describe('EventLayer', () => {
     act(() => { fakeMap.zoom = 18; handlers.move(); });
     expect(btn().style.transform).toContain('50px');
   });
+
+  it('renders the society events when in society mode', () => {
+    useAppStore.setState({
+      mapMode: 'society',
+      societyMapEvents: [{
+        id: 's1', title: 'Society Party', url: '', date: '2026-07-10', endDate: null, time: null,
+        location: null, imageUrl: null, organizerKey: 'pef', societyId: 'supef',
+        coord: [16.61, 49.21], roomCode: null, venueKind: 'offcampus', category: 'party',
+      }],
+      mapEvents: [], eventFilter: 'all', activeBuildingId: null,
+    });
+    render(<EventLayer />);
+    const btn = paneEl.querySelector('button[title="Society Party"]') as HTMLElement;
+    expect(btn).toBeTruthy();
+  });
 });

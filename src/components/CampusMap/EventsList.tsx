@@ -52,7 +52,10 @@ function EventRow({ event, locale, t, selected, onClick }: {
 // open the bottom-left detail card (off-campus rows open it too but don't move
 // the map).
 export function EventsList() {
-  const events = useAppStore((s) => s.mapEvents);
+  const mode = useAppStore((s) => s.mapMode);
+  const publicEvents = useAppStore((s) => s.mapEvents);
+  const societyEvents = useAppStore((s) => s.societyMapEvents);
+  const events = mode === 'society' ? societyEvents : publicEvents;
   const filter = useAppStore((s) => s.eventFilter);
   const setFilter = useAppStore((s) => s.setEventFilter);
   const selection = useAppStore((s) => s.mapSelection);
