@@ -5,12 +5,20 @@
  * Resolves only once the blob is saved, giving the UI a true completion signal.
  */
 export async function downloadDocumentInPage(url: string, filename: string): Promise<void> {
+  if (!url.startsWith('https://is.mendelu.cz')) throw new Error('Refusing non-IS document URL');
   const res = await fetch(url, { credentials: 'include' });
-  if (res.status === 401 || res.status === 403) throw new Error(`HTTP ${res.status}`);
+  if (res.status === 401 || res.status === 403) {
+    // Genuine session-expiry — the caller redirects to login on this signal only.
+    const err = new Error(`HTTP ${res.status}`);
+    (err as Error & { sessionExpired?: boolean }).sessionExpired = true;
+    throw err;
+  }
   const contentType = res.headers.get('content-type') ?? '';
   if (!contentType.includes('application/pdf')) {
     // A non-PDF 200 means the session lapsed and IS served a login/HTML page.
-    throw new Error(`Not a PDF (${contentType || 'unknown'})`);
+    const err = new Error(`Not a PDF (${contentType || 'unknown'})`);
+    (err as Error & { sessionExpired?: boolean }).sessionExpired = true;
+    throw err;
   }
   const blob = await res.blob();
   const objectUrl = URL.createObjectURL(blob);

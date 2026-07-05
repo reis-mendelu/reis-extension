@@ -32,12 +32,30 @@ describe('downloadDocumentInPage', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response('<html>login</html>', { status: 200, headers: { 'content-type': 'text/html' } }),
     );
-    await expect(downloadDocumentInPage('https://is.mendelu.cz/x', 'f.pdf')).rejects.toThrow();
+    await expect(downloadDocumentInPage('https://is.mendelu.cz/x', 'f.pdf')).rejects.toMatchObject({ sessionExpired: true });
     expect(clickSpy).not.toHaveBeenCalled();
   });
 
   it('rejects on a 401', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('', { status: 401 }));
-    await expect(downloadDocumentInPage('https://is.mendelu.cz/x', 'f.pdf')).rejects.toThrow();
+    await expect(downloadDocumentInPage('https://is.mendelu.cz/x', 'f.pdf')).rejects.toMatchObject({ sessionExpired: true });
+  });
+
+  it('propagates a network-level fetch rejection without a sessionExpired flag', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
+    let caught: unknown;
+    try {
+      await downloadDocumentInPage('https://is.mendelu.cz/x', 'f.pdf');
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(TypeError);
+    expect((caught as { sessionExpired?: boolean }).sessionExpired).toBeUndefined();
+  });
+
+  it('rejects a non-IS URL without fetching', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    await expect(downloadDocumentInPage('https://evil.example.com/x', 'f.pdf')).rejects.toThrow('Refusing non-IS document URL');
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

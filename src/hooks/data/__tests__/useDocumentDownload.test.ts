@@ -22,6 +22,17 @@ describe('useDocumentDownload', () => {
     await waitFor(() => expect(result.current.status['reg-arch']).toBe('error'));
   });
 
+  it('ignores a ghost re-click on a row already in flight', async () => {
+    const spy = vi.spyOn(proxy, 'downloadDocument').mockResolvedValue(undefined);
+    const { result } = renderHook(() => useDocumentDownload());
+    act(() => {
+      result.current.run('potvrzeni-cz', 'https://x', 'f.pdf');
+      result.current.run('potvrzeni-cz', 'https://x', 'f.pdf');
+    });
+    await waitFor(() => expect(result.current.status['potvrzeni-cz']).toBe('done'));
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
   it('clears the pending done→idle timer on unmount', async () => {
     vi.spyOn(proxy, 'downloadDocument').mockResolvedValue(undefined);
     const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');

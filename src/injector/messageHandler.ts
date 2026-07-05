@@ -143,12 +143,17 @@ async function handleAction(id: string, action: string, payload: unknown) {
                 break;
             case "download_document":
                 // First-party fetch on is.mendelu.cz so the SameSite cookie rides
-                // along; on a non-PDF (session lapsed) redirect to login.
+                // along. Redirect to login only on a genuine session-expiry
+                // (401/403, or a non-PDF 200 = login HTML); a transient network
+                // blip or IS 5xx must not force-navigate a still-logged-in user —
+                // the row just shows `error`.
                 try {
                     await downloadDocumentInPage(p.url, p.filename);
                     result = { success: true };
                 } catch (e) {
-                    window.location.href = "https://is.mendelu.cz/system/login.pl?lang=cz";
+                    if ((e as { sessionExpired?: boolean } | null)?.sessionExpired) {
+                        window.location.href = "https://is.mendelu.cz/system/login.pl?lang=cz";
+                    }
                     throw e;
                 }
                 break;

@@ -1,4 +1,4 @@
-import { FileCheck2, FileText, ScrollText, Loader2, Check, AlertTriangle, ExternalLink } from 'lucide-react';
+import { FileCheck2, FileText, ScrollText, Loader2, Check, AlertTriangle, ExternalLink, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -30,6 +30,20 @@ export function DocumentsDrawer() {
 
   return (
     <AdaptiveDrawer open={isOpen} onClose={() => setOpen(false)} width="sm:w-[460px]" title={t('documents.title')}>
+      {/* Header — AdaptiveDrawer's `title` prop only surfaces as a sr-only a11y
+          label on the mobile sheet; desktop needs a real visible heading +
+          close affordance, so render one explicitly (mirrors EduroamDrawer). */}
+      <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-base-300">
+        <div className="w-11 h-11 rounded-box bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <FileText className="w-5 h-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-base truncate">{t('documents.title')}</h3>
+        </div>
+        <button onClick={() => setOpen(false)} aria-label={t('common.close')} className="btn btn-ghost btn-xs btn-circle">
+          <X size={16} />
+        </button>
+      </div>
       <div className="flex flex-col gap-1 p-3">
         {STUDY_DOCUMENTS.map(doc => {
           const Icon = ICONS[doc.id] ?? FileText;
@@ -48,10 +62,11 @@ export function DocumentsDrawer() {
           );
         })}
         <a
-          href={buildZadostUrl(sid, language)}
+          href={sid ? buildZadostUrl(sid, language) : undefined}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 px-3 py-2.5 mt-1 border-t border-base-300 rounded-lg text-sm text-base-content/70 hover:bg-base-200 transition-colors"
+          aria-disabled={!sid}
+          className={`flex items-center gap-3 px-3 py-2.5 mt-1 border-t border-base-300 rounded-lg text-sm text-base-content/70 hover:bg-base-200 transition-colors ${!sid ? 'pointer-events-none opacity-50' : ''}`}
         >
           <ScrollText className="w-5 h-5 shrink-0" />
           <span className="flex-1 font-medium">{t('documents.items.zadost')}</span>
