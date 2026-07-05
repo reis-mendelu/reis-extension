@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   # UI/UX gate: lints ONLY the files changed in this PR with --max-warnings=0,
   # so theme/i18n violations (and any other warning) hard-block new or edited code
