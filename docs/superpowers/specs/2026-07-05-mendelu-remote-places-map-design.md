@@ -150,6 +150,15 @@ Two changes to the arboretum, mirroring the campus-faculty drill interaction:
   boundary (only paths + greenhouses + 2 viewpoints + 1 firepit). So the 5-section
   collection markers remain hand-placed approximations; going finer would require
   manually georeferencing the static plan image.
+- **13 highlights georeferenced from the plan (option A).** Downloaded the static
+  plan (`mapka.jpg`, 900×677) and read its numbered labels. The plan is the garden
+  rotated ~90° CCW (greenhouses top-left = real north); using the greenhouse
+  cluster as anchor, derived a linear px→(lat), py→(lon) transform, mapped ~13 key
+  labels (Skleníky, Správní budova, Sbírka lomikamenů, Alpinkový skleník, Sbírka
+  vrb, Vodní kaskáda, Denivky, Alpinum, Meteostanice, Zahrada Vysočiny, Zahrada
+  pro nevidomé, Zahrada miniatur, Růže) and **snapped each to the nearest OSM path
+  vertex** (7–76 m from estimate) so they sit on walkways inside the garden. Still
+  approximate — no georeferenced source exists — but positioned from the real plan.
 
 ## Out of scope
 
