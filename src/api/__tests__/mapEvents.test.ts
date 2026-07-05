@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { toMapEvent } from '../mapEvents';
+import { describe, it, expect, vi } from 'vitest';
+import { toMapEvent, fetchMapEvents } from '../mapEvents';
+import { isPublicEvent } from '../../components/CampusMap/eventWindow';
 
 describe('toMapEvent', () => {
   it('maps a campus-room row into a MapEvent with a resolved building coord', () => {
@@ -39,5 +40,33 @@ describe('toMapEvent', () => {
       room_code: null, coord_lng: null, coord_lat: null, location: 'TBD', url: null,
     };
     expect(toMapEvent(row).coord).toBeNull();
+  });
+
+  it('isPublicEvent gates past and far-future dates out', () => {
+    const now = new Date('2026-07-06T09:00:00');
+    expect(isPublicEvent('2026-07-01', now)).toBe(false); // past
+    expect(isPublicEvent('2026-07-10', now)).toBe(true); // in window
+    expect(isPublicEvent('2026-08-30', now)).toBe(false); // far future
+  });
+});
+
+vi.mock('../../services/spolky/supabaseClient', () => {
+  const iso = (d: number) => {
+    const t = new Date();
+    t.setDate(t.getDate() + d);
+    return t.toISOString().slice(0, 10);
+  };
+  const mk = (id: string, date: string) => ({
+    id, association_id: 'supef', title: id, category: 'party', date, end_date: null, time: null,
+    venue_kind: 'offcampus', room_code: null, coord_lng: 16.6, coord_lat: 49.2, location: null, url: null,
+  });
+  const rows = [mk('past', iso(-5)), mk('live', iso(3)), mk('future', iso(40))];
+  return { supabase: { from: () => ({ select: () => ({ order: () => Promise.resolve({ data: rows, error: null }) }) }) } };
+});
+
+describe('fetchMapEvents public window filter', () => {
+  it('fetchMapEvents returns only events inside the public window', async () => {
+    const events = await fetchMapEvents();
+    expect(events.map((e) => e.id)).toEqual(['live']); // past + far-future filtered out
   });
 });
