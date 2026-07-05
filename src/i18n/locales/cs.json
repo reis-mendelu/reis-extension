@@ -53,7 +53,7 @@
     }
   },
   "documents": {
-    "title": "Tisk dokumentů",
+    "title": "Studijní dokumenty",
     "items": {
       "confirmationCz": "Potvrzení o studiu",
       "confirmationEn": "Confirmation of study",
@@ -125,7 +125,7 @@
     "portal": "Portál studenta",
     "teacherList": "List záznamníku učitele",
     "tests": "Testy",
-    "documents": "Tisk dokumentů",
+    "documents": "Studijní dokumenty",
     "eIndex": "E-index",
     "practiceTests": "Cvičné testy",
     "assignments": "Odevzdávárna",

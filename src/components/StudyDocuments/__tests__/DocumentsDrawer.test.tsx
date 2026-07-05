@@ -52,7 +52,7 @@ describe('DocumentsDrawer', () => {
 
   it('renders a header with the title and a working close button', () => {
     render(<DocumentsDrawer />);
-    expect(screen.getByRole('heading', { name: 'Tisk dokumentů' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Studijní dokumenty' })).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Zavřít'));
     expect(useAppStore.getState().isDocumentsOpen).toBe(false);
   });
