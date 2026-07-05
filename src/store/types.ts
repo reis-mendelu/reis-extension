@@ -424,6 +424,8 @@ export interface MapSlice {
   focusRoomByCode: (code: string) => void;
   focusPoiById: (id: number) => void;
   focusLandmarkById: (id: number) => void;
+  /** Fly to an off-campus MENDELU site (arboretum, Lednice, Žabčice, Křtiny). */
+  focusRemotePlaceById: (id: number) => void;
   /** Fly back to the whole-campus overview (Místa "Hlavní kampus"). */
   focusCampus: () => void;
   /** Fly to an arbitrary named coordinate without a real landmark/poi (e.g. the JAK dorm cluster centre). */

@@ -93,6 +93,33 @@ describe('mapSlice', () => {
     expect(s.mapFocusRequest).toBe(before + 1);
   });
 
+  it('focusRemotePlaceById flies to the site: poi selection at the outline centroid, address as type, bumps focus', () => {
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusRemotePlaceById(-102); // Zahradnická fakulta – Lednice
+    const s = useAppStore.getState();
+    expect(s.activeBuildingId).toBeNull();
+    expect(s.activeFloorId).toBeNull();
+    expect(s.mapSelection).toMatchObject({
+      kind: 'poi',
+      poi: { id: -102, name: 'Zahradnická fakulta – Lednice', type: 'Valtická 337, Lednice', url: 'https://zf.mendelu.cz/' },
+    });
+    // Coord is the footprint centroid, near Lednice (lon ~16.80, lat ~48.80).
+    const coord = (s.mapSelection as { coord: [number, number] }).coord;
+    expect(coord[0]).toBeGreaterThan(16.79);
+    expect(coord[0]).toBeLessThan(16.81);
+    expect(coord[1]).toBeGreaterThan(48.79);
+    expect(coord[1]).toBeLessThan(48.81);
+    expect(s.mapFocusRequest).toBe(before + 1);
+  });
+
+  it('focusRemotePlaceById with an unknown id leaves state untouched', () => {
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusRemotePlaceById(-999);
+    const s = useAppStore.getState();
+    expect(s.mapSelection).toBeNull();
+    expect(s.mapFocusRequest).toBe(before);
+  });
+
   it('setMapSearchQuery populates results', () => {
     useAppStore.getState().setMapSearchQuery('Q01');
     expect(useAppStore.getState().mapSearchResults.length).toBeGreaterThan(0);
