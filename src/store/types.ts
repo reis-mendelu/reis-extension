@@ -452,6 +452,15 @@ export interface MapSlice {
   setMapMode: (mode: 'student' | 'society') => void;
   /** Rebuild societyMapEvents from the current societyPosts. Called after posts load/change. */
   refreshSocietyMapEvents: () => void;
+  /** True while the user is picking a spot: the next map click captures a coordinate. */
+  placingEvent: boolean;
+  /** The coordinate [lng,lat] picked for the event being composed (null = none yet). */
+  draftCoord: [number, number] | null;
+  beginPlacing: () => void;
+  cancelPlacing: () => void;
+  /** Record a picked coordinate and leave placing mode. */
+  placeDraftCoord: (coord: [number, number]) => void;
+  clearDraftCoord: () => void;
 }
 
 export type AppState = ScheduleSlice & ExamSlice & SyllabusSlice & ZaznamnikSlice & FilesSlice & NotesSlice & ClassmatesSlice & SubjectsSlice & SyncSlice & ThemeSlice & I18nSlice & ErrorReportingSlice & SuccessRateSlice & StudyJamsSlice & EduroamSlice & DocumentsSlice & FeedbackSlice & StudyPlanSlice & CvicneTestsSlice & ErasmusSlice & MenuSlice & HiddenItemsSlice & CalendarCustomEventsSlice & TeachingWeekSlice & NavPagesSlice & ContextSlice & PulseSlice & NotificationSlice & BulletinSlice & ViewportSlice & import('./slices/createSearchSlice').SearchSlice & import('./slices/createPersonProfileSlice').PersonProfileSlice & MapSlice & import('./slices/createRsvpSlice').RsvpSlice & import('./slices/createAdminSlice').AdminSlice;

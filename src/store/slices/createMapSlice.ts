@@ -42,6 +42,8 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   eventFilter: 'all',
   mapMode: 'student',
   societyMapEvents: [],
+  placingEvent: false,
+  draftCoord: null,
 
   setMapBuilding: (id) => {
     const b = buildingById(id);
@@ -138,7 +140,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
 
   setMapMode: (mode) => {
     if (mode === 'society' && !get().adminAssociationId) return; // gate: society only
-    set({ mapMode: mode, mapSelection: null });
+    set({ mapMode: mode, mapSelection: null, placingEvent: false, draftCoord: null });
     if (mode === 'society') get().refreshSocietyMapEvents();
   },
 
@@ -146,6 +148,11 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     const rows = get().societyPosts;
     set({ societyMapEvents: rows.map((r) => locateEvent(toMapEvent(r))) });
   },
+
+  beginPlacing: () => set({ placingEvent: true, mapSelection: null }),
+  cancelPlacing: () => set({ placingEvent: false }),
+  placeDraftCoord: (coord) => set({ draftCoord: coord, placingEvent: false }),
+  clearDraftCoord: () => set({ draftCoord: null }),
 
   loadMapEvents: async () => {
     if (get().mapEventsLoaded) return;

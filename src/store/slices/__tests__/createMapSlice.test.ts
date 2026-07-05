@@ -33,7 +33,8 @@ const fc = (id: number, floorId: number): RoomsCollection => ({ type: 'FeatureCo
 beforeEach(() => {
   useAppStore.setState({ activeBuildingId: null, activeFloorId: null, mapSelection: null,
     roomsByBuilding: {}, mapLoadingBuilding: null, mapSearchQuery: '', mapSearchResults: [], mapFocusRequest: 0,
-    mapEvents: [], mapEventsLoaded: false, mapPanelTab: 'places', eventFilter: 'all' });
+    mapEvents: [], mapEventsLoaded: false, mapPanelTab: 'places', eventFilter: 'all',
+    placingEvent: false, draftCoord: null });
   vi.mocked(fetchBuildingRooms).mockReset();
   vi.mocked(fetchMapEvents).mockReset();
   vi.mocked(fetchMapEvents).mockResolvedValue(MOCK_EVENTS);
@@ -218,5 +219,23 @@ describe('map mode + society events', () => {
     const evs = useAppStore.getState().societyMapEvents;
     expect(evs).toHaveLength(1);
     expect(evs[0]).toMatchObject({ id: 'e1', title: 'Party', coord: [16.61, 49.21] });
+  });
+});
+
+describe('click-to-place', () => {
+  it('arms and captures a coordinate', () => {
+    const s = useAppStore.getState();
+    s.beginPlacing();
+    expect(useAppStore.getState().placingEvent).toBe(true);
+    useAppStore.getState().placeDraftCoord([16.6, 49.2]);
+    const st = useAppStore.getState();
+    expect(st.placingEvent).toBe(false);
+    expect(st.draftCoord).toEqual([16.6, 49.2]);
+  });
+  it('cancel clears the armed state without a coordinate', () => {
+    useAppStore.getState().beginPlacing();
+    useAppStore.getState().cancelPlacing();
+    expect(useAppStore.getState().placingEvent).toBe(false);
+    expect(useAppStore.getState().draftCoord).toBeNull();
   });
 });
