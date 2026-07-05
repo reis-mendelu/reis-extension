@@ -1,58 +1,23 @@
-import { CalendarOff, MapPin } from 'lucide-react';
-import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
+import { CalendarOff } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useEventsFacultySettings } from '../../hooks/useEventsFacultySettings';
 import { ALL_SOCIETIES } from '../../data/societies';
 import { readableTextColor } from '../../utils/readableTextColor';
-import { filterEvents, weekSections, relativeDayLabel } from './eventHelpers';
-import type { MapEvent } from '../../types/events';
-
-function EventRow({ event, locale, t, selected, onClick }: {
-  event: MapEvent; locale: string; t: (k: string) => string; selected: boolean; onClick: () => void;
-}) {
-  const day = relativeDayLabel(event.date, locale, t);
-  // "what it's about" reads from the title + a category cue; "where" from the
-  // location. The society isn't shown — at launch there's only one, so it's noise.
-  return (
-    <button
-      onClick={onClick}
-      className={`flex w-full items-center gap-3 border-l-2 px-3 py-2 text-left transition-colors ${
-        selected ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-base-200'
-      }`}
-    >
-      {/* poster thumbnail; falls back to a neutral tile with the colour emoji */}
-      <span className="h-[52px] w-[52px] flex-shrink-0 overflow-hidden rounded-lg">
-        {event.imageUrl ? (
-          <img src={event.imageUrl} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <span className="flex h-full w-full items-center justify-center bg-base-200">
-            <img src={CATEGORY_EMOJI_SRC[event.category]} alt="" className="h-7 w-7" />
-          </span>
-        )}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] font-semibold text-base-content">{event.title}</span>
-        <span className="mt-0.5 block truncate text-[11px] text-base-content/60">
-          {day}{event.time ? ` · ${event.time}` : ''}
-        </span>
-        {event.location && (
-          <span className="mt-0.5 flex items-center gap-1 text-[11px] text-base-content/60">
-            <MapPin size={11} className="flex-shrink-0" />
-            <span className="truncate">{event.location}</span>
-          </span>
-        )}
-      </span>
-    </button>
-  );
-}
+import { filterEvents, weekSections } from './eventHelpers';
+import { EventRow } from './EventRow';
 
 // Body of the MapSidePanel "Events" tab: an All / My-faculty filter and the
 // upcoming events grouped into "This week" / "Next week", soonest first. Rows
 // open the bottom-left detail card (off-campus rows open it too but don't move
 // the map).
 export function EventsList() {
-  const events = useAppStore((s) => s.mapEvents);
+  const mode = useAppStore((s) => s.mapMode);
+  const publicEvents = useAppStore((s) => s.mapEvents);
+  const societyEvents = useAppStore((s) => s.societyMapEvents);
+  // MapSidePanel renders MyEventsPanel in society mode, so this list is student-only
+  // in practice; the mode check keeps the source correct if that ever changes.
+  const events = mode === 'society' ? societyEvents : publicEvents;
   const filter = useAppStore((s) => s.eventFilter);
   const setFilter = useAppStore((s) => s.setEventFilter);
   const selection = useAppStore((s) => s.mapSelection);
@@ -70,7 +35,7 @@ export function EventsList() {
   // keeps the remaining societies in their catalog order.
   const homeFaculty = subscribedFaculties.find((k) => k !== 'mendelu');
   const societies = [...ALL_SOCIETIES].sort(
-    (a, b) => (a.facultyKey === homeFaculty ? 0 : 1) - (b.facultyKey === homeFaculty ? 0 : 1),
+    (a, b) => (a.facultyKey === homeFaculty ? 0 : 1) - (b.facultyKey === homeFaculty ? 0 : 1)
   );
   const chipBase = 'btn btn-xs flex-shrink-0 whitespace-nowrap rounded-full';
 
@@ -92,7 +57,9 @@ export function EventsList() {
               key={s.id}
               onClick={() => setFilter(s.id)}
               className={`${chipBase} ${active ? 'border-transparent' : 'btn-ghost'}`}
-              style={active ? { backgroundColor: s.color, color: readableTextColor(s.color) } : undefined}
+              style={
+                active ? { backgroundColor: s.color, color: readableTextColor(s.color) } : undefined
+              }
             >
               {s.shortName}
             </button>

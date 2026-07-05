@@ -1,29 +1,66 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// EventsList (the default "events" tab body) pulls in useEventsFacultySettings,
+// which does async IndexedDB + chrome.storage work via useEffect. Mocked here
+// (as the pre-existing suite for this file did) so these tab-behavior tests
+// stay synchronous and don't emit act() noise unrelated to what's under test.
 vi.mock('../../../hooks/useEventsFacultySettings', () => ({
-  useEventsFacultySettings: () => ({ subscribedFaculties: ['mendelu', 'pef'], isLoading: false }),
+  useEventsFacultySettings: () => ({ subscribedFaculties: ['mendelu'], isLoading: false }),
 }));
+
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MapSidePanel } from '../MapSidePanel';
 import { useAppStore } from '../../../store/useAppStore';
-import { MOCK_MAP_EVENTS } from './fixtures/mockMapEvents';
+import { MapSidePanel } from '../MapSidePanel';
 
 beforeEach(() => {
-  useAppStore.setState({ mapPanelTab: 'places', mapEvents: MOCK_MAP_EVENTS, eventFilter: 'all', mapSelection: null, language: 'en' });
+  useAppStore.setState({
+    language: 'cz',
+    mapMode: 'student',
+    mapPanelTab: 'events',
+    adminRole: null,
+    adminAssociationId: null,
+    mapEvents: [],
+    societyMapEvents: [],
+    eventFilter: 'all',
+    mapSelection: null,
+    setMapMode: vi.fn(),
+    setMapPanelTab: vi.fn(),
+  });
 });
 
-describe('MapSidePanel', () => {
-  it('defaults to the Places tab', () => {
+describe('MapSidePanel tabs', () => {
+  it('shows two tabs for a normal student', () => {
     render(<MapSidePanel />);
-    // Main campus row from LandmarkPicker is present in Places.
-    expect(screen.getByText('Main campus')).toBeTruthy();
+    expect(screen.getAllByRole('tab')).toHaveLength(2);
   });
 
-  it('switches to the Events tab and shows society events', async () => {
+  it('shows the third "Moje akce" tab for an association', () => {
+    useAppStore.setState({ adminRole: 'association', adminAssociationId: 'supef' });
     render(<MapSidePanel />);
-    await userEvent.click(screen.getByRole('tab', { name: /Events/ }));
-    expect(useAppStore.getState().mapPanelTab).toBe('events');
-    expect(screen.getByText('PEF Kvíz')).toBeTruthy();
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs).toHaveLength(3);
+  });
+
+  it('clicking the society tab enters society mode', () => {
+    const setMapMode = vi.fn();
+    useAppStore.setState({ adminRole: 'association', adminAssociationId: 'supef', setMapMode });
+    render(<MapSidePanel />);
+    // "Moje akce" — exact accessible name avoids ambiguity with the "Akce" tab.
+    screen.getByRole('tab', { name: 'Moje akce' }).click();
+    expect(setMapMode).toHaveBeenCalledWith('society');
+  });
+
+  it('clicking Events from society mode returns to student mode', () => {
+    const setMapMode = vi.fn();
+    useAppStore.setState({
+      adminRole: 'association',
+      adminAssociationId: 'supef',
+      mapMode: 'society',
+      setMapMode,
+    });
+    render(<MapSidePanel />);
+    // Exact "Akce" (not a substring match) so it doesn't also match "Moje akce".
+    screen.getByRole('tab', { name: 'Akce' }).click();
+    expect(setMapMode).toHaveBeenCalledWith('student');
   });
 });

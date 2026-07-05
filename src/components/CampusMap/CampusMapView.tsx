@@ -7,9 +7,13 @@ import { RoomSearch } from './RoomSearch';
 import { EdgeIndicators } from './EdgeIndicators';
 import { EventLayer } from './EventLayer';
 import { useAppStore } from '../../store/useAppStore';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function CampusMapView() {
   const selection = useAppStore((s) => s.mapSelection);
+  const placing = useAppStore((s) => s.placingEvent);
+  const cancelPlacing = useAppStore((s) => s.cancelPlacing);
+  const { t } = useTranslation();
   // Edge arrows slide out from behind these panels instead of vanishing.
   const leftPanelRef = useRef<HTMLDivElement>(null);
   const placesPanelRef = useRef<HTMLDivElement>(null);
@@ -25,13 +29,28 @@ export function CampusMapView() {
       <EdgeIndicators occluders={[leftPanelRef, placesPanelRef, detailPanelRef]} />
       {/* Floor selector moved off the right edge (it overlapped the Místa panel)
           into the left column under the search. */}
-      <div ref={leftPanelRef} className="absolute top-3 left-3 z-[1000] flex flex-col items-start gap-2">
+      <div
+        ref={leftPanelRef}
+        className="absolute top-3 left-3 z-[1000] flex flex-col items-start gap-2"
+      >
         <RoomSearch />
         <FloorStack />
       </div>
-      <div ref={placesPanelRef} className="absolute top-3 right-3 z-[1000]"><MapSidePanel /></div>
+      <div ref={placesPanelRef} className="absolute top-3 right-3 z-[1000]">
+        <MapSidePanel />
+      </div>
       {selection && (
-        <div ref={detailPanelRef} className="absolute bottom-3 left-3 z-[1000] w-72"><DetailPanel /></div>
+        <div ref={detailPanelRef} className="absolute bottom-3 left-3 z-[1000] w-72">
+          <DetailPanel />
+        </div>
+      )}
+      {placing && (
+        <div className="absolute bottom-6 left-1/2 z-[1001] flex -translate-x-1/2 items-center gap-3 rounded-full bg-primary px-4 py-2 text-primary-content shadow-popover-heavy">
+          <span className="text-sm font-semibold">{t('map.clickToPlace')}</span>
+          <button type="button" className="btn btn-ghost btn-xs" onClick={cancelPlacing}>
+            {t('common.cancel')}
+          </button>
+        </div>
       )}
     </div>
   );

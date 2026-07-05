@@ -6,12 +6,22 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { filterEvents, groupEventsByVenue, type VenueGroup } from './eventHelpers';
 import { subscribeMapInstance } from './mapInstance';
 import { EventPin } from './EventPin';
+import { isScheduledEvent } from './eventWindow';
 
-interface Placed { key: string; x: number; y: number; group: VenueGroup; }
+interface Placed {
+  key: string;
+  x: number;
+  y: number;
+  group: VenueGroup;
+}
 
 // Leaflet's private projection used by its own markers to animate on zoom.
 type ZoomAnimMap = {
-  _latLngToNewLayerPoint(latlng: L.LatLngExpression, zoom: number, center: L.LatLngExpression): L.Point;
+  _latLngToNewLayerPoint(
+    latlng: L.LatLngExpression,
+    zoom: number,
+    center: L.LatLngExpression
+  ): L.Point;
 };
 
 // Dedicated Leaflet pane for our pins. A child of the map pane (z below tooltips),
@@ -26,7 +36,10 @@ const PANE_NAME = 'reisEvents';
 // transitions the transform in sync with the basemap. zoomend/viewreset settle
 // the exact positions. Pins only show in campus overview, not floor-view.
 export function EventLayer() {
-  const events = useAppStore((s) => s.mapEvents);
+  const mode = useAppStore((s) => s.mapMode);
+  const publicEvents = useAppStore((s) => s.mapEvents);
+  const societyEvents = useAppStore((s) => s.societyMapEvents);
+  const events = mode === 'society' ? societyEvents : publicEvents;
   const eventFilter = useAppStore((s) => s.eventFilter);
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const selection = useAppStore((s) => s.mapSelection);
@@ -45,7 +58,10 @@ export function EventLayer() {
   // Re-place pins when the visible groups change (filter toggle, data load).
   const groupsRef = useRef(groups);
   const scheduleRef = useRef<(() => void) | null>(null);
-  useEffect(() => { groupsRef.current = groups; scheduleRef.current?.(); }, [groups]);
+  useEffect(() => {
+    groupsRef.current = groups;
+    scheduleRef.current?.();
+  }, [groups]);
 
   useEffect(() => {
     let map: L.Map | null = null;
@@ -54,7 +70,10 @@ export function EventLayer() {
     // fly's continuous zoom change (recompute each frame so pins stay glued).
     let placedZoom = NaN;
     const recompute = () => {
-      if (!map) { setPlaced([]); return; }
+      if (!map) {
+        setPlaced([]);
+        return;
+      }
       placedZoom = map.getZoom();
       const next: Placed[] = groupsRef.current.map((g) => {
         const pt = map!.latLngToLayerPoint([g.coord[1], g.coord[0]]);
@@ -68,17 +87,23 @@ export function EventLayer() {
     // but does NOT fire `zoomanim`; it fires `move` per frame with a changing
     // zoom, so re-project on `move` whenever the zoom differs from what's drawn —
     // that keeps fly'd pins glued while leaving plain drags on the free path.
-    const onMove = () => { if (map && map.getZoom() !== placedZoom) recompute(); };
+    const onMove = () => {
+      if (map && map.getZoom() !== placedZoom) recompute();
+    };
     // On a stepped zoom, move each pin to its post-zoom layer point so the
     // `leaflet-zoom-animated` transform transitions in sync with the basemap;
     // zoomend/viewreset then settle the exact (rounded) positions.
     const onZoomAnim = (e: L.ZoomAnimEvent) => {
       if (!map) return;
       const proj = map as unknown as ZoomAnimMap;
-      setPlaced(groupsRef.current.map((g) => {
-        const pt = proj._latLngToNewLayerPoint([g.coord[1], g.coord[0]], e.zoom, e.center).round();
-        return { key: g.key, x: pt.x, y: pt.y, group: g };
-      }));
+      setPlaced(
+        groupsRef.current.map((g) => {
+          const pt = proj
+            ._latLngToNewLayerPoint([g.coord[1], g.coord[0]], e.zoom, e.center)
+            .round();
+          return { key: g.key, x: pt.x, y: pt.y, group: g };
+        })
+      );
     };
     const bind = (m: L.Map) => {
       const p = m.getPane(PANE_NAME) ?? m.createPane(PANE_NAME);
@@ -98,7 +123,11 @@ export function EventLayer() {
     const unsub = subscribeMapInstance((m) => {
       if (map) unbind(map);
       map = m;
-      if (map) bind(map); else { setPane(null); setPlaced([]); }
+      if (map) bind(map);
+      else {
+        setPane(null);
+        setPlaced([]);
+      }
     });
     return () => {
       scheduleRef.current = null;
@@ -119,11 +148,12 @@ export function EventLayer() {
           x={p.x}
           y={p.y}
           selected={p.group.events.some((e) => e.id === selectedId)}
+          scheduled={mode === 'society' && p.group.events.some((e) => isScheduledEvent(e.date))}
           locale={language === 'en' ? 'en-US' : 'cs-CZ'}
           onSelect={focusEvent}
         />
       ))}
     </>,
-    pane,
+    pane
   );
 }

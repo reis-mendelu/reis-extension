@@ -4,19 +4,18 @@ import { FACULTY_TO_ASSOCIATION, ASSOCIATION_PROFILES } from './config';
 import { supabase } from './supabaseClient';
 import { logError } from '../../utils/reportError';
 
-// Runtime shape of a `notifications` row. Supabase results are `any`-typed, so
-// we validate before rendering user-facing content rather than trusting the DB.
+// Runtime shape of a `spolky_events` row used by the notification feed. Supabase
+// results are `any`-typed, so we validate before rendering user-facing content
+// rather than trusting the DB.
 const NotificationRowSchema = z.object({
   id: z.string(),
   association_id: z.string(),
   title: z.string(),
   body: z.string().nullable(),
-  link: z.string().nullable(),
+  url: z.string().nullable(),
   created_at: z.string(),
-  expires_at: z.string(),
-  // Constrain to the domain values; an unexpected DB value degrades to 'normal'
-  // rather than failing the whole array parse (which would drop every notification).
-  priority: z.enum(['normal', 'high']).catch('normal'),
+  date: z.string(),
+  end_date: z.string().nullable(),
 });
 
 /**
@@ -30,9 +29,7 @@ export async function trackNotificationsViewed(notificationIds: string[]): Promi
     // Call Supabase RPC to increment view counts for each notification
     // We use Promise.all to run them in parallel
     await Promise.all(
-      notificationIds.map((id) =>
-        supabase.rpc('increment_notification_view', { row_id: id })
-      )
+      notificationIds.map((id) => supabase.rpc('increment_post_view', { row_id: id }))
     );
   } catch (error) {
     logError('Spolky.trackNotificationsViewed', error);
@@ -47,7 +44,7 @@ export async function trackNotificationClick(notificationId: string): Promise<vo
   if (!notificationId) return;
 
   try {
-    await supabase.rpc('increment_notification_click', { row_id: notificationId });
+    await supabase.rpc('increment_post_click', { row_id: notificationId });
   } catch (error) {
     logError('Spolky.trackNotificationClick', error);
   }
@@ -59,11 +56,11 @@ export async function trackNotificationClick(notificationId: string): Promise<vo
 export async function fetchNotifications(): Promise<SpolekNotification[]> {
   try {
     const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .gt('expires_at', new Date().toISOString())
+      .from('spolky_events')
+      .select('id, association_id, title, body, url, created_at, date, end_date')
+      .gte('date', new Date().toISOString().slice(0, 10))
       .or('visible_from.is.null,visible_from.lte.' + new Date().toISOString())
-      .order('created_at', { ascending: false })
+      .order('date', { ascending: true })
       .limit(50);
 
     if (error) {
@@ -81,10 +78,10 @@ export async function fetchNotifications(): Promise<SpolekNotification[]> {
       associationId: n.association_id,
       title: n.title,
       body: n.body || n.title,
-      link: n.link || undefined,
+      link: n.url || undefined,
       createdAt: n.created_at,
-      expiresAt: n.expires_at,
-      priority: n.priority
+      expiresAt: n.end_date || n.date, // events use their date as natural expiry
+      priority: 'normal' as const,
     }));
   } catch {
     return [];
@@ -98,10 +95,10 @@ export async function fetchNotifications(): Promise<SpolekNotification[]> {
  */
 export function getUserAssociation(facultyId: string | null): AssociationProfile | null {
   if (!facultyId) return null;
-  
+
   const associationId = FACULTY_TO_ASSOCIATION[facultyId as keyof typeof FACULTY_TO_ASSOCIATION];
   if (!associationId) return null;
-  
+
   return ASSOCIATION_PROFILES[associationId] || null;
 }
 
@@ -127,5 +124,3 @@ export function filterNotificationsByFaculty(
     return subscribedAssociations.includes(assocId);
   });
 }
-
-

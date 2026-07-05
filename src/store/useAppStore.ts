@@ -34,6 +34,7 @@ import { createBulletinSlice } from './slices/createBulletinSlice';
 import { createViewportSlice } from './slices/createViewportSlice';
 import { createMapSlice } from './slices/createMapSlice';
 import { createRsvpSlice } from './slices/createRsvpSlice';
+import { createAdminSlice } from './slices/createAdminSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
@@ -73,129 +74,136 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createViewportSlice(...a),
   ...createMapSlice(...a),
   ...createRsvpSlice(...a),
+  ...createAdminSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
 export const initializeStore = async () => {
-    // Initialize mock data for demo if enabled
-    // Set USE_MOCK_DATA=true in your .env file to enable
-    if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
-        await initMockData();
+  // Initialize mock data for demo if enabled
+  // Set USE_MOCK_DATA=true in your .env file to enable
+  if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+    await initMockData();
+  }
+
+  const s = useAppStore.getState();
+
+  // Start global pulse
+  const pulseInterval = setInterval(() => {
+    useAppStore.getState().updatePulse();
+  }, 1000);
+
+  // Tier 1: User-visible data — load immediately
+  s.loadNotificationState();
+  s.fetchNotifications();
+  s.fetchSchedule();
+  s.fetchExams();
+  s.fetchSubjects();
+  s.loadTheme();
+  s.loadLanguage();
+  s.loadErrorReportingEnabled();
+  s.loadContext();
+  s.loadAdminSession();
+
+  // Tier 2: Background data — deferred to avoid thundering-herd on IDB at startup
+  queueMicrotask(async () => {
+    const s2 = useAppStore.getState();
+    s2.fetchStudyPlan();
+    s2.fetchStudyStats();
+    s2.fetchStudyComparison();
+    s2.loadGradeHistory();
+    s2.fetchCvicneTests();
+    s2.fetchOdevzdavarny();
+    s2.fetchAllFiles();
+    s2.fetchAllClassmates();
+    await s2.hydrateLastFilesFetchedAt();
+    await s2.hydrateLastClassmatesFetchedAt();
+    await s2.hydrateLastExamClassmatesFetchedAt();
+    s2.fetchZaznamnik();
+    s2.loadFeedbackState();
+    s2.loadHiddenItems();
+    s2.loadCalendarCustomEvents();
+    s2.fetchTeachingWeek();
+    s2.loadRecentSearches();
+    s2.hydrateBulletin();
+    s2.loadMapEvents();
+    // Predictive prefetch — files for subjects scheduled today.
+    // Guarded by 60s SWR + max 6 subjects in prefetchTodaySubjectsImpl.
+    useAppStore.getState().prefetchTodaySubjects();
+  });
+
+  // Fire-and-forget daily usage tracking
+  import('../api/feedback').then(({ trackDailyUsage }) =>
+    import('../utils/userParams').then(({ getUserParams }) =>
+      getUserParams().then((p) => {
+        if (p) trackDailyUsage(p.studentId);
+      })
+    )
+  );
+
+  // Subscribe to sync service — selective refresh based on type
+  const unsubscribe = syncService.subscribe((type) => {
+    const st = useAppStore.getState();
+
+    if (type === 'THEME_UPDATE') {
+      st.loadTheme();
+      return;
+    }
+    if (type === 'LANGUAGE_UPDATE') {
+      st.loadLanguage().then(() => useAppStore.getState().loadMapEvents());
+      st.fetchAllFiles();
+      useAppStore.setState({ menu: null });
+      return;
     }
 
-    const s = useAppStore.getState();
+    // Default: full data refresh (e.g. after sync completes)
+    // Chain prefetch after schedule resolves so a fresh install (empty IDB
+    // schedule at init) still gets predictive prefetch on the first sync.
+    st.fetchSchedule().then(() => useAppStore.getState().prefetchTodaySubjects());
+    st.fetchExams();
+    st.fetchSubjects();
+    st.fetchStudyPlan();
+    st.fetchStudyStats();
+    st.fetchStudyComparison();
+    st.loadGradeHistory();
+    st.fetchCvicneTests();
+    st.fetchOdevzdavarny();
+  });
 
-    // Start global pulse
-    const pulseInterval = setInterval(() => {
-        useAppStore.getState().updatePulse();
-    }, 1000);
+  // Cross-tab theme listener — use loadTheme() to also update DOM data-theme attribute
+  const bcTheme = new BroadcastChannel('reis_theme_sync');
+  bcTheme.onmessage = () => {
+    useAppStore.getState().loadTheme();
+  };
 
-    // Tier 1: User-visible data — load immediately
-    s.loadNotificationState();
-    s.fetchNotifications();
-    s.fetchSchedule();
-    s.fetchExams();
-    s.fetchSubjects();
-    s.loadTheme();
-    s.loadLanguage();
-    s.loadErrorReportingEnabled();
-    s.loadContext();
+  // Cross-tab language listener — use loadLanguage() and re-fetch files for the new language
+  const bcLang = new BroadcastChannel('reis_language_sync');
+  bcLang.onmessage = () => {
+    useAppStore
+      .getState()
+      .loadLanguage()
+      .then(() => useAppStore.getState().loadMapEvents());
+    useAppStore.getState().fetchAllFiles();
+    // Clear menu so it re-fetches with the new language
+    useAppStore.setState({ menu: null });
+  };
 
-    // Tier 2: Background data — deferred to avoid thundering-herd on IDB at startup
-    queueMicrotask(async () => {
-        const s2 = useAppStore.getState();
-        s2.fetchStudyPlan();
-        s2.fetchStudyStats();
-        s2.fetchStudyComparison();
-        s2.loadGradeHistory();
-        s2.fetchCvicneTests();
-        s2.fetchOdevzdavarny();
-        s2.fetchAllFiles();
-        s2.fetchAllClassmates();
-        await s2.hydrateLastFilesFetchedAt();
-        await s2.hydrateLastClassmatesFetchedAt();
-        await s2.hydrateLastExamClassmatesFetchedAt();
-        s2.fetchZaznamnik();
-        s2.loadFeedbackState();
-        s2.loadHiddenItems();
-        s2.loadCalendarCustomEvents();
-        s2.fetchTeachingWeek();
-        s2.loadRecentSearches();
-        s2.hydrateBulletin();
-        s2.loadMapEvents();
-        // Predictive prefetch — files for subjects scheduled today.
-        // Guarded by 60s SWR + max 6 subjects in prefetchTodaySubjectsImpl.
-        useAppStore.getState().prefetchTodaySubjects();
-    });
+  // Cross-iframe files listener — when another window refreshes a subject's
+  // files, rehydrate from IDB and advance lastFilesFetchedAt without re-fetching.
+  const bcFiles = new BroadcastChannel(FILES_SYNC_CHANNEL);
+  bcFiles.onmessage = (event) => {
+    const msg = event.data as FilesSyncMessage | undefined;
+    if (!msg?.courseCode) return;
+    useAppStore.setState((s) => ({
+      lastFilesFetchedAt: { ...s.lastFilesFetchedAt, [msg.courseCode]: msg.fetchedAt },
+    }));
+    void useAppStore.getState().refreshFiles(msg.courseCode);
+  };
 
-    // Fire-and-forget daily usage tracking
-    import('../api/feedback').then(({ trackDailyUsage }) =>
-        import('../utils/userParams').then(({ getUserParams }) =>
-            getUserParams().then(p => { if (p) trackDailyUsage(p.studentId); })
-        )
-    );
-
-    // Subscribe to sync service — selective refresh based on type
-    const unsubscribe = syncService.subscribe((type) => {
-        const st = useAppStore.getState();
-
-        if (type === 'THEME_UPDATE') {
-            st.loadTheme();
-            return;
-        }
-        if (type === 'LANGUAGE_UPDATE') {
-            st.loadLanguage().then(() => useAppStore.getState().loadMapEvents());
-            st.fetchAllFiles();
-            useAppStore.setState({ menu: null });
-            return;
-        }
-
-        // Default: full data refresh (e.g. after sync completes)
-        // Chain prefetch after schedule resolves so a fresh install (empty IDB
-        // schedule at init) still gets predictive prefetch on the first sync.
-        st.fetchSchedule().then(() => useAppStore.getState().prefetchTodaySubjects());
-        st.fetchExams();
-        st.fetchSubjects();
-        st.fetchStudyPlan();
-        st.fetchStudyStats();
-        st.fetchStudyComparison();
-        st.loadGradeHistory();
-        st.fetchCvicneTests();
-        st.fetchOdevzdavarny();
-    });
-
-    // Cross-tab theme listener — use loadTheme() to also update DOM data-theme attribute
-    const bcTheme = new BroadcastChannel('reis_theme_sync');
-    bcTheme.onmessage = () => {
-        useAppStore.getState().loadTheme();
-    };
-
-    // Cross-tab language listener — use loadLanguage() and re-fetch files for the new language
-    const bcLang = new BroadcastChannel('reis_language_sync');
-    bcLang.onmessage = () => {
-        useAppStore.getState().loadLanguage().then(() => useAppStore.getState().loadMapEvents());
-        useAppStore.getState().fetchAllFiles();
-        // Clear menu so it re-fetches with the new language
-        useAppStore.setState({ menu: null });
-    };
-
-    // Cross-iframe files listener — when another window refreshes a subject's
-    // files, rehydrate from IDB and advance lastFilesFetchedAt without re-fetching.
-    const bcFiles = new BroadcastChannel(FILES_SYNC_CHANNEL);
-    bcFiles.onmessage = (event) => {
-        const msg = event.data as FilesSyncMessage | undefined;
-        if (!msg?.courseCode) return;
-        useAppStore.setState((s) => ({
-            lastFilesFetchedAt: { ...s.lastFilesFetchedAt, [msg.courseCode]: msg.fetchedAt },
-        }));
-        void useAppStore.getState().refreshFiles(msg.courseCode);
-    };
-
-    return () => {
-        clearInterval(pulseInterval);
-        unsubscribe();
-        bcTheme.close();
-        bcLang.close();
-        bcFiles.close();
-    };
+  return () => {
+    clearInterval(pulseInterval);
+    unsubscribe();
+    bcTheme.close();
+    bcLang.close();
+    bcFiles.close();
+  };
 };
