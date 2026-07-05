@@ -11,6 +11,17 @@ const sampleRow = {
   end_date: null,
 };
 
+const fallbackRow = {
+  id: 'e2',
+  association_id: 'supef',
+  title: 'Fallback Title',
+  body: null,
+  url: null,
+  created_at: '2026-07-02T00:00:00Z',
+  date: '2026-07-11',
+  end_date: null,
+};
+
 const from = vi.fn();
 const select = vi.fn();
 const gte = vi.fn();
@@ -24,7 +35,7 @@ function makeBuilder() {
     gte: (...args: unknown[]) => { gte(...args); return builder; },
     or: (...args: unknown[]) => { or(...args); return builder; },
     order: (...args: unknown[]) => { order(...args); return builder; },
-    limit: (...args: unknown[]) => { limit(...args); return Promise.resolve({ data: [sampleRow], error: null }); },
+    limit: (...args: unknown[]) => { limit(...args); return Promise.resolve({ data: [sampleRow, fallbackRow], error: null }); },
   };
   return builder;
 }
@@ -57,6 +68,16 @@ describe('fetchNotifications (repointed to spolky_events)', () => {
         link: 'http://x',
         createdAt: '2026-07-01T00:00:00Z',
         expiresAt: '2026-07-10',
+        priority: 'normal',
+      },
+      {
+        id: 'e2',
+        associationId: 'supef',
+        title: 'Fallback Title',
+        body: 'Fallback Title',
+        link: undefined,
+        createdAt: '2026-07-02T00:00:00Z',
+        expiresAt: '2026-07-11',
         priority: 'normal',
       },
     ]);

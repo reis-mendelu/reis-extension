@@ -23,7 +23,7 @@ describe('createAdminSlice', () => {
   let set: ReturnType<typeof vi.fn>;
   let get: ReturnType<typeof vi.fn>;
   beforeEach(() => {
-    signIn.mockReset(); getSession.mockReset(); maybeSingle.mockReset(); order.mockClear();
+    signIn.mockReset(); getSession.mockReset(); signOut.mockClear(); maybeSingle.mockReset(); order.mockClear();
     set = vi.fn((u) => { state = { ...state, ...(typeof u === 'function' ? u(state) : u) }; });
     get = vi.fn(() => state);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -64,7 +64,7 @@ describe('createAdminSlice', () => {
     const res = await state.adminLogin('ghost', 'pw');
     expect(res.error).toBeDefined();
     expect(state.adminSession).toBeNull();
-    expect(signOut).toHaveBeenCalled();
+    expect(signOut).toHaveBeenCalledTimes(1);
   });
 
   it('logout clears everything', async () => {
@@ -82,6 +82,14 @@ describe('createAdminSlice', () => {
     maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'esn' } });
     await state.loadAdminSession();
     expect(state.adminAssociationId).toBe('esn');
+  });
+
+  it('loadAdminSession signs out when the persisted session has no provisioned account', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { email: 'ghost@societies.reis.invalid' } } } });
+    maybeSingle.mockResolvedValue({ data: null });
+    await state.loadAdminSession();
+    expect(state.adminSession).toBeNull();
+    expect(signOut).toHaveBeenCalledTimes(1);
   });
 
   it('loadSocietyPosts populates societyPosts for the logged-in association', async () => {

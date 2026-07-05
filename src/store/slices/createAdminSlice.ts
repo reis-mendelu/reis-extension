@@ -64,6 +64,10 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     if (!data.session) return;
     const email = data.session.user.email ?? '';
     const { role, associationId } = await resolveAccount(email);
+    if (role === null) {
+      try { await adminAuthClient.auth.signOut(); } catch (e) { logError('Admin.loadSession.signOut', e); }
+      return;
+    }
     set({ adminSession: data.session, adminRole: role, adminAssociationId: associationId });
     await get().loadSocietyPosts();
   },

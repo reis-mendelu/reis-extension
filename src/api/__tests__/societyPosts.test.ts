@@ -38,4 +38,8 @@ describe('societyPosts.createPost', () => {
     const res = await createPost(base, 'supef', 'x');
     expect(res.error).toBe('denied');
   });
+  it('returns an error (does not throw) when the insert resolves with no data and no error', async () => {
+    insertSingle.mockResolvedValue({ data: null, error: null });
+    expect((await createPost(base, 'supef', 'x')).error).toBeDefined();
+  });
 });
