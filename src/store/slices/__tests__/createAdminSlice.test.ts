@@ -152,3 +152,31 @@ describe('admin ↔ map wiring', () => {
     expect(useAppStore.getState().societyMapEvents).toEqual([]);
   });
 });
+
+describe('enterSocietyMode / openSocietyAdmin', () => {
+  beforeEach(() => useAppStore.setState({
+    adminRole: null, adminAssociationId: null, adminOverlayOpen: false,
+    mapMode: 'student', mapFocusRequest: 0, societyPosts: [], societyMapEvents: [],
+  }));
+
+  it('enterSocietyMode flips to society mode, closes overlay, requests map focus', () => {
+    useAppStore.setState({ adminRole: 'association', adminAssociationId: 'supef', adminOverlayOpen: true });
+    useAppStore.getState().enterSocietyMode();
+    const s = useAppStore.getState();
+    expect(s.mapMode).toBe('society');
+    expect(s.adminOverlayOpen).toBe(false);
+    expect(s.mapFocusRequest).toBe(1);
+  });
+
+  it('openSocietyAdmin enters society mode when logged in as association', () => {
+    useAppStore.setState({ adminRole: 'association', adminAssociationId: 'supef' });
+    useAppStore.getState().openSocietyAdmin();
+    expect(useAppStore.getState().mapMode).toBe('society');
+  });
+
+  it('openSocietyAdmin opens the login overlay when not logged in', () => {
+    useAppStore.getState().openSocietyAdmin();
+    expect(useAppStore.getState().adminOverlayOpen).toBe(true);
+    expect(useAppStore.getState().mapMode).toBe('student');
+  });
+});

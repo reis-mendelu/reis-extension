@@ -15,6 +15,10 @@ export interface AdminSlice {
   societyPosts: SpolkyEventRow[];
   openAdminOverlay: () => void;
   closeAdminOverlay: () => void;
+  /** Enter society map mode (authoring) and switch the app's current view onto the map. */
+  enterSocietyMode: () => void;
+  /** If already logged in as an association, jump straight onto the map; otherwise open the login overlay. */
+  openSocietyAdmin: () => void;
   adminLogin: (email: string, password: string) => Promise<{ error?: string }>;
   adminLogout: () => Promise<void>;
   loadAdminSession: () => Promise<void>;
@@ -42,6 +46,16 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   societyPosts: [],
   openAdminOverlay: () => { set({ adminOverlayOpen: true }); void get().loadSocietyPosts(); },
   closeAdminOverlay: () => set({ adminOverlayOpen: false }),
+  enterSocietyMode: () => {
+    set({ adminOverlayOpen: false });
+    get().setMapMode('society');
+    get().focusCampus();
+  },
+  openSocietyAdmin: () => {
+    const s = get();
+    if (s.adminRole === 'association' && s.adminAssociationId) get().enterSocietyMode();
+    else get().openAdminOverlay();
+  },
   adminLogin: async (emailInput, password) => {
     const email = normalizeEmail(emailInput);
     const { data, error } = await adminAuthClient.auth.signInWithPassword({ email, password });

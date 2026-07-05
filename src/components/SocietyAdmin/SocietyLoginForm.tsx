@@ -19,7 +19,8 @@ export function SocietyLoginForm() {
     setBusy(true); setError(false);
     try {
       const res = await adminLogin(email, password);
-      if (res.error) setError(true);
+      if (res.error) { setError(true); return; }
+      if (useAppStore.getState().adminRole === 'association') useAppStore.getState().enterSocietyMode();
     } catch {
       setError(true);
     } finally {
