@@ -16,7 +16,7 @@ function parseCzDateTime(s: string): Date | null {
   if (!s) return null;
   const [datePart, timePart] = s.split(' ');
   try {
-    return parseDate(datePart, timePart ?? '00:00');
+    return parseDate(datePart!, timePart ?? '00:00'); // safe: split always yields >=1 part
   } catch {
     return null;
   }
@@ -25,17 +25,20 @@ function parseCzDateTime(s: string): Date | null {
 const H = 3_600_000;
 
 export function useDeadlineAlerts() {
-  const exams = useAppStore(s => s.exams.data);
-  const odevzdavarny = useAppStore(s => s.odevzdavarny);
-  const cvicneTests = useAppStore(s => s.cvicneTests);
-  const language = useAppStore(s => s.language);
-  const seenIds = useAppStore(s => s.notifications.seenDeadlineAlertIds);
-  const markDeadlineAlertsSeen = useAppStore(s => s.markDeadlineAlertsSeen);
-  const pulseNow = useAppStore(s => s.now);
+  const exams = useAppStore((s) => s.exams.data);
+  const odevzdavarny = useAppStore((s) => s.odevzdavarny);
+  const cvicneTests = useAppStore((s) => s.cvicneTests);
+  const language = useAppStore((s) => s.language);
+  const seenIds = useAppStore((s) => s.notifications.seenDeadlineAlertIds);
+  const markDeadlineAlertsSeen = useAppStore((s) => s.markDeadlineAlertsSeen);
+  const pulseNow = useAppStore((s) => s.now);
 
-  const markAllSeen = useCallback((ids: string[]) => {
-    markDeadlineAlertsSeen(ids);
-  }, [markDeadlineAlertsSeen]);
+  const markAllSeen = useCallback(
+    (ids: string[]) => {
+      markDeadlineAlertsSeen(ids);
+    },
+    [markDeadlineAlertsSeen]
+  );
 
   const alerts = useMemo(() => {
     const now = pulseNow.getTime();
@@ -55,17 +58,33 @@ export function useDeadlineAlerts() {
               if (start) {
                 const h = (start.getTime() - now) / H;
                 if (h > 0 && h <= 24)
-                  result.push({ id: `exam-opens-${term.id}`, type: 'exam-reg-opens', title: subjectName, body: sectionName, deadline: start, hoursUntil: h });
+                  result.push({
+                    id: `exam-opens-${term.id}`,
+                    type: 'exam-reg-opens',
+                    title: subjectName,
+                    body: sectionName,
+                    deadline: start,
+                    hoursUntil: h,
+                  });
               }
             }
             if (term.registrationEnd) {
               const end = parseCzDateTime(term.registrationEnd);
               if (end) {
                 const h = (end.getTime() - now) / H;
-                const startTime = term.registrationStart ? parseCzDateTime(term.registrationStart)?.getTime() : undefined;
+                const startTime = term.registrationStart
+                  ? parseCzDateTime(term.registrationStart)?.getTime()
+                  : undefined;
                 const isOpen = !startTime || startTime <= now;
                 if (h > 0 && h <= 48 && isOpen)
-                  result.push({ id: `exam-reg-${term.id}`, type: 'exam-reg', title: subjectName, body: sectionName, deadline: end, hoursUntil: h });
+                  result.push({
+                    id: `exam-reg-${term.id}`,
+                    type: 'exam-reg',
+                    title: subjectName,
+                    body: sectionName,
+                    deadline: end,
+                    hoursUntil: h,
+                  });
               }
             }
           }
@@ -80,7 +99,15 @@ export function useDeadlineAlerts() {
       const h = (deadline.getTime() - now) / H;
       if (h > 0 && h <= 48) {
         const courseName = isEn ? a.courseNameEn : a.courseNameCs;
-        result.push({ id: `odev-${a.odevzdavarnaId || a.name}`, type: 'assignment', title: courseName, body: a.name, deadline, hoursUntil: h, link: a.uploadUrl });
+        result.push({
+          id: `odev-${a.odevzdavarnaId || a.name}`,
+          type: 'assignment',
+          title: courseName,
+          body: a.name,
+          deadline,
+          hoursUntil: h,
+          link: a.uploadUrl,
+        });
       }
     }
 
@@ -95,8 +122,8 @@ export function useDeadlineAlerts() {
     return result;
   }, [exams, odevzdavarny, cvicneTests, language, pulseNow]);
 
-  const unseenCount = useMemo(() => 
-    alerts.filter(a => !seenIds.has(a.id)).length,
+  const unseenCount = useMemo(
+    () => alerts.filter((a) => !seenIds.has(a.id)).length,
     [alerts, seenIds]
   );
 
