@@ -11,8 +11,8 @@ import { GradeHistorySchema } from './schemas/gradeHistory.schema';
 import { StudyPlanOrDualLanguageSchema } from './schemas/studyPlan.schema';
 import { CvicneTestsSchema } from './schemas/cvicneTests.schema';
 import { OdevzdavarnySchema } from './schemas/odevzdavarny.schema';
+import { ErasmusCountryDataSchema } from './schemas/erasmus.schema';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
-import type { ErasmusCountryData } from '../types/erasmus';
 import type { IskamData } from './iskam';
 import type { SubjectZaznamnik } from './zaznamnik';
 
@@ -199,7 +199,7 @@ export const StoreSchemas = {
   study_plan: StudyPlanOrDualLanguageSchema,
   cvicne_tests: CvicneTestsSchema,
   odevzdavarny: OdevzdavarnySchema,
-  erasmus: z.custom<ErasmusCountryData>(),
+  erasmus: ErasmusCountryDataSchema,
   document_notes: DocumentNoteSchema,
   note_images: NoteImageSchema,
   iskam: IskamDataSchema,
