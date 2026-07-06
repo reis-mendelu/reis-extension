@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { parseCourseMetadata } from '../metadataParser';
 describe('metadataParser', () => {
-    beforeEach(() => {
-        document.body.innerHTML = '';
-    });
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
 
-    it('should parse Czech metadata correctly', () => {
-        const html = `
+  it('should parse Czech metadata correctly', () => {
+    const html = `
             <table>
                 <tbody>
                     <tr><td>Název předmětu</td><td>Algoritmizace</td></tr>
@@ -18,20 +18,20 @@ describe('metadataParser', () => {
                 </tbody>
             </table>
         `;
-        document.body.innerHTML = html;
-        const result = parseCourseMetadata(document, 'cz');
+    document.body.innerHTML = html;
+    const result = parseCourseMetadata(document, 'cz');
 
-        expect(result.courseName).toBe('Algoritmizace');
-        expect(result.credits).toBe('Zkouška');
-        expect(result.garant?.name).toBe('doc. Ing. Oldřich Trenz, Ph.D.');
-        expect(result.teachers).toHaveLength(1);
-        expect(result.teachers[0].name).toBe('Ing. Pavel Turčínek, Ph.D.');
-        expect(result.teachers[0].roles).toBe('cvičící');
-        expect(result.status).toBe('Povinný');
-    });
+    expect(result.courseName).toBe('Algoritmizace');
+    expect(result.credits).toBe('Zkouška');
+    expect(result.garant?.name).toBe('doc. Ing. Oldřich Trenz, Ph.D.');
+    expect(result.teachers).toHaveLength(1);
+    expect(result.teachers[0]!.name).toBe('Ing. Pavel Turčínek, Ph.D.'); // safe: length asserted above
+    expect(result.teachers[0]!.roles).toBe('cvičící');
+    expect(result.status).toBe('Povinný');
+  });
 
-    it('should parse English metadata correctly (Computer Architecture scenario)', () => {
-        const html = `
+  it('should parse English metadata correctly (Computer Architecture scenario)', () => {
+    const html = `
             <table>
                 <tbody>
                     <tr><td>Course code:</td><td>EBC-AP</td></tr>
@@ -44,17 +44,17 @@ describe('metadataParser', () => {
                 </tbody>
             </table>
         `;
-        document.body.innerHTML = html;
-        const result = parseCourseMetadata(document, 'en');
+    document.body.innerHTML = html;
+    const result = parseCourseMetadata(document, 'en');
 
-        expect(result.courseName).toBe('Computer Architecture');
-        expect(result.credits).toBe('Exam');
-        expect(result.garant?.name).toBe('prof. RNDr. Tomáš Pitner, Ph.D.');
-        expect(result.status).toBe('required');
-    });
+    expect(result.courseName).toBe('Computer Architecture');
+    expect(result.credits).toBe('Exam');
+    expect(result.garant?.name).toBe('prof. RNDr. Tomáš Pitner, Ph.D.');
+    expect(result.status).toBe('required');
+  });
 
-    it('should handle KRED outlier scenario (robust placeholder detection)', () => {
-        const html = `
+  it('should handle KRED outlier scenario (robust placeholder detection)', () => {
+    const html = `
             <table>
                 <tbody>
                     <tr><td>Course code:</td><td>KRED</td></tr>
@@ -65,20 +65,20 @@ describe('metadataParser', () => {
                 </tbody>
             </table>
         `;
-        document.body.innerHTML = html;
-        const result = parseCourseMetadata(document, 'en');
+    document.body.innerHTML = html;
+    const result = parseCourseMetadata(document, 'en');
 
-        expect(result.courseName).toBe('Sport - kredit');
-        expect(result.credits).toBe('course completion (1 credit)');
-    });
+    expect(result.courseName).toBe('Sport - kredit');
+    expect(result.credits).toBe('course completion (1 credit)');
+  });
 
-    it('should handle missing fields gracefully', () => {
-        const html = `<table><tbody><tr><td>Random Row</td><td>Value</td></tr></tbody></table>`;
-        document.body.innerHTML = html;
-        const result = parseCourseMetadata(document);
+  it('should handle missing fields gracefully', () => {
+    const html = `<table><tbody><tr><td>Random Row</td><td>Value</td></tr></tbody></table>`;
+    document.body.innerHTML = html;
+    const result = parseCourseMetadata(document);
 
-        expect(result.credits).toBeNull();
-        expect(result.garant).toBeNull();
-        expect(result.teachers).toHaveLength(0);
-    });
+    expect(result.credits).toBeNull();
+    expect(result.garant).toBeNull();
+    expect(result.teachers).toHaveLength(0);
+  });
 });

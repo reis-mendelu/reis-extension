@@ -8,11 +8,10 @@ import { MOCK_REGISTRY, DEFAULT_MOCK_SOCIETY } from './mock/registry';
 export async function initMockData() {
   try {
     const societyId = import.meta.env.VITE_MOCK_SOCIETY;
-    const targetId = (societyId && MOCK_REGISTRY[societyId])
-      ? societyId
-      : DEFAULT_MOCK_SOCIETY;
+    const targetId = societyId && MOCK_REGISTRY[societyId] ? societyId : DEFAULT_MOCK_SOCIETY;
 
-    await MockManager.loadDataset(MOCK_REGISTRY[targetId]);
+    // safe: targetId is either a validated MOCK_REGISTRY key or DEFAULT_MOCK_SOCIETY (itself a registered key)
+    await MockManager.loadDataset(MOCK_REGISTRY[targetId]!);
 
     const weekStart = new Date('2026-02-10T00:00:00');
     await IndexedDBService.set('meta', 'schedule_week_start', weekStart.toISOString());
