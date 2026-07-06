@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import type { SyllabusRequirements } from '../types/documents';
 import { ExamSubjectSchema } from './schemas/exams.schema';
 import { BlockLessonSchema } from './schemas/schedule.schema';
 import { SubjectsDataSchema } from './schemas/subjects.schema';
@@ -13,13 +12,13 @@ import { CvicneTestsSchema } from './schemas/cvicneTests.schema';
 import { OdevzdavarnySchema } from './schemas/odevzdavarny.schema';
 import { ErasmusCountryDataSchema } from './schemas/erasmus.schema';
 import { DocumentNoteSchema } from './schemas/documentNotes.schema';
+import { SyllabusSchema } from './schemas/syllabus.schema';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
 import type { IskamData } from './iskam';
 import type { SubjectZaznamnik } from './zaznamnik';
 
 // --- Base Types using Zod ---
 
-export const SyllabusRequirementsSchema = z.custom<SyllabusRequirements>();
 export const CalendarCustomEventSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -52,15 +51,6 @@ export const HiddenItemsSchema = z.object({
 
 // 'assessments' store - Legacy, kept for backward compatibility
 export const AssessmentsSchema = z.array(z.unknown());
-
-// 'syllabuses' store - can be legacy single-language or dual-language object
-export const SyllabusSchema = z.union([
-  SyllabusRequirementsSchema,
-  z.object({
-    cz: SyllabusRequirementsSchema,
-    en: SyllabusRequirementsSchema,
-  }),
-]);
 
 // 'exams' store - Array of ExamSubject
 export const ExamsSchema = z.array(ExamSubjectSchema);
