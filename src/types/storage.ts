@@ -13,6 +13,7 @@ import { OdevzdavarnySchema } from './schemas/odevzdavarny.schema';
 import { ErasmusCountryDataSchema } from './schemas/erasmus.schema';
 import { DocumentNoteSchema } from './schemas/documentNotes.schema';
 import { SyllabusSchema } from './schemas/syllabus.schema';
+import { RoomsCollectionSchema } from './schemas/mapRooms.schema';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
 import type { IskamData } from './iskam';
 import type { SubjectZaznamnik } from './zaznamnik';
@@ -192,7 +193,7 @@ export const StoreSchemas = {
   note_images: NoteImageSchema,
   iskam: IskamDataSchema,
   zaznamnik: ZaznamnikSchema,
-  map_rooms: z.custom<import('../types/campusMap').RoomsCollection>(),
+  map_rooms: RoomsCollectionSchema,
 };
 
 export type StoreName = keyof typeof StoreSchemas;
