@@ -9,8 +9,8 @@ import { MetaSchema } from './schemas/meta.schema';
 import { ClassmatesSchema } from './schemas/classmates.schema';
 import { GradeHistorySchema } from './schemas/gradeHistory.schema';
 import { StudyPlanOrDualLanguageSchema } from './schemas/studyPlan.schema';
+import { CvicneTestsSchema } from './schemas/cvicneTests.schema';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
-import type { CvicnyTest } from '../api/cvicneTests';
 import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { ErasmusCountryData } from '../types/erasmus';
 import type { IskamData } from './iskam';
@@ -197,7 +197,7 @@ export const StoreSchemas = {
   meta: MetaSchema,
   grade_history: GradeHistorySchema,
   study_plan: StudyPlanOrDualLanguageSchema,
-  cvicne_tests: z.array(z.custom<CvicnyTest>()),
+  cvicne_tests: CvicneTestsSchema,
   odevzdavarny: z.array(z.custom<Odevzdavarna>()),
   erasmus: z.custom<ErasmusCountryData>(),
   document_notes: DocumentNoteSchema,
