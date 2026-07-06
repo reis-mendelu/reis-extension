@@ -104,8 +104,6 @@
   "src/hooks/useDatePickerData.ts",
   "src/hooks/useDeadlineAlerts.ts",
   "src/hooks/useTimeline.ts",
-  "src/injector/messageHandler.ts",
-  "src/injector/syncService.ts",
   "src/schemas/__tests__/examSchema.test.ts",
   "src/schemas/__tests__/syllabusSchema.test.ts",
   "src/schemas/examSchema.ts",
