@@ -10,8 +10,8 @@ import { ClassmatesSchema } from './schemas/classmates.schema';
 import { GradeHistorySchema } from './schemas/gradeHistory.schema';
 import { StudyPlanOrDualLanguageSchema } from './schemas/studyPlan.schema';
 import { CvicneTestsSchema } from './schemas/cvicneTests.schema';
+import { OdevzdavarnySchema } from './schemas/odevzdavarny.schema';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
-import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { ErasmusCountryData } from '../types/erasmus';
 import type { IskamData } from './iskam';
 import type { SubjectZaznamnik } from './zaznamnik';
@@ -198,7 +198,7 @@ export const StoreSchemas = {
   grade_history: GradeHistorySchema,
   study_plan: StudyPlanOrDualLanguageSchema,
   cvicne_tests: CvicneTestsSchema,
-  odevzdavarny: z.array(z.custom<Odevzdavarna>()),
+  odevzdavarny: OdevzdavarnySchema,
   erasmus: z.custom<ErasmusCountryData>(),
   document_notes: DocumentNoteSchema,
   note_images: NoteImageSchema,
