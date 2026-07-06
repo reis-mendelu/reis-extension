@@ -227,7 +227,8 @@ describe('mapSlice', () => {
 
   it('focusEventById off-campus also selects without moving the camera', async () => {
     await useAppStore.getState().loadMapEvents();
-    const off = { ...useAppStore.getState().mapEvents[0], id: 'off-1', coord: null };
+    // safe: loadMapEvents populates mapEvents (asserted non-empty elsewhere)
+    const off = { ...useAppStore.getState().mapEvents[0]!, id: 'off-1', coord: null };
     useAppStore.setState({ mapEvents: [...useAppStore.getState().mapEvents, off] });
     const before = useAppStore.getState().mapFocusRequest;
     useAppStore.getState().focusEventById('off-1');
@@ -248,7 +249,8 @@ describe('mapSlice', () => {
 
   it('focusEventById from a LIST click does NOT fly for an off-campus event (no coord)', async () => {
     await useAppStore.getState().loadMapEvents();
-    const off = { ...useAppStore.getState().mapEvents[0], id: 'off-2', coord: null };
+    // safe: loadMapEvents populates mapEvents (asserted non-empty elsewhere)
+    const off = { ...useAppStore.getState().mapEvents[0]!, id: 'off-2', coord: null };
     useAppStore.setState({ mapEvents: [...useAppStore.getState().mapEvents, off] });
     const before = useAppStore.getState().mapFocusRequest;
     useAppStore.getState().focusEventById('off-2', { fly: true });

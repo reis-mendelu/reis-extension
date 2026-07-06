@@ -118,7 +118,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
       logError('MapSlice.focusLandmarkById', new Error(`unknown landmark ${id}`));
       return;
     }
-    const coord = polygonCentroid(l.outline.coordinates[0]);
+    const coord = polygonCentroid(l.outline.coordinates[0]!); // safe: GeoJSON Polygon always has >=1 ring
     set({
       activeBuildingId: null,
       activeFloorId: null,
