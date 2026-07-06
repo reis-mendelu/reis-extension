@@ -57,7 +57,7 @@ describe('GradeHistorySchema', () => {
   });
 
   it('rejects genuine corruption: grade entry missing predmetId', () => {
-    const { predmetId: _predmetId, ...noPredmetId } = realData.grades[0];
+    const { predmetId: _predmetId, ...noPredmetId } = realData.grades[0]!; // safe: fixed literal
     expect(GradeHistorySchema.safeParse({ ...realData, grades: [noPredmetId] }).success).toBe(
       false
     );
