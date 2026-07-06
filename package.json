@@ -23,6 +23,8 @@
     "test:smoke": "xvfb-run -a playwright test e2e/serenity/specs/smoke.spec.ts",
     "test:e2e:setup": "playwright install chromium",
     "typecheck": "tsc -b",
+    "typecheck:nuia": "tsc -p tsconfig.app.json --noUncheckedIndexedAccess --noEmit",
+    "nuia:gate": "node scripts/nuia-gate.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
