@@ -10,7 +10,7 @@ export const createCustomEventsSlice: AppSlice<CalendarCustomEventsSlice> = (set
     try {
       const data = await IndexedDBService.getAllWithKeys('custom_events');
       if (Array.isArray(data)) {
-        set({ customEvents: data.map(item => item.value as CalendarCustomEvent) });
+        set({ customEvents: data.map((item) => item.value as CalendarCustomEvent) });
       }
     } catch (error) {
       logError('CustomEventsSlice.loadCalendarCustomEvents', error);
@@ -20,7 +20,7 @@ export const createCustomEventsSlice: AppSlice<CalendarCustomEventsSlice> = (set
   addCalendarCustomEvent: async (event: CalendarCustomEvent) => {
     const { customEvents } = get();
     const newCustomEvents = [...customEvents, event];
-    
+
     set({ customEvents: newCustomEvents });
     await IndexedDBService.set('custom_events', event.id, event);
   },
@@ -30,7 +30,8 @@ export const createCustomEventsSlice: AppSlice<CalendarCustomEventsSlice> = (set
     const eventIndex = customEvents.findIndex((e) => e.id === id);
     if (eventIndex === -1) return;
 
-    const updatedEvent = { ...customEvents[eventIndex], ...patch };
+    // safe: eventIndex !== -1 guaranteed above
+    const updatedEvent = { ...customEvents[eventIndex]!, ...patch };
     const newCustomEvents = [
       ...customEvents.slice(0, eventIndex),
       updatedEvent,

@@ -179,7 +179,7 @@ describe('createAdminSlice', () => {
     set({ adminAssociationId: 'supef' });
     await state.loadSocietyPosts();
     expect(state.societyPosts).toHaveLength(1);
-    expect(state.societyPosts[0].id).toBe('p1');
+    expect(state.societyPosts[0]!.id).toBe('p1'); // safe: length asserted above
   });
 
   it('loadSocietyPosts clears posts when there is no association', async () => {
