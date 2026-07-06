@@ -23,7 +23,7 @@ describe('ClassmatesSchema', () => {
   });
 
   it('accepts an entry missing the optional messageUrl', () => {
-    const { messageUrl: _messageUrl, ...noMessageUrl } = realData[0];
+    const { messageUrl: _messageUrl, ...noMessageUrl } = realData[0]!; // safe: fixed 1-element literal
     expect(ClassmatesSchema.safeParse([noMessageUrl]).success).toBe(true);
   });
 
@@ -41,7 +41,7 @@ describe('ClassmatesSchema', () => {
   });
 
   it('rejects genuine corruption: entry missing personId', () => {
-    const { personId: _personId, ...noId } = realData[0];
+    const { personId: _personId, ...noId } = realData[0]!; // safe: fixed 1-element literal
     expect(ClassmatesSchema.safeParse([noId]).success).toBe(false);
   });
 });

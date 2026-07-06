@@ -146,7 +146,7 @@ describe('ErasmusCountryDataSchema', () => {
   });
 
   it('rejects genuine corruption: report missing reportId', () => {
-    const { reportId: _reportId, ...noReportId } = realData.reports[0];
+    const { reportId: _reportId, ...noReportId } = realData.reports[0]!; // safe: fixed literal
     expect(ErasmusCountryDataSchema.safeParse({ ...realData, reports: [noReportId] }).success).toBe(
       false
     );

@@ -53,15 +53,19 @@ describe('StudyPlanSchema', () => {
   });
 
   it('accepts an unexpected subject.type value (widened to string, no drift-drop)', () => {
+    // safe: fixed literal fixture
+    const block0 = realPlan.blocks[0]!;
+    const group0 = block0.groups[0]!;
+    const subject0 = group0.subjects[0]!;
     const drift = {
       ...realPlan,
       blocks: [
         {
-          ...realPlan.blocks[0],
+          ...block0,
           groups: [
             {
-              ...realPlan.blocks[0].groups[0],
-              subjects: [{ ...realPlan.blocks[0].groups[0].subjects[0], type: 'new_kind' }],
+              ...group0,
+              subjects: [{ ...subject0, type: 'new_kind' }],
             },
           ],
         },
@@ -84,13 +88,16 @@ describe('StudyPlanSchema', () => {
   });
 
   it('rejects genuine corruption: subject entry missing code', () => {
-    const { code: _code, ...noCode } = realPlan.blocks[0].groups[0].subjects[0];
+    // safe: fixed literal fixture
+    const block0 = realPlan.blocks[0]!;
+    const group0 = block0.groups[0]!;
+    const { code: _code, ...noCode } = group0.subjects[0]!;
     const corrupted = {
       ...realPlan,
       blocks: [
         {
-          ...realPlan.blocks[0],
-          groups: [{ ...realPlan.blocks[0].groups[0], subjects: [noCode] }],
+          ...block0,
+          groups: [{ ...group0, subjects: [noCode] }],
         },
       ],
     };
