@@ -75,6 +75,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - name: noUncheckedIndexedAccess ratchet gate
+        run: npm run nuia:gate
 
   # Full unit-test suite. The iskam parser specs read HTML fixtures from the
   # gitignored .agent/ dir (real IS Mendelu HTML, intentionally not committed),
