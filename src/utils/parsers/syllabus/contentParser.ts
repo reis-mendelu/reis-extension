@@ -27,18 +27,22 @@ export function parseCourseContent(doc: Document): string | null {
   const topRows = Array.from(cell.querySelectorAll(':scope > table > tbody > tr'));
   for (let i = 0; i < topRows.length; i++) {
     const tr = topRows[i];
+    // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
     const cells = tr.querySelectorAll(':scope > td');
     if (cells.length < 2) continue;
 
+    // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
     const label = (cells[0].textContent?.trim() ?? '').replace(/\u00a0/g, ' ');
 
     if (/^\d+\.$/.test(label)) {
       // Chapter row — extract bold title, strip "(dotace N/N)"
+      // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
       const titleEl = cells[1].querySelector('b');
-      const title = ((titleEl?.textContent ?? cells[1].textContent ?? '')
+      // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
+      const title = (titleEl?.textContent ?? cells[1].textContent ?? '')
         .replace(/\u00a0/g, ' ')
         .replace(/\(dotace[^)]+\)/g, '')
-        .trim());
+        .trim();
       if (title) lines.push(`${label} ${title}`);
 
       // Sub-topics live in the immediately following row's second cell
@@ -50,8 +54,12 @@ export function parseCourseContent(doc: Document): string | null {
           for (const subTr of subContainer.querySelectorAll('tr')) {
             const sc = subTr.querySelectorAll('td');
             if (sc.length < 2) continue;
+            // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
             const subLabel = (sc[0].textContent?.trim() ?? '').replace(/\u00a0/g, ' ');
-            const subText = (sc[1].textContent?.trim() ?? '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ');
+            // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
+            const subText = (sc[1].textContent?.trim() ?? '')
+              .replace(/\u00a0/g, ' ')
+              .replace(/\s+/g, ' ');
             if (subLabel && subText) lines.push(`  ${subLabel} ${subText}`);
           }
         }
@@ -62,11 +70,11 @@ export function parseCourseContent(doc: Document): string | null {
   if (lines.length === 0) {
     // Fallback: plain text extraction
     const clone = cell.cloneNode(true) as HTMLElement;
-    clone.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+    clone.querySelectorAll('br').forEach((br) => br.replaceWith('\n'));
     const text = (clone.textContent ?? '')
       .split('\n')
-      .map(l => l.trim().replace(/\s+/g, ' '))
-      .filter(l => l.length > 0)
+      .map((l) => l.trim().replace(/\s+/g, ' '))
+      .filter((l) => l.length > 0)
       .join('\n');
     return text || null;
   }

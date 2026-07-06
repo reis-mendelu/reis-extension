@@ -4,7 +4,7 @@ import { parseExamData } from '../index';
 // Minimal table_2 fixture faithful to real IS Mendelu available-terms HTML.
 // Columns: Poř. | Kód | Předmět | Datum | Kde | Sekce | Vypsal | Obsazenost | Typ | Přihlašování | Info
 function wrapInPage(table2Rows: string): string {
-    return `<html><body>
+  return `<html><body>
         <table id="table_1"><thead><tr class="zahlavi">
             <th>Poř.</th><th>Kód</th><th>Předmět</th><th>Datum termínu</th>
             <th>Kde</th><th>Druh (forma)</th><th>Vypsal</th><th>Přihlášeno</th>
@@ -120,70 +120,75 @@ const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }));
 vi.mock('@/utils/reportError', () => ({ reportError }));
 
 describe('availableTermsParser — capacity formats', () => {
-    beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => vi.clearAllMocks());
 
-    it('parses standard "occupied/total" capacity', () => {
-        const result = parseExamData(wrapInPage(ROW_NORMAL_CAPACITY), 'cz');
-        const terms = result.flatMap(s => s.sections.flatMap(sec => sec.terms));
-        expect(terms).toHaveLength(1);
-        expect(terms[0].capacity).toEqual({ occupied: 5, total: 20, raw: '5/20' });
-        expect(terms[0].full).toBe(false);
-    });
+  it('parses standard "occupied/total" capacity', () => {
+    const result = parseExamData(wrapInPage(ROW_NORMAL_CAPACITY), 'cz');
+    const terms = result.flatMap((s) => s.sections.flatMap((sec) => sec.terms));
+    expect(terms).toHaveLength(1);
+    // safe: length asserted above
+    expect(terms[0]!.capacity).toEqual({ occupied: 5, total: 20, raw: '5/20' });
+    expect(terms[0]!.full).toBe(false);
+  });
 
-    it('parses waitlist capacity "0/12(8)" without error and marks not full', () => {
-        const result = parseExamData(wrapInPage(ROW_WAITLIST_CAPACITY), 'cz');
-        const terms = result.flatMap(s => s.sections.flatMap(sec => sec.terms));
-        expect(terms).toHaveLength(1);
-        // total must be 12, not 0 (the bug: Number('12(8)') === NaN → was clamped to 0)
-        expect(terms[0].capacity).toEqual({ occupied: 0, total: 12, raw: '0/12(8)' });
-        expect(terms[0].full).toBe(false);
-        expect(reportError).not.toHaveBeenCalled();
-    });
+  it('parses waitlist capacity "0/12(8)" without error and marks not full', () => {
+    const result = parseExamData(wrapInPage(ROW_WAITLIST_CAPACITY), 'cz');
+    const terms = result.flatMap((s) => s.sections.flatMap((sec) => sec.terms));
+    expect(terms).toHaveLength(1);
+    // total must be 12, not 0 (the bug: Number('12(8)') === NaN → was clamped to 0)
+    // safe: length asserted above
+    expect(terms[0]!.capacity).toEqual({ occupied: 0, total: 12, raw: '0/12(8)' });
+    expect(terms[0]!.full).toBe(false);
+    expect(reportError).not.toHaveBeenCalled();
+  });
 
-    it('marks "12/12(3)" as full', () => {
-        const result = parseExamData(wrapInPage(ROW_FULL_WAITLIST_CAPACITY), 'cz');
-        const terms = result.flatMap(s => s.sections.flatMap(sec => sec.terms));
-        expect(terms).toHaveLength(1);
-        expect(terms[0].capacity).toEqual({ occupied: 12, total: 12, raw: '12/12(3)' });
-        expect(terms[0].full).toBe(true);
-    });
+  it('marks "12/12(3)" as full', () => {
+    const result = parseExamData(wrapInPage(ROW_FULL_WAITLIST_CAPACITY), 'cz');
+    const terms = result.flatMap((s) => s.sections.flatMap((sec) => sec.terms));
+    expect(terms).toHaveLength(1);
+    // safe: length asserted above
+    expect(terms[0]!.capacity).toEqual({ occupied: 12, total: 12, raw: '12/12(3)' });
+    expect(terms[0]!.full).toBe(true);
+  });
 });
 
 describe('availableTermsParser — IS Mendelu built-in action links', () => {
-    beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => vi.clearAllMocks());
 
-    it('extracts watchdog, block-reason, and detail URLs when IS Mendelu emits them', () => {
-        const result = parseExamData(wrapInPage(ROW_BLOCKED_WITH_BUILTIN_ACTIONS), 'cz');
-        const terms = result.flatMap(s => s.sections.flatMap(sec => sec.terms));
-        expect(terms).toHaveLength(1);
-        const term = terms[0];
-        expect(term.watchdogUrl).toBe(
-            'https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=336593;studium=149707;obdobi=812;aktivace=1;lang=cz'
-        );
-        expect(term.blockReasonUrl).toBe(
-            'https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=336593;studium=149707;obdobi=812;zobraz_duvod=1;lang=cz'
-        );
-        expect(term.detailUrl).toBe(
-            'https://is.mendelu.cz/auth/student/terminy_info.pl?termin=336593;studium=149707;obdobi=812;lang=cz'
-        );
-    });
+  it('extracts watchdog, block-reason, and detail URLs when IS Mendelu emits them', () => {
+    const result = parseExamData(wrapInPage(ROW_BLOCKED_WITH_BUILTIN_ACTIONS), 'cz');
+    const terms = result.flatMap((s) => s.sections.flatMap((sec) => sec.terms));
+    expect(terms).toHaveLength(1);
+    const term = terms[0]!; // safe: length asserted above
+    expect(term.watchdogUrl).toBe(
+      'https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=336593;studium=149707;obdobi=812;aktivace=1;lang=cz'
+    );
+    expect(term.blockReasonUrl).toBe(
+      'https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=336593;studium=149707;obdobi=812;zobraz_duvod=1;lang=cz'
+    );
+    expect(term.detailUrl).toBe(
+      'https://is.mendelu.cz/auth/student/terminy_info.pl?termin=336593;studium=149707;obdobi=812;lang=cz'
+    );
+  });
 
-    it('omits URLs when IS Mendelu does not emit the anchors (standard enrollable row)', () => {
-        const result = parseExamData(wrapInPage(ROW_NORMAL_CAPACITY), 'cz');
-        const terms = result.flatMap(s => s.sections.flatMap(sec => sec.terms));
-        expect(terms).toHaveLength(1);
-        expect(terms[0].watchdogUrl).toBeUndefined();
-        expect(terms[0].blockReasonUrl).toBeUndefined();
-        // detail URL absent on this fixture (no <img sysid="prohlizeni-info"> in the Info cell)
-        expect(terms[0].detailUrl).toBeUndefined();
-    });
+  it('omits URLs when IS Mendelu does not emit the anchors (standard enrollable row)', () => {
+    const result = parseExamData(wrapInPage(ROW_NORMAL_CAPACITY), 'cz');
+    const terms = result.flatMap((s) => s.sections.flatMap((sec) => sec.terms));
+    expect(terms).toHaveLength(1);
+    // safe: length asserted above
+    expect(terms[0]!.watchdogUrl).toBeUndefined();
+    expect(terms[0]!.blockReasonUrl).toBeUndefined();
+    // detail URL absent on this fixture (no <img sysid="prohlizeni-info"> in the Info cell)
+    expect(terms[0]!.detailUrl).toBeUndefined();
+  });
 
-    it('captures aktivace=2 deactivation URL on armed terms (icon swaps, sysid may differ)', () => {
-        const result = parseExamData(wrapInPage(ROW_ARMED_WATCHDOG), 'cz');
-        const terms = result.flatMap(s => s.sections.flatMap(sec => sec.terms));
-        expect(terms).toHaveLength(1);
-        expect(terms[0].watchdogUrl).toBe(
-            'https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=339178;studium=149707;obdobi=812;aktivace=2;lang=cz'
-        );
-    });
+  it('captures aktivace=2 deactivation URL on armed terms (icon swaps, sysid may differ)', () => {
+    const result = parseExamData(wrapInPage(ROW_ARMED_WATCHDOG), 'cz');
+    const terms = result.flatMap((s) => s.sections.flatMap((sec) => sec.terms));
+    expect(terms).toHaveLength(1);
+    // safe: length asserted above
+    expect(terms[0]!.watchdogUrl).toBe(
+      'https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=339178;studium=149707;obdobi=812;aktivace=2;lang=cz'
+    );
+  });
 });
