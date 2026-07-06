@@ -1,221 +1,276 @@
-import { Messages, isIframeMessage } from "../types/messages";
-import { iframeElement, sendToIframe, markIframeReady } from "./iframeManager";
-import { cachedData, syncAllData, runDriveBackupNow, runNotesBackupNow, setNotesSnapshot, setNotesHtmlOverride, isSyncing, refreshExams } from "./syncService";
-import { fetchFullSemesterSchedule } from "./dataFetchers";
-import { fetchExamData, registerExam, unregisterExam } from "../api/exams";
-import { fetchSubjects } from "../api/subjects";
-import type { DataRequestType } from "../types/messages";
-import { scrapedNavMenu } from "./sniper";
-import { downloadDocumentInPage } from "./documentDownloader";
-import { isIsMendeluUrl } from "./isMendeluUrl";
+import { Messages, isIframeMessage } from '../types/messages';
+import { iframeElement, sendToIframe, markIframeReady } from './iframeManager';
+import {
+  cachedData,
+  syncAllData,
+  runDriveBackupNow,
+  runNotesBackupNow,
+  setNotesSnapshot,
+  setNotesHtmlOverride,
+  isSyncing,
+  refreshExams,
+} from './syncService';
+import { fetchFullSemesterSchedule } from './dataFetchers';
+import { fetchExamData, registerExam, unregisterExam } from '../api/exams';
+import { fetchSubjects } from '../api/subjects';
+import type { DataRequestType } from '../types/messages';
+import { scrapedNavMenu } from './sniper';
+import { downloadDocumentInPage } from './documentDownloader';
+import { isIsMendeluUrl } from './isMendeluUrl';
 
 let topUpPopupRef: Window | null = null;
 
 const IFRAME_ORIGIN = chrome.runtime.getURL('').replace(/\/$/, '');
 
 export async function handleMessage(event: MessageEvent) {
-    if (event.origin !== IFRAME_ORIGIN) return;
-    if (event.source !== iframeElement?.contentWindow) return;
-    const data = event.data;
-    if (!isIframeMessage(data)) return;
+  if (event.origin !== IFRAME_ORIGIN) return;
+  if (event.source !== iframeElement?.contentWindow) return;
+  const data = event.data;
+  if (!isIframeMessage(data)) return;
 
-    switch (data.type) {
-        case "REIS_READY":
-            // Flush any messages queued before the iframe was ready
-            markIframeReady();
-            // Send current state as a guarantee (may duplicate queued data, which is safe)
-            sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing }));
-            if (scrapedNavMenu) sendToIframe(Messages.navMenu(scrapedNavMenu));
-            break;
-        case "REIS_REQUEST_DATA":
-            await handleDataRequest(data.dataType);
-            break;
-        case "REIS_FETCH":
-            await handleFetchRequest(data.id, data.url, data.options);
-            break;
-        case "REIS_ACTION":
-            await handleAction(data.id, data.action, data.payload);
-            break;
-    }
+  switch (data.type) {
+    case 'REIS_READY':
+      // Flush any messages queued before the iframe was ready
+      markIframeReady();
+      // Send current state as a guarantee (may duplicate queued data, which is safe)
+      sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing }));
+      if (scrapedNavMenu) sendToIframe(Messages.navMenu(scrapedNavMenu));
+      break;
+    case 'REIS_REQUEST_DATA':
+      await handleDataRequest(data.dataType);
+      break;
+    case 'REIS_FETCH':
+      await handleFetchRequest(data.id, data.url, data.options);
+      break;
+    case 'REIS_ACTION':
+      await handleAction(data.id, data.action, data.payload);
+      break;
+  }
 }
 
 async function handleDataRequest(dataType: DataRequestType) {
-    try {
-        if (dataType === "all") {
-            if (cachedData.lastSync === 0) await syncAllData();
-            sendToIframe(Messages.data("all", { ...cachedData, isSyncing }));
-        } else {
-            let data: unknown = null;
-            switch (dataType) {
-                case "schedule": data = await fetchFullSemesterSchedule(); break;
-                case "exams": data = await fetchExamData(); break;
-                case "subjects": data = await fetchSubjects(); break;
-                case "files": data = cachedData.files; break;
-            }
-            sendToIframe(Messages.data(dataType, data));
-        }
-    } catch (e) { sendToIframe(Messages.data(dataType, null, String(e))); }
+  try {
+    if (dataType === 'all') {
+      if (cachedData.lastSync === 0) await syncAllData();
+      sendToIframe(Messages.data('all', { ...cachedData, isSyncing }));
+    } else {
+      let data: unknown = null;
+      switch (dataType) {
+        case 'schedule':
+          data = await fetchFullSemesterSchedule();
+          break;
+        case 'exams':
+          data = await fetchExamData();
+          break;
+        case 'subjects':
+          data = await fetchSubjects();
+          break;
+        case 'files':
+          data = cachedData.files;
+          break;
+      }
+      sendToIframe(Messages.data(dataType, data));
+    }
+  } catch (e) {
+    sendToIframe(Messages.data(dataType, null, String(e)));
+  }
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = () => reject(reader.error ?? new Error('FileReader failed'));
-        reader.readAsDataURL(blob);
-    });
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error ?? new Error('FileReader failed'));
+    reader.readAsDataURL(blob);
+  });
 }
 
-async function handleFetchRequest(id: string, url: string, options?: { method?: string; headers?: Record<string, string>; body?: string; responseType?: 'text' | 'image' }) {
-    try {
-        let text: string;
-        if (isIsMendeluUrl(url)) {
-            const response = await fetch(url, {
-                method: options?.method ?? "GET", headers: options?.headers,
-                body: options?.body, credentials: "include",
-            });
-            if (response.status === 401 || response.status === 403) {
-                window.location.href = "https://is.mendelu.cz/system/login.pl?lang=cz";
-                throw new Error(`HTTP ${response.status}`);
-            }
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            if (options?.responseType === 'image') {
-                // Photos (foto.pl) are binary and live behind /auth/. Fetching here
-                // in the content script (first-party, credentialed) sidesteps the
-                // cross-origin cookie loss that breaks a direct iframe <img> on
-                // Firefox. Hand back a self-contained data: URL. A non-image body
-                // means the session lapsed → fail so the caller shows its fallback.
-                const contentType = response.headers.get('content-type') ?? '';
-                if (!contentType.startsWith('image/')) throw new Error(`Not an image (${contentType})`);
-                text = await blobToDataUrl(await response.blob());
-            } else {
-                text = await response.text();
-            }
-        } else {
-            // Up to 3 attempts: handles SW wake-up (null result) and transient
-            // CDN/HEI API hiccups (success: false on 5xx or network blips).
-            let result: { success?: boolean; data?: string; error?: string } | null = null;
-            for (let attempt = 0; attempt < 3; attempt++) {
-                result = await chrome.runtime.sendMessage({ type: 'REIS_BG_FETCH', url, options });
-                if (result?.success) break;
-                // Don't retry 4xx — those won't change on retry.
-                if (result?.error && /HTTP 4\d\d\b/.test(result.error)) break;
-                if (attempt < 2) await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
-            }
-            if (!result?.success) throw new Error(result?.error || 'Background fetch failed');
-            text = result.data!;
-        }
-        sendToIframe(Messages.fetchResult(id, true, text));
-    } catch (e) { sendToIframe(Messages.fetchResult(id, false, undefined, String(e))); }
+async function handleFetchRequest(
+  id: string,
+  url: string,
+  options?: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+    responseType?: 'text' | 'image';
+  }
+) {
+  try {
+    let text: string;
+    if (isIsMendeluUrl(url)) {
+      const response = await fetch(url, {
+        method: options?.method ?? 'GET',
+        headers: options?.headers,
+        body: options?.body,
+        credentials: 'include',
+      });
+      if (response.status === 401 || response.status === 403) {
+        window.location.href = 'https://is.mendelu.cz/system/login.pl?lang=cz';
+        throw new Error(`HTTP ${response.status}`);
+      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (options?.responseType === 'image') {
+        // Photos (foto.pl) are binary and live behind /auth/. Fetching here
+        // in the content script (first-party, credentialed) sidesteps the
+        // cross-origin cookie loss that breaks a direct iframe <img> on
+        // Firefox. Hand back a self-contained data: URL. A non-image body
+        // means the session lapsed → fail so the caller shows its fallback.
+        const contentType = response.headers.get('content-type') ?? '';
+        if (!contentType.startsWith('image/')) throw new Error(`Not an image (${contentType})`);
+        text = await blobToDataUrl(await response.blob());
+      } else {
+        text = await response.text();
+      }
+    } else {
+      // Up to 3 attempts: handles SW wake-up (null result) and transient
+      // CDN/HEI API hiccups (success: false on 5xx or network blips).
+      let result: { success?: boolean; data?: string; error?: string } | null = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        result = await chrome.runtime.sendMessage({ type: 'REIS_BG_FETCH', url, options });
+        if (result?.success) break;
+        // Don't retry 4xx — those won't change on retry.
+        if (result?.error && /HTTP 4\d\d\b/.test(result.error)) break;
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+      }
+      if (!result?.success) throw new Error(result?.error || 'Background fetch failed');
+      text = result.data!;
+    }
+    sendToIframe(Messages.fetchResult(id, true, text));
+  } catch (e) {
+    sendToIframe(Messages.fetchResult(id, false, undefined, String(e)));
+  }
 }
 
 async function handleAction(id: string, action: string, payload: unknown) {
-    try {
-        let result: unknown = null;
-        const p = payload as Record<string, string>;
-        switch (action) {
-            case "register_exam": result = { success: await registerExam(p.termId) }; break;
-            case "unregister_exam": result = { success: await unregisterExam(p.termId) }; break;
-            case "trigger_sync":
-                await syncAllData();
-                result = { success: true };
-                break;
-            case "trigger_drive_backup":
-                await runDriveBackupNow();
-                result = { success: true };
-                break;
-            case "push_notes":
-                setNotesSnapshot(payload as Record<string, Record<string, { note: string; fileName: string }>>);
-                await runNotesBackupNow();
-                result = { success: true };
-                break;
-            case "push_notes_html": {
-                // Cache-only: this message is posted right before push_notes, which
-                // is the single backup trigger. Triggering a backup here too would
-                // race the snapshot's text-only pass and get skipped by the hash diff.
-                const { code, html } = payload as { code: string; html: string };
-                setNotesHtmlOverride(code, html);
-                result = { success: true };
-                break;
-            }
-            case "refresh_exams":
-                await refreshExams();
-                result = { success: true };
-                break;
-            case "download_document":
-                // First-party fetch on is.mendelu.cz so the SameSite cookie rides
-                // along. Redirect to login only on a genuine session-expiry
-                // (401/403, or a non-PDF 200 = login HTML); a transient network
-                // blip or IS 5xx must not force-navigate a still-logged-in user —
-                // the row just shows `error`.
-                try {
-                    await downloadDocumentInPage(p.url, p.filename);
-                    result = { success: true };
-                } catch (e) {
-                    if ((e as { sessionExpired?: boolean } | null)?.sessionExpired) {
-                        window.location.href = "https://is.mendelu.cz/system/login.pl?lang=cz";
-                    }
-                    throw e;
-                }
-                break;
-            case "open_url": {
-                if (topUpPopupRef && !topUpPopupRef.closed) {
-                    topUpPopupRef.focus();
-                    result = { success: true };
-                    break;
-                }
-                const w = 960, h = 780;
-                const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
-                const top = Math.round(window.screenY + (window.outerHeight - h) / 2);
-                topUpPopupRef = window.open(p.url, '_blank', `popup,width=${w},height=${h},left=${left},top=${top}`);
-                sendToIframe(Messages.popupState(true));
-                const interval = setInterval(() => {
-                    if (!topUpPopupRef || topUpPopupRef.closed) {
-                        clearInterval(interval);
-                        topUpPopupRef = null;
-                        sendToIframe(Messages.popupState(false));
-                    }
-                }, 500);
-                result = { success: true };
-                break;
-            }
-            case "logout": {
-                if (!window.location.pathname.includes('/auth/')) {
-                    console.warn("Not in an authenticated session. No need to log out.");
-                    result = { success: false, reason: 'not_authenticated' };
-                    break;
-                }
-
-                const existingForm = document.querySelector('form[action="/auth/system/logout.pl"]') as HTMLFormElement;
-                if (existingForm) {
-                    const logoutButton = existingForm.querySelector('input[name="odhlaseni"]') as HTMLInputElement;
-                    if (logoutButton) {
-                        logoutButton.click();
-                    } else {
-                        existingForm.submit();
-                    }
-                    result = { success: true };
-                    break;
-                }
-
-                const dynamicForm = document.createElement('form');
-                dynamicForm.method = 'POST';
-                dynamicForm.action = '/auth/system/logout.pl';
-                dynamicForm.style.display = 'none';
-
-                const payloadInput = document.createElement('input');
-                payloadInput.type = 'hidden';
-                payloadInput.name = 'odhlaseni';
-                payloadInput.value = 'Log out';
-
-                dynamicForm.appendChild(payloadInput);
-                document.body.appendChild(dynamicForm);
-                dynamicForm.submit();
-                result = { success: true };
-                break;
-            }
-            default: throw new Error(`Unknown action: ${action}`);
+  try {
+    let result: unknown = null;
+    const p = payload as Record<string, string>;
+    switch (action) {
+      case 'register_exam': {
+        if (!p.termId) throw new Error('register_exam: missing termId');
+        result = { success: await registerExam(p.termId) };
+        break;
+      }
+      case 'unregister_exam': {
+        if (!p.termId) throw new Error('unregister_exam: missing termId');
+        result = { success: await unregisterExam(p.termId) };
+        break;
+      }
+      case 'trigger_sync':
+        await syncAllData();
+        result = { success: true };
+        break;
+      case 'trigger_drive_backup':
+        await runDriveBackupNow();
+        result = { success: true };
+        break;
+      case 'push_notes':
+        setNotesSnapshot(
+          payload as Record<string, Record<string, { note: string; fileName: string }>>
+        );
+        await runNotesBackupNow();
+        result = { success: true };
+        break;
+      case 'push_notes_html': {
+        // Cache-only: this message is posted right before push_notes, which
+        // is the single backup trigger. Triggering a backup here too would
+        // race the snapshot's text-only pass and get skipped by the hash diff.
+        const { code, html } = payload as { code: string; html: string };
+        setNotesHtmlOverride(code, html);
+        result = { success: true };
+        break;
+      }
+      case 'refresh_exams':
+        await refreshExams();
+        result = { success: true };
+        break;
+      case 'download_document':
+        // First-party fetch on is.mendelu.cz so the SameSite cookie rides
+        // along. Redirect to login only on a genuine session-expiry
+        // (401/403, or a non-PDF 200 = login HTML); a transient network
+        // blip or IS 5xx must not force-navigate a still-logged-in user —
+        // the row just shows `error`.
+        try {
+          if (!p.url || !p.filename) throw new Error('download_document: missing url or filename');
+          await downloadDocumentInPage(p.url, p.filename);
+          result = { success: true };
+        } catch (e) {
+          if ((e as { sessionExpired?: boolean } | null)?.sessionExpired) {
+            window.location.href = 'https://is.mendelu.cz/system/login.pl?lang=cz';
+          }
+          throw e;
         }
-        sendToIframe(Messages.actionResult(id, true, result));
-    } catch (e) { sendToIframe(Messages.actionResult(id, false, undefined, String(e))); }
+        break;
+      case 'open_url': {
+        if (topUpPopupRef && !topUpPopupRef.closed) {
+          topUpPopupRef.focus();
+          result = { success: true };
+          break;
+        }
+        const w = 960,
+          h = 780;
+        const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
+        const top = Math.round(window.screenY + (window.outerHeight - h) / 2);
+        topUpPopupRef = window.open(
+          p.url,
+          '_blank',
+          `popup,width=${w},height=${h},left=${left},top=${top}`
+        );
+        sendToIframe(Messages.popupState(true));
+        const interval = setInterval(() => {
+          if (!topUpPopupRef || topUpPopupRef.closed) {
+            clearInterval(interval);
+            topUpPopupRef = null;
+            sendToIframe(Messages.popupState(false));
+          }
+        }, 500);
+        result = { success: true };
+        break;
+      }
+      case 'logout': {
+        if (!window.location.pathname.includes('/auth/')) {
+          console.warn('Not in an authenticated session. No need to log out.');
+          result = { success: false, reason: 'not_authenticated' };
+          break;
+        }
+
+        const existingForm = document.querySelector(
+          'form[action="/auth/system/logout.pl"]'
+        ) as HTMLFormElement;
+        if (existingForm) {
+          const logoutButton = existingForm.querySelector(
+            'input[name="odhlaseni"]'
+          ) as HTMLInputElement;
+          if (logoutButton) {
+            logoutButton.click();
+          } else {
+            existingForm.submit();
+          }
+          result = { success: true };
+          break;
+        }
+
+        const dynamicForm = document.createElement('form');
+        dynamicForm.method = 'POST';
+        dynamicForm.action = '/auth/system/logout.pl';
+        dynamicForm.style.display = 'none';
+
+        const payloadInput = document.createElement('input');
+        payloadInput.type = 'hidden';
+        payloadInput.name = 'odhlaseni';
+        payloadInput.value = 'Log out';
+
+        dynamicForm.appendChild(payloadInput);
+        document.body.appendChild(dynamicForm);
+        dynamicForm.submit();
+        result = { success: true };
+        break;
+      }
+      default:
+        throw new Error(`Unknown action: ${action}`);
+    }
+    sendToIframe(Messages.actionResult(id, true, result));
+  } catch (e) {
+    sendToIframe(Messages.actionResult(id, false, undefined, String(e)));
+  }
 }
