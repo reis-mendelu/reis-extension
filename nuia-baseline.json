@@ -96,8 +96,6 @@
   "src/components/WeeklyCalendar/index.tsx",
   "src/components/WeeklyCalendar/useCalendarData.ts",
   "src/components/WeeklyCalendar/utils.ts",
-  "src/data/map/__tests__/mapData.test.ts",
-  "src/data/societies.ts",
   "src/hooks/ui/useAutoBooking/utils.ts",
   "src/hooks/ui/useMenuItems.ts",
   "src/hooks/useAppLogic.ts",

@@ -82,5 +82,5 @@ export function societyById(id: string): Society {
   const society = SOCIETIES[id];
   if (society) return society;
   logError('societies.societyById', new Error(`unknown society id "${id}" — falling back to ESN`));
-  return SOCIETIES.esn;
+  return SOCIETIES.esn!; // safe: 'esn' is a static catalog key defined above
 }
