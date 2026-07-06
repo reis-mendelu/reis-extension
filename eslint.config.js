@@ -88,4 +88,14 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
+  // Parser files (CLAUDE.md Parser Rules) suppress noUncheckedIndexedAccess
+  // errors with @ts-ignore, not @ts-expect-error: the real tsconfig doesn't
+  // enable the flag until the rollout's final step, so @ts-expect-error would
+  // itself error as an unused directive under the normal (flag-off) build.
+  {
+    files: ['**/utils/parsers/**/*.ts'],
+    rules: {
+      '@typescript-eslint/ban-ts-comment': 'off',
+    },
+  },
 ])
