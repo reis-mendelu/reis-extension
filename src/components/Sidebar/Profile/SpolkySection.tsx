@@ -9,11 +9,23 @@ interface SpolkySectionProps {
   onToggle: () => void;
   isSub: (id: string) => boolean;
   onToggleAssoc: (id: string) => void;
+  /** Close the surrounding profile popover so entering society mode is visible. */
+  onNavigate?: () => void;
 }
 
-export function SpolkySection({ expanded, onToggle, isSub, onToggleAssoc }: SpolkySectionProps) {
+export function SpolkySection({
+  expanded,
+  onToggle,
+  isSub,
+  onToggleAssoc,
+  onNavigate,
+}: SpolkySectionProps) {
   const { t } = useTranslation();
   const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
+  const manage = () => {
+    onNavigate?.();
+    openSocietyAdmin();
+  };
   return (
     <div>
       <button
@@ -51,7 +63,7 @@ export function SpolkySection({ expanded, onToggle, isSub, onToggleAssoc }: Spol
               ))}
             </div>
             <button
-              onClick={openSocietyAdmin}
+              onClick={manage}
               className="w-full flex items-center justify-between px-2 py-1.5 mt-1 hover:bg-base-200 rounded-md text-xs opacity-60 hover:opacity-100 transition-colors"
             >
               <span className="flex items-center gap-2">

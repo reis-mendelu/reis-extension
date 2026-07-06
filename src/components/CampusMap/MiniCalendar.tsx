@@ -1,8 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toISO, parseISO, monthMatrix, addMonths } from './calendar';
 
-const DOW = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
+// Monday-first short weekday names in the caller's locale. 2024-01-01 is a
+// Monday, so offsetting from it gives Mon…Sun in whatever language the app is in
+// (the old hardcoded Czech row ignored `locale`).
+function weekdayNames(locale: string): string[] {
+  const fmt = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+  return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(2024, 0, 1 + i)));
+}
 
 export function MiniCalendar({
   value,
@@ -23,6 +29,7 @@ export function MiniCalendar({
   );
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dow = useMemo(() => weekdayNames(locale), [locale]);
   const label = value
     ? new Date(`${value}T00:00:00`).toLocaleDateString(locale, {
         weekday: 'short',
@@ -57,6 +64,10 @@ export function MiniCalendar({
       >
         <Calendar size={16} className="opacity-70" />
         <span className="truncate">{label}</span>
+        <ChevronDown
+          size={16}
+          className={`ml-auto opacity-50 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
       </button>
       {open && (
         <div
@@ -83,8 +94,8 @@ export function MiniCalendar({
             </button>
           </div>
           <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-bold text-base-content/50">
-            {DOW.map((d) => (
-              <span key={d} className="py-1">
+            {dow.map((d, i) => (
+              <span key={i} className="py-1">
                 {d}
               </span>
             ))}

@@ -245,4 +245,17 @@ describe('enterSocietyMode / openSocietyAdmin', () => {
     expect(useAppStore.getState().adminOverlayOpen).toBe(true);
     expect(useAppStore.getState().mapMode).toBe('student');
   });
+
+  it('openSocietyAdmin still requests map focus when already in society mode (feedback, not a no-op)', () => {
+    useAppStore.setState({
+      adminRole: 'association',
+      adminAssociationId: 'supef',
+      mapMode: 'society',
+      mapFocusRequest: 4,
+    });
+    useAppStore.getState().openSocietyAdmin();
+    // Camera re-frame / view switch fires so the click always resolves to something.
+    expect(useAppStore.getState().mapFocusRequest).toBe(5);
+    expect(useAppStore.getState().mapMode).toBe('society');
+  });
 });

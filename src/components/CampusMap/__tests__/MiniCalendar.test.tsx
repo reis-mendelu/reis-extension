@@ -38,6 +38,22 @@ describe('MiniCalendar', () => {
     expect(onChange).toHaveBeenCalledWith('2026-07-15');
   });
 
+  it('localizes the weekday header from the locale (English), not hardcoded Czech', () => {
+    render(
+      <MiniCalendar
+        value={null}
+        onChange={() => {}}
+        placeholder="Pick a date"
+        t={t}
+        locale="en-US"
+      />
+    );
+    fireEvent.click(screen.getByText('Pick a date'));
+    // Monday-first, English short names — never the old hardcoded 'Po'/'Út'.
+    expect(screen.getByText('Mon')).toBeTruthy();
+    expect(screen.queryByText('Po')).toBeNull();
+  });
+
   it('closes the popover when clicking outside', () => {
     render(
       <MiniCalendar

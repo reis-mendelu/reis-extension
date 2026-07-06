@@ -1017,6 +1017,7 @@
     "changePlace": "Změnit místo",
     "publish": "Zveřejnit akci",
     "clickToPlace": "Klikněte na mapu, kde akce je",
+    "draftPinLabel": "Místo akce — klikněte pro změnu",
     "venueLabel": "Kde",
     "venueOffcampus": "Ve městě",
     "venueCampus": "Kampus",
