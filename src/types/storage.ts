@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { SyllabusRequirements, DocumentNote } from '../types/documents';
+import type { SyllabusRequirements } from '../types/documents';
 import { ExamSubjectSchema } from './schemas/exams.schema';
 import { BlockLessonSchema } from './schemas/schedule.schema';
 import { SubjectsDataSchema } from './schemas/subjects.schema';
@@ -12,6 +12,7 @@ import { StudyPlanOrDualLanguageSchema } from './schemas/studyPlan.schema';
 import { CvicneTestsSchema } from './schemas/cvicneTests.schema';
 import { OdevzdavarnySchema } from './schemas/odevzdavarny.schema';
 import { ErasmusCountryDataSchema } from './schemas/erasmus.schema';
+import { DocumentNoteSchema } from './schemas/documentNotes.schema';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
 import type { IskamData } from './iskam';
 import type { SubjectZaznamnik } from './zaznamnik';
@@ -69,9 +70,6 @@ export const ScheduleSchema = z.array(BlockLessonSchema);
 
 // 'subjects' store - SubjectsData
 export const SubjectsSchema = SubjectsDataSchema;
-
-// 'document_notes' store - DocumentNote
-export const DocumentNoteSchema = z.custom<DocumentNote>();
 
 // 'note_images' store - normalized image blobs, keyed by content hash
 export const NoteImageSchema = z.object({
