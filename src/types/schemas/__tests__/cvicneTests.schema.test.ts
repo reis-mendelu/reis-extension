@@ -42,7 +42,7 @@ describe('CvicneTestsSchema', () => {
   });
 
   it('rejects genuine corruption: entry missing courseId', () => {
-    const { courseId: _courseId, ...noCourseId } = realData[0];
+    const { courseId: _courseId, ...noCourseId } = realData[0]!; // safe: fixed 1-element literal
     expect(CvicneTestsSchema.safeParse([noCourseId]).success).toBe(false);
   });
 });

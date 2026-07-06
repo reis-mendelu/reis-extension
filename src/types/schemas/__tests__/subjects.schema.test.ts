@@ -66,7 +66,7 @@ describe('SubjectsDataSchema', () => {
   });
 
   it('rejects genuine corruption: subject entry missing subjectCode', () => {
-    const { subjectCode: _subjectCode, ...noCode } = realData.data['EBC-ALG'];
+    const { subjectCode: _subjectCode, ...noCode } = realData.data['EBC-ALG']!; // safe: fixed literal key
     const corrupted = { ...realData, data: { 'EBC-ALG': noCode } };
     expect(SubjectsDataSchema.safeParse(corrupted).success).toBe(false);
   });

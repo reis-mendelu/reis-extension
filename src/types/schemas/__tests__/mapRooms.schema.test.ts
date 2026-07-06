@@ -57,7 +57,7 @@ describe('RoomsCollectionSchema', () => {
       features: [
         {
           ...realData.features[0],
-          properties: { ...realData.features[0].properties, category: 'new_kind' },
+          properties: { ...realData.features[0]!.properties, category: 'new_kind' }, // safe: fixed literal
         },
       ],
     };
@@ -73,7 +73,7 @@ describe('RoomsCollectionSchema', () => {
   });
 
   it('rejects genuine corruption: feature missing properties.id', () => {
-    const { id: _id, ...noId } = realData.features[0].properties;
+    const { id: _id, ...noId } = realData.features[0]!.properties; // safe: fixed literal
     const corrupted = { ...realData, features: [{ ...realData.features[0], properties: noId }] };
     expect(RoomsCollectionSchema.safeParse(corrupted).success).toBe(false);
   });
