@@ -13,7 +13,7 @@ describe('bundled map data', () => {
 
   it('every room-index entry references a real building + floor', () => {
     const floorByBuilding = new Map(
-      buildings.buildings.map((b) => [b.id, new Set(b.floors.map((f) => f.id))]),
+      buildings.buildings.map((b) => [b.id, new Set(b.floors.map((f) => f.id))])
     );
     for (const e of index as { buildingId: number; floorId: number; code: string }[]) {
       expect(floorByBuilding.has(e.buildingId)).toBe(true);
@@ -45,20 +45,29 @@ describe('bundled map data', () => {
       expect(p.url).toMatch(/^https:\/\//);
       // Optional grounds boundary (arboretum garden) is a closed ring.
       if (p.area) {
-        const a = p.area.coordinates[0];
+        const a = p.area.coordinates[0]!; // safe: GeoJSON Polygon always has >=1 ring
         expect(a.length).toBeGreaterThanOrEqual(4);
         expect(a[0]).toEqual(a[a.length - 1]);
       }
       // One polygon, or a MultiPolygon of buildings (Lednice, arboretum) — check every ring.
-      const rings = p.outline.type === 'MultiPolygon'
-        ? p.outline.coordinates.map((poly) => poly[0])
-        : [p.outline.coordinates[0]];
+      // safe: GeoJSON (Multi)Polygon coordinates always have >=1 ring at index 0
+      const rings =
+        p.outline.type === 'MultiPolygon'
+          ? p.outline.coordinates.map((poly) => poly[0]!)
+          : [p.outline.coordinates[0]!];
       expect(rings.length).toBeGreaterThan(0);
-      let sx = 0, sy = 0, n = 0;
+      let sx = 0,
+        sy = 0,
+        n = 0;
       for (const ring of rings) {
         expect(ring.length).toBeGreaterThanOrEqual(4);
         expect(ring[0]).toEqual(ring[ring.length - 1]); // ring is closed
-        for (const [x, y] of ring) { sx += x; sy += y; n++; }
+        // safe: GeoJSON positions are always [lon, lat] pairs
+        for (const [x, y] of ring) {
+          sx += x!;
+          sy += y!;
+          n++;
+        }
       }
       // Overall footprint centre lands in South Moravia (lon ~16, lat ~48–50).
       expect(sx / n).toBeGreaterThanOrEqual(16);
@@ -68,13 +77,14 @@ describe('bundled map data', () => {
       // Optional inner-map detail (arboretum): footpaths are polylines, POIs are
       // named points in the same region.
       if (p.paths) for (const path of p.paths) expect(path.length).toBeGreaterThanOrEqual(2);
-      if (p.pois) for (const poi of p.pois) {
-        expect(poi.name.length).toBeGreaterThan(0);
-        expect(poi.lon).toBeGreaterThanOrEqual(16);
-        expect(poi.lon).toBeLessThanOrEqual(17);
-        expect(poi.lat).toBeGreaterThanOrEqual(48);
-        expect(poi.lat).toBeLessThanOrEqual(50);
-      }
+      if (p.pois)
+        for (const poi of p.pois) {
+          expect(poi.name.length).toBeGreaterThan(0);
+          expect(poi.lon).toBeGreaterThanOrEqual(16);
+          expect(poi.lon).toBeLessThanOrEqual(17);
+          expect(poi.lat).toBeGreaterThanOrEqual(48);
+          expect(poi.lat).toBeLessThanOrEqual(50);
+        }
     }
   });
 });
