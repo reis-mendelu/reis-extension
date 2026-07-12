@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { loadRealDataSnapshot } from '../loadRealDataSnapshot';
+import { loadRealDataSnapshot, resetRealDataStores } from '../loadRealDataSnapshot';
+
+vi.mock('../storage', () => ({
+  IndexedDBService: { clear: vi.fn(async () => {}) },
+}));
 
 describe('loadRealDataSnapshot', () => {
   beforeEach(() => vi.restoreAllMocks());
@@ -41,5 +45,40 @@ describe('loadRealDataSnapshot', () => {
     const { isContentMessage, Messages } = await import('../../types/messages');
     const msg = Messages.syncUpdate({ lastSync: 1, isSyncing: false });
     expect(isContentMessage(msg)).toBe(true);
+  });
+});
+
+describe('resetRealDataStores', () => {
+  beforeEach(() => vi.clearAllMocks());
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('clears the crawl-data stores when a snapshot exists', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () => new Response(JSON.stringify({ subjects: {}, lastSync: 1 }), { status: 200 })
+      )
+    );
+    const { IndexedDBService } = await import('../storage');
+    const didClear = await resetRealDataStores();
+    expect(didClear).toBe(true);
+    const cleared = vi.mocked(IndexedDBService.clear).mock.calls.map((c) => c[0]);
+    // Exams must be among them — that is the stale-mock store that leaked.
+    expect(cleared).toContain('exams');
+    expect(cleared).toEqual(expect.arrayContaining(['schedule', 'subjects', 'exams', 'zaznamnik']));
+    // Must NOT wipe meta (holds user_params/theme the snapshot load depends on).
+    expect(cleared).not.toContain('meta');
+  });
+
+  it('does NOT clear anything when the snapshot is absent (404 → HTML fallback)', async () => {
+    // Missing file: dev server returns index.html, so res.json() throws.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('<!DOCTYPE html><html></html>', { status: 200 }))
+    );
+    const { IndexedDBService } = await import('../storage');
+    const didClear = await resetRealDataStores();
+    expect(didClear).toBe(false);
+    expect(IndexedDBService.clear).not.toHaveBeenCalled();
   });
 });
