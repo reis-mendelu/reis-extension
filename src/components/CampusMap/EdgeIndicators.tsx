@@ -124,21 +124,22 @@ export function EdgeIndicators({ occluders = [] }: EdgeIndicatorsProps) {
             {/* Soft (not stark) solid green so it reads on the light basemap
                 without shouting; the global soft-button tint was invisible. */}
             <button
-              className="absolute pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full text-white shadow-sm ring-1 ring-white/70"
+              className="peer absolute pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full text-white shadow-sm ring-1 ring-white/70"
               style={{ left: a.x, top: a.y, transform: 'translate(-50%, -50%)', backgroundColor: '#8bc34a' }}
               title={label}
               onClick={go}
             >
               <span className="text-xs leading-none" style={{ transform: `rotate(${a.deg}deg)` }}>▲</span>
             </button>
-            <button
-              className="absolute pointer-events-auto max-w-[140px] truncate rounded-full border border-base-300 bg-base-100/95 px-2 py-0.5 text-xs font-medium text-base-content shadow-sm"
+            {/* Label is a hover-only tooltip: revealed while its arrow (the peer)
+                is hovered, so the map isn't cluttered with always-on labels. It's
+                non-interactive — the arrow itself handles the click. */}
+            <span
+              className="pointer-events-none absolute max-w-[140px] truncate rounded-full border border-base-300 bg-base-100/95 px-2 py-0.5 text-xs font-medium text-base-content opacity-0 shadow-sm transition-opacity peer-hover:opacity-100"
               style={{ left: lx, top: ly, transform: `translate(${labelTx}, -50%)` }}
-              title={label}
-              onClick={go}
             >
               {label}
-            </button>
+            </span>
           </div>
         );
       })}
