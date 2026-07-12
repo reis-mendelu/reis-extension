@@ -1020,6 +1020,7 @@
     "eventTime": "Time",
     "hour": "Hour",
     "minute": "Minute",
+    "clearTime": "Clear time",
     "selectPlace": "Select place on map",
     "searchPlace": "Search a place (bar, club, park…)",
     "searching": "Searching…",

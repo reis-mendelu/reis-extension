@@ -1020,6 +1020,7 @@
     "eventTime": "Čas",
     "hour": "Hodina",
     "minute": "Minuta",
+    "clearTime": "Vymazat čas",
     "selectPlace": "Vybrat místo na mapě",
     "searchPlace": "Hledat místo (bar, klub, park…)",
     "searching": "Hledám…",
