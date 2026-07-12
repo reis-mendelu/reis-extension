@@ -52,12 +52,14 @@ Run a single test file: `npx vitest run src/store/slices/__tests__/someSlice.tes
 
 ## Local dev with real data
 
-To run the app locally against your **real** (possibly stale) IS data without a live IS session:
+To view the reIS UI at `localhost:3000` against your **real** (possibly stale) IS data, without an extension and without a live IS session:
 
-1. Put `MENDELU_USER`/`MENDELU_PASS` in `.env`, then `npm run scrape:real`. This runs `scripts/scrape-real-data.ts`: Playwright logs into IS, and the extension's **own** `src/api/*` fetchers/parsers run in Node (happy-dom + fake-indexeddb + a cookie-injecting fetch, set up in `scripts/lib/nodeRuntime.ts`) via `scripts/lib/collectRealData.ts` — a standalone mirror of `syncAllData`. It writes `public/dev-real-data.json` (gitignored).
-2. `npm run dev` packs that snapshot into `.output/chrome-mv3-dev/`. Load that dir as an unpacked extension and open `chrome-extension://<id>/main.html` in a tab. Standalone (non-iframe) + dev ⇒ `useAppLogic` auto-ingests the snapshot through the real `REIS_SYNC_UPDATE` handler (`src/utils/loadRealDataSnapshot.ts`).
+1. **Scrape once:** put `MENDELU_USER`/`MENDELU_PASS` in `.env`, then `npm run scrape:real`. This runs `scripts/scrape-real-data.ts`: Playwright logs into IS, and the extension's **own** `src/api/*` fetchers/parsers run in Node (happy-dom + fake-indexeddb + a cookie-injecting fetch, set up in `scripts/lib/nodeRuntime.ts`) via `scripts/lib/collectRealData.ts` — a standalone mirror of `syncAllData`. It writes `public/dev-real-data.json` (gitignored, real personal data).
+2. **Run the webapp:** `npm run dev:web` (Vite, `vite.web.config.ts`, root `dev/`) serves the React app as a plain page at `http://localhost:3000`. On mount, standalone (non-iframe) + dev ⇒ `useAppLogic` fetches `/dev-real-data.json` and feeds it through the real `REIS_SYNC_UPDATE` handler (`src/utils/loadRealDataSnapshot.ts`), so the UI renders exactly as in production.
 
-Note: the WXT dev server does **not** serve the app HTML at `localhost:3000` — the app only runs as a loaded extension page. A `build:publicAssets` hook in `wxt.config.ts` strips `dev-real-data.json` from production builds so real data never ships. Anti-drift is enforced by `scripts/lib/__tests__/no-parser-reimpl.test.ts` (the scraper must reuse `@/api/*`, never reimplement parsers).
+Why not `npm run dev` (WXT)? `wxt dev` builds an **extension** and its dev server does not serve the app HTML over HTTP — the app can't be opened at a localhost URL that way. The `dev/` harness (`chromeShim.ts` + `main.web.tsx` + `index.html`) runs the same app as a normal webapp instead; a minimal `chrome.*` shim covers the extension APIs the app touches at mount. `@source "../src/**"` in `src/index.css` lets Tailwind scan components when Vite's root is `dev/`.
+
+Anti-drift is enforced by `scripts/lib/__tests__/no-parser-reimpl.test.ts` (the scraper must reuse `@/api/*`, never reimplement parsers). The `build:publicAssets` hook in `wxt.config.ts` strips `dev-real-data.json` from production extension builds so real data never ships.
 
 ## Release
 

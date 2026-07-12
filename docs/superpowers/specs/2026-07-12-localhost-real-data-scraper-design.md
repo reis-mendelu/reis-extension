@@ -93,22 +93,19 @@ In a top-level window `event.source === window === window.parent`, so the synthe
 
 ## 5. Turnkey UX
 
-> **Correction (verified during implementation):** the WXT dev server serves
-> static/public assets but does **not** serve the app's HTML entrypoints over
-> HTTP — `http://localhost:3000/main.html` 404s. The reIS iframe app only runs
-> as a loaded extension page (`chrome-extension://<id>/main.html`). So the
-> snapshot is **packed into the dev build** (non-dotfile `public/dev-real-data.json`)
-> and the app is viewed by loading the unpacked dev build. A `build:publicAssets`
-> hook in `wxt.config.ts` strips the snapshot from **production** builds so real
-> data never ships.
+> **Approach change (verified during implementation):** `wxt dev` builds an
+> *extension* and does not serve the app HTML over HTTP (`localhost:3000/main.html`
+> 404s), so it can't be used to view the UI at a URL. Instead we run reIS as a
+> **standalone Vite webapp** — no extension, no iframe. This is simpler and, being
+> a normal localhost page, is directly openable/verifiable in a browser.
 
+- **Components (added):** `dev/index.html`, `dev/main.web.tsx` (installs the shim, then boots `@/entrypoints/main/main`), `dev/chromeShim.ts` (minimal in-memory `chrome.storage` + `chrome.runtime.getURL` + no-op `identity`; merges into the partial `window.chrome` real Chrome exposes), `vite.web.config.ts` (root `dev/`, `publicDir` `public/`, `@`→`src`, port 3000). `@source "../src/**"` added to `src/index.css` so Tailwind scans components when the Vite root is `dev/`.
 - **Flow:**
-  1. `npm run scrape:real` (needs `.env` creds) → writes `public/dev-real-data.json` and prints next steps.
-  2. `npm run dev` → packs the snapshot into `.output/chrome-mv3-dev/`.
-  3. Load `.output/chrome-mv3-dev` as an unpacked extension (chrome://extensions → Developer mode → Load unpacked).
-  4. Open `chrome-extension://<id>/main.html` in a tab (or click the reIS toolbar icon) → real data renders. Standalone page ⇒ `isInIframe()` is false ⇒ the dev-only auto-ingest (§4) fires.
-- **Scripts:** `npm run scrape:real`; `npm run dev` (unchanged otherwise).
-- First-run friction: one command + one-time unpacked load. Subsequent data refreshes: re-run `scrape:real` (dev server hot-reloads the packed asset).
+  1. `npm run scrape:real` (needs `.env` creds) → writes `public/dev-real-data.json`.
+  2. `npm run dev:web` → serves the app at `http://localhost:3000`.
+  3. On mount, standalone (`!isInIframe()`) + `import.meta.env.DEV` ⇒ `loadRealDataSnapshot()` fetches `/dev-real-data.json` (served from `public/`) and dispatches the synthetic `REIS_SYNC_UPDATE` (§4) → real data renders.
+- **Verified:** with a real-shaped sample snapshot, the app renders at `localhost:3000` and the Exams view shows the snapshot's exams (ingest path exercised end-to-end).
+- The `build:publicAssets` prod-strip hook still applies to the extension build; the webapp path doesn't ship at all.
 
 ---
 
