@@ -38,9 +38,10 @@ describe('MiniCalendar', () => {
     expect(onChange).toHaveBeenCalledWith('2026-07-15');
   });
 
-  it('marks the container dropdown-open while open (DaisyUI hides the popover otherwise)', () => {
-    // DaisyUI 5 display:none's .dropdown-content unless the container is
-    // :focus-within or .dropdown-open — React state alone isn't enough.
+  it('portals the popover to <body> so the panel overflow can not clip it', () => {
+    // The composer lives in a side panel with overflow-hidden; an in-flow
+    // absolute popover gets clipped. The calendar renders via a body portal
+    // instead, so its grid is a descendant of <body>, not of the component root.
     const { container } = render(
       <MiniCalendar
         value={null}
@@ -50,19 +51,19 @@ describe('MiniCalendar', () => {
         locale="en-US"
       />
     );
-    const root = container.querySelector('.dropdown') as HTMLElement;
-    expect(root.classList.contains('dropdown-open')).toBe(false);
     fireEvent.click(screen.getByText('Pick a date'));
-    expect(root.classList.contains('dropdown-open')).toBe(true);
+    const day = screen.getByRole('button', { name: '15' });
+    expect(container.contains(day)).toBe(false); // portalled out of the component
+    expect(document.body.contains(day)).toBe(true);
   });
 
-  it('trigger has no tabindex (a [tabindex] trigger gets pointer-events:none on focus, so a real click never opens it)', () => {
-    // The trigger is the first child of .dropdown. If it carries [tabindex],
-    // DaisyUI's `.dropdown:focus-within > [tabindex]:first-child { pointer-events:none }`
-    // fires the moment mousedown focuses it, so the ensuing click lands on the
-    // parent .dropdown and the button's onClick never runs. happy-dom can't apply
-    // that CSS, so we guard the root cause directly: the <button> stays focusable
-    // natively and must NOT be marked [tabindex].
+  it('trigger has no tabindex (a [tabindex] dropdown trigger gets pointer-events:none on focus, so a real click never opens it)', () => {
+    // Regression guard for the original bug: as a DaisyUI `.dropdown` trigger,
+    // marking the <button> [tabindex] made
+    // `.dropdown:focus-within > [tabindex]:first-child { pointer-events:none }`
+    // fire the moment mousedown focused it, so the click landed on the parent and
+    // onClick never ran. happy-dom can't apply that CSS, so guard the cause: the
+    // <button> stays focusable natively and must NOT be marked [tabindex].
     render(
       <MiniCalendar value={null} onChange={() => {}} placeholder="Pick a date" t={t} locale="en-US" />
     );

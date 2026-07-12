@@ -1,6 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toISO, parseISO, monthMatrix, addMonths } from './calendar';
+
+// The 7×32px day grid + padding needs this much; narrower and the grid wraps.
+const POPOVER_WIDTH = 256;
 
 // Monday-first short weekday names in the caller's locale. 2024-01-01 is a
 // Monday, so offsetting from it gives Mon…Sun in whatever language the app is in
@@ -28,7 +32,9 @@ export function MiniCalendar({
     () => parsed ?? { y: new Date().getFullYear(), m0: new Date().getMonth() }
   );
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
   const dow = useMemo(() => weekdayNames(locale), [locale]);
   const label = value
     ? new Date(`${value}T00:00:00`).toLocaleDateString(locale, {
@@ -43,30 +49,47 @@ export function MiniCalendar({
     year: 'numeric',
   });
 
+  // Anchor the popover under the trigger in viewport coords. It's portalled to
+  // <body> so the side-panel's overflow-hidden can't clip it; clamp to the
+  // viewport so it never spills off the right edge.
+  const updatePos = useCallback(() => {
+    const el = btnRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const left = Math.min(r.left, window.innerWidth - POPOVER_WIDTH - 8);
+    setPos({ top: r.bottom + 4, left: Math.max(8, left) });
+  }, []);
+
   useEffect(() => {
     if (!open) return;
+    updatePos();
     const onPointerDown = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      if (btnRef.current?.contains(target) || popRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onPointerDown);
-    return () => document.removeEventListener('mousedown', onPointerDown);
-  }, [open]);
+    // Reposition while open if anything scrolls/resizes under it (capture=true
+    // catches scroll on the panel/map, which don't bubble to window).
+    window.addEventListener('scroll', updatePos, true);
+    window.addEventListener('resize', updatePos);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      window.removeEventListener('scroll', updatePos, true);
+      window.removeEventListener('resize', updatePos);
+    };
+  }, [open, updatePos]);
 
   return (
-    // dropdown-open is required: DaisyUI 5 display:none's .dropdown-content
-    // unless the container is :focus-within or .dropdown-open, and focus is
-    // unreliable inside the extension iframe — state must drive visibility.
-    <div className={`dropdown w-full ${open ? 'dropdown-open' : ''}`} ref={containerRef}>
+    <>
       <button
+        ref={btnRef}
         type="button"
-        // No tabIndex: a <button> is already focusable, and marking it
-        // [tabindex] makes DaisyUI's `.dropdown:focus-within > [tabindex]:first-child`
-        // rule set pointer-events:none on it the instant mousedown focuses it —
-        // the click then lands on the parent .dropdown instead of the button, so
-        // onClick never fires and the picker never opens (only physical clicks hit
-        // this; a synthetic .click() dispatches straight to the element).
+        // No tabIndex: a <button> is already focusable. When this was a DaisyUI
+        // `.dropdown` trigger, marking it [tabindex] made
+        // `.dropdown:focus-within > [tabindex]:first-child { pointer-events:none }`
+        // fire on mousedown-focus, so the click landed on the parent and onClick
+        // never ran. The popover is now portalled, but keep it plain regardless.
         className={`input input-bordered flex w-full items-center gap-2 ${value ? '' : 'text-base-content/50'}`}
         onClick={() => setOpen((o) => !o)}
       >
@@ -77,61 +100,64 @@ export function MiniCalendar({
           className={`ml-auto opacity-50 transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
-      {open && (
-        <div
-          tabIndex={0}
-          className="dropdown-content z-[70] mt-1 w-64 rounded-box border border-base-300 bg-base-100 p-3 shadow-popover-heavy"
-        >
-          <div className="mb-2 flex items-center justify-between">
-            <button
-              type="button"
-              className="btn btn-ghost btn-xs"
-              aria-label={t('map.prevMonth')}
-              onClick={() => setView((v) => addMonths(v.y, v.m0, -1))}
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span className="text-sm font-semibold capitalize">{monthLabel}</span>
-            <button
-              type="button"
-              className="btn btn-ghost btn-xs"
-              aria-label={t('map.nextMonth')}
-              onClick={() => setView((v) => addMonths(v.y, v.m0, 1))}
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-          <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-bold text-base-content/50">
-            {dow.map((d, i) => (
-              <span key={i} className="py-1">
-                {d}
-              </span>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-0.5">
-            {monthMatrix(view.y, view.m0)
-              .flat()
-              .map((d, i) => {
-                if (d === null) return <span key={i} />;
-                const iso = toISO(view.y, view.m0, d);
-                const sel = iso === value;
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    className={`btn btn-ghost btn-xs h-8 w-8 p-0 tabular-nums ${sel ? 'btn-primary' : ''}`}
-                    onClick={() => {
-                      onChange(iso);
-                      setOpen(false);
-                    }}
-                  >
-                    {d}
-                  </button>
-                );
-              })}
-          </div>
-        </div>
-      )}
-    </div>
+      {open &&
+        createPortal(
+          <div
+            ref={popRef}
+            className="fixed z-[9999] rounded-box border border-base-300 bg-base-100 p-3 shadow-popover-heavy"
+            style={{ top: pos.top, left: pos.left, width: POPOVER_WIDTH }}
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs"
+                aria-label={t('map.prevMonth')}
+                onClick={() => setView((v) => addMonths(v.y, v.m0, -1))}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="text-sm font-semibold capitalize">{monthLabel}</span>
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs"
+                aria-label={t('map.nextMonth')}
+                onClick={() => setView((v) => addMonths(v.y, v.m0, 1))}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+            <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-bold text-base-content/50">
+              {dow.map((d, i) => (
+                <span key={i} className="py-1">
+                  {d}
+                </span>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-0.5">
+              {monthMatrix(view.y, view.m0)
+                .flat()
+                .map((d, i) => {
+                  if (d === null) return <span key={i} />;
+                  const iso = toISO(view.y, view.m0, d);
+                  const sel = iso === value;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      className={`btn btn-ghost btn-xs h-8 w-8 p-0 tabular-nums ${sel ? 'btn-primary' : ''}`}
+                      onClick={() => {
+                        onChange(iso);
+                        setOpen(false);
+                      }}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
   );
 }
