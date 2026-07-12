@@ -127,26 +127,30 @@ export function MyEventsPanel() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center gap-2 border-b border-base-300 px-3 py-2.5">
-        <span
-          className="flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded-md text-[10px] font-bold text-white"
-          style={{ backgroundColor: soc?.logo ? undefined : (soc?.color ?? 'var(--fallback-p,#0046a0)') }}
-        >
-          {soc?.logo ? (
-            <img src={soc.logo} alt="" className="h-full w-full object-contain" />
-          ) : (
-            (soc?.shortName?.slice(0, 2).toUpperCase() ?? '•')
-          )}
-        </span>
-        <span className="text-sm font-bold">{soc?.name ?? t('map.myEvents')}</span>
-        <button
-          type="button"
-          className="btn btn-primary btn-xs ml-auto gap-1"
-          onClick={() => openComposer()}
-        >
-          <Plus size={13} /> {t('map.createEvent')}
-        </button>
-      </div>
+      {/* The society identity + Create bar is redundant while composing (the
+          composer has its own header), so hide it then to save vertical space. */}
+      {!composerOpen && (
+        <div className="flex items-center gap-2 border-b border-base-300 px-3 py-2.5">
+          <span
+            className="flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded-md text-[10px] font-bold text-white"
+            style={{ backgroundColor: soc?.logo ? undefined : (soc?.color ?? 'var(--fallback-p,#0046a0)') }}
+          >
+            {soc?.logo ? (
+              <img src={soc.logo} alt="" className="h-full w-full object-contain" />
+            ) : (
+              (soc?.shortName?.slice(0, 2).toUpperCase() ?? '•')
+            )}
+          </span>
+          <span className="text-sm font-bold">{soc?.name ?? t('map.myEvents')}</span>
+          <button
+            type="button"
+            className="btn btn-primary btn-xs ml-auto gap-1"
+            onClick={() => openComposer()}
+          >
+            <Plus size={13} /> {t('map.createEvent')}
+          </button>
+        </div>
+      )}
 
       {composerOpen && <EventComposer key={editEventId ?? 'new'} onDone={closeComposer} />}
 

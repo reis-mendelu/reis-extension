@@ -114,6 +114,17 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
     expect(screen.getByPlaceholderText('Název akce')).toBeInTheDocument();
   });
 
+  it('hides the society header while composing to save space', () => {
+    useAppStore.setState({ composerOpen: false });
+    const { rerender } = render(<MyEventsPanel />);
+    // Header "Vytvořit akci" button is present when not composing…
+    expect(screen.getByRole('button', { name: 'Vytvořit akci' })).toBeInTheDocument();
+    useAppStore.setState({ composerOpen: true, closeComposer: vi.fn() });
+    rerender(<MyEventsPanel />);
+    // …and hidden once the composer takes over (it has its own header).
+    expect(screen.queryByRole('button', { name: 'Vytvořit akci' })).toBeNull();
+  });
+
   it('logout calls adminLogout', () => {
     const adminLogout = vi.fn(async () => {});
     useAppStore.setState({ adminLogout });
