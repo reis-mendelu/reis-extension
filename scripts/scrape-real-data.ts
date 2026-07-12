@@ -36,6 +36,7 @@ async function login(): Promise<string> {
 }
 
 async function main() {
+  const startedAt = Date.now();
   process.stderr.write('[scrape] logging in…\n');
   const cookieHeader = await login();
   process.stderr.write('[scrape] session acquired, collecting data…\n');
@@ -53,15 +54,15 @@ async function main() {
         : 0,
     files: Object.keys((data.files as object) ?? {}).length,
   };
-  process.stdout.write(`\n✅ Wrote ${OUT}\n   ${JSON.stringify(counts)}\n`);
-  process.stdout.write(
-    '   Next:\n' +
-      '     1. npm run dev            (packs the snapshot into .output/chrome-mv3-dev)\n' +
-      '     2. Load .output/chrome-mv3-dev as an unpacked extension in Chrome\n' +
-      '        (chrome://extensions → Developer mode → Load unpacked)\n' +
-      '     3. Open chrome-extension://<id>/main.html in a tab → real data renders\n'
-  );
+  const secs = ((Date.now() - startedAt) / 1000).toFixed(0);
+  process.stdout.write(`\n✅ Wrote ${OUT} in ${secs}s\n   ${JSON.stringify(counts)}\n`);
+  process.stdout.write('   Next: npm run dev:web  →  open http://localhost:3000 (real data renders)\n');
   if (verbose) process.stdout.write(`\n${JSON.stringify(data, null, 2).slice(0, 2000)}\n`);
+
+  // The app's fetchers keep Node's HTTP keep-alive sockets (and happy-dom timers)
+  // alive, so the event loop never drains on its own — exit explicitly once the
+  // snapshot is safely written.
+  process.exit(0);
 }
 
 main().catch((e) => {
