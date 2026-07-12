@@ -16,25 +16,50 @@ const CLUSTERS = clusterLandmarks(
     const [lon, lat] = polygonCentroid(l.outline.coordinates[0]);
     return { id: l.id, name: l.name, lat, lon };
   }),
-  150,
+  150
 );
 
 // Every off-screen destination an arrow can point to: the landmark clusters plus
 // the main campus itself (so panning far away still leaves a way back). Campus is
 // flagged so its click and (translated) label differ from the landmark arrows.
-interface Target { key: string; lat: number; lon: number; label: string; firstId: number; isCampus: boolean; }
+interface Target {
+  key: string;
+  lat: number;
+  lon: number;
+  label: string;
+  firstId: number;
+  isCampus: boolean;
+}
 const TARGETS: Target[] = [
-  ...CLUSTERS.map((c) => ({ key: c.ids.join('-'), lat: c.lat, lon: c.lon, label: c.label, firstId: c.ids[0], isCampus: false })),
+  ...CLUSTERS.map((c) => ({
+    key: c.ids.join('-'),
+    lat: c.lat,
+    lon: c.lon,
+    label: c.label,
+    firstId: c.ids[0],
+    isCampus: false,
+  })),
   { key: 'campus', lat: CAMPUS_LAT, lon: CAMPUS_LON, label: '', firstId: -1, isCampus: true },
 ];
 
-interface Arrow { key: string; x: number; y: number; deg: number; angle: number; label: string; firstId: number; isCampus: boolean; }
+interface Arrow {
+  key: string;
+  x: number;
+  y: number;
+  deg: number;
+  angle: number;
+  label: string;
+  firstId: number;
+  isCampus: boolean;
+}
 const PAD = 28;
 const LABEL_OFFSET = 26; // px the label sits inward (toward centre) from the arrow
 
 /** Refs to the on-map panels (search/floors top-left, Místa top-right) so edge
  *  arrows can slide out from behind them instead of disappearing. */
-interface EdgeIndicatorsProps { occluders?: RefObject<HTMLElement | null>[]; }
+interface EdgeIndicatorsProps {
+  occluders?: RefObject<HTMLElement | null>[];
+}
 
 export function EdgeIndicators({ occluders = [] }: EdgeIndicatorsProps) {
   const focusLandmarkById = useAppStore((s) => s.focusLandmarkById);
@@ -57,7 +82,10 @@ export function EdgeIndicators({ occluders = [] }: EdgeIndicatorsProps) {
     let map: L.Map | null = null;
     let rafId: number | null = null;
     const recompute = () => {
-      if (!map) { setArrows([]); return; }
+      if (!map) {
+        setArrows([]);
+        return;
+      }
       const size = map.getSize();
       const rect = { width: size.x, height: size.y };
       const center = { x: size.x / 2, y: size.y / 2 };
@@ -67,7 +95,12 @@ export function EdgeIndicators({ occluders = [] }: EdgeIndicatorsProps) {
       const boxes: Box[] = occludersRef.current
         .map((r) => r.current?.getBoundingClientRect())
         .filter((b): b is DOMRect => b != null)
-        .map((b) => ({ left: b.left - base.left, top: b.top - base.top, right: b.right - base.left, bottom: b.bottom - base.top }));
+        .map((b) => ({
+          left: b.left - base.left,
+          top: b.top - base.top,
+          right: b.right - base.left,
+          bottom: b.bottom - base.top,
+        }));
       const next: Arrow[] = [];
       for (const target of TARGETS) {
         const pt = map.latLngToContainerPoint([target.lat, target.lon]);
@@ -76,7 +109,16 @@ export function EdgeIndicators({ occluders = [] }: EdgeIndicatorsProps) {
         const { x, y } = nudgePastBoxes({ x: a.x, y: a.y }, boxes, rect.height, PAD);
         // ▲ glyph points up (= -y). atan2 gives the screen-space heading; +90°
         // rotates the up-glyph onto it.
-        next.push({ key: target.key, x, y, deg: (a.angle * 180) / Math.PI + 90, angle: a.angle, label: target.label, firstId: target.firstId, isCampus: target.isCampus });
+        next.push({
+          key: target.key,
+          x,
+          y,
+          deg: (a.angle * 180) / Math.PI + 90,
+          angle: a.angle,
+          label: target.label,
+          firstId: target.firstId,
+          isCampus: target.isCampus,
+        });
       }
       setArrows(next);
     };
@@ -87,11 +129,19 @@ export function EdgeIndicators({ occluders = [] }: EdgeIndicatorsProps) {
     // input so they may call recompute directly.
     const scheduleRecompute = () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => { rafId = null; recompute(); });
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        recompute();
+      });
     };
     scheduleRecomputeRef.current = scheduleRecompute;
-    const bind = (m: L.Map) => { m.on('moveend zoomend', recompute); scheduleRecompute(); };
-    const unbind = (m: L.Map) => { m.off('moveend zoomend', recompute); };
+    const bind = (m: L.Map) => {
+      m.on('moveend zoomend', recompute);
+      scheduleRecompute();
+    };
+    const unbind = (m: L.Map) => {
+      m.off('moveend zoomend', recompute);
+    };
     const unsub = subscribeMapInstance((m) => {
       if (map) unbind(map);
       map = m;
@@ -125,11 +175,18 @@ export function EdgeIndicators({ occluders = [] }: EdgeIndicatorsProps) {
                 without shouting; the global soft-button tint was invisible. */}
             <button
               className="peer absolute pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full text-white shadow-sm ring-1 ring-white/70"
-              style={{ left: a.x, top: a.y, transform: 'translate(-50%, -50%)', backgroundColor: '#8bc34a' }}
+              style={{
+                left: a.x,
+                top: a.y,
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: '#8bc34a',
+              }}
               title={label}
               onClick={go}
             >
-              <span className="text-xs leading-none" style={{ transform: `rotate(${a.deg}deg)` }}>▲</span>
+              <span className="text-xs leading-none" style={{ transform: `rotate(${a.deg}deg)` }}>
+                ▲
+              </span>
             </button>
             {/* Label is a hover-only tooltip: revealed while its arrow (the peer)
                 is hovered, so the map isn't cluttered with always-on labels. It's

@@ -69,9 +69,7 @@ export async function searchPlaces(query: string): Promise<PlaceResult[]> {
       return [];
     }
     const data = (await res.json()) as { features?: PhotonFeature[] };
-    return (data.features ?? [])
-      .map(toPlaceResult)
-      .filter((r) => r.name.length > 0);
+    return (data.features ?? []).map(toPlaceResult).filter((r) => r.name.length > 0);
   } catch (err) {
     logError('Api.searchPlaces', err);
     return [];

@@ -31,7 +31,7 @@ describe('ComposerPlaceSearch', () => {
     expect(searchPlaces).toHaveBeenCalledWith('bar který neexistuje');
     fireEvent.click(hit);
     expect(onSelect).toHaveBeenCalledTimes(1);
-    expect(onSelect.mock.calls[0][0]).toMatchObject({
+    expect(onSelect.mock.calls[0]![0]).toMatchObject({
       name: 'Bar, který neexistuje',
       coord: [16.6097, 49.1959],
     });

@@ -241,7 +241,9 @@ export function MapCanvas() {
     }
     if (targetBounds) {
       const tb = targetBounds;
-      flyAndReveal(map, () => map.fitBounds(tb, { maxZoom: 21, padding: [120, 120], animate: false }));
+      flyAndReveal(map, () =>
+        map.fitBounds(tb, { maxZoom: 21, padding: [120, 120], animate: false })
+      );
     } else if (b) {
       flyAndReveal(map, () =>
         map.fitBounds(b.bounds as L.LatLngBoundsExpression, {

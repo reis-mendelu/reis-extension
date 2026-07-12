@@ -27,9 +27,12 @@ export function ComposerPlaceSearch({
   // Monotonic request id so a slow earlier response can't overwrite a later one.
   const seq = useRef(0);
 
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    []
+  );
 
   if (selected) {
     return (
@@ -78,7 +81,9 @@ export function ComposerPlaceSearch({
       {q.trim().length >= 2 && (
         <div className="mt-1 flex max-h-40 flex-col overflow-y-auto">
           {loading && results.length === 0 && (
-            <p className="px-2 py-3 text-center text-xs text-base-content/50">{t('map.searching')}</p>
+            <p className="px-2 py-3 text-center text-xs text-base-content/50">
+              {t('map.searching')}
+            </p>
           )}
           {!loading && results.length === 0 && (
             <p className="px-2 py-3 text-center text-xs text-base-content/50">
@@ -96,7 +101,9 @@ export function ComposerPlaceSearch({
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-semibold">{r.name}</span>
                 {r.context && (
-                  <span className="block truncate text-[11px] text-base-content/50">{r.context}</span>
+                  <span className="block truncate text-[11px] text-base-content/50">
+                    {r.context}
+                  </span>
                 )}
               </span>
             </button>

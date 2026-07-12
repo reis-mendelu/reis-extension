@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { toPlaceResult, searchPlaces, type PhotonFeature } from '../placeSearch';
 
-const feature = (props: Partial<PhotonFeature['properties']>, coord: [number, number]): PhotonFeature => ({
+const feature = (
+  props: Partial<PhotonFeature['properties']>,
+  coord: [number, number]
+): PhotonFeature => ({
   type: 'Feature',
   geometry: { type: 'Point', coordinates: coord },
   properties: { osm_id: 1, osm_type: 'N', ...props },
@@ -10,7 +13,16 @@ const feature = (props: Partial<PhotonFeature['properties']>, coord: [number, nu
 describe('toPlaceResult', () => {
   it('maps a Photon feature to {name, context, coord} with [lng, lat] order', () => {
     const r = toPlaceResult(
-      feature({ osm_id: 42, osm_type: 'N', name: 'Bar, který neexistuje', city: 'Brno', street: 'Dvořákova' }, [16.6097, 49.1959])
+      feature(
+        {
+          osm_id: 42,
+          osm_type: 'N',
+          name: 'Bar, který neexistuje',
+          city: 'Brno',
+          street: 'Dvořákova',
+        },
+        [16.6097, 49.1959]
+      )
     );
     expect(r.name).toBe('Bar, který neexistuje');
     expect(r.context).toBe('Brno, Dvořákova');
@@ -49,7 +61,7 @@ describe('searchPlaces', () => {
     } as Response);
 
     const res = await searchPlaces('Lužánky');
-    const url = vi.mocked(fetch).mock.calls[0][0] as string;
+    const url = vi.mocked(fetch).mock.calls[0]![0] as string;
     expect(url).toContain('photon.komoot.io/api');
     expect(url).toContain('q=Lu%C5%BE%C3%A1nky');
     expect(url).toMatch(/lat=49\.\d+/); // Brno/MENDELU bias applied

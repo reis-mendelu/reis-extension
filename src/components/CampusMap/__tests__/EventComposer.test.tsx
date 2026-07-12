@@ -90,7 +90,9 @@ describe('EventComposer publish', () => {
   it('publishes with the category chosen in the picker (not hardcoded party)', async () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     render(<EventComposer onDone={() => {}} />);
-    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Kvíz večer' } });
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), {
+      target: { value: 'Kvíz večer' },
+    });
     fireEvent.click(screen.getByText('Vyberte datum'));
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // Pick the "Kvíz" (quiz) category instead of leaving the default party.

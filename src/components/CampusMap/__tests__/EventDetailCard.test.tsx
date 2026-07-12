@@ -41,7 +41,11 @@ describe('EventDetailCard', () => {
   });
 
   it('links an off-campus venue to Google Maps at its coordinates (lat,lng)', () => {
-    const offEvent: MapEvent = { ...ev, location: 'Bar, který neexistuje', coord: [16.6097, 49.1959] };
+    const offEvent: MapEvent = {
+      ...ev,
+      location: 'Bar, který neexistuje',
+      coord: [16.6097, 49.1959],
+    };
     render(<EventDetailCard event={offEvent} />);
     const link = screen.getByRole('link', { name: /Bar, který neexistuje/ });
     // Google Maps expects lat,lng; coord is stored [lng, lat].

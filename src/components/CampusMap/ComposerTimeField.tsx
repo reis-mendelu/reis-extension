@@ -23,7 +23,7 @@ export function ComposerTimeField({
   onChange: (v: string) => void;
   t: (k: string) => string;
 }) {
-  const [h, m] = value ? value.split(':') : ['', ''];
+  const [h = '', m = ''] = value ? value.split(':') : ['', ''];
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
