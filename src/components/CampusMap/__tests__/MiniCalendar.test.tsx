@@ -65,7 +65,13 @@ describe('MiniCalendar', () => {
     // onClick never ran. happy-dom can't apply that CSS, so guard the cause: the
     // <button> stays focusable natively and must NOT be marked [tabindex].
     render(
-      <MiniCalendar value={null} onChange={() => {}} placeholder="Pick a date" t={t} locale="en-US" />
+      <MiniCalendar
+        value={null}
+        onChange={() => {}}
+        placeholder="Pick a date"
+        t={t}
+        locale="en-US"
+      />
     );
     const trigger = screen.getByText('Pick a date').closest('button')!;
     expect(trigger.hasAttribute('tabindex')).toBe(false);

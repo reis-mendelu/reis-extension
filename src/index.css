@@ -1,10 +1,12 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Mobile = touch device + narrow viewport. Desktop split-screen stays desktop. */
 @custom-variant touch (@media (pointer: coarse) and (max-width: 767px));
 
 /* CRITICAL: Prevent all scrolling at the page level */
-html, body, #root {
+html,
+body,
+#root {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -35,7 +37,9 @@ html, body, #root {
 
 /* Enable both light and dark Mendelu themes */
 @plugin "daisyui" {
-  themes: mendelu-dark --default, mendelu;
+  themes:
+    mendelu-dark --default,
+    mendelu;
 }
 
 /* Safelist DaisyUI toggle component (not auto-detected by JIT scanner) */
@@ -44,10 +48,9 @@ html, body, #root {
 /* Safelist for calendar day highlight (dynamically constructed classes) */
 @source inline("bg-accent/5 bg-accent/10 text-accent");
 
-
 /* Custom Mendelu light theme for REIS extension */
 @plugin "daisyui/theme" {
-  name: "mendelu";
+  name: 'mendelu';
   default: false;
   color-scheme: light;
 
@@ -60,7 +63,7 @@ html, body, #root {
   /* Brand colors */
   --color-primary: #79be15;
   --color-primary-content: #ffffff;
-  --color-secondary: #8DC843;
+  --color-secondary: #8dc843;
   --color-secondary-content: #ffffff;
   --color-accent: #00548f;
   --color-accent-content: #ffffff;
@@ -96,7 +99,7 @@ html, body, #root {
 
 /* Custom Mendelu dark theme for REIS extension */
 @plugin "daisyui/theme" {
-  name: "mendelu-dark";
+  name: 'mendelu-dark';
   default: true;
   color-scheme: dark;
 
@@ -109,7 +112,7 @@ html, body, #root {
   /* Brand colors - preserved */
   --color-primary: #79be15;
   --color-primary-content: #ffffff;
-  --color-secondary: #8DC843;
+  --color-secondary: #8dc843;
   --color-secondary-content: #ffffff;
   --color-accent: #3b82f6;
   --color-accent-content: #ffffff;
@@ -147,15 +150,15 @@ html, body, #root {
 @theme {
   /* Event Type Colors */
   --color-exam-border: #dc2626;
-  --color-exam-bg: #FEF2F2;
+  --color-exam-bg: #fef2f2;
   --color-exam-text: #991b1b;
 
   --color-lecture-border: #79be15;
-  --color-lecture-bg: #F3FAEA;
+  --color-lecture-bg: #f3faea;
   --color-lecture-text: #365314;
 
   --color-seminar-border: #00548f;
-  --color-seminar-bg: #F0F7FF;
+  --color-seminar-bg: #f0f7ff;
   --color-seminar-text: #1e3a8a;
 
   /* Surface Colors */
@@ -174,7 +177,7 @@ html, body, #root {
   --shadow-drawer: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 
   /* Typography */
-  --font-inter: "Inter", sans-serif;
+  --font-inter: 'Inter', sans-serif;
 
   /* Minimum touch hit-target (Material/Apple guideline) */
   --size-tap: 2.75rem;
@@ -205,7 +208,9 @@ html, body, #root {
 /* Clickable link styles - explicit hover effects */
 .clickable-link {
   cursor: pointer;
-  transition: color 0.2s ease, text-decoration 0.2s ease;
+  transition:
+    color 0.2s ease,
+    text-decoration 0.2s ease;
 }
 
 .clickable-link:hover {
@@ -338,7 +343,9 @@ html, body, #root {
   font-weight: 700;
   white-space: nowrap;
   pointer-events: none;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.9), 0 0 3px rgba(255, 255, 255, 0.9);
+  text-shadow:
+    0 0 3px rgba(255, 255, 255, 0.9),
+    0 0 3px rgba(255, 255, 255, 0.9);
 }
 .leaflet-tooltip.building-label::before {
   display: none;
