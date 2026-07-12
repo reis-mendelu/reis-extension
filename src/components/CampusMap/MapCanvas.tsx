@@ -120,29 +120,37 @@ export function MapCanvas() {
       // don't bump focusReq), so we DO fly there: zoom to 18 when at overview, but
       // never zoom back out if you're already deeper in.
       const sel = select.mapSelection;
+      // Choosing a place/landmark/event ports the camera INSTANTLY (like Google
+      // Maps), not the slow zoom-out-pan-zoom-in "fly" — animate:false makes
+      // setView/fitBounds jump and fire moveend at once (flyAndReveal reveals the
+      // vector panes on that moveend).
       if (sel?.kind === 'poi') {
         // A remote site (arboretum/Lednice/…) fits its whole extent so it never
         // over-zooms past its own size; a plain poi (landmark) zooms to 18.
         const rp = REMOTE.find((p) => p.id === sel.poi.id);
         if (rp) {
           flyAndReveal(map, () =>
-            map.flyToBounds(remotePlaceBounds(rp) as L.LatLngBoundsExpression, {
+            map.fitBounds(remotePlaceBounds(rp) as L.LatLngBoundsExpression, {
               maxZoom: 18,
               padding: [50, 50],
+              animate: false,
             })
           );
         } else {
           const [lon, lat] = sel.coord;
-          flyAndReveal(map, () => map.flyTo([lat, lon], 18));
+          flyAndReveal(map, () => map.setView([lat, lon], 18, { animate: false }));
         }
       } else if (sel?.kind === 'event' && sel.event.coord) {
         const [lon, lat] = sel.event.coord;
-        flyAndReveal(map, () => map.flyTo([lat, lon], Math.max(map.getZoom(), 18)));
+        flyAndReveal(map, () =>
+          map.setView([lat, lon], Math.max(map.getZoom(), 18), { animate: false })
+        );
       } else {
         flyAndReveal(map, () =>
-          map.flyToBounds(META.campus.bounds as L.LatLngBoundsExpression, {
+          map.fitBounds(META.campus.bounds as L.LatLngBoundsExpression, {
             maxZoom: 18,
             padding: [40, 40],
+            animate: false,
           })
         );
       }
@@ -155,7 +163,11 @@ export function MapCanvas() {
       // geometry still loading — show the building while we wait
       if (b)
         flyAndReveal(map, () =>
-          map.flyToBounds(b.bounds as L.LatLngBoundsExpression, { maxZoom: 21, padding: [50, 50] })
+          map.fitBounds(b.bounds as L.LatLngBoundsExpression, {
+            maxZoom: 21,
+            padding: [50, 50],
+            animate: false,
+          })
         );
       return;
     }
@@ -229,10 +241,14 @@ export function MapCanvas() {
     }
     if (targetBounds) {
       const tb = targetBounds;
-      flyAndReveal(map, () => map.flyToBounds(tb, { maxZoom: 21, padding: [120, 120] }));
+      flyAndReveal(map, () => map.fitBounds(tb, { maxZoom: 21, padding: [120, 120], animate: false }));
     } else if (b) {
       flyAndReveal(map, () =>
-        map.flyToBounds(b.bounds as L.LatLngBoundsExpression, { maxZoom: 21, padding: [50, 50] })
+        map.fitBounds(b.bounds as L.LatLngBoundsExpression, {
+          maxZoom: 21,
+          padding: [50, 50],
+          animate: false,
+        })
       );
     }
   }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq]);
