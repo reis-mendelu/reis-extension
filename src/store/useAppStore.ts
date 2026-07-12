@@ -37,6 +37,7 @@ import { createRsvpSlice } from './slices/createRsvpSlice';
 import { createAdminSlice } from './slices/createAdminSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
+import { resetRealDataStores } from '../services/loadRealDataSnapshot';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
 
 export const useAppStore = create<AppState>()((...a) => ({
@@ -83,6 +84,11 @@ export const initializeStore = async () => {
   // Set USE_MOCK_DATA=true in your .env file to enable
   if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
     await initMockData();
+  } else {
+    // Dev standalone real-data mode: wipe crawl data left in IDB by a previous
+    // mock session BEFORE the tier-1 hydration below reads it, so the snapshot
+    // is the sole source of truth. No-op in production / inside the iframe.
+    await resetRealDataStores();
   }
 
   const s = useAppStore.getState();
