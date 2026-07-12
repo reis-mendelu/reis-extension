@@ -93,6 +93,33 @@ describe('MiniCalendar', () => {
     expect(screen.queryByText('Po')).toBeNull();
   });
 
+  it('flips the popover above the trigger when it would overflow the viewport bottom', () => {
+    // happy-dom reports offsetHeight 0, so updatePos falls back to the 340px
+    // estimate — deterministic geometry we can assert on. innerHeight 500 with a
+    // trigger whose bottom is 490 leaves no room below (490+6+340 > 492), but
+    // 114px above (460-6-340), so the card must flip above the trigger.
+    const innerHeight = Object.getOwnPropertyDescriptor(window, 'innerHeight');
+    Object.defineProperty(window, 'innerHeight', { value: 500, configurable: true });
+    render(
+      <MiniCalendar
+        value={null}
+        onChange={() => {}}
+        placeholder="Pick a date"
+        t={t}
+        locale="en-US"
+      />
+    );
+    const trigger = screen.getByText('Pick a date').closest('button')!;
+    trigger.getBoundingClientRect = () =>
+      ({ top: 460, bottom: 490, left: 12, right: 300, width: 288, height: 30 }) as DOMRect;
+    fireEvent.click(trigger);
+    const pop = Array.from(document.querySelectorAll('div')).find(
+      (d) => d.style.width === '288px'
+    )!;
+    expect(pop.style.top).toBe('114px');
+    if (innerHeight) Object.defineProperty(window, 'innerHeight', innerHeight);
+  });
+
   it('closes the popover when clicking outside', () => {
     render(
       <MiniCalendar

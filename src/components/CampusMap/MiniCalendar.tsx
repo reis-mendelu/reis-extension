@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toISO, parseISO, monthMatrix, addMonths } from './calendar';
@@ -7,6 +7,9 @@ import { toISO, parseISO, monthMatrix, addMonths } from './calendar';
 const POPOVER_WIDTH = 288;
 // Minimum gap the popover keeps from the viewport edge.
 const MARGIN = 8;
+// Fallback height (header + weekday row + up to 6 day rows + padding) used only
+// until the popover has mounted and its real height can be measured.
+const POPOVER_EST_HEIGHT = 340;
 
 // Monday-first short weekday names in the caller's locale. 2024-01-01 is a
 // Monday, so offsetting from it gives Mon…Sun in whatever language the app is in
@@ -52,11 +55,13 @@ export function MiniCalendar({
     : placeholder;
   const monthName = new Date(view.y, view.m0, 1).toLocaleDateString(locale, { month: 'long' });
 
-  // Anchor the popover under the trigger in viewport coords. It's portalled to
+  // Anchor the popover to the trigger in viewport coords. It's portalled to
   // <body> so the side-panel's overflow-hidden can't clip it. Right-align it to
   // the trigger (the popover is wider than the field) so it keeps the panel's
   // own inset from the edge instead of bleeding to the border; clamp into the
-  // viewport with a margin as a fallback.
+  // viewport with a margin as a fallback. Vertically it prefers to sit below the
+  // trigger, but flips above (or clamps) when a low trigger would push the card
+  // off the bottom of the screen.
   const updatePos = useCallback(() => {
     const el = btnRef.current;
     if (!el) return;
@@ -65,10 +70,20 @@ export function MiniCalendar({
       MARGIN,
       Math.min(r.right - POPOVER_WIDTH, window.innerWidth - POPOVER_WIDTH - MARGIN)
     );
-    setPos({ top: r.bottom + 6, left });
+    const popH = popRef.current?.offsetHeight || POPOVER_EST_HEIGHT;
+    const below = r.bottom + 6;
+    const above = r.top - 6 - popH;
+    // Flip above only when below overflows AND above actually has room.
+    const top =
+      below + popH > window.innerHeight - MARGIN && above >= MARGIN
+        ? above
+        : Math.max(MARGIN, Math.min(below, window.innerHeight - popH - MARGIN));
+    setPos({ top, left });
   }, []);
 
-  useEffect(() => {
+  // Layout effect (not useEffect): position the popover before the browser
+  // paints, so it never flashes at its initial {0,0} for a frame.
+  useLayoutEffect(() => {
     if (!open) return;
     updatePos();
     const onPointerDown = (e: MouseEvent) => {

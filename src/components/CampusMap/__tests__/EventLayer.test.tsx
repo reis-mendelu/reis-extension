@@ -6,7 +6,7 @@ vi.mock('../../../hooks/useEventsFacultySettings', () => {
   const subscribedFaculties = ['mendelu', 'pef'];
   return { useEventsFacultySettings: () => ({ subscribedFaculties, isLoading: false }) };
 });
-import { render, act } from '@testing-library/react';
+import { render, act, fireEvent } from '@testing-library/react';
 import { EventLayer } from '../EventLayer';
 import { setMapInstance } from '../mapInstance';
 import { useAppStore } from '../../../store/useAppStore';
@@ -154,6 +154,25 @@ describe('EventLayer', () => {
     const draft = paneEl.querySelector('[data-draft-pin="true"]') as HTMLElement;
     expect(draft).toBeTruthy();
     expect(draft.style.transform).toContain('10px'); // resting layer point (10,20)
+  });
+
+  it('re-enters placing mode when the draft pin is clicked', () => {
+    const beginPlacing = vi.fn();
+    useAppStore.setState({
+      mapMode: 'society',
+      adminAssociationId: 'supef',
+      societyMapEvents: [],
+      mapEvents: [],
+      eventFilter: 'all',
+      activeBuildingId: null,
+      composerOpen: true,
+      draftCoord: [16.61, 49.21],
+      beginPlacing,
+    });
+    render(<EventLayer />);
+    const draft = paneEl.querySelector('[data-draft-pin="true"]') as HTMLElement;
+    fireEvent.click(draft);
+    expect(beginPlacing).toHaveBeenCalledOnce();
   });
 
   it('does not render a draft pin when the composer is closed', () => {
