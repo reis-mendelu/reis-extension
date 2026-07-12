@@ -97,7 +97,7 @@ export function ComposerPlaceSearch({
               className="flex items-center gap-2 rounded-lg px-2 py-2 text-left text-sm hover:bg-base-200"
               onClick={() => onSelect({ name: r.name, coord: r.coord })}
             >
-              <MapPin size={13} className="flex-shrink-0 opacity-60" />
+              <MapPin size={13} className="shrink-0 opacity-60" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-semibold">{r.name}</span>
                 {r.context && (

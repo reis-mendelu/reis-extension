@@ -44,7 +44,10 @@ function rowFrom(input: PostInput, associationId: string, createdBy: string): Sp
 // a clean slate each dev session is fine for a test harness).
 export const devSocietyStore = {
   list: (associationId: string): SpolkyEventRow[] =>
-    events.filter((e) => e.association_id === associationId),
+    events
+      .filter((e) => e.association_id === associationId)
+      // Match listMyPosts' `.order('date', ascending)` so dev matches prod.
+      .sort((a, b) => a.date.localeCompare(b.date)),
   create: (input: PostInput, associationId: string, createdBy: string): { id?: string } => {
     const row = rowFrom(input, associationId, createdBy);
     events.push(row);

@@ -192,7 +192,7 @@ export function EdgeIndicators({ occluders = [] }: EdgeIndicatorsProps) {
                 is hovered, so the map isn't cluttered with always-on labels. It's
                 non-interactive — the arrow itself handles the click. */}
             <span
-              className="pointer-events-none absolute max-w-[140px] truncate rounded-full border border-base-300 bg-base-100/95 px-2 py-0.5 text-xs font-medium text-base-content opacity-0 shadow-sm transition-opacity peer-hover:opacity-100"
+              className="pointer-events-none absolute max-w-[140px] truncate rounded-full border border-base-300 bg-base-100/95 px-2 py-0.5 text-xs font-medium text-base-content opacity-0 shadow-sm transition-opacity peer-hover:opacity-100 peer-focus:opacity-100"
               style={{ left: lx, top: ly, transform: `translate(${labelTx}, -50%)` }}
             >
               {label}

@@ -3,6 +3,7 @@ import { Users, ChevronDown, ChevronRight, Shield, LogOut } from 'lucide-react';
 import { ASSOCIATION_PROFILES } from '../../../services/spolky/config';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
+import { logError } from '../../../utils/reportError';
 
 interface SpolkySectionProps {
   expanded: boolean;
@@ -33,7 +34,7 @@ export function SpolkySection({
   // manage/login action) instead of a stray button in the map panel.
   const logout = () => {
     onNavigate?.();
-    void adminLogout();
+    adminLogout().catch((e) => logError('SpolkySection.logout', e));
   };
   return (
     <div>

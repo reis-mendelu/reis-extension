@@ -34,7 +34,7 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
         {/* identity: avatar + title + host */}
         <div className="flex items-center gap-3">
           <span
-            className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-base-300"
+            className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-base-300"
             style={{ backgroundColor: soc.color }}
           >
             {soc.logo ? (
@@ -56,18 +56,14 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
         {/* the facts */}
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-sm text-base-content/70">
-            <Clock size={13} className="flex-shrink-0" />
+            <Clock size={13} className="shrink-0" />
             <span>
               {dateLabel}
               {event.time ? ` · ${event.time}` : ''}
             </span>
           </div>
           <div className="flex items-center gap-1.5 text-sm text-base-content/70">
-            <img
-              src={CATEGORY_EMOJI_SRC[event.category]}
-              alt=""
-              className="h-4 w-4 flex-shrink-0"
-            />
+            <img src={CATEGORY_EMOJI_SRC[event.category]} alt="" className="h-4 w-4 shrink-0" />
             <span>{t(`map.category.${event.category}`)}</span>
           </div>
           {event.roomCode ? (
@@ -75,7 +71,7 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
               className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
               onClick={() => focusRoom(event.roomCode!)}
             >
-              <MapPin size={13} className="flex-shrink-0" /> {roomCodeToName(event.roomCode, INDEX)}
+              <MapPin size={13} className="shrink-0" /> {roomCodeToName(event.roomCode, INDEX)}
             </button>
           ) : event.location ? (
             event.coord ? (
@@ -87,12 +83,12 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
               >
-                <MapPin size={13} className="flex-shrink-0" /> {event.location}
-                <ExternalLink size={11} className="flex-shrink-0 opacity-60" />
+                <MapPin size={13} className="shrink-0" /> {event.location}
+                <ExternalLink size={11} className="shrink-0 opacity-60" />
               </a>
             ) : (
               <div className="flex items-center gap-1.5 text-sm text-base-content/70">
-                <MapPin size={13} className="flex-shrink-0" /> {event.location}
+                <MapPin size={13} className="shrink-0" /> {event.location}
               </div>
             )
           ) : null}

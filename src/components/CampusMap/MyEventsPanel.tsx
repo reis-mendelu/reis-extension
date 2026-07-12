@@ -42,17 +42,24 @@ export function MyEventsPanel() {
 
   const remove = async (id: string) => {
     setBusyId(id);
-    const res = await deletePost(id);
-    setBusyId(null);
-    setConfirmId(null);
-    if (res.error) {
+    try {
+      const res = await deletePost(id);
+      if (res.error) {
+        toast.error(t('admin.saveError'));
+        return;
+      }
+      if (selectedId === id) clearMapSelection(); // close the preview card if it was open
+      await loadSocietyPosts();
+      void reloadMapEvents(); // drop the pin from the public "Akce" feed too
+      toast.success(t('map.toastDeleted'));
+    } catch {
       toast.error(t('admin.saveError'));
-      return;
+    } finally {
+      // Cleared in finally so an unexpected throw never leaves the row stuck
+      // disabled / mid-confirm.
+      setBusyId(null);
+      setConfirmId(null);
     }
-    if (selectedId === id) clearMapSelection(); // close the preview card if it was open
-    await loadSocietyPosts();
-    void reloadMapEvents(); // drop the pin from the public "Akce" feed too
-    toast.success(t('map.toastDeleted'));
   };
 
   const rowActions = (e: MapEvent) =>
@@ -131,7 +138,7 @@ export function MyEventsPanel() {
       {!composerOpen && (
         <div className="flex items-center gap-2 border-b border-base-300 px-3 py-2.5">
           <span
-            className="flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded-md text-[10px] font-bold text-white"
+            className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md text-[10px] font-bold text-white"
             style={{
               backgroundColor: soc?.logo ? undefined : (soc?.color ?? 'var(--fallback-p,#0046a0)'),
             }}

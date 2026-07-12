@@ -63,7 +63,9 @@ export async function searchPlaces(query: string): Promise<PlaceResult[]> {
   if (q.length < MIN_QUERY) return [];
   const url = `${PHOTON_URL}?q=${encodeURIComponent(q)}&limit=6&lat=${BIAS_LAT}&lon=${BIAS_LON}&bbox=${CZ_BBOX}&lang=default`;
   try {
-    const res = await fetch(url);
+    // Bound the request so a slow/unresponsive Photon doesn't hang the search
+    // dropdown's loading state forever.
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) {
       logError('Api.searchPlaces', new Error(`photon ${res.status}`));
       return [];
