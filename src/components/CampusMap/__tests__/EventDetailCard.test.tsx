@@ -1,11 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { EventDetailCard } from '../EventDetailCard';
 import type { MapEvent } from '../../../types/events';
-
-vi.mock('../../../api/societyPosts', () => ({ deletePost: vi.fn().mockResolvedValue({}) }));
-import { deletePost } from '../../../api/societyPosts';
 
 const ev: MapEvent = {
   id: 'e1',
@@ -23,51 +20,24 @@ const ev: MapEvent = {
   venueKind: 'offcampus',
   category: 'party',
 };
-const mineEvent = ev;
-
-describe('EventDetailCard society controls', () => {
+describe('EventDetailCard', () => {
   beforeEach(() => {
     useAppStore.setState({
       mapMode: 'student',
       adminAssociationId: 'supef',
-      loadSocietyPosts: vi.fn() as never,
       language: 'en',
     });
     vi.clearAllMocks();
   });
 
-  it('hides edit/delete for students', () => {
+  // The card is a read-only preview: a society edits/deletes from the "Moje
+  // akce" panel, never here (management stays in one place). Guard that no
+  // authoring control leaks into the card, even for the society's own event.
+  it('never renders edit/delete controls, even for an own event in society mode', () => {
+    useAppStore.setState({ mapMode: 'society', adminAssociationId: 'supef' });
     render(<EventDetailCard event={ev} />);
-    expect(screen.queryByRole('button', { name: /delete/i })).toBeNull();
-  });
-
-  it('deletes an own event in society mode (arm then confirm)', async () => {
-    useAppStore.setState({ mapMode: 'society' });
-    render(<EventDetailCard event={ev} />);
-    // First click only arms the confirm state — label flips to "Delete for good?".
-    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    // Second click on the (now-relabeled) button actually deletes.
-    fireEvent.click(screen.getByRole('button', { name: 'Delete for good?' }));
-    await waitFor(() => expect(deletePost).toHaveBeenCalledWith('e1'));
-  });
-
-  it('keeps the card and does not reload when delete fails', async () => {
-    const loadSocietyPosts = vi.fn(async () => {});
-    const clearMapSelection = vi.fn();
-    vi.mocked(deletePost).mockResolvedValueOnce({ error: 'boom' } as never);
-    useAppStore.setState({
-      mapMode: 'society',
-      adminAssociationId: 'supef',
-      language: 'cz',
-      loadSocietyPosts,
-      clearMapSelection,
-    });
-    render(<EventDetailCard event={mineEvent} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Smazat' })); // arm confirm (cs: map.delete)
-    fireEvent.click(screen.getByRole('button', { name: 'Opravdu smazat?' })); // confirm (cs: map.deleteConfirm)
-    await waitFor(() => expect(deletePost).toHaveBeenCalledTimes(1));
-    expect(loadSocietyPosts).not.toHaveBeenCalled();
-    expect(clearMapSelection).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /delete|smazat/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /edit|upravit/i })).toBeNull();
   });
 
   it('shows the human-readable room name, not the raw IS room code', () => {
@@ -77,13 +47,5 @@ describe('EventDetailCard society controls', () => {
     render(<EventDetailCard event={campusEvent} />);
     expect(screen.getByText('Q01')).toBeTruthy();
     expect(screen.queryByText('BA39N1009')).toBeNull();
-  });
-
-  it("hides edit/delete for another society's event in society mode (cross-tenant isolation)", () => {
-    useAppStore.setState({ mapMode: 'society', adminAssociationId: 'supef' });
-    const otherEvent: MapEvent = { ...ev, societyId: 'esn' };
-    render(<EventDetailCard event={otherEvent} />);
-    expect(screen.queryByRole('button', { name: /delete/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /edit/i })).toBeNull();
   });
 });

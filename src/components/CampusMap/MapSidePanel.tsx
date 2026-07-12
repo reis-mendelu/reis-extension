@@ -1,8 +1,5 @@
-import type { ReactNode } from 'react';
-import { MapPin, PartyPopper, Sparkles } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { societyById } from '../../data/societies';
 import { LandmarkPicker } from './LandmarkPicker';
 import { EventsList } from './EventsList';
 import { MyEventsPanel } from './MyEventsPanel';
@@ -21,12 +18,10 @@ export function MapSidePanel() {
   const tab = useAppStore((s) => s.mapPanelTab);
   const setTab = useAppStore((s) => s.setMapPanelTab);
   const role = useAppStore((s) => s.adminRole);
-  const assocId = useAppStore((s) => s.adminAssociationId);
   const { t } = useTranslation();
 
   const isSociety = mode === 'society';
   const active: TabKey = isSociety ? 'mine' : tab;
-  const soc = assocId ? societyById(assocId) : null;
 
   const select = (key: TabKey) => {
     if (key === 'mine') {
@@ -37,28 +32,29 @@ export function MapSidePanel() {
     setTab(key);
   };
 
-  const tabBtn = (key: TabKey, icon: ReactNode, label: string) => (
+  // Text-only, equal-width tabs so all three fit one row in the narrow panel:
+  // an icon + label ("Moje akce" / "My events") wraps and overflows the tab at
+  // a third of 288px. The labels are self-explanatory without icons.
+  const tabBtn = (key: TabKey, label: string) => (
     <button
       type="button"
       role="tab"
       id={`map-tab-${key}`}
       aria-selected={active === key}
       aria-controls="map-tabpanel"
-      className={`tab gap-1.5 ${active === key ? 'tab-active font-semibold' : ''}`}
+      className={`tab flex-1 whitespace-nowrap px-1 ${active === key ? 'tab-active font-semibold' : ''}`}
       onClick={() => select(key)}
     >
-      {icon}
       {label}
     </button>
   );
 
   return (
-    <div className="flex max-h-[80vh] w-64 flex-col overflow-hidden rounded-box border border-base-300 bg-base-100/95 shadow-popover-heavy backdrop-blur-sm">
-      <div role="tablist" className="tabs tabs-box tabs-sm m-1 mb-0 shrink-0">
-        {tabBtn('events', <PartyPopper size={13} />, t('map.events'))}
-        {tabBtn('places', <MapPin size={13} />, t('map.places'))}
-        {role === 'association' &&
-          tabBtn('mine', <Sparkles size={13} style={{ color: soc?.color }} />, t('map.myEvents'))}
+    <div className="flex max-h-[80vh] w-72 flex-col overflow-hidden rounded-box border border-base-300 bg-base-100/95 shadow-popover-heavy backdrop-blur-sm">
+      <div role="tablist" className="tabs tabs-box tabs-sm m-1 mb-0 shrink-0 flex-nowrap">
+        {tabBtn('events', t('map.events'))}
+        {tabBtn('places', t('map.places'))}
+        {role === 'association' && tabBtn('mine', t('map.myEvents'))}
       </div>
       <div
         id="map-tabpanel"
