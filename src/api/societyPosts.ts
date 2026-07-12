@@ -1,5 +1,6 @@
 import { adminAuthClient } from '@/services/admin/authClient';
 import { logError } from '@/utils/reportError';
+import { DEV_SOCIETY, devSocietyStore } from '@/utils/mock/devSociety';
 
 export type VenueKind = 'campus' | 'online' | 'offcampus';
 
@@ -64,6 +65,7 @@ export async function createPost(
   associationId: string,
   createdBy: string
 ): Promise<{ id?: string; error?: string }> {
+  if (DEV_SOCIETY) return devSocietyStore.create(input, associationId, createdBy);
   const { data, error } = await adminAuthClient
     .from('spolky_events')
     .insert(toRow(input, associationId, createdBy))
@@ -80,6 +82,7 @@ export async function updatePost(
   id: string,
   patch: Partial<Omit<ReturnType<typeof toRow>, 'association_id' | 'created_by'>>
 ): Promise<{ error?: string }> {
+  if (DEV_SOCIETY) return devSocietyStore.update(id, patch as Partial<SpolkyEventRow>);
   const { error } = await adminAuthClient.from('spolky_events').update(patch).eq('id', id);
   if (error) {
     logError('Admin.updatePost', error);
@@ -89,6 +92,7 @@ export async function updatePost(
 }
 
 export async function deletePost(id: string): Promise<{ error?: string }> {
+  if (DEV_SOCIETY) return devSocietyStore.delete(id);
   const { error } = await adminAuthClient.from('spolky_events').delete().eq('id', id);
   if (error) {
     logError('Admin.deletePost', error);
@@ -98,6 +102,7 @@ export async function deletePost(id: string): Promise<{ error?: string }> {
 }
 
 export async function listMyPosts(associationId: string): Promise<SpolkyEventRow[]> {
+  if (DEV_SOCIETY) return devSocietyStore.list(associationId);
   const { data, error } = await adminAuthClient
     .from('spolky_events')
     .select('*')

@@ -1,14 +1,19 @@
 import { useState } from 'react';
-import { CalendarPlus, MapPin, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { CalendarPlus, Check, MapPin, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { createPost, updatePost, type PostInput } from '../../api/societyPosts';
 import { isScheduledEvent, goLiveDate } from './eventWindow';
 import { MiniCalendar } from './MiniCalendar';
 import { ComposerRoomSearch } from './ComposerRoomSearch';
+import { ComposerPlaceSearch } from './ComposerPlaceSearch';
+import { ComposerTimeField } from './ComposerTimeField';
 import { roomCodeToName } from './mapHelpers';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import type { RoomIndexEntry } from '../../types/campusMap';
+import type { EventCategory } from '../../types/events';
+import { EVENT_CATEGORIES, CATEGORY_ICON } from '../../data/eventCategories';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
 
@@ -24,8 +29,10 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   const email = useAppStore((s) => s.adminSession?.user.email ?? '');
   const draftCoord = useAppStore((s) => s.draftCoord);
   const beginPlacing = useAppStore((s) => s.beginPlacing);
+  const placeDraftCoord = useAppStore((s) => s.placeDraftCoord);
   const clearDraftCoord = useAppStore((s) => s.clearDraftCoord);
   const loadSocietyPosts = useAppStore((s) => s.loadSocietyPosts);
+  const reloadMapEvents = useAppStore((s) => s.reloadMapEvents);
   const editId = useAppStore((s) => s.editEventId);
   const editing = useAppStore(
     (s) => s.societyMapEvents.find((e) => e.id === s.editEventId) ?? null
@@ -35,6 +42,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
 
   const [title, setTitle] = useState(editing?.title ?? '');
   const [date, setDate] = useState(editing?.date ?? '');
+  const [time, setTime] = useState(editing?.time ?? '');
   const [venue, setVenue] = useState<'offcampus' | 'campus'>(
     editing?.venueKind === 'campus' ? 'campus' : 'offcampus'
   );
@@ -48,6 +56,12 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
           coord: editing.coord,
         }
       : null
+  );
+  const [category, setCategory] = useState<EventCategory>(editing?.category ?? 'party');
+  // Display name for an off-campus venue (from the Photon place search). Null
+  // when the point was dropped on the map by hand rather than searched.
+  const [placeName, setPlaceName] = useState<string | null>(
+    editing && editing.venueKind !== 'campus' ? (editing.location ?? null) : null
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
@@ -65,7 +79,19 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     if (v === venue) return;
     setVenue(v);
     setRoom(null);
+    setPlaceName(null);
     if (v === 'campus') clearDraftCoord();
+  };
+
+  // A searched venue sets both the display name and the coordinate; clearing
+  // resets both so the search box comes back.
+  const selectPlace = ({ name, coord: c }: { name: string; coord: [number, number] }) => {
+    setPlaceName(name);
+    placeDraftCoord(c);
+  };
+  const clearPlace = () => {
+    setPlaceName(null);
+    clearDraftCoord();
   };
 
   const publish = async () => {
@@ -75,23 +101,27 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     const input: PostInput = {
       title: title.trim(),
       body: '',
-      category: editing?.category ?? 'party',
+      category,
       date,
+      time: time || null,
       venueKind: venue,
       roomCode: venue === 'campus' ? (room?.code ?? null) : null,
       coordLng: coord[0],
       coordLat: coord[1],
+      location: venue === 'campus' ? null : placeName,
     };
     try {
       const res = editId
         ? await updatePost(editId, {
             title: input.title,
             date: input.date,
+            time: input.time ?? null,
             category: input.category,
             venue_kind: input.venueKind,
             room_code: input.roomCode ?? null,
             coord_lng: input.coordLng,
             coord_lat: input.coordLat,
+            location: input.location ?? null,
           })
         : await createPost(input, associationId, email);
       if (res.error) {
@@ -99,6 +129,10 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         return;
       }
       await loadSocietyPosts();
+      void reloadMapEvents(); // surface the change on the public "Akce" feed too
+      toast.success(
+        editId ? t('map.toastSaved') : scheduled ? t('map.toastScheduled') : t('map.toastPublished')
+      );
       close();
     } catch {
       setError(true);
@@ -154,19 +188,46 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       )}
 
       <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
+        {t('map.eventTime')}
+      </label>
+      <ComposerTimeField value={time} onChange={setTime} t={t} />
+
+      <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
+        {t('map.categoryLabel')}
+      </label>
+      <div className="flex flex-wrap gap-1.5">
+        {EVENT_CATEGORIES.map((key) => {
+          const Icon = CATEGORY_ICON[key];
+          const label = t(`map.category.${key}`);
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-label={label}
+              aria-pressed={category === key}
+              className={`btn btn-xs gap-1 ${category === key ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
+              onClick={() => setCategory(key)}
+            >
+              <Icon size={13} /> {label}
+            </button>
+          );
+        })}
+      </div>
+
+      <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
         {t('map.venueLabel')}
       </label>
       <div className="flex gap-2">
         <button
           type="button"
-          className={`btn btn-sm flex-1 gap-1 ${venue === 'offcampus' ? 'btn-primary' : 'btn-outline'}`}
+          className={`btn btn-sm flex-1 gap-1 ${venue === 'offcampus' ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
           onClick={() => switchVenue('offcampus')}
         >
           <MapPin size={13} /> {t('map.venueOffcampus')}
         </button>
         <button
           type="button"
-          className={`btn btn-sm flex-1 gap-1 ${venue === 'campus' ? 'btn-primary' : 'btn-outline'}`}
+          className={`btn btn-sm flex-1 gap-1 ${venue === 'campus' ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
           onClick={() => switchVenue('campus')}
         >
           {t('map.venueCampus')}
@@ -180,18 +241,26 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
           onClear={() => setRoom(null)}
           t={t}
         />
+      ) : draftCoord ? (
+        // A venue is chosen (searched or dropped on the map): one unified chip.
+        <div className="mt-2 flex items-center gap-2 rounded-lg border border-success/40 bg-success/10 px-3 py-2 text-sm">
+          <Check size={14} className="text-success" />
+          <span className="min-w-0 flex-1 truncate">{placeName ?? t('map.mapPoint')}</span>
+          <button type="button" className="btn btn-ghost btn-xs" onClick={clearPlace}>
+            {t('map.changePlace')}
+          </button>
+        </div>
       ) : (
         <>
+          <ComposerPlaceSearch selected={null} onSelect={selectPlace} onClear={clearPlace} t={t} />
+          {/* Fallback for venues Photon doesn't know: drop the pin by hand. */}
           <button
             type="button"
-            className={`btn btn-sm mt-2 w-full gap-2 ${draftCoord ? 'btn-outline' : 'btn-ghost border border-dashed border-base-content/30'}`}
+            className="btn btn-ghost btn-xs mt-1 w-full gap-1.5 text-base-content/60"
             onClick={beginPlacing}
           >
-            <MapPin size={14} /> {draftCoord ? t('map.changePlace') : t('map.selectPlace')}
+            <MapPin size={13} /> {t('map.orPickOnMap')}
           </button>
-          <p className="mt-1.5 text-[11px] text-base-content/50">
-            {draftCoord ? '' : t('map.clickToPlace')}
-          </p>
         </>
       )}
 
@@ -202,7 +271,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         </button>
         <button
           type="button"
-          className="btn btn-primary btn-sm flex-1"
+          className="btn btn-primary btn-sm flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={!ready || busy}
           onClick={publish}
         >

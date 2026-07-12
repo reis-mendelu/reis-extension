@@ -215,6 +215,23 @@ describe('mapSlice', () => {
     expect(useAppStore.getState().mapEvents.length).toBeGreaterThan(0);
   });
 
+  it('loadMapEvents is a no-op once already loaded (does not refetch)', async () => {
+    useAppStore.setState({ mapEventsLoaded: true, mapEvents: [] });
+    await useAppStore.getState().loadMapEvents();
+    expect(vi.mocked(fetchMapEvents)).not.toHaveBeenCalled();
+    expect(useAppStore.getState().mapEvents).toEqual([]);
+  });
+
+  it('reloadMapEvents refetches the public feed even when already loaded (post-publish freshness)', async () => {
+    // Simulate a live session that booted with an empty public feed, then a
+    // society published an event: the load-once guard must NOT block a refresh.
+    useAppStore.setState({ mapEventsLoaded: true, mapEvents: [] });
+    await useAppStore.getState().reloadMapEvents();
+    expect(vi.mocked(fetchMapEvents)).toHaveBeenCalledTimes(1);
+    expect(useAppStore.getState().mapEvents.length).toBe(MOCK_EVENTS.length);
+    expect(useAppStore.getState().mapEventsLoaded).toBe(true);
+  });
+
   it('focusEventById from a PIN click (no opts) selects without moving the camera', async () => {
     await useAppStore.getState().loadMapEvents();
     const pinned = useAppStore.getState().mapEvents.find((e) => e.coord)!;

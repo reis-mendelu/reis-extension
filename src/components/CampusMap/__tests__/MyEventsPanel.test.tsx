@@ -6,6 +6,8 @@ import type { MapEvent } from '../../../types/events';
 
 vi.mock('../../../api/societyPosts', () => ({ deletePost: vi.fn().mockResolvedValue({}) }));
 import { deletePost } from '../../../api/societyPosts';
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+import { toast } from 'sonner';
 
 const mk = (id: string, date: string): MapEvent => ({
   id,
@@ -110,14 +112,25 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
     useAppStore.setState({ composerOpen: true, closeComposer: vi.fn() });
     render(<MyEventsPanel />);
     expect(screen.getByPlaceholderText('Název akce')).toBeInTheDocument();
+    // The events list is hidden while composing so the composer is the sole
+    // focus — no redundant empty-state or half-scrolled rows below the form.
+    expect(screen.queryByText('Spring Party')).toBeNull();
   });
 
-  it('logout calls adminLogout', () => {
-    const adminLogout = vi.fn(async () => {});
-    useAppStore.setState({ adminLogout });
+  it('hides the society header while composing to save space', () => {
+    useAppStore.setState({ composerOpen: false });
+    const { rerender } = render(<MyEventsPanel />);
+    // Header "Vytvořit akci" button is present when not composing…
+    expect(screen.getByRole('button', { name: 'Vytvořit akci' })).toBeInTheDocument();
+    useAppStore.setState({ composerOpen: true, closeComposer: vi.fn() });
+    rerender(<MyEventsPanel />);
+    // …and hidden once the composer takes over (it has its own header).
+    expect(screen.queryByRole('button', { name: 'Vytvořit akci' })).toBeNull();
+  });
+
+  it('has no logout in the map panel (logout lives in the profile Spolky section)', () => {
     render(<MyEventsPanel />);
-    screen.getByRole('button', { name: 'Odhlásit' }).click();
-    expect(adminLogout).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('button', { name: 'Odhlásit' })).toBeNull();
   });
 
   it('row Edit opens the composer for that event (authoring stays in the panel)', () => {
@@ -130,7 +143,8 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
 
   it('row Delete arms an in-row confirm, then commits deletePost + reload', async () => {
     const loadSocietyPosts = vi.fn(async () => {});
-    useAppStore.setState({ loadSocietyPosts });
+    const reloadMapEvents = vi.fn(async () => {});
+    useAppStore.setState({ loadSocietyPosts, reloadMapEvents });
     render(<MyEventsPanel />);
     // Arm: the trash swaps to a confirm (✓) / cancel (✗) pair, no request yet.
     fireEvent.click(screen.getByRole('button', { name: 'Smazat' }));
@@ -138,6 +152,11 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Opravdu smazat?' }));
     await waitFor(() => expect(deletePost).toHaveBeenCalledWith('e1'));
     expect(loadSocietyPosts).toHaveBeenCalled();
+    // Deleting changes the public feed too — refresh it so the pin disappears
+    // from the student "Akce" view without a full reload.
+    expect(reloadMapEvents).toHaveBeenCalled();
+    // Confirm the deletion so the society knows it took effect.
+    expect(toast.success).toHaveBeenCalled();
   });
 
   it('Cancel disarms the delete confirm without calling deletePost', () => {

@@ -229,12 +229,20 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     set({ composerOpen: false, editEventId: null, placingEvent: false, draftCoord: null }),
 
   loadMapEvents: async () => {
-    if (get().mapEventsLoaded) return;
+    if (get().mapEventsLoaded) return; // boot-time load: once is enough
+    await get().reloadMapEvents();
+  },
+
+  // Refetch the public feed unconditionally. The load-once guard in
+  // loadMapEvents means the boot snapshot never refreshes on its own, so a
+  // society publishing/deleting an event would otherwise not surface on the
+  // public map/"Akce" tab until a full reload — call this after those mutations.
+  reloadMapEvents: async () => {
     try {
       const events = await fetchMapEvents();
       set({ mapEvents: events.map(locateEvent), mapEventsLoaded: true });
     } catch (err) {
-      logError('MapSlice.loadMapEvents', err);
+      logError('MapSlice.reloadMapEvents', err);
     }
   },
 

@@ -18,6 +18,8 @@ vi.mock('../../../api/societyPosts', () => ({
   createPost: (...a: Parameters<typeof createPost>) => createPost(...a),
   updatePost: (...a: Parameters<typeof updatePost>) => updatePost(...a),
 }));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+import { toast } from 'sonner';
 
 beforeEach(() => {
   createPost.mockClear();
@@ -31,6 +33,7 @@ beforeEach(() => {
     composerOpen: true,
     societyMapEvents: [],
     loadSocietyPosts: vi.fn(async () => {}),
+    reloadMapEvents: vi.fn(async () => {}),
   });
 });
 
@@ -49,6 +52,54 @@ describe('EventComposer publish', () => {
     const input = createPost.mock.calls[0][0];
     expect(input.venueKind).toBe('offcampus');
     expect(input.coordLng).toBe(16.61);
+    // Publishing a live event must refresh the public feed so it shows on the
+    // student "Akce" tab without a full reload (stale load-once cache fix).
+    expect(useAppStore.getState().reloadMapEvents).toHaveBeenCalled();
+    // And the society gets a clear confirmation it worked.
+    expect(toast.success).toHaveBeenCalled();
+  });
+
+  it('keeps publish disabled until every field is filled, then enables it', async () => {
+    render(<EventComposer onDone={() => {}} />);
+    const publish = screen.getByRole('button', { name: 'Zveřejnit akci' });
+    expect(publish).toBeDisabled();
+
+    // Completing every field enables publish.
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
+    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    await waitFor(() => expect(publish).not.toBeDisabled());
+  });
+
+  it('publishes with the chosen start time', async () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
+    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    // Time: open the reIS-native picker, choose hour 19 then minute 30.
+    fireEvent.click(screen.getByRole('button', { name: 'Čas' }));
+    fireEvent.click(screen.getByRole('button', { name: '19' }));
+    fireEvent.click(screen.getByRole('button', { name: '30' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    expect(createPost.mock.calls[0][0].time).toBe('19:30');
+  });
+
+  it('publishes with the category chosen in the picker (not hardcoded party)', async () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), {
+      target: { value: 'Kvíz večer' },
+    });
+    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    // Pick the "Kvíz" (quiz) category instead of leaving the default party.
+    fireEvent.click(screen.getByRole('button', { name: 'Kvíz' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    expect(createPost.mock.calls[0][0].category).toBe('quiz');
   });
 
   it('preserves venue_kind=campus and room_code when editing a campus event', async () => {
