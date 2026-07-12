@@ -112,6 +112,9 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
     useAppStore.setState({ composerOpen: true, closeComposer: vi.fn() });
     render(<MyEventsPanel />);
     expect(screen.getByPlaceholderText('Název akce')).toBeInTheDocument();
+    // The events list is hidden while composing so the composer is the sole
+    // focus — no redundant empty-state or half-scrolled rows below the form.
+    expect(screen.queryByText('Spring Party')).toBeNull();
   });
 
   it('hides the society header while composing to save space', () => {

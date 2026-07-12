@@ -151,16 +151,22 @@ export function MyEventsPanel() {
         </div>
       )}
 
-      {composerOpen && <EventComposer key={editEventId ?? 'new'} onDone={closeComposer} />}
-
+      {/* One scroll area: the composer takes it over while open (sole focus),
+          otherwise it lists the society's events. */}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {section(t('map.liveNow'), live)}
-        {section(t('map.scheduled'), scheduled, goLive)}
-        {section(t('map.past'), past)}
-        {events.length === 0 && (
-          <p className="px-3 py-6 text-center text-sm text-base-content/60">
-            {t('map.noOwnEvents')}
-          </p>
+        {composerOpen ? (
+          <EventComposer key={editEventId ?? 'new'} onDone={closeComposer} />
+        ) : (
+          <>
+            {section(t('map.liveNow'), live)}
+            {section(t('map.scheduled'), scheduled, goLive)}
+            {section(t('map.past'), past)}
+            {events.length === 0 && (
+              <p className="px-3 py-6 text-center text-sm text-base-content/60">
+                {t('map.noOwnEvents')}
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>
