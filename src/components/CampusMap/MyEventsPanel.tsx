@@ -1,9 +1,11 @@
-import { LogOut, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Check, LogOut, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { sortByDate } from './eventHelpers';
 import { isPastEvent, isScheduledEvent, goLiveDate } from './eventWindow';
 import { societyById } from '../../data/societies';
+import { deletePost } from '../../api/societyPosts';
 import { EventRow } from './EventRow';
 import { EventComposer } from './EventComposer';
 import type { MapEvent } from '../../types/events';
@@ -21,11 +23,73 @@ export function MyEventsPanel() {
   const composerOpen = useAppStore((s) => s.composerOpen);
   const editEventId = useAppStore((s) => s.editEventId);
   const closeComposer = useAppStore((s) => s.closeComposer);
+  const loadSocietyPosts = useAppStore((s) => s.loadSocietyPosts);
+  const clearMapSelection = useAppStore((s) => s.clearMapSelection);
+  const selection = useAppStore((s) => s.mapSelection);
   const adminLogout = useAppStore((s) => s.adminLogout);
   const assocId = useAppStore((s) => s.adminAssociationId);
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const soc = assocId ? societyById(assocId) : null;
+
+  // Delete is a two-step, in-row confirm so authoring never leaves this panel:
+  // the trash icon arms `confirmId`, then a check commits. `busyId` disables the
+  // row while the request is in flight.
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const selectedId = selection?.kind === 'event' ? selection.event.id : null;
+
+  const remove = async (id: string) => {
+    setBusyId(id);
+    const res = await deletePost(id);
+    setBusyId(null);
+    setConfirmId(null);
+    if (res.error) return;
+    if (selectedId === id) clearMapSelection(); // close the preview card if it was open
+    await loadSocietyPosts();
+  };
+
+  const rowActions = (e: MapEvent) =>
+    confirmId === e.id ? (
+      <>
+        <button
+          type="button"
+          className="btn btn-ghost btn-xs px-1.5 text-error"
+          aria-label={t('map.deleteConfirm')}
+          disabled={busyId === e.id}
+          onClick={() => void remove(e.id)}
+        >
+          <Check size={15} />
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost btn-xs px-1.5"
+          aria-label={t('common.cancel')}
+          onClick={() => setConfirmId(null)}
+        >
+          <X size={15} />
+        </button>
+      </>
+    ) : (
+      <>
+        <button
+          type="button"
+          className="btn btn-ghost btn-xs px-1.5 text-base-content/45 hover:text-base-content"
+          aria-label={t('map.edit')}
+          onClick={() => openComposer(e.id)}
+        >
+          <Pencil size={14} />
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost btn-xs px-1.5 text-base-content/45 hover:text-error"
+          aria-label={t('map.delete')}
+          onClick={() => setConfirmId(e.id)}
+        >
+          <Trash2 size={14} />
+        </button>
+      </>
+    );
 
   const past = sortByDate(events.filter((e) => isPastEvent(e.date))).reverse();
   const scheduled = sortByDate(events.filter((e) => isScheduledEvent(e.date)));
@@ -45,9 +109,10 @@ export function MyEventsPanel() {
             event={e}
             locale={locale}
             t={t}
-            selected={false}
+            selected={selectedId === e.id}
             subline={subline?.(e)}
             onClick={() => focusEvent(e.id, { fly: true })}
+            actions={rowActions(e)}
           />
         ))}
       </div>

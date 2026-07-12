@@ -18,6 +18,15 @@ describe('ComposerRoomSearch', () => {
     expect(arg.coord).toHaveLength(2); // [lng, lat]
   });
 
+  it('ranks the bare lecture hall first: "q01" → Q01 before Q01.09', () => {
+    // Same ranking as the top-left map search — the dotted offices come first
+    // in rooms-index.json, but the hall students search for must win.
+    render(<ComposerRoomSearch selected={null} onSelect={() => {}} onClear={() => {}} t={t} />);
+    fireEvent.change(screen.getByPlaceholderText('map.searchRoom'), { target: { value: 'q01' } });
+    const names = screen.getAllByRole('button').map((b) => b.querySelector('span')?.textContent);
+    expect(names[0]).toBe('Q01');
+  });
+
   it('shows the selected room with a change button', () => {
     const onClear = vi.fn();
     render(

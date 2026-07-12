@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { MyEventsPanel } from '../MyEventsPanel';
 import type { MapEvent } from '../../../types/events';
+
+vi.mock('../../../api/societyPosts', () => ({ deletePost: vi.fn().mockResolvedValue({}) }));
+import { deletePost } from '../../../api/societyPosts';
 
 const mk = (id: string, date: string): MapEvent => ({
   id,
@@ -83,7 +86,10 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
       ],
       openComposer: vi.fn(),
       adminLogout: vi.fn(async () => {}),
+      loadSocietyPosts: vi.fn(async () => {}),
+      clearMapSelection: vi.fn(),
     });
+    vi.clearAllMocks();
   });
 
   it('renders own events as rich rows with the thumbnail', () => {
@@ -112,5 +118,34 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
     render(<MyEventsPanel />);
     screen.getByRole('button', { name: 'Odhlásit' }).click();
     expect(adminLogout).toHaveBeenCalledOnce();
+  });
+
+  it('row Edit opens the composer for that event (authoring stays in the panel)', () => {
+    const openComposer = vi.fn();
+    useAppStore.setState({ openComposer });
+    render(<MyEventsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Upravit' }));
+    expect(openComposer).toHaveBeenCalledWith('e1');
+  });
+
+  it('row Delete arms an in-row confirm, then commits deletePost + reload', async () => {
+    const loadSocietyPosts = vi.fn(async () => {});
+    useAppStore.setState({ loadSocietyPosts });
+    render(<MyEventsPanel />);
+    // Arm: the trash swaps to a confirm (✓) / cancel (✗) pair, no request yet.
+    fireEvent.click(screen.getByRole('button', { name: 'Smazat' }));
+    expect(deletePost).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Opravdu smazat?' }));
+    await waitFor(() => expect(deletePost).toHaveBeenCalledWith('e1'));
+    expect(loadSocietyPosts).toHaveBeenCalled();
+  });
+
+  it('Cancel disarms the delete confirm without calling deletePost', () => {
+    render(<MyEventsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Smazat' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zrušit' }));
+    expect(deletePost).not.toHaveBeenCalled();
+    // Back to the resting Edit/Delete affordances.
+    expect(screen.getByRole('button', { name: 'Smazat' })).toBeInTheDocument();
   });
 });

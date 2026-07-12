@@ -1017,6 +1017,7 @@
     "changePlace": "Change place",
     "publish": "Publish event",
     "clickToPlace": "Click the map where your event is",
+    "draftPinLabel": "Event location — click to change",
     "venueLabel": "Where",
     "venueOffcampus": "In town",
     "venueCampus": "Campus",
