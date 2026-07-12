@@ -5,6 +5,8 @@ import { toISO, parseISO, monthMatrix, addMonths } from './calendar';
 
 // Wide enough for seven comfortable circular day cells plus the card padding.
 const POPOVER_WIDTH = 288;
+// Minimum gap the popover keeps from the viewport edge.
+const MARGIN = 8;
 
 // Monday-first short weekday names in the caller's locale. 2024-01-01 is a
 // Monday, so offsetting from it gives Mon…Sun in whatever language the app is in
@@ -51,14 +53,19 @@ export function MiniCalendar({
   const monthName = new Date(view.y, view.m0, 1).toLocaleDateString(locale, { month: 'long' });
 
   // Anchor the popover under the trigger in viewport coords. It's portalled to
-  // <body> so the side-panel's overflow-hidden can't clip it; clamp to the
-  // viewport so it never spills off the right edge.
+  // <body> so the side-panel's overflow-hidden can't clip it. Right-align it to
+  // the trigger (the popover is wider than the field) so it keeps the panel's
+  // own inset from the edge instead of bleeding to the border; clamp into the
+  // viewport with a margin as a fallback.
   const updatePos = useCallback(() => {
     const el = btnRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const left = Math.min(r.left, window.innerWidth - POPOVER_WIDTH - 8);
-    setPos({ top: r.bottom + 4, left: Math.max(8, left) });
+    const left = Math.max(
+      MARGIN,
+      Math.min(r.right - POPOVER_WIDTH, window.innerWidth - POPOVER_WIDTH - MARGIN)
+    );
+    setPos({ top: r.bottom + 6, left });
   }, []);
 
   useEffect(() => {
