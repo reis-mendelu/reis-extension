@@ -54,6 +54,9 @@ describe('searchPlaces', () => {
     expect(url).toContain('q=Lu%C5%BE%C3%A1nky');
     expect(url).toMatch(/lat=49\.\d+/); // Brno/MENDELU bias applied
     expect(url).toMatch(/lon=16\.\d+/);
+    // Restrict to a Czech bbox so global namesakes (a US/DE "Utopia") don't
+    // outrank the Brno venue.
+    expect(url).toContain('bbox=');
     expect(res).toHaveLength(1);
     expect(res[0]).toMatchObject({ name: 'Lužánky', coord: [16.6085, 49.2067] });
   });

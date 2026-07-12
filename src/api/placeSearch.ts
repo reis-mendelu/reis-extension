@@ -10,6 +10,11 @@ const PHOTON_URL = 'https://photon.komoot.io/api';
 // Bias results toward MENDELU / Brno so "Česká" or "Lužánky" resolve locally.
 const BIAS_LAT = 49.21;
 const BIAS_LON = 16.6144;
+// Restrict to a Czech Republic bounding box (minLon,minLat,maxLon,maxLat) so a
+// global namesake — e.g. a "Utopia" in the US or Munich — can't outrank the Brno
+// venue. Nearly every society event is in Brno/CZ; the lat/lon bias then ranks
+// Brno first within the box.
+const CZ_BBOX = '12.09,48.55,18.86,51.06';
 const MIN_QUERY = 2;
 
 export interface PhotonFeature {
@@ -56,7 +61,7 @@ export function toPlaceResult(f: PhotonFeature): PlaceResult {
 export async function searchPlaces(query: string): Promise<PlaceResult[]> {
   const q = query.trim();
   if (q.length < MIN_QUERY) return [];
-  const url = `${PHOTON_URL}?q=${encodeURIComponent(q)}&limit=6&lat=${BIAS_LAT}&lon=${BIAS_LON}&lang=default`;
+  const url = `${PHOTON_URL}?q=${encodeURIComponent(q)}&limit=6&lat=${BIAS_LAT}&lon=${BIAS_LON}&bbox=${CZ_BBOX}&lang=default`;
   try {
     const res = await fetch(url);
     if (!res.ok) {

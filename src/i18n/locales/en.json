@@ -1017,6 +1017,7 @@
     "toastDeleted": "Event deleted",
     "eventName": "Event name",
     "eventDate": "Date",
+    "eventTime": "Time",
     "selectPlace": "Select place on map",
     "searchPlace": "Search a place (bar, club, park…)",
     "searching": "Searching…",

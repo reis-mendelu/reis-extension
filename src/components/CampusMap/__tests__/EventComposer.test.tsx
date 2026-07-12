@@ -72,6 +72,18 @@ describe('EventComposer publish', () => {
     await waitFor(() => expect(publish).not.toBeDisabled());
   });
 
+  it('publishes with the chosen start time', async () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
+    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    fireEvent.change(screen.getByLabelText('Čas'), { target: { value: '19:30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    expect(createPost.mock.calls[0][0].time).toBe('19:30');
+  });
+
   it('publishes with the category chosen in the picker (not hardcoded party)', async () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     render(<EventComposer onDone={() => {}} />);

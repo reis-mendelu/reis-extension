@@ -41,6 +41,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
 
   const [title, setTitle] = useState(editing?.title ?? '');
   const [date, setDate] = useState(editing?.date ?? '');
+  const [time, setTime] = useState(editing?.time ?? '');
   const [venue, setVenue] = useState<'offcampus' | 'campus'>(
     editing?.venueKind === 'campus' ? 'campus' : 'offcampus'
   );
@@ -101,6 +102,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       body: '',
       category,
       date,
+      time: time || null,
       venueKind: venue,
       roomCode: venue === 'campus' ? (room?.code ?? null) : null,
       coordLng: coord[0],
@@ -112,6 +114,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         ? await updatePost(editId, {
             title: input.title,
             date: input.date,
+            time: input.time ?? null,
             category: input.category,
             venue_kind: input.venueKind,
             room_code: input.roomCode ?? null,
@@ -182,6 +185,17 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
           {goLiveDate(date).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
         </p>
       )}
+
+      <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
+        {t('map.eventTime')}
+      </label>
+      <input
+        type="time"
+        aria-label={t('map.eventTime')}
+        className="input input-bordered w-full"
+        value={time}
+        onChange={(e) => setTime(e.target.value)}
+      />
 
       <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
         {t('map.categoryLabel')}

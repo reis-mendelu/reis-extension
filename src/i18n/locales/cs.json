@@ -1017,6 +1017,7 @@
     "toastDeleted": "Akce smazána",
     "eventName": "Název akce",
     "eventDate": "Datum",
+    "eventTime": "Čas",
     "selectPlace": "Vybrat místo na mapě",
     "searchPlace": "Hledat místo (bar, klub, park…)",
     "searching": "Hledám…",
