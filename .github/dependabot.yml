@@ -11,10 +11,12 @@ updates:
     # week. Lift the matching entry once the blocker below ships a release, then
     # let Dependabot reoffer it.
     ignore:
-      # typescript 6 — typescript-eslint peers `typescript ">=4.8.4 <6.0.0"`.
-      # Lift when typescript-eslint supports TS 6.
+      # typescript 6 & 7 — typescript-eslint@8 peers `typescript ">=4.8.4 <6.1.0"`,
+      # so anything from 6.1 up (incl. the 7.x native port) fails `npm ci` with
+      # ERESOLVE (PR #138 was TS 7.0.2). Block every major >= 6 until the toolchain
+      # widens its peer range; lift once typescript-eslint supports the target major.
       - dependency-name: "typescript"
-        versions: ["6.x"]
+        versions: [">= 6"]
       # eslint 10 / @eslint/js 10 conflict with the eslint peer range used
       # transitively by typescript-eslint. Both must move together. Lift when
       # typescript-eslint supports eslint 10.
