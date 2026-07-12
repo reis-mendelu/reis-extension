@@ -122,4 +122,16 @@ function maybeRefresh(
       log(`refresh failed (exit ${code}) — keeping the existing snapshot`);
     }
   });
+
+  // Without an 'error' listener a failed spawn (e.g. npm not on PATH) throws an
+  // unhandled EventEmitter error that could take down the dev server, and the
+  // lock would never be cleaned since 'exit' never fires.
+  child.on('error', (err) => {
+    try {
+      rmSync(lockPath);
+    } catch {
+      /* lock already gone */
+    }
+    log(`refresh failed to start: ${err.message}`);
+  });
 }

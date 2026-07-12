@@ -105,7 +105,7 @@ async function collectSubjectDetails(
             .then((f) => {
               files[code] = f;
             })
-            .catch(() => {})
+            .catch((e) => log(`files[${code}] failed: ${e instanceof Error ? e.message : e}`))
         );
       if (s.subjectId)
         jobs.push(
@@ -113,7 +113,7 @@ async function collectSubjectDetails(
             .then((y) => {
               syllabuses[code] = y;
             })
-            .catch(() => {})
+            .catch((e) => log(`syllabus[${code}] failed: ${e instanceof Error ? e.message : e}`))
         );
       await Promise.all(jobs);
     })
@@ -134,7 +134,7 @@ async function collectSubjectDetails(
           .then((z) => {
             data.zaznamnik = z;
           })
-          .catch(() => {})
+          .catch((e) => log(`zaznamnik failed: ${e instanceof Error ? e.message : e}`))
       : Promise.resolve();
 
   await Promise.all([...tasks, zaznamnik]);

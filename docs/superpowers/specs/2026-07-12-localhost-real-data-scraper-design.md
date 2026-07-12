@@ -61,7 +61,7 @@ collectRealData()  — mirror of syncAllData, calling src/api/* directly:
    per subject @ pLimit(3): fetchFilesFromFolder, fetchSyllabus, syncZaznamnik, classmates
    ⇒ assemble SyncedData  (typed import from src/types/messages — compile-time shape contract)
    ▼
-write public/.dev-real-data.json      // gitignored — real grades/names/classmates
+write public/dev-real-data.json       // gitignored — real grades/names/classmates
 ```
 
 Per-endpoint failures are tolerated exactly like production (`Promise.allSettled`); whatever succeeds is written. `collectRealData` deliberately omits `sendToIframe` and Drive backup — those are extension-runtime side effects, not data collection.
@@ -81,7 +81,7 @@ Edit the message effect in `useAppLogic.ts`. Auto-ingest is gated by **three** c
 When all hold, on mount:
 
 ```
-const snap = await fetch('/.dev-real-data.json').then(r => r.ok ? r.json() : null).catch(() => null);
+const snap = await fetch('/dev-real-data.json').then(r => r.ok ? r.json() : null).catch(() => null);
 if (snap) window.postMessage(Messages.syncUpdate({ ...snap, isSyncing: false }), '*');
 ```
 

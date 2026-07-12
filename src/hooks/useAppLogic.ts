@@ -9,7 +9,7 @@ import { useSpolkySettings } from './useSpolkySettings';
 import { useAppStore, initializeStore } from '../store/useAppStore';
 import { NOTES_ENABLED } from '../config/featureFlags';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
-import { loadRealDataSnapshot } from '../utils/loadRealDataSnapshot';
+import { loadRealDataSnapshot } from '../services/loadRealDataSnapshot';
 import type { AppView, SelectedSubject } from '../types/app';
 import { isContentMessage } from '../types/messages';
 import { sendTelemetry } from '../services/errorReporter/telemetry';
