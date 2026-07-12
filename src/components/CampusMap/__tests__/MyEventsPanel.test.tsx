@@ -125,12 +125,9 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
     expect(screen.queryByRole('button', { name: 'Vytvořit akci' })).toBeNull();
   });
 
-  it('logout calls adminLogout', () => {
-    const adminLogout = vi.fn(async () => {});
-    useAppStore.setState({ adminLogout });
+  it('has no logout in the map panel (logout lives in the profile Spolky section)', () => {
     render(<MyEventsPanel />);
-    screen.getByRole('button', { name: 'Odhlásit' }).click();
-    expect(adminLogout).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('button', { name: 'Odhlásit' })).toBeNull();
   });
 
   it('row Edit opens the composer for that event (authoring stays in the panel)', () => {

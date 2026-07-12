@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Check, LogOut, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { sortByDate } from './eventHelpers';
@@ -28,7 +28,6 @@ export function MyEventsPanel() {
   const reloadMapEvents = useAppStore((s) => s.reloadMapEvents);
   const clearMapSelection = useAppStore((s) => s.clearMapSelection);
   const selection = useAppStore((s) => s.mapSelection);
-  const adminLogout = useAppStore((s) => s.adminLogout);
   const assocId = useAppStore((s) => s.adminAssociationId);
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
@@ -163,16 +162,6 @@ export function MyEventsPanel() {
             {t('map.noOwnEvents')}
           </p>
         )}
-      </div>
-
-      <div className="border-t border-base-300 px-3 py-2">
-        <button
-          type="button"
-          className="btn btn-ghost btn-xs gap-1.5 text-base-content/60"
-          onClick={() => void adminLogout()}
-        >
-          <LogOut size={13} /> {t('admin.logout')}
-        </button>
       </div>
     </div>
   );
