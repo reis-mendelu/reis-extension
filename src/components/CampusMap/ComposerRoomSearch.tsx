@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Check, MapPin, Search } from 'lucide-react';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import buildingsJson from '../../data/map/buildings.json';
-import { roomCodeToCoord } from './mapHelpers';
+import { roomCodeToCoord, searchRooms } from './mapHelpers';
 import type { RoomIndexEntry, BuildingsMeta } from '../../types/campusMap';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
@@ -34,11 +34,9 @@ export function ComposerRoomSearch({
   }
 
   const ql = q.trim().toLowerCase();
-  const matches = ql
-    ? INDEX.filter(
-        (r) => r.code.toLowerCase().includes(ql) || r.name.toLowerCase().includes(ql)
-      ).slice(0, 6)
-    : [];
+  // Same ranked search as the top-left map search — exact hall names ("Q01")
+  // beat the dotted offices (Q01.09…) that precede them in the index.
+  const matches = searchRooms(q, INDEX);
 
   return (
     <div className="mt-2">

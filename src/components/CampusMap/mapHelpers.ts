@@ -260,6 +260,24 @@ function matchRank(q: string, name: string, code: string): number {
   return 4;
 }
 
+// Rooms matching a normalized query, tagged with their rank. Shared by the
+// top-left map search and the composer's room picker so both order hits the
+// same way (exact "Q01" beats the dotted Q01.NN offices listed earlier).
+function rankedRooms(q: string, index: RoomIndexEntry[]) {
+  return index
+    .filter((e) => e.code.toLowerCase().includes(q) || e.name.toLowerCase().includes(q))
+    .map((entry) => ({ entry, rank: matchRank(q, entry.name, entry.code) }));
+}
+
+export function searchRooms(query: string, index: RoomIndexEntry[], limit = 6): RoomIndexEntry[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  return rankedRooms(q, index)
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, limit)
+    .map((x) => x.entry);
+}
+
 export function searchPlaces(
   query: string,
   index: RoomIndexEntry[],
@@ -269,12 +287,10 @@ export function searchPlaces(
 ): MapSelection[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
-  const rooms = index
-    .filter((e) => e.code.toLowerCase().includes(q) || e.name.toLowerCase().includes(q))
-    .map((entry) => ({
-      sel: { kind: 'roomRef', entry } as MapSelection,
-      rank: matchRank(q, entry.name, entry.code),
-    }));
+  const rooms = rankedRooms(q, index).map(({ entry, rank }) => ({
+    sel: { kind: 'roomRef', entry } as MapSelection,
+    rank,
+  }));
   const places = pois
     .filter((f) => f.properties.name.toLowerCase().includes(q))
     .map((f) => ({

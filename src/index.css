@@ -283,6 +283,21 @@ html, body, #root {
   border-color: color-mix(in oklab, var(--color-secondary) 40%, transparent);
 }
 
+/* ── Form-field focus: single ring ───────────────────────────────────────
+ * DaisyUI 5 focuses .input/.select/.textarea with a 2px outline offset 2px
+ * AROUND the field's own border — two concentric rings that read as an ugly
+ * double border. Show focus on the border itself instead. Plain rules
+ * (outside any @layer) intentionally override DaisyUI's component layer. */
+.input:focus,
+.input:focus-within,
+.select:focus,
+.select:focus-within,
+.textarea:focus,
+.textarea:focus-within {
+  outline: none;
+  border-color: color-mix(in oklab, var(--color-base-content) 45%, transparent);
+}
+
 /* ── Campus map (Leaflet) overrides ──────────────────────────────────────
  * The campus basemap is always light (CartoDB Positron) regardless of theme,
  * so these are Leaflet-library overrides, not themed component styles. */

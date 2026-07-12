@@ -55,10 +55,18 @@ export function MiniCalendar({
   }, [open]);
 
   return (
-    <div className="dropdown w-full" ref={containerRef}>
+    // dropdown-open is required: DaisyUI 5 display:none's .dropdown-content
+    // unless the container is :focus-within or .dropdown-open, and focus is
+    // unreliable inside the extension iframe — state must drive visibility.
+    <div className={`dropdown w-full ${open ? 'dropdown-open' : ''}`} ref={containerRef}>
       <button
         type="button"
-        tabIndex={0}
+        // No tabIndex: a <button> is already focusable, and marking it
+        // [tabindex] makes DaisyUI's `.dropdown:focus-within > [tabindex]:first-child`
+        // rule set pointer-events:none on it the instant mousedown focuses it —
+        // the click then lands on the parent .dropdown instead of the button, so
+        // onClick never fires and the picker never opens (only physical clicks hit
+        // this; a synthetic .click() dispatches straight to the element).
         className={`input input-bordered flex w-full items-center gap-2 ${value ? '' : 'text-base-content/50'}`}
         onClick={() => setOpen((o) => !o)}
       >

@@ -4,6 +4,7 @@ import {
   lonLatToLatLng,
   ringToLatLng,
   searchPlaces,
+  searchRooms,
   polygonCentroid,
   categoryStyle,
   landmarkGroupLabels,
@@ -151,6 +152,27 @@ describe('searchPlaces', () => {
     expect(r.some((m) => m.kind === 'landmark' && m.landmark.name === 'Tauferovy koleje')).toBe(
       true
     );
+  });
+});
+
+describe('searchRooms', () => {
+  // Children listed first — mirrors the real rooms-index.json, where the
+  // dotted Q01.NN offices precede the bare "Q01" lecture hall.
+  const index: RoomIndexEntry[] = [
+    { code: 'BA39P1009', name: 'Q01.09', buildingId: 0, floorId: 5, floorLevel: 0, placeId: 10 },
+    { code: 'BA39P1014', name: 'Q01.14', buildingId: 0, floorId: 5, floorLevel: 0, placeId: 11 },
+    { code: 'BA39P1024', name: 'Q01.24', buildingId: 0, floorId: 5, floorLevel: 0, placeId: 12 },
+    { code: 'BA39N1009', name: 'Q01', buildingId: 0, floorId: 9, floorLevel: 0, placeId: 1 },
+  ];
+
+  it('ranks the exact bare-hall match first, same as the map search', () => {
+    expect(searchRooms('q01', index).map((r) => r.name)[0]).toBe('Q01');
+  });
+  it('respects the result limit after ranking', () => {
+    expect(searchRooms('q01', index, 2)).toHaveLength(2);
+  });
+  it('returns [] for an empty query', () => {
+    expect(searchRooms('   ', index)).toEqual([]);
   });
 });
 

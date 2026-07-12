@@ -38,6 +38,38 @@ describe('MiniCalendar', () => {
     expect(onChange).toHaveBeenCalledWith('2026-07-15');
   });
 
+  it('marks the container dropdown-open while open (DaisyUI hides the popover otherwise)', () => {
+    // DaisyUI 5 display:none's .dropdown-content unless the container is
+    // :focus-within or .dropdown-open — React state alone isn't enough.
+    const { container } = render(
+      <MiniCalendar
+        value={null}
+        onChange={() => {}}
+        placeholder="Pick a date"
+        t={t}
+        locale="en-US"
+      />
+    );
+    const root = container.querySelector('.dropdown') as HTMLElement;
+    expect(root.classList.contains('dropdown-open')).toBe(false);
+    fireEvent.click(screen.getByText('Pick a date'));
+    expect(root.classList.contains('dropdown-open')).toBe(true);
+  });
+
+  it('trigger has no tabindex (a [tabindex] trigger gets pointer-events:none on focus, so a real click never opens it)', () => {
+    // The trigger is the first child of .dropdown. If it carries [tabindex],
+    // DaisyUI's `.dropdown:focus-within > [tabindex]:first-child { pointer-events:none }`
+    // fires the moment mousedown focuses it, so the ensuing click lands on the
+    // parent .dropdown and the button's onClick never runs. happy-dom can't apply
+    // that CSS, so we guard the root cause directly: the <button> stays focusable
+    // natively and must NOT be marked [tabindex].
+    render(
+      <MiniCalendar value={null} onChange={() => {}} placeholder="Pick a date" t={t} locale="en-US" />
+    );
+    const trigger = screen.getByText('Pick a date').closest('button')!;
+    expect(trigger.hasAttribute('tabindex')).toBe(false);
+  });
+
   it('localizes the weekday header from the locale (English), not hardcoded Czech', () => {
     render(
       <MiniCalendar
