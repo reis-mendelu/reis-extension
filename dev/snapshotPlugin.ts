@@ -1,10 +1,20 @@
 import type { Plugin, ViteDevServer } from 'vite';
-import { existsSync, readFileSync, statSync, writeFileSync, rmSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync, rmSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { resolve } from 'node:path';
 import { snapshotAgeMs, isStale, maxAgeMsFromEnv, DAY_MS } from '../scripts/lib/snapshotFreshness';
 
 const LOCK_TTL_MS = 10 * 60 * 1000; // assume a scrape older than this died
+
+/** File mtime in ms, or undefined if the file is missing/unreadable. Attempts the
+ *  stat directly (no existsSync-then-stat) to avoid a TOCTOU file-system race. */
+function mtimeMs(path: string): number | undefined {
+  try {
+    return statSync(path).mtimeMs;
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * Dev-only Vite plugin for the standalone webapp: keeps rendering instant by
@@ -25,17 +35,18 @@ export function reisSnapshotPlugin(): Plugin {
       const log = (m: string) => server.config.logger.info(`\x1b[36m[reis-data]\x1b[0m ${m}`);
       const maxAge = maxAgeMsFromEnv(process.env);
 
-      const exists = existsSync(snapshotPath);
+      // Read stat + contents directly (try/catch), never existsSync-then-read,
+      // so there is no file-system race between the check and the use.
+      const mtime = mtimeMs(snapshotPath);
       let lastSync: number | undefined;
-      let mtime: number | undefined;
-      if (exists) {
-        mtime = statSync(snapshotPath).mtimeMs;
+      if (mtime !== undefined) {
         try {
           lastSync = JSON.parse(readFileSync(snapshotPath, 'utf8')).lastSync;
         } catch {
-          /* unreadable/partial snapshot ⇒ treat age as unknown */
+          /* unreadable/partial snapshot ⇒ fall back to mtime */
         }
       }
+      const exists = mtime !== undefined;
       const age = snapshotAgeMs(lastSync, mtime);
       const stale = isStale(age, maxAge);
       const ageLabel = age != null ? `${(age / DAY_MS).toFixed(1)}d old` : 'age unknown';
@@ -59,9 +70,12 @@ export function reisSnapshotPlugin(): Plugin {
 }
 
 function hasCredentials(root: string): boolean {
-  const envPath = resolve(root, '.env');
-  if (!existsSync(envPath)) return false;
-  const env = readFileSync(envPath, 'utf8');
+  let env: string;
+  try {
+    env = readFileSync(resolve(root, '.env'), 'utf8');
+  } catch {
+    return false;
+  }
   return /^MENDELU_USER=.+/m.test(env) && /^MENDELU_PASS=.+/m.test(env);
 }
 
@@ -72,14 +86,19 @@ function maybeRefresh(
   server: ViteDevServer
 ): void {
   if (process.env.REIS_SNAPSHOT_NO_AUTOFETCH === '1') {
-    log('auto-refresh disabled (REIS_SNAPSHOT_NO_AUTOFETCH=1) — run `npm run scrape:real` manually');
+    log(
+      'auto-refresh disabled (REIS_SNAPSHOT_NO_AUTOFETCH=1) — run `npm run scrape:real` manually'
+    );
     return;
   }
   if (!hasCredentials(root)) {
     log('no MENDELU creds in .env — skipping auto-refresh (run `npm run scrape:real`)');
     return;
   }
-  if (existsSync(lockPath) && Date.now() - statSync(lockPath).mtimeMs < LOCK_TTL_MS) {
+  // Direct stat (no existsSync-then-stat race): a fresh lock means a scrape is
+  // already running.
+  const lockMtime = mtimeMs(lockPath);
+  if (lockMtime !== undefined && Date.now() - lockMtime < LOCK_TTL_MS) {
     log('a refresh is already in progress — skipping');
     return;
   }

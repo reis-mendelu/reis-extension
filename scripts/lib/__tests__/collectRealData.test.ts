@@ -9,7 +9,9 @@ vi.mock('@/injector/dataFetchers', () => ({
 vi.mock('@/api/exams', () => ({ fetchDualLanguageExams: vi.fn(async () => [{ code: 'X' }]) }));
 vi.mock('@/api/subjects', () => ({
   fetchDualLanguageSubjects: vi.fn(async () => ({
-    subjects: { data: {} }, attendance: {}, availablePeriods: [],
+    subjects: { data: {} },
+    attendance: {},
+    availablePeriods: [],
   })),
 }));
 vi.mock('@/api/pastSubjects', () => ({ fetchDualLanguagePastSubjects: vi.fn(async () => null) }));

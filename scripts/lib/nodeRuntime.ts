@@ -8,8 +8,7 @@ export function createCookieFetch(
   baseFetch: typeof fetch = fetch
 ): typeof fetch {
   return (async (input: RequestInfo | URL, init: RequestInit = {}) => {
-    const url =
-      typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     let host = '';
     try {
       host = new URL(url).host;

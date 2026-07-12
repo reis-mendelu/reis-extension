@@ -56,7 +56,9 @@ async function main() {
   };
   const secs = ((Date.now() - startedAt) / 1000).toFixed(0);
   process.stdout.write(`\n✅ Wrote ${OUT} in ${secs}s\n   ${JSON.stringify(counts)}\n`);
-  process.stdout.write('   Next: npm run dev:web  →  open http://localhost:3000 (real data renders)\n');
+  process.stdout.write(
+    '   Next: npm run dev:web  →  open http://localhost:3000 (real data renders)\n'
+  );
   if (verbose) process.stdout.write(`\n${JSON.stringify(data, null, 2).slice(0, 2000)}\n`);
 
   // The app's fetchers keep Node's HTTP keep-alive sockets (and happy-dom timers)
@@ -66,8 +68,6 @@ async function main() {
 }
 
 main().catch((e) => {
-  process.stderr.write(
-    `\n❌ scrape:real failed: ${e instanceof Error ? e.message : String(e)}\n`
-  );
+  process.stderr.write(`\n❌ scrape:real failed: ${e instanceof Error ? e.message : String(e)}\n`);
   process.exit(1);
 });

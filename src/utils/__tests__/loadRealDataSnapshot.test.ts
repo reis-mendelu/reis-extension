@@ -12,11 +12,9 @@ describe('loadRealDataSnapshot', () => {
       vi.fn(async () => new Response(JSON.stringify(snapshot), { status: 200 }))
     );
     const posts: unknown[] = [];
-    const spy = vi
-      .spyOn(window, 'postMessage')
-      .mockImplementation(((m: unknown) => {
-        posts.push(m);
-      }) as typeof window.postMessage);
+    const spy = vi.spyOn(window, 'postMessage').mockImplementation(((m: unknown) => {
+      posts.push(m);
+    }) as typeof window.postMessage);
 
     const ok = await loadRealDataSnapshot();
 
@@ -29,7 +27,10 @@ describe('loadRealDataSnapshot', () => {
   });
 
   it('returns false and does not post when the file is absent (404)', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 404 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('', { status: 404 }))
+    );
     const spy = vi.spyOn(window, 'postMessage');
     const ok = await loadRealDataSnapshot();
     expect(ok).toBe(false);
