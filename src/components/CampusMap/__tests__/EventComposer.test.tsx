@@ -78,7 +78,8 @@ describe('EventComposer publish', () => {
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
     fireEvent.click(screen.getByText('Vyberte datum'));
     fireEvent.click(screen.getByRole('button', { name: '15' }));
-    fireEvent.change(screen.getByLabelText('Čas'), { target: { value: '19:30' } });
+    fireEvent.change(screen.getByLabelText('Hodina'), { target: { value: '19' } });
+    fireEvent.change(screen.getByLabelText('Minuta'), { target: { value: '30' } });
     fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
     await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
     expect(createPost.mock.calls[0][0].time).toBe('19:30');

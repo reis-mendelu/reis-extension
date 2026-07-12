@@ -1018,6 +1018,8 @@
     "eventName": "Event name",
     "eventDate": "Date",
     "eventTime": "Time",
+    "hour": "Hour",
+    "minute": "Minute",
     "selectPlace": "Select place on map",
     "searchPlace": "Search a place (bar, club, park…)",
     "searching": "Searching…",

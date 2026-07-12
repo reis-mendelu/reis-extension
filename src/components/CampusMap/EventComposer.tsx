@@ -8,6 +8,7 @@ import { isScheduledEvent, goLiveDate } from './eventWindow';
 import { MiniCalendar } from './MiniCalendar';
 import { ComposerRoomSearch } from './ComposerRoomSearch';
 import { ComposerPlaceSearch } from './ComposerPlaceSearch';
+import { ComposerTimeField } from './ComposerTimeField';
 import { roomCodeToName } from './mapHelpers';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import type { RoomIndexEntry } from '../../types/campusMap';
@@ -189,13 +190,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
         {t('map.eventTime')}
       </label>
-      <input
-        type="time"
-        aria-label={t('map.eventTime')}
-        className="input input-bordered w-full"
-        value={time}
-        onChange={(e) => setTime(e.target.value)}
-      />
+      <ComposerTimeField value={time} onChange={setTime} t={t} />
 
       <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
         {t('map.categoryLabel')}
