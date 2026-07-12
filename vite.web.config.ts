@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { reisSnapshotPlugin } from './dev/snapshotPlugin';
 
 // Standalone webapp dev harness for reIS — runs the React app as a plain
 // localhost page (no extension, no iframe), ingesting the scraped snapshot
@@ -9,7 +10,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   root: resolve(__dirname, 'dev'),
   publicDir: resolve(__dirname, 'public'),
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), reisSnapshotPlugin()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
