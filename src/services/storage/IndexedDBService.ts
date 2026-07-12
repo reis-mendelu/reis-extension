@@ -103,7 +103,15 @@ interface ReisDB extends DBSchema {
     };
 }
 
-const DB_NAME = 'reis_db';
+// Mock/demo mode (VITE_USE_MOCK_DATA=true) uses a SEPARATE database so its
+// seeded society data can never bleed into the real one. IndexedDB is
+// origin-scoped and the standalone dev webapp serves every mode from the same
+// origin (localhost), so without this split a demo/screenshot run and a
+// real-data run would share `reis_db` — and flipping the flag off does not clean
+// up, so leftover mock (e.g. the ESN "Czech Language for Foreigners" exam) would
+// hydrate on the next real-data boot. The production extension never sets the
+// flag, so it always uses `reis_db`.
+const DB_NAME = import.meta.env.VITE_USE_MOCK_DATA === 'true' ? 'reis_db_mock' : 'reis_db';
 const DB_VERSION = 21;
 
 // True for the "database connection is closing" / InvalidStateError family that
