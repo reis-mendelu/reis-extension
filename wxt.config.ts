@@ -41,6 +41,7 @@ export default defineConfig({
       'https://darksoothingshadow-reis-syllabus-similarity.hf.space/*',
       'https://zvbpgkmnrqyprtkyxkwn.supabase.co/*',
       'https://hei.api.uni-foundation.eu/*',
+      'https://photon.komoot.io/*',
     ],
     action: {
       default_popup: 'main.html',
