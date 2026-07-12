@@ -9,6 +9,7 @@ import { useSpolkySettings } from './useSpolkySettings';
 import { useAppStore, initializeStore } from '../store/useAppStore';
 import { NOTES_ENABLED } from '../config/featureFlags';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
+import { loadRealDataSnapshot } from '../services/loadRealDataSnapshot';
 import type { AppView, SelectedSubject } from '../types/app';
 import { isContentMessage } from '../types/messages';
 import { sendTelemetry } from '../services/errorReporter/telemetry';
@@ -125,7 +126,10 @@ export function useAppLogic() {
     // Skip iframe data sync when using mock data
     if (import.meta.env.VITE_USE_MOCK_DATA === 'true') return;
 
-    if (!isInIframe()) return;
+    // Dev standalone (localhost): allow the real-data snapshot to flow through
+    // the same handler by not bailing on the missing iframe.
+    const realDataMode = import.meta.env.DEV && !isInIframe();
+    if (!isInIframe() && !realDataMode) return;
     const handle = async (e: MessageEvent) => {
       if (e.source !== window.parent) return;
       const d = e.data;
@@ -308,8 +312,12 @@ export function useAppLogic() {
       }
     };
     window.addEventListener('message', handle);
-    signalReady();
-    requestData('all');
+    if (realDataMode) {
+      void loadRealDataSnapshot();
+    } else {
+      signalReady();
+      requestData('all');
+    }
     return () => window.removeEventListener('message', handle);
   }, []);
 
