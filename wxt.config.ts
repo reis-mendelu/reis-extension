@@ -6,6 +6,17 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   srcDir: 'src',
   modules: ['@wxt-dev/module-react'],
+  hooks: {
+    // Never ship the localhost real-data snapshot in a production build.
+    // It stays packed in dev (chrome-mv3-dev) so the unpacked extension can
+    // fetch it, but is stripped from production output.
+    'build:publicAssets'(wxt, files) {
+      if (wxt.config.mode === 'production') {
+        const i = files.findIndex((f) => f.relativeDest === 'dev-real-data.json');
+        if (i !== -1) files.splice(i, 1);
+      }
+    },
+  },
   webExt: {
     disabled: process.env.WXT_RUNNER_DISABLED === 'true',
   },

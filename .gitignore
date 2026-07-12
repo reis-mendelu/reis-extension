@@ -136,4 +136,4 @@ receiver/.vercel
 .superpowers/
 
 # Local real-data snapshot for localhost dev (real personal data — never commit)
-public/.dev-real-data.json
+public/dev-real-data.json

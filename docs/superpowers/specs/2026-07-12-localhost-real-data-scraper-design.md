@@ -87,18 +87,28 @@ if (snap) window.postMessage(Messages.syncUpdate({ ...snap, isSyncing: false }),
 
 In a top-level window `event.source === window === window.parent`, so the synthetic message passes the handler's existing `e.source !== window.parent` check and flows through the **exact production ingest code path** (store writes + IDB persistence). If the snapshot file is absent, the fetch 404s and it silently no-ops (empty app, same as today) — so nothing breaks before the first scrape.
 
-**Safety:** the snapshot is gitignored and lives only on the developer's disk, so production/CI builds never contain it; combined with the `DEV` guard the fetch is dead code in production.
+**Safety:** the snapshot is gitignored, the `build:publicAssets` hook strips it from production output, and the loader is `import.meta.env.DEV`-gated — so it is packed only in dev builds and is dead code in production.
 
 ---
 
 ## 5. Turnkey UX
 
-- **Entry URL:** `http://localhost:3000/main.html` (the iframe app served standalone by the WXT dev server). Documented in the script's success output and README.
-- **Scripts:**
-  - `npm run scrape:real` → `tsx scripts/scrape-real-data.ts` (prints the snapshot path + row counts on success).
-  - `npm run dev` → unchanged; auto-loads the snapshot per §4.
-- **launch.json:** existing `wxt-dev-chrome` is sufficient — no new config needed, because ingest requires no env flag.
-- First-run friction is exactly one command (`scrape:real`, needs `.env` creds). Subsequent sessions: just `npm run dev`.
+> **Correction (verified during implementation):** the WXT dev server serves
+> static/public assets but does **not** serve the app's HTML entrypoints over
+> HTTP — `http://localhost:3000/main.html` 404s. The reIS iframe app only runs
+> as a loaded extension page (`chrome-extension://<id>/main.html`). So the
+> snapshot is **packed into the dev build** (non-dotfile `public/dev-real-data.json`)
+> and the app is viewed by loading the unpacked dev build. A `build:publicAssets`
+> hook in `wxt.config.ts` strips the snapshot from **production** builds so real
+> data never ships.
+
+- **Flow:**
+  1. `npm run scrape:real` (needs `.env` creds) → writes `public/dev-real-data.json` and prints next steps.
+  2. `npm run dev` → packs the snapshot into `.output/chrome-mv3-dev/`.
+  3. Load `.output/chrome-mv3-dev` as an unpacked extension (chrome://extensions → Developer mode → Load unpacked).
+  4. Open `chrome-extension://<id>/main.html` in a tab (or click the reIS toolbar icon) → real data renders. Standalone page ⇒ `isInIframe()` is false ⇒ the dev-only auto-ingest (§4) fires.
+- **Scripts:** `npm run scrape:real`; `npm run dev` (unchanged otherwise).
+- First-run friction: one command + one-time unpacked load. Subsequent data refreshes: re-run `scrape:real` (dev server hot-reloads the packed asset).
 
 ---
 

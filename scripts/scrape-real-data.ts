@@ -5,7 +5,7 @@ import { chromium } from 'playwright';
 import { installNodeRuntime } from './lib/nodeRuntime';
 
 const LOGIN_URL = 'https://is.mendelu.cz/system/login.pl';
-const OUT = resolve(process.cwd(), 'public/.dev-real-data.json');
+const OUT = resolve(process.cwd(), 'public/dev-real-data.json');
 const verbose = process.argv.includes('--verbose');
 
 async function login(): Promise<string> {
@@ -54,7 +54,13 @@ async function main() {
     files: Object.keys((data.files as object) ?? {}).length,
   };
   process.stdout.write(`\n✅ Wrote ${OUT}\n   ${JSON.stringify(counts)}\n`);
-  process.stdout.write('   Now run: npm run dev  →  open http://localhost:3000/main.html\n');
+  process.stdout.write(
+    '   Next:\n' +
+      '     1. npm run dev            (packs the snapshot into .output/chrome-mv3-dev)\n' +
+      '     2. Load .output/chrome-mv3-dev as an unpacked extension in Chrome\n' +
+      '        (chrome://extensions → Developer mode → Load unpacked)\n' +
+      '     3. Open chrome-extension://<id>/main.html in a tab → real data renders\n'
+  );
   if (verbose) process.stdout.write(`\n${JSON.stringify(data, null, 2).slice(0, 2000)}\n`);
 }
 

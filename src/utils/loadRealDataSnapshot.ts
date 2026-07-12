@@ -2,7 +2,10 @@ import { Messages } from '../types/messages';
 import type { SyncedData } from '../types/messages';
 import { isInIframe } from '../api/proxyClient';
 
-const SNAPSHOT_URL = '/.dev-real-data.json';
+// Non-dotfile so WXT packs it into the dev build; the extension page fetches it
+// from its own origin (chrome-extension://<id>/dev-real-data.json). Gitignored,
+// and DEV-gated below so it is inert in production.
+const SNAPSHOT_URL = '/dev-real-data.json';
 
 /** Dev-only, standalone-only: load the scraped real-data snapshot and feed it
  *  through the production REIS_SYNC_UPDATE handler. No-op if unavailable. */

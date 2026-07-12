@@ -50,6 +50,15 @@ npm run typecheck        # TypeScript strict check
 
 Run a single test file: `npx vitest run src/store/slices/__tests__/someSlice.test.ts`
 
+## Local dev with real data
+
+To run the app locally against your **real** (possibly stale) IS data without a live IS session:
+
+1. Put `MENDELU_USER`/`MENDELU_PASS` in `.env`, then `npm run scrape:real`. This runs `scripts/scrape-real-data.ts`: Playwright logs into IS, and the extension's **own** `src/api/*` fetchers/parsers run in Node (happy-dom + fake-indexeddb + a cookie-injecting fetch, set up in `scripts/lib/nodeRuntime.ts`) via `scripts/lib/collectRealData.ts` — a standalone mirror of `syncAllData`. It writes `public/dev-real-data.json` (gitignored).
+2. `npm run dev` packs that snapshot into `.output/chrome-mv3-dev/`. Load that dir as an unpacked extension and open `chrome-extension://<id>/main.html` in a tab. Standalone (non-iframe) + dev ⇒ `useAppLogic` auto-ingests the snapshot through the real `REIS_SYNC_UPDATE` handler (`src/utils/loadRealDataSnapshot.ts`).
+
+Note: the WXT dev server does **not** serve the app HTML at `localhost:3000` — the app only runs as a loaded extension page. A `build:publicAssets` hook in `wxt.config.ts` strips `dev-real-data.json` from production builds so real data never ships. Anti-drift is enforced by `scripts/lib/__tests__/no-parser-reimpl.test.ts` (the scraper must reuse `@/api/*`, never reimplement parsers).
+
 ## Release
 
 Pushing a `v*` tag triggers `.github/workflows/publish.yml` → builds Chrome + Firefox zips → submits to all three stores via `wxt submit`. Use `/release` to automate the full flow.
