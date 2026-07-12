@@ -16,6 +16,14 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
+  define: {
+    // Default the dev-only "reIS" test society ON for the webapp harness so the
+    // society/organizer UI is available without a Supabase login on every reload
+    // (see src/utils/mock/devSociety.ts). Only affects `npm run dev:web`; the
+    // shipped extension builds via wxt.config.ts and never sees this. Override
+    // with `VITE_DEV_SOCIETY= npm run dev:web` to test the real login flow.
+    'import.meta.env.VITE_DEV_SOCIETY': JSON.stringify(process.env.VITE_DEV_SOCIETY ?? 'reis'),
+  },
   server: {
     port: 3000,
     strictPort: true,
