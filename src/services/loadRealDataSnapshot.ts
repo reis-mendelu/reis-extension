@@ -19,8 +19,16 @@ const SNAPSHOT_URL = '/dev-real-data.json';
 // Excludes `meta` (holds user_params/theme the snapshot load itself depends on)
 // and CDN-fed stores like success_rates (not part of the snapshot).
 const SNAPSHOT_STORES: StoreName[] = [
-  'schedule', 'exams', 'subjects', 'study_plan', 'cvicne_tests',
-  'odevzdavarny', 'syllabuses', 'classmates', 'zaznamnik', 'files',
+  'schedule',
+  'exams',
+  'subjects',
+  'study_plan',
+  'cvicne_tests',
+  'odevzdavarny',
+  'syllabuses',
+  'classmates',
+  'zaznamnik',
+  'files',
 ];
 
 /** Dev-only, standalone-only: clear the crawl-data stores so the real-data

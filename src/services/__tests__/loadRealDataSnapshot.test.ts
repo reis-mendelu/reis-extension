@@ -55,7 +55,9 @@ describe('resetRealDataStores', () => {
   it('clears the crawl-data stores when a snapshot exists', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response(JSON.stringify({ subjects: {}, lastSync: 1 }), { status: 200 }))
+      vi.fn(
+        async () => new Response(JSON.stringify({ subjects: {}, lastSync: 1 }), { status: 200 })
+      )
     );
     const { IndexedDBService } = await import('../storage');
     const didClear = await resetRealDataStores();
@@ -63,9 +65,7 @@ describe('resetRealDataStores', () => {
     const cleared = vi.mocked(IndexedDBService.clear).mock.calls.map((c) => c[0]);
     // Exams must be among them — that is the stale-mock store that leaked.
     expect(cleared).toContain('exams');
-    expect(cleared).toEqual(
-      expect.arrayContaining(['schedule', 'subjects', 'exams', 'zaznamnik'])
-    );
+    expect(cleared).toEqual(expect.arrayContaining(['schedule', 'subjects', 'exams', 'zaznamnik']));
     // Must NOT wipe meta (holds user_params/theme the snapshot load depends on).
     expect(cleared).not.toContain('meta');
   });

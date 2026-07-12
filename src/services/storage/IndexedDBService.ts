@@ -1,5 +1,12 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { SubjectsData, SyllabusRequirements, ParsedFile, GradeHistory, DocumentNote, NoteImage } from '../../types/documents';
+import type {
+  SubjectsData,
+  SyllabusRequirements,
+  ParsedFile,
+  GradeHistory,
+  DocumentNote,
+  NoteImage,
+} from '../../types/documents';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ExamSubject } from '../../types/exams';
 import type { ClassmatesData } from '../../types/classmates';
@@ -13,94 +20,94 @@ import type { SubjectZaznamnik } from '../../types/zaznamnik';
 import { StoreSchemas, type StoreName } from '../../types/storage';
 
 interface ReisDB extends DBSchema {
-    files: {
-        key: string;
-        value: ParsedFile[] | { cz: ParsedFile[], en: ParsedFile[] }; // Key is courseCode
-    };
-    assessments: {
-        key: string;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        value: any; // Legacy store — kept for backward compatibility
-    };
-    syllabuses: {
-        key: string;
-        value: SyllabusRequirements | { cz: SyllabusRequirements, en: SyllabusRequirements }; // Key is courseCode
-    };
-    classmates: {
-        key: string;
-        // Keys are either `${courseCode}` (course classmates) or `exam:${terminId}` (per-exam-term classmates)
-        value: ClassmatesData;
-    };
-    exams: {
-        key: string;
-        value: ExamSubject[];
-    };
-    schedule: {
-        key: string;
-        value: BlockLesson[];
-    };
-    subjects: {
-        key: string;
-        value: SubjectsData;
-    };
-    success_rates: {
-        key: string;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        value: any;
-    };
-    meta: {
-        key: string;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        value: any;
-    };
-    grade_history: {
-        key: string;
-        value: GradeHistory;
-    };
-    study_plan: {
-        key: string;
-        value: StudyPlan | DualLanguageStudyPlan;
-    };
-    cvicne_tests: {
-        key: string;
-        value: CvicnyTest[];
-    };
-    odevzdavarny: {
-        key: string;
-        value: Odevzdavarna[];
-    };
-    erasmus: {
-        key: string;
-        value: ErasmusCountryData;
-    };
-    document_notes: {
-        key: string;
-        value: DocumentNote;
-    };
-    note_images: {
-        key: string;
-        value: NoteImage;
-    };
-    hidden_items: {
-        key: string;
-        value: HiddenItems;
-    };
-    custom_events: {
-        key: string;
-        value: CalendarCustomEvent;
-    };
-    iskam: {
-        key: string;
-        value: IskamData;
-    };
-    zaznamnik: {
-        key: string;
-        value: SubjectZaznamnik | null; // Key is courseCode
-    };
-    map_rooms: {
-        key: string;        // String(buildingId), e.g. "0" for Q
-        value: import('../../types/campusMap').RoomsCollection;
-    };
+  files: {
+    key: string;
+    value: ParsedFile[] | { cz: ParsedFile[]; en: ParsedFile[] }; // Key is courseCode
+  };
+  assessments: {
+    key: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    value: any; // Legacy store — kept for backward compatibility
+  };
+  syllabuses: {
+    key: string;
+    value: SyllabusRequirements | { cz: SyllabusRequirements; en: SyllabusRequirements }; // Key is courseCode
+  };
+  classmates: {
+    key: string;
+    // Keys are either `${courseCode}` (course classmates) or `exam:${terminId}` (per-exam-term classmates)
+    value: ClassmatesData;
+  };
+  exams: {
+    key: string;
+    value: ExamSubject[];
+  };
+  schedule: {
+    key: string;
+    value: BlockLesson[];
+  };
+  subjects: {
+    key: string;
+    value: SubjectsData;
+  };
+  success_rates: {
+    key: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    value: any;
+  };
+  meta: {
+    key: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    value: any;
+  };
+  grade_history: {
+    key: string;
+    value: GradeHistory;
+  };
+  study_plan: {
+    key: string;
+    value: StudyPlan | DualLanguageStudyPlan;
+  };
+  cvicne_tests: {
+    key: string;
+    value: CvicnyTest[];
+  };
+  odevzdavarny: {
+    key: string;
+    value: Odevzdavarna[];
+  };
+  erasmus: {
+    key: string;
+    value: ErasmusCountryData;
+  };
+  document_notes: {
+    key: string;
+    value: DocumentNote;
+  };
+  note_images: {
+    key: string;
+    value: NoteImage;
+  };
+  hidden_items: {
+    key: string;
+    value: HiddenItems;
+  };
+  custom_events: {
+    key: string;
+    value: CalendarCustomEvent;
+  };
+  iskam: {
+    key: string;
+    value: IskamData;
+  };
+  zaznamnik: {
+    key: string;
+    value: SubjectZaznamnik | null; // Key is courseCode
+  };
+  map_rooms: {
+    key: string; // String(buildingId), e.g. "0" for Q
+    value: import('../../types/campusMap').RoomsCollection;
+  };
 }
 
 // Mock/demo mode (VITE_USE_MOCK_DATA=true) uses a SEPARATE database so its
@@ -117,157 +124,190 @@ const DB_VERSION = 21;
 // True for the "database connection is closing" / InvalidStateError family that
 // a stale handle throws after the underlying connection was closed.
 function isConnectionClosing(e: unknown): boolean {
-    if (e instanceof DOMException && e.name === 'InvalidStateError') return true;
-    const msg = e instanceof Error ? e.message : String(e);
-    return /connection is closing|InvalidStateError/i.test(msg);
+  if (e instanceof DOMException && e.name === 'InvalidStateError') return true;
+  const msg = e instanceof Error ? e.message : String(e);
+  return /connection is closing|InvalidStateError/i.test(msg);
 }
 
 class IndexedDBServiceImpl {
-    // Null when no live connection is held. Self-healing: any close (another tab
-    // upgrading the DB, the extension context being invalidated, or the browser
-    // reaping an idle connection) resets this so the next call reopens, instead
-    // of forever awaiting a dead handle that throws "connection is closing".
-    private dbPromise: Promise<IDBPDatabase<ReisDB>> | null = null;
+  // Null when no live connection is held. Self-healing: any close (another tab
+  // upgrading the DB, the extension context being invalidated, or the browser
+  // reaping an idle connection) resets this so the next call reopens, instead
+  // of forever awaiting a dead handle that throws "connection is closing".
+  private dbPromise: Promise<IDBPDatabase<ReisDB>> | null = null;
 
-    private getDB(): Promise<IDBPDatabase<ReisDB>> {
-        if (!this.dbPromise) {
-            this.dbPromise = openDB<ReisDB>(DB_NAME, DB_VERSION, {
-                upgrade(db) {
-                    const requiredStores: (keyof ReisDB)[] = [
-                        'files', 'assessments', 'syllabuses', 'classmates',
-                        'exams', 'schedule', 'subjects', 'success_rates', 'meta',
-                        'grade_history', 'study_plan', 'cvicne_tests', 'odevzdavarny',
-                        'erasmus', 'document_notes', 'note_images', 'hidden_items', 'custom_events',
-                        'iskam', 'zaznamnik', 'map_rooms'
-                    ];
+  private getDB(): Promise<IDBPDatabase<ReisDB>> {
+    if (!this.dbPromise) {
+      this.dbPromise = openDB<ReisDB>(DB_NAME, DB_VERSION, {
+        upgrade(db) {
+          const requiredStores: (keyof ReisDB)[] = [
+            'files',
+            'assessments',
+            'syllabuses',
+            'classmates',
+            'exams',
+            'schedule',
+            'subjects',
+            'success_rates',
+            'meta',
+            'grade_history',
+            'study_plan',
+            'cvicne_tests',
+            'odevzdavarny',
+            'erasmus',
+            'document_notes',
+            'note_images',
+            'hidden_items',
+            'custom_events',
+            'iskam',
+            'zaznamnik',
+            'map_rooms',
+          ];
 
-                    requiredStores.forEach(store => {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        if (!db.objectStoreNames.contains(store as any)) {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            db.createObjectStore(store as any);
-                        }
-                    });
-                },
-                // A newer DB version (e.g. after an extension update) wants to
-                // open: step aside by closing our connection and dropping the
-                // handle, so the next call reopens at the new version.
-                blocking: () => {
-                    const closing = this.dbPromise;
-                    this.dbPromise = null;
-                    void closing?.then(db => db.close()).catch(() => {});
-                },
-                // Browser closed the connection unexpectedly. Force a reopen.
-                terminated: () => { this.dbPromise = null; },
-            }).catch(err => {
-                this.dbPromise = null;
-                throw err;
-            });
-        }
-        return this.dbPromise;
-    }
-
-    // Runs a DB operation, transparently reopening and retrying once if it fails
-    // because the connection was closing. Single funnel so the self-heal lives
-    // in one place rather than a try/catch at every call site.
-    private async run<T>(op: (db: IDBPDatabase<ReisDB>) => Promise<T>): Promise<T> {
-        try {
-            return await op(await this.getDB());
-        } catch (e) {
-            if (!isConnectionClosing(e)) throw e;
-            this.dbPromise = null;
-            return await op(await this.getDB());
-        }
-    }
-
-
-    private validate<K extends StoreName>(storeName: K, value: unknown): ReisDB[K]['value'] | undefined {
-        const schema = StoreSchemas[storeName];
-        const result = schema.safeParse(value);
-        if (!result.success) return undefined;
-        return result.data as ReisDB[K]['value'];
-    }
-
-    async get<K extends StoreName>(storeName: K, key: string): Promise<ReisDB[K]['value'] | undefined> {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const value = await this.run(db => db.get(storeName as any, key));
-        return value ? this.validate(storeName, value) : undefined;
-    }
-
-
-
-    async set<K extends StoreName>(storeName: K, key: string, value: ReisDB[K]['value']): Promise<void> {
-        // Validate before saving to prevent corrupt data ingress
-        const validated = this.validate(storeName, value);
-        if (!validated) return; // Drop invalid data rather than saving it
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await this.run(db => db.put(storeName as any, validated, key));
-    }
-
-    async setMany<K extends StoreName>(
-        storeName: K,
-        entries: Array<readonly [string, ReisDB[K]['value']]>
-    ): Promise<void> {
-        if (entries.length === 0) return;
-        const validated = entries
-            .map(([key, value]) => [key, this.validate(storeName, value)] as const)
-            .filter((e): e is readonly [string, ReisDB[K]['value']] => e[1] !== undefined);
-        if (validated.length === 0) return;
-
-        await this.run(async db => {
+          requiredStores.forEach((store) => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const tx = db.transaction(storeName as any, 'readwrite');
-            const store = tx.store;
-            for (const [key, value] of validated) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                store.put(value as any, key);
+            if (!db.objectStoreNames.contains(store as any)) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              db.createObjectStore(store as any);
             }
-            await tx.done;
-        });
+          });
+        },
+        // A newer DB version (e.g. after an extension update) wants to
+        // open: step aside by closing our connection and dropping the
+        // handle, so the next call reopens at the new version.
+        blocking: () => {
+          const closing = this.dbPromise;
+          this.dbPromise = null;
+          void closing?.then((db) => db.close()).catch(() => {});
+        },
+        // Browser closed the connection unexpectedly. Force a reopen.
+        terminated: () => {
+          this.dbPromise = null;
+        },
+      }).catch((err) => {
+        this.dbPromise = null;
+        throw err;
+      });
     }
+    return this.dbPromise;
+  }
 
-    async delete<K extends keyof ReisDB>(storeName: K, key: string): Promise<void> {
+  // Runs a DB operation, transparently reopening and retrying once if it fails
+  // because the connection was closing. Single funnel so the self-heal lives
+  // in one place rather than a try/catch at every call site.
+  private async run<T>(op: (db: IDBPDatabase<ReisDB>) => Promise<T>): Promise<T> {
+    try {
+      return await op(await this.getDB());
+    } catch (e) {
+      if (!isConnectionClosing(e)) throw e;
+      this.dbPromise = null;
+      return await op(await this.getDB());
+    }
+  }
+
+  private validate<K extends StoreName>(
+    storeName: K,
+    value: unknown
+  ): ReisDB[K]['value'] | undefined {
+    const schema = StoreSchemas[storeName];
+    const result = schema.safeParse(value);
+    if (!result.success) return undefined;
+    return result.data as ReisDB[K]['value'];
+  }
+
+  async get<K extends StoreName>(
+    storeName: K,
+    key: string
+  ): Promise<ReisDB[K]['value'] | undefined> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const value = await this.run((db) => db.get(storeName as any, key));
+    return value ? this.validate(storeName, value) : undefined;
+  }
+
+  async set<K extends StoreName>(
+    storeName: K,
+    key: string,
+    value: ReisDB[K]['value']
+  ): Promise<void> {
+    // Validate before saving to prevent corrupt data ingress
+    const validated = this.validate(storeName, value);
+    if (!validated) return; // Drop invalid data rather than saving it
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await this.run((db) => db.put(storeName as any, validated, key));
+  }
+
+  async setMany<K extends StoreName>(
+    storeName: K,
+    entries: Array<readonly [string, ReisDB[K]['value']]>
+  ): Promise<void> {
+    if (entries.length === 0) return;
+    const validated = entries
+      .map(([key, value]) => [key, this.validate(storeName, value)] as const)
+      .filter((e): e is readonly [string, ReisDB[K]['value']] => e[1] !== undefined);
+    if (validated.length === 0) return;
+
+    await this.run(async (db) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tx = db.transaction(storeName as any, 'readwrite');
+      const store = tx.store;
+      for (const [key, value] of validated) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await this.run(db => db.delete(storeName as any, key));
-    }
+        store.put(value as any, key);
+      }
+      await tx.done;
+    });
+  }
 
-    async clear<K extends keyof ReisDB>(storeName: K): Promise<void> {
+  async delete<K extends keyof ReisDB>(storeName: K, key: string): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await this.run((db) => db.delete(storeName as any, key));
+  }
+
+  async clear<K extends keyof ReisDB>(storeName: K): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await this.run((db) => db.clear(storeName as any));
+  }
+
+  async clearAll(): Promise<void> {
+    await this.run(async (db) => {
+      const stores = Array.from(db.objectStoreNames);
+      if (stores.length === 0) return;
+      const tx = db.transaction(stores, 'readwrite');
+      for (const store of stores) {
+        tx.objectStore(store).clear();
+      }
+      await tx.done;
+    });
+  }
+
+  async getAll<K extends StoreName>(storeName: K): Promise<ReisDB[K]['value'][]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const values = await this.run((db) => db.getAll(storeName as any));
+    return values
+      .map((v) => this.validate(storeName, v))
+      .filter((v): v is ReisDB[K]['value'] => v !== undefined);
+  }
+
+  async getAllWithKeys<K extends StoreName>(
+    storeName: K
+  ): Promise<{ key: string; value: ReisDB[K]['value'] }[]> {
+    const [keys, values] = await this.run((db) =>
+      Promise.all([
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await this.run(db => db.clear(storeName as any));
-    }
-
-    async clearAll(): Promise<void> {
-        await this.run(async db => {
-            const stores = Array.from(db.objectStoreNames);
-            if (stores.length === 0) return;
-            const tx = db.transaction(stores, 'readwrite');
-            for (const store of stores) {
-                tx.objectStore(store).clear();
-            }
-            await tx.done;
-        });
-    }
-
-    async getAll<K extends StoreName>(storeName: K): Promise<ReisDB[K]['value'][]> {
+        db.getAllKeys(storeName as any),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const values = await this.run(db => db.getAll(storeName as any));
-        return values.map(v => this.validate(storeName, v)).filter((v): v is ReisDB[K]['value'] => v !== undefined);
-    }
+        db.getAll(storeName as any),
+      ])
+    );
 
-    async getAllWithKeys<K extends StoreName>(storeName: K): Promise<{ key: string, value: ReisDB[K]['value'] }[]> {
-        const [keys, values] = await this.run(db => Promise.all([
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            db.getAllKeys(storeName as any),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            db.getAll(storeName as any),
-        ]));
-        
-        return (keys as string[]).map((key, i) => {
-            const value = this.validate(storeName, values[i]);
-            return value !== undefined ? { key, value } : null;
-        }).filter((item): item is { key: string, value: ReisDB[K]['value'] } => item !== null);
-    }
+    return (keys as string[])
+      .map((key, i) => {
+        const value = this.validate(storeName, values[i]);
+        return value !== undefined ? { key, value } : null;
+      })
+      .filter((item): item is { key: string; value: ReisDB[K]['value'] } => item !== null);
+  }
 }
 
 export const IndexedDBService = new IndexedDBServiceImpl();
