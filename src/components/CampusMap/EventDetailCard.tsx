@@ -4,10 +4,15 @@ import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { societyById } from '../../data/societies';
+import roomsIndexJson from '../../data/map/rooms-index.json';
+import { roomCodeToName } from './mapHelpers';
+import type { RoomIndexEntry } from '../../types/campusMap';
 import { parseEventDate } from './eventHelpers';
 import { EventRsvp } from './EventRsvp';
 import { deletePost } from '../../api/societyPosts';
 import type { MapEvent } from '../../types/events';
+
+const INDEX = roomsIndexJson as RoomIndexEntry[];
 
 // Bottom-left detail body for a selected society event. Minimal and info-first:
 // a small society avatar + title + host, then the facts (when / what / where),
@@ -95,7 +100,7 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
               className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
               onClick={() => focusRoom(event.roomCode!)}
             >
-              <MapPin size={13} className="flex-shrink-0" /> {event.roomCode}
+              <MapPin size={13} className="flex-shrink-0" /> {roomCodeToName(event.roomCode, INDEX)}
             </button>
           ) : event.location ? (
             <div className="flex items-center gap-1.5 text-sm text-base-content/70">

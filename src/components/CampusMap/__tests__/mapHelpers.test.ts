@@ -9,6 +9,7 @@ import {
   categoryStyle,
   landmarkGroupLabels,
   roomCodeToCoord,
+  roomCodeToName,
 } from '../mapHelpers';
 import type { RoomIndexEntry, BuildingsMeta, PoiFeature, Landmark } from '../../../types/campusMap';
 
@@ -31,6 +32,24 @@ describe('roomCodeToCoord', () => {
   });
   it('returns null for an unknown code', () => {
     expect(roomCodeToCoord('ZZZ', index, buildings)).toBeNull();
+  });
+});
+
+describe('roomCodeToName', () => {
+  const index = [
+    { code: 'BA39N1009', name: 'Q01', buildingId: 0, floorId: 5, floorLevel: 0, placeId: 546 },
+  ] as unknown as RoomIndexEntry[];
+  it('resolves the IS-internal code to its human-readable hall name', () => {
+    expect(roomCodeToName('BA39N1009', index)).toBe('Q01');
+  });
+  it('normalizes case and whitespace before matching', () => {
+    expect(roomCodeToName('  ba39n1009 ', index)).toBe('Q01');
+  });
+  it('passes a legacy name-valued code through unchanged', () => {
+    expect(roomCodeToName('Q01', index)).toBe('Q01');
+  });
+  it('falls back to the given string for an unknown code', () => {
+    expect(roomCodeToName('ZZZ', index)).toBe('ZZZ');
   });
 });
 

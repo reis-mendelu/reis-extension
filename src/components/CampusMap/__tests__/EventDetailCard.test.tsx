@@ -70,6 +70,15 @@ describe('EventDetailCard society controls', () => {
     expect(clearMapSelection).not.toHaveBeenCalled();
   });
 
+  it('shows the human-readable room name, not the raw IS room code', () => {
+    // Campus events persist only the IS-internal code ("BA39N1009"); the
+    // hall name ("Q01") lives in rooms-index.json. The card must resolve it.
+    const campusEvent: MapEvent = { ...ev, roomCode: 'BA39N1009', venueKind: 'campus' };
+    render(<EventDetailCard event={campusEvent} />);
+    expect(screen.getByText('Q01')).toBeTruthy();
+    expect(screen.queryByText('BA39N1009')).toBeNull();
+  });
+
   it("hides edit/delete for another society's event in society mode (cross-tenant isolation)", () => {
     useAppStore.setState({ mapMode: 'society', adminAssociationId: 'supef' });
     const otherEvent: MapEvent = { ...ev, societyId: 'esn' };

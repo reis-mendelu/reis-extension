@@ -35,6 +35,19 @@ export function roomCodeToCoord(
   return [b.center[1], b.center[0]];
 }
 
+// Events persist only the IS-internal room code (e.g. "BA39N1009"); the
+// human-readable hall name ("Q01") lives in the rooms index. Resolve code →
+// name for display. Normalizes like roomCodeToCoord and also matches on name,
+// so a legacy row that stored the name already stays a name. Falls back to the
+// given string for an unknown code so the user still sees something.
+export function roomCodeToName(code: string, index: RoomIndexEntry[]): string {
+  const needle = code.trim().toLowerCase();
+  const entry = index.find(
+    (e) => e.code.toLowerCase() === needle || e.name.toLowerCase() === needle
+  );
+  return entry?.name ?? code;
+}
+
 // Leaflet polygon styles for the map. Fixed literals (the basemap is always
 // light) kept here with categoryStyle so all map styling lives in one place.
 // SELECTED = MyMENDELU-style solid orange (brand colors are green, so orange
