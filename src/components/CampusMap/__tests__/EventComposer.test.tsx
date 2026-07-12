@@ -18,6 +18,8 @@ vi.mock('../../../api/societyPosts', () => ({
   createPost: (...a: Parameters<typeof createPost>) => createPost(...a),
   updatePost: (...a: Parameters<typeof updatePost>) => updatePost(...a),
 }));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+import { toast } from 'sonner';
 
 beforeEach(() => {
   createPost.mockClear();
@@ -53,6 +55,8 @@ describe('EventComposer publish', () => {
     // Publishing a live event must refresh the public feed so it shows on the
     // student "Akce" tab without a full reload (stale load-once cache fix).
     expect(useAppStore.getState().reloadMapEvents).toHaveBeenCalled();
+    // And the society gets a clear confirmation it worked.
+    expect(toast.success).toHaveBeenCalled();
   });
 
   it('disables publish and shows what is missing until the form is complete', async () => {

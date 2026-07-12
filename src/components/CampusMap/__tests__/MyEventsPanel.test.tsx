@@ -6,6 +6,8 @@ import type { MapEvent } from '../../../types/events';
 
 vi.mock('../../../api/societyPosts', () => ({ deletePost: vi.fn().mockResolvedValue({}) }));
 import { deletePost } from '../../../api/societyPosts';
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+import { toast } from 'sonner';
 
 const mk = (id: string, date: string): MapEvent => ({
   id,
@@ -142,6 +144,8 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
     // Deleting changes the public feed too — refresh it so the pin disappears
     // from the student "Akce" view without a full reload.
     expect(reloadMapEvents).toHaveBeenCalled();
+    // Confirm the deletion so the society knows it took effect.
+    expect(toast.success).toHaveBeenCalled();
   });
 
   it('Cancel disarms the delete confirm without calling deletePost', () => {

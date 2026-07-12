@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Check, LogOut, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -45,10 +46,14 @@ export function MyEventsPanel() {
     const res = await deletePost(id);
     setBusyId(null);
     setConfirmId(null);
-    if (res.error) return;
+    if (res.error) {
+      toast.error(t('admin.saveError'));
+      return;
+    }
     if (selectedId === id) clearMapSelection(); // close the preview card if it was open
     await loadSocietyPosts();
     void reloadMapEvents(); // drop the pin from the public "Akce" feed too
+    toast.success(t('map.toastDeleted'));
   };
 
   const rowActions = (e: MapEvent) =>

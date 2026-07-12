@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { CalendarPlus, Check, MapPin, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -132,6 +133,9 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       }
       await loadSocietyPosts();
       void reloadMapEvents(); // surface the change on the public "Akce" feed too
+      toast.success(
+        editId ? t('map.toastSaved') : scheduled ? t('map.toastScheduled') : t('map.toastPublished')
+      );
       close();
     } catch {
       setError(true);
