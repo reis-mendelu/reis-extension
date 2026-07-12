@@ -40,6 +40,18 @@ describe('EventDetailCard', () => {
     expect(screen.queryByRole('button', { name: /edit|upravit/i })).toBeNull();
   });
 
+  it('links an off-campus venue to Google Maps at its coordinates (lat,lng)', () => {
+    const offEvent: MapEvent = { ...ev, location: 'Bar, který neexistuje', coord: [16.6097, 49.1959] };
+    render(<EventDetailCard event={offEvent} />);
+    const link = screen.getByRole('link', { name: /Bar, který neexistuje/ });
+    // Google Maps expects lat,lng; coord is stored [lng, lat].
+    expect(link).toHaveAttribute(
+      'href',
+      'https://www.google.com/maps/search/?api=1&query=49.1959,16.6097'
+    );
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
   it('shows the human-readable room name, not the raw IS room code', () => {
     // Campus events persist only the IS-internal code ("BA39N1009"); the
     // hall name ("Q01") lives in rooms-index.json. The card must resolve it.

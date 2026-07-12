@@ -61,15 +61,15 @@ export const SOCIETIES: Record<string, Society> = {
     logo: '/spolky/zf.jpg',
     facultyKey: 'zf',
   },
-  // The reIS team itself (reis_admin role). Campus-wide like ESN. No shipped
-  // logo asset, so an empty `logo` makes consumers fall back to the glyph.
+  // The reIS team itself (reis_admin role). Campus-wide like ESN. Uses the app's
+  // own logo (served at the extension root, like /spolky/*).
   reis: {
     id: 'reis',
     name: 'reIS',
     shortName: 'reIS',
     color: '#79be15',
     glyph: 'reIS',
-    logo: '',
+    logo: '/reIS_logo.svg',
     facultyKey: 'mendelu',
   },
 };

@@ -78,9 +78,23 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
               <MapPin size={13} className="flex-shrink-0" /> {roomCodeToName(event.roomCode, INDEX)}
             </button>
           ) : event.location ? (
-            <div className="flex items-center gap-1.5 text-sm text-base-content/70">
-              <MapPin size={13} className="flex-shrink-0" /> {event.location}
-            </div>
+            event.coord ? (
+              // Off-campus venue: open it in Google Maps so the student can
+              // navigate there. coord is [lng, lat]; Maps wants lat,lng.
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${event.coord[1]},${event.coord[0]}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+              >
+                <MapPin size={13} className="flex-shrink-0" /> {event.location}
+                <ExternalLink size={11} className="flex-shrink-0 opacity-60" />
+              </a>
+            ) : (
+              <div className="flex items-center gap-1.5 text-sm text-base-content/70">
+                <MapPin size={13} className="flex-shrink-0" /> {event.location}
+              </div>
+            )
           ) : null}
         </div>
 

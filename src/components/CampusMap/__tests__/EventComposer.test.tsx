@@ -59,20 +59,17 @@ describe('EventComposer publish', () => {
     expect(toast.success).toHaveBeenCalled();
   });
 
-  it('disables publish and shows what is missing until the form is complete', async () => {
+  it('keeps publish disabled until every field is filled, then enables it', async () => {
     render(<EventComposer onDone={() => {}} />);
     const publish = screen.getByRole('button', { name: 'Zveřejnit akci' });
     expect(publish).toBeDisabled();
-    // A hint tells the organizer why they can't publish yet (no silent dead button).
-    expect(screen.getByText(/Doplňte/)).toBeInTheDocument();
 
-    // Completing every field clears the hint and enables publish.
+    // Completing every field enables publish.
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
     fireEvent.click(screen.getByText('Vyberte datum'));
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     await waitFor(() => expect(publish).not.toBeDisabled());
-    expect(screen.queryByText(/Doplňte/)).toBeNull();
   });
 
   it('publishes with the category chosen in the picker (not hardcoded party)', async () => {

@@ -129,10 +129,14 @@ export function MyEventsPanel() {
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center gap-2 border-b border-base-300 px-3 py-2.5">
         <span
-          className="flex h-6 w-6 items-center justify-center rounded-md text-[10px] font-bold text-white"
-          style={{ backgroundColor: soc?.color ?? 'var(--fallback-p,#0046a0)' }}
+          className="flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded-md text-[10px] font-bold text-white"
+          style={{ backgroundColor: soc?.logo ? undefined : (soc?.color ?? 'var(--fallback-p,#0046a0)') }}
         >
-          {soc?.shortName?.slice(0, 2).toUpperCase() ?? '•'}
+          {soc?.logo ? (
+            <img src={soc.logo} alt="" className="h-full w-full object-contain" />
+          ) : (
+            (soc?.shortName?.slice(0, 2).toUpperCase() ?? '•')
+          )}
         </span>
         <span className="text-sm font-bold">{soc?.name ?? t('map.myEvents')}</span>
         <button

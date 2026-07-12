@@ -67,13 +67,6 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   const coord = venue === 'campus' ? (room?.coord ?? null) : draftCoord;
   const ready = !!title.trim() && !!date && !!coord;
   const scheduled = date ? isScheduledEvent(date) : false;
-  // What still blocks publishing — shown as a hint so the disabled button is
-  // never a silent dead end.
-  const missing = [
-    !title.trim() && t('map.eventName'),
-    !date && t('map.eventDate'),
-    !coord && t('map.venueLabel'),
-  ].filter((x): x is string => !!x);
 
   const close = () => {
     clearDraftCoord();
@@ -218,14 +211,14 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       <div className="flex gap-2">
         <button
           type="button"
-          className={`btn btn-sm flex-1 gap-1 ${venue === 'offcampus' ? 'btn-primary' : 'btn-outline'}`}
+          className={`btn btn-sm flex-1 gap-1 ${venue === 'offcampus' ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
           onClick={() => switchVenue('offcampus')}
         >
           <MapPin size={13} /> {t('map.venueOffcampus')}
         </button>
         <button
           type="button"
-          className={`btn btn-sm flex-1 gap-1 ${venue === 'campus' ? 'btn-primary' : 'btn-outline'}`}
+          className={`btn btn-sm flex-1 gap-1 ${venue === 'campus' ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
           onClick={() => switchVenue('campus')}
         >
           {t('map.venueCampus')}
@@ -263,11 +256,6 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       )}
 
       {error && <p className="mt-2 text-[11px] text-error">{t('admin.saveError')}</p>}
-      {!ready && !busy && (
-        <p className="mt-2 text-[11px] text-base-content/50">
-          {t('map.fillToPublish')}: {missing.join(', ')}
-        </p>
-      )}
       <div className="mt-3 flex gap-2">
         <button type="button" className="btn btn-ghost btn-sm" onClick={close}>
           {t('common.cancel')}

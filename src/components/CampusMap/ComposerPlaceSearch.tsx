@@ -103,8 +103,6 @@ export function ComposerPlaceSearch({
           ))}
         </div>
       )}
-      {/* OSM/ODbL attribution requirement for Photon results. */}
-      <p className="mt-1 text-[10px] text-base-content/40">{t('map.poweredByOsm')}</p>
     </div>
   );
 }
