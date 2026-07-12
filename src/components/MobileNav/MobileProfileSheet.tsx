@@ -172,6 +172,7 @@ export function MobileProfileSheet({
                     onToggle={() => setSpolkyOpen(!spolkyOpen)}
                     isSub={isSubscribed}
                     onToggleAssoc={toggleAssociation}
+                    onNavigate={onClose}
                   />
                   <OutlookSyncToggle enabled={isEnabled} loading={syncLoading} onToggle={tSync} />
                 </div>

@@ -19,10 +19,12 @@ import { useTripleClick } from '../../hooks/ui/useTripleClick';
 export function ProfilePopup({
   isOpen,
   onOpenFeedback,
+  onClose,
   isIskam,
 }: {
   isOpen: boolean;
   onOpenFeedback?: () => void;
+  onClose?: () => void;
   isIskam?: boolean;
 }) {
   const { isEnabled, isLoading: syncLoading, toggle: tSync } = useOutlookSync(),
@@ -157,6 +159,7 @@ export function ProfilePopup({
               onToggle={() => setSpolkyOpen(!spolkyOpen)}
               isSub={isSubscribed}
               onToggleAssoc={toggleAssociation}
+              onNavigate={onClose}
             />
             <OutlookSyncToggle enabled={isEnabled} loading={syncLoading} onToggle={tSync} />
             <GoogleDriveToggle />

@@ -6,6 +6,11 @@ import { createPost, updatePost, type PostInput } from '../../api/societyPosts';
 import { isScheduledEvent, goLiveDate } from './eventWindow';
 import { MiniCalendar } from './MiniCalendar';
 import { ComposerRoomSearch } from './ComposerRoomSearch';
+import { roomCodeToName } from './mapHelpers';
+import roomsIndexJson from '../../data/map/rooms-index.json';
+import type { RoomIndexEntry } from '../../types/campusMap';
+
+const INDEX = roomsIndexJson as RoomIndexEntry[];
 
 // Create/edit a society event. No <form> submit (sandboxed iframe blocks it);
 // Publish/Save is a button. Venue is either a free-placed off-campus point
@@ -35,7 +40,13 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   );
   const [room, setRoom] = useState<{ code: string; name: string; coord: [number, number] } | null>(
     editing && editing.venueKind === 'campus' && editing.roomCode && editing.coord
-      ? { code: editing.roomCode, name: editing.location ?? editing.roomCode, coord: editing.coord }
+      ? {
+          code: editing.roomCode,
+          // roomCode is the IS-internal code ("BA39N1009"); show the hall name
+          // ("Q01") in the picked-room chip, same as the search results do.
+          name: editing.location ?? roomCodeToName(editing.roomCode, INDEX),
+          coord: editing.coord,
+        }
       : null
   );
   const [busy, setBusy] = useState(false);

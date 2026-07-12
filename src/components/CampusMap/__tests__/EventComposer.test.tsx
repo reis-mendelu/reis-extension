@@ -81,4 +81,33 @@ describe('EventComposer publish', () => {
     expect(patch.room_code).toBe('BA39N6006');
     expect(patch.category).toBe('boardgames');
   });
+
+  it('shows the hall name (not the IS code) in the picked-room chip when editing', () => {
+    // Campus events save only room_code and a null location, so the chip must
+    // resolve BA39N1009 → "Q01" rather than echoing the raw code.
+    useAppStore.setState({
+      editEventId: 'c2',
+      societyMapEvents: [
+        {
+          id: 'c2',
+          title: 'Zootopia',
+          url: '',
+          date: '2026-07-14',
+          endDate: null,
+          time: null,
+          location: null,
+          imageUrl: null,
+          organizerKey: 'pef',
+          societyId: 'supef',
+          coord: [16.614, 49.209],
+          roomCode: 'BA39N1009',
+          venueKind: 'campus',
+          category: 'party',
+        },
+      ],
+    });
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.getByText('Q01')).toBeTruthy();
+    expect(screen.queryByText('BA39N1009')).toBeNull();
+  });
 });

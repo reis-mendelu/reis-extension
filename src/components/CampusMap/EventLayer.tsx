@@ -6,6 +6,8 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { filterEvents, groupEventsByVenue, type VenueGroup } from './eventHelpers';
 import { subscribeMapInstance } from './mapInstance';
 import { EventPin } from './EventPin';
+import { DraftPin } from './DraftPin';
+import { societyById } from '../../data/societies';
 import { isScheduledEvent } from './eventWindow';
 
 interface Placed {
@@ -44,9 +46,17 @@ export function EventLayer() {
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const selection = useAppStore((s) => s.mapSelection);
   const focusEvent = useAppStore((s) => s.focusEventById);
-  const { language } = useTranslation();
+  // The in-progress event location: only meaningful while the composer is open.
+  const composerOpen = useAppStore((s) => s.composerOpen);
+  const draftCoord = useAppStore((s) => s.draftCoord);
+  const assocId = useAppStore((s) => s.adminAssociationId);
+  const beginPlacing = useAppStore((s) => s.beginPlacing);
+  const { language, t } = useTranslation();
   const [placed, setPlaced] = useState<Placed[]>([]);
+  const [draftPt, setDraftPt] = useState<{ x: number; y: number } | null>(null);
   const [pane, setPane] = useState<HTMLElement | null>(null);
+  const activeDraft = composerOpen ? draftCoord : null;
+  const draftColor = (assocId ? societyById(assocId)?.color : null) ?? '#0046a0';
   // Events are loaded by the store (initializeStore + language handlers), not a
   // fetch-in-useEffect here — this layer stays presentational over store state.
 
@@ -57,11 +67,18 @@ export function EventLayer() {
 
   // Re-place pins when the visible groups change (filter toggle, data load).
   const groupsRef = useRef(groups);
+  const draftRef = useRef<[number, number] | null>(activeDraft);
   const scheduleRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     groupsRef.current = groups;
     scheduleRef.current?.();
   }, [groups]);
+  // Re-project the draft point when it's placed/moved/cleared or the composer
+  // opens/closes, so the pin appears (and disappears) immediately.
+  useEffect(() => {
+    draftRef.current = activeDraft;
+    scheduleRef.current?.();
+  }, [activeDraft]);
 
   useEffect(() => {
     let map: L.Map | null = null;
@@ -72,6 +89,7 @@ export function EventLayer() {
     const recompute = () => {
       if (!map) {
         setPlaced([]);
+        setDraftPt(null);
         return;
       }
       placedZoom = map.getZoom();
@@ -80,6 +98,11 @@ export function EventLayer() {
         return { key: g.key, x: pt.x, y: pt.y, group: g };
       });
       setPlaced(next);
+      const d = draftRef.current;
+      if (d) {
+        const pt = map.latLngToLayerPoint([d[1], d[0]]);
+        setDraftPt({ x: pt.x, y: pt.y });
+      } else setDraftPt(null);
     };
     scheduleRef.current = recompute;
     // Pure panning needs no handler — the pane is a child of the map pane and
@@ -104,6 +127,11 @@ export function EventLayer() {
           return { key: g.key, x: pt.x, y: pt.y, group: g };
         })
       );
+      const d = draftRef.current;
+      if (d) {
+        const pt = proj._latLngToNewLayerPoint([d[1], d[0]], e.zoom, e.center).round();
+        setDraftPt({ x: pt.x, y: pt.y });
+      }
     };
     const bind = (m: L.Map) => {
       const p = m.getPane(PANE_NAME) ?? m.createPane(PANE_NAME);
@@ -127,6 +155,7 @@ export function EventLayer() {
       else {
         setPane(null);
         setPlaced([]);
+        setDraftPt(null);
       }
     });
     return () => {
@@ -136,7 +165,9 @@ export function EventLayer() {
     };
   }, []);
 
-  if (activeBuildingId !== null || !pane || placed.length === 0) return null;
+  // The draft pin can be the only thing to show (placing a first event with no
+  // saved events yet), so don't bail on an empty `placed` when a draft exists.
+  if (activeBuildingId !== null || !pane || (placed.length === 0 && !draftPt)) return null;
   const selectedId = selection?.kind === 'event' ? selection.event.id : null;
 
   return createPortal(
@@ -153,6 +184,15 @@ export function EventLayer() {
           onSelect={focusEvent}
         />
       ))}
+      {draftPt && (
+        <DraftPin
+          x={draftPt.x}
+          y={draftPt.y}
+          color={draftColor}
+          label={t('map.draftPinLabel')}
+          onClick={beginPlacing}
+        />
+      )}
     </>,
     pane
   );
