@@ -25,6 +25,8 @@
     "typecheck": "tsc -b",
     "typecheck:nuia": "tsc -p tsconfig.app.json --noUncheckedIndexedAccess --noEmit",
     "nuia:gate": "node scripts/nuia-gate.mjs",
+    "scrape:real": "tsx --tsconfig tsconfig.app.json scripts/scrape-real-data.ts",
+    "dev:web": "vite --config vite.web.config.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -91,6 +93,7 @@
     "jsdom": "^29.1.1",
     "postcss": "^8.5.17",
     "prettier": "^3.9.5",
+    "tsx": "^4.23.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.63.0",
     "vite": "^7.3.6",

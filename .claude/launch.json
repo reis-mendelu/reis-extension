@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "wxt-dev-chrome",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "wxt-dev-firefox",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:firefox"],
+      "port": 3000
+    },
+    {
+      "name": "reis-webapp",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:web"],
+      "port": 3000
+    }
+  ]
+}

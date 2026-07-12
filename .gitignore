@@ -134,3 +134,9 @@ receiver/.vercel
 
 # Brainstorming visual companion
 .superpowers/
+
+# Local real-data snapshot for localhost dev (real personal data — never commit)
+public/dev-real-data.json
+
+# Lockfile for the dev:web background snapshot refresh
+public/.dev-real-data.lock

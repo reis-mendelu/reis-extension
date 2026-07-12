@@ -1,5 +1,11 @@
 @import 'tailwindcss';
 
+/* Explicit content source so Tailwind scans the component tree even when the
+   build tool's root is not the repo root (e.g. the standalone webapp dev
+   harness in vite.web.config.ts uses root: dev/). Redundant but harmless for
+   the WXT extension build, which already scans src/. */
+@source "../src/**/*.{ts,tsx,html}";
+
 /* Mobile = touch device + narrow viewport. Desktop split-screen stays desktop. */
 @custom-variant touch (@media (pointer: coarse) and (max-width: 767px));
 
