@@ -31,6 +31,7 @@ beforeEach(() => {
     composerOpen: true,
     societyMapEvents: [],
     loadSocietyPosts: vi.fn(async () => {}),
+    reloadMapEvents: vi.fn(async () => {}),
   });
 });
 
@@ -49,6 +50,38 @@ describe('EventComposer publish', () => {
     const input = createPost.mock.calls[0][0];
     expect(input.venueKind).toBe('offcampus');
     expect(input.coordLng).toBe(16.61);
+    // Publishing a live event must refresh the public feed so it shows on the
+    // student "Akce" tab without a full reload (stale load-once cache fix).
+    expect(useAppStore.getState().reloadMapEvents).toHaveBeenCalled();
+  });
+
+  it('disables publish and shows what is missing until the form is complete', async () => {
+    render(<EventComposer onDone={() => {}} />);
+    const publish = screen.getByRole('button', { name: 'Zveřejnit akci' });
+    expect(publish).toBeDisabled();
+    // A hint tells the organizer why they can't publish yet (no silent dead button).
+    expect(screen.getByText(/Doplňte/)).toBeInTheDocument();
+
+    // Completing every field clears the hint and enables publish.
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
+    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    await waitFor(() => expect(publish).not.toBeDisabled());
+    expect(screen.queryByText(/Doplňte/)).toBeNull();
+  });
+
+  it('publishes with the category chosen in the picker (not hardcoded party)', async () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Kvíz večer' } });
+    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    // Pick the "Kvíz" (quiz) category instead of leaving the default party.
+    fireEvent.click(screen.getByRole('button', { name: 'Kvíz' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    expect(createPost.mock.calls[0][0].category).toBe('quiz');
   });
 
   it('preserves venue_kind=campus and room_code when editing a campus event', async () => {

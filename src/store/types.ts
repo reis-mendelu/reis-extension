@@ -488,6 +488,8 @@ export interface MapSlice {
   setMapPanelTab: (tab: 'places' | 'events') => void;
   setEventFilter: (filter: string) => void;
   loadMapEvents: () => Promise<void>;
+  /** Refetch the public feed unconditionally (bypasses the load-once guard). Call after a society create/update/delete so the public map/"Akce" tab reflects the change without a full reload. */
+  reloadMapEvents: () => Promise<void>;
   /** Select an event for the detail panel. Pass `{ fly: true }` (list click) to also fly the camera to its coordinate; a pin click omits it and the camera stays put. */
   focusEventById: (id: string, opts?: { fly?: boolean }) => void;
   // --- Society authoring mode ---

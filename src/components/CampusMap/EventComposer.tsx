@@ -9,6 +9,8 @@ import { ComposerRoomSearch } from './ComposerRoomSearch';
 import { roomCodeToName } from './mapHelpers';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import type { RoomIndexEntry } from '../../types/campusMap';
+import type { EventCategory } from '../../types/events';
+import { EVENT_CATEGORIES, CATEGORY_ICON } from '../../data/eventCategories';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
 
@@ -26,6 +28,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   const beginPlacing = useAppStore((s) => s.beginPlacing);
   const clearDraftCoord = useAppStore((s) => s.clearDraftCoord);
   const loadSocietyPosts = useAppStore((s) => s.loadSocietyPosts);
+  const reloadMapEvents = useAppStore((s) => s.reloadMapEvents);
   const editId = useAppStore((s) => s.editEventId);
   const editing = useAppStore(
     (s) => s.societyMapEvents.find((e) => e.id === s.editEventId) ?? null
@@ -49,12 +52,20 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         }
       : null
   );
+  const [category, setCategory] = useState<EventCategory>(editing?.category ?? 'party');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
 
   const coord = venue === 'campus' ? (room?.coord ?? null) : draftCoord;
   const ready = !!title.trim() && !!date && !!coord;
   const scheduled = date ? isScheduledEvent(date) : false;
+  // What still blocks publishing — shown as a hint so the disabled button is
+  // never a silent dead end.
+  const missing = [
+    !title.trim() && t('map.eventName'),
+    !date && t('map.eventDate'),
+    !coord && t('map.venueLabel'),
+  ].filter((x): x is string => !!x);
 
   const close = () => {
     clearDraftCoord();
@@ -75,7 +86,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     const input: PostInput = {
       title: title.trim(),
       body: '',
-      category: editing?.category ?? 'party',
+      category,
       date,
       venueKind: venue,
       roomCode: venue === 'campus' ? (room?.code ?? null) : null,
@@ -99,6 +110,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         return;
       }
       await loadSocietyPosts();
+      void reloadMapEvents(); // surface the change on the public "Akce" feed too
       close();
     } catch {
       setError(true);
@@ -154,6 +166,28 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       )}
 
       <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
+        {t('map.categoryLabel')}
+      </label>
+      <div className="flex flex-wrap gap-1.5">
+        {EVENT_CATEGORIES.map((key) => {
+          const Icon = CATEGORY_ICON[key];
+          const label = t(`map.category.${key}`);
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-label={label}
+              aria-pressed={category === key}
+              className={`btn btn-xs gap-1 ${category === key ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
+              onClick={() => setCategory(key)}
+            >
+              <Icon size={13} /> {label}
+            </button>
+          );
+        })}
+      </div>
+
+      <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
         {t('map.venueLabel')}
       </label>
       <div className="flex gap-2">
@@ -196,13 +230,18 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       )}
 
       {error && <p className="mt-2 text-[11px] text-error">{t('admin.saveError')}</p>}
+      {!ready && !busy && (
+        <p className="mt-2 text-[11px] text-base-content/50">
+          {t('map.fillToPublish')}: {missing.join(', ')}
+        </p>
+      )}
       <div className="mt-3 flex gap-2">
         <button type="button" className="btn btn-ghost btn-sm" onClick={close}>
           {t('common.cancel')}
         </button>
         <button
           type="button"
-          className="btn btn-primary btn-sm flex-1"
+          className="btn btn-primary btn-sm flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={!ready || busy}
           onClick={publish}
         >

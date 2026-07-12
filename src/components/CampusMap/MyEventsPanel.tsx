@@ -24,6 +24,7 @@ export function MyEventsPanel() {
   const editEventId = useAppStore((s) => s.editEventId);
   const closeComposer = useAppStore((s) => s.closeComposer);
   const loadSocietyPosts = useAppStore((s) => s.loadSocietyPosts);
+  const reloadMapEvents = useAppStore((s) => s.reloadMapEvents);
   const clearMapSelection = useAppStore((s) => s.clearMapSelection);
   const selection = useAppStore((s) => s.mapSelection);
   const adminLogout = useAppStore((s) => s.adminLogout);
@@ -47,6 +48,7 @@ export function MyEventsPanel() {
     if (res.error) return;
     if (selectedId === id) clearMapSelection(); // close the preview card if it was open
     await loadSocietyPosts();
+    void reloadMapEvents(); // drop the pin from the public "Akce" feed too
   };
 
   const rowActions = (e: MapEvent) =>

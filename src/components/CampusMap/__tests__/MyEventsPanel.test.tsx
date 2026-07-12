@@ -130,7 +130,8 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
 
   it('row Delete arms an in-row confirm, then commits deletePost + reload', async () => {
     const loadSocietyPosts = vi.fn(async () => {});
-    useAppStore.setState({ loadSocietyPosts });
+    const reloadMapEvents = vi.fn(async () => {});
+    useAppStore.setState({ loadSocietyPosts, reloadMapEvents });
     render(<MyEventsPanel />);
     // Arm: the trash swaps to a confirm (✓) / cancel (✗) pair, no request yet.
     fireEvent.click(screen.getByRole('button', { name: 'Smazat' }));
@@ -138,6 +139,9 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Opravdu smazat?' }));
     await waitFor(() => expect(deletePost).toHaveBeenCalledWith('e1'));
     expect(loadSocietyPosts).toHaveBeenCalled();
+    // Deleting changes the public feed too — refresh it so the pin disappears
+    // from the student "Akce" view without a full reload.
+    expect(reloadMapEvents).toHaveBeenCalled();
   });
 
   it('Cancel disarms the delete confirm without calling deletePost', () => {

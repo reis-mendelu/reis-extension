@@ -4,6 +4,14 @@ import {
 } from 'lucide-react';
 import type { EventCategory } from '../types/events';
 
+// Display order for the category picker (composer). 'party' leads because it's
+// the most common society event and stays the default; 'other' trails as the
+// catch-all.
+export const EVENT_CATEGORIES: readonly EventCategory[] = [
+  'party', 'social', 'boardgames', 'quiz', 'sports',
+  'film', 'karaoke', 'culture', 'trip', 'other',
+];
+
 // One lucide (outline) icon per category — used by the side list + detail card,
 // where outline glyphs read best in a row of text (the Fluent convention:
 // outline in lists, filled for emphasis).

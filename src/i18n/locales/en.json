@@ -1016,7 +1016,8 @@
     "selectPlace": "Select place on map",
     "changePlace": "Change place",
     "publish": "Publish event",
-    "clickToPlace": "Click the map where your event is",
+    "fillToPublish": "Fill in",
+    "clickToPlace": "Tap the button, then mark the spot on the map",
     "draftPinLabel": "Event location — click to change",
     "venueLabel": "Where",
     "venueOffcampus": "In town",
@@ -1027,6 +1028,7 @@
     "edit": "Edit",
     "delete": "Delete",
     "deleteConfirm": "Delete for good?",
+    "categoryLabel": "Event type",
     "category": {
       "party": "Party",
       "boardgames": "Board games",
