@@ -38,20 +38,13 @@
       {
         "id": "parser-brittleness",
         "rule": "IS Mendelu HTML parsers are extremely brittle and must almost never change. Never alter a parser to fix a lint or test error (suppress the lint / fix the test fixture instead). Column-index constants are load-bearing. Any parser change requires a real IS Mendelu HTML sample as evidence, otherwise it must be reverted.",
-        "scope": [
-          "src/api/documents/parser.ts",
-          "src/api/cvicneTests.ts",
-          "src/utils/parsers/**"
-        ],
+        "scope": ["src/api/documents/parser.ts", "src/api/cvicneTests.ts", "src/utils/parsers/**"],
         "severity": "high"
       },
       {
         "id": "telemetry-privacy",
         "rule": "Error telemetry must never transmit student PII or IS data: no student name, student/staff ID (raw or hashed), session cookies, grades, schedules, or IndexedDB contents. The `extra` argument to logError is never transmitted. Route all non-fatal errors through logError (src/utils/reportError.ts); content scripts must bridge via a telemetryError message. Ensure sanitize.ts redaction stays intact.",
-        "scope": [
-          "src/services/errorReporter/**",
-          "src/utils/reportError.ts"
-        ],
+        "scope": ["src/services/errorReporter/**", "src/utils/reportError.ts"],
         "severity": "high"
       },
       {
