@@ -1,0 +1,80 @@
+{
+  "$schema": "https://www.greptile.com/schema/greptile.json",
+  "strictness": 2,
+  "commentTypes": ["logic", "syntax", "style"],
+  "ignorePatterns": "**/node_modules/**\n**/.output/**\n**/dist/**\npackage-lock.json\n**/*.generated.*\npublic/dev-real-data.json\ne2e/**/__screenshots__/**",
+  "customContext": {
+    "rules": [
+      {
+        "id": "no-web-storage",
+        "rule": "Never use localStorage or sessionStorage. All persistent client state must go through IndexedDBService; small user settings go through the Chrome Storage API.",
+        "severity": "high"
+      },
+      {
+        "id": "no-reexport-barrels",
+        "rule": "No proxy/re-export barrel files. Import directly from the implementation file, never from an index/barrel that only re-exports.",
+        "severity": "high"
+      },
+      {
+        "id": "no-useeffect-fetch",
+        "rule": "Never fetch data in a useEffect. Data fetching belongs in services or the Zustand store; components read from the store synchronously.",
+        "severity": "high"
+      },
+      {
+        "id": "no-custom-css",
+        "rule": "No custom CSS. Use DaisyUI semantic classes (e.g. btn-primary, bg-base-200) and Tailwind utilities only.",
+        "severity": "medium"
+      },
+      {
+        "id": "state-in-zustand",
+        "rule": "All application state lives in Zustand slices (src/store/slices/create*Slice.ts). No ad-hoc/generic global state outside the sliced store.",
+        "severity": "medium"
+      },
+      {
+        "id": "max-file-lines",
+        "rule": "Files should stay under ~200 lines. Flag files that grow well past this and suggest splitting.",
+        "severity": "low"
+      },
+      {
+        "id": "parser-brittleness",
+        "rule": "IS Mendelu HTML parsers are extremely brittle and must almost never change. Never alter a parser to fix a lint or test error (suppress the lint / fix the test fixture instead). Column-index constants are load-bearing. Any parser change requires a real IS Mendelu HTML sample as evidence, otherwise it must be reverted.",
+        "scope": ["src/api/documents/parser.ts", "src/api/cvicneTests.ts", "src/utils/parsers/**"],
+        "severity": "high"
+      },
+      {
+        "id": "telemetry-privacy",
+        "rule": "Error telemetry must never transmit student PII or IS data: no student name, student/staff ID (raw or hashed), session cookies, grades, schedules, or IndexedDB contents. The `extra` argument to logError is never transmitted. Route all non-fatal errors through logError (src/utils/reportError.ts); content scripts must bridge via a telemetryError message. Ensure sanitize.ts redaction stays intact.",
+        "scope": ["src/services/errorReporter/**", "src/utils/reportError.ts"],
+        "severity": "high"
+      },
+      {
+        "id": "drive-dedupe-by-hash",
+        "rule": "Google Drive backup must dedupe files ONLY by the appProperties.reisLink IS-link hash, never by filename (IS legitimately serves many files with the same display name). Folders are find-or-create by name+parent. The manifest is a cache, not the source of truth.",
+        "scope": ["src/services/drive/**", "src/api/googleDrive.ts"],
+        "severity": "high"
+      },
+      {
+        "id": "drive-scope-minimal",
+        "rule": "Google Drive integration must use the drive.file OAuth scope only. Never escalate to drive, drive.readonly, or documents scopes.",
+        "scope": ["src/api/googleAuth.ts", "src/services/drive/**"],
+        "severity": "high"
+      },
+      {
+        "id": "host-data-direction",
+        "rule": "Host integration is push-based: data flows content script -> iframe, never iframe -> host API. The iframe must never call the IS Mendelu or WebISKAM API directly; only the content script fetches host data.",
+        "scope": ["src/injector/**", "src/entrypoints/**"],
+        "severity": "high"
+      },
+      {
+        "id": "lang-code-mapping",
+        "rule": "Internal code uses 'cs'/'en' language codes; the IS Mendelu API uses 'cz'/'en'. The cs<->cz mapping must be applied in the API layer, not leaked into UI or store code.",
+        "severity": "medium"
+      },
+      {
+        "id": "no-hand-edited-manifest",
+        "rule": "The extension manifest is generated from wxt.config.ts and must never be hand-edited.",
+        "severity": "medium"
+      }
+    ]
+  }
+}
