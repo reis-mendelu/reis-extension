@@ -104,13 +104,13 @@ npm run build
 
 ## License
 
-The source code in this repository is licensed under the **GNU Affero General Public License v3.0 only** (AGPL-3.0-only). See [`LICENSE`](LICENSE) for the full text.
+The source code in this repository is licensed under the **Apache License 2.0** (Apache-2.0). See [`LICENSE`](LICENSE) for the full text.
 
-In short: you are free to use, study, modify, and redistribute the code, but any distributed or network-deployed derivative work must also be released under the AGPL-3.0 with full source code available.
+In short: you are free to use, study, modify, and redistribute the code — including in closed-source or commercial works — provided you retain the copyright and license notices, state any changes you made, and include a copy of the license. The license also grants an explicit patent license from contributors. It does **not** cover the reIS name or logo (see Trademarks below).
 
 ## Trademarks
 
-The name **"reIS"** and the reIS logo are **not** covered by the AGPL license above. They are unregistered trademarks of the project authors. You may not use them to name, brand, or promote a forked or derivative extension — including (but not limited to) listings on the Chrome Web Store, the Firefox Add-ons store, or any equivalent distribution channel — in a way that could cause confusion with the official reIS extension. Forks must use a distinct name and icon.
+The name **"reIS"** and the reIS logo are **not** covered by the Apache license above. They are unregistered trademarks of the project authors. You may not use them to name, brand, or promote a forked or derivative extension — including (but not limited to) listings on the Chrome Web Store, the Firefox Add-ons store, or any equivalent distribution channel — in a way that could cause confusion with the official reIS extension. Forks must use a distinct name and icon.
 
 ---
 
