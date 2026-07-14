@@ -8,6 +8,22 @@
             "type": "command",
             "command": "python3 .claude/hooks/guard-parsers.py",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/nudge-scraper-files.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/nudge-scraper-prompt.py",
+            "timeout": 5
           }
         ]
       }
