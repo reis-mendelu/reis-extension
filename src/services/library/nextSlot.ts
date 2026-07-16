@@ -42,7 +42,7 @@ export function computeNextSlot(
     if (b.status !== 'AVAILABLE') continue;
     const bStart = new Date(b.start);
     const bEnd = new Date(b.end);
-    let start = ceilToHour(new Date(Math.max(bStart.getTime(), earliest.getTime())));
+    const start = ceilToHour(new Date(Math.max(bStart.getTime(), earliest.getTime())));
     if (start.getTime() + HOUR_MS <= bEnd.getTime()) {
       if (!best || start < best) best = start;
     }
