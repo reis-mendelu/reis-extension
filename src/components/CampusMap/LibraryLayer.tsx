@@ -4,7 +4,7 @@ import type L from 'leaflet';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { LIBRARY_ROOMS } from '../../data/map/libraryRooms';
-import { computeNextSlot } from '../../services/library/nextSlot';
+import { isBookableToday } from '../../services/library/nextSlot';
 import { subscribeMapInstance } from './mapInstance';
 
 // Centroid of the Knihovna A cluster (building A), as [lng, lat].
@@ -98,7 +98,7 @@ export function LibraryLayer() {
   const now = new Date();
   const freeCount = LIBRARY_ROOMS.filter((room) => {
     const a = availability[room.staffGuid];
-    return a ? computeNextSlot(a.blocks, room.leadMinutes, now) !== null : false;
+    return a ? isBookableToday(a.blocks, room.leadMinutes, now) : false;
   }).length;
 
   return createPortal(

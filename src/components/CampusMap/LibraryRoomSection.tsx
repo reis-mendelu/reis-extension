@@ -22,13 +22,14 @@ export function LibraryRoomSection({ placeId }: { placeId: number }) {
             <p className="text-xs text-base-content/60">
               {t('map.libraryCapacity')}: {cap} {t('map.libraryPeople')} · {t('map.libraryAmenities')}
             </p>
-            <span className={`badge badge-sm ${status.free ? 'badge-success' : 'badge-ghost'}`}>{status.text}</span>
+            {status.known && (
+              <span className={`badge badge-sm ${status.free ? 'badge-success' : 'badge-ghost'}`}>{status.text}</span>
+            )}
             <a
-              href={avail?.webUrl}
+              href={room.bookingUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="link link-primary block text-sm"
-              aria-disabled={!avail?.webUrl}
             >
               {t('map.libraryReserve')}
             </a>

@@ -21,8 +21,23 @@ describe('statusLabel', () => {
     expect(r.free).toBe(false);
     expect(r.text).toBe('map.libraryFull');
   });
-  it('degrades to fully-booked label when availability is missing', () => {
+  it('reports unknown (not fully-booked) when availability is missing', () => {
     const r = statusLabel(room, undefined, new Date('2026-07-17T11:00:00'), t as never, 'cs');
+    expect(r.known).toBe(false);
     expect(r.free).toBe(false);
+  });
+  it('marks known true (fully booked) when availability exists but no slot fits', () => {
+    const r = statusLabel(room, avail, new Date('2026-07-17T15:30:00'), t as never, 'cs');
+    expect(r.known).toBe(true);
+    expect(r.free).toBe(false);
+  });
+  it('marks known true (free) when a slot fits', () => {
+    const r = statusLabel(room, avail, new Date('2026-07-17T11:00:00'), t as never, 'cs');
+    expect(r.known).toBe(true);
+    expect(r.free).toBe(true);
+  });
+  it('maps the app-internal "cz" locale to Intl-valid "cs" for date/time formatting', () => {
+    const r = statusLabel(room, avail, new Date('2026-07-17T11:00:00'), t as never, 'cz');
+    expect(r.text).toBe('map.libraryNextSlotToday:14:00');
   });
 });

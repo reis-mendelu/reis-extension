@@ -25,7 +25,7 @@ import {
 } from './mapLayers';
 import { setMapInstance } from './mapInstance';
 import { LIBRARY_PLACE_IDS, libraryRoomsByPlaceId } from '@/data/map/libraryRooms';
-import { computeNextSlot } from '@/services/library/nextSlot';
+import { isBookableToday } from '@/services/library/nextSlot';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
@@ -51,6 +51,19 @@ export function MapCanvas() {
   const focusReq = useAppStore((s) => s.mapFocusRequest);
   const mapSelection = useAppStore((s) => s.mapSelection);
   const libraryAvailability = useAppStore((s) => s.libraryAvailability);
+  // "Latest ref" for the heavy draw effect below: availability data can land
+  // seconds after mount (async proxy fetch), and re-running that effect on
+  // every such update would re-fly the camera (fitBounds again) even though
+  // the user hasn't navigated. The heavy effect reads `libraryAvailability`
+  // through this ref (always current, updated every render) instead of
+  // depending on it directly, so navigation state (building/floor/focus) is
+  // the only thing that triggers a redraw+fly. A separate light effect below
+  // reacts to `libraryAvailability` changes to re-tint already-drawn library
+  // polygons in place, without touching the camera.
+  const libraryAvailabilityRef = useRef(libraryAvailability);
+  useEffect(() => {
+    libraryAvailabilityRef.current = libraryAvailability;
+  }, [libraryAvailability]);
 
   // init once
   useEffect(() => {
@@ -222,9 +235,10 @@ export function MapCanvas() {
       let effectiveBase = base;
       if (LIBRARY_PLACE_IDS.has(p.id)) {
         const now = new Date();
+        const availNow = libraryAvailabilityRef.current;
         const free = libraryRoomsByPlaceId(p.id).some((room) => {
-          const a = libraryAvailability[room.staffGuid];
-          return a ? computeNextSlot(a.blocks, room.leadMinutes, now) !== null : false;
+          const a = availNow[room.staffGuid];
+          return a ? isBookableToday(a.blocks, room.leadMinutes, now) : false;
         });
         effectiveBase = free ? LIBRARY_FREE_STYLE : LIBRARY_BUSY_STYLE;
       }
@@ -267,7 +281,10 @@ export function MapCanvas() {
         })
       );
     }
-  }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq, libraryAvailability]);
+    // libraryAvailability intentionally excluded — read via libraryAvailabilityRef
+    // so its arrival doesn't trigger a redraw+fly; see comment at the ref
+    // declaration and the dedicated re-tint effect below.
+  }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq]);
 
   // Highlight the selected room in place on a plain map click — restyle the live
   // polygons without a full redraw or camera move (the heavy effect above only
@@ -286,6 +303,32 @@ export function MapCanvas() {
       } else poly.setStyle(base);
     }
   }, [mapSelection]);
+
+  // Re-tint already-drawn library polygons in place when fresh availability
+  // data lands (e.g. a few seconds after mount) — mirrors the selection
+  // effect above: restyle the live polygons via roomPolysRef, no redraw and
+  // no camera move. The currently-selected room (if any) is left alone; its
+  // SELECTED_STYLE is owned by the effect above and re-asserted whenever
+  // mapSelection changes.
+  useEffect(() => {
+    const selId =
+      mapSelection?.kind === 'room'
+        ? mapSelection.room.id
+        : mapSelection?.kind === 'roomRef'
+          ? mapSelection.entry.placeId
+          : null;
+    const now = new Date();
+    for (const [placeId, entry] of roomPolysRef.current) {
+      if (!LIBRARY_PLACE_IDS.has(placeId) || placeId === selId) continue;
+      const free = libraryRoomsByPlaceId(placeId).some((room) => {
+        const a = libraryAvailability[room.staffGuid];
+        return a ? isBookableToday(a.blocks, room.leadMinutes, now) : false;
+      });
+      const style = free ? LIBRARY_FREE_STYLE : LIBRARY_BUSY_STYLE;
+      roomPolysRef.current.set(placeId, { poly: entry.poly, base: style });
+      entry.poly.setStyle(style);
+    }
+  }, [libraryAvailability, mapSelection]);
 
   return <div ref={ref} className="absolute inset-0" />;
 }

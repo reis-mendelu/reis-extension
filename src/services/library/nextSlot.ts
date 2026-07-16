@@ -49,3 +49,17 @@ export function computeNextSlot(
   }
   return best ? toLocalIso(best) : null;
 }
+
+// Whether the room's earliest bookable slot falls on `now`'s local calendar
+// day. Distinct from "computeNextSlot returns non-null" — a room can have a
+// next slot several days out (or, for the 2-day-lead seminar room, can never
+// have one today at all) and must not be counted/tinted as free-today.
+export function isBookableToday(
+  blocks: AvailabilityBlock[],
+  leadMinutes: number,
+  now: Date,
+): boolean {
+  const iso = computeNextSlot(blocks, leadMinutes, now);
+  if (!iso) return false;
+  return new Date(iso).toDateString() === now.toDateString();
+}

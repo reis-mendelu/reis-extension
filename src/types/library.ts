@@ -25,4 +25,5 @@ export interface LibraryRoom {
   placeId: number;
   capacity: number | [number, number];
   leadMinutes: number;
+  bookingUrl: string; // static per-room Bookings deep-link — always present, never depends on live availability
 }

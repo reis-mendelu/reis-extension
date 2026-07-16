@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeNextSlot, parseAvailabilityItems } from '@/services/library/nextSlot';
+import { computeNextSlot, isBookableToday, parseAvailabilityItems } from '@/services/library/nextSlot';
 import type { AvailabilityBlock } from '@/types/library';
 
 const day: AvailabilityBlock[] = [
@@ -38,5 +38,23 @@ describe('computeNextSlot (2-day lead, seminar)', () => {
   it('returns null within a single day window', () => {
     const now = new Date('2026-07-17T09:00:00');
     expect(computeNextSlot(day, 2880, now)).toBeNull();
+  });
+});
+
+describe('isBookableToday', () => {
+  it('is true when the earliest slot falls today', () => {
+    const now = new Date('2026-07-17T09:10:00');
+    expect(isBookableToday(day, 60, now)).toBe(true);
+  });
+  it('is false when the only slot is on a future day', () => {
+    const futureOnly: AvailabilityBlock[] = [
+      { status: 'AVAILABLE', start: '2026-07-18T08:00:00', end: '2026-07-18T12:00:00' },
+    ];
+    const now = new Date('2026-07-17T09:00:00');
+    expect(isBookableToday(futureOnly, 60, now)).toBe(false);
+  });
+  it('is false for the 2-day-lead seminar room (next slot is never today)', () => {
+    const now = new Date('2026-07-17T09:00:00');
+    expect(isBookableToday(day, 2880, now)).toBe(false);
   });
 });
