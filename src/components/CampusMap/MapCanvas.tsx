@@ -12,6 +12,8 @@ import {
   STRUCTURE_STYLE,
   BUILDING_STYLE,
   SIBLING_STYLE,
+  LIBRARY_FREE_STYLE,
+  LIBRARY_BUSY_STYLE,
 } from './mapHelpers';
 import {
   initLeafletMap,
@@ -22,6 +24,8 @@ import {
   REMOTE_IDS,
 } from './mapLayers';
 import { setMapInstance } from './mapInstance';
+import { LIBRARY_PLACE_IDS, libraryRoomsByPlaceId } from '@/data/map/libraryRooms';
+import { computeNextSlot } from '@/services/library/nextSlot';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
@@ -46,6 +50,7 @@ export function MapCanvas() {
   const roomsByBuilding = useAppStore((s) => s.roomsByBuilding);
   const focusReq = useAppStore((s) => s.mapFocusRequest);
   const mapSelection = useAppStore((s) => s.mapSelection);
+  const libraryAvailability = useAppStore((s) => s.libraryAvailability);
 
   // init once
   useEffect(() => {
@@ -214,13 +219,22 @@ export function MapCanvas() {
             interactive: true,
             bubblingMouseEvents: false,
           };
+      let effectiveBase = base;
+      if (LIBRARY_PLACE_IDS.has(p.id)) {
+        const now = new Date();
+        const free = libraryRoomsByPlaceId(p.id).some((room) => {
+          const a = libraryAvailability[room.staffGuid];
+          return a ? computeNextSlot(a.blocks, room.leadMinutes, now) !== null : false;
+        });
+        effectiveBase = free ? LIBRARY_FREE_STYLE : LIBRARY_BUSY_STYLE;
+      }
       const poly = L.polygon(
         ringToLatLng(f.geometry.coordinates[0]),
-        isSel ? SELECTED_STYLE : base
+        isSel ? SELECTED_STYLE : effectiveBase
       );
       if (!struct) {
         poly.on('click', () => select.selectMapRoom(p));
-        roomPolysRef.current.set(p.id, { poly, base });
+        roomPolysRef.current.set(p.id, { poly, base: effectiveBase });
         if (p.name) {
           // Label sizable rooms permanently (MyMENDELU-style); tiny rooms only on
           // hover, to avoid a wall of overlapping numbers.
@@ -253,7 +267,7 @@ export function MapCanvas() {
         })
       );
     }
-  }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq]);
+  }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq, libraryAvailability]);
 
   // Highlight the selected room in place on a plain map click — restyle the live
   // polygons without a full redraw or camera move (the heavy effect above only
