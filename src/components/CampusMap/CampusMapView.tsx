@@ -6,6 +6,7 @@ import { DetailPanel } from './DetailPanel';
 import { RoomSearch } from './RoomSearch';
 import { EdgeIndicators } from './EdgeIndicators';
 import { EventLayer } from './EventLayer';
+import { LibraryLayer } from './LibraryLayer';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -32,6 +33,7 @@ export function CampusMapView() {
     <div className="relative isolate w-full h-full">
       <MapCanvas />
       <EventLayer />
+      <LibraryLayer />
       <EdgeIndicators occluders={[leftPanelRef, placesPanelRef, detailPanelRef]} />
       {/* Floor selector moved off the right edge (it overlapped the Místa panel)
           into the left column under the search. */}
