@@ -78,10 +78,8 @@ describe('EventComposer publish', () => {
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
     fireEvent.click(screen.getByText('Vyberte datum'));
     fireEvent.click(screen.getByRole('button', { name: '15' }));
-    // Time: open the reIS-native picker, choose hour 19 then minute 30.
-    fireEvent.click(screen.getByRole('button', { name: 'Čas' }));
-    fireEvent.click(screen.getByRole('button', { name: '19' }));
-    fireEvent.click(screen.getByRole('button', { name: '30' }));
+    // Time: type into the reIS-native combobox — "1930" masks to 19:30.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
     fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
     await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
     expect(createPost.mock.calls[0][0].time).toBe('19:30');
