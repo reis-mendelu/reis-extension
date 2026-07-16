@@ -1052,7 +1052,16 @@
       "culture": "Culture",
       "social": "Social",
       "other": "Event"
-    }
+    },
+    "libraryCapacity": "Capacity",
+    "libraryPeople": "people",
+    "libraryAmenities": "PC · power · Wi-Fi",
+    "libraryRulesShort": "1-hour bookings, key at the loans desk against your card.",
+    "libraryNextSlotToday": "Free from {{time}}",
+    "libraryNextSlotDay": "Free {{date}} {{time}}",
+    "libraryFull": "Fully booked",
+    "libraryReserve": "Reserve",
+    "libraryFreeToday": "{{count}} free today"
   },
   "admin": {
     "email": "Email",
