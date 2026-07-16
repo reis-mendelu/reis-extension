@@ -21,6 +21,7 @@ import {
 } from '../../components/CampusMap/mapHelpers';
 import { fetchBuildingRooms } from '../../api/campusMap';
 import { fetchMapEvents, toMapEvent } from '../../api/mapEvents';
+import { fetchLibraryAvailability } from '@/api/libraryAvailability';
 import { logError } from '../../utils/reportError';
 
 const META = buildingsJson as BuildingsMeta;
@@ -50,6 +51,8 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   mapFocusRequest: 0,
   mapEvents: [],
   mapEventsLoaded: false,
+  libraryAvailability: {},
+  libraryAvailabilityLoaded: false,
   mapPanelTab: 'events',
   eventFilter: 'all',
   mapMode: 'student',
@@ -243,6 +246,19 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
       set({ mapEvents: events.map(locateEvent), mapEventsLoaded: true });
     } catch (err) {
       logError('MapSlice.reloadMapEvents', err);
+    }
+  },
+
+  loadLibraryAvailability: async () => {
+    if (get().libraryAvailabilityLoaded) return;
+    try {
+      const rooms = await fetchLibraryAvailability();
+      const byGuid: Record<string, (typeof rooms)[number]> = {};
+      for (const r of rooms) byGuid[r.staffGuid] = r;
+      set({ libraryAvailability: byGuid, libraryAvailabilityLoaded: true });
+    } catch (err) {
+      logError('MapSlice.loadLibraryAvailability', err);
+      set({ libraryAvailabilityLoaded: true });
     }
   },
 

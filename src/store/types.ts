@@ -28,6 +28,7 @@ import type {
   RoomProperties,
 } from '../types/campusMap';
 import type { MapEvent } from '../types/events';
+import type { RoomAvailability } from '@/types/library';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type Theme = 'mendelu' | 'mendelu-dark';
@@ -481,6 +482,9 @@ export interface MapSlice {
   // --- Society events on the map ---
   mapEvents: MapEvent[];
   mapEventsLoaded: boolean;
+  libraryAvailability: Record<string, RoomAvailability>;
+  libraryAvailabilityLoaded: boolean;
+  loadLibraryAvailability: () => Promise<void>;
   /** Which tab the top-right panel shows. */
   mapPanelTab: 'places' | 'events';
   /** Event scope: 'all' societies, or a specific societyId. */
