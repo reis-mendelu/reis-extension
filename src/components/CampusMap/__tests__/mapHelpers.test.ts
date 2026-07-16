@@ -54,7 +54,15 @@ describe('roomCodeToName', () => {
   });
   it('resolves a building-A code to its nickname (A01), not the raw N-code', () => {
     const idx = [
-      { code: 'BA01N1052', name: 'BA01N1052', nickname: 'A01', buildingId: 1, floorId: 2, floorLevel: 0, placeId: 63374 },
+      {
+        code: 'BA01N1052',
+        name: 'BA01N1052',
+        nickname: 'A01',
+        buildingId: 1,
+        floorId: 2,
+        floorLevel: 0,
+        placeId: 63374,
+      },
     ] as unknown as RoomIndexEntry[];
     expect(roomCodeToName('BA01N1052', idx)).toBe('A01');
   });
@@ -220,7 +228,15 @@ describe('searchRooms', () => {
   });
   it('finds a building-A room by its nickname even though the name is the raw code', () => {
     const idx: RoomIndexEntry[] = [
-      { code: 'BA01N1052', name: 'BA01N1052', nickname: 'A01', buildingId: 1, floorId: 2, floorLevel: 0, placeId: 63374 },
+      {
+        code: 'BA01N1052',
+        name: 'BA01N1052',
+        nickname: 'A01',
+        buildingId: 1,
+        floorId: 2,
+        floorLevel: 0,
+        placeId: 63374,
+      },
     ];
     expect(searchRooms('a01', idx).map((r) => r.code)).toContain('BA01N1052');
     // the raw N-code still matches too

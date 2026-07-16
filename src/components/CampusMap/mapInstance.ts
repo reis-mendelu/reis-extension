@@ -19,5 +19,7 @@ export function getMapInstance(): L.Map | null {
 export function subscribeMapInstance(cb: (m: L.Map | null) => void): () => void {
   listeners.add(cb);
   cb(instance);
-  return () => { listeners.delete(cb); };
+  return () => {
+    listeners.delete(cb);
+  };
 }

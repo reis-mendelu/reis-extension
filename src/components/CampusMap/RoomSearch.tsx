@@ -13,18 +13,34 @@ export function RoomSearch() {
 
   return (
     <div className="relative w-64">
-      <input className="input input-sm input-bordered w-full" value={query} placeholder={t('map.searchPlaceholder')}
-        onChange={(e) => setQuery(e.target.value)} />
+      <input
+        className="input input-sm input-bordered w-full"
+        value={query}
+        placeholder={t('map.searchPlaceholder')}
+        onChange={(e) => setQuery(e.target.value)}
+      />
       {results.length > 0 && (
         <ul className="absolute z-[1000] mt-1 w-full bg-base-100 border border-base-300 rounded-lg shadow-md max-h-64 overflow-auto">
           {results.map((m, i) => {
-            const label = m.kind === 'poi' ? m.poi.name : m.kind === 'roomRef' ? roomLabel(m.entry.name, m.entry.code, m.entry.nickname) : m.kind === 'landmark' ? m.landmark.name : '';
+            const label =
+              m.kind === 'poi'
+                ? m.poi.name
+                : m.kind === 'roomRef'
+                  ? roomLabel(m.entry.name, m.entry.code, m.entry.nickname)
+                  : m.kind === 'landmark'
+                    ? m.landmark.name
+                    : '';
             return (
               <li key={i}>
-                <button className="w-full text-left px-3 py-1.5 hover:bg-base-200 text-sm"
-                  onClick={() => { if (m.kind === 'poi') focusPoiById(m.poi.id);
+                <button
+                  className="w-full text-left px-3 py-1.5 hover:bg-base-200 text-sm"
+                  onClick={() => {
+                    if (m.kind === 'poi') focusPoiById(m.poi.id);
                     else if (m.kind === 'roomRef') focusRoomByCode(m.entry.code);
-                    else if (m.kind === 'landmark') focusLandmarkById(m.landmark.id); setQuery(''); }}>
+                    else if (m.kind === 'landmark') focusLandmarkById(m.landmark.id);
+                    setQuery('');
+                  }}
+                >
                   {label}
                 </button>
               </li>
