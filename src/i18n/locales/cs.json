@@ -1057,11 +1057,11 @@
     "libraryPeople": "osob",
     "libraryAmenities": "PC · zásuvka · Wi-Fi",
     "libraryRulesShort": "Rezervace na 1 h, klíč u výpůjčního pultu proti kartě.",
-    "libraryNextSlotToday": "Volno od {{time}}",
-    "libraryNextSlotDay": "Volno {{date}} {{time}}",
+    "libraryNextSlotToday": "Volno od {time}",
+    "libraryNextSlotDay": "Volno {date} {time}",
     "libraryFull": "Momentálně plno",
     "libraryReserve": "Rezervovat",
-    "libraryFreeToday": "{{count}} volné dnes"
+    "libraryFreeToday": "{count} volné dnes"
   },
   "admin": {
     "email": "E-mail",

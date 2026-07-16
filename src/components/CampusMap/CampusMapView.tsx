@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { MapCanvas } from './MapCanvas';
 import { FloorStack } from './FloorStack';
 import { MapSidePanel } from './MapSidePanel';
@@ -13,7 +13,13 @@ export function CampusMapView() {
   const selection = useAppStore((s) => s.mapSelection);
   const placing = useAppStore((s) => s.placingEvent);
   const cancelPlacing = useAppStore((s) => s.cancelPlacing);
+  const loadLibraryAvailability = useAppStore((s) => s.loadLibraryAvailability);
   const { t } = useTranslation();
+  // Store-load orchestration (not component-level data fetching): kick off the
+  // library room availability fetch once when the map mounts.
+  useEffect(() => {
+    void loadLibraryAvailability();
+  }, [loadLibraryAvailability]);
   // Edge arrows slide out from behind these panels instead of vanishing.
   const leftPanelRef = useRef<HTMLDivElement>(null);
   const placesPanelRef = useRef<HTMLDivElement>(null);

@@ -4,6 +4,8 @@ import { landmarkGroupLabels } from './mapHelpers';
 import { EventDetailCard } from './EventDetailCard';
 import landmarksJson from '../../data/map/landmarks.json';
 import type { Landmark } from '../../types/campusMap';
+import { LIBRARY_PLACE_IDS } from '@/data/map/libraryRooms';
+import { LibraryRoomSection } from './LibraryRoomSection';
 
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
 const GROUP_LABELS = landmarkGroupLabels(LANDMARKS);
@@ -45,6 +47,8 @@ export function DetailPanel() {
 
   const r = sel.kind === 'room' ? sel.room : null;
   const name = r ? r.name : sel.kind === 'roomRef' ? sel.entry.name : '';
+  const placeId = sel.kind === 'room' ? r?.id : sel.kind === 'roomRef' ? sel.entry.placeId : undefined;
+  const isLibrary = placeId != null && LIBRARY_PLACE_IDS.has(placeId);
   return (
     <div className="p-4 bg-base-100 border border-base-300 rounded-lg space-y-1">
       <h3 className="font-bold text-base-content">{name}</h3>
@@ -53,6 +57,7 @@ export function DetailPanel() {
       {r?.hasProjector && <span className="badge badge-sm badge-info mr-1">{t('map.projector')}</span>}
       {r?.hasWhiteboard && <span className="badge badge-sm badge-info">{t('map.whiteboard')}</span>}
       {r?.passportNumber && <p className="text-xs text-base-content/50 pt-1">{r.passportNumber}</p>}
+      {isLibrary && placeId != null && <LibraryRoomSection placeId={placeId} />}
     </div>
   );
 }
