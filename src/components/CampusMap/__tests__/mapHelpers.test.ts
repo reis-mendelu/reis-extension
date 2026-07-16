@@ -84,6 +84,11 @@ describe('roomLabel', () => {
   it('tolerates an empty name by stripping the raw code', () => {
     expect(roomLabel('', 'BA01N1052', undefined)).toBe('N1052');
   });
+  it('prefers the nickname when rawCode is null (building B: no passportNumber)', () => {
+    // name is a raw-code-shaped string but there is no passport code to compare
+    // against, so the nickname must still win.
+    expect(roomLabel('BA02N9999', null, 'B564')).toBe('B564');
+  });
 });
 
 describe('categoryStyle', () => {

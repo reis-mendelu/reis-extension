@@ -146,8 +146,12 @@ export function roomLabel(
   rawCode: string | null | undefined,
   nickname: string | null | undefined
 ): string {
-  if (name && name !== rawCode) return name; // PEF: name is already friendly
-  if (nickname) return nickname; // A/C/E/M: friendly code lives in nickname
+  // Only treat `name` as already-friendly when we can prove it differs from a
+  // known raw code. With a null/undefined `rawCode` (e.g. building B rooms carry
+  // a nickname but no passportNumber) we can't tell, so we must not short-circuit
+  // here — otherwise a raw-code-shaped `name` would win over a real nickname.
+  if (name && rawCode != null && name !== rawCode) return name; // PEF: name is friendly
+  if (nickname) return nickname; // A/C/E/M (and B): friendly code lives in nickname
   return shortLabel(name || rawCode || ''); // fallback: strip the prefix
 }
 
