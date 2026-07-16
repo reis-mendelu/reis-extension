@@ -4,6 +4,10 @@ export type RoomCategory =
 export interface RoomProperties {
   id: number; buildingId: number; floorId: number; floorLevel: number | null;
   name: string; type: string; category: RoomCategory; label: string;
+  // `nickname` = the human hall label from the MENDELU map API (e.g. "A01" for
+  // BA01N1052); null when the API has none. Optional so data cached before it
+  // shipped still types. Resolved for display via roomLabel().
+  nickname?: string | null;
   passportNumber: string | null; seats: number | null;
   hasProjector: boolean; hasWhiteboard: boolean; code: number | null;
 }
@@ -68,7 +72,7 @@ export interface RemotePlace {
 }
 
 export interface RoomIndexEntry {
-  code: string; name: string; buildingId: number;
+  code: string; name: string; nickname?: string | null; buildingId: number;
   floorId: number; floorLevel: number | null; placeId: number;
 }
 

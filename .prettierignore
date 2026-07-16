@@ -6,3 +6,5 @@ coverage
 package-lock.json
 .agent
 *.md
+# Generated + committed minified by reis-data/scripts/buildMapData.mjs
+src/data/map/rooms-index.json

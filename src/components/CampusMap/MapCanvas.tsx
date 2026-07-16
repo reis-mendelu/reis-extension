@@ -5,7 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 import buildingsJson from '../../data/map/buildings.json';
 import {
   ringToLatLng,
-  shortLabel,
+  roomLabel,
   categoryStyle,
   remotePlaceBounds,
   SELECTED_STYLE,
@@ -226,7 +226,7 @@ export function MapCanvas() {
           // hover, to avoid a wall of overlapping numbers.
           const pb = poly.getBounds();
           const big = pb.getNorthEast().distanceTo(pb.getSouthWest()) > 12;
-          poly.bindTooltip(shortLabel(p.name), {
+          poly.bindTooltip(roomLabel(p.name, p.passportNumber, p.nickname), {
             permanent: big,
             direction: 'center',
             className: big ? 'room-label' : '',

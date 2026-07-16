@@ -1,6 +1,6 @@
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { landmarkGroupLabels } from './mapHelpers';
+import { landmarkGroupLabels, roomLabel } from './mapHelpers';
 import { EventDetailCard } from './EventDetailCard';
 import landmarksJson from '../../data/map/landmarks.json';
 import type { Landmark } from '../../types/campusMap';
@@ -44,7 +44,11 @@ export function DetailPanel() {
   }
 
   const r = sel.kind === 'room' ? sel.room : null;
-  const name = r ? r.name : sel.kind === 'roomRef' ? sel.entry.name : '';
+  const name = r
+    ? roomLabel(r.name, r.passportNumber, r.nickname)
+    : sel.kind === 'roomRef'
+      ? roomLabel(sel.entry.name, sel.entry.code, sel.entry.nickname)
+      : '';
   return (
     <div className="p-4 bg-base-100 border border-base-300 rounded-lg space-y-1">
       <h3 className="font-bold text-base-content">{name}</h3>
