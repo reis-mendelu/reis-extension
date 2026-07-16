@@ -45,7 +45,7 @@ export function roomCodeToName(code: string, index: RoomIndexEntry[]): string {
   const entry = index.find(
     (e) => e.code.toLowerCase() === needle || e.name.toLowerCase() === needle
   );
-  return entry?.name ?? code;
+  return entry ? roomLabel(entry.name, entry.code, entry.nickname) : code;
 }
 
 // Leaflet polygon styles for the map. Fixed literals (the basemap is always
@@ -130,6 +130,29 @@ export function categoryStyle(c: RoomCategory): RoomStyle {
 
 export function shortLabel(name: string): string {
   return name.match(/[NPS]\d+$/)?.[0] ?? name;
+}
+
+// The human-readable hall label. MENDELU buildings expose it two different ways:
+//  - PEF (building Q) puts the friendly code in `name` (e.g. "Q6.06"); its
+//    `nickname` holds a long descriptive title ("KPMG Hall") or nothing.
+//  - Buildings A/C/E/M put the raw passport code in `name` ("BA01N1052") and the
+//    friendly code in `nickname` ("A01").
+// So prefer an already-friendly `name`, else the `nickname`, else fall back to
+// stripping the building prefix off the raw code (old behaviour). `rawCode` is
+// the passport code — `passportNumber` on a geojson feature, `code` on an index
+// entry. Verified against the MENDELU map API: BA01N1052 → nickname "A01".
+export function roomLabel(
+  name: string,
+  rawCode: string | null | undefined,
+  nickname: string | null | undefined
+): string {
+  // Only treat `name` as already-friendly when we can prove it differs from a
+  // known raw code. With a null/undefined `rawCode` (e.g. building B rooms carry
+  // a nickname but no passportNumber) we can't tell, so we must not short-circuit
+  // here — otherwise a raw-code-shaped `name` would win over a real nickname.
+  if (name && rawCode != null && name !== rawCode) return name; // PEF: name is friendly
+  if (nickname) return nickname; // A/C/E/M (and B): friendly code lives in nickname
+  return shortLabel(name || rawCode || ''); // fallback: strip the prefix
 }
 
 export function lonLatToLatLng(c: [number, number]): [number, number] {
@@ -260,12 +283,14 @@ const BARE_HALL = /^[a-z]\d{1,3}$/;
 // Rank a candidate against the query so the student sees the most relevant hit
 // first: exact match (typing "Q01" → the room *named* Q01) → bare lecture hall
 // prefix → other prefix → bare hall substring → loose substring.
-function matchRank(q: string, name: string, code: string): number {
-  const n = name.toLowerCase(),
-    c = code.toLowerCase();
-  const exact = n === q || c === q;
-  const prefix = n.startsWith(q) || c.startsWith(q);
-  const hall = BARE_HALL.test(n);
+// `nickname` is included so the friendly hall label counts for matching/ranking
+// even when it lives outside `name` — building A's "A01" is a nickname, not a
+// name, and a student typing "A01" must still find room BA01N1052.
+function matchRank(q: string, name: string, code: string, nickname = ''): number {
+  const fields = [name.toLowerCase(), code.toLowerCase(), nickname.toLowerCase()].filter(Boolean);
+  const exact = fields.some((f) => f === q);
+  const prefix = fields.some((f) => f.startsWith(q));
+  const hall = BARE_HALL.test(name.toLowerCase()) || BARE_HALL.test(nickname.toLowerCase());
   if (exact) return 0;
   if (prefix && hall) return 1;
   if (prefix) return 2;
@@ -278,8 +303,13 @@ function matchRank(q: string, name: string, code: string): number {
 // same way (exact "Q01" beats the dotted Q01.NN offices listed earlier).
 function rankedRooms(q: string, index: RoomIndexEntry[]) {
   return index
-    .filter((e) => e.code.toLowerCase().includes(q) || e.name.toLowerCase().includes(q))
-    .map((entry) => ({ entry, rank: matchRank(q, entry.name, entry.code) }));
+    .filter(
+      (e) =>
+        e.code.toLowerCase().includes(q) ||
+        e.name.toLowerCase().includes(q) ||
+        (e.nickname ?? '').toLowerCase().includes(q)
+    )
+    .map((entry) => ({ entry, rank: matchRank(q, entry.name, entry.code, entry.nickname ?? '') }));
 }
 
 export function searchRooms(query: string, index: RoomIndexEntry[], limit = 6): RoomIndexEntry[] {

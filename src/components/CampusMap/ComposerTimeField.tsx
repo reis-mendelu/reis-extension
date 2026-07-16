@@ -1,17 +1,22 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { ChevronDown, Clock } from 'lucide-react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown, Clock, X } from 'lucide-react';
+import {
+  TIME_OPTIONS,
+  EVENING_ANCHOR,
+  maskTimeInput,
+  isCompleteTime,
+  filterTimeOptions,
+} from './timeField';
+import { TimeListbox } from './TimeListbox';
 
-// reIS-native start-time picker. A trigger styled like the DATUM field opens a
-// custom popover with two scrollable columns (hour / minute) — NOT the OS
-// <input type="time"> wheel or a native <select>, both of which draw off-brand
-// browser chrome (the "double border" when open) and feel cramped. Value is an
-// "HH:MM" string; empty = no time. Mirrors MiniCalendar's portalled-popover
-// pattern so the side panel's overflow can't clip it.
-const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
-const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
-const POPOVER_WIDTH = 200;
-const POPOVER_EST_HEIGHT = 260;
+// reIS-native start-time picker: a type-or-pick combobox. The field is editable
+// (type "1930" → 19:30, colon auto-inserted, hours/minutes clamped) and the
+// chevron opens a single quarter-hour list to click or arrow through. NOT the OS
+// <input type="time"> wheel (off-brand chrome) nor the old two scrollable columns
+// (two hunts for one thought). Value is "HH:MM"; empty = no time. Mirrors
+// MiniCalendar's portalled popover so the side panel's overflow can't clip it.
+const POPOVER_WIDTH = 160;
+const POPOVER_EST_HEIGHT = 240;
 const MARGIN = 8;
 
 export function ComposerTimeField({
@@ -23,19 +28,29 @@ export function ComposerTimeField({
   onChange: (v: string) => void;
   t: (k: string) => string;
 }) {
-  const [h = '', m = ''] = value ? value.split(':') : ['', ''];
+  const [text, setText] = useState(value);
+  const [syncedValue, setSyncedValue] = useState(value);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const [active, setActive] = useState(-1);
+  const wrapRef = useRef<HTMLLabelElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
+  const listId = 'time-listbox';
 
-  // The hour gates the value so an optional time can be cleared back to empty;
-  // picking an hour defaults the minute to 00, which the minute column refines.
-  const setHour = (nh: string) => onChange(`${nh}:${m || '00'}`);
-  const setMinute = (nm: string) => onChange(h ? `${h}:${nm}` : `00:${nm}`);
+  // `value` is the source of truth; `text` is the in-progress draft. Reconcile
+  // during render on outside changes (list pick, composer reset) — React's
+  // sanctioned alternative to a setState effect. Partial drafts never move
+  // `value`, so mid-typing ("19:3") won't trip this and get clobbered.
+  if (value !== syncedValue) {
+    setSyncedValue(value);
+    setText(value);
+  }
+
+  const options = useMemo(() => filterTimeOptions(text), [text]);
 
   const updatePos = useCallback(() => {
-    const el = btnRef.current;
+    const el = wrapRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
     const left = Math.max(MARGIN, Math.min(r.left, window.innerWidth - POPOVER_WIDTH - MARGIN));
@@ -49,13 +64,36 @@ export function ComposerTimeField({
     setPos({ top, left });
   }, []);
 
+  // Close and revert the draft to the last committed value, so an abandoned
+  // partial ("19:3") never lingers in the field.
+  const close = useCallback(() => {
+    setOpen(false);
+    setText(value);
+  }, [value]);
+
+  const commit = (v: string) => {
+    setText(v);
+    onChange(v);
+    setOpen(false);
+    inputRef.current?.focus();
+  };
+
+  // When opening, land the highlight (and scroll) on the value if set, else on
+  // the early-evening anchor — the common society start band, one glance in.
+  const openList = useCallback(() => {
+    const anchor = isCompleteTime(value) ? value : EVENING_ANCHOR;
+    const i = TIME_OPTIONS.indexOf(anchor);
+    setActive(i);
+    setOpen(true);
+  }, [value]);
+
   useLayoutEffect(() => {
     if (!open) return;
     updatePos();
     const onPointerDown = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (btnRef.current?.contains(target) || popRef.current?.contains(target)) return;
-      setOpen(false);
+      if (wrapRef.current?.contains(target) || popRef.current?.contains(target)) return;
+      close();
     };
     document.addEventListener('mousedown', onPointerDown);
     window.addEventListener('scroll', updatePos, true);
@@ -65,80 +103,105 @@ export function ComposerTimeField({
       window.removeEventListener('scroll', updatePos, true);
       window.removeEventListener('resize', updatePos);
     };
-  }, [open, updatePos]);
+  }, [open, updatePos, close]);
 
-  const column = (
-    label: string,
-    values: string[],
-    selected: string,
-    onPick: (v: string) => void
-  ) => (
-    <div className="flex min-w-0 flex-1 flex-col">
-      <span className="mb-1 px-1 text-[10px] font-bold uppercase tracking-wider text-base-content/40">
-        {label}
-      </span>
-      <div className="flex max-h-[200px] flex-col gap-0.5 overflow-y-auto pr-1">
-        {values.map((v) => (
-          <button
-            key={v}
-            type="button"
-            aria-pressed={v === selected}
-            className={`rounded-md py-1.5 text-center text-sm tabular-nums transition-colors ${
-              v === selected
-                ? 'bg-primary font-semibold text-primary-content'
-                : 'text-base-content hover:bg-base-content/10'
-            }`}
-            onClick={() => onPick(v)}
-          >
-            {v}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+  // Keep the active row scrolled into view for both keyboard nav and first open.
+  useLayoutEffect(() => {
+    if (!open || active < 0) return;
+    popRef.current
+      ?.querySelector(`[data-opt="${options[active]}"]`)
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [open, active, options]);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!open) return openList();
+      setActive((a) => Math.min(options.length - 1, a + 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActive((a) => Math.max(0, a - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (open && active >= 0 && options[active]) commit(options[active]);
+      else if (isCompleteTime(text)) commit(text);
+    } else if (e.key === 'Escape') {
+      close();
+    }
+  };
 
   return (
-    <>
+    <label
+      ref={wrapRef}
+      className={`input input-bordered flex w-full items-center gap-2 ${value ? '' : 'text-base-content/50'}`}
+      // Open on a field click, but not on the refocus after a pick (else
+      // commit()'s focus() would reopen the list). Typing/ArrowDown open too.
+      onClick={() => {
+        if (!open) openList();
+      }}
+    >
+      <Clock size={16} className={value ? 'text-primary' : 'opacity-70'} />
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="numeric"
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-label={t('map.eventTime')}
+        placeholder="--:--"
+        value={text}
+        className="grow bg-transparent tabular-nums outline-none placeholder:text-base-content/40"
+        onChange={(e) => {
+          const masked = maskTimeInput(e.target.value);
+          setText(masked);
+          setActive(-1);
+          if (!open) setOpen(true);
+          if (masked === '' || isCompleteTime(masked)) onChange(masked);
+        }}
+        onKeyDown={onKeyDown}
+      />
+      {value && (
+        <button
+          type="button"
+          aria-label={t('map.clearTime')}
+          className="opacity-50 transition-opacity hover:opacity-100"
+          onClick={(e) => {
+            e.stopPropagation();
+            commit('');
+          }}
+        >
+          <X size={15} />
+        </button>
+      )}
       <button
-        ref={btnRef}
         type="button"
         aria-label={t('map.eventTime')}
-        className={`input input-bordered flex w-full items-center gap-2 ${value ? '' : 'text-base-content/50'}`}
-        onClick={() => setOpen((o) => !o)}
+        className="opacity-50"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (open) close();
+          else openList();
+        }}
       >
-        <Clock size={16} className={value ? 'text-primary' : 'opacity-70'} />
-        <span className="truncate">{value || '--:--'}</span>
-        <ChevronDown
-          size={16}
-          className={`ml-auto opacity-50 transition-transform ${open ? 'rotate-180' : ''}`}
-        />
+        <ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open &&
-        createPortal(
-          <div
-            ref={popRef}
-            className="fixed z-[9999] rounded-box border border-base-300 bg-base-100 p-2 shadow-popover-heavy"
-            style={{ top: pos.top, left: pos.left, width: POPOVER_WIDTH }}
-          >
-            <div className="flex gap-2">
-              {column(t('map.hour'), HOURS, h, setHour)}
-              {column(t('map.minute'), MINUTES, m, setMinute)}
-            </div>
-            {value && (
-              <button
-                type="button"
-                className="mt-1 w-full rounded-md py-1 text-center text-xs text-base-content/60 transition-colors hover:bg-base-content/10"
-                onClick={() => {
-                  onChange('');
-                  setOpen(false);
-                }}
-              >
-                {t('map.clearTime')}
-              </button>
-            )}
-          </div>,
-          document.body
-        )}
-    </>
+      {open && (
+        <TimeListbox
+          id={listId}
+          options={options}
+          value={value}
+          active={active}
+          pos={pos}
+          width={POPOVER_WIDTH}
+          popRef={popRef}
+          onHover={setActive}
+          onPick={commit}
+          emptyLabel={t('map.noMatchingTime')}
+        />
+      )}
+    </label>
   );
 }

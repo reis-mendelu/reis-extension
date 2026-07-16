@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Check, MapPin, Search } from 'lucide-react';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import buildingsJson from '../../data/map/buildings.json';
-import { roomCodeToCoord, searchRooms } from './mapHelpers';
+import { roomCodeToCoord, roomLabel, searchRooms } from './mapHelpers';
 import type { RoomIndexEntry, BuildingsMeta } from '../../types/campusMap';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
@@ -60,15 +60,16 @@ export function ComposerRoomSearch({
           {matches.map((r) => {
             const coord = roomCodeToCoord(r.code, INDEX, BUILDINGS);
             if (!coord) return null;
+            const label = roomLabel(r.name, r.code, r.nickname);
             return (
               <button
                 key={r.code}
                 type="button"
                 className="flex items-center gap-2 rounded-lg px-2 py-2 text-left text-sm hover:bg-base-200"
-                onClick={() => onSelect({ code: r.code, name: r.name, coord })}
+                onClick={() => onSelect({ code: r.code, name: label, coord })}
               >
                 <MapPin size={13} className="flex-shrink-0 opacity-60" />
-                <span className="font-semibold">{r.name}</span>
+                <span className="font-semibold">{label}</span>
                 <span className="truncate text-[11px] text-base-content/50">{r.code}</span>
               </button>
             );

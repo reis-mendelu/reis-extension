@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   shortLabel,
+  roomLabel,
   lonLatToLatLng,
   ringToLatLng,
   searchPlaces,
@@ -50,6 +51,43 @@ describe('roomCodeToName', () => {
   });
   it('falls back to the given string for an unknown code', () => {
     expect(roomCodeToName('ZZZ', index)).toBe('ZZZ');
+  });
+  it('resolves a building-A code to its nickname (A01), not the raw N-code', () => {
+    const idx = [
+      {
+        code: 'BA01N1052',
+        name: 'BA01N1052',
+        nickname: 'A01',
+        buildingId: 1,
+        floorId: 2,
+        floorLevel: 0,
+        placeId: 63374,
+      },
+    ] as unknown as RoomIndexEntry[];
+    expect(roomCodeToName('BA01N1052', idx)).toBe('A01');
+  });
+});
+
+describe('roomLabel', () => {
+  it('keeps an already-friendly name (PEF: name differs from the passport code)', () => {
+    expect(roomLabel('Q6.06', 'BA39N6006', null)).toBe('Q6.06');
+  });
+  it('ignores a descriptive nickname when the name is already the friendly code', () => {
+    expect(roomLabel('Q3.54', 'BA39N3054', 'KPMG Hall')).toBe('Q3.54');
+  });
+  it('uses the nickname when the name is the raw passport code (building A)', () => {
+    expect(roomLabel('BA01N1052', 'BA01N1052', 'A01')).toBe('A01');
+  });
+  it('falls back to the stripped prefix when there is no nickname', () => {
+    expect(roomLabel('BA01N1052', 'BA01N1052', null)).toBe('N1052');
+  });
+  it('tolerates an empty name by stripping the raw code', () => {
+    expect(roomLabel('', 'BA01N1052', undefined)).toBe('N1052');
+  });
+  it('prefers the nickname when rawCode is null (building B: no passportNumber)', () => {
+    // name is a raw-code-shaped string but there is no passport code to compare
+    // against, so the nickname must still win.
+    expect(roomLabel('BA02N9999', null, 'B564')).toBe('B564');
   });
 });
 
@@ -192,6 +230,22 @@ describe('searchRooms', () => {
   });
   it('returns [] for an empty query', () => {
     expect(searchRooms('   ', index)).toEqual([]);
+  });
+  it('finds a building-A room by its nickname even though the name is the raw code', () => {
+    const idx: RoomIndexEntry[] = [
+      {
+        code: 'BA01N1052',
+        name: 'BA01N1052',
+        nickname: 'A01',
+        buildingId: 1,
+        floorId: 2,
+        floorLevel: 0,
+        placeId: 63374,
+      },
+    ];
+    expect(searchRooms('a01', idx).map((r) => r.code)).toContain('BA01N1052');
+    // the raw N-code still matches too
+    expect(searchRooms('n1052', idx).map((r) => r.code)).toContain('BA01N1052');
   });
 });
 

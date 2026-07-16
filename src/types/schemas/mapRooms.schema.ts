@@ -21,6 +21,9 @@ const RoomPropertiesSchema = z
     floorId: z.number(),
     floorLevel: z.number().nullable(),
     name: z.string(),
+    // Tolerate data cached/served before nickname shipped (old CDN geojson and
+    // existing IndexedDB rows lack the key) — default a missing one to null.
+    nickname: z.string().nullable().default(null),
     type: z.string(),
     category: z.string(),
     label: z.string(),
