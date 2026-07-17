@@ -22,6 +22,8 @@ import {
 import { fetchBuildingRooms } from '../../api/campusMap';
 import { fetchMapEvents, toMapEvent } from '../../api/mapEvents';
 import { fetchLibraryAvailability } from '@/api/libraryAvailability';
+import { createLibraryBooking } from '@/api/libraryBooking';
+import { buildBookingRequest } from '@/services/library/bookingRequest';
 import { logError } from '../../utils/reportError';
 
 const META = buildingsJson as BuildingsMeta;
@@ -53,6 +55,8 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   mapEventsLoaded: false,
   libraryAvailability: {},
   libraryAvailabilityLoaded: false,
+  bookingStatus: {},
+  bookingError: {},
   mapPanelTab: 'events',
   eventFilter: 'all',
   mapMode: 'student',
@@ -258,6 +262,24 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     const byGuid: Record<string, (typeof rooms)[number]> = {};
     for (const r of rooms) byGuid[r.staffGuid] = r;
     set({ libraryAvailability: byGuid, libraryAvailabilityLoaded: true });
+  },
+
+  bookRoom: async (room, slotIso, identity) => {
+    const key = `${room.staffGuid}|${slotIso}`;
+    set((s) => ({ bookingStatus: { ...s.bookingStatus, [key]: 'submitting' } }));
+    const req = buildBookingRequest(room, slotIso, identity);
+    const result = await createLibraryBooking(req);
+    if (result.ok) {
+      set((s) => ({ bookingStatus: { ...s.bookingStatus, [key]: 'success' } }));
+      // Reset the load-once guard so the panel reflects the new booking.
+      set({ libraryAvailabilityLoaded: false });
+      await get().loadLibraryAvailability();
+    } else {
+      set((s) => ({
+        bookingStatus: { ...s.bookingStatus, [key]: 'error' },
+        bookingError: { ...s.bookingError, [key]: result.error },
+      }));
+    }
   },
 
   focusEventById: (id, opts) => {
