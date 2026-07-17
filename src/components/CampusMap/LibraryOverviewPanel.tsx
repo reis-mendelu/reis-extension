@@ -14,7 +14,9 @@ function isSolo(room: LibraryRoom): boolean {
 }
 
 function capacityLabel(room: LibraryRoom): string {
-  return Array.isArray(room.capacity) ? `${room.capacity[0]}–${room.capacity[1]}` : `${room.capacity}`;
+  return Array.isArray(room.capacity)
+    ? `${room.capacity[0]}–${room.capacity[1]}`
+    : `${room.capacity}`;
 }
 
 function RoomRow({ room }: { room: LibraryRoom }) {
@@ -57,9 +59,7 @@ function RoomRow({ room }: { room: LibraryRoom }) {
           ))}
         </div>
       ) : (
-        <p className="text-[11px] text-base-content/50">
-          {status.known ? status.text : '—'}
-        </p>
+        <p className="text-[11px] text-base-content/50">{status.known ? status.text : '—'}</p>
       )}
     </li>
   );
