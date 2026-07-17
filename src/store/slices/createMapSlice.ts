@@ -77,6 +77,8 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
 
   clearMapSelection: () => set({ mapSelection: null }),
 
+  openLibraryOverview: () => set({ mapSelection: { kind: 'libraryOverview' } }),
+
   setMapFloor: (floorId) => set({ activeFloorId: floorId, mapSelection: null }),
 
   selectMapRoom: (room) => set({ mapSelection: { kind: 'room', room } }),

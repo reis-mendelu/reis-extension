@@ -485,6 +485,8 @@ export interface MapSlice {
   libraryAvailability: Record<string, RoomAvailability>;
   libraryAvailabilityLoaded: boolean;
   loadLibraryAvailability: () => Promise<void>;
+  /** Open the library study-room overview panel (the library pin). Does not enter a building or move the camera — the overview lists all rooms with today's live availability. */
+  openLibraryOverview: () => void;
   /** Which tab the top-right panel shows. */
   mapPanelTab: 'places' | 'events';
   /** Event scope: 'all' societies, or a specific societyId. */

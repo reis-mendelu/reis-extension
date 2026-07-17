@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  bookableRangesToday,
   computeNextSlot,
   isBookableToday,
   parseAvailabilityItems,
@@ -66,5 +67,33 @@ describe('isBookableToday', () => {
   it('is false for the 2-day-lead seminar room (next slot is never today)', () => {
     const now = new Date('2026-07-17T09:00:00');
     expect(isBookableToday(day, 2880, now)).toBe(false);
+  });
+});
+
+describe('bookableRangesToday', () => {
+  it('returns every available range today, clipped to the lead-time cutoff', () => {
+    const now = new Date('2026-07-17T09:10:00');
+    expect(bookableRangesToday(day, 60, now)).toEqual([
+      { start: '2026-07-17T11:00:00', end: '2026-07-17T12:00:00' },
+      { start: '2026-07-17T14:00:00', end: '2026-07-17T16:00:00' },
+    ]);
+  });
+  it('merges touching available blocks into one range', () => {
+    const split: AvailabilityBlock[] = [
+      { status: 'AVAILABLE', start: '2026-07-17T08:00:00', end: '2026-07-17T10:00:00' },
+      { status: 'AVAILABLE', start: '2026-07-17T10:00:00', end: '2026-07-17T12:00:00' },
+    ];
+    const now = new Date('2026-07-17T06:00:00');
+    expect(bookableRangesToday(split, 60, now)).toEqual([
+      { start: '2026-07-17T08:00:00', end: '2026-07-17T12:00:00' },
+    ]);
+  });
+  it('is empty when nothing bookable remains today', () => {
+    const now = new Date('2026-07-17T15:30:00');
+    expect(bookableRangesToday(day, 60, now)).toEqual([]);
+  });
+  it('is empty for the 2-day-lead seminar room (never bookable today)', () => {
+    const now = new Date('2026-07-17T09:00:00');
+    expect(bookableRangesToday(day, 2880, now)).toEqual([]);
   });
 });

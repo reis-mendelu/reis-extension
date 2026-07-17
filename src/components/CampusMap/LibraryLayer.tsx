@@ -10,10 +10,6 @@ import { subscribeMapInstance } from './mapInstance';
 
 // Centroid of the Knihovna A cluster (building A), as [lng, lat].
 const LIBRARY_COORD: [number, number] = [16.6152, 49.20996];
-// The Team Study Room 1 code that focusRoomByCode flies to on click — building
-// A / floor -1, from which the student can see the whole library zone and pick
-// any room.
-const LIBRARY_FOCUS_CODE = 'BA01P1049';
 
 // Leaflet's private projection used by its own markers to animate on zoom.
 type ZoomAnimMap = {
@@ -32,7 +28,7 @@ type ZoomAnimMap = {
 export function LibraryLayer() {
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const availability = useAppStore((s) => s.libraryAvailability);
-  const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
+  const openLibraryOverview = useAppStore((s) => s.openLibraryOverview);
   const { t } = useTranslation();
   const [pane, setPane] = useState<HTMLElement | null>(null);
   const [pt, setPt] = useState<{ x: number; y: number } | null>(null);
@@ -101,22 +97,43 @@ export function LibraryLayer() {
     const a = availability[room.staffGuid];
     return a ? isBookableToday(a.blocks, room.leadMinutes, now) : false;
   }).length;
+  const hoverText =
+    freeCount > 0 ? t('map.libraryFreeToday', { count: freeCount }) : t('map.libraryFull');
 
+  // A map-native marker in the same visual language as the society event pins:
+  // a small white disc anchored on the library building, carrying the library
+  // glyph — no persistent label (that surfaces on hover). A count badge appears
+  // only when rooms are free today, so the marker reads "alive" without shouting.
   return createPortal(
     <button
       type="button"
-      aria-label={t('map.studyRooms')}
-      className="pointer-events-auto absolute left-0 top-0 flex items-center gap-1.5 whitespace-nowrap rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-content shadow-md leaflet-zoom-animated"
+      aria-label={`${t('map.studyRooms')} — ${hoverText}`}
+      className="group pointer-events-auto absolute left-0 top-0 flex items-center justify-center leaflet-zoom-animated"
       style={{ transform: `translate(${pt.x}px, ${pt.y}px) translate(-50%, -50%)` }}
-      onClick={() => focusRoomByCode(LIBRARY_FOCUS_CODE)}
+      onClick={() => openLibraryOverview()}
     >
-      <Library size={14} strokeWidth={2} aria-hidden="true" />
-      <span>{t('map.studyRooms')}</span>
-      {freeCount > 0 && (
-        <span className="rounded-full bg-primary-content/20 px-1.5 text-[11px] font-semibold tabular-nums">
-          {freeCount}
+      <span
+        className="relative flex items-center justify-center rounded-full bg-white transition-transform group-hover:scale-110"
+        style={{
+          width: 30,
+          height: 30,
+          border: '1px solid rgba(0,0,0,0.12)',
+          boxShadow: '0 1px 4px rgba(0,0,0,.28)',
+        }}
+      >
+        <Library size={17} strokeWidth={2} className="text-primary" aria-hidden="true" />
+        {freeCount > 0 && (
+          <span className="absolute -right-1.5 -top-1.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-success px-1 text-[10px] font-bold leading-none text-success-content shadow-sm tabular-nums">
+            {freeCount}
+          </span>
+        )}
+        <span className="pointer-events-none absolute bottom-[38px] left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-base-100 px-2 py-1 text-base-content shadow-popover-heavy group-hover:block">
+          <span className="block text-[11px] font-bold leading-tight">{t('map.studyRooms')}</span>
+          <span className="block text-[10px] font-semibold leading-tight text-base-content/60">
+            {hoverText}
+          </span>
         </span>
-      )}
+      </span>
     </button>,
     pane
   );

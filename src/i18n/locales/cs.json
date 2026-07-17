@@ -1062,7 +1062,11 @@
     "libraryNextSlotDay": "Volno {date} {time}",
     "libraryFull": "Momentálně plno",
     "libraryReserve": "Rezervovat",
-    "studyRooms": "Studovny"
+    "studyRooms": "Studovny",
+    "libraryFreeToday": "{count} volné dnes",
+    "libraryToday": "Dnešní dostupnost",
+    "librarySoloSection": "Jen pro vás",
+    "libraryGroupSection": "Pro skupinu"
   },
   "admin": {
     "email": "E-mail",
