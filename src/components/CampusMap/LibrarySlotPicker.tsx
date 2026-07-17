@@ -43,6 +43,7 @@ export function LibrarySlotPicker({
           <button
             key={d.toDateString()}
             type="button"
+            aria-pressed={i === dayIdx}
             className={`${pill} ${i === dayIdx ? 'btn-primary' : 'btn-ghost'}`}
             onClick={() => onDay(i)}
           >
@@ -53,6 +54,7 @@ export function LibrarySlotPicker({
       <div className="flex gap-1 overflow-x-auto pb-0.5">
         <button
           type="button"
+          aria-pressed={hour === null}
           className={`${pill} ${hour === null ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => onHour(null)}
         >
@@ -62,6 +64,7 @@ export function LibrarySlotPicker({
           <button
             key={h}
             type="button"
+            aria-pressed={h === hour}
             className={`${pill} tabular-nums ${h === hour ? 'btn-primary' : 'btn-ghost'}`}
             onClick={() => onHour(h)}
           >

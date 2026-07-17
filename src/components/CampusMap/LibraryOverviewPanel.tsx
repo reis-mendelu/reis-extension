@@ -105,8 +105,11 @@ export function LibraryOverviewPanel() {
     [availabilityMap]
   );
   const days = useMemo(() => pickableDays(unionBlocks, now), [unionBlocks, now]);
-  const hours = useMemo(() => openStartHours(unionBlocks), [unionBlocks]);
   const day = days[Math.min(dayIdx, days.length - 1)] ?? now;
+  const hours = useMemo(() => openStartHours(unionBlocks, day), [unionBlocks, day]);
+  // If the picked hour isn't open on the selected day, fall back to "any time"
+  // rather than showing every room as busy at a slot that doesn't exist.
+  const activeHour = hour !== null && hours.includes(hour) ? hour : null;
 
   const solo = LIBRARY_ROOMS.filter(isSolo);
   const group = LIBRARY_ROOMS.filter((r) => !isSolo(r));
@@ -116,7 +119,7 @@ export function LibraryOverviewPanel() {
       room={room}
       availability={availabilityMap[room.staffGuid]}
       day={day}
-      hour={hour}
+      hour={activeHour}
       now={now}
     />
   );
@@ -140,7 +143,7 @@ export function LibraryOverviewPanel() {
             dayIdx={Math.min(dayIdx, days.length - 1)}
             onDay={setDayIdx}
             hours={hours}
-            hour={hour}
+            hour={activeHour}
             onHour={setHour}
             now={now}
             loc={loc}

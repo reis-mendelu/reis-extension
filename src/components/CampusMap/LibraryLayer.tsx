@@ -97,8 +97,15 @@ export function LibraryLayer() {
     const a = availability[room.staffGuid];
     return a ? isBookableToday(a.blocks, room.leadMinutes, now) : false;
   }).length;
+  // Availability not loaded (or partially failed) for some room → never make a
+  // definitive "fully booked" claim; show the neutral free-note instead.
+  const hasUnknown = LIBRARY_ROOMS.some((room) => !availability[room.staffGuid]);
   const hoverText =
-    freeCount > 0 ? t('map.libraryFreeToday', { count: freeCount }) : t('map.libraryFull');
+    freeCount > 0
+      ? t('map.libraryFreeToday', { count: freeCount })
+      : hasUnknown
+        ? t('map.libraryFreeNote')
+        : t('map.libraryFull');
 
   // A map-native marker in the same visual language as the society event pins:
   // a small white disc anchored on the library building, carrying the library
@@ -112,15 +119,9 @@ export function LibraryLayer() {
       style={{ transform: `translate(${pt.x}px, ${pt.y}px) translate(-50%, -50%)` }}
       onClick={() => openLibraryOverview()}
     >
-      <span
-        className="relative flex items-center justify-center rounded-full bg-white transition-transform group-hover:scale-110"
-        style={{
-          width: 30,
-          height: 30,
-          border: '1px solid rgba(0,0,0,0.12)',
-          boxShadow: '0 1px 4px rgba(0,0,0,.28)',
-        }}
-      >
+      {/* Fixed white/black literals (not theme tokens): map overlays sit on the
+          always-light basemap, same as EventPin. */}
+      <span className="relative flex size-[30px] items-center justify-center rounded-full border border-black/10 bg-white shadow-md transition-transform group-hover:scale-110">
         <Library size={17} strokeWidth={2} className="text-primary" aria-hidden="true" />
         {freeCount > 0 && (
           <span className="absolute -right-1.5 -top-1.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-success px-1 text-[10px] font-bold leading-none text-success-content shadow-sm tabular-nums">

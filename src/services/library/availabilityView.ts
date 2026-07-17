@@ -29,11 +29,14 @@ export function pickableDays(blocks: AvailabilityBlock[], now: Date, horizon = 7
 
 // The distinct hour-of-day starts (0–23) that begin at least one whole bookable
 // hour inside some AVAILABLE block — e.g. an 08:00–16:00 window yields 8…15.
-// The union across rooms gives the picker its hour options.
-export function openStartHours(blocks: AvailabilityBlock[]): number[] {
+// Pass `day` to scope the options to that calendar date (so hours open on a
+// different day don't leak into the picker); omit it for the union across days.
+export function openStartHours(blocks: AvailabilityBlock[], day?: Date): number[] {
+  const dayStr = day ? day.toDateString() : null;
   const hours = new Set<number>();
   for (const b of blocks) {
     if (b.status !== 'AVAILABLE') continue;
+    if (dayStr && new Date(b.start).toDateString() !== dayStr) continue;
     const end = new Date(b.end).getTime();
     const h = new Date(b.start);
     if (h.getMinutes() || h.getSeconds() || h.getMilliseconds()) {

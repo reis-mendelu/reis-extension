@@ -74,29 +74,35 @@ serve(async (req: Request) => {
     const rooms = (
       await Promise.all(
         services.map(async (s: any) => {
-          const guid = s.staffMemberIds[0];
-          const lead = s.bookingsSchedulingPolicy?.minimumLeadTime === 'P2D' ? 2880 : 60;
-          const availRes = await fetchWithTimeout(`${BASE}GetStaffAvailability`, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({
-              staffIds: [guid],
-              startDateTime: { dateTime: dateOnly(start), timeZone: TZ },
-              endDateTime: { dateTime: dateOnly(end), timeZone: TZ },
-            }),
-          });
-          // Omit rooms whose availability couldn't be fetched so the client can
-          // render an "unknown" state instead of a false "fully booked".
-          if (!availRes.ok) return null;
-          const availJson = await availRes.json();
-          const items = availJson.staffAvailabilityResponse?.[0]?.availabilityItems || [];
-          return {
-            staffGuid: guid,
-            serviceId: s.serviceId,
-            webUrl: s.webUrl,
-            leadMinutes: lead,
-            items,
-          };
+          // Isolate per-room failures: without this try/catch a single room's
+          // timeout (fetchWithTimeout aborts → throws) would reject Promise.all
+          // and drop ALL rooms to the outer catch. Omit only the failing room so
+          // the client renders "unknown" for it, not "fully booked" for all.
+          try {
+            const guid = s.staffMemberIds[0];
+            const lead = s.bookingsSchedulingPolicy?.minimumLeadTime === 'P2D' ? 2880 : 60;
+            const availRes = await fetchWithTimeout(`${BASE}GetStaffAvailability`, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({
+                staffIds: [guid],
+                startDateTime: { dateTime: dateOnly(start), timeZone: TZ },
+                endDateTime: { dateTime: dateOnly(end), timeZone: TZ },
+              }),
+            });
+            if (!availRes.ok) return null;
+            const availJson = await availRes.json();
+            const items = availJson.staffAvailabilityResponse?.[0]?.availabilityItems || [];
+            return {
+              staffGuid: guid,
+              serviceId: s.serviceId,
+              webUrl: s.webUrl,
+              leadMinutes: lead,
+              items,
+            };
+          } catch {
+            return null;
+          }
         })
       )
     ).filter((r) => r !== null);

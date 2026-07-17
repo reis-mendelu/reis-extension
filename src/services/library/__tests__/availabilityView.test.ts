@@ -41,4 +41,11 @@ describe('openStartHours', () => {
     ];
     expect(openStartHours(busyOnly)).toEqual([]);
   });
+  it('scopes hours to a given day so other days do not leak', () => {
+    // Fri open 08–12 → 8..11; Mon open 08–16 → 8..15
+    expect(openStartHours(blocks, new Date('2026-07-17T00:00:00'))).toEqual([8, 9, 10, 11]);
+    expect(openStartHours(blocks, new Date('2026-07-20T00:00:00'))).toEqual([
+      8, 9, 10, 11, 12, 13, 14, 15,
+    ]);
+  });
 });
