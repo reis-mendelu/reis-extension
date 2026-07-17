@@ -27,3 +27,29 @@ export interface LibraryRoom {
   leadMinutes: number;
   bookingUrl: string; // static per-room Bookings deep-link — always present, never depends on live availability
 }
+
+// --- In-app booking (Path B) ---
+
+// The student identity a booking carries — all three come from getUserParams():
+// fullName, email (<username>@mendelu.cz), studentId ("Identifikační číslo").
+export interface BookingIdentity {
+  name: string;
+  email: string;
+  studentId: string;
+}
+
+// The minimal request the client sends to the bookings-create edge function.
+// The edge builds the full MS `{ appointment }` envelope from this — the client
+// never constructs the raw MS payload (so it can't inject extra recipients etc.).
+export interface BookingRequest {
+  serviceId: string;
+  staffMemberId: string;
+  startDateTime: string; // naive local ISO
+  endDateTime: string; // naive local ISO (start + 1h)
+  customer: BookingIdentity;
+}
+
+export type BookingError = 'conflict' | 'rate_limited' | 'invalid' | 'upstream' | 'offline';
+
+export type BookingResult =
+  { ok: true; appointmentId: string } | { ok: false; error: BookingError };
