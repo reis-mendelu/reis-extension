@@ -10,6 +10,7 @@ const TZ = "Central Europe Standard Time";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-reis-extension-secret",
 };
@@ -31,17 +32,33 @@ function dateOnly(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`;
 }
 
+// Bound every upstream call so a stalled Bookings request can't hold the edge
+// invocation open until the platform kills it.
+async function fetchWithTimeout(url: string, opts: RequestInit, ms = 8000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...opts, signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const secretHeader = req.headers.get("x-reis-extension-secret");
-    if (EXTENSION_SECRET && secretHeader !== EXTENSION_SECRET) {
+    // Fail closed: a missing server secret must reject, never disable auth.
+    if (!EXTENSION_SECRET) {
+      return json({ error: "Service unavailable" }, 503);
+    }
+    if (secretHeader !== EXTENSION_SECRET) {
       return json({ error: "Unauthorized: invalid extension secret" }, 401);
     }
 
     if (cache && Date.now() - cache.at < TTL_MS) return json(cache.payload);
 
-    const svcRes = await fetch(`${BASE}services`, {
+    const svcRes = await fetchWithTimeout(`${BASE}services`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: "{}",
@@ -54,29 +71,35 @@ serve(async (req: Request) => {
     const start = new Date(now.getTime() - 24 * 3600_000);
     const end = new Date(now.getTime() + 5 * 24 * 3600_000);
 
-    const rooms = await Promise.all(
-      services.map(async (s: any) => {
-        const guid = s.staffMemberIds[0];
-        const lead = s.bookingsSchedulingPolicy?.minimumLeadTime === "P2D" ? 2880 : 60;
-        const availRes = await fetch(`${BASE}GetStaffAvailability`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            staffIds: [guid],
-            startDateTime: { dateTime: dateOnly(start), timeZone: TZ },
-            endDateTime: { dateTime: dateOnly(end), timeZone: TZ },
-          }),
-        });
-        const availJson = availRes.ok ? await availRes.json() : { staffAvailabilityResponse: [] };
-        const items = availJson.staffAvailabilityResponse?.[0]?.availabilityItems || [];
-        return { staffGuid: guid, serviceId: s.serviceId, webUrl: s.webUrl, leadMinutes: lead, items };
-      }),
-    );
+    const rooms = (
+      await Promise.all(
+        services.map(async (s: any) => {
+          const guid = s.staffMemberIds[0];
+          const lead = s.bookingsSchedulingPolicy?.minimumLeadTime === "P2D" ? 2880 : 60;
+          const availRes = await fetchWithTimeout(`${BASE}GetStaffAvailability`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              staffIds: [guid],
+              startDateTime: { dateTime: dateOnly(start), timeZone: TZ },
+              endDateTime: { dateTime: dateOnly(end), timeZone: TZ },
+            }),
+          });
+          // Omit rooms whose availability couldn't be fetched so the client can
+          // render an "unknown" state instead of a false "fully booked".
+          if (!availRes.ok) return null;
+          const availJson = await availRes.json();
+          const items = availJson.staffAvailabilityResponse?.[0]?.availabilityItems || [];
+          return { staffGuid: guid, serviceId: s.serviceId, webUrl: s.webUrl, leadMinutes: lead, items };
+        }),
+      )
+    ).filter((r) => r !== null);
 
     const payload = { rooms };
     cache = { at: Date.now(), payload };
     return json(payload);
-  } catch (error: any) {
-    return json({ error: error.message, rooms: [] }, 200);
+  } catch (_error) {
+    // Never surface upstream error details; the client treats [] as degraded.
+    return json({ rooms: [] }, 200);
   }
 });
