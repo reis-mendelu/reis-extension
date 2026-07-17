@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type L from 'leaflet';
+import { Library } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { LIBRARY_ROOMS } from '../../data/map/libraryRooms';
@@ -104,11 +105,18 @@ export function LibraryLayer() {
   return createPortal(
     <button
       type="button"
-      className="pointer-events-auto absolute left-0 top-0 flex items-center gap-1 rounded-full bg-primary px-2 py-1 text-xs font-semibold text-primary-content leaflet-zoom-animated"
+      aria-label={t('map.studyRooms')}
+      className="pointer-events-auto absolute left-0 top-0 flex items-center gap-1.5 whitespace-nowrap rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-content shadow-md leaflet-zoom-animated"
       style={{ transform: `translate(${pt.x}px, ${pt.y}px) translate(-50%, -50%)` }}
       onClick={() => focusRoomByCode(LIBRARY_FOCUS_CODE)}
     >
-      {t('map.title')} · {t('map.libraryFreeToday', { count: freeCount })}
+      <Library size={14} strokeWidth={2} aria-hidden="true" />
+      <span>{t('map.studyRooms')}</span>
+      {freeCount > 0 && (
+        <span className="rounded-full bg-primary-content/20 px-1.5 text-[11px] font-semibold tabular-nums">
+          {freeCount}
+        </span>
+      )}
     </button>,
     pane
   );

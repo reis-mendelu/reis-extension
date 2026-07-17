@@ -1,5 +1,5 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/services/supabase/config';
-import { parseAvailabilityItems } from '@/services/library/nextSlot';
+import { parseAvailabilityItems, type RawItem } from '@/services/library/nextSlot';
 import { logError } from '@/utils/reportError';
 import type { RoomAvailability } from '@/types/library';
 
@@ -16,13 +16,21 @@ export async function fetchLibraryAvailability(): Promise<RoomAvailability[]> {
       },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = (await res.json()) as { rooms?: Array<{ staffGuid: string; serviceId: string; webUrl: string; leadMinutes: number; items: unknown[] }> };
+    const data = (await res.json()) as {
+      rooms?: Array<{
+        staffGuid: string;
+        serviceId: string;
+        webUrl: string;
+        leadMinutes: number;
+        items: RawItem[];
+      }>;
+    };
     return (data.rooms || []).map((r) => ({
       staffGuid: r.staffGuid,
       serviceId: r.serviceId,
       webUrl: r.webUrl,
       leadMinutes: r.leadMinutes,
-      blocks: parseAvailabilityItems(r.items as never),
+      blocks: parseAvailabilityItems(r.items),
     }));
   } catch (err) {
     logError('Api.fetchLibraryAvailability', err);

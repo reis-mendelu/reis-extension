@@ -251,15 +251,11 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
 
   loadLibraryAvailability: async () => {
     if (get().libraryAvailabilityLoaded) return;
-    try {
-      const rooms = await fetchLibraryAvailability();
-      const byGuid: Record<string, (typeof rooms)[number]> = {};
-      for (const r of rooms) byGuid[r.staffGuid] = r;
-      set({ libraryAvailability: byGuid, libraryAvailabilityLoaded: true });
-    } catch (err) {
-      logError('MapSlice.loadLibraryAvailability', err);
-      set({ libraryAvailabilityLoaded: true });
-    }
+    // fetchLibraryAvailability never throws — it logs and returns [] on failure.
+    const rooms = await fetchLibraryAvailability();
+    const byGuid: Record<string, (typeof rooms)[number]> = {};
+    for (const r of rooms) byGuid[r.staffGuid] = r;
+    set({ libraryAvailability: byGuid, libraryAvailabilityLoaded: true });
   },
 
   focusEventById: (id, opts) => {

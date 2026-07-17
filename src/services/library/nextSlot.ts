@@ -2,7 +2,7 @@ import type { AvailabilityBlock, AvailabilityStatus } from '@/types/library';
 
 const HOUR_MS = 3_600_000;
 
-interface RawItem {
+export interface RawItem {
   status: string;
   startDateTime: { dateTime: string; timeZone: string };
   endDateTime: { dateTime: string; timeZone: string };

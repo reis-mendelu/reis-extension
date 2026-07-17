@@ -26,6 +26,26 @@ import {
 import { setMapInstance } from './mapInstance';
 import { LIBRARY_PLACE_IDS, libraryRoomsByPlaceId } from '@/data/map/libraryRooms';
 import { isBookableToday } from '@/services/library/nextSlot';
+import type { RoomAvailability } from '@/types/library';
+
+// Fill for a library room polygon: free-today → green, known-but-not-free →
+// muted, unknown (no availability data, e.g. an upstream failure) → the room's
+// neutral base style, so a failed fetch never reads as a false "busy".
+function libraryTintStyle(
+  placeId: number,
+  availability: Record<string, RoomAvailability>,
+  now: Date,
+  neutral: L.PathOptions
+): L.PathOptions {
+  const rooms = libraryRoomsByPlaceId(placeId);
+  const known = rooms.some((room) => availability[room.staffGuid]);
+  if (!known) return neutral;
+  const free = rooms.some((room) => {
+    const a = availability[room.staffGuid];
+    return a ? isBookableToday(a.blocks, room.leadMinutes, now) : false;
+  });
+  return free ? LIBRARY_FREE_STYLE : LIBRARY_BUSY_STYLE;
+}
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
@@ -234,13 +254,7 @@ export function MapCanvas() {
           };
       let effectiveBase = base;
       if (LIBRARY_PLACE_IDS.has(p.id)) {
-        const now = new Date();
-        const availNow = libraryAvailabilityRef.current;
-        const free = libraryRoomsByPlaceId(p.id).some((room) => {
-          const a = availNow[room.staffGuid];
-          return a ? isBookableToday(a.blocks, room.leadMinutes, now) : false;
-        });
-        effectiveBase = free ? LIBRARY_FREE_STYLE : LIBRARY_BUSY_STYLE;
+        effectiveBase = libraryTintStyle(p.id, libraryAvailabilityRef.current, new Date(), base);
       }
       const poly = L.polygon(
         ringToLatLng(f.geometry.coordinates[0]),
@@ -319,14 +333,12 @@ export function MapCanvas() {
           : null;
     const now = new Date();
     for (const [placeId, entry] of roomPolysRef.current) {
-      if (!LIBRARY_PLACE_IDS.has(placeId) || placeId === selId) continue;
-      const free = libraryRoomsByPlaceId(placeId).some((room) => {
-        const a = libraryAvailability[room.staffGuid];
-        return a ? isBookableToday(a.blocks, room.leadMinutes, now) : false;
-      });
-      const style = free ? LIBRARY_FREE_STYLE : LIBRARY_BUSY_STYLE;
+      if (!LIBRARY_PLACE_IDS.has(placeId)) continue;
+      const style = libraryTintStyle(placeId, libraryAvailability, now, entry.base);
+      // Always refresh the stored base so a later deselect restores the current
+      // tint; only skip the visible restyle while this room is selected.
       roomPolysRef.current.set(placeId, { poly: entry.poly, base: style });
-      entry.poly.setStyle(style);
+      if (placeId !== selId) entry.poly.setStyle(style);
     }
   }, [libraryAvailability, mapSelection]);
 

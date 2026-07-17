@@ -1062,7 +1062,7 @@
     "libraryNextSlotDay": "Free {date} {time}",
     "libraryFull": "Fully booked",
     "libraryReserve": "Reserve",
-    "libraryFreeToday": "{count} free today"
+    "studyRooms": "Study rooms"
   },
   "admin": {
     "email": "Email",
