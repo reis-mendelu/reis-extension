@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
+  bookableRangesOnDay,
   bookableRangesToday,
   computeNextSlot,
   isBookableToday,
+  isRoomFreeAt,
   parseAvailabilityItems,
 } from '@/services/library/nextSlot';
 import type { AvailabilityBlock } from '@/types/library';
@@ -95,5 +97,42 @@ describe('bookableRangesToday', () => {
   it('is empty for the 2-day-lead seminar room (never bookable today)', () => {
     const now = new Date('2026-07-17T09:00:00');
     expect(bookableRangesToday(day, 2880, now)).toEqual([]);
+  });
+});
+
+describe('bookableRangesOnDay', () => {
+  const twoDays: AvailabilityBlock[] = [
+    { status: 'AVAILABLE', start: '2026-07-17T08:00:00', end: '2026-07-17T12:00:00' },
+    { status: 'AVAILABLE', start: '2026-07-18T08:00:00', end: '2026-07-18T16:00:00' },
+  ];
+  it('returns a future day whole open window (lead cutoff already passed)', () => {
+    const now = new Date('2026-07-17T09:00:00');
+    const target = new Date('2026-07-18T00:00:00');
+    expect(bookableRangesOnDay(twoDays, 60, target, now)).toEqual([
+      { start: '2026-07-18T08:00:00', end: '2026-07-18T16:00:00' },
+    ]);
+  });
+  it('clips the current day by the lead cutoff', () => {
+    const now = new Date('2026-07-17T09:10:00');
+    const target = new Date('2026-07-17T00:00:00');
+    expect(bookableRangesOnDay(twoDays, 60, target, now)).toEqual([
+      { start: '2026-07-17T11:00:00', end: '2026-07-17T12:00:00' },
+    ]);
+  });
+});
+
+describe('isRoomFreeAt', () => {
+  it('is true for an hour fully inside an available block past the lead cutoff', () => {
+    const now = new Date('2026-07-17T09:10:00');
+    expect(isRoomFreeAt(day, 60, new Date('2026-07-17T14:00:00'), now)).toBe(true);
+  });
+  it('is false inside a busy block', () => {
+    const now = new Date('2026-07-17T09:00:00');
+    expect(isRoomFreeAt(day, 60, new Date('2026-07-17T12:00:00'), now)).toBe(false);
+  });
+  it('is false before the lead cutoff even if the block is available', () => {
+    const now = new Date('2026-07-17T09:10:00');
+    // 10:00 is inside the 08–12 block but < now+1h rounded, so not bookable
+    expect(isRoomFreeAt(day, 60, new Date('2026-07-17T09:00:00'), now)).toBe(false);
   });
 });

@@ -3,6 +3,11 @@ import type { LibraryRoom } from '@/types/library';
 const BOOKING_BASE =
   'https://outlook.office.com/book/RezervacestudovenMENDELU@mendelu.onmicrosoft.com/s';
 
+// The Bookings landing page (no per-service suffix) — lists every study room so
+// the student can pick and book any of them. The single CTA in the overview.
+export const LIBRARY_BOOKING_HOME =
+  'https://outlook.office.com/book/RezervacestudovenMENDELU@mendelu.onmicrosoft.com/';
+
 export const LIBRARY_ROOMS: LibraryRoom[] = [
   {
     staffGuid: 'e9c87efa-0ea7-4d3e-9f9a-9e51c5775474',

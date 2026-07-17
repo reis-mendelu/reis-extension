@@ -55,27 +55,29 @@ export interface TimeRange {
   end: string;
 }
 
-// Every contiguous AVAILABLE range that a student can still book *today*: each
-// range is clipped to start no earlier than the lead-time cutoff (now +
+// Every contiguous AVAILABLE range a student can still book on `day`'s local
+// calendar date: each range starts no earlier than the lead-time cutoff (now +
 // leadMinutes, rounded up to the hour), holds at least one whole hour, and
-// begins on `now`'s local day. Touching ranges are merged so the panel shows
-// "14:00–18:00", not four one-hour fragments. Answers "which specific hours can
-// I book?" — where computeNextSlot answers only "the single earliest one".
-export function bookableRangesToday(
+// begins on `day`. Touching ranges are merged so the panel shows "14:00–18:00",
+// not four one-hour fragments. For a future `day` the lead cutoff is already in
+// the past, so the whole open day qualifies; for today it clips the morning.
+export function bookableRangesOnDay(
   blocks: AvailabilityBlock[],
   leadMinutes: number,
+  day: Date,
   now: Date
 ): TimeRange[] {
   const earliest = ceilToHour(new Date(now.getTime() + leadMinutes * 60_000));
-  const endOfDay = new Date(now);
+  const endOfDay = new Date(day);
   endOfDay.setHours(23, 59, 59, 999);
+  const dayStr = day.toDateString();
   const clipped: TimeRange[] = [];
   for (const b of blocks) {
     if (b.status !== 'AVAILABLE') continue;
     const start = ceilToHour(new Date(Math.max(new Date(b.start).getTime(), earliest.getTime())));
     const end = new Date(Math.min(new Date(b.end).getTime(), endOfDay.getTime()));
     if (start.getTime() + HOUR_MS > end.getTime()) continue; // no whole hour left
-    if (start.toDateString() !== now.toDateString()) continue; // slot is a future day
+    if (start.toDateString() !== dayStr) continue; // slot is not on this day
     clipped.push({ start: toLocalIso(start), end: toLocalIso(end) });
   }
   clipped.sort((a, b) => a.start.localeCompare(b.start));
@@ -86,6 +88,35 @@ export function bookableRangesToday(
     else merged.push({ ...r });
   }
   return merged;
+}
+
+// Today's bookable ranges — the day-scoped view for `now`'s own date.
+export function bookableRangesToday(
+  blocks: AvailabilityBlock[],
+  leadMinutes: number,
+  now: Date
+): TimeRange[] {
+  return bookableRangesOnDay(blocks, leadMinutes, now, now);
+}
+
+// Whether a room's specific hour-aligned slot (starting at `slotStart`) is
+// bookable: it must clear the lead-time cutoff and fall entirely inside one
+// AVAILABLE block. Answers the picker's "is THIS room free at THIS time?".
+export function isRoomFreeAt(
+  blocks: AvailabilityBlock[],
+  leadMinutes: number,
+  slotStart: Date,
+  now: Date
+): boolean {
+  const cutoff = now.getTime() + leadMinutes * 60_000;
+  if (slotStart.getTime() < cutoff) return false;
+  const slotEnd = slotStart.getTime() + HOUR_MS;
+  return blocks.some(
+    (b) =>
+      b.status === 'AVAILABLE' &&
+      new Date(b.start).getTime() <= slotStart.getTime() &&
+      slotEnd <= new Date(b.end).getTime()
+  );
 }
 
 // Whether the room's earliest bookable slot falls on `now`'s local calendar
