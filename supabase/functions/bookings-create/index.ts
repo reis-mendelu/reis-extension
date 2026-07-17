@@ -107,7 +107,15 @@ serve(async (req: Request) => {
     const studentId = customer?.studentId?.trim();
 
     // Validate shape + allowlist + identity presence.
-    if (!serviceId || !staffMemberId || !startDateTime || !endDateTime || !name || !email || !studentId) {
+    if (
+      !serviceId ||
+      !staffMemberId ||
+      !startDateTime ||
+      !endDateTime ||
+      !name ||
+      !email ||
+      !studentId
+    ) {
       return json({ error: 'invalid' }, 400);
     }
     if (!ALLOW.has(`${serviceId}|${staffMemberId}`)) return json({ error: 'invalid' }, 400);
@@ -188,7 +196,10 @@ serve(async (req: Request) => {
 
     if (!bookRes.ok) {
       // 4xx from MS is almost always the slot being taken between load and book.
-      return json({ error: bookRes.status < 500 ? 'conflict' : 'upstream' }, bookRes.status < 500 ? 409 : 502);
+      return json(
+        { error: bookRes.status < 500 ? 'conflict' : 'upstream' },
+        bookRes.status < 500 ? 409 : 502
+      );
     }
     const created = await bookRes.json().catch(() => ({}));
     const appointmentId =
