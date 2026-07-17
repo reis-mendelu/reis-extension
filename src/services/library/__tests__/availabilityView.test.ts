@@ -8,20 +8,25 @@ const ymd = (d: Date) =>
 
 const blocks: AvailabilityBlock[] = [
   { status: 'OUT_OF_OFFICE', start: '2026-07-16T00:00:00', end: '2026-07-16T08:00:00' },
-  { status: 'AVAILABLE', start: '2026-07-16T08:00:00', end: '2026-07-16T16:00:00' },
-  { status: 'AVAILABLE', start: '2026-07-17T08:00:00', end: '2026-07-17T12:00:00' },
+  { status: 'AVAILABLE', start: '2026-07-16T08:00:00', end: '2026-07-16T16:00:00' }, // Thu
+  { status: 'AVAILABLE', start: '2026-07-17T08:00:00', end: '2026-07-17T12:00:00' }, // Fri
   { status: 'BUSY', start: '2026-07-17T12:00:00', end: '2026-07-17T13:00:00' },
-  { status: 'AVAILABLE', start: '2026-07-18T09:00:00', end: '2026-07-18T11:00:00' },
+  { status: 'AVAILABLE', start: '2026-07-18T09:00:00', end: '2026-07-18T11:00:00' }, // Sat (closed)
+  { status: 'AVAILABLE', start: '2026-07-20T08:00:00', end: '2026-07-20T16:00:00' }, // Mon
 ];
 
 describe('pickableDays', () => {
-  it('always includes today and adds future available days, dropping the past', () => {
-    const now = new Date('2026-07-17T09:00:00');
-    expect(pickableDays(blocks, now).map(ymd)).toEqual(['2026-07-17', '2026-07-18']);
+  it('includes today plus future open days, dropping the past', () => {
+    const now = new Date('2026-07-17T09:00:00'); // Friday
+    expect(pickableDays(blocks, now).map(ymd)).toEqual(['2026-07-17', '2026-07-20']);
   });
-  it('includes today even when nothing remains bookable today', () => {
-    const now = new Date('2026-07-19T09:00:00');
-    expect(pickableDays(blocks, now).map(ymd)).toEqual(['2026-07-19']);
+  it('excludes weekend days even when the mailbox reports them free', () => {
+    const now = new Date('2026-07-17T09:00:00');
+    expect(pickableDays(blocks, now).map(ymd)).not.toContain('2026-07-18'); // Saturday
+  });
+  it('includes today (a weekday) even when nothing remains bookable today', () => {
+    const now = new Date('2026-07-20T23:00:00'); // Monday, after hours
+    expect(pickableDays(blocks, now).map(ymd)).toEqual(['2026-07-20']);
   });
 });
 

@@ -2,6 +2,15 @@ import type { AvailabilityBlock, AvailabilityStatus } from '@/types/library';
 
 const HOUR_MS = 3_600_000;
 
+// The MENDELU library is closed on weekends, so Saturday/Sunday are never
+// bookable — even though the room mailbox reports them free (GetStaffAvailability
+// returns raw free/busy, not the library's business hours). Weekday hours
+// already come through the availability blocks; only the weekend gap leaks.
+export function isOpenDay(d: Date): boolean {
+  const day = d.getDay();
+  return day !== 0 && day !== 6; // 0 = Sunday, 6 = Saturday
+}
+
 export interface RawItem {
   status: string;
   startDateTime: { dateTime: string; timeZone: string };
@@ -43,6 +52,7 @@ export function computeNextSlot(
     const bStart = new Date(b.start);
     const bEnd = new Date(b.end);
     const start = ceilToHour(new Date(Math.max(bStart.getTime(), earliest.getTime())));
+    if (!isOpenDay(start)) continue; // library closed on weekends
     if (start.getTime() + HOUR_MS <= bEnd.getTime()) {
       if (!best || start < best) best = start;
     }
@@ -67,6 +77,7 @@ export function bookableRangesOnDay(
   day: Date,
   now: Date
 ): TimeRange[] {
+  if (!isOpenDay(day)) return []; // library closed on weekends
   const earliest = ceilToHour(new Date(now.getTime() + leadMinutes * 60_000));
   const endOfDay = new Date(day);
   endOfDay.setHours(23, 59, 59, 999);
@@ -108,6 +119,7 @@ export function isRoomFreeAt(
   slotStart: Date,
   now: Date
 ): boolean {
+  if (!isOpenDay(slotStart)) return false; // library closed on weekends
   const cutoff = now.getTime() + leadMinutes * 60_000;
   if (slotStart.getTime() < cutoff) return false;
   const slotEnd = slotStart.getTime() + HOUR_MS;

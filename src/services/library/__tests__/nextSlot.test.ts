@@ -61,7 +61,7 @@ describe('isBookableToday', () => {
   });
   it('is false when the only slot is on a future day', () => {
     const futureOnly: AvailabilityBlock[] = [
-      { status: 'AVAILABLE', start: '2026-07-18T08:00:00', end: '2026-07-18T12:00:00' },
+      { status: 'AVAILABLE', start: '2026-07-20T08:00:00', end: '2026-07-20T12:00:00' }, // Mon
     ];
     const now = new Date('2026-07-17T09:00:00');
     expect(isBookableToday(futureOnly, 60, now)).toBe(false);
@@ -102,14 +102,14 @@ describe('bookableRangesToday', () => {
 
 describe('bookableRangesOnDay', () => {
   const twoDays: AvailabilityBlock[] = [
-    { status: 'AVAILABLE', start: '2026-07-17T08:00:00', end: '2026-07-17T12:00:00' },
-    { status: 'AVAILABLE', start: '2026-07-18T08:00:00', end: '2026-07-18T16:00:00' },
+    { status: 'AVAILABLE', start: '2026-07-17T08:00:00', end: '2026-07-17T12:00:00' }, // Fri
+    { status: 'AVAILABLE', start: '2026-07-20T08:00:00', end: '2026-07-20T16:00:00' }, // Mon
   ];
   it('returns a future day whole open window (lead cutoff already passed)', () => {
     const now = new Date('2026-07-17T09:00:00');
-    const target = new Date('2026-07-18T00:00:00');
+    const target = new Date('2026-07-20T00:00:00');
     expect(bookableRangesOnDay(twoDays, 60, target, now)).toEqual([
-      { start: '2026-07-18T08:00:00', end: '2026-07-18T16:00:00' },
+      { start: '2026-07-20T08:00:00', end: '2026-07-20T16:00:00' },
     ]);
   });
   it('clips the current day by the lead cutoff', () => {
@@ -118,6 +118,28 @@ describe('bookableRangesOnDay', () => {
     expect(bookableRangesOnDay(twoDays, 60, target, now)).toEqual([
       { start: '2026-07-17T11:00:00', end: '2026-07-17T12:00:00' },
     ]);
+  });
+});
+
+describe('weekend closure (library shut Sat/Sun)', () => {
+  const sat: AvailabilityBlock[] = [
+    { status: 'AVAILABLE', start: '2026-07-18T08:00:00', end: '2026-07-18T16:00:00' }, // Saturday
+  ];
+  it('bookableRangesOnDay is empty on a Saturday even when the mailbox is free', () => {
+    const now = new Date('2026-07-17T09:00:00');
+    expect(bookableRangesOnDay(sat, 60, new Date('2026-07-18T00:00:00'), now)).toEqual([]);
+  });
+  it('isRoomFreeAt is false for a Saturday slot', () => {
+    const now = new Date('2026-07-17T09:00:00');
+    expect(isRoomFreeAt(sat, 60, new Date('2026-07-18T10:00:00'), now)).toBe(false);
+  });
+  it('computeNextSlot skips the weekend to the next weekday', () => {
+    const spanning: AvailabilityBlock[] = [
+      { status: 'AVAILABLE', start: '2026-07-18T08:00:00', end: '2026-07-18T16:00:00' }, // Sat
+      { status: 'AVAILABLE', start: '2026-07-20T08:00:00', end: '2026-07-20T16:00:00' }, // Mon
+    ];
+    const now = new Date('2026-07-18T07:00:00'); // Saturday morning
+    expect(computeNextSlot(spanning, 60, now)).toBe('2026-07-20T08:00:00');
   });
 });
 
