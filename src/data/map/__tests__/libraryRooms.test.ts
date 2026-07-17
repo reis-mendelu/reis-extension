@@ -24,6 +24,16 @@ describe('libraryRooms', () => {
     expect(new Set(guids).size).toBe(7);
   });
 
+  it('has a unique, well-formed Bookings deep-link per room', () => {
+    const prefix = 'https://outlook.office.com/book/RezervacestudovenMENDELU@mendelu.onmicrosoft.com/s/';
+    const urls = LIBRARY_ROOMS.map((r) => r.bookingUrl);
+    for (const url of urls) {
+      expect(url.startsWith(prefix)).toBe(true);
+      expect(url.length).toBeGreaterThan(prefix.length);
+    }
+    expect(new Set(urls).size).toBe(7);
+  });
+
   it('groups the two IC rooms under the shared placeId 57640', () => {
     expect(libraryRoomsByPlaceId(57640)).toHaveLength(2);
     expect(LIBRARY_PLACE_IDS.has(57640)).toBe(true);
