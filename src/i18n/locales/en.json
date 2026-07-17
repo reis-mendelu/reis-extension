@@ -1021,6 +1021,7 @@
     "hour": "Hour",
     "minute": "Minute",
     "clearTime": "Clear time",
+    "noMatchingTime": "No such time",
     "selectPlace": "Select place on map",
     "searchPlace": "Search a place (bar, club, park…)",
     "searching": "Searching…",

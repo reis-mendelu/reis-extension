@@ -147,6 +147,7 @@ export const initializeStore = async () => {
     s2.loadRecentSearches();
     s2.hydrateBulletin();
     s2.loadMapEvents();
+    s2.loadLibraryAvailability();
     // Predictive prefetch — files for subjects scheduled today.
     // Guarded by 60s SWR + max 6 subjects in prefetchTodaySubjectsImpl.
     useAppStore.getState().prefetchTodaySubjects();

@@ -1021,6 +1021,7 @@
     "hour": "Hodina",
     "minute": "Minuta",
     "clearTime": "Vymazat čas",
+    "noMatchingTime": "Žádný čas",
     "selectPlace": "Vybrat místo na mapě",
     "searchPlace": "Hledat místo (bar, klub, park…)",
     "searching": "Hledám…",

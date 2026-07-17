@@ -5,8 +5,8 @@ import { ComposerTimeField } from '../ComposerTimeField';
 
 const t = (k: string) => k;
 
-// Controlled wrapper: the field is controlled, so a two-step (hour then minute)
-// pick only works if the value round-trips back in — same as EventComposer does.
+// Controlled wrapper — the field is controlled, so the committed value must
+// round-trip back in, same as EventComposer does.
 function Harness({ onChange, initial = '' }: { onChange?: (v: string) => void; initial?: string }) {
   const [v, setV] = useState(initial);
   return (
@@ -21,39 +21,56 @@ function Harness({ onChange, initial = '' }: { onChange?: (v: string) => void; i
   );
 }
 
-const openPopover = () => fireEvent.click(screen.getByRole('button', { name: 'map.eventTime' }));
+const field = () => screen.getByRole('combobox', { name: 'map.eventTime' });
 
 describe('ComposerTimeField', () => {
-  it('picking an hour then a minute yields HH:MM', () => {
+  it('typing digits commits a masked HH:MM', () => {
     const onChange = vi.fn();
     render(<Harness onChange={onChange} />);
-    openPopover();
-    fireEvent.click(screen.getByRole('button', { name: '19' })); // 19 is hour-only
-    fireEvent.click(screen.getByRole('button', { name: '30' })); // 30 is minute-only
+    fireEvent.change(field(), { target: { value: '1930' } });
     expect(onChange).toHaveBeenLastCalledWith('19:30');
   });
 
-  it('picking an hour alone defaults the minute to 00', () => {
+  it('does not commit a partial time until it is complete', () => {
     const onChange = vi.fn();
     render(<Harness onChange={onChange} />);
-    openPopover();
-    fireEvent.click(screen.getByRole('button', { name: '21' }));
-    expect(onChange).toHaveBeenLastCalledWith('21:00');
+    fireEvent.change(field(), { target: { value: '19' } });
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.change(field(), { target: { value: '1930' } });
+    expect(onChange).toHaveBeenLastCalledWith('19:30');
   });
 
-  it('offers minutes in 5-minute steps only', () => {
-    render(<Harness initial="00:00" />);
-    openPopover();
-    expect(screen.getByRole('button', { name: '55' })).toBeInTheDocument(); // minute-only
-    // "37" is neither a 5-minute step nor a valid hour (max 23), so it must not
-    // appear as any button.
-    expect(screen.queryByRole('button', { name: '37' })).toBeNull();
+  it('reads a single-digit hour without a forced leading zero', () => {
+    render(<Harness />);
+    fireEvent.change(field(), { target: { value: '9' } });
+    expect(field()).toHaveValue('09');
+  });
+
+  it('picks a time from the dropdown list', () => {
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} />);
+    fireEvent.click(field());
+    fireEvent.click(screen.getByRole('option', { name: '19:30' }));
+    expect(onChange).toHaveBeenLastCalledWith('19:30');
+  });
+
+  it('offers the list in 15-minute steps only', () => {
+    render(<Harness />);
+    fireEvent.click(field());
+    expect(screen.getByRole('option', { name: '19:30' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: '19:35' })).toBeNull();
+  });
+
+  it('filters the list to the typed hour', () => {
+    render(<Harness />);
+    fireEvent.change(field(), { target: { value: '19' } });
+    expect(screen.getByRole('option', { name: '19:00' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: '18:00' })).toBeNull();
   });
 
   it('clears the time back to empty (time is optional)', () => {
     const onChange = vi.fn();
     render(<Harness onChange={onChange} initial="19:30" />);
-    openPopover();
     fireEvent.click(screen.getByRole('button', { name: 'map.clearTime' }));
     expect(onChange).toHaveBeenLastCalledWith('');
   });
