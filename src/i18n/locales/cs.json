@@ -1074,7 +1074,19 @@
     "libraryFreeAt": "Volno",
     "libraryBusyAt": "Obsazeno",
     "librarySoloSection": "Jen pro vás",
-    "libraryGroupSection": "Pro skupinu"
+    "libraryGroupSection": "Pro skupinu",
+    "libraryBookConfirmTitle": "Rezervovat studovnu",
+    "libraryBookName": "Jméno",
+    "libraryBookEmail": "E-mail",
+    "libraryBookStudentId": "Studentské / zaměstnanecké číslo",
+    "libraryBookConfirmCta": "Potvrdit rezervaci",
+    "libraryBookRealNote": "Vytvoří skutečnou rezervaci a odešle potvrzení do knihovny.",
+    "libraryBookSuccess": "Rezervováno!",
+    "libraryBookConflict": "Tento termín byl právě obsazen — zkuste jiný.",
+    "libraryBookRateLimited": "Nedávno jste rezervovali několik místností — zkuste to později.",
+    "libraryBookOffline": "Bez připojení — rezervace se nezdařila.",
+    "libraryBookInvalid": "Rezervaci se nepodařilo odeslat.",
+    "libraryBookMissing": "Doplňte prosím zvýrazněná pole."
   },
   "admin": {
     "email": "E-mail",

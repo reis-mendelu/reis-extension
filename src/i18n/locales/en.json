@@ -1074,7 +1074,19 @@
     "libraryFreeAt": "Free",
     "libraryBusyAt": "Busy",
     "librarySoloSection": "Just for you",
-    "libraryGroupSection": "For a group"
+    "libraryGroupSection": "For a group",
+    "libraryBookConfirmTitle": "Book this room",
+    "libraryBookName": "Name",
+    "libraryBookEmail": "Email",
+    "libraryBookStudentId": "Student / employee ID",
+    "libraryBookConfirmCta": "Confirm booking",
+    "libraryBookRealNote": "Creates a real reservation and emails the library.",
+    "libraryBookSuccess": "Booked!",
+    "libraryBookConflict": "That time was just taken — pick another.",
+    "libraryBookRateLimited": "You've booked several rooms recently — try again later.",
+    "libraryBookOffline": "You're offline — booking failed.",
+    "libraryBookInvalid": "Couldn't submit the booking.",
+    "libraryBookMissing": "Please fill the highlighted fields."
   },
   "admin": {
     "email": "Email",

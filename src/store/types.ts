@@ -396,6 +396,7 @@ export interface ContextSlice {
   userSemester: string | null;
   isErasmus: boolean;
   fullName: string | null;
+  userEmail: string | null;
   loadContext: () => Promise<void>;
 }
 

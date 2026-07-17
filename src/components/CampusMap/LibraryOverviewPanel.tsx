@@ -7,6 +7,7 @@ import { bookableRangesOnDay, isRoomFreeAt } from '@/services/library/nextSlot';
 import { pickableDays, openStartHours } from '@/services/library/availabilityView';
 import type { LibraryRoom, RoomAvailability } from '@/types/library';
 import { LibrarySlotPicker } from './LibrarySlotPicker';
+import { LibraryBookingDialog } from './LibraryBookingDialog';
 
 // A room is "solo" (just you, or a study partner) when it holds at most two
 // people; everything larger is a group room. This is the axis the student asks
@@ -21,25 +22,32 @@ function capacityLabel(room: LibraryRoom): string {
     : `${room.capacity}`;
 }
 
+function slotToIso(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:00:00`;
+}
+
 function RoomRow({
   room,
   availability,
   day,
   hour,
   now,
+  onBook,
 }: {
   room: LibraryRoom;
   availability: RoomAvailability | undefined;
   day: Date;
   hour: number | null;
   now: Date;
+  onBook: (room: LibraryRoom, slotIso: string) => void;
 }) {
   const { t, language } = useTranslation();
   const roomName = language === 'en' ? room.service : room.nameCs;
 
   // The right-hand status, one badge so each room stays on a single line:
   //   • not loaded yet → neutral "—" (never blindly claim busy)
-  //   • an exact hour is picked → free/busy answer for that slot
+  //   • an exact hour is picked → a Book button if free, else "busy"
   //   • otherwise → the picked day's open windows, or "full" if none
   let status: ReactNode;
   if (!availability) {
@@ -48,10 +56,14 @@ function RoomRow({
     const slot = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, 0, 0, 0);
     const free = isRoomFreeAt(availability.blocks, room.leadMinutes, slot, now);
     status = free ? (
-      <span className="badge badge-sm badge-success gap-1 whitespace-nowrap font-medium">
+      <button
+        type="button"
+        className="btn btn-primary btn-xs gap-1 whitespace-nowrap"
+        onClick={() => onBook(room, slotToIso(slot))}
+      >
         <Check size={11} strokeWidth={3} aria-hidden="true" />
-        {t('map.libraryFreeAt')}
-      </span>
+        {t('map.libraryReserve')}
+      </button>
     ) : (
       <span className="badge badge-sm badge-ghost whitespace-nowrap text-base-content/40">
         {t('map.libraryBusyAt')}
@@ -99,6 +111,7 @@ export function LibraryOverviewPanel() {
   const loc = language === 'cz' ? 'cs' : language;
   const [dayIdx, setDayIdx] = useState(0);
   const [hour, setHour] = useState<number | null>(null);
+  const [booking, setBooking] = useState<{ room: LibraryRoom; slotIso: string } | null>(null);
 
   const unionBlocks = useMemo(
     () => LIBRARY_ROOMS.flatMap((r) => availabilityMap[r.staffGuid]?.blocks ?? []),
@@ -121,6 +134,7 @@ export function LibraryOverviewPanel() {
       day={day}
       hour={activeHour}
       now={now}
+      onBook={(r, slotIso) => setBooking({ room: r, slotIso })}
     />
   );
 
@@ -172,6 +186,13 @@ export function LibraryOverviewPanel() {
           {t('map.libraryBook')} <ExternalLink size={13} />
         </a>
       </div>
+      {booking && (
+        <LibraryBookingDialog
+          room={booking.room}
+          slotIso={booking.slotIso}
+          onClose={() => setBooking(null)}
+        />
+      )}
     </div>
   );
 }
