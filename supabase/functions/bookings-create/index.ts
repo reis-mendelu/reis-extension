@@ -7,8 +7,11 @@ const EXTENSION_SECRET = Deno.env.get('EXTENSION_SECRET');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 // @ts-ignore
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+// No default: a public salt lets anyone with DB access reverse the hashes for
+// MENDELU's bounded set of student IDs, defeating the pseudonymisation. Absent →
+// fail closed (checked in the handler), never fall back to a known salt.
 // @ts-ignore
-const HASH_SALT = Deno.env.get('BOOKING_HASH_SALT') || 'reis-booking';
+const HASH_SALT = Deno.env.get('BOOKING_HASH_SALT');
 
 const BIZ = 'RezervacestudovenMENDELU@mendelu.onmicrosoft.com';
 const BASE = `https://bookings.cloud.microsoft/BookingsService/api/V1/bookingBusinessesc2/${BIZ}/`;
@@ -94,8 +97,9 @@ interface Body {
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
-    // Fail closed: a missing server secret must reject, never disable auth.
-    if (!EXTENSION_SECRET) return json({ error: 'unavailable' }, 503);
+    // Fail closed: a missing server secret (auth) or hash salt (privacy) must
+    // reject rather than degrade to a public/known value.
+    if (!EXTENSION_SECRET || !HASH_SALT) return json({ error: 'unavailable' }, 503);
     if (req.headers.get('x-reis-extension-secret') !== EXTENSION_SECRET) {
       return json({ error: 'unauthorized' }, 401);
     }

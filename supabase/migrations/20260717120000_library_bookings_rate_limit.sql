@@ -30,6 +30,11 @@ as $$
 declare
   recent int;
 begin
+  -- Serialize concurrent requests for the same student so the check-then-insert
+  -- can't race (TOCTOU): two parallel bookings could otherwise both read the old
+  -- count and both insert, bypassing the cap. The lock is released at commit.
+  perform pg_advisory_xact_lock(hashtext(p_student_hash));
+
   select count(*) into recent
     from public.library_bookings_log
    where student_hash = p_student_hash
