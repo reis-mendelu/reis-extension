@@ -64,7 +64,8 @@ export function DetailPanel() {
     : sel.kind === 'roomRef'
       ? roomLabel(sel.entry.name, sel.entry.code, sel.entry.nickname)
       : '';
-  const placeId = sel.kind === 'room' ? r?.id : sel.kind === 'roomRef' ? sel.entry.placeId : undefined;
+  const placeId =
+    sel.kind === 'room' ? r?.id : sel.kind === 'roomRef' ? sel.entry.placeId : undefined;
   const isLibrary = placeId != null && LIBRARY_PLACE_IDS.has(placeId);
   return (
     <div className="p-4 bg-base-100 border border-base-300 rounded-lg space-y-1">

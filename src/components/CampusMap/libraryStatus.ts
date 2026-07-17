@@ -8,7 +8,7 @@ export function statusLabel(
   availability: RoomAvailability | undefined,
   now: Date,
   t: T,
-  locale: string,
+  locale: string
 ): { text: string; free: boolean; known: boolean } {
   // 'cz' is the app-internal language code (matches IS Mendelu's own 'cz'/'en'
   // convention); it isn't valid Intl locale data — Czech is 'cs'.

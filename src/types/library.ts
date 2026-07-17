@@ -9,7 +9,7 @@ export interface AvailabilityBlock {
 export interface RoomAvailability {
   staffGuid: string;
   serviceId: string;
-  webUrl: string;      // per-room Bookings deep-link
+  webUrl: string; // per-room Bookings deep-link
   leadMinutes: number; // 60 for study rooms, 2880 for the seminar room
   blocks: AvailabilityBlock[];
 }
@@ -17,8 +17,8 @@ export interface RoomAvailability {
 export interface LibraryRoom {
   staffGuid: string;
   serviceId: string;
-  service: string;          // English service title (stable id-ish label)
-  nameCs: string;           // Czech room-resource name for display
+  service: string; // English service title (stable id-ish label)
+  nameCs: string; // Czech room-resource name for display
   library: 'A' | 'IC';
   buildingId: 54678;
   floorId: 57574;

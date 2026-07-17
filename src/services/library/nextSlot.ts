@@ -34,7 +34,7 @@ function toLocalIso(d: Date): string {
 export function computeNextSlot(
   blocks: AvailabilityBlock[],
   leadMinutes: number,
-  now: Date,
+  now: Date
 ): string | null {
   const earliest = ceilToHour(new Date(now.getTime() + leadMinutes * 60_000));
   let best: Date | null = null;
@@ -57,7 +57,7 @@ export function computeNextSlot(
 export function isBookableToday(
   blocks: AvailabilityBlock[],
   leadMinutes: number,
-  now: Date,
+  now: Date
 ): boolean {
   const iso = computeNextSlot(blocks, leadMinutes, now);
   if (!iso) return false;

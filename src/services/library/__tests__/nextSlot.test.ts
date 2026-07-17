@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { computeNextSlot, isBookableToday, parseAvailabilityItems } from '@/services/library/nextSlot';
+import {
+  computeNextSlot,
+  isBookableToday,
+  parseAvailabilityItems,
+} from '@/services/library/nextSlot';
 import type { AvailabilityBlock } from '@/types/library';
 
 const day: AvailabilityBlock[] = [
@@ -13,9 +17,15 @@ const day: AvailabilityBlock[] = [
 describe('parseAvailabilityItems', () => {
   it('strips the status prefix and keeps local dateTime', () => {
     const blocks = parseAvailabilityItems([
-      { status: 'BOOKINGSAVAILABILITYSTATUS_AVAILABLE', startDateTime: { dateTime: '2026-07-17T08:00:00', timeZone: 'x' }, endDateTime: { dateTime: '2026-07-17T12:00:00', timeZone: 'x' } },
+      {
+        status: 'BOOKINGSAVAILABILITYSTATUS_AVAILABLE',
+        startDateTime: { dateTime: '2026-07-17T08:00:00', timeZone: 'x' },
+        endDateTime: { dateTime: '2026-07-17T12:00:00', timeZone: 'x' },
+      },
     ]);
-    expect(blocks).toEqual([{ status: 'AVAILABLE', start: '2026-07-17T08:00:00', end: '2026-07-17T12:00:00' }]);
+    expect(blocks).toEqual([
+      { status: 'AVAILABLE', start: '2026-07-17T08:00:00', end: '2026-07-17T12:00:00' },
+    ]);
   });
 });
 

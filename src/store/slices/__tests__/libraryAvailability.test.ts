@@ -17,7 +17,7 @@ describe('loadLibraryAvailability', () => {
 
   it('populates libraryAvailability keyed by staffGuid', async () => {
     await useAppStore.getState().loadLibraryAvailability();
-    expect(useAppStore.getState().libraryAvailability.g1.webUrl).toBe('u');
+    expect(useAppStore.getState().libraryAvailability.g1!.webUrl).toBe('u'); // safe: populated above
     expect(useAppStore.getState().libraryAvailabilityLoaded).toBe(true);
   });
 

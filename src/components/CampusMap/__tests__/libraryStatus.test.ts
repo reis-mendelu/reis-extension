@@ -5,7 +5,10 @@ import type { RoomAvailability } from '@/types/library';
 
 const room = { leadMinutes: 60 } as { leadMinutes: number };
 const avail: RoomAvailability = {
-  staffGuid: 'g', serviceId: 's', webUrl: 'u', leadMinutes: 60,
+  staffGuid: 'g',
+  serviceId: 's',
+  webUrl: 'u',
+  leadMinutes: 60,
   blocks: [{ status: 'AVAILABLE', start: '2026-07-17T14:00:00', end: '2026-07-17T16:00:00' }],
 };
 const t = (k: string, o?: any) => (o?.time ? `${k}:${o.time}` : k);

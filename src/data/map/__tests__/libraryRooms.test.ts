@@ -25,7 +25,8 @@ describe('libraryRooms', () => {
   });
 
   it('has a unique, well-formed Bookings deep-link per room', () => {
-    const prefix = 'https://outlook.office.com/book/RezervacestudovenMENDELU@mendelu.onmicrosoft.com/s/';
+    const prefix =
+      'https://outlook.office.com/book/RezervacestudovenMENDELU@mendelu.onmicrosoft.com/s/';
     const urls = LIBRARY_ROOMS.map((r) => r.bookingUrl);
     for (const url of urls) {
       expect(url.startsWith(prefix)).toBe(true);
