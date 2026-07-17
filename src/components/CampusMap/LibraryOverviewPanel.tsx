@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Library, Clock, Users, Check, ExternalLink } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAppStore } from '@/store/useAppStore';
@@ -107,19 +107,19 @@ function RoomRow({
 export function LibraryOverviewPanel() {
   const { t, language } = useTranslation();
   const availabilityMap = useAppStore((s) => s.libraryAvailability);
-  const now = useMemo(() => new Date(), []);
+  // Fresh each render (not memoized): a long-open panel must not keep offering a
+  // slot that has since fallen into the past or the lead-time window, which would
+  // book straight into an MS "conflict". Date construction is negligible.
+  const now = new Date();
   const loc = language === 'cz' ? 'cs' : language;
   const [dayIdx, setDayIdx] = useState(0);
   const [hour, setHour] = useState<number | null>(null);
   const [booking, setBooking] = useState<{ room: LibraryRoom; slotIso: string } | null>(null);
 
-  const unionBlocks = useMemo(
-    () => LIBRARY_ROOMS.flatMap((r) => availabilityMap[r.staffGuid]?.blocks ?? []),
-    [availabilityMap]
-  );
-  const days = useMemo(() => pickableDays(unionBlocks, now), [unionBlocks, now]);
+  const unionBlocks = LIBRARY_ROOMS.flatMap((r) => availabilityMap[r.staffGuid]?.blocks ?? []);
+  const days = pickableDays(unionBlocks, now);
   const day = days[Math.min(dayIdx, days.length - 1)] ?? now;
-  const hours = useMemo(() => openStartHours(unionBlocks, day), [unionBlocks, day]);
+  const hours = openStartHours(unionBlocks, day);
   // If the picked hour isn't open on the selected day, fall back to "any time"
   // rather than showing every room as busy at a slot that doesn't exist.
   const activeHour = hour !== null && hours.includes(hour) ? hour : null;
