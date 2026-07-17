@@ -10,8 +10,9 @@ export function statusLabel(
   t: T,
   locale: string
 ): { text: string; free: boolean; known: boolean } {
-  // 'cz' is the app-internal language code (matches IS Mendelu's own 'cz'/'en'
-  // convention); it isn't valid Intl locale data — Czech is 'cs'.
+  // useTranslation can emit 'cz' (this app's internal language code); Intl has
+  // no data for 'cz' and would silently fall back, so map it to 'cs' at the
+  // Intl call boundary only. Not API-layer normalization.
   const loc = locale === 'cz' ? 'cs' : locale;
   if (!availability) return { text: '', free: false, known: false };
   const iso = computeNextSlot(availability.blocks, room.leadMinutes, now);
