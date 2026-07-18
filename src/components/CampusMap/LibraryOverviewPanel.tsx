@@ -33,6 +33,7 @@ function RoomRow({
   day,
   hour,
   now,
+  loading,
   onBook,
 }: {
   room: LibraryRoom;
@@ -40,17 +41,22 @@ function RoomRow({
   day: Date;
   hour: number | null;
   now: Date;
+  loading: boolean;
   onBook: (room: LibraryRoom, slotIso: string) => void;
 }) {
   const { t, language } = useTranslation();
   const roomName = language === 'en' ? room.service : room.nameCs;
 
   // The right-hand status, one badge so each room stays on a single line:
-  //   • not loaded yet → neutral "—" (never blindly claim busy)
+  //   • still fetching availability → a skeleton (not a bare "—", which reads
+  //     as broken/empty during the slow cold-cache load)
+  //   • loaded but this room's data is missing → neutral "—" (degraded)
   //   • an exact hour is picked → a Book button if free, else "busy"
   //   • otherwise → the picked day's open windows, or "full" if none
   let status: ReactNode;
-  if (!availability) {
+  if (loading) {
+    status = <span className="skeleton inline-block h-5 w-14 rounded-full" />;
+  } else if (!availability) {
     status = <span className="badge badge-sm badge-ghost text-base-content/30">—</span>;
   } else if (hour !== null) {
     const slot = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, 0, 0, 0);
@@ -107,6 +113,7 @@ function RoomRow({
 export function LibraryOverviewPanel() {
   const { t, language } = useTranslation();
   const availabilityMap = useAppStore((s) => s.libraryAvailability);
+  const loaded = useAppStore((s) => s.libraryAvailabilityLoaded);
   // Fresh each render (not memoized): a long-open panel must not keep offering a
   // slot that has since fallen into the past or the lead-time window, which would
   // book straight into an MS "conflict". Date construction is negligible.
@@ -134,6 +141,7 @@ export function LibraryOverviewPanel() {
       day={day}
       hour={activeHour}
       now={now}
+      loading={!loaded}
       onBook={(r, slotIso) => setBooking({ room: r, slotIso })}
     />
   );
