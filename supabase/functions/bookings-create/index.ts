@@ -205,14 +205,25 @@ serve(async (req: Request) => {
         bookRes.status < 500 ? 409 : 502
       );
     }
-    const created = await bookRes.json().catch(() => ({}));
+    // The booking already succeeded (2xx). Extract an appointment id if we can,
+    // but NEVER report failure from here on — a false failure makes the client
+    // retry and double-book. (This EWS-style id is NOT what the cancel endpoint
+    // expects; a cancel feature must resolve the short id first — see the
+    // library-booking-write-api memory. The body is not logged: it carries PII.)
+    const rawBody = await bookRes.text();
+    let created: any = null;
+    try {
+      created = JSON.parse(rawBody);
+    } catch {
+      created = rawBody;
+    }
     const appointmentId =
+      (typeof created === 'string' ? created.trim() : '') ||
       created?.appointment?.appointmentId ||
       created?.appointmentId ||
       created?.appointment?.id ||
       created?.id ||
       '';
-    if (!appointmentId) return json({ error: 'upstream' }, 502);
     return json({ ok: true, appointmentId });
   } catch (_error) {
     return json({ error: 'upstream' }, 502);

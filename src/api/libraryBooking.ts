@@ -23,8 +23,11 @@ export async function createLibraryBooking(req: BookingRequest): Promise<Booking
       appointmentId?: string;
       error?: string;
     };
-    if (res.ok && data.ok && data.appointmentId) {
-      return { ok: true, appointmentId: data.appointmentId };
+    // appointmentId is optional — the booking is confirmed by ok:true. Requiring
+    // it would turn a successful booking whose id we couldn't parse into a false
+    // failure, prompting a retry and a double-booking.
+    if (res.ok && data.ok) {
+      return { ok: true, appointmentId: data.appointmentId ?? '' };
     }
     if (res.status === 409) return { ok: false, error: 'conflict' };
     if (res.status === 429) return { ok: false, error: 'rate_limited' };
