@@ -66,6 +66,8 @@ describe('indexAvailabilityByRoom', () => {
     expect(Object.keys(map)).toHaveLength(7);
     for (const room of LIBRARY_ROOMS) {
       expect(map[room.staffGuid]?.serviceId).toBe(room.serviceId);
+      // the stored object's own guid is rewritten to match its key, not the shared API guid
+      expect(map[room.staffGuid]?.staffGuid).toBe(room.staffGuid);
     }
     // The shared API guid must NOT survive as a key — that was the bug: all 7
     // rooms collapsed to a single entry and every per-room lookup missed.

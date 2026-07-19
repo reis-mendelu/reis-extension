@@ -32,6 +32,8 @@ describe('loadLibraryAvailability', () => {
     await useAppStore.getState().loadLibraryAvailability();
     const map = useAppStore.getState().libraryAvailability;
     expect(map[room.staffGuid]?.webUrl).toBe('u');
+    // Stored object's guid is rewritten to its key, not the shared API mailbox guid.
+    expect(map[room.staffGuid]?.staffGuid).toBe(room.staffGuid);
     // The shared API guid must NOT survive as a key (that was the display bug).
     expect(map[SHARED]).toBeUndefined();
     expect(useAppStore.getState().libraryAvailabilityLoaded).toBe(true);

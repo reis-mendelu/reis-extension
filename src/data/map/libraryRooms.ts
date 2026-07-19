@@ -124,7 +124,9 @@ export function indexAvailabilityByRoom(
   const out: Record<string, RoomAvailability> = {};
   for (const room of LIBRARY_ROOMS) {
     const a = byServiceId.get(room.serviceId);
-    if (a) out[room.staffGuid] = a;
+    // Overwrite the row's `staffGuid` (the shared API mailbox guid) with the
+    // room's own guid so the object is self-consistent with its map key.
+    if (a) out[room.staffGuid] = { ...a, staffGuid: room.staffGuid };
   }
   return out;
 }
