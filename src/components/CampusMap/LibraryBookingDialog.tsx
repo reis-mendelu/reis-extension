@@ -36,6 +36,7 @@ export function LibraryBookingDialog({
   const [email, setEmail] = useState(useAppStore.getState().userEmail ?? '');
   const [sid, setSid] = useState(useAppStore.getState().studentId ?? '');
   const [showMissing, setShowMissing] = useState(false);
+  const [committed, setCommitted] = useState(false);
 
   const identity = { name, email, studentId: sid };
   const missing = missingIdentityFields(identity);
@@ -104,6 +105,16 @@ export function LibraryBookingDialog({
               {t('map.libraryBookRealNote')}
             </p>
 
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-base-content/80">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-primary checkbox-xs shrink-0"
+                checked={committed}
+                onChange={(e) => setCommitted(e.target.checked)}
+              />
+              <span>{t('map.libraryBookCommit')}</span>
+            </label>
+
             <div className="flex justify-end gap-2">
               <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
                 {t('common.cancel')}
@@ -111,7 +122,7 @@ export function LibraryBookingDialog({
               <button
                 type="button"
                 className="btn btn-primary btn-sm"
-                disabled={status === 'submitting'}
+                disabled={status === 'submitting' || !committed}
                 onClick={submit}
               >
                 {status === 'submitting' && <span className="loading loading-spinner loading-xs" />}

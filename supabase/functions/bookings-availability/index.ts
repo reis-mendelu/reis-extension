@@ -69,19 +69,30 @@ serve(async (req: Request) => {
 
     const now = new Date();
     const start = new Date(now.getTime() - 24 * 3600_000);
-    const end = new Date(now.getTime() + 5 * 24 * 3600_000);
+    // 60 days ahead — MENDELU's Bookings business allows booking up to its
+    // maximumAdvance (P60D). MS only reports AVAILABLE within its own policy, so
+    // a wider window never over-offers; it just stops throttling advance booking
+    // to a few days. Payload stays small (one block-run per open day per room).
+    const end = new Date(now.getTime() + 60 * 24 * 3600_000);
 
-    const rooms = (
-      await Promise.all(
-        services.map(async (s: any) => {
-          // Isolate per-room failures: without this try/catch a single room's
-          // timeout (fetchWithTimeout aborts → throws) would reject Promise.all
-          // and drop ALL rooms to the outer catch. Omit only the failing room so
-          // the client renders "unknown" for it, not "fully booked" for all.
-          try {
-            const guid = s.staffMemberIds[0];
-            const lead = s.bookingsSchedulingPolicy?.minimumLeadTime === 'P2D' ? 2880 : 60;
-            const availRes = await fetchWithTimeout(`${BASE}GetStaffAvailability`, {
+    // Every service maps to a staff member (currently a single shared scheduling
+    // mailbox), so many services share one GUID. Fetch availability ONCE per
+    // unique GUID, not once per service: N identical calls would trip MS's
+    // ~4-concurrent throttle and, over a 60-day window (MS latency is variable,
+    // seen up to ~8.5s), blow the fetch timeout and drop every room. A generous
+    // 15s timeout absorbs a slow-but-valid response instead of aborting it.
+    // staffMemberIds is non-empty here (services was filtered above), but drop any
+    // falsy GUID defensively so a malformed entry never becomes a wasted lookup.
+    const uniqueGuids = [
+      ...new Set<string>(services.map((s: any) => s.staffMemberIds?.[0]).filter(Boolean)),
+    ];
+    const availByGuid = new Map<string, unknown[]>();
+    await Promise.all(
+      uniqueGuids.map(async (guid) => {
+        try {
+          const availRes = await fetchWithTimeout(
+            `${BASE}GetStaffAvailability`,
+            {
               method: 'POST',
               headers: { 'content-type': 'application/json' },
               body: JSON.stringify({
@@ -89,23 +100,34 @@ serve(async (req: Request) => {
                 startDateTime: { dateTime: dateOnly(start), timeZone: TZ },
                 endDateTime: { dateTime: dateOnly(end), timeZone: TZ },
               }),
-            });
-            if (!availRes.ok) return null;
-            const availJson = await availRes.json();
-            const items = availJson.staffAvailabilityResponse?.[0]?.availabilityItems || [];
-            return {
-              staffGuid: guid,
-              serviceId: s.serviceId,
-              webUrl: s.webUrl,
-              leadMinutes: lead,
-              items,
-            };
-          } catch {
-            return null;
-          }
-        })
-      )
-    ).filter((r) => r !== null);
+            },
+            15000
+          );
+          if (!availRes.ok) return; // leave GUID unset → its rooms omitted, not fabricated
+          const availJson = await availRes.json();
+          availByGuid.set(guid, availJson.staffAvailabilityResponse?.[0]?.availabilityItems || []);
+        } catch {
+          // Timeout/network: omit this GUID's rooms so the client shows "unknown"
+          // for them rather than "fully booked" for all.
+        }
+      })
+    );
+
+    const rooms = services
+      .map((s: any) => {
+        const guid = s.staffMemberIds[0];
+        const items = availByGuid.get(guid);
+        if (!items) return null;
+        const lead = s.bookingsSchedulingPolicy?.minimumLeadTime === 'P2D' ? 2880 : 60;
+        return {
+          staffGuid: guid,
+          serviceId: s.serviceId,
+          webUrl: s.webUrl,
+          leadMinutes: lead,
+          items,
+        };
+      })
+      .filter((r: unknown) => r !== null);
 
     const payload = { rooms };
     cache = { at: Date.now(), payload };

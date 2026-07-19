@@ -11,8 +11,10 @@ function startOfDay(d: Date): Date {
 // plus every later open day that still has an AVAILABLE window ending in the
 // future, capped at `horizon` days and sorted ascending. Weekends are dropped —
 // the library is closed then (see isOpenDay). Fed the union of all rooms' blocks
-// so the picker covers any day any room is open.
-export function pickableDays(blocks: AvailabilityBlock[], now: Date, horizon = 7): Date[] {
+// so the picker covers any day any room is open. The default matches MS Bookings'
+// `maximumAdvance` (P60D) so the horizon never clips before the real ceiling —
+// the fetched availability window (edge fn) and MS's own policy bound it instead.
+export function pickableDays(blocks: AvailabilityBlock[], now: Date, horizon = 60): Date[] {
   const today = startOfDay(now);
   const days = new Map<string, Date>();
   if (isOpenDay(today)) days.set(today.toDateString(), today);

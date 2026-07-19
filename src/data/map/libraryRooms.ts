@@ -1,4 +1,4 @@
-import type { LibraryRoom } from '@/types/library';
+import type { LibraryRoom, RoomAvailability } from '@/types/library';
 
 const BOOKING_BASE =
   'https://outlook.office.com/book/RezervacestudovenMENDELU@mendelu.onmicrosoft.com/s';
@@ -106,4 +106,27 @@ export const LIBRARY_PLACE_IDS: Set<number> = new Set(LIBRARY_ROOMS.map((r) => r
 
 export function libraryRoomsByPlaceId(placeId: number): LibraryRoom[] {
   return LIBRARY_ROOMS.filter((r) => r.placeId === placeId);
+}
+
+// Reconcile the Bookings availability API's identity with the app's. The API
+// returns every study room under ONE shared staff GUID (a single scheduling
+// mailbox), telling rooms apart only by `serviceId`. The rest of the app keys a
+// room by its own per-room `staffGuid` (the id the booking-create path sends and
+// the edge's allow-list validates). So index availability by that per-room
+// staffGuid, matching each API row to a room on the unique serviceId. Rows whose
+// serviceId isn't a known room are dropped. Keying the API rows directly by their
+// `staffGuid` would collapse all rooms into one entry — the shared guid — and
+// leave every per-room lookup missing.
+export function indexAvailabilityByRoom(
+  rooms: RoomAvailability[]
+): Record<string, RoomAvailability> {
+  const byServiceId = new Map(rooms.map((r) => [r.serviceId, r]));
+  const out: Record<string, RoomAvailability> = {};
+  for (const room of LIBRARY_ROOMS) {
+    const a = byServiceId.get(room.serviceId);
+    // Overwrite the row's `staffGuid` (the shared API mailbox guid) with the
+    // room's own guid so the object is self-consistent with its map key.
+    if (a) out[room.staffGuid] = { ...a, staffGuid: room.staffGuid };
+  }
+  return out;
 }
