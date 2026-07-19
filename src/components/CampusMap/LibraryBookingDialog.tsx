@@ -105,10 +105,10 @@ export function LibraryBookingDialog({
               {t('map.libraryBookRealNote')}
             </p>
 
-            <label className="flex cursor-pointer items-start gap-2 text-xs text-base-content/80">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-base-content/80">
               <input
                 type="checkbox"
-                className="checkbox checkbox-primary checkbox-sm mt-0.5 shrink-0"
+                className="checkbox checkbox-primary checkbox-xs shrink-0"
                 checked={committed}
                 onChange={(e) => setCommitted(e.target.checked)}
               />
