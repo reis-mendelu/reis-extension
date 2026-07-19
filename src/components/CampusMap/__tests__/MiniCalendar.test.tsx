@@ -139,6 +139,24 @@ describe('MiniCalendar', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('bounds month paging to the min/max range', () => {
+    render(
+      <MiniCalendar
+        value="2026-07-20"
+        onChange={() => {}}
+        placeholder="Pick a date"
+        t={t}
+        locale="en-US"
+        minDate="2026-07-20"
+        maxDate="2026-09-16"
+      />
+    );
+    fireEvent.click(screen.getByText(/2026/).closest('button')!);
+    // Viewing July (the min month): can't page back, can page forward toward Sept.
+    expect(screen.getByRole('button', { name: 'map.prevMonth' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'map.nextMonth' })).toBeEnabled();
+  });
+
   it('closes the popover when clicking outside', () => {
     render(
       <MiniCalendar

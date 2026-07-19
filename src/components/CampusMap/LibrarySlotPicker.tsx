@@ -42,6 +42,8 @@ export function LibrarySlotPicker({
           if (i !== undefined) onDay(i);
         }}
         isDisabled={(iso) => !indexByISO.has(iso)}
+        minDate={dayISO(days[0]!)}
+        maxDate={dayISO(days[days.length - 1]!)}
         placeholder={t('map.libraryPickDay')}
         t={t}
         locale={loc}

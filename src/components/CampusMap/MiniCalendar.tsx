@@ -26,6 +26,8 @@ export function MiniCalendar({
   t,
   locale,
   isDisabled,
+  minDate,
+  maxDate,
 }: {
   value: string | null;
   onChange: (iso: string) => void;
@@ -35,6 +37,11 @@ export function MiniCalendar({
   // Optional gate: return true for a day that can't be picked (greyed, inert).
   // Omitted → every day is selectable (the original behaviour).
   isDisabled?: (iso: string) => boolean;
+  // Optional ISO bounds that stop month paging past the selectable range, so a
+  // user can't wander into all-greyed months with no explanation. Omitted → the
+  // chevrons page freely (the original behaviour).
+  minDate?: string;
+  maxDate?: string;
 }) {
   const parsed = value ? parseISO(value) : null;
   const [view, setView] = useState(
@@ -58,6 +65,15 @@ export function MiniCalendar({
       })
     : placeholder;
   const monthName = new Date(view.y, view.m0, 1).toLocaleDateString(locale, { month: 'long' });
+
+  // Bound month paging to the min/max range (compared by year*12+month), so the
+  // chevrons stop at the edge of the selectable window instead of paging into
+  // empty months.
+  const viewMonth = view.y * 12 + view.m0;
+  const minP = minDate ? parseISO(minDate) : null;
+  const maxP = maxDate ? parseISO(maxDate) : null;
+  const prevDisabled = minP ? viewMonth <= minP.y * 12 + minP.m0 : false;
+  const nextDisabled = maxP ? viewMonth >= maxP.y * 12 + maxP.m0 : false;
 
   // Anchor the popover to the trigger in viewport coords. It's portalled to
   // <body> so the side-panel's overflow-hidden can't clip it. Right-align it to
@@ -137,9 +153,10 @@ export function MiniCalendar({
             <div className="mb-3 flex items-center justify-between">
               <button
                 type="button"
-                className="flex h-7 w-7 items-center justify-center rounded-full text-base-content/70 transition-colors hover:bg-base-content/10"
+                disabled={prevDisabled}
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-base-content/70 transition-colors ${prevDisabled ? 'opacity-30' : 'hover:bg-base-content/10'}`}
                 aria-label={t('map.prevMonth')}
-                onClick={() => setView((v) => addMonths(v.y, v.m0, -1))}
+                onClick={() => !prevDisabled && setView((v) => addMonths(v.y, v.m0, -1))}
               >
                 <ChevronLeft size={16} />
               </button>
@@ -149,9 +166,10 @@ export function MiniCalendar({
               </span>
               <button
                 type="button"
-                className="flex h-7 w-7 items-center justify-center rounded-full text-base-content/70 transition-colors hover:bg-base-content/10"
+                disabled={nextDisabled}
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-base-content/70 transition-colors ${nextDisabled ? 'opacity-30' : 'hover:bg-base-content/10'}`}
                 aria-label={t('map.nextMonth')}
-                onClick={() => setView((v) => addMonths(v.y, v.m0, 1))}
+                onClick={() => !nextDisabled && setView((v) => addMonths(v.y, v.m0, 1))}
               >
                 <ChevronRight size={16} />
               </button>
