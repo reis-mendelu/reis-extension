@@ -1,23 +1,39 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@/api/libraryAvailability', () => ({
-  fetchLibraryAvailability: vi.fn(async () => [
-    { staffGuid: 'g1', serviceId: 's1', webUrl: 'u', leadMinutes: 60, blocks: [] },
-  ]),
+  fetchLibraryAvailability: vi.fn(),
 }));
 
 import { useAppStore } from '@/store/useAppStore';
 import { fetchLibraryAvailability } from '@/api/libraryAvailability';
+import { LIBRARY_ROOMS } from '@/data/map/libraryRooms';
+
+const room = LIBRARY_ROOMS[0]!;
+const SHARED = 'shared-scheduling-mailbox-guid';
 
 describe('loadLibraryAvailability', () => {
   beforeEach(() => {
     useAppStore.setState({ libraryAvailability: {}, libraryAvailabilityLoaded: false });
     vi.clearAllMocks();
+    // The Bookings API returns every room under ONE shared staff GUID, keyed
+    // apart only by serviceId (see indexAvailabilityByRoom).
+    vi.mocked(fetchLibraryAvailability).mockResolvedValue([
+      {
+        staffGuid: SHARED,
+        serviceId: room.serviceId,
+        webUrl: 'u',
+        leadMinutes: room.leadMinutes,
+        blocks: [],
+      },
+    ]);
   });
 
-  it('populates libraryAvailability keyed by staffGuid', async () => {
+  it("keys availability by each room's own staffGuid, matched on serviceId", async () => {
     await useAppStore.getState().loadLibraryAvailability();
-    expect(useAppStore.getState().libraryAvailability.g1!.webUrl).toBe('u'); // safe: populated above
+    const map = useAppStore.getState().libraryAvailability;
+    expect(map[room.staffGuid]?.webUrl).toBe('u');
+    // The shared API guid must NOT survive as a key (that was the display bug).
+    expect(map[SHARED]).toBeUndefined();
     expect(useAppStore.getState().libraryAvailabilityLoaded).toBe(true);
   });
 

@@ -22,6 +22,7 @@ import {
 import { fetchBuildingRooms } from '../../api/campusMap';
 import { fetchMapEvents, toMapEvent } from '../../api/mapEvents';
 import { fetchLibraryAvailability } from '@/api/libraryAvailability';
+import { indexAvailabilityByRoom } from '@/data/map/libraryRooms';
 import { createLibraryBooking } from '@/api/libraryBooking';
 import { buildBookingRequest } from '@/services/library/bookingRequest';
 import { logError } from '../../utils/reportError';
@@ -259,9 +260,10 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     if (get().libraryAvailabilityLoaded) return;
     // fetchLibraryAvailability never throws — it logs and returns [] on failure.
     const rooms = await fetchLibraryAvailability();
-    const byGuid: Record<string, (typeof rooms)[number]> = {};
-    for (const r of rooms) byGuid[r.staffGuid] = r;
-    set({ libraryAvailability: byGuid, libraryAvailabilityLoaded: true });
+    // The API returns all rooms under one shared staff GUID; index by each room's
+    // own per-room staffGuid (matched on serviceId) so every reader's
+    // `availability[room.staffGuid]` lookup resolves. See indexAvailabilityByRoom.
+    set({ libraryAvailability: indexAvailabilityByRoom(rooms), libraryAvailabilityLoaded: true });
   },
 
   bookRoom: async (room, slotIso, identity) => {
