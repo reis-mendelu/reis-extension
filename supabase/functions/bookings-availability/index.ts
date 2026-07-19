@@ -115,7 +115,13 @@ serve(async (req: Request) => {
         const items = availByGuid.get(guid);
         if (!items) return null;
         const lead = s.bookingsSchedulingPolicy?.minimumLeadTime === 'P2D' ? 2880 : 60;
-        return { staffGuid: guid, serviceId: s.serviceId, webUrl: s.webUrl, leadMinutes: lead, items };
+        return {
+          staffGuid: guid,
+          serviceId: s.serviceId,
+          webUrl: s.webUrl,
+          leadMinutes: lead,
+          items,
+        };
       })
       .filter((r: unknown) => r !== null);
 
