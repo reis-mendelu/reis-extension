@@ -81,7 +81,11 @@ serve(async (req: Request) => {
     // ~4-concurrent throttle and, over a 60-day window (MS latency is variable,
     // seen up to ~8.5s), blow the fetch timeout and drop every room. A generous
     // 15s timeout absorbs a slow-but-valid response instead of aborting it.
-    const uniqueGuids = [...new Set<string>(services.map((s: any) => s.staffMemberIds[0]))];
+    // staffMemberIds is non-empty here (services was filtered above), but drop any
+    // falsy GUID defensively so a malformed entry never becomes a wasted lookup.
+    const uniqueGuids = [
+      ...new Set<string>(services.map((s: any) => s.staffMemberIds?.[0]).filter(Boolean)),
+    ];
     const availByGuid = new Map<string, unknown[]>();
     await Promise.all(
       uniqueGuids.map(async (guid) => {
