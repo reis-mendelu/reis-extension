@@ -60,6 +60,22 @@ export const SELECTED_STYLE: PathOptions = {
   fillOpacity: 0.85,
   bubblingMouseEvents: false,
 };
+// Library study-room polygons are tinted by live availability instead of the
+// usual category color — free = green, busy/unknown = muted grey.
+export const LIBRARY_FREE_STYLE: PathOptions = {
+  color: '#15803d',
+  weight: 2,
+  fillColor: '#22c55e',
+  fillOpacity: 0.55,
+  bubblingMouseEvents: false,
+};
+export const LIBRARY_BUSY_STYLE: PathOptions = {
+  color: '#57534e',
+  weight: 1,
+  fillColor: '#a8a29e',
+  fillOpacity: 0.35,
+  bubblingMouseEvents: false,
+};
 export const STRUCTURE_STYLE: PathOptions = {
   color: '#c2c8d0',
   weight: 0.8,

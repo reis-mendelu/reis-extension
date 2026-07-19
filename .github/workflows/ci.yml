@@ -50,7 +50,7 @@ jobs:
             BASE="$(git rev-parse HEAD~1 2>/dev/null || echo "")"
           fi
           if [ -n "$BASE" ]; then
-            CHANGED="$(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- '*.ts' '*.tsx' | grep -vE '\.(test|spec)\.(ts|tsx)$' || true)"
+            CHANGED="$(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- '*.ts' '*.tsx' | grep -vE '\.(test|spec)\.(ts|tsx)$' | grep -vE '^supabase/' || true)"
           else
             CHANGED=""
           fi

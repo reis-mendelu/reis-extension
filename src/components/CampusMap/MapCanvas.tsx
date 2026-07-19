@@ -12,6 +12,8 @@ import {
   STRUCTURE_STYLE,
   BUILDING_STYLE,
   SIBLING_STYLE,
+  LIBRARY_FREE_STYLE,
+  LIBRARY_BUSY_STYLE,
 } from './mapHelpers';
 import {
   initLeafletMap,
@@ -22,6 +24,28 @@ import {
   REMOTE_IDS,
 } from './mapLayers';
 import { setMapInstance } from './mapInstance';
+import { LIBRARY_PLACE_IDS, libraryRoomsByPlaceId } from '@/data/map/libraryRooms';
+import { isBookableToday } from '@/services/library/nextSlot';
+import type { RoomAvailability } from '@/types/library';
+
+// Fill for a library room polygon: free-today → green, known-but-not-free →
+// muted, unknown (no availability data, e.g. an upstream failure) → the room's
+// neutral base style, so a failed fetch never reads as a false "busy".
+function libraryTintStyle(
+  placeId: number,
+  availability: Record<string, RoomAvailability>,
+  now: Date,
+  neutral: L.PathOptions
+): L.PathOptions {
+  const rooms = libraryRoomsByPlaceId(placeId);
+  const known = rooms.some((room) => availability[room.staffGuid]);
+  if (!known) return neutral;
+  const free = rooms.some((room) => {
+    const a = availability[room.staffGuid];
+    return a ? isBookableToday(a.blocks, room.leadMinutes, now) : false;
+  });
+  return free ? LIBRARY_FREE_STYLE : LIBRARY_BUSY_STYLE;
+}
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
@@ -46,6 +70,20 @@ export function MapCanvas() {
   const roomsByBuilding = useAppStore((s) => s.roomsByBuilding);
   const focusReq = useAppStore((s) => s.mapFocusRequest);
   const mapSelection = useAppStore((s) => s.mapSelection);
+  const libraryAvailability = useAppStore((s) => s.libraryAvailability);
+  // "Latest ref" for the heavy draw effect below: availability data can land
+  // seconds after mount (async proxy fetch), and re-running that effect on
+  // every such update would re-fly the camera (fitBounds again) even though
+  // the user hasn't navigated. The heavy effect reads `libraryAvailability`
+  // through this ref (always current, updated every render) instead of
+  // depending on it directly, so navigation state (building/floor/focus) is
+  // the only thing that triggers a redraw+fly. A separate light effect below
+  // reacts to `libraryAvailability` changes to re-tint already-drawn library
+  // polygons in place, without touching the camera.
+  const libraryAvailabilityRef = useRef(libraryAvailability);
+  useEffect(() => {
+    libraryAvailabilityRef.current = libraryAvailability;
+  }, [libraryAvailability]);
 
   // init once
   useEffect(() => {
@@ -214,13 +252,17 @@ export function MapCanvas() {
             interactive: true,
             bubblingMouseEvents: false,
           };
+      let effectiveBase = base;
+      if (LIBRARY_PLACE_IDS.has(p.id)) {
+        effectiveBase = libraryTintStyle(p.id, libraryAvailabilityRef.current, new Date(), base);
+      }
       const poly = L.polygon(
         ringToLatLng(f.geometry.coordinates[0]),
-        isSel ? SELECTED_STYLE : base
+        isSel ? SELECTED_STYLE : effectiveBase
       );
       if (!struct) {
         poly.on('click', () => select.selectMapRoom(p));
-        roomPolysRef.current.set(p.id, { poly, base });
+        roomPolysRef.current.set(p.id, { poly, base: effectiveBase });
         if (p.name) {
           // Label sizable rooms permanently (MyMENDELU-style); tiny rooms only on
           // hover, to avoid a wall of overlapping numbers.
@@ -253,6 +295,9 @@ export function MapCanvas() {
         })
       );
     }
+    // libraryAvailability intentionally excluded — read via libraryAvailabilityRef
+    // so its arrival doesn't trigger a redraw+fly; see comment at the ref
+    // declaration and the dedicated re-tint effect below.
   }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq]);
 
   // Highlight the selected room in place on a plain map click — restyle the live
@@ -272,6 +317,30 @@ export function MapCanvas() {
       } else poly.setStyle(base);
     }
   }, [mapSelection]);
+
+  // Re-tint already-drawn library polygons in place when fresh availability
+  // data lands (e.g. a few seconds after mount) — mirrors the selection
+  // effect above: restyle the live polygons via roomPolysRef, no redraw and
+  // no camera move. The currently-selected room (if any) is left alone; its
+  // SELECTED_STYLE is owned by the effect above and re-asserted whenever
+  // mapSelection changes.
+  useEffect(() => {
+    const selId =
+      mapSelection?.kind === 'room'
+        ? mapSelection.room.id
+        : mapSelection?.kind === 'roomRef'
+          ? mapSelection.entry.placeId
+          : null;
+    const now = new Date();
+    for (const [placeId, entry] of roomPolysRef.current) {
+      if (!LIBRARY_PLACE_IDS.has(placeId)) continue;
+      const style = libraryTintStyle(placeId, libraryAvailability, now, entry.base);
+      // Always refresh the stored base so a later deselect restores the current
+      // tint; only skip the visible restyle while this room is selected.
+      roomPolysRef.current.set(placeId, { poly: entry.poly, base: style });
+      if (placeId !== selId) entry.poly.setStyle(style);
+    }
+  }, [libraryAvailability, mapSelection]);
 
   return <div ref={ref} className="absolute inset-0" />;
 }
