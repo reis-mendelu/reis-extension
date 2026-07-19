@@ -28,6 +28,21 @@ describe('pickableDays', () => {
     const now = new Date('2026-07-20T23:00:00'); // Monday, after hours
     expect(pickableDays(blocks, now).map(ymd)).toEqual(['2026-07-20']);
   });
+
+  it('offers well beyond a week when availability reaches further (advance booking)', () => {
+    // Three weeks of open weekdays from a Monday → 15 bookable days. The old
+    // 7-day horizon clipped this to a single week; advance booking needs the
+    // full run, bounded only by the fetched window / MS maximumAdvance.
+    const now = new Date('2026-07-20T07:00:00'); // Monday
+    const many: AvailabilityBlock[] = [];
+    for (let i = 0; i < 21; i++) {
+      const d = new Date(2026, 6, 20 + i);
+      if (d.getDay() === 0 || d.getDay() === 6) continue; // skip weekends
+      const iso = ymd(d);
+      many.push({ status: 'AVAILABLE', start: `${iso}T08:00:00`, end: `${iso}T16:00:00` });
+    }
+    expect(pickableDays(many, now)).toHaveLength(15);
+  });
 });
 
 describe('openStartHours', () => {

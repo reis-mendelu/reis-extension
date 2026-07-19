@@ -69,7 +69,11 @@ serve(async (req: Request) => {
 
     const now = new Date();
     const start = new Date(now.getTime() - 24 * 3600_000);
-    const end = new Date(now.getTime() + 5 * 24 * 3600_000);
+    // 60 days ahead — MENDELU's Bookings business allows booking up to its
+    // maximumAdvance (P60D). MS only reports AVAILABLE within its own policy, so
+    // a wider window never over-offers; it just stops throttling advance booking
+    // to a few days. Payload stays small (one block-run per open day per room).
+    const end = new Date(now.getTime() + 60 * 24 * 3600_000);
 
     const rooms = (
       await Promise.all(
