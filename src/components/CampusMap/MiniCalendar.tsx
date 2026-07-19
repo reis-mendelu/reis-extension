@@ -25,12 +25,16 @@ export function MiniCalendar({
   placeholder,
   t,
   locale,
+  isDisabled,
 }: {
   value: string | null;
   onChange: (iso: string) => void;
   placeholder: string;
   t: (k: string) => string;
   locale: string;
+  // Optional gate: return true for a day that can't be picked (greyed, inert).
+  // Omitted → every day is selectable (the original behaviour).
+  isDisabled?: (iso: string) => boolean;
 }) {
   const parsed = value ? parseISO(value) : null;
   const [view, setView] = useState(
@@ -169,24 +173,32 @@ export function MiniCalendar({
                   const iso = toISO(view.y, view.m0, d);
                   const sel = iso === value;
                   const isToday = iso === todayISO;
+                  const disabled = isDisabled?.(iso) ?? false;
                   return (
                     <button
                       key={i}
                       type="button"
+                      disabled={disabled}
                       aria-pressed={sel}
                       aria-current={isToday ? 'date' : undefined}
                       className={[
                         'flex h-8 w-8 items-center justify-center rounded-full text-sm tabular-nums transition-colors',
-                        sel
-                          ? 'bg-primary font-semibold text-primary-content hover:bg-primary/90'
-                          : isToday
-                            ? 'font-semibold text-primary ring-1 ring-inset ring-primary/50 hover:bg-primary/10'
-                            : 'text-base-content hover:bg-base-content/10',
+                        disabled
+                          ? 'cursor-not-allowed text-base-content/20'
+                          : sel
+                            ? 'bg-primary font-semibold text-primary-content hover:bg-primary/90'
+                            : isToday
+                              ? 'font-semibold text-primary ring-1 ring-inset ring-primary/50 hover:bg-primary/10'
+                              : 'text-base-content hover:bg-base-content/10',
                       ].join(' ')}
-                      onClick={() => {
-                        onChange(iso);
-                        setOpen(false);
-                      }}
+                      onClick={
+                        disabled
+                          ? undefined
+                          : () => {
+                              onChange(iso);
+                              setOpen(false);
+                            }
+                      }
                     >
                       {d}
                     </button>

@@ -120,6 +120,25 @@ describe('MiniCalendar', () => {
     if (innerHeight) Object.defineProperty(window, 'innerHeight', innerHeight);
   });
 
+  it('disables days rejected by isDisabled and never emits them', () => {
+    const onChange = vi.fn();
+    render(
+      <MiniCalendar
+        value="2026-07-15"
+        onChange={onChange}
+        placeholder="Pick a date"
+        t={t}
+        locale="en-US"
+        isDisabled={(iso) => iso !== '2026-07-15'}
+      />
+    );
+    fireEvent.click(screen.getByText(/2026/).closest('button')!);
+    const other = screen.getByRole('button', { name: '16' });
+    expect(other).toBeDisabled();
+    fireEvent.click(other);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('closes the popover when clicking outside', () => {
     render(
       <MiniCalendar

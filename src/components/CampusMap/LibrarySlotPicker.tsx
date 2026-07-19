@@ -1,19 +1,15 @@
 import { useTranslation } from '@/hooks/useTranslation';
+import { MiniCalendar } from './MiniCalendar';
+import { toISO } from './calendar';
 
-function isSameDay(a: Date, b: Date): boolean {
-  return a.toDateString() === b.toDateString();
+function dayISO(d: Date): string {
+  return toISO(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-function dayLabel(d: Date, now: Date, loc: string, t: (k: string) => string): string {
-  if (isSameDay(d, now)) return t('map.libraryDayToday');
-  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  if (isSameDay(d, tomorrow)) return t('map.libraryDayTomorrow');
-  return d.toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'numeric' });
-}
-
-// A two-row control: pick a day, then optionally an exact hour. "Any time"
-// (hour = null) is the default and shows each room's open windows; picking an
-// hour switches the rooms to a free/busy answer for that precise slot.
+// Pick a day from the shared MiniCalendar (only bookable days are selectable),
+// then optionally an exact hour. "Any time" (hour = null) is the default and
+// shows each room's open windows; picking an hour switches the rooms to a
+// precise free/busy answer for that slot. Hours stay a compact pill row.
 export function LibrarySlotPicker({
   days,
   dayIdx,
@@ -21,7 +17,6 @@ export function LibrarySlotPicker({
   hours,
   hour,
   onHour,
-  now,
   loc,
 }: {
   days: Date[];
@@ -30,27 +25,27 @@ export function LibrarySlotPicker({
   hours: number[];
   hour: number | null;
   onHour: (h: number | null) => void;
-  now: Date;
   loc: string;
 }) {
   const { t } = useTranslation();
   const pill = 'btn btn-xs shrink-0 rounded-full font-medium';
 
+  const selected = days[Math.min(dayIdx, days.length - 1)]!;
+  const indexByISO = new Map(days.map((d, i) => [dayISO(d), i]));
+
   return (
     <div className="space-y-1.5">
-      <div className="flex gap-1 overflow-x-auto pb-0.5">
-        {days.map((d, i) => (
-          <button
-            key={d.toDateString()}
-            type="button"
-            aria-pressed={i === dayIdx}
-            className={`${pill} ${i === dayIdx ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => onDay(i)}
-          >
-            {dayLabel(d, now, loc, t)}
-          </button>
-        ))}
-      </div>
+      <MiniCalendar
+        value={dayISO(selected)}
+        onChange={(iso) => {
+          const i = indexByISO.get(iso);
+          if (i !== undefined) onDay(i);
+        }}
+        isDisabled={(iso) => !indexByISO.has(iso)}
+        placeholder={t('map.libraryPickDay')}
+        t={t}
+        locale={loc}
+      />
       <div className="flex gap-1 overflow-x-auto pb-0.5">
         <button
           type="button"

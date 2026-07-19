@@ -167,7 +167,6 @@ export function LibraryOverviewPanel() {
             hours={hours}
             hour={activeHour}
             onHour={setHour}
-            now={now}
             loc={loc}
           />
         )}
