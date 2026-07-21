@@ -108,6 +108,20 @@ export function libraryRoomsByPlaceId(placeId: number): LibraryRoom[] {
   return LIBRARY_ROOMS.filter((r) => r.placeId === placeId);
 }
 
+// The MENDELU map API's `nickname` field is the friendly hover label for most
+// rooms, but for these two library place IDs it's just the raw passport code
+// ("A011", "AS01") — an upstream data gap, not something we can fix at the
+// source. 57640 is shared by two bookable rooms (Study Room IC 1 & 2), so its
+// hover label is the plural group name, not either individual room's nameCs.
+const LIBRARY_HOVER_LABELS: Record<number, string> = {
+  57631: 'Seminární místnost',
+  57640: 'Studovny IC',
+};
+
+export function libraryHoverLabel(placeId: number): string | undefined {
+  return LIBRARY_HOVER_LABELS[placeId];
+}
+
 // Reconcile the Bookings availability API's identity with the app's. The API
 // returns every study room under ONE shared staff GUID (a single scheduling
 // mailbox), telling rooms apart only by `serviceId`. The rest of the app keys a
