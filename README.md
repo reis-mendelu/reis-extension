@@ -35,11 +35,8 @@ REIS.mendelu je rozšíření prohlížeče, které zpřehledňuje a personalizu
 
 ## 👥 Tým
 
-| Jméno | Role |
-|-------|------|
-| Dominik Holek | Vedoucí projektu, datová analýza |
-| Antonín Dědeček | Produktový a komunitní manažer |
-| Kryštof Janda | Výzkum a inovace |
+Dominik Holek, Antonín Dědeček
+
 
 ---
 
