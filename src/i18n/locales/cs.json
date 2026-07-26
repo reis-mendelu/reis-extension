@@ -1169,7 +1169,10 @@
       "peekHint": "Vytáhni pro události a rezervaci",
       "thisWeek": "Tenhle týden",
       "emptyTitle": "Mapa se nenačetla",
-      "emptyBody": "Zkus to prosím znovu."
+      "emptyBody": "Zkus to prosím znovu.",
+      "sheetExpand": "Rozbalit panel mapy",
+      "sheetCollapse": "Sbalit panel mapy",
+      "noRoomsOnFloor": "Na tomto patře nejsou žádné místnosti."
     },
     "student": {
       "title": "Student",

@@ -1169,7 +1169,10 @@
       "peekHint": "Pull up for events and booking",
       "thisWeek": "This week",
       "emptyTitle": "Map didn't load",
-      "emptyBody": "Please try again."
+      "emptyBody": "Please try again.",
+      "sheetExpand": "Expand map sheet",
+      "sheetCollapse": "Collapse map sheet",
+      "noRoomsOnFloor": "No rooms on this floor."
     },
     "student": {
       "title": "Student",
