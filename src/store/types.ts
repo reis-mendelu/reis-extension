@@ -453,6 +453,43 @@ export interface ViewportSlice {
   ) => void;
 }
 
+export type MobileTab = 'calendar' | 'exams' | 'subjects' | 'map' | 'student';
+export type MapSheetState = 'peek' | 'expanded';
+export type MapSheetTab = 'akce' | 'knihovna' | 'budova';
+
+/** Discriminated union of every sheet the phone UI can open. */
+export type MobileSheet =
+  | { kind: 'eventDetail'; eventId: string }
+  | { kind: 'subjectDrawer'; courseCode: string; courseName?: string; courseId?: string }
+  | { kind: 'studyPlan' }
+  | { kind: 'profile' }
+  | { kind: 'person'; personId: string }
+  | { kind: 'eduroam' }
+  | { kind: 'docs' }
+  | { kind: 'erasmus' }
+  | { kind: 'notifications' }
+  | { kind: 'confirm'; confirmId: string };
+
+export interface MobileUiSlice {
+  mobileTab: MobileTab;
+  mobileSelectedDayIso: string | null;
+  mobileSheets: MobileSheet[];
+  mapSheetState: MapSheetState;
+  mapTab: MapSheetTab;
+  /** Dev-only forced phone/desktop branch. null = defer to viewport. */
+  devPhoneOverride: boolean | null;
+
+  setMobileTab: (tab: MobileTab) => void;
+  setMobileSelectedDay: (iso: string | null) => void;
+  pushSheet: (sheet: MobileSheet) => void;
+  popSheet: () => void;
+  replaceSheet: (sheet: MobileSheet) => void;
+  closeAllSheets: () => void;
+  setMapSheetState: (state: MapSheetState) => void;
+  setMapTab: (tab: MapSheetTab) => void;
+  setDevPhoneOverride: (value: boolean | null) => void;
+}
+
 export interface MapSlice {
   activeBuildingId: number | null;
   activeFloorId: number | null;
@@ -560,6 +597,7 @@ export type AppState = ScheduleSlice &
   NotificationSlice &
   BulletinSlice &
   ViewportSlice &
+  MobileUiSlice &
   import('./slices/createSearchSlice').SearchSlice &
   import('./slices/createPersonProfileSlice').PersonProfileSlice &
   MapSlice &
