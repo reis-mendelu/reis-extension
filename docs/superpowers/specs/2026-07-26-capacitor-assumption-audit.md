@@ -30,7 +30,10 @@ Live test, `is.mendelu.cz`, real credentials via the scraper's Playwright login.
 - **§A's "all cookie attributes lost" — NEUTRALISED.** It only bites if you must reconstruct unknown attributes. There is **one** cookie with **static, known** attributes. `getCookies()` returning `{UISAuth: "..."}` is sufficient — the rest is hardcodable, and the attribute-less restore test passes. **D4 gets weaker still:** no custom plugin, and even the proxy-rule workaround is more machinery than needed.
 - **Concurrent sessions are allowed.** Logging in on the phone does not log the student out on their laptop. This was never asked but would have been a silent killer.
 - **§C4 (2FA/SSO) — RESOLVED for IS.** Login is a plain form POST to `/system/login.pl` with `credential_0`/`credential_1`. No SAML, no redirect chain. (WebISKAM is different — it uses Shibboleth at `alibaba.mendelu.cz/idp`, per `src/api/iskam/client.ts:12-16`.)
-- **§C1 (session lifetime) — partially resolved.** A 40-day-old token is dead, and since IS is *not* single-session, that 403 is genuine expiry rather than login-invalidation. So expiry ∈ (minutes, 40 days]. A no-traffic idle probe at +20/40/60/90/120 min is running to pin the sliding-idle question; result pending.
+- **§C1 (session lifetime) — narrowed to ≈7 days absolute.** A 40-day-old token is dead, and since IS is *not* single-session, that 403 is genuine expiry rather than login-invalidation. The user reports **not re-logging in on Brave for about 7 days** at a stretch. Per §A, Chromium resurrects session cookies under "Continue where you left off", so the client side keeps `UISAuth` indefinitely — meaning the ~7-day boundary is **server-side**.
+  A sliding idle window is unlikely: reIS's 5-minute sync only runs while an IS tab is open, so overnight gaps are 8–12h of zero traffic. A sliding window would have to exceed 12h to survive those, and a >12h sliding window that still dies at a consistent ~7 days doesn't fit. **Absolute ~7-day lifetime is the best-supported reading.**
+  Consequence: **cookie restore has a hard 7-day ceiling.** No amount of Keychain machinery avoids weekly re-login on any platform. This sharpens rather than weakens the §C5 question — the workstream's entire value is the delta between re-login *weekly* (the floor) and re-login *on every app kill*.
+  A no-traffic idle probe at +20/40/60/90/120 min is running to confirm the absence of a short sliding window; result pending. To convert "about 7 days" into a number, probe a known-age token daily for a week.
 
 ### What remains genuinely open
 
@@ -344,6 +347,7 @@ Against Apple's 1–3 day review SLA, **OTA updates are mandatory, not optional.
 No reasoning in the repo depends on any of D1–D7; the codebase predates the discussion and makes no claims about Capacitor. Two updates from this audit:
 
 - **D3 / D5 stand unresolved and are now the critical path.** Everything server-side is cleared. The only remaining question is client-side cookie retention on iOS.
+- **D3 gets weak supporting evidence.** The user's Brave session surviving ~7 days is Chromium retaining a session cookie across browser restarts. Android WebView is also Chromium. Not proof — Brave's tab-restore machinery is not WebView's cookie store — but directionally consistent with "iOS is the only platform needing cookie restore". Still resolve by test C5, not by inference.
 - **D4 weakens further.** With one cookie of known static attributes, neither a custom plugin nor the proxy-rule rewrite is needed — `getCookies()` plus hardcoded attributes is provably sufficient (tested).
 
 ---
