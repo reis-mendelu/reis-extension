@@ -14,7 +14,7 @@ export function DayAgenda({ rows, onOpenEvent }: DayAgendaProps) {
     const railEnd = events[events.length - 1]?.lesson.endTime ?? '';
 
     return (
-        <div className="flex gap-3 px-4">
+        <div data-testid="day-agenda" className="flex gap-3 px-4">
             <div className="flex flex-shrink-0 flex-col items-center pt-1">
                 <span className="text-2xs font-medium text-content-muted">{railStart}</span>
                 <div className="my-1 w-0.5 flex-1 rounded-full bg-gradient-to-b from-primary to-base-300" />

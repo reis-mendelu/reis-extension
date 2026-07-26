@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { CalendarScreen } from '../CalendarScreen';
 import { useAppStore } from '../../../../store/useAppStore';
 import { makeLesson as lesson } from '../../../../test/fixtures/lesson';
@@ -25,8 +25,19 @@ describe('CalendarScreen', () => {
   it('renders the now-running hero while a lesson is in progress', () => {
     useAppStore.setState({ schedule: { data: [lesson({})], status: 'success', weekStart: null } as never });
     render(<CalendarScreen />);
-    expect(screen.getByText('Teď běží')).toBeInTheDocument();
-    expect(screen.getByText(/Management/)).toBeInTheDocument();
+    expect(within(screen.getByTestId('now-next-card')).getByText('Teď běží')).toBeInTheDocument();
+    expect(within(screen.getByTestId('now-next-card')).getByText(/Management/)).toBeInTheDocument();
+  });
+
+  it('shows the running lesson in both the hero and the day agenda, not just the hero', () => {
+    // The hero is a highlight, not a replacement — the agenda must render the
+    // complete day exactly as buildDayAgenda returns it, including whatever
+    // lesson is currently running. Regression guard for the dedup filter that
+    // used to strip the running lesson out of the agenda list.
+    useAppStore.setState({ schedule: { data: [lesson({})], status: 'success', weekStart: null } as never });
+    render(<CalendarScreen />);
+    expect(within(screen.getByTestId('now-next-card')).getByText(/Management/)).toBeInTheDocument();
+    expect(within(screen.getByTestId('day-agenda')).getByText(/Management/)).toBeInTheDocument();
   });
 
   it('renders a gap marker between distant lessons', () => {

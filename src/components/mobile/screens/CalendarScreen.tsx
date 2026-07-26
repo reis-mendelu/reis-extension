@@ -68,13 +68,7 @@ export function CalendarScreen() {
     const now = new Date();
     const selectedIso = mobileSelectedDayIso ?? toIso(now);
     const nowNext = resolveNowNext(schedule, now);
-    // The currently-running lesson is already fully represented by the hero
-    // card above, so it is dropped from the list below to avoid showing the
-    // same lesson twice. Rows for other days are untouched: resolveNowNext
-    // only ever returns a lesson dated today.
-    const agenda = buildDayAgenda(schedule, selectedIso).filter(
-        (row) => !(nowNext && row.type === 'event' && row.lesson.id === nowNext.current.id)
-    );
+    const agenda = buildDayAgenda(schedule, selectedIso);
     const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
 
     const openBulletin = () => {
