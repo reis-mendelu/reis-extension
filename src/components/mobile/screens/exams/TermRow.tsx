@@ -17,11 +17,13 @@ export interface TermRowProps {
  * watchable, regardless of which of the three states above applies.
  */
 export function TermRow({ term, section, isProcessing, onRegister }: TermRowProps) {
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
     const { armed, firing, toggle } = useWatchdog(term);
     const isRegHere = section.registeredTerm?.id === term.id;
     const isFull = term.full || !!(term.capacity && term.capacity.occupied >= term.capacity.total);
-    const subline = [term.room, term.teacher, term.sectionForm].filter(Boolean).join(' · ');
+    const room = (language === 'en' && term.roomEn) ? term.roomEn : (term.roomCs || term.room);
+    const sectionForm = (language === 'en' && term.sectionFormEn) ? term.sectionFormEn : (term.sectionFormCs || term.sectionForm);
+    const subline = [room, term.teacher, sectionForm].filter(Boolean).join(' · ');
 
     return (
         <div className="flex items-center gap-2.5 rounded-xl border border-base-200 bg-base-100 px-3 py-2.5">

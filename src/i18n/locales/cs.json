@@ -1129,6 +1129,7 @@
     },
     "exams": {
       "title": "Zkoušky",
+      "eyebrow": "Zkouškové",
       "registeredCount": "{count} přihlášeno",
       "groupUpcoming": "Nadcházející",
       "groupOther": "Ostatní",

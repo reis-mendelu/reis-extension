@@ -1129,6 +1129,7 @@
     },
     "exams": {
       "title": "Exams",
+      "eyebrow": "Exam period",
       "registeredCount": "{count} registered",
       "groupUpcoming": "Upcoming",
       "groupOther": "Other",

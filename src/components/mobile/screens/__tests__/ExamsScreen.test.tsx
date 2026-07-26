@@ -102,6 +102,51 @@ describe('ExamsScreen', () => {
         render(<ExamsScreen />);
         expect(screen.getByText('Odhlásit')).toBeInTheDocument();
     });
+
+    it('puts a registered section under Nadcházející and a non-registered one under Ostatní', () => {
+        useAppStore.setState({
+            examClassmates: { 'term-1': [] },
+            lastExamClassmatesFetchedAt: { 'term-1': Date.now() },
+        });
+        setExams([
+            subject([{
+                id: 'sec-reg', name: 'zkouška', type: 'exam', status: 'registered',
+                registeredTerm: { id: 'term-1', date: '1.6.2026', time: '09:00' },
+                terms: [{ id: 'term-1', date: '1.6.2026', time: '09:00' }],
+            }], { id: 'sub-reg', name: 'RegisteredSubject', code: 'REG-1' }),
+            subject([{
+                id: 'sec-avail', name: 'zkouška', type: 'exam', status: 'available',
+                terms: [{ id: 'term-2', date: '2.6.2026', time: '10:00', canRegisterNow: true }],
+            }], { id: 'sub-avail', name: 'AvailableSubject', code: 'AVL-1' }),
+        ]);
+        render(<ExamsScreen />);
+        const text = screen.getByTestId('exams-screen').textContent ?? '';
+        const upcomingIdx = text.indexOf('Nadcházející');
+        const otherIdx = text.indexOf('Ostatní');
+        const regIdx = text.indexOf('RegisteredSubject');
+        const availIdx = text.indexOf('AvailableSubject');
+
+        expect(upcomingIdx).toBeGreaterThanOrEqual(0);
+        expect(otherIdx).toBeGreaterThan(upcomingIdx);
+        expect(regIdx).toBeGreaterThan(upcomingIdx);
+        expect(regIdx).toBeLessThan(otherIdx);
+        expect(availIdx).toBeGreaterThan(otherIdx);
+    });
+
+    it('marks the matching term as "tvůj termín" once a registered section is expanded', () => {
+        useAppStore.setState({
+            examClassmates: { 'term-1': [] },
+            lastExamClassmatesFetchedAt: { 'term-1': Date.now() },
+        });
+        setExams([subject([{
+            id: 'sec-1', name: 'zkouška', type: 'exam', status: 'registered',
+            registeredTerm: { id: 'term-1', date: '1.6.2026', time: '09:00' },
+            terms: [{ id: 'term-1', date: '1.6.2026', time: '09:00' }],
+        }])]);
+        render(<ExamsScreen />);
+        fireEvent.click(screen.getByText('Algoritmizace'));
+        expect(screen.getByText('tvůj termín')).toBeInTheDocument();
+    });
 });
 
 describe('ExamTimeline', () => {

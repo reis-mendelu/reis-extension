@@ -41,6 +41,9 @@ export function ExamsScreen() {
 
     const timeline = useMemo(() => buildExamTimeline(exams, now), [exams, now]);
 
+    const eyebrowLabel = t('mobile.exams.eyebrow');
+    const eyebrow = userSemester ? `${eyebrowLabel} · ${userSemester}` : eyebrowLabel;
+
     const { upcoming, other } = useMemo(() => {
         const upcoming: Row[] = [];
         const other: Row[] = [];
@@ -59,7 +62,7 @@ export function ExamsScreen() {
     return (
         <div data-testid="exams-screen" className="flex flex-1 flex-col overflow-hidden">
             <ScreenHeader
-                eyebrow={userSemester ?? ''}
+                eyebrow={eyebrow}
                 title={t('mobile.exams.title')}
                 action={upcoming.length > 0 ? (
                     <span className="flex-shrink-0 rounded-full bg-primary/15 px-2.5 py-1.5 text-2xs font-semibold text-primary">
