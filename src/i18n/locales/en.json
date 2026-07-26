@@ -1116,6 +1116,7 @@
     },
     "calendar": {
       "greeting": "Hi, {name}",
+      "greetingNoName": "Hi",
       "nowRunning": "On now",
       "endsIn": "ends in {minutes} min",
       "next": "Next: {title}",

@@ -1,4 +1,4 @@
-import { Bell, Calendar, AlertTriangle, Pin } from 'lucide-react';
+import { Bell, Calendar, AlertTriangle, Pin, User } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useSchedule } from '../../../hooks/data/useSchedule';
@@ -87,7 +87,9 @@ export function CalendarScreen() {
         <div data-testid="calendar-screen" className="flex flex-1 flex-col overflow-hidden">
             <ScreenHeader
                 eyebrow={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
-                title={t('mobile.calendar.greeting', { name: fullName?.split(' ')[0] ?? '' })}
+                title={fullName
+                    ? t('mobile.calendar.greeting', { name: fullName.split(' ')[0] ?? '' })
+                    : t('mobile.calendar.greetingNoName')}
                 action={
                     <div className="flex items-center gap-2">
                         <button
@@ -106,9 +108,10 @@ export function CalendarScreen() {
                         <button
                             type="button"
                             onClick={() => pushSheet({ kind: 'profile' })}
+                            aria-label={t('sidebar.profile')}
                             className="flex h-10 w-10 items-center justify-center rounded-full border border-base-300 bg-base-100 font-display text-sm font-bold text-primary"
                         >
-                            {fullName ? initials(fullName) : ''}
+                            {fullName ? initials(fullName) : <User size={18} />}
                         </button>
                     </div>
                 }
@@ -136,6 +139,7 @@ export function CalendarScreen() {
             <button
                 type="button"
                 onClick={openBulletin}
+                aria-label={t('bulletin.expand')}
                 className="mx-4 mt-3 flex flex-shrink-0 items-center gap-1.5 self-start rounded-lg border border-base-300 bg-base-100/60 px-3 py-1.5"
             >
                 <Pin size={14} className="text-primary" />

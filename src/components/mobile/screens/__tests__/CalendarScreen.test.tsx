@@ -50,4 +50,29 @@ describe('CalendarScreen', () => {
     render(<CalendarScreen />);
     expect(screen.getByTestId('agenda-gap')).toBeInTheDocument();
   });
+
+  it('falls back to a name-less greeting and a User icon avatar when fullName is absent', () => {
+    useAppStore.setState({ schedule: { data: [], status: 'success', weekStart: null } as never, fullName: null });
+    render(<CalendarScreen />);
+    expect(screen.getByText('Ahoj')).toBeInTheDocument();
+    expect(screen.queryByText(/Ahoj,/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Profil').querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('renders the named greeting and initials when fullName is present', () => {
+    useAppStore.setState({
+      schedule: { data: [], status: 'success', weekStart: null } as never,
+      fullName: 'Jana Nováková',
+    });
+    render(<CalendarScreen />);
+    expect(screen.getByText('Ahoj, Jana')).toBeInTheDocument();
+    expect(screen.getByLabelText('Profil')).toHaveTextContent('JN');
+  });
+
+  it('gives the avatar and bulletin buttons accessible names', () => {
+    useAppStore.setState({ schedule: { data: [], status: 'success', weekStart: null } as never });
+    render(<CalendarScreen />);
+    expect(screen.getByLabelText('Profil')).toBeInTheDocument();
+    expect(screen.getByLabelText('Rozbalit vývěsku')).toBeInTheDocument();
+  });
 });
