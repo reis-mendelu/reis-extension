@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
 import { Bell, BellRing, Info, ExternalLink } from 'lucide-react';
 import type { ExamTerm } from '../../types/exams';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useAppStore } from '../../store/useAppStore';
-import { triggerWatchdog } from '../../api/exams';
+import { useWatchdog } from '../../hooks/data/useWatchdog';
 
 /**
  * Action row for IS Mendelu's built-in term actions (watchdog + "why blocked?").
@@ -13,56 +11,13 @@ import { triggerWatchdog } from '../../api/exams';
  */
 export function TermBuiltinActions({ term }: { term: ExamTerm }) {
     const { t } = useTranslation();
-    const triggerExamsRefresh = useAppStore(s => s.triggerExamsRefresh);
-    // Optimistic override: flips the UI instantly on click. Held until the next
-    // exam-refresh re-parses the URL (aktivace=1 ↔ aktivace=2) and urlArmed agrees.
-    const [optimisticArmed, setOptimisticArmed] = useState<boolean | null>(null);
-    const [firing, setFiring] = useState(false);
-    
-    // Custom inline micro-toast state
-    const [activeFeedback, setActiveFeedback] = useState<'activated' | 'deactivated' | 'failed' | null>(null);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-    const urlArmed = !!term.watchdogUrl?.includes('aktivace=2');
-    const armed = optimisticArmed ?? urlArmed;
-
-    // Once the parsed URL catches up to the optimistic value, drop the override
-    // so the URL is authoritative again for any future external state changes.
-    useEffect(() => {
-        if (optimisticArmed !== null && urlArmed === optimisticArmed) {
-            setOptimisticArmed(null);
-        }
-    }, [urlArmed, optimisticArmed]);
-
-    // Automatically hide contextual micro-toast after timeout
-    useEffect(() => {
-        if (activeFeedback) {
-            const timer = setTimeout(() => {
-                setActiveFeedback(null);
-                setErrorMessage(null);
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [activeFeedback]);
+    const { armed, firing, feedback: activeFeedback, errorMessage, toggle } = useWatchdog(term);
 
     if (!term.watchdogUrl && !term.blockReasonUrl) return null;
 
     const handleWatchdog = async (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!term.watchdogUrl || firing) return;
-        const next = !armed;
-        setOptimisticArmed(next);
-        setFiring(true);
-        const result = await triggerWatchdog(term.watchdogUrl);
-        setFiring(false);
-        if (result.success) {
-            setActiveFeedback(next ? 'activated' : 'deactivated');
-            triggerExamsRefresh();
-        } else {
-            setOptimisticArmed(null);
-            setErrorMessage(result.error || null);
-            setActiveFeedback('failed');
-        }
+        await toggle();
     };
 
     return (
