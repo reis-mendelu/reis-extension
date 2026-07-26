@@ -18,6 +18,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:web"],
       "port": 3000
+    },
+    {
+      "name": "reis-webapp-mock",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:web:mock"],
+      "port": 3000
     }
   ]
 }

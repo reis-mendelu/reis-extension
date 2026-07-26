@@ -27,6 +27,7 @@
     "nuia:gate": "node scripts/nuia-gate.mjs",
     "scrape:real": "tsx --tsconfig tsconfig.app.json scripts/scrape-real-data.ts",
     "dev:web": "vite --config vite.web.config.ts",
+    "dev:web:mock": "VITE_USE_MOCK_DATA=true vite --config vite.web.config.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
