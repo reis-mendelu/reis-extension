@@ -24,8 +24,8 @@ export function BottomNav() {
     if (keyboardOpen) return null;
 
     return (
-        <div
-            role="tablist"
+        <nav
+            aria-label={t('mobile.nav.label')}
             className="absolute bottom-[18px] left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border border-base-300 bg-base-100 p-1.5 shadow-drawer"
         >
             {TABS.map(({ id, icon: Icon, labelKey }) => {
@@ -33,11 +33,10 @@ export function BottomNav() {
                 return (
                     <button
                         key={id}
-                        role="tab"
-                        aria-selected={active}
+                        aria-current={active ? 'page' : undefined}
                         aria-label={t(labelKey)}
                         onClick={() => setMobileTab(id)}
-                        className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 transition-colors ${
+                        className={`flex min-h-11 min-w-11 items-center gap-1.5 rounded-full px-3 transition-colors ${
                             active ? 'bg-primary/15 text-primary' : 'text-content-muted'
                         }`}
                     >
@@ -46,6 +45,6 @@ export function BottomNav() {
                     </button>
                 );
             })}
-        </div>
+        </nav>
     );
 }

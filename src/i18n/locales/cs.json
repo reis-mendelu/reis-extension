@@ -1107,6 +1107,7 @@
   },
   "mobile": {
     "nav": {
+      "label": "Hlavní navigace",
       "calendar": "Kalendář",
       "exams": "Zkoušky",
       "subjects": "Předměty",

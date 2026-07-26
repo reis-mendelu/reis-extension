@@ -1107,6 +1107,7 @@
   },
   "mobile": {
     "nav": {
+      "label": "Main navigation",
       "calendar": "Calendar",
       "exams": "Exams",
       "subjects": "Courses",
