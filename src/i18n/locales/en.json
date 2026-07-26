@@ -1192,7 +1192,8 @@
     },
     "sheet": {
       "close": "Close",
-      "cancel": "Not now"
+      "cancel": "Not now",
+      "openInIsMendelu": "Open in IS MENDELU"
     }
   }
 }

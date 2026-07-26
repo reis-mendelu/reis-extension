@@ -1192,7 +1192,8 @@
     },
     "sheet": {
       "close": "Zavřít",
-      "cancel": "Radši ne"
+      "cancel": "Radši ne",
+      "openInIsMendelu": "Otevřít v IS MENDELU"
     }
   }
 }

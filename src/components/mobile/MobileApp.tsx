@@ -6,6 +6,7 @@ import { ExamsScreen } from './screens/ExamsScreen';
 import { SubjectsScreen } from './screens/SubjectsScreen';
 import { MapScreen } from './screens/MapScreen';
 import { StudentScreen } from './screens/StudentScreen';
+import { SheetHost } from './sheets/SheetHost';
 
 /**
  * Root of the phone UI. Takes no props: `useAppLogic()` returns desktop-local
@@ -36,6 +37,7 @@ export function MobileApp() {
             {tab === 'map' && <MapScreen />}
             {tab === 'student' && <StudentScreen />}
             <BottomNav />
+            <SheetHost />
         </div>
     );
 }
