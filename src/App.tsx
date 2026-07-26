@@ -5,9 +5,12 @@ import { getSmartWeekRange } from '@/utils/calendar'
 import { useAppLogic } from './hooks/useAppLogic'
 import { AppMain } from './components/AppMain'
 import { AppOverlays } from './components/AppOverlays'
+import { MobileApp } from './components/mobile/MobileApp'
+import { usePhoneViewport } from './hooks/ui/usePhoneViewport'
 
 function App() {
   const s = useAppLogic();
+  const isPhone = usePhoneViewport();
 
   const handlePrevWeek = () => { s.setCurrentDate(prev => { const d = new Date(prev); d.setDate(d.getDate() - 7); return d; }); s.setWeekNavCount(p => p + 1); };
   const handleNextWeek = () => { s.setCurrentDate(prev => { const d = new Date(prev); d.setDate(d.getDate() + 7); return d; }); s.setWeekNavCount(p => p + 1); };
@@ -19,6 +22,8 @@ function App() {
       ? `${s.currentDate.getDate()}. - ${end.getDate()}.${s.currentDate.getMonth() + 1}.`
       : `${s.currentDate.getDate()}.${s.currentDate.getMonth() + 1}. - ${end.getDate()}.${end.getMonth() + 1}.`;
   };
+
+  if (isPhone) return <MobileApp />;
 
   return (
     <div className="flex h-screen overflow-hidden bg-base-200 font-sans text-base-content">

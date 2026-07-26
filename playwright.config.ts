@@ -52,6 +52,13 @@ export default defineConfig({
         browserName: 'firefox',
       },
     },
+    {
+      name: 'mobile-chromium',
+      use: {
+        ...devices['Pixel 7'],
+        browserName: 'chromium',
+      },
+    },
   ],
   // Output directories for test artifacts
   outputDir: './e2e/test-results',
