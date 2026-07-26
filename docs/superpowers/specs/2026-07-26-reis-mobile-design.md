@@ -196,12 +196,16 @@ badge, with deadline alerts also rendering as cards under the hero.
 
 Header with registered count. Horizontal timeline of registered terms.
 Collapsible groups, each an `ExamCard`; expanding shows term rows with
-Přihlásit / "tvůj termín" / a **disabled watch button**. Registered cards show
-"X spolužáků na tomto termínu" and Odhlásit. Register and unregister both route
-through `ConfirmSheet`.
+Přihlásit / "tvůj termín" / "obsazeno" (from `term.full` or `capacity`) and a
+**working watch button** where `term.watchdogUrl` is present. Registered cards
+show "X spolužáků na tomto termínu" and Odhlásit. Register and unregister both
+route through `ConfirmSheet`.
 
-*Data:* `useExams`, `useExamClassmates`, `useExamNote`.
+*Data:* `useExams`, `useExamClassmates`, `useExamNote`, `triggerWatchdog`.
 **New (pure fn):** `examTimeline`.
+**New (shared hook):** `useWatchdog(term)` — extracted from
+`TermBuiltinActions.tsx` so desktop and mobile share one implementation of the
+optimistic-arm / `triggerExamsRefresh` cycle rather than duplicating it.
 
 ### Předměty
 
@@ -270,7 +274,8 @@ kancelář → map), `EduroamSheet`, `DocsSheet`, `ErasmusSheet`,
 
 | Prototype element | Decision | Rationale |
 |---|---|---|
-| Exam-term watcher (bolt button) | **Render disabled**, copy points to IS | IS owns this (server-side email). No trace in `src/api/exams.ts` or any fixture, and CLAUDE.md requires real IS HTML before parser work. The prototype's copy ("Nezavírej appku") wrongly implies a client-side poller and must be rewritten. |
+| Exam-term watcher (bolt button) | **Fully wire it** | Already built end to end. `ExamTerm.watchdogUrl` is parsed (`availableTermsParser.ts`, with tests), `triggerWatchdog(url)` exists in `src/api/exams.ts`, and desktop's `TermBuiltinActions.tsx` drives it. Armed state is derived from the URL itself — IS emits `aktivace=1` when off, `aktivace=2` when on. Mobile reuses this via a shared `useWatchdog` hook. The prototype's copy ("Nezavírej appku a neuspávej mobil!") wrongly implies a client-side poller and **must be rewritten** — IS's "hlídací pes" notifies server-side. |
+| Term capacity / "obsazeno" | **Include** | Already parsed: `ExamTerm.capacity: { occupied, total, raw }` and `ExamTerm.full`, already consumed by `ExamPanel/utils.ts` and `TermsSummary.tsx`. |
 | "X spolužáků na tomto termínu" | **Include** | `useExamClassmates(terminId)` already exists. Free. |
 | "Stáhnout vše" in drawer | **Omit** | Multi-file download is blocked by most mobile browsers after the first file. Per-file download works as today. |
 | Sylabus "Hodnocení" points table | **Include** | Already backed: `SyllabusRequirements.requirementsTable: string[][]` is that table; `requirementsText` covers the note beneath it. |
@@ -377,11 +382,13 @@ imports them.
 
 ### R4 — Parser breakage
 
-**Mitigation:** this work changes **zero** parsers. Both elements that would have
-required parser changes are resolved otherwise — term rosters via the existing
-`useExamClassmates` hook, and the watch button by rendering it disabled. The
-invariant is machine-enforced: `.claude/hooks/guard-parsers.py` runs `PreToolUse`
-on every `Edit|Write`. If it fires, the task is wrong, not the hook.
+**Mitigation:** this work changes **zero** parsers. Every element that looked
+like it might need one turned out to be parsed already — term rosters via
+`useExamClassmates`, the watch button via `ExamTerm.watchdogUrl` +
+`triggerWatchdog`, term capacity via `ExamTerm.capacity` / `.full`, and the
+syllabus points table via `SyllabusRequirements.requirementsTable`. The invariant
+is machine-enforced: `.claude/hooks/guard-parsers.py` runs `PreToolUse` on every
+`Edit|Write`. If it fires, the task is wrong, not the hook.
 
 ### R5 — English copy back-filled as a gloss
 
@@ -408,9 +415,7 @@ directly.
    Will reuse the primitives this work establishes, and is the spec that finally
    retires `src/components/MobileNav/`, the `'iskam-dashboard'` `AppView` member
    and the `touch:` custom variant.
-2. **Exam-term watcher wiring** — needs real IS HTML for the control and its
-   endpoint before any parser work.
-3. **Phone-native Erasmus** — list-based Learning Agreement instead of tables,
+2. **Phone-native Erasmus** — list-based Learning Agreement instead of tables,
    no Europe map. Needs its own design pass.
-4. **"Stáhnout vše"** — if it comes back, the Drive-backup route is the more
+3. **"Stáhnout vše"** — if it comes back, the Drive-backup route is the more
    promising answer than client-side zipping.
