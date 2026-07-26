@@ -5,6 +5,12 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Shared between the mobile-chromium testMatch and the desktop/firefox-android
+// testIgnore so the two filters cannot drift apart. Mobile-only specs (like
+// mobile-shell.spec.ts) assert the phone branch mounted, which only holds
+// under touch-emulated projects.
+const MOBILE_ONLY_SPEC = /mobile-.*\.spec\.ts$/;
+
 export default defineConfig({
   testDir: './e2e',
   globalSetup: path.join(__dirname, 'e2e', 'global-setup.ts'),
@@ -44,6 +50,7 @@ export default defineConfig({
     {
       name: 'desktop',
       use: {},
+      testIgnore: MOBILE_ONLY_SPEC,
     },
     {
       name: 'firefox-android',
@@ -51,6 +58,7 @@ export default defineConfig({
         ...devices['Pixel 7'],
         browserName: 'firefox',
       },
+      testIgnore: MOBILE_ONLY_SPEC,
     },
     {
       name: 'mobile-chromium',
@@ -58,6 +66,7 @@ export default defineConfig({
         ...devices['Pixel 7'],
         browserName: 'chromium',
       },
+      testMatch: MOBILE_ONLY_SPEC,
     },
   ],
   // Output directories for test artifacts

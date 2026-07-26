@@ -2,16 +2,10 @@
 // imports like icons.ts that read chrome.runtime.getURL at module eval), then
 // boot the real reIS app exactly as the extension does.
 import './chromeShim';
-import { useAppStore } from '../src/store/useAppStore';
-
-// Dev-only phone override: `?mobile=1` forces the phone branch, `?mobile=0`
-// forces desktop. Guarded by import.meta.env.DEV so it cannot ship. Needed
-// because `pointer: coarse` requires touch emulation, which plain browser
-// resizing does not provide.
-if (import.meta.env.DEV) {
-    const param = new URLSearchParams(window.location.search).get('mobile');
-    if (param === '1') useAppStore.getState().setDevPhoneOverride(true);
-    if (param === '0') useAppStore.getState().setDevPhoneOverride(false);
-}
+// Side-effect import: must run BEFORE `@/entrypoints/main/main` so the phone
+// override is applied before the React root renders. ES module imports hoist,
+// so this only works because it appears in source order between chromeShim
+// and main — see phoneOverride.ts for the override itself.
+import './phoneOverride';
 
 import '@/entrypoints/main/main';
