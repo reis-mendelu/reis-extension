@@ -49,4 +49,27 @@ describe('buildDayAgenda', () => {
     const rows = buildDayAgenda([lesson({ date: '20260421' })], '2026-04-20');
     expect(rows).toEqual([]);
   });
+
+  it('inserts a gap row when the gap is exactly 60 minutes', () => {
+    const rows = buildDayAgenda(
+      [
+        lesson({ id: 'c', startTime: '09:00', endTime: '10:00' }),
+        lesson({ id: 'd', startTime: '11:00', endTime: '12:00' }),
+      ],
+      '2026-04-20'
+    );
+    expect(rows.map((r) => r.type)).toEqual(['event', 'gap', 'event']);
+    expect(rows[1]).toEqual({ type: 'gap', minutes: 60 });
+  });
+
+  it('does not insert a gap row when the gap is 59 minutes', () => {
+    const rows = buildDayAgenda(
+      [
+        lesson({ id: 'e', startTime: '09:00', endTime: '10:00' }),
+        lesson({ id: 'f', startTime: '10:59', endTime: '11:59' }),
+      ],
+      '2026-04-20'
+    );
+    expect(rows.map((r) => r.type)).toEqual(['event', 'event']);
+  });
 });
