@@ -176,6 +176,7 @@ export default {
             // === Typography ===
             fontFamily: {
                 inter: ['Inter', 'sans-serif'],
+                display: ['DM Sans', 'Inter', 'sans-serif'],
             },
 
             // === Transitions ===
