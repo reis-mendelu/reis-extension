@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/reis-design-system-83922ded-7e75-4c46-a754-1880ee106cc9/colors_and_type.css">
+<link rel="stylesheet" href="_ds/reis-design-system-83922ded-7e75-4c46-a754-1880ee106cc9/fonts/dm-sans.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="_ds/reis-design-system-83922ded-7e75-4c46-a754-1880ee106cc9/_ds_bundle.js"></script>
+<style>
+html{background:#0b0f17}
+body{margin:0;background:#0b0f17;font-family:'Inter','DM Sans',system-ui,sans-serif}
+a{color:#79be15;text-decoration:none}a:hover{color:#8dc843}
+*{box-sizing:border-box}
+::-webkit-scrollbar{width:0;height:0}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,-14px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes dsPulse{0%,100%{opacity:1}50%{opacity:.45}}
+.reis-pin{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.12);box-shadow:0 1px 4px rgba(0,0,0,.28)}
+.leaflet-tooltip.room-label{background:transparent;border:none;box-shadow:none;padding:0;color:#1f2937;font-size:10px;font-weight:600;white-space:nowrap;pointer-events:none}
+.leaflet-tooltip.room-label::before{display:none}
+.leaflet-tooltip.building-label{background:transparent;border:none;box-shadow:none;padding:0;color:#1e293b;font-size:12px;font-weight:700;white-space:nowrap;pointer-events:none;text-shadow:0 0 3px rgba(255,255,255,.9),0 0 3px rgba(255,255,255,.9)}
+.leaflet-tooltip.building-label::before{display:none}
+.reis-hide-building-labels .leaflet-tooltip.building-label{display:none}
+.reis-hide-room-labels .leaflet-tooltip.room-label{display:none}
+.leaflet-container{font-family:Inter,system-ui,sans-serif}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="display:flex;justify-content:center;min-height:100vh;background:#0b0f17">
+<div data-screen-label="reIS app" style="position:relative;width:100%;max-width:430px;height:100vh;max-height:100dvh;background:var(--color-base-200);color:var(--content-primary);font-family:var(--font-ui);overflow:hidden;display:flex;flex-direction:column">
+
+  <sc-if value="{{ isCal }}" hint-placeholder-val="{{ true }}">
+  <div data-screen-label="Kalendář" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:20px 20px 4px;flex-shrink:0">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:500 12px Inter;color:var(--content-muted)">{{ headerDate }}</span><span style="font:800 26px 'DM Sans',sans-serif;letter-spacing:-0.02em">Ahoj, Kryštofe</span></div>
+      <div onClick="{{ openProfile }}" style="width:40px;height:40px;border-radius:50%;background:var(--color-base-100);display:grid;place-items:center;font:700 14px 'DM Sans',sans-serif;color:var(--color-primary);border:1px solid var(--surface-muted);cursor:pointer">KJ</div>
+    </div>
+    <sc-if value="{{ showNow }}" hint-placeholder-val="{{ true }}">
+    <div style="margin:14px 16px 0;border-radius:16px;background:var(--color-base-100);border:1px solid rgba(121,190,21,.25);padding:16px;display:flex;flex-direction:column;gap:10px;flex-shrink:0">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="display:flex;align-items:center;gap:6px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--color-primary)"><span style="width:7px;height:7px;border-radius:50%;background:var(--color-primary);animation:dsPulse 2s infinite"></span>Teď běží</span><span style="font:600 12px Inter;color:var(--content-muted)">konec za 25 min</span></div>
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:700 18px 'DM Sans',sans-serif;letter-spacing:-0.01em">Management — přednáška</span><span style="font:400 13px Inter;color:var(--content-secondary)">Q01 · 9:00 – 10:50 · Ing. Petr Novák, Ph.D.</span></div>
+      <div style="height:5px;border-radius:99px;background:var(--surface-muted);overflow:hidden"><div style="width:76%;height:100%;background:var(--color-primary);border-radius:99px"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:2px"><span style="font:500 12px Inter;color:var(--content-muted)">Pak: Mikroekonomie I · Q26 · 11:00</span><span onClick="{{ showRoute }}" style="font:600 12px Inter;color:var(--color-primary);cursor:pointer;padding:6px 0 6px 12px">Trasa →</span></div>
+    </div>
+    </sc-if>
+    <div style="display:flex;gap:6px;padding:16px 16px 10px;flex-shrink:0">
+      <sc-for list="{{ days }}" as="d" hint-placeholder-count="5">
+        <div onClick="{{ d.onPick }}" style="{{ d.chipStyle }}">{{ d.chipLabel }}</div>
+      </sc-for>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:2px 16px 96px">
+      <sc-if value="{{ dayEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:56px 24px;text-align:center">
+          <div style="width:64px;height:64px;border-radius:50%;background:rgba(121,190,21,.1);display:grid;place-items:center;color:var(--color-primary)"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M8 2v4M16 2v4M3 9h18"></path></svg></div>
+          <div style="font:700 16px 'DM Sans',sans-serif">Nic nemáš, pohodička</div>
+          <div style="font:400 12.5px Inter;color:var(--content-muted);max-width:220px">Žádné přednášky ani cvičení. Užij si volno!</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ dayHasEvents }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;gap:12px">
+        <div style="display:flex;flex-direction:column;align-items:center;padding-top:4px;flex-shrink:0"><span style="font:500 11px Inter;color:var(--content-muted)">{{ railStart }}</span><div style="flex:1;width:2px;background:linear-gradient(var(--color-primary),var(--surface-muted));margin:4px 0;border-radius:2px"></div><span style="font:500 11px Inter;color:var(--content-muted)">{{ railEnd }}</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:10px;padding-bottom:8px;min-width:0">
+          <sc-for list="{{ dayEvents }}" as="ev" hint-placeholder-count="3">
+            <sc-if value="{{ ev.isGap }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:8px;padding:2px 0"><div style="flex:1;height:1px;background:var(--surface-muted)"></div><span style="font:500 11px Inter;color:var(--content-muted)">{{ ev.gap }}</span><div style="flex:1;height:1px;background:var(--surface-muted)"></div></div>
+            </sc-if>
+            <sc-if value="{{ ev.isEv }}" hint-placeholder-val="{{ true }}">
+              <div onClick="{{ ev.open }}" style="{{ ev.style }}" data-comment-anchor="457055c90c-div">
+                <div style="display:flex;justify-content:space-between;gap:8px"><span style="font:600 13.5px Inter;color:#111827">{{ ev.title }}</span><sc-if value="{{ ev.isExam }}" hint-placeholder-val="{{ false }}"><span style="font:700 10px Inter;color:#991b1b;text-transform:uppercase">zkouška</span></sc-if></div>
+                <sc-if value="{{ ev.sub }}" hint-placeholder-val="{{ false }}"><div style="font:500 12px Inter;color:#991b1b;margin-top:2px">{{ ev.sub }}</div></sc-if>
+                <div style="font:400 12px Inter;color:#4b5563;margin-top:3px">{{ ev.meta }}</div>
+              </div>
+            </sc-if>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isExams }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Zkoušky" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <sc-if value="{{ armedAny }}" hint-placeholder-val="{{ false }}">
+      <div style="background:rgba(245,158,11,.1);border-bottom:1px solid rgba(245,158,11,.2);padding:9px 16px;display:flex;gap:8px;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" style="animation:dsPulse 1.6s infinite"><path d="M13 2 4.5 13.5H11l-1 8.5L18.5 10.5H12z"></path></svg><span style="font:600 11.5px Inter;color:#fbbf24">Hlídáme termín. Nezavírej appku a neuspávej mobil!</span></div>
+    </sc-if>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:20px 20px 4px;flex-shrink:0">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:500 12px Inter;color:var(--content-muted)">Zkouškové · LS 2025/26</span><span style="font:800 26px 'DM Sans',sans-serif;letter-spacing:-0.02em">Zkoušky</span></div>
+      <span style="font:600 11px Inter;background:rgba(59,130,246,.14);color:#60a5fa;padding:6px 10px;border-radius:99px">{{ regCountLabel }}</span>
+    </div>
+    <div style="margin:14px 0 0;padding:0 20px;flex-shrink:0">
+      <div style="position:relative;height:58px">
+        <div style="position:absolute;left:0;right:0;top:12px;height:2px;background:var(--surface-muted);border-radius:2px"></div>
+        <div style="position:absolute;left:0;top:12px;height:2px;width:14%;background:var(--color-primary);border-radius:2px"></div>
+        <sc-for list="{{ timeline }}" as="tp" hint-placeholder-count="2">
+          <div style="{{ tp.style }}"><div style="{{ tp.dotStyle }}"></div><span style="font:700 10px Inter;margin-top:6px;white-space:nowrap;color:var(--content-primary)">{{ tp.t }}</span><span style="font:500 9.5px Inter;color:var(--content-muted);white-space:nowrap">{{ tp.sub }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding:16px 16px 96px">
+      <sc-for list="{{ examGroups }}" as="g" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:10px">
+      <div onClick="{{ g.toggle }}" style="display:flex;align-items:center;gap:8px;padding:0 2px;min-height:44px;margin:-14px 0 -10px;cursor:pointer">
+        <span style="font:700 10px Inter;text-transform:uppercase;letter-spacing:.09em;color:var(--content-muted)">{{ g.title }}</span>
+        <span style="font:600 10px Inter;color:var(--content-muted);background:var(--surface-muted);padding:2px 6px;border-radius:99px">{{ g.count }}</span>
+        <span style="flex:1;border-bottom:1px solid rgba(243,244,246,.07)"></span>
+        <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"></path></svg></sc-if>
+        <sc-if value="{{ g.closed }}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></sc-if>
+      </div>
+      <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ g.items }}" as="ex" hint-placeholder-count="2">
+        <div style="{{ ex.cardStyle }}">
+          <div onClick="{{ ex.toggle }}" style="display:flex;align-items:center;gap:11px;cursor:pointer">
+            <div style="{{ ex.accentStyle }}"></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+              <span style="font:600 13.5px Inter;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ex.name }}</span>
+              <span style="font:400 11.5px Inter;color:var(--content-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ex.subject }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0">
+              <span style="{{ ex.statusMainStyle }}">{{ ex.statusMain }}</span>
+              <span style="font:400 11.5px Inter;color:var(--content-muted)">{{ ex.statusSub }}</span>
+            </div>
+            <sc-if value="{{ ex.expanded }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m18 15-6-6-6 6"></path></svg></sc-if>
+            <sc-if value="{{ ex.collapsedChev }}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m6 9 6 6 6-6"></path></svg></sc-if>
+          </div>
+          <sc-if value="{{ ex.regExpanded }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:6px;font:400 12.5px Inter;color:var(--content-secondary)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5M16 4a3.5 3.5 0 0 1 0 7M21.5 20c0-3-2-4.8-4.5-5.4"></path></svg><span>{{ ex.regMates }}</span></div>
+            <button onClick="{{ ex.unregister }}" style="width:100%;font:600 12px Inter;color:#f87171;border:1px solid rgba(239,68,68,.35);background:transparent;padding:10px 0;border-radius:8px;cursor:pointer">Odhlásit</button>
+          </sc-if>
+          <sc-if value="{{ ex.expanded }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ ex.terms }}" as="tm" hint-placeholder-count="2">
+                <div style="{{ tm.style }}">
+                  <div style="display:flex;flex-direction:column;flex:1;min-width:0"><span style="font:600 13px Inter">{{ tm.label }}</span><span style="font:400 11px Inter;color:var(--content-muted)">{{ tm.sub }}</span></div>
+                  <sc-if value="{{ tm.canRegister }}" hint-placeholder-val="{{ true }}"><button onClick="{{ tm.register }}" style="font:600 12px Inter;background:rgba(121,190,21,.16);color:var(--color-primary);border:none;padding:9px 14px;border-radius:8px;cursor:pointer;flex-shrink:0">Přihlásit</button></sc-if>
+                  <sc-if value="{{ tm.isRegHere }}" hint-placeholder-val="{{ false }}"><span style="font:600 11px Inter;color:#4ade80;flex-shrink:0">tvůj termín</span></sc-if>
+                  <sc-if value="{{ tm.watchable }}" hint-placeholder-val="{{ false }}"><button onClick="{{ tm.toggleArm }}" style="{{ tm.armStyle }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2 4.5 13.5H11l-1 8.5L18.5 10.5H12z"></path></svg>{{ tm.armLabel }}</button></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+      </div>
+      </sc-if>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isSubjects }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Předměty" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:20px 20px 4px;flex-shrink:0">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:500 12px Inter;color:var(--content-muted)">Ekonomická informatika · PEF</span><span style="font:800 26px 'DM Sans',sans-serif;letter-spacing:-0.02em">Předměty</span></div>
+      <button onClick="{{ openPlan }}" style="height:44px;padding:0 14px;border:none;border-radius:8px;background:rgba(121,190,21,.14);color:var(--color-primary);font:600 12px Inter;cursor:pointer">Studijní plán</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:14px 16px 96px;display:flex;flex-direction:column;gap:10px">
+      <div style="border-radius:16px;background:var(--color-base-100);border:1px solid rgba(243,244,246,.08);padding:16px;display:flex;gap:16px;align-items:center;flex-shrink:0">
+        <div style="position:relative;width:64px;height:64px;border-radius:50%;background:conic-gradient(#79be15 0 193deg,#374151 193deg 360deg);display:grid;place-items:center;flex-shrink:0"><div style="width:50px;height:50px;border-radius:50%;background:var(--color-base-100);display:grid;place-items:center;font:700 13px 'DM Sans',sans-serif">54 %</div></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between"><span style="font:600 14px Inter">96 / 180 kreditů</span></div>
+          <div style="font:400 12px Inter;color:var(--content-secondary)">Tenhle semestr tě čeká ještě 12 kr. — 3 zkoušky, 1 zápočet.</div>
+        </div>
+      </div>
+      <div style="border-radius:12px;background:var(--color-base-100);border:1px solid rgba(121,190,21,.3);box-shadow:0 0 0 3px rgba(121,190,21,.08);overflow:hidden;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px 2px">
+          <div style="width:4px;height:30px;border-radius:99px;background:var(--color-primary);flex-shrink:0"></div>
+          <div style="flex:1;display:flex;flex-direction:column"><span style="font:600 14px 'DM Sans',sans-serif">4. semestr</span><span style="font:400 11px Inter;color:var(--content-muted)">právě běží · 28 kr.</span></div>
+          <span style="font:600 11px Inter;background:rgba(121,190,21,.15);color:var(--color-primary);padding:3px 8px;border-radius:6px">2/6 hotovo</span>
+        </div>
+        <div style="display:flex;flex-direction:column;padding:4px 8px 8px">
+          <sc-for list="{{ curSemRows }}" as="r" hint-placeholder-count="6">
+            <div onClick="{{ r.open }}" style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:8px;cursor:pointer">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+                <span style="font:500 13.5px Inter">{{ r.name }}</span>
+                <sc-if value="{{ r.note }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:4px;font:700 10px Inter;color:rgba(121,190,21,.75);margin-top:2px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>{{ r.note }}</span></sc-if>
+              </div>
+              <sc-if value="{{ r.fail }}" hint-placeholder-val="{{ false }}"><span style="{{ r.failStyle }}">{{ r.fail }}</span></sc-if>
+              <sc-if value="{{ r.grade }}" hint-placeholder-val="{{ false }}"><span style="{{ r.gradeStyle }}">{{ r.grade }}</span></sc-if>
+              <span style="font:400 11.5px Inter;color:var(--content-muted);flex-shrink:0">{{ r.crLabel }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="border-radius:16px;background:var(--color-base-100);border:1px solid rgba(243,244,246,.08);overflow:hidden;flex-shrink:0">
+        <div onClick="{{ toggleAvg }}" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer">
+          <span style="font:700 10px Inter;text-transform:uppercase;letter-spacing:.09em;color:var(--content-muted)">Studijní průměr</span>
+          <sc-if value="{{ avgOpen }}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"></path></svg></sc-if>
+          <sc-if value="{{ avgClosed }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></sc-if>
+        </div>
+        <sc-if value="{{ avgOpen }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:0 16px 14px;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid rgba(243,244,246,.07)">
+            <span style="font:400 13.5px Inter;color:var(--content-secondary)">Tento semestr</span>
+            <span style="flex:1;border-bottom:1px dotted rgba(243,244,246,.2)"></span>
+            <span style="font:600 14px 'DM Sans',sans-serif">1,71</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 0">
+            <span style="font:400 13.5px Inter;color:var(--content-secondary)">Za celé studium</span>
+            <span style="flex:1;border-bottom:1px dotted rgba(243,244,246,.2)"></span>
+            <span style="font:600 14px 'DM Sans',sans-serif" data-comment-anchor="d5a1567cba-span">1,80</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 0">
+            <span style="display:flex;align-items:center;gap:5px;font:400 13.5px Inter;color:var(--content-secondary)">Vážený průměr<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 16v-4M12 8h.01" stroke-linecap="round"></path></svg></span>
+            <span style="flex:1;border-bottom:1px dotted rgba(243,244,246,.2)"></span>
+            <span style="font:600 14px 'DM Sans',sans-serif">1,86</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px;padding-top:12px;border-top:1px solid rgba(243,244,246,.07)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M6 4h12v5a6 6 0 0 1-12 0V4ZM9 20h6M12 15v5"></path></svg>
+            <span style="font:500 13px Inter">Překonáváš 62 % studentů ve svém ročníku.</span>
+          </div>
+          <div style="display:flex;align-items:baseline;justify-content:flex-end;gap:8px;padding-top:10px">
+            <span style="font:700 10px Inter;text-transform:uppercase;letter-spacing:.09em;color:var(--content-muted)">Pořadí v ročníku</span>
+            <span style="font:600 14px 'DM Sans',sans-serif">241. / 612</span>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isMap }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Mapa" style="position:absolute;inset:0;background:#eef1ec;overflow:hidden">
+    <div ref="{{ mapEl }}" style="position:absolute;inset:0;z-index:0;background:#e8ede3"></div>
+    <sc-if value="{{ mapDrilled }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ exitCampus }}" style="position:absolute;left:16px;top:76px;z-index:10;display:flex;align-items:center;gap:6px;background:rgba(31,41,55,.94);backdrop-filter:blur(12px);border:1px solid rgba(243,244,246,.1);border-radius:99px;padding:9px 14px;box-shadow:var(--shadow-popup);cursor:pointer;font:600 12px Inter;color:#f3f4f6"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>Celý kampus</div>
+      <div style="position:absolute;right:12px;bottom:166px;z-index:10;display:flex;flex-direction:column;gap:2px;background:rgba(31,41,55,.94);backdrop-filter:blur(12px);border:1px solid rgba(243,244,246,.1);border-radius:12px;padding:4px;box-shadow:var(--shadow-popup)">
+        <sc-for list="{{ mapFloors }}" as="fl" hint-placeholder-count="3">
+          <div onClick="{{ fl.pick }}" style="{{ fl.style }}">{{ fl.name }}</div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <div style="position:relative;z-index:10;margin:16px 16px 0;display:flex;align-items:center;gap:10px;background:rgba(31,41,55,.94);backdrop-filter:blur(12px);border:1px solid rgba(243,244,246,.1);border-radius:99px;padding:12px 16px;box-shadow:var(--shadow-popup)">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+      <span style="font:400 13.5px Inter;color:#9ca3af">Najdi místnost, budovu, akci…</span>
+    </div>
+    <div style="{{ mapSheetStyle }}">
+      <div onClick="{{ toggleMapSheet }}" style="cursor:pointer;padding:8px 16px 4px"><div style="width:36px;height:4px;border-radius:99px;background:var(--surface-muted);margin:0 auto"></div></div>
+      <sc-if value="{{ mapPeek }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ toggleMapSheet }}" style="display:flex;justify-content:space-between;align-items:center;padding:2px 20px 14px;cursor:pointer">
+          <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 13.5px Inter">3 akce tenhle týden · knihovna volná od 13:00</span><span style="font:400 11.5px Inter;color:var(--content-muted)">Vytáhni pro události a rezervaci</span></div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><path d="m18 15-6-6-6 6"></path></svg>
+        </div>
+      </sc-if>
+      <sc-if value="{{ mapExpanded }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;gap:4px;margin:0 16px;background:var(--color-base-200);border-radius:8px;padding:4px">
+          <div onClick="{{ tabAkce }}" style="{{ tabAkceStyle }}">Akce</div>
+          <div onClick="{{ tabKnihovna }}" style="{{ tabKnihovnaStyle }}">Knihovna</div>
+          <sc-if value="{{ selBuilding }}" hint-placeholder-val="{{ false }}"><div onClick="{{ tabBudova }}" style="{{ tabBudovaStyle }}">Budova {{ selBuilding }}</div></sc-if>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding-bottom:96px">
+          <sc-if value="{{ mapTabAkce }}" hint-placeholder-val="{{ true }}">
+            <div style="padding:12px 16px 2px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">Tenhle týden</div>
+            <sc-for list="{{ mapEvents }}" as="me" hint-placeholder-count="3">
+              <div style="{{ me.rowStyle }}">
+                <div style="width:40px;display:flex;flex-direction:column;align-items:center;background:var(--color-base-200);border-radius:8px;padding:5px 0;flex-shrink:0"><span style="font:700 14px 'DM Sans',sans-serif">{{ me.d }}</span><span style="font:600 9px Inter;text-transform:uppercase;color:var(--content-muted)">{{ me.dow }}</span></div>
+                <div style="flex:1;min-width:0"><div style="font:600 13.5px Inter">{{ me.title }}</div><div style="font:400 11.5px Inter;color:var(--content-muted)">{{ me.sub }}</div></div>
+                <button onClick="{{ me.toggleRsvp }}" style="{{ me.rsvpStyle }}">{{ me.rsvpLabel }}</button>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ mapTabKnihovna }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:12px 16px 2px;display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">Studovny · zdarma</span><span style="font:400 11px Inter;color:var(--content-muted)">dnes</span></div>
+            <sc-for list="{{ libRooms }}" as="lr" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 16px">
+                <div style="width:36px;height:36px;border-radius:8px;background:rgba(0,84,143,.18);color:#7db3d9;display:grid;place-items:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 4.5v15z"></path></svg></div>
+                <div style="flex:1;min-width:0"><div style="font:600 13.5px Inter">{{ lr.name }} <span style="font:400 11px Inter;color:var(--content-muted)">· {{ lr.cap }}</span></div><div style="{{ lr.hoursStyle }}">{{ lr.hours }}</div></div>
+                <sc-if value="{{ lr.bookable }}" hint-placeholder-val="{{ true }}"><button onClick="{{ lr.book }}" style="font:600 12px Inter;background:rgba(121,190,21,.16);color:var(--color-primary);border:none;padding:9px 14px;border-radius:8px;cursor:pointer;flex-shrink:0">Rezervovat</button></sc-if>
+                <sc-if value="{{ lr.full }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px Inter;color:var(--content-muted);flex-shrink:0">obsazeno</span></sc-if>
+              </div>
+            </sc-for>
+            <div style="margin:8px 16px;padding:10px 14px;border-radius:12px;border:1px dashed var(--surface-muted);font:400 11.5px Inter;color:var(--content-muted)">Rezervace ti přijde do Outlooku. Zrušit ji můžeš tamtéž.</div>
+          </sc-if>
+          <sc-if value="{{ mapTabBudova }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:12px 16px 2px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">Budova {{ selBuilding }} · PEF</div>
+            <sc-for list="{{ buildingRooms }}" as="br" hint-placeholder-count="4">
+              <div style="{{ br.rowStyle }}">
+                <div style="width:40px;text-align:center;font:700 12px var(--font-mono);color:var(--content-secondary);flex-shrink:0">{{ br.r }}</div>
+                <div style="flex:1;min-width:0;font:400 12.5px Inter;color:var(--content-secondary)">{{ br.sub }}</div>
+                <sc-if value="{{ br.mine }}" hint-placeholder-val="{{ false }}"><span style="font:700 10px Inter;background:rgba(220,38,38,.14);color:#f87171;padding:3px 7px;border-radius:5px;flex-shrink:0">test v 15:00</span></sc-if>
+              </div>
+            </sc-for>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+  <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:18px;display:flex;gap:4px;align-items:center;background:var(--color-base-100);backdrop-filter:blur(12px);border:1px solid var(--surface-muted);border-radius:99px;padding:6px;box-shadow:var(--shadow-drawer);z-index:40">
+    <div onClick="{{ goCal }}" style="{{ navCalStyle }}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M8 2v4M16 2v4M3 9h18"></path></svg><sc-if value="{{ isCal }}" hint-placeholder-val="{{ true }}"><span style="font:600 12px Inter">Kalendář</span></sc-if></div>
+    <div onClick="{{ goExams }}" style="{{ navExamsStyle }}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M8 2v4M16 2v4M3 9h18M9 15l2 2 4-4"></path></svg><sc-if value="{{ isExams }}" hint-placeholder-val="{{ false }}"><span style="font:600 12px Inter">Zkoušky</span></sc-if></div>
+    <div onClick="{{ goSubjects }}" style="{{ navSubjectsStyle }}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 4.5v15zM20 17v5H6.5a2.5 2.5 0 0 1 0-5"></path></svg><sc-if value="{{ isSubjects }}" hint-placeholder-val="{{ false }}"><span style="font:600 12px Inter">Předměty</span></sc-if></div>
+    <div onClick="{{ goMap }}" style="{{ navMapStyle }}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg><sc-if value="{{ isMap }}" hint-placeholder-val="{{ false }}"><span style="font:600 12px Inter">Mapa</span></sc-if></div>
+    <div onClick="{{ goStudent }}" style="{{ navStudentStyle }}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"></path></svg><sc-if value="{{ isStudent }}" hint-placeholder-val="{{ false }}"><span style="font:600 12px Inter">Student</span></sc-if></div>
+  </div>
+
+  <sc-if value="{{ eventDetail }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeEvent }}" style="position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:50;animation:fadeIn .2s ease-out"></div>
+    <div style="position:absolute;left:0;right:0;bottom:0;background:var(--color-base-100);border-radius:20px 20px 0 0;box-shadow:0 -12px 36px rgba(0,0,0,.5);padding:8px 20px 26px;display:flex;flex-direction:column;gap:12px;z-index:51;animation:sheetUp .3s ease-out">
+      <div style="width:36px;height:4px;border-radius:99px;background:var(--surface-muted);margin:0 auto"></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="{{ eventDetailChipStyle }}">{{ eventDetailKind }}</span><span style="font:400 12px Inter;color:var(--content-muted)">{{ eventDetailTime }}</span></div>
+      <div style="display:flex;flex-direction:column;gap:3px"><span style="font:700 19px 'DM Sans',sans-serif;letter-spacing:-0.015em">{{ eventDetailTitle }}</span><span style="font:400 13px Inter;color:var(--content-secondary)">{{ eventDetailMeta }}</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding-top:2px">
+        <button onClick="{{ showRoute }}" style="border:none;border-radius:8px;background:var(--color-primary);color:#fff;font:600 14px Inter;padding:13px 0;cursor:pointer">Ukázat na mapě</button>
+        <button onClick="{{ hideEvent }}" style="border:none;border-radius:8px;background:transparent;color:var(--content-muted);font:600 13px Inter;padding:9px 0;cursor:pointer">Skrýt tuhle hodinu</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ drawer }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDrawer }}" style="position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:50;animation:fadeIn .2s ease-out"></div>
+    <div style="position:absolute;left:0;right:0;bottom:0;top:90px;background:var(--color-base-100);border-radius:20px 20px 0 0;box-shadow:0 -12px 36px rgba(0,0,0,.5);display:flex;flex-direction:column;overflow:hidden;z-index:51;animation:sheetUp .3s ease-out">
+      <div style="width:36px;height:4px;border-radius:99px;background:var(--surface-muted);margin:8px auto 4px;flex-shrink:0"></div>
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:8px 16px 12px;flex-shrink:0">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+          <span style="font:600 10px var(--font-mono);color:var(--color-primary);letter-spacing:.06em">{{ drawerCodeLine }}</span>
+          <span style="font:700 19px 'DM Sans',sans-serif;letter-spacing:-0.015em">{{ drawerName }}</span>
+          <span style="font:400 12px Inter;color:var(--content-muted)">{{ drawerTeacherLine }}</span>
+        </div>
+        <button onClick="{{ closeDrawer }}" style="width:36px;height:36px;border:none;border-radius:50%;background:var(--color-base-200);color:var(--content-secondary);display:grid;place-items:center;cursor:pointer;flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:2px;padding:2px 12px 0;border-bottom:1px solid var(--color-base-300);flex-shrink:0">
+        <button onClick="{{ pickTabSoubory }}" style="{{ tabSouboryStyle }}">
+          <span style="position:relative;display:block">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v5h5"></path><path d="M8 13h8M8 17h6"></path></svg>
+            <span style="{{ badgeSouboryStyle }}">{{ countSoubory }}</span>
+          </span>
+          <span style="font:700 10px Inter;letter-spacing:-0.01em">Soubory</span>
+        </button>
+        <button onClick="{{ pickTabSpoluzaci }}" style="{{ tabSpoluzaciStyle }}">
+          <span style="position:relative;display:block">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path></svg>
+            <span style="{{ badgeSpoluzaciStyle }}">{{ countSpoluzaci }}</span>
+          </span>
+          <span style="font:700 10px Inter;letter-spacing:-0.01em">Spolužáci</span>
+        </button>
+        <button onClick="{{ pickTabUspesnost }}" style="{{ tabUspesnostStyle }}">
+          <span style="position:relative;display:block">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9M13 17V5M8 17v-3"></path></svg>
+          </span>
+          <span style="font:700 10px Inter;letter-spacing:-0.01em">Úspěšnost</span>
+        </button>
+        <button onClick="{{ pickTabSylabus }}" style="{{ tabSylabusStyle }}">
+          <span style="position:relative;display:block">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg>
+          </span>
+          <span style="font:700 10px Inter;letter-spacing:-0.01em">Sylabus</span>
+        </button>
+        <button onClick="{{ pickTabZaznamnik }}" style="{{ tabZaznamnikStyle }}">
+          <span style="position:relative;display:block">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"></path></svg>
+            <span style="{{ badgeZaznamnikStyle }}">{{ countZaznamnik }}</span>
+          </span>
+          <span style="font:700 10px Inter;letter-spacing:-0.01em">Záznámník</span>
+        </button>
+      </div>
+      <div style="flex:1;overflow-y:auto">
+        <sc-if value="{{ tabSoubory }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:14px 16px 4px;display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">{{ filesHeading }}</span><span onClick="{{ downloadAll }}" style="font:600 12px Inter;color:var(--color-primary);cursor:pointer">Stáhnout vše</span></div>
+          <sc-for list="{{ drawerFiles }}" as="f" hint-placeholder-count="3">
+            <div onClick="{{ f.download }}" style="display:flex;align-items:center;gap:12px;padding:11px 16px;cursor:pointer">
+              <div style="{{ f.icStyle }}">{{ f.ic }}</div>
+              <div style="flex:1;min-width:0"><div style="font:500 13.5px Inter">{{ f.n }}</div><div style="font:400 11px Inter;color:var(--content-muted)">{{ f.sub }}</div></div>
+              <sc-if value="{{ f.isNew }}" hint-placeholder-val="{{ false }}"><span style="width:7px;height:7px;border-radius:50%;background:var(--color-primary);flex-shrink:0"></span></sc-if>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"></path></svg>
+            </div>
+          </sc-for>
+        </sc-if>
+        <sc-if value="{{ tabSylabus }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:14px 16px 6px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">Hodnocení</div>
+          <div style="margin:0 16px;border-radius:12px;border:1px solid var(--surface-muted);overflow:hidden">
+            <sc-for list="{{ grading }}" as="g" hint-placeholder-count="4">
+              <div style="{{ g.rowStyle }}"><span style="font:400 13px Inter">{{ g.k }}</span><span style="font:600 13px var(--font-mono)">{{ g.v }}</span></div>
+            </sc-for>
+          </div>
+          <div style="margin:10px 16px 0;padding:10px 14px;border-radius:12px;background:rgba(121,190,21,.06);border:1px solid rgba(121,190,21,.2);font:400 12px Inter;color:var(--content-secondary)">Na zápočet potřebuješ min. 50 b a účast na cvičeních (max. 2 absence).</div>
+          <div style="padding:16px 16px 6px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">Semestr</div>
+          <div style="margin:0 16px 16px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;font:500 12px Inter;color:var(--content-secondary)"><span>týden 10 ze 13</span><span>zbývají 3 týdny výuky</span></div>
+            <div style="height:5px;border-radius:99px;background:var(--surface-muted);overflow:hidden"><div style="width:77%;height:100%;background:var(--color-primary)"></div></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ tabSpoluzaci }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:14px 16px 4px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">{{ classmatesHeading }}</div>
+          <sc-for list="{{ classmates }}" as="cm" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 16px">
+              <div style="width:36px;height:36px;border-radius:50%;background:var(--color-base-200);display:grid;place-items:center;font:700 12px 'DM Sans',sans-serif;color:var(--color-primary);flex-shrink:0">{{ cm.ini }}</div>
+              <div style="flex:1;min-width:0"><div style="font:500 13.5px Inter">{{ cm.name }}</div><div style="font:400 11px Inter;color:var(--content-muted)">{{ cm.grp }}</div></div>
+            </div>
+          </sc-for>
+        </sc-if>
+        <sc-if value="{{ tabZaznamnik }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:14px 16px 6px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">Průběžné hodnocení</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin:0 16px">
+            <sc-for list="{{ phArches }}" as="a" hint-placeholder-count="2">
+              <div style="background:var(--color-base-200);border-radius:8px;padding:9px 12px">
+                <div style="font:600 11px Inter;color:var(--content-secondary);margin-bottom:5px">{{ a.name }}</div>
+                <div style="{{ a.gridStyle }}">
+                  <sc-for list="{{ a.cols }}" as="c" hint-placeholder-count="4">
+                    <span style="font:400 10px Inter;color:var(--content-muted)">{{ c.t }}</span>
+                  </sc-for>
+                  <sc-for list="{{ a.vals }}" as="v" hint-placeholder-count="4">
+                    <span style="font:500 12px var(--font-mono)">{{ v.t }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="padding:16px 16px 6px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">{{ vtHeading }}</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin:0 16px">
+            <sc-for list="{{ vtTests }}" as="vt" hint-placeholder-count="3">
+              <div style="background:var(--color-base-200);border-radius:8px;overflow:hidden">
+                <div onClick="{{ vt.toggle }}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer">
+                  <span style="flex:1;min-width:0;font:600 12px Inter;color:var(--content-secondary)">{{ vt.name }}</span>
+                  <span style="{{ vt.chipStyle }}">{{ vt.best }}</span>
+                  <sc-if value="{{ vt.multi }}" hint-placeholder-val="{{ false }}">
+                    <span style="font:400 11px Inter;color:var(--content-muted);flex-shrink:0">{{ vt.countLabel }}</span>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ vt.open }}" hint-placeholder-val="{{ true }}">
+                  <sc-for list="{{ vt.attempts }}" as="at" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid var(--color-base-300)">
+                      <span style="{{ at.chipStyle }}">{{ at.score }}</span>
+                      <span style="font:400 11px Inter;color:var(--content-muted)">{{ at.at }}</span>
+                      <span style="margin-left:auto;font:400 11px Inter;color:var(--content-muted)">{{ at.teacher }}</span>
+                    </div>
+                  </sc-for>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;justify-content:center;gap:8px;padding:14px 16px 4px">
+            <span onClick="{{ openIsPrubezne }}" style="display:flex;align-items:center;gap:5px;font:700 11px Inter;color:var(--content-muted);cursor:pointer">IS (průběžné hodnocení)<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></span>
+            <span onClick="{{ openIsTesty }}" style="display:flex;align-items:center;gap:5px;font:700 11px Inter;color:var(--content-muted);cursor:pointer">IS (výsledky testů)<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ tabUspesnost }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:14px 16px 2px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">Známky spolužáků · LS 2024/25</div>
+          <div style="display:flex;align-items:flex-end;gap:8px;height:120px;padding:12px 24px 0">
+            <sc-for list="{{ gradeBars }}" as="gb" hint-placeholder-count="6">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end"><span style="font:600 10px Inter;color:var(--content-muted)">{{ gb.pct }}</span><div style="{{ gb.barStyle }}"></div><span style="font:700 11px var(--font-mono);color:var(--content-secondary)">{{ gb.g }}</span></div>
+            </sc-for>
+          </div>
+          <div style="margin:14px 16px;padding:10px 14px;border-radius:12px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);font:400 12px Inter;color:var(--content-secondary)">Neúspěšnost 27 % — nadprůměr fakulty. Začni s přípravou dřív.</div>
+        </sc-if>
+      </div>
+      <div style="border-top:1px solid var(--color-base-300);padding:10px 16px 20px;display:flex;justify-content:center;flex-shrink:0"><span style="display:flex;align-items:center;gap:6px;font:500 12px Inter;color:var(--content-muted)">Otevřít v IS MENDELU<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></span></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isStudent }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Student" style="position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;background:var(--color-base-200)">
+    <div style="display:flex;flex-direction:column;gap:2px;padding:20px 20px 4px;flex-shrink:0"><span style="font:500 12px Inter;color:var(--content-muted)">IS MENDELU v kapse</span><span style="font:800 26px 'DM Sans',sans-serif;letter-spacing:-0.02em">Student</span></div>
+    <div style="display:flex;gap:4px;margin:14px 16px 0;background:var(--color-base-100);border-radius:8px;padding:4px;flex-shrink:0">
+      <div onClick="{{ pickStudPages }}" style="{{ studPagesStyle }}">Stránky IS</div>
+      <div onClick="{{ pickStudPeople }}" style="{{ studPeopleStyle }}">Lidé</div>
+    </div>
+    <div style="margin:10px 16px 0;display:flex;align-items:center;gap:10px;background:var(--color-base-100);border:1px solid var(--surface-muted);border-radius:99px;padding:12px 16px;flex-shrink:0">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+      <input value="{{ query }}" onChange="{{ onSearch }}" placeholder="{{ searchPlaceholder }}" style="flex:1;background:transparent;border:none;outline:none;color:var(--content-primary);font:400 14px Inter">
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:12px 0 96px">
+      <sc-if value="{{ showPeopleResults }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:6px 16px 2px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">Výsledky</div>
+        <sc-for list="{{ peopleResults }}" as="p" hint-placeholder-count="2">
+          <div onClick="{{ p.open }}" style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer">
+            <div style="width:38px;height:38px;border-radius:50%;background:var(--color-base-100);display:grid;place-items:center;font:700 12px 'DM Sans',sans-serif;color:var(--color-primary);flex-shrink:0">{{ p.ini }}</div>
+            <div style="flex:1;min-width:0"><div style="font:500 13.5px Inter">{{ p.name }}</div><div style="font:400 11px Inter;color:var(--content-muted)">{{ p.role }}</div></div>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"></path></svg>
+          </div>
+        </sc-for>
+      </sc-if>
+      <sc-if value="{{ showPeopleBrowse }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:6px 16px 2px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">Tvoji vyučující</div>
+        <sc-for list="{{ suggestedPeople }}" as="p" hint-placeholder-count="4">
+          <div onClick="{{ p.open }}" style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer">
+            <div style="width:38px;height:38px;border-radius:50%;background:var(--color-base-100);display:grid;place-items:center;font:700 12px 'DM Sans',sans-serif;color:var(--color-primary);flex-shrink:0">{{ p.ini }}</div>
+            <div style="flex:1;min-width:0"><div style="font:500 13.5px Inter">{{ p.name }}</div><div style="font:400 11px Inter;color:var(--content-muted)">{{ p.role }}</div></div>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"></path></svg>
+          </div>
+        </sc-for>
+        <div style="margin:10px 16px;padding:10px 14px;border-radius:12px;border:1px dashed var(--surface-muted);font:400 11.5px Inter;color:var(--content-muted)">Najdeš tu každého na MENDELU — studenty, vyučující i ústavy.</div>
+      </sc-if>
+      <sc-if value="{{ showPageResults }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:6px 16px 2px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">Stránky IS</div>
+        <sc-for list="{{ pageResults }}" as="pg" hint-placeholder-count="3">
+          <div onClick="{{ pg.go }}" style="display:flex;align-items:center;gap:12px;padding:11px 16px;cursor:pointer">
+            <div style="flex:1;min-width:0"><div style="font:500 13.5px Inter">{{ pg.label }}</div><div style="font:400 11px Inter;color:var(--content-muted)">{{ pg.group }}</div></div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
+          </div>
+        </sc-for>
+      </sc-if>
+      <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:24px 16px;text-align:center;font:400 12.5px Inter;color:var(--content-muted)">Nic jsme nenašli. Zkus to jinak.</div>
+      </sc-if>
+      <sc-if value="{{ showPageBrowse }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:2px 16px 4px">
+          <div onClick="{{ openEduroam }}" style="border-radius:12px;background:var(--color-base-100);border:1px solid var(--surface-muted);padding:14px;display:flex;flex-direction:column;gap:8px;cursor:pointer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#79be15" stroke-width="2" stroke-linecap="round"><path d="M5 12a11 11 0 0 1 14 0M8.5 15.5a6 6 0 0 1 7 0M2 8.5a16 16 0 0 1 20 0"></path><circle cx="12" cy="19" r="1.2" fill="#79be15"></circle></svg>
+            <div style="font:600 13px Inter">Eduroam</div><div style="font:400 11px Inter;color:var(--content-muted)">Wi-Fi na 2 kliky</div>
+          </div>
+          <div onClick="{{ openDocs }}" style="border-radius:12px;background:var(--color-base-100);border:1px solid var(--surface-muted);padding:14px;display:flex;flex-direction:column;gap:8px;cursor:pointer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#79be15" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6M9 15h6M9 11h2"></path></svg>
+            <div style="font:600 13px Inter">Dokumenty</div><div style="font:400 11px Inter;color:var(--content-muted)">potvrzení o studiu</div>
+          </div>
+          
+          
+        </div>
+        <sc-for list="{{ pageGroups }}" as="grp" hint-placeholder-count="3">
+          <div style="padding:12px 16px 2px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">{{ grp.group }}</div>
+          <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="4">
+            <div onClick="{{ it.go }}" style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer">
+              <div style="flex:1;min-width:0;font:500 13.5px Inter">{{ it.label }}</div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
+            </div>
+          </sc-for>
+        </sc-for>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ eduroamOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeEduroam }}" style="position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:50;animation:fadeIn .2s ease-out"></div>
+    <div style="position:absolute;left:0;right:0;bottom:0;background:var(--color-base-100);border-radius:20px 20px 0 0;box-shadow:0 -12px 36px rgba(0,0,0,.5);padding:8px 20px 26px;display:flex;flex-direction:column;gap:14px;z-index:51;animation:sheetUp .3s ease-out">
+      <div style="width:36px;height:4px;border-radius:99px;background:var(--surface-muted);margin:0 auto"></div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px"><span style="font:700 19px 'DM Sans',sans-serif;letter-spacing:-0.015em">Eduroam za dvě minuty</span><span style="font:400 13px Inter;color:var(--content-secondary)">Funguje na iOS, Androidu i Windows.</span></div>
+      <div style="display:flex;align-items:center;gap:12px"><span style="width:24px;height:24px;border-radius:50%;background:rgba(121,190,21,.15);color:var(--color-primary);display:grid;place-items:center;font:700 12px Inter;flex-shrink:0">1</span><div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--surface-muted);border-radius:8px;padding:10px 12px"><span style="font:600 13px var(--font-mono)">xjanda42 · ●●●●●●●●</span><button onClick="{{ copyPass }}" style="font:600 12px Inter;background:rgba(121,190,21,.14);color:var(--color-primary);border:none;padding:7px 12px;border-radius:8px;cursor:pointer">Zkopírovat</button></div></div>
+      <div style="display:flex;align-items:center;gap:12px"><span style="width:24px;height:24px;border-radius:50%;background:rgba(121,190,21,.15);color:var(--color-primary);display:grid;place-items:center;font:700 12px Inter;flex-shrink:0">2</span><button onClick="{{ dlProfile }}" style="flex:1;border:none;border-radius:8px;background:var(--color-primary);color:#fff;font:600 13.5px Inter;padding:13px 0;cursor:pointer">Stáhnout profil pro tohle zařízení</button></div>
+      <div style="display:flex;align-items:center;gap:12px"><span style="width:24px;height:24px;border-radius:50%;background:rgba(121,190,21,.15);color:var(--color-primary);display:grid;place-items:center;font:700 12px Inter;flex-shrink:0">3</span><span style="font:400 12.5px Inter;color:var(--content-secondary)">Profil nainstaluj, vlož heslo — a máš hotovo.</span></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ docsOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDocs }}" style="position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:50;animation:fadeIn .2s ease-out"></div>
+    <div style="position:absolute;left:0;right:0;bottom:0;background:var(--color-base-100);border-radius:20px 20px 0 0;box-shadow:0 -12px 36px rgba(0,0,0,.5);padding:8px 20px 26px;display:flex;flex-direction:column;gap:10px;z-index:51;animation:sheetUp .3s ease-out">
+      <div style="width:36px;height:4px;border-radius:99px;background:var(--surface-muted);margin:0 auto"></div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px"><span style="font:700 19px 'DM Sans',sans-serif;letter-spacing:-0.015em">Úřední dokumenty</span><span style="font:400 13px Inter;color:var(--content-secondary)">S elektronickým podpisem univerzity — úřady je berou.</span></div>
+      <sc-for list="{{ docsList }}" as="doc" hint-placeholder-count="3">
+        <div style="display:flex;align-items:center;gap:12px;border:1px solid var(--surface-muted);border-radius:8px;padding:11px 12px">
+          <div style="width:34px;height:34px;border-radius:8px;background:rgba(239,68,68,.1);color:#f87171;display:grid;place-items:center;font:700 9px Inter;flex-shrink:0">PDF</div>
+          <div style="flex:1;min-width:0"><div style="font:500 13px Inter">{{ doc.n }}</div><div style="font:400 11px Inter;color:var(--content-muted)">{{ doc.sub }}</div></div>
+          <button onClick="{{ doc.dl }}" style="font:600 12px Inter;background:rgba(121,190,21,.14);color:var(--color-primary);border:none;padding:8px 12px;border-radius:8px;cursor:pointer;flex-shrink:0">Stáhnout</button>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ personOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closePerson }}" style="position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:50;animation:fadeIn .2s ease-out"></div>
+    <div style="position:absolute;left:0;right:0;bottom:0;background:var(--color-base-100);border-radius:20px 20px 0 0;box-shadow:0 -12px 36px rgba(0,0,0,.5);padding:8px 20px 26px;display:flex;flex-direction:column;gap:12px;z-index:51;animation:sheetUp .3s ease-out">
+      <div style="width:36px;height:4px;border-radius:99px;background:var(--surface-muted);margin:0 auto"></div>
+      <div style="display:flex;align-items:center;gap:14px;padding-top:4px">
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--color-base-200);display:grid;place-items:center;font:700 17px 'DM Sans',sans-serif;color:var(--color-primary);flex-shrink:0">{{ personIni }}</div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font:700 17px 'DM Sans',sans-serif;letter-spacing:-0.01em">{{ personName }}</span><span style="font:400 12px Inter;color:var(--content-muted)">{{ personRole }}</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;font:400 13px Inter;color:var(--content-secondary)">
+        <span style="display:flex;align-items:center;gap:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m2 7 10 6L22 7"></path></svg>{{ personEmail }}</span>
+        <sc-if value="{{ personOffice }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>kancelář {{ personOffice }} · konzultace út 13–15</span></sc-if>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button onClick="{{ personMail }}" style="border:none;border-radius:8px;background:var(--color-primary);color:#fff;font:600 14px Inter;padding:13px 0;cursor:pointer">Napsat e-mail</button>
+        <sc-if value="{{ personOffice }}" hint-placeholder-val="{{ false }}"><button onClick="{{ personOnMap }}" style="border:1px solid var(--surface-muted);border-radius:8px;background:transparent;color:var(--content-secondary);font:600 13px Inter;padding:11px 0;cursor:pointer">Ukázat kancelář na mapě</button></sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ planOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closePlan }}" style="position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:50;animation:fadeIn .2s ease-out"></div>
+    <div data-screen-label="Studijní plán" style="position:absolute;left:0;right:0;bottom:0;top:70px;background:var(--color-base-100);border-radius:20px 20px 0 0;box-shadow:0 -12px 36px rgba(0,0,0,.5);display:flex;flex-direction:column;overflow:hidden;z-index:51;animation:sheetUp .3s ease-out">
+      <div style="width:36px;height:4px;border-radius:99px;background:var(--surface-muted);margin:8px auto 4px;flex-shrink:0"></div>
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:8px 16px 12px;flex-shrink:0">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+          <span style="font:700 19px 'DM Sans',sans-serif;letter-spacing:-0.015em">Studijní plán</span>
+          <span style="font:400 12px Inter;color:var(--content-muted)">Ekonomická informatika · 96 / 180 kr. · průměr 1,8</span>
+        </div>
+        <button onClick="{{ closePlan }}" style="width:36px;height:36px;border:none;border-radius:50%;background:var(--color-base-200);color:var(--content-secondary);display:grid;place-items:center;cursor:pointer;flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+      </div>
+      <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:2px 16px 24px">
+        <sc-for list="{{ sems }}" as="sem" hint-placeholder-count="3">
+          <div style="{{ sem.cardStyle }}">
+            <div onClick="{{ sem.toggle }}" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer">
+              <div style="{{ sem.barStyle }}"></div>
+              <span style="font:600 14px 'DM Sans',sans-serif;flex:1">{{ sem.title }}</span>
+              <sc-if value="{{ sem.cr }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px Inter;color:var(--content-muted)">{{ sem.cr }}</span></sc-if>
+              <span style="{{ sem.badgeStyle }}">{{ sem.done }}</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" style="{{ sem.chevStyle }}"><path d="m6 9 6 6 6-6"></path></svg>
+            </div>
+            <sc-if value="{{ sem.open }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;padding:0 8px 8px">
+                <sc-for list="{{ sem.rows }}" as="r" hint-placeholder-count="4">
+                  <div onClick="{{ r.open }}" style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:8px;cursor:pointer">
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+                      <span style="font:500 13.5px Inter">{{ r.name }}</span>
+                      <sc-if value="{{ r.note }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:4px;font:700 10px Inter;color:rgba(121,190,21,.75);margin-top:2px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>{{ r.note }}</span></sc-if>
+                    </div>
+                    <sc-if value="{{ r.fail }}" hint-placeholder-val="{{ false }}"><span style="{{ r.failStyle }}">{{ r.fail }}</span></sc-if>
+                    <sc-if value="{{ r.grade }}" hint-placeholder-val="{{ false }}"><span style="{{ r.gradeStyle }}">{{ r.grade }}</span></sc-if>
+                    <span style="font:400 11.5px Inter;color:var(--content-muted);flex-shrink:0">{{ r.crLabel }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+        <div style="padding:10px 14px;border-radius:12px;border:1px dashed var(--surface-muted);font:400 11.5px Inter;color:var(--content-muted)">5. a 6. semestr zapíšeš v srpnu — otevřeme je tady hned potom.</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ profileOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeProfile }}" style="position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:50;animation:fadeIn .2s ease-out"></div>
+    <div data-screen-label="Profil a nastavení" style="position:absolute;left:0;right:0;bottom:0;top:70px;background:var(--color-base-100);border-radius:20px 20px 0 0;box-shadow:0 -12px 36px rgba(0,0,0,.5);display:flex;flex-direction:column;overflow:hidden;z-index:51;animation:sheetUp .3s ease-out">
+      <div style="width:36px;height:4px;border-radius:99px;background:var(--surface-muted);margin:8px auto 4px;flex-shrink:0"></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 16px 14px;flex-shrink:0">
+        <div style="width:46px;height:46px;border-radius:50%;background:var(--color-base-200);display:grid;place-items:center;font:700 15px 'DM Sans',sans-serif;color:var(--color-primary);flex-shrink:0">KJ</div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          <span style="font:700 17px 'DM Sans',sans-serif;letter-spacing:-0.01em">Kryštof Janda</span>
+          <span style="font:400 12px Inter;color:var(--content-muted)">Ekonomická informatika · 4. semestr · PEF</span>
+        </div>
+        <button onClick="{{ closeProfile }}" style="width:36px;height:36px;border:none;border-radius:50%;background:var(--color-base-200);color:var(--content-secondary);display:grid;place-items:center;cursor:pointer;flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding-bottom:20px">
+        <div style="padding:6px 16px 4px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">Vzhled</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:11px 16px">
+          <div style="flex:1;min-width:0"><div style="font:500 13.5px Inter">Tmavý režim</div><div style="font:400 11px Inter;color:var(--content-muted)">šetří oči i baterku</div></div>
+          <div onClick="{{ toggleTheme }}" style="{{ themeTrack }}"><div style="{{ themeKnob }}"></div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:11px 16px">
+          <div style="flex:1;min-width:0"><div style="font:500 13.5px Inter">Jazyk</div></div>
+          <div style="display:flex;gap:4px;background:var(--color-base-200);border-radius:8px;padding:4px;width:180px">
+            <div style="flex:1;text-align:center;padding:6px 0;border-radius:6px;background:var(--color-base-100);font:600 12px Inter;box-shadow:var(--shadow-card);cursor:pointer">Čeština</div>
+            <div onClick="{{ pickEn }}" style="flex:1;text-align:center;padding:6px 0;border-radius:6px;font:500 12px Inter;color:var(--content-muted);cursor:pointer">English</div>
+          </div>
+        </div>
+        <div style="padding:14px 16px 4px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">Synchronizace</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:11px 16px">
+          <div style="flex:1;min-width:0"><div style="font:500 13.5px Inter">Rozvrh do Outlooku</div><div style="font:400 11px Inter;color:var(--content-muted)">{{ outlookSub }}</div></div>
+          <div onClick="{{ toggleOutlook }}" style="{{ outlookTrack }}"><div style="{{ outlookKnob }}"></div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:11px 16px">
+          <div style="flex:1;min-width:0"><div style="font:500 13.5px Inter">Záloha souborů na Drive</div><div style="font:400 11px Inter;color:var(--content-muted)">{{ driveSub }}</div></div>
+          <div onClick="{{ toggleDrive }}" style="{{ driveTrack }}"><div style="{{ driveKnob }}"></div></div>
+        </div>
+        
+        <sc-if value="{{ hiddenEmpty }}" hint-placeholder-val="{{ true }}">
+          
+        </sc-if>
+        <sc-for list="{{ hiddenList }}" as="h" hint-placeholder-count="1">
+          <div style="display:flex;align-items:center;gap:12px;padding:9px 16px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24M2 2l20 20"></path></svg>
+            <div style="flex:1;min-width:0"><div style="font:500 13px Inter">{{ h.title }}</div><div style="font:400 11px Inter;color:var(--content-muted)">{{ h.sub }}</div></div>
+            <button onClick="{{ h.restore }}" style="font:600 12px Inter;background:rgba(121,190,21,.14);color:var(--color-primary);border:none;padding:8px 12px;border-radius:8px;cursor:pointer;flex-shrink:0">Vrátit</button>
+          </div>
+        </sc-for>
+        <div style="padding:14px 16px 6px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.08em;color:var(--content-muted)">Spolky na mapě</div>
+        <div style="display:flex;gap:6px;padding:0 16px;flex-wrap:wrap">
+          <sc-for list="{{ spolky }}" as="sp" hint-placeholder-count="3">
+            <span onClick="{{ sp.toggle }}" style="{{ sp.style }}">{{ sp.name }}</span>
+          </sc-for>
+        </div>
+        <div style="height:1px;background:var(--color-base-300);margin:16px 16px 4px"></div>
+        <div onClick="{{ openFeedback }}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-9 8.35 8.5 8.5 0 0 1-3.4-.7L3 21l1.85-5.6A8.38 8.38 0 0 1 12.5 3a8.5 8.5 0 0 1 8.5 8.5Z"></path></svg>
+          <span style="flex:1;font:500 13.5px Inter">Napsat zpětnou vazbu</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"></path></svg>
+        </div>
+        <div onClick="{{ logout }}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;color:#f87171">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path></svg>
+          <span style="flex:1;font:500 13.5px Inter">Odhlásit se</span>
+        </div>
+        <div style="padding:10px 16px 0;font:400 10.5px Inter;color:var(--content-muted);text-align:center">reIS 5.0.5 · vytvořeno studenty pro studenty</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ confirm }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ cancelConfirm }}" style="position:absolute;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);z-index:60;animation:fadeIn .2s ease-out"></div>
+    <div style="position:absolute;left:0;right:0;bottom:0;background:var(--color-base-100);border-radius:20px 20px 0 0;box-shadow:0 -12px 36px rgba(0,0,0,.5);padding:8px 20px 26px;display:flex;flex-direction:column;gap:14px;z-index:61;animation:sheetUp .25s ease-out">
+      <div style="width:36px;height:4px;border-radius:99px;background:var(--surface-muted);margin:0 auto"></div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px">
+        <span style="font:700 19px 'DM Sans',sans-serif;letter-spacing:-0.015em">{{ confirmTitle }}</span>
+        <span style="font:400 13px Inter;color:var(--content-secondary)">{{ confirmSub }}</span>
+      </div>
+      <div style="{{ confirmBoxStyle }}">
+        <div style="font:700 13px Inter">{{ confirmLine1 }}</div>
+        <div style="font:400 13px Inter;color:var(--content-secondary)">{{ confirmLine2 }}</div>
+        <sc-if value="{{ confirmNote }}" hint-placeholder-val="{{ false }}"><div style="font:400 12px Inter;color:var(--content-muted);border-top:1px solid rgba(243,244,246,.07);padding-top:8px">{{ confirmNote }}</div></sc-if>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button onClick="{{ confirmPrimary }}" style="{{ confirmPrimaryStyle }}">{{ confirmPrimaryLabel }}</button>
+        <button onClick="{{ cancelConfirm }}" style="border:none;border-radius:8px;background:transparent;color:var(--content-muted);font:600 13px Inter;padding:10px 0;cursor:pointer">Radši ne</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:70;background:var(--color-base-100);border:1px solid var(--surface-muted);border-radius:99px;padding:10px 18px;box-shadow:var(--shadow-popup);display:flex;align-items:center;gap:8px;animation:toastIn .25s ease-out;white-space:nowrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#79be15" stroke-width="2.5" stroke-linecap="round"><path d="m5 12 5 5 9-10"></path></svg>
+      <span style="font:600 12.5px Inter;color:var(--content-primary)">{{ toast }}</span>
+    </div>
+  </sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;startView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;calendar&quot;,&quot;exams&quot;,&quot;subjects&quot;,&quot;map&quot;,&quot;student&quot;],&quot;default&quot;:&quot;calendar&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototyp&quot;},&quot;emptyWeek&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototyp&quot;}}">
+class Component extends DCLogic {
+  state = {
+    view: null, day: 0, expandedExam: 'man', semOpen: { 0: true }, avgOpen: true,
+    examGroupOpen: { reg: true, open: true, soon: false },
+    drawer: null, drawerTab: 'soubory', vtOpen: {},
+    mapTab: 'akce', mapOpen: false, selBuilding: null,
+    mapBldg: null, mapFloorId: null, selRoom: null, mapTarget: null,
+    registered: { dbs: 'dbs-a' }, armed: {}, rsvp: {},
+    confirm: null, eventDetail: null, toast: null, hiddenEvents: {},
+    profile: false, theme: 'mendelu-dark', outlook: true, drive: false, spolky: { supef: true }
+  };
+
+  track(on) { return 'width:42px;height:26px;border-radius:99px;padding:3px;cursor:pointer;transition:background .2s;flex-shrink:0;background:' + (on ? 'var(--color-primary)' : 'var(--surface-muted)'); }
+  knob(on) { return 'width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;transform:translateX(' + (on ? 16 : 0) + 'px)'; }
+
+  toast(msg) { clearTimeout(this._tt); this.setState({ toast: msg }); this._tt = setTimeout(() => this.setState({ toast: null }), 2600); }
+
+  get DAYS() {
+    return [
+      { label: 'Po', date: 13, events: [
+        { id: 'e1', title: 'Management', kind: 'přednáška', type: 'lecture', room: 'Q01', start: '9:00', end: '10:50', teacher: 'Ing. Petr Novák, Ph.D.' },
+        { id: 'e2', title: 'Mikroekonomie I', kind: 'cvičení', type: 'seminar', room: 'Q26', start: '11:00', end: '12:50', teacher: 'Ing. Jana Králová' },
+        { gap: 'volno 2 h — dej si oběd' },
+        { id: 'e3', title: 'Průběžný test 2', sub: 'Databázové systémy', kind: 'zkouška', type: 'exam', room: 'Q15', start: '15:00', end: '16:00', teacher: 'doc. Ing. Marek Svoboda, Ph.D.' }
+      ]},
+      { label: 'Út', date: 14, events: [] },
+      { label: 'St', date: 15, events: [
+        { id: 'e4', title: 'Statistika', kind: 'cvičení', type: 'seminar', room: 'Q29', start: '9:00', end: '10:50', teacher: 'Mgr. Eva Dvořáková' },
+        { gap: 'volno 2 h' },
+        { id: 'e5', title: 'Informatika', kind: 'přednáška', type: 'lecture', room: 'Q02', start: '13:00', end: '14:50', teacher: 'Ing. Tomáš Malý' }
+      ]},
+      { label: 'Čt', date: 16, events: [
+        { id: 'e6', title: 'Právo', kind: 'přednáška', type: 'lecture', room: 'Q01', start: '11:00', end: '12:50', teacher: 'JUDr. Alena Horká' }
+      ]},
+      { label: 'Pá', date: 17, events: [] }
+    ];
+  }
+
+  get EXAMS() {
+    return [
+      { id: 'dbs', subject: 'Databázové systémy', name: 'Průběžný test 2', mates: 12, terms: [
+        { id: 'dbs-a', label: 'dnes · 15:00 · Q15', free: 0, cap: 20, dereg: 'Odhlásit se můžeš do 12:00.', tl: 'dnes 15:00', tlSub: 'DBS test 2', left: '14%' }
+      ]},
+      { id: 'man', subject: 'Management', name: 'Zkouška', mates: 5, terms: [
+        { id: 'man-a', label: 'út 21. 7. · 9:00 · Q01', free: 8, cap: 30, dereg: 'Odhlásit se pak můžeš do 19. 7. 23:59.', note: 'Poznámka učitele: přines si kalkulačku, test trvá 60 minut.', tl: 'za 2 dny', tlSub: 'Management zk.', left: '46%' },
+        { id: 'man-b', label: 'pá 24. 7. · 11:00 · Q02', free: 2, cap: 30, dereg: 'Odhlásit se pak můžeš do 22. 7. 23:59.', tl: 'za 5 dní', tlSub: 'Management zk.', left: '62%' },
+        { id: 'man-c', label: 'po 27. 7. · 9:00 · Q01', opensAt: 'otevře se 20. 7. v 18:00', tl: 'za 8 dní', tlSub: 'Management zk.', left: '78%' }
+      ]},
+      { id: 'mik', subject: 'Mikroekonomie I', name: 'Zkouška', terms: [] }
+    ];
+  }
+
+  get SEMS() {
+    return [
+      { i: 0, title: '4. semestr', state: 'current', cr: '28 kr.', subjects: [
+        { code: 'EBC-DBS', name: 'Databázové systémy', cr: 5, fail: 27, note: 'test dnes v 15:00', teacher: 'doc. Ing. Marek Svoboda, Ph.D.', room: 'Q15', type: 'zkouška' },
+        { code: 'EBC-MAN', name: 'Management', cr: 4, fail: 21, teacher: 'Ing. Petr Novák, Ph.D.', room: 'Q01', type: 'zkouška' },
+        { code: 'EBC-MI', name: 'Mikroekonomie I', cr: 6, fail: 12, teacher: 'Ing. Jana Králová', room: 'Q26', type: 'zkouška' },
+        { code: 'EBC-STAT', name: 'Statistika', cr: 5, grade: 'B', teacher: 'Mgr. Eva Dvořáková', room: 'Q29', type: 'zápočet + zk.' },
+        { code: 'EBC-INF', name: 'Informatika', cr: 4, grade: 'A', teacher: 'Ing. Tomáš Malý', room: 'Q02', type: 'zkouška' },
+        { code: 'EBC-PRV', name: 'Právo', cr: 4, fail: 8, teacher: 'JUDr. Alena Horká', room: 'Q01', type: 'zápočet' }
+      ]},
+      { i: 1, title: '3. semestr', state: 'past', subjects: [
+        { code: 'EBC-MAE', name: 'Makroekonomie', cr: 6, grade: 'C' }, { code: 'EBC-UC1', name: 'Účetnictví I', cr: 5, grade: 'B' },
+        { code: 'EBC-MT2', name: 'Matematika II', cr: 6, grade: 'D' }, { code: 'EBC-MRK', name: 'Marketing', cr: 4, grade: 'A' },
+        { code: 'EBC-AJ3', name: 'Angličtina B1', cr: 2, grade: 'B' }, { code: 'EBC-PE', name: 'Podniková ekonomika', cr: 5, grade: 'C' },
+        { code: 'EBC-TV', name: 'Tělesná výchova', cr: 1, grade: 'záp.' }
+      ]},
+      { i: 2, title: '2. semestr', state: 'past', subjects: [
+        { code: 'EBC-MI0', name: 'Mikroekonomie — úvod', cr: 5, grade: 'B' }, { code: 'EBC-MT1', name: 'Matematika I', cr: 6, grade: 'E' },
+        { code: 'EBC-ZI', name: 'Základy informatiky', cr: 4, grade: 'A' }, { code: 'EBC-PRA', name: 'Právo — základy', cr: 4, grade: 'C' },
+        { code: 'EBC-AJ2', name: 'Angličtina A2', cr: 2, grade: 'A' }, { code: 'EBC-STA', name: 'Popisná statistika', cr: 5, grade: 'C' },
+        { code: 'EBC-FIL', name: 'Filozofie', cr: 3, grade: 'B' }, { code: 'EBC-TV0', name: 'Tělesná výchova', cr: 1, grade: 'záp.' }
+      ]}
+    ];
+  }
+
+  get PEOPLE() {
+    return [
+      { ini: 'MS', name: 'doc. Ing. Marek Svoboda, Ph.D.', role: 'Ústav informatiky · garant DBS', office: 'Q3.14', email: 'marek.svoboda@mendelu.cz' },
+      { ini: 'PN', name: 'Ing. Petr Novák, Ph.D.', role: 'Ústav managementu', office: 'Q4.02', email: 'petr.novak@mendelu.cz' },
+      { ini: 'JK', name: 'Ing. Jana Králová', role: 'Ústav ekonomie', office: 'Q2.31', email: 'jana.kralova@mendelu.cz' },
+      { ini: 'ED', name: 'Mgr. Eva Dvořáková', role: 'Ústav statistiky a operačního výzkumu', office: 'Q3.60', email: 'eva.dvorakova@mendelu.cz' },
+      { ini: 'AK', name: 'Adam Kovář', role: 'student · Ekonomická informatika', office: null, email: 'xkovar12@mendelu.cz' },
+      { ini: 'AH', name: 'JUDr. Alena Horká', role: 'Ústav práva a humanitních věd', office: 'Q5.11', email: 'alena.horka@mendelu.cz' }
+    ];
+  }
+  get PAGES() {
+    return [
+      { group: 'Moje studium', items: ['E-index', 'Rozvrhy', 'Odevzdávárny', 'Zápisy předmětů', 'Školné a poplatky'] },
+      { group: 'Osobní', items: ['Pošta', 'Lidé na MENDELU', 'Úřední deska', 'Moje doklady'] },
+      { group: 'Provoz', items: ['Menza — jídelníček', 'Koleje ISKAM', 'Knihovna'] }
+    ];
+  }
+  norm(x) { return (x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+  studentVals(s) {
+    const q = this.norm(s.query || '');
+    const tab = s.studTab || 'pages';
+    const openPage = (label) => () => this.toast('Otevíráme „' + label + '" v IS…');
+    const openPerson = (px) => () => this.setState({ person: px });
+    const people = (tab === 'people' && q) ? this.PEOPLE.filter(p => this.norm(p.name + ' ' + p.role).includes(q)).slice(0, 5).map(p => ({ ...p, open: openPerson(p) })) : [];
+    const pages = (tab === 'pages' && q) ? this.PAGES.flatMap(g => g.items.filter(i => this.norm(i).includes(q)).map(i => ({ label: i, group: g.group, go: openPage(i) }))).slice(0, 6) : [];
+    const studSeg = (a) => a
+      ? 'flex:1;text-align:center;padding:8px 0;border-radius:6px;background:rgba(121,190,21,.16);color:var(--color-primary);font:600 12.5px Inter;cursor:pointer'
+      : 'flex:1;text-align:center;padding:8px 0;border-radius:6px;font:500 12.5px Inter;color:var(--content-muted);cursor:pointer';
+    const p = s.person;
+    return {
+      query: s.query || '',
+      onSearch: (e) => this.setState({ query: e.target.value }),
+      pickStudPages: () => this.setState({ studTab: 'pages', query: '' }),
+      pickStudPeople: () => this.setState({ studTab: 'people', query: '' }),
+      studPagesStyle: studSeg(tab === 'pages'), studPeopleStyle: studSeg(tab === 'people'),
+      searchPlaceholder: tab === 'pages' ? 'Hledej stránku IS…' : 'Hledej jméno nebo ústav…',
+      showPageResults: tab === 'pages' && q.length > 0 && pages.length > 0,
+      showPageBrowse: tab === 'pages' && q.length === 0,
+      showPeopleResults: tab === 'people' && q.length > 0 && people.length > 0,
+      showPeopleBrowse: tab === 'people' && q.length === 0,
+      noResults: q.length > 0 && ((tab === 'pages' && pages.length === 0) || (tab === 'people' && people.length === 0)),
+      peopleResults: people, pageResults: pages,
+      suggestedPeople: this.PEOPLE.filter(x => x.office).map(x => ({ ...x, open: openPerson(x) })),
+      pageGroups: this.PAGES.map(g => ({ group: g.group, items: g.items.map(i => ({ label: i, go: openPage(i) })) })),
+      openEduroam: () => this.setState({ eduroam: true }), closeEduroam: () => this.setState({ eduroam: false }),
+      eduroamOpen: !!s.eduroam,
+      copyPass: () => this.toast('Heslo zkopírováno.'),
+      dlProfile: () => { this.setState({ eduroam: false }); this.toast('Stahujeme eduroam profil…'); },
+      openDocs: () => this.setState({ docs: true }), closeDocs: () => this.setState({ docs: false }),
+      docsOpen: !!s.docs,
+      docsList: [
+        { n: 'Potvrzení o studiu', sub: 'česky · LS 2025/26' },
+        { n: 'Potvrzení o studiu', sub: 'anglicky · LS 2025/26' },
+        { n: 'Výpis známek', sub: 'celé studium' }
+      ].map(d => ({ ...d, dl: () => { this.setState({ docs: false }); this.toast('Stahujeme ' + d.n.toLowerCase() + '…'); } })),
+      openTeams: () => this.toast('Otevíráme Teams…'),
+      openOutlook: () => this.toast('Otevíráme Outlook…'),
+      personOpen: !!p, closePerson: () => this.setState({ person: null }),
+      personIni: p ? p.ini : '', personName: p ? p.name : '', personRole: p ? p.role : '',
+      personEmail: p ? p.email : '', personOffice: p ? p.office : null,
+      personMail: () => { this.setState({ person: null }); this.toast('Otevíráme e-mail…'); },
+      personOnMap: () => { this.setState({ person: null, view: 'map', selBuilding: 'Q', mapTab: 'budova', mapOpen: true, mapBldg: 0, mapFloorId: 2, selRoom: null }); this.toast('Kancelář je v budově Q, 3. patro.'); }
+    };
+  }
+  evStyle(t) {
+    const m = { lecture: ['rgba(243,250,234,.85)', '#79be15'], seminar: ['rgba(240,247,255,.85)', '#00548f'], exam: ['rgba(254,242,242,.85)', '#dc2626'] }[t];
+    return 'border-radius:12px;background:' + m[0] + ';border:1px solid rgba(0,0,0,.06);border-left:4px solid ' + m[1] + ';padding:11px 13px;cursor:pointer';
+  }
+  gradeColor(g) { return { A: '#10b981', B: '#34d399', C: '#84cc16', D: '#facc15', E: '#fb923c', F: '#ef4444' }[g] || '#9ca3af'; }
+  failChip(f) {
+    const c = f >= 25 ? ['rgba(239,68,68,.12)', '#f87171'] : f >= 20 ? ['rgba(245,158,11,.14)', '#fbbf24'] : ['rgba(243,244,246,.06)', '#9ca3af'];
+    return 'font:600 10px Inter;background:' + c[0] + ';color:' + c[1] + ';padding:3px 7px;border-radius:5px;flex-shrink:0';
+  }
+  navStyle(active) {
+    return active
+      ? 'display:flex;align-items:center;gap:6px;background:rgba(121,190,21,.16);color:var(--color-primary);border-radius:99px;padding:9px 14px;cursor:pointer'
+      : 'display:flex;align-items:center;padding:9px 12px;color:var(--content-muted);cursor:pointer;border-radius:99px';
+  }
+  segStyle(active) {
+    return active
+      ? 'flex:1;text-align:center;padding:8px 0;border-radius:6px;background:var(--color-base-100);font:600 12.5px Inter;box-shadow:var(--shadow-card);cursor:pointer'
+      : 'flex:1;text-align:center;padding:8px 0;border-radius:6px;font:500 12.5px Inter;color:var(--content-muted);cursor:pointer';
+  }
+
+  componentDidMount() { this.syncMap(); }
+  componentDidUpdate() { this.syncMap(); }
+  componentWillUnmount() { this.destroyMap(); }
+
+  loadBuildings() {
+    if (!this._bmetaP) this._bmetaP = fetch('./map/buildings.json').then(r => r.json()).then(m => { this._bmeta = m; return m; });
+    return this._bmetaP;
+  }
+  destroyMap() { if (this._map) { this._map.remove(); this._map = null; this._layer = null; this._pins = null; this._drawnKey = null; } }
+  syncMap() {
+    const view = this.state.view ?? this.props.startView ?? 'calendar';
+    const el = this.mapEl && this.mapEl.current;
+    if (view !== 'map' || !el) { this.destroyMap(); return; }
+    if (this._map) { this.redraw(); return; }
+    if (!window.L) { clearTimeout(this._lwait); this._lwait = setTimeout(() => this.syncMap(), 250); return; }
+    if (this._initing) return;
+    this._initing = true;
+    this.loadBuildings().then(meta => {
+      this._initing = false;
+      const cur = this.mapEl.current;
+      if (!cur || this._map || (this.state.view ?? this.props.startView ?? 'calendar') !== 'map') return;
+      const map = L.map(cur, { zoomControl: false, attributionControl: true, minZoom: 14, maxZoom: 22 });
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 22, maxNativeZoom: 20, attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(map);
+      this._layer = L.layerGroup().addTo(map);
+      this._pins = L.layerGroup().addTo(map);
+      map.on('click', () => { if (this.state.mapBldg != null) this.setState({ mapBldg: null, selRoom: null, mapTarget: null }); });
+      map.fitBounds(meta.campus.bounds, { padding: [30, 30] });
+      // Extension behavior: lettered building names hidden at/near the campus-overview zoom
+      const cb = L.latLngBounds(meta.campus.bounds);
+      const syncLabels = () => {
+        const restZoom = Math.min(18, Math.floor(map.getBoundsZoom(cb, false, L.point(40, 40))));
+        map.getContainer().classList.toggle('reis-hide-building-labels', map.getZoom() <= restZoom + 1);
+        map.getContainer().classList.toggle('reis-hide-room-labels', map.getZoom() < 17.5);
+      };
+      syncLabels();
+      map.on('zoomend', syncLabels);
+      this._map = map;
+      this.drawPins();
+      this.redraw();
+      this.forceUpdate();
+    }).catch(() => { this._initing = false; this.toast('Mapu se nepovedlo načíst.'); });
+  }
+  pinIcon(f) { return L.divIcon({ className: '', html: '<span class="reis-pin"><img src="map/emoji/' + f + '" width="18" height="18"></span>', iconSize: [30, 30], iconAnchor: [15, 15] }); }
+  drawPins() {
+    const openAkce = () => this.setState({ mapTab: 'akce', mapOpen: true });
+    L.marker([49.20988, 16.61462], { icon: this.pinIcon('1f389.svg') }).on('click', openAkce).addTo(this._pins);
+    L.marker([49.21003, 16.61602], { icon: this.pinIcon('1f3b2.svg') }).on('click', openAkce).addTo(this._pins);
+    L.circleMarker([49.21035, 16.6156], { radius: 11, color: '#3b82f6', weight: 1.5, fillColor: '#3b82f6', fillOpacity: 0.2, interactive: false }).addTo(this._pins);
+    L.circleMarker([49.21035, 16.6156], { radius: 5, color: '#ffffff', weight: 2, fillColor: '#3b82f6', fillOpacity: 1, interactive: false }).addTo(this._pins);
+  }
+  roomTitle(p) {
+    if (p.name && p.passportNumber != null && p.name !== p.passportNumber) return p.name;
+    if (p.nickname) return p.nickname;
+    const m = (p.name || p.passportNumber || '').match(/[NPS]\d+$/);
+    return m ? m[0] : (p.name || '');
+  }
+  fetchRooms(id) {
+    this._rooms = this._rooms || {};
+    if (!this._rooms[id]) this._rooms[id] = fetch('https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main/map/rooms-' + id + '.geojson').then(r => { if (!r.ok) throw new Error('http ' + r.status); return r.json(); });
+    return this._rooms[id];
+  }
+  async redraw() {
+    const map = this._map, s = this.state;
+    if (!map || !this._bmeta) return;
+    const key = [s.mapBldg, s.mapFloorId, s.selRoom, s.mapTarget].join('|');
+    if (key === this._drawnKey) return;
+    const fitChanged = !this._drawnKey || this._drawnKey.split('|').slice(0, 2).join('|') !== [s.mapBldg, s.mapFloorId].join('|');
+    const prevTarget = this._drawnKey ? this._drawnKey.split('|')[3] : '';
+    this._drawnKey = key;
+    const seq = this._seq = (this._seq || 0) + 1;
+    const layer = this._layer;
+    layer.clearLayers();
+    const ring = (r) => r.map(c => [c[1], c[0]]);
+    const meta = this._bmeta;
+    const B = { color: '#2563eb', weight: 2, fillColor: '#3b82f6', fillOpacity: 0.25, bubblingMouseEvents: false };
+    const SIB = { color: '#2563eb', weight: 1.5, fillColor: '#3b82f6', fillOpacity: 0.1, bubblingMouseEvents: false };
+    const enter = (b) => () => this.setState({ mapBldg: b.id, mapFloorId: b.defaultFloorId, selBuilding: b.name, mapTab: 'budova', selRoom: null, mapTarget: null });
+    if (s.mapBldg == null) {
+      for (const b of meta.buildings) {
+        L.polygon(ring(b.outline.coordinates[0]), B).on('click', enter(b))
+          .bindTooltip(b.name, { permanent: true, direction: 'center', className: 'building-label' }).addTo(layer);
+      }
+      if (fitChanged) map.fitBounds(meta.campus.bounds, { padding: [30, 30], animate: false });
+      return;
+    }
+    const b = meta.buildings.find(x => x.id === s.mapBldg);
+    if (!b) return;
+    for (const sib of meta.buildings) {
+      if (sib.id === b.id) continue;
+      L.polygon(ring(sib.outline.coordinates[0]), SIB).on('click', enter(sib))
+        .bindTooltip(sib.name, { permanent: true, direction: 'center', className: 'building-label' }).addTo(layer);
+    }
+    if (fitChanged) map.fitBounds(b.bounds, { maxZoom: 21, padding: [40, 40], animate: false });
+    let fc = null;
+    try { fc = await this.fetchRooms(b.id); } catch (e) { this.toast('Místnosti se nepovedlo načíst.'); }
+    if (!fc || seq !== this._seq || !this._map) return;
+    // Resolve a target room (from "Ukázat na mapě") to its floor + feature
+    let targetFeat = null;
+    if (s.mapTarget) {
+      for (const f of fc.features) {
+        if (f.properties.category !== 'structure' && this.roomTitle(f.properties) === s.mapTarget) { targetFeat = f; break; }
+      }
+      if (targetFeat && targetFeat.properties.floorId !== s.mapFloorId) { this.setState({ mapFloorId: targetFeat.properties.floorId }); return; }
+    }
+    const CAT = { teaching: ['#c8e6a0', '#7cb342'], office: ['#cfe3f5', '#5a9bd4'], service: ['#f3d6e6', '#d98cb3'], circulation: ['#ece1cb', '#cbb994'], other: ['#e8edf2', '#c2c8d0'] };
+    const feats = fc.features.filter(f => f.properties.floorId === s.mapFloorId).sort(a => a.properties.category === 'structure' ? -1 : 1);
+    for (const f of feats) {
+      const p = f.properties, struct = p.category === 'structure';
+      const c = CAT[p.category] || CAT.other;
+      const label = this.roomTitle(p);
+      const mine = label === 'Q15';
+      const isSel = p.id === s.selRoom || (targetFeat && p.id === targetFeat.properties.id);
+      const st = struct ? { color: '#c2c8d0', weight: 0.8, fillColor: '#e3e6ea', fillOpacity: 0.5, interactive: false }
+        : isSel ? { color: '#ea580c', weight: 3, fillColor: '#fb923c', fillOpacity: 0.85, bubblingMouseEvents: false }
+        : mine ? { color: '#dc2626', weight: 2, fillColor: '#ef4444', fillOpacity: 0.35, bubblingMouseEvents: false }
+        : { color: c[1], weight: 1, fillColor: c[0], fillOpacity: 0.6, bubblingMouseEvents: false };
+      const poly = L.polygon(ring(f.geometry.coordinates[0]), st);
+      if (!struct) {
+        poly.on('click', () => this.setState({ selRoom: p.id, mapTarget: null }));
+        if (label) {
+          const pb = poly.getBounds();
+          const big = map.distance(pb.getNorthEast(), pb.getSouthWest()) > 12;
+          poly.bindTooltip(label, { permanent: big || mine, direction: 'center', className: big || mine ? 'room-label' : '' });
+        }
+      }
+      poly.addTo(layer);
+      if (isSel) poly.bringToFront();
+      if (targetFeat && p.id === targetFeat.properties.id) this._targetPoly = poly;
+    }
+    // Center the target room in the map strip visible above the bottom sheet
+    if (targetFeat && this._targetPoly && (fitChanged || s.mapTarget !== prevTarget)) {
+      const bottomPad = s.mapOpen ? Math.round(map.getSize().y * 0.62) + 30 : 180;
+      map.fitBounds(this._targetPoly.getBounds(), { maxZoom: 21, paddingTopLeft: [60, 90], paddingBottomRight: [60, bottomPad], animate: false });
+    }
+    this._targetPoly = targetFeat ? this._targetPoly : null;
+  }
+  floorPills() {
+    const s = this.state;
+    const b = this._bmeta && s.mapBldg != null ? this._bmeta.buildings.find(x => x.id === s.mapBldg) : null;
+    if (!b) return [];
+    return b.floors.map(fl => ({
+      name: fl.name,
+      pick: () => this.setState({ mapFloorId: fl.id, selRoom: null, mapTarget: null }),
+      style: 'min-width:38px;text-align:center;padding:8px 0;border-radius:9px;cursor:pointer;' + (fl.id === s.mapFloorId ? 'background:rgba(121,190,21,.22);color:#8dc843;font:700 12px Inter' : 'color:#9ca3af;font:600 12px Inter')
+    }));
+  }
+
+  renderVals() {
+    if (!this.mapEl) this.mapEl = React.createRef();
+    const s = this.state;
+    const empty = this.props.emptyWeek ?? false;
+    const view = s.view ?? this.props.startView ?? 'calendar';
+    const go = (v) => () => this.setState({ view: v, eventDetail: null, drawer: null, confirm: null, plan: false });
+
+    const days = this.DAYS.map((d, i) => ({
+      chipLabel: d.label + ' ' + d.date,
+      chipStyle: 'flex:1;text-align:center;padding:8px 0;border-radius:99px;cursor:pointer;' + (i === s.day ? 'background:var(--color-primary);color:#fff;font:600 12px Inter' : 'color:var(--content-secondary);font:500 12px Inter'),
+      onPick: () => this.setState({ day: i })
+    }));
+    const dayData = this.DAYS[s.day];
+    const rawEvents = empty ? [] : dayData.events.filter(e => e.gap || !s.hiddenEvents[e.id]);
+    const real = rawEvents.filter(e => !e.gap);
+    const dayEvents = rawEvents.map(e => e.gap
+      ? { isGap: true, isEv: false, gap: e.gap }
+      : { ...e, isEv: true, isGap: false, isExam: e.type === 'exam', style: this.evStyle(e.type), meta: e.room + ' · ' + e.start + ' – ' + e.end, open: () => this.setState({ eventDetail: e }) });
+
+    const ed = s.eventDetail;
+    const kindChip = ed ? { lecture: ['rgba(121,190,21,.15)', '#8dc843'], seminar: ['rgba(0,84,143,.3)', '#7db3d9'], exam: ['rgba(220,38,38,.15)', '#f87171'] }[ed.type] : null;
+
+    const exams = this.EXAMS.map(ex => {
+      const regId = s.registered[ex.id];
+      const regTerm = regId ? ex.terms.find(t => t.id === regId) : null;
+      const openTerms = ex.terms.filter(t => !t.opensAt && t.free > 0);
+      const expanded = s.expandedExam === ex.id && ex.terms.length > 0;
+      const isReg = !!regTerm;
+      return {
+        ...ex, isReg, expanded, noTerms: ex.terms.length === 0,
+        regExpanded: isReg && expanded, collapsedChev: !expanded && ex.terms.length > 0,
+        accentStyle: 'width:3px;align-self:stretch;min-height:32px;border-radius:99px;flex-shrink:0;background:' + (isReg ? '#22c55e' : ex.terms.length === 0 ? '#f59e0b' : openTerms.length ? 'var(--color-primary)' : 'var(--surface-muted)'),
+        statusMain: isReg ? (p => (p[0] || '') + ' ' + (p[1] || ''))(regTerm.label.split(' · '))
+          : ex.terms.length === 0 ? 'brzy'
+          : openTerms.length ? openTerms.length + ' volné' : 'obsazeno',
+        statusMainStyle: 'font:600 13px \'DM Sans\',sans-serif;white-space:nowrap;color:' + (isReg ? '#4ade80' : ex.terms.length === 0 ? '#fbbf24' : openTerms.length ? 'var(--color-primary)' : 'var(--content-secondary)'),
+        statusSub: isReg ? (regTerm.label.split(' · ')[2] || '')
+          : ex.terms.length === 0 ? 'dáme ti vědět'
+          : ex.terms.length + (ex.terms.length === 1 ? ' termín' : ex.terms.length < 5 ? ' termíny' : ' termínů'),
+        cardStyle: 'border-radius:12px;background:var(--color-base-100);border:1px solid ' + (isReg ? 'rgba(34,197,94,.25)' : expanded ? 'rgba(243,244,246,.15)' : 'rgba(243,244,246,.08)') + ';padding:12px 14px;display:flex;flex-direction:column;gap:10px' + (ex.terms.length === 0 ? ';opacity:.65' : ''),
+        regWhen: regTerm ? regTerm.label.split(' · ').slice(0, 2).join(' · ') : '',
+        regRoom: regTerm ? regTerm.label.split(' · ')[2] || '' : '',
+        regMates: (ex.mates || 0) + ' spolužáků na stejném termínu',
+        toggle: () => this.setState({ expandedExam: expanded ? null : ex.id }),
+        unregister: () => this.setState({ confirm: { type: 'unregister', exam: ex, term: regTerm } }),
+        terms: ex.terms.map(tm => {
+          const isRegHere = regId === tm.id;
+          const canRegister = !tm.opensAt && tm.free > 0 && !isRegHere;
+          const armed = !!s.armed[tm.id];
+          return {
+            ...tm, isRegHere, canRegister, watchable: !!tm.opensAt && !isReg,
+            sub: tm.opensAt ? tm.opensAt : ('volno ' + tm.free + ' z ' + tm.cap + (tm.free === 0 ? ' — obsazeno' : '')),
+            style: 'border-radius:8px;border:1px solid ' + (isRegHere ? 'rgba(34,197,94,.4)' : canRegister ? 'rgba(121,190,21,.35)' : 'var(--surface-muted)') + ';' + (canRegister ? 'background:rgba(121,190,21,.05);' : '') + 'padding:10px 12px;display:flex;align-items:center;gap:10px' + (tm.opensAt && !armed ? ';opacity:.7' : ''),
+            register: () => this.setState({ confirm: { type: 'register', exam: ex, term: tm } }),
+            toggleArm: () => { const a = { ...s.armed }; if (a[tm.id]) { delete a[tm.id]; this.setState({ armed: a }); this.toast('Hlídání zrušeno.'); } else { a[tm.id] = true; this.setState({ armed: a }); this.toast('Hlídáme. Přihlásíme tě hned po otevření.'); } },
+            armLabel: armed ? 'Hlídám' : 'Hlídat',
+            armStyle: 'display:flex;align-items:center;gap:4px;font:600 11px Inter;border-radius:8px;padding:8px 10px;cursor:pointer;flex-shrink:0;border:1px solid rgba(245,158,11,.4);' + (armed ? 'background:rgba(245,158,11,.16);color:#fbbf24;animation:dsPulse 1.6s infinite' : 'background:transparent;color:#fbbf24')
+          };
+        })
+      };
+    });
+    const regCount = Object.keys(s.registered).filter(k => s.registered[k]).length;
+    const timeline = [];
+    this.EXAMS.forEach(ex => { const rid = s.registered[ex.id]; if (!rid) return; const t = ex.terms.find(x => x.id === rid); if (t) timeline.push({ t: t.tl, sub: t.tlSub, left: t.left, exam: t.tl.indexOf('dnes') === 0 }); });
+    timeline.sort((a, b) => parseFloat(a.left) - parseFloat(b.left));
+    const tlPts = timeline.map(tp => ({
+      t: tp.t, sub: tp.sub,
+      style: 'position:absolute;left:' + tp.left + ';top:6px;display:flex;flex-direction:column;align-items:center;transform:translateX(-50%)',
+      dotStyle: 'width:14px;height:14px;border-radius:50%;background:' + (tp.exam ? '#dc2626' : 'var(--color-primary)') + ';border:3px solid var(--color-base-200);box-shadow:0 0 0 2px ' + (tp.exam ? '#dc2626' : 'var(--color-primary)')
+    }));
+    tlPts.push({ t: '?', sub: '', style: 'position:absolute;left:92%;top:6px;display:flex;flex-direction:column;align-items:center;transform:translateX(-50%)', dotStyle: 'width:12px;height:12px;border-radius:50%;background:var(--surface-muted);border:3px solid var(--color-base-200)' });
+
+    const sems = this.SEMS.map(sem => {
+      const open = !!s.semOpen[sem.i];
+      const isCur = sem.state === 'current';
+      const gradedCount = sem.subjects.filter(x => x.grade).length;
+      return {
+        title: sem.title, cr: sem.cr || null, open,
+        done: gradedCount + '/' + sem.subjects.length,
+        cardStyle: 'border-radius:12px;background:var(--color-base-100);border:1px solid ' + (isCur ? 'rgba(121,190,21,.3);box-shadow:0 0 0 3px rgba(121,190,21,.08)' : 'rgba(34,197,94,.2)') + ';overflow:hidden',
+        barStyle: 'width:4px;height:30px;border-radius:99px;background:' + (isCur ? 'var(--color-primary)' : '#22c55e') + ';flex-shrink:0',
+        badgeStyle: 'font:600 11px Inter;background:' + (isCur ? 'rgba(121,190,21,.15);color:var(--color-primary)' : 'rgba(34,197,94,.14);color:#4ade80') + ';padding:3px 8px;border-radius:6px',
+        chevStyle: 'flex-shrink:0;transition:transform .2s;' + (open ? 'transform:rotate(180deg)' : ''),
+        toggle: () => this.setState({ semOpen: { ...s.semOpen, [sem.i]: !open } }),
+        rows: sem.subjects.map(sub => ({
+          name: sub.name, note: sub.note || null, crLabel: sub.cr + ' kr.',
+          fail: sub.fail != null ? sub.fail + ' %' : null, failStyle: this.failChip(sub.fail || 0),
+          grade: sub.grade || null, gradeStyle: 'font:600 13px var(--font-mono);color:' + this.gradeColor(sub.grade) + ';flex-shrink:0',
+          open: () => this.setState({ drawer: sub, drawerTab: 'soubory', plan: false })
+        }))
+      };
+    });
+
+    const d = s.drawer;
+    const isDbs = d && d.code === 'EBC-DBS';
+    const drawerFiles = (isDbs ? [
+      { n: '08_transakce.pdf', sub: 'nové · nahráno včera', ic: 'PDF', isNew: true },
+      { n: '07_normalizace.pdf', sub: 'tvoje poznámka: „bude v testu!"', ic: 'PDF' },
+      { n: '06_sql_joiny.pdf', sub: 'přednáška 6', ic: 'PDF' },
+      { n: 'cviceni_sql_data.zip', sub: '12 MB', ic: 'ZIP' }
+    ] : [
+      { n: '01_uvod.pdf', sub: 'přednáška 1', ic: 'PDF' },
+      { n: '02_zaklady.pdf', sub: 'přednáška 2', ic: 'PDF' },
+      { n: 'materialy_cviceni.zip', sub: '8 MB', ic: 'ZIP' }
+    ]).map(f => ({
+      ...f,
+      icStyle: 'width:36px;height:36px;border-radius:8px;display:grid;place-items:center;font:700 9px Inter;flex-shrink:0;' + (f.ic === 'ZIP' ? 'background:rgba(59,130,246,.12);color:#60a5fa' : 'background:rgba(239,68,68,.1);color:#f87171'),
+      download: () => this.toast('Stahujeme ' + f.n)
+    }));
+    const dtStyle = (a) => 'flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 0;border:none;background:transparent;cursor:pointer;border-bottom:2px solid ' + (a ? 'var(--color-primary);color:var(--color-primary)' : 'transparent;color:var(--content-muted)');
+    const dtBadge = (a, n) => 'position:absolute;top:-7px;right:-10px;min-width:14px;height:14px;padding:0 3px;border-radius:99px;font:700 9px Inter;display:flex;align-items:center;justify-content:center;box-sizing:border-box;' + (n === 0 ? 'background:var(--color-base-200);color:var(--content-muted)' : a ? 'background:var(--color-primary);color:#0f172a' : 'background:var(--color-base-300);color:var(--content-secondary)');
+    const pick = (t) => () => this.setState({ drawerTab: t });
+
+    const phArches = [
+      { name: 'Průběžné testy — body', cols: ['T1', 'T2', 'Bonus', 'Celkem'], vals: ['13/15', '11/15', '3', '27/33'] },
+      { name: 'Docházka na cvičení', cols: ['Účast'], vals: ['9 z 10'] }
+    ].map(a => ({
+      name: a.name,
+      cols: a.cols.map(t => ({ t })), vals: a.vals.map(t => ({ t })),
+      gridStyle: 'display:grid;gap:2px 12px;grid-template-columns:repeat(' + a.cols.length + ',minmax(40px,1fr))'
+    }));
+    const chip = (pct) => 'flex-shrink:0;padding:2px 7px;border-radius:6px;font:700 10px var(--font-mono);' + (pct >= 60 ? 'background:rgba(16,185,129,.15);color:#34d399' : pct >= 40 ? 'background:rgba(245,158,11,.15);color:#fbbf24' : 'background:rgba(239,68,68,.15);color:#f87171');
+    const vtRaw = [
+      { name: 'Cvičný test 3 — SQL joiny', attempts: [{ score: '18/20', pct: 90, at: '14. 4. 19:12', teacher: 'Ing. Dvořák' }, { score: '13/20', pct: 65, at: '12. 4. 21:40', teacher: 'Ing. Dvořák' }] },
+      { name: 'Cvičný test 2 — normalizace', attempts: [{ score: '12/20', pct: 60, at: '31. 3. 18:05', teacher: 'Ing. Dvořák' }] },
+      { name: 'Cvičný test 1 — ER model', attempts: [{ score: '7/20', pct: 35, at: '17. 3. 22:48', teacher: 'Ing. Dvořák' }] }
+    ];
+    const vtTests = vtRaw.map((v, i) => {
+      const best = v.attempts.reduce((a, b) => b.pct > a.pct ? b : a, v.attempts[0]);
+      const multi = v.attempts.length > 1;
+      return {
+        name: v.name, multi, countLabel: v.attempts.length + '×',
+        best: best.score + ' (' + best.pct + ' %)', chipStyle: chip(best.pct),
+        open: multi ? !!(s.vtOpen || {})[i] : true,
+        toggle: multi ? () => this.setState({ vtOpen: { ...(s.vtOpen || {}), [i]: !(s.vtOpen || {})[i] } }) : () => {},
+        attempts: v.attempts.map(a => ({ ...a, chipStyle: chip(a.pct) }))
+      };
+    });
+    const zaznamnikCount = phArches.length + vtRaw.length;
+    const gradingRows = [{ k: 'Průběžný test 1', v: '15 b' }, { k: 'Průběžný test 2', v: '15 b' }, { k: 'Zkouška', v: '60 b' }, { k: 'Aktivita na cvičení', v: '10 b' }];
+    const classmates = [
+      { ini: 'AK', name: 'Adam Kovář', grp: 'cvičení út 11:00' }, { ini: 'BN', name: 'Barbora Nováková', grp: 'cvičení út 11:00' },
+      { ini: 'DH', name: 'David Horák', grp: 'cvičení st 9:00' }, { ini: 'EP', name: 'Eliška Pokorná', grp: 'cvičení út 11:00' },
+      { ini: 'JS', name: 'Jakub Svoboda', grp: 'cvičení st 9:00' }, { ini: 'TM', name: 'Tereza Machová', grp: 'cvičení út 11:00' },
+      { ini: 'LV', name: 'Lukáš Veselý', grp: 'cvičení st 9:00' }, { ini: 'KD', name: 'Karolína Doležalová', grp: 'cvičení út 11:00' },
+      { ini: 'MN', name: 'Martin Nešpor', grp: 'cvičení st 9:00' }, { ini: 'VS', name: 'Veronika Sedláčková', grp: 'cvičení út 11:00' }
+    ];
+    const gradeBars = [{ g: 'A', v: 18 }, { g: 'B', v: 24 }, { g: 'C', v: 21 }, { g: 'D', v: 14 }, { g: 'E', v: 9 }, { g: 'F', v: 14 }].map(b => ({
+      g: b.g, pct: b.v + ' %',
+      barStyle: 'width:100%;max-width:34px;height:' + Math.round(b.v * 2.6) + 'px;border-radius:5px 5px 2px 2px;background:' + this.gradeColor(b.g)
+    }));
+
+    const mapEvents = [
+      { id: 'ev1', d: '15', dow: 'stř', title: 'Grilovačka SU PEF', base: 43, sub: '17:00 · před budovou Q', hot: true },
+      { id: 'ev2', d: '16', dow: 'čtv', title: 'Deskovky v knihovně', base: 12, sub: '18:00 · budova A, studovna' },
+      { id: 'ev3', d: '17', dow: 'pát', title: 'ESN welcome drink', base: 28, sub: '20:00 · mimo kampus — Fléda' }
+    ].map(ev => {
+      const going = !!s.rsvp[ev.id];
+      return {
+        ...ev, sub: ev.sub + ' · jde ' + (ev.base + (going ? 1 : 0)) + ' lidí',
+        rowStyle: 'display:flex;align-items:center;gap:12px;padding:11px 16px' + (ev.hot ? ';background:rgba(121,190,21,.07);border-left:3px solid var(--color-primary)' : ''),
+        rsvpLabel: going ? 'Jdeš' : 'Jdu',
+        rsvpStyle: 'font:600 12px Inter;border-radius:8px;padding:8px 14px;cursor:pointer;flex-shrink:0;border:1px solid ' + (going ? 'rgba(34,197,94,.4);background:rgba(34,197,94,.12);color:#4ade80' : 'rgba(121,190,21,.35);background:transparent;color:var(--color-primary)'),
+        toggleRsvp: () => { const r = { ...s.rsvp, [ev.id]: !going }; this.setState({ rsvp: r }); this.toast(going ? 'Zrušeno.' : 'Super, jdeš! Přidáno do kalendáře.'); }
+      };
+    });
+    const libRooms = [
+      { id: 'l1', name: 'Studovna pro 2', acc: 'studovnu pro 2', cap: '2 místa', hours: 'volná 13–16' },
+      { id: 'l2', name: 'Kóje pro 1', acc: 'kóji pro 1', cap: '1 místo', hours: 'volná 10–12 · 15–18' },
+      { id: 'l3', name: 'Týmovka', acc: 'týmovku', cap: '4–8 míst', hours: 'dnes plno', full: true }
+    ].map(r => ({
+      ...r, bookable: !r.full, full: !!r.full,
+      hoursStyle: 'font:400 11.5px Inter;color:' + (r.full ? 'var(--content-muted)' : '#4ade80'),
+      book: () => this.setState({ confirm: { type: 'library', room: r } })
+    }));
+    const buildingRooms = [
+      { r: 'Q01', sub: 'přednášková aula · 180 míst' },
+      { r: 'Q02', sub: 'posluchárna · 90 míst' },
+      { r: 'Q15', sub: 'počítačová učebna · 24 míst', mine: true },
+      { r: 'Q26', sub: 'seminární místnost · 40 míst' }
+    ].map(br => ({ ...br, mine: !!br.mine, rowStyle: 'display:flex;align-items:center;gap:12px;padding:11px 16px' + (br.mine ? ';background:rgba(220,38,38,.06);border-left:3px solid #dc2626' : '') }));
+
+    const c = s.confirm;
+    let confirmVals = {};
+    if (c) {
+      if (c.type === 'register') confirmVals = {
+        confirmTitle: 'Fakt se chceš přihlásit na tenhle termín?', confirmSub: c.term.dereg,
+        confirmLine1: c.exam.subject + ' · ' + c.exam.name, confirmLine2: c.term.label + ' · volno ' + c.term.free + ' z ' + c.term.cap,
+        confirmNote: c.term.note || null, confirmPrimaryLabel: 'Přihlásit',
+        confirmBoxStyle: 'border-radius:12px;border:1px solid rgba(121,190,21,.3);background:rgba(121,190,21,.05);padding:14px;display:flex;flex-direction:column;gap:6px',
+        confirmPrimaryStyle: 'border:none;border-radius:8px;background:var(--color-primary);color:#fff;font:600 14px Inter;padding:14px 0;cursor:pointer',
+        confirmPrimary: () => { this.setState({ registered: { ...s.registered, [c.exam.id]: c.term.id }, confirm: null, expandedExam: null }); this.toast('Super, přihlášeno!'); }
+      };
+      else if (c.type === 'unregister') confirmVals = {
+        confirmTitle: 'Fakt se chceš odhlásit?', confirmSub: 'Termín se může rychle zaplnit — zpátky už se nemusíš dostat.',
+        confirmLine1: c.exam.subject + ' · ' + c.exam.name, confirmLine2: c.term.label, confirmNote: null, confirmPrimaryLabel: 'Odhlásit',
+        confirmBoxStyle: 'border-radius:12px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.05);padding:14px;display:flex;flex-direction:column;gap:6px',
+        confirmPrimaryStyle: 'border:none;border-radius:8px;background:#ef4444;color:#fff;font:600 14px Inter;padding:14px 0;cursor:pointer',
+        confirmPrimary: () => { const r = { ...s.registered }; delete r[c.exam.id]; this.setState({ registered: r, confirm: null, expandedExam: c.exam.id }); this.toast('Odhlášeno.'); }
+      };
+      else confirmVals = {
+        confirmTitle: 'Rezervovat ' + c.room.acc + '?', confirmSub: 'Rezervace je zdarma, potvrzení ti přijde do Outlooku.',
+        confirmLine1: c.room.name + ' · knihovna, budova A', confirmLine2: 'dnes 13:00 – 14:00 · ' + c.room.cap, confirmNote: null, confirmPrimaryLabel: 'Rezervovat',
+        confirmBoxStyle: 'border-radius:12px;border:1px solid rgba(121,190,21,.3);background:rgba(121,190,21,.05);padding:14px;display:flex;flex-direction:column;gap:6px',
+        confirmPrimaryStyle: 'border:none;border-radius:8px;background:var(--color-primary);color:#fff;font:600 14px Inter;padding:14px 0;cursor:pointer',
+        confirmPrimary: () => { this.setState({ confirm: null }); this.toast('Super, zarezervováno!'); }
+      };
+    }
+
+    return {
+      isCal: view === 'calendar', isExams: view === 'exams', isSubjects: view === 'subjects', isMap: view === 'map',
+      goCal: go('calendar'), goExams: go('exams'), goSubjects: go('subjects'), goMap: go('map'),
+      navCalStyle: this.navStyle(view === 'calendar'), navExamsStyle: this.navStyle(view === 'exams'),
+      navSubjectsStyle: this.navStyle(view === 'subjects'), navMapStyle: this.navStyle(view === 'map'),
+      headerDate: ['Pondělí 13. července', 'Úterý 14. července', 'Středa 15. července', 'Čtvrtek 16. července', 'Pátek 17. července'][s.day],
+      showNow: s.day === 0 && !empty && !s.hiddenEvents['e1'],
+      days, dayEvents, dayEmpty: real.length === 0, dayHasEvents: real.length > 0,
+      railStart: real.length ? real[0].start : '', railEnd: real.length ? real[real.length - 1].end : '',
+      eventDetail: !!ed, closeEvent: () => this.setState({ eventDetail: null }),
+      eventDetailTitle: ed ? ed.title : '', eventDetailKind: ed ? ed.kind : '',
+      eventDetailChipStyle: ed ? 'font:700 10px Inter;text-transform:uppercase;letter-spacing:.05em;background:' + kindChip[0] + ';color:' + kindChip[1] + ';padding:3px 8px;border-radius:6px' : '',
+      eventDetailTime: ed ? ed.start + ' – ' + ed.end : '',
+      eventDetailMeta: ed ? ((ed.sub ? ed.sub + ' · ' : '') + ed.room + ' · ' + ed.teacher) : '',
+      showRoute: () => this.setState({ view: 'map', eventDetail: null, selBuilding: 'Q', mapTab: 'budova', mapOpen: true, mapBldg: 0, mapFloorId: 5, selRoom: null, mapTarget: ed ? ed.room : 'Q26' }),
+      hideEvent: () => { const ev = ed; this.setState({ hiddenEvents: { ...s.hiddenEvents, [ev.id]: true }, eventDetail: null }); this.toast('Schováno. Vrátíš to v nastavení.'); },
+      examGroups: [
+        { key: 'reg', title: 'Přihlášené' },
+        { key: 'open', title: 'Otevřené termíny' },
+        { key: 'soon', title: 'Zatím neotevřené' }
+      ].map(g => {
+        const items = exams.filter(e => g.key === 'reg' ? e.isReg : g.key === 'soon' ? (!e.isReg && e.terms.length === 0) : (!e.isReg && e.terms.length > 0));
+        const open = !!s.examGroupOpen[g.key];
+        return { ...g, items, count: items.length, open, closed: !open, toggle: () => this.setState({ examGroupOpen: { ...s.examGroupOpen, [g.key]: !open } }) };
+      }).filter(g => g.count > 0),
+      exams, timeline: tlPts, regCountLabel: regCount === 1 ? '1 přihlášená' : regCount + ' přihlášené', armedAny: Object.keys(s.armed).length > 0,
+      sems, curSemRows: sems[0].rows,
+      avgOpen: s.avgOpen, avgClosed: !s.avgOpen, toggleAvg: () => this.setState({ avgOpen: !s.avgOpen }),
+      planOpen: !!s.plan, openPlan: () => this.setState({ plan: true }), closePlan: () => this.setState({ plan: false }),
+      drawer: !!d, closeDrawer: () => this.setState({ drawer: null }),
+      drawerCodeLine: d ? (d.code + ' · ' + d.cr + ' KR. · ' + (d.type || 'zkouška').toUpperCase()) : '',
+      drawerName: d ? d.name : '', drawerTeacherLine: d ? ((d.teacher || 'garant předmětu') + (d.room ? ' · ' + d.room : '')) : '',
+      tabSoubory: s.drawerTab === 'soubory', tabSylabus: s.drawerTab === 'sylabus', tabSpoluzaci: s.drawerTab === 'spoluzaci', tabUspesnost: s.drawerTab === 'uspesnost', tabZaznamnik: s.drawerTab === 'zaznamnik',
+      tabSouboryStyle: dtStyle(s.drawerTab === 'soubory'), tabSpoluzaciStyle: dtStyle(s.drawerTab === 'spoluzaci'), tabUspesnostStyle: dtStyle(s.drawerTab === 'uspesnost'), tabSylabusStyle: dtStyle(s.drawerTab === 'sylabus'), tabZaznamnikStyle: dtStyle(s.drawerTab === 'zaznamnik'),
+      pickTabSoubory: pick('soubory'), pickTabSpoluzaci: pick('spoluzaci'), pickTabUspesnost: pick('uspesnost'), pickTabSylabus: pick('sylabus'), pickTabZaznamnik: pick('zaznamnik'),
+      countSoubory: drawerFiles.length, badgeSouboryStyle: dtBadge(s.drawerTab === 'soubory', drawerFiles.length),
+      countSpoluzaci: classmates.length, badgeSpoluzaciStyle: dtBadge(s.drawerTab === 'spoluzaci', classmates.length),
+      countZaznamnik: zaznamnikCount, badgeZaznamnikStyle: dtBadge(s.drawerTab === 'zaznamnik', zaznamnikCount),
+      classmatesHeading: classmates.length + ' spolužáků v kruhu',
+      phArches, vtTests, vtHeading: 'Testy · ' + vtTests.length,
+      openIsPrubezne: () => this.toast('Otevíráme IS — průběžné hodnocení'), openIsTesty: () => this.toast('Otevíráme IS — výsledky testů'),
+      drawerFiles, filesHeading: 'Přednášky · ' + drawerFiles.length + ' souborů', downloadAll: () => this.toast('Balíme vše do ZIPu…'),
+      grading: gradingRows.map((g, i) => ({ ...g, rowStyle: 'display:flex;justify-content:space-between;padding:10px 14px' + (i > 0 ? ';border-top:1px solid var(--surface-muted)' : '') })),
+      classmates, gradeBars,
+      mapEvents, libRooms, buildingRooms, selBuilding: s.selBuilding,
+      mapPeek: !s.mapOpen, mapExpanded: s.mapOpen,
+      toggleMapSheet: () => this.setState({ mapOpen: !s.mapOpen }),
+      mapSheetStyle: 'position:absolute;left:0;right:0;bottom:0;background:var(--color-base-100);border-radius:20px 20px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;transition:top .3s ease,height .3s ease;z-index:30;' + (s.mapOpen ? 'top:38%' : 'height:150px'),
+      tabAkce: () => this.setState({ mapTab: 'akce' }), tabKnihovna: () => this.setState({ mapTab: 'knihovna' }), tabBudova: () => this.setState({ mapTab: 'budova' }),
+      tabAkceStyle: this.segStyle(s.mapTab === 'akce'), tabKnihovnaStyle: this.segStyle(s.mapTab === 'knihovna'), tabBudovaStyle: this.segStyle(s.mapTab === 'budova'),
+      mapTabAkce: s.mapTab === 'akce', mapTabKnihovna: s.mapTab === 'knihovna', mapTabBudova: s.mapTab === 'budova' && !!s.selBuilding,
+      mapEl: this.mapEl, mapDrilled: s.mapBldg != null,
+      exitCampus: () => this.setState({ mapBldg: null, selRoom: null, mapTarget: null }),
+      mapFloors: this.floorPills(),
+      theme: s.theme || 'mendelu-dark',
+      profileOpen: !!s.profile,
+      openProfile: () => this.setState({ profile: true }),
+      closeProfile: () => this.setState({ profile: false }),
+      toggleTheme: () => { const next = (s.theme || 'mendelu-dark') === 'mendelu-dark' ? 'mendelu' : 'mendelu-dark'; this.setState({ theme: next }); },
+      themeTrack: this.track((s.theme || 'mendelu-dark') === 'mendelu-dark'), themeKnob: this.knob((s.theme || 'mendelu-dark') === 'mendelu-dark'),
+      pickEn: () => this.toast('English brzy. Zatím česky.'),
+      toggleOutlook: () => { const on = s.outlook ?? true; this.setState({ outlook: !on }); this.toast(on ? 'Sync vypnutá.' : 'Rozvrh posíláme do Outlooku.'); },
+      outlookTrack: this.track(s.outlook ?? true), outlookKnob: this.knob(s.outlook ?? true),
+      outlookSub: (s.outlook ?? true) ? 'naposledy synchronizováno před 12 min' : 'vypnuto',
+      toggleDrive: () => { const on = s.drive ?? false; this.setState({ drive: !on }); this.toast(on ? 'Záloha vypnutá.' : 'Soubory zálohujeme na tvůj Drive.'); },
+      driveTrack: this.track(s.drive ?? false), driveKnob: this.knob(s.drive ?? false),
+      driveSub: (s.drive ?? false) ? 'zálohujeme soubory všech předmětů' : 'vypnuto',
+      hiddenEmpty: Object.keys(s.hiddenEvents || {}).length === 0,
+      hiddenList: Object.keys(s.hiddenEvents || {}).flatMap(id => {
+        for (const day of this.DAYS) { const ev = day.events.find(e => e.id === id); if (ev) return [{ title: ev.title + ' — ' + ev.kind, sub: day.label + ' ' + ev.start + ' · ' + ev.room, restore: () => { const h = { ...s.hiddenEvents }; delete h[id]; this.setState({ hiddenEvents: h }); this.toast('Vráceno do kalendáře.'); } }]; }
+        return [];
+      }),
+      spolky: [{ id: 'supef', name: 'SU PEF' }, { id: 'esn', name: 'ESN' }, { id: 'suldf', name: 'SU LDF' }].map(sp => {
+        const cur = s.spolky || { supef: true };
+        const on = !!cur[sp.id];
+        return { name: sp.name, style: 'font:600 11.5px Inter;padding:7px 12px;border-radius:99px;cursor:pointer;' + (on ? 'background:rgba(121,190,21,.16);color:var(--color-primary);border:1px solid rgba(121,190,21,.35)' : 'background:var(--color-base-200);color:var(--content-muted);border:1px solid transparent'), toggle: () => this.setState({ spolky: { ...cur, [sp.id]: !on } }) };
+      }),
+      openFeedback: () => this.toast('Piš! Každý nápad čteme.'),
+      logout: () => this.toast('Tohle je prototyp — zůstáváš přihlášený.'),
+      isStudent: view === 'student', goStudent: go('student'), navStudentStyle: this.navStyle(view === 'student'),
+      ...this.studentVals(s),
+      confirm: !!c, cancelConfirm: () => this.setState({ confirm: null }),
+      ...confirmVals,
+      toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>
