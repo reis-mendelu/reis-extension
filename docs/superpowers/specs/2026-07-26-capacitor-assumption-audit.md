@@ -33,7 +33,8 @@ Live test, `is.mendelu.cz`, real credentials via the scraper's Playwright login.
 - **§C1 (session lifetime) — narrowed to ≈7 days absolute.** A 40-day-old token is dead, and since IS is *not* single-session, that 403 is genuine expiry rather than login-invalidation. The user reports **not re-logging in on Brave for about 7 days** at a stretch. Per §A, Chromium resurrects session cookies under "Continue where you left off", so the client side keeps `UISAuth` indefinitely — meaning the ~7-day boundary is **server-side**.
   A sliding idle window is unlikely: reIS's 5-minute sync only runs while an IS tab is open, so overnight gaps are 8–12h of zero traffic. A sliding window would have to exceed 12h to survive those, and a >12h sliding window that still dies at a consistent ~7 days doesn't fit. **Absolute ~7-day lifetime is the best-supported reading.**
   Consequence: **cookie restore has a hard 7-day ceiling.** No amount of Keychain machinery avoids weekly re-login on any platform. This sharpens rather than weakens the §C5 question — the workstream's entire value is the delta between re-login *weekly* (the floor) and re-login *on every app kill*.
-  A no-traffic idle probe at +20/40/60/90/120 min is running to confirm the absence of a short sliding window; result pending. To convert "about 7 days" into a number, probe a known-age token daily for a week.
+  **Confirmed by measurement.** A no-traffic idle probe — a token issued, then left completely untouched, with zero intervening requests — stayed authenticated at **+20, +40, +60, +90 and +120 minutes**. There is no short sliding idle window. Combined with the dead 40-day token and the ~7-day Brave observation, an absolute ~7-day lifetime is the only reading that fits all three results.
+  To convert "about 7 days" into an exact number, probe a known-age token once a day for a week.
 
 ### What remains genuinely open
 
