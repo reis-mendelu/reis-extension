@@ -23,6 +23,7 @@ What is **not** negotiable in Tasks 11–20 is the interface block, the test obl
 
 - **Zero parser changes.** `.claude/hooks/guard-parsers.py` runs `PreToolUse` on every `Edit|Write` and will block them. If it fires, the task is wrong, not the hook.
 - **No custom CSS.** Use DaisyUI semantic classes (`bg-base-100`, `btn-primary`, `text-primary`). The design system's own header states: *"Source of truth: reis-mendelu/reis-extension tailwind + daisyUI theme… Prefer DaisyUI semantic classes in product code."*
+  **Permitted exception:** inline `style` for values *computed from data at runtime* — progress-bar widths, conic-gradient stops, timeline offsets. Anything expressible as a class must be a class. This is a narrow carve-out, not a loophole.
 - **No `localStorage` / `sessionStorage`.** Use `IndexedDBService`.
 - **No `useEffect` for data fetching.** Screens consume existing hooks; those hooks own their own fetching.
 - **No proxy / re-export barrel files.** Import directly from the implementation file.
@@ -651,7 +652,7 @@ Completes risk R1. After this task the phone branch exists, is reachable in dev,
 
 **Interfaces:**
 - Consumes: `resolvePhoneViewport` (Task 2); `MobileUiSlice.devPhoneOverride` and `setDevPhoneOverride` (Task 3).
-- Produces: `usePhoneViewport(): boolean`; `<MobileApp logic={...} />` rendering a container with `data-testid="mobile-app"`. Tasks 5–20 fill `MobileApp` in.
+- Produces: `usePhoneViewport(): boolean`; `<MobileApp />` (no props) rendering a container with `data-testid="mobile-app"`. Tasks 5–20 fill `MobileApp` in.
 
 - [ ] **Step 1: Write the failing hook test**
 
@@ -718,19 +719,19 @@ Create `src/components/mobile/MobileApp.tsx`:
 
 ```tsx
 import { Toaster } from '../ui/sonner';
-import type { useAppLogic } from '../../hooks/useAppLogic';
-
-export interface MobileAppProps {
-    logic: ReturnType<typeof useAppLogic>;
-}
 
 /**
- * Root of the phone UI. Mounts its own Toaster: App.tsx's Toaster lives inside
- * the desktop return, so the early phone branch would otherwise have no toast
- * host and every confirmation would silently do nothing.
+ * Root of the phone UI. Takes no props: `useAppLogic()` returns desktop-local
+ * state (currentView, selectedSubject, currentDate) that the mobile UI slice
+ * replaces, so there is nothing to thread through. It is still CALLED
+ * unconditionally in App.tsx above the branch — that is what owns IDB
+ * hydration and the REIS_READY handshake — we simply do not pass its result.
+ *
+ * Mounts its own Toaster: App.tsx's Toaster lives inside the desktop return,
+ * so the phone branch would otherwise have no toast host and every
+ * confirmation would silently do nothing.
  */
-export function MobileApp({ logic }: MobileAppProps) {
-    void logic; // consumed from Task 6 onwards
+export function MobileApp() {
     return (
         <div
             data-testid="mobile-app"
@@ -763,11 +764,15 @@ function App() {
   const handleToday = () => s.setCurrentDate(getSmartWeekRange().start);
   const getDateRangeLabel = () => { /* unchanged */ };
 
-  if (isPhone) return <MobileApp logic={s} />;
+  if (isPhone) return <MobileApp />;
 
   return ( /* existing desktop tree, unchanged */ );
 }
 ```
+
+`s` stays bound because the desktop tree below uses it; the phone branch simply
+does not consume it. Do **not** move the `useAppLogic()` call inside a
+condition — hooks must run unconditionally.
 
 - [ ] **Step 6: Wire the dev override in `dev/main.web.tsx`**
 
@@ -1193,15 +1198,9 @@ import { ExamsScreen } from './screens/ExamsScreen';
 import { SubjectsScreen } from './screens/SubjectsScreen';
 import { MapScreen } from './screens/MapScreen';
 import { StudentScreen } from './screens/StudentScreen';
-import type { useAppLogic } from '../../hooks/useAppLogic';
 
-export interface MobileAppProps {
-    logic: ReturnType<typeof useAppLogic>;
-}
-
-export function MobileApp({ logic }: MobileAppProps) {
+export function MobileApp() {
     const tab = useAppStore((s) => s.mobileTab);
-    void logic; // consumed by the drawer sheet in Task 14
 
     return (
         <div
@@ -1239,6 +1238,7 @@ git commit -m "feat(mobile): add bottom nav and screen router"
 The two derivations behind the Kalendář screen. Both take an injected `now` so they are deterministic. Prototype reference: lines 45–51 (hero), 66–84 (agenda + gaps).
 
 **Files:**
+- Create: `src/test/fixtures/lesson.ts`
 - Create: `src/utils/mobile/nowNext.ts`
 - Create: `src/utils/mobile/dayAgenda.ts`
 - Test: `src/utils/mobile/__tests__/nowNext.test.ts`
@@ -1250,24 +1250,49 @@ The two derivations behind the Kalendář screen. Both take an injected `now` so
   - `resolveNowNext(lessons: BlockLesson[], now: Date): NowNext | null` where `NowNext = { current: BlockLesson; elapsedPct: number; minutesLeft: number; next: BlockLesson | null }`.
   - `buildDayAgenda(lessons: BlockLesson[], dayIso: string): AgendaRow[]` where `AgendaRow = { type: 'event'; lesson: BlockLesson } | { type: 'gap'; minutes: number }`.
 
-- [ ] **Step 1: Write the failing `nowNext` test**
+- [ ] **Step 1: Create the shared lesson fixture**
+
+Three test files need the same `BlockLesson` factory, so it lives in one place. Create `src/test/fixtures/lesson.ts`:
+
+```ts
+import type { BlockLesson } from '../../types/calendarTypes';
+
+/**
+ * A minimal valid BlockLesson for tests. Defaults to Monday 2026-04-20,
+ * 09:00–10:50 in Q01; override whatever the test cares about.
+ */
+export function makeLesson(over: Partial<BlockLesson> = {}): BlockLesson {
+    return {
+        id: 'l1',
+        date: '20260420',
+        startTime: '09:00',
+        endTime: '10:50',
+        courseName: 'Management',
+        courseCode: 'EBC-MAN',
+        courseId: '1',
+        room: 'Q01',
+        roomStructured: {} as BlockLesson['roomStructured'],
+        teachers: [],
+        periodId: '',
+        studyId: '',
+        campus: '',
+        isDefaultCampus: '',
+        facultyCode: '',
+        isSeminar: 'false',
+        isConsultation: 'false',
+        ...over,
+    };
+}
+```
+
+- [ ] **Step 2: Write the failing `nowNext` test**
 
 Create `src/utils/mobile/__tests__/nowNext.test.ts`:
 
 ```ts
 import { describe, it, expect } from 'vitest';
 import { resolveNowNext } from '../nowNext';
-import type { BlockLesson } from '../../../types/calendarTypes';
-
-const lesson = (over: Partial<BlockLesson>): BlockLesson =>
-  ({
-    id: 'l1', date: '20260420', startTime: '09:00', endTime: '10:50',
-    courseName: 'Management', courseCode: 'EBC-MAN', courseId: '1',
-    room: 'Q01', roomStructured: {} as never, teachers: [], periodId: '',
-    studyId: '', campus: '', isDefaultCampus: '', facultyCode: '',
-    isSeminar: 'false', isConsultation: 'false',
-    ...over,
-  }) as BlockLesson;
+import { makeLesson as lesson } from '../../../test/fixtures/lesson';
 
 describe('resolveNowNext', () => {
   it('returns null when nothing is running', () => {
@@ -1311,12 +1336,12 @@ describe('resolveNowNext', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 3: Run test to verify it fails**
 
 Run: `npx vitest run src/utils/mobile/__tests__/nowNext.test.ts`
 Expected: FAIL — "Failed to resolve import ... nowNext".
 
-- [ ] **Step 3: Write `nowNext.ts`**
+- [ ] **Step 4: Write `nowNext.ts`**
 
 Create `src/utils/mobile/nowNext.ts`:
 
@@ -1369,29 +1394,19 @@ export function resolveNowNext(lessons: BlockLesson[], now: Date): NowNext | nul
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 5: Run test to verify it passes**
 
 Run: `npx vitest run src/utils/mobile/__tests__/nowNext.test.ts`
 Expected: PASS, 6 tests.
 
-- [ ] **Step 5: Write the failing `dayAgenda` test**
+- [ ] **Step 6: Write the failing `dayAgenda` test**
 
 Create `src/utils/mobile/__tests__/dayAgenda.test.ts`:
 
 ```ts
 import { describe, it, expect } from 'vitest';
 import { buildDayAgenda } from '../dayAgenda';
-import type { BlockLesson } from '../../../types/calendarTypes';
-
-const lesson = (over: Partial<BlockLesson>): BlockLesson =>
-  ({
-    id: 'l1', date: '20260420', startTime: '09:00', endTime: '10:50',
-    courseName: 'Management', courseCode: 'EBC-MAN', courseId: '1',
-    room: 'Q01', roomStructured: {} as never, teachers: [], periodId: '',
-    studyId: '', campus: '', isDefaultCampus: '', facultyCode: '',
-    isSeminar: 'false', isConsultation: 'false',
-    ...over,
-  }) as BlockLesson;
+import { makeLesson as lesson } from '../../../test/fixtures/lesson';
 
 describe('buildDayAgenda', () => {
   it('returns an empty list for a day with no lessons', () => {
@@ -1439,12 +1454,12 @@ describe('buildDayAgenda', () => {
 });
 ```
 
-- [ ] **Step 6: Run test to verify it fails**
+- [ ] **Step 7: Run test to verify it fails**
 
 Run: `npx vitest run src/utils/mobile/__tests__/dayAgenda.test.ts`
 Expected: FAIL — "Failed to resolve import ... dayAgenda".
 
-- [ ] **Step 7: Write `dayAgenda.ts`**
+- [ ] **Step 8: Write `dayAgenda.ts`**
 
 Create `src/utils/mobile/dayAgenda.ts`:
 
@@ -1490,12 +1505,12 @@ export function buildDayAgenda(lessons: BlockLesson[], dayIso: string): AgendaRo
 }
 ```
 
-- [ ] **Step 8: Run tests to verify they pass**
+- [ ] **Step 9: Run tests to verify they pass**
 
 Run: `npx vitest run src/utils/mobile/`
 Expected: PASS, 11 tests.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 git add src/utils/mobile/
@@ -1531,14 +1546,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { CalendarScreen } from '../CalendarScreen';
 import { useAppStore } from '../../../../store/useAppStore';
-
-const lesson = (over: Record<string, unknown>) => ({
-  id: 'l1', date: '20260420', startTime: '09:00', endTime: '10:50',
-  courseName: 'Management', courseCode: 'EBC-MAN', courseId: '1', room: 'Q01',
-  roomStructured: {}, teachers: [], periodId: '', studyId: '', campus: '',
-  isDefaultCampus: '', facultyCode: '', isSeminar: 'false', isConsultation: 'false',
-  ...over,
-});
+import { makeLesson as lesson } from '../../../../test/fixtures/lesson';
 
 describe('CalendarScreen', () => {
   beforeEach(() => {
