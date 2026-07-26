@@ -35,28 +35,28 @@ export function ConfirmSheet({ pendingAction, onConfirm, onCancel }: ConfirmShee
                 onClose={onCancel}
             />
             <div className="flex flex-col gap-3 px-4 pb-5">
-                <p className="text-xs text-content-secondary">
+                <p className="text-xs text-base-content/70">
                     {isRegister ? t('exams.confirmation.registerBody') : t('exams.confirmation.unregisterBody')}
                 </p>
                 <div className="flex flex-col gap-2 rounded-xl bg-base-200 p-3">
-                    <span className="text-sm font-semibold text-content-primary">{section.name}</span>
+                    <span className="text-sm font-semibold text-base-content">{section.name}</span>
                     {term && (
-                        <div className="flex flex-col gap-1.5 text-xs text-content-secondary">
+                        <div className="flex flex-col gap-1.5 text-xs text-base-content/70">
                             {term.date && (
                                 <span className="flex items-center gap-1.5">
-                                    <Calendar size={13} className="text-content-muted" />
+                                    <Calendar size={13} className="text-base-content/60" />
                                     {term.date}
                                 </span>
                             )}
                             {term.time && (
                                 <span className="flex items-center gap-1.5">
-                                    <Clock size={13} className="text-content-muted" />
+                                    <Clock size={13} className="text-base-content/60" />
                                     {term.time}
                                 </span>
                             )}
                             {term.room && (
                                 <span className="flex items-center gap-1.5">
-                                    <MapPin size={13} className="text-content-muted" />
+                                    <MapPin size={13} className="text-base-content/60" />
                                     {term.room}
                                 </span>
                             )}
@@ -67,7 +67,7 @@ export function ConfirmSheet({ pendingAction, onConfirm, onCancel }: ConfirmShee
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="min-h-11 flex-1 rounded-xl border border-base-300 text-sm font-semibold text-content-secondary"
+                        className="min-h-11 flex-1 rounded-xl border border-base-300 text-sm font-semibold text-base-content/70"
                     >
                         {t('common.cancel')}
                     </button>

@@ -74,7 +74,7 @@ export function ExamsScreen() {
                         <Calendar size={28} />
                     </div>
                     <div className="font-display text-base font-bold">{t('mobile.exams.emptyTitle')}</div>
-                    <div className="max-w-56 text-2xs text-content-muted">{t('mobile.exams.emptyBody')}</div>
+                    <div className="max-w-56 text-2xs text-base-content/60">{t('mobile.exams.emptyBody')}</div>
                 </div>
             ) : (
                 <>

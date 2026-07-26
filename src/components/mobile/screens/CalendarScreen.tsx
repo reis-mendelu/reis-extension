@@ -128,8 +128,8 @@ export function CalendarScreen() {
                         >
                             <AlertTriangle size={16} className="flex-shrink-0 text-warning" />
                             <div className="flex min-w-0 flex-col">
-                                <span className="truncate text-xs font-semibold text-content-primary">{alert.title}</span>
-                                <span className="truncate text-2xs text-content-secondary">{alert.body}</span>
+                                <span className="truncate text-xs font-semibold text-base-content">{alert.title}</span>
+                                <span className="truncate text-2xs text-base-content/70">{alert.body}</span>
                             </div>
                         </div>
                     ))}
@@ -143,7 +143,7 @@ export function CalendarScreen() {
                 className="mx-4 mt-3 flex flex-shrink-0 items-center gap-1.5 self-start rounded-lg border border-base-300 bg-base-100/60 px-3 py-1.5"
             >
                 <Pin size={14} className="text-primary" />
-                <span className="text-xs font-semibold text-content-primary">{t('bulletin.title')}</span>
+                <span className="text-xs font-semibold text-base-content">{t('bulletin.title')}</span>
             </button>
             <MobileBulletinOverlay
                 isOpen={bulletinExpanded}
@@ -162,7 +162,7 @@ export function CalendarScreen() {
                             <Calendar size={28} />
                         </div>
                         <div className="font-display text-base font-bold">{t('mobile.calendar.emptyTitle')}</div>
-                        <div className="max-w-56 text-2xs text-content-muted">{t('mobile.calendar.emptyBody')}</div>
+                        <div className="max-w-56 text-2xs text-base-content/60">{t('mobile.calendar.emptyBody')}</div>
                     </div>
                 ) : (
                     <DayAgenda

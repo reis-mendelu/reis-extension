@@ -46,7 +46,7 @@ export function DayChips({ weekStart, selectedIso, onSelect }: DayChipsProps) {
                         className={`flex-1 rounded-full py-2 text-center text-xs transition-colors ${
                             isSelected
                                 ? 'bg-primary font-semibold text-primary-content'
-                                : 'font-medium text-content-secondary'
+                                : 'font-medium text-base-content/70'
                         }`}
                     >
                         {label} {date.getDate()}

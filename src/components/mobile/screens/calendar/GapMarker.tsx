@@ -15,7 +15,7 @@ export function GapMarker({ minutes }: GapMarkerProps) {
     return (
         <div data-testid="agenda-gap" className="flex items-center gap-2 py-0.5">
             <div className="h-px flex-1 bg-base-300" />
-            <span className="text-2xs font-medium text-content-muted">{label}</span>
+            <span className="text-2xs font-medium text-base-content/60">{label}</span>
             <div className="h-px flex-1 bg-base-300" />
         </div>
     );

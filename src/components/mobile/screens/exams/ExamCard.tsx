@@ -53,8 +53,8 @@ export function ExamCard({ subject, section, isProcessing, onRegister, onUnregis
                 className={`flex items-center gap-3 ${hasTerms ? 'cursor-pointer' : ''}`}
             >
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="truncate text-sm font-semibold text-content-primary">{subjectName}</span>
-                    <span className="truncate text-xs text-content-muted">{sectionName}</span>
+                    <span className="truncate text-sm font-semibold text-base-content">{subjectName}</span>
+                    <span className="truncate text-xs text-base-content/60">{sectionName}</span>
                 </div>
                 {isRegistered ? (
                     <span className="flex-shrink-0 text-2xs font-bold text-success">{t('exams.registered')}</span>
@@ -63,15 +63,15 @@ export function ExamCard({ subject, section, isProcessing, onRegister, onUnregis
                 )}
                 {hasTerms && (
                     expanded
-                        ? <ChevronUp size={14} className="flex-shrink-0 text-content-muted" />
-                        : <ChevronDown size={14} className="flex-shrink-0 text-content-muted" />
+                        ? <ChevronUp size={14} className="flex-shrink-0 text-base-content/60" />
+                        : <ChevronDown size={14} className="flex-shrink-0 text-base-content/60" />
                 )}
             </div>
 
             {isRegistered && section.registeredTerm && (
                 <div className="flex flex-col gap-2">
                     {classmates !== null && (
-                        <span className="text-2xs text-content-secondary">
+                        <span className="text-2xs text-base-content/70">
                             {classmates.length > 0
                                 ? t('mobile.exams.mates', { count: classmates.length })
                                 : t('mobile.exams.matesNone')}

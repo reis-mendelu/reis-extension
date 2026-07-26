@@ -37,7 +37,7 @@ export function BottomNav() {
                         aria-label={t(labelKey)}
                         onClick={() => setMobileTab(id)}
                         className={`flex min-h-11 min-w-11 items-center gap-1.5 rounded-full px-3 transition-colors ${
-                            active ? 'bg-primary/15 text-primary' : 'text-content-muted'
+                            active ? 'bg-primary/15 text-primary' : 'text-base-content/60'
                         }`}
                     >
                         <Icon className="h-[19px] w-[19px]" />

@@ -18,13 +18,13 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
                     <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
                     {t('mobile.calendar.nowRunning')}
                 </span>
-                <span className="text-xs font-semibold text-content-muted">
+                <span className="text-xs font-semibold text-base-content/60">
                     {t('mobile.calendar.endsIn', { minutes: minutesLeft })}
                 </span>
             </div>
             <div className="flex flex-col gap-0.5">
                 <span className="font-display text-lg font-bold tracking-tight">{current.courseName}</span>
-                <span className="text-xs text-content-secondary">
+                <span className="text-xs text-base-content/70">
                     {current.room} · {current.startTime} – {current.endTime}
                     {teacher && ` · ${teacher}`}
                 </span>
@@ -34,7 +34,7 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
             </div>
             {next && (
                 <div className="flex items-center justify-between pt-0.5">
-                    <span className="text-xs font-medium text-content-muted">
+                    <span className="text-xs font-medium text-base-content/60">
                         {t('mobile.calendar.next', { title: `${next.courseName} · ${next.room} · ${next.startTime}` })}
                     </span>
                     <button onClick={onRoute} className="py-1.5 pl-3 text-xs font-semibold text-primary">

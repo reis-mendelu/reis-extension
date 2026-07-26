@@ -22,7 +22,7 @@ export function SheetHeader({ title, subtitle, eyebrow, onClose }: SheetHeaderPr
                         </span>
                     )}
                     <span className="font-display text-lg font-bold tracking-tight">{title}</span>
-                    {subtitle && <span className="text-xs text-content-muted">{subtitle}</span>}
+                    {subtitle && <span className="text-xs text-base-content/60">{subtitle}</span>}
                 </div>
                 {onClose && (
                     <button

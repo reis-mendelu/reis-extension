@@ -11,7 +11,7 @@ export function ScreenHeader({ eyebrow, title, action }: ScreenHeaderProps) {
     return (
         <div className="flex flex-shrink-0 items-end justify-between px-5 pb-1 pt-5">
             <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-medium text-content-muted">{eyebrow}</span>
+                <span className="text-xs font-medium text-base-content/60">{eyebrow}</span>
                 <span className="font-display text-2xl font-extrabold tracking-tight">{title}</span>
             </div>
             {action}

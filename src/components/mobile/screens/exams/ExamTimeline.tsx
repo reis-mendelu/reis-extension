@@ -22,8 +22,8 @@ export function ExamTimeline({ points }: ExamTimelineProps) {
                             className="absolute top-0 flex -translate-x-1/2 flex-col items-center gap-1"
                         >
                             <span className="h-2.5 w-2.5 rounded-full border-2 border-base-100 bg-primary" />
-                            <span className="whitespace-nowrap text-2xs font-bold text-content-primary">{point.subjectCode}</span>
-                            <span className="whitespace-nowrap text-2xs text-content-muted">{point.label}</span>
+                            <span className="whitespace-nowrap text-2xs font-bold text-base-content">{point.subjectCode}</span>
+                            <span className="whitespace-nowrap text-2xs text-base-content/60">{point.label}</span>
                         </div>
                     );
                 })}
