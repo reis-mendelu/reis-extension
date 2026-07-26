@@ -36,8 +36,15 @@ export function useWatchdog(term: ExamTerm): UseWatchdogResult {
 
     // Once the parsed URL catches up to the optimistic value, drop the override
     // so the URL is authoritative again for any future external state changes.
+    //
+    // This is React's "adjust state when props change" case, which the modern
+    // guidance says to do during render rather than in an effect. Moved here
+    // verbatim from TermBuiltinActions as a behaviour-preserving extraction, so
+    // the pattern is carried over unchanged rather than rewritten in the same
+    // commit. Tracked for a proper fix in issue #157.
     useEffect(() => {
         if (optimisticArmed !== null && urlArmed === optimisticArmed) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setOptimisticArmed(null);
         }
     }, [urlArmed, optimisticArmed]);
