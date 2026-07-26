@@ -8,6 +8,8 @@ import type { BlockLesson } from '../../types/calendarTypes';
 import type { ParsedFile, CourseMetadata, SubjectInfo } from '../../types/documents';
 import type { SelectedSubject } from '../../types/app';
 
+export type DrawerTab = 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
+
 export interface DrawerHeaderProps {
     lesson: BlockLesson | SelectedSubject | null;
     courseId: string;
