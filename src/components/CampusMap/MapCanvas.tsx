@@ -24,7 +24,11 @@ import {
   REMOTE_IDS,
 } from './mapLayers';
 import { setMapInstance } from './mapInstance';
-import { LIBRARY_PLACE_IDS, libraryRoomsByPlaceId } from '@/data/map/libraryRooms';
+import {
+  LIBRARY_PLACE_IDS,
+  libraryRoomsByPlaceId,
+  libraryHoverLabel,
+} from '@/data/map/libraryRooms';
 import { isBookableToday } from '@/services/library/nextSlot';
 import type { RoomAvailability } from '@/types/library';
 
@@ -268,7 +272,10 @@ export function MapCanvas() {
           // hover, to avoid a wall of overlapping numbers.
           const pb = poly.getBounds();
           const big = pb.getNorthEast().distanceTo(pb.getSouthWest()) > 12;
-          poly.bindTooltip(roomLabel(p.name, p.passportNumber, p.nickname), {
+          const label = LIBRARY_PLACE_IDS.has(p.id)
+            ? (libraryHoverLabel(p.id) ?? roomLabel(p.name, p.passportNumber, p.nickname))
+            : roomLabel(p.name, p.passportNumber, p.nickname);
+          poly.bindTooltip(label, {
             permanent: big,
             direction: 'center',
             className: big ? 'room-label' : '',

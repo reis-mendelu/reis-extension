@@ -25,7 +25,6 @@ export default defineConfig({
     'import.meta.env.VITE_DEV_SOCIETY': JSON.stringify(process.env.VITE_DEV_SOCIETY ?? 'reis'),
   },
   server: {
-    port: 3000,
-    strictPort: true,
+    port: Number(process.env.PORT) || 3000,
   },
 });
