@@ -57,7 +57,12 @@ export function SubjectsScreen() {
         </button>
     );
 
-    if (!plan) {
+    // A KontrolaPlanu that failed to parse still comes back as an object
+    // (creditsAcquired: 0, creditsRequired: 0, blocks: []) rather than null —
+    // Erasmus/exchange students in particular never have a parseable plan.
+    // Treat that shape as absent so we render the empty state instead of a
+    // broken "0 %" ring. Mirrors desktop's planUsable check (SubjectsPanel/index.tsx).
+    if (!plan || !plan.blocks.some((b) => b.groups.some((g) => g.subjects.length > 0))) {
         return (
             <div data-testid="subjects-screen" className="flex flex-1 flex-col overflow-hidden">
                 <ScreenHeader eyebrow="" title={t('mobile.subjects.title')} action={headerAction} />

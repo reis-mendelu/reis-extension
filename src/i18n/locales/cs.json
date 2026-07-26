@@ -1146,6 +1146,7 @@
       "title": "Předměty",
       "studyPlan": "Studijní plán",
       "creditsOf": "{earned} / {total} kreditů",
+      "creditProgress": "Splněno {pct} % kreditů",
       "currentSemester": "{n}. semestr",
       "running": "právě běží · {credits} kr.",
       "doneOf": "{done}/{total} hotovo",

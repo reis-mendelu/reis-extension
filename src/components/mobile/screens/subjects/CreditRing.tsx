@@ -18,6 +18,8 @@ export function CreditRing({ earned, total }: CreditRingProps) {
     return (
         <div className="flex flex-shrink-0 items-center gap-4 rounded-2xl border border-base-300 bg-base-100 p-4 shadow-card">
             <div
+                role="img"
+                aria-label={t('mobile.subjects.creditProgress', { pct })}
                 className="relative flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full"
                 style={{ background: `conic-gradient(var(--color-primary) 0% ${pct}%, var(--color-base-300) ${pct}% 100%)` }}
             >

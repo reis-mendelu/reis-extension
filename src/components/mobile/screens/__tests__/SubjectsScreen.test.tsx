@@ -71,11 +71,31 @@ describe('SubjectsScreen', () => {
         expect(screen.getByText('Zatím žádné předměty')).toBeInTheDocument();
     });
 
+    it('renders the empty state for an unparseable plan (blocks: []) instead of a broken 0 % ring', () => {
+        // parseStudyPlanDOM never returns null — when the credits label and
+        // subject rows aren't found it returns { creditsAcquired: 0, creditsRequired: 0, blocks: [] }.
+        // Erasmus/exchange students in particular hit this shape.
+        const emptyPlan = plan({ creditsAcquired: 0, creditsRequired: 0, blocks: [] });
+        useAppStore.setState({ studyPlanDual: { cz: emptyPlan, en: emptyPlan } } as never);
+        render(<SubjectsScreen />);
+        expect(screen.getByText('Zatím žádné předměty')).toBeInTheDocument();
+        expect(screen.queryByText('0 / 0 kreditů')).not.toBeInTheDocument();
+        expect(screen.queryByRole('img', { name: /kreditů/ })).not.toBeInTheDocument();
+    });
+
     it('shows the credit ring for a seeded plan', () => {
         const p = plan();
         useAppStore.setState({ studyPlanDual: { cz: p, en: p } } as never);
         render(<SubjectsScreen />);
         expect(screen.getByText('96 / 180 kreditů')).toBeInTheDocument();
+    });
+
+    it('pins the computed ring percentage so an inverted fill fraction fails', () => {
+        const p = plan({ creditsAcquired: 96, creditsRequired: 180 });
+        useAppStore.setState({ studyPlanDual: { cz: p, en: p } } as never);
+        render(<SubjectsScreen />);
+        // Math.round((96 / 180) * 100) = 53; the inverted (total/earned) form would yield 188.
+        expect(screen.getByRole('img', { name: 'Splněno 53 % kreditů' })).toBeInTheDocument();
     });
 
     it('keeps the average accordion collapsed by default and reveals the averages on tap', () => {

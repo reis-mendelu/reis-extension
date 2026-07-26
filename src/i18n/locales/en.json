@@ -1146,6 +1146,7 @@
       "title": "Courses",
       "studyPlan": "Study plan",
       "creditsOf": "{earned} / {total} credits",
+      "creditProgress": "{pct}% of credits completed",
       "currentSemester": "Semester {n}",
       "running": "in progress · {credits} cr.",
       "doneOf": "{done}/{total} done",
