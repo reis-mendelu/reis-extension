@@ -1104,5 +1104,91 @@
     "saveError": "Nepodařilo se uložit — zkuste to znovu",
     "manageButton": "Spravovat spolek",
     "reisAdminNote": "Přihlášen jako reIS admin. Akce se spravují u konkrétního spolku."
+  },
+  "mobile": {
+    "nav": {
+      "calendar": "Kalendář",
+      "exams": "Zkoušky",
+      "subjects": "Předměty",
+      "map": "Mapa",
+      "student": "Student"
+    },
+    "calendar": {
+      "greeting": "Ahoj, {name}",
+      "nowRunning": "Teď běží",
+      "endsIn": "konec za {minutes} min",
+      "next": "Pak: {title}",
+      "route": "Trasa →",
+      "emptyTitle": "Nic nemáš, pohodička",
+      "emptyBody": "Žádné přednášky ani cvičení. Užij si volno!",
+      "gap": "{hours} h volno",
+      "gapMinutes": "{minutes} min volno",
+      "notifications": "Oznámení"
+    },
+    "exams": {
+      "title": "Zkoušky",
+      "registeredCount": "{count} přihlášeno",
+      "groupUpcoming": "Nadcházející",
+      "groupOther": "Ostatní",
+      "register": "Přihlásit",
+      "unregister": "Odhlásit",
+      "yourTerm": "tvůj termín",
+      "full": "obsazeno",
+      "mates": "{count} spolužáků na tomto termínu",
+      "matesNone": "Zatím nikdo ze spolužáků",
+      "emptyTitle": "Žádné zkoušky",
+      "emptyBody": "Až se objeví termíny, najdeš je tady."
+    },
+    "subjects": {
+      "title": "Předměty",
+      "studyPlan": "Studijní plán",
+      "creditsOf": "{earned} / {total} kreditů",
+      "currentSemester": "{n}. semestr",
+      "running": "právě běží · {credits} kr.",
+      "doneOf": "{done}/{total} hotovo",
+      "average": "Studijní průměr",
+      "avgSemester": "Tento semestr",
+      "avgTotal": "Za celé studium",
+      "avgWeighted": "Vážený průměr",
+      "beats": "Překonáváš {pct} % studentů ve svém ročníku.",
+      "topTier": "Jsi v top {pct} % ročníku.",
+      "rank": "Pořadí v ročníku",
+      "emptyTitle": "Zatím žádné předměty",
+      "emptyBody": "Předměty se objeví po zápisu."
+    },
+    "map": {
+      "searchPlaceholder": "Najdi místnost, budovu, akci…",
+      "wholeCampus": "Celý kampus",
+      "tabEvents": "Akce",
+      "tabLibrary": "Knihovna",
+      "tabBuilding": "Budova {name}",
+      "peekHint": "Vytáhni pro události a rezervaci",
+      "thisWeek": "Tenhle týden",
+      "emptyTitle": "Mapa se nenačetla",
+      "emptyBody": "Zkus to prosím znovu."
+    },
+    "student": {
+      "title": "Student",
+      "subtitle": "IS MENDELU v kapse",
+      "tabPages": "Stránky IS",
+      "tabPeople": "Lidé",
+      "searchPages": "Hledej stránku v IS…",
+      "searchPeople": "Hledej člověka…",
+      "results": "Výsledky",
+      "yourTeachers": "Tvoji vyučující",
+      "noResults": "Nic jsme nenašli. Zkus to jinak.",
+      "eduroam": "Eduroam",
+      "eduroamSub": "Wi-Fi na 2 kliky",
+      "documents": "Dokumenty",
+      "documentsSub": "potvrzení o studiu",
+      "erasmus": "Erasmus",
+      "erasmusSub": "Learning Agreement",
+      "iskam": "ISKAM",
+      "iskamSub": "menza a koleje"
+    },
+    "sheet": {
+      "close": "Zavřít",
+      "cancel": "Radši ne"
+    }
   }
 }
