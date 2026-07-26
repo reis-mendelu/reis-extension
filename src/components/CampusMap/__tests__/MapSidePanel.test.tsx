@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// EventsList (the default "events" tab body) pulls in useEventsFacultySettings,
+// MapEventsSection (the default "events" tab body) pulls in useEventsFacultySettings,
 // which does async IndexedDB + chrome.storage work via useEffect. Mocked here
 // (as the pre-existing suite for this file did) so these tab-behavior tests
 // stay synchronous and don't emit act() noise unrelated to what's under test.

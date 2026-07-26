@@ -106,11 +106,13 @@ function RoomRow({
   );
 }
 
-// The library pin opens this: a compact overview of every study room. The rooms
-// are free to book and split by the question a student asks first — "just me,
-// or a group?". A day + hour picker checks any specific slot; by default each
-// row shows the picked day's open hours. One button books on the Outlook page.
-export function LibraryOverviewPanel() {
+// The library overview: a compact list of every study room, shared by the
+// desktop DetailPanel (opened from the library pin) and the mobile map
+// sheet's Knihovna tab. The rooms are free to book and split by the question a
+// student asks first — "just me, or a group?". A day + hour picker checks any
+// specific slot; by default each row shows the picked day's open hours. One
+// button books on the Outlook page.
+export function MapLibrarySection() {
   const { t, language } = useTranslation();
   const availabilityMap = useAppStore((s) => s.libraryAvailability);
   const loaded = useAppStore((s) => s.libraryAvailabilityLoaded);

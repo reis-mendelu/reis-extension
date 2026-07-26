@@ -7,11 +7,11 @@ import { readableTextColor } from '../../utils/readableTextColor';
 import { filterEvents, weekSections } from './eventHelpers';
 import { EventRow } from './EventRow';
 
-// Body of the MapSidePanel "Events" tab: an All / My-faculty filter and the
-// upcoming events grouped into "This week" / "Next week", soonest first. Rows
-// open the bottom-left detail card (off-campus rows open it too but don't move
-// the map).
-export function EventsList() {
+// The events tab body shared by the desktop MapSidePanel and the mobile map
+// sheet's Akce tab: an All / My-faculty filter and the upcoming events grouped
+// into "This week" / "Next week", soonest first. Rows open the bottom-left
+// detail card on desktop (off-campus rows open it too but don't move the map).
+export function MapEventsSection() {
   const mode = useAppStore((s) => s.mapMode);
   const publicEvents = useAppStore((s) => s.mapEvents);
   const societyEvents = useAppStore((s) => s.societyMapEvents);
