@@ -84,6 +84,31 @@ describe('MapScreen', () => {
     expect(screen.getByText('Studovny knihovny')).toBeInTheDocument();
   });
 
+  it('typing in the search bar updates mapSearchQuery', () => {
+    const setMapSearchQuery = vi.fn();
+    useAppStore.setState({ setMapSearchQuery, mapSearchQuery: '', mapSearchResults: [] });
+    render(<MapScreen />);
+    fireEvent.change(screen.getByPlaceholderText('Najdi místnost, budovu, akci…'), { target: { value: 'Q01' } });
+    expect(setMapSearchQuery).toHaveBeenCalledWith('Q01');
+  });
+
+  it('shows search results and focuses the room on click, then clears the query', () => {
+    const focusRoomByCode = vi.fn();
+    const setMapSearchQuery = vi.fn();
+    useAppStore.setState({
+      focusRoomByCode,
+      setMapSearchQuery,
+      mapSearchQuery: 'Q01',
+      mapSearchResults: [
+        { kind: 'roomRef', entry: { code: 'Q01', name: 'Q01', buildingId: 1, floorId: 1, floorLevel: 1, placeId: 1 } },
+      ],
+    } as never);
+    render(<MapScreen />);
+    fireEvent.click(screen.getByText('Q01'));
+    expect(focusRoomByCode).toHaveBeenCalledWith('Q01');
+    expect(setMapSearchQuery).toHaveBeenCalledWith('');
+  });
+
   it('does not show a Budova tab when no building is selected', () => {
     useAppStore.setState({ mapSheetState: 'expanded' });
     render(<MapScreen />);

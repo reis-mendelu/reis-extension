@@ -1,8 +1,18 @@
 import { Search } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useAppStore } from '../../../store/useAppStore';
 import { MapCanvas } from '../../CampusMap/MapCanvas';
+import { roomLabel } from '../../CampusMap/mapHelpers';
+import type { MapSelection } from '../../../types/campusMap';
 import { FloorSwitcher } from './map/FloorSwitcher';
 import { MapSheet } from './map/MapSheet';
+
+function resultLabel(m: MapSelection): string {
+    if (m.kind === 'poi') return m.poi.name;
+    if (m.kind === 'roomRef') return roomLabel(m.entry.name, m.entry.code, m.entry.nickname);
+    if (m.kind === 'landmark') return m.landmark.name;
+    return '';
+}
 
 /**
  * Mapa screen: `MapCanvas` (the shared, unmodified Leaflet instance — same
@@ -26,19 +36,58 @@ import { MapSheet } from './map/MapSheet';
  */
 export function MapScreen() {
     const { t } = useTranslation();
+    const query = useAppStore((s) => s.mapSearchQuery);
+    const results = useAppStore((s) => s.mapSearchResults);
+    const setQuery = useAppStore((s) => s.setMapSearchQuery);
+    const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
+    const focusPoiById = useAppStore((s) => s.focusPoiById);
+    const focusLandmarkById = useAppStore((s) => s.focusLandmarkById);
+
+    const selectResult = (m: MapSelection) => {
+        if (m.kind === 'poi') focusPoiById(m.poi.id);
+        else if (m.kind === 'roomRef') focusRoomByCode(m.entry.code);
+        else if (m.kind === 'landmark') focusLandmarkById(m.landmark.id);
+        setQuery('');
+    };
 
     return (
         <div data-testid="map-screen" className="relative isolate flex flex-1 flex-col overflow-hidden">
             <MapCanvas />
             <FloorSwitcher />
-            <div
-                className="relative z-[1000] mx-4 mt-4 flex items-center gap-2.5 rounded-full px-4 py-3 backdrop-blur-md"
-                style={{ background: 'rgba(31,41,55,.94)', border: '1px solid rgba(243,244,246,.1)' }}
-            >
-                <Search size={17} style={{ color: '#9ca3af' }} aria-hidden="true" />
-                <span className="text-[13.5px]" style={{ color: '#9ca3af' }}>
-                    {t('mobile.map.searchPlaceholder')}
-                </span>
+            <div className="relative z-[1000] mx-4 mt-4">
+                <label
+                    className="flex items-center gap-2.5 rounded-full px-4 py-3 backdrop-blur-md"
+                    style={{ background: 'rgba(31,41,55,.94)', border: '1px solid rgba(243,244,246,.1)' }}
+                >
+                    <Search size={17} style={{ color: '#9ca3af' }} aria-hidden="true" />
+                    <input
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder={t('mobile.map.searchPlaceholder')}
+                        aria-label={t('mobile.map.searchPlaceholder')}
+                        className="w-full flex-1 bg-transparent text-[13.5px] outline-none"
+                        style={{ color: '#f3f4f6' }}
+                    />
+                </label>
+                {results.length > 0 && (
+                    <ul
+                        className="absolute mt-1.5 max-h-64 w-full overflow-auto rounded-2xl backdrop-blur-md"
+                        style={{ background: 'rgba(31,41,55,.96)', border: '1px solid rgba(243,244,246,.1)' }}
+                    >
+                        {results.map((m, i) => (
+                            <li key={i}>
+                                <button
+                                    type="button"
+                                    onClick={() => selectResult(m)}
+                                    className="w-full px-4 py-2.5 text-left text-[13.5px]"
+                                    style={{ color: '#f3f4f6' }}
+                                >
+                                    {resultLabel(m)}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </div>
             <MapSheet />
         </div>
