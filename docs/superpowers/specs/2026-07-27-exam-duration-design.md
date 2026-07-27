@@ -48,7 +48,7 @@ the same label/value cell shape verified against a real 2026-07 sample:
 | Sync enrichment | `src/services/sync/examDurations.ts` | Cache reuse, concurrency cap, failure isolation |
 | Wiring | `src/injector/syncService.ts` | Both the phase-2b path and `refreshExams` |
 | Consumption | `src/components/WeeklyCalendar/useCalendarData.ts` | `durationMinutes ?? 90` |
-| Layout floor | `src/components/WeeklyCalendar/utils.ts` | `getEventStyle` minimum block height |
+| Layout floor | `src/components/WeeklyCalendar/utils.ts` | `renderedBlockMinutes` — shared by `getEventStyle` and the card |
 
 `termDuration.ts` is a new file rather than an extension of `terminyInfo.ts`
 because that file was already at 189 lines against the repo's 200-line cap.
@@ -87,12 +87,25 @@ length could not be read.
 ### Short-exam rendering
 
 A 10-minute block is ~1.2% of the 14-hour grid — about 7px — which clips the
-card's subject, room and teacher. `getEventStyle` therefore floors the rendered
-*height* at 30 minutes' worth of grid.
+card's subject, room and teacher. The grid therefore floors the rendered
+*height* at **90 minutes**' worth of grid, via `renderedBlockMinutes` in
+`WeeklyCalendar/utils.ts`.
 
-This is deliberately layout-only. `startTime`/`endTime` stay truthful, so the
-card label and tooltip still read `12:00 - 12:10` and `organizeLessons` overlap
-detection still uses real times.
+90 rather than something smaller because `CalendarEventCard` independently gates
+the subject and room on `duration >= 60`. That was invisibly always-true while
+every exam was assumed to last 90 minutes; real durations flipped it false for
+short exams, so the first attempt at a 30-minute floor still produced a block
+labelled only "exam". Both `getEventStyle` and the card now read the same
+`renderedBlockMinutes` helper, so the two cannot drift apart again.
+
+The floor is deliberately layout-only. `startTime`/`endTime` stay truthful, so
+the card label and tooltip still read `12:00 - 12:10` and `organizeLessons`
+overlap detection still uses real times.
+
+**Residual risk:** overlap detection uses true times while the block is drawn at
+the floored height, so a 10-minute exam followed by a lesson 30 minutes later
+can overlap visually without the layout assigning them separate columns. Not
+observed in the mock week; worth revisiting if it shows up with real data.
 
 ## Known gap
 
@@ -108,11 +121,13 @@ silently degrading to the fallback.
 - `enrichExamsWithDurations` — 9 tests: cache reuse, no-mutation, per-term
   failure isolation, concurrency cap
 - `useCalendarData` — 10min → `09:55`, 180min → `12:45`, absent → `11:15`
-- `getEventStyle` — clamp applies to short blocks, leaves 90min/180min untouched
+- `getEventStyle` / `renderedBlockMinutes` — a 10min block draws the same height as
+  a 90min one, 180min is left untouched, the block start never shifts
 
-Confirmed in the running dev webapp with four registered mock exams:
-180min → `08:00-11:00`, 10min → `12:00-12:10` (28px, clamped), 90min and
-absent-duration → `13:30-15:00` / `15:30-17:00`.
+Confirmed in the running dev webapp with four registered mock exams, after a
+hard reload: 180min → `08:00-11:00` at 21.4286% (166px); 10min → `12:00-12:10`
+at 10.7143% (83px), i.e. the same box as the 90min term, rendering its subject,
+room and true span; 90min → `13:30-15:00`; absent-duration → `15:30-17:00`.
 
 ## Privacy
 
