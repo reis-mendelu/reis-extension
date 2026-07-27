@@ -1,12 +1,17 @@
 import type { NowNext } from '../../../../utils/mobile/nowNext';
 import { useTranslation } from '../../../../hooks/useTranslation';
+import { localizedCourseName, localizedRoom } from '../../../../utils/localizedLesson';
 
 export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => void }) {
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
     const { current, next, elapsedPct, minutesLeft } = data;
     // Teacher has fullName/shortName, not `.name` — the prototype's placeholder
     // data used a plain `.name` field that doesn't exist on the real type.
     const teacher = current.teachers[0]?.fullName ?? '';
+    const currentName = localizedCourseName(current, language);
+    const currentRoom = localizedRoom(current, language);
+    const nextName = next ? localizedCourseName(next, language) : '';
+    const nextRoom = next ? localizedRoom(next, language) : '';
 
     return (
         <div
@@ -23,9 +28,9 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
                 </span>
             </div>
             <div className="flex flex-col gap-0.5">
-                <span className="font-display text-lg font-bold tracking-tight">{current.courseName}</span>
+                <span className="font-display text-lg font-bold tracking-tight">{currentName}</span>
                 <span className="text-xs text-base-content/70">
-                    {current.room} · {current.startTime} – {current.endTime}
+                    {currentRoom} · {current.startTime} – {current.endTime}
                     {teacher && ` · ${teacher}`}
                 </span>
             </div>
@@ -35,7 +40,7 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
             {next && (
                 <div className="flex items-center justify-between pt-0.5">
                     <span className="text-xs font-medium text-base-content/60">
-                        {t('mobile.calendar.next', { title: `${next.courseName} · ${next.room} · ${next.startTime}` })}
+                        {t('mobile.calendar.next', { title: `${nextName} · ${nextRoom} · ${next.startTime}` })}
                     </span>
                     <button onClick={onRoute} className="py-1.5 pl-3 text-xs font-semibold text-primary">
                         {t('mobile.calendar.route')}

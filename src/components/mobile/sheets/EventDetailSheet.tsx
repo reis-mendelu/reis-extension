@@ -5,6 +5,7 @@ import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import type { MobileSheet } from '../../../store/types';
 import type { BlockLesson } from '../../../types/calendarTypes';
+import { localizedCourseName, localizedRoom } from '../../../utils/localizedLesson';
 
 type EventDetailSheetData = Extract<MobileSheet, { kind: 'eventDetail' }>;
 
@@ -43,8 +44,8 @@ export function EventDetailSheet({ sheet, onClose }: EventDetailSheetProps) {
     const lesson = schedule.find((l) => l.id === sheet.eventId);
     if (!lesson) return null;
 
-    const courseName = (language === 'en' ? lesson.courseNameEn : lesson.courseNameCs) ?? lesson.courseName;
-    const room = (language === 'en' ? lesson.roomEn : lesson.roomCs) ?? lesson.room;
+    const courseName = localizedCourseName(lesson, language);
+    const room = localizedRoom(lesson, language);
     const teacher = lesson.teachers[0]?.fullName;
     const subtitle = `${room} · ${lesson.startTime}–${lesson.endTime}${teacher ? ` · ${teacher}` : ''}`;
 

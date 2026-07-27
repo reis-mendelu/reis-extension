@@ -1,6 +1,7 @@
 import { MapPin } from 'lucide-react';
 import type { BlockLesson } from '../../../../types/calendarTypes';
 import { useTranslation } from '../../../../hooks/useTranslation';
+import { localizedCourseName, localizedRoom } from '../../../../utils/localizedLesson';
 
 export interface AgendaEventProps {
     lesson: BlockLesson;
@@ -26,8 +27,8 @@ function eventStyles(lesson: BlockLesson) {
 
 export function AgendaEvent({ lesson, onOpen }: AgendaEventProps) {
     const { t, language } = useTranslation();
-    const courseName = (language === 'en' ? lesson.courseNameEn : lesson.courseNameCs) ?? lesson.courseName;
-    const room = (language === 'en' ? lesson.roomEn : lesson.roomCs) ?? lesson.room;
+    const courseName = localizedCourseName(lesson, language);
+    const room = localizedRoom(lesson, language);
     const teacher = lesson.teachers[0]?.fullName;
     const styles = eventStyles(lesson);
 
