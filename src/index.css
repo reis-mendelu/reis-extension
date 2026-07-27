@@ -30,26 +30,6 @@ body,
   --app-vh: 100dvh;
 }
 
-/* DM Sans — display face for the phone UI. Files already ship in public/fonts. */
-@font-face {
-  font-family: 'DM Sans';
-  src: url('/fonts/dm-sans-regular.woff2') format('woff2');
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'DM Sans';
-  src: url('/fonts/dm-sans-medium.woff2') format('woff2');
-  font-weight: 500 600;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'DM Sans';
-  src: url('/fonts/dm-sans-bold.woff2') format('woff2');
-  font-weight: 700 800;
-  font-display: swap;
-}
-
 @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -207,6 +187,10 @@ body,
 
   /* Typography */
   --font-inter: 'Inter', sans-serif;
+  /* No DM Sans file is currently bundled (public/fonts/dm-sans-*.woff2 were
+     Google-Fonts 404 pages, not real fonts — removed, see @font-face
+     history). This falls through to Inter and will pick up DM Sans
+     automatically the moment real font files are added. */
   --font-display: 'DM Sans', 'Inter', sans-serif;
   --text-2xs: 10px;
   --text-2xs--line-height: 14px;
