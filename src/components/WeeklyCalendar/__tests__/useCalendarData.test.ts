@@ -103,3 +103,58 @@ describe('useCalendarData', () => {
         expect(result.current.weekDates[0].weekday).toBe('Mon');
     });
 });
+
+describe('useCalendarData exam duration', () => {
+    const thursdayFeb12 = new Date(2026, 1, 12);
+
+    const examWith = (durationMinutes?: number) => ([{
+        version: 1 as const,
+        id: 'SUB',
+        name: 'Hospodářská politika',
+        code: 'EBC-HP',
+        sections: [{
+            id: 'sec-1',
+            name: 'zkouška',
+            type: 'zkouška',
+            status: 'registered' as const,
+            registeredTerm: {
+                id: '339715',
+                date: '12.02.2026',
+                time: '09:45',
+                room: '5.28',
+                teacher: 'Ing. Jan Novák, Ph.D.',
+                ...(durationMinutes !== undefined ? { durationMinutes } : {}),
+            },
+            terms: [],
+        }],
+    }]);
+
+    const renderWithExam = (durationMinutes?: number) => {
+        vi.clearAllMocks();
+        vi.mocked(useSchedule).mockReturnValue({ schedule: [], isLoaded: true, weekStart: null, status: 'success', isSyncing: false } as UseScheduleResult);
+        vi.mocked(useExams).mockReturnValue({ exams: examWith(durationMinutes) as any, isLoaded: true, error: null, lastSync: null, retry: () => {} });
+        vi.mocked(useAppStore).mockImplementation((selector: any) => selector({
+            language: 'cz',
+            syncStatus: { handshakeDone: true, handshakeTimedOut: false, isSyncing: false },
+            customEvents: [],
+            hiddenItems: { events: [], courses: [] },
+            teachingWeekData: null,
+        }));
+        const { result } = renderHook(() => useCalendarData(thursdayFeb12));
+        return result.current.scheduleData.find((l: any) => l.isExam);
+    };
+
+    it('ends a 10-minute oral exam at 09:55, not 11:15', () => {
+        const exam = renderWithExam(10);
+        expect(exam?.startTime).toBe('09:45');
+        expect(exam?.endTime).toBe('09:55');
+    });
+
+    it('honours a longer written exam', () => {
+        expect(renderWithExam(180)?.endTime).toBe('12:45');
+    });
+
+    it('falls back to 90 minutes when IS published no duration', () => {
+        expect(renderWithExam(undefined)?.endTime).toBe('11:15');
+    });
+});

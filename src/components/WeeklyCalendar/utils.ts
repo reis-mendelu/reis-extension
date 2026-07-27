@@ -20,12 +20,20 @@ export function timeToPercent(time: string): number {
     return (totalMinutesFrom7 / totalMinutesInDay) * 100;
 }
 
+// Shortest block the grid can draw and still show the card's text. A 10-minute
+// oral exam is only ~1.2% of a 14-hour day — about 7px — which clips the subject,
+// room and teacher entirely. Clamping is deliberately layout-only: startTime and
+// endTime stay truthful everywhere else (card label, tooltip, overlap math), so
+// a 09:45 exam still reads "09:45 - 09:55".
+const MIN_VISUAL_BLOCK_MINUTES = 30;
+
 export function getEventStyle(startTime: string, endTime: string): { top: string; height: string } {
     const topPercent = timeToPercent(startTime);
     const bottomPercent = timeToPercent(endTime);
+    const minHeightPercent = (MIN_VISUAL_BLOCK_MINUTES / (TOTAL_HOURS * 60)) * 100;
     return {
         top: `${topPercent}%`,
-        height: `${bottomPercent - topPercent}%`,
+        height: `${Math.max(bottomPercent - topPercent, minHeightPercent)}%`,
     };
 }
 

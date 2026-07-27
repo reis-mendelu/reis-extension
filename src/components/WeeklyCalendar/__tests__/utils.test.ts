@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { organizeLessons } from '../utils';
+import { organizeLessons, getEventStyle } from '../utils';
 import type { BlockLesson } from '../../../types/calendarTypes';
 
 describe('organizeLessons', () => {
@@ -125,5 +125,27 @@ describe('organizeLessons', () => {
         // Last two should be 50% width
         expect(organized.find(l => l.id === '4')?.maxColumns).toBe(2);
         expect(organized.find(l => l.id === '5')?.maxColumns).toBe(2);
+    });
+});
+
+describe('getEventStyle minimum visual height', () => {
+    const pct = (s: string) => parseFloat(s);
+
+    it('clamps a 10-minute exam to a readable block', () => {
+        const tiny = getEventStyle('09:45', '09:55');
+        // 10 min of a 14h day is ~1.19% — unreadable. Floor is 30 min ≈ 3.57%.
+        expect(pct(tiny.height)).toBeCloseTo((30 / (14 * 60)) * 100, 5);
+    });
+
+    it('does not move the block start when clamping', () => {
+        expect(getEventStyle('09:45', '09:55').top).toBe(getEventStyle('09:45', '11:15').top);
+    });
+
+    it('leaves a normal 90-minute block untouched', () => {
+        expect(pct(getEventStyle('09:45', '11:15').height)).toBeCloseTo((90 / (14 * 60)) * 100, 5);
+    });
+
+    it('leaves a long block untouched', () => {
+        expect(pct(getEventStyle('09:00', '12:00').height)).toBeCloseTo((180 / (14 * 60)) * 100, 5);
     });
 });

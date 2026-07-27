@@ -7,6 +7,9 @@ import { getWeekForDate } from '../../api/teachingWeek';
 import { isLessonHidden } from '../../utils/hiddenLessons';
 import type { BlockLesson, DateInfo } from '../../types/calendarTypes';
 
+/** Used only when IS Mendelu doesn't publish a length for the term. */
+const DEFAULT_EXAM_MINUTES = 90;
+
 export function useCalendarData(initialDate: Date) {
   const { schedule: storedSchedule, isLoaded: isScheduleLoaded } = useSchedule();
   const teachingWeekData = useAppStore((state) => state.teachingWeekData);
@@ -57,6 +60,7 @@ export function useCalendarData(initialDate: Date) {
             title: `${subject.name} - ${section.name}`,
             start: parseDate(section.registeredTerm.date, section.registeredTerm.time),
             location: section.registeredTerm.room || 'Unknown',
+            durationMinutes: section.registeredTerm.durationMinutes,
             meta: {
               teacher: section.registeredTerm.teacher || 'Unknown',
               teacherId: section.registeredTerm.teacherId || '',
@@ -70,7 +74,13 @@ export function useCalendarData(initialDate: Date) {
       const dateObj = new Date(exam.start);
       const dateStr = `${dateObj.getFullYear()}${String(dateObj.getMonth() + 1).padStart(2, '0')}${String(dateObj.getDate()).padStart(2, '0')}`;
       const startTime = `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
-      const endObj = new Date(dateObj.getTime() + 90 * 60000);
+      // "Délka trvání akce" from the term detail page, attached during sync
+      // (services/sync/examDurations.ts). IS omits it on some terms and the
+      // fetch can fail, so keep the historical 90-minute assumption as the
+      // fallback rather than inventing a different one.
+      const endObj = new Date(
+        dateObj.getTime() + (exam.durationMinutes ?? DEFAULT_EXAM_MINUTES) * 60000
+      );
       return {
         id: `exam-${exam.id}-${exam.start}`,
         date: dateStr,

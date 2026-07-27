@@ -54,6 +54,7 @@ export interface ExamSection {
         roomCs?: string;     // Localized room name (Czech)
         roomEn?: string;     // Localized room name (English)
         deregistrationDeadline?: string;  // When deregistration closes (format: "DD.MM.YYYY HH:MM")
+        durationMinutes?: number;  // "Délka trvání akce" from terminy_info.pl; undefined when IS omits it
     };
     terms: ExamTerm[];
 }
