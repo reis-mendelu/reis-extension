@@ -1200,7 +1200,9 @@
       "openInIsMendelu": "Otevřít v IS MENDELU",
       "showOnMap": "Ukázat na mapě",
       "writeEmail": "Napsat e-mail",
-      "showOfficeOnMap": "Ukázat kancelář na mapě"
+      "showOfficeOnMap": "Ukázat kancelář na mapě",
+      "personLoading": "Načítání…",
+      "personLoadError": "Osobu se nepodařilo načíst."
     },
     "profile": {
       "appearance": "Vzhled",

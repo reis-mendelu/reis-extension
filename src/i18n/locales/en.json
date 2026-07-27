@@ -1200,7 +1200,9 @@
       "openInIsMendelu": "Open in IS MENDELU",
       "showOnMap": "Show on map",
       "writeEmail": "Write email",
-      "showOfficeOnMap": "Show office on map"
+      "showOfficeOnMap": "Show office on map",
+      "personLoading": "Loading…",
+      "personLoadError": "Couldn't load this person."
     },
     "profile": {
       "appearance": "Appearance",

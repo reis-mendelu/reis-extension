@@ -1,4 +1,4 @@
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, AlertTriangle } from 'lucide-react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { PasswordChip } from '../../Eduroam/PasswordChip';
@@ -35,14 +35,21 @@ function NumberBadge({ n }: { n: number }) {
  */
 export function EduroamSheet({ onClose }: EduroamSheetProps) {
     const { t } = useTranslation();
-    const { status, password, qrDataUrl, run } = useEduroamSetup();
     const target = detectTarget();
+    const { status, password, qrDataUrl, error, run } = useEduroamSetup(target);
     const working = status === 'working';
 
     return (
         <Sheet size="content" onClose={onClose}>
             <SheetHeader title={t('eduroam.heroTitle')} subtitle={t('eduroam.subtitle')} onClose={onClose} />
             <div className="flex flex-col gap-3.5 px-4 pb-6">
+                {status === 'error' && (
+                    <div className="alert alert-error text-sm">
+                        <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                        <span>{t('eduroam.error')}{error ? `: ${error}` : ''}</span>
+                    </div>
+                )}
+
                 <div className="flex items-center gap-3">
                     <NumberBadge n={1} />
                     <div className="min-w-0 flex-1">

@@ -102,6 +102,32 @@ describe('EduroamSheet', () => {
         expect(run).toHaveBeenCalledWith('ios');
     });
 
+    it('calls useEduroamSetup with the detected target so the password prefetch runs immediately', () => {
+        mockedIsMobile.mockReturnValue(false);
+        mockedIsMac.mockReturnValue(false);
+        mockedUseEduroamSetup.mockReturnValue(baseHookState());
+        useAppStore.setState({ language: 'cz' } as never);
+
+        render(<EduroamSheet onClose={vi.fn()} />);
+
+        expect(mockedUseEduroamSetup).toHaveBeenCalledWith('windows');
+    });
+
+    it('shows an error alert with the message when status is error, instead of failing silently', () => {
+        mockedIsMobile.mockReturnValue(false);
+        mockedIsMac.mockReturnValue(false);
+        mockedUseEduroamSetup.mockReturnValue({
+            ...baseHookState(),
+            status: 'error',
+            error: 'Session expired',
+        });
+        useAppStore.setState({ language: 'cz' } as never);
+
+        render(<EduroamSheet onClose={vi.fn()} />);
+
+        expect(screen.getByText(/Session expired/)).toBeInTheDocument();
+    });
+
     it('closes via the header close button', () => {
         mockedIsMobile.mockReturnValue(false);
         mockedIsMac.mockReturnValue(false);

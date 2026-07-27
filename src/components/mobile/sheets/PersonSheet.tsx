@@ -34,7 +34,7 @@ function initials(name: string): string {
 export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
     const { t } = useTranslation();
     const numericId = Number(sheet.personId);
-    const { profile } = usePersonProfile(Number.isFinite(numericId) ? numericId : undefined);
+    const { profile, isLoading, error } = usePersonProfile(Number.isFinite(numericId) ? numericId : undefined);
     const photo = usePersonPhoto(sheet.personId);
     const { schedule } = useSchedule();
     const setMobileTab = useAppStore((s) => s.setMobileTab);
@@ -43,9 +43,16 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
     const taughtLesson = schedule.find((l) => l.teachers.some((teacher) => teacher.id === sheet.personId));
     const roomLabel = taughtLesson?.room;
 
-    const name = profile?.name ?? sheet.personId;
+    // Never the raw IS id: the search result that opened this sheet already
+    // knows the display name (`personName`), so that's the immediate title —
+    // no loading flash. `profile.name` supersedes it once the fetch resolves.
+    // If neither is available, show an explicit loading/error state instead
+    // (never falling back to `sheet.personId`).
+    const name = profile?.name ?? sheet.personName;
+    const title = name ?? (isLoading ? t('mobile.sheet.personLoading') : t('mobile.sheet.personLoadError'));
     const roleLine = profile?.studyTypeSentence || profile?.programmeName || undefined;
     const email = profile?.universityEmail || profile?.privateEmail || null;
+    const placeholderText = isLoading ? t('mobile.sheet.personLoading') : error || t('mobile.sheet.personLoadError');
 
     const onShowOnMap = () => {
         if (!taughtLesson) return;
@@ -56,47 +63,51 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
 
     return (
         <Sheet size="content" onClose={onClose}>
-            <SheetHeader title={name} subtitle={roleLine} onClose={onClose} />
-            <div className="flex flex-col gap-3 px-4 pb-5">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-sm font-bold text-primary">
-                        {photo ? <img src={photo} alt={name} className="h-full w-full object-cover" /> : initials(name)}
+            <SheetHeader title={title} subtitle={roleLine} onClose={onClose} />
+            {!name ? (
+                <p className="px-5 pb-5 text-xs text-base-content/60">{placeholderText}</p>
+            ) : (
+                <div className="flex flex-col gap-3 px-4 pb-5">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-sm font-bold text-primary">
+                            {photo ? <img src={photo} alt={name} className="h-full w-full object-cover" /> : initials(name)}
+                        </div>
+                        <div className="flex min-w-0 flex-col gap-1.5 text-xs text-base-content/70">
+                            {email && (
+                                <span className="flex items-center gap-2 truncate">
+                                    <Mail size={13} className="flex-shrink-0 text-base-content/50" />
+                                    <span className="truncate">{email}</span>
+                                </span>
+                            )}
+                            {roomLabel && (
+                                <span className="flex items-center gap-2 truncate">
+                                    <MapPin size={13} className="flex-shrink-0 text-base-content/50" />
+                                    <span className="truncate">{roomLabel}</span>
+                                </span>
+                            )}
+                        </div>
                     </div>
-                    <div className="flex min-w-0 flex-col gap-1.5 text-xs text-base-content/70">
+                    <div className="flex flex-col gap-2">
                         {email && (
-                            <span className="flex items-center gap-2 truncate">
-                                <Mail size={13} className="flex-shrink-0 text-base-content/50" />
-                                <span className="truncate">{email}</span>
-                            </span>
+                            <a
+                                href={`mailto:${email}`}
+                                className="flex min-h-11 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-content"
+                            >
+                                {t('mobile.sheet.writeEmail')}
+                            </a>
                         )}
-                        {roomLabel && (
-                            <span className="flex items-center gap-2 truncate">
-                                <MapPin size={13} className="flex-shrink-0 text-base-content/50" />
-                                <span className="truncate">{roomLabel}</span>
-                            </span>
+                        {taughtLesson && (
+                            <button
+                                type="button"
+                                onClick={onShowOnMap}
+                                className="flex min-h-11 items-center justify-center rounded-xl border border-base-300 text-sm font-semibold text-base-content/70"
+                            >
+                                {t('mobile.sheet.showOfficeOnMap')}
+                            </button>
                         )}
                     </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                    {email && (
-                        <a
-                            href={`mailto:${email}`}
-                            className="flex min-h-11 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-content"
-                        >
-                            {t('mobile.sheet.writeEmail')}
-                        </a>
-                    )}
-                    {taughtLesson && (
-                        <button
-                            type="button"
-                            onClick={onShowOnMap}
-                            className="flex min-h-11 items-center justify-center rounded-xl border border-base-300 text-sm font-semibold text-base-content/70"
-                        >
-                            {t('mobile.sheet.showOfficeOnMap')}
-                        </button>
-                    )}
-                </div>
-            </div>
+            )}
         </Sheet>
     );
 }

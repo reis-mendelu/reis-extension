@@ -463,7 +463,7 @@ export type MobileSheet =
   | { kind: 'subjectDrawer'; courseCode: string; courseName?: string; courseId?: string }
   | { kind: 'studyPlan' }
   | { kind: 'profile' }
-  | { kind: 'person'; personId: string }
+  | { kind: 'person'; personId: string; personName?: string }
   | { kind: 'eduroam' }
   | { kind: 'docs' }
   | { kind: 'erasmus' }

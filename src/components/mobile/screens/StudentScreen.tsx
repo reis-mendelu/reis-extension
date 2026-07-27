@@ -70,7 +70,7 @@ export function StudentScreen() {
 
     const openPerson = (result: SearchResult) => {
         saveToHistory(result);
-        pushSheet({ kind: 'person', personId: result.id });
+        pushSheet({ kind: 'person', personId: result.id, personName: result.title });
     };
 
     const noResultsText = t('mobile.student.noResults');

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { saveAs } from 'file-saver';
 import QRCode from 'qrcode';
 import { fetchEduroamCertMaterial, fetchEduroamPassword } from '../../api/eduroam';
@@ -16,9 +16,16 @@ export const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.u
 // macOS deep link straight to the Profiles / Device Management pane.
 const PROFILES_SETTINGS_URL = 'x-apple.systempreferences:com.apple.preferences.configurationprofiles';
 
-export function useEduroamSetup() {
+/**
+ * @param autoSelectTarget When provided (the eduroam sheet's platform, resolved
+ * synchronously with no device picker), runs the same `selectTarget` flow the
+ * desktop drawer only fires on user click — once, on mount — so the password
+ * prefetch (`fetchEduroamPassword`) runs immediately and a returning student
+ * sees their password chip instead of the placeholder.
+ */
+export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
   const [status, setStatus] = useState<EduroamStatus>('idle');
-  const [target, setTarget] = useState<EduroamTarget>(isMac ? 'mac' : 'ios');
+  const [target, setTarget] = useState<EduroamTarget>(autoSelectTarget ?? (isMac ? 'mac' : 'ios'));
   const [password, setPassword] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +90,17 @@ export function useEduroamSetup() {
     setPassword(null);
     setQrDataUrl(null);
   }, []);
+
+  // Fires selectTarget exactly once, only when a caller (the sheet) hands us a
+  // pre-resolved target. The desktop drawer never passes autoSelectTarget, so
+  // this is a no-op there — selection stays a user click.
+  const didAutoSelect = useRef(false);
+  useEffect(() => {
+    if (autoSelectTarget && !didAutoSelect.current) {
+      didAutoSelect.current = true;
+      selectTarget(autoSelectTarget);
+    }
+  }, [autoSelectTarget, selectTarget]);
 
   // Custom-scheme link: hand off to the OS without navigating the iframe.
   const openProfilesSettings = useCallback(() => {
