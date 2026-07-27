@@ -62,7 +62,9 @@ export const supefDataset: SocietyDataset = {
             room: 'Q01',
             teacher: 'Ing. Alena Melicharová, Ph.D.',
             teacherId: 'melicharova-alena',
-            deregistrationDeadline: '11.02.2026 23:59'
+            deregistrationDeadline: '11.02.2026 23:59',
+            // Long written exam — renders visibly taller than the old flat 1.5h.
+            durationMinutes: 180
           },
           terms: [
             {
@@ -80,6 +82,85 @@ export const supefDataset: SocietyDataset = {
               canRegisterNow: true
             }
           ]
+        }
+      ]
+    },
+    // Three more registered terms on the same day so the weekly calendar shows
+    // every exam-duration case side by side: a 10-minute oral (clamped to the
+    // minimum readable block height), a 90-minute written, and one where IS
+    // published no length at all (falls back to 90).
+    {
+      version: 1,
+      id: 'exam-hp',
+      name: 'Hospodářská politika',
+      code: 'EBC-HP',
+      sections: [
+        {
+          id: 'hp-zkouska',
+          name: 'exam',
+          type: 'exam',
+          status: 'registered',
+          registeredTerm: {
+            id: 'hp-term-1',
+            date: '12.02.2026',
+            time: '12:00',
+            room: '5.28',
+            teacher: 'Ing. Aleš Franc, Ph.D.',
+            teacherId: 'franc-ales',
+            deregistrationDeadline: '11.02.2026 23:59',
+            durationMinutes: 10
+          },
+          terms: []
+        }
+      ]
+    },
+    {
+      version: 1,
+      id: 'exam-stat',
+      name: 'Statistika',
+      code: 'EBC-ST',
+      sections: [
+        {
+          id: 'stat-zkouska',
+          name: 'exam',
+          type: 'exam',
+          status: 'registered',
+          registeredTerm: {
+            id: 'stat-term-1',
+            date: '12.02.2026',
+            time: '13:30',
+            room: 'Q02',
+            teacher: 'doc. Ing. Petr Dvořák, Ph.D.',
+            teacherId: 'dvorak-petr',
+            deregistrationDeadline: '11.02.2026 23:59',
+            durationMinutes: 90
+          },
+          terms: []
+        }
+      ]
+    },
+    {
+      version: 1,
+      id: 'exam-ucetnictvi',
+      name: 'Účetnictví',
+      code: 'EBC-UC',
+      sections: [
+        {
+          id: 'uc-zkouska',
+          name: 'exam',
+          type: 'exam',
+          status: 'registered',
+          registeredTerm: {
+            id: 'uc-term-1',
+            date: '12.02.2026',
+            time: '15:30',
+            room: 'Q03',
+            teacher: 'Ing. Eva Nováková, Ph.D.',
+            teacherId: 'novakova-eva',
+            deregistrationDeadline: '11.02.2026 23:59'
+            // durationMinutes intentionally absent — exercises the 90-min fallback.
+          },
+          terms: []
         }
       ]
     },

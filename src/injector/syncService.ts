@@ -16,6 +16,8 @@ import { mergePastSubjects } from '../services/sync/mergePastSubjects';
 import { syncPastSemesters } from '../services/sync/syncPastSemesters';
 
 import { getUserParams } from '../utils/userParams';
+import { enrichExamsWithDurations } from '../services/sync/examDurations';
+import type { ExamSubject } from '../types/exams';
 import { fetchFullSemesterSchedule } from './dataFetchers';
 import { sendToIframe } from './iframeManager';
 import { SYNC_INTERVAL } from './config';
@@ -32,6 +34,10 @@ import type { ParsedFile, SubjectsData } from '../types/documents';
 const limit = pLimit(3);
 export let cachedData: SyncedData = { lastSync: 0 };
 export let isSyncing = false;
+
+// SyncedData types its payload fields as `unknown`; exams are always ExamSubject[]
+// here because they come straight from fetchDualLanguageExams.
+const cachedExams = (): ExamSubject[] => (cachedData.exams as ExamSubject[] | undefined) ?? [];
 
 /** Latest notes snapshot pushed from the iframe (it owns the notes IDB). */
 export function setNotesSnapshot(
@@ -185,7 +191,14 @@ export async function syncAllData() {
           ? fullSchedule.value
           : cachedData.schedule,
       exams:
-        exams.status === 'fulfilled' && exams.value.length > 0 ? exams.value : cachedData.exams,
+        exams.status === 'fulfilled' && exams.value.length > 0
+          ? await enrichExamsWithDurations(
+              exams.value,
+              cachedExams(),
+              studium ?? '',
+              userParams?.obdobi ?? '',
+            )
+          : cachedData.exams,
       subjects:
         subjects.status === 'fulfilled' && subjects.value
           ? subjects.value.subjects
@@ -459,7 +472,14 @@ export function stopSyncService() {
 export async function refreshExams(): Promise<void> {
   const fresh = await fetchDualLanguageExams();
   if (fresh.length > 0) {
-    cachedData = { ...cachedData, exams: fresh };
-    sendToIframe(Messages.syncUpdate({ exams: fresh, isSyncing, lastSync: cachedData.lastSync }));
+    const params = await getUserParams();
+    const enriched = await enrichExamsWithDurations(
+      fresh,
+      cachedExams(),
+      params?.studium ?? '',
+      params?.obdobi ?? '',
+    );
+    cachedData = { ...cachedData, exams: enriched };
+    sendToIframe(Messages.syncUpdate({ exams: enriched, isSyncing, lastSync: cachedData.lastSync }));
   }
 }
