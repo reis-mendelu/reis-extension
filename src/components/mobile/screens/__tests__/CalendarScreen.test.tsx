@@ -75,4 +75,17 @@ describe('CalendarScreen', () => {
     expect(screen.getByLabelText('Profil')).toBeInTheDocument();
     expect(screen.getByLabelText('Rozbalit vývěsku')).toBeInTheDocument();
   });
+
+  it('omits an event hidden via hiddenItems.events from the day agenda', () => {
+    useAppStore.setState({
+      schedule: { data: [lesson({ id: 'l1' })], status: 'success', weekStart: null } as never,
+      hiddenItems: {
+        events: [{ id: 'l1', courseCode: 'EBC-MAN', courseName: 'Management', date: '20260420' }],
+        courses: [],
+      },
+    });
+    render(<CalendarScreen />);
+    expect(screen.queryByTestId('day-agenda')).not.toBeInTheDocument();
+    expect(screen.getByText('Nic nemáš, pohodička')).toBeInTheDocument();
+  });
 });

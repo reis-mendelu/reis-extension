@@ -4,6 +4,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { getCzechHoliday } from '../../utils/holidays';
 import { parseDate } from '../../utils/date';
 import { getWeekForDate } from '../../api/teachingWeek';
+import { isLessonHidden } from '../../utils/hiddenLessons';
 import type { BlockLesson, DateInfo } from '../../types/calendarTypes';
 
 export function useCalendarData(initialDate: Date) {
@@ -90,16 +91,7 @@ export function useCalendarData(initialDate: Date) {
     const scheduleData = useMemo((): BlockLesson[] => {
         const lessons = (storedSchedule || [])
             .filter(l => weekDateStrings.includes(l.date))
-            .filter(l => 
-                !hiddenItems.events.some(e => e.id === l.id) && 
-                !hiddenItems.courses.some(c => 
-                    c.courseCode === l.courseCode && (
-                        !c.type || c.type === 'all' || 
-                        (c.type === 'seminar' && l.isSeminar === 'true') || 
-                        (c.type === 'lecture' && l.isSeminar === 'false')
-                    )
-                )
-            );
+            .filter(l => !isLessonHidden(l, hiddenItems));
         const weekExams = examLessons.filter(e => weekDateStrings.includes(e.date));
         
         const mappedCustomEvents = customEvents

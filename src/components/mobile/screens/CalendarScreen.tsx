@@ -6,6 +6,7 @@ import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
 import { useNotificationFeed } from '../../../hooks/useNotificationFeed';
 import { resolveNowNext } from '../../../utils/mobile/nowNext';
 import { buildDayAgenda } from '../../../utils/mobile/dayAgenda';
+import { isLessonHidden } from '../../../utils/hiddenLessons';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
@@ -49,6 +50,7 @@ export function CalendarScreen() {
     const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
     const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
     const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
+    const hiddenItems = useAppStore((s) => s.hiddenItems);
 
     const { notifications, readIds } = useNotificationFeed();
     const { alerts } = useDeadlineAlerts();
@@ -68,7 +70,8 @@ export function CalendarScreen() {
     const now = new Date();
     const selectedIso = mobileSelectedDayIso ?? toIso(now);
     const nowNext = resolveNowNext(schedule, now);
-    const agenda = buildDayAgenda(schedule, selectedIso);
+    const visibleSchedule = schedule.filter((l) => !isLessonHidden(l, hiddenItems));
+    const agenda = buildDayAgenda(visibleSchedule, selectedIso);
     const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
 
     const openBulletin = () => {
