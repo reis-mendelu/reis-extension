@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { toast } from 'sonner';
 import { Bell, BellRing } from 'lucide-react';
 import type { ExamSection, ExamTerm } from '../../../../types/exams';
 import { useWatchdog } from '../../../../hooks/data/useWatchdog';
@@ -18,7 +20,21 @@ export interface TermRowProps {
  */
 export function TermRow({ term, section, isProcessing, onRegister }: TermRowProps) {
     const { t, language } = useTranslation();
-    const { armed, firing, toggle } = useWatchdog(term);
+    const { armed, firing, feedback, errorMessage, toggle } = useWatchdog(term);
+
+    // Mirror desktop's TermBuiltinActions inline micro-toast, but via the
+    // shared sonner Toaster MobileApp already mounts — a failed toggle would
+    // otherwise silently revert the button with no explanation at all.
+    useEffect(() => {
+        if (feedback === 'activated') toast.success(t('exams.watchdogActivated'));
+        else if (feedback === 'deactivated') toast.info(t('exams.watchdogDeactivated'));
+        else if (feedback === 'failed') toast.error(errorMessage || t('exams.watchdogFailed'));
+        // Intentionally reacting only to `feedback` transitions: errorMessage/t
+        // are read at the moment feedback fires (set together in useWatchdog),
+        // not on every render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [feedback]);
+
     const isRegHere = section.registeredTerm?.id === term.id;
     const isFull = term.full || !!(term.capacity && term.capacity.occupied >= term.capacity.total);
     const room = (language === 'en' && term.roomEn) ? term.roomEn : (term.roomCs || term.room);
