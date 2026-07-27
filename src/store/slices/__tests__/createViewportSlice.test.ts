@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createViewportSlice } from '../createViewportSlice';
 import type { ViewportSlice } from '../../types';
 
@@ -42,5 +42,55 @@ describe('createViewportSlice', () => {
         state.setViewport({ keyboardOpen: true, viewportHeight: 500 });
         expect(state.keyboardOpen).toBe(true);
         expect(state.viewportHeight).toBe(500);
+    });
+
+    describe('initial isTouch/isNarrow seeding', () => {
+        let originalMatchMedia: typeof window.matchMedia;
+
+        beforeEach(() => {
+            originalMatchMedia = window.matchMedia;
+        });
+
+        afterEach(() => {
+            window.matchMedia = originalMatchMedia;
+        });
+
+        function stubMatchMedia(matchingQuery: string) {
+            window.matchMedia = vi.fn((query: string) => ({
+                matches: query === matchingQuery,
+                media: query,
+                onchange: null,
+                addListener: vi.fn(),
+                removeListener: vi.fn(),
+                addEventListener: vi.fn(),
+                removeEventListener: vi.fn(),
+                dispatchEvent: vi.fn(),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            })) as any;
+        }
+
+        it('seeds isTouch true when the browser reports a coarse pointer, exactly the AppShell query', () => {
+            stubMatchMedia('(pointer: coarse)');
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const fresh = createViewportSlice(vi.fn(), vi.fn(), {} as any);
+            expect(fresh.isTouch).toBe(true);
+            expect(fresh.isNarrow).toBe(false);
+        });
+
+        it('seeds isNarrow true when the browser reports a narrow viewport, exactly the AppShell query', () => {
+            stubMatchMedia('(max-width: 767px)');
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const fresh = createViewportSlice(vi.fn(), vi.fn(), {} as any);
+            expect(fresh.isNarrow).toBe(true);
+            expect(fresh.isTouch).toBe(false);
+        });
+
+        it('seeds both false when neither query matches (desktop)', () => {
+            stubMatchMedia('(never: matches)');
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const fresh = createViewportSlice(vi.fn(), vi.fn(), {} as any);
+            expect(fresh.isTouch).toBe(false);
+            expect(fresh.isNarrow).toBe(false);
+        });
     });
 });
