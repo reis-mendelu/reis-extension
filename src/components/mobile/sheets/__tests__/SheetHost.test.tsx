@@ -60,7 +60,10 @@ describe('SheetHost', () => {
     });
 
     it('renders nothing for an unknown sheet kind', () => {
-        useAppStore.setState({ mobileSheets: [{ kind: 'docs' }] } as never);
+        // 'confirm' is a real MobileSheet kind but has no SheetHost renderer yet
+        // (ConfirmSheet self-mounts inside ExamsScreen instead) — it stands in
+        // here for "kind SheetHost doesn't know how to render".
+        useAppStore.setState({ mobileSheets: [{ kind: 'confirm', confirmId: 'x' }] } as never);
         const { container } = render(<SheetHost />);
         expect(container).toBeEmptyDOMElement();
     });

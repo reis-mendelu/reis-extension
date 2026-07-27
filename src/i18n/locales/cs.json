@@ -54,6 +54,7 @@
   },
   "documents": {
     "title": "Studijní dokumenty",
+    "sheetSubtitle": "S elektronickým podpisem univerzity — úřady je berou",
     "items": {
       "confirmationCz": "Potvrzení o studiu",
       "confirmationEn": "Confirmation of study",
