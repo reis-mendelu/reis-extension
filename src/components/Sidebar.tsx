@@ -26,14 +26,13 @@ export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, onOpenSubje
 
   const isItemActive = (id: string) => {
     if (currentView === 'calendar' && id === 'dashboard') return true;
-    if (currentView === 'iskam-dashboard' && id === 'iskam-dashboard') return true;
     if (currentView === 'studyPlan' && id === 'subjects') return true;
     return currentView === id;
   };
 
   return (
     <aside className="flex touch:hidden flex-col w-20 h-screen bg-base-200 border-r border-base-300 items-center py-6 shrink-0 relative z-40">
-      <button onClick={() => onViewChange(currentView === 'iskam-dashboard' ? 'iskam-dashboard' : 'calendar')} className="mb-8 w-10 h-10 rounded-xl overflow-hidden hover:opacity-80 transition-opacity flex items-center justify-center">
+      <button onClick={() => onViewChange('calendar')} className="mb-8 w-10 h-10 rounded-xl overflow-hidden hover:opacity-80 transition-opacity flex items-center justify-center">
         <ReisLogo className="w-full h-full" />
       </button>
       <div className="flex flex-col gap-3 w-full px-2">
@@ -57,9 +56,8 @@ export const Sidebar = ({ currentView, onViewChange, onOpenFeedback, onOpenSubje
               onMouseEnter={() => handleEnter(item.id)} 
               onMouseLeave={handleLeave} 
               onClick={() => { 
-                  if (item.id === 'dashboard') onViewChange('calendar'); 
-                  else if (item.id === 'iskam-dashboard') onViewChange('iskam-dashboard');
-                  else if (item.id === 'exams') onViewChange('exams'); 
+                  if (item.id === 'dashboard') onViewChange('calendar');
+                  else if (item.id === 'exams') onViewChange('exams');
                   else if (item.id === 'subjects') onViewChange('subjects');
                   else if (item.id === 'erasmus') onViewChange('erasmus');
                   else if (item.id === 'map') onViewChange('map');

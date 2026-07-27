@@ -1,5 +1,4 @@
 import { Sidebar } from './components/Sidebar'
-import { MobileBottomNav } from './components/MobileNav/MobileBottomNav'
 import { Toaster } from './components/ui/sonner'
 import { getSmartWeekRange } from '@/utils/calendar'
 import { useAppLogic } from './hooks/useAppLogic'
@@ -29,9 +28,6 @@ function App() {
     <div className="flex h-screen overflow-hidden bg-base-200 font-sans text-base-content">
       <Toaster position="top-center" />
       <Sidebar currentView={s.currentView} onViewChange={s.setCurrentView}
-               onOpenFeedback={() => s.setIsFeedbackOpen(true)}
-               onOpenSubject={s.handleOpenSubjectFromSearch} />
-      <MobileBottomNav currentView={s.currentView} onViewChange={s.setCurrentView}
                onOpenFeedback={() => s.setIsFeedbackOpen(true)}
                onOpenSubject={s.handleOpenSubjectFromSearch} />
 
