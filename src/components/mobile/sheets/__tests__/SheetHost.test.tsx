@@ -60,7 +60,7 @@ describe('SheetHost', () => {
     });
 
     it('renders nothing for an unknown sheet kind', () => {
-        useAppStore.setState({ mobileSheets: [{ kind: 'eventDetail', eventId: 'x' }] } as never);
+        useAppStore.setState({ mobileSheets: [{ kind: 'docs' }] } as never);
         const { container } = render(<SheetHost />);
         expect(container).toBeEmptyDOMElement();
     });

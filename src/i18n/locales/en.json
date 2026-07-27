@@ -1196,7 +1196,8 @@
     "sheet": {
       "close": "Close",
       "cancel": "Not now",
-      "openInIsMendelu": "Open in IS MENDELU"
+      "openInIsMendelu": "Open in IS MENDELU",
+      "showOnMap": "Show on map"
     }
   }
 }
