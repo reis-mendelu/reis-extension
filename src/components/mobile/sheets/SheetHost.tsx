@@ -3,6 +3,8 @@ import { SubjectDrawerSheet } from './SubjectDrawerSheet';
 import { EventDetailSheet } from './EventDetailSheet';
 import { StudyPlanSheet } from './StudyPlanSheet';
 import { NotificationsSheet } from './NotificationsSheet';
+import { ProfileSheet } from './ProfileSheet';
+import { PersonSheet } from './PersonSheet';
 
 /**
  * Renders the phone UI's sheet stack, in order, each in its own `Sheet`.
@@ -10,8 +12,8 @@ import { NotificationsSheet } from './NotificationsSheet';
  * kind registers here via the `switch` below rather than mounting itself.
  *
  * Unknown/unimplemented `kind`s render nothing rather than throwing: the
- * `MobileSheet` union still lists a few kinds (profile, person, eduroam,
- * docs, erasmus, confirm) that later tasks will add renderers for.
+ * `MobileSheet` union still lists a few kinds (eduroam, docs, erasmus,
+ * confirm) that later tasks will add renderers for.
  */
 export function SheetHost() {
     const sheets = useAppStore((s) => s.mobileSheets);
@@ -29,6 +31,10 @@ export function SheetHost() {
                         return <StudyPlanSheet key={index} onClose={popSheet} />;
                     case 'notifications':
                         return <NotificationsSheet key={index} onClose={popSheet} />;
+                    case 'profile':
+                        return <ProfileSheet key={index} onClose={popSheet} />;
+                    case 'person':
+                        return <PersonSheet key={index} sheet={sheet} onClose={popSheet} />;
                     default:
                         return null;
                 }

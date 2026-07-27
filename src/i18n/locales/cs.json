@@ -1197,7 +1197,16 @@
       "close": "Zavřít",
       "cancel": "Radši ne",
       "openInIsMendelu": "Otevřít v IS MENDELU",
-      "showOnMap": "Ukázat na mapě"
+      "showOnMap": "Ukázat na mapě",
+      "writeEmail": "Napsat e-mail",
+      "showOfficeOnMap": "Ukázat kancelář na mapě"
+    },
+    "profile": {
+      "appearance": "Vzhled",
+      "darkModeHint": "šetří oči i baterku",
+      "sync": "Synchronizace",
+      "societies": "Spolky na mapě",
+      "footer": "vytvořeno studenty pro studenty"
     }
   }
 }

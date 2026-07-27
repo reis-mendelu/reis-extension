@@ -1197,7 +1197,16 @@
       "close": "Close",
       "cancel": "Not now",
       "openInIsMendelu": "Open in IS MENDELU",
-      "showOnMap": "Show on map"
+      "showOnMap": "Show on map",
+      "writeEmail": "Write email",
+      "showOfficeOnMap": "Show office on map"
+    },
+    "profile": {
+      "appearance": "Appearance",
+      "darkModeHint": "saves your eyes and battery",
+      "sync": "Sync",
+      "societies": "Societies on the map",
+      "footer": "made by students, for students"
     }
   }
 }
