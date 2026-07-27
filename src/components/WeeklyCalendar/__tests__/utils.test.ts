@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { organizeLessons, getEventStyle } from '../utils';
+import { organizeLessons, getEventStyle, renderedBlockMinutes } from '../utils';
 import type { BlockLesson } from '../../../types/calendarTypes';
 
 describe('organizeLessons', () => {
@@ -131,10 +131,21 @@ describe('organizeLessons', () => {
 describe('getEventStyle minimum visual height', () => {
     const pct = (s: string) => parseFloat(s);
 
-    it('clamps a 10-minute exam to a readable block', () => {
-        const tiny = getEventStyle('09:45', '09:55');
-        // 10 min of a 14h day is ~1.19% — unreadable. Floor is 30 min ≈ 3.57%.
-        expect(pct(tiny.height)).toBeCloseTo((30 / (14 * 60)) * 100, 5);
+    it('draws a 10-minute exam at the same size as a 90-minute one', () => {
+        // 10 min of a 14h day is ~1.19% — an unlabelled sliver. The floor gives it
+        // the full 1.5h box so the card renders exactly as it always has.
+        expect(getEventStyle('09:45', '09:55').height).toBe(getEventStyle('09:45', '11:15').height);
+    });
+
+    it('gives a clamped short exam enough room to satisfy the card layout gate', () => {
+        // CalendarEventCard hides subject + room below 60 rendered minutes; a real
+        // 10-minute oral exam must still clear it or it renders as a blank sliver.
+        expect(renderedBlockMinutes('09:45', '09:55')).toBeGreaterThanOrEqual(60);
+    });
+
+    it('reports true length for blocks already above the floor', () => {
+        expect(renderedBlockMinutes('09:45', '11:15')).toBe(90);
+        expect(renderedBlockMinutes('09:00', '12:00')).toBe(180);
     });
 
     it('does not move the block start when clamping', () => {

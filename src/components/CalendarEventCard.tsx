@@ -14,6 +14,7 @@ import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from '../hooks/useTranslation';
 import { useTimeline } from '../hooks/useTimeline';
 import { useHintStatus } from '../hooks/ui/useHintStatus';
+import { renderedBlockMinutes } from './WeeklyCalendar/utils';
 import { toast } from 'sonner';
 
 interface CalendarEventCardProps {
@@ -38,13 +39,6 @@ function getLocalizedRoom(lesson: LessonWithRow, language?: string): string {
     return lesson.roomCs || lesson.room;
 }
 
-// Calculate duration in minutes from time strings
-function calculateDuration(startTime: string, endTime: string): number {
-    const [startHours, startMinutes] = startTime.split(':').map(Number);
-    const [endHours, endMinutes] = endTime.split(':').map(Number);
-    return (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
-}
-
 // Extract exam section name from the composite title
 function getExamSectionName(courseName: string): string {
     // The format from WeeklyCalendar is `${subject.name} - ${section.name}`
@@ -63,8 +57,11 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
     const hideCourse = useAppStore(s => s.hideCourse);
     const timeline = useTimeline(lesson.courseCode || '');
 
-    const duration = calculateDuration(lesson.startTime, lesson.endTime);
-    const isLongEnough = duration >= 60; // Only show location if event is 1 hour+
+    // Gate on the space the block actually occupies, not its literal length. Exam
+    // lengths are real now (see services/sync/examDurations.ts), so a 10-minute
+    // oral exam would otherwise fail this check and render with no subject or
+    // room at all — the grid floors short blocks, so the room is there to use.
+    const isLongEnough = renderedBlockMinutes(lesson.startTime, lesson.endTime) >= 60;
 
     const handleHideOccurrence = (e: React.MouseEvent) => {
         e.stopPropagation();
