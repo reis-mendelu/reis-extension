@@ -129,10 +129,14 @@ describe('analyzeProbe — text contrast', () => {
     // A grey that lands between 3:1 and 4.5:1 on this backdrop.
     const grey = parseCssColor('#6b7280')!;
     const small = analyzeProbe(
-      probe([el({ hasDirectText: true, text: 'x', color: grey, bgChain: [BASE_200], fontSize: 14 })])
+      probe([
+        el({ hasDirectText: true, text: 'x', color: grey, bgChain: [BASE_200], fontSize: 14 }),
+      ])
     );
     const large = analyzeProbe(
-      probe([el({ hasDirectText: true, text: 'x', color: grey, bgChain: [BASE_200], fontSize: 28 })])
+      probe([
+        el({ hasDirectText: true, text: 'x', color: grey, bgChain: [BASE_200], fontSize: 28 }),
+      ])
     );
     expect(kinds(small)).toContain('contrast-text');
     expect(kinds(large)).not.toContain('contrast-text');
@@ -191,7 +195,9 @@ describe('analyzeProbe — text contrast', () => {
   });
 
   it('ignores elements with no direct text', () => {
-    const f = analyzeProbe(probe([el({ hasDirectText: false, color: BASE_300, bgChain: [BASE_200] })]));
+    const f = analyzeProbe(
+      probe([el({ hasDirectText: false, color: BASE_300, bgChain: [BASE_200] })])
+    );
     expect(kinds(f)).not.toContain('contrast-text');
   });
 });

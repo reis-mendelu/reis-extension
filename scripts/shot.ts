@@ -50,7 +50,9 @@ function parseArgs(argv: string[]): Options {
   }
   const label = positional[0];
   if (!label) {
-    console.error('usage: npm run verify:ui -- <label> [--view exams] [--theme dark] [--click TEXT]');
+    console.error(
+      'usage: npm run verify:ui -- <label> [--view exams] [--theme dark] [--click TEXT]'
+    );
     process.exit(2);
   }
   const widths = flags.get('widths')?.split(',').map(Number).filter(Boolean) ?? DEFAULT_WIDTHS;
@@ -123,7 +125,8 @@ function probeSource(): ProbeResult {
   for (const node of Array.from(document.body.querySelectorAll<HTMLElement>('*'))) {
     if (nodes.length >= MAX_ELEMENTS) break;
     const style = getComputedStyle(node);
-    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') continue;
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0')
+      continue;
     const r = node.getBoundingClientRect();
     if (r.width <= 0 || r.height <= 0) continue;
     if (r.bottom < 0 || r.top > window.innerHeight) continue;
@@ -188,7 +191,10 @@ function probeSource(): ProbeResult {
     height: window.innerHeight,
     docScrollWidth: document.documentElement.scrollWidth,
     docClientWidth: document.documentElement.clientWidth,
-    rootBg: rootBg && rootBg.a > 0.01 ? rootBg : resolveColor(getComputedStyle(document.body).backgroundColor),
+    rootBg:
+      rootBg && rootBg.a > 0.01
+        ? rootBg
+        : resolveColor(getComputedStyle(document.body).backgroundColor),
     elements,
   };
 }

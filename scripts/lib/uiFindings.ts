@@ -47,11 +47,7 @@ export interface ProbeResult {
 }
 
 export type FindingKind =
-  | 'overflow'
-  | 'overflow-element'
-  | 'contrast-surface'
-  | 'contrast-text'
-  | 'collision';
+  'overflow' | 'overflow-element' | 'contrast-surface' | 'contrast-text' | 'collision';
 
 export interface Finding {
   kind: FindingKind;

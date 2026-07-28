@@ -38,7 +38,13 @@ describe('rebaseFixture', () => {
             terms: [
               { id: 't1', dayOffset: 0, time: '09:00' },
               { id: 't2', dayOffset: 7, time: '11:00', deregDayOffset: 5, deregTime: '23:59' },
-              { id: 't3', dayOffset: -3, time: '08:00', regStartDayOffset: -20, regEndDayOffset: -4 },
+              {
+                id: 't3',
+                dayOffset: -3,
+                time: '08:00',
+                regStartDayOffset: -20,
+                regEndDayOffset: -4,
+              },
             ],
           },
         ],

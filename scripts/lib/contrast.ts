@@ -74,7 +74,10 @@ export function parseCssColor(input: string): Rgba | null {
   if (rgb) {
     // Accept "r, g, b, a" and "r g b / a" in one pass.
     const [channels, slashAlpha] = rgb[1]!.split('/');
-    const parts = channels!.trim().split(/[\s,]+/).filter(Boolean);
+    const parts = channels!
+      .trim()
+      .split(/[\s,]+/)
+      .filter(Boolean);
     if (parts.length < 3) return null;
     const chan = (t: string) =>
       clamp(t.endsWith('%') ? (parseFloat(t) / 100) * 255 : parseFloat(t), 0, 255);
