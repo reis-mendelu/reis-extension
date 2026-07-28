@@ -66,6 +66,10 @@ export function MapCanvas() {
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup>(L.layerGroup());
   const exitHandlerRef = useRef<((e: L.LeafletMouseEvent) => void) | null>(null);
+  // Set only by the floor-view tap-away, never by the "Celý kampus" button, so
+  // the redraw below can tell "I'm done with this building" from "take me back
+  // to the whole campus" — both dispatch the same `exitToCampus`.
+  const keepViewRef = useRef(false);
   // Live room polygons keyed by placeId, with their unselected base style — lets
   // a plain map click re-highlight in place without a full redraw or camera move.
   const roomPolysRef = useRef<Map<number, { poly: L.Polygon; base: L.PathOptions }>>(new Map());
@@ -193,6 +197,16 @@ export function MapCanvas() {
         flyAndReveal(map, () =>
           map.setView([lat, lon], Math.max(map.getZoom(), 18), { animate: false })
         );
+      } else if (keepViewRef.current) {
+        // Left floor-view by tapping the basemap: drop the floor plan but leave
+        // the camera alone. Re-fitting the campus here threw the user all the
+        // way out to the overview when all they did was tap beside a building —
+        // the "Celý kampus" button exists for that, and still does it.
+        //
+        // Deliberately NOT wrapped in flyAndReveal: with no camera move there is
+        // no re-projection to hide, and its 900ms safety reveal would blank the
+        // vector panes for most of a second on a `moveend` that never comes.
+        keepViewRef.current = false;
       } else {
         flyAndReveal(map, () =>
           map.fitBounds(META.campus.bounds as L.LatLngBoundsExpression, {
@@ -234,7 +248,10 @@ export function MapCanvas() {
     }
     drawLandmarks(layer, select, SIBLING_STYLE);
     // Clicking the bare basemap (not an outline/room) returns to overview.
-    const onMapClick = () => select.exitToCampus();
+    const onMapClick = () => {
+      keepViewRef.current = true;
+      select.exitToCampus();
+    };
     map.on('click', onMapClick);
     exitHandlerRef.current = onMapClick;
     // The selected room (from search/deep-link or a canvas click) gets a bold
