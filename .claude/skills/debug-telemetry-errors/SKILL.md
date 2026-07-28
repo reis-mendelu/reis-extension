@@ -14,7 +14,7 @@ User asks anything like:
 - "is this error new or known"
 - "are we fine after the v… release"
 
-If they're asking about the *infrastructure* of error reporting (sanitization, RPC, schema), use `.agent/rules/charlie-munger.md` first, not this skill.
+If they're asking about the *infrastructure* of error reporting (sanitization, RPC, schema), read the **Error Reporting & Privacy** section of `CLAUDE.md` first, not this skill.
 
 ## The shape of the data
 
@@ -222,6 +222,6 @@ Before adding ANY new query that pulls more than the disclosed columns, or any n
 ## What this skill is NOT for
 
 - Investigating bugs the user reports verbally without Supabase data → use `superpowers:systematic-debugging`.
-- Designing new telemetry features → use `.agent/rules/charlie-munger.md` for the inversion lens.
+- Designing new telemetry features → see `CLAUDE.md` "Iron Rules" for the inversion lens.
 - Performance issues → wrong skill.
 - IS Mendelu HTML parser changes → see `CLAUDE.md` "Parser Rules". Never relax guards.
