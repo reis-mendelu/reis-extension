@@ -50,7 +50,7 @@ export function DocsSheet({ onClose }: DocsSheetProps) {
                             <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-field bg-error/10 text-error">
                                 <Icon className="h-4 w-4" />
                             </span>
-                            <span className="min-w-0 flex-1 truncate text-base font-medium">
+                            <span className="min-w-0 flex-1 truncate text-md font-medium">
                                 {t(`documents.items.${doc.labelKey}`)}
                             </span>
                             <StatusIcon status={st} />

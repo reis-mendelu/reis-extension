@@ -46,7 +46,7 @@ function SemesterRow({ subject, onOpenSubject }: { subject: SubjectStatus; onOpe
                 titles but deliberately not these, and at 390px a cut landed
                 mid-word ("Databázové systémy a návrh d…"), losing the half of
                 the name that distinguishes one subject from another. */}
-            <span className="flex-1 text-base font-medium text-base-content">{subject.name}</span>
+            <span className="flex-1 text-md font-medium text-base-content">{subject.name}</span>
             <GradeChip subject={subject} />
             {isRealCredits(subject.credits) && (
                 <span className="flex-shrink-0 text-sm text-base-content/50">

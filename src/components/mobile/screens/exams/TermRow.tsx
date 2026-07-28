@@ -59,15 +59,15 @@ export function TermRow({ term, section, isProcessing, onRegister }: TermRowProp
 
     return (
         <div
-            className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 ${
+            className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 ${
                 isRegHere ? 'border-primary/40 bg-primary/5' : 'border-base-300 bg-base-100'
             }`}
         >
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="truncate text-base font-bold text-base-content">
+                <span className="truncate text-md font-bold text-base-content">
                     {[when, room].filter(Boolean).join(' · ')}
                 </span>
-                {subline && <span className="truncate text-sm text-base-content/60">{subline}</span>}
+                {subline && <span className="truncate text-2sm text-base-content/60">{subline}</span>}
             </div>
 
             {isRegHere ? (

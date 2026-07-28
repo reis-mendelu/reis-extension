@@ -39,7 +39,7 @@ export function ConfirmSheet({ pendingAction, onConfirm, onCancel }: ConfirmShee
                     {isRegister ? t('exams.confirmation.registerBody') : t('exams.confirmation.unregisterBody')}
                 </p>
                 <div className="flex flex-col gap-2 rounded-xl bg-base-200 p-3">
-                    <span className="text-base font-semibold text-base-content">{section.name}</span>
+                    <span className="text-md font-semibold text-base-content">{section.name}</span>
                     {term && (
                         <div className="flex flex-col gap-1.5 text-sm text-base-content/70">
                             {term.date && (

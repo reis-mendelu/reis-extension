@@ -36,9 +36,9 @@ export function PageGroupList({ groups, onOpen }: PageGroupListProps) {
                             key={item.id}
                             type="button"
                             onClick={() => onOpen(item.href)}
-                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left"
+                            className="flex w-full items-center gap-3 px-4 py-2 text-left"
                         >
-                            <span className="min-w-0 flex-1 truncate text-base font-medium">{item.label}</span>
+                            <span className="min-w-0 flex-1 truncate text-md font-medium">{item.label}</span>
                             <ExternalLink size={14} className="flex-shrink-0 text-base-content/40" />
                         </button>
                     ))}

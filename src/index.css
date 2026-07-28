@@ -194,6 +194,13 @@ body,
   --font-display: 'DM Sans', 'Inter', sans-serif;
   --text-2xs: 10px;
   --text-2xs--line-height: 14px;
+  /* Tailwind's scale steps 12 → 14 → 16 with nothing between, which is too
+     coarse for dense phone lists: 16px card titles over 14px subtitles cost
+     roughly a card per screen against the design. These two fill the gaps. */
+  --text-2sm: 13px;
+  --text-2sm--line-height: 17px;
+  --text-md: 15px;
+  --text-md--line-height: 20px;
 
   /* Minimum touch hit-target (Material/Apple guideline) */
   --size-tap: 2.75rem;

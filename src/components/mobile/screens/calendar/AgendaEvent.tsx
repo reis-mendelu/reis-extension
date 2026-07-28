@@ -42,14 +42,14 @@ export function AgendaEvent({ lesson, onOpen }: AgendaEventProps) {
             className={`flex w-full cursor-pointer flex-col gap-0.5 rounded-xl border border-l-4 px-3 py-2.5 text-left ${styles.bg} ${styles.border} ${styles.rail}`}
         >
             <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-base font-semibold leading-snug text-content-primary">{courseName}</span>
+                <span className="truncate text-md font-semibold leading-snug text-content-primary">{courseName}</span>
                 {lesson.isExam && (
                     <span className={`flex-shrink-0 text-xs font-bold uppercase ${styles.text}`}>
                         {t('course.badge.exam')}
                     </span>
                 )}
             </div>
-            <div className="flex items-center gap-1 text-sm leading-snug text-content-secondary">
+            <div className="flex items-center gap-1 text-2sm leading-snug text-content-secondary">
                 <MapPin size={13} className="flex-shrink-0" />
                 <span className="truncate">
                     {room} · {lesson.startTime} – {lesson.endTime}

@@ -13,7 +13,7 @@ export function ExamGroup({ title, count, children }: ExamGroupProps) {
     const [open, setOpen] = useState(true);
 
     return (
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2">
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
@@ -28,7 +28,7 @@ export function ExamGroup({ title, count, children }: ExamGroupProps) {
                     ? <ChevronUp size={13} className="flex-shrink-0 text-base-content/60" />
                     : <ChevronDown size={13} className="flex-shrink-0 text-base-content/60" />}
             </button>
-            {open && <div className="flex flex-col gap-2.5">{children}</div>}
+            {open && <div className="flex flex-col gap-2">{children}</div>}
         </div>
     );
 }

@@ -40,7 +40,7 @@ export function NextUpStrip({ items, now, locale, t, onOpen }: NextUpStripProps)
                             key={item.section.id}
                             type="button"
                             onClick={() => onOpen(item)}
-                            className={`flex w-[188px] flex-shrink-0 flex-col gap-1 rounded-2xl border px-3.5 py-3 text-left ${
+                            className={`flex w-[178px] flex-shrink-0 flex-col gap-0.5 rounded-2xl border px-3.5 py-2.5 text-left ${
                                 today ? 'border-error/50 bg-error/5' : 'border-base-300 bg-base-100'
                             }`}
                         >
@@ -54,8 +54,8 @@ export function NextUpStrip({ items, now, locale, t, onOpen }: NextUpStripProps)
                                     {formatWhenShort(item.date, item.term.time, now, locale, t('mobile.exams.today'))}
                                 </span>
                             </span>
-                            <span className="truncate text-base font-bold text-base-content">{item.subjectName}</span>
-                            <span className="truncate text-sm text-base-content/60">
+                            <span className="truncate text-md font-bold text-base-content">{item.subjectName}</span>
+                            <span className="truncate text-2sm text-base-content/60">
                                 {[item.sectionName, item.term.room].filter(Boolean).join(' · ')}
                             </span>
                         </button>

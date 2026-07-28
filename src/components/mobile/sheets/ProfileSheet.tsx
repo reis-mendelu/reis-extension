@@ -79,14 +79,14 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
                 <label className="flex items-center gap-3 px-4 py-2.5">
                     <Moon size={16} className="flex-shrink-0 text-base-content/50" />
                     <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="text-base font-medium">{t('settings.darkMode')}</span>
+                        <span className="text-md font-medium">{t('settings.darkMode')}</span>
                         <span className="text-xs text-base-content/60">{t('mobile.profile.darkModeHint')}</span>
                     </div>
                     <input type="checkbox" className="toggle toggle-primary toggle-sm" checked={isDark} onChange={toggleTheme} />
                 </label>
                 <div className="flex items-center gap-3 px-4 py-2.5">
                     <Languages size={16} className="flex-shrink-0 text-base-content/50" />
-                    <span className="flex-1 text-base font-medium">{t('settings.language')}</span>
+                    <span className="flex-1 text-md font-medium">{t('settings.language')}</span>
                     <div className="join">
                         <button
                             type="button"
@@ -111,7 +111,7 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
                 <label className="flex items-center gap-3 px-4 py-2.5">
                     <Calendar size={16} className="flex-shrink-0 text-base-content/50" />
                     <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="text-base font-medium">{t('sync.schedule')}</span>
+                        <span className="text-md font-medium">{t('sync.schedule')}</span>
                         <span className="truncate text-xs text-base-content/60">{t('sync.tooltip')}</span>
                     </div>
                     <input
@@ -125,7 +125,7 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
                 <label className="flex items-center gap-3 px-4 py-2.5">
                     <HardDrive size={16} className="flex-shrink-0 text-base-content/50" />
                     <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="text-base font-medium">{t('drive.title')}</span>
+                        <span className="text-md font-medium">{t('drive.title')}</span>
                         <span className="truncate text-xs text-base-content/60">
                             {driveConnected ? t('drive.connected') : t('drive.connectHint')}
                         </span>
@@ -158,7 +158,7 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
 
                 <button type="button" onClick={() => setFeedbackOpen(true)} className="flex w-full items-center gap-3 px-4 py-3">
                     <MessageSquarePlus size={17} className="flex-shrink-0 text-base-content/50" />
-                    <span className="flex-1 text-left text-base font-medium">{t('settings.reportBug')}</span>
+                    <span className="flex-1 text-left text-md font-medium">{t('settings.reportBug')}</span>
                     <ChevronRight size={15} className="text-base-content/40" />
                 </button>
                 <button
@@ -167,7 +167,7 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
                     className="flex w-full items-center gap-3 px-4 py-3 text-error"
                 >
                     <LogOut size={17} className="flex-shrink-0" />
-                    <span className="flex-1 text-left text-base font-medium">{t('settings.logout')}</span>
+                    <span className="flex-1 text-left text-md font-medium">{t('settings.logout')}</span>
                 </button>
             </div>
 

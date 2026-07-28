@@ -26,29 +26,29 @@ export function ShortcutGrid({ onOpenSheet }: ShortcutGridProps) {
             <button type="button" onClick={() => onOpenSheet('eduroam')} className={cardClassName}>
                 <Wifi size={20} className="text-primary" />
                 <span>
-                    <span className="block text-base font-semibold">{t('mobile.student.eduroam')}</span>
-                    <span className="block text-xs text-base-content/60">{t('mobile.student.eduroamSub')}</span>
+                    <span className="block text-md font-semibold">{t('mobile.student.eduroam')}</span>
+                    <span className="block text-2sm text-base-content/60">{t('mobile.student.eduroamSub')}</span>
                 </span>
             </button>
             <button type="button" onClick={() => onOpenSheet('docs')} className={cardClassName}>
                 <FileText size={20} className="text-primary" />
                 <span>
-                    <span className="block text-base font-semibold">{t('mobile.student.documents')}</span>
-                    <span className="block text-xs text-base-content/60">{t('mobile.student.documentsSub')}</span>
+                    <span className="block text-md font-semibold">{t('mobile.student.documents')}</span>
+                    <span className="block text-2sm text-base-content/60">{t('mobile.student.documentsSub')}</span>
                 </span>
             </button>
             <button type="button" onClick={() => onOpenSheet('erasmus')} className={cardClassName}>
                 <GraduationCap size={20} className="text-primary" />
                 <span>
-                    <span className="block text-base font-semibold">{t('mobile.student.erasmus')}</span>
-                    <span className="block text-xs text-base-content/60">{t('mobile.student.erasmusSub')}</span>
+                    <span className="block text-md font-semibold">{t('mobile.student.erasmus')}</span>
+                    <span className="block text-2sm text-base-content/60">{t('mobile.student.erasmusSub')}</span>
                 </span>
             </button>
             <a href="https://webiskam.mendelu.cz/" target="_blank" rel="noopener noreferrer" className={cardClassName}>
                 <UtensilsCrossed size={20} className="text-primary" />
                 <span>
-                    <span className="block text-base font-semibold">{t('mobile.student.iskam')}</span>
-                    <span className="block text-xs text-base-content/60">{t('mobile.student.iskamSub')}</span>
+                    <span className="block text-md font-semibold">{t('mobile.student.iskam')}</span>
+                    <span className="block text-2sm text-base-content/60">{t('mobile.student.iskamSub')}</span>
                 </span>
             </a>
         </div>
