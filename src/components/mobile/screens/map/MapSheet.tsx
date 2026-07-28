@@ -104,7 +104,7 @@ export function MapSheet() {
                     </div>
                     <div className="flex-1 overflow-y-auto pb-24 pt-2">
                         {activeTab === 'akce' && <MapEventsSection />}
-                        {activeTab === 'knihovna' && <MapLibrarySection />}
+                        {activeTab === 'knihovna' && <MapLibrarySection flush />}
                         {activeTab === 'budova' && activeBuildingId !== null && (
                             <BuildingRoomList buildingId={activeBuildingId} />
                         )}

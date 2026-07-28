@@ -24,7 +24,16 @@ const LANDMARK_LETTERS: Record<number, string> = { 1587: 'Z' };
 // Free, keyless, retina-aware. maxNativeZoom 20 (one better than OSM's 19)
 // reduces upscaling blur at floor-zoom levels. Creates the map, wires the tile
 // layer + label-visibility toggle, and returns it (caller owns layers/cleanup).
-export function initLeafletMap(container: HTMLElement, campusBounds: L.LatLngBoundsExpression): L.Map {
+export function initLeafletMap(
+  container: HTMLElement,
+  campusBounds: L.LatLngBoundsExpression,
+  /** Reveal the lettered building names at the resting overview zoom rather than
+   *  one notch in. On a phone the map is the whole screen and the letters are
+   *  the only way to tell one outline from another without tapping — the
+   *  desktop's clutter argument does not apply when there is no side panel
+   *  naming things. */
+  labelsAtRest = false
+): L.Map {
   const map = L.map(container, {
     zoomControl: true, attributionControl: true, minZoom: 14, maxZoom: 22,
     // Keep Leaflet's default stepped zoom (zoomSnap 1) but make each wheel notch
@@ -50,7 +59,8 @@ export function initLeafletMap(container: HTMLElement, campusBounds: L.LatLngBou
   const cb = L.latLngBounds(campusBounds as L.LatLngBoundsLiteral);
   const syncLabelVisibility = () => {
     const restZoom = Math.min(18, Math.floor(map.getBoundsZoom(cb, false, L.point(40, 40))));
-    map.getContainer().classList.toggle('reis-hide-building-labels', map.getZoom() <= restZoom + 1);
+    const hideBelow = labelsAtRest ? restZoom - 1 : restZoom + 1;
+    map.getContainer().classList.toggle('reis-hide-building-labels', map.getZoom() <= hideBelow);
   };
   syncLabelVisibility();
   map.on('zoomend', syncLabelVisibility);

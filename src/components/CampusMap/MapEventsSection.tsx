@@ -37,16 +37,22 @@ export function MapEventsSection() {
   const societies = [...ALL_SOCIETIES].sort(
     (a, b) => (a.facultyKey === homeFaculty ? 0 : 1) - (b.facultyKey === homeFaculty ? 0 : 1)
   );
-  const chipBase = 'btn btn-xs flex-shrink-0 whitespace-nowrap rounded-full';
+  // Filter chips, not list rows. `btn btn-xs btn-ghost` read as a row of
+  // tappable menu items — full-width, hover-filling, with a scrollbar under
+  // them — rather than a set of toggles. A bordered, tinted pill with a muted
+  // resting state says "filter" at a glance and takes far less room.
+  const chipBase =
+    'flex h-7 flex-shrink-0 items-center whitespace-nowrap rounded-full border px-2.5 text-xs font-semibold transition-colors';
+  const chipIdle = 'border-base-300 bg-base-200 text-base-content/70';
 
   return (
     <div className="flex max-h-[60vh] flex-col">
-      <div className="custom-scrollbar flex gap-1.5 overflow-x-auto px-2 py-2">
+      <div className="flex gap-1.5 overflow-x-auto px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {/* "Vše" keeps the brand primary; each society chip fills with its own
             brand colour when active, so the colour legend pays off here */}
         <button
           onClick={() => setFilter('all')}
-          className={`${chipBase} ${filter === 'all' ? 'btn-primary' : 'btn-ghost'}`}
+          className={`${chipBase} ${filter === 'all' ? 'border-transparent bg-primary text-primary-content' : chipIdle}`}
         >
           {t('map.allSocieties')}
         </button>
@@ -56,7 +62,7 @@ export function MapEventsSection() {
             <button
               key={s.id}
               onClick={() => setFilter(s.id)}
-              className={`${chipBase} ${active ? 'border-transparent' : 'btn-ghost'}`}
+              className={`${chipBase} ${active ? 'border-transparent' : chipIdle}`}
               style={
                 active ? { backgroundColor: s.color, color: readableTextColor(s.color) } : undefined
               }

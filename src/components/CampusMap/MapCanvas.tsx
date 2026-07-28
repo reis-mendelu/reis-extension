@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
+import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
 import buildingsJson from '../../data/map/buildings.json';
 import {
   ringToLatLng,
@@ -50,13 +51,17 @@ import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
 
-// At the campus-overview resting zoom the lettered building names (X, Q, A…)
-// just clutter the basemap and collide with event pins, so they're hidden via the
-// `reis-hide-building-labels` class (src/index.css). They reappear the moment the
-// user zooms IN past the overview — the threshold is computed live in
-// initLeafletMap. The drill interaction is a click, not the label.
+// On DESKTOP, at the campus-overview resting zoom the lettered building names
+// (X, Q, A…) just clutter the basemap and collide with event pins, so they're
+// hidden via the `reis-hide-building-labels` class (src/index.css) and reappear
+// the moment the user zooms IN past the overview. On a PHONE they show at rest:
+// the map is the whole screen with no side panel naming anything, so the letter
+// is the only way to tell one outline from another without tapping it. The
+// threshold is computed live in initLeafletMap. The drill interaction is a
+// click, not the label.
 
 export function MapCanvas() {
+  const isPhone = usePhoneViewport();
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup>(L.layerGroup());
@@ -88,7 +93,7 @@ export function MapCanvas() {
   // init once
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
-    const map = initLeafletMap(ref.current, META.campus.bounds as L.LatLngBoundsExpression);
+    const map = initLeafletMap(ref.current, META.campus.bounds as L.LatLngBoundsExpression, isPhone);
     layerRef.current.addTo(map);
     mapRef.current = map;
     setMapInstance(map);
@@ -97,6 +102,11 @@ export function MapCanvas() {
       map.remove();
       mapRef.current = null;
     };
+    // Deliberately once-only. `isPhone` is read at construction to pick the
+    // label-visibility threshold; re-running would tear down and rebuild the
+    // whole Leaflet map (losing camera and layers) just to change it, and the
+    // desktop/phone branches mount different trees anyway.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // draw campus overview or the active floor

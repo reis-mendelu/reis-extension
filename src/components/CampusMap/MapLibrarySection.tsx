@@ -112,7 +112,16 @@ function RoomRow({
 // student asks first — "just me, or a group?". A day + hour picker checks any
 // specific slot; by default each row shows the picked day's open hours. One
 // button books on the Outlook page.
-export function MapLibrarySection() {
+export interface MapLibrarySectionProps {
+  /** Drop the card chrome (border, rounded corners, own scroll region). The
+   *  desktop detail panel needs it — this is a floating card there. The mobile
+   *  map sheet does not: it is already a base-100 surface with its own scroll
+   *  container, so the wrapper only nested a second scrollbar inside the first
+   *  and drew a box border against an identically-coloured background. */
+  flush?: boolean;
+}
+
+export function MapLibrarySection({ flush = false }: MapLibrarySectionProps) {
   const { t, language } = useTranslation();
   const availabilityMap = useAppStore((s) => s.libraryAvailability);
   const loaded = useAppStore((s) => s.libraryAvailabilityLoaded);
@@ -149,8 +158,14 @@ export function MapLibrarySection() {
   );
 
   return (
-    <div className="max-h-[80vh] overflow-y-auto overflow-x-hidden rounded-lg border border-base-300 bg-base-100">
-      <div className="space-y-3 p-3">
+    <div
+      className={
+        flush
+          ? ''
+          : 'max-h-[80vh] overflow-y-auto overflow-x-hidden rounded-lg border border-base-300 bg-base-100'
+      }
+    >
+      <div className={`space-y-3 ${flush ? 'px-4 pb-2' : 'p-3'}`}>
         <div className="flex items-center gap-2">
           <Library size={18} strokeWidth={2} className="shrink-0 text-primary" aria-hidden="true" />
           <div className="min-w-0">
