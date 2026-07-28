@@ -28,7 +28,8 @@
     "scrape:real": "tsx --tsconfig tsconfig.app.json scripts/scrape-real-data.ts",
     "dev:web": "vite --config vite.web.config.ts",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "verify:ui": "tsx --tsconfig tsconfig.app.json scripts/shot.ts"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",

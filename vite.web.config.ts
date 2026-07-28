@@ -25,7 +25,9 @@ export default defineConfig({
     'import.meta.env.VITE_DEV_SOCIETY': JSON.stringify(process.env.VITE_DEV_SOCIETY ?? 'reis'),
   },
   server: {
-    port: 3000,
+    // Honour PORT so concurrent worktree sessions (and the UI verification
+    // script) can run their own harness instead of fighting over :3000.
+    port: Number(process.env.PORT) || 3000,
     strictPort: true,
   },
 });
