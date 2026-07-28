@@ -83,30 +83,32 @@ export function ExamCard({ subject, section, isProcessing, onRegister, onUnregis
                 <div className="flex items-center gap-3">{header}</div>
             )}
 
-            {/* The classmate line stays on the collapsed card — it is the
-                at-a-glance detail. Unregistering is destructive and does not:
-                behind the chevron it takes a deliberate tap, and a list of
-                registered exams is not a row of red buttons. */}
-            {isRegistered && section.registeredTerm && classmates !== null && (
-                <span className="text-xs text-base-content/70">
-                    {classmates.length > 0
-                        ? t(
-                            `mobile.exams.mates${pluralSuffix(language, classmates.length)}`,
-                            { count: classmates.length }
-                        )
-                        : t('mobile.exams.matesNone')}
-                </span>
-            )}
-
+            {/* Both the classmate line and unregistering live behind the
+                chevron. Keeping either on the collapsed card cost every
+                registered exam a third line, and a screen full of them scrolled
+                for no gain — the collapsed card answers "am I signed up", the
+                expansion answers everything else. */}
             {expanded && isRegistered && section.registeredTerm && (
-                <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); onUnregister(section); }}
-                    disabled={isProcessing}
-                    className="min-h-11 w-full rounded-lg border border-error/35 text-sm font-semibold text-error disabled:opacity-50"
-                >
-                    {isProcessing ? <span className="loading loading-spinner loading-xs" /> : t('mobile.exams.unregister')}
-                </button>
+                <>
+                    {classmates !== null && (
+                        <span className="text-xs text-base-content/70">
+                            {classmates.length > 0
+                                ? t(
+                                    `mobile.exams.mates${pluralSuffix(language, classmates.length)}`,
+                                    { count: classmates.length }
+                                )
+                                : t('mobile.exams.matesNone')}
+                        </span>
+                    )}
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onUnregister(section); }}
+                        disabled={isProcessing}
+                        className="min-h-11 w-full rounded-lg border border-error/35 text-sm font-semibold text-error disabled:opacity-50"
+                    >
+                        {isProcessing ? <span className="loading loading-spinner loading-xs" /> : t('mobile.exams.unregister')}
+                    </button>
+                </>
             )}
 
             {expanded && hasTerms && (

@@ -55,7 +55,13 @@ export function SubjectDrawerTabs({ activeTab, onTabChange, disabledTabs, counts
                         <span className="relative">
                             <Icon size={17} strokeWidth={isActive ? 2.5 : 2} />
                             {count !== undefined && count > 0 && (
-                                <span className="absolute -top-1.5 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-xs font-bold text-primary-content">
+                                // Neutral, not primary: a solid green pill on every
+                                // tab competed with the active-tab underline for
+                                // attention. The prototype's badge is 9px and
+                                // base-300 (it tints only the active tab's); this
+                                // stays neutral throughout so the count informs
+                                // without shouting.
+                                <span className="absolute -top-1.5 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-base-300 px-1 text-[9px] font-bold text-base-content/70">
                                     {count}
                                 </span>
                             )}

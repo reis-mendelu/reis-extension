@@ -29,33 +29,33 @@ export function AgendaEvent({ lesson, onOpen }: AgendaEventProps) {
     const { t, language } = useTranslation();
     const courseName = localizedCourseName(lesson, language);
     const room = localizedRoom(lesson, language);
-    const teacher = lesson.teachers[0]?.fullName;
+    // Surname only ("Melicharová"), not the full titled name — that is what
+    // lets room, time and teacher share one line at 390px without clipping.
+    // The full name is one tap away in the event sheet.
+    const teacher = lesson.teachers[0]?.shortName || lesson.teachers[0]?.fullName;
     const styles = eventStyles(lesson);
 
     return (
         <button
             type="button"
             onClick={onOpen}
-            className={`flex w-full cursor-pointer flex-col gap-1 rounded-xl border border-l-4 p-3 text-left ${styles.bg} ${styles.border} ${styles.rail}`}
+            className={`flex w-full cursor-pointer flex-col gap-0.5 rounded-xl border border-l-4 px-3 py-2.5 text-left ${styles.bg} ${styles.border} ${styles.rail}`}
         >
             <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-base font-semibold text-content-primary">{courseName}</span>
+                <span className="truncate text-base font-semibold leading-snug text-content-primary">{courseName}</span>
                 {lesson.isExam && (
                     <span className={`flex-shrink-0 text-xs font-bold uppercase ${styles.text}`}>
                         {t('course.badge.exam')}
                     </span>
                 )}
             </div>
-            <div className="flex items-center gap-1 text-sm text-content-secondary">
-                <MapPin size={14} className="flex-shrink-0" />
+            <div className="flex items-center gap-1 text-sm leading-snug text-content-secondary">
+                <MapPin size={13} className="flex-shrink-0" />
                 <span className="truncate">
                     {room} · {lesson.startTime} – {lesson.endTime}
+                    {teacher && ` · ${teacher}`}
                 </span>
             </div>
-            {/* Its own line: at 390px the room+time+teacher run packed onto one
-                line always clipped the surname — the informative half of the
-                name — mid-word. */}
-            {teacher && <span className="truncate text-sm text-content-secondary">{teacher}</span>}
         </button>
     );
 }
