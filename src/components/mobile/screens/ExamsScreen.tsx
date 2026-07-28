@@ -65,7 +65,7 @@ export function ExamsScreen() {
                 eyebrow={eyebrow}
                 title={t('mobile.exams.title')}
                 action={upcoming.length > 0 ? (
-                    <span className="flex-shrink-0 rounded-full bg-primary/15 px-2.5 py-1.5 text-2xs font-semibold text-primary">
+                    <span className="flex-shrink-0 rounded-full bg-primary/15 px-2.5 py-1.5 text-xs font-semibold text-primary">
                         {t('mobile.exams.registeredCount', { count: upcoming.length })}
                     </span>
                 ) : undefined}
@@ -76,8 +76,8 @@ export function ExamsScreen() {
                     <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
                         <Calendar size={28} />
                     </div>
-                    <div className="font-display text-base font-bold">{t('mobile.exams.emptyTitle')}</div>
-                    <div className="max-w-56 text-2xs text-base-content/60">{t('mobile.exams.emptyBody')}</div>
+                    <div className="font-display text-lg font-bold">{t('mobile.exams.emptyTitle')}</div>
+                    <div className="max-w-56 text-xs text-base-content/60">{t('mobile.exams.emptyBody')}</div>
                 </div>
             ) : (
                 <>

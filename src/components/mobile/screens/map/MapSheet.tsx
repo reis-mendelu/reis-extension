@@ -15,6 +15,12 @@ const META = buildingsJson as BuildingsMeta;
  * either a one-line peek summary or the Akce/Knihovna/Budova tabs, driven by
  * `mapSheetState` / `mapTab` (Task 3's mobile UI slice — no local state here).
  *
+ * The collapsed height reserves the bottom ~96px for the floating `BottomNav`,
+ * which is positioned against the SCREEN (bottom-[18px]), not this sheet, and
+ * so draws straight over it. Sizing the collapsed sheet to its content instead
+ * puts the peek row underneath the nav pill; the prototype reserves the same
+ * band.
+ *
  * This is rendered as a sibling of `MapCanvas` in `MapScreen`, never a
  * wrapper around it: expanding/collapsing only changes THIS component's own
  * height. MapCanvas's own container is `absolute inset-0` against MapScreen,
@@ -50,7 +56,7 @@ export function MapSheet() {
             role="tab"
             aria-selected={activeTab === key}
             onClick={() => setTab(key)}
-            className={`flex-1 whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-semibold ${
+            className={`flex-1 whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-semibold ${
                 activeTab === key
                     ? 'bg-base-100 text-base-content shadow-sm'
                     : 'text-base-content/60'
@@ -64,7 +70,7 @@ export function MapSheet() {
         <div
             data-testid="map-sheet"
             className={`absolute inset-x-0 bottom-0 z-[1000] flex flex-col overflow-hidden rounded-t-[20px] bg-base-100 shadow-drawer transition-[height] duration-300 ease-out ${
-                expanded ? 'h-[70vh]' : 'h-[116px]'
+                expanded ? 'h-[70vh]' : 'h-[166px]'
             }`}
         >
             <button

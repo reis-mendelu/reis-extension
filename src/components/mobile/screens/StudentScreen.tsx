@@ -30,7 +30,7 @@ function buildPageGroups(query: string, language: string): PageGroup[] {
 }
 
 function NoResults({ text }: { text: string }) {
-    return <p className="px-4 py-8 text-center text-xs text-base-content/50">{text}</p>;
+    return <p className="px-4 py-8 text-center text-sm text-base-content/50">{text}</p>;
 }
 
 export function StudentScreen() {
@@ -96,7 +96,7 @@ export function StudentScreen() {
                     <>
                         {!hasQuery && (
                             <>
-                                <div className="px-4 pb-0.5 pt-1 text-2xs font-bold uppercase tracking-wider text-base-content/60">
+                                <div className="px-4 pb-0.5 pt-1 text-xs font-bold uppercase tracking-wider text-base-content/60">
                                     {t('mobile.student.yourTeachers')}
                                 </div>
                                 {teacherResults.map((result) => (
@@ -117,7 +117,7 @@ export function StudentScreen() {
 
                         {hasQuery && peopleResults.length > 0 && (
                             <>
-                                <div className="px-4 pb-0.5 pt-1 text-2xs font-bold uppercase tracking-wider text-base-content/60">
+                                <div className="px-4 pb-0.5 pt-1 text-xs font-bold uppercase tracking-wider text-base-content/60">
                                     {t('mobile.student.results')}
                                 </div>
                                 {peopleResults.map((result) => (

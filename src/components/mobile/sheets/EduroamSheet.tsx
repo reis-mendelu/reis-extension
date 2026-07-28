@@ -20,7 +20,7 @@ function detectTarget(): EduroamTarget {
 
 function NumberBadge({ n }: { n: number }) {
     return (
-        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
+        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 text-base font-bold text-primary">
             {n}
         </span>
     );
@@ -44,7 +44,7 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
             <SheetHeader title={t('eduroam.heroTitle')} subtitle={t('eduroam.subtitle')} onClose={onClose} />
             <div className="flex flex-col gap-3.5 px-4 pb-6">
                 {status === 'error' && (
-                    <div className="alert alert-error text-sm">
+                    <div className="alert alert-error text-base">
                         <AlertTriangle className="h-4 w-4 flex-shrink-0" />
                         <span>{t('eduroam.error')}{error ? `: ${error}` : ''}</span>
                     </div>
@@ -56,7 +56,7 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
                         {password ? (
                             <PasswordChip password={password} />
                         ) : (
-                            <span className="text-sm text-base-content/60">{t('eduroam.pwdLabel')}</span>
+                            <span className="text-base text-base-content/60">{t('eduroam.pwdLabel')}</span>
                         )}
                     </div>
                 </div>
@@ -82,7 +82,7 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
 
                 <div className="flex items-center gap-3">
                     <NumberBadge n={3} />
-                    <span className="flex-1 text-xs text-base-content/70">{t('eduroam.connectStep')}</span>
+                    <span className="flex-1 text-sm text-base-content/70">{t('eduroam.connectStep')}</span>
                 </div>
             </div>
         </Sheet>

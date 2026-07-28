@@ -1141,7 +1141,10 @@
       "mates": "{count} spolužáků na tomto termínu",
       "matesNone": "Zatím nikdo ze spolužáků",
       "emptyTitle": "Žádné zkoušky",
-      "emptyBody": "Až se objeví termíny, najdeš je tady."
+      "emptyBody": "Až se objeví termíny, najdeš je tady.",
+      "matesOne": "{count} spolužák na tomto termínu",
+      "matesFew": "{count} spolužáci na tomto termínu",
+      "matesOther": "{count} spolužáků na tomto termínu"
     },
     "subjects": {
       "title": "Předměty",
@@ -1159,7 +1162,10 @@
       "topTier": "Jsi v top {pct} % ročníku.",
       "rank": "Pořadí v ročníku",
       "emptyTitle": "Zatím žádné předměty",
-      "emptyBody": "Předměty se objeví po zápisu."
+      "emptyBody": "Předměty se objeví po zápisu.",
+      "creditOne": "kredit",
+      "creditFew": "kredity",
+      "creditOther": "kreditů"
     },
     "map": {
       "searchPlaceholder": "Najdi místnost, budovu, akci…",
@@ -1208,8 +1214,7 @@
       "appearance": "Vzhled",
       "darkModeHint": "šetří oči i baterku",
       "sync": "Synchronizace",
-      "societies": "Spolky na mapě",
-      "footer": "vytvořeno studenty pro studenty"
+      "societies": "Spolky na mapě"
     }
   }
 }

@@ -17,12 +17,12 @@ export function SheetHeader({ title, subtitle, eyebrow, onClose }: SheetHeaderPr
             <div className="flex items-start gap-3 px-4 pb-3 pt-2">
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     {eyebrow && (
-                        <span className="font-mono text-2xs font-semibold tracking-wider text-primary">
+                        <span className="font-mono text-xs font-semibold tracking-wider text-primary">
                             {eyebrow}
                         </span>
                     )}
                     <span className="font-display text-lg font-bold tracking-tight">{title}</span>
-                    {subtitle && <span className="text-xs text-base-content/60">{subtitle}</span>}
+                    {subtitle && <span className="text-sm text-base-content/60">{subtitle}</span>}
                 </div>
                 {onClose && (
                     <button

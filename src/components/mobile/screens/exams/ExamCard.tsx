@@ -5,6 +5,7 @@ import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useExamClassmates } from '../../../../hooks/data/useExamClassmates';
 import { getSectionState } from '../../../ExamPanel/utils';
+import { pluralSuffix } from '../../../../utils/plural';
 import { TermRow } from './TermRow';
 
 export interface ExamCardProps {
@@ -19,13 +20,13 @@ function StatusPill({ section, now, t }: { section: ExamSection; now: Date; t: (
     const state = getSectionState(section, now);
     if (state.type === 'open') {
         return (
-            <span className="flex-shrink-0 text-2xs font-bold text-success">
+            <span className="flex-shrink-0 text-xs font-bold text-success">
                 {state.openCount} {t('exams.available')}
             </span>
         );
     }
     if (state.type === 'opening') {
-        return <span className="flex-shrink-0 text-2xs font-semibold text-warning/70">{t('exams.opening')}</span>;
+        return <span className="flex-shrink-0 text-xs font-semibold text-warning/70">{t('exams.opening')}</span>;
     }
     return null;
 }
@@ -46,46 +47,66 @@ export function ExamCard({ subject, section, isProcessing, onRegister, onUnregis
     const sectionName = (language === 'en' && section.nameEn) ? section.nameEn : (section.nameCs || section.name);
     const hasTerms = section.terms.length > 0;
 
+    const header = (
+        <>
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="truncate text-base font-semibold text-base-content">{subjectName}</span>
+                <span className="truncate text-sm text-base-content/60">{sectionName}</span>
+            </div>
+            {isRegistered ? (
+                <span className="flex-shrink-0 text-xs font-bold text-success">{t('exams.registered')}</span>
+            ) : (
+                <StatusPill section={section} now={now} t={t} />
+            )}
+        </>
+    );
+
     return (
         <div className="flex flex-col gap-2.5 rounded-2xl border border-base-300 bg-base-100 p-3.5 shadow-card">
-            <div
-                onClick={() => hasTerms && setExpanded((e) => !e)}
-                className={`flex items-center gap-3 ${hasTerms ? 'cursor-pointer' : ''}`}
-            >
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="truncate text-sm font-semibold text-base-content">{subjectName}</span>
-                    <span className="truncate text-xs text-base-content/60">{sectionName}</span>
-                </div>
-                {isRegistered ? (
-                    <span className="flex-shrink-0 text-2xs font-bold text-success">{t('exams.registered')}</span>
-                ) : (
-                    <StatusPill section={section} now={now} t={t} />
-                )}
-                {hasTerms && (
-                    expanded
+            {/* A real <button> when it toggles, so it is keyboard- and
+                screen-reader-reachable like every other tappable row in the
+                mobile tree. A section with no terms has nothing to expand, so
+                it stays a plain div — a button that does nothing is worse. */}
+            {hasTerms ? (
+                <button
+                    type="button"
+                    aria-expanded={expanded}
+                    onClick={() => setExpanded((e) => !e)}
+                    className="flex w-full cursor-pointer items-center gap-3 text-left"
+                >
+                    {header}
+                    {expanded
                         ? <ChevronUp size={14} className="flex-shrink-0 text-base-content/60" />
-                        : <ChevronDown size={14} className="flex-shrink-0 text-base-content/60" />
-                )}
-            </div>
+                        : <ChevronDown size={14} className="flex-shrink-0 text-base-content/60" />}
+                </button>
+            ) : (
+                <div className="flex items-center gap-3">{header}</div>
+            )}
 
-            {isRegistered && section.registeredTerm && (
-                <div className="flex flex-col gap-2">
-                    {classmates !== null && (
-                        <span className="text-2xs text-base-content/70">
-                            {classmates.length > 0
-                                ? t('mobile.exams.mates', { count: classmates.length })
-                                : t('mobile.exams.matesNone')}
-                        </span>
-                    )}
-                    <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); onUnregister(section); }}
-                        disabled={isProcessing}
-                        className="min-h-11 w-full rounded-lg border border-error/35 text-xs font-semibold text-error disabled:opacity-50"
-                    >
-                        {isProcessing ? <span className="loading loading-spinner loading-xs" /> : t('mobile.exams.unregister')}
-                    </button>
-                </div>
+            {/* The classmate line stays on the collapsed card — it is the
+                at-a-glance detail. Unregistering is destructive and does not:
+                behind the chevron it takes a deliberate tap, and a list of
+                registered exams is not a row of red buttons. */}
+            {isRegistered && section.registeredTerm && classmates !== null && (
+                <span className="text-xs text-base-content/70">
+                    {classmates.length > 0
+                        ? t(
+                            `mobile.exams.mates${pluralSuffix(language, classmates.length)}`,
+                            { count: classmates.length }
+                        )
+                        : t('mobile.exams.matesNone')}
+                </span>
+            )}
+
+            {expanded && isRegistered && section.registeredTerm && (
+                <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onUnregister(section); }}
+                    disabled={isProcessing}
+                    className="min-h-11 w-full rounded-lg border border-error/35 text-sm font-semibold text-error disabled:opacity-50"
+                >
+                    {isProcessing ? <span className="loading loading-spinner loading-xs" /> : t('mobile.exams.unregister')}
+                </button>
             )}
 
             {expanded && hasTerms && (

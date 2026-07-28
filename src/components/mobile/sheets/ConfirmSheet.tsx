@@ -35,13 +35,13 @@ export function ConfirmSheet({ pendingAction, onConfirm, onCancel }: ConfirmShee
                 onClose={onCancel}
             />
             <div className="flex flex-col gap-3 px-4 pb-5">
-                <p className="text-xs text-base-content/70">
+                <p className="text-sm text-base-content/70">
                     {isRegister ? t('exams.confirmation.registerBody') : t('exams.confirmation.unregisterBody')}
                 </p>
                 <div className="flex flex-col gap-2 rounded-xl bg-base-200 p-3">
-                    <span className="text-sm font-semibold text-base-content">{section.name}</span>
+                    <span className="text-base font-semibold text-base-content">{section.name}</span>
                     {term && (
-                        <div className="flex flex-col gap-1.5 text-xs text-base-content/70">
+                        <div className="flex flex-col gap-1.5 text-sm text-base-content/70">
                             {term.date && (
                                 <span className="flex items-center gap-1.5">
                                     <Calendar size={13} className="text-base-content/60" />
@@ -67,14 +67,14 @@ export function ConfirmSheet({ pendingAction, onConfirm, onCancel }: ConfirmShee
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="min-h-11 flex-1 rounded-xl border border-base-300 text-sm font-semibold text-base-content/70"
+                        className="min-h-11 flex-1 rounded-xl border border-base-300 text-base font-semibold text-base-content/70"
                     >
                         {t('common.cancel')}
                     </button>
                     <button
                         type="button"
                         onClick={onConfirm}
-                        className={`min-h-11 flex-1 rounded-xl text-sm font-semibold ${
+                        className={`min-h-11 flex-1 rounded-xl text-base font-semibold ${
                             isRegister ? 'bg-primary text-primary-content' : 'bg-error text-error-content'
                         }`}
                     >

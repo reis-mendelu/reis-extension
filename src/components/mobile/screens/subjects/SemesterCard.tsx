@@ -2,6 +2,7 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { useCourseGrade } from '../../../../hooks/data/useCourseGrade';
 import { gradeBadge } from '../../../../utils/gradeLookup';
 import { isZameraniCode, isRealCredits } from '../../../SubjectsPanel/utils';
+import { pluralSuffix } from '../../../../utils/plural';
 import type { SemesterBlock, SubjectStatus } from '../../../../types/studyPlan';
 
 interface SemesterCardProps {
@@ -23,25 +24,33 @@ function GradeChip({ subject }: { subject: SubjectStatus }) {
             : t('subjects.grade.completed');
 
     return (
-        <span className={`flex-shrink-0 rounded px-1.5 py-0.5 text-2xs font-semibold ${isFail ? 'bg-error/10 text-error' : 'bg-success/10 text-success'}`}>
+        <span className={`flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold ${isFail ? 'bg-error/10 text-error' : 'bg-success/10 text-success'}`}>
             {text}
         </span>
     );
 }
 
 function SemesterRow({ subject, onOpenSubject }: { subject: SubjectStatus; onOpenSubject: (subject: SubjectStatus) => void }) {
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
+    // Per-subject credits are small numbers, where Czech needs all three forms
+    // ("1 kredit" / "2 kredity" / "5 kreditů"). The shared `subjects.credits`
+    // is the invariant genitive, correct only for the 5+ totals desktop shows.
+    const creditWord = t(`mobile.subjects.credit${pluralSuffix(language, subject.credits)}`);
     return (
         <button
             type="button"
             onClick={() => onOpenSubject(subject)}
             className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2.5 text-left active:bg-base-200"
         >
-            <span className="flex-1 truncate text-sm font-medium text-base-content">{subject.name}</span>
+            {/* Wraps rather than truncating — the prototype ellipsizes exam card
+                titles but deliberately not these, and at 390px a cut landed
+                mid-word ("Databázové systémy a návrh d…"), losing the half of
+                the name that distinguishes one subject from another. */}
+            <span className="flex-1 text-base font-medium text-base-content">{subject.name}</span>
             <GradeChip subject={subject} />
             {isRealCredits(subject.credits) && (
-                <span className="flex-shrink-0 text-xs text-base-content/50">
-                    {subject.credits} {t('subjects.credits')}
+                <span className="flex-shrink-0 text-sm text-base-content/50">
+                    {subject.credits} {creditWord}
                 </span>
             )}
         </button>
@@ -62,14 +71,14 @@ export function SemesterCard({ block, onOpenSubject }: SemesterCardProps) {
             <div className="flex items-center gap-2.5 px-3.5 pb-0.5 pt-3">
                 <span className="h-8 w-1 flex-shrink-0 rounded-full bg-primary" />
                 <div className="flex flex-1 flex-col">
-                    <span className="font-display text-sm font-semibold text-base-content">
+                    <span className="font-display text-base font-semibold text-base-content">
                         {t('mobile.subjects.currentSemester', { n: semNum })}
                     </span>
-                    <span className="text-2xs text-base-content/60">
+                    <span className="text-xs text-base-content/60">
                         {t('mobile.subjects.running', { credits: totalCredits })}
                     </span>
                 </div>
-                <span className="flex-shrink-0 rounded-md bg-primary/15 px-2 py-0.5 text-2xs font-semibold text-primary">
+                <span className="flex-shrink-0 rounded-md bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
                     {t('mobile.subjects.doneOf', { done: doneCount, total: subjects.length })}
                 </span>
             </div>

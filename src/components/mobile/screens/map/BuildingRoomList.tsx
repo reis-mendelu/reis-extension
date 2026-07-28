@@ -21,7 +21,7 @@ export function BuildingRoomList({ buildingId }: { buildingId: number }) {
 
     if (rooms.length === 0) {
         return (
-            <p className="px-4 py-6 text-center text-xs text-base-content/50">
+            <p className="px-4 py-6 text-center text-sm text-base-content/50">
                 {t('mobile.map.noRoomsOnFloor')}
             </p>
         );
@@ -34,10 +34,10 @@ export function BuildingRoomList({ buildingId }: { buildingId: number }) {
                     key={p.id}
                     className="flex items-center gap-3 border-b border-base-200 px-4 py-2.5 last:border-0"
                 >
-                    <span className="w-10 flex-shrink-0 text-center font-mono text-xs font-bold text-base-content/70">
+                    <span className="w-10 flex-shrink-0 text-center font-mono text-sm font-bold text-base-content/70">
                         {roomLabel(p.name, p.passportNumber, p.nickname)}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-xs text-base-content/60">{p.label}</span>
+                    <span className="min-w-0 flex-1 truncate text-sm text-base-content/60">{p.label}</span>
                 </li>
             ))}
         </ul>

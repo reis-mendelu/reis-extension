@@ -23,11 +23,11 @@ export function CreditRing({ earned, total }: CreditRingProps) {
                 className="relative flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full"
                 style={{ background: `conic-gradient(var(--color-primary) 0% ${pct}%, var(--color-base-300) ${pct}% 100%)` }}
             >
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-base-100 font-display text-sm font-bold text-base-content">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-base-100 font-display text-base font-bold text-base-content">
                     {pct} %
                 </div>
             </div>
-            <span className="text-sm font-semibold text-base-content">
+            <span className="text-base font-semibold text-base-content">
                 {t('mobile.subjects.creditsOf', { earned, total })}
             </span>
         </div>

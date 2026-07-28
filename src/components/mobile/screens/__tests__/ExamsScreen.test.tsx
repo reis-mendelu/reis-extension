@@ -13,6 +13,7 @@ function point(overrides: Partial<TimelinePoint> = {}): TimelinePoint {
         date: overrides.date ?? new Date('2026-06-01T09:00:00'),
         daysLeft: overrides.daysLeft ?? 5,
         label: overrides.label ?? '1.6.2026 09:00',
+        shortLabel: overrides.shortLabel ?? '1.6.',
     };
 }
 
@@ -89,7 +90,9 @@ describe('ExamsScreen', () => {
         expect(screen.getByTestId('watch-toggle')).toBeInTheDocument();
     });
 
-    it('shows Odhlásit for a registered section', () => {
+    // Unregistering is destructive, so it lives behind the card's chevron
+    // rather than sitting on every collapsed registered card.
+    it('reveals Odhlásit for a registered section only once expanded', () => {
         useAppStore.setState({
             examClassmates: { 'term-1': [] },
             lastExamClassmatesFetchedAt: { 'term-1': Date.now() },
@@ -100,6 +103,9 @@ describe('ExamsScreen', () => {
             terms: [{ id: 'term-1', date: '1.6.2026', time: '09:00' }],
         }])]);
         render(<ExamsScreen />);
+        expect(screen.queryByText('Odhlásit')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { expanded: false }));
         expect(screen.getByText('Odhlásit')).toBeInTheDocument();
     });
 
@@ -157,17 +163,30 @@ describe('ExamTimeline', () => {
 
     it('centres a single point at 50% of the inset span', () => {
         render(<ExamTimeline points={[point({ id: 'only' })]} />);
-        const dotLabel = screen.getByText('1.6.2026 09:00');
-        const wrapper = dotLabel.parentElement;
+        // Renders the short label; the full date+time would not fit alongside
+        // its neighbours once there is more than one point.
+        const wrapper = screen.getByText('1.6.').parentElement;
         expect(wrapper).toHaveStyle({ left: '50%' });
     });
 
-    it('positions two points at the start and end of the inset span', () => {
+    // The end columns anchor by their outer edge instead of centring on the
+    // dot: a centred label on a dot sitting exactly at 0%/100% hangs half its
+    // width off the screen.
+    it('anchors the end points by their outer edges', () => {
         render(<ExamTimeline points={[
-            point({ id: 'first', label: 'first-label' }),
-            point({ id: 'second', label: 'second-label' }),
+            point({ id: 'first', shortLabel: 'first-label' }),
+            point({ id: 'second', shortLabel: 'second-label' }),
         ]} />);
         expect(screen.getByText('first-label').parentElement).toHaveStyle({ left: '0%' });
-        expect(screen.getByText('second-label').parentElement).toHaveStyle({ left: '100%' });
+        expect(screen.getByText('second-label').parentElement).toHaveStyle({ right: '0%' });
+    });
+
+    it('centres the points between the two ends', () => {
+        render(<ExamTimeline points={[
+            point({ id: 'a', shortLabel: 'a-label' }),
+            point({ id: 'b', shortLabel: 'b-label' }),
+            point({ id: 'c', shortLabel: 'c-label' }),
+        ]} />);
+        expect(screen.getByText('b-label').parentElement).toHaveStyle({ left: '50%' });
     });
 });

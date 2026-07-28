@@ -28,7 +28,11 @@ export function SubjectDrawerTabs({ activeTab, onTabChange, disabledTabs, counts
     const { t } = useTranslation();
 
     return (
-        <div className="flex flex-shrink-0 items-end gap-0.5 border-b border-base-300 px-2">
+        // Below 360px the five labels no longer fit a fifth of the width each
+        // — the longest ("Záznámník") pushed the row to 325px on a 320px
+        // screen and clipped itself. Tighter padding and a hair smaller label
+        // keep all five visible; wider phones are unaffected.
+        <div className="flex flex-shrink-0 items-end gap-0.5 border-b border-base-300 px-2 max-[359px]:gap-0 max-[359px]:px-1">
             {TABS.map(({ id, labelKey, icon: Icon }) => {
                 const isActive = activeTab === id;
                 const isDisabled = disabledTabs.includes(id);
@@ -51,12 +55,12 @@ export function SubjectDrawerTabs({ activeTab, onTabChange, disabledTabs, counts
                         <span className="relative">
                             <Icon size={17} strokeWidth={isActive ? 2.5 : 2} />
                             {count !== undefined && count > 0 && (
-                                <span className="absolute -top-1.5 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-2xs font-bold text-primary-content">
+                                <span className="absolute -top-1.5 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-xs font-bold text-primary-content">
                                     {count}
                                 </span>
                             )}
                         </span>
-                        <span className="text-2xs font-bold leading-tight">{t(labelKey)}</span>
+                        <span className="text-xs font-bold leading-tight max-[359px]:text-[11px]">{t(labelKey)}</span>
                     </button>
                 );
             })}

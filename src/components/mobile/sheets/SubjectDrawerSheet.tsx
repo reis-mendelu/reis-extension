@@ -33,11 +33,14 @@ export interface SubjectDrawerSheetProps {
  * shared `DrawerTabBody` beneath, and a persistent "open in IS" footer.
  *
  * Selection/drag props passed to `DrawerTabBody` are mouse-only concerns
- * (rubber-band rectangle select) that don't translate to touch. Rather than
- * fake a pointer-based drag, this sheet passes a plain tap-to-toggle
- * `selectedIds`/`toggleSelect` (so the file-row checkbox still works) and
- * hardcodes `isDragging`/`selectionBoxStyle`/`showDragHint` to their
- * off states — there is no rectangle to draw and no hint to teach on a phone.
+ * (rubber-band rectangle select) that don't translate to touch, so this sheet
+ * hardcodes `isDragging`/`selectionBoxStyle`/`showDragHint` to their off
+ * states — there is no rectangle to draw and no hint to teach on a phone —
+ * and passes `selectable={false}` to drop the per-row checkboxes: with no
+ * ctrl-click, no drag-select and no bulk-download bar on a phone, the only
+ * thing a checkbox could do is select one row at a time. Files open or
+ * download from the row itself. `selectedIds`/`toggleSelect` are still
+ * threaded through because `DrawerTabBody` requires them.
  */
 export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) {
     const { courseCode, courseName, courseId } = sheet;
@@ -129,6 +132,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
                     resolvedCourseId={resolvedCourseId}
                     syllabusResult={syllabusResult}
                     folderUrl={subjectInfo?.folderUrl}
+                    selectable={false}
                 />
             </div>
             {openInIsHref && (
@@ -136,7 +140,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
                     href={openInIsHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex flex-shrink-0 items-center justify-center gap-1.5 border-t border-base-300 py-3 text-2xs font-semibold text-base-content/60"
+                    className="flex flex-shrink-0 items-center justify-center gap-1.5 border-t border-base-300 py-3 text-xs font-semibold text-base-content/60"
                 >
                     {t('mobile.sheet.openInIsMendelu')}
                     <ExternalLink size={13} />

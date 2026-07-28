@@ -37,7 +37,7 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
                     </div>
                 )}
                 {loading && !notifications.length ? (
-                    <div className="p-6 text-center text-sm text-base-content/60">{t('notifications.loading')}</div>
+                    <div className="p-6 text-center text-base text-base-content/60">{t('notifications.loading')}</div>
                 ) : !hasContent ? (
                     <div className="flex flex-col items-center gap-2 p-10 text-center text-base-content/60">
                         <Bell size={40} className="opacity-40" />

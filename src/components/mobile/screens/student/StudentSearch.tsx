@@ -27,7 +27,7 @@ export function StudentSearch({ mode, onModeChange, query, onQueryChange }: Stud
                     role="tab"
                     aria-selected={mode === 'pages'}
                     onClick={() => onModeChange('pages')}
-                    className={`flex-1 rounded-md py-2 text-xs font-semibold transition-colors ${
+                    className={`flex-1 rounded-md py-2 text-sm font-semibold transition-colors ${
                         mode === 'pages' ? 'bg-base-100 text-base-content shadow-sm' : 'text-base-content/60'
                     }`}
                 >
@@ -38,7 +38,7 @@ export function StudentSearch({ mode, onModeChange, query, onQueryChange }: Stud
                     role="tab"
                     aria-selected={mode === 'people'}
                     onClick={() => onModeChange('people')}
-                    className={`flex-1 rounded-md py-2 text-xs font-semibold transition-colors ${
+                    className={`flex-1 rounded-md py-2 text-sm font-semibold transition-colors ${
                         mode === 'people' ? 'bg-base-100 text-base-content shadow-sm' : 'text-base-content/60'
                     }`}
                 >
@@ -52,7 +52,7 @@ export function StudentSearch({ mode, onModeChange, query, onQueryChange }: Stud
                     onChange={(e) => onQueryChange(e.target.value)}
                     placeholder={placeholder}
                     aria-label={placeholder}
-                    className="w-full bg-transparent text-sm text-base-content outline-none placeholder:text-base-content/40"
+                    className="w-full bg-transparent text-base text-base-content outline-none placeholder:text-base-content/40"
                 />
             </div>
         </div>

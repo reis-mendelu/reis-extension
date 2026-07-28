@@ -43,6 +43,11 @@ export interface FileListProps {
     onDownloadSingle?: (link: string) => void;
     folderUrl?: string;
     lastVisitedAt?: number | null;
+    /** Per-row selection checkboxes. Defaults to on for desktop, where
+     *  selection feeds ctrl-click and rubber-band multi-select for a bulk
+     *  download. The phone drawer has neither, so it turns them off — a
+     *  checkbox that only ever selects one row at a time is noise. */
+    selectable?: boolean;
 }
 
 export interface DragSelectionState {

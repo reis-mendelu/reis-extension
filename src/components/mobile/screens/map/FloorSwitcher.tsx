@@ -27,7 +27,7 @@ export function FloorSwitcher() {
             <button
                 type="button"
                 onClick={exitToCampus}
-                className="absolute left-4 top-[76px] z-[1000] flex items-center gap-1.5 rounded-full px-3.5 py-2.5 text-xs font-semibold backdrop-blur-md"
+                className="absolute left-4 top-[76px] z-[1000] flex items-center gap-1.5 rounded-full px-3.5 py-2.5 text-sm font-semibold backdrop-blur-md"
                 style={{
                     background: 'rgba(31,41,55,.94)',
                     border: '1px solid rgba(243,244,246,.1)',

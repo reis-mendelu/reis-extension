@@ -52,7 +52,8 @@ export function FileList({
     onViewPdf,
     onDownloadSingle,
     folderUrl,
-    lastVisitedAt
+    lastVisitedAt,
+    selectable = true
 }: FileListProps) {
     const { t, language } = useTranslation();
     const { noteKeys } = useDocumentNoteKeys(courseCode);
@@ -122,13 +123,15 @@ export function FileList({
                                                 }
                                             `}
                                         >
-                                            <input 
-                                                type="checkbox"
-                                                checked={isSelected}
-                                                onChange={(e) => onToggleSelect(subFile.link, e as any)}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="checkbox checkbox-xs checkbox-primary interactive shrink-0"
-                                            />
+                                            {selectable && (
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={(e) => onToggleSelect(subFile.link, e as any)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="checkbox checkbox-xs checkbox-primary interactive shrink-0"
+                                                />
+                                            )}
                                             
                                             <div className="flex-1 min-w-0">
                                                 <div className={`font-medium truncate flex items-center gap-2 ${isSelected ? 'text-primary' : 'text-base-content'}`}>

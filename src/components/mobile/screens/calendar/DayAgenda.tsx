@@ -16,9 +16,9 @@ export function DayAgenda({ rows, onOpenEvent }: DayAgendaProps) {
     return (
         <div data-testid="day-agenda" className="flex gap-3 px-4">
             <div className="flex flex-shrink-0 flex-col items-center pt-1">
-                <span className="text-2xs font-medium text-base-content/60">{railStart}</span>
+                <span className="text-xs font-medium text-base-content/60">{railStart}</span>
                 <div className="my-1 w-0.5 flex-1 rounded-full bg-gradient-to-b from-primary to-base-300" />
-                <span className="text-2xs font-medium text-base-content/60">{railEnd}</span>
+                <span className="text-xs font-medium text-base-content/60">{railEnd}</span>
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-2.5 pb-8">
                 {rows.map((row, i) =>

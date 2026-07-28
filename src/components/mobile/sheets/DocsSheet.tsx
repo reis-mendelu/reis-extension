@@ -50,7 +50,7 @@ export function DocsSheet({ onClose }: DocsSheetProps) {
                             <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-field bg-error/10 text-error">
                                 <Icon className="h-4 w-4" />
                             </span>
-                            <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                            <span className="min-w-0 flex-1 truncate text-base font-medium">
                                 {t(`documents.items.${doc.labelKey}`)}
                             </span>
                             <StatusIcon status={st} />
@@ -70,7 +70,7 @@ export function DocsSheet({ onClose }: DocsSheetProps) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-disabled={!sid}
-                    className={`mt-1 flex items-center gap-3 border-t border-base-300 px-3 py-2.5 text-sm text-base-content/70 ${!sid ? 'pointer-events-none opacity-50' : ''}`}
+                    className={`mt-1 flex items-center gap-3 border-t border-base-300 px-3 py-2.5 text-base text-base-content/70 ${!sid ? 'pointer-events-none opacity-50' : ''}`}
                 >
                     <ScrollText className="h-4 w-4 flex-shrink-0" />
                     <span className="flex-1 font-medium">{t('documents.items.zadost')}</span>

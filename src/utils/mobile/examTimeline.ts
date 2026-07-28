@@ -5,7 +5,11 @@ export interface TimelinePoint {
     subjectCode: string;
     date: Date;
     daysLeft: number;
+    /** Full "DD.MM.YYYY HH:MM". */
     label: string;
+    /** Day and month only ("5.4."), for the timeline itself: several points
+     *  share one phone width, where full timestamps collide. */
+    shortLabel: string;
 }
 
 /** "DD.MM.YYYY" + "HH:MM" → Date, or null when the string is not that shape. */
@@ -42,6 +46,7 @@ export function buildExamTimeline(exams: ExamSubject[], now: Date): TimelinePoin
                 date,
                 daysLeft: daysBetween(now, date),
                 label: `${reg.date} ${reg.time}`,
+                shortLabel: `${date.getDate()}.${date.getMonth() + 1}.`,
             });
         }
     }

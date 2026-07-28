@@ -25,6 +25,14 @@ describe('buildExamTimeline', () => {
     expect(pts[0]!.daysLeft).toBe(5);
   });
 
+  // The timeline lays several points across a phone width, so it renders
+  // `shortLabel`; the full `label` stays for anything wanting date + time.
+  it('carries a day-and-month short label beside the full one', () => {
+    const pts = buildExamTimeline([subject('EBC-ALG', { id: 't1', date: '05.04.2026', time: '09:00' })], now);
+    expect(pts[0]!.label).toBe('05.04.2026 09:00');
+    expect(pts[0]!.shortLabel).toBe('5.4.');
+  });
+
   it('reports zero days left for a term today', () => {
     const pts = buildExamTimeline([subject('EBC-ALG', { id: 't1', date: '20.04.2026', time: '14:00' })], now);
     expect(pts[0]!.daysLeft).toBe(0);

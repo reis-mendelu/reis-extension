@@ -67,14 +67,14 @@ export function EventDetailSheet({ sheet, onClose }: EventDetailSheetProps) {
                 <button
                     type="button"
                     onClick={onShowOnMap}
-                    className="flex min-h-11 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-content"
+                    className="flex min-h-11 items-center justify-center rounded-xl bg-primary text-base font-semibold text-primary-content"
                 >
                     {t('mobile.sheet.showOnMap')}
                 </button>
                 <button
                     type="button"
                     onClick={onHide}
-                    className="flex min-h-9 items-center justify-center text-xs font-semibold text-base-content/60"
+                    className="flex min-h-9 items-center justify-center text-sm font-semibold text-base-content/60"
                 >
                     {t('calendar.hide.occurrence')}
                 </button>

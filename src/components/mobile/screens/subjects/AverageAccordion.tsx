@@ -18,9 +18,9 @@ function formatGpa(value: number): string {
 function AverageRow({ label, value }: { label: string; value: string }) {
     return (
         <div className="flex items-center gap-2 border-t border-base-300/60 py-2.5 first:border-t-0">
-            <span className="text-sm text-base-content/70">{label}</span>
+            <span className="text-base text-base-content/70">{label}</span>
             <span className="flex-1 border-b border-dotted border-base-300" />
-            <span className="font-display text-sm font-semibold text-base-content">{value}</span>
+            <span className="font-display text-base font-semibold text-base-content">{value}</span>
         </div>
     );
 }
@@ -48,7 +48,7 @@ export function AverageAccordion({ studyStats, comparison }: AverageAccordionPro
                 aria-expanded={open}
                 className="flex w-full items-center justify-between px-4 py-3.5"
             >
-                <span className="text-2xs font-bold uppercase tracking-wider text-base-content/60">
+                <span className="text-xs font-bold uppercase tracking-wider text-base-content/60">
                     {t('mobile.subjects.average')}
                 </span>
                 {open
@@ -67,7 +67,7 @@ export function AverageAccordion({ studyStats, comparison }: AverageAccordionPro
                     {standing && comparison && (
                         <div className={`flex items-center gap-2 pt-2.5 ${hasAverages ? 'mt-1 border-t border-base-300/60' : ''}`}>
                             <Trophy size={15} className="flex-shrink-0 text-primary" />
-                            <span className="text-sm font-medium text-base-content">
+                            <span className="text-base font-medium text-base-content">
                                 {standing.tier === 'top'
                                     ? t('mobile.subjects.topTier', { pct: Math.round(standing.pct) })
                                     : t('mobile.subjects.beats', { pct: Math.round(standing.pct) })}
@@ -76,10 +76,10 @@ export function AverageAccordion({ studyStats, comparison }: AverageAccordionPro
                     )}
                     {standing && comparison && (
                         <div className="flex items-baseline justify-end gap-2 pt-2.5">
-                            <span className="text-2xs font-bold uppercase tracking-wider text-base-content/60">
+                            <span className="text-xs font-bold uppercase tracking-wider text-base-content/60">
                                 {t('mobile.subjects.rank')}
                             </span>
-                            <span className="font-display text-sm font-semibold text-base-content">
+                            <span className="font-display text-base font-semibold text-base-content">
                                 {comparison.rank}. / {comparison.total}
                             </span>
                         </div>

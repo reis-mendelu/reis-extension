@@ -1141,7 +1141,10 @@
       "mates": "{count} classmates on this slot",
       "matesNone": "No classmates yet",
       "emptyTitle": "No exams",
-      "emptyBody": "Slots will show up here once they open."
+      "emptyBody": "Slots will show up here once they open.",
+      "matesOne": "{count} classmate on this slot",
+      "matesFew": "{count} classmates on this slot",
+      "matesOther": "{count} classmates on this slot"
     },
     "subjects": {
       "title": "Courses",
@@ -1159,7 +1162,10 @@
       "topTier": "You're in the top {pct}% of your year.",
       "rank": "Rank in year",
       "emptyTitle": "No courses yet",
-      "emptyBody": "Courses appear once you've enrolled."
+      "emptyBody": "Courses appear once you've enrolled.",
+      "creditOne": "credit",
+      "creditFew": "credits",
+      "creditOther": "credits"
     },
     "map": {
       "searchPlaceholder": "Find a room, building, event…",
@@ -1208,8 +1214,7 @@
       "appearance": "Appearance",
       "darkModeHint": "saves your eyes and battery",
       "sync": "Sync",
-      "societies": "Societies on the map",
-      "footer": "made by students, for students"
+      "societies": "Societies on the map"
     }
   }
 }

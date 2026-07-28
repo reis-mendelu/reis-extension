@@ -27,8 +27,8 @@ function EmptyState() {
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <BookOpen size={28} />
             </div>
-            <div className="font-display text-base font-bold">{t('mobile.subjects.emptyTitle')}</div>
-            <div className="max-w-56 text-2xs text-base-content/60">{t('mobile.subjects.emptyBody')}</div>
+            <div className="font-display text-lg font-bold">{t('mobile.subjects.emptyTitle')}</div>
+            <div className="max-w-56 text-xs text-base-content/60">{t('mobile.subjects.emptyBody')}</div>
         </div>
     );
 }
@@ -51,7 +51,7 @@ export function SubjectsScreen() {
         <button
             type="button"
             onClick={openPlan}
-            className="flex h-11 flex-shrink-0 items-center rounded-lg bg-primary/15 px-3.5 text-2xs font-semibold text-primary"
+            className="flex h-11 flex-shrink-0 items-center rounded-lg bg-primary/15 px-3.5 text-sm font-semibold text-primary"
         >
             {t('mobile.subjects.studyPlan')}
         </button>

@@ -19,8 +19,8 @@ export function ExamGroup({ title, count, children }: ExamGroupProps) {
                 onClick={() => setOpen((o) => !o)}
                 className="flex min-h-11 items-center gap-2 px-0.5 text-left"
             >
-                <span className="text-2xs font-bold uppercase tracking-wider text-base-content/60">{title}</span>
-                <span className="rounded-full bg-base-300 px-1.5 py-0.5 text-2xs font-semibold text-base-content/60">
+                <span className="text-xs font-bold uppercase tracking-wider text-base-content/60">{title}</span>
+                <span className="rounded-full bg-base-300 px-1.5 py-0.5 text-xs font-semibold text-base-content/60">
                     {count}
                 </span>
                 <span className="flex-1 border-b border-base-300" />

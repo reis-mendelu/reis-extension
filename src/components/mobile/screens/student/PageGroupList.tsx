@@ -28,7 +28,7 @@ export function PageGroupList({ groups, onOpen }: PageGroupListProps) {
         <div className="flex flex-col">
             {groups.map((group) => (
                 <div key={group.id}>
-                    <div className="px-4 pb-0.5 pt-3 text-2xs font-bold uppercase tracking-wider text-base-content/60">
+                    <div className="px-4 pb-0.5 pt-3 text-xs font-bold uppercase tracking-wider text-base-content/60">
                         {group.label}
                     </div>
                     {group.items.map((item) => (
@@ -38,7 +38,7 @@ export function PageGroupList({ groups, onOpen }: PageGroupListProps) {
                             onClick={() => onOpen(item.href)}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-left"
                         >
-                            <span className="min-w-0 flex-1 truncate text-sm font-medium">{item.label}</span>
+                            <span className="min-w-0 flex-1 truncate text-base font-medium">{item.label}</span>
                             <ExternalLink size={14} className="flex-shrink-0 text-base-content/40" />
                         </button>
                     ))}

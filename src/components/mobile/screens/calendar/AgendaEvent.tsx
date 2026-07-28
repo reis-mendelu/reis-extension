@@ -33,25 +33,29 @@ export function AgendaEvent({ lesson, onOpen }: AgendaEventProps) {
     const styles = eventStyles(lesson);
 
     return (
-        <div
+        <button
+            type="button"
             onClick={onOpen}
-            className={`flex cursor-pointer flex-col gap-1 rounded-xl border border-l-4 p-3 ${styles.bg} ${styles.border} ${styles.rail}`}
+            className={`flex w-full cursor-pointer flex-col gap-1 rounded-xl border border-l-4 p-3 text-left ${styles.bg} ${styles.border} ${styles.rail}`}
         >
             <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-sm font-semibold text-content-primary">{courseName}</span>
+                <span className="truncate text-base font-semibold text-content-primary">{courseName}</span>
                 {lesson.isExam && (
-                    <span className={`flex-shrink-0 text-2xs font-bold uppercase ${styles.text}`}>
+                    <span className={`flex-shrink-0 text-xs font-bold uppercase ${styles.text}`}>
                         {t('course.badge.exam')}
                     </span>
                 )}
             </div>
-            <div className="flex items-center gap-1 text-xs text-content-secondary">
-                <MapPin size={12} className="flex-shrink-0" />
+            <div className="flex items-center gap-1 text-sm text-content-secondary">
+                <MapPin size={14} className="flex-shrink-0" />
                 <span className="truncate">
                     {room} · {lesson.startTime} – {lesson.endTime}
-                    {teacher && ` · ${teacher}`}
                 </span>
             </div>
-        </div>
+            {/* Its own line: at 390px the room+time+teacher run packed onto one
+                line always clipped the surname — the informative half of the
+                name — mid-word. */}
+            {teacher && <span className="truncate text-sm text-content-secondary">{teacher}</span>}
+        </button>
     );
 }

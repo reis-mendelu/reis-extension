@@ -34,6 +34,8 @@ interface DrawerTabBodyProps {
     syllabusResult: { syllabus: SyllabusRequirements | null; isLoading: boolean };
     folderUrl?: string;
     lastVisitedAt?: number | null;
+    /** Forwarded to FileList — off for the phone drawer. */
+    selectable?: boolean;
 }
 
 /**
@@ -43,7 +45,7 @@ interface DrawerTabBodyProps {
  */
 export function DrawerTabBody({
     tab, lesson, files, isFilesLoading, isSyncing, isDragging, selectionBoxStyle, showDragHint,
-    groupedFiles, selectedIds, fileRefs, ignoreClickRef, toggleSelect, openFile, onViewPdf, onDownloadSingle, resolvedCourseId, syllabusResult, folderUrl, lastVisitedAt
+    groupedFiles, selectedIds, fileRefs, ignoreClickRef, toggleSelect, openFile, onViewPdf, onDownloadSingle, resolvedCourseId, syllabusResult, folderUrl, lastVisitedAt, selectable
 }: DrawerTabBodyProps) {
     const { t, language } = useTranslation();
 
@@ -81,7 +83,8 @@ export function DrawerTabBody({
                  ) : (
                     <FileList key={lesson?.courseCode || ''} groups={groupedFiles} selectedIds={selectedIds} courseCode={lesson?.courseCode || ''}
                                fileRefs={fileRefs} ignoreClickRef={ignoreClickRef} onToggleSelect={toggleSelect}
-                               onOpenFile={openFile} onViewPdf={onViewPdf} onDownloadSingle={onDownloadSingle} folderUrl={folderUrl} lastVisitedAt={lastVisitedAt} />
+                               onOpenFile={openFile} onViewPdf={onViewPdf} onDownloadSingle={onDownloadSingle} folderUrl={folderUrl} lastVisitedAt={lastVisitedAt}
+                               selectable={selectable} />
                  )}
             </>
         );

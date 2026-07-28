@@ -43,7 +43,7 @@ export function DayChips({ weekStart, selectedIso, onSelect }: DayChipsProps) {
                         key={iso}
                         type="button"
                         onClick={() => onSelect(iso)}
-                        className={`flex-1 rounded-full py-2 text-center text-xs transition-colors ${
+                        className={`flex-1 rounded-full py-2 text-center text-sm transition-colors ${
                             isSelected
                                 ? 'bg-primary font-semibold text-primary-content'
                                 : 'font-medium text-base-content/70'
