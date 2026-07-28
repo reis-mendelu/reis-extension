@@ -25,7 +25,10 @@ export default defineConfig({
     'import.meta.env.VITE_DEV_SOCIETY': JSON.stringify(process.env.VITE_DEV_SOCIETY ?? 'reis'),
   },
   server: {
-    port: 3000,
+    // Honour PORT so the harness can assign a free one when something else is
+    // already squatting 3000. strictPort stays on so a clash fails loudly
+    // rather than silently drifting to another port the tests won't find.
+    port: Number(process.env.PORT) || 3000,
     strictPort: true,
   },
 });

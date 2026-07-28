@@ -1,6 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 
-const BASE_URL = 'http://localhost:3000';
+// Defaults to 3000, but honours REIS_WEB_URL so the suite can follow the dev
+// server when the harness has to assign a different port (something else may
+// already hold 3000).
+const BASE_URL = process.env.REIS_WEB_URL ?? 'http://localhost:3000';
 
 // Mirrors src/i18n/locales/en.json's mobile.nav.* — BottomNav's aria-label
 // per tab, used as the accessible name for `getByRole('button', ...)`.
