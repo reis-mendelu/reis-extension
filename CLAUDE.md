@@ -63,6 +63,10 @@ Why not `npm run dev` (WXT)? `wxt dev` builds an **extension** and its dev serve
 
 Anti-drift is enforced by `scripts/lib/__tests__/no-parser-reimpl.test.ts` (the scraper must reuse `@/api/*`, never reimplement parsers). The `build:publicAssets` hook in `wxt.config.ts` strips `dev-real-data.json` from production extension builds so real data never ships.
 
+**Working in a worktree:** a fresh worktree has only tracked files, so `node_modules`, `public/dev-real-data.json` and `.env` are all absent — and they fail *quietly* (Vite 403s on `@fontsource/inter` and the app renders in a fallback typeface; a missing snapshot makes `dev:web` serve `index.html`, so the UI silently falls back to stale IndexedDB). The `SessionStart` hook `.claude/hooks/worktree-bootstrap.sh` links all three from the main checkout on session start. It shares `node_modules` — run `npm ci` in the worktree if that branch changes dependencies. `PORT` is honoured by `vite.web.config.ts` so concurrent worktrees don't fight over `:3000`.
+
+**Verifying UI changes:** use the `verify-ui` skill — `npm run verify:ui -- <label> --view <view>` screenshots at 320/390/430 and asserts overflow, text collision, and contrast. Notably it catches the recurring dark-theme trap: `bg-base-300` on a `base-200` surface is **1.006:1**, i.e. invisible. Never judge a UI change from a screenshot alone.
+
 ## Release
 
 Pushing a `v*` tag triggers `.github/workflows/publish.yml` → builds Chrome + Firefox zips → submits to all three stores via `wxt submit`. Use `/release` to automate the full flow.
