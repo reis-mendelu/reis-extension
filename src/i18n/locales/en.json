@@ -1144,7 +1144,19 @@
       "emptyBody": "Slots will show up here once they open.",
       "matesOne": "{count} classmate on this slot",
       "matesFew": "{count} classmates on this slot",
-      "matesOther": "{count} classmates on this slot"
+      "matesOther": "{count} classmates on this slot",
+      "nextUp": "What's coming",
+      "today": "today",
+      "groupThisWeek": "Registered · this week",
+      "groupLater": "Registered · later",
+      "groupOpen": "Open slots",
+      "registeredCountOne": "{count} registered",
+      "registeredCountFew": "{count} registered",
+      "registeredCountOther": "{count} registered",
+      "termCountOne": "{count} slot",
+      "termCountFew": "{count} slots",
+      "termCountOther": "{count} slots",
+      "freeOf": "{free} of {total} free"
     },
     "subjects": {
       "title": "Courses",

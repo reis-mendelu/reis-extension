@@ -13,7 +13,7 @@ export interface TimelinePoint {
 }
 
 /** "DD.MM.YYYY" + "HH:MM" → Date, or null when the string is not that shape. */
-function parseCzechDateTime(date: string, time: string): Date | null {
+export function parseCzechDateTime(date: string, time: string): Date | null {
     const m = date.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})$/);
     if (!m) return null;
     const [h, min] = (time.match(/^(\d{1,2}):(\d{2})$/) ? time.split(':') : ['0', '0']).map(Number);

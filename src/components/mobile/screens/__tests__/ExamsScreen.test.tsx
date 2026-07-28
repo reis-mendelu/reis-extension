@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { ExamsScreen } from '../ExamsScreen';
 import { ExamTimeline } from '../exams/ExamTimeline';
 import { useAppStore } from '../../../../store/useAppStore';
@@ -109,7 +109,10 @@ describe('ExamsScreen', () => {
         expect(screen.getByText('Odhlásit')).toBeInTheDocument();
     });
 
-    it('puts a registered section under Nadcházející and a non-registered one under Ostatní', () => {
+    // Registered exams split by week; anything not registered lands in the
+    // open-slots group. The fixture's 1.6.2026 is well in the past, so it sorts
+    // into "later" rather than "this week".
+    it('groups a registered section by week and a non-registered one under open slots', () => {
         useAppStore.setState({
             examClassmates: { 'term-1': [] },
             lastExamClassmatesFetchedAt: { 'term-1': Date.now() },
@@ -126,17 +129,15 @@ describe('ExamsScreen', () => {
             }], { id: 'sub-avail', name: 'AvailableSubject', code: 'AVL-1' }),
         ]);
         render(<ExamsScreen />);
-        const text = screen.getByTestId('exams-screen').textContent ?? '';
-        const upcomingIdx = text.indexOf('Nadcházející');
-        const otherIdx = text.indexOf('Ostatní');
-        const regIdx = text.indexOf('RegisteredSubject');
-        const availIdx = text.indexOf('AvailableSubject');
-
-        expect(upcomingIdx).toBeGreaterThanOrEqual(0);
-        expect(otherIdx).toBeGreaterThan(upcomingIdx);
-        expect(regIdx).toBeGreaterThan(upcomingIdx);
-        expect(regIdx).toBeLessThan(otherIdx);
-        expect(availIdx).toBeGreaterThan(otherIdx);
+        // Scoped to the list: the "what's coming" strip repeats every registered
+        // exam above it, so an unscoped indexOf finds the subject there first.
+        const listText = screen.getByTestId('exam-list').textContent ?? '';
+        const registeredIdx = listText.indexOf('Přihlášené');
+        const openIdx = listText.indexOf('Otevřené termíny');
+        expect(registeredIdx).toBeGreaterThanOrEqual(0);
+        expect(openIdx).toBeGreaterThan(registeredIdx);
+        expect(listText.indexOf('RegisteredSubject')).toBeLessThan(openIdx);
+        expect(listText.indexOf('AvailableSubject')).toBeGreaterThan(openIdx);
     });
 
     it('marks the matching term as "tvůj termín" once a registered section is expanded', () => {
@@ -150,7 +151,8 @@ describe('ExamsScreen', () => {
             terms: [{ id: 'term-1', date: '1.6.2026', time: '09:00' }],
         }])]);
         render(<ExamsScreen />);
-        fireEvent.click(screen.getByText('Algoritmizace'));
+        // The strip carries the same subject name, so target the list card.
+        fireEvent.click(within(screen.getByTestId('exam-list')).getByText('Algoritmizace'));
         expect(screen.getByText('tvůj termín')).toBeInTheDocument();
     });
 });

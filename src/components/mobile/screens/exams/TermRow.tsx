@@ -4,6 +4,9 @@ import { Bell, BellRing } from 'lucide-react';
 import type { ExamSection, ExamTerm } from '../../../../types/exams';
 import { useWatchdog } from '../../../../hooks/data/useWatchdog';
 import { useTranslation } from '../../../../hooks/useTranslation';
+import { freeSeats } from '../../../../utils/mobile/examRows';
+import { parseCzechDateTime } from '../../../../utils/mobile/examTimeline';
+import { formatDayMonth, trimHour } from '../../../../utils/mobile/examWhen';
 
 export interface TermRowProps {
     term: ExamTerm;
@@ -39,27 +42,44 @@ export function TermRow({ term, section, isProcessing, onRegister }: TermRowProp
     const isFull = term.full || !!(term.capacity && term.capacity.occupied >= term.capacity.total);
     const room = (language === 'en' && term.roomEn) ? term.roomEn : (term.roomCs || term.room);
     const sectionForm = (language === 'en' && term.sectionFormEn) ? term.sectionFormEn : (term.sectionFormCs || term.sectionForm);
-    const subline = [room, term.teacher, sectionForm].filter(Boolean).join(' · ');
+
+    // "po 3. 8. · 14:00 · Q08", with the seats left beneath. Falls back to the
+    // raw IS strings when the date does not parse, so a placeholder value
+    // never blanks out the row.
+    const parsed = parseCzechDateTime(term.date, term.time);
+    const when = parsed
+        ? `${formatDayMonth(parsed, language === 'en' ? 'en-US' : 'cs-CZ')} · ${trimHour(term.time)}`
+        : `${term.date} · ${term.time}`;
+    const seats = freeSeats(term);
+    const subline = [
+        seats ? t('mobile.exams.freeOf', { free: seats.free, total: seats.total }) : null,
+        term.teacher,
+        sectionForm,
+    ].filter(Boolean).join(' · ');
 
     return (
-        <div className="flex items-center gap-2.5 rounded-xl border border-base-200 bg-base-100 px-3 py-2.5">
+        <div
+            className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 ${
+                isRegHere ? 'border-primary/40 bg-primary/5' : 'border-base-300 bg-base-100'
+            }`}
+        >
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-sm font-semibold text-base-content">
-                    {term.date} · {term.time}
+                <span className="truncate text-base font-bold text-base-content">
+                    {[when, room].filter(Boolean).join(' · ')}
                 </span>
-                {subline && <span className="truncate text-xs text-base-content/60">{subline}</span>}
+                {subline && <span className="truncate text-sm text-base-content/60">{subline}</span>}
             </div>
 
             {isRegHere ? (
-                <span className="flex-shrink-0 text-xs font-bold text-success">{t('mobile.exams.yourTerm')}</span>
+                <span className="flex-shrink-0 text-sm font-bold text-success">{t('mobile.exams.yourTerm')}</span>
             ) : isFull ? (
-                <span className="flex-shrink-0 text-xs font-semibold text-base-content/60">{t('mobile.exams.full')}</span>
+                <span className="flex-shrink-0 text-sm font-semibold text-base-content/60">{t('mobile.exams.full')}</span>
             ) : term.canRegisterNow ? (
                 <button
                     type="button"
                     onClick={() => onRegister(section, term.id)}
                     disabled={isProcessing}
-                    className="min-h-11 flex-shrink-0 rounded-lg bg-primary/15 px-3.5 text-sm font-semibold text-primary disabled:opacity-50"
+                    className="min-h-11 flex-shrink-0 rounded-lg bg-primary/15 px-4 text-sm font-bold text-primary disabled:opacity-50"
                 >
                     {t('mobile.exams.register')}
                 </button>
