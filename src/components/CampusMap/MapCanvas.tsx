@@ -9,6 +9,7 @@ import {
   roomLabel,
   categoryStyle,
   remotePlaceBounds,
+  ringContains,
   SELECTED_STYLE,
   STRUCTURE_STYLE,
   BUILDING_STYLE,
@@ -120,6 +121,10 @@ export function MapCanvas() {
     const layer = layerRef.current;
     layer.clearLayers();
     const select = useAppStore.getState();
+    // Leaving floor-view by tapping the basemap keeps the camera; the "Celý
+    // kampus" button still re-fits the campus. Cleared where the camera
+    // decision is reached rather than here.
+    const cameFromMapTap = keepViewRef.current;
     if (exitHandlerRef.current) {
       map.off('click', exitHandlerRef.current);
       exitHandlerRef.current = null;
@@ -197,7 +202,7 @@ export function MapCanvas() {
         flyAndReveal(map, () =>
           map.setView([lat, lon], Math.max(map.getZoom(), 18), { animate: false })
         );
-      } else if (keepViewRef.current) {
+      } else if (cameFromMapTap) {
         // Left floor-view by tapping the basemap: drop the floor plan but leave
         // the camera alone. Re-fitting the campus here threw the user all the
         // way out to the overview when all they did was tap beside a building —
@@ -206,7 +211,6 @@ export function MapCanvas() {
         // Deliberately NOT wrapped in flyAndReveal: with no camera move there is
         // no re-projection to hide, and its 900ms safety reveal would blank the
         // vector panes for most of a second on a `moveend` that never comes.
-        keepViewRef.current = false;
       } else {
         flyAndReveal(map, () =>
           map.fitBounds(META.campus.bounds as L.LatLngBoundsExpression, {
@@ -216,6 +220,7 @@ export function MapCanvas() {
           })
         );
       }
+      keepViewRef.current = false;
       return;
     }
 
@@ -247,8 +252,13 @@ export function MapCanvas() {
         .addTo(layer);
     }
     drawLandmarks(layer, select, SIBLING_STYLE);
-    // Clicking the bare basemap (not an outline/room) returns to overview.
-    const onMapClick = () => {
+    // Tapping the bare basemap leaves floor-view — but only from OUTSIDE the
+    // building. The gaps between rooms (corridors, courtyards, stairwells) are
+    // still the building, and exiting when a tap lands in one made the floor
+    // plan feel like it was slipping out from under you. Tested against the
+    // outline, not `bounds`: these footprints are L- and U-shaped.
+    const onMapClick = (e: L.LeafletMouseEvent) => {
+      if (b && ringContains(b.outline.coordinates[0], e.latlng.lng, e.latlng.lat)) return;
       keepViewRef.current = true;
       select.exitToCampus();
     };

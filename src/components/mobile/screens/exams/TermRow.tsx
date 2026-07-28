@@ -41,7 +41,6 @@ export function TermRow({ term, section, isProcessing, onRegister }: TermRowProp
     const isRegHere = section.registeredTerm?.id === term.id;
     const isFull = term.full || !!(term.capacity && term.capacity.occupied >= term.capacity.total);
     const room = (language === 'en' && term.roomEn) ? term.roomEn : (term.roomCs || term.room);
-    const sectionForm = (language === 'en' && term.sectionFormEn) ? term.sectionFormEn : (term.sectionFormCs || term.sectionForm);
 
     // "po 3. 8. · 14:00 · Q08", with the seats left beneath. Falls back to the
     // raw IS strings when the date does not parse, so a placeholder value
@@ -50,12 +49,13 @@ export function TermRow({ term, section, isProcessing, onRegister }: TermRowProp
     const when = parsed
         ? `${formatDayMonth(parsed, language === 'en' ? 'en-US' : 'cs-CZ')} · ${trimHour(term.time)}`
         : `${term.date} · ${term.time}`;
+    // Seats only. The row already carries date, time, room and a status on one
+    // line; adding the teacher and the section form pushed it to six facts and
+    // truncated the name mid-title anyway ("Ing. Břetislav Andrlí…"). The design
+    // shows just the seat count here, and the teacher stays available on the
+    // subject's own screen.
     const seats = freeSeats(term);
-    const subline = [
-        seats ? t('mobile.exams.freeOf', { free: seats.free, total: seats.total }) : null,
-        term.teacher,
-        sectionForm,
-    ].filter(Boolean).join(' · ');
+    const subline = seats ? t('mobile.exams.freeOf', { free: seats.free, total: seats.total }) : '';
 
     return (
         <div
