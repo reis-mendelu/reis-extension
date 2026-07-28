@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { analyzeProbe, type ProbeElement, type ProbeResult } from '../uiFindings';
-import { parseCssColor } from '../contrast';
+import { parseCssColor, OPAQUE_BLACK } from '../contrast';
 
 const BASE_200 = parseCssColor('#0f172a')!;
 const BASE_300 = parseCssColor('#111827')!;
@@ -107,6 +107,26 @@ describe('analyzeProbe — surface contrast', () => {
     const transparent = { r: 0, g: 0, b: 0, a: 0 };
     const f = analyzeProbe(probe([el({ bg: BASE_300, bgChain: [transparent, BASE_200] })]));
     expect(kinds(f)).toContain('contrast-surface');
+  });
+
+  // The browser paints every ancestor layer in turn. Stopping at the nearest
+  // translucent one and compositing it straight onto the page backdrop skips
+  // the layers between, so the judged colour is not the rendered pixel.
+  it('composites the whole translucent ancestor stack, not just the nearest', () => {
+    // Two stacked 50%-white veils over black render as rgb(191); one veil alone
+    // renders as rgb(127). A surface of rgb(195) is therefore invisible on the
+    // real two-veil backdrop (~1.03:1) but perfectly visible on rgb(127)
+    // (~2.2:1) — so only correct full-stack compositing flags it.
+    const veil = { ...WHITE, a: 0.5 };
+    const surface = { r: 195, g: 195, b: 195, a: 1 };
+    const stacked = analyzeProbe(
+      probe([el({ bg: surface, bgChain: [veil, veil] })], { rootBg: OPAQUE_BLACK })
+    );
+    const single = analyzeProbe(
+      probe([el({ bg: surface, bgChain: [veil] })], { rootBg: OPAQUE_BLACK })
+    );
+    expect(kinds(stacked)).toContain('contrast-surface');
+    expect(kinds(single)).not.toContain('contrast-surface');
   });
 });
 

@@ -48,13 +48,22 @@ function parseArgs(argv: string[]): Options {
       flags.set(a.slice(2), next === undefined || next.startsWith('--') ? '' : argv[++i]!);
     } else positional.push(a);
   }
-  const label = positional[0];
-  if (!label) {
+  const rawLabel = positional[0];
+  if (!rawLabel) {
     console.error(
       'usage: npm run verify:ui -- <label> [--view exams] [--theme dark] [--click TEXT]'
     );
     process.exit(2);
   }
+  // The label becomes a filename. Anything with a separator or "…/.." in it
+  // would write outside .verify/ — which is also the directory this script
+  // wipes on every run, so an escaped path would silently survive and go stale.
+  const label = rawLabel.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[.-]+/, '');
+  if (!label) {
+    console.error(`label "${rawLabel}" has no usable characters — use letters, digits, - or _`);
+    process.exit(2);
+  }
+  if (label !== rawLabel) console.log(`label sanitised to "${label}"`);
   const widths = flags.get('widths')?.split(',').map(Number).filter(Boolean) ?? DEFAULT_WIDTHS;
   return {
     label,

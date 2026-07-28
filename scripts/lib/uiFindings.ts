@@ -74,14 +74,25 @@ function isOpaqueEnough(c: Rgba | null): c is Rgba {
   return c != null && c.a > 0.01;
 }
 
-/** Flatten an element's backdrop: first painted ancestor, composited over the
- *  page backdrop. Falls back to the page backdrop, then to white. */
+/**
+ * Flatten an element's backdrop the way the browser paints it: every ancestor
+ * layer composited in turn, outermost first, over the page backdrop.
+ *
+ * Taking only the nearest painted ancestor and dropping it straight onto the
+ * page backdrop skips every translucent layer between them, so the judged
+ * colour is not the pixel that ends up on screen. The probe truncates the chain
+ * at the first fully opaque ancestor, so this stays short.
+ *
+ * Returns null when nothing paints at all — no backdrop means no claim.
+ */
 function backdropOf(e: ProbeElement, root: Rgba | null | undefined): Rgba | null {
-  const base = isOpaqueEnough(root) ? root : OPAQUE_WHITE;
-  for (const c of e.bgChain) {
-    if (isOpaqueEnough(c)) return c.a >= 1 ? c : compositeOver(c, base);
-  }
-  return isOpaqueEnough(root) ? root : null;
+  const painted = e.bgChain.filter(isOpaqueEnough);
+  if (painted.length === 0) return isOpaqueEnough(root) ? root : null;
+
+  let acc: Rgba = isOpaqueEnough(root) ? root : OPAQUE_WHITE;
+  // bgChain is nearest-first; paint from the far end inward.
+  for (let i = painted.length - 1; i >= 0; i--) acc = compositeOver(painted[i]!, acc);
+  return acc;
 }
 
 function sameColor(a: Rgba, b: Rgba): boolean {

@@ -15,7 +15,14 @@ set -uo pipefail
 # The common git dir is the MAIN checkout's .git even from inside a worktree.
 common_dir=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || exit 0
 main_root=$(dirname "$common_dir")
-here=$(pwd -P)
+
+# The WORKTREE ROOT, not the cwd. A session with a persisted working directory
+# fires this hook from wherever it last was, and `pwd` would then create
+# src/api/node_modules while leaving the real worktree root empty. Derived from
+# git rather than $CLAUDE_PROJECT_DIR so the hook is also correct when run by
+# hand or from a test, where that variable is unset.
+here=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+[ -n "$here" ] || exit 0
 
 # Not a worktree (or somehow the main checkout itself) — nothing to do.
 [ "$main_root" = "$here" ] && exit 0
