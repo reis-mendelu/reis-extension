@@ -176,11 +176,19 @@ function probeSource(): ProbeResult {
     };
   });
 
+  // The page's own backdrop. html usually inherits body's background, so try
+  // both — without it, light text on an unpainted container scores as
+  // illegible against an assumed white page.
+  const rootBg =
+    resolveColor(getComputedStyle(document.documentElement).backgroundColor) ??
+    resolveColor(getComputedStyle(document.body).backgroundColor);
+
   return {
     width: window.innerWidth,
     height: window.innerHeight,
     docScrollWidth: document.documentElement.scrollWidth,
     docClientWidth: document.documentElement.clientWidth,
+    rootBg: rootBg && rootBg.a > 0.01 ? rootBg : resolveColor(getComputedStyle(document.body).backgroundColor),
     elements,
   };
 }

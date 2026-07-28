@@ -8,7 +8,7 @@
  * All thresholds and decisions live here.
  */
 
-import { compositeOver, contrastRatio, type Rgba } from './contrast';
+import { compositeOver, contrastRatio, OPAQUE_WHITE, type Rgba } from './contrast';
 
 export interface Rect {
   x: number;
@@ -40,6 +40,9 @@ export interface ProbeResult {
   height: number;
   docScrollWidth: number;
   docClientWidth: number;
+  /** The page's own backdrop, terminating every ancestor chain. Assuming white
+   *  here would score light text on an unpainted container as illegible. */
+  rootBg?: Rgba | null;
   elements: ProbeElement[];
 }
 
@@ -75,12 +78,14 @@ function isOpaqueEnough(c: Rgba | null): c is Rgba {
   return c != null && c.a > 0.01;
 }
 
-/** Flatten an element's backdrop: first painted ancestor, composited downward. */
-function backdropOf(e: ProbeElement): Rgba | null {
+/** Flatten an element's backdrop: first painted ancestor, composited over the
+ *  page backdrop. Falls back to the page backdrop, then to white. */
+function backdropOf(e: ProbeElement, root: Rgba | null | undefined): Rgba | null {
+  const base = isOpaqueEnough(root) ? root : OPAQUE_WHITE;
   for (const c of e.bgChain) {
-    if (isOpaqueEnough(c)) return c.a >= 1 ? c : compositeOver(c, { r: 255, g: 255, b: 255, a: 1 });
+    if (isOpaqueEnough(c)) return c.a >= 1 ? c : compositeOver(c, base);
   }
-  return null;
+  return isOpaqueEnough(root) ? root : null;
 }
 
 function sameColor(a: Rgba, b: Rgba): boolean {
@@ -90,6 +95,18 @@ function sameColor(a: Rgba, b: Rgba): boolean {
     Math.round(a.b) === Math.round(b.b) &&
     Math.abs(a.a - b.a) < 0.01
   );
+}
+
+/**
+ * The surface text is actually drawn on: the element's own background when it
+ * paints one (a chip, a badge, a button), otherwise the nearest painted
+ * ancestor. Using the ancestor for an element that paints its own background
+ * measures the wrong pair and wildly under-reports.
+ */
+function textBackdropOf(e: ProbeElement, root: Rgba | null | undefined): Rgba | null {
+  const ancestor = backdropOf(e, root);
+  if (!isOpaqueEnough(e.bg)) return ancestor;
+  return compositeOver(e.bg, ancestor ?? OPAQUE_WHITE);
 }
 
 function isLargeText(e: ProbeElement): boolean {
@@ -133,7 +150,7 @@ function surfaceFindings(p: ProbeResult): Finding[] {
   const out: Finding[] = [];
   for (const e of p.elements) {
     if (!isOpaqueEnough(e.bg) || area(e.rect) < 4) continue;
-    const backdrop = backdropOf(e);
+    const backdrop = backdropOf(e, p.rootBg);
     if (!backdrop) continue;
     // An element that reuses its backdrop's exact colour is composition, not a
     // mistake. Only a *different* colour that fails to read is a defect.
@@ -157,7 +174,7 @@ function textFindings(p: ProbeResult): Finding[] {
   const out: Finding[] = [];
   for (const e of p.elements) {
     if (!e.hasDirectText || !isOpaqueEnough(e.color)) continue;
-    const backdrop = backdropOf(e);
+    const backdrop = textBackdropOf(e, p.rootBg);
     if (!backdrop) continue;
     const fg = compositeOver(e.color, backdrop);
     const need = isLargeText(e) ? MIN_LARGE_TEXT_RATIO : MIN_TEXT_RATIO;

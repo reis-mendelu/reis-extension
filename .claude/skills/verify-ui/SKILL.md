@@ -65,9 +65,21 @@ Occluded elements are skipped, so findings describe what is actually on screen.
 - Put geometry logic in a tested pure module (`scripts/lib/`, `src/utils/`) and
   keep components thin. Every real geometry bug in this project was caught by a
   unit test or by this script — none by reading code.
-- Real exam data is seasonal and usually absent from the snapshot. Use
-  `REIS_FIXTURE=examSeason npm run dev:web` for a populated Exams screen rather
-  than hand-editing `public/dev-real-data.json`.
+- Real exam data is seasonal and usually absent from the snapshot — a July
+  scrape leaves the Exams screen permanently empty. Start the `reis-webapp-exams`
+  preview config (`npm run dev:web:exams`) for a populated screen instead of
+  hand-editing `public/dev-real-data.json`.
+
+## Fixtures
+
+`REIS_FIXTURE=<name>` makes the dev harness serve `dev/fixtures/<name>.json`
+overlaid on the real snapshot, so synthetic exams sit alongside real subjects
+and files. Fixtures are synthetic and committed; dates are authored as
+`dayOffset` from today and materialised by `scripts/lib/fixtureRebase.ts`, so
+they never rot. Supported offset keys on a term: `dayOffset`,
+`regStartDayOffset`, `regEndDayOffset`, `deregDayOffset` (+ `deregTime`).
+
+Add a fixture by dropping a JSON file in `dev/fixtures/` — no plumbing needed.
 
 ## Extending it
 

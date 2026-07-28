@@ -29,7 +29,8 @@
     "dev:web": "vite --config vite.web.config.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify:ui": "tsx --tsconfig tsconfig.app.json scripts/shot.ts"
+    "verify:ui": "tsx --tsconfig tsconfig.app.json scripts/shot.ts",
+    "dev:web:exams": "REIS_FIXTURE=examSeason vite --config vite.web.config.ts"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",

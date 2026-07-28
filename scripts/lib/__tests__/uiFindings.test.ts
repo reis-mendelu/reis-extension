@@ -155,6 +155,41 @@ describe('analyzeProbe — text contrast', () => {
     expect(kinds(f)).not.toContain('contrast-text');
   });
 
+  // A chip/badge/button paints its own background. Judging its label against
+  // the ancestor surface instead measures a pair that is never drawn together.
+  it('measures against the element own background when it paints one', () => {
+    const chip = el({
+      hasDirectText: true,
+      text: '02.08',
+      color: WHITE,
+      bg: SLATE_700, // chip surface — white on this is legible
+      bgChain: [WHITE], // ancestor is white — white-on-white would be a false alarm
+    });
+    expect(kinds(analyzeProbe(probe([chip])))).not.toContain('contrast-text');
+  });
+
+  it('still catches unreadable text on a painted chip', () => {
+    const chip = el({
+      hasDirectText: true,
+      text: '02.08',
+      color: BASE_300,
+      bg: BASE_200,
+      bgChain: [WHITE],
+    });
+    expect(kinds(analyzeProbe(probe([chip])))).toContain('contrast-text');
+  });
+
+  // Without the page backdrop, an unpainted container defaults to white and
+  // white-on-dark text is reported as invisible — a false alarm on every
+  // dark-theme screen.
+  it('falls back to the page backdrop when no ancestor paints one', () => {
+    const floating = el({ hasDirectText: true, text: 'Vybrat', color: WHITE, bgChain: [] });
+    const withRoot = analyzeProbe(probe([floating], { rootBg: BASE_200 }));
+    const withoutRoot = analyzeProbe(probe([floating], { rootBg: null }));
+    expect(kinds(withRoot)).not.toContain('contrast-text');
+    expect(kinds(withoutRoot)).not.toContain('contrast-text'); // no backdrop ⇒ no claim
+  });
+
   it('ignores elements with no direct text', () => {
     const f = analyzeProbe(probe([el({ hasDirectText: false, color: BASE_300, bgChain: [BASE_200] })]));
     expect(kinds(f)).not.toContain('contrast-text');

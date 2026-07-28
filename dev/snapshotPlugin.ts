@@ -3,6 +3,7 @@ import { readFileSync, statSync, writeFileSync, rmSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { resolve } from 'node:path';
 import { snapshotAgeMs, isStale, maxAgeMsFromEnv, DAY_MS } from '../scripts/lib/snapshotFreshness';
+import { rebaseFixture, applyFixture } from '../scripts/lib/fixtureRebase';
 
 const LOCK_TTL_MS = 10 * 60 * 1000; // assume a scrape older than this died
 
@@ -34,6 +35,23 @@ export function reisSnapshotPlugin(): Plugin {
     configureServer(server) {
       const log = (m: string) => server.config.logger.info(`\x1b[36m[reis-data]\x1b[0m ${m}`);
       const maxAge = maxAgeMsFromEnv(process.env);
+
+      // REIS_FIXTURE=<name> serves dev/fixtures/<name>.json instead of (well,
+      // overlaid on) the scraped snapshot. Exam data is seasonal — a July scrape
+      // has no terms at all — so this is how the Exams screen gets populated
+      // without hand-editing real data. Intercepting the request keeps the app
+      // path identical: it still fetches /dev-real-data.json.
+      const fixtureName = process.env.REIS_FIXTURE;
+      if (fixtureName) {
+        server.middlewares.use('/dev-real-data.json', (_req, res) => {
+          const body = buildFixtureSnapshot(root, fixtureName, snapshotPath, log);
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Cache-Control', 'no-store');
+          res.end(body);
+        });
+        log(`serving fixture "${fixtureName}" — the real snapshot is untouched`);
+        return; // no freshness check, no background scrape: a fixture is never stale
+      }
 
       // Read stat + contents directly (try/catch), never existsSync-then-read,
       // so there is no file-system race between the check and the use.
@@ -67,6 +85,34 @@ export function reisSnapshotPlugin(): Plugin {
       if (stale) maybeRefresh(root, lockPath, log, server);
     },
   };
+}
+
+/**
+ * Rebase the named fixture onto today and overlay it on the real snapshot when
+ * one exists, so synthetic exams sit alongside real subjects/files. Reads on
+ * every request — editing the fixture just needs a page reload.
+ */
+function buildFixtureSnapshot(
+  root: string,
+  name: string,
+  snapshotPath: string,
+  log: (m: string) => void
+): string {
+  let base: Record<string, unknown> = {};
+  try {
+    base = JSON.parse(readFileSync(snapshotPath, 'utf8'));
+  } catch {
+    /* no real snapshot — the fixture stands alone */
+  }
+  const fixturePath = resolve(root, 'dev/fixtures', `${name}.json`);
+  try {
+    const fixture = JSON.parse(readFileSync(fixturePath, 'utf8'));
+    return JSON.stringify(applyFixture(base, rebaseFixture(fixture, new Date())));
+  } catch (err) {
+    log(`fixture "${name}" unreadable (${fixturePath}) — serving the real snapshot`);
+    log(`  ${err instanceof Error ? err.message : String(err)}`);
+    return JSON.stringify(base);
+  }
 }
 
 function hasCredentials(root: string): boolean {
