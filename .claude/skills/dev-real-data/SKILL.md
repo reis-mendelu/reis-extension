@@ -15,3 +15,21 @@ To view the reIS UI at `localhost:3000` against your **real** (possibly stale) I
 Why not `npm run dev` (WXT)? `wxt dev` builds an **extension** and its dev server does not serve the app HTML over HTTP — the app can't be opened at a localhost URL that way. The `dev/` harness (`chromeShim.ts` + `main.web.tsx` + `index.html`) runs the same app as a normal webapp instead; a minimal `chrome.*` shim covers the extension APIs the app touches at mount. `@source "../src/**"` in `src/index.css` lets Tailwind scan components when Vite's root is `dev/`.
 
 Anti-drift is enforced by `scripts/lib/__tests__/no-parser-reimpl.test.ts` (the scraper must reuse `@/api/*`, never reimplement parsers). The `build:publicAssets` hook in `wxt.config.ts` strips `dev-real-data.json` from production extension builds so real data never ships.
+
+## Fixtures for seasonal data
+
+The snapshot only contains what IS was serving when it was scraped. A July scrape has no exam terms at all, so the Exams screen sits permanently in its empty state. Don't hand-edit `public/dev-real-data.json` — run a fixture instead:
+
+```bash
+npm run dev:web:exams    # REIS_FIXTURE=examSeason
+```
+
+`REIS_FIXTURE=<name>` makes `dev/snapshotPlugin.ts` serve `dev/fixtures/<name>.json` **overlaid on** the real snapshot, so synthetic exams sit alongside real subjects and files, and the real snapshot is never modified. Fixtures are synthetic and committed; dates are authored as `dayOffset` from today and materialised to IS `DD.MM.YYYY` at serve time by `scripts/lib/fixtureRebase.ts`, so they never rot. Term offset keys: `dayOffset`, `regStartDayOffset`, `regEndDayOffset`, `deregDayOffset` (+ `deregTime`). Add a fixture by dropping a JSON file in `dev/fixtures/` — no plumbing needed. A fixture is never treated as stale, so no background scrape is triggered.
+
+## Working in a worktree
+
+A fresh worktree contains only tracked files, so `node_modules`, `public/dev-real-data.json` and `.env` are all absent — and each fails *quietly* rather than loudly: Vite 403s on `@fontsource/inter` and the app renders in a fallback typeface, and a missing snapshot makes `dev:web` serve `index.html`, so the UI silently falls back to stale IndexedDB (a real mix of real and mock data).
+
+The `SessionStart` hook `.claude/hooks/worktree-bootstrap.sh` links all three from the main checkout automatically. It resolves the worktree root via `git rev-parse --show-toplevel`, not the cwd, so a persisted working directory can't scatter links into a subdirectory. It shares `node_modules` with the main checkout — run `npm ci` in the worktree if that branch changes dependencies.
+
+`vite.web.config.ts` honours `PORT`, so concurrent worktree sessions don't fight over `:3000`.

@@ -1,12 +1,23 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-bootstrap.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/guard-parsers.py",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-parsers.py",
             "timeout": 5
           }
         ]
