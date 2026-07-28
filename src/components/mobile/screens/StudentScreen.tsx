@@ -77,7 +77,7 @@ export function StudentScreen() {
 
     return (
         <div data-testid="student-screen" className="flex flex-1 flex-col overflow-hidden">
-            <ScreenHeader eyebrow={t('mobile.student.subtitle')} title={t('mobile.student.title')} />
+            <ScreenHeader title={t('mobile.student.title')} />
             <StudentSearch mode={mode} onModeChange={handleModeChange} query={query} onQueryChange={setQuery} />
 
             <div className="flex-1 overflow-y-auto pb-24 pt-2">

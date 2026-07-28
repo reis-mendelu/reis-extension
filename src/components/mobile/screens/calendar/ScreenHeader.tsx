@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react';
 
 export interface ScreenHeaderProps {
-    eyebrow: string;
+    /** Optional: omit where the title already says it. Student's "IS MENDELU
+     *  v kapse" was a tagline rather than context, unlike the other screens'
+     *  eyebrows, which carry the semester or exam period. */
+    eyebrow?: string;
     title: string;
     action?: ReactNode;
 }
@@ -14,7 +17,7 @@ export function ScreenHeader({ eyebrow, title, action }: ScreenHeaderProps) {
                 ("B-OI prez - ZS 2025/2026") wrapped at 320px and pushed the
                 title out of line with the action button beside it. */}
             <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="truncate text-sm font-medium text-base-content/60">{eyebrow}</span>
+                {eyebrow && <span className="truncate text-sm font-medium text-base-content/60">{eyebrow}</span>}
                 <span className="truncate font-display text-2xl font-extrabold tracking-tight">{title}</span>
             </div>
             {action}
