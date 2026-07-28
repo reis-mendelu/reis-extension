@@ -155,30 +155,33 @@ describe('ExamsScreen', () => {
     });
 });
 
+// Positioning and clustering are `layoutExamTimeline`'s job and are covered in
+// utils/mobile/__tests__/examTimelineLayout.test.ts against real widths. These
+// cover what only rendering can: jsdom reports a zero-width rail (no layout
+// engine), so the component must still paint via the even-spacing fallback.
 describe('ExamTimeline', () => {
+    const NOW = new Date('2026-05-25T09:00:00');
+
     it('renders nothing for zero points', () => {
-        const { container } = render(<ExamTimeline points={[]} />);
+        const { container } = render(<ExamTimeline points={[]} now={NOW} />);
         expect(container).toBeEmptyDOMElement();
     });
 
     it('centres a single point at 50% of the inset span', () => {
-        render(<ExamTimeline points={[point({ id: 'only' })]} />);
+        render(<ExamTimeline points={[point({ id: 'only' })]} now={NOW} />);
         // Renders the short label; the full date+time would not fit alongside
         // its neighbours once there is more than one point.
         const wrapper = screen.getByText('1.6.').parentElement;
         expect(wrapper).toHaveStyle({ left: '50%' });
     });
 
-    // The end columns anchor by their outer edge instead of centring on the
-    // dot: a centred label on a dot sitting exactly at 0%/100% hangs half its
-    // width off the screen.
-    it('anchors the end points by their outer edges', () => {
+    it('still lays points out when the rail width is unmeasurable', () => {
         render(<ExamTimeline points={[
             point({ id: 'first', shortLabel: 'first-label' }),
             point({ id: 'second', shortLabel: 'second-label' }),
-        ]} />);
+        ]} now={NOW} />);
         expect(screen.getByText('first-label').parentElement).toHaveStyle({ left: '0%' });
-        expect(screen.getByText('second-label').parentElement).toHaveStyle({ right: '0%' });
+        expect(screen.getByText('second-label').parentElement).toHaveStyle({ left: '100%' });
     });
 
     it('centres the points between the two ends', () => {
@@ -186,7 +189,7 @@ describe('ExamTimeline', () => {
             point({ id: 'a', shortLabel: 'a-label' }),
             point({ id: 'b', shortLabel: 'b-label' }),
             point({ id: 'c', shortLabel: 'c-label' }),
-        ]} />);
+        ]} now={NOW} />);
         expect(screen.getByText('b-label').parentElement).toHaveStyle({ left: '50%' });
     });
 });

@@ -81,7 +81,7 @@ export function ExamsScreen() {
                 </div>
             ) : (
                 <>
-                    <ExamTimeline points={timeline} />
+                    <ExamTimeline points={timeline} now={now} />
                     <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-24 pt-4">
                         {upcoming.length > 0 && (
                             <ExamGroup title={t('mobile.exams.groupUpcoming')} count={upcoming.length}>
