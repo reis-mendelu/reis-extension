@@ -6,6 +6,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { NotificationFeed } from './NotificationFeed';
 import { useAppStore } from '../store/useAppStore';
 import { getWeekForDate } from '../api/teachingWeek';
+import { isTrustedHostOrigin } from '../utils/trustedOrigin';
 
 interface AppHeaderProps {
   currentView: string;
@@ -59,6 +60,11 @@ export function AppHeader({
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') openIfMobile();
     };
     const onMsg = (e: MessageEvent) => {
+      // Only the content script in the parent frame may open the search. See
+      // isTrustedHostOrigin: any frame on the host page can reach this
+      // listener otherwise.
+      if (e.source !== window.parent) return;
+      if (!isTrustedHostOrigin(e.origin, import.meta.env.DEV)) return;
       if (e.data?.type === 'REIS_OPEN_SEARCH') openIfMobile();
     };
     document.addEventListener('keydown', onKey);
