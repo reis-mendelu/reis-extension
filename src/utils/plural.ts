@@ -18,9 +18,9 @@ export type PluralSuffix = 'One' | 'Few' | 'Other';
  *                 unrecognised falls back to Czech, matching `useTranslation`.
  */
 export function pluralSuffix(language: string, count: number): PluralSuffix {
-    const locale = language === 'en' ? 'en' : 'cs';
-    const category = new Intl.PluralRules(locale).select(count);
-    if (category === 'one') return 'One';
-    if (category === 'few') return 'Few';
-    return 'Other';
+  const locale = language === 'en' ? 'en' : 'cs';
+  const category = new Intl.PluralRules(locale).select(count);
+  if (category === 'one') return 'One';
+  if (category === 'few') return 'Few';
+  return 'Other';
 }

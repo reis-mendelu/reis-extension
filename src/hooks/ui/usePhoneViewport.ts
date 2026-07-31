@@ -6,8 +6,8 @@ import { resolvePhoneViewport } from '../../utils/resolvePhoneViewport';
  * stored, so there is no second source of truth to drift from the viewport.
  */
 export function usePhoneViewport(): boolean {
-    const isTouch = useAppStore((s) => s.isTouch);
-    const isNarrow = useAppStore((s) => s.isNarrow);
-    const override = useAppStore((s) => s.devPhoneOverride);
-    return resolvePhoneViewport({ isTouch, isNarrow, override });
+  const isTouch = useAppStore((s) => s.isTouch);
+  const isNarrow = useAppStore((s) => s.isNarrow);
+  const override = useAppStore((s) => s.devPhoneOverride);
+  return resolvePhoneViewport({ isTouch, isNarrow, override });
 }

@@ -21,9 +21,9 @@ export default defineConfig({
     timeout: 10000,
     // Visual comparison settings
     toHaveScreenshot: {
-      maxDiffPixels: 100,           // Allow minor anti-aliasing differences
-      threshold: 0.2,               // Per-pixel color tolerance
-      animations: 'disabled',       // Disable animations for consistency
+      maxDiffPixels: 100, // Allow minor anti-aliasing differences
+      threshold: 0.2, // Per-pixel color tolerance
+      animations: 'disabled', // Disable animations for consistency
     },
   },
   // Snapshot storage organization
@@ -36,12 +36,15 @@ export default defineConfig({
   reporter: [
     ['html', { open: 'never' }],
     ['list'],
-    ['@serenity-js/playwright-test', {
-      crew: [
-        ['@serenity-js/console-reporter', { theme: 'monochrome' }],
-        ['@serenity-js/core:ArtifactArchiver', { outputDirectory: 'target/site/serenity' }],
-      ]
-    }]
+    [
+      '@serenity-js/playwright-test',
+      {
+        crew: [
+          ['@serenity-js/console-reporter', { theme: 'monochrome' }],
+          ['@serenity-js/core:ArtifactArchiver', { outputDirectory: 'target/site/serenity' }],
+        ],
+      },
+    ],
   ],
   use: {
     trace: 'on-first-retry',
@@ -74,4 +77,3 @@ export default defineConfig({
   // Output directories for test artifacts
   outputDir: './e2e/test-results',
 });
-

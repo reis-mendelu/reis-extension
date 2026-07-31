@@ -62,7 +62,13 @@ export function MapSidePanel() {
         aria-labelledby={`map-tab-${active}`}
         className={`min-h-0 flex-1 ${isSociety ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'}`}
       >
-        {isSociety ? <MyEventsPanel /> : active === 'places' ? <LandmarkPicker /> : <MapEventsSection />}
+        {isSociety ? (
+          <MyEventsPanel />
+        ) : active === 'places' ? (
+          <LandmarkPicker />
+        ) : (
+          <MapEventsSection />
+        )}
       </div>
     </div>
   );

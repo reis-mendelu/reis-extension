@@ -32,7 +32,7 @@ export function AppHeader({
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [prefillQuery, setPrefillQuery] = useState('');
   const desktopPrefillRef = useRef<((query: string) => void) | null>(null);
-  const isNarrow = useAppStore(s => s.isNarrow);
+  const isNarrow = useAppStore((s) => s.isNarrow);
 
   useEffect(() => {
     if (!searchPrefillRef) return;
@@ -52,74 +52,85 @@ export function AppHeader({
   }, [searchPrefillRef, isNarrow]);
 
   useEffect(() => {
-    const openIfMobile = () => { if (isNarrow) setMobileSearchOpen(true); };
-    const onKey = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key === 'k') openIfMobile(); };
-    const onMsg = (e: MessageEvent) => { if (e.data?.type === 'REIS_OPEN_SEARCH') openIfMobile(); };
+    const openIfMobile = () => {
+      if (isNarrow) setMobileSearchOpen(true);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') openIfMobile();
+    };
+    const onMsg = (e: MessageEvent) => {
+      if (e.data?.type === 'REIS_OPEN_SEARCH') openIfMobile();
+    };
     document.addEventListener('keydown', onKey);
     window.addEventListener('message', onMsg);
-    return () => { document.removeEventListener('keydown', onKey); window.removeEventListener('message', onMsg); };
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('message', onMsg);
+    };
   }, [isNarrow]);
-  const teachingWeekData = useAppStore(s => s.teachingWeekData);
+  const teachingWeekData = useAppStore((s) => s.teachingWeekData);
   const viewedWeek = useMemo(() => {
     if (!teachingWeekData || !currentDate) return null;
     return getWeekForDate(teachingWeekData, currentDate);
   }, [teachingWeekData, currentDate]);
-    return (
-      <>
-        <div
-          className="flex-shrink-0 z-30 bg-base-200/90 backdrop-blur-md border-b border-base-300 px-4 pb-3"
-          style={{ paddingTop: 'calc(1.25rem + var(--safe-top, 0px))' }}
-        >
-          <div className="relative flex items-center justify-between gap-2 md:gap-4 w-full">
-            {currentView === 'calendar' && (
-              <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 z-10">
-                <div className="flex items-center bg-base-300 rounded-lg p-1">
-                  <button
-                    onClick={onPrevWeek}
-                    className="p-1 hover:bg-base-100 rounded-md shadow-sm transition-all text-base-content/70 hover:text-primary"
-                    aria-label="Previous week"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-                  <button
-                    onClick={onNextWeek}
-                    className="p-1 hover:bg-base-100 rounded-md shadow-sm transition-all text-base-content/70 hover:text-primary"
-                    aria-label="Next week"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                </div>
-                <button onClick={onToday} className="btn btn-primary btn-sm border-none shadow-sm">
-                  {t('common.today')}
+  return (
+    <>
+      <div
+        className="flex-shrink-0 z-30 bg-base-200/90 backdrop-blur-md border-b border-base-300 px-4 pb-3"
+        style={{ paddingTop: 'calc(1.25rem + var(--safe-top, 0px))' }}
+      >
+        <div className="relative flex items-center justify-between gap-2 md:gap-4 w-full">
+          {currentView === 'calendar' && (
+            <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 z-10">
+              <div className="flex items-center bg-base-300 rounded-lg p-1">
+                <button
+                  onClick={onPrevWeek}
+                  className="p-1 hover:bg-base-100 rounded-md shadow-sm transition-all text-base-content/70 hover:text-primary"
+                  aria-label="Previous week"
+                >
+                  <ChevronLeft size={20} />
                 </button>
-                <span className="hidden sm:inline text-lg font-semibold text-base-content whitespace-nowrap">{dateRangeLabel}</span>
-                {viewedWeek && (
-                  <span className="text-sm text-base-content/50 whitespace-nowrap">
-                    <span className="hidden sm:inline"> · </span>
-                    {t('teachingWeek.label', { current: viewedWeek })}
-                  </span>
-                )}
+                <button
+                  onClick={onNextWeek}
+                  className="p-1 hover:bg-base-100 rounded-md shadow-sm transition-all text-base-content/70 hover:text-primary"
+                  aria-label="Next week"
+                >
+                  <ChevronRight size={20} />
+                </button>
               </div>
-            )}
-  
-            {currentView === 'calendar' ? <BulletinBanner inline /> : <div className="flex-1" />}
-
-            <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 ml-auto z-10">
-              {/* Narrow/mobile: search icon button */}
-              <button
-                onClick={() => setMobileSearchOpen(true)}
-                className="md:hidden p-2 hover:bg-base-300 rounded-lg flex-shrink-0"
-                aria-label="Search"
-              >
-                <Search size={20} />
+              <button onClick={onToday} className="btn btn-primary btn-sm border-none shadow-sm">
+                {t('common.today')}
               </button>
+              <span className="hidden sm:inline text-lg font-semibold text-base-content whitespace-nowrap">
+                {dateRangeLabel}
+              </span>
+              {viewedWeek && (
+                <span className="text-sm text-base-content/50 whitespace-nowrap">
+                  <span className="hidden sm:inline"> · </span>
+                  {t('teachingWeek.label', { current: viewedWeek })}
+                </span>
+              )}
+            </div>
+          )}
 
-              <div className="flex items-center gap-1">
-                <NotificationFeed />
-              </div>
+          {currentView === 'calendar' ? <BulletinBanner inline /> : <div className="flex-1" />}
+
+          <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 ml-auto z-10">
+            {/* Narrow/mobile: search icon button */}
+            <button
+              onClick={() => setMobileSearchOpen(true)}
+              className="md:hidden p-2 hover:bg-base-300 rounded-lg flex-shrink-0"
+              aria-label="Search"
+            >
+              <Search size={20} />
+            </button>
+
+            <div className="flex items-center gap-1">
+              <NotificationFeed />
             </div>
           </div>
         </div>
+      </div>
 
       <MobileSearchOverlay
         isOpen={mobileSearchOpen}

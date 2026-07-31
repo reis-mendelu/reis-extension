@@ -98,7 +98,11 @@ export function MapCanvas() {
   // init once
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
-    const map = initLeafletMap(ref.current, META.campus.bounds as L.LatLngBoundsExpression, isPhone);
+    const map = initLeafletMap(
+      ref.current,
+      META.campus.bounds as L.LatLngBoundsExpression,
+      isPhone
+    );
     layerRef.current.addTo(map);
     mapRef.current = map;
     setMapInstance(map);

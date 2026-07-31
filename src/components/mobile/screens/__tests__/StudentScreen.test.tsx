@@ -5,82 +5,87 @@ import { useAppStore } from '../../../../store/useAppStore';
 import type { SearchResult } from '../../../SearchBar/types';
 
 function teacher(overrides: Partial<SearchResult> = {}): SearchResult {
-    return {
-        id: overrides.id ?? '12345',
-        title: overrides.title ?? 'Jan Novák',
-        type: 'person',
-        personType: 'teacher',
-        detail: overrides.detail ?? 'Vyučující',
-        ...overrides,
-    };
+  return {
+    id: overrides.id ?? '12345',
+    title: overrides.title ?? 'Jan Novák',
+    type: 'person',
+    personType: 'teacher',
+    detail: overrides.detail ?? 'Vyučující',
+    ...overrides,
+  };
 }
 
 describe('StudentScreen', () => {
-    beforeEach(() => {
-        useAppStore.setState({
-            language: 'cz',
-            mobileSheets: [],
-            recentSearches: [],
-            subjects: null,
-            studyPlanDual: null,
-            studiumId: null,
-            userFaculty: null,
-            userSemester: null,
-            executeSearch: vi.fn().mockResolvedValue({ people: [], subjects: [], subjectsTruncated: false }),
-        });
+  beforeEach(() => {
+    useAppStore.setState({
+      language: 'cz',
+      mobileSheets: [],
+      recentSearches: [],
+      subjects: null,
+      studyPlanDual: null,
+      studiumId: null,
+      userFaculty: null,
+      userSemester: null,
+      executeSearch: vi
+        .fn()
+        .mockResolvedValue({ people: [], subjects: [], subjectsTruncated: false }),
     });
+  });
 
-    it('shows the Stránky IS segment active by default with the shortcut grid', () => {
-        render(<StudentScreen />);
-        expect(screen.getByRole('tab', { name: 'Stránky IS' })).toHaveAttribute('aria-selected', 'true');
-        expect(screen.getByRole('tab', { name: 'Lidé' })).toHaveAttribute('aria-selected', 'false');
-        expect(screen.getByText('Eduroam')).toBeInTheDocument();
-        expect(screen.getByText('Dokumenty')).toBeInTheDocument();
-        expect(screen.getByText('Erasmus')).toBeInTheDocument();
-        expect(screen.getByText('ISKAM')).toBeInTheDocument();
-    });
+  it('shows the Stránky IS segment active by default with the shortcut grid', () => {
+    render(<StudentScreen />);
+    expect(screen.getByRole('tab', { name: 'Stránky IS' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+    expect(screen.getByRole('tab', { name: 'Lidé' })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByText('Eduroam')).toBeInTheDocument();
+    expect(screen.getByText('Dokumenty')).toBeInTheDocument();
+    expect(screen.getByText('Erasmus')).toBeInTheDocument();
+    expect(screen.getByText('ISKAM')).toBeInTheDocument();
+  });
 
-    it('pushes an eduroam sheet when the Eduroam shortcut is tapped', () => {
-        render(<StudentScreen />);
-        fireEvent.click(screen.getByText('Eduroam'));
-        expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'eduroam' }]);
-    });
+  it('pushes an eduroam sheet when the Eduroam shortcut is tapped', () => {
+    render(<StudentScreen />);
+    fireEvent.click(screen.getByText('Eduroam'));
+    expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'eduroam' }]);
+  });
 
-    it('renders the ISKAM shortcut as a real link, not a sheet trigger', () => {
-        render(<StudentScreen />);
-        const link = screen.getByRole('link', { name: /ISKAM/ });
-        expect(link).toHaveAttribute('href', 'https://webiskam.mendelu.cz/');
-        fireEvent.click(link);
-        expect(useAppStore.getState().mobileSheets).toEqual([]);
-    });
+  it('renders the ISKAM shortcut as a real link, not a sheet trigger', () => {
+    render(<StudentScreen />);
+    const link = screen.getByRole('link', { name: /ISKAM/ });
+    expect(link).toHaveAttribute('href', 'https://webiskam.mendelu.cz/');
+    fireEvent.click(link);
+    expect(useAppStore.getState().mobileSheets).toEqual([]);
+  });
 
-    it('switching to Lidé shows the teacher list', () => {
-        useAppStore.setState({ recentSearches: [teacher()] });
-        render(<StudentScreen />);
-        fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
-        expect(screen.getByRole('tab', { name: 'Lidé' })).toHaveAttribute('aria-selected', 'true');
-        expect(screen.getByText('Tvoji vyučující')).toBeInTheDocument();
-        expect(screen.getByText('Jan Novák')).toBeInTheDocument();
-    });
+  it('switching to Lidé shows the teacher list', () => {
+    useAppStore.setState({ recentSearches: [teacher()] });
+    render(<StudentScreen />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
+    expect(screen.getByRole('tab', { name: 'Lidé' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Tvoji vyučující')).toBeInTheDocument();
+    expect(screen.getByText('Jan Novák')).toBeInTheDocument();
+  });
 
-    it('does not show the shortcut grid once switched to Lidé', () => {
-        render(<StudentScreen />);
-        fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
-        expect(screen.queryByText('Eduroam')).not.toBeInTheDocument();
-    });
+  it('does not show the shortcut grid once switched to Lidé', () => {
+    render(<StudentScreen />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
+    expect(screen.queryByText('Eduroam')).not.toBeInTheDocument();
+  });
 
-    it('filters IS pages as the user types', () => {
-        render(<StudentScreen />);
-        const input = screen.getByRole('textbox', { name: 'Hledej stránku v IS…' });
-        fireEvent.change(input, { target: { value: 'Portál studenta' } });
-        expect(screen.getByText('Portál studenta')).toBeInTheDocument();
-        expect(screen.queryByText('E-index')).not.toBeInTheDocument();
-    });
+  it('filters IS pages as the user types', () => {
+    render(<StudentScreen />);
+    const input = screen.getByRole('textbox', { name: 'Hledej stránku v IS…' });
+    fireEvent.change(input, { target: { value: 'Portál studenta' } });
+    expect(screen.getByText('Portál studenta')).toBeInTheDocument();
+    expect(screen.queryByText('E-index')).not.toBeInTheDocument();
+  });
 
-    it('shows the no-results message for a query with no matches', () => {
-        render(<StudentScreen />);
-        const input = screen.getByRole('textbox', { name: 'Hledej stránku v IS…' });
-        fireEvent.change(input, { target: { value: 'zzzznonexistentpage' } });
-        expect(screen.getByText('Nic jsme nenašli. Zkus to jinak.')).toBeInTheDocument();
-    });
+  it('shows the no-results message for a query with no matches', () => {
+    render(<StudentScreen />);
+    const input = screen.getByRole('textbox', { name: 'Hledej stránku v IS…' });
+    fireEvent.change(input, { target: { value: 'zzzznonexistentpage' } });
+    expect(screen.getByText('Nic jsme nenašli. Zkus to jinak.')).toBeInTheDocument();
+  });
 });

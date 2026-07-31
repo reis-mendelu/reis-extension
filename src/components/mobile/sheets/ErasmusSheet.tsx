@@ -5,7 +5,7 @@ import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 export interface ErasmusSheetProps {
-    onClose: () => void;
+  onClose: () => void;
 }
 
 /**
@@ -18,19 +18,19 @@ export interface ErasmusSheetProps {
  * sidebar's search bar) so it's a no-op here.
  */
 export function ErasmusSheet({ onClose }: ErasmusSheetProps) {
-    const { t } = useTranslation();
-    const pushSheet = useAppStore((s) => s.pushSheet);
+  const { t } = useTranslation();
+  const pushSheet = useAppStore((s) => s.pushSheet);
 
-    const openSubject = (courseCode: string, courseName?: string, courseId?: string) => {
-        pushSheet({ kind: 'subjectDrawer', courseCode, courseName, courseId });
-    };
+  const openSubject = (courseCode: string, courseName?: string, courseId?: string) => {
+    pushSheet({ kind: 'subjectDrawer', courseCode, courseName, courseId });
+  };
 
-    return (
-        <Sheet size="full" onClose={onClose}>
-            <SheetHeader title={t('mobile.student.erasmus')} onClose={onClose} />
-            <div className="flex flex-1 flex-col overflow-hidden">
-                <ErasmusPanel onOpenSubject={openSubject} onSearchSubject={() => {}} />
-            </div>
-        </Sheet>
-    );
+  return (
+    <Sheet size="full" onClose={onClose}>
+      <SheetHeader title={t('mobile.student.erasmus')} onClose={onClose} />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <ErasmusPanel onOpenSubject={openSubject} onSearchSubject={() => {}} />
+      </div>
+    </Sheet>
+  );
 }

@@ -10,7 +10,12 @@ import { useAppStore } from '../../../store/useAppStore';
 import { MOCK_MAP_EVENTS } from './fixtures/mockMapEvents';
 
 beforeEach(() => {
-  useAppStore.setState({ mapEvents: MOCK_MAP_EVENTS, eventFilter: 'all', mapSelection: null, language: 'en' });
+  useAppStore.setState({
+    mapEvents: MOCK_MAP_EVENTS,
+    eventFilter: 'all',
+    mapSelection: null,
+    language: 'en',
+  });
 });
 
 describe('MapEventsSection', () => {

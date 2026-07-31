@@ -5,9 +5,9 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import type { useExamActions } from '../../ExamPanel/useExamActions';
 
 export interface ConfirmSheetProps {
-    pendingAction: ReturnType<typeof useExamActions>['pendingAction'];
-    onConfirm: () => void;
-    onCancel: () => void;
+  pendingAction: ReturnType<typeof useExamActions>['pendingAction'];
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
 /**
@@ -19,69 +19,75 @@ export interface ConfirmSheetProps {
  * member is left unused for now.
  */
 export function ConfirmSheet({ pendingAction, onConfirm, onCancel }: ConfirmSheetProps) {
-    const { t } = useTranslation();
-    if (!pendingAction) return null;
+  const { t } = useTranslation();
+  if (!pendingAction) return null;
 
-    const isRegister = pendingAction.type === 'register';
-    const { section } = pendingAction;
-    const term = isRegister
-        ? section.terms.find((candidate) => candidate.id === pendingAction.termId)
-        : section.registeredTerm;
+  const isRegister = pendingAction.type === 'register';
+  const { section } = pendingAction;
+  const term = isRegister
+    ? section.terms.find((candidate) => candidate.id === pendingAction.termId)
+    : section.registeredTerm;
 
-    return (
-        <Sheet size="content" onClose={onCancel} elevated>
-            <SheetHeader
-                title={isRegister ? t('exams.confirmation.registerTitle') : t('exams.confirmation.unregisterTitle')}
-                onClose={onCancel}
-            />
-            <div className="flex flex-col gap-3 px-4 pb-5">
-                <p className="text-sm text-base-content/70">
-                    {isRegister ? t('exams.confirmation.registerBody') : t('exams.confirmation.unregisterBody')}
-                </p>
-                <div className="flex flex-col gap-2 rounded-xl bg-base-200 p-3">
-                    <span className="text-md font-semibold text-base-content">{section.name}</span>
-                    {term && (
-                        <div className="flex flex-col gap-1.5 text-sm text-base-content/70">
-                            {term.date && (
-                                <span className="flex items-center gap-1.5">
-                                    <Calendar size={13} className="text-base-content/60" />
-                                    {term.date}
-                                </span>
-                            )}
-                            {term.time && (
-                                <span className="flex items-center gap-1.5">
-                                    <Clock size={13} className="text-base-content/60" />
-                                    {term.time}
-                                </span>
-                            )}
-                            {term.room && (
-                                <span className="flex items-center gap-1.5">
-                                    <MapPin size={13} className="text-base-content/60" />
-                                    {term.room}
-                                </span>
-                            )}
-                        </div>
-                    )}
-                </div>
-                <div className="flex gap-2">
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        className="min-h-11 flex-1 rounded-xl border border-base-300 text-base font-semibold text-base-content/70"
-                    >
-                        {t('common.cancel')}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onConfirm}
-                        className={`min-h-11 flex-1 rounded-xl text-base font-semibold ${
-                            isRegister ? 'bg-primary text-primary-content' : 'bg-error text-error-content'
-                        }`}
-                    >
-                        {isRegister ? t('mobile.exams.register') : t('mobile.exams.unregister')}
-                    </button>
-                </div>
+  return (
+    <Sheet size="content" onClose={onCancel} elevated>
+      <SheetHeader
+        title={
+          isRegister
+            ? t('exams.confirmation.registerTitle')
+            : t('exams.confirmation.unregisterTitle')
+        }
+        onClose={onCancel}
+      />
+      <div className="flex flex-col gap-3 px-4 pb-5">
+        <p className="text-sm text-base-content/70">
+          {isRegister
+            ? t('exams.confirmation.registerBody')
+            : t('exams.confirmation.unregisterBody')}
+        </p>
+        <div className="flex flex-col gap-2 rounded-xl bg-base-200 p-3">
+          <span className="text-md font-semibold text-base-content">{section.name}</span>
+          {term && (
+            <div className="flex flex-col gap-1.5 text-sm text-base-content/70">
+              {term.date && (
+                <span className="flex items-center gap-1.5">
+                  <Calendar size={13} className="text-base-content/60" />
+                  {term.date}
+                </span>
+              )}
+              {term.time && (
+                <span className="flex items-center gap-1.5">
+                  <Clock size={13} className="text-base-content/60" />
+                  {term.time}
+                </span>
+              )}
+              {term.room && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin size={13} className="text-base-content/60" />
+                  {term.room}
+                </span>
+              )}
             </div>
-        </Sheet>
-    );
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="min-h-11 flex-1 rounded-xl border border-base-300 text-base font-semibold text-base-content/70"
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className={`min-h-11 flex-1 rounded-xl text-base font-semibold ${
+              isRegister ? 'bg-primary text-primary-content' : 'bg-error text-error-content'
+            }`}
+          >
+            {isRegister ? t('mobile.exams.register') : t('mobile.exams.unregister')}
+          </button>
+        </div>
+      </div>
+    </Sheet>
+  );
 }

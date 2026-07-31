@@ -5,7 +5,7 @@ import { useAppStore } from '../src/store/useAppStore';
 // because `pointer: coarse` requires touch emulation, which plain browser
 // resizing does not provide.
 if (import.meta.env.DEV) {
-    const param = new URLSearchParams(window.location.search).get('mobile');
-    if (param === '1') useAppStore.getState().setDevPhoneOverride(true);
-    if (param === '0') useAppStore.getState().setDevPhoneOverride(false);
+  const param = new URLSearchParams(window.location.search).get('mobile');
+  if (param === '1') useAppStore.getState().setDevPhoneOverride(true);
+  if (param === '0') useAppStore.getState().setDevPhoneOverride(false);
 }

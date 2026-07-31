@@ -12,20 +12,20 @@
  * so the predicate can't drift into three subtly different copies again.
  */
 export interface LocalizedLessonFields {
-    courseName: string;
-    courseNameCs?: string;
-    courseNameEn?: string;
-    room: string;
-    roomCs?: string;
-    roomEn?: string;
+  courseName: string;
+  courseNameCs?: string;
+  courseNameEn?: string;
+  room: string;
+  roomCs?: string;
+  roomEn?: string;
 }
 
 export function localizedCourseName(lesson: LocalizedLessonFields, language: string): string {
-    if (language === 'en' && lesson.courseNameEn) return lesson.courseNameEn;
-    return lesson.courseNameCs || lesson.courseName;
+  if (language === 'en' && lesson.courseNameEn) return lesson.courseNameEn;
+  return lesson.courseNameCs || lesson.courseName;
 }
 
 export function localizedRoom(lesson: LocalizedLessonFields, language: string): string {
-    if (language === 'en' && lesson.roomEn) return lesson.roomEn;
-    return lesson.roomCs || lesson.room;
+  if (language === 'en' && lesson.roomEn) return lesson.roomEn;
+  return lesson.roomCs || lesson.room;
 }

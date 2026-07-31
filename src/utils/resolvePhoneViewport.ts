@@ -1,8 +1,8 @@
 export interface PhoneViewportInput {
-    isTouch: boolean;
-    isNarrow: boolean;
-    /** Dev-only forced value. null/undefined defers to the viewport. */
-    override?: boolean | null;
+  isTouch: boolean;
+  isNarrow: boolean;
+  /** Dev-only forced value. null/undefined defers to the viewport. */
+  override?: boolean | null;
 }
 
 /**
@@ -13,6 +13,6 @@ export interface PhoneViewportInput {
  * it is testable without a DOM, and so the dev override has one place to apply.
  */
 export function resolvePhoneViewport({ isTouch, isNarrow, override }: PhoneViewportInput): boolean {
-    if (override === true || override === false) return override;
-    return isTouch && isNarrow;
+  if (override === true || override === false) return override;
+  return isTouch && isNarrow;
 }

@@ -12,13 +12,14 @@ import type { BlockLesson, HiddenItems } from '../types/calendarTypes';
  * and mobile (`CalendarScreen`) so the predicate can't drift between them.
  */
 export function isLessonHidden(lesson: BlockLesson, hiddenItems: HiddenItems): boolean {
-    if (hiddenItems.events.some((e) => e.id === lesson.id)) return true;
+  if (hiddenItems.events.some((e) => e.id === lesson.id)) return true;
 
-    return hiddenItems.courses.some((c) =>
-        c.courseCode === lesson.courseCode && (
-            !c.type || c.type === 'all' ||
-            (c.type === 'seminar' && lesson.isSeminar === 'true') ||
-            (c.type === 'lecture' && lesson.isSeminar === 'false')
-        )
-    );
+  return hiddenItems.courses.some(
+    (c) =>
+      c.courseCode === lesson.courseCode &&
+      (!c.type ||
+        c.type === 'all' ||
+        (c.type === 'seminar' && lesson.isSeminar === 'true') ||
+        (c.type === 'lecture' && lesson.isSeminar === 'false'))
+  );
 }

@@ -14,7 +14,8 @@ export type EduroamTarget = 'mac' | 'ios' | 'android' | 'windows';
 export const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent);
 
 // macOS deep link straight to the Profiles / Device Management pane.
-const PROFILES_SETTINGS_URL = 'x-apple.systempreferences:com.apple.preferences.configurationprofiles';
+const PROFILES_SETTINGS_URL =
+  'x-apple.systempreferences:com.apple.preferences.configurationprofiles';
 
 /**
  * @param autoSelectTarget When provided (the eduroam sheet's platform, resolved
@@ -45,20 +46,27 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         // Upload the profile to a one-time row; the QR points at the endpoint that
         // serves it so iOS Safari shows the install prompt directly (no page).
         const id = await putTransfer(new TextEncoder().encode(xml));
-        setQrDataUrl(await QRCode.toDataURL(buildTransferUrl(id, 'ios'), { margin: 2, width: 320 }));
+        setQrDataUrl(
+          await QRCode.toDataURL(buildTransferUrl(id, 'ios'), { margin: 2, width: 320 })
+        );
       } else if (t === 'android') {
         // Android uses an .eap-config (geteduroam), delivered via the same transfer;
         // the receiver serves it as application/eap-config for fmt=android.
         const eap = generateEapConfig({ rootCaDer, clientP12 });
         const id = await putTransfer(new TextEncoder().encode(eap));
-        setQrDataUrl(await QRCode.toDataURL(buildTransferUrl(id, 'android'), { margin: 2, width: 320 }));
+        setQrDataUrl(
+          await QRCode.toDataURL(buildTransferUrl(id, 'android'), { margin: 2, width: 320 })
+        );
       } else if (t === 'windows') {
         // Windows: same .eap-config as Android, but reIS runs on this PC, so we
         // save it straight to disk. geteduroam (Windows) opens it on double-click.
         const eap = generateEapConfig({ rootCaDer, clientP12 });
         saveAs(new Blob([eap], { type: 'application/eap-config' }), 'eduroam-reis.eap-config');
       } else {
-        saveAs(new Blob([xml], { type: 'application/x-apple-aspen-config' }), 'eduroam-reis.mobileconfig');
+        saveAs(
+          new Blob([xml], { type: 'application/x-apple-aspen-config' }),
+          'eduroam-reis.mobileconfig'
+        );
       }
 
       setPassword(extractionPw);
@@ -80,7 +88,9 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     // Only populates when a cert already exists; first-time users get it from
     // run(). Never overwrites a value run() may have already set.
     void fetchEduroamPassword()
-      .then((pw) => { if (pw) setPassword((prev) => prev ?? pw); })
+      .then((pw) => {
+        if (pw) setPassword((prev) => prev ?? pw);
+      })
       .catch((e) => logError('useEduroamSetup.prefetchPassword', e));
   }, []);
 

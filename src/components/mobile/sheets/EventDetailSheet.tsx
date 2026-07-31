@@ -10,15 +10,15 @@ import { localizedCourseName, localizedRoom } from '../../../utils/localizedLess
 type EventDetailSheetData = Extract<MobileSheet, { kind: 'eventDetail' }>;
 
 export interface EventDetailSheetProps {
-    sheet: EventDetailSheetData;
-    onClose: () => void;
+  sheet: EventDetailSheetData;
+  onClose: () => void;
 }
 
 /** Badge label key for the lesson's kind — mirrors `AgendaEvent`'s own check order. */
 function kindLabelKey(lesson: BlockLesson): string {
-    if (lesson.isExam) return 'course.badge.exam';
-    if (lesson.isSeminar === 'true') return 'course.badge.seminar';
-    return 'course.badge.lecture';
+  if (lesson.isExam) return 'course.badge.exam';
+  if (lesson.isSeminar === 'true') return 'course.badge.seminar';
+  return 'course.badge.lecture';
 }
 
 /**
@@ -35,50 +35,55 @@ function kindLabelKey(lesson: BlockLesson): string {
  * (e.g. a stale sheet after a sync) rather than showing a broken sheet.
  */
 export function EventDetailSheet({ sheet, onClose }: EventDetailSheetProps) {
-    const { t, language } = useTranslation();
-    const { schedule } = useSchedule();
-    const hideEvent = useAppStore((s) => s.hideEvent);
-    const setMobileTab = useAppStore((s) => s.setMobileTab);
-    const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
+  const { t, language } = useTranslation();
+  const { schedule } = useSchedule();
+  const hideEvent = useAppStore((s) => s.hideEvent);
+  const setMobileTab = useAppStore((s) => s.setMobileTab);
+  const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
 
-    const lesson = schedule.find((l) => l.id === sheet.eventId);
-    if (!lesson) return null;
+  const lesson = schedule.find((l) => l.id === sheet.eventId);
+  if (!lesson) return null;
 
-    const courseName = localizedCourseName(lesson, language);
-    const room = localizedRoom(lesson, language);
-    const teacher = lesson.teachers[0]?.fullName;
-    const subtitle = `${room} · ${lesson.startTime}–${lesson.endTime}${teacher ? ` · ${teacher}` : ''}`;
+  const courseName = localizedCourseName(lesson, language);
+  const room = localizedRoom(lesson, language);
+  const teacher = lesson.teachers[0]?.fullName;
+  const subtitle = `${room} · ${lesson.startTime}–${lesson.endTime}${teacher ? ` · ${teacher}` : ''}`;
 
-    const onShowOnMap = () => {
-        const roomCode = lesson.room.replace(/\s*\([^)]*\)\s*$/, '').trim();
-        setMobileTab('map');
-        focusRoomByCode(roomCode);
-    };
+  const onShowOnMap = () => {
+    const roomCode = lesson.room.replace(/\s*\([^)]*\)\s*$/, '').trim();
+    setMobileTab('map');
+    focusRoomByCode(roomCode);
+  };
 
-    const onHide = () => {
-        void hideEvent(lesson.id, lesson.courseCode, lesson.courseName, lesson.date);
-        onClose();
-    };
+  const onHide = () => {
+    void hideEvent(lesson.id, lesson.courseCode, lesson.courseName, lesson.date);
+    onClose();
+  };
 
-    return (
-        <Sheet size="content" onClose={onClose}>
-            <SheetHeader eyebrow={t(kindLabelKey(lesson))} title={courseName} subtitle={subtitle} onClose={onClose} />
-            <div className="flex flex-col gap-2 px-4 pb-5">
-                <button
-                    type="button"
-                    onClick={onShowOnMap}
-                    className="flex min-h-11 items-center justify-center rounded-xl bg-primary text-base font-semibold text-primary-content"
-                >
-                    {t('mobile.sheet.showOnMap')}
-                </button>
-                <button
-                    type="button"
-                    onClick={onHide}
-                    className="flex min-h-9 items-center justify-center text-sm font-semibold text-base-content/60"
-                >
-                    {t('calendar.hide.occurrence')}
-                </button>
-            </div>
-        </Sheet>
-    );
+  return (
+    <Sheet size="content" onClose={onClose}>
+      <SheetHeader
+        eyebrow={t(kindLabelKey(lesson))}
+        title={courseName}
+        subtitle={subtitle}
+        onClose={onClose}
+      />
+      <div className="flex flex-col gap-2 px-4 pb-5">
+        <button
+          type="button"
+          onClick={onShowOnMap}
+          className="flex min-h-11 items-center justify-center rounded-xl bg-primary text-base font-semibold text-primary-content"
+        >
+          {t('mobile.sheet.showOnMap')}
+        </button>
+        <button
+          type="button"
+          onClick={onHide}
+          className="flex min-h-9 items-center justify-center text-sm font-semibold text-base-content/60"
+        >
+          {t('calendar.hide.occurrence')}
+        </button>
+      </div>
+    </Sheet>
+  );
 }

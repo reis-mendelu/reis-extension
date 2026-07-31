@@ -19,35 +19,35 @@ import { ErasmusSheet } from './ErasmusSheet';
  * `ExamsScreen` instead of going through this host.
  */
 export function SheetHost() {
-    const sheets = useAppStore((s) => s.mobileSheets);
-    const popSheet = useAppStore((s) => s.popSheet);
+  const sheets = useAppStore((s) => s.mobileSheets);
+  const popSheet = useAppStore((s) => s.popSheet);
 
-    return (
-        <>
-            {sheets.map((sheet, index) => {
-                switch (sheet.kind) {
-                    case 'subjectDrawer':
-                        return <SubjectDrawerSheet key={index} sheet={sheet} onClose={popSheet} />;
-                    case 'eventDetail':
-                        return <EventDetailSheet key={index} sheet={sheet} onClose={popSheet} />;
-                    case 'studyPlan':
-                        return <StudyPlanSheet key={index} onClose={popSheet} />;
-                    case 'notifications':
-                        return <NotificationsSheet key={index} onClose={popSheet} />;
-                    case 'profile':
-                        return <ProfileSheet key={index} onClose={popSheet} />;
-                    case 'person':
-                        return <PersonSheet key={index} sheet={sheet} onClose={popSheet} />;
-                    case 'eduroam':
-                        return <EduroamSheet key={index} onClose={popSheet} />;
-                    case 'docs':
-                        return <DocsSheet key={index} onClose={popSheet} />;
-                    case 'erasmus':
-                        return <ErasmusSheet key={index} onClose={popSheet} />;
-                    default:
-                        return null;
-                }
-            })}
-        </>
-    );
+  return (
+    <>
+      {sheets.map((sheet, index) => {
+        switch (sheet.kind) {
+          case 'subjectDrawer':
+            return <SubjectDrawerSheet key={index} sheet={sheet} onClose={popSheet} />;
+          case 'eventDetail':
+            return <EventDetailSheet key={index} sheet={sheet} onClose={popSheet} />;
+          case 'studyPlan':
+            return <StudyPlanSheet key={index} onClose={popSheet} />;
+          case 'notifications':
+            return <NotificationsSheet key={index} onClose={popSheet} />;
+          case 'profile':
+            return <ProfileSheet key={index} onClose={popSheet} />;
+          case 'person':
+            return <PersonSheet key={index} sheet={sheet} onClose={popSheet} />;
+          case 'eduroam':
+            return <EduroamSheet key={index} onClose={popSheet} />;
+          case 'docs':
+            return <DocsSheet key={index} onClose={popSheet} />;
+          case 'erasmus':
+            return <ErasmusSheet key={index} onClose={popSheet} />;
+          default:
+            return null;
+        }
+      })}
+    </>
+  );
 }

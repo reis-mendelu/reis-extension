@@ -17,29 +17,29 @@ import { FloorStack } from '../../../CampusMap/FloorStack';
  * anything meant to float above the map here has to clear the same bar.
  */
 export function FloorSwitcher() {
-    const activeBuildingId = useAppStore((s) => s.activeBuildingId);
-    const exitToCampus = useAppStore((s) => s.exitToCampus);
-    const { t } = useTranslation();
-    if (activeBuildingId === null) return null;
+  const activeBuildingId = useAppStore((s) => s.activeBuildingId);
+  const exitToCampus = useAppStore((s) => s.exitToCampus);
+  const { t } = useTranslation();
+  if (activeBuildingId === null) return null;
 
-    return (
-        <>
-            <button
-                type="button"
-                onClick={exitToCampus}
-                className="absolute left-4 top-[76px] z-[1000] flex items-center gap-1.5 rounded-full px-3.5 py-2.5 text-sm font-semibold backdrop-blur-md"
-                style={{
-                    background: 'rgba(31,41,55,.94)',
-                    border: '1px solid rgba(243,244,246,.1)',
-                    color: '#f3f4f6',
-                }}
-            >
-                <ArrowLeft size={14} aria-hidden="true" />
-                {t('mobile.map.wholeCampus')}
-            </button>
-            <div className="absolute bottom-[190px] right-3 z-[1000]">
-                <FloorStack />
-            </div>
-        </>
-    );
+  return (
+    <>
+      <button
+        type="button"
+        onClick={exitToCampus}
+        className="absolute left-4 top-[76px] z-[1000] flex items-center gap-1.5 rounded-full px-3.5 py-2.5 text-sm font-semibold backdrop-blur-md"
+        style={{
+          background: 'rgba(31,41,55,.94)',
+          border: '1px solid rgba(243,244,246,.1)',
+          color: '#f3f4f6',
+        }}
+      >
+        <ArrowLeft size={14} aria-hidden="true" />
+        {t('mobile.map.wholeCampus')}
+      </button>
+      <div className="absolute bottom-[190px] right-3 z-[1000]">
+        <FloorStack />
+      </div>
+    </>
+  );
 }

@@ -30,8 +30,22 @@ body,
   --app-vh: 100dvh;
 }
 
-@keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sheetUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
 /* Density rescale on phone (touch + narrow). Bumps typography only; spacing
  * is intentionally untouched to avoid shifting pixel-tight layouts (calendar grid,

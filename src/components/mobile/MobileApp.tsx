@@ -23,21 +23,21 @@ import { SheetHost } from './sheets/SheetHost';
  * placeholder screens Tasks 8–16 fill in, with `BottomNav` driving the switch.
  */
 export function MobileApp() {
-    const tab = useAppStore((s) => s.mobileTab);
+  const tab = useAppStore((s) => s.mobileTab);
 
-    return (
-        <div
-            data-testid="mobile-app"
-            className="relative flex h-screen w-full flex-col overflow-hidden bg-base-200 text-base-content"
-        >
-            <Toaster position="top-center" />
-            {tab === 'calendar' && <CalendarScreen />}
-            {tab === 'exams' && <ExamsScreen />}
-            {tab === 'subjects' && <SubjectsScreen />}
-            {tab === 'map' && <MapScreen />}
-            {tab === 'student' && <StudentScreen />}
-            <BottomNav />
-            <SheetHost />
-        </div>
-    );
+  return (
+    <div
+      data-testid="mobile-app"
+      className="relative flex h-screen w-full flex-col overflow-hidden bg-base-200 text-base-content"
+    >
+      <Toaster position="top-center" />
+      {tab === 'calendar' && <CalendarScreen />}
+      {tab === 'exams' && <ExamsScreen />}
+      {tab === 'subjects' && <SubjectsScreen />}
+      {tab === 'map' && <MapScreen />}
+      {tab === 'student' && <StudentScreen />}
+      <BottomNav />
+      <SheetHost />
+    </div>
+  );
 }

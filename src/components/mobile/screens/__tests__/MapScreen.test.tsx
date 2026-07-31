@@ -88,7 +88,9 @@ describe('MapScreen', () => {
     const setMapSearchQuery = vi.fn();
     useAppStore.setState({ setMapSearchQuery, mapSearchQuery: '', mapSearchResults: [] });
     render(<MapScreen />);
-    fireEvent.change(screen.getByPlaceholderText('Najdi místnost, budovu, akci…'), { target: { value: 'Q01' } });
+    fireEvent.change(screen.getByPlaceholderText('Najdi místnost, budovu, akci…'), {
+      target: { value: 'Q01' },
+    });
     expect(setMapSearchQuery).toHaveBeenCalledWith('Q01');
   });
 
@@ -100,7 +102,10 @@ describe('MapScreen', () => {
       setMapSearchQuery,
       mapSearchQuery: 'Q01',
       mapSearchResults: [
-        { kind: 'roomRef', entry: { code: 'Q01', name: 'Q01', buildingId: 1, floorId: 1, floorLevel: 1, placeId: 1 } },
+        {
+          kind: 'roomRef',
+          entry: { code: 'Q01', name: 'Q01', buildingId: 1, floorId: 1, floorLevel: 1, placeId: 1 },
+        },
       ],
     } as never);
     render(<MapScreen />);

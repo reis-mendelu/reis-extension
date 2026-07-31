@@ -4,11 +4,11 @@ import { useAppStore } from '../../store/useAppStore';
 import { triggerWatchdog } from '../../api/exams';
 
 export interface UseWatchdogResult {
-    armed: boolean;
-    firing: boolean;
-    feedback: 'activated' | 'deactivated' | 'failed' | null;
-    errorMessage: string | null;
-    toggle: () => Promise<void>;
+  armed: boolean;
+  firing: boolean;
+  feedback: 'activated' | 'deactivated' | 'failed' | null;
+  errorMessage: string | null;
+  toggle: () => Promise<void>;
 }
 
 /**
@@ -21,61 +21,63 @@ export interface UseWatchdogResult {
  * implemented once.
  */
 export function useWatchdog(term: ExamTerm): UseWatchdogResult {
-    const triggerExamsRefresh = useAppStore(s => s.triggerExamsRefresh);
-    // Optimistic override: flips the UI instantly on click. Held until the next
-    // exam-refresh re-parses the URL (aktivace=1 ↔ aktivace=2) and urlArmed agrees.
-    const [optimisticArmed, setOptimisticArmed] = useState<boolean | null>(null);
-    const [firing, setFiring] = useState(false);
+  const triggerExamsRefresh = useAppStore((s) => s.triggerExamsRefresh);
+  // Optimistic override: flips the UI instantly on click. Held until the next
+  // exam-refresh re-parses the URL (aktivace=1 ↔ aktivace=2) and urlArmed agrees.
+  const [optimisticArmed, setOptimisticArmed] = useState<boolean | null>(null);
+  const [firing, setFiring] = useState(false);
 
-    // Custom inline micro-toast state
-    const [activeFeedback, setActiveFeedback] = useState<'activated' | 'deactivated' | 'failed' | null>(null);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Custom inline micro-toast state
+  const [activeFeedback, setActiveFeedback] = useState<
+    'activated' | 'deactivated' | 'failed' | null
+  >(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    const urlArmed = !!term.watchdogUrl?.includes('aktivace=2');
-    const armed = optimisticArmed ?? urlArmed;
+  const urlArmed = !!term.watchdogUrl?.includes('aktivace=2');
+  const armed = optimisticArmed ?? urlArmed;
 
-    // Once the parsed URL catches up to the optimistic value, drop the override
-    // so the URL is authoritative again for any future external state changes.
-    //
-    // This is React's "adjust state when props change" case, which the modern
-    // guidance says to do during render rather than in an effect. Moved here
-    // verbatim from TermBuiltinActions as a behaviour-preserving extraction, so
-    // the pattern is carried over unchanged rather than rewritten in the same
-    // commit. Tracked for a proper fix in issue #157.
-    useEffect(() => {
-        if (optimisticArmed !== null && urlArmed === optimisticArmed) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setOptimisticArmed(null);
-        }
-    }, [urlArmed, optimisticArmed]);
+  // Once the parsed URL catches up to the optimistic value, drop the override
+  // so the URL is authoritative again for any future external state changes.
+  //
+  // This is React's "adjust state when props change" case, which the modern
+  // guidance says to do during render rather than in an effect. Moved here
+  // verbatim from TermBuiltinActions as a behaviour-preserving extraction, so
+  // the pattern is carried over unchanged rather than rewritten in the same
+  // commit. Tracked for a proper fix in issue #157.
+  useEffect(() => {
+    if (optimisticArmed !== null && urlArmed === optimisticArmed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOptimisticArmed(null);
+    }
+  }, [urlArmed, optimisticArmed]);
 
-    // Automatically hide contextual micro-toast after timeout
-    useEffect(() => {
-        if (activeFeedback) {
-            const timer = setTimeout(() => {
-                setActiveFeedback(null);
-                setErrorMessage(null);
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [activeFeedback]);
+  // Automatically hide contextual micro-toast after timeout
+  useEffect(() => {
+    if (activeFeedback) {
+      const timer = setTimeout(() => {
+        setActiveFeedback(null);
+        setErrorMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeFeedback]);
 
-    const toggle = async () => {
-        if (!term.watchdogUrl || firing) return;
-        const next = !armed;
-        setOptimisticArmed(next);
-        setFiring(true);
-        const result = await triggerWatchdog(term.watchdogUrl);
-        setFiring(false);
-        if (result.success) {
-            setActiveFeedback(next ? 'activated' : 'deactivated');
-            triggerExamsRefresh();
-        } else {
-            setOptimisticArmed(null);
-            setErrorMessage(result.error || null);
-            setActiveFeedback('failed');
-        }
-    };
+  const toggle = async () => {
+    if (!term.watchdogUrl || firing) return;
+    const next = !armed;
+    setOptimisticArmed(next);
+    setFiring(true);
+    const result = await triggerWatchdog(term.watchdogUrl);
+    setFiring(false);
+    if (result.success) {
+      setActiveFeedback(next ? 'activated' : 'deactivated');
+      triggerExamsRefresh();
+    } else {
+      setOptimisticArmed(null);
+      setErrorMessage(result.error || null);
+      setActiveFeedback('failed');
+    }
+  };
 
-    return { armed, firing, feedback: activeFeedback, errorMessage, toggle };
+  return { armed, firing, feedback: activeFeedback, errorMessage, toggle };
 }
