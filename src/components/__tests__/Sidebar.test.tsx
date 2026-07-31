@@ -3,12 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { Sidebar } from '../Sidebar';
 import type { MenuItem } from '../menuConfig';
 
-// Sidebar renders ProfilePopup, which calls useSpolkySettings — an async
-// IndexedDB load ending in setIsLoading(false) inside a `finally`, with no
-// mounted guard. Locally that tail lands before teardown; on CI's slower
-// runner it lands after, and touching React state once happy-dom's window is
-// gone throws "window is not defined" and fails the whole vitest run. These
-// tests are about logo/nav routing, so the hook is stubbed rather than raced.
+// Sidebar renders ProfilePopup, which calls useSpolkySettings and its async
+// IndexedDB load. These tests are about logo/nav routing, so the hook is
+// stubbed to keep them off real storage entirely.
 vi.mock('../../hooks/useSpolkySettings', () => ({
   useSpolkySettings: () => ({
     subscribedAssociations: [],
