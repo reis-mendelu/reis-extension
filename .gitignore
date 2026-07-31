@@ -140,3 +140,6 @@ public/dev-real-data.json
 
 # Lockfile for the dev:web background snapshot refresh
 public/.dev-real-data.lock
+
+# UI verification output (scripts/shot.ts) — always regenerated, never committed
+.verify/

@@ -22,20 +22,21 @@
     {
       "name": "reis-webapp",
       "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run",
-        "dev:web"
-      ],
+      "runtimeArgs": ["run", "dev:web"],
       "port": 3000,
       "autoPort": true
     },
     {
       "name": "reis-webapp-mock",
       "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run",
-        "dev:web:mock"
-      ],
+      "runtimeArgs": ["run", "dev:web:mock"],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "reis-webapp-exams",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:web:exams"],
       "port": 3000,
       "autoPort": true
     }
