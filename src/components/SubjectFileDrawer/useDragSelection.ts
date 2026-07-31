@@ -63,6 +63,6 @@ export function useDragSelection({ isOpen, containerRef, contentRef, fileRefs }:
             initialIds.current = (e.ctrlKey || e.shiftKey || e.metaKey) ? ids : [];
             if (!e.ctrlKey && !e.shiftKey && !e.metaKey) setIds([]);
         },
-        toggleSelect: (id: string, e: React.MouseEvent) => { e.stopPropagation(); setIds(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]); }
+        toggleSelect: (id: string, e: React.SyntheticEvent) => { e.stopPropagation(); setIds(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]); }
     };
 }

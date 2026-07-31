@@ -11,48 +11,48 @@ import type { SelectedSubject } from '../../types/app';
 export type DrawerTab = 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
 
 export interface DrawerHeaderProps {
-    lesson: BlockLesson | SelectedSubject | null;
-    courseId: string;
-    courseInfo?: CourseMetadata; // New: metadata for search/sidebar view
-    subjectInfo?: SubjectInfo | null;
-    selectedCount: number;
-    isDownloading: boolean;
-    downloadProgress?: { completed: number; total: number } | null;
-    activeTab: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
-    tabCounts?: Record<string, number | undefined>;
-    onClose: () => void;
-    onDownload: () => void;
-    onTabChange: (tab: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik') => void;
+  lesson: BlockLesson | SelectedSubject | null;
+  courseId: string;
+  courseInfo?: CourseMetadata; // New: metadata for search/sidebar view
+  subjectInfo?: SubjectInfo | null;
+  selectedCount: number;
+  isDownloading: boolean;
+  downloadProgress?: { completed: number; total: number } | null;
+  activeTab: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
+  tabCounts?: Record<string, number | undefined>;
+  onClose: () => void;
+  onDownload: () => void;
+  onTabChange: (tab: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik') => void;
 }
 
 export interface FileGroup {
-    name: string;
-    displayName: string;
-    files: ParsedFile[];
+  name: string;
+  displayName: string;
+  files: ParsedFile[];
 }
 
 export interface FileListProps {
-    groups: FileGroup[];
-    selectedIds: string[];
-    courseCode: string;
-    fileRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
-    ignoreClickRef: React.MutableRefObject<boolean>;
-    onToggleSelect: (id: string, e: React.MouseEvent) => void;
-    onOpenFile: (link: string) => void;
-    onViewPdf?: (link: string) => void;
-    onDownloadSingle?: (link: string) => void;
-    folderUrl?: string;
-    lastVisitedAt?: number | null;
-    /** Per-row selection checkboxes. Defaults to on for desktop, where
-     *  selection feeds ctrl-click and rubber-band multi-select for a bulk
-     *  download. The phone drawer has neither, so it turns them off — a
-     *  checkbox that only ever selects one row at a time is noise. */
-    selectable?: boolean;
+  groups: FileGroup[];
+  selectedIds: string[];
+  courseCode: string;
+  fileRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
+  ignoreClickRef: React.MutableRefObject<boolean>;
+  onToggleSelect: (id: string, e: React.SyntheticEvent) => void;
+  onOpenFile: (link: string) => void;
+  onViewPdf?: (link: string) => void;
+  onDownloadSingle?: (link: string) => void;
+  folderUrl?: string;
+  lastVisitedAt?: number | null;
+  /** Per-row selection checkboxes. Defaults to on for desktop, where
+   *  selection feeds ctrl-click and rubber-band multi-select for a bulk
+   *  download. The phone drawer has neither, so it turns them off — a
+   *  checkbox that only ever selects one row at a time is noise. */
+  selectable?: boolean;
 }
 
 export interface DragSelectionState {
-    isDragging: boolean;
-    selectionStart: { x: number; y: number } | null;
-    selectionEnd: { x: number; y: number } | null;
-    selectedIds: string[];
+  isDragging: boolean;
+  selectionStart: { x: number; y: number } | null;
+  selectionEnd: { x: number; y: number } | null;
+  selectedIds: string[];
 }
