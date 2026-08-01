@@ -179,6 +179,29 @@ export function ringToLatLng(ring: number[][]): [number, number][] {
   return ring.map((c) => [c[1], c[0]] as [number, number]);
 }
 
+/**
+ * Is [lon, lat] inside this ring? Standard ray casting over the [lon, lat]
+ * pairs `buildings.json` stores.
+ *
+ * Used by floor-view's tap-to-exit, which needs the real outline rather than
+ * `bounds`: campus buildings are L- and U-shaped, and their bounding boxes
+ * cover courtyards and streets the building does not, so a bounds test would
+ * swallow taps that are plainly outside it.
+ */
+export function ringContains(ring: number[][], lon: number, lat: number): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const a = ring[i];
+    const b = ring[j];
+    if (!a || !b) continue;
+    const [xi, yi] = a as [number, number];
+    const [xj, yj] = b as [number, number];
+    const straddles = yi > lat !== yj > lat;
+    if (straddles && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
 // Average of a ring's vertices, returned as [lon, lat] (data convention).
 // Good enough for fly-to / cluster anchoring; not a true area centroid.
 export function polygonCentroid(ring: number[][]): [number, number] {

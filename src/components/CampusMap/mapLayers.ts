@@ -3,8 +3,14 @@ import { useAppStore } from '../../store/useAppStore';
 import landmarksJson from '../../data/map/landmarks.json';
 import remotePlacesJson from '../../data/map/remotePlaces.json';
 import {
-  ringToLatLng, landmarkGroupLabels, remotePlaceRings, remotePlaceCenter,
-  BUILDING_STYLE, GARDEN_STYLE, PATH_STYLE, POI_MARKER_STYLE,
+  ringToLatLng,
+  landmarkGroupLabels,
+  remotePlaceRings,
+  remotePlaceCenter,
+  BUILDING_STYLE,
+  GARDEN_STYLE,
+  PATH_STYLE,
+  POI_MARKER_STYLE,
 } from './mapHelpers';
 import type { Landmark, RemotePlace } from '../../types/campusMap';
 
@@ -24,9 +30,21 @@ const LANDMARK_LETTERS: Record<number, string> = { 1587: 'Z' };
 // Free, keyless, retina-aware. maxNativeZoom 20 (one better than OSM's 19)
 // reduces upscaling blur at floor-zoom levels. Creates the map, wires the tile
 // layer + label-visibility toggle, and returns it (caller owns layers/cleanup).
-export function initLeafletMap(container: HTMLElement, campusBounds: L.LatLngBoundsExpression): L.Map {
+export function initLeafletMap(
+  container: HTMLElement,
+  campusBounds: L.LatLngBoundsExpression,
+  /** Reveal the lettered building names at the resting overview zoom rather than
+   *  one notch in. On a phone the map is the whole screen and the letters are
+   *  the only way to tell one outline from another without tapping — the
+   *  desktop's clutter argument does not apply when there is no side panel
+   *  naming things. */
+  labelsAtRest = false
+): L.Map {
   const map = L.map(container, {
-    zoomControl: true, attributionControl: true, minZoom: 14, maxZoom: 22,
+    zoomControl: true,
+    attributionControl: true,
+    minZoom: 14,
+    maxZoom: 22,
     // Keep Leaflet's default stepped zoom (zoomSnap 1) but make each wheel notch
     // require more scroll (default 60 → 100 px per level) so it doesn't jump so
     // aggressively. zoomSnap:0 (fractional) felt worse — floaty and blurry on
@@ -50,7 +68,8 @@ export function initLeafletMap(container: HTMLElement, campusBounds: L.LatLngBou
   const cb = L.latLngBounds(campusBounds as L.LatLngBoundsLiteral);
   const syncLabelVisibility = () => {
     const restZoom = Math.min(18, Math.floor(map.getBoundsZoom(cb, false, L.point(40, 40))));
-    map.getContainer().classList.toggle('reis-hide-building-labels', map.getZoom() <= restZoom + 1);
+    const hideBelow = labelsAtRest ? restZoom - 1 : restZoom + 1;
+    map.getContainer().classList.toggle('reis-hide-building-labels', map.getZoom() <= hideBelow);
   };
   syncLabelVisibility();
   map.on('zoomend', syncLabelVisibility);
@@ -63,10 +82,13 @@ export function initLeafletMap(container: HTMLElement, campusBounds: L.LatLngBou
 // panes for the duration of the fly so only the basemap animates; reveal once
 // the camera has settled.
 export function flyAndReveal(map: L.Map, fly: () => void): void {
-  const panes = [map.getPane('overlayPane'), map.getPane('tooltipPane')]
-    .filter((p): p is HTMLElement => p != null);
+  const panes = [map.getPane('overlayPane'), map.getPane('tooltipPane')].filter(
+    (p): p is HTMLElement => p != null
+  );
   for (const p of panes) p.style.visibility = 'hidden';
-  const reveal = () => { for (const p of panes) p.style.visibility = ''; };
+  const reveal = () => {
+    for (const p of panes) p.style.visibility = '';
+  };
   map.once('moveend', reveal);
   window.setTimeout(reveal, 900); // safety: a fly to ~the current view fires no moveend
   fly();
@@ -79,7 +101,7 @@ export function flyAndReveal(map: L.Map, fly: () => void): void {
 export function drawLandmarks(
   layer: L.LayerGroup,
   select: ReturnType<typeof useAppStore.getState>,
-  style: L.PathOptions,
+  style: L.PathOptions
 ) {
   for (const l of LANDMARKS) {
     const poly = L.polygon(ringToLatLng(l.outline.coordinates[0]), style);
@@ -87,11 +109,16 @@ export function drawLandmarks(
       const c = poly.getBounds().getCenter();
       select.selectMapPoi(
         { id: l.id, name: l.name, type: l.type, url: l.url, phone: l.phone, email: l.email },
-        [c.lng, c.lat],
+        [c.lng, c.lat]
       );
     });
     const letter = LANDMARK_LETTERS[l.id];
-    if (letter) poly.bindTooltip(letter, { permanent: true, direction: 'center', className: 'building-label' });
+    if (letter)
+      poly.bindTooltip(letter, {
+        permanent: true,
+        direction: 'center',
+        className: 'building-label',
+      });
     else poly.bindTooltip(LANDMARK_LABELS.get(l.id) ?? l.name);
     poly.addTo(layer);
   }
@@ -107,7 +134,7 @@ export function drawLandmarks(
 export function drawRemotePlaces(
   layer: L.LayerGroup,
   select: ReturnType<typeof useAppStore.getState>,
-  drilledId: number | null,
+  drilledId: number | null
 ) {
   for (const p of REMOTE) {
     const [clon, clat] = remotePlaceCenter(p);
@@ -115,10 +142,11 @@ export function drawRemotePlaces(
     const collapsible = !!p.area;
     // Collapsed garden: a click drills in (fly + reveal). Otherwise a click just
     // selects the site in place (no camera move).
-    const select_ = () => select.selectMapPoi(
-      { id: p.id, name: p.name, type: p.address ?? '', url: p.url, phone: null, email: null },
-      [clon, clat],
-    );
+    const select_ = () =>
+      select.selectMapPoi(
+        { id: p.id, name: p.name, type: p.address ?? '', url: p.url, phone: null, email: null },
+        [clon, clat]
+      );
     const enter = () => select.focusRemotePlaceById(p.id);
 
     if (p.area) {
@@ -129,21 +157,23 @@ export function drawRemotePlaces(
     }
     // Inner detail only when drilled in (or for the always-shown far sites).
     if (drilled || !collapsible) {
-      if (p.paths) for (const path of p.paths) {
-        L.polyline(ringToLatLng(path), PATH_STYLE).addTo(layer);
-      }
+      if (p.paths)
+        for (const path of p.paths) {
+          L.polyline(ringToLatLng(path), PATH_STYLE).addTo(layer);
+        }
       for (const ring of remotePlaceRings(p.outline)) {
         L.polygon(ringToLatLng(ring), BUILDING_STYLE)
           .on('click', select_)
           .bindTooltip(p.shortName)
           .addTo(layer);
       }
-      if (p.pois) for (const poi of p.pois) {
-        L.circleMarker([poi.lat, poi.lon], POI_MARKER_STYLE)
-          .on('click', select_)
-          .bindTooltip(poi.name, { permanent: true, direction: 'right', className: 'room-label' })
-          .addTo(layer);
-      }
+      if (p.pois)
+        for (const poi of p.pois) {
+          L.circleMarker([poi.lat, poi.lon], POI_MARKER_STYLE)
+            .on('click', select_)
+            .bindTooltip(poi.name, { permanent: true, direction: 'right', className: 'room-label' })
+            .addTo(layer);
+        }
     }
   }
 }

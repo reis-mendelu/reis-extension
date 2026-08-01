@@ -1,0 +1,273 @@
+{
+  "_comment": "Synthetic exam-season fixture. NO real student data — fictional teachers, invented term ids. Dates are authored as dayOffset from 'now' and materialised by scripts/lib/fixtureRebase.ts, so this never rots. Serve with: REIS_FIXTURE=examSeason npm run dev:web",
+  "exams": [
+    {
+      "version": 1,
+      "id": "fx-mt",
+      "code": "EBC-MT",
+      "name": "Matematika",
+      "nameCs": "Matematika",
+      "nameEn": "Mathematics",
+      "sections": [
+        {
+          "id": "fx-mt-zk",
+          "name": "zkouška",
+          "nameCs": "zkouška",
+          "nameEn": "exam",
+          "type": "Zkouška",
+          "status": "registered",
+          "registeredTerm": {
+            "id": "fx-mt-zk-t2",
+            "dayOffset": 2,
+            "time": "09:00",
+            "room": "Q01",
+            "roomCs": "Q01",
+            "roomEn": "Q01",
+            "teacher": "doc. Ing. Jan Novák, Ph.D.",
+            "deregDayOffset": 0,
+            "deregTime": "23:59"
+          },
+          "terms": [
+            {
+              "id": "fx-mt-zk-t1",
+              "dayOffset": 0,
+              "time": "08:00",
+              "room": "Q01",
+              "teacher": "doc. Ing. Jan Novák, Ph.D.",
+              "capacity": { "occupied": 40, "total": 40, "raw": "40/40" },
+              "full": true,
+              "attemptTypes": ["regular"],
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written"
+            },
+            {
+              "id": "fx-mt-zk-t2",
+              "dayOffset": 2,
+              "time": "09:00",
+              "room": "Q01",
+              "teacher": "doc. Ing. Jan Novák, Ph.D.",
+              "capacity": { "occupied": 31, "total": 40, "raw": "31/40" },
+              "full": false,
+              "attemptTypes": ["regular"],
+              "canRegisterNow": true,
+              "deregDayOffset": 0,
+              "deregTime": "23:59",
+              "sectionForm": "písemná",
+              "sectionFormEn": "written"
+            },
+            {
+              "id": "fx-mt-zk-t3",
+              "dayOffset": 16,
+              "time": "10:00",
+              "room": "Q02",
+              "teacher": "Ing. Petra Dvořáková, Ph.D.",
+              "capacity": { "occupied": 4, "total": 35, "raw": "4/35" },
+              "attemptTypes": ["retake1"],
+              "canRegisterNow": true,
+              "sectionForm": "písemná a ústní",
+              "sectionFormEn": "written and oral"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-pyt",
+      "code": "EBC-PYT",
+      "name": "Programování v Pythonu",
+      "nameCs": "Programování v Pythonu",
+      "nameEn": "Programming in Python",
+      "sections": [
+        {
+          "id": "fx-pyt-zap",
+          "name": "zápočet",
+          "nameCs": "zápočet",
+          "nameEn": "credit",
+          "type": "Zápočet",
+          "status": "registered",
+          "registeredTerm": {
+            "id": "fx-pyt-zap-t1",
+            "dayOffset": -3,
+            "time": "13:00",
+            "room": "Z4",
+            "teacher": "Mgr. Tomáš Svoboda"
+          },
+          "terms": [
+            {
+              "id": "fx-pyt-zap-t1",
+              "dayOffset": -3,
+              "time": "13:00",
+              "room": "Z4",
+              "teacher": "Mgr. Tomáš Svoboda",
+              "capacity": { "occupied": 22, "total": 24, "raw": "22/24" },
+              "attemptTypes": ["regular"]
+            }
+          ]
+        },
+        {
+          "id": "fx-pyt-zk",
+          "name": "zkouška",
+          "nameCs": "zkouška",
+          "nameEn": "exam",
+          "type": "Zkouška",
+          "status": "open",
+          "terms": [
+            {
+              "id": "fx-pyt-zk-t1",
+              "dayOffset": 5,
+              "time": "11:30",
+              "room": "Z4",
+              "teacher": "Mgr. Tomáš Svoboda",
+              "capacity": { "occupied": 18, "total": 24, "raw": "18/24" },
+              "attemptTypes": ["regular"],
+              "canRegisterNow": true,
+              "deregDayOffset": 3,
+              "deregTime": "12:00",
+              "sectionForm": "e-test",
+              "sectionFormEn": "e-test"
+            },
+            {
+              "id": "fx-pyt-zk-t2",
+              "dayOffset": 5,
+              "time": "14:00",
+              "room": "Z5",
+              "teacher": "Ing. Petra Dvořáková, Ph.D.",
+              "capacity": { "occupied": 24, "total": 24, "raw": "24/24" },
+              "full": true,
+              "attemptTypes": ["regular"],
+              "sectionForm": "e-test"
+            },
+            {
+              "id": "fx-pyt-zk-t3",
+              "dayOffset": 23,
+              "time": "09:00",
+              "room": "Z4",
+              "teacher": "Mgr. Tomáš Svoboda",
+              "capacity": { "occupied": 1, "total": 24, "raw": "1/24" },
+              "attemptTypes": ["retake1", "retake2"],
+              "canRegisterNow": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-aos",
+      "code": "EBC-AOS",
+      "name": "Architektura operačních systémů",
+      "nameCs": "Architektura operačních systémů",
+      "nameEn": "Operating System Architecture",
+      "sections": [
+        {
+          "id": "fx-aos-zk",
+          "name": "zkouška",
+          "nameCs": "zkouška",
+          "nameEn": "exam",
+          "type": "Zkouška",
+          "status": "open",
+          "terms": [
+            {
+              "id": "fx-aos-zk-t1",
+              "dayOffset": 9,
+              "time": "08:30",
+              "room": "A11",
+              "teacher": "prof. Ing. Marie Černá, CSc.",
+              "capacity": { "occupied": 12, "total": 30, "raw": "12/30" },
+              "attemptTypes": ["regular"],
+              "canRegisterNow": true,
+              "regStartDayOffset": -14,
+              "regEndDayOffset": 7,
+              "deregDayOffset": 7,
+              "deregTime": "23:59"
+            },
+            {
+              "id": "fx-aos-zk-t2",
+              "dayOffset": 30,
+              "time": "08:30",
+              "room": "A11",
+              "teacher": "prof. Ing. Marie Černá, CSc.",
+              "capacity": { "occupied": 0, "total": 30, "raw": "0/30" },
+              "attemptTypes": ["retake1"],
+              "regStartDayOffset": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-dsnd",
+      "code": "EBC-DSND",
+      "name": "Datové struktury a návrh databází",
+      "nameCs": "Datové struktury a návrh databází",
+      "nameEn": "Data Structures and Database Design",
+      "sections": [
+        {
+          "id": "fx-dsnd-zk",
+          "name": "zkouška",
+          "nameCs": "zkouška",
+          "nameEn": "exam",
+          "type": "Zkouška",
+          "status": "open",
+          "terms": [
+            {
+              "id": "fx-dsnd-zk-t1",
+              "dayOffset": 1,
+              "time": "15:00",
+              "room": "B33",
+              "teacher": "Ing. Lukáš Horák, Ph.D.",
+              "capacity": { "occupied": 27, "total": 28, "raw": "27/28" },
+              "attemptTypes": ["regular"],
+              "canRegisterNow": true,
+              "deregDayOffset": 0,
+              "deregTime": "12:00"
+            },
+            {
+              "id": "fx-dsnd-zk-t2",
+              "dayOffset": 12,
+              "time": "15:00",
+              "room": "B33",
+              "teacher": "Ing. Lukáš Horák, Ph.D.",
+              "capacity": { "occupied": 9, "total": 28, "raw": "9/28" },
+              "attemptTypes": ["regular", "retake1"],
+              "canRegisterNow": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-iv",
+      "code": "EBC-IV",
+      "name": "Informační výchova",
+      "nameCs": "Informační výchova",
+      "nameEn": "Information Literacy",
+      "sections": [
+        {
+          "id": "fx-iv-zap",
+          "name": "zápočet",
+          "nameCs": "zápočet",
+          "nameEn": "credit",
+          "type": "Zápočet",
+          "status": "open",
+          "terms": [
+            {
+              "id": "fx-iv-zap-t1",
+              "dayOffset": 7,
+              "time": "10:00",
+              "room": "N1052",
+              "teacher": "Mgr. Eva Pokorná",
+              "capacity": { "occupied": 15, "total": 20, "raw": "15/20" },
+              "attemptTypes": ["regular"],
+              "canRegisterNow": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

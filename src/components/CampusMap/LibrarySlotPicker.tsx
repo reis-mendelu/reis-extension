@@ -48,7 +48,7 @@ export function LibrarySlotPicker({
         t={t}
         locale={loc}
       />
-      <div className="flex gap-1 overflow-x-auto pb-0.5">
+      <div className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <button
           type="button"
           aria-pressed={hour === null}

@@ -2,12 +2,14 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
+import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
 import buildingsJson from '../../data/map/buildings.json';
 import {
   ringToLatLng,
   roomLabel,
   categoryStyle,
   remotePlaceBounds,
+  ringContains,
   SELECTED_STYLE,
   STRUCTURE_STYLE,
   BUILDING_STYLE,
@@ -50,17 +52,25 @@ import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
 
-// At the campus-overview resting zoom the lettered building names (X, Q, A…)
-// just clutter the basemap and collide with event pins, so they're hidden via the
-// `reis-hide-building-labels` class (src/index.css). They reappear the moment the
-// user zooms IN past the overview — the threshold is computed live in
-// initLeafletMap. The drill interaction is a click, not the label.
+// On DESKTOP, at the campus-overview resting zoom the lettered building names
+// (X, Q, A…) just clutter the basemap and collide with event pins, so they're
+// hidden via the `reis-hide-building-labels` class (src/index.css) and reappear
+// the moment the user zooms IN past the overview. On a PHONE they show at rest:
+// the map is the whole screen with no side panel naming anything, so the letter
+// is the only way to tell one outline from another without tapping it. The
+// threshold is computed live in initLeafletMap. The drill interaction is a
+// click, not the label.
 
 export function MapCanvas() {
+  const isPhone = usePhoneViewport();
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup>(L.layerGroup());
   const exitHandlerRef = useRef<((e: L.LeafletMouseEvent) => void) | null>(null);
+  // Set only by the floor-view tap-away, never by the "Celý kampus" button, so
+  // the redraw below can tell "I'm done with this building" from "take me back
+  // to the whole campus" — both dispatch the same `exitToCampus`.
+  const keepViewRef = useRef(false);
   // Live room polygons keyed by placeId, with their unselected base style — lets
   // a plain map click re-highlight in place without a full redraw or camera move.
   const roomPolysRef = useRef<Map<number, { poly: L.Polygon; base: L.PathOptions }>>(new Map());
@@ -88,7 +98,11 @@ export function MapCanvas() {
   // init once
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
-    const map = initLeafletMap(ref.current, META.campus.bounds as L.LatLngBoundsExpression);
+    const map = initLeafletMap(
+      ref.current,
+      META.campus.bounds as L.LatLngBoundsExpression,
+      isPhone
+    );
     layerRef.current.addTo(map);
     mapRef.current = map;
     setMapInstance(map);
@@ -97,6 +111,11 @@ export function MapCanvas() {
       map.remove();
       mapRef.current = null;
     };
+    // Deliberately once-only. `isPhone` is read at construction to pick the
+    // label-visibility threshold; re-running would tear down and rebuild the
+    // whole Leaflet map (losing camera and layers) just to change it, and the
+    // desktop/phone branches mount different trees anyway.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // draw campus overview or the active floor
@@ -106,6 +125,10 @@ export function MapCanvas() {
     const layer = layerRef.current;
     layer.clearLayers();
     const select = useAppStore.getState();
+    // Leaving floor-view by tapping the basemap keeps the camera; the "Celý
+    // kampus" button still re-fits the campus. Cleared where the camera
+    // decision is reached rather than here.
+    const cameFromMapTap = keepViewRef.current;
     if (exitHandlerRef.current) {
       map.off('click', exitHandlerRef.current);
       exitHandlerRef.current = null;
@@ -183,6 +206,15 @@ export function MapCanvas() {
         flyAndReveal(map, () =>
           map.setView([lat, lon], Math.max(map.getZoom(), 18), { animate: false })
         );
+      } else if (cameFromMapTap) {
+        // Left floor-view by tapping the basemap: drop the floor plan but leave
+        // the camera alone. Re-fitting the campus here threw the user all the
+        // way out to the overview when all they did was tap beside a building —
+        // the "Celý kampus" button exists for that, and still does it.
+        //
+        // Deliberately NOT wrapped in flyAndReveal: with no camera move there is
+        // no re-projection to hide, and its 900ms safety reveal would blank the
+        // vector panes for most of a second on a `moveend` that never comes.
       } else {
         flyAndReveal(map, () =>
           map.fitBounds(META.campus.bounds as L.LatLngBoundsExpression, {
@@ -192,6 +224,7 @@ export function MapCanvas() {
           })
         );
       }
+      keepViewRef.current = false;
       return;
     }
 
@@ -223,8 +256,16 @@ export function MapCanvas() {
         .addTo(layer);
     }
     drawLandmarks(layer, select, SIBLING_STYLE);
-    // Clicking the bare basemap (not an outline/room) returns to overview.
-    const onMapClick = () => select.exitToCampus();
+    // Tapping the bare basemap leaves floor-view — but only from OUTSIDE the
+    // building. The gaps between rooms (corridors, courtyards, stairwells) are
+    // still the building, and exiting when a tap lands in one made the floor
+    // plan feel like it was slipping out from under you. Tested against the
+    // outline, not `bounds`: these footprints are L- and U-shaped.
+    const onMapClick = (e: L.LeafletMouseEvent) => {
+      if (b && ringContains(b.outline.coordinates[0], e.latlng.lng, e.latlng.lat)) return;
+      keepViewRef.current = true;
+      select.exitToCampus();
+    };
     map.on('click', onMapClick);
     exitHandlerRef.current = onMapClick;
     // The selected room (from search/deep-link or a canvas click) gets a bold
