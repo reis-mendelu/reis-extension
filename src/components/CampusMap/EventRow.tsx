@@ -4,7 +4,7 @@ import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
 import { relativeDayLabel } from './eventHelpers';
 import type { MapEvent } from '../../types/events';
 
-// Shared list row for both the public Events tab (EventsList) and the
+// Shared list row for both the public Events tab (MapEventsSection) and the
 // organizer's own-events panel (MyEventsPanel). `subline` lets the caller
 // override the default "day · time" line — e.g. MyEventsPanel shows a
 // "goes live" countdown for scheduled events instead. `actions` renders

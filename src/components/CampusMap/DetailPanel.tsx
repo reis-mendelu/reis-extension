@@ -6,7 +6,7 @@ import landmarksJson from '../../data/map/landmarks.json';
 import type { Landmark } from '../../types/campusMap';
 import { LIBRARY_PLACE_IDS } from '@/data/map/libraryRooms';
 import { LibraryRoomSection } from './LibraryRoomSection';
-import { LibraryOverviewPanel } from './LibraryOverviewPanel';
+import { MapLibrarySection } from './MapLibrarySection';
 
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
 const GROUP_LABELS = landmarkGroupLabels(LANDMARKS);
@@ -30,7 +30,7 @@ export function DetailPanel() {
 
   if (sel.kind === 'event') return <EventDetailCard event={sel.event} />;
 
-  if (sel.kind === 'libraryOverview') return <LibraryOverviewPanel />;
+  if (sel.kind === 'libraryOverview') return <MapLibrarySection />;
 
   if (sel.kind === 'poi') {
     const p = sel.poi;

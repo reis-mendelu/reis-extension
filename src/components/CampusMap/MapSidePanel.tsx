@@ -1,7 +1,7 @@
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { LandmarkPicker } from './LandmarkPicker';
-import { EventsList } from './EventsList';
+import { MapEventsSection } from './MapEventsSection';
 import { MyEventsPanel } from './MyEventsPanel';
 
 type TabKey = 'events' | 'places' | 'mine';
@@ -62,7 +62,13 @@ export function MapSidePanel() {
         aria-labelledby={`map-tab-${active}`}
         className={`min-h-0 flex-1 ${isSociety ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'}`}
       >
-        {isSociety ? <MyEventsPanel /> : active === 'places' ? <LandmarkPicker /> : <EventsList />}
+        {isSociety ? (
+          <MyEventsPanel />
+        ) : active === 'places' ? (
+          <LandmarkPicker />
+        ) : (
+          <MapEventsSection />
+        )}
       </div>
     </div>
   );

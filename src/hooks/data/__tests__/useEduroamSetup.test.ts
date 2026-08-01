@@ -58,6 +58,20 @@ describe('useEduroamSetup', () => {
     expect(result.current.password).toBeNull();
   });
 
+  it('autoSelectTarget prefetches the password for the given target exactly once on mount', async () => {
+    const { fetchEduroamPassword } = await import('../../../api/eduroam');
+    const { result } = renderHook(({ target }) => useEduroamSetup(target), {
+      initialProps: { target: 'ios' as const },
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(fetchEduroamPassword).toHaveBeenCalledTimes(1);
+    expect(result.current.password).toBe('pw123');
+  });
+
   it("run('windows') saves a .eap-config file directly (no QR, no transfer)", async () => {
     const { result } = renderHook(() => useEduroamSetup());
 

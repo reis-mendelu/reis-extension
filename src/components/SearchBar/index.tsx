@@ -10,11 +10,17 @@ import { SearchFooter } from './SearchFooter';
 import type { SearchResult } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { getModifierKey } from '../../utils/platform';
+import { isTrustedHostOrigin } from '../../utils/trustedOrigin';
 
 interface SearchBarProps {
   placeholder?: string;
   onSearch?: (query: string) => void;
-  onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string, facultyCode?: string) => void;
+  onOpenSubject?: (
+    courseCode: string,
+    courseName?: string,
+    courseId?: string,
+    facultyCode?: string
+  ) => void;
   prefillRef?: React.MutableRefObject<((query: string) => void) | null>;
   /** Minimal chrome (Study Plan): input + results + the faculty/university scope toggle.
    * Drops the IS-portal launcher, footer hints, recent-searches, and ⌘K badge. */
@@ -23,20 +29,50 @@ interface SearchBarProps {
   subjectsOnly?: boolean;
 }
 
-export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, minimal, subjectsOnly }: SearchBarProps) {
+export function SearchBar({
+  placeholder,
+  onSearch,
+  onOpenSubject,
+  prefillRef,
+  minimal,
+  subjectsOnly,
+}: SearchBarProps) {
   const { t, language } = useTranslation();
   const { studiumId, obdobiId, facultyId } = useAppStore();
   const modifier = getModifierKey();
   const defaultPlaceholder = t('search.placeholder', { shortcut: modifier });
-  const finalPlaceholder = placeholder
-    || (subjectsOnly ? t('search.placeholderSubjects') : (modifier ? defaultPlaceholder : defaultPlaceholder.replace(/\s*\(.*\)$/, '')));
+  const finalPlaceholder =
+    placeholder ||
+    (subjectsOnly
+      ? t('search.placeholderSubjects')
+      : modifier
+        ? defaultPlaceholder
+        : defaultPlaceholder.replace(/\s*\(.*\)$/, ''));
   const [query, setQuery] = useState('');
-  const { isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, saveToHistory, scope, canScopeToFaculty, widenToUniversity, narrowToFaculty } = useSearch(query, subjectsOnly);
+  const {
+    isOpen,
+    setIsOpen,
+    selectedIndex,
+    setSelectedIndex,
+    sections,
+    filteredResults,
+    isLoading,
+    recentSearches,
+    saveToHistory,
+    scope,
+    canScopeToFaculty,
+    widenToUniversity,
+    narrowToFaculty,
+  } = useSearch(query, subjectsOnly);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputWrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
 
   // Close on click outside
   useEffect(() => {
@@ -60,6 +96,10 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, mi
       }
     };
     const handleParentMessage = (e: MessageEvent) => {
+      // Same guard as AppHeader's twin handler — both listen for the same
+      // message and both were reachable by any frame on the host page.
+      if (e.source !== window.parent) return;
+      if (!isTrustedHostOrigin(e.origin, import.meta.env.DEV)) return;
       if (e.data?.type === 'REIS_OPEN_SEARCH') {
         if (!isVisible()) return;
         inputRef.current?.focus();
@@ -82,12 +122,17 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, mi
       setIsOpen(true);
       inputRef.current?.focus();
     };
-    return () => { prefillRef.current = null; };
+    return () => {
+      prefillRef.current = null;
+    };
   }, [prefillRef, setIsOpen]);
 
   // Track input position for fixed dropdown
   useEffect(() => {
-    if (!isOpen || !inputWrapRef.current) { setDropdownPos(null); return; }
+    if (!isOpen || !inputWrapRef.current) {
+      setDropdownPos(null);
+      return;
+    }
     const update = () => {
       const rect = inputWrapRef.current?.getBoundingClientRect();
       if (rect) setDropdownPos({ top: rect.bottom, left: rect.left, width: rect.width });
@@ -102,11 +147,22 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, mi
     if (result.type === 'subject' && onOpenSubject) {
       onOpenSubject(result.subjectCode!, result.title, result.subjectId, result.faculty);
     } else if (result.link) {
-      window.open(injectUserParams(result.link, studiumId, language === 'en' ? 'en' : 'cz', obdobiId, facultyId), '_blank');
+      window.open(
+        injectUserParams(
+          result.link,
+          studiumId,
+          language === 'en' ? 'en' : 'cz',
+          obdobiId,
+          facultyId
+        ),
+        '_blank'
+      );
     }
 
     if (onSearch) onSearch(result.title);
-    setQuery(''); setIsOpen(false); setSelectedIndex(-1);
+    setQuery('');
+    setIsOpen(false);
+    setSelectedIndex(-1);
   };
 
   const isEmptyQuery = query.trim() === '';
@@ -114,13 +170,27 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, mi
   const browseItems: SearchResult[] = isEmptyQuery ? recentSearches : [];
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!isOpen) { if (e.key === 'Enter' && query.trim() !== '') setIsOpen(true); return; }
+    if (!isOpen) {
+      if (e.key === 'Enter' && query.trim() !== '') setIsOpen(true);
+      return;
+    }
     const items = isEmptyQuery ? browseItems : filteredResults;
     const resultsCount = items.length;
-    if (e.key === 'ArrowDown') { e.preventDefault(); setSelectedIndex(prev => (prev + 1) % resultsCount); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setSelectedIndex(prev => prev <= 0 ? resultsCount - 1 : prev - 1); }
-    else if (e.key === 'Enter') { e.preventDefault(); if (resultsCount > 0) handleSelect(items[selectedIndex >= 0 ? selectedIndex : 0]); }
-    else if (e.key === 'Escape') { e.preventDefault(); setIsOpen(false); setQuery(''); inputRef.current?.blur(); }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev + 1) % resultsCount);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev <= 0 ? resultsCount - 1 : prev - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (resultsCount > 0) handleSelect(items[selectedIndex >= 0 ? selectedIndex : 0]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsOpen(false);
+      setQuery('');
+      inputRef.current?.blur();
+    }
   };
 
   // Render sectioned search results
@@ -133,19 +203,30 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, mi
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-base-content/50" />
               <span>{t('search.loading')}</span>
             </div>
-          ) : t('search.empty')}
+          ) : (
+            t('search.empty')
+          )}
         </div>
       );
     }
 
     let globalIdx = 0;
-    return sections.map(section => {
+    return sections.map((section) => {
       const sectionStartIdx = globalIdx;
       const items = section.results.map((result) => {
         const idx = globalIdx++;
         return (
-          <SearchResultItem key={result.id} result={result} isRecent={false} isSelected={selectedIndex === idx}
-            onMouseEnter={() => setSelectedIndex(idx)} onMouseDown={(e) => { e.preventDefault(); handleSelect(result); }} />
+          <SearchResultItem
+            key={result.id}
+            result={result}
+            isRecent={false}
+            isSelected={selectedIndex === idx}
+            onMouseEnter={() => setSelectedIndex(idx)}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              handleSelect(result);
+            }}
+          />
         );
       });
       return (
@@ -164,7 +245,10 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, mi
 
   const dropdownContent = showDropdown && (
     <>
-      <div className="fixed inset-0 bg-black/20 z-40 animate-in fade-in duration-150" onMouseDown={() => setIsOpen(false)} />
+      <div
+        className="fixed inset-0 bg-black/20 z-40 animate-in fade-in duration-150"
+        onMouseDown={() => setIsOpen(false)}
+      />
       <div
         ref={dropdownRef}
         className="fixed z-50 bg-base-100 border border-base-300 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2 duration-200"
@@ -180,14 +264,27 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, mi
           <div className="max-h-[min(500px,60vh)] overflow-y-auto pb-2">
             {recentSearches.length > 0 ? (
               <div>
-                <div className="px-4 py-1.5 text-xs font-semibold text-base-content/50 uppercase tracking-wider mt-1 sticky top-0 bg-base-100 z-10">{t('search.recent')}</div>
+                <div className="px-4 py-1.5 text-xs font-semibold text-base-content/50 uppercase tracking-wider mt-1 sticky top-0 bg-base-100 z-10">
+                  {t('search.recent')}
+                </div>
                 {recentSearches.map((result, index) => (
-                  <SearchResultItem key={result.id} result={result} isRecent isSelected={selectedIndex === index}
-                    onMouseEnter={() => setSelectedIndex(index)} onMouseDown={(e) => { e.preventDefault(); handleSelect(result); }} />
+                  <SearchResultItem
+                    key={result.id}
+                    result={result}
+                    isRecent
+                    isSelected={selectedIndex === index}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelect(result);
+                    }}
+                  />
                 ))}
               </div>
             ) : (
-              <div className="px-4 py-8 text-center text-sm text-base-content/50">{t('search.recentHint')}</div>
+              <div className="px-4 py-8 text-center text-sm text-base-content/50">
+                {t('search.recentHint')}
+              </div>
             )}
           </div>
         ) : (
@@ -202,7 +299,12 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, mi
             </span>
             <button
               type="button"
-              onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); if (scope === 'faculty') widenToUniversity(); else narrowToFaculty(); }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (scope === 'faculty') widenToUniversity();
+                else narrowToFaculty();
+              }}
               className="text-xs text-primary hover:underline flex items-center gap-1.5 shrink-0"
             >
               <Globe className="w-3.5 h-3.5" />
@@ -220,38 +322,64 @@ export function SearchBar({ placeholder, onSearch, onOpenSubject, prefillRef, mi
       <div className={minimal ? 'w-full' : 'flex items-center gap-2 w-full max-w-md lg:max-w-2xl'}>
         {/* Portal Launcher Trigger */}
         {!minimal && (
-        <div className="relative group/launcher flex-shrink-0">
-          <button
-            onClick={() => setIsPortalOpen(true)}
-            className="p-2.5 bg-base-100 border border-base-300 rounded-xl hover:border-primary/30 hover:bg-primary/5 text-base-content/60 hover:text-primary transition-all duration-200 shadow-sm group"
-          >
-            <LayoutGrid className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          </button>
+          <div className="relative group/launcher flex-shrink-0">
+            <button
+              onClick={() => setIsPortalOpen(true)}
+              className="p-2.5 bg-base-100 border border-base-300 rounded-xl hover:border-primary/30 hover:bg-primary/5 text-base-content/60 hover:text-primary transition-all duration-200 shadow-sm group"
+            >
+              <LayoutGrid className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            </button>
 
-          {/* Custom Premium Tooltip */}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-3 py-2 bg-primary text-primary-content text-[11px] font-bold rounded-lg shadow-xl opacity-0 group-hover:launcher:opacity-100 translate-y-1 group-hover:launcher:translate-y-0 pointer-events-none transition-all duration-300 whitespace-nowrap z-[100] scale-95 group-hover:launcher:scale-100 origin-top">
-            {t('search.isPortalTooltip')}
-            {/* Arrow */}
-            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rotate-45" />
+            {/* Custom Premium Tooltip */}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-3 py-2 bg-primary text-primary-content text-[11px] font-bold rounded-lg shadow-xl opacity-0 group-hover:launcher:opacity-100 translate-y-1 group-hover:launcher:translate-y-0 pointer-events-none transition-all duration-300 whitespace-nowrap z-[100] scale-95 group-hover:launcher:scale-100 origin-top">
+              {t('search.isPortalTooltip')}
+              {/* Arrow */}
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rotate-45" />
+            </div>
           </div>
-        </div>
         )}
 
         <div ref={inputWrapRef} className="relative w-full">
-          <div className={`relative flex items-center w-full bg-base-100 rounded-xl border shadow-sm transition-all duration-200 z-50 ${isOpen ? 'border-primary shadow-[0_0_0_3px_rgba(121,190,21,0.15)]' : 'border-base-300 hover:border-base-content/30'}`}>
+          <div
+            className={`relative flex items-center w-full bg-base-100 rounded-xl border shadow-sm transition-all duration-200 z-50 ${isOpen ? 'border-primary shadow-[0_0_0_3px_rgba(121,190,21,0.15)]' : 'border-base-300 hover:border-base-content/30'}`}
+          >
             <div className="flex-1 flex items-center h-12 px-4">
-              {isLoading
-                ? <Loader2 className="w-5 h-5 mr-3 animate-spin text-base-content" />
-                : <Search className={`w-5 h-5 mr-3 transition-colors ${isOpen ? 'text-base-content' : 'text-base-content/50'}`} />}
-              <input ref={inputRef} type="text" value={query} onChange={(e) => { setQuery(e.target.value); setIsOpen(true); }}
-                onFocus={() => setIsOpen(true)} onKeyDown={handleKeyDown} placeholder={finalPlaceholder}
-                className="w-full bg-transparent text-sm text-base-content placeholder-base-content/50 focus:outline-none" />
-              {query ? (
-                <button onClick={() => { setQuery(''); inputRef.current?.focus(); }} className="p-1 hover:bg-base-200 rounded-full"><X className="w-4 h-4 text-base-content/50" /></button>
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 mr-3 animate-spin text-base-content" />
               ) : (
-                !minimal && modifier && (
+                <Search
+                  className={`w-5 h-5 mr-3 transition-colors ${isOpen ? 'text-base-content' : 'text-base-content/50'}`}
+                />
+              )}
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setIsOpen(true);
+                }}
+                onFocus={() => setIsOpen(true)}
+                onKeyDown={handleKeyDown}
+                placeholder={finalPlaceholder}
+                className="w-full bg-transparent text-sm text-base-content placeholder-base-content/50 focus:outline-none"
+              />
+              {query ? (
+                <button
+                  onClick={() => {
+                    setQuery('');
+                    inputRef.current?.focus();
+                  }}
+                  className="p-1 hover:bg-base-200 rounded-full"
+                >
+                  <X className="w-4 h-4 text-base-content/50" />
+                </button>
+              ) : (
+                !minimal &&
+                modifier && (
                   <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-base-content/40 bg-base-200 border border-base-300 rounded flex-shrink-0">
-                    <span className={modifier === '⌘' ? 'text-xs' : 'text-[10px]'}>{modifier}</span>K
+                    <span className={modifier === '⌘' ? 'text-xs' : 'text-[10px]'}>{modifier}</span>
+                    K
                   </kbd>
                 )
               )}

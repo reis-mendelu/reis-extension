@@ -32,6 +32,7 @@ import { createSearchSlice } from './slices/createSearchSlice';
 import { createPersonProfileSlice } from './slices/createPersonProfileSlice';
 import { createBulletinSlice } from './slices/createBulletinSlice';
 import { createViewportSlice } from './slices/createViewportSlice';
+import { createMobileUiSlice } from './slices/createMobileUiSlice';
 import { createMapSlice } from './slices/createMapSlice';
 import { createRsvpSlice } from './slices/createRsvpSlice';
 import { createAdminSlice } from './slices/createAdminSlice';
@@ -75,6 +76,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createPersonProfileSlice(...a),
   ...createBulletinSlice(...a),
   ...createViewportSlice(...a),
+  ...createMobileUiSlice(...a),
   ...createMapSlice(...a),
   ...createRsvpSlice(...a),
   ...createAdminSlice(...a),

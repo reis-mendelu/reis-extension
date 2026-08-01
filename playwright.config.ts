@@ -5,6 +5,14 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Scoped to mobile specs under e2e/serenity/specs/, shared between the
+// mobile-chromium testMatch and the desktop/firefox-android testIgnore so
+// the two filters cannot drift apart. Specs like mobile-shell.spec.ts assert
+// the phone branch mounted, which only holds under touch-emulated projects.
+// Note: e2e/mobile-smoke.spec.ts is deliberately NOT covered because it
+// targets firefox-android and self-guards on browserName.
+const MOBILE_ONLY_SPEC = /serenity[\\/]specs[\\/]mobile-.*\.spec\.ts$/;
+
 export default defineConfig({
   testDir: './e2e',
   globalSetup: path.join(__dirname, 'e2e', 'global-setup.ts'),
@@ -13,9 +21,9 @@ export default defineConfig({
     timeout: 10000,
     // Visual comparison settings
     toHaveScreenshot: {
-      maxDiffPixels: 100,           // Allow minor anti-aliasing differences
-      threshold: 0.2,               // Per-pixel color tolerance
-      animations: 'disabled',       // Disable animations for consistency
+      maxDiffPixels: 100, // Allow minor anti-aliasing differences
+      threshold: 0.2, // Per-pixel color tolerance
+      animations: 'disabled', // Disable animations for consistency
     },
   },
   // Snapshot storage organization
@@ -28,12 +36,15 @@ export default defineConfig({
   reporter: [
     ['html', { open: 'never' }],
     ['list'],
-    ['@serenity-js/playwright-test', {
-      crew: [
-        ['@serenity-js/console-reporter', { theme: 'monochrome' }],
-        ['@serenity-js/core:ArtifactArchiver', { outputDirectory: 'target/site/serenity' }],
-      ]
-    }]
+    [
+      '@serenity-js/playwright-test',
+      {
+        crew: [
+          ['@serenity-js/console-reporter', { theme: 'monochrome' }],
+          ['@serenity-js/core:ArtifactArchiver', { outputDirectory: 'target/site/serenity' }],
+        ],
+      },
+    ],
   ],
   use: {
     trace: 'on-first-retry',
@@ -44,6 +55,7 @@ export default defineConfig({
     {
       name: 'desktop',
       use: {},
+      testIgnore: MOBILE_ONLY_SPEC,
     },
     {
       name: 'firefox-android',
@@ -51,9 +63,17 @@ export default defineConfig({
         ...devices['Pixel 7'],
         browserName: 'firefox',
       },
+      testIgnore: MOBILE_ONLY_SPEC,
+    },
+    {
+      name: 'mobile-chromium',
+      use: {
+        ...devices['Pixel 7'],
+        browserName: 'chromium',
+      },
+      testMatch: MOBILE_ONLY_SPEC,
     },
   ],
   // Output directories for test artifacts
   outputDir: './e2e/test-results',
 });
-

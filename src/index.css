@@ -30,6 +30,23 @@ body,
   --app-vh: 100dvh;
 }
 
+@keyframes sheetUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Density rescale on phone (touch + narrow). Bumps typography only; spacing
  * is intentionally untouched to avoid shifting pixel-tight layouts (calendar grid,
  * timeline math). See docs/superpowers/specs/2026-05-23-mobile-architecture-design.md */
@@ -184,6 +201,20 @@ body,
 
   /* Typography */
   --font-inter: 'Inter', sans-serif;
+  /* No DM Sans file is currently bundled (public/fonts/dm-sans-*.woff2 were
+     Google-Fonts 404 pages, not real fonts — removed, see @font-face
+     history). This falls through to Inter and will pick up DM Sans
+     automatically the moment real font files are added. */
+  --font-display: 'DM Sans', 'Inter', sans-serif;
+  --text-2xs: 10px;
+  --text-2xs--line-height: 14px;
+  /* Tailwind's scale steps 12 → 14 → 16 with nothing between, which is too
+     coarse for dense phone lists: 16px card titles over 14px subtitles cost
+     roughly a card per screen against the design. These two fill the gaps. */
+  --text-2sm: 13px;
+  --text-2sm--line-height: 17px;
+  --text-md: 15px;
+  --text-md--line-height: 20px;
 
   /* Minimum touch hit-target (Material/Apple guideline) */
   --size-tap: 2.75rem;

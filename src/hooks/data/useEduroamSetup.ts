@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { saveAs } from 'file-saver';
 import QRCode from 'qrcode';
 import { fetchEduroamCertMaterial, fetchEduroamPassword } from '../../api/eduroam';
@@ -14,11 +14,19 @@ export type EduroamTarget = 'mac' | 'ios' | 'android' | 'windows';
 export const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent);
 
 // macOS deep link straight to the Profiles / Device Management pane.
-const PROFILES_SETTINGS_URL = 'x-apple.systempreferences:com.apple.preferences.configurationprofiles';
+const PROFILES_SETTINGS_URL =
+  'x-apple.systempreferences:com.apple.preferences.configurationprofiles';
 
-export function useEduroamSetup() {
+/**
+ * @param autoSelectTarget When provided (the eduroam sheet's platform, resolved
+ * synchronously with no device picker), runs the same `selectTarget` flow the
+ * desktop drawer only fires on user click — once, on mount — so the password
+ * prefetch (`fetchEduroamPassword`) runs immediately and a returning student
+ * sees their password chip instead of the placeholder.
+ */
+export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
   const [status, setStatus] = useState<EduroamStatus>('idle');
-  const [target, setTarget] = useState<EduroamTarget>(isMac ? 'mac' : 'ios');
+  const [target, setTarget] = useState<EduroamTarget>(autoSelectTarget ?? (isMac ? 'mac' : 'ios'));
   const [password, setPassword] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,20 +46,27 @@ export function useEduroamSetup() {
         // Upload the profile to a one-time row; the QR points at the endpoint that
         // serves it so iOS Safari shows the install prompt directly (no page).
         const id = await putTransfer(new TextEncoder().encode(xml));
-        setQrDataUrl(await QRCode.toDataURL(buildTransferUrl(id, 'ios'), { margin: 2, width: 320 }));
+        setQrDataUrl(
+          await QRCode.toDataURL(buildTransferUrl(id, 'ios'), { margin: 2, width: 320 })
+        );
       } else if (t === 'android') {
         // Android uses an .eap-config (geteduroam), delivered via the same transfer;
         // the receiver serves it as application/eap-config for fmt=android.
         const eap = generateEapConfig({ rootCaDer, clientP12 });
         const id = await putTransfer(new TextEncoder().encode(eap));
-        setQrDataUrl(await QRCode.toDataURL(buildTransferUrl(id, 'android'), { margin: 2, width: 320 }));
+        setQrDataUrl(
+          await QRCode.toDataURL(buildTransferUrl(id, 'android'), { margin: 2, width: 320 })
+        );
       } else if (t === 'windows') {
         // Windows: same .eap-config as Android, but reIS runs on this PC, so we
         // save it straight to disk. geteduroam (Windows) opens it on double-click.
         const eap = generateEapConfig({ rootCaDer, clientP12 });
         saveAs(new Blob([eap], { type: 'application/eap-config' }), 'eduroam-reis.eap-config');
       } else {
-        saveAs(new Blob([xml], { type: 'application/x-apple-aspen-config' }), 'eduroam-reis.mobileconfig');
+        saveAs(
+          new Blob([xml], { type: 'application/x-apple-aspen-config' }),
+          'eduroam-reis.mobileconfig'
+        );
       }
 
       setPassword(extractionPw);
@@ -73,7 +88,9 @@ export function useEduroamSetup() {
     // Only populates when a cert already exists; first-time users get it from
     // run(). Never overwrites a value run() may have already set.
     void fetchEduroamPassword()
-      .then((pw) => { if (pw) setPassword((prev) => prev ?? pw); })
+      .then((pw) => {
+        if (pw) setPassword((prev) => prev ?? pw);
+      })
       .catch((e) => logError('useEduroamSetup.prefetchPassword', e));
   }, []);
 
@@ -83,6 +100,17 @@ export function useEduroamSetup() {
     setPassword(null);
     setQrDataUrl(null);
   }, []);
+
+  // Fires selectTarget exactly once, only when a caller (the sheet) hands us a
+  // pre-resolved target. The desktop drawer never passes autoSelectTarget, so
+  // this is a no-op there — selection stays a user click.
+  const didAutoSelect = useRef(false);
+  useEffect(() => {
+    if (autoSelectTarget && !didAutoSelect.current) {
+      didAutoSelect.current = true;
+      selectTarget(autoSelectTarget);
+    }
+  }, [autoSelectTarget, selectTarget]);
 
   // Custom-scheme link: hand off to the OS without navigating the iframe.
   const openProfilesSettings = useCallback(() => {

@@ -1,3 +1,33 @@
+/*  ⚠️  THIS FILE IS NOT LOADED. NOTHING HERE GENERATES ANY CSS.  ⚠️
+ *
+ *  The project runs Tailwind CSS v4 through `@tailwindcss/vite`, and
+ *  `src/index.css` contains no `@config` directive — so Tailwind never reads
+ *  this file. Every block below (`safelist`, `theme.fontSize`, `theme.extend`'s
+ *  colors / boxShadow / fontFamily / transitionDuration, and the `daisyui`
+ *  options) is inert.
+ *
+ *  This is not theoretical. It has already caused silent bugs twice:
+ *    - `text-2xs` (declared in `theme.fontSize` below) produced NO rule, so
+ *      three SuccessRate components rendered at inherited size for months.
+ *    - A `font-display` family added here produced no rule, so DM Sans
+ *      silently fell back to the default sans stack.
+ *  Both are invisible to tests: the class name is still present in the
+ *  `className` string, it just never matches a CSS rule. Verifying against
+ *  compiled CSS under `.output/` is the only way to catch it.
+ *
+ *  ➜  ADD DESIGN TOKENS TO THE `@theme` BLOCK IN `src/index.css` INSTEAD.
+ *     Tailwind v4 generates utilities from `--color-*`, `--font-*`, `--text-*`
+ *     and `--shadow-*` custom properties declared there.
+ *
+ *  Note the `theme.fontSize` rem→px override below claims to be "CRITICAL" for
+ *  Shadow DOM consistency. That rationale is obsolete regardless: reIS renders
+ *  inside an iframe (chrome-extension:// origin), not Shadow DOM, so the host
+ *  page's root font-size cannot leak in.
+ *
+ *  Auditing what this file was meant to provide, migrating anything still
+ *  wanted into `@theme`, and then deleting it is tracked in issue #157.
+ */
+
 /** @type {import('tailwindcss').Config} */
 import daisyui from 'daisyui';
 

@@ -14,45 +14,59 @@ const HARDCODED_OBDOBI = 'obdobi=801';
 // Hardcoded user values should not appear in API files
 
 describe('No Hardcoded User IDs', () => {
-    it('should not have hardcoded studium in exams.ts', () => {
-        const content = fs.readFileSync(path.resolve(__dirname, '../../api/exams.ts'), 'utf-8');
-        expect(content).not.toContain(`studium=${HARDCODED_STUDIUM}`);
-        expect(content).not.toContain(`studium=${HARDCODED_STUDIUM}`);
-    });
+  it('should not have hardcoded studium in exams.ts', () => {
+    const content = fs.readFileSync(path.resolve(__dirname, '../../api/exams.ts'), 'utf-8');
+    expect(content).not.toContain(`studium=${HARDCODED_STUDIUM}`);
+    expect(content).not.toContain(`studium=${HARDCODED_STUDIUM}`);
+  });
 
-    it('should not have hardcoded obdobi in exams.ts', () => {
-        const content = fs.readFileSync(path.resolve(__dirname, '../../api/exams.ts'), 'utf-8');
-        expect(content).not.toContain(HARDCODED_OBDOBI);
-    });
+  it('should not have hardcoded obdobi in exams.ts', () => {
+    const content = fs.readFileSync(path.resolve(__dirname, '../../api/exams.ts'), 'utf-8');
+    expect(content).not.toContain(HARDCODED_OBDOBI);
+  });
 
-    it('should use dynamic studium extraction in exams.ts', () => {
-        const content = fs.readFileSync(path.resolve(__dirname, '../../api/exams.ts'), 'utf-8');
-        // Should import getUserParams
-        expect(content).toContain('getUserParams');
-        // Should not have hardcoded URL constant with studium
-        expect(content).not.toMatch(/const.*URL.*studium=\d+/);
-    });
+  it('should use dynamic studium extraction in exams.ts', () => {
+    const content = fs.readFileSync(path.resolve(__dirname, '../../api/exams.ts'), 'utf-8');
+    // Should import getUserParams
+    expect(content).toContain('getUserParams');
+    // Should not have hardcoded URL constant with studium
+    expect(content).not.toMatch(/const.*URL.*studium=\d+/);
+  });
 });
 
 describe('injectUserParams', () => {
-    it('should be used when navigating to pages in SearchBar', () => {
-        const content = fs.readFileSync(path.resolve(__dirname, '../../components/SearchBar/index.tsx'), 'utf-8');
-        expect(content).toContain('injectUserParams');
-        expect(content).toContain('injectUserParams(result.link, studiumId, language === \'en\' ? \'en\' : \'cz\', obdobiId, facultyId)');
-    });
+  it('should be used when navigating to pages in SearchBar', () => {
+    const content = fs.readFileSync(
+      path.resolve(__dirname, '../../components/SearchBar/index.tsx'),
+      'utf-8'
+    );
+    expect(content).toContain('injectUserParams');
+    // Whitespace-insensitive: the assertion is about which arguments are
+    // threaded through, not how Prettier happens to wrap the call. Pinning
+    // the single-line form made this fail the moment the file was
+    // reformatted, with nothing about the arguments having changed.
+    expect(content.replace(/\s+/g, ' ')).toMatch(
+      /injectUserParams\( ?result\.link, studiumId, language === 'en' \? 'en' : 'cz', obdobiId, facultyId,? ?\)/
+    );
+  });
 });
 
 describe('Data Files No Hardcoded IDs', () => {
-    it('should not have hardcoded studium in moje-studium-part1.ts', () => {
-        const content = fs.readFileSync(path.resolve(__dirname, '../../data/pages/moje-studium-part1.ts'), 'utf-8');
-        expect(content).not.toContain(`studium=${HARDCODED_STUDIUM}`);
-        expect(content).toContain('studium={{studium}}');
-    });
+  it('should not have hardcoded studium in moje-studium-part1.ts', () => {
+    const content = fs.readFileSync(
+      path.resolve(__dirname, '../../data/pages/moje-studium-part1.ts'),
+      'utf-8'
+    );
+    expect(content).not.toContain(`studium=${HARDCODED_STUDIUM}`);
+    expect(content).toContain('studium={{studium}}');
+  });
 
-    it('should not have hardcoded studium in moje-studium-part2.ts', () => {
-        const content = fs.readFileSync(path.resolve(__dirname, '../../data/pages/moje-studium-part2.ts'), 'utf-8');
-        expect(content).not.toContain(`studium=${HARDCODED_STUDIUM}`);
-        expect(content).toContain('studium={{studium}}');
-    });
+  it('should not have hardcoded studium in moje-studium-part2.ts', () => {
+    const content = fs.readFileSync(
+      path.resolve(__dirname, '../../data/pages/moje-studium-part2.ts'),
+      'utf-8'
+    );
+    expect(content).not.toContain(`studium=${HARDCODED_STUDIUM}`);
+    expect(content).toContain('studium={{studium}}');
+  });
 });
-
