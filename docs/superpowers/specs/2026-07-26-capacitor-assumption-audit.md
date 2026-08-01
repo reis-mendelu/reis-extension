@@ -31,10 +31,21 @@ Live test, `is.mendelu.cz`, real credentials via the scraper's Playwright login.
 - **Concurrent sessions are allowed.** Logging in on the phone does not log the student out on their laptop. This was never asked but would have been a silent killer.
 - **§C4 (2FA/SSO) — RESOLVED for IS.** Login is a plain form POST to `/system/login.pl` with `credential_0`/`credential_1`. No SAML, no redirect chain. (WebISKAM is different — it uses Shibboleth at `alibaba.mendelu.cz/idp`, per `src/api/iskam/client.ts:12-16`.)
 - **§C1 (session lifetime) — narrowed to ≈7 days absolute.** A 40-day-old token is dead, and since IS is *not* single-session, that 403 is genuine expiry rather than login-invalidation. The user reports **not re-logging in on Brave for about 7 days** at a stretch. Per §A, Chromium resurrects session cookies under "Continue where you left off", so the client side keeps `UISAuth` indefinitely — meaning the ~7-day boundary is **server-side**.
-  A sliding idle window is unlikely: reIS's 5-minute sync only runs while an IS tab is open, so overnight gaps are 8–12h of zero traffic. A sliding window would have to exceed 12h to survive those, and a >12h sliding window that still dies at a consistent ~7 days doesn't fit. **Absolute ~7-day lifetime is the best-supported reading.**
-  Consequence: **cookie restore has a hard 7-day ceiling.** No amount of Keychain machinery avoids weekly re-login on any platform. This sharpens rather than weakens the §C5 question — the workstream's entire value is the delta between re-login *weekly* (the floor) and re-login *on every app kill*.
-  **Confirmed by measurement.** A no-traffic idle probe — a token issued, then left completely untouched, with zero intervening requests — stayed authenticated at **+20, +40, +60, +90 and +120 minutes**. There is no short sliding idle window. Combined with the dead 40-day token and the ~7-day Brave observation, an absolute ~7-day lifetime is the only reading that fits all three results.
-  To convert "about 7 days" into an exact number, probe a known-age token once a day for a week.
+  **CORRECTED 2026-08-02 — there IS a sliding inactivity timeout, and IS documents it.** During the Capacitor spike, the IS page *"First log in to UIS instructions"* (`is.mendelu.cz`, section "Secure login into the system") was read directly. It states:
+
+  > "The login form also contains setting of the login validity period, which is a minimal period of inactivity after which you will be logged out from the system. Implicitly, this period is set to one day."
+
+  So the model is: a **sliding inactivity window, default 1 day, user-settable at login time**. The earlier reasoning here — that a sliding window was "unlikely" because it would have to exceed 12h — was wrong; it does exceed 12h, by design.
+
+  What each prior measurement actually showed, re-read against this:
+  - The no-traffic idle probe passing at **+20/40/60/90/120 min** only proved the window is longer than 2 hours. It never had a chance to disprove a 1-day window. It was far too short.
+  - The **~7-day Brave** observation is consistent with a sliding window being renewed by daily use, not with a 7-day absolute cap.
+  - The dead **40-day token** is explained by inactivity alone — it sat untouched well past any window.
+
+  **Consequence for the mobile design, revised:** the ceiling is not a fixed ~7 days. A student who opens the app at least once within the validity period keeps the session indefinitely; one who doesn't gets logged out after their configured window (default 1 day). That makes session restore *more* valuable than the earlier reading suggested, not less — but it also means the login form's validity-period control is worth investigating, since a longer setting directly extends how long a restored cookie stays good.
+
+  - [ ] Determine the maximum selectable login validity period on the IS login form, and whether it is set per-session or persisted per-account.
+  - [ ] Re-run the idle probe at a horizon that can actually falsify a 1-day window (e.g. +18h, +26h) rather than the 2h that was measured.
 
 ### What remains genuinely open
 
