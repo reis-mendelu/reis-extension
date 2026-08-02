@@ -4,7 +4,7 @@
 
 **Goal:** Ship a Capacitor app that boots the existing reIS phone UI against a real, restored IS Mendelu session on iOS and Android, with working file downloads and a working Android back button.
 
-**Architecture:** The student logs into real IS inside `@capgo/capacitor-inappbrowser`'s `openWebView`. reIS is injected at `documentStart`, exactly as the extension's content script works today. `UISAuth` is captured to secure storage and replayed on cold start via the proven hybrid restore. All `chrome.*` usage moves behind a thin platform port so the extension, the dev webapp, and the Capacitor app share one codebase.
+**Architecture:** *(settled by Task 1 — Model C.)* The reIS phone UI from #162 runs as a normal app in the Capacitor host WebView. The student logs into real IS inside `@capgo/capacitor-inappbrowser`'s `openWebView`, which exists **only for login and cookie capture**; `UISAuth` is then stored and replayed. All IS data is fetched over **`CapacitorHttp`**, which runs in the native layer and is therefore not subject to IS's blanket CORS denial. All `chrome.*` usage moves behind a thin platform port so the extension, the dev webapp, and the Capacitor app share one codebase.
 
 **Tech Stack:** Capacitor 8, `@capgo/capacitor-inappbrowser` 8.13.2, React 19, Vite, Zustand, vitest + happy-dom.
 
@@ -51,16 +51,34 @@ From `docs/superpowers/specs/2026-07-27-capacitor-spike-findings.md`. Do not re-
 `saveDocument.ts` and `saveDeps.ts` are split so the branching logic is testable without
 a device and the extension bundle never imports `@capacitor/*`.
 
-**Task 1 gates the shape of Task 7.** If it selects Model A (injected), the reIS bundle is
-delivered into the IS page and a `capacitor/injected/bootstrap.ts` is added there; if it
-selects Model C, `main.capacitor.ts` renders `MobileApp` directly and `openWebView` is
-used only for login. Tasks 2–6 are identical either way. Do not start Task 2 before Task 1
-resolves — but note Tasks 2–6 carry no Model A/C dependency, so they can proceed in
-parallel with Task 1 if you prefer.
+~~**Task 1 gates the shape of Task 7.**~~ **Resolved → Model C.** `main.capacitor.ts`
+renders `MobileApp` directly and `openWebView` is used only for login. No injected
+bootstrap is needed. Tasks 2–6 were transport-agnostic and are unaffected.
+
+Model C added one file that the original plan did not have, because it assumed the
+question was still open:
+
+| Path | Responsibility |
+|---|---|
+| `src/api/capacitorTransport.ts` | The `CapacitorHttp` transport + the per-platform cookie mechanism (**new — Task 6b**) |
 
 ---
 
-### Task 1: Resolve the data transport — injection vs native HTTP
+### Task 1: Resolve the data transport — injection vs native HTTP ✅ DONE
+
+> **RESOLVED 2026-08-02 → Model C (`CapacitorHttp`).** Full evidence and rationale:
+> `docs/superpowers/specs/2026-08-02-capacitor-transport-decision.md`.
+>
+> Measured on both platforms with a real session:
+>
+> | Cookie supplied via | Android | iOS |
+> |---|---|---|
+> | `CapacitorCookies.setCookie()` | **200 AUTHED** | 403 |
+> | explicit `headers: { Cookie }` | 403 | **200 AUTHED** |
+>
+> **Both work — with opposite mechanisms**, so supplying the cookie needs a
+> `Capacitor.getPlatform()` branch. Getting it wrong yields a **silent 403**, not an
+> error. Steps below are kept for the record; do not re-run them.
 
 The single decision that changes everything downstream. #158 flags it as unresolved, and the header findings narrowed four candidate models to two. **This task produces a decision with evidence, not code in `src/`.**
 
@@ -134,7 +152,7 @@ Tap the new button. Read the result with `adb exec-out screencap -p > shot.png`.
 Expected, and what each outcome means:
 
 - `status: 200` **and** `AUTHED: YES` → **native HTTP bypasses CORS and carries the cookie. Model C is viable.**
-- `status: 200` but `AUTHED: no` → the request went out but unauthenticated; the native jar is not being used. Model C needs the cookie sent as an explicit header — retry once with `headers: { Cookie: 'UISAuth=' + s.uisAuth }` before concluding.
+- `status: 200` but `AUTHED: no`, or `403` → the request went out unauthenticated. **Measured: this is exactly what happens on iOS with the native jar, and on Android with the explicit header.** Try the other mechanism before concluding anything.
 - Any CORS error, or `status: 0` → the call fell back to the browser `fetch` path. **Model C is dead; choose Model A.**
 
 - [ ] **Step 4: Repeat on iOS**
@@ -993,9 +1011,326 @@ git commit -m "feat(mobile): platform-aware document save with an existence asse
 
 ---
 
+### Task 6b: The Capacitor transport — `CapacitorHttp` behind `fetchWithAuth`
+
+**Added after Task 1 chose Model C.** #158 predicted this exact shape: *"A Capacitor shell
+slots in as a third transport behind the same function — no call-site changes."*
+
+The measured trap: supplying the cookie the wrong way per platform returns a **403 with a
+perfectly normal-looking response**, not an error. The transport must detect that itself.
+
+**Files:**
+- Create: `src/api/capacitorTransport.ts`
+- Create: `src/api/__tests__/capacitorTransport.test.ts`
+- Modify: `src/api/client.ts` (add one branch to `fetchWithAuth`)
+
+**Interfaces:**
+- Consumes: `getPlatform()` (Task 2)
+- Produces:
+  - `buildCookieDelivery(platform: 'ios' | 'android' | 'web', token: string): CookieDelivery`
+  - `interface CookieDelivery { headers: Record<string, string>; seedNativeJar: boolean }`
+  - `isAuthenticatedHtml(html: string): boolean`
+  - `fetchViaCapacitor(url: string, token: string, deps: CapacitorTransportDeps): Promise<Response>`
+
+- [ ] **Step 1: Write the failing test**
+
+Create `src/api/__tests__/capacitorTransport.test.ts`:
+
+```ts
+import { describe, it, expect, vi } from 'vitest';
+import {
+  buildCookieDelivery,
+  isAuthenticatedHtml,
+  fetchViaCapacitor,
+} from '../capacitorTransport';
+
+const TOKEN = '6NSqqyos2r0lEVg5aGkXaQnw%2FrogfwDfWoNzCB803bRQ';
+
+describe('buildCookieDelivery', () => {
+  // MEASURED on device: Android ignores a hand-set Cookie header (403) and
+  // needs the native jar; iOS is the exact inverse. Do not "simplify" this.
+  it('uses the native jar on android, with no Cookie header', () => {
+    expect(buildCookieDelivery('android', TOKEN)).toEqual({
+      headers: {},
+      seedNativeJar: true,
+    });
+  });
+
+  it('uses an explicit Cookie header on ios, without seeding the jar', () => {
+    expect(buildCookieDelivery('ios', TOKEN)).toEqual({
+      headers: { Cookie: `UISAuth=${TOKEN}` },
+      seedNativeJar: false,
+    });
+  });
+
+  it('falls back to the header form on web', () => {
+    expect(buildCookieDelivery('web', TOKEN).seedNativeJar).toBe(false);
+  });
+});
+
+describe('isAuthenticatedHtml', () => {
+  it('treats a logout link as proof of authentication', () => {
+    expect(isAuthenticatedHtml('<a href="/system/logout.pl">Log out</a>')).toBe(true);
+  });
+
+  it('treats a page without one as unauthenticated', () => {
+    expect(isAuthenticatedHtml('<form action="/system/login.pl">')).toBe(false);
+  });
+});
+
+describe('fetchViaCapacitor', () => {
+  function deps(over = {}) {
+    return {
+      platform: 'android' as const,
+      setCookie: vi.fn(async () => {}),
+      httpGet: vi.fn(async () => ({
+        status: 200,
+        data: '<a href="/system/logout.pl">x</a>',
+        headers: { 'Content-Type': 'text/html' },
+      })),
+      ...over,
+    };
+  }
+
+  it('seeds the native jar on android before requesting', async () => {
+    const d = deps();
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d);
+    expect(d.setCookie).toHaveBeenCalledWith({
+      url: 'https://is.mendelu.cz',
+      key: 'UISAuth',
+      value: TOKEN,
+    });
+  });
+
+  it('does NOT seed the jar on ios', async () => {
+    const d = deps({ platform: 'ios' as const });
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d);
+    expect(d.setCookie).not.toHaveBeenCalled();
+  });
+
+  it('returns a Response carrying the body', async () => {
+    const res = await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, deps());
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('logout.pl');
+  });
+
+  it('THROWS a sessionExpired error on a 403 — the measured silent-auth-failure case', async () => {
+    const d = deps({
+      httpGet: vi.fn(async () => ({ status: 403, data: 'denied', headers: {} })),
+    });
+    await expect(
+      fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d),
+    ).rejects.toMatchObject({ sessionExpired: true });
+  });
+
+  it('THROWS on a 200 that is not authenticated — a wrong-cookie-mechanism bug looks exactly like this', async () => {
+    const d = deps({
+      httpGet: vi.fn(async () => ({
+        status: 200,
+        data: '<form action="/system/login.pl">',
+        headers: {},
+      })),
+    });
+    await expect(
+      fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d),
+    ).rejects.toMatchObject({ sessionExpired: true });
+  });
+});
+```
+
+- [ ] **Step 2: Run it and verify it fails**
+
+Run: `npx vitest run src/api/__tests__/capacitorTransport.test.ts`
+Expected: FAIL — cannot resolve `../capacitorTransport`.
+
+- [ ] **Step 3: Implement**
+
+Create `src/api/capacitorTransport.ts`:
+
+```ts
+import { UIS_AUTH_COOKIE } from '../platform/sessionToken';
+
+export interface CookieDelivery {
+  headers: Record<string, string>;
+  seedNativeJar: boolean;
+}
+
+export interface CapacitorHttpResponse {
+  status: number;
+  data?: unknown;
+  headers?: Record<string, string>;
+}
+
+export interface CapacitorTransportDeps {
+  platform: 'ios' | 'android' | 'web';
+  setCookie(o: { url: string; key: string; value: string }): Promise<void>;
+  httpGet(o: {
+    url: string;
+    headers?: Record<string, string>;
+  }): Promise<CapacitorHttpResponse>;
+}
+
+/**
+ * MEASURED on device (2026-08-02), and the two platforms are exact opposites:
+ *
+ *   Android — a hand-set `Cookie` header does NOT reach the server (403). The
+ *             native layer manages cookies, so the jar must be seeded.
+ *   iOS     — the reverse: the explicit header works, seeding the jar alone 403s.
+ *
+ * Do not "simplify" this into one branch, and do not do both at once — on
+ * Android the explicit header actively produced a 403, so combining them is not
+ * known to be safe.
+ */
+export function buildCookieDelivery(
+  platform: 'ios' | 'android' | 'web',
+  token: string,
+): CookieDelivery {
+  if (platform === 'android') {
+    return { headers: {}, seedNativeJar: true };
+  }
+  return { headers: { Cookie: `${UIS_AUTH_COOKIE}=${token}` }, seedNativeJar: false };
+}
+
+/**
+ * IS answers an unauthenticated request with a normal 200 login page, so status
+ * alone cannot tell us whether auth worked. A logout link is the signal — the
+ * same one the spike probes used.
+ */
+export function isAuthenticatedHtml(html: string): boolean {
+  return /logout\.pl/.test(html);
+}
+
+function sessionExpired(message: string): Error {
+  const err = new Error(message) as Error & { sessionExpired?: boolean };
+  err.sessionExpired = true;
+  return err;
+}
+
+export async function fetchViaCapacitor(
+  url: string,
+  token: string,
+  deps: CapacitorTransportDeps,
+): Promise<Response> {
+  const delivery = buildCookieDelivery(deps.platform, token);
+
+  if (delivery.seedNativeJar) {
+    await deps.setCookie({
+      url: 'https://is.mendelu.cz',
+      key: UIS_AUTH_COOKIE,
+      value: token,
+    });
+  }
+
+  const res = await deps.httpGet({ url, headers: delivery.headers });
+  const body = String(res.data ?? '');
+
+  if (res.status === 401 || res.status === 403) {
+    throw sessionExpired(`HTTP ${res.status}`);
+  }
+  // A 200 that is not authenticated means either the session lapsed OR the
+  // cookie was delivered the wrong way for this platform. Both are auth
+  // failures; neither must be allowed to reach a parser as if it were data.
+  if (!isAuthenticatedHtml(body)) {
+    throw sessionExpired('Authenticated request returned an unauthenticated page');
+  }
+
+  return new Response(body, {
+    status: res.status,
+    headers: new Headers({
+      'Content-Type': res.headers?.['Content-Type'] ?? 'text/html',
+    }),
+  });
+}
+```
+
+- [ ] **Step 4: Run and verify it passes**
+
+Run: `npx vitest run src/api/__tests__/capacitorTransport.test.ts`
+Expected: PASS, 10 tests.
+
+- [ ] **Step 5: Add the branch to `fetchWithAuth`**
+
+In `src/api/client.ts`, insert **before** the existing `isInIframe()` branch:
+
+```ts
+    if (getPlatform().kind === 'capacitor') {
+        const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
+        const token = await loadStoredToken();
+        return fetchViaCapacitor(url, token, {
+            platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
+            setCookie: (o) => CapacitorCookies.setCookie(o),
+            httpGet: (o) => CapacitorHttp.get(o),
+        });
+    }
+```
+
+and add to the imports at the top of `src/api/client.ts`:
+
+```ts
+import { getPlatform } from '../platform';
+import { fetchViaCapacitor } from './capacitorTransport';
+import { loadStoredToken } from '../platform/tokenStore';
+```
+
+- [ ] **Step 6: Write the token store**
+
+Create `src/platform/tokenStore.ts`:
+
+```ts
+import { getPlatform } from './index';
+import { isPlausibleToken } from './sessionToken';
+
+export const TOKEN_KEY = 'reis.session.uisAuth';
+
+/**
+ * NOTE: this is Preferences (UserDefaults / SharedPreferences), not Keychain or
+ * Keystore, and UISAuth is a live credential. Acceptable for a debug build;
+ * moving to real secure storage is a tracked follow-up that must land before
+ * any public release.
+ */
+export async function saveStoredToken(token: string): Promise<void> {
+  await getPlatform().storage.set(TOKEN_KEY, token);
+}
+
+export async function loadStoredToken(): Promise<string> {
+  const value = await getPlatform().storage.get(TOKEN_KEY);
+  if (!isPlausibleToken(value)) {
+    const err = new Error('No stored IS session') as Error & { sessionExpired?: boolean };
+    err.sessionExpired = true;
+    throw err;
+  }
+  return value;
+}
+```
+
+- [ ] **Step 7: Verify nothing regressed**
+
+```bash
+npm run test:run
+npm run typecheck
+npm run build
+```
+
+Expected: green. The new branch is unreachable unless `getPlatform().kind === 'capacitor'`, which only the Capacitor entry sets.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add src/api/capacitorTransport.ts src/api/__tests__/capacitorTransport.test.ts \
+        src/api/client.ts src/platform/tokenStore.ts
+git commit -m "feat(api): CapacitorHttp transport with per-platform cookie delivery"
+```
+
+---
+
 ### Task 7: The Capacitor app shell
 
-Brings Tasks 2–6 together into something that runs on a device. **The shape of this task depends on Task 1's decision** — the steps below assume **Model A (injected)**. If Task 1 chose Model C, the `openWebView` call becomes login-only and the app renders `MobileApp` directly in the host WebView; the platform, session, back-button and save work from Tasks 2–6 is unchanged either way.
+Brings Tasks 2–6b together into something that runs on a device.
+
+> **Task 1 chose Model C**, so `openWebView` here is **login-only**: it exists to let the
+> student authenticate against real IS and to capture `UISAuth`. Once captured, reIS
+> renders as a normal app and all data goes through the Task 6b transport. The steps below
+> reflect that.
 
 **Files:**
 - Create: `capacitor.config.ts`
@@ -1273,6 +1608,7 @@ Each is its own plan. None blocks the shell.
 | **`chrome.storage.sync` replacement** | The only genuine capability loss. Needs a backend decision — drop it or build one. |
 | **Google Drive OAuth on mobile** | `chrome.identity.launchWebAuthFlow` → `@capacitor/browser` + custom URL scheme. Do not escalate the `drive.file` scope. |
 | **Migrating the other 59 `chrome.*` sites** | Tasks 2–3 build the seam; moving every call site is mechanical volume best done in its own pass with the extension test suite as the gate. |
+| **Model A as a fallback** | If MENDELU ever adds server-side origin/UA checks, `CapacitorHttp` is the surface that breaks first and injection becomes the fallback. The spike's injection probes are kept for that reason. |
 
 ## Self-review notes
 
