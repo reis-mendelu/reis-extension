@@ -8,6 +8,7 @@ import { saveAs } from 'file-saver';
 import { normalizeFileUrl } from '../../utils/fileUrl';
 import { createLogger } from '../../utils/logger';
 import { requestQueue } from '../../utils/requestQueue';
+import { isNativeHost, openIsFileNatively } from '../../mobile/openIsFile';
 
 const log = createLogger('useFileActions');
 
@@ -31,6 +32,14 @@ export function useFileActions(): UseFileActionsResult {
 
     const openFile = useCallback(async (link: string) => {
         const fullUrl = normalizeFileUrl(link);
+
+        // Capacitor: IS denies CORS to every origin, so the browser fetch below
+        // always fails here — and its window.open fallback hands the URL to the
+        // SYSTEM BROWSER, which has no IS session. Fetch natively instead.
+        if (isNativeHost()) {
+            await openIsFileNatively(fullUrl);
+            return;
+        }
 
         try {
             const response = await fetch(fullUrl, { credentials: 'include' });
@@ -57,6 +66,22 @@ export function useFileActions(): UseFileActionsResult {
     const openPdfInline = useCallback(async (link: string): Promise<string | null> => {
         const fullUrl = normalizeFileUrl(link);
         try {
+            // Capacitor: fetch natively, then hand the inline viewer a blob URL
+            // exactly as on desktop — no window.open, so no escape to Chrome.
+            if (isNativeHost()) {
+                const { fetchIsBinary } = await import('../../api/capacitorBinary');
+                const { loadStoredToken } = await import('../../platform/tokenStore');
+                const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
+                const result = await fetchIsBinary(fullUrl, await loadStoredToken(), {
+                    platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
+                    setCookie: (o) => CapacitorCookies.setCookie(o),
+                    httpGet: (o) => CapacitorHttp.get(o),
+                });
+                // A viewer page is not a PDF — returning null lets the caller
+                // fall back to its normal "can't preview" path.
+                if (result.kind !== 'binary') return null;
+                return URL.createObjectURL(result.blob);
+            }
             const response = await fetch(fullUrl, { credentials: 'include' });
             if (!response.ok) return null;
             const blob = await response.blob();
@@ -69,6 +94,12 @@ export function useFileActions(): UseFileActionsResult {
 
     const downloadSingle = useCallback(async (link: string) => {
         const fullUrl = normalizeFileUrl(link);
+        // See openFile: the browser fetch and its window.open fallback are both
+        // dead ends on Capacitor.
+        if (isNativeHost()) {
+            await openIsFileNatively(fullUrl);
+            return;
+        }
         try {
             const response = await fetch(fullUrl, { credentials: 'include' });
             if (!response.ok) { window.open(fullUrl, '_blank'); return; }
