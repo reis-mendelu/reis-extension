@@ -1,3 +1,4 @@
+import { createExtensionPlatform } from './extensionPlatform';
 import type { ReisPlatform } from './types';
 
 let current: ReisPlatform | null = null;
@@ -12,12 +13,25 @@ export function setPlatform(p: ReisPlatform): void {
 }
 
 export function getPlatform(): ReisPlatform {
-  if (!current) {
-    throw new Error(
-      'reIS: no platform installed — call setPlatform() at the entry point before rendering',
-    );
+  if (current) return current;
+
+  // The extension is the INCUMBENT host. Code shared with it (documentDownloader
+  // in the content script, for example) must not start requiring a new boot
+  // step, because one missed entry point — content, webiskam, background, both
+  // iframe roots — becomes a production crash rather than a test failure.
+  // So when a real extension runtime is visible, install that host implicitly.
+  //
+  // Capacitor and the dev webapp have no `chrome.runtime.id`, so a forgotten
+  // setPlatform() there still fails loudly. That asymmetry is deliberate: be
+  // forgiving to the host that already works, strict with the ones being added.
+  if (typeof chrome !== 'undefined' && chrome.runtime?.id) {
+    current = createExtensionPlatform();
+    return current;
   }
-  return current;
+
+  throw new Error(
+    'reIS: no platform installed — call setPlatform() at the entry point before rendering',
+  );
 }
 
 /** Test-only escape hatch; never call from app code. */

@@ -30,9 +30,28 @@ describe('platform registry', () => {
     expect(getPlatform().kind).toBe('capacitor');
   });
 
-  it('throws a useful error when nothing was installed', () => {
+  it('auto-installs the extension host when a real chrome runtime is visible', () => {
+    // The extension must never require a new boot step — see getPlatform().
     __resetPlatformForTests();
-    expect(() => getPlatform()).toThrow(/no platform installed/i);
+    expect(getPlatform().kind).toBe('extension');
+  });
+
+  it('throws when nothing is installed and there is no extension runtime', () => {
+    __resetPlatformForTests();
+    const g = globalThis as { chrome?: { runtime?: { id?: string } } };
+    const realId = g.chrome?.runtime?.id;
+    if (g.chrome?.runtime) delete g.chrome.runtime.id;
+    try {
+      expect(() => getPlatform()).toThrow(/no platform installed/i);
+    } finally {
+      if (g.chrome?.runtime) g.chrome.runtime.id = realId;
+    }
+  });
+
+  it('an explicitly installed host still wins over auto-detection', () => {
+    __resetPlatformForTests();
+    setPlatform(stub('capacitor'));
+    expect(getPlatform().kind).toBe('capacitor');
   });
 
   it('round-trips storage through the installed platform', async () => {
