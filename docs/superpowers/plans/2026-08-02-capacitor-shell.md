@@ -543,7 +543,7 @@ import {
   buildRestoreHeaders,
 } from '../sessionToken';
 
-const REAL_SHAPE = '6NSqqyos2r0lEVg5aGkXaQnw%2FrogfwDfWoNzCB803bRQ';
+const REAL_SHAPE = 'AAAAAAAAAAAAAAAAAAAAAAAA%2FBBBBBBBBBBBBBBBBBBB';
 
 describe('extractSessionToken', () => {
   it('pulls UISAuth out of a cookie bag', () => {
@@ -1044,7 +1044,7 @@ import {
   fetchViaCapacitor,
 } from '../capacitorTransport';
 
-const TOKEN = '6NSqqyos2r0lEVg5aGkXaQnw%2FrogfwDfWoNzCB803bRQ';
+const TOKEN = 'AAAAAAAAAAAAAAAAAAAAAAAA%2FBBBBBBBBBBBBBBBBBBB';
 
 describe('buildCookieDelivery', () => {
   // MEASURED on device: Android ignores a hand-set Cookie header (403) and
