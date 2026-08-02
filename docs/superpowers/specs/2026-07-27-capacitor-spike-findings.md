@@ -28,7 +28,34 @@ Results of the day-one device tests from #158. Each answer is measured, not infe
 
 ## Consequences for #158
 
-pending
+**The architecture holds.** The load-bearing assumption — that reIS can be injected
+into IS inside a Capacitor WebView at document start, on both platforms — is measured,
+not inferred. Nothing found here invalidates the port.
+
+Four things changed as a result of measuring:
+
+1. **Session restore is mandatory on both platforms** (tests 1 + 2). It was hoped to be
+   iOS-only, or avoidable via `persistWebViewData`. It is neither. `UISAuth` is a
+   session cookie and both engines drop it on app kill.
+2. **But restore is solved, and it is one mechanism for both** (test 1b). The hybrid —
+   `headers: {Cookie}` for request #1, `document.cookie` at documentStart for the rest —
+   works identically on iOS and Android. No native plugin, no `setCookie` API, and the
+   `outboundProxyRules` workaround listed in §A is **not needed**.
+3. **`@capacitor/filesystem` + `@capacitor/share` moved from optional to required**
+   (test 3) — and the failure they prevent is *silent*, which makes it a shipping risk
+   rather than a papercut.
+4. **`urlChangeEvent` re-injection may be deletable** (test 0b) — `preShowScript`
+   re-runs on every navigation in 8.13.2. Confirm once more on a deep navigation before
+   removing it from the design.
+
+**Still unproven and needing real hardware, not more spike work:** eduroam
+*association* on campus, the iOS `NEHotspotEAPSettings` self-signed-root question, and
+the iOS twin of the download probe (expected to fail like Android).
+
+One thing this spike did **not** test: how a restored session behaves over days, and
+whether IS ever rotates `UISAuth` mid-session. The audit showed no rotation across
+requests, and no `Set-Cookie` appears on authenticated requests — but that is not the
+same as observing it across the full inactivity window.
 
 ---
 
