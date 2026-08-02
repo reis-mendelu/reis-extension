@@ -76,7 +76,17 @@ session. It was rejected on balance, not on feasibility.
 | Cookie handling | one mechanism | **per-platform branch** |
 | Verified | tests 0 / 0b / 1b | **this task** |
 
-The deciding argument is that **#158 already predicted this shape**: *"`fetchWithAuth()`
+> **Project principle, confirmed by the maintainer (2026-08-02):** *"live injected over
+> real IS — that's not something we do in reIS since it's dangerous and we try to avoid
+> that."*
+>
+> This is the decisive argument, and it outranks the technical trade-offs below. Note the
+> distinction it draws, because it is easy to get wrong: the extension's content script
+> injects an **iframe on the extension's own origin** — reIS code has never run *inside*
+> IS's page context. Model A would have been the first time it did. Model C keeps that
+> boundary intact.
+
+The supporting technical argument is that **#158 already predicted this shape**: *"`fetchWithAuth()`
 branches between a direct credentialed fetch and `fetchViaProxy()` over postMessage. A
 Capacitor shell slots in as a third transport behind the same function — no call-site
 changes."* Model C is that third transport. Model A would instead require the whole reIS
@@ -104,6 +114,7 @@ defend an injected UI against IS's own stylesheet on every IS change.
 The `Access-Control-Allow-Origin` sentinel is a deliberate deny. Nothing here defeats a
 server-side policy — `CapacitorHttp` simply is not a browser and is not subject to it.
 If MENDELU later adds server-side origin or user-agent checks, Model C is the surface
-that would break first, and Model A (first-party, indistinguishable from the student's own
-browser) would become the fallback. Keeping the injection probes in the spike repo is
-deliberate for that reason.
+that would break first. Model A is **not** a free fallback in that case — it conflicts
+with the project principle above — so the real fallback would need designing rather than
+reaching for. The injection probes stay in the spike repo as evidence of what is
+technically possible, not as an approved design.
