@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { Folder, Download, PanelRightOpen, StickyNote } from 'lucide-react';
 import type { FileListProps } from './types';
+import { collapseAttachments } from '../../api/documents/collapseAttachments';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDocumentNoteKeys } from '../../hooks/data/useDocumentNoteKeys';
 import { parseIsDate } from './utils/fileDate';
@@ -84,9 +85,16 @@ export function FileList({
             {group.displayName}
           </div>
           <div className="grid grid-cols-1 gap-1">
-            {group.files.map((file, i) => (
+            {group.files.map((file, i) => {
+              // IS lists each document TWICE in a folder row — a
+              // dokumenty_cteni.pl viewer page and a slozka.pl?download= file,
+              // both with the same document id. Rendering one row per
+              // attachment showed every file as "Name (1)" / "Name (2)".
+              // Collapse the pair; genuinely distinct attachments are kept.
+              const attachments = collapseAttachments(file.files);
+              return (
               <div key={i} className="space-y-1">
-                {file.files.map((subFile, j) => {
+                {attachments.map((subFile, j) => {
                   const isSelected = selectedIds.includes(subFile.link);
                   return (
                     <div key={subFile.link} className="space-y-1">
@@ -147,7 +155,7 @@ export function FileList({
                             className={`font-medium truncate flex items-center gap-2 ${isSelected ? 'text-primary' : 'text-base-content'}`}
                           >
                             <span className="truncate">
-                              {file.files.length > 1
+                              {attachments.length > 1
                                 ? `${file.file_name} (${j + 1})`
                                 : file.file_name}
                             </span>
@@ -227,7 +235,7 @@ export function FileList({
                             courseCode={courseCode}
                             fileLink={subFile.link}
                             fileName={
-                              file.files.length > 1
+                              attachments.length > 1
                                 ? `${file.file_name} (${j + 1})`
                                 : file.file_name
                             }
@@ -239,7 +247,8 @@ export function FileList({
                   );
                 })}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ))}

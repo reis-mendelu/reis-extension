@@ -5,6 +5,7 @@ import { fetchSubjects } from "../subjects";
 import { validateUrl } from "../../utils/validation/index";
 import { logError } from "../../utils/reportError";
 import type { ParsedFile, FileAttachment } from "../../types/documents";
+import { stableDocumentKey } from './collapseAttachments';
 
 export async function fetchDocumentsForSubject(subjectCode: string): Promise<FileAttachment[]> {
     const subjectsData = await fetchSubjects();
@@ -94,12 +95,15 @@ export async function fetchFilesFromFolder(
             allFiles.push(...subResults.flat());
         }
 
-        // Final Deduplication using a more robust key (link + filename)
+        // Final deduplication. NOT keyed on the link: IS's viewer URLs carry a
+        // `serializace` token containing a timestamp, so the same document
+        // fetched twice (pagination, or a subfolder repeating a parent's rows)
+        // produced two different keys and appeared twice in the drawer.
+        // stableDocumentKey keys on the document id instead.
         const unique = new Map<string, ParsedFile>();
         allFiles.forEach(f => {
             if (f.files.length > 0) {
-                const key = `${f.files[0].link}_${f.file_name}`;
-                unique.set(key, f);
+                unique.set(stableDocumentKey(f.files, f.file_name), f);
             }
         });
 
