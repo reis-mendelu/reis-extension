@@ -194,7 +194,7 @@ git commit -m "docs: decide the Capacitor data transport"
 
 ---
 
-### Task 2: The platform port — one seam for three hosts
+### ✅ Task 2: The platform port — one seam for three hosts
 
 `chrome.*` is called from 59 sites across `src/`. Replacing them ad hoc would fork the codebase. Instead introduce one interface, implement it three times, and swap at the entry point.
 
@@ -338,7 +338,7 @@ git commit -m "feat(platform): add the host capability seam"
 
 ---
 
-### Task 3: Implement the three platforms
+### ✅ Task 3: Implement the three platforms
 
 **Files:**
 - Create: `src/platform/extensionPlatform.ts`
@@ -512,7 +512,7 @@ Expected: the whole existing suite stays green — nothing consumes the platform
 
 ---
 
-### Task 4: Session token capture and validation (pure logic)
+### ✅ Task 4: Session token capture and validation (pure logic)
 
 Split deliberately from the storage I/O so the interesting part is unit-testable. This task adds no device code.
 
@@ -674,7 +674,7 @@ git commit -m "feat(platform): session token capture and hybrid-restore builders
 
 ---
 
-### Task 5: Android back button drives the sheet stack
+### ✅ Task 5: Android back button drives the sheet stack
 
 `createMobileUiSlice` has a sheet stack and **nothing anywhere handles a back gesture** — no `popstate`, no `backButton` listener. Harmless in a browser tab; in a native shell, pressing back inside a sheet exits the app.
 
@@ -771,7 +771,7 @@ git commit -m "feat(mobile): back press unwinds the sheet stack"
 
 ---
 
-### Task 6: Document saving that cannot fail silently
+### ✅ Task 6: Document saving that cannot fail silently
 
 Measured: `URL.createObjectURL` + `a.download` + `a.click()` **saves nothing and throws nothing** on Android, and iOS WKWebView does not support `a[download]`. The current `downloadDocumentInPage` ends with exactly that sequence.
 
@@ -1011,7 +1011,7 @@ git commit -m "feat(mobile): platform-aware document save with an existence asse
 
 ---
 
-### Task 6b: The Capacitor transport — `CapacitorHttp` behind `fetchWithAuth`
+### ✅ Task 6b: The Capacitor transport — `CapacitorHttp` behind `fetchWithAuth`
 
 **Added after Task 1 chose Model C.** #158 predicted this exact shape: *"A Capacitor shell
 slots in as a third transport behind the same function — no call-site changes."*
