@@ -19,7 +19,7 @@ Results of the day-one device tests from #158. Each answer is measured, not infe
 | # | Question | Answer | Evidence |
 |---|---|---|---|
 | 0 | Does `preShowScript` injection run on IS? | **YES — at documentStart** | Green banner `REIS INJECTION OK — readyState at inject: loading` on the IS login page |
-| 1 | Does iOS WKWebView keep `UISAuth` across app kill? | pending — needs login | `getCookies` verified working (`keys: (none) / UISAuth: ABSENT` with no session) |
+| 1 | Does iOS WKWebView keep `UISAuth` across app kill? | **NO — cookie is lost** | live session before kill → `ABSENT` after SIGKILL + relaunch |
 | 2 | Does Android WebView keep `UISAuth` across app kill? | pending | |
 | 3 | Does blob + `a[download]` save a file? | pending — needs login | probe built, needs a real IS PDF URL |
 | 4 | Does `ACTION_WIFI_ADD_NETWORKS` accept an EAP-TLS config? | pending | |
@@ -140,3 +140,50 @@ negative result recorded at the top of the file so it is not retried blindly.
 > is a much larger, separate undertaking — and the fact that reIS *can* inject at
 > documentStart makes it technically possible, which is exactly why it should be
 > scoped deliberately rather than drifting into the port.
+
+---
+
+## Test 1 — iOS cookie survival across app kill: **FAILS. Restore is mandatory.**
+
+The headline question of this spike, answered.
+
+| Step | `Read cookies` output |
+|---|---|
+| Logged in, WebView closed | `keys: UISAuth` / `UISAuth: 6faz7v…IjiQ (len 48)` |
+| After `simctl terminate` + relaunch (**no login**) | `keys: (none)` / **`UISAuth: ABSENT`** |
+
+Method: `xcrun simctl terminate` SIGKILLs the app process — equivalent to swiping it
+away in the app switcher, and it resets `WKProcessPool`. Kill was verified
+(`launchctl list` → gone) and the relaunch got a **new PID** (87575 → 37389), so this
+was a genuine cold start, not a resume.
+
+**Confound checked and closed:** the spike never passed `persistWebViewData`, so it
+could have been disabled. It is not — the shipped `.d.ts` declares `@default true`
+(since 8.6.36). Persistence was **on**, and the cookie was lost anyway.
+
+That is the expected behaviour once stated plainly: `UISAuth` is a **session cookie
+with no `Expires`**. "Session" means until the browsing session ends, and killing the
+app ends it. `persistWebViewData` persists cache/localStorage/IndexedDB — it does not
+promote a session cookie to a persistent one.
+
+### Consequences
+
+- **D5 CONFIRMED.** "`persistWebViewData: true` means the session survives app restart"
+  was too optimistic, exactly as suspected.
+- **D3's optimistic reading is dead for iOS.** "iOS may not need cookie restore" is false.
+- **Session restore is REQUIRED, not conditional.** The Keychain/Keystore workstream in
+  #158 is real work and cannot be cancelled. Plan 4 stays.
+- Combined with the ~1-day sliding inactivity window, the UX target is: restore the
+  cookie on cold start so the student stays logged in **as long as they use the app
+  within the inactivity window**, instead of re-authenticating on every app kill.
+- The server side is already proven to accept this: the audit showed `UISAuth` survives
+  process death, a UA swap, and total attribute loss, and that only `name+value+domain+path`
+  is needed. `getCookies({includeHttpOnly:true})` is verified working here. So restore is
+  **known-feasible** — it just has to be built.
+
+### Still open on Android
+
+Test 2 (Android cookie survival) remains untested — no Android toolchain installed.
+Android WebView is Chromium and its cookie store is process-independent, so it may
+well survive where iOS does not. **Do not assume it; it is now the only remaining
+platform question that could reduce scope.**
