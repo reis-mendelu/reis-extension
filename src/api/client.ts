@@ -1,6 +1,9 @@
  
  
 import { fetchViaProxy, isInIframe } from './proxyClient';
+import { getPlatform } from '../platform';
+import { fetchViaCapacitor } from './capacitorTransport';
+import { loadStoredToken } from '../platform/tokenStore';
 
 export const BASE_URL = "https://is.mendelu.cz";
 
@@ -27,6 +30,20 @@ export const DEFAULT_HEADERS: Record<string, string> = {
  */
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
     const headers = { ...DEFAULT_HEADERS, ...options.headers as Record<string, string> };
+
+    // Capacitor: IS denies CORS to every origin, so a browser fetch from the
+    // app's own origin cannot reach it. CapacitorHttp runs natively, where CORS
+    // does not apply. Imported lazily so the extension bundle never pulls in
+    // @capacitor/*.
+    if (getPlatform().kind === 'capacitor') {
+        const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
+        const token = await loadStoredToken();
+        return fetchViaCapacitor(url, token, {
+            platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
+            setCookie: (o) => CapacitorCookies.setCookie(o),
+            httpGet: (o) => CapacitorHttp.get(o),
+        });
+    }
 
     // If we're in an iframe, use the proxy client
     if (isInIframe()) {
