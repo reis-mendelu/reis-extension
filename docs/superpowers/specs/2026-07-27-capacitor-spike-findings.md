@@ -115,7 +115,32 @@ desirable — it mirrors the extension hiding the page until reIS is ready
   through `cap add` but fails at Gradle with `Cannot find a Java installation …
   matching languageVersion=21`. The first Gradle sync takes ~5 minutes.
 - A duplicate simulator runtime disk image will block device creation with
-  `Invalid runtime`. Prefer Xcode's Components UI over `simctl runtime delete`.
+  `Invalid runtime`. Prefer Xcode's Components UI over `simctl runtime delete`
+  — deleting it destroyed the 8.5 GB download once and it had to be refetched.
+- Homebrew was unusable on this machine (`/opt/homebrew` not user-owned, needs
+  `sudo chown`). The whole Android toolchain was installed **user-space, no sudo**:
+  JDK under `~/android-toolchain/`, SDK under `~/Library/Android/sdk`, with an
+  `env.sh` exporting `JAVA_HOME` / `ANDROID_HOME` / `PATH`.
+
+### Android run recipe
+
+```bash
+source ~/android-toolchain/env.sh
+cd <spike>/android && ./gradlew assembleDebug
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+adb shell am start -n cz.reis.spike/.MainActivity
+adb shell input tap <x> <y>          # screen is 1080x2400, native px, no scaling
+adb exec-out screencap -p > shot.png
+```
+
+To kill for a cold-start test: `adb shell am force-stop cz.reis.spike`, and confirm it
+was genuine with `adb shell pidof cz.reis.spike` before and after. On iOS the equivalent
+is `xcrun simctl terminate`; simulator screenshots need a **~2.287** divisor to convert
+image pixels to tap points, whereas Android needs none.
+
+> **Do not tap inside a live authenticated IS WebView to navigate.** Doing so hit the
+> logout link once and ended the session mid-test. Drive process kills from the host
+> (`adb` / `simctl`) and get URLs from outside the WebView instead.
 
 ### Incidental finding — IS documents its session timeout
 
@@ -484,3 +509,35 @@ idea why.
   `documentDownloader.ts` needs a platform branch at exactly one point, not a rewrite.
 - **Add a regression guard.** A silent no-op is exactly the failure that ships. Whatever
   replaces `a.click()` must assert the file exists after writing.
+
+---
+
+## How these tests were run without a second login
+
+Worth recording, because it is reusable and it avoided the one action that broke a
+previous session.
+
+- The `UISAuth` used for restore was one the developer had already supplied, **checked
+  live with `curl` first** before spending a build cycle on it.
+- The real IS PDF URL came from the **IS Mendelu MCP tools**
+  (`list_subject_files` → `downloadUrl`), *not* from tapping around inside the
+  authenticated WebView. Tapping inside a live IS session is how an earlier run hit the
+  logout link and ended its own session.
+- Token and PDF URL were read at runtime from a **gitignored** `src/public/session.local.json`
+  rather than typed into a `window.prompt` — `adb`/`simctl` cannot reliably type a
+  URL-encoded token, and the alternative (hardcoding) would have put a live credential
+  in source. Same pattern as the eduroam cert material.
+- Note for vite: the spike's `root` is `./src`, so `publicDir` is **`src/public`**, not
+  `./public`.
+
+> ⚠️ **A live session credential ends up on disk and inside the debug APK's assets**
+> when tests are run this way. It is gitignored and was never committed (verified
+> against the staged diff), but deleting the file does not invalidate the session —
+> only logging out of IS does.
+
+### Stale-fact correction
+
+`tisk_dokumentu.pl?potvrzeni_tisk=1` no longer returns a PDF on a bare GET; it returns
+HTML saying *"The entered study does not exist."* and needs `studium=…;obdobi=…`. A
+28-day-old note recorded it as a one-GET PDF download. Course-file URLs from
+`dok_server/slozka.pl?download=…` are the reliable choice for download testing.
