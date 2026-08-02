@@ -118,3 +118,58 @@ that would break first. Model A is **not** a free fallback in that case — it c
 with the project principle above — so the real fallback would need designing rather than
 reaching for. The injection probes stay in the spike repo as evidence of what is
 technically possible, not as an approved design.
+
+---
+
+## Does this mean the extension can drop its iframe/proxy? **No.**
+
+Recording this because it is the obvious inference from the CORS finding above, it is
+wrong, and someone will otherwise propose "simplify the extension by dropping the proxy"
+later.
+
+**CORS was never why the extension proxies.** `wxt.config.ts:33` already declares
+`host_permissions: ['https://is.mendelu.cz/*']`, which exempts the extension from CORS
+enforcement entirely. The blanket `Access-Control-Allow-Origin` denial that constrains
+Capacitor simply does not apply to it.
+
+The extension is blocked by **two different rules**, and `src/api/proxyClient.ts:38` names
+the first in its own comment — *"The content script performs the first-party fetch
+(SameSite cookie)"*:
+
+1. **`UISAuth` is `SameSite=Lax`** (captured live; see the audit's attribute table). A
+   fetch from `chrome-extension://…` to `is.mendelu.cz` is cross-site, so the browser
+   will not attach the cookie **regardless of what permissions the extension holds**. The
+   content script is first-party on `is.mendelu.cz` and therefore gets it for free. That
+   is what the proxy buys.
+2. **`Cookie` is a forbidden request header** in the Fetch spec — JS cannot set it. So the
+   extension cannot sidestep SameSite by supplying the credential by hand either.
+
+`declarativeNetRequest` could inject the header at the network layer, but it is **not used
+anywhere** in `src/` or the config (verified), and adopting it would mean adding the
+`cookies` permission, reading `UISAuth` out of the jar, and handling a live credential in
+more places — for no benefit.
+
+### Why Model C escapes all of it
+
+`CapacitorHttp` is **not a browser context**. It is native `URLSession` / OkHttp, so none
+of the three rules apply: no CORS, no SameSite, no forbidden-header list. That is what
+makes carrying the credential explicitly possible at all.
+
+This also serves as a consistency check on the measurement above: **iOS accepting an
+explicit `Cookie` header is only possible because the request is native.** The same call
+from any browser fetch would have that header silently stripped.
+
+| | Extension (today) | Capacitor (Model C) |
+|---|---|---|
+| Blocked by CORS? | No — `host_permissions` | No — not a browser |
+| Blocked by SameSite? | **Yes → needs the content-script proxy** | No |
+| Can set `Cookie` by hand? | No — forbidden header | **Yes** (iOS) / native jar (Android) |
+| UI placement | iframe overlay on IS | normal app screen |
+
+**The iframe overlay is a separate, product-level choice** — it is how students see reIS
+in place of IS. Nothing here argues against it, and it is also what keeps reIS code out of
+IS's page context, per the principle above.
+
+> **The line worth keeping:** the extension's constraint is `SameSite=Lax` plus `Cookie`
+> being a forbidden fetch header — **not CORS**. That is why Model C does not translate
+> back to the extension.
