@@ -22,18 +22,34 @@ export function useOpenSemesters(plan: StudyPlan | null) {
   }, [plan]);
 
   useEffect(() => {
+    // The read can outlive the component. In the app that is a harmless no-op,
+    // but under vitest the environment is torn down per file, so a late
+    // setState reaches a jsdom that no longer has a `window` — which surfaced
+    // as an unhandled error and a non-zero exit even though every test passed.
+    let alive = true;
     IndexedDBService.get('meta', IDB_KEY)
       .then((stored) => {
-        if (Array.isArray(stored) && stored.length > 0) setOpenSemesters(new Set(stored as number[]));
+        if (!alive) return;
+        if (Array.isArray(stored) && stored.length > 0)
+          setOpenSemesters(new Set(stored as number[]));
         else setOpenSemesters(new Set());
         setIdbLoaded(true);
       })
-      .catch(() => { setOpenSemesters(new Set()); setIdbLoaded(true); });
+      .catch(() => {
+        if (!alive) return;
+        setOpenSemesters(new Set());
+        setIdbLoaded(true);
+      });
+    return () => {
+      alive = false;
+    };
   }, [currentSemesterIndices]);
 
   useEffect(() => {
     if (!idbLoaded) return;
-    IndexedDBService.set('meta', IDB_KEY, Array.from(openSemesters)).catch(e => logError('SubjectsPanel.persistOpenSemesters', e));
+    IndexedDBService.set('meta', IDB_KEY, Array.from(openSemesters)).catch((e) =>
+      logError('SubjectsPanel.persistOpenSemesters', e)
+    );
   }, [openSemesters, idbLoaded]);
 
   useEffect(() => {
@@ -46,7 +62,7 @@ export function useOpenSemesters(plan: StudyPlan | null) {
   }, [idbLoaded, plan, currentSemesterIndices]);
 
   const handleToggle = useCallback((index: number) => {
-    setOpenSemesters(prev => {
+    setOpenSemesters((prev) => {
       const next = new Set(prev);
       if (next.has(index)) next.delete(index);
       else next.add(index);
