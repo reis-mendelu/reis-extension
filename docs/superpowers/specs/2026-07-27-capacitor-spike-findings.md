@@ -11,8 +11,9 @@ Results of the day-one device tests from #158. Each answer is measured, not infe
 | @capacitor/ios | 8.5.0 |
 | @capacitor/android | 8.5.0 |
 | @capgo/capacitor-inappbrowser | 8.13.2 (post-8.6.0 — on the breaking-change side of the proxy-handling change) |
-| Xcode / iOS Simulator | Xcode 26.6 (build 17F113), iOS 26.5 Simulator runtime pending |
-| Android emulator API level | not installed |
+| Xcode / iOS Simulator | Xcode 26.6 (build 17F113), iOS 26.5 Simulator runtime, iPhone 17 |
+| Android emulator API level | **API 35** (Pixel 7, Android 15, arm64) |
+| JDK | **Temurin 21.0.12** — Capacitor 8 requires 21; JDK 17 fails Gradle with `matching languageVersion=21` |
 
 ## Results
 
@@ -23,7 +24,7 @@ Results of the day-one device tests from #158. Each answer is measured, not infe
 | 1b | Can the cookie be RESTORED into the WebView? | **YES — hybrid** | `headers` + `document.cookie` at documentStart; authenticated and survives navigation |
 | 2 | Does Android WebView keep `UISAuth` across app kill? | pending | |
 | 3 | Does blob + `a[download]` save a file? | pending — needs login | probe built, needs a real IS PDF URL |
-| 4 | Does `ACTION_WIFI_ADD_NETWORKS` accept an EAP-TLS config? | pending | |
+| 4 | Does `ACTION_WIFI_ADD_NETWORKS` accept an EAP-TLS config? | **YES** | `resultCode -1 (RESULT_OK)`, `perNetwork 0 (SUCCESS)`; saved as netId=1, `TYPE_EAP` |
 
 ## Consequences for #158
 
@@ -83,7 +84,9 @@ desirable — it mirrors the extension hiding the page until reIS is ready
   `-project ios/App/App.xcodeproj`.
 - **The first build takes >10 minutes** resolving SPM packages, with no incremental
   output. It is not hung.
-- `npx cap add android` requires a JDK. Absent here, so the spike is iOS-only.
+- `npx cap add android` requires a JDK — and specifically **JDK 21**. JDK 17 gets
+  through `cap add` but fails at Gradle with `Cannot find a Java installation …
+  matching languageVersion=21`. The first Gradle sync takes ~5 minutes.
 - A duplicate simulator runtime disk image will block device creation with
   `Invalid runtime`. Prefer Xcode's Components UI over `simctl runtime delete`.
 
@@ -103,10 +106,10 @@ the correction in `2026-07-26-capacitor-assumption-audit.md` §C1.
 
 | Test | Blocked on |
 |---|---|
-| 1 — iOS cookie survival across app kill | human: real credentials + app-switcher kill |
-| 2 — Android cookie survival | Android Studio + JDK not installed |
+| ~~1 — iOS cookie survival across app kill~~ | **done** — fails, restore built and proven |
+| 2 — Android cookie survival | human: login inside the WebView |
 | 3 — file download | human: login + a real IS PDF URL + Files app check |
-| 4 — `ACTION_WIFI_ADD_NETWORKS` EAP-TLS (#159) | Android Studio + JDK not installed |
+| ~~4 — `ACTION_WIFI_ADD_NETWORKS` EAP-TLS (#159)~~ | **done** — accepted, see below |
 
 ### Bonus experiment — can injection make IS phone-native? **NO, not via viewport meta**
 
@@ -254,3 +257,91 @@ does anything.
   `openWebView` resolves on *presentation*, and the screenshots were taken before the
   WebView animated in. Approaches B and C had both presented. Approach B's real defect
   is narrower than first stated: the reload conflicts with `isPresentAfterPageLoad`.
+
+---
+
+## Test 4 — eduroam EAP-TLS via `ACTION_WIFI_ADD_NETWORKS`: **ACCEPTED**
+
+The one open item in #159, answered on Android 15 / API 35 with **real MENDELU cert
+material** (the student's own `.p12` + the MENDELU root CA, fetched from IS without
+generating a new certificate — generation is one of only three IS write paths and
+was deliberately avoided).
+
+| Signal | Value |
+|---|---|
+| `resultCode` | `-1` = `RESULT_OK` |
+| per-network result | `0` = `ADD_WIFI_RESULT_SUCCESS` |
+| Saved as | `netId=1`, `configKey="eduroam"WPA_EAP`, `networkType=TYPE_EAP` |
+| Saved-network count | `numSavedNetworks=2` (was 1) |
+| Creator | `networkCreator=CREATOR_USER` |
+
+A system dialog appeared — *"Save this network? reIS Spike wants to save a network to
+your phone / eduroam"* — with Cancel/Save. One tap on Save, and the config was written.
+
+### The self-signed root CA is genuinely pinned
+
+This was the real risk: that Android would either reject MENDELU's self-signed root or
+silently degrade to "trust any server". Neither happened. From `dumpsys wifi`:
+
+```
+identity "xholek1@mendelu.cz"
+domain_suffix_match "mendelu.cz"
+ca_cert "keystore://CACERT_"eduroam"_WPA_EAPIEEE8021X_TLS_NULL_0"
+client_cert "keystore://USRCERT_"eduroam"_WPA_EAPIEEE8021X_TLS_NULL"
+key_id "USRPKEY_"eduroam"_WPA_EAPIEEE8021X_TLS_NULL"
+engine 1
+engine_id "keystore"
+user_approve_no_ca_cert: false
+```
+
+Every field survived exactly as configured, and `mEapMethod=1` (TLS), `mOcspType=0`
+(OCSP off) match MENDELU's own guide. **`user_approve_no_ca_cert: false` is the
+important one** — Android did not fall back to the "no CA certificate" escape hatch;
+the private key and both certificates went into the **system keystore**, and the
+server cert will be validated against the pinned root with a `mendelu.cz` domain-suffix
+check.
+
+### API correction — the plan's code did not compile
+
+`WifiNetworkSuggestion.Builder` has **no** `setWifiEnterpriseConfig()`. Verified
+against `android-35` (`javap`), the only enterprise setters are:
+
+```
+setWpa2EnterpriseConfig · setWpa3EnterpriseConfig
+setWpa3EnterpriseStandardModeConfig · setWpa3Enterprise192BitModeConfig
+setWapiEnterpriseConfig
+```
+
+**The caller must commit to a WPA generation.** eduroam at MENDELU is WPA2-Enterprise,
+so `setWpa2EnterpriseConfig` is correct — deprecated since API 33 but still the only
+WPA2 path. Getting this wrong is a compile error, not a runtime surprise, so it is
+cheap; it just needs to be in the implementation issue.
+
+The probe is written in **Java, not Kotlin** as the plan specified: the Capacitor
+Android app module ships no Kotlin Gradle plugin, and adding one is avoidable risk.
+
+### What is still NOT proven
+
+**Accepting a config is not the same as connecting to the network.** The emulator has
+no eduroam AP in range, and it showed exactly that — the framework immediately tried
+to connect and reported:
+
+```
+FAILURE_NETWORK_NOT_FOUND, wifiState=WIFI_ASSOCIATED, mEapMethod=1
+```
+
+That failure is the *expected* off-campus result and says nothing about whether the
+handshake works. **Proving association requires a real phone in range of a MENDELU
+AP.** That is a separate on-campus check, and it is the last thing standing between
+#159 and "verified end to end".
+
+### Consequences for #159
+
+- The **`ACTION_WIFI_ADD_NETWORKS` approach is confirmed.** No fallback to
+  `addNetworkSuggestions` (with its 24-hour disconnect penalty) is needed.
+- The result is a **real, user-visible, user-deletable saved network** — the property
+  that made this API the right choice over the Suggestion API.
+- **geteduroam is not needed on Android**, and its failure mode (disabling a working
+  config after failing to resolve MENDELU in eduroam discovery) is avoided entirely.
+- Required manifest permissions: `ACCESS_WIFI_STATE`, `CHANGE_WIFI_STATE`.
+- Minimum API is **30** for this intent; below that the app must fall back or refuse.
