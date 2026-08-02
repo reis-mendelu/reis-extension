@@ -143,3 +143,8 @@ public/.dev-real-data.lock
 
 # UI verification output (scripts/shot.ts) — always regenerated, never committed
 .verify/
+
+# Capacitor
+dist-capacitor/
+/android
+/ios
