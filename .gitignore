@@ -146,5 +146,16 @@ public/.dev-real-data.lock
 
 # Capacitor
 dist-capacitor/
-/android
-/ios
+# The native projects ARE committed: they hold custom native source
+# (android/app/src/main/java/cz/reis/app/DownloadsPlugin.java) that `cap add`
+# cannot regenerate. Only the build output is ignored.
+/android/app/build/
+/android/build/
+/android/.gradle/
+/android/local.properties
+/android/app/src/main/assets/public/
+/android/app/src/main/assets/capacitor.config.json
+/android/app/src/main/assets/capacitor.plugins.json
+/ios/App/App/public/
+/ios/App/build/
+/ios/DerivedData/

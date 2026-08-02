@@ -107,3 +107,17 @@ export function base64ToText(base64: string): string {
   const raw = base64.startsWith('data:') && comma !== -1 ? base64.slice(comma + 1) : base64;
   return atob(raw);
 }
+
+/** Filesystem.writeFile and the Downloads plugin both take base64, not a Blob. */
+export function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Failed to read blob'));
+    reader.onload = () => {
+      const result = String(reader.result);
+      // Strip the "data:<mime>;base64," prefix that readAsDataURL adds.
+      resolve(result.slice(result.indexOf(',') + 1));
+    };
+    reader.readAsDataURL(blob);
+  });
+}
