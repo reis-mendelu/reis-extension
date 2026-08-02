@@ -1,4 +1,5 @@
 import { IFRAME_ID } from './config';
+import { getPlatform } from '../platform';
 
 export let iframeElement: HTMLIFrameElement | null = null;
 let iframeReady = false;
@@ -55,6 +56,15 @@ export function markIframeReady() {
 }
 
 export function sendToIframe(message: unknown) {
+    // Capacitor has no content script and no iframe — the app IS the receiver.
+    // Post to our own window so useAppLogic's existing REIS_SYNC_UPDATE handler
+    // picks it up unchanged: at top level `window.parent === window`, which is
+    // exactly the check that handler makes. This keeps ONE sync implementation
+    // instead of forking syncService per host.
+    if (getPlatform().kind === 'capacitor') {
+        window.postMessage(message, "*");
+        return;
+    }
     if (!iframeElement?.contentWindow) return;
     if (!iframeReady) {
         messageQueue.push(message);

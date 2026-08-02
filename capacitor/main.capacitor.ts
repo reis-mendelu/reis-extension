@@ -52,6 +52,21 @@ async function boot(): Promise<void> {
   // and every sync request would fail its auth check.
   await import('@/entrypoints/main/main');
   await SplashScreen.hide();
+
+  // In the extension the CONTENT SCRIPT drives this and posts results into the
+  // iframe. Capacitor has neither, so the app drives its own sync; sendToIframe
+  // loops the results back to this same window, where useAppLogic's existing
+  // handler consumes them unchanged.
+  // startSyncService fires an immediate syncAllData() and then sets the
+  // SYNC_INTERVAL timer — no separate first call needed.
+  const { syncAllData, startSyncService } = await import('@/injector/syncService');
+  startSyncService();
+
+  // IS's session is a sliding inactivity window, so a returning student is
+  // usually still authenticated — refresh on resume rather than only at boot.
+  void CapApp.addListener('resume', () => {
+    void syncAllData().catch(() => {});
+  });
 }
 
 void boot().catch(async (e) => {
