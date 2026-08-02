@@ -42,6 +42,16 @@ describe('isPlausibleToken', () => {
   it('rejects anything short enough to be a truncation bug', () => {
     expect(isPlausibleToken('abc')).toBe(false);
   });
+
+  it('rejects characters a real token cannot contain', () => {
+    // `;` would silently truncate the cookie; the quote/brace shapes are what a
+    // code-injection attempt looks like. None of these can be a UISAuth value.
+    expect(isPlausibleToken('AAAAAAAAAAAAAAAA;evil=1')).toBe(false);
+    expect(isPlausibleToken('AAAAAAAAAAAAAAAA"+alert(1)+"')).toBe(false);
+    expect(isPlausibleToken('AAAAAAAAAAAAAAAA</script>')).toBe(false);
+    expect(isPlausibleToken('AAAAAAAAAAAAAAAA\\u0022')).toBe(false);
+    expect(isPlausibleToken('AAAAAAAAAAAAAAAA\n')).toBe(false);
+  });
 });
 
 describe('buildRestoreHeaders', () => {
@@ -62,8 +72,16 @@ describe('buildRestoreScript', () => {
     expect(s.toLowerCase()).not.toContain('expires');
   });
 
-  it('escapes the token so a quote cannot break out of the script', () => {
-    expect(buildRestoreScript('a"b')).toContain('"a\\"b"');
+  it('refuses to build a script around a token that is not a valid token', () => {
+    // The token is the only untrusted input that reaches generated code, so it
+    // is rejected outright rather than escaped: there is no legitimate token
+    // this rejects, and escaping is a weaker promise than never emitting it.
+    expect(() => buildRestoreScript('a"b')).toThrow(/token/i);
+    expect(() => buildRestoreScript('AAAAAAAAAAAAAAAA";alert(1);"')).toThrow(/token/i);
+  });
+
+  it('emits only characters from the token charset', () => {
+    expect(buildRestoreScript(REAL_SHAPE)).toContain(`"${REAL_SHAPE}"`);
   });
 
   it('never throws inside the page, whatever happens', () => {
