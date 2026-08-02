@@ -19,7 +19,7 @@ Results of the day-one device tests from #158. Each answer is measured, not infe
 
 | # | Question | Answer | Evidence |
 |---|---|---|---|
-| 0 | Does `preShowScript` injection run on IS? | **YES — at documentStart** | Green banner `REIS INJECTION OK — readyState at inject: loading` on the IS login page |
+| 0 | Does `preShowScript` injection run on IS? | **YES — at documentStart, on BOTH platforms** | Green banner `REIS INJECTION OK — readyState at inject: loading` on the IS login page, iOS **and** Android |
 | 1 | Does iOS WKWebView keep `UISAuth` across app kill? | **NO — cookie is lost** | live session before kill → `ABSENT` after SIGKILL + relaunch |
 | 1b | Can the cookie be RESTORED into the WebView? | **YES — hybrid** | `headers` + `document.cookie` at documentStart; authenticated and survives navigation |
 | 2 | Does Android WebView keep `UISAuth` across app kill? | pending | |
@@ -345,3 +345,21 @@ AP.** That is a separate on-campus check, and it is the last thing standing betw
   config after failing to resolve MENDELU in eduroam discovery) is avoided entirely.
 - Required manifest permissions: `ACCESS_WIFI_STATE`, `CHANGE_WIFI_STATE`.
 - Minimum API is **30** for this intent; below that the app must fall back or refuse.
+
+---
+
+## Test 0 on Android: **PASS — injection is cross-platform**
+
+Same probe, Android 15 / API 35 emulator, same result: the IS login page renders in
+`openWebView` and the green banner reports `readyState at inject: loading`.
+
+Two things this settles, both previously only verified on iOS:
+
+- **`preShowScript` + `documentStart` is not an iOS-only capability.** The single
+  biggest architectural gate in #158 now holds on both platforms.
+- **IS renders in Android's WebView too** — no framing refusal, no UA block, no WAF
+  challenge. The fatal-if-false check passes on both.
+
+Incidentally, Android's WebView shrinks-to-fit the same way WKWebView does: the login
+page is small but complete and legible. This is consistent with the negative viewport
+finding above — IS ships no viewport meta, and both engines cope by zooming out.
