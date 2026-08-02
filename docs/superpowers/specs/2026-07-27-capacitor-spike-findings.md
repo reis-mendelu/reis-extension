@@ -541,3 +541,61 @@ previous session.
 HTML saying *"The entered study does not exist."* and needs `studium=…;obdobi=…`. A
 28-day-old note recorded it as a one-GET PDF download. Course-file URLs from
 `dok_server/slozka.pl?download=…` are the reliable choice for download testing.
+
+---
+
+## Late finding — IS's headers constrain the architecture more than expected
+
+Checked while planning the implementation. These three headers decide *where reIS is
+allowed to run*, and none of them were recorded in #158.
+
+```
+Access-Control-Allow-Origin: https://localhost.that.never.exists/
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+(no Content-Security-Policy at all)
+```
+
+Verified on `/auth/`, `/auth/student/moje_studium.pl`, `/auth/dok_server/index.pl` and
+`/system/login.pl` — consistent everywhere, and the ACAO value **does not vary with the
+request's `Origin`**. It is a hardcoded sentinel that matches no real origin.
+
+### What each one rules in or out
+
+**`Access-Control-Allow-Origin: https://localhost.that.never.exists/` — CORS is denied
+to everybody, deliberately.** Any browser-context fetch to IS from a *different* origin
+fails the CORS check, cookies or not. This kills the most obvious mobile design:
+"render the #162 phone UI in the Capacitor host WebView and let it fetch IS directly".
+It cannot work. `fetchWithAuth` even passes `mode: "cors"` explicitly
+(`src/api/client.ts`), which is fine today only because the content script is
+*first-party* on `is.mendelu.cz`.
+
+**`X-Frame-Options: SAMEORIGIN` — the reIS app cannot embed IS in an iframe.** Only
+`is.mendelu.cz` may frame `is.mendelu.cz`. Note the extension's model is the *reverse*
+and is unaffected: the content script runs **on** the IS page and injects an iframe of
+the extension app. A top-level `openWebView` is not a frame, so this does not affect the
+spike's approach either.
+
+**No `Content-Security-Policy` at all.** IS restricts neither the scripts that run on
+its pages nor what it may embed. This is why `preShowScript` injection works
+unconstrained (test 0), and it means an injected script may create an iframe pointing at
+our own bundled origin — i.e. the extension's exact architecture transplants.
+
+### Consequence: only two viable transports
+
+| Model | Viable? | Why |
+|---|---|---|
+| reIS in host WebView, fetches IS directly | ❌ | Blocked by CORS |
+| reIS in host WebView, host frames IS | ❌ | Blocked by `X-Frame-Options` |
+| **A — reIS injected into the IS page** (first-party; iframe + postMessage proxy, exactly as the extension does) | ✅ | No CORS boundary; no CSP to fight |
+| **C — reIS in host WebView, data over `CapacitorHttp`** (native HTTP, no browser CORS) | ✅ *in principle* | Native layer is not subject to CORS; **needs verifying that the session cookie flows via `CapacitorCookies`** |
+
+Model **A** reuses the most existing code — `fetchWithAuth` already branches to
+`fetchViaProxy` over postMessage when it detects an iframe, so the transport seam exists
+and is exercised daily. Model **C** is architecturally cleaner (the phone UI from #162
+runs as a normal app rather than injected over a foreign page) but rests on an unverified
+assumption about native cookie handling.
+
+**This is the first thing the implementation plan resolves**, because it changes almost
+everything downstream. It is cheap to settle: one `CapacitorHttp` request to IS from the
+host WebView, with a restored cookie, either returns authenticated HTML or it does not.
