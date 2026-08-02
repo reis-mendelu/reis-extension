@@ -38,6 +38,8 @@ async function boot(): Promise<void> {
       });
     },
     onPageLoaded: (cb) => InAppBrowser.addListener('browserPageLoaded', () => cb()),
+    // Backing out of the login must reject rather than hang the splash screen.
+    onDismissed: (cb) => InAppBrowser.addListener('closeEvent', () => cb()),
     readCookies: () =>
       InAppBrowser.getCookies({ url: IS_COOKIE_URL, includeHttpOnly: true }) as Promise<
         Record<string, string>

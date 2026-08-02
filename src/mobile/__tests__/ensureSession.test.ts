@@ -79,6 +79,79 @@ describe('ensureSession', () => {
     expect(d.save).toHaveBeenCalledTimes(1);
   });
 
+  it('REJECTS when the student dismisses the login WebView', async () => {
+    // Without this the promise never settles, and boot() awaits it before
+    // hiding the splash — so a student who backs out sits on a splash screen
+    // forever, with no error and no way to retry.
+    let dismiss: () => void = () => {};
+    const d = deps({
+      readCookies: vi.fn(async () => ({})),
+      onDismissed: vi.fn(async (cb: () => void) => {
+        dismiss = cb;
+        return { remove: vi.fn(async () => {}) };
+      }),
+      openLogin: vi.fn(async () => {
+        dismiss();
+      }),
+    });
+    await expect(ensureSession(d)).rejects.toThrow(/cancel|dismiss/i);
+  });
+
+  it('ignores a dismissal that arrives after a successful login', async () => {
+    // The WebView close WE trigger also fires the dismissal event.
+    let fire: () => void = () => {};
+    let dismiss: () => void = () => {};
+    const d = deps({
+      onPageLoaded: vi.fn(async (cb: () => void) => {
+        fire = cb;
+        return { remove: vi.fn(async () => {}) };
+      }),
+      onDismissed: vi.fn(async (cb: () => void) => {
+        dismiss = cb;
+        return { remove: vi.fn(async () => {}) };
+      }),
+      openLogin: vi.fn(async () => {
+        fire();
+      }),
+    });
+    const result = ensureSession(d);
+    await Promise.resolve();
+    dismiss();
+    await expect(result).resolves.toBe(TOKEN);
+  });
+
+  it('still works when the host provides no dismissal signal', async () => {
+    // onDismissed is optional; the extension-shaped deps do not have one.
+    let fire: () => void = () => {};
+    const d = deps({
+      onPageLoaded: vi.fn(async (cb: () => void) => {
+        fire = cb;
+        return { remove: vi.fn(async () => {}) };
+      }),
+      openLogin: vi.fn(async () => {
+        fire();
+      }),
+    });
+    await expect(ensureSession(d)).resolves.toBe(TOKEN);
+  });
+
+  it('removes the dismissal listener too, so a later close is not heard', async () => {
+    const removeDismiss = vi.fn(async () => {});
+    let fire: () => void = () => {};
+    const d = deps({
+      onPageLoaded: vi.fn(async (cb: () => void) => {
+        fire = cb;
+        return { remove: vi.fn(async () => {}) };
+      }),
+      onDismissed: vi.fn(async () => ({ remove: removeDismiss })),
+      openLogin: vi.fn(async () => {
+        fire();
+      }),
+    });
+    await ensureSession(d);
+    expect(removeDismiss).toHaveBeenCalled();
+  });
+
   it('removes the page-load listener so a second login does not double-fire', async () => {
     const remove = vi.fn(async () => {});
     let fire: () => void = () => {};

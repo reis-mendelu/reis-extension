@@ -1,4 +1,4 @@
-import { buildCookieDelivery } from './capacitorTransport';
+import { assertIsOrigin, buildCookieDelivery } from './capacitorTransport';
 
 export interface BinaryDeps {
   platform: 'ios' | 'android' | 'web';
@@ -59,6 +59,9 @@ export async function fetchIsBinary(
   token: string,
   deps: BinaryDeps
 ): Promise<IsResourceResult> {
+  // File links are parsed out of IS HTML, so this is the call that most needs
+  // the guard: an IS page can link to any host, and the session must not follow.
+  assertIsOrigin(url);
   const delivery = buildCookieDelivery(deps.platform, token);
   if (delivery.seedNativeJar) {
     await deps.setCookie({ url: 'https://is.mendelu.cz', key: 'UISAuth', value: token });

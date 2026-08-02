@@ -8,141 +8,206 @@ import type { ParsedFile } from '../../types/documents';
 vi.mock('../client');
 vi.mock('./parser');
 vi.mock('../../utils/validation/index', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../../utils/validation/index')>();
-    return {
-        ...actual,
-        sanitizeString: vi.fn(s => s),
-        validateFileName: vi.fn(s => s),
-        validateUrl: vi.fn(s => s)
-    };
+  const actual = await importOriginal<typeof import('../../utils/validation/index')>();
+  return {
+    ...actual,
+    sanitizeString: vi.fn((s) => s),
+    validateFileName: vi.fn((s) => s),
+    validateUrl: vi.fn((s) => s),
+  };
 });
 vi.mock('../../utils/requestQueue', () => ({
-    requestQueue: { add: vi.fn(fn => fn()) },
-    processWithDelay: vi.fn((items, processor) => Promise.all(items.map(processor)))
+  requestQueue: { add: vi.fn((fn) => fn()) },
+  processWithDelay: vi.fn((items, processor) => Promise.all(items.map(processor))),
 }));
 
 describe('fetchFilesFromFolder', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        // Setup default mocks
-        vi.mocked(fetchWithAuth).mockResolvedValue({
-            text: async () => '<html></html>',
-            ok: true,
-            status: 200,
-        } as Response);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Setup default mocks
+    vi.mocked(fetchWithAuth).mockResolvedValue({
+      text: async () => '<html></html>',
+      ok: true,
+      status: 200,
+    } as Response);
+  });
+
+  it('should fetch files from a single folder', async () => {
+    vi.mocked(parseServerFiles).mockReturnValue({
+      files: [
+        {
+          file_name: 'test.pdf',
+          link: 'http://test.com/test.pdf',
+          files: [{ name: 'test.pdf', link: 'http://test.com/test.pdf', type: 'pdf' }],
+        } as unknown as ParsedFile,
+      ],
+      paginationLinks: [],
     });
 
-    it('should fetch files from a single folder', async () => {
-        vi.mocked(parseServerFiles).mockReturnValue({
-            files: [{ file_name: 'test.pdf', link: 'http://test.com/test.pdf', files: [{ name: 'test.pdf', link: 'http://test.com/test.pdf', type: 'pdf' }] } as unknown as ParsedFile],
-            paginationLinks: []
-        });
+    const result = await fetchFilesFromFolder('http://test.com');
 
-        const result = await fetchFilesFromFolder('http://test.com');
-        
-        expect(result).toHaveLength(1);
-        expect(result[0].file_name).toBe('test.pdf');
+    expect(result).toHaveLength(1);
+    expect(result[0].file_name).toBe('test.pdf');
+  });
+
+  it('should throw error when root fetch fails', async () => {
+    const error = new Error('Network error');
+    vi.mocked(fetchWithAuth).mockRejectedValue(error);
+
+    await expect(fetchFilesFromFolder('http://test.com')).rejects.toThrow('Network error');
+  });
+
+  it('should handle sub-folder fetch failure gracefully (resilience)', async () => {
+    // First fetch (root) succeeds and returns a subfolder
+    vi.mocked(fetchWithAuth).mockResolvedValueOnce({
+      text: async () => 'root',
+    } as Response);
+
+    vi.mocked(parseServerFiles).mockReturnValueOnce({
+      files: [
+        {
+          file_name: 'Subfolder',
+          files: [{ link: 'slozka.pl?id=123', name: 'Subfolder' }],
+        } as unknown as ParsedFile,
+      ],
+      paginationLinks: [],
     });
 
-    it('should throw error when root fetch fails', async () => {
-        const error = new Error('Network error');
-        vi.mocked(fetchWithAuth).mockRejectedValue(error);
+    // Second fetch (subfolder) fails
+    const subError = new Error('Subfolder failed');
+    vi.mocked(fetchWithAuth).mockRejectedValueOnce(subError);
 
-        await expect(fetchFilesFromFolder('http://test.com')).rejects.toThrow('Network error');
+    const result = await fetchFilesFromFolder('http://test.com');
+
+    // Root had one "folder" entry. Folders are filtered out unless they have download links.
+    expect(result).toEqual([]);
+  });
+
+  it('should fetch multiple pages and deduplicate', async () => {
+    // Page 1
+    vi.mocked(fetchWithAuth).mockResolvedValueOnce({
+      text: async () => 'page1',
+    } as Response);
+
+    vi.mocked(parseServerFiles).mockReturnValueOnce({
+      files: [
+        {
+          file_name: 'File 1',
+          files: [{ name: 'File 1', type: 'pdf', link: 'download?id=1' }],
+        } as unknown as ParsedFile,
+      ],
+      paginationLinks: ['on=1'],
     });
 
-    it('should handle sub-folder fetch failure gracefully (resilience)', async () => {
-        // First fetch (root) succeeds and returns a subfolder
-        vi.mocked(fetchWithAuth).mockResolvedValueOnce({
-            text: async () => 'root',
-        } as Response);
+    // Page 2
+    vi.mocked(fetchWithAuth).mockResolvedValueOnce({
+      text: async () => 'page2',
+    } as Response);
 
-        vi.mocked(parseServerFiles).mockReturnValueOnce({
-            files: [{ 
-                file_name: 'Subfolder', 
-                files: [{ link: 'slozka.pl?id=123', name: 'Subfolder' }] 
-            } as unknown as ParsedFile],
-            paginationLinks: []
-        });
-
-        // Second fetch (subfolder) fails
-        const subError = new Error('Subfolder failed');
-        vi.mocked(fetchWithAuth).mockRejectedValueOnce(subError);
-
-        const result = await fetchFilesFromFolder('http://test.com');
-        
-        // Root had one "folder" entry. Folders are filtered out unless they have download links.
-        expect(result).toEqual([]);
+    vi.mocked(parseServerFiles).mockReturnValueOnce({
+      files: [
+        {
+          file_name: 'File 2',
+          files: [{ name: 'File 2', type: 'pdf', link: 'download?id=2' }],
+        } as unknown as ParsedFile,
+      ],
+      paginationLinks: [],
     });
 
-    it('should fetch multiple pages and deduplicate', async () => {
-         // Page 1
-        vi.mocked(fetchWithAuth).mockResolvedValueOnce({
-            text: async () => 'page1',
-        } as Response);
+    const result = await fetchFilesFromFolder('http://test.com');
 
-        vi.mocked(parseServerFiles).mockReturnValueOnce({
-            files: [{ file_name: 'File 1', files: [{ name: 'File 1', type: 'pdf', link: 'download?id=1' }] } as unknown as ParsedFile],
-            paginationLinks: ['on=1']
-        });
+    expect(result).toHaveLength(2);
+    expect(result.map((f) => f.file_name)).toContain('File 1');
+    expect(result.map((f) => f.file_name)).toContain('File 2');
+  });
 
-        // Page 2
-        vi.mocked(fetchWithAuth).mockResolvedValueOnce({
-            text: async () => 'page2',
-        } as Response);
+  it('should not recurse into the same subfolder more than once when it appears on multiple pages', async () => {
+    const subfolderEntry = {
+      file_name: 'Shared Subfolder',
+      files: [
+        {
+          link: 'https://is.mendelu.cz/auth/dok_server/slozka.pl?id=999',
+          name: 'Shared Subfolder',
+        },
+      ],
+    } as unknown as ParsedFile;
 
-        vi.mocked(parseServerFiles).mockReturnValueOnce({
-            files: [{ file_name: 'File 2', files: [{ name: 'File 2', type: 'pdf', link: 'download?id=2' }] } as unknown as ParsedFile],
-            paginationLinks: []
-        });
-
-        const result = await fetchFilesFromFolder('http://test.com');
-        
-        expect(result).toHaveLength(2);
-        expect(result.map(f => f.file_name)).toContain('File 1');
-        expect(result.map(f => f.file_name)).toContain('File 2');
+    // Page 1: one real file + one subfolder entry
+    vi.mocked(fetchWithAuth).mockResolvedValueOnce({ text: async () => 'page1' } as Response);
+    vi.mocked(parseServerFiles).mockReturnValueOnce({
+      files: [
+        {
+          file_name: 'File 1',
+          files: [{ name: 'File 1', type: 'pdf', link: 'download?id=1' }],
+        } as unknown as ParsedFile,
+        subfolderEntry,
+      ],
+      paginationLinks: ['on=1'],
     });
 
-
-    it('should not recurse into the same subfolder more than once when it appears on multiple pages', async () => {
-        const subfolderEntry = {
-            file_name: 'Shared Subfolder',
-            files: [{ link: 'https://is.mendelu.cz/auth/dok_server/slozka.pl?id=999', name: 'Shared Subfolder' }]
-        } as unknown as ParsedFile;
-
-        // Page 1: one real file + one subfolder entry
-        vi.mocked(fetchWithAuth).mockResolvedValueOnce({ text: async () => 'page1' } as Response);
-        vi.mocked(parseServerFiles).mockReturnValueOnce({
-            files: [
-                { file_name: 'File 1', files: [{ name: 'File 1', type: 'pdf', link: 'download?id=1' }] } as unknown as ParsedFile,
-                subfolderEntry,
-            ],
-            paginationLinks: ['on=1']
-        });
-
-        // Page 2: same subfolder entry repeated (IS behaviour)
-        vi.mocked(fetchWithAuth).mockResolvedValueOnce({ text: async () => 'page2' } as Response);
-        vi.mocked(parseServerFiles).mockReturnValueOnce({
-            files: [
-                { file_name: 'File 2', files: [{ name: 'File 2', type: 'pdf', link: 'download?id=2' }] } as unknown as ParsedFile,
-                subfolderEntry,
-            ],
-            paginationLinks: []
-        });
-
-        // Subfolder fetch (should only be called ONCE)
-        vi.mocked(fetchWithAuth).mockResolvedValueOnce({ text: async () => 'subfolder' } as Response);
-        vi.mocked(parseServerFiles).mockReturnValueOnce({
-            files: [{ file_name: 'Sub File', files: [{ name: 'Sub File', type: 'pdf', link: 'download?id=sub' }] } as unknown as ParsedFile],
-            paginationLinks: []
-        });
-
-        const result = await fetchFilesFromFolder('http://test.com');
-
-        // fetchWithAuth: page1 + page2 + subfolder(x1) = 3 calls
-        expect(fetchWithAuth).toHaveBeenCalledTimes(3);
-        expect(result).toHaveLength(3); // File 1, File 2, Sub File
+    // Page 2: same subfolder entry repeated (IS behaviour)
+    vi.mocked(fetchWithAuth).mockResolvedValueOnce({ text: async () => 'page2' } as Response);
+    vi.mocked(parseServerFiles).mockReturnValueOnce({
+      files: [
+        {
+          file_name: 'File 2',
+          files: [{ name: 'File 2', type: 'pdf', link: 'download?id=2' }],
+        } as unknown as ParsedFile,
+        subfolderEntry,
+      ],
+      paginationLinks: [],
     });
 
+    // Subfolder fetch (should only be called ONCE)
+    vi.mocked(fetchWithAuth).mockResolvedValueOnce({ text: async () => 'subfolder' } as Response);
+    vi.mocked(parseServerFiles).mockReturnValueOnce({
+      files: [
+        {
+          file_name: 'Sub File',
+          files: [{ name: 'Sub File', type: 'pdf', link: 'download?id=sub' }],
+        } as unknown as ParsedFile,
+      ],
+      paginationLinks: [],
+    });
+
+    const result = await fetchFilesFromFolder('http://test.com');
+
+    // fetchWithAuth: page1 + page2 + subfolder(x1) = 3 calls
+    expect(fetchWithAuth).toHaveBeenCalledTimes(3);
+    expect(result).toHaveLength(3); // File 1, File 2, Sub File
+  });
+
+  it('collapses the viewer+download pair inside a row, not just across rows', async () => {
+    // IS emits both links for ONE document. Consumers of this function
+    // flatten `files`, so leaving both here means every document is
+    // handled twice — including being uploaded to Drive twice, once as
+    // the actual file and once as the viewer's HTML page.
+    vi.mocked(parseServerFiles).mockReturnValue({
+      files: [
+        {
+          file_name: 'Přednáška 09',
+          files: [
+            {
+              name: 'Přednáška 09',
+              type: 'unknown',
+              link: 'https://is.mendelu.cz/auth/dok_server/dokumenty_cteni.pl?id=1;dok=359057;serializace=x',
+            },
+            {
+              name: 'Přednáška 09',
+              type: 'pdf',
+              link: 'https://is.mendelu.cz/auth/dok_server/slozka.pl?download=359057;id=1',
+            },
+          ],
+        } as unknown as ParsedFile,
+      ],
+      paginationLinks: [],
+    });
+
+    const result = await fetchFilesFromFolder('http://test.com');
+
+    expect(result).toHaveLength(1);
+    expect(result[0].files).toHaveLength(1);
+    expect(result[0].files[0].link).toContain('download=359057');
+    expect(result[0].files[0].type).toBe('pdf');
+  });
 });
-

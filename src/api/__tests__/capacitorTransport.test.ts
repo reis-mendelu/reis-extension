@@ -3,6 +3,7 @@ import {
   buildCookieDelivery,
   isAuthenticatedHtml,
   fetchViaCapacitor,
+  assertIsOrigin,
   type CapacitorTransportDeps,
 } from '../capacitorTransport';
 
@@ -96,5 +97,54 @@ describe('fetchViaCapacitor', () => {
     await expect(fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d)).rejects.toMatchObject({
       sessionExpired: true,
     });
+  });
+
+  it('does NOT call a 5xx a session expiry — an IS outage must not log the student out', async () => {
+    const d = deps({
+      httpGet: vi.fn(async () => ({ status: 503, data: 'maintenance', headers: {} })),
+    });
+    const err = await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d).catch((e) => e);
+    expect(err.message).toContain('503');
+    expect(err.sessionExpired).toBeUndefined();
+  });
+
+  it('refuses to send the session to a non-IS origin, and never requests it', async () => {
+    const d = deps();
+    await expect(fetchViaCapacitor('https://evil.example/steal', TOKEN, d)).rejects.toThrow(
+      /evil\.example/
+    );
+    expect(d.httpGet).not.toHaveBeenCalled();
+    expect(d.setCookie).not.toHaveBeenCalled();
+  });
+
+  it('refuses a lookalike host that merely ends with the IS domain', async () => {
+    await expect(
+      fetchViaCapacitor('https://is.mendelu.cz.evil.example/x', TOKEN, deps())
+    ).rejects.toThrow(/refusing/i);
+  });
+
+  it('accepts a relative URL, which can only resolve to IS', async () => {
+    const d = deps();
+    await expect(fetchViaCapacitor('/auth/student/', TOKEN, d)).resolves.toBeInstanceOf(Response);
+  });
+});
+
+describe('assertIsOrigin', () => {
+  it('accepts the IS origin', () => {
+    expect(() => assertIsOrigin('https://is.mendelu.cz/auth/x.pl?id=1')).not.toThrow();
+  });
+
+  it('rejects plain http, which would put the session on the wire in clear', () => {
+    expect(() => assertIsOrigin('http://is.mendelu.cz/auth/')).toThrow(/refusing/i);
+  });
+
+  it('rejects a protocol-relative URL, which looks relative but is not', () => {
+    // `//evil.example/x` resolves against the IS origin's SCHEME, not its host.
+    expect(() => assertIsOrigin('//evil.example/x')).toThrow(/evil\.example/);
+  });
+
+  it('resolves a relative path against IS rather than rejecting it', () => {
+    // Some links come from parsed IS HTML, which is not guaranteed absolute.
+    expect(() => assertIsOrigin('/auth/student/')).not.toThrow();
   });
 });

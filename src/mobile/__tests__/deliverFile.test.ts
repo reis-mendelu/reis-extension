@@ -39,6 +39,20 @@ describe('deliverFile', () => {
     expect(d.saveToDownloads).not.toHaveBeenCalled();
   });
 
+  it('sanitises the IS-supplied filename before it reaches a native save', async () => {
+    const d = deps();
+    await deliverFile('../../databases/reis.db', 'AAA=', 'application/pdf', d);
+    expect(d.saveToDownloads).toHaveBeenCalledWith(
+      expect.objectContaining({ filename: 'reis.db' })
+    );
+  });
+
+  it('sanitises on the share path too', async () => {
+    const d = deps({ platform: 'ios' });
+    await deliverFile('sub/dir/x.pdf', 'AAA=', 'application/pdf', d);
+    expect(d.shareFile).toHaveBeenCalledWith(expect.objectContaining({ filename: 'x.pdf' }));
+  });
+
   it('propagates a save failure instead of reporting a phantom success', async () => {
     const d = deps({
       saveToDownloads: vi.fn(async () => {

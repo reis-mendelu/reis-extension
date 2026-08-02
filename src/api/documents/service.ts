@@ -5,7 +5,7 @@ import { fetchSubjects } from '../subjects';
 import { validateUrl } from '../../utils/validation/index';
 import { logError } from '../../utils/reportError';
 import type { ParsedFile, FileAttachment } from '../../types/documents';
-import { stableDocumentKey } from './collapseAttachments';
+import { collapseAttachments, stableDocumentKey } from './collapseAttachments';
 
 export async function fetchDocumentsForSubject(subjectCode: string): Promise<FileAttachment[]> {
   const subjectsData = await fetchSubjects();
@@ -127,8 +127,15 @@ export async function fetchFilesFromFolder(
       f.files.some((fi) => fi.link.includes('download') || !fi.link.includes('slozka.pl'))
     );
 
-    // Tag all files with the language they were fetched in
-    finalResults.forEach((f) => (f.language = lang));
+    // The dedup above works ACROSS rows; this collapses the viewer+download
+    // pair IS emits WITHIN one row. It belongs here rather than in the view:
+    // every consumer flattens `files`, so leaving both links in meant each
+    // document was handled twice — including being mirrored to Drive twice,
+    // once as the file and once as the viewer's HTML page.
+    finalResults.forEach((f) => {
+      f.files = collapseAttachments(f.files);
+      f.language = lang;
+    });
 
     return finalResults;
   } catch (e) {

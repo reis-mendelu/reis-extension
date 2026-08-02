@@ -53,6 +53,32 @@ function sessionExpired(message: string): Error {
   return err;
 }
 
+/** Kept local rather than imported from client.ts, which imports this module. */
+const IS_ORIGIN = 'https://is.mendelu.cz';
+
+/**
+ * The native transports attach a live `UISAuth` to whatever URL they are given,
+ * and some of those URLs come from parsed IS HTML rather than from our own code.
+ * IS pages can link anywhere, so the destination is checked before the session
+ * is attached: a session cookie must never leave the origin that issued it.
+ *
+ * Origin equality, not a suffix match — `is.mendelu.cz.evil.example` ends with
+ * the IS domain and is not IS. A relative URL resolves against IS, so it passes;
+ * a protocol-relative one (`//host/x`) does not, which is the point of resolving
+ * rather than string-matching.
+ */
+export function assertIsOrigin(url: string): void {
+  let origin: string;
+  try {
+    origin = new URL(url, IS_ORIGIN).origin;
+  } catch {
+    throw new Error('reIS: refusing to send the IS session to an unparseable URL');
+  }
+  if (origin !== IS_ORIGIN) {
+    throw new Error(`reIS: refusing to send the IS session to ${origin}`);
+  }
+}
+
 /**
  * The third transport behind fetchWithAuth. IS denies CORS to every origin
  * (`Access-Control-Allow-Origin: https://localhost.that.never.exists/`), so a
@@ -64,6 +90,7 @@ export async function fetchViaCapacitor(
   token: string,
   deps: CapacitorTransportDeps
 ): Promise<Response> {
+  assertIsOrigin(url);
   const delivery = buildCookieDelivery(deps.platform, token);
 
   if (delivery.seedNativeJar) {
@@ -79,6 +106,13 @@ export async function fetchViaCapacitor(
 
   if (res.status === 401 || res.status === 403) {
     throw sessionExpired(`HTTP ${res.status}`);
+  }
+  // Anything else non-2xx is IS being broken (5xx, a maintenance page), NOT the
+  // student being logged out. Tagging it sessionExpired would throw them back to
+  // a login screen over a transient outage — documentDownloader.ts keeps these
+  // two cases apart for the same reason.
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error(`HTTP ${res.status}`);
   }
   // A 200 that is not authenticated means either the session lapsed OR the
   // cookie was delivered the wrong way for this platform. Both are auth

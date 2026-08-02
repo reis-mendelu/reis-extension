@@ -11,6 +11,12 @@ export interface SessionDeps {
   openLogin(): Promise<void>;
   /** Fires on every page load inside that WebView. */
   onPageLoaded(cb: () => void): Promise<ListenerHandle>;
+  /**
+   * Fires when the WebView closes. Optional, because not every host can report
+   * it — but where it exists it is the only way to learn that the student
+   * backed out, and without it this never settles.
+   */
+  onDismissed?(cb: () => void): Promise<ListenerHandle>;
   readCookies(): Promise<Record<string, string>>;
   closeWebView(): Promise<void>;
 }
@@ -34,6 +40,12 @@ export async function ensureSession(deps: SessionDeps): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     let settled = false;
     let handle: ListenerHandle | null = null;
+    let dismissHandle: ListenerHandle | null = null;
+
+    const cleanup = async () => {
+      await handle?.remove();
+      await dismissHandle?.remove();
+    };
 
     const finish = async (token: string) => {
       // Guard: page-load events keep arriving while we await below, and closing
@@ -43,11 +55,26 @@ export async function ensureSession(deps: SessionDeps): Promise<string> {
       try {
         await deps.save(token);
         await deps.closeWebView();
-        await handle?.remove();
+        await cleanup();
         resolve(token);
       } catch (e) {
         reject(e);
       }
+    };
+
+    /**
+     * The student backed out of the login. Rejecting is the whole point:
+     * boot() awaits this before hiding the splash screen, so staying pending
+     * strands them on the splash with no error and no way to retry.
+     *
+     * Ordering matters — our own closeWebView() in finish() fires this same
+     * event, which is why `settled` is checked first.
+     */
+    const onDismiss = () => {
+      if (settled) return;
+      settled = true;
+      void cleanup();
+      reject(new Error('Login cancelled: the sign-in window was dismissed'));
     };
 
     const onLoad = () => {
@@ -64,6 +91,7 @@ export async function ensureSession(deps: SessionDeps): Promise<string> {
     void (async () => {
       try {
         handle = await deps.onPageLoaded(onLoad);
+        dismissHandle = (await deps.onDismissed?.(onDismiss)) ?? null;
         await deps.openLogin();
       } catch (e) {
         if (!settled) {

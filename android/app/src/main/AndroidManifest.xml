@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- allowBackup is FALSE, against the Capacitor template's default: the app
+         keeps a live UISAuth session token in SharedPreferences, and Android
+         auto-backup would copy it to the user's cloud backup and to any
+         device-to-device transfer. Nothing here is worth backing up anyway —
+         every byte of reIS data is re-synced from IS on first launch.
+         dataExtractionRules covers Android 12+, where allowBackup alone no
+         longer governs device transfer. -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        tools:targetApi="31"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"

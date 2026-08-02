@@ -1,3 +1,5 @@
+import { safeFilename } from './safeFilename';
+
 export interface DeliverDeps {
   platform: 'ios' | 'android' | 'web';
   /** Android: write into the Downloads folder and post a system notification. */
@@ -24,11 +26,15 @@ export function deliveryKindFor(platform: 'ios' | 'android' | 'web'): DeliveryKi
 }
 
 export async function deliverFile(
-  filename: string,
+  rawFilename: string,
   base64: string,
   mime: string,
   deps: DeliverDeps
 ): Promise<DeliveryKind> {
+  // The name comes from IS (Content-Disposition, or parsed page metadata), and
+  // both branches below hand it to native code that treats it as a path.
+  const filename = safeFilename(rawFilename);
+
   const kind = deliveryKindFor(deps.platform);
   if (kind === 'downloads') {
     await deps.saveToDownloads({ filename, base64, mime });

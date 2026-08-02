@@ -125,4 +125,14 @@ describe('fetchIsBinary', () => {
       fetchIsBinary('https://is.mendelu.cz/auth/dok_server/dokumenty_cteni.pl?id=1', TOKEN, d)
     ).resolves.toEqual({ kind: 'page' });
   });
+
+  it('refuses an off-IS link, and never sends the session', async () => {
+    // File links are parsed out of IS HTML; an IS page can link anywhere.
+    const d = deps();
+    await expect(fetchIsBinary('https://evil.example/x.pdf', TOKEN, d)).rejects.toThrow(
+      /evil\.example/
+    );
+    expect(d.httpGet).not.toHaveBeenCalled();
+    expect(d.setCookie).not.toHaveBeenCalled();
+  });
 });

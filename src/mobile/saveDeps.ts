@@ -1,4 +1,5 @@
 import { getPlatform } from '../platform';
+import { safeFilename } from './safeFilename';
 import type { SaveDeps } from './saveDocument';
 
 /**
@@ -25,8 +26,10 @@ export function buildSaveDeps(): SaveDeps {
     async nativeSave(blob, filename) {
       const { Filesystem, Directory } = await import('@capacitor/filesystem');
       const base64 = await blobToBase64(blob);
+      // `path` is resolved relative to the directory, and `recursive` creates
+      // whatever it names — so an IS-supplied name must be one segment only.
       const { uri } = await Filesystem.writeFile({
-        path: filename,
+        path: safeFilename(filename),
         data: base64,
         directory: Directory.Documents,
         recursive: true,

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ (API 31) split backup into cloud-backup and device-transfer, and
+  android:allowBackup no longer governs the transfer case on its own.
+
+  Everything is excluded. The app stores a live IS session token in
+  SharedPreferences, and the rest of its data is a cache that re-syncs from IS
+  on first launch, so there is nothing here that is worth leaving the device.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" />
+        <exclude domain="database" />
+        <exclude domain="file" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" />
+        <exclude domain="database" />
+        <exclude domain="file" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

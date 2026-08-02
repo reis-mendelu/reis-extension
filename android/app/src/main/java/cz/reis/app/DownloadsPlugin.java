@@ -50,6 +50,16 @@ public class DownloadsPlugin extends Plugin {
             return;
         }
 
+        // The JS side sanitises too (src/mobile/safeFilename.ts), but this is a
+        // plugin surface reachable from any script in the WebView, and the
+        // pre-API-29 branch below builds a real path out of this value. Keeping
+        // it to a basename here means the traversal cannot depend on the caller.
+        filename = new File(filename).getName();
+        if (filename.isEmpty() || filename.equals(".") || filename.equals("..")) {
+            call.reject("save requires a filename, not a directory reference");
+            return;
+        }
+
         try {
             byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
             Uri uri = writeToDownloads(filename, mime, bytes);

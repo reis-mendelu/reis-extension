@@ -1,45 +1,19 @@
 /**
  * File List Component
  *
- * Renders the file grid with selection support.
+ * Renders the file grid with selection support. A single row lives in
+ * FileListItem; this file owns the grouping around it.
  */
 
 import { useState } from 'react';
-import { Folder, Download, PanelRightOpen, StickyNote } from 'lucide-react';
+import { Folder } from 'lucide-react';
 import type { FileListProps } from './types';
 import { collapseAttachments } from '../../api/documents/collapseAttachments';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDocumentNoteKeys } from '../../hooks/data/useDocumentNoteKeys';
 import { parseIsDate } from './utils/fileDate';
 import { ISBacklink } from './ISBacklink';
-import { DocumentNoteEditor } from './DocumentNoteEditor';
-import { NOTES_ENABLED } from '../../config/featureFlags';
-
-const typeBadgeConfig: Record<string, string> = {
-  pdf: 'badge-error',
-  xls: 'badge-success',
-  xlsx: 'badge-success',
-  csv: 'badge-success',
-  ppt: 'badge-warning',
-  pptx: 'badge-warning',
-  doc: 'badge-info',
-  docx: 'badge-info',
-  txt: 'badge-info',
-  rtf: 'badge-info',
-  zip: 'badge-warning badge-outline',
-  rar: 'badge-warning badge-outline',
-  '7z': 'badge-warning badge-outline',
-};
-
-function FileTypeBadge({ type }: { type: string }) {
-  const label = type === 'unknown' ? 'FILE' : type.toUpperCase();
-  const cls = typeBadgeConfig[type] || 'badge-ghost';
-  return <span className={`badge badge-sm font-mono text-[10px] ${cls}`}>{label}</span>;
-}
-
-function isPdfFile(subFile: { link: string; type: string }): boolean {
-  return subFile.type === 'pdf' || subFile.link.toLowerCase().endsWith('.pdf');
-}
+import { FileListItem } from './FileListItem';
 
 function isNewSinceVisit(date: string, lastVisitedAt: number | null | undefined): boolean {
   if (typeof lastVisitedAt !== 'number') return false;
@@ -86,166 +60,39 @@ export function FileList({
           </div>
           <div className="grid grid-cols-1 gap-1">
             {group.files.map((file, i) => {
-              // IS lists each document TWICE in a folder row — a
-              // dokumenty_cteni.pl viewer page and a slozka.pl?download= file,
-              // both with the same document id. Rendering one row per
-              // attachment showed every file as "Name (1)" / "Name (2)".
-              // Collapse the pair; genuinely distinct attachments are kept.
+              // Defensive: fetchFilesFromFolder already collapses the
+              // viewer+download pair IS emits per document, but files can also
+              // reach the store from older cached data.
               const attachments = collapseAttachments(file.files);
               return (
                 <div key={i} className="space-y-1">
-                  {attachments.map((subFile, j) => {
-                    const isSelected = selectedIds.includes(subFile.link);
-                    return (
-                      <div key={subFile.link} className="space-y-1">
-                        <div
-                          ref={(el) => {
-                            if (el) {
-                              fileRefs.current.set(subFile.link, el);
-                            } else {
-                              fileRefs.current.delete(subFile.link);
-                            }
-                          }}
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (ignoreClickRef.current) return;
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              if (e.ctrlKey || e.metaKey) {
-                                onToggleSelect(subFile.link, e);
-                              } else if (isPdfFile(subFile) && onViewPdf) {
-                                onViewPdf(subFile.link);
-                              } else {
-                                onOpenFile(subFile.link);
-                              }
-                            }
-                          }}
-                          onClick={(e) => {
-                            if (ignoreClickRef.current) return;
-                            if (e.ctrlKey || e.metaKey) {
-                              onToggleSelect(subFile.link, e);
-                            } else if (isPdfFile(subFile) && onViewPdf) {
-                              onViewPdf(subFile.link);
-                            } else {
-                              onOpenFile(subFile.link);
-                            }
-                          }}
-                          className={`
-                                                flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer group hover:shadow-sm
-                                                focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none
-                                                ${
-                                                  isSelected
-                                                    ? 'bg-primary/10 border-primary/20 shadow-sm'
-                                                    : 'bg-base-100 border-transparent hover:bg-base-200/50 hover:border-base-300'
-                                                }
-                                            `}
-                        >
-                          {selectable && (
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) => onToggleSelect(subFile.link, e)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="checkbox checkbox-xs checkbox-primary interactive shrink-0"
-                            />
-                          )}
-
-                          <div className="flex-1 min-w-0">
-                            <div
-                              className={`font-medium truncate flex items-center gap-2 ${isSelected ? 'text-primary' : 'text-base-content'}`}
-                            >
-                              <span className="truncate">
-                                {attachments.length > 1
-                                  ? `${file.file_name} (${j + 1})`
-                                  : file.file_name}
-                              </span>
-                              {isNewSinceVisit(file.date, lastVisitedAt) && (
-                                <span className="badge badge-primary badge-xs font-bold shrink-0">
-                                  {t('course.freshness.newBadge')}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs text-base-content/50 truncate flex items-center gap-2">
-                              {file.date && <span className="shrink-0">{file.date}</span>}
-                              {file.file_comment && (
-                                <span className="truncate">{file.file_comment}</span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            {NOTES_ENABLED &&
-                              (() => {
-                                const hasNote = noteKeys.has(subFile.link);
-                                const isExpanded = expandedLink === subFile.link;
-                                return (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setExpandedLink(isExpanded ? null : subFile.link);
-                                    }}
-                                    className={`btn btn-ghost btn-xs btn-square ${hasNote || isExpanded ? 'text-primary hover:text-primary' : 'text-base-content/40 hover:text-base-content/70'}`}
-                                    title={
-                                      hasNote
-                                        ? t('course.documentNote.edit')
-                                        : t('course.documentNote.add')
-                                    }
-                                  >
-                                    <StickyNote
-                                      size={14}
-                                      className={hasNote ? 'fill-primary/15' : ''}
-                                    />
-                                  </button>
-                                );
-                              })()}
-                            {onDownloadSingle && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onDownloadSingle(subFile.link);
-                                }}
-                                className="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-base-content/70"
-                                title={t('course.footer.download') || 'Download'}
-                              >
-                                <Download size={14} />
-                              </button>
-                            )}
-                            {isPdfFile(subFile) && onViewPdf && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onViewPdf(subFile.link);
-                                }}
-                                className="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-primary"
-                                title={t('course.footer.openInSidebar') || 'Open in Sidebar'}
-                              >
-                                <PanelRightOpen size={14} />
-                              </button>
-                            )}
-                            <FileTypeBadge type={subFile.type} />
-                          </div>
-                        </div>
-                        {NOTES_ENABLED && expandedLink === subFile.link && (
-                          <div
-                            className="px-2 pb-2"
-                            onClick={(e) => e.stopPropagation()}
-                            onMouseDown={(e) => e.stopPropagation()}
-                          >
-                            <DocumentNoteEditor
-                              courseCode={courseCode}
-                              fileLink={subFile.link}
-                              fileName={
-                                attachments.length > 1
-                                  ? `${file.file_name} (${j + 1})`
-                                  : file.file_name
-                              }
-                              onClose={() => setExpandedLink(null)}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {attachments.map((subFile, j) => (
+                    <FileListItem
+                      key={subFile.link}
+                      subFile={subFile}
+                      displayName={
+                        attachments.length > 1 ? `${file.file_name} (${j + 1})` : file.file_name
+                      }
+                      date={file.date}
+                      comment={file.file_comment}
+                      isNew={isNewSinceVisit(file.date, lastVisitedAt)}
+                      isSelected={selectedIds.includes(subFile.link)}
+                      selectable={selectable}
+                      hasNote={noteKeys.has(subFile.link)}
+                      isExpanded={expandedLink === subFile.link}
+                      courseCode={courseCode}
+                      fileRefs={fileRefs}
+                      ignoreClickRef={ignoreClickRef}
+                      onToggleSelect={onToggleSelect}
+                      onOpenFile={onOpenFile}
+                      onViewPdf={onViewPdf}
+                      onDownloadSingle={onDownloadSingle}
+                      onToggleNote={() =>
+                        setExpandedLink(expandedLink === subFile.link ? null : subFile.link)
+                      }
+                      onCloseNote={() => setExpandedLink(null)}
+                    />
+                  ))}
                 </div>
               );
             })}
