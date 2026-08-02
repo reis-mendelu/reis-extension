@@ -20,6 +20,7 @@ Results of the day-one device tests from #158. Each answer is measured, not infe
 |---|---|---|---|
 | 0 | Does `preShowScript` injection run on IS? | **YES — at documentStart** | Green banner `REIS INJECTION OK — readyState at inject: loading` on the IS login page |
 | 1 | Does iOS WKWebView keep `UISAuth` across app kill? | **NO — cookie is lost** | live session before kill → `ABSENT` after SIGKILL + relaunch |
+| 1b | Can the cookie be RESTORED into the WebView? | **YES — hybrid** | `headers` + `document.cookie` at documentStart; authenticated and survives navigation |
 | 2 | Does Android WebView keep `UISAuth` across app kill? | pending | |
 | 3 | Does blob + `a[download]` save a file? | pending — needs login | probe built, needs a real IS PDF URL |
 | 4 | Does `ACTION_WIFI_ADD_NETWORKS` accept an EAP-TLS config? | pending | |
@@ -187,3 +188,69 @@ Test 2 (Android cookie survival) remains untested — no Android toolchain insta
 Android WebView is Chromium and its cookie store is process-independent, so it may
 well survive where iOS does not. **Do not assume it; it is now the only remaining
 platform question that could reduce scope.**
+
+---
+
+## Cookie RESTORE — solved. The hybrid works and survives navigation.
+
+Test 1 proved iOS *loses* the cookie. This proves we can *put it back*. Tested against
+a real, live IS session token (entered at runtime via `window.prompt`; never committed).
+
+`@capgo/capacitor-inappbrowser` has **no `setCookie` API**, so three approaches were
+tried on device:
+
+| Approach | Load #1 | After navigating | Verdict |
+|---|---|---|---|
+| **A. `headers: { Cookie }`** | ✅ authenticated | ❌ **back to login page** | Insufficient alone |
+| **B. `document.cookie` + `location.replace`** | — | — | ❌ reload aborts the load that `isPresentAfterPageLoad` waits for |
+| **C. HYBRID — `headers` + `document.cookie` at documentStart, no reload** | ✅ authenticated | ✅ **still authenticated** | ✅ **WORKS** |
+
+The discriminator is the probe's `cookieVisible` field:
+
+- Approach A → `AUTHED: yes | cookieVisible: false` — the header authenticated the
+  request but **nothing entered WKWebView's cookie jar**, so the next navigation was
+  anonymous.
+- Approach C → `AUTHED: yes | cookieVisible: true` — a real cookie is in the jar, and
+  it rides every subsequent request.
+
+### Why the hybrid is necessary rather than belt-and-braces
+
+Each half fixes what the other cannot:
+
+- The **first request** leaves before any script can run, so only a `Cookie` **header**
+  can authenticate it.
+- **Every later request** needs a cookie in the jar, which only **`document.cookie`**
+  can put there.
+
+`UISAuth` is `HttpOnly`, but HttpOnly only blocks JS from *reading* a cookie. On a
+fresh WebView where no such cookie exists, JS may *create* one with that name, and the
+server neither knows nor cares that the client-side copy lacks the flag.
+
+This also depends on the already-confirmed fact that `preShowScript` runs at
+**documentStart** — approach C is only possible because injection lands before the page
+does anything.
+
+### What this settles
+
+- **Session restore is feasible on iOS with no native plugin and no `setCookie` API.**
+  §A listed `outboundProxyRules` + `addProxyHandler` as the alternative workaround —
+  **not needed.**
+- Combined with test 1, the full cycle is proven end-to-end in the WebView:
+  `getCookies` → (store) → app killed → relaunch → hybrid restore → authenticated and
+  navigable.
+
+### Not yet proven
+
+- **Keychain / secure storage persistence.** The store→retrieve step was simulated by
+  pasting the token by hand. Persisting it across an app kill is mundane KV work
+  (`@capacitor/preferences` is UserDefaults, *not* Keychain — a secure-storage plugin
+  is required for a credential), but it has not been exercised here.
+- Long-session behaviour of a restored session, and whether IS ever rotates `UISAuth`
+  mid-session (the audit showed no rotation across requests, but not across days).
+
+### Corrections made during this test
+
+- I twice reported "openWebView resolved but the WebView never presented". **Wrong** —
+  `openWebView` resolves on *presentation*, and the screenshots were taken before the
+  WebView animated in. Approaches B and C had both presented. Approach B's real defect
+  is narrower than first stated: the reload conflicts with `isPresentAfterPageLoad`.
