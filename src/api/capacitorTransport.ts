@@ -30,7 +30,7 @@ export interface CapacitorTransportDeps {
  */
 export function buildCookieDelivery(
   platform: 'ios' | 'android' | 'web',
-  token: string,
+  token: string
 ): CookieDelivery {
   if (platform === 'android') {
     return { headers: {}, seedNativeJar: true };
@@ -62,7 +62,7 @@ function sessionExpired(message: string): Error {
 export async function fetchViaCapacitor(
   url: string,
   token: string,
-  deps: CapacitorTransportDeps,
+  deps: CapacitorTransportDeps
 ): Promise<Response> {
   const delivery = buildCookieDelivery(deps.platform, token);
 

@@ -37,12 +37,20 @@ export function collapseAttachments(files: FileAttachment[]): FileAttachment[] {
     }
 
     // Same document seen twice — keep whichever entry is the direct download,
-    // and keep a real mime type over the viewer's 'unknown'.
+    // and keep a real mime type over the other entry's 'unknown'.
     const kept = out[existing];
+    if (!kept) {
+      // Unreachable: every index in the map came from an out.push above. Kept
+      // as a push rather than a throw so a future refactor loses no file.
+      out.push(file);
+      continue;
+    }
+
     const preferred = isDirectDownload(file.link) ? file : kept;
+    const other = preferred === file ? kept : file;
     out[existing] = {
       ...preferred,
-      type: preferred.type !== 'unknown' ? preferred.type : (kept.type ?? file.type),
+      type: preferred.type !== 'unknown' ? preferred.type : other.type,
     };
   }
 
@@ -50,11 +58,7 @@ export function collapseAttachments(files: FileAttachment[]): FileAttachment[] {
 }
 
 function documentIdOf(link: string): string | null {
-  return (
-    link.match(/[?;&]download=(\d+)/)?.[1] ??
-    link.match(/[?;&]dok=(\d+)/)?.[1] ??
-    null
-  );
+  return link.match(/[?;&]download=(\d+)/)?.[1] ?? link.match(/[?;&]dok=(\d+)/)?.[1] ?? null;
 }
 
 function isDirectDownload(link: string): boolean {

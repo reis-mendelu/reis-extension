@@ -46,7 +46,7 @@ describe('deliverFile', () => {
       }),
     });
     await expect(deliverFile('a.pdf', 'AAA=', 'application/pdf', d)).rejects.toThrow(
-      /no Downloads entry/,
+      /no Downloads entry/
     );
   });
 });

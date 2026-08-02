@@ -93,24 +93,35 @@ export function FileList({
               // Collapse the pair; genuinely distinct attachments are kept.
               const attachments = collapseAttachments(file.files);
               return (
-              <div key={i} className="space-y-1">
-                {attachments.map((subFile, j) => {
-                  const isSelected = selectedIds.includes(subFile.link);
-                  return (
-                    <div key={subFile.link} className="space-y-1">
-                      <div
-                        ref={(el) => {
-                          if (el) {
-                            fileRefs.current.set(subFile.link, el);
-                          } else {
-                            fileRefs.current.delete(subFile.link);
-                          }
-                        }}
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (ignoreClickRef.current) return;
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
+                <div key={i} className="space-y-1">
+                  {attachments.map((subFile, j) => {
+                    const isSelected = selectedIds.includes(subFile.link);
+                    return (
+                      <div key={subFile.link} className="space-y-1">
+                        <div
+                          ref={(el) => {
+                            if (el) {
+                              fileRefs.current.set(subFile.link, el);
+                            } else {
+                              fileRefs.current.delete(subFile.link);
+                            }
+                          }}
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (ignoreClickRef.current) return;
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              if (e.ctrlKey || e.metaKey) {
+                                onToggleSelect(subFile.link, e);
+                              } else if (isPdfFile(subFile) && onViewPdf) {
+                                onViewPdf(subFile.link);
+                              } else {
+                                onOpenFile(subFile.link);
+                              }
+                            }
+                          }}
+                          onClick={(e) => {
+                            if (ignoreClickRef.current) return;
                             if (e.ctrlKey || e.metaKey) {
                               onToggleSelect(subFile.link, e);
                             } else if (isPdfFile(subFile) && onViewPdf) {
@@ -118,19 +129,8 @@ export function FileList({
                             } else {
                               onOpenFile(subFile.link);
                             }
-                          }
-                        }}
-                        onClick={(e) => {
-                          if (ignoreClickRef.current) return;
-                          if (e.ctrlKey || e.metaKey) {
-                            onToggleSelect(subFile.link, e);
-                          } else if (isPdfFile(subFile) && onViewPdf) {
-                            onViewPdf(subFile.link);
-                          } else {
-                            onOpenFile(subFile.link);
-                          }
-                        }}
-                        className={`
+                          }}
+                          className={`
                                                 flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer group hover:shadow-sm
                                                 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none
                                                 ${
@@ -139,114 +139,114 @@ export function FileList({
                                                     : 'bg-base-100 border-transparent hover:bg-base-200/50 hover:border-base-300'
                                                 }
                                             `}
-                      >
-                        {selectable && (
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(e) => onToggleSelect(subFile.link, e)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="checkbox checkbox-xs checkbox-primary interactive shrink-0"
-                          />
-                        )}
-
-                        <div className="flex-1 min-w-0">
-                          <div
-                            className={`font-medium truncate flex items-center gap-2 ${isSelected ? 'text-primary' : 'text-base-content'}`}
-                          >
-                            <span className="truncate">
-                              {attachments.length > 1
-                                ? `${file.file_name} (${j + 1})`
-                                : file.file_name}
-                            </span>
-                            {isNewSinceVisit(file.date, lastVisitedAt) && (
-                              <span className="badge badge-primary badge-xs font-bold shrink-0">
-                                {t('course.freshness.newBadge')}
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs text-base-content/50 truncate flex items-center gap-2">
-                            {file.date && <span className="shrink-0">{file.date}</span>}
-                            {file.file_comment && (
-                              <span className="truncate">{file.file_comment}</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          {NOTES_ENABLED &&
-                            (() => {
-                              const hasNote = noteKeys.has(subFile.link);
-                              const isExpanded = expandedLink === subFile.link;
-                              return (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedLink(isExpanded ? null : subFile.link);
-                                  }}
-                                  className={`btn btn-ghost btn-xs btn-square ${hasNote || isExpanded ? 'text-primary hover:text-primary' : 'text-base-content/40 hover:text-base-content/70'}`}
-                                  title={
-                                    hasNote
-                                      ? t('course.documentNote.edit')
-                                      : t('course.documentNote.add')
-                                  }
-                                >
-                                  <StickyNote
-                                    size={14}
-                                    className={hasNote ? 'fill-primary/15' : ''}
-                                  />
-                                </button>
-                              );
-                            })()}
-                          {onDownloadSingle && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDownloadSingle(subFile.link);
-                              }}
-                              className="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-base-content/70"
-                              title={t('course.footer.download') || 'Download'}
-                            >
-                              <Download size={14} />
-                            </button>
-                          )}
-                          {isPdfFile(subFile) && onViewPdf && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onViewPdf(subFile.link);
-                              }}
-                              className="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-primary"
-                              title={t('course.footer.openInSidebar') || 'Open in Sidebar'}
-                            >
-                              <PanelRightOpen size={14} />
-                            </button>
-                          )}
-                          <FileTypeBadge type={subFile.type} />
-                        </div>
-                      </div>
-                      {NOTES_ENABLED && expandedLink === subFile.link && (
-                        <div
-                          className="px-2 pb-2"
-                          onClick={(e) => e.stopPropagation()}
-                          onMouseDown={(e) => e.stopPropagation()}
                         >
-                          <DocumentNoteEditor
-                            courseCode={courseCode}
-                            fileLink={subFile.link}
-                            fileName={
-                              attachments.length > 1
-                                ? `${file.file_name} (${j + 1})`
-                                : file.file_name
-                            }
-                            onClose={() => setExpandedLink(null)}
-                          />
+                          {selectable && (
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => onToggleSelect(subFile.link, e)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="checkbox checkbox-xs checkbox-primary interactive shrink-0"
+                            />
+                          )}
+
+                          <div className="flex-1 min-w-0">
+                            <div
+                              className={`font-medium truncate flex items-center gap-2 ${isSelected ? 'text-primary' : 'text-base-content'}`}
+                            >
+                              <span className="truncate">
+                                {attachments.length > 1
+                                  ? `${file.file_name} (${j + 1})`
+                                  : file.file_name}
+                              </span>
+                              {isNewSinceVisit(file.date, lastVisitedAt) && (
+                                <span className="badge badge-primary badge-xs font-bold shrink-0">
+                                  {t('course.freshness.newBadge')}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-base-content/50 truncate flex items-center gap-2">
+                              {file.date && <span className="shrink-0">{file.date}</span>}
+                              {file.file_comment && (
+                                <span className="truncate">{file.file_comment}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            {NOTES_ENABLED &&
+                              (() => {
+                                const hasNote = noteKeys.has(subFile.link);
+                                const isExpanded = expandedLink === subFile.link;
+                                return (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedLink(isExpanded ? null : subFile.link);
+                                    }}
+                                    className={`btn btn-ghost btn-xs btn-square ${hasNote || isExpanded ? 'text-primary hover:text-primary' : 'text-base-content/40 hover:text-base-content/70'}`}
+                                    title={
+                                      hasNote
+                                        ? t('course.documentNote.edit')
+                                        : t('course.documentNote.add')
+                                    }
+                                  >
+                                    <StickyNote
+                                      size={14}
+                                      className={hasNote ? 'fill-primary/15' : ''}
+                                    />
+                                  </button>
+                                );
+                              })()}
+                            {onDownloadSingle && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDownloadSingle(subFile.link);
+                                }}
+                                className="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-base-content/70"
+                                title={t('course.footer.download') || 'Download'}
+                              >
+                                <Download size={14} />
+                              </button>
+                            )}
+                            {isPdfFile(subFile) && onViewPdf && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onViewPdf(subFile.link);
+                                }}
+                                className="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-primary"
+                                title={t('course.footer.openInSidebar') || 'Open in Sidebar'}
+                              >
+                                <PanelRightOpen size={14} />
+                              </button>
+                            )}
+                            <FileTypeBadge type={subFile.type} />
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                        {NOTES_ENABLED && expandedLink === subFile.link && (
+                          <div
+                            className="px-2 pb-2"
+                            onClick={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
+                          >
+                            <DocumentNoteEditor
+                              courseCode={courseCode}
+                              fileLink={subFile.link}
+                              fileName={
+                                attachments.length > 1
+                                  ? `${file.file_name} (${j + 1})`
+                                  : file.file_name
+                              }
+                              onClose={() => setExpandedLink(null)}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               );
             })}
           </div>

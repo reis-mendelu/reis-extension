@@ -23,16 +23,16 @@ describe('toDirectDownloadUrl', () => {
   it('defaults to cz when the viewer URL carries no lang', () => {
     expect(
       toDirectDownloadUrl(
-        'https://is.mendelu.cz/auth/dok_server/dokumenty_cteni.pl?id=1;dok=2;serializace=x',
-      ),
+        'https://is.mendelu.cz/auth/dok_server/dokumenty_cteni.pl?id=1;dok=2;serializace=x'
+      )
     ).toBe('https://is.mendelu.cz/auth/dok_server/slozka.pl?download=2;id=1;z=1;lang=cz');
   });
 
-  it('handles &-separated params as well as IS\'s usual ;', () => {
+  it("handles &-separated params as well as IS's usual ;", () => {
     expect(
       toDirectDownloadUrl(
-        'https://is.mendelu.cz/auth/dok_server/dokumenty_cteni.pl?id=153920&on=0&dok=359057&lang=cz',
-      ),
+        'https://is.mendelu.cz/auth/dok_server/dokumenty_cteni.pl?id=153920&on=0&dok=359057&lang=cz'
+      )
     ).toBe(DIRECT);
   });
 
@@ -46,7 +46,7 @@ describe('toDirectDownloadUrl', () => {
 
   it('returns null when dok is present but id is missing', () => {
     expect(
-      toDirectDownloadUrl('https://is.mendelu.cz/auth/dok_server/dokumenty_cteni.pl?dok=359057'),
+      toDirectDownloadUrl('https://is.mendelu.cz/auth/dok_server/dokumenty_cteni.pl?dok=359057')
     ).toBeNull();
   });
 });

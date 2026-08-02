@@ -8,7 +8,7 @@ import tailwindcss from '@tailwindcss/vite';
 // in a normal checkout; in a git worktree it points at the MAIN checkout instead.
 const NODE_MODULES_ROOT = resolve(
   dirname(createRequire(import.meta.url).resolve('vite/package.json')),
-  '..',
+  '..'
 );
 
 // Capacitor build of reIS. Same React app as the extension and the dev webapp —

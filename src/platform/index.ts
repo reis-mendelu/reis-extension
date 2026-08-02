@@ -30,7 +30,7 @@ export function getPlatform(): ReisPlatform {
   }
 
   throw new Error(
-    'reIS: no platform installed — call setPlatform() at the entry point before rendering',
+    'reIS: no platform installed — call setPlatform() at the entry point before rendering'
   );
 }
 

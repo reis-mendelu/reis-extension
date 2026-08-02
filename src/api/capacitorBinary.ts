@@ -57,7 +57,7 @@ export type IsResourceResult =
 export async function fetchIsBinary(
   url: string,
   token: string,
-  deps: BinaryDeps,
+  deps: BinaryDeps
 ): Promise<IsResourceResult> {
   const delivery = buildCookieDelivery(deps.platform, token);
   if (delivery.seedNativeJar) {

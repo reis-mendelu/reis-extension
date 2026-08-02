@@ -28,9 +28,7 @@ export function extractSessionToken(cookies: Record<string, string>): string | n
 }
 
 export function isPlausibleToken(value: unknown): value is string {
-  return (
-    typeof value === 'string' && value.length >= MIN_TOKEN_LENGTH && TOKEN_CHARSET.test(value)
-  );
+  return typeof value === 'string' && value.length >= MIN_TOKEN_LENGTH && TOKEN_CHARSET.test(value);
 }
 
 export function buildRestoreHeaders(token: string): Record<string, string> {

@@ -21,17 +21,25 @@ describe('collapseAttachments', () => {
 
   it('keeps the DIRECT DOWNLOAD, not the viewer — reIS downloads, it does not open old IS', () => {
     const [only] = collapseAttachments([VIEWER('359057'), DOWNLOAD('359057')]);
-    expect(only.link).toContain('download=359057');
-    expect(only.link).not.toContain('dokumenty_cteni');
+    expect(only?.link).toContain('download=359057');
+    expect(only?.link).not.toContain('dokumenty_cteni');
   });
 
   it('prefers the download even when the viewer comes second', () => {
     const [only] = collapseAttachments([DOWNLOAD('359057'), VIEWER('359057')]);
-    expect(only.link).toContain('download=359057');
+    expect(only?.link).toContain('download=359057');
   });
 
   it('keeps the real mime type rather than the viewer\'s "unknown"', () => {
-    expect(collapseAttachments([VIEWER('359057'), DOWNLOAD('359057')])[0].type).toBe('pdf');
+    expect(collapseAttachments([VIEWER('359057'), DOWNLOAD('359057')])[0]?.type).toBe('pdf');
+  });
+
+  it("falls back to the OTHER entry's type when the preferred one is unknown", () => {
+    // The download link is preferred but carries no usable type, so the type
+    // has to come from the entry that was not chosen — whichever side that is.
+    const dl = { ...DOWNLOAD('359057'), type: 'unknown' as const };
+    const viewer = { ...VIEWER('359057'), type: 'pdf' as const };
+    expect(collapseAttachments([dl, viewer])[0]?.type).toBe('pdf');
   });
 
   it('does NOT merge two genuinely different documents', () => {
@@ -46,7 +54,11 @@ describe('collapseAttachments', () => {
   });
 
   it('passes through attachments that carry no document id', () => {
-    const odd: FileAttachment = { name: 'x', type: 'unknown', link: 'https://is.mendelu.cz/auth/x.pl' };
+    const odd: FileAttachment = {
+      name: 'x',
+      type: 'unknown',
+      link: 'https://is.mendelu.cz/auth/x.pl',
+    };
     expect(collapseAttachments([odd])).toEqual([odd]);
   });
 
@@ -80,12 +92,14 @@ describe('stableDocumentKey', () => {
   });
 
   it('differs for genuinely different documents', () => {
-    expect(stableDocumentKey([DOWNLOAD('1')], 'x')).not.toBe(stableDocumentKey([DOWNLOAD('2')], 'x'));
+    expect(stableDocumentKey([DOWNLOAD('1')], 'x')).not.toBe(
+      stableDocumentKey([DOWNLOAD('2')], 'x')
+    );
   });
 
   it('matches a viewer link against its own direct download', () => {
     expect(stableDocumentKey([VIEWER('359057')], 'x')).toBe(
-      stableDocumentKey([DOWNLOAD('359057')], 'x'),
+      stableDocumentKey([DOWNLOAD('359057')], 'x')
     );
   });
 

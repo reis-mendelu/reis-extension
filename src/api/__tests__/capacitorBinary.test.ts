@@ -32,12 +32,14 @@ describe('filenameFromResponse', () => {
     expect(
       filenameFromResponse({
         'Content-Disposition': 'attachment; filename="Prednaska_01.pdf"',
-      }),
+      })
     ).toBe('Prednaska_01.pdf');
   });
 
   it('handles an unquoted filename', () => {
-    expect(filenameFromResponse({ 'content-disposition': 'attachment; filename=x.pdf' })).toBe('x.pdf');
+    expect(filenameFromResponse({ 'content-disposition': 'attachment; filename=x.pdf' })).toBe(
+      'x.pdf'
+    );
   });
 
   it('falls back to a sane name when the header is absent — IS query URLs have no basename', () => {
@@ -62,9 +64,7 @@ describe('fetchIsBinary', () => {
   it('requests the body as a blob, not as text — a PDF does not survive as a string', async () => {
     const d = deps();
     await fetchIsBinary('https://is.mendelu.cz/f.pdf', TOKEN, d);
-    expect(d.httpGet).toHaveBeenCalledWith(
-      expect.objectContaining({ responseType: 'blob' }),
-    );
+    expect(d.httpGet).toHaveBeenCalledWith(expect.objectContaining({ responseType: 'blob' }));
   });
 
   it('seeds the native jar on android and sends no Cookie header', async () => {
@@ -79,7 +79,7 @@ describe('fetchIsBinary', () => {
     await fetchIsBinary('https://is.mendelu.cz/f.pdf', TOKEN, d);
     expect(d.setCookie).not.toHaveBeenCalled();
     expect(d.httpGet).toHaveBeenCalledWith(
-      expect.objectContaining({ headers: { Cookie: `UISAuth=${TOKEN}` } }),
+      expect.objectContaining({ headers: { Cookie: `UISAuth=${TOKEN}` } })
     );
   });
 
@@ -122,7 +122,7 @@ describe('fetchIsBinary', () => {
       })),
     });
     await expect(
-      fetchIsBinary('https://is.mendelu.cz/auth/dok_server/dokumenty_cteni.pl?id=1', TOKEN, d),
+      fetchIsBinary('https://is.mendelu.cz/auth/dok_server/dokumenty_cteni.pl?id=1', TOKEN, d)
     ).resolves.toEqual({ kind: 'page' });
   });
 });

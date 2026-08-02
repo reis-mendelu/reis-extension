@@ -61,8 +61,8 @@ describe('ensureSession', () => {
     let fire: () => void = () => {};
     let calls = 0;
     const d = deps({
-      readCookies: vi.fn(
-        async (): Promise<Record<string, string>> => (++calls >= 3 ? { UISAuth: TOKEN } : {}),
+      readCookies: vi.fn(async (): Promise<Record<string, string>> =>
+        ++calls >= 3 ? { UISAuth: TOKEN } : {}
       ),
       onPageLoaded: vi.fn(async (cb: () => void) => {
         fire = cb;

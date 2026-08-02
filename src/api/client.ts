@@ -1,81 +1,80 @@
- 
- 
 import { fetchViaProxy, isInIframe } from './proxyClient';
 import { getPlatform } from '../platform';
 import { fetchViaCapacitor } from './capacitorTransport';
 import { loadStoredToken } from '../platform/tokenStore';
 
-export const BASE_URL = "https://is.mendelu.cz";
+export const BASE_URL = 'https://is.mendelu.cz';
 
 export const DEFAULT_HEADERS: Record<string, string> = {
-    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-    "accept-language": "cs,en;q=0.9,en-GB;q=0.8,en-US;q=0.7",
-    "cache-control": "max-age=0",
-    "content-type": "application/x-www-form-urlencoded",
-    "sec-ch-ua": "\"Microsoft Edge\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
-    "sec-ch-ua-mobile": "?1",
-    "sec-ch-ua-platform": "\"Android\"",
-    "sec-fetch-dest": "document",
-    "sec-fetch-mode": "navigate",
-    "sec-fetch-site": "same-origin",
-    "sec-fetch-user": "?1",
-    "upgrade-insecure-requests": "1"
+  accept:
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+  'accept-language': 'cs,en;q=0.9,en-GB;q=0.8,en-US;q=0.7',
+  'cache-control': 'max-age=0',
+  'content-type': 'application/x-www-form-urlencoded',
+  'sec-ch-ua': '"Microsoft Edge";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
+  'sec-ch-ua-mobile': '?1',
+  'sec-ch-ua-platform': '"Android"',
+  'sec-fetch-dest': 'document',
+  'sec-fetch-mode': 'navigate',
+  'sec-fetch-site': 'same-origin',
+  'sec-fetch-user': '?1',
+  'upgrade-insecure-requests': '1',
 };
 
 /**
  * Fetch with authentication, automatically routes through proxy when in iframe.
- * 
+ *
  * - Content Script context: Direct fetch with cookies
  * - Iframe context: Proxied through content script via postMessage
  */
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-    const headers = { ...DEFAULT_HEADERS, ...options.headers as Record<string, string> };
+  const headers = { ...DEFAULT_HEADERS, ...(options.headers as Record<string, string>) };
 
-    // Capacitor: IS denies CORS to every origin, so a browser fetch from the
-    // app's own origin cannot reach it. CapacitorHttp runs natively, where CORS
-    // does not apply. Imported lazily so the extension bundle never pulls in
-    // @capacitor/*.
-    if (getPlatform().kind === 'capacitor') {
-        const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
-        const token = await loadStoredToken();
-        return fetchViaCapacitor(url, token, {
-            platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
-            setCookie: (o) => CapacitorCookies.setCookie(o),
-            httpGet: (o) => CapacitorHttp.get(o),
-        });
-    }
+  // Capacitor: IS denies CORS to every origin, so a browser fetch from the
+  // app's own origin cannot reach it. CapacitorHttp runs natively, where CORS
+  // does not apply. Imported lazily so the extension bundle never pulls in
+  // @capacitor/*.
+  if (getPlatform().kind === 'capacitor') {
+    const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
+    const token = await loadStoredToken();
+    return fetchViaCapacitor(url, token, {
+      platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
+      setCookie: (o) => CapacitorCookies.setCookie(o),
+      httpGet: (o) => CapacitorHttp.get(o),
+    });
+  }
 
-    // If we're in an iframe, use the proxy client
-    if (isInIframe()) {
-        const text = await fetchViaProxy(url, {
-            method: options.method as string | undefined,
-            headers,
-            body: options.body as string | undefined,
-        });
-
-        // Create a Response-like object from the text
-        return new Response(text, {
-            status: 200,
-            statusText: 'OK',
-            headers: new Headers({ 'Content-Type': 'text/html' })
-        });
-    }
-
-    // Direct fetch in content script context
-    const response = await fetch(url, {
-        ...options,
-        headers,
-        credentials: "include",
-        mode: "cors",
+  // If we're in an iframe, use the proxy client
+  if (isInIframe()) {
+    const text = await fetchViaProxy(url, {
+      method: options.method as string | undefined,
+      headers,
+      body: options.body as string | undefined,
     });
 
-    if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-            window.location.href = "https://is.mendelu.cz/system/login.pl?lang=cz";
-            throw new Error("Authentication required");
-        }
-        throw new Error(`Request failed with status ${response.status}`);
-    }
+    // Create a Response-like object from the text
+    return new Response(text, {
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers({ 'Content-Type': 'text/html' }),
+    });
+  }
 
-    return response;
+  // Direct fetch in content script context
+  const response = await fetch(url, {
+    ...options,
+    headers,
+    credentials: 'include',
+    mode: 'cors',
+  });
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      window.location.href = 'https://is.mendelu.cz/system/login.pl?lang=cz';
+      throw new Error('Authentication required');
+    }
+    throw new Error(`Request failed with status ${response.status}`);
+  }
+
+  return response;
 }

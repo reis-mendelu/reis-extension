@@ -6,7 +6,11 @@ import { toDirectDownloadUrl } from '../api/isDocumentUrl';
 import { deliverFile } from './deliverFile';
 
 interface DownloadsPlugin {
-  save(o: { filename: string; base64: string; mime: string }): Promise<{ uri: string; bytes: number }>;
+  save(o: {
+    filename: string;
+    base64: string;
+    mime: string;
+  }): Promise<{ uri: string; bytes: number }>;
 }
 
 /** Android-only native plugin: writes into Downloads and posts a notification.

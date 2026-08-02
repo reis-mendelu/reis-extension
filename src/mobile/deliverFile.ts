@@ -27,7 +27,7 @@ export async function deliverFile(
   filename: string,
   base64: string,
   mime: string,
-  deps: DeliverDeps,
+  deps: DeliverDeps
 ): Promise<DeliveryKind> {
   const kind = deliveryKindFor(deps.platform);
   if (kind === 'downloads') {

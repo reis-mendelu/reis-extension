@@ -80,9 +80,9 @@ describe('fetchViaCapacitor', () => {
     const d = deps({
       httpGet: vi.fn(async () => ({ status: 403, data: 'denied', headers: {} })),
     });
-    await expect(
-      fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d),
-    ).rejects.toMatchObject({ sessionExpired: true });
+    await expect(fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d)).rejects.toMatchObject({
+      sessionExpired: true,
+    });
   });
 
   it('THROWS on a 200 that is not authenticated — a wrong-cookie-mechanism bug looks exactly like this', async () => {
@@ -93,8 +93,8 @@ describe('fetchViaCapacitor', () => {
         headers: {},
       })),
     });
-    await expect(
-      fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d),
-    ).rejects.toMatchObject({ sessionExpired: true });
+    await expect(fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d)).rejects.toMatchObject({
+      sessionExpired: true,
+    });
   });
 });
