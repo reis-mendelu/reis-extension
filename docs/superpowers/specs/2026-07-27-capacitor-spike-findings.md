@@ -766,3 +766,120 @@ IS *write* paths. It will appear to do nothing on mobile.
 The fix mirrors the sync loopback: give the app an action handler that receives
 `REIS_ACTION` from its own window and replies with `REIS_ACTION_RESULT`, reusing
 `messageHandler`'s logic rather than reimplementing it. That is the next task.
+
+---
+
+## Feature audit — what a student can actually do on mobile today
+
+Three parallel audits traced every user-visible action from the mobile UI down to the
+host boundary. Summary of what is BROKEN, DEGRADED or WORKS, with the non-obvious bits
+called out.
+
+### Correction to an earlier claim in this document
+
+An earlier note said exam registration "will appear to do nothing on mobile". **That was
+wrong.** `registerExam` / `unregisterExam` / the watchdog all go through `fetchWithAuth`,
+so the **IS write genuinely succeeds**. What is dead is the *follow-up refresh*:
+`SyncService.triggerExamRefresh` (`src/services/sync/SyncService.ts:25`) posts a
+`REIS_ACTION` nobody receives, so `examsRefreshing` sticks for its 15 s timeout and the
+authoritative re-read never happens. The optimistic update carries the UI until the next
+5-minute sync.
+
+The riskiest case is **switching terms** (`useExamActions.ts:24-46`): unregister → register
+→ rollback-on-failure. All three legs work, but after a *failed* switch the student sees a
+stale list with no re-read — the one case where trusting the optimistic state is wrong.
+
+`refreshExams()` already exists in-process (`src/injector/syncService.ts:459`) and the
+loopback already works, so this is a small fix: call it directly instead of round-tripping
+through a `REIS_ACTION`. The sibling triggers `triggerSync` and `triggerDriveBackup` are
+dead for the same reason.
+
+### Exams
+
+| Action | Verdict |
+|---|---|
+| View terms / registered exams | **WORKS** |
+| Register / unregister / switch term | **DEGRADED** — the write succeeds, the refresh is dead |
+| Watchdog ("hlídací pes") toggle | **DEGRADED** — same |
+| Classmate counts, expand rows | **WORKS** |
+
+Every exam IS call is a GET, which matters because the Capacitor transport currently
+implements **only GET** (`src/api/client.ts`) — it drops `method` and `body`.
+
+### Documents and files
+
+| Action | Verdict |
+|---|---|
+| Tap a subject file / per-row download | **WORKS** — downloads to Documents, then Share |
+| Study documents ("Stáhnout") | **BROKEN** — `executeAction`, 30 s timeout then a red error icon |
+| "Žádost na studijní oddělení" row | **BROKEN** — `target="_blank"` → system browser, no session |
+| "Otevřít v IS MENDELU" backlinks | **DEGRADED** — same system-browser escape |
+| Bulk ZIP download | **Not reachable on phone** — desktop-only, and by product decision it stays that way |
+| Inline PDF preview | **Not reachable on phone** |
+
+Precise symptom for the study-documents hang: `REQUEST_TIMEOUT` is 30 s
+(`src/api/proxy/pendingRequests.ts:4`), so it is not an infinite spinner — it fails to a
+red `AlertTriangle` after 30 s.
+
+**Latent tablet trap:** `resolvePhoneViewport` requires touch **and** narrow, so a
+Capacitor build on a tablet renders the *desktop* tree — which reaches
+`PdfViewer.tsx:15` (`chrome.runtime.getURL` → `ReferenceError`, swallowed at `:61` →
+permanent spinner) and the ZIP path. Worth deciding deliberately whether tablets are
+supported.
+
+**Dead code that is a live trap:** `src/hooks/ui/useFileDownload.ts` has no consumers but
+contains every breakage class at once (bare `fetch`, `window.open`, `a[download]`,
+`saveAs`). Anyone porting by example will copy it.
+
+### eduroam — 100% non-functional, and it fails at the first network call
+
+Opening the sheet auto-fires `fetchEduroamPassword()` → `src/api/eduroam.ts:31` bare
+`fetch` → CORS-denied. The error is swallowed into `logError`, so row 1 sits on its grey
+placeholder forever **and a telemetry report fires on every sheet open before the student
+touches anything**. Tapping "Stáhnout eduroam profil" dies at the same first request.
+
+Three further walls sit behind that one, so fixing CORS alone is not enough:
+
+1. **Cert generation is a POST** (`api/eduroam.ts:55`) and the native transport has **no
+   POST path at all**.
+2. **The cert downloads are binary** and need raw bytes; `fetchIsBinary` returns a Blob,
+   and `capacitorTransport`'s `logout.pl` auth check would reject a binary body outright.
+   Routing eduroam through `fetchWithAuth` unchanged would fail *harder*, not softer.
+3. **The QR transfer is a desktop→phone artifact.** On mobile it renders a QR on the very
+   device being configured — unscannable. And the Android `.eap-config` branch is the
+   geteduroam route that #159 documents as *actively harmful* (it disables a working
+   config).
+
+**The native one-tap flow (#159) does not exist in the product.** Verified absent:
+`android/app/src/main/java/cz/reis/app/` contains only `MainActivity.java`; the manifest
+declares only `INTERNET` (not `ACCESS_WIFI_STATE` / `CHANGE_WIFI_STATE`); there is no iOS
+`NEHotspotConfiguration` code or entitlement. Only the throwaway spike ever proved it.
+
+### ISKAM — a structural blocker, not a port
+
+**ISKAM is not merely broken on Capacitor; it is absent from the build.** `iskam.html` is
+not in `dist-capacitor` at all, and the whole feature is reachable only via a content
+script matched to `webiskam.mendelu.cz`.
+
+The blocker is authentication, not plumbing: **WebISKAM is Shibboleth**
+(`alibaba.mendelu.cz/idp`), structurally unlike IS's plain form POST. `ensureSession`
+captures exactly one cookie from one host. ISKAM would need a second `InAppBrowser` login,
+cookie capture through an unspiked SAML redirect chain, and a second stored token.
+
+Today the "ISKAM" card is an `<a target="_blank">` to WebISKAM, which Capacitor hands to
+the **system browser** — where the student has no session and must log in again, in
+another app.
+
+> **Recommendation: declare ISKAM out of scope for the first Capacitor release**, and at
+> minimum change that card to an in-app-browser presentation so the student stays inside
+> reIS. Rebuilding it properly is "a second host integration from scratch", not a port.
+
+### Cross-cutting: the remaining `REIS_ACTION` edges
+
+`register_exam` · `unregister_exam` · `refresh_exams` · `trigger_sync` ·
+`trigger_drive_backup` · `download_document` · `push_notes` · `open_url` · `logout` ·
+`toggle_outlook_sync` · `download_file`
+
+All post a message only the content script answers. The fix mirrors the sync loopback that
+already works. Note `VolneKapacitySection.tsx:23-34` has **no timeout at all** (unlike
+`executeAction`'s 30 s), so it would hang forever rather than fail.
