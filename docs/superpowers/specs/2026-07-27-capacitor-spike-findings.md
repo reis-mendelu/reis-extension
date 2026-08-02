@@ -599,3 +599,60 @@ assumption about native cookie handling.
 **This is the first thing the implementation plan resolves**, because it changes almost
 everything downstream. It is cheap to settle: one `CapacitorHttp` request to IS from the
 host WebView, with a restored cookie, either returns authenticated HTML or it does not.
+
+---
+
+## Task 7 finding — the shell boots, but nothing drives the sync
+
+Caught by comparing the running app against the extension side by side: the extension
+lists the student's subjects; the Capacitor app showed *"Zatím žádné předměty"*. That is
+**not** empty data — it is a missing pipeline, and it is a gap in the shell plan rather
+than a bug in what the plan specified.
+
+### Evidence
+
+Every IS endpoint the app requested on a full boot:
+
+```
+4x  /auth/student/pruchod_studiem.pl              (study progress)
+4x  /auth/ca/konfigurace_prenosu_udalosti.pl      (outlook transfer config)
+2x  /auth/ca/prehled_tydnu.pl                     (teaching weeks)
+```
+
+Those are the paths that fetch **directly from app code**. Nothing fetched subjects,
+exams, files, classmates or the study plan.
+
+### Cause
+
+`syncAllData()` lives in `src/injector/syncService.ts` — the **content script** — and
+every caller is a content-script file (`bgPokeListener.ts`, `messageHandler.ts`, and its
+own interval). It delivers results with `sendToIframe(Messages.syncUpdate(...))`, a
+postMessage into the extension's iframe.
+
+Model C has **neither**: no content script to call it, and no iframe to receive it. So
+the app authenticates correctly, the transport works, and then almost nothing asks it for
+anything.
+
+This is worth stating plainly because it was invisible until the app ran against real
+data — the shell looked complete. Boot, auth, transport, back button and downloads are
+all genuinely done; the *data* layer is not.
+
+### The promising shape of the fix
+
+`syncAllData` itself is host-agnostic — it calls the `src/api/*` fetchers, which now route
+through `fetchWithAuth` and therefore already work on Capacitor (proven: the three
+endpoints above returned real authenticated HTML). Only its two ends are extension-shaped:
+
+1. **Nothing calls it.** The app must drive it on boot and on foreground.
+2. **`sendToIframe` posts to an iframe.** In Capacitor the app *is* the receiver, so the
+   same `Messages.syncUpdate(...)` payload needs dispatching to the app's own listener
+   instead — a loopback rather than a cross-frame hop.
+
+If `sendToIframe` gains a Capacitor branch that dispatches locally, **`syncAllData` should
+work unchanged**, which would reuse the entire sync implementation rather than forking it.
+That is the first thing to try, and it should be tried before writing any new sync code.
+
+> ⚠️ Do not "fix" this by having each screen fetch what it needs. The sync service exists
+> because the fan-out is dozens of endpoints, dual-language, with ordering and caching
+> rules. Reimplementing that per screen is how the mobile build silently diverges from the
+> extension.
