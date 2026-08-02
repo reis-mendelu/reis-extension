@@ -656,3 +656,51 @@ That is the first thing to try, and it should be tried before writing any new sy
 > because the fan-out is dozens of endpoints, dual-language, with ordering and caching
 > rules. Reimplementing that per screen is how the mobile build silently diverges from the
 > extension.
+
+### Sync now runs — and exposed the next, smaller gap
+
+The loopback works. `sendToIframe` gained a Capacitor branch that posts to its own
+window, and because `window.parent === window` at top level, `useAppLogic`'s existing
+`REIS_SYNC_UPDATE` handler consumes it **unchanged**. One sync implementation, three
+hosts.
+
+Measured before/after on a full boot:
+
+| | Endpoints fetched |
+|---|---|
+| Before | 3 |
+| After | **14 distinct, ~236 requests** — subjects, syllabi, classmates, documents, exams, schedules, study plan |
+
+The Subjects tab now matches the extension exactly: same study, same 59/180 credits, same
+per-subject grades.
+
+**Residual gap — a handful of fetchers bypass `fetchWithAuth`.** Three consistently fail
+on Capacitor:
+
+```
+Api.fetchCvicneTests      Api.fetchOdevzdavarnyLang      Api.fetchSubjectZaznamnik
+```
+
+Cause: they call **bare `fetch(url)`** instead of `fetchWithAuth`, so they never reach the
+Capacitor transport and are CORS-blocked. `src/api/cvicneTests.ts:23` is the clearest
+example. Enumerated IS-targeting bare fetches:
+
+| File | Line |
+|---|---|
+| `src/api/cvicneTests.ts` | 23 |
+| `src/api/odevzdavarny.ts` | 56 |
+| `src/api/kontrola.ts` | 17 |
+| `src/api/eduroam.ts` | 31, 37, 55 |
+
+Other bare fetches in `src/api/` target the jsDelivr CDN, Google, Supabase proxies or
+`skm.mendelu.cz` — those are unaffected, since they are not IS and serve proper CORS.
+
+> Fixing these means routing them through `fetchWithAuth`, which also imposes its
+> `DEFAULT_HEADERS` and its 401/403 login redirect. That is a behaviour change for the
+> **extension** too, so each call site needs checking rather than a blind sed. It is a
+> small, well-bounded task — but it is not a no-op refactor.
+
+Rejected alternative: enabling Capacitor's global `CapacitorHttp` fetch patch would fix
+all of them at once without touching call sites, but it would route *every* request
+natively and rely on the native cookie jar — which **does not work on iOS** (measured).
+The explicit transport branch exists precisely because of that asymmetry.
