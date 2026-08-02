@@ -22,8 +22,8 @@ Results of the day-one device tests from #158. Each answer is measured, not infe
 | 0 | Does `preShowScript` injection run on IS? | **YES — at documentStart, on BOTH platforms** | Green banner `REIS INJECTION OK — readyState at inject: loading` on the IS login page, iOS **and** Android |
 | 1 | Does iOS WKWebView keep `UISAuth` across app kill? | **NO — cookie is lost** | live session before kill → `ABSENT` after SIGKILL + relaunch |
 | 1b | Can the cookie be RESTORED into the WebView? | **YES — hybrid** | `headers` + `document.cookie` at documentStart; authenticated and survives navigation |
-| 2 | Does Android WebView keep `UISAuth` across app kill? | pending | |
-| 3 | Does blob + `a[download]` save a file? | pending — needs login | probe built, needs a real IS PDF URL |
+| 2 | Does Android WebView keep `UISAuth` across app kill? | **NO — lost too** | `UISAuth` len 46 before `force-stop` → `keys: (none)` / `ABSENT` after, PID 5175→5414 |
+| 3 | Does blob + `a[download]` save a file? | **NO — and it fails SILENTLY** | Android: blob 1,620,758 B fetched, `a.click()` ran, **no file anywhere**, no error |
 | 4 | Does `ACTION_WIFI_ADD_NETWORKS` accept an EAP-TLS config? | **YES** | `resultCode -1 (RESULT_OK)`, `perNetwork 0 (SUCCESS)`; saved as netId=1, `TYPE_EAP` |
 
 ## Consequences for #158
@@ -107,9 +107,18 @@ the correction in `2026-07-26-capacitor-assumption-audit.md` §C1.
 | Test | Blocked on |
 |---|---|
 | ~~1 — iOS cookie survival across app kill~~ | **done** — fails, restore built and proven |
-| 2 — Android cookie survival | human: login inside the WebView |
-| 3 — file download | human: login + a real IS PDF URL + Files app check |
+| ~~2 — Android cookie survival~~ | **done** — fails the same way |
+| ~~3 — file download~~ | **done** on Android — silent no-op; iOS twin not run |
 | ~~4 — `ACTION_WIFI_ADD_NETWORKS` EAP-TLS (#159)~~ | **done** — accepted, see below |
+
+Everything the spike set out to answer is answered. What remains is **on-device
+confirmation on real hardware**, not open design questions:
+
+| Remaining | Why it needs a real device |
+|---|---|
+| eduroam **association** on campus | needs a MENDELU AP in range |
+| iOS `NEHotspotEAPSettings` with a self-signed root | needs the HotspotConfiguration entitlement + a paid account |
+| iOS download probe | expected to fail like Android; not yet measured |
 
 ### Bonus experiment — can injection make IS phone-native? **NO, not via viewport meta**
 
@@ -363,3 +372,88 @@ Two things this settles, both previously only verified on iOS:
 Incidentally, Android's WebView shrinks-to-fit the same way WKWebView does: the login
 page is small but complete and legible. This is consistent with the negative viewport
 finding above — IS ships no viewport meta, and both engines cope by zooming out.
+
+---
+
+## Test 2 — Android cookie survival across app kill: **ALSO FAILS**
+
+The hoped-for scope reduction does **not** materialise. Android's WebView is Chromium
+and its cookie store is process-independent, so it was reasonable to expect `UISAuth`
+to survive where WKWebView lost it. It does not.
+
+| Step | `Read cookies` output |
+|---|---|
+| After hybrid restore, WebView closed | `keys: UISAuth` / `UISAuth: 6NSqqy…3bRQ (len 46)` |
+| After `am force-stop` + relaunch | `keys: (none)` / **`UISAuth: ABSENT`** |
+
+The kill was verified genuine, not a resume: PID **5175 → (gone) → 5414**.
+
+The reason is the same on both platforms and has nothing to do with the engine:
+**`UISAuth` has no `Expires`, so it is a session cookie**, and every browser engine
+drops session cookies when the browsing session ends. Chromium's persistent cookie
+store persists *persistent* cookies. `persistWebViewData` doesn't change that on either
+side.
+
+### Method caveat — stated plainly
+
+The cookie under test was placed by `document.cookie` (the hybrid restore), not by a
+server `Set-Cookie`, because **IS only ever issues `UISAuth` at login** — verified: no
+`Set-Cookie` header appears on any authenticated request. Both are session cookies in
+the same jar with the same attributes, and Chromium does not record provenance, so the
+persistence semantics are the same. Worth knowing the test was run this way regardless.
+
+### Consequence for #158
+
+- **No platform escape hatch. Session restore is required on iOS *and* Android.** The
+  earlier note that this "is now the only remaining platform question that could reduce
+  scope" is resolved — it does not reduce scope.
+- The upside: **one mechanism serves both platforms.** The hybrid restore was verified
+  working on Android in this same session (`AUTHED: yes | cookieVisible: true`), using
+  identical code to iOS. No per-platform branch is needed for auth.
+
+---
+
+## Test 3 — blob + `a[download]`: **FAILS SILENTLY on Android**
+
+The most dangerous result in the spike, because nothing reports an error.
+
+Ran against a real IS course PDF (`slozka.pl?download=…`, 1.6 MB, `Content-Type:
+application/pdf`, `Content-Disposition: attachment`) inside the restored, authenticated
+WebView. The probe reproduces `src/injector/documentDownloader.ts`'s exact mechanism.
+
+```
+DOWNLOAD PROBE: blob 1620758B — anchor clicked, check Files/Downloads
+```
+
+**Everything up to the save works:**
+
+- `fetch(url, {credentials:'include'})` → 200, and the blob is **1,620,758 bytes —
+  byte-identical to what `curl` returns**. So the restored cookie authenticates
+  subresource fetches, not just navigations. That is a genuinely useful positive.
+- `URL.createObjectURL` + `a.download` + `a.click()` all execute without throwing.
+
+**And then nothing is saved.** Checked exhaustively:
+
+| Check | Result |
+|---|---|
+| `/sdcard/Download/` | empty |
+| `find /sdcard -newermt '-10 minutes'` | nothing |
+| App-private storage | nothing |
+| MediaStore downloads | `No result found` |
+| logcat for `DownloadListener` / `onDownloadStart` | never fires |
+
+Android's WebView routes downloads through a `DownloadListener`, and **it is not
+invoked for `blob:` URLs** — the click is a no-op. No exception, no console error, no
+user-visible failure. A student would tap Download, see nothing happen, and have no
+idea why.
+
+### Consequence for #158
+
+- **`@capacitor/filesystem` + `@capacitor/share` are REQUIRED, not optional.** This was
+  already the conclusion from reading iOS's lack of `a[download]` support; Android now
+  confirms it independently, for a different underlying reason.
+- The fetch half is reusable: `fetch` + blob works. Only the **save** step must be
+  replaced — write the bytes via Filesystem, then hand off to Share/open. So
+  `documentDownloader.ts` needs a platform branch at exactly one point, not a rewrite.
+- **Add a regression guard.** A silent no-op is exactly the failure that ships. Whatever
+  replaces `a.click()` must assert the file exists after writing.
