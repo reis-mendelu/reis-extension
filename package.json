@@ -34,6 +34,8 @@
     "dev:web:exams": "REIS_FIXTURE=examSeason vite --config vite.web.config.ts"
   },
   "dependencies": {
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/preferences": "^8.0.1",
     "@fontsource/inter": "^5.3.0",
     "@supabase/supabase-js": "^2.110.8",
     "clsx": "^2.1.1",
