@@ -704,3 +704,65 @@ Rejected alternative: enabling Capacitor's global `CapacitorHttp` fetch patch wo
 all of them at once without touching call sites, but it would route *every* request
 natively and rely on the native cookie jar — which **does not work on iOS** (measured).
 The explicit transport branch exists precisely because of that asymmetry.
+
+---
+
+## File links opened the system browser — fixed, and what it exposed
+
+**Reported symptom:** tapping a file in the app opened Chrome instead of downloading.
+
+**Cause:** `useFileActions` fetches with the browser `fetch`, which IS blocks by CORS on
+Capacitor, and its failure path is `window.open(fullUrl, '_blank')` — which Capacitor
+hands to the **system browser**. Chrome then has no IS session, so it could not have
+loaded the file either. All three actions (`openFile`, `openPdfInline`, `downloadSingle`)
+had the same shape.
+
+**Fix:** a native binary transport (`CapacitorHttp` with `responseType: 'blob'`, base64
+decoded — a 1.6 MB PDF does **not** survive being handled as a string), using the same
+per-platform cookie delivery as the HTML transport.
+
+### The non-obvious part: not every "file" link is a file
+
+`src/api/documents` yields links to **`dokumenty_cteni.pl`** — IS's document *viewer
+page*, which legitimately returns `text/html`. The first version of the guard rejected
+that as a lapsed session, so downloads failed with *"Expected a document, got text/html"*.
+
+Both cases are HTML, so content-type alone cannot separate them. They are distinguished
+by the **same `logout.pl` signal the HTML transport uses**:
+
+| Response | Meaning | Action |
+|---|---|---|
+| non-HTML | a real file | save via Filesystem, then Share |
+| HTML **with** `logout.pl` | an authenticated IS page | open in the **in-app** browser with the session restored |
+| HTML **without** `logout.pl` | login page — session lapsed | throw `sessionExpired` |
+
+`fetchIsBinary` returns a discriminated union so callers cannot forget the page case —
+the compiler caught all three call sites when it was introduced.
+
+**Device-verified:** the viewer page now opens in-app, authenticated (`Přihlášen: …`),
+with no escape to Chrome. Both the row tap and the download icon.
+
+> ⚠️ **Not device-verified: the binary save+share branch.** Every link reachable from the
+> subject drawer is a `dokumenty_cteni.pl` viewer page, so the `slozka.pl?download=…`
+> branch was exercised only by unit tests (13). It needs a real direct-download link to
+> confirm end to end.
+
+### Related gap found while fixing this: `executeAction` has no handler on Capacitor
+
+`executeAction` (`src/api/proxyClient.ts`) posts a `REIS_ACTION` message and waits for a
+`REIS_ACTION_RESULT`. The only handler is `src/injector/messageHandler.ts` — **the content
+script**. On Capacitor nothing answers, so every one of these silently hangs until
+`REQUEST_TIMEOUT`:
+
+```
+register_exam · unregister_exam · toggle_outlook_sync · download_file
+download_document · trigger_sync · trigger_drive_backup · push_notes
+refresh_exams · open_url · logout
+```
+
+**`register_exam` matters most** — exam registration is a core feature and one of the few
+IS *write* paths. It will appear to do nothing on mobile.
+
+The fix mirrors the sync loopback: give the app an action handler that receives
+`REIS_ACTION` from its own window and replies with `REIS_ACTION_RESULT`, reusing
+`messageHandler`'s logic rather than reimplementing it. That is the next task.
