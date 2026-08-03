@@ -54,6 +54,7 @@
   },
   "documents": {
     "title": "Study documents",
+    "unsealedFallback": "IS can't seal documents right now — we downloaded the unsealed version. Some offices require the seal.",
     "sheetSubtitle": "Electronically signed by the university — accepted by authorities",
     "items": {
       "confirmationCz": "Confirmation of study (Czech)",

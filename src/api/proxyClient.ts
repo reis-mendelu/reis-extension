@@ -40,9 +40,17 @@ export function openPopup(url: string): Promise<void> { return executeAction('op
  * Download an IS study document. The content script performs the first-party
  * fetch (SameSite cookie); the returned promise resolves only when the file is
  * actually saved, so callers can show real completion.
+ *
+ * `fallbackUrl` is the unsealed variant. The retry happens down in the
+ * downloader rather than here so the decision can read the real error — across
+ * this postMessage boundary a rejection is only a string.
  */
-export function downloadDocument(url: string, filename: string): Promise<void> {
-  return executeAction('download_document', { url, filename });
+export function downloadDocument(
+  url: string,
+  filename: string,
+  fallbackUrl?: string | null
+): Promise<{ usedFallback: boolean }> {
+  return executeAction('download_document', { url, filename, fallbackUrl: fallbackUrl ?? undefined });
 }
 
 export async function logout(): Promise<void> {

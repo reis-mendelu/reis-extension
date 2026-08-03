@@ -30,7 +30,7 @@ describe('DocumentsDrawer', () => {
   });
 
   it('downloads on row click and shows completion', async () => {
-    const spy = vi.spyOn(proxy, 'downloadDocument').mockResolvedValue(undefined);
+    const spy = vi.spyOn(proxy, 'downloadDocument').mockResolvedValue({ usedFallback: false });
     render(<DocumentsDrawer />);
     await act(async () => {
       fireEvent.click(screen.getByText('Potvrzení o studiu'));
@@ -38,6 +38,8 @@ describe('DocumentsDrawer', () => {
     expect(spy).toHaveBeenCalledWith(
       'https://is.mendelu.cz/auth/student/tisk_dokumentu.pl?potvrzeni_tisk_el=1;studium=149707;lang=cz',
       'Potvrzeni_o_studiu.pdf',
+      // The unsealed fallback rides along so a sealing outage cannot dead-end the row.
+      'https://is.mendelu.cz/auth/student/tisk_dokumentu.pl?potvrzeni_tisk=1;studium=149707;lang=cz',
     );
     await waitFor(() => expect(screen.getByLabelText('done')).toBeTruthy());
   });

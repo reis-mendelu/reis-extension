@@ -50,21 +50,39 @@ export function isNativeHost(): boolean {
  * the student should actually see (`Potvrzeni_o_studiu.pdf`). Subject files
  * pass nothing and keep the server's name.
  */
-export async function openIsFileNatively(url: string, filenameOverride?: string): Promise<void> {
-  const downloadUrl = toDirectDownloadUrl(url) ?? url;
+export async function openIsFileNatively(
+  url: string,
+  filenameOverride?: string,
+  fallbackUrl?: string
+): Promise<{ usedFallback: boolean }> {
   const token = await loadStoredToken();
   const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
+  const platform = Capacitor.getPlatform() as 'ios' | 'android' | 'web';
+  const deps = {
+    platform,
+    setCookie: (o: { url: string; key: string; value: string }) => CapacitorCookies.setCookie(o),
+    httpGet: (o: { url: string; headers?: Record<string, string>; responseType?: 'blob' }) =>
+      CapacitorHttp.get(o),
+  };
 
-  const result = await fetchIsBinary(downloadUrl, token, {
-    platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
-    setCookie: (o) => CapacitorCookies.setCookie(o),
-    httpGet: (o) => CapacitorHttp.get(o),
-  });
+  const fetchOne = (target: string) => fetchIsBinary(toDirectDownloadUrl(target) ?? target, token, deps);
 
-  // Still HTML after the rewrite means IS did not serve a file for this link.
-  // Failing loudly beats silently saving a web page as a .pdf.
+  let result = await fetchOne(url);
+  let usedFallback = false;
+
+  // `kind: 'page'` means IS served an authenticated PAGE rather than a file —
+  // exactly what its sealed print endpoints do while broken. Retry the unsealed
+  // variant rather than failing. A lapsed session never reaches here:
+  // fetchIsBinary throws sessionExpired for that, and re-auth is the right
+  // answer there, not a second doomed request.
+  if (result.kind !== 'binary' && fallbackUrl) {
+    result = await fetchOne(fallbackUrl);
+    usedFallback = true;
+  }
+
+  // Still not a file: failing loudly beats silently saving a web page as a .pdf.
   if (result.kind !== 'binary') {
-    throw new Error(`IS did not return a file for ${downloadUrl}`);
+    throw new Error(`IS did not return a file for ${url}`);
   }
 
   const base64 = await blobToBase64(result.blob);
@@ -89,4 +107,6 @@ export async function openIsFileNatively(url: string, filenameOverride?: string)
       await Share.share({ title: o.filename, url: uri });
     },
   });
+
+  return { usedFallback };
 }

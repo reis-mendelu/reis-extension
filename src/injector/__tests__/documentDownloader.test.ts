@@ -28,12 +28,64 @@ describe('downloadDocumentInPage', () => {
     expect(downloadName).toBe('Potvrzeni_o_studiu.pdf');
   });
 
-  it('rejects when the response is not a PDF (session expired → login HTML)', async () => {
+  it('treats a LOGIN page as an expired session (login redirect stays)', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('<html>login</html>', { status: 200, headers: { 'content-type': 'text/html' } }),
+      new Response('<html>Přihlášení do systému</html>', { status: 200, headers: { 'content-type': 'text/html' } }),
     );
     await expect(downloadDocumentInPage('https://is.mendelu.cz/x', 'f.pdf')).rejects.toMatchObject({ sessionExpired: true });
     expect(clickSpy).not.toHaveBeenCalled();
+  });
+
+  it('treats an AUTHENTICATED page as notADocument, NOT an expired session', async () => {
+    // IS's sealed print endpoints answer a fully authenticated request this way
+    // while broken. Tagging it sessionExpired logged the student out over an IS
+    // bug — and left no opportunity to fall back to the unsealed document.
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('<html><a href="/auth/system/logout.pl">odhlásit</a></html>', {
+        status: 200, headers: { 'content-type': 'text/html' },
+      }),
+    );
+    const caught = await downloadDocumentInPage('https://is.mendelu.cz/x', 'f.pdf').catch((e) => e);
+    expect((caught as { notADocument?: boolean }).notADocument).toBe(true);
+    expect((caught as { sessionExpired?: boolean }).sessionExpired).toBeUndefined();
+  });
+
+  it('falls back to the unsealed URL when the sealed one returns a page', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response('<html><a href="/auth/system/logout.pl">x</a></html>', {
+        status: 200, headers: { 'content-type': 'text/html' },
+      }))
+      .mockResolvedValueOnce(new Response(pdfBlob(), {
+        status: 200, headers: { 'content-type': 'application/pdf' },
+      }));
+
+    const result = await downloadDocumentInPage(
+      'https://is.mendelu.cz/sealed', 'f.pdf', 'https://is.mendelu.cz/plain',
+    );
+
+    expect(result).toEqual({ usedFallback: true });
+    expect(fetchSpy.mock.calls.map((c) => c[0])).toEqual([
+      'https://is.mendelu.cz/sealed', 'https://is.mendelu.cz/plain',
+    ]);
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT fall back on an expired session — re-auth is the right answer', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('', { status: 403 }));
+    await expect(
+      downloadDocumentInPage('https://is.mendelu.cz/sealed', 'f.pdf', 'https://is.mendelu.cz/plain'),
+    ).rejects.toMatchObject({ sessionExpired: true });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports usedFallback:false when the sealed document works', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(pdfBlob(), { status: 200, headers: { 'content-type': 'application/pdf' } }),
+    );
+    const result = await downloadDocumentInPage(
+      'https://is.mendelu.cz/sealed', 'f.pdf', 'https://is.mendelu.cz/plain',
+    );
+    expect(result).toEqual({ usedFallback: false });
   });
 
   it('rejects on a 401', async () => {

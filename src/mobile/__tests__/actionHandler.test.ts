@@ -7,7 +7,7 @@ import {
 
 function deps(over: Partial<MobileActionDeps> = {}): MobileActionDeps {
   return {
-    downloadDocument: vi.fn(async () => {}),
+    downloadDocument: vi.fn(async () => ({ usedFallback: false })),
     refreshExams: vi.fn(async () => {}),
     syncAllData: vi.fn(async () => {}),
     ...over,
@@ -15,17 +15,32 @@ function deps(over: Partial<MobileActionDeps> = {}): MobileActionDeps {
 }
 
 describe('runMobileAction', () => {
-  it('routes download_document to the native download with url and filename', async () => {
+  it('routes download_document to the native download with url, filename and fallback', async () => {
     const d = deps();
     await runMobileAction(
       'download_document',
-      { url: 'https://is.mendelu.cz/auth/student/tisk_dokumentu.pl?x=1', filename: 'P.pdf' },
+      {
+        url: 'https://is.mendelu.cz/auth/student/tisk_dokumentu.pl?x=1',
+        filename: 'P.pdf',
+        fallbackUrl: 'https://is.mendelu.cz/auth/student/tisk_dokumentu.pl?plain=1',
+      },
       d
     );
     expect(d.downloadDocument).toHaveBeenCalledWith(
       'https://is.mendelu.cz/auth/student/tisk_dokumentu.pl?x=1',
-      'P.pdf'
+      'P.pdf',
+      'https://is.mendelu.cz/auth/student/tisk_dokumentu.pl?plain=1'
     );
+  });
+
+  it('reports usedFallback back to the caller so the UI can flag an unsealed copy', async () => {
+    const d = deps({ downloadDocument: vi.fn(async () => ({ usedFallback: true })) });
+    const result = await runMobileAction(
+      'download_document',
+      { url: 'https://is.mendelu.cz/x', filename: 'P.pdf', fallbackUrl: 'https://is.mendelu.cz/y' },
+      d
+    );
+    expect(result).toEqual({ success: true, usedFallback: true });
   });
 
   it('rejects download_document with a missing url or filename before touching the network', async () => {

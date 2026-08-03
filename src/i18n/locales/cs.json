@@ -54,6 +54,7 @@
   },
   "documents": {
     "title": "Studijní dokumenty",
+    "unsealedFallback": "Elektronická pečeť teď v IS nefunguje — stáhli jsme dokument bez ní. Úřad ji může vyžadovat.",
     "sheetSubtitle": "S elektronickým podpisem univerzity — úřady je berou",
     "items": {
       "confirmationCz": "Potvrzení o studiu",

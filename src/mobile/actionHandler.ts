@@ -19,7 +19,11 @@ import { sendToIframe } from '../injector/iframeManager';
  */
 export interface MobileActionDeps {
   /** Native fetch + platform-appropriate delivery. See mobile/openIsFile. */
-  downloadDocument(url: string, filename: string): Promise<void>;
+  downloadDocument(
+    url: string,
+    filename: string,
+    fallbackUrl?: string
+  ): Promise<{ usedFallback: boolean }>;
   refreshExams(): Promise<void>;
   syncAllData(): Promise<void>;
 }
@@ -48,8 +52,8 @@ export async function runMobileAction(
       // payload error, not as a mysterious IS response.
       if (!p.url) throw new Error('download_document: missing url');
       if (!p.filename) throw new Error('download_document: missing filename');
-      await deps.downloadDocument(p.url, p.filename);
-      return { success: true };
+      // usedFallback rides back so the UI can say the document is unsealed.
+      return { success: true, ...(await deps.downloadDocument(p.url, p.filename, p.fallbackUrl)) };
     }
     case 'refresh_exams':
       await deps.refreshExams();
@@ -100,9 +104,9 @@ export async function handleMobileActionMessage(
  */
 export function installMobileActionHandler(): void {
   const deps: MobileActionDeps = {
-    downloadDocument: async (url, filename) => {
+    downloadDocument: async (url, filename, fallbackUrl) => {
       const { openIsFileNatively } = await import('./openIsFile');
-      await openIsFileNatively(url, filename);
+      return openIsFileNatively(url, filename, fallbackUrl);
     },
     refreshExams: async () => {
       const { refreshExams } = await import('../injector/syncService');

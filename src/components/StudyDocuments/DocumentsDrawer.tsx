@@ -3,7 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
 import { useTranslation } from '../../hooks/useTranslation';
 import { AdaptiveDrawer } from '../ui/AdaptiveDrawer';
-import { STUDY_DOCUMENTS, buildDocumentUrl, buildZadostUrl } from '../../api/studyDocuments';
+import { STUDY_DOCUMENTS, buildDocumentUrl, buildFallbackDocumentUrl, buildZadostUrl } from '../../api/studyDocuments';
 import { useDocumentDownload, type DownloadStatus } from '../../hooks/data/useDocumentDownload';
 
 const ICONS: Record<string, typeof FileText> = {
@@ -52,7 +52,7 @@ export function DocumentsDrawer() {
             <button
               key={doc.id}
               disabled={!sid || st === 'loading'}
-              onClick={() => run(doc.id, buildDocumentUrl(sid, doc), doc.filename)}
+              onClick={() => run(doc.id, buildDocumentUrl(sid, doc), doc.filename, buildFallbackDocumentUrl(sid, doc))}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-base-200 disabled:opacity-50 transition-colors text-left"
             >
               <Icon className="w-5 h-5 text-primary shrink-0" />
