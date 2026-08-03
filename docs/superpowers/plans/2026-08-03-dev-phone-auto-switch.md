@@ -29,7 +29,7 @@
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `resolveDevPhoneOverride({ param: string | null; isNarrow: boolean }): boolean` and the exported interface `DevPhoneOverrideInput`. Task 2 imports both.
+- Produces: `resolveDevPhoneOverride({ param: string | null; isNarrow: boolean }): boolean`, plus the exported interface `DevPhoneOverrideInput` as its parameter type. Task 2 imports the function only.
 
 - [ ] **Step 1: Write the failing test**
 

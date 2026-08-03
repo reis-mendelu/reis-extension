@@ -29,6 +29,15 @@ developer-facing affordance changes.
 Dev webapp only. The shipped extension keeps the strict `isTouch && isNarrow` rule
 and its behavior is unchanged.
 
+"Dev webapp only" is not the same as "nothing else is affected" — `npm run
+verify:ui` drives the dev webapp, so it is downstream of this change. `shot.ts`
+builds its Playwright context with no `hasTouch`, and its three widths
+(320/390/430) are all below the 767px breakpoint, so its runs previously measured
+the desktop tree squeezed narrow and now measure the phone shell. That is the more
+useful measurement for a mobile-width check, but it does invalidate baselines from
+earlier runs. Documented in `.claude/skills/verify-ui/SKILL.md`, along with
+`?mobile=0` as the way to measure the narrow desktop tree.
+
 ## Design
 
 ### Pure decision function
