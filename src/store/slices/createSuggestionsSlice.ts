@@ -29,25 +29,22 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
   updateSuggestionStatus: async (id, status) => {
     const target = get().suggestions.find((r) => r.id === id);
     if (!target) return;
-    const previousStatus = target.status;
 
-    // Optimistic: triaging should feel instant. Reverted below if the write is
-    // rejected, so the badge can never claim an item was handled when it wasn't.
-    // Only this one row's previous status is remembered (not a snapshot of the
-    // whole list) so a revert can never clobber a concurrent update to another
-    // row, or discard a loadSuggestions() that lands in between.
+    // Optimistic: triaging should feel instant.
     const after = get().suggestions.map((r) => (r.id === id ? { ...r, status } : r));
     set({ suggestions: after, suggestionsUnread: unread(after) });
 
     const ok = await apiSetStatus(id, status);
     if (!ok) {
-      // Re-apply against current state at revert time. If the row is gone
-      // (e.g. a reload removed it), the map is a no-op — never resurrect it.
-      const current = get().suggestions;
-      const reverted = current.map((r) =>
-        r.id === id ? { ...r, status: previousStatus } : r
-      );
-      set({ suggestions: reverted, suggestionsUnread: unread(reverted) });
+      // Do not try to reconstruct the previous state locally — with two
+      // interleaved writes on the same row, or a reload landing mid-flight,
+      // any client-remembered "previous" value can be stale or was never
+      // confirmed by the server in the first place (see reviewer-reported
+      // failure modes). The database is the source of truth and a failed
+      // write is a rare path, so just discard the local guess and resync
+      // via the slice's own loadSuggestions() — one extra round trip is
+      // cheap and always leaves the UI showing authoritative server state.
+      await get().loadSuggestions();
     }
   },
 });
