@@ -77,7 +77,7 @@ begin
   -- Prune. This table must not become a growing record of who submitted from
   -- where; one hour of history is all the cap needs.
   delete from public.suggestions_rate_log
-   where created_at < now() - interval '24 hours';
+   where created_at < now() - interval '1 hour';
 
   select count(*) into recent
     from public.suggestions_rate_log

@@ -112,7 +112,7 @@ create index suggestions_rate_log_hash_time on public.suggestions_rate_log (ip_h
 Two deliberate differences from the booking log:
 
 - **The salt fails closed.** `SUGGESTION_HASH_SALT` absent → the function refuses, exactly as `BOOKING_HASH_SALT` does. A raw or unsalted IP is personal data; the salt is what makes it pseudonymous.
-- **It prunes.** Rows older than 24h are deleted inside the same call. `library_bookings_log` never got this and accumulates indefinitely; this table should not become a growing record of who submitted from where.
+- **It prunes.** Rows older than 1 hour are deleted inside the same call. `library_bookings_log` never got this and accumulates indefinitely; this table should not become a growing record of who submitted from where.
 
 ---
 
