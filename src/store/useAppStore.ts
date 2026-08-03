@@ -39,7 +39,7 @@ import { createAdminSlice } from './slices/createAdminSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { resetRealDataStores } from '../services/loadRealDataSnapshot';
-import { DEV_SOCIETY } from '../utils/mock/devSociety';
+import { devAdminSeed } from '../utils/mock/devSociety';
 import type { Session } from '@supabase/supabase-js';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
 
@@ -112,15 +112,15 @@ export const initializeStore = async () => {
   s.loadLanguage();
   s.loadErrorReportingEnabled();
   s.loadContext();
-  if (DEV_SOCIETY) {
-    // Dev-only: seed a persistent "reIS" society session so the organizer UI is
-    // available at localhost:3000 without a Supabase login on every reload
-    // (CRUD is routed to a local store — see utils/mock/devSociety). Stripped
-    // from production by import.meta.env.DEV.
+  const devSeed = devAdminSeed();
+  if (devSeed) {
+    // Dev-only: seed a persistent society/admin session so the organizer and
+    // reIS-admin surfaces are available at localhost:3000 without a Supabase
+    // login on every reload. Stripped from production by import.meta.env.DEV.
     useAppStore.setState({
-      adminRole: 'association',
-      adminAssociationId: DEV_SOCIETY,
-      adminSession: { user: { email: `${DEV_SOCIETY}@dev.local` } } as unknown as Session,
+      adminRole: devSeed.adminRole,
+      adminAssociationId: devSeed.adminAssociationId,
+      adminSession: { user: { email: devSeed.email } } as unknown as Session,
     });
     void s.loadSocietyPosts();
   } else {

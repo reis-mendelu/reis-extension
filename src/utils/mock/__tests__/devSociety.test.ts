@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { devSocietyStore } from '../devSociety';
+import { devSocietyStore, devAdminSeed } from '../devSociety';
 import type { PostInput } from '../../../api/societyPosts';
 
 const input = (over: Partial<PostInput> = {}): PostInput => ({
@@ -56,5 +56,27 @@ describe('devSocietyStore (offline dev society CRUD)', () => {
     const a = devSocietyStore.create(input(), 'reis', 'x');
     const b = devSocietyStore.create(input(), 'reis', 'x');
     expect(a.id).not.toBe(b.id);
+  });
+});
+
+describe('devAdminSeed', () => {
+  it('returns null when no dev society is configured', () => {
+    expect(devAdminSeed(false, undefined)).toBeNull();
+  });
+
+  it('seeds an association session by default', () => {
+    expect(devAdminSeed('esn', undefined)).toEqual({
+      adminRole: 'association',
+      adminAssociationId: 'esn',
+      email: 'esn@dev.local',
+    });
+  });
+
+  it('seeds a reis_admin session with no association when asked', () => {
+    expect(devAdminSeed('esn', 'reis_admin')).toEqual({
+      adminRole: 'reis_admin',
+      adminAssociationId: null,
+      email: 'reis.mendelu@gmail.com',
+    });
   });
 });
