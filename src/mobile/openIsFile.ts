@@ -17,6 +17,14 @@ interface DownloadsPlugin {
  *  Capacitor's Filesystem cannot do this — its Directory enum has no Downloads. */
 const Downloads = registerPlugin<DownloadsPlugin>('Downloads');
 
+/**
+ * Precedence for the saved filename. A caller-chosen name wins; an empty one is
+ * treated as absent so a blank override can never produce a nameless file.
+ */
+export function chooseFilename(override: string | undefined, fromResponse: string): string {
+  return override || fromResponse;
+}
+
 /** True when the app must NOT fall back to window.open for IS URLs. */
 export function isNativeHost(): boolean {
   return getPlatform().kind === 'capacitor';
@@ -36,8 +44,13 @@ export function isNativeHost(): boolean {
  *    BROWSER, which has no IS session.
  * 3. **On Android it lands in Downloads with a notification**, like any
  *    browser — not a share sheet. See deliverFile for the iOS asymmetry.
+ *
+ * `filenameOverride` exists for the study documents: `tisk_dokumentu.pl`
+ * returns IS's own Content-Disposition name, but STUDY_DOCUMENTS defines what
+ * the student should actually see (`Potvrzeni_o_studiu.pdf`). Subject files
+ * pass nothing and keep the server's name.
  */
-export async function openIsFileNatively(url: string): Promise<void> {
+export async function openIsFileNatively(url: string, filenameOverride?: string): Promise<void> {
   const downloadUrl = toDirectDownloadUrl(url) ?? url;
   const token = await loadStoredToken();
   const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
@@ -55,7 +68,7 @@ export async function openIsFileNatively(url: string): Promise<void> {
   }
 
   const base64 = await blobToBase64(result.blob);
-  await deliverFile(result.filename, base64, result.blob.type || 'application/pdf', {
+  await deliverFile(chooseFilename(filenameOverride, result.filename), base64, result.blob.type || 'application/pdf', {
     platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
     saveToDownloads: (o) => Downloads.save(o),
     shareFile: async (o) => {

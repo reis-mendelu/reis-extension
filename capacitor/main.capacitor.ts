@@ -8,6 +8,7 @@ import { getPlatform } from '@/platform';
 import { TOKEN_KEY } from '@/platform/tokenStore';
 import { ensureSession } from '@/mobile/ensureSession';
 import { handleBackPress } from '@/mobile/backButton';
+import { installMobileActionHandler } from '@/mobile/actionHandler';
 import { useAppStore } from '@/store/useAppStore';
 
 const IS_LOGIN_URL = 'https://is.mendelu.cz/system/login.pl?lang=cz';
@@ -48,6 +49,11 @@ async function boot(): Promise<void> {
       await InAppBrowser.close();
     },
   });
+
+  // Before the React root: the app posts REIS_ACTION as soon as it renders
+  // (a watchdog exam refresh, a tapped download), and with no responder those
+  // sit until the 30 s timeout. Installing first means none are missed.
+  installMobileActionHandler();
 
   // Dynamic import on purpose: this module renders the React root on
   // evaluation, so a static import would boot the app BEFORE a session exists
