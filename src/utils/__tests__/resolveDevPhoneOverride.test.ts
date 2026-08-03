@@ -12,13 +12,16 @@ describe('resolveDevPhoneOverride', () => {
     expect(resolveDevPhoneOverride({ param: '0', isNarrow: false })).toBe(false);
   });
 
-  it('follows the viewport when no param is given', () => {
+  it('forces the phone branch on a narrow viewport when no param is given', () => {
     expect(resolveDevPhoneOverride({ param: null, isNarrow: true })).toBe(true);
-    expect(resolveDevPhoneOverride({ param: null, isNarrow: false })).toBe(false);
+  });
+
+  it('defers to the viewport (null) when unpinned and wide', () => {
+    expect(resolveDevPhoneOverride({ param: null, isNarrow: false })).toBeNull();
   });
 
   it('ignores an unrecognised param value and follows the viewport', () => {
     expect(resolveDevPhoneOverride({ param: 'yes', isNarrow: true })).toBe(true);
-    expect(resolveDevPhoneOverride({ param: '', isNarrow: false })).toBe(false);
+    expect(resolveDevPhoneOverride({ param: '', isNarrow: false })).toBeNull();
   });
 });

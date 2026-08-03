@@ -10,6 +10,12 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-03-dev-phone-auto-switch-design.md`
 
+**Status:** Executed. All steps below are done — `fd8e4331` (Task 1), `d65fd306`
+(Task 2). Two changes landed afterwards from PR review, so the code blocks below
+are the plan as written, not the final state: the resolver returns `null` rather
+than `false` for the unpinned-wide case, and the subscription registers an
+`import.meta.hot?.dispose` teardown. Read the source files for current code.
+
 ## Global Constraints
 
 - Scope is the dev webapp only. Do **not** modify `src/utils/resolvePhoneViewport.ts` — its `isTouch && isNarrow` rule is production behavior and stays as-is.
@@ -31,7 +37,7 @@
 - Consumes: nothing.
 - Produces: `resolveDevPhoneOverride({ param: string | null; isNarrow: boolean }): boolean`, plus the exported interface `DevPhoneOverrideInput` as its parameter type. Task 2 imports the function only.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/utils/__tests__/resolveDevPhoneOverride.test.ts`:
 
@@ -62,7 +68,7 @@ describe('resolveDevPhoneOverride', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 npx vitest run src/utils/__tests__/resolveDevPhoneOverride.test.ts
@@ -70,7 +76,7 @@ npx vitest run src/utils/__tests__/resolveDevPhoneOverride.test.ts
 
 Expected: FAIL — `Failed to resolve import "../resolveDevPhoneOverride"`.
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 Create `src/utils/resolveDevPhoneOverride.ts`:
 
@@ -96,7 +102,7 @@ export function resolveDevPhoneOverride({ param, isNarrow }: DevPhoneOverrideInp
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 npx vitest run src/utils/__tests__/resolveDevPhoneOverride.test.ts
@@ -104,7 +110,7 @@ npx vitest run src/utils/__tests__/resolveDevPhoneOverride.test.ts
 
 Expected: PASS — 4 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/utils/resolveDevPhoneOverride.ts src/utils/__tests__/resolveDevPhoneOverride.test.ts
@@ -124,7 +130,7 @@ git commit -m "feat(dev): add resolveDevPhoneOverride, a pure dev phone-override
 
 **Critical detail:** `useAppStore` is created with a plain `create<AppState>()(...)` and does **not** use the `subscribeWithSelector` middleware. The selector form `subscribe(selector, listener)` is therefore unavailable — `subscribe(listener)` fires on *every* store change. The listener must compare `isNarrow` against the last applied value and bail when unchanged. Without that guard, every unrelated store write calls `setDevPhoneOverride`, which is itself a `set()`, re-notifying subscribers in a loop.
 
-- [ ] **Step 1: Replace the file contents**
+- [x] **Step 1: Replace the file contents**
 
 Replace all of `dev/phoneOverride.ts` with:
 
@@ -167,7 +173,7 @@ if (import.meta.env.DEV) {
 }
 ```
 
-- [ ] **Step 2: Typecheck**
+- [x] **Step 2: Typecheck**
 
 ```bash
 npm run typecheck
@@ -175,7 +181,7 @@ npm run typecheck
 
 Expected: PASS, no errors.
 
-- [ ] **Step 3: Lint the changed files**
+- [x] **Step 3: Lint the changed files**
 
 ```bash
 npx eslint dev/phoneOverride.ts src/utils/resolveDevPhoneOverride.ts src/utils/__tests__/resolveDevPhoneOverride.test.ts --max-warnings=0
@@ -183,7 +189,7 @@ npx eslint dev/phoneOverride.ts src/utils/resolveDevPhoneOverride.ts src/utils/_
 
 Expected: no output (clean). CI's lint gate is `--max-warnings=0`, so warnings fail the build.
 
-- [ ] **Step 4: Run the full unit suite for regressions**
+- [x] **Step 4: Run the full unit suite for regressions**
 
 ```bash
 npm run test:run
@@ -193,7 +199,7 @@ Expected: PASS. Pay attention to `src/utils/__tests__/resolvePhoneViewport.test.
 
 Use `test:run`, not `test` — `npm run test` is bare `vitest`, which stays in watch mode and never exits.
 
-- [ ] **Step 5: Verify manually in the dev webapp**
+- [x] **Step 5: Verify manually in the dev webapp**
 
 Start the webapp with the `reis-webapp` launch config (`preview_start`), not a
 foreground `npm run dev:web` — the dev server does not exit and will block.
@@ -212,7 +218,7 @@ Then confirm the pins still win:
 - `http://localhost:3000/?mobile=1` at a **wide** viewport → phone shell.
 - `http://localhost:3000/?mobile=0` at the **Mobile** preset → desktop shell.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add dev/phoneOverride.ts

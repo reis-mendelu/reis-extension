@@ -27,10 +27,16 @@ if (import.meta.env.DEV) {
   // change; the equality guard is what keeps it from re-entering through
   // setDevPhoneOverride's own set().
   if (!pinned) {
-    useAppStore.subscribe((state) => {
+    const unsubscribe = useAppStore.subscribe((state) => {
       if (state.isNarrow === lastIsNarrow) return;
       lastIsNarrow = state.isNarrow;
       apply(lastIsNarrow);
     });
+
+    // A side-effect module with no accept handler normally forces a full page
+    // reload, which would drop this listener anyway — but disposing explicitly
+    // means we don't have to depend on that, and a hot re-eval can't stack a
+    // second listener holding a stale `param`.
+    import.meta.hot?.dispose(() => unsubscribe());
   }
 }

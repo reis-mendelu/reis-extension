@@ -1,7 +1,7 @@
 # Dev webapp: auto-switch to phone layout on narrow viewport
 
 **Date:** 2026-08-03
-**Status:** Approved, not yet implemented
+**Status:** Implemented — `fd8e4331` (resolver + tests), `d65fd306` (wiring)
 
 ## Problem
 
@@ -66,11 +66,11 @@ load-bearing in two ways:
   `?mobile=1`. Pinning keeps that spec passing.
 - It preserves the manual escape hatch for forcing desktop at a narrow width.
 
-The function returns a boolean rather than the tri-state `boolean | null` that
-`devPhoneOverride` accepts. Returning `false` when wide, instead of `null`, is safe:
-`resolvePhoneViewport` short-circuits on `override === false` and returns false,
-which is what `isTouch && isNarrow` would have produced anyway at a wide width — on
-a real tablet (touch, not narrow) both paths give desktop.
+Unpinned and wide returns `null`, the store's "defer to the viewport" value, not
+`false`. The two are behaviourally identical — the wide case implies
+`isNarrow === false`, so the `isTouch && isNarrow` fallback is false regardless —
+but `null` states what is meant. `false` would assert a desktop override nobody
+asked for, which is a latent trap if a future reader ever distinguishes the two.
 
 ### Wiring
 
