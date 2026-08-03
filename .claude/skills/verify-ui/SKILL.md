@@ -38,6 +38,13 @@ npm run verify:ui -- <label> --view exams --url http://localhost:<port>
 | `--onboarding` | off | Keep the welcome modal. Off by default: it blocks the whole page. |
 | `--wait` | 600 | ms to settle after navigation. |
 
+All three widths are below the 767px phone breakpoint, so the dev webapp renders
+the **phone** shell and that is what gets measured. (Before the dev override
+followed viewport width, these runs measured the desktop tree squeezed narrow —
+`shot.ts` sets no `hasTouch`, so the strict `isTouch && isNarrow` rule never
+fired.) To measure the narrow *desktop* tree instead, append `?mobile=0` to
+`--url`.
+
 Output always lands in `.verify/` (gitignored), **wiped at the start of every
 run**, with every path printed absolute. Exit code is 1 when there are errors.
 
@@ -66,9 +73,17 @@ Occluded elements are skipped, so findings describe what is actually on screen.
   keep components thin. Every real geometry bug in this project was caught by a
   unit test or by this script — none by reading code.
 - Real exam data is seasonal and usually absent from the snapshot — a July
-  scrape leaves the Exams screen permanently empty. Start the `reis-webapp-exams`
-  preview config (`npm run dev:web:exams`) for a populated screen instead of
-  hand-editing `public/dev-real-data.json`.
+  scrape leaves the Exams screen permanently empty. Serve the exam fixture for a
+  populated screen instead of hand-editing `public/dev-real-data.json`.
+  `REIS_FIXTURE` is read from the process env at server start, so this one needs
+  a background Bash server — there is no launch config for it:
+
+  ```bash
+  npm run dev:web:exams
+  ```
+
+  This is the documented exception to "never start the dev webapp with Bash";
+  every other run uses the `reis-webapp` preview config.
 
 ## Fixtures
 
