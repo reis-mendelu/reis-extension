@@ -51,6 +51,11 @@ describe('fetchViaCapacitor', () => {
         data: '<a href="/system/logout.pl">x</a>',
         headers: { 'Content-Type': 'text/html' },
       })),
+      httpPost: vi.fn(async () => ({
+        status: 200,
+        data: '<a href="/system/logout.pl">x</a>',
+        headers: { 'Content-Type': 'text/html' },
+      })),
       ...over,
     };
   }
@@ -126,6 +131,68 @@ describe('fetchViaCapacitor', () => {
   it('accepts a relative URL, which can only resolve to IS', async () => {
     const d = deps();
     await expect(fetchViaCapacitor('/auth/student/', TOKEN, d)).resolves.toBeInstanceOf(Response);
+  });
+
+  it('sends a POST through httpPost with the body as data', async () => {
+    const d = deps();
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/wifi/certifikat.pl', TOKEN, d, {
+      method: 'POST',
+      body: 'lang=cz&gen=x',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+    expect(d.httpPost).toHaveBeenCalledWith({
+      url: 'https://is.mendelu.cz/auth/wifi/certifikat.pl',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      data: 'lang=cz&gen=x',
+    });
+    expect(d.httpGet).not.toHaveBeenCalled();
+  });
+
+  it('still routes a GET through httpGet, never httpPost', async () => {
+    const d = deps();
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d);
+    expect(d.httpGet).toHaveBeenCalled();
+    expect(d.httpPost).not.toHaveBeenCalled();
+  });
+
+  it('treats a lowercase method as POST', async () => {
+    const d = deps();
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, { method: 'post', body: 'a=1' });
+    expect(d.httpPost).toHaveBeenCalled();
+  });
+
+  it('applies the iOS Cookie header LAST so a caller cannot detach the session', async () => {
+    const d = deps({ platform: 'ios' });
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, {
+      method: 'POST',
+      body: 'a=1',
+      headers: { Cookie: 'UISAuth=attacker-supplied' },
+    });
+    const sent = (d.httpPost as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as {
+      headers: Record<string, string>;
+    };
+    expect(sent.headers.Cookie).toBe(`UISAuth=${TOKEN}`);
+  });
+
+  it('seeds the native jar for a POST on android too', async () => {
+    const d = deps();
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, { method: 'POST', body: 'a=1' });
+    expect(d.setCookie).toHaveBeenCalled();
+  });
+
+  it('refuses a POST to a non-IS origin before sending anything', async () => {
+    const d = deps();
+    await expect(
+      fetchViaCapacitor('https://evil.example.com/x', TOKEN, d, { method: 'POST', body: 'a=1' })
+    ).rejects.toThrow(/refusing to send the IS session/);
+    expect(d.httpPost).not.toHaveBeenCalled();
+  });
+
+  it('applies the sessionExpired rule to a POST as well', async () => {
+    const d = deps({ httpPost: vi.fn(async () => ({ status: 403, data: '' })) });
+    await expect(
+      fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, { method: 'POST', body: 'a=1' })
+    ).rejects.toMatchObject({ sessionExpired: true });
   });
 });
 

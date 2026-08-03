@@ -11,10 +11,23 @@ export interface CapacitorHttpResponse {
   headers?: Record<string, string>;
 }
 
+/** The request shape fetchWithAuth forwards. `headers` are the CALLER's own —
+ *  see client.ts, which deliberately does not forward DEFAULT_HEADERS here. */
+export interface CapacitorRequestOptions {
+  method?: string;
+  body?: string;
+  headers?: Record<string, string>;
+}
+
 export interface CapacitorTransportDeps {
   platform: 'ios' | 'android' | 'web';
   setCookie(o: { url: string; key: string; value: string }): Promise<void>;
   httpGet(o: { url: string; headers?: Record<string, string> }): Promise<CapacitorHttpResponse>;
+  httpPost(o: {
+    url: string;
+    headers?: Record<string, string>;
+    data?: string;
+  }): Promise<CapacitorHttpResponse>;
 }
 
 /**
@@ -88,7 +101,8 @@ export function assertIsOrigin(url: string): void {
 export async function fetchViaCapacitor(
   url: string,
   token: string,
-  deps: CapacitorTransportDeps
+  deps: CapacitorTransportDeps,
+  options: CapacitorRequestOptions = {}
 ): Promise<Response> {
   assertIsOrigin(url);
   const delivery = buildCookieDelivery(deps.platform, token);
@@ -101,7 +115,14 @@ export async function fetchViaCapacitor(
     });
   }
 
-  const res = await deps.httpGet({ url, headers: delivery.headers });
+  // Cookie delivery goes LAST: on iOS the Cookie header IS the authentication,
+  // so a caller must not be able to overwrite it and silently detach the
+  // session. On Android that map is empty and the jar was seeded above.
+  const headers = { ...options.headers, ...delivery.headers };
+  const isPost = (options.method ?? 'GET').toUpperCase() === 'POST';
+  const res = isPost
+    ? await deps.httpPost({ url, headers, data: options.body ?? '' })
+    : await deps.httpGet({ url, headers });
   const body = String(res.data ?? '');
 
   if (res.status === 401 || res.status === 403) {

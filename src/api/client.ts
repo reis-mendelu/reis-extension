@@ -41,6 +41,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
       platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
       setCookie: (o) => CapacitorCookies.setCookie(o),
       httpGet: (o) => CapacitorHttp.get(o),
+      httpPost: (o) => CapacitorHttp.post(o),
     });
   }
 
