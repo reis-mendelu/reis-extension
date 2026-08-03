@@ -119,24 +119,24 @@ the Drive actions stop masquerading as network problems.
 is Capacitor. The `e.source !== window.parent` check stays, so on a top-level
 window only same-window posts pass — no widening of what a hostile frame can do.
 
-### 5. Logout — open decision
+### 5. Logout — decided: **C, defer**
 
 Current mobile behaviour is worse than "does not work": `logout()`
 (`src/api/proxyClient.ts:47`) wipes IndexedDB **first**, then hangs 30 s. The
 student is left with an emptied app and a still-valid token.
 
-- **A — local sign-out (recommended):** clear token, IDB and the native cookie
-  jar, then reload; `boot()` finds no token and presents the login WebView. Fully
-  signed out on the device; the server session lingers until IS times it out.
-- **B — leave dead but fail fast** (the §3 default).
-- **C — defer** until POST support lands (Task 3), then a real server-side logout.
+**Chosen: C — defer** until POST support lands (Task 3), then implement a real
+server-side logout. (A was a local-only sign-out; B was leaving it dead.)
 
-A true logout POSTs `/auth/system/logout.pl`, and the Capacitor transport is
-GET-only until Task 3 — so A is the most that can be done today, and C can
-upgrade it later without changing the UI.
+Deferring the *implementation* does not mean keeping the destructive half.
+`logout()` now bails on Capacitor **before** clearing anything, and the mobile
+profile sheet catches the rejection to show a toast — an unhandled rejection
+there would fire a telemetry report on every tap and tell the student nothing.
+Extension behaviour is untouched.
 
-**Until this is decided, `logout` falls under the §3 default: it fails fast and
-loudly instead of hanging.** That is already strictly better than today.
+**When Task 3 lands**, the mobile branch replaces that throw with a real
+`/auth/system/logout.pl` POST followed by the existing clear-and-reload; the UI
+needs no change, and `settings.logoutUnavailable` can be removed.
 
 ---
 
