@@ -153,6 +153,21 @@ no Capacitor imports — the existing pattern):
 - the origin allowance accepts the app's own origin on Capacitor and still
   rejects a foreign one
 
+### Outcome (2026-08-03)
+
+Device-verified on Android with a live session: all five rows tapped, all five
+PDFs in Downloads under their chosen filenames, `%PDF-1.5`, 59–99 KB.
+
+Verification also exposed a bug the dispatcher merely *revealed*: four of the five
+documents used IS's sealed (`_el`) triggers, which do not download at all — they
+queue an async job and now answer a GET with `text/html` ("Request body constraint
+violation"). Because `downloadDocumentInPage` reads a non-PDF 200 as an expired
+session, the **extension** force-navigated the student to the IS login page on
+click. The catalog now uses the plain triggers on both platforms, a test asserts
+no `_el` survives, and the sheet subtitle no longer promises an electronic
+signature the plain documents lack. Sealed copies need POST support plus a
+repository pickup flow — a real feature, not a flag flip.
+
 **Device verification is non-negotiable.** The failure class here is *silent* —
 `a.download` on a blob URL saves nothing and throws nothing on Android
 (`src/mobile/saveDocument.ts`). Build, install, tap all five document rows,
