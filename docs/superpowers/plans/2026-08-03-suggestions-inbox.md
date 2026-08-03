@@ -1261,10 +1261,18 @@ git commit -m "feat(store): suggestions slice with optimistic status updates"
 
 **Files:**
 - Modify: `src/store/slices/createAdminSlice.ts:66-115`
+- Create: `src/components/SocietyAdmin/SuggestionsToast.tsx`
+- Modify: `src/components/AppOverlays.tsx`
 - Test: `src/store/slices/__tests__/createAdminSlice.test.ts`
+- Test: `src/components/SocietyAdmin/__tests__/SuggestionsToast.test.tsx`
 
 **Interfaces:**
 - Consumes: `loadSuggestions`, `suggestionsUnread` (Task 6).
+
+**Layering, and why the toast is not in the slice:** no slice or service in this
+codebase imports `sonner` or does translation — `toast` and `t()` are strictly
+component-level, and `t` does not exist on the store at all. So the slice only
+loads; a render-less component announces.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1292,9 +1300,6 @@ vi.mock('../../../services/admin/authClient', () => ({
 }));
 vi.mock('../../../api/societyPosts', () => ({ listMyPosts: vi.fn().mockResolvedValue([]) }));
 
-const toastInfo = vi.fn();
-vi.mock('sonner', () => ({ toast: { info: (...a: unknown[]) => toastInfo(...a) } }));
-
 describe('createAdminSlice boot', () => {
   let state: Record<string, unknown>;
   let set: ReturnType<typeof vi.fn>;
@@ -1302,7 +1307,6 @@ describe('createAdminSlice boot', () => {
   const loadSuggestions = vi.fn();
 
   beforeEach(() => {
-    toastInfo.mockReset();
     loadSuggestions.mockReset();
     loadSuggestions.mockResolvedValue(undefined);
     set = vi.fn((updater) => {
@@ -1313,7 +1317,7 @@ describe('createAdminSlice boot', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state = { ...createAdminSlice(set as any, get as any, {} as any), loadSuggestions,
       suggestionsUnread: 0, setMapMode: vi.fn(), focusCampus: vi.fn(),
-      refreshSocietyMapEvents: vi.fn(), t: (k: string) => k };
+      refreshSocietyMapEvents: vi.fn() };
   });
 
   it('loads suggestions for a reis_admin session', async () => {
@@ -1343,41 +1347,22 @@ describe('createAdminSlice boot', () => {
 Run: `npx vitest run src/store/slices/__tests__/createAdminSlice.test.ts`
 Expected: FAIL — `loadSuggestions` is never called.
 
-- [ ] **Step 3: Wire the load and the toast**
+- [ ] **Step 3: Load the inbox when the role resolves**
 
-In `src/store/slices/createAdminSlice.ts`, add near the top:
-
-```ts
-import { toast } from 'sonner';
-```
-
-Add this helper above `createAdminSlice`:
+In `src/store/slices/createAdminSlice.ts`, in `loadAdminSession`, after
+`set({ adminSession: data.session, adminRole: role, adminAssociationId: associationId });`
+and before `await get().loadSocietyPosts();`, insert:
 
 ```ts
-// After the role resolves, pull the inbox and announce anything untriaged. This
-// is a pull, not a push: nothing arrives while the iframe is closed, so the
-// count is surfaced at every open. Dismissing the toast does not clear it —
-// only changing a suggestion's status does.
-async function announceSuggestions(get: () => AppState): Promise<void> {
-  await get().loadSuggestions();
-  const n = get().suggestionsUnread;
-  if (n > 0) toast.info(get().t('admin.newSuggestions', { count: n }));
-}
-```
-
-`AppState` needs importing as a type:
-
-```ts
-import type { AppSlice, AppState } from '../types';
-```
-
-In `loadAdminSession`, after `set({ adminSession: data.session, adminRole: role, adminAssociationId: associationId });` and before `await get().loadSocietyPosts();`, insert:
-
-```ts
-    if (role === 'reis_admin') await announceSuggestions(get);
+    // Pull the inbox as soon as the role is known. This is a pull, not a push:
+    // nothing arrives while the iframe is closed, so the count is refreshed at
+    // every open and announced by SuggestionsToast.
+    if (role === 'reis_admin') await get().loadSuggestions();
 ```
 
 Apply the same single line at the equivalent point in `adminLogin`, so logging in fresh also loads the inbox.
+
+No `sonner` or `t()` import belongs in this file — see the layering note above.
 
 In `adminLogout`, add `suggestions: []` and `suggestionsUnread: 0` to the reset `set({...})` so a logout does not leave another user's suggestions in memory.
 
@@ -1404,12 +1389,120 @@ The Czech string is phrased to sidestep Czech plural agreement (`1 nový návrh`
 Run: `npx vitest run src/store/slices/__tests__/createAdminSlice.test.ts`
 Expected: PASS, 3 tests.
 
-- [ ] **Step 6: Lint and commit**
+- [ ] **Step 6: Write the failing toast test**
+
+Create `src/components/SocietyAdmin/__tests__/SuggestionsToast.test.tsx`:
+
+```tsx
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render } from '@testing-library/react';
+import { useAppStore } from '../../../store/useAppStore';
+import { SuggestionsToast } from '../SuggestionsToast';
+
+const toastInfo = vi.fn();
+vi.mock('sonner', () => ({ toast: { info: (...a: unknown[]) => toastInfo(...a) } }));
+
+describe('SuggestionsToast', () => {
+  beforeEach(() => {
+    toastInfo.mockReset();
+    useAppStore.setState({ language: 'en', adminRole: null, suggestionsUnread: 0 });
+  });
+
+  it('says nothing to a student session', () => {
+    useAppStore.setState({ adminRole: null, suggestionsUnread: 4 });
+    render(<SuggestionsToast />);
+    expect(toastInfo).not.toHaveBeenCalled();
+  });
+
+  it('says nothing when a reis_admin has no unread', () => {
+    useAppStore.setState({ adminRole: 'reis_admin', suggestionsUnread: 0 });
+    render(<SuggestionsToast />);
+    expect(toastInfo).not.toHaveBeenCalled();
+  });
+
+  it('announces the unread count to a reis_admin', () => {
+    useAppStore.setState({ adminRole: 'reis_admin', suggestionsUnread: 4 });
+    render(<SuggestionsToast />);
+    expect(toastInfo).toHaveBeenCalledTimes(1);
+    expect(String(toastInfo.mock.calls[0][0])).toContain('4');
+  });
+
+  it('announces once per mount, not on every store change', () => {
+    useAppStore.setState({ adminRole: 'reis_admin', suggestionsUnread: 4 });
+    render(<SuggestionsToast />);
+    useAppStore.setState({ suggestionsUnread: 5 });
+    expect(toastInfo).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders nothing', () => {
+    const { container } = render(<SuggestionsToast />);
+    expect(container).toBeEmptyDOMElement();
+  });
+});
+```
+
+- [ ] **Step 7: Run it to confirm it fails**
+
+Run: `npx vitest run src/components/SocietyAdmin/__tests__/SuggestionsToast.test.tsx`
+Expected: FAIL — cannot resolve `../SuggestionsToast`.
+
+- [ ] **Step 8: Implement the toast component**
+
+Create `src/components/SocietyAdmin/SuggestionsToast.tsx`:
+
+```tsx
+import { useEffect, useRef } from 'react';
+import { toast } from 'sonner';
+import { useAppStore } from '../../store/useAppStore';
+import { useTranslation } from '../../hooks/useTranslation';
+
+// Render-less. Announces untriaged suggestions once per app open to a reIS
+// admin. Toasts and t() live in components in this codebase — never in slices,
+// which have no access to `t` at all. The ref guard keeps a later store change
+// (marking one triaged) from re-firing the announcement mid-session.
+export function SuggestionsToast() {
+  const unread = useAppStore((s) => (s.adminRole === 'reis_admin' ? s.suggestionsUnread : 0));
+  const { t } = useTranslation();
+  const announced = useRef(false);
+
+  useEffect(() => {
+    if (announced.current || unread === 0) return;
+    announced.current = true;
+    toast.info(t('admin.newSuggestions', { count: unread }));
+  }, [unread, t]);
+
+  return null;
+}
+```
+
+The ref is read inside the effect, never during render — the project's `react-hooks` rules ban render-time ref access.
+
+- [ ] **Step 9: Mount it**
+
+In `src/components/AppOverlays.tsx`, add the import beside `SocietyAdminOverlay`:
+
+```tsx
+import { SuggestionsToast } from './SocietyAdmin/SuggestionsToast';
+```
+
+and render it next to `<SocietyAdminOverlay />`:
+
+```tsx
+      <SocietyAdminOverlay />
+      <SuggestionsToast />
+```
+
+- [ ] **Step 10: Run the tests**
+
+Run: `npx vitest run src/components/SocietyAdmin src/store/slices/__tests__/createAdminSlice.test.ts`
+Expected: PASS — 5 new toast tests, 3 admin-slice tests, and the 3 pre-existing overlay tests.
+
+- [ ] **Step 11: Lint and commit**
 
 ```bash
-npx eslint src/store/slices/createAdminSlice.ts src/store/slices/__tests__/createAdminSlice.test.ts --max-warnings=0
-git add src/store/slices/createAdminSlice.ts src/store/slices/__tests__/createAdminSlice.test.ts src/i18n
-git commit -m "feat(admin): load suggestions and announce unread at every boot"
+npx eslint src/store/slices/createAdminSlice.ts src/store/slices/__tests__/createAdminSlice.test.ts src/components/SocietyAdmin/SuggestionsToast.tsx src/components/SocietyAdmin/__tests__/SuggestionsToast.test.tsx src/components/AppOverlays.tsx --max-warnings=0
+git add src/store/slices/createAdminSlice.ts src/store/slices/__tests__/createAdminSlice.test.ts src/components/SocietyAdmin src/components/AppOverlays.tsx src/i18n
+git commit -m "feat(admin): load suggestions at boot and announce unread once per open"
 ```
 
 ---
