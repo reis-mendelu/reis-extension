@@ -6,12 +6,16 @@ import {
   buildZadostUrl,
 } from '../studyDocuments';
 
-const byId = (id: string) => STUDY_DOCUMENTS.find(d => d.id === id)!;
+const byId = (id: string) => STUDY_DOCUMENTS.find((d) => d.id === id)!;
 
 describe('studyDocuments catalog', () => {
   it('lists the five one-click documents in order', () => {
-    expect(STUDY_DOCUMENTS.map(d => d.id)).toEqual([
-      'potvrzeni-cz', 'potvrzeni-en', 'prehled-cz', 'prehled-en', 'reg-arch',
+    expect(STUDY_DOCUMENTS.map((d) => d.id)).toEqual([
+      'potvrzeni-cz',
+      'potvrzeni-en',
+      'prehled-cz',
+      'prehled-en',
+      'reg-arch',
     ]);
   });
 

@@ -24,19 +24,54 @@ export interface StudyDocument {
  * a copy into Úložiště dokumentů.
  *
  * `fallbackTrigger` is the unsealed equivalent, used only when the sealed
- * endpoint answers with a page instead of a file. That is not hypothetical: on
- * 2026-08-03 every sealed endpoint began returning "Request body constraint
- * violation" — for plain desktop browsers too, so it is a MENDELU-side fault
- * reIS cannot fix. An unsealed document beats no document, and the UI tells the
- * student which one they got. See memory `tisk-dokumentu-catalog`.
+ * endpoint answers with a page instead of a file. That is not hypothetical, and
+ * the failure is PER-DOCUMENT rather than a blanket outage — measured repeatedly
+ * on 2026-08-03, `potvrzeni_tisk_el` failed 3/3 with "Request body constraint
+ * violation" while `prehled_tisk_el` succeeded 3/3. It reproduces in a plain
+ * desktop browser, so it is a MENDELU-side fault reIS cannot fix.
+ *
+ * An unsealed document beats no document, and the UI tells the student which one
+ * they got — a silent downgrade is the one way this can do harm, since an
+ * unsealed copy may be refused. See memory `tisk-dokumentu-catalog`.
  */
 export const STUDY_DOCUMENTS: StudyDocument[] = [
-  { id: 'potvrzeni-cz', labelKey: 'confirmationCz', trigger: 'potvrzeni_tisk_el=1', fallbackTrigger: 'potvrzeni_tisk=1', filename: 'Potvrzeni_o_studiu.pdf' },
-  { id: 'potvrzeni-en', labelKey: 'confirmationEn', trigger: 'potvrzeni_tisk_el=1', fallbackTrigger: 'potvrzeni_tisk=1', contentLang: 'eng', filename: 'Confirmation_of_study.pdf' },
-  { id: 'prehled-cz', labelKey: 'overviewCz', trigger: 'prehled_tisk_el=1', fallbackTrigger: 'prehled_tisk=1', filename: 'Prehled_studia.pdf' },
-  { id: 'prehled-en', labelKey: 'overviewEn', trigger: 'prehled_tisk_el=1', fallbackTrigger: 'prehled_tisk=1', contentLang: 'eng', filename: 'Study_overview.pdf' },
+  {
+    id: 'potvrzeni-cz',
+    labelKey: 'confirmationCz',
+    trigger: 'potvrzeni_tisk_el=1',
+    fallbackTrigger: 'potvrzeni_tisk=1',
+    filename: 'Potvrzeni_o_studiu.pdf',
+  },
+  {
+    id: 'potvrzeni-en',
+    labelKey: 'confirmationEn',
+    trigger: 'potvrzeni_tisk_el=1',
+    fallbackTrigger: 'potvrzeni_tisk=1',
+    contentLang: 'eng',
+    filename: 'Confirmation_of_study.pdf',
+  },
+  {
+    id: 'prehled-cz',
+    labelKey: 'overviewCz',
+    trigger: 'prehled_tisk_el=1',
+    fallbackTrigger: 'prehled_tisk=1',
+    filename: 'Prehled_studia.pdf',
+  },
+  {
+    id: 'prehled-en',
+    labelKey: 'overviewEn',
+    trigger: 'prehled_tisk_el=1',
+    fallbackTrigger: 'prehled_tisk=1',
+    contentLang: 'eng',
+    filename: 'Study_overview.pdf',
+  },
   // The registration sheet has no sealed variant, so this IS the plain one.
-  { id: 'reg-arch', labelKey: 'regArch', trigger: 'reg_arch_tisk=1', filename: 'Registracni_arch.pdf' },
+  {
+    id: 'reg-arch',
+    labelKey: 'regArch',
+    trigger: 'reg_arch_tisk=1',
+    filename: 'Registracni_arch.pdf',
+  },
 ];
 
 /** Build a direct-download URL. `lang=cz` only affects IS UI chrome (irrelevant to a download). */

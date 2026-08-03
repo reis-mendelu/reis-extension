@@ -194,7 +194,10 @@ async function handleAction(id: string, action: string, payload: unknown) {
           if (!p.url || !p.filename) throw new Error('download_document: missing url or filename');
           // usedFallback tells the UI the student got the UNSEALED document,
           // which it must surface — see documentDownloader.
-          result = { success: true, ...(await downloadDocumentInPage(p.url, p.filename, p.fallbackUrl)) };
+          result = {
+            success: true,
+            ...(await downloadDocumentInPage(p.url, p.filename, p.fallbackUrl)),
+          };
         } catch (e) {
           if ((e as { sessionExpired?: boolean } | null)?.sessionExpired) {
             window.location.href = 'https://is.mendelu.cz/system/login.pl?lang=cz';

@@ -1,35 +1,59 @@
-import { FileCheck2, FileText, ScrollText, Loader2, Check, AlertTriangle, ExternalLink, X } from 'lucide-react';
+import {
+  FileCheck2,
+  FileText,
+  ScrollText,
+  Loader2,
+  Check,
+  AlertTriangle,
+  ExternalLink,
+  X,
+} from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
 import { useTranslation } from '../../hooks/useTranslation';
 import { AdaptiveDrawer } from '../ui/AdaptiveDrawer';
-import { STUDY_DOCUMENTS, buildDocumentUrl, buildFallbackDocumentUrl, buildZadostUrl } from '../../api/studyDocuments';
+import {
+  STUDY_DOCUMENTS,
+  buildDocumentUrl,
+  buildFallbackDocumentUrl,
+  buildZadostUrl,
+} from '../../api/studyDocuments';
 import { useDocumentDownload, type DownloadStatus } from '../../hooks/data/useDocumentDownload';
 
 const ICONS: Record<string, typeof FileText> = {
-  'potvrzeni-cz': FileCheck2, 'potvrzeni-en': FileCheck2,
-  'prehled-cz': FileText, 'prehled-en': FileText, 'reg-arch': ScrollText,
+  'potvrzeni-cz': FileCheck2,
+  'potvrzeni-en': FileCheck2,
+  'prehled-cz': FileText,
+  'prehled-en': FileText,
+  'reg-arch': ScrollText,
 };
 
 function StatusIcon({ status }: { status: DownloadStatus }) {
-  if (status === 'loading') return <Loader2 className="w-4 h-4 animate-spin" aria-label="loading" />;
+  if (status === 'loading')
+    return <Loader2 className="w-4 h-4 animate-spin" aria-label="loading" />;
   if (status === 'done') return <Check className="w-4 h-4 text-success" aria-label="done" />;
-  if (status === 'error') return <AlertTriangle className="w-4 h-4 text-error" aria-label="error" />;
+  if (status === 'error')
+    return <AlertTriangle className="w-4 h-4 text-error" aria-label="error" />;
   return null;
 }
 
 /** Documents panel opened from the Student flyout. Self-connects to the store. */
 export function DocumentsDrawer() {
   const { t } = useTranslation();
-  const isOpen = useAppStore(s => s.isDocumentsOpen);
-  const setOpen = useAppStore(s => s.setIsDocumentsOpen);
-  const language = useAppStore(s => s.language);
+  const isOpen = useAppStore((s) => s.isDocumentsOpen);
+  const setOpen = useAppStore((s) => s.setIsDocumentsOpen);
+  const language = useAppStore((s) => s.language);
   const { params } = useUserParams();
   const sid = params?.studium ?? '';
   const { status, run } = useDocumentDownload();
 
   return (
-    <AdaptiveDrawer open={isOpen} onClose={() => setOpen(false)} width="sm:w-[460px]" title={t('documents.title')}>
+    <AdaptiveDrawer
+      open={isOpen}
+      onClose={() => setOpen(false)}
+      width="sm:w-[460px]"
+      title={t('documents.title')}
+    >
       {/* Header — AdaptiveDrawer's `title` prop only surfaces as a sr-only a11y
           label on the mobile sheet; desktop needs a real visible heading +
           close affordance, so render one explicitly (mirrors EduroamDrawer). */}
@@ -40,19 +64,30 @@ export function DocumentsDrawer() {
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-base truncate">{t('documents.title')}</h3>
         </div>
-        <button onClick={() => setOpen(false)} aria-label={t('common.close')} className="btn btn-ghost btn-xs btn-circle">
+        <button
+          onClick={() => setOpen(false)}
+          aria-label={t('common.close')}
+          className="btn btn-ghost btn-xs btn-circle"
+        >
           <X size={16} />
         </button>
       </div>
       <div className="flex flex-col gap-1 p-3">
-        {STUDY_DOCUMENTS.map(doc => {
+        {STUDY_DOCUMENTS.map((doc) => {
           const Icon = ICONS[doc.id] ?? FileText;
           const st = status[doc.id] ?? 'idle';
           return (
             <button
               key={doc.id}
               disabled={!sid || st === 'loading'}
-              onClick={() => run(doc.id, buildDocumentUrl(sid, doc), doc.filename, buildFallbackDocumentUrl(sid, doc))}
+              onClick={() =>
+                run(
+                  doc.id,
+                  buildDocumentUrl(sid, doc),
+                  doc.filename,
+                  buildFallbackDocumentUrl(sid, doc)
+                )
+              }
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-base-200 disabled:opacity-50 transition-colors text-left"
             >
               <Icon className="w-5 h-5 text-primary shrink-0" />

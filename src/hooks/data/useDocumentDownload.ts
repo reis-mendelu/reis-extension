@@ -18,9 +18,12 @@ export function useDocumentDownload() {
   const inFlight = useRef<Set<string>>(new Set());
 
   // Cancel any pending done→idle resets if the drawer unmounts.
-  useEffect(() => () => {
-    Object.values(timers.current).forEach(clearTimeout);
-  }, []);
+  useEffect(
+    () => () => {
+      Object.values(timers.current).forEach(clearTimeout);
+    },
+    []
+  );
 
   /**
    * `fallbackUrl` is the unsealed variant of the same document. When the sealed
@@ -28,24 +31,28 @@ export function useDocumentDownload() {
    * the student is TOLD, because an unsealed copy can be refused by the office
    * they take it to. A silent downgrade is the one way this fallback can harm.
    */
-  const run = useCallback((id: string, url: string, filename: string, fallbackUrl?: string | null) => {
-    if (inFlight.current.has(id)) return;
-    inFlight.current.add(id);
-    clearTimeout(timers.current[id]);
-    setStatus(s => ({ ...s, [id]: 'loading' }));
-    downloadDocument(url, filename, fallbackUrl)
-      .then((res) => {
-        inFlight.current.delete(id);
-        if (res?.usedFallback) toast.warning(tr('documents.unsealedFallback'), { duration: 6000 });
-        setStatus(s => ({ ...s, [id]: 'done' }));
-        timers.current[id] = setTimeout(() => setStatus(s => ({ ...s, [id]: 'idle' })), 2000);
-      })
-      .catch((e) => {
-        inFlight.current.delete(id);
-        logError('Documents.download', e);
-        setStatus(s => ({ ...s, [id]: 'error' }));
-      });
-  }, [tr]);
+  const run = useCallback(
+    (id: string, url: string, filename: string, fallbackUrl?: string | null) => {
+      if (inFlight.current.has(id)) return;
+      inFlight.current.add(id);
+      clearTimeout(timers.current[id]);
+      setStatus((s) => ({ ...s, [id]: 'loading' }));
+      downloadDocument(url, filename, fallbackUrl)
+        .then((res) => {
+          inFlight.current.delete(id);
+          if (res?.usedFallback)
+            toast.warning(tr('documents.unsealedFallback'), { duration: 6000 });
+          setStatus((s) => ({ ...s, [id]: 'done' }));
+          timers.current[id] = setTimeout(() => setStatus((s) => ({ ...s, [id]: 'idle' })), 2000);
+        })
+        .catch((e) => {
+          inFlight.current.delete(id);
+          logError('Documents.download', e);
+          setStatus((s) => ({ ...s, [id]: 'error' }));
+        });
+    },
+    [tr]
+  );
 
   return { status, run };
 }

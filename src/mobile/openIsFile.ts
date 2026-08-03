@@ -65,7 +65,8 @@ export async function openIsFileNatively(
       CapacitorHttp.get(o),
   };
 
-  const fetchOne = (target: string) => fetchIsBinary(toDirectDownloadUrl(target) ?? target, token, deps);
+  const fetchOne = (target: string) =>
+    fetchIsBinary(toDirectDownloadUrl(target) ?? target, token, deps);
 
   let result = await fetchOne(url);
   let usedFallback = false;
@@ -86,27 +87,32 @@ export async function openIsFileNatively(
   }
 
   const base64 = await blobToBase64(result.blob);
-  await deliverFile(chooseFilename(filenameOverride, result.filename), base64, result.blob.type || 'application/pdf', {
-    platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
-    saveToDownloads: (o) => Downloads.save(o),
-    shareFile: async (o) => {
-      // iOS has no Downloads folder: write to Documents, then offer the file to
-      // the Files/share sheet, which is that platform's native save flow.
-      const { Filesystem, Directory } = await import('@capacitor/filesystem');
-      await Filesystem.writeFile({
-        path: o.filename,
-        data: o.base64,
-        directory: Directory.Documents,
-        recursive: true,
-      });
-      const { uri } = await Filesystem.getUri({
-        directory: Directory.Documents,
-        path: o.filename,
-      });
-      const { Share } = await import('@capacitor/share');
-      await Share.share({ title: o.filename, url: uri });
-    },
-  });
+  await deliverFile(
+    chooseFilename(filenameOverride, result.filename),
+    base64,
+    result.blob.type || 'application/pdf',
+    {
+      platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
+      saveToDownloads: (o) => Downloads.save(o),
+      shareFile: async (o) => {
+        // iOS has no Downloads folder: write to Documents, then offer the file to
+        // the Files/share sheet, which is that platform's native save flow.
+        const { Filesystem, Directory } = await import('@capacitor/filesystem');
+        await Filesystem.writeFile({
+          path: o.filename,
+          data: o.base64,
+          directory: Directory.Documents,
+          recursive: true,
+        });
+        const { uri } = await Filesystem.getUri({
+          directory: Directory.Documents,
+          path: o.filename,
+        });
+        const { Share } = await import('@capacitor/share');
+        await Share.share({ title: o.filename, url: uri });
+      },
+    }
+  );
 
   return { usedFallback };
 }

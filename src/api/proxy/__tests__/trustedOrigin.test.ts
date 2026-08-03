@@ -9,9 +9,9 @@ describe('isTrustedProxyOrigin', () => {
   });
 
   it('rejects a foreign origin on the extension', () => {
-    expect(isTrustedProxyOrigin('https://evil.example.com', 'extension', 'chrome-extension://abc')).toBe(
-      false
-    );
+    expect(
+      isTrustedProxyOrigin('https://evil.example.com', 'extension', 'chrome-extension://abc')
+    ).toBe(false);
   });
 
   it('accepts the app own origin on Capacitor — Android serves from https://localhost', () => {
@@ -21,9 +21,9 @@ describe('isTrustedProxyOrigin', () => {
   });
 
   it('accepts the app own origin on Capacitor — iOS serves from capacitor://localhost', () => {
-    expect(isTrustedProxyOrigin('capacitor://localhost', 'capacitor', 'capacitor://localhost')).toBe(
-      true
-    );
+    expect(
+      isTrustedProxyOrigin('capacitor://localhost', 'capacitor', 'capacitor://localhost')
+    ).toBe(true);
   });
 
   it('still rejects a foreign origin on Capacitor', () => {
@@ -35,9 +35,9 @@ describe('isTrustedProxyOrigin', () => {
   it('does NOT accept an arbitrary own-origin claim on the extension', () => {
     // The allowance is Capacitor-only on purpose: in the extension the iframe's
     // own origin must never be able to resolve its own pending requests.
-    expect(isTrustedProxyOrigin('chrome-extension://abc', 'extension', 'chrome-extension://abc')).toBe(
-      false
-    );
+    expect(
+      isTrustedProxyOrigin('chrome-extension://abc', 'extension', 'chrome-extension://abc')
+    ).toBe(false);
   });
 
   it('never trusts a null/opaque origin', () => {

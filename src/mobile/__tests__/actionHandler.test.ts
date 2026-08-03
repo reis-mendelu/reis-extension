@@ -156,7 +156,11 @@ describe('handleMobileActionMessage', () => {
       reply
     );
     expect(reply).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'req-9', success: false, error: expect.stringMatching(/logout/) })
+      expect.objectContaining({
+        id: 'req-9',
+        success: false,
+        error: expect.stringMatching(/logout/),
+      })
     );
   });
 });

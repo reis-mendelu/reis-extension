@@ -79,7 +79,12 @@ export function DocsSheet({ onClose }: DocsSheetProps) {
                 type="button"
                 disabled={!sid || st === 'loading'}
                 onClick={() =>
-                  run(doc.id, buildDocumentUrl(sid, doc), doc.filename, buildFallbackDocumentUrl(sid, doc))
+                  run(
+                    doc.id,
+                    buildDocumentUrl(sid, doc),
+                    doc.filename,
+                    buildFallbackDocumentUrl(sid, doc)
+                  )
                 }
                 className="btn btn-primary btn-xs flex-shrink-0"
               >
