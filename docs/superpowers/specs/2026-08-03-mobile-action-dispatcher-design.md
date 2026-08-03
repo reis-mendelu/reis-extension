@@ -168,11 +168,23 @@ UA/Accept/Referer, `;obdobi=`, repeats, and body headers (an httpbin echo shows
 CapacitorHttp sends a clean GET with no Content-Length). `reg_arch_tisk` works
 precisely because it is the one document with no sealed variant.
 
-A fallback-to-unsealed was built and then **reverted on the user's call**: the
-desktop implementation was correct, and product code should not be restructured
-around a temporary server outage. `studyDocuments.ts`, `documentDownloader.ts` and
-the sheet copy are therefore unchanged from `main`. When MENDELU repairs their
-side, the existing `_el` triggers start working again on both platforms at once.
+Re-measured afterwards, the failure turned out to be **per-document, not a blanket
+outage**: `potvrzeni_tisk_el` fails 3/3 while `prehled_tisk_el` succeeds 3/3
+(sealed, ~233 KB). That reframed the fix.
+
+**Final design — sealed first, unsealed fallback.** `_el` stays the primary
+everywhere it exists; only when IS returns a page (never on 401/403) is the
+unsealed variant fetched. Reliability outranks the seal, but not silently: the
+downloader returns `usedFallback` and the UI warns, because an unsealed copy can
+be refused by the office the student takes it to. This degrades exactly the broken
+document and leaves `prehled_tisk_el` sealed; when MENDELU repairs the other, it
+seals again with no code change.
+
+This required separating two cases `documentDownloader` had conflated: a non-PDF
+200 was tagged `sessionExpired`, which force-navigated the student to the IS login
+page over an IS-side bug *and* left no chance to retry. The login page and an
+authenticated page are now told apart by the `logout.pl` marker — the same signal
+the mobile transport already used.
 
 **Device verification is non-negotiable.** The failure class here is *silent* —
 `a.download` on a blob URL saves nothing and throws nothing on Android
