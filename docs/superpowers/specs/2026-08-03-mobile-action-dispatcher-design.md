@@ -155,18 +155,24 @@ no Capacitor imports — the existing pattern):
 
 ### Outcome (2026-08-03)
 
-Device-verified on Android with a live session: all five rows tapped, all five
-PDFs in Downloads under their chosen filenames, `%PDF-1.5`, 59–99 KB.
+Device-verified on Android with a live session: **`Registracni_arch.pdf` lands in
+Downloads** (64851 B, `%PDF-1.5`) through the same GET the extension makes. The
+mobile path is correct end to end — dispatcher, native transport, filename
+override, delivery.
 
-Verification also exposed a bug the dispatcher merely *revealed*: four of the five
-documents used IS's sealed (`_el`) triggers, which do not download at all — they
-queue an async job and now answer a GET with `text/html` ("Request body constraint
-violation"). Because `downloadDocumentInPage` reads a non-PDF 200 as an expired
-session, the **extension** force-navigated the student to the IS login page on
-click. The catalog now uses the plain triggers on both platforms, a test asserts
-no `_el` survives, and the sheet subtitle no longer promises an electronic
-signature the plain documents lack. Sealed copies need POST support plus a
-repository pickup flow — a real feature, not a flag flip.
+The other four rows fail, and **not for a reason in this codebase.** IS's sealed
+(`_el`) endpoints are answering "Operaci se nepodařilo úspěšně dokončit. Request
+body constraint violation" — reproduced by the user in a plain desktop browser,
+outside reIS. Ruled out from our side by measurement: browser-like
+UA/Accept/Referer, `;obdobi=`, repeats, and body headers (an httpbin echo shows
+CapacitorHttp sends a clean GET with no Content-Length). `reg_arch_tisk` works
+precisely because it is the one document with no sealed variant.
+
+A fallback-to-unsealed was built and then **reverted on the user's call**: the
+desktop implementation was correct, and product code should not be restructured
+around a temporary server outage. `studyDocuments.ts`, `documentDownloader.ts` and
+the sheet copy are therefore unchanged from `main`. When MENDELU repairs their
+side, the existing `_el` triggers start working again on both platforms at once.
 
 **Device verification is non-negotiable.** The failure class here is *silent* —
 `a.download` on a blob URL saves nothing and throws nothing on Android
