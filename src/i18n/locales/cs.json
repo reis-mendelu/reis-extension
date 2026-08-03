@@ -514,13 +514,7 @@
   "onboarding": {
     "welcome": "Vítej v reISu!",
     "description": "Vylepšená verze IS MENDELU.\nVytvořeno studenty pro studenty.",
-    "getStarted": "Jdeme na to",
-    "syncTitle": "Sync do mobilu (Outlook)",
-    "syncDescription": "1. Otevři Outlook na mobilu\n2. Přejdi na záložku \"Kalendář\"",
-    "syncToggle": "Aktivovat Sync",
-    "syncCoffeeBreak": "Sync trvá přibližně 15 min.",
-    "driveTitle": "Zálohovat soubory na Disk",
-    "driveDescription": "Zrcadli studijní materiály z tohoto semestru na svůj Google Disk."
+    "getStarted": "Jdeme na to"
   },
   "subjects": {
     "title": "Moje předměty",
