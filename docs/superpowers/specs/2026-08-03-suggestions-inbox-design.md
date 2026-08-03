@@ -186,15 +186,17 @@ Test-first, per Iron Rules.
 
 ## Rollout order
 
+0. **Human step, do now: delete the webhook in Discord.**
 1. `npm install` in the worktree; confirm the `SocietyAdmin` suites collect and pass.
 2. Dev-seed fix, so the feature can be seen at `localhost:3000`.
 3. Migration.
 4. Deploy `submit-suggestion` + set its three secrets.
 5. Client swap, tests, UI verification.
 6. Release through the normal `/release` flow.
-7. **Human step: delete the webhook in Discord.**
 
-**On timing step 7:** deleting it the moment the release lands breaks feedback for anyone still on the old build — they get the modal's error toast, which is visible rather than silent, but still a failure. Waiting until the stores have rolled the update out closes that window. The only harm in waiting is that someone reading the public repo can post messages into a Discord channel you are abandoning. **Recommendation: ship, let the stores roll out, then delete.** Delete immediately instead if you would rather kill the credential today and accept the failed submissions.
+**Why the delete moves first (decided 2026-08-03).** The ordering question was whether killing the webhook before the replacement ships would break feedback for users on the old build. Checked against `daily_active_usage`: weekly active users fell from **86** (w/c 2026-05-25) to **2–5** across all of July, and 2 in the current week. Post-exam usage is effectively nil, so the population that could hit the modal in the gap is a handful of people, and the cost of a failed submission — a visible error toast, no silent loss — is negligible against leaving a known-compromised credential live for several more weeks.
+
+Between the delete and the release, `FeedbackModal` posts to a dead URL and shows its error toast. That is the accepted state, not a regression to debug.
 
 Note that deleting the line from `config.ts` revokes nothing — the URL is in git history on a public repo. Only the Discord-side delete does.
 
