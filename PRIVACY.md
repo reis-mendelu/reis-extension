@@ -41,7 +41,7 @@ This data is used solely for aggregate usage statistics and product improvement.
 ### 5. User Feedback (Voluntary)
 If you use the built-in "Report Bug / Feedback" feature, the following data is sent to our support channel:
 - **Content**: The message and contact details you explicitly provide.
-- **Technical Context**: Extension version, browser user agent, and screen resolution (to help debug issues).
+- **Technical Context**: Extension version, browser name and version, viewport size, and the current in-app screen (e.g. `calendar`, `exams`, `settings` — an app view name, not a URL or page address) to help debug issues.
 - **Storage**: Suggestions are stored in reIS's own Supabase project and are readable only by the reIS maintainer account.
 - **Abuse Prevention**: To limit abuse of the suggestion form, a salted SHA-256 hash of the sending IP address is stored for at most one hour. The raw IP is never stored.
 

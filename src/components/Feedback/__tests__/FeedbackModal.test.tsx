@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { FeedbackModal } from '../FeedbackModal';
@@ -9,10 +9,21 @@ vi.mock('../../../api/suggestions', () => ({
 }));
 
 describe('FeedbackModal', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
     submitSuggestion.mockReset();
     submitSuggestion.mockResolvedValue({ ok: true });
     useAppStore.setState({ language: 'en' });
+    // Guards against a merge/copy-paste mistake that leaves a stray direct
+    // fetch() alongside submitSuggestion — all network I/O must go through
+    // the API layer, never straight out of the component.
+    fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('submits the draft through submitSuggestion, not a webhook', async () => {
@@ -32,6 +43,7 @@ describe('FeedbackModal', () => {
       body: 'Panel stayed empty',
       contact: '',
     });
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('shows the success state when the submission lands', async () => {

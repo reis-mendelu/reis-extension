@@ -4,6 +4,7 @@ import { X, Send, Loader2, CheckCircle2 } from 'lucide-react';
 import { submitSuggestion } from '../../api/suggestions';
 import { toast } from 'sonner';
 import { useTranslation } from '../../hooks/useTranslation';
+import { logError } from '../../utils/reportError';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -28,15 +29,25 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     // studium=/obdobi=/predmet=/termin=.
     // NOTE the rename: SuggestionDraft's field is `body`, the component's state
     // variable is `message`.
-    const result = await submitSuggestion({ type, title, body: message, contact });
+    // try/finally is the safety net: submitSuggestion catches internally and
+    // resolves { ok: false, error: 'offline' } today, but if that invariant
+    // ever breaks, an unexpected rejection must not leave the Send button
+    // stuck on "Sending…" with the user's text trapped behind it.
+    try {
+      const result = await submitSuggestion({ type, title, body: message, contact });
 
-    if (result.ok) {
-      setIsSuccess(true);
-      toast.success(t('feedback.toastSuccess'));
-    } else {
+      if (result.ok) {
+        setIsSuccess(true);
+        toast.success(t('feedback.toastSuccess'));
+      } else {
+        toast.error(t('feedback.toastError'));
+      }
+    } catch (err) {
+      logError('FeedbackModal.handleSubmit', err);
       toast.error(t('feedback.toastError'));
+    } finally {
+      setIsSending(false);
     }
-    setIsSending(false);
   };
 
   const handleClose = () => {
