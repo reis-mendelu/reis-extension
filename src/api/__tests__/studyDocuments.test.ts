@@ -10,16 +10,28 @@ describe('studyDocuments catalog', () => {
     ]);
   });
 
-  it('builds the sealed Czech confirmation URL', () => {
+  it('builds the Czech confirmation URL', () => {
     expect(buildDocumentUrl('149707', byId('potvrzeni-cz'))).toBe(
-      'https://is.mendelu.cz/auth/student/tisk_dokumentu.pl?potvrzeni_tisk_el=1;studium=149707;lang=cz'
+      'https://is.mendelu.cz/auth/student/tisk_dokumentu.pl?potvrzeni_tisk=1;studium=149707;lang=cz'
     );
   });
 
   it('adds jazyk=eng for the English confirmation', () => {
     expect(buildDocumentUrl('149707', byId('potvrzeni-en'))).toBe(
-      'https://is.mendelu.cz/auth/student/tisk_dokumentu.pl?potvrzeni_tisk_el=1;jazyk=eng;studium=149707;lang=cz'
+      'https://is.mendelu.cz/auth/student/tisk_dokumentu.pl?potvrzeni_tisk=1;jazyk=eng;studium=149707;lang=cz'
     );
+  });
+
+  it('uses NO _el trigger anywhere — sealed prints are not downloads', () => {
+    // Measured against live IS on 2026-08-03: every `_el` trigger answers a GET
+    // with HTML ("Request body constraint violation"), and the page states the
+    // sealed document appears in Úložiště dokumentů within an hour. Every plain
+    // trigger returns application/pdf. Re-adding `_el` here silently breaks
+    // BOTH platforms — on the extension a non-PDF 200 is read as an expired
+    // session and force-navigates the student to the login page.
+    for (const doc of STUDY_DOCUMENTS) {
+      expect(doc.trigger).not.toMatch(/_el=/);
+    }
   });
 
   it('builds the registration-sheet URL (no jazyk)', () => {

@@ -36,7 +36,7 @@ describe('DocumentsDrawer', () => {
       fireEvent.click(screen.getByText('Potvrzení o studiu'));
     });
     expect(spy).toHaveBeenCalledWith(
-      'https://is.mendelu.cz/auth/student/tisk_dokumentu.pl?potvrzeni_tisk_el=1;studium=149707;lang=cz',
+      'https://is.mendelu.cz/auth/student/tisk_dokumentu.pl?potvrzeni_tisk=1;studium=149707;lang=cz',
       'Potvrzeni_o_studiu.pdf',
     );
     await waitFor(() => expect(screen.getByLabelText('done')).toBeTruthy());
