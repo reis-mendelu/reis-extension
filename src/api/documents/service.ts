@@ -1,118 +1,145 @@
-import { fetchWithAuth } from "../client";
-import { requestQueue, processWithDelay } from "../../utils/requestQueue";
-import { parseServerFiles } from "./parser";
-import { fetchSubjects } from "../subjects";
-import { validateUrl } from "../../utils/validation/index";
-import { logError } from "../../utils/reportError";
-import type { ParsedFile, FileAttachment } from "../../types/documents";
+import { fetchWithAuth } from '../client';
+import { requestQueue, processWithDelay } from '../../utils/requestQueue';
+import { parseServerFiles } from './parser';
+import { fetchSubjects } from '../subjects';
+import { validateUrl } from '../../utils/validation/index';
+import { logError } from '../../utils/reportError';
+import type { ParsedFile, FileAttachment } from '../../types/documents';
+import { collapseAttachments, stableDocumentKey } from './collapseAttachments';
 
 export async function fetchDocumentsForSubject(subjectCode: string): Promise<FileAttachment[]> {
-    const subjectsData = await fetchSubjects();
-    const subject = subjectsData?.data[subjectCode];
-    if (!subject?.folderUrl) return [];
-    const parsedFiles = await fetchFilesFromFolder(subject.folderUrl);
-    return parsedFiles.flatMap(pf => pf.files);
+  const subjectsData = await fetchSubjects();
+  const subject = subjectsData?.data[subjectCode];
+  if (!subject?.folderUrl) return [];
+  const parsedFiles = await fetchFilesFromFolder(subject.folderUrl);
+  return parsedFiles.flatMap((pf) => pf.files);
 }
 
 export async function fetchFilesFromFolder(
-    folderUrl: string,
-    lang: string = 'cz',
-    recursive = true,
-    currentDepth = 0,
-    maxDepth = 2,
+  folderUrl: string,
+  lang: string = 'cz',
+  recursive = true,
+  currentDepth = 0,
+  maxDepth = 2
 ): Promise<ParsedFile[]> {
-    try {
-        // Append language parameter if not already present
-        let url = folderUrl;
-        if (!url.includes('lang=')) {
-            url += url.includes('?') ? `;lang=${lang}` : `?lang=${lang}`;
-        }
-
-        const response = await fetchWithAuth(url);
-        const respText = await response.text();
-        const { files: initialFiles, paginationLinks, totalRecords } = parseServerFiles(respText);
-
-        // Tag initial files with language
-        initialFiles.forEach(f => f.language = lang);
-
-        const allFiles = [...initialFiles];
-
-        // Use Promise.allSettled for pagination to be resilient
-        const pageRequests = paginationLinks.map(async (link) => {
-            const pageUrl = link.startsWith('http') ? link : validateUrl(link.startsWith('/') ? link : `/auth/dok_server/${link.replace(/^\.\//, '')}`, 'is.mendelu.cz');
-            if (!pageUrl) return [];
-            
-            try {
-                const pageResp = await requestQueue.add(async () => fetchWithAuth(pageUrl));
-                const pageText = await pageResp.text();
-                const { files: pageFiles } = parseServerFiles(pageText);
-                
-                if (pageFiles.length === 0) {
-                    logError('Documents.paginationEmpty', new Error('pagination page returned 0 files'));
-                }
-
-                return pageFiles;
-            } catch (err) {
-                logError('Documents.paginationFetch', err);
-                return [];
-            }
-        });
-
-        const extraResults = await Promise.all(pageRequests);
-        allFiles.push(...extraResults.flat());
-
-        if (totalRecords !== undefined && allFiles.length > 0 && allFiles.length < totalRecords) {
-            logError(
-                'Documents.integrityMismatch',
-                new Error(`expected ${totalRecords} items, parsed ${allFiles.length}`),
-            );
-        }
-
-        if (recursive && currentDepth < maxDepth) {
-            // Deduplicate by URL — the same subfolder can appear on every paginated page
-            const folderMap = new Map<string, { url: string; name: string }>();
-            allFiles
-                .filter(f => f.files.some(fi => fi.link.includes('slozka.pl') && !fi.link.includes('download')))
-                .forEach(f => {
-                    const url = f.files[0].link;
-                    if (!folderMap.has(url)) folderMap.set(url, { url, name: f.file_name });
-                });
-            const folders = Array.from(folderMap.values());
-
-            const subResults = await processWithDelay(folders, async f => {
-                try {
-                    const results = await fetchFilesFromFolder(f.url, lang, true, currentDepth + 1, maxDepth);
-                    results.forEach(r => r.subfolder = f.name);
-                    return results;
-                } catch (err) {
-                    logError('Documents.subfolderFetch', err, { depth: currentDepth });
-                    return []; // Resilience: return empty array instead of failing the whole fetch
-                }
-            }, 200);
-
-
-            allFiles.push(...subResults.flat());
-        }
-
-        // Final Deduplication using a more robust key (link + filename)
-        const unique = new Map<string, ParsedFile>();
-        allFiles.forEach(f => {
-            if (f.files.length > 0) {
-                const key = `${f.files[0].link}_${f.file_name}`;
-                unique.set(key, f);
-            }
-        });
-
-        const finalResults = Array.from(unique.values()).filter(f => 
-            f.files.some(fi => fi.link.includes('download') || !fi.link.includes('slozka.pl'))
-        );
-
-        // Tag all files with the language they were fetched in
-        finalResults.forEach(f => f.language = lang);
-
-        return finalResults;
-    } catch (e) {
-        logError('Documents.fetchFilesFromFolder', e);
-        throw e;
+  try {
+    // Append language parameter if not already present
+    let url = folderUrl;
+    if (!url.includes('lang=')) {
+      url += url.includes('?') ? `;lang=${lang}` : `?lang=${lang}`;
     }
+
+    const response = await fetchWithAuth(url);
+    const respText = await response.text();
+    const { files: initialFiles, paginationLinks, totalRecords } = parseServerFiles(respText);
+
+    // Tag initial files with language
+    initialFiles.forEach((f) => (f.language = lang));
+
+    const allFiles = [...initialFiles];
+
+    // Use Promise.allSettled for pagination to be resilient
+    const pageRequests = paginationLinks.map(async (link) => {
+      const pageUrl = link.startsWith('http')
+        ? link
+        : validateUrl(
+            link.startsWith('/') ? link : `/auth/dok_server/${link.replace(/^\.\//, '')}`,
+            'is.mendelu.cz'
+          );
+      if (!pageUrl) return [];
+
+      try {
+        const pageResp = await requestQueue.add(async () => fetchWithAuth(pageUrl));
+        const pageText = await pageResp.text();
+        const { files: pageFiles } = parseServerFiles(pageText);
+
+        if (pageFiles.length === 0) {
+          logError('Documents.paginationEmpty', new Error('pagination page returned 0 files'));
+        }
+
+        return pageFiles;
+      } catch (err) {
+        logError('Documents.paginationFetch', err);
+        return [];
+      }
+    });
+
+    const extraResults = await Promise.all(pageRequests);
+    allFiles.push(...extraResults.flat());
+
+    if (totalRecords !== undefined && allFiles.length > 0 && allFiles.length < totalRecords) {
+      logError(
+        'Documents.integrityMismatch',
+        new Error(`expected ${totalRecords} items, parsed ${allFiles.length}`)
+      );
+    }
+
+    if (recursive && currentDepth < maxDepth) {
+      // Deduplicate by URL — the same subfolder can appear on every paginated page
+      const folderMap = new Map<string, { url: string; name: string }>();
+      allFiles
+        .filter((f) =>
+          f.files.some((fi) => fi.link.includes('slozka.pl') && !fi.link.includes('download'))
+        )
+        .forEach((f) => {
+          const url = f.files[0].link;
+          if (!folderMap.has(url)) folderMap.set(url, { url, name: f.file_name });
+        });
+      const folders = Array.from(folderMap.values());
+
+      const subResults = await processWithDelay(
+        folders,
+        async (f) => {
+          try {
+            const results = await fetchFilesFromFolder(
+              f.url,
+              lang,
+              true,
+              currentDepth + 1,
+              maxDepth
+            );
+            results.forEach((r) => (r.subfolder = f.name));
+            return results;
+          } catch (err) {
+            logError('Documents.subfolderFetch', err, { depth: currentDepth });
+            return []; // Resilience: return empty array instead of failing the whole fetch
+          }
+        },
+        200
+      );
+
+      allFiles.push(...subResults.flat());
+    }
+
+    // Final deduplication. NOT keyed on the link: IS's viewer URLs carry a
+    // `serializace` token containing a timestamp, so the same document
+    // fetched twice (pagination, or a subfolder repeating a parent's rows)
+    // produced two different keys and appeared twice in the drawer.
+    // stableDocumentKey keys on the document id instead.
+    const unique = new Map<string, ParsedFile>();
+    allFiles.forEach((f) => {
+      if (f.files.length > 0) {
+        unique.set(stableDocumentKey(f.files, f.file_name), f);
+      }
+    });
+
+    const finalResults = Array.from(unique.values()).filter((f) =>
+      f.files.some((fi) => fi.link.includes('download') || !fi.link.includes('slozka.pl'))
+    );
+
+    // The dedup above works ACROSS rows; this collapses the viewer+download
+    // pair IS emits WITHIN one row. It belongs here rather than in the view:
+    // every consumer flattens `files`, so leaving both links in meant each
+    // document was handled twice — including being mirrored to Drive twice,
+    // once as the file and once as the viewer's HTML page.
+    finalResults.forEach((f) => {
+      f.files = collapseAttachments(f.files);
+      f.language = lang;
+    });
+
+    return finalResults;
+  } catch (e) {
+    logError('Documents.fetchFilesFromFolder', e);
+    throw e;
+  }
 }

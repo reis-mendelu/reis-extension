@@ -143,3 +143,19 @@ public/.dev-real-data.lock
 
 # UI verification output (scripts/shot.ts) — always regenerated, never committed
 .verify/
+
+# Capacitor
+dist-capacitor/
+# The native projects ARE committed: they hold custom native source
+# (android/app/src/main/java/cz/reis/app/DownloadsPlugin.java) that `cap add`
+# cannot regenerate. Only the build output is ignored.
+/android/app/build/
+/android/build/
+/android/.gradle/
+/android/local.properties
+/android/app/src/main/assets/public/
+/android/app/src/main/assets/capacitor.config.json
+/android/app/src/main/assets/capacitor.plugins.json
+/ios/App/App/public/
+/ios/App/build/
+/ios/DerivedData/

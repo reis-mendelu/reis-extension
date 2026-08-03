@@ -5,6 +5,8 @@
  * Resolves only once the blob is saved, giving the UI a true completion signal.
  */
 import { isIsMendeluUrl } from './isMendeluUrl';
+import { saveBlob } from '../mobile/saveDocument';
+import { buildSaveDeps } from '../mobile/saveDeps';
 
 export async function downloadDocumentInPage(url: string, filename: string): Promise<void> {
   if (!isIsMendeluUrl(url)) throw new Error('Refusing non-IS document URL');
@@ -29,13 +31,8 @@ export async function downloadDocumentInPage(url: string, filename: string): Pro
     throw err;
   }
   const blob = await res.blob();
-  const objectUrl = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = objectUrl;
-  a.download = filename;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
+  // The save step is platform-dependent: blob + a[download] is a SILENT no-op
+  // in both mobile WebViews (measured), so Capacitor writes via Filesystem and
+  // asserts the file landed. The extension path is unchanged.
+  await saveBlob(blob, filename, buildSaveDeps());
 }

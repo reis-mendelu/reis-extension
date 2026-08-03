@@ -27,6 +27,7 @@ import type {
 } from '../types/documents';
 import type { ClassmatesData } from '../types/classmates';
 import type { SubjectZaznamnik } from '../types/zaznamnik';
+import { getPlatform } from '../platform';
 
 interface SyncedData {
   schedule?: BlockLesson[];
@@ -129,7 +130,11 @@ export function useAppLogic() {
     // Dev standalone (localhost): allow the real-data snapshot to flow through
     // the same handler by not bailing on the missing iframe.
     const realDataMode = import.meta.env.DEV && !isInIframe();
-    if (!isInIframe() && !realDataMode) return;
+    // Capacitor: same shape as dev standalone, but in a PRODUCTION build — there
+    // is no iframe because the app is the top-level window, and syncService
+    // loops its updates back via window.postMessage (see sendToIframe).
+    const isCapacitor = getPlatform().kind === 'capacitor';
+    if (!isInIframe() && !realDataMode && !isCapacitor) return;
     const handle = async (e: MessageEvent) => {
       if (e.source !== window.parent) return;
       const d = e.data;
