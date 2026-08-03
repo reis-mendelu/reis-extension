@@ -27,13 +27,27 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
   },
 
   updateSuggestionStatus: async (id, status) => {
-    const before = get().suggestions;
+    const target = get().suggestions.find((r) => r.id === id);
+    if (!target) return;
+    const previousStatus = target.status;
+
     // Optimistic: triaging should feel instant. Reverted below if the write is
     // rejected, so the badge can never claim an item was handled when it wasn't.
-    const after = before.map((r) => (r.id === id ? { ...r, status } : r));
+    // Only this one row's previous status is remembered (not a snapshot of the
+    // whole list) so a revert can never clobber a concurrent update to another
+    // row, or discard a loadSuggestions() that lands in between.
+    const after = get().suggestions.map((r) => (r.id === id ? { ...r, status } : r));
     set({ suggestions: after, suggestionsUnread: unread(after) });
 
     const ok = await apiSetStatus(id, status);
-    if (!ok) set({ suggestions: before, suggestionsUnread: unread(before) });
+    if (!ok) {
+      // Re-apply against current state at revert time. If the row is gone
+      // (e.g. a reload removed it), the map is a no-op — never resurrect it.
+      const current = get().suggestions;
+      const reverted = current.map((r) =>
+        r.id === id ? { ...r, status: previousStatus } : r
+      );
+      set({ suggestions: reverted, suggestionsUnread: unread(reverted) });
+    }
   },
 });
