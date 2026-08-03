@@ -85,6 +85,7 @@
     "errorReporting": "Error Reporting",
     "errorReportingDesc": "Send anonymous, sanitized error reports to help fix bugs.",
     "logout": "Logout",
+    "logoutUnavailable": "Signing out isn't available in the app yet. Please sign out in IS.",
     "basicDetails": "Basic Details",
     "accounts": "Accounts",
     "cards": "Cards",

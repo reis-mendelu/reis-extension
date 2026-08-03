@@ -85,6 +85,7 @@
     "errorReporting": "Hlášení chyb",
     "errorReportingDesc": "Posílat anonymizovaná hlášení chyb, ať můžeme bugy opravit.",
     "logout": "Odhlásit se",
+    "logoutUnavailable": "Odhlášení zatím v aplikaci nefunguje. Odhlaste se prosím v IS.",
     "basicDetails": "Základní údaje",
     "accounts": "Konta",
     "cards": "Karty",

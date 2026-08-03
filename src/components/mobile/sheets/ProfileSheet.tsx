@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import {
   X,
   Moon,
@@ -200,7 +201,11 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
         <button
           type="button"
           onClick={() => {
-            void logout();
+            // Sign-out is deferred on mobile until the transport can POST, and
+            // logout() now refuses rather than wiping local data first. Catch
+            // it: an unhandled rejection here would fire a telemetry report on
+            // every tap and tell the student nothing.
+            void logout().catch(() => toast.error(t('settings.logoutUnavailable')));
           }}
           className="flex w-full items-center gap-3 px-4 py-3 text-error"
         >

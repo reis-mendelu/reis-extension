@@ -7,6 +7,7 @@ import { initProxyListener } from './proxy/messageListener';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
 import { clearUserParamsCache } from '../utils/userParams';
 import { logError } from '../utils/reportError';
+import { getPlatform } from '../platform';
 
 export async function fetchViaProxy(url: string, opts?: MsgTypes.FetchRequestMessage['options']): Promise<string> {
     initProxyListener();
@@ -45,6 +46,14 @@ export function downloadDocument(url: string, filename: string): Promise<void> {
 }
 
 export async function logout(): Promise<void> {
+    // Mobile has no logout responder yet: a real sign-out POSTs
+    // /auth/system/logout.pl and the Capacitor transport is GET-only until the
+    // POST work lands. Bail BEFORE clearing anything — the destructive half
+    // must not run when the sign-out itself cannot, or the student is left with
+    // an emptied app AND a live session.
+    if (getPlatform().kind === 'capacitor') {
+        throw new Error('Sign-out is not available in the reIS mobile app yet');
+    }
     clearUserParamsCache();
     try {
         await IndexedDBService.clearAll();
