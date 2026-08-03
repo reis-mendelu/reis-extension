@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, Loader2, CheckCircle2 } from 'lucide-react';
-import { DISCORD_WEBHOOK_URL } from '../../constants/config';
+import { submitSuggestion } from '../../api/suggestions';
 import { toast } from 'sonner';
 import { useTranslation } from '../../hooks/useTranslation';
-import { logError } from '../../utils/reportError';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -24,41 +23,20 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     if (e) e.preventDefault();
     setIsSending(true);
 
-    const contextData = {
-      version: '4.0.0', // Updated for next release
-      url: window.location.href,
-      userAgent: navigator.userAgent,
-      screen: `${window.innerWidth}x${window.innerHeight}`
-    };
+    // Context (screen, version, browser, viewport) is assembled in the API
+    // layer. Deliberately no window.location.href: on IS it carries
+    // studium=/obdobi=/predmet=/termin=.
+    // NOTE the rename: SuggestionDraft's field is `body`, the component's state
+    // variable is `message`.
+    const result = await submitSuggestion({ type, title, body: message, contact });
 
-    const payload = {
-      username: "reIS Feedback Bot",
-      avatar_url: "https://is.mendelu.cz/auth/images/logo_mendelu.png", // Using university logo
-      thread_name: `[${type.toUpperCase()}] ${title}`, // For Forum Channels
-      content: `**Typ:** ${type}\n**Kontakt:** ${contact || 'N/A'}\n**Zpráva:**\n${message}\n\n__Technické info:__\n\`\`\`json\n${JSON.stringify(contextData, null, 2)}\n\`\`\``
-    };
-
-    try {
-      const response = await fetch(DISCORD_WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        setIsSuccess(true);
-        toast.success(t('feedback.toastSuccess'));
-      } else {
-        throw new Error('Failed to send');
-      }
-    } catch (error) {
-      logError('FeedbackModal.send', error);
+    if (result.ok) {
+      setIsSuccess(true);
+      toast.success(t('feedback.toastSuccess'));
+    } else {
       toast.error(t('feedback.toastError'));
-    } finally {
-      setIsSending(false);
     }
+    setIsSending(false);
   };
 
   const handleClose = () => {

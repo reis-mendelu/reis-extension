@@ -252,7 +252,7 @@
     "description": "Details",
     "descriptionPlaceholder": "What happened? Where? How to reproduce?",
     "contact": "Contact (optional)",
-    "contactPlaceholder": "Email / Discord",
+    "contactPlaceholder": "Email",
     "submit": "Send feedback",
     "sending": "Sending...",
     "successTitle": "Sent!",

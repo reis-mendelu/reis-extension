@@ -42,7 +42,8 @@ This data is used solely for aggregate usage statistics and product improvement.
 If you use the built-in "Report Bug / Feedback" feature, the following data is sent to our support channel:
 - **Content**: The message and contact details you explicitly provide.
 - **Technical Context**: Extension version, browser user agent, and screen resolution (to help debug issues).
-- **Storage**: This data is processed securely via Discord webhooks for developer review.
+- **Storage**: Suggestions are stored in reIS's own Supabase project and are readable only by the reIS maintainer account.
+- **Abuse Prevention**: To limit abuse of the suggestion form, a salted SHA-256 hash of the sending IP address is stored for at most one hour. The raw IP is never stored.
 
 ### 6. Automatic Error Reporting
 When an unhandled error or warning occurs in the extension, a sanitized diagnostic report is automatically sent to our Supabase backend so we can detect and fix bugs.
@@ -61,8 +62,7 @@ When an unhandled error or warning occurs in the extension, a sanitized diagnost
 The extension communicates exclusively with:
 1.  **IS Mendelu** (`is.mendelu.cz`): To fetch your academic data (authenticated by you).
 2.  **WebISKAM** (`webiskam.mendelu.cz`): To display your canteen profile and meal reservations. The extension replaces the WebISKAM page with its own interface; all dining data remains local.
-3.  **Supabase** (`*.supabase.co`): To fetch public notifications, store anonymous interaction stats, manage tutoring participation data if you opt in, and receive sanitized error diagnostic reports.
-4.  **Discord** (`discord.com`): To deliver your feedback messages to the developers (only when you submit feedback).
+3.  **Supabase** (`*.supabase.co`): To fetch public notifications, store anonymous interaction stats, manage tutoring participation data if you opt in, receive sanitized error diagnostic reports, and deliver your feedback messages to the developers (only when you submit feedback).
 
 ## User Control
 You have full control over your data:

@@ -297,7 +297,7 @@
     "description": "Detailní popis",
     "descriptionPlaceholder": "Co se stalo? Kde? Jak to zopakovat?",
     "contact": "Kontakt (nepovinné)",
-    "contactPlaceholder": "Email / Discord",
+    "contactPlaceholder": "Email",
     "submit": "Odeslat zpětnou vazbu",
     "sending": "Odesílání...",
     "successTitle": "Super, odesláno!",
