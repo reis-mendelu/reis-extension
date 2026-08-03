@@ -53,6 +53,12 @@ per-platform cookie delivery, 401/403 vs 5xx separation, and the `logout.pl`
 check — IS answers a POST with an HTML page, so the check is still the right
 signal there.
 
+**Header precedence is explicit:** caller headers merge over `DEFAULT_HEADERS`,
+and the cookie-delivery headers from `buildCookieDelivery` are applied **last**
+so a caller can never overwrite `Cookie` and detach the session on iOS. On
+Android that map is empty and the native jar is seeded instead — the asymmetry
+documented at `capacitorTransport.ts:20-30`, which must not be collapsed.
+
 This gives `fetchWithAuth` POST on all three platforms, not just for eduroam.
 
 ### 2. Bytes axis — a sibling function, not an option flag
