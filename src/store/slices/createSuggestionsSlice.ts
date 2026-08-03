@@ -23,6 +23,10 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
 
   loadSuggestions: async () => {
     const rows = await listSuggestions();
+    // `null` means the read failed (already logged in listSuggestions) —
+    // leave existing state untouched rather than presenting a failed read
+    // as an authoritative "inbox is empty". A genuine `[]` still clears it.
+    if (rows === null) return;
     set({ suggestions: rows, suggestionsUnread: unread(rows) });
   },
 
@@ -44,6 +48,14 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
       // write is a rare path, so just discard the local guess and resync
       // via the slice's own loadSuggestions() — one extra round trip is
       // cheap and always leaves the UI showing authoritative server state.
+      //
+      // Residual tradeoff (reviewer-raised): concurrent resyncs have no
+      // sequencing guard, so an out-of-order response can briefly show
+      // stale data until the next load. Accepted — a single admin triages
+      // one row at a time, so building sequencing machinery for this isn't
+      // worth it. loadSuggestions() itself never turns a failed read into
+      // a blanked inbox (see its `null` handling), which is the failure
+      // mode that actually mattered here.
       await get().loadSuggestions();
     }
   },

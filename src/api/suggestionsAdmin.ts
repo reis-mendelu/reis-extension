@@ -8,7 +8,11 @@ import type { SuggestionRow, SuggestionStatus } from '@/types/suggestions';
 // gate — no service-role key is ever in the client. In dev:web the seeded
 // session is fake and cannot satisfy RLS, so reads route to the mock store,
 // mirroring how societyPosts routes CRUD to devSocietyStore.
-export async function listSuggestions(): Promise<SuggestionRow[]> {
+//
+// Returns `null` when the read fails so callers can distinguish "the read
+// failed" from "there are genuinely no rows" — an empty array is always a
+// genuine, authoritative result.
+export async function listSuggestions(): Promise<SuggestionRow[] | null> {
   if (DEV_SOCIETY) return devSuggestionsStore.list();
   const { data, error } = await adminAuthClient
     .from('suggestions')
@@ -17,7 +21,7 @@ export async function listSuggestions(): Promise<SuggestionRow[]> {
     .limit(200);
   if (error) {
     logError('Api.listSuggestions', error);
-    return [];
+    return null;
   }
   return (data ?? []) as SuggestionRow[];
 }

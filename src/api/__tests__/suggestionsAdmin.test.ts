@@ -50,12 +50,19 @@ describe('suggestionsAdmin.listSuggestions', () => {
     expect(logError).not.toHaveBeenCalled();
   });
 
-  it('returns [] (does not throw) when Supabase returns an error', async () => {
+  it('returns null (does not throw) when Supabase returns an error', async () => {
     limit.mockResolvedValue({ data: null, error: { message: 'denied' } });
     const result = await listSuggestions();
-    expect(result).toEqual([]);
+    expect(result).toBeNull();
     expect(logError).toHaveBeenCalledTimes(1);
     expect(vi.mocked(logError).mock.calls[0][0]).toBe('Api.listSuggestions');
+  });
+
+  it('returns [] when the query genuinely yields no rows', async () => {
+    limit.mockResolvedValue({ data: [], error: null });
+    const result = await listSuggestions();
+    expect(result).toEqual([]);
+    expect(logError).not.toHaveBeenCalled();
   });
 });
 
