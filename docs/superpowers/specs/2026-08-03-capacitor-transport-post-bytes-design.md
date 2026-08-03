@@ -53,11 +53,18 @@ per-platform cookie delivery, 401/403 vs 5xx separation, and the `logout.pl`
 check — IS answers a POST with an HTML page, so the check is still the right
 signal there.
 
-**Header precedence is explicit:** caller headers merge over `DEFAULT_HEADERS`,
-and the cookie-delivery headers from `buildCookieDelivery` are applied **last**
-so a caller can never overwrite `Cookie` and detach the session on iOS. On
-Android that map is empty and the native jar is seeded instead — the asymmetry
-documented at `capacitorTransport.ts:20-30`, which must not be collapsed.
+**Header precedence is explicit:** `client.ts` forwards only the **caller's own**
+headers to the Capacitor transport — deliberately *not* the `DEFAULT_HEADERS`-merged
+map it builds for the other platforms. Today the Capacitor branch sends no caller
+headers at all, and sync's ~236 GETs are device-verified with exactly that shape;
+adding `DEFAULT_HEADERS` there would change every sync request on the wire for no
+benefit to this work. Only an explicit caller (eduroam's POST, which sets its own
+content-type) adds anything.
+
+Within the transport, the cookie-delivery headers from `buildCookieDelivery` are
+applied **last**, so a caller can never overwrite `Cookie` and detach the session
+on iOS. On Android that map is empty and the native jar is seeded instead — the
+asymmetry documented at `capacitorTransport.ts:20-30`, which must not be collapsed.
 
 This gives `fetchWithAuth` POST on all three platforms, not just for eduroam.
 
