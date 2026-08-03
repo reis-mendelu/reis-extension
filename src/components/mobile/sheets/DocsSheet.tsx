@@ -11,7 +11,12 @@ import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { STUDY_DOCUMENTS, buildDocumentUrl, buildZadostUrl } from '../../../api/studyDocuments';
+import {
+  STUDY_DOCUMENTS,
+  buildDocumentUrl,
+  buildFallbackDocumentUrl,
+  buildZadostUrl,
+} from '../../../api/studyDocuments';
 import { useDocumentDownload, type DownloadStatus } from '../../../hooks/data/useDocumentDownload';
 
 export interface DocsSheetProps {
@@ -73,7 +78,14 @@ export function DocsSheet({ onClose }: DocsSheetProps) {
               <button
                 type="button"
                 disabled={!sid || st === 'loading'}
-                onClick={() => run(doc.id, buildDocumentUrl(sid, doc), doc.filename)}
+                onClick={() =>
+                  run(
+                    doc.id,
+                    buildDocumentUrl(sid, doc),
+                    doc.filename,
+                    buildFallbackDocumentUrl(sid, doc)
+                  )
+                }
                 className="btn btn-primary btn-xs flex-shrink-0"
               >
                 {t('common.download')}

@@ -54,6 +54,7 @@
   },
   "documents": {
     "title": "Studijní dokumenty",
+    "unsealedFallback": "Elektronická pečeť teď v IS nefunguje — stáhli jsme dokument bez ní. Úřad ji může vyžadovat.",
     "sheetSubtitle": "S elektronickým podpisem univerzity — úřady je berou",
     "items": {
       "confirmationCz": "Potvrzení o studiu",
@@ -85,6 +86,7 @@
     "errorReporting": "Hlášení chyb",
     "errorReportingDesc": "Posílat anonymizovaná hlášení chyb, ať můžeme bugy opravit.",
     "logout": "Odhlásit se",
+    "logoutUnavailable": "Odhlášení zatím v aplikaci nefunguje. Odhlaste se prosím v IS.",
     "basicDetails": "Základní údaje",
     "accounts": "Konta",
     "cards": "Karty",

@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { downloadDocumentInPage } from '../documentDownloader';
 
-const pdfBlob = () => new Blob([new Uint8Array([0x25, 0x50, 0x44, 0x46])], { type: 'application/pdf' });
+const pdfBlob = () =>
+  new Blob([new Uint8Array([0x25, 0x50, 0x44, 0x46])], { type: 'application/pdf' });
 
 describe('downloadDocumentInPage', () => {
   let clickSpy: ReturnType<typeof vi.spyOn>;
@@ -12,14 +13,21 @@ describe('downloadDocumentInPage', () => {
     (URL as unknown as { revokeObjectURL: () => void }).revokeObjectURL = () => {};
     clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
   });
-  afterEach(() => { clickSpy.mockRestore(); vi.restoreAllMocks(); });
+  afterEach(() => {
+    clickSpy.mockRestore();
+    vi.restoreAllMocks();
+  });
 
   it('fetches the PDF and saves it via an <a download> with the given filename', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(pdfBlob(), { status: 200, headers: { 'content-type': 'application/pdf' } }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(pdfBlob(), { status: 200, headers: { 'content-type': 'application/pdf' } })
+      );
     let downloadName = '';
-    clickSpy.mockImplementation(function (this: HTMLAnchorElement) { downloadName = this.download; });
+    clickSpy.mockImplementation(function (this: HTMLAnchorElement) {
+      downloadName = this.download;
+    });
 
     await downloadDocumentInPage('https://is.mendelu.cz/x', 'Potvrzeni_o_studiu.pdf');
 
@@ -28,17 +36,91 @@ describe('downloadDocumentInPage', () => {
     expect(downloadName).toBe('Potvrzeni_o_studiu.pdf');
   });
 
-  it('rejects when the response is not a PDF (session expired → login HTML)', async () => {
+  it('treats a LOGIN page as an expired session (login redirect stays)', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('<html>login</html>', { status: 200, headers: { 'content-type': 'text/html' } }),
+      new Response('<html>Přihlášení do systému</html>', {
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+      })
     );
-    await expect(downloadDocumentInPage('https://is.mendelu.cz/x', 'f.pdf')).rejects.toMatchObject({ sessionExpired: true });
+    await expect(downloadDocumentInPage('https://is.mendelu.cz/x', 'f.pdf')).rejects.toMatchObject({
+      sessionExpired: true,
+    });
     expect(clickSpy).not.toHaveBeenCalled();
+  });
+
+  it('treats an AUTHENTICATED page as notADocument, NOT an expired session', async () => {
+    // IS's sealed print endpoints answer a fully authenticated request this way
+    // while broken. Tagging it sessionExpired logged the student out over an IS
+    // bug — and left no opportunity to fall back to the unsealed document.
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('<html><a href="/auth/system/logout.pl">odhlásit</a></html>', {
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+      })
+    );
+    const caught = await downloadDocumentInPage('https://is.mendelu.cz/x', 'f.pdf').catch((e) => e);
+    expect((caught as { notADocument?: boolean }).notADocument).toBe(true);
+    expect((caught as { sessionExpired?: boolean }).sessionExpired).toBeUndefined();
+  });
+
+  it('falls back to the unsealed URL when the sealed one returns a page', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response('<html><a href="/auth/system/logout.pl">x</a></html>', {
+          status: 200,
+          headers: { 'content-type': 'text/html' },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(pdfBlob(), {
+          status: 200,
+          headers: { 'content-type': 'application/pdf' },
+        })
+      );
+
+    const result = await downloadDocumentInPage(
+      'https://is.mendelu.cz/sealed',
+      'f.pdf',
+      'https://is.mendelu.cz/plain'
+    );
+
+    expect(result).toEqual({ usedFallback: true });
+    expect(fetchSpy.mock.calls.map((c) => c[0])).toEqual([
+      'https://is.mendelu.cz/sealed',
+      'https://is.mendelu.cz/plain',
+    ]);
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT fall back on an expired session — re-auth is the right answer', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('', { status: 403 }));
+    await expect(
+      downloadDocumentInPage('https://is.mendelu.cz/sealed', 'f.pdf', 'https://is.mendelu.cz/plain')
+    ).rejects.toMatchObject({ sessionExpired: true });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports usedFallback:false when the sealed document works', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(pdfBlob(), { status: 200, headers: { 'content-type': 'application/pdf' } })
+    );
+    const result = await downloadDocumentInPage(
+      'https://is.mendelu.cz/sealed',
+      'f.pdf',
+      'https://is.mendelu.cz/plain'
+    );
+    expect(result).toEqual({ usedFallback: false });
   });
 
   it('rejects on a 401', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('', { status: 401 }));
-    await expect(downloadDocumentInPage('https://is.mendelu.cz/x', 'f.pdf')).rejects.toMatchObject({ sessionExpired: true });
+    await expect(downloadDocumentInPage('https://is.mendelu.cz/x', 'f.pdf')).rejects.toMatchObject({
+      sessionExpired: true,
+    });
   });
 
   it('propagates a network-level fetch rejection without a sessionExpired flag', async () => {
@@ -55,7 +137,10 @@ describe('downloadDocumentInPage', () => {
 
   it('rejects a transient IS 5xx without a sessionExpired flag (no login redirect)', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('<html>500 error</html>', { status: 500, headers: { 'content-type': 'text/html' } }),
+      new Response('<html>500 error</html>', {
+        status: 500,
+        headers: { 'content-type': 'text/html' },
+      })
     );
     let caught: unknown;
     try {
@@ -70,7 +155,9 @@ describe('downloadDocumentInPage', () => {
 
   it('rejects a non-IS URL without fetching', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    await expect(downloadDocumentInPage('https://evil.example.com/x', 'f.pdf')).rejects.toThrow('Refusing non-IS document URL');
+    await expect(downloadDocumentInPage('https://evil.example.com/x', 'f.pdf')).rejects.toThrow(
+      'Refusing non-IS document URL'
+    );
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
