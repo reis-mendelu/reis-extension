@@ -52,7 +52,7 @@ describe('logout on Capacitor', () => {
     void logout().catch(() => {});
     await vi.waitFor(() => expect(clearAll).toHaveBeenCalled());
     expect(postMessage).toHaveBeenCalledTimes(1);
-    const msg = postMessage.mock.calls[0][0] as { type: string; action: string };
+    const msg = postMessage.mock.calls[0]?.[0] as { type: string; action: string };
     expect(msg.type).toBe('REIS_ACTION');
     expect(msg.action).toBe('logout');
   });
