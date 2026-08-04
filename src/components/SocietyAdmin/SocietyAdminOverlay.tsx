@@ -1,6 +1,7 @@
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { SocietyLoginForm } from './SocietyLoginForm';
+import { SuggestionsInbox } from './SuggestionsInbox';
 
 export function SocietyAdminOverlay() {
   const open = useAppStore((s) => s.adminOverlayOpen);
@@ -21,6 +22,8 @@ export function SocietyAdminOverlay() {
         {session ? (
           <>
             <p className="text-sm text-base-content/70">{t('admin.reisAdminNote')}</p>
+            <h4 className="font-semibold text-sm mt-4 mb-2">{t('admin.suggestionsTitle')}</h4>
+            <SuggestionsInbox />
             <button className="btn btn-ghost btn-sm mt-4" onClick={() => void logout()}>
               {t('admin.logout')}
             </button>

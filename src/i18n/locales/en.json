@@ -1099,7 +1099,11 @@
     "saveError": "Could not save — please try again",
     "manageButton": "Manage society",
     "reisAdminNote": "Signed in as reIS admin. Manage events under a specific society.",
-    "newSuggestions": "{count} new suggestion(s) from students"
+    "newSuggestions": "{count} new suggestion(s) from students",
+    "noSuggestions": "No suggestions yet.",
+    "markTriaged": "Triaged",
+    "markDone": "Done",
+    "suggestionsTitle": "Student suggestions"
   },
   "mobile": {
     "nav": {
