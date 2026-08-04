@@ -4,6 +4,7 @@ import {
   isAuthenticatedHtml,
   fetchViaCapacitor,
   assertIsOrigin,
+  normalizeCapacitorBody,
   type CapacitorTransportDeps,
 } from '../capacitorTransport';
 
@@ -193,6 +194,99 @@ describe('fetchViaCapacitor', () => {
     await expect(
       fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, { method: 'POST', body: 'a=1' })
     ).rejects.toMatchObject({ sessionExpired: true });
+  });
+
+  // Regression: schedule.ts builds its POST body with `new URLSearchParams(...)`
+  // and passes it straight through. The native bridge JSON.stringify's a
+  // non-string `data`, and URLSearchParams has no enumerable own properties,
+  // so it silently became "{}" — an empty body on the calendar's sync path.
+  it('normalises a URLSearchParams body to its urlencoded string before it reaches httpPost', async () => {
+    const d = deps();
+    const params = new URLSearchParams({ rozvrh_student: '123', lang: 'cz' });
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/katalog/rozvrhy_view.pl', TOKEN, d, {
+      method: 'POST',
+      body: params,
+    });
+    const sent = (d.httpPost as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as { data: string };
+    expect(sent.data).toBe('rozvrh_student=123&lang=cz');
+  });
+
+  it('throws instead of sending an unsupported body type', async () => {
+    const d = deps();
+    await expect(
+      fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, {
+        method: 'POST',
+        body: new FormData(),
+      })
+    ).rejects.toThrow();
+    expect(d.httpPost).not.toHaveBeenCalled();
+  });
+
+  it('defaults Content-Type to form-urlencoded on a POST when the caller supplied none', async () => {
+    const d = deps();
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, { method: 'POST', body: 'a=1' });
+    const sent = (d.httpPost as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as {
+      headers: Record<string, string>;
+    };
+    expect(sent.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
+  });
+
+  it('lets a caller-supplied Content-Type win over the default', async () => {
+    const d = deps();
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, {
+      method: 'POST',
+      body: '{"a":1}',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const sent = (d.httpPost as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as {
+      headers: Record<string, string>;
+    };
+    expect(sent.headers['Content-Type']).toBe('application/json');
+  });
+
+  it('does not add a Content-Type header to a GET, ever', async () => {
+    const d = deps();
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d);
+    const sent = (d.httpGet as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as {
+      headers: Record<string, string>;
+    };
+    expect(sent.headers).toEqual({});
+  });
+
+  it('sends exactly the caller headers on a GET — no additions of any kind', async () => {
+    const d = deps();
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, {
+      headers: { 'X-Custom': 'value' },
+    });
+    const sent = (d.httpGet as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as {
+      headers: Record<string, string>;
+    };
+    expect(sent.headers).toEqual({ 'X-Custom': 'value' });
+  });
+});
+
+describe('normalizeCapacitorBody', () => {
+  it('returns an empty string for a missing body', () => {
+    expect(normalizeCapacitorBody(undefined)).toBe('');
+    expect(normalizeCapacitorBody(null)).toBe('');
+  });
+
+  it('leaves a string body unchanged', () => {
+    expect(normalizeCapacitorBody('rozvrh_student=123&lang=cz')).toBe('rozvrh_student=123&lang=cz');
+  });
+
+  it('serialises a URLSearchParams body to its urlencoded form', () => {
+    // This is the exact bug: URLSearchParams has no enumerable own properties,
+    // so JSON.stringify-ing it (what the native bridge does to non-string data)
+    // silently produces "{}" — an empty POST body. String(params) is what a
+    // browser would actually have put on the wire.
+    const params = new URLSearchParams({ rozvrh_student: '123', lang: 'cz' });
+    expect(normalizeCapacitorBody(params)).toBe('rozvrh_student=123&lang=cz');
+  });
+
+  it('throws for an unsupported body type instead of silently corrupting it', () => {
+    expect(() => normalizeCapacitorBody(new FormData())).toThrow();
+    expect(() => normalizeCapacitorBody(new Blob(['x']))).toThrow();
   });
 });
 

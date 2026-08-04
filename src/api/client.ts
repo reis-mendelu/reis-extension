@@ -44,7 +44,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
       httpPost: (o) => CapacitorHttp.post(o),
     }, {
       method: options.method,
-      body: options.body as string | undefined,
+      body: options.body,
       // Deliberately options.headers, NOT the DEFAULT_HEADERS-merged `headers`
       // above: sync's GETs are device-verified with no caller headers, and
       // changing what they put on the wire is a risk with no upside here.

@@ -12,10 +12,13 @@ export interface CapacitorHttpResponse {
 }
 
 /** The request shape fetchWithAuth forwards. `headers` are the CALLER's own —
- *  see client.ts, which deliberately does not forward DEFAULT_HEADERS here. */
+ *  see client.ts, which deliberately does not forward DEFAULT_HEADERS here.
+ *  `body` is the real RequestInit type, not narrowed to `string`: callers
+ *  (e.g. schedule.ts) build POST bodies with `new URLSearchParams(...)`, and
+ *  normalizeCapacitorBody below is what turns that into wire-safe text. */
 export interface CapacitorRequestOptions {
   method?: string;
-  body?: string;
+  body?: BodyInit | null;
   headers?: Record<string, string>;
 }
 
@@ -64,6 +67,37 @@ function sessionExpired(message: string): Error {
   const err = new Error(message) as Error & { sessionExpired?: boolean };
   err.sessionExpired = true;
   return err;
+}
+
+/**
+ * CapacitorHttp.post JSON.stringify's a non-string `data` before it goes over
+ * the native bridge. `URLSearchParams` has no enumerable own properties, so
+ * that stringify silently produces `"{}"` — the schedule POST (calendar sync)
+ * hit exactly this and sent an empty body while looking like it succeeded.
+ *
+ * `String(params)` is what actually reproduces the urlencoded form a browser
+ * `fetch` would have sent. Anything else (FormData, Blob, a stream) has no
+ * safe equivalent here, so it throws rather than shipping a silently wrong
+ * request — the same failure mode this function exists to close off.
+ */
+export function normalizeCapacitorBody(body: BodyInit | null | undefined): string {
+  if (body === null || body === undefined) {
+    return '';
+  }
+  if (typeof body === 'string') {
+    return body;
+  }
+  if (body instanceof URLSearchParams) {
+    return String(body);
+  }
+  const kind =
+    typeof body === 'object' && body !== null ? body.constructor?.name : typeof body;
+  throw new Error(`reIS: unsupported Capacitor POST body type: ${kind}`);
+}
+
+function hasContentTypeHeader(headers: Record<string, string> | undefined): boolean {
+  if (!headers) return false;
+  return Object.keys(headers).some((key) => key.toLowerCase() === 'content-type');
 }
 
 /** Kept local rather than imported from client.ts, which imports this module. */
@@ -115,13 +149,23 @@ export async function fetchViaCapacitor(
     });
   }
 
+  const isPost = (options.method ?? 'GET').toUpperCase() === 'POST';
+
+  // A POST body needs a Content-Type or IS will not parse it. GET must never
+  // gain headers it didn't have before (~236 device-verified GETs on this
+  // path), so the default is applied for POST only, and only when the caller
+  // didn't already supply one — a caller-set Content-Type always wins.
+  const contentTypeDefault: Record<string, string> =
+    isPost && !hasContentTypeHeader(options.headers)
+      ? { 'Content-Type': 'application/x-www-form-urlencoded' }
+      : {};
+
   // Cookie delivery goes LAST: on iOS the Cookie header IS the authentication,
   // so a caller must not be able to overwrite it and silently detach the
   // session. On Android that map is empty and the jar was seeded above.
-  const headers = { ...options.headers, ...delivery.headers };
-  const isPost = (options.method ?? 'GET').toUpperCase() === 'POST';
+  const headers = { ...contentTypeDefault, ...options.headers, ...delivery.headers };
   const res = isPost
-    ? await deps.httpPost({ url, headers, data: options.body ?? '' })
+    ? await deps.httpPost({ url, headers, data: normalizeCapacitorBody(options.body) })
     : await deps.httpGet({ url, headers });
   const body = String(res.data ?? '');
 
