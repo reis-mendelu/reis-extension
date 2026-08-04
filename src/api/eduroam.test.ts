@@ -92,8 +92,9 @@ describe('generateCert on the wire', () => {
     await fetchEduroamCertMaterial();
 
     const sent = postInit?.headers as Record<string, string>;
-    const contentTypeKeys = Object.keys(sent).filter((k) => k.toLowerCase() === 'content-type');
-    expect(contentTypeKeys).toHaveLength(1);
-    expect(sent[contentTypeKeys[0]]).toBe('application/x-www-form-urlencoded');
+    const contentTypes = Object.entries(sent)
+      .filter(([key]) => key.toLowerCase() === 'content-type')
+      .map(([, value]) => value);
+    expect(contentTypes).toEqual(['application/x-www-form-urlencoded']);
   });
 });
