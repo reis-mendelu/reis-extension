@@ -158,7 +158,10 @@ describe('fetchViaCapacitor', () => {
 
   it('treats a lowercase method as POST', async () => {
     const d = deps();
-    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, { method: 'post', body: 'a=1' });
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, {
+      method: 'post',
+      body: 'a=1',
+    });
     expect(d.httpPost).toHaveBeenCalled();
   });
 
@@ -177,7 +180,10 @@ describe('fetchViaCapacitor', () => {
 
   it('seeds the native jar for a POST on android too', async () => {
     const d = deps();
-    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, { method: 'POST', body: 'a=1' });
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, {
+      method: 'POST',
+      body: 'a=1',
+    });
     expect(d.setCookie).toHaveBeenCalled();
   });
 
@@ -224,7 +230,10 @@ describe('fetchViaCapacitor', () => {
 
   it('defaults Content-Type to form-urlencoded on a POST when the caller supplied none', async () => {
     const d = deps();
-    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, { method: 'POST', body: 'a=1' });
+    await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, {
+      method: 'POST',
+      body: 'a=1',
+    });
     const sent = (d.httpPost as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as {
       headers: Record<string, string>;
     };

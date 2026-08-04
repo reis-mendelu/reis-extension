@@ -90,8 +90,7 @@ export function normalizeCapacitorBody(body: BodyInit | null | undefined): strin
   if (body instanceof URLSearchParams) {
     return String(body);
   }
-  const kind =
-    typeof body === 'object' && body !== null ? body.constructor?.name : typeof body;
+  const kind = typeof body === 'object' && body !== null ? body.constructor?.name : typeof body;
   throw new Error(`reIS: unsupported Capacitor POST body type: ${kind}`);
 }
 
