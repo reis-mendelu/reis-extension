@@ -20,10 +20,12 @@ export interface CapacitorRequestOptions {
 
 /**
  * HTTP header names are case-insensitive, and the native layers disagree about
- * casing: Android commonly returns `content-type` where iOS returns
- * `Content-Type`. Reading one exact spelling meant every Android JSON response
- * looked like it had no content-type at all — which the transport then treated
- * as HTML.
+ * casing: iOS lowercases every header key (`lowerCaseHeaderDictionary` in
+ * HttpRequestHandler.swift), while Android passes `connection.getHeaderFields()`
+ * through as the server sent it — so which spelling shows up depends on IS's
+ * own response, not just the platform. Reading one exact spelling meant a
+ * differently-cased response looked like it had no content-type at all —
+ * which the transport then treated as HTML.
  */
 export function readHeader(
   headers: Record<string, string> | undefined,

@@ -136,9 +136,10 @@ export function blobToBase64(blob: Blob): Promise<string> {
  *
  * It is deliberately NOT tagged sessionExpired. `fetchIsBinary` returns
  * `kind: 'page'` only when the HTML CONTAINED `logout.pl` — positive proof the
- * session is alive. openIsFile.ts reads that flag to decide about re-auth, so
- * tagging it here would sign the student out mid-session over a response that
- * had just proved the opposite. IS served the wrong thing; the session is fine.
+ * session is alive. That flag means "the session lapsed, send the student back
+ * through login" (the reading `src/injector/messageHandler.ts:202` acts on), so
+ * setting it here would assert the opposite of what was just measured. IS
+ * served the wrong thing; the session is fine.
  */
 export async function toBytes(result: IsResourceResult): Promise<Uint8Array> {
   if (result.kind !== 'binary') {

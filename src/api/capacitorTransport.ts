@@ -139,7 +139,13 @@ export async function fetchViaCapacitor(
   const res = isPost
     ? await deps.httpPost({ url, headers, data: normalizeCapacitorBody(options.body) })
     : await deps.httpGet({ url, headers });
-  const body = String(res.data ?? '');
+  // Both native layers parse a JSON body BEFORE it crosses the bridge
+  // (Android's HttpRequestHandler.parseJSON, iOS's tryParseJson fire ahead of
+  // the responseType switch), so `res.data` for a JSON response is already a
+  // parsed object, not a string. `String(obj)` produces the literal text
+  // "[object Object]", which then fails JSON.parse downstream — this broke
+  // fetchWeekSchedule on mobile (rozvrhy_view.pl POSTs `format: "json"`).
+  const body = typeof res.data === 'string' ? res.data : JSON.stringify(res.data ?? '');
 
   if (res.status === 401 || res.status === 403) {
     throw sessionExpired(`HTTP ${res.status}`);
@@ -162,7 +168,12 @@ export async function fetchViaCapacitor(
   // A response with no content-type keeps the old assumption — IS's HTML is
   // the overwhelming majority here, and a header-less login page must still be
   // caught.
-  const contentType = readHeader(res.headers, 'content-type') ?? 'text/html';
+  // `||`, not `??`: a header present with an empty string value must fall
+  // back to the fail-closed HTML default too, not just a missing header.
+  // `?? 'text/html'` only substitutes on undefined, so an empty content-type
+  // slipped the `includes('text/html')` check below and let an
+  // unauthenticated login page through as if it were data.
+  const contentType = readHeader(res.headers, 'content-type') || 'text/html';
   if (contentType.toLowerCase().includes('text/html') && !isAuthenticatedHtml(body)) {
     throw sessionExpired('Authenticated request returned an unauthenticated page');
   }

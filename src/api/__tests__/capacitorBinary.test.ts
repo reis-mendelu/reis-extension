@@ -154,10 +154,11 @@ describe('toBytes', () => {
 
   it('does NOT call that a lapsed session — kind:page is positive proof the session is alive', async () => {
     // fetchIsBinary only returns kind:'page' when the HTML CONTAINED logout.pl.
-    // Tagging it sessionExpired asserts the opposite of what was just measured,
-    // and openIsFile.ts already reads that flag to decide about re-auth — so a
-    // handler acting on it generically would sign the student out mid-session
-    // over a perfectly healthy response.
+    // Tagging it sessionExpired asserts the opposite of what was just measured.
+    // The flag means "the session lapsed, re-authenticate" — see
+    // src/injector/messageHandler.ts:202, which redirects to the IS login page
+    // on it — so any handler acting on it would push the student through
+    // re-auth over a perfectly healthy response.
     const err = await toBytes({ kind: 'page' }).catch((e) => e);
     expect(err.sessionExpired).toBeUndefined();
   });

@@ -328,6 +328,60 @@ describe('fetchViaCapacitor', () => {
     expect(await res.text()).toBe('{"rozvrh":[]}');
   });
 
+  // Both native layers parse a JSON response body BEFORE it crosses the
+  // bridge (Android's HttpRequestHandler.parseJSON, iOS's tryParseJson), so
+  // `res.data` for a JSON response is already a parsed object, not a string.
+  // `String(obj)` produces the literal text "[object Object]", which then
+  // fails JSON.parse downstream — this is what broke fetchWeekSchedule on
+  // mobile (rozvrhy_view.pl POSTs `format: "json"`).
+  it('re-serialises a parsed-object POST response instead of stringifying it to "[object Object]"', async () => {
+    const parsed = { rozvrh: [{ id: 1 }] };
+    const d = deps({
+      httpPost: vi.fn(async () => ({
+        status: 200,
+        data: parsed,
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+      })),
+    });
+    const res = await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, {
+      method: 'POST',
+      body: 'format=json',
+    });
+    const text = await res.text();
+    expect(text).not.toBe('[object Object]');
+    expect(JSON.parse(text)).toEqual(parsed);
+  });
+
+  it('re-serialises a parsed-object GET response the same way', async () => {
+    const parsed = { ok: true };
+    const d = deps({
+      httpGet: vi.fn(async () => ({
+        status: 200,
+        data: parsed,
+        headers: { 'Content-Type': 'application/json' },
+      })),
+    });
+    const res = await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d);
+    expect(await res.json()).toEqual(parsed);
+  });
+
+  // An empty content-type VALUE (as opposed to a missing header) must still
+  // fall back to the HTML default. `?? 'text/html'` only substitutes on
+  // undefined/null, so `contentType === ''` slipped the `includes('text/html')`
+  // check and let an unauthenticated login page through as if it were data.
+  it('treats an empty content-type header as HTML too, not as "no gate applies"', async () => {
+    const d = deps({
+      httpGet: vi.fn(async () => ({
+        status: 200,
+        data: '<form action="/system/login.pl">',
+        headers: { 'content-type': '' },
+      })),
+    });
+    await expect(fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d)).rejects.toMatchObject({
+      sessionExpired: true,
+    });
+  });
+
   it('still refuses an HTML body without a logout link, whatever the casing of its content-type', async () => {
     const d = deps({
       httpPost: vi.fn(async () => ({
