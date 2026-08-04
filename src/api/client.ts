@@ -37,19 +37,24 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   if (getPlatform().kind === 'capacitor') {
     const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
     const token = await loadStoredToken();
-    return fetchViaCapacitor(url, token, {
-      platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
-      setCookie: (o) => CapacitorCookies.setCookie(o),
-      httpGet: (o) => CapacitorHttp.get(o),
-      httpPost: (o) => CapacitorHttp.post(o),
-    }, {
-      method: options.method,
-      body: options.body,
-      // Deliberately options.headers, NOT the DEFAULT_HEADERS-merged `headers`
-      // above: sync's GETs are device-verified with no caller headers, and
-      // changing what they put on the wire is a risk with no upside here.
-      headers: options.headers as Record<string, string> | undefined,
-    });
+    return fetchViaCapacitor(
+      url,
+      token,
+      {
+        platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
+        setCookie: (o) => CapacitorCookies.setCookie(o),
+        httpGet: (o) => CapacitorHttp.get(o),
+        httpPost: (o) => CapacitorHttp.post(o),
+      },
+      {
+        method: options.method,
+        body: options.body,
+        // Deliberately options.headers, NOT the DEFAULT_HEADERS-merged `headers`
+        // above: sync's GETs are device-verified with no caller headers, and
+        // changing what they put on the wire is a risk with no upside here.
+        headers: options.headers as Record<string, string> | undefined,
+      }
+    );
   }
 
   // If we're in an iframe, use the proxy client
