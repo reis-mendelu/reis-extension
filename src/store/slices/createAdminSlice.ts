@@ -75,6 +75,10 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       return { error: 'account_unavailable' };
     }
     set({ adminSession: data.session, adminRole: role, adminAssociationId: associationId });
+    // Pull the inbox as soon as the role is known. This is a pull, not a push:
+    // nothing arrives while the iframe is closed, so the count is refreshed at
+    // every open and announced by SuggestionsToast.
+    if (role === 'reis_admin') await get().loadSuggestions();
     await get().loadSocietyPosts();
     return {};
   },
@@ -92,6 +96,8 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       societyPosts: [],
       societyMapEvents: [],
       mapMode: 'student',
+      suggestions: [],
+      suggestionsUnread: 0,
     });
   },
   loadAdminSession: async () => {
@@ -108,6 +114,10 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       return;
     }
     set({ adminSession: data.session, adminRole: role, adminAssociationId: associationId });
+    // Pull the inbox as soon as the role is known. This is a pull, not a push:
+    // nothing arrives while the iframe is closed, so the count is refreshed at
+    // every open and announced by SuggestionsToast.
+    if (role === 'reis_admin') await get().loadSuggestions();
     await get().loadSocietyPosts();
   },
   loadSocietyPosts: async () => {

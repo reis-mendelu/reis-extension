@@ -259,3 +259,54 @@ describe('enterSocietyMode / openSocietyAdmin', () => {
     expect(useAppStore.getState().mapMode).toBe('society');
   });
 });
+
+describe('createAdminSlice boot', () => {
+  // Local harness (not the full useAppStore) so loadSuggestions can be a bare
+  // spy — this suite only cares whether loadAdminSession calls it, not what it does.
+  let state: Record<string, unknown>;
+  let bootSet: ReturnType<typeof vi.fn>;
+  let bootGet: ReturnType<typeof vi.fn>;
+  const loadSuggestions = vi.fn();
+
+  beforeEach(() => {
+    getSession.mockReset();
+    maybeSingle.mockReset();
+    signOut.mockClear();
+    loadSuggestions.mockReset();
+    loadSuggestions.mockResolvedValue(undefined);
+    bootSet = vi.fn((updater) => {
+      const patch = typeof updater === 'function' ? updater(state) : updater;
+      state = { ...state, ...patch };
+    });
+    bootGet = vi.fn(() => state);
+    state = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...createAdminSlice(bootSet as any, bootGet as any, {} as any),
+      loadSuggestions,
+      suggestionsUnread: 0,
+      setMapMode: vi.fn(),
+      focusCampus: vi.fn(),
+      refreshSocietyMapEvents: vi.fn(),
+    };
+  });
+
+  it('loads suggestions for a reis_admin session', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { email: 'reis.mendelu@gmail.com' } } } });
+    maybeSingle.mockResolvedValue({ data: { role: 'reis_admin', association_id: null }, error: null });
+    await (state.loadAdminSession as () => Promise<void>)();
+    expect(loadSuggestions).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not load suggestions for an association session', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { email: 'admin@supef.cz' } } } });
+    maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'supef' }, error: null });
+    await (state.loadAdminSession as () => Promise<void>)();
+    expect(loadSuggestions).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when there is no stored session', async () => {
+    getSession.mockResolvedValue({ data: { session: null } });
+    await (state.loadAdminSession as () => Promise<void>)();
+    expect(loadSuggestions).not.toHaveBeenCalled();
+  });
+});
