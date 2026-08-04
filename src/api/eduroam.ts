@@ -5,6 +5,8 @@
 
 const CERT_URL = 'https://is.mendelu.cz/auth/wifi/certifikat.pl';
 
+import { fetchWithAuth, fetchAuthedBytes } from './client';
+
 export interface EduroamCertMaterial {
   /** MENDELU root CA, DER bytes (also the server-validation anchor). */
   rootCaDer: Uint8Array;
@@ -28,17 +30,9 @@ export function parseCertPage(html: string): { hasCert: boolean; password: strin
 }
 
 async function getText(url: string): Promise<string> {
-  const res = await fetch(url, { credentials: 'include' });
+  const res = await fetchWithAuth(url);
   if (!res.ok) throw new Error(`eduroam: GET ${url} -> ${res.status}`);
   return res.text();
-}
-
-async function getBytes(url: string): Promise<Uint8Array> {
-  const res = await fetch(url, { credentials: 'include' });
-  if (!res.ok) throw new Error(`eduroam: GET ${url} -> ${res.status}`);
-  const ct = res.headers.get('content-type') || '';
-  if (ct.includes('text/html')) throw new Error('eduroam: expected certificate bytes, got HTML (session expired?)');
-  return new Uint8Array(await res.arrayBuffer());
 }
 
 /**
@@ -52,10 +46,19 @@ export async function fetchEduroamPassword(): Promise<string | null> {
 }
 
 async function generateCert(): Promise<void> {
-  const res = await fetch(CERT_URL, {
+  // One of only two IS writes in reIS (outlookSync.ts has the other). It must
+  // stay student-initiated: a certificate is valid for 366 days and generating
+  // one silently would rotate a credential the student may already have
+  // installed on other devices.
+  //
+  // No explicit Content-Type. Both transports already supply it, and adding a
+  // differently-cased copy DOUBLED it: DEFAULT_HEADERS uses lowercase
+  // `content-type`, both keys survive client.ts's object spread, and `Headers`
+  // appends rather than replaces — so IS received
+  // `application/x-www-form-urlencoded, application/x-www-form-urlencoded`,
+  // failed to parse the body, and no certificate was ever created.
+  const res = await fetchWithAuth(CERT_URL, {
     method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `lang=cz&gen=${encodeURIComponent('Vygenerovat certifikát')}`,
   });
   if (!res.ok) throw new Error(`eduroam: generate -> ${res.status}`);
@@ -78,8 +81,8 @@ export async function fetchEduroamCertMaterial(): Promise<EduroamCertMaterial> {
   }
 
   const [rootCaDer, clientP12] = await Promise.all([
-    getBytes(`${CERT_URL}?get=root-der;lang=cz`),
-    getBytes(`${CERT_URL}?get=user-p12;lang=cz`),
+    fetchAuthedBytes(`${CERT_URL}?get=root-der;lang=cz`),
+    fetchAuthedBytes(`${CERT_URL}?get=user-p12;lang=cz`),
   ]);
 
   return { rootCaDer, clientP12, password, generated };

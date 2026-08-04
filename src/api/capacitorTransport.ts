@@ -1,4 +1,9 @@
 import { UIS_AUTH_COOKIE } from '../platform/sessionToken';
+import {
+  normalizeCapacitorBody,
+  readHeader,
+  type CapacitorRequestOptions,
+} from './capacitorRequest';
 
 export interface CookieDelivery {
   headers: Record<string, string>;
@@ -15,6 +20,11 @@ export interface CapacitorTransportDeps {
   platform: 'ios' | 'android' | 'web';
   setCookie(o: { url: string; key: string; value: string }): Promise<void>;
   httpGet(o: { url: string; headers?: Record<string, string> }): Promise<CapacitorHttpResponse>;
+  httpPost(o: {
+    url: string;
+    headers?: Record<string, string>;
+    data?: string;
+  }): Promise<CapacitorHttpResponse>;
 }
 
 /**
@@ -88,7 +98,8 @@ export function assertIsOrigin(url: string): void {
 export async function fetchViaCapacitor(
   url: string,
   token: string,
-  deps: CapacitorTransportDeps
+  deps: CapacitorTransportDeps,
+  options: CapacitorRequestOptions = {}
 ): Promise<Response> {
   assertIsOrigin(url);
   const delivery = buildCookieDelivery(deps.platform, token);
@@ -101,8 +112,47 @@ export async function fetchViaCapacitor(
     });
   }
 
-  const res = await deps.httpGet({ url, headers: delivery.headers });
-  const body = String(res.data ?? '');
+  // Only GET and POST have a native transport. Anything else used to fall
+  // through to httpGet with the body dropped, and the caller got a 200 for a
+  // request that never happened — the silent-wrong-request shape this module
+  // exists to eliminate, so it throws for the same reason an unrepresentable
+  // body does.
+  const method = (options.method ?? 'GET').toUpperCase();
+  if (method !== 'GET' && method !== 'POST') {
+    throw new Error(`reIS: unsupported Capacitor request method: ${method}`);
+  }
+  const isPost = method === 'POST';
+
+  // A POST body needs a Content-Type or IS will not parse it. GET must never
+  // gain headers it didn't have before (~236 device-verified GETs on this
+  // path), so the default is applied for POST only, and only when the caller
+  // didn't already supply one — a caller-set Content-Type always wins.
+  const contentTypeDefault: Record<string, string> =
+    isPost && readHeader(options.headers, 'content-type') === undefined
+      ? { 'Content-Type': 'application/x-www-form-urlencoded' }
+      : {};
+
+  // Cookie delivery goes LAST: on iOS the Cookie header IS the authentication,
+  // so a caller must not be able to overwrite it and silently detach the
+  // session. On Android that map is empty and the jar was seeded above.
+  const headers = { ...contentTypeDefault, ...options.headers, ...delivery.headers };
+  const res = isPost
+    ? await deps.httpPost({ url, headers, data: normalizeCapacitorBody(options.body) })
+    : await deps.httpGet({ url, headers });
+  // Both native layers parse a JSON body BEFORE it crosses the bridge
+  // (Android's HttpRequestHandler.parseJSON, iOS's tryParseJson fire ahead of
+  // the responseType switch), so `res.data` for a JSON response is already a
+  // parsed object, not a string. `String(obj)` produces the literal text
+  // "[object Object]", which then fails JSON.parse downstream — this broke
+  // fetchWeekSchedule on mobile (rozvrhy_view.pl POSTs `format: "json"`).
+  // The `?? ''` must NOT sit inside the stringify: JSON.stringify('') is the
+  // two-character text `""`, so an empty body would arrive as a non-empty one.
+  const body =
+    typeof res.data === 'string'
+      ? res.data
+      : res.data === undefined || res.data === null
+        ? ''
+        : JSON.stringify(res.data);
 
   if (res.status === 401 || res.status === 403) {
     throw sessionExpired(`HTTP ${res.status}`);
@@ -117,14 +167,26 @@ export async function fetchViaCapacitor(
   // A 200 that is not authenticated means either the session lapsed OR the
   // cookie was delivered the wrong way for this platform. Both are auth
   // failures; neither must be allowed to reach a parser as if it were data.
-  if (!isAuthenticatedHtml(body)) {
+  //
+  // The check is HTML-ONLY, because `logout.pl` is a property of IS's page
+  // chrome and nothing else. schedule.ts POSTs rozvrhy_view.pl with
+  // `format: "json"`; that JSON can never contain a logout link, so applying
+  // the gate to it rejected healthy responses on every mobile sync cycle.
+  // A response with no content-type keeps the old assumption — IS's HTML is
+  // the overwhelming majority here, and a header-less login page must still be
+  // caught.
+  // `||`, not `??`: a header present with an empty string value must fall
+  // back to the fail-closed HTML default too, not just a missing header.
+  // `?? 'text/html'` only substitutes on undefined, so an empty content-type
+  // slipped the `includes('text/html')` check below and let an
+  // unauthenticated login page through as if it were data.
+  const contentType = readHeader(res.headers, 'content-type') || 'text/html';
+  if (contentType.toLowerCase().includes('text/html') && !isAuthenticatedHtml(body)) {
     throw sessionExpired('Authenticated request returned an unauthenticated page');
   }
 
   return new Response(body, {
     status: res.status,
-    headers: new Headers({
-      'Content-Type': res.headers?.['Content-Type'] ?? 'text/html',
-    }),
+    headers: new Headers({ 'Content-Type': contentType }),
   });
 }
