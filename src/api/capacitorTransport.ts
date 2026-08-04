@@ -145,7 +145,14 @@ export async function fetchViaCapacitor(
   // parsed object, not a string. `String(obj)` produces the literal text
   // "[object Object]", which then fails JSON.parse downstream — this broke
   // fetchWeekSchedule on mobile (rozvrhy_view.pl POSTs `format: "json"`).
-  const body = typeof res.data === 'string' ? res.data : JSON.stringify(res.data ?? '');
+  // The `?? ''` must NOT sit inside the stringify: JSON.stringify('') is the
+  // two-character text `""`, so an empty body would arrive as a non-empty one.
+  const body =
+    typeof res.data === 'string'
+      ? res.data
+      : res.data === undefined || res.data === null
+        ? ''
+        : JSON.stringify(res.data);
 
   if (res.status === 401 || res.status === 403) {
     throw sessionExpired(`HTTP ${res.status}`);

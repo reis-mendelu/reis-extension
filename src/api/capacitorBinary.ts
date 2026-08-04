@@ -76,6 +76,15 @@ export async function fetchIsBinary(
   if (res.status === 401 || res.status === 403) {
     throw sessionExpired(`HTTP ${res.status}`);
   }
+  // Anything else non-2xx is IS being broken, not the student being logged out
+  // — the same separation fetchViaCapacitor makes. It has to happen BEFORE the
+  // content-type branch below: Android returns an error body as a raw string
+  // whatever responseType asked for, so a 503 HTML maintenance page would
+  // otherwise reach atob(), throw on markup that was never base64, and get
+  // swallowed into a fake expired session.
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error(`HTTP ${res.status}`);
+  }
 
   const headers = res.headers ?? {};
   const contentType = headers['Content-Type'] ?? headers['content-type'] ?? '';

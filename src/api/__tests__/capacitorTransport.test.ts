@@ -310,8 +310,9 @@ describe('fetchViaCapacitor', () => {
     expect(res.headers.get('content-type')).toContain('application/json');
   });
 
-  // Android's native layer commonly hands back lowercase header names, so an
-  // exact-cased lookup silently reported every JSON response as text/html.
+  // iOS lowercases every response header key (lowerCaseHeaderDictionary) while
+  // Android forwards the server's own casing, so an exact-cased lookup silently
+  // reported JSON responses as text/html on whichever platform disagreed.
   it('reads the content-type case-insensitively, as the native layer returns it', async () => {
     const d = deps({
       httpPost: vi.fn(async () => ({

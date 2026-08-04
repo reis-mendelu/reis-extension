@@ -100,6 +100,24 @@ describe('fetchIsBinary', () => {
     });
   });
 
+  // Android's HttpRequestHandler.readData takes the `errorStream != null`
+  // branch for any error status and returns the body as a RAW STRING, ignoring
+  // responseType:'blob'. Without a status guard a 503 maintenance page fell
+  // through to the HTML branch, where atob() choked on markup that was never
+  // base64 — and the swallowed throw reported the outage as a lapsed session.
+  it('THROWS a plain error on 5xx — an IS outage is not the student being logged out', async () => {
+    const d = deps({
+      httpGet: vi.fn(async () => ({
+        status: 503,
+        data: '<!DOCTYPE html><h1>Odstávka</h1>',
+        headers: { 'Content-Type': 'text/html' },
+      })),
+    });
+    const err = await fetchIsBinary('https://is.mendelu.cz/f.p12', TOKEN, d).catch((e) => e);
+    expect(err.message).toMatch(/503/);
+    expect(err.sessionExpired).toBeUndefined();
+  });
+
   it('THROWS on HTML with no logout link — that is a lapsed session, not a document', async () => {
     // btoa('<html>login</html>')
     const d = deps({

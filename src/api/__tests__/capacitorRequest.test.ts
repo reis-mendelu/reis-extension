@@ -99,8 +99,9 @@ describe('normalizeHeadersInit', () => {
 });
 
 describe('readHeader', () => {
-  // The native layers disagree about casing: Android commonly returns
-  // `content-type` where iOS returns `Content-Type`.
+  // The native layers disagree about casing: iOS lowercases every response
+  // header key, Android forwards the server's own — so either spelling can
+  // arrive, depending on the platform and on what IS itself sent.
   it('finds a header whatever its casing', () => {
     expect(readHeader({ 'content-type': 'application/json' }, 'Content-Type')).toBe(
       'application/json'

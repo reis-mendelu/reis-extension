@@ -101,8 +101,9 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
  *
  * The `logout.pl` auth check is deliberately NOT applied here: binary cannot
  * carry that marker, so the check would report a fake expired session. Expiry is
- * detected the way fetchIsBinary detects it — 401/403, or HTML where a file was
- * expected.
+ * detected the way fetchIsBinary detects it — 401/403, or an UNAUTHENTICATED
+ * HTML body where a file was expected. Any other non-2xx is a plain error, so a
+ * transient IS outage is never dressed up as a lapsed session.
  */
 export async function fetchAuthedBytes(url: string): Promise<Uint8Array> {
   if (getPlatform().kind === 'capacitor') {
