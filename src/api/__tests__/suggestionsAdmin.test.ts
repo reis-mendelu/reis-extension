@@ -5,7 +5,10 @@ const order = vi.fn(() => ({ limit }));
 const select = vi.fn(() => ({ order }));
 const eq = vi.fn();
 const update = vi.fn(() => ({ eq }));
-const from = vi.fn(() => ({ select, update }));
+const from = vi.fn((...args: unknown[]) => {
+  void args;
+  return { select, update };
+});
 
 vi.mock('@/services/admin/authClient', () => ({
   adminAuthClient: { from: (...args: unknown[]) => from(...args) },
@@ -45,6 +48,7 @@ describe('suggestionsAdmin.listSuggestions', () => {
     const result = await listSuggestions();
     expect(from).toHaveBeenCalledWith('suggestions');
     expect(result).toHaveLength(2);
+    if (result === null) throw new Error('expected rows, got null');
     // PII check: assert the field is present, never inspect its value.
     expect(result[0]).toHaveProperty('contact');
     expect(logError).not.toHaveBeenCalled();
