@@ -149,6 +149,16 @@ describe('toBytes', () => {
     // fetchIsBinary returns kind:'page' for an AUTHENTICATED html response.
     // For a .p12 request that means IS did not serve the file; saving the page
     // would produce a corrupt certificate that fails silently at install time.
-    await expect(toBytes({ kind: 'page' })).rejects.toMatchObject({ sessionExpired: true });
+    await expect(toBytes({ kind: 'page' })).rejects.toThrow(/page/i);
+  });
+
+  it('does NOT call that a lapsed session — kind:page is positive proof the session is alive', async () => {
+    // fetchIsBinary only returns kind:'page' when the HTML CONTAINED logout.pl.
+    // Tagging it sessionExpired asserts the opposite of what was just measured,
+    // and openIsFile.ts already reads that flag to decide about re-auth — so a
+    // handler acting on it generically would sign the student out mid-session
+    // over a perfectly healthy response.
+    const err = await toBytes({ kind: 'page' }).catch((e) => e);
+    expect(err.sessionExpired).toBeUndefined();
   });
 });
