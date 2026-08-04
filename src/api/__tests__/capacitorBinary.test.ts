@@ -3,6 +3,7 @@ import {
   base64ToBlob,
   filenameFromResponse,
   fetchIsBinary,
+  toBytes,
   type BinaryDeps,
 } from '../capacitorBinary';
 
@@ -134,5 +135,20 @@ describe('fetchIsBinary', () => {
     );
     expect(d.httpGet).not.toHaveBeenCalled();
     expect(d.setCookie).not.toHaveBeenCalled();
+  });
+});
+
+describe('toBytes', () => {
+  it('returns the blob contents as bytes', async () => {
+    const blob = new Blob([new Uint8Array([0x30, 0x82, 0x01])], { type: 'application/x-pkcs12' });
+    const bytes = await toBytes({ kind: 'binary', blob, filename: 'cert.p12' });
+    expect(Array.from(bytes)).toEqual([0x30, 0x82, 0x01]);
+  });
+
+  it('THROWS on a page — an HTML page must never be written as a certificate', async () => {
+    // fetchIsBinary returns kind:'page' for an AUTHENTICATED html response.
+    // For a .p12 request that means IS did not serve the file; saving the page
+    // would produce a corrupt certificate that fails silently at install time.
+    await expect(toBytes({ kind: 'page' })).rejects.toMatchObject({ sessionExpired: true });
   });
 });

@@ -124,3 +124,23 @@ export function blobToBase64(blob: Blob): Promise<string> {
     reader.readAsDataURL(blob);
   });
 }
+
+/**
+ * Narrows an IsResourceResult to raw bytes.
+ *
+ * The `page` case is the one that matters: `fetchIsBinary` returns it for an
+ * authenticated HTML response, which for a certificate request means IS did not
+ * serve the file. Writing those bytes would produce a `.p12` that is really a
+ * web page — a corruption that only surfaces when the student tries to install
+ * it, long after the download "succeeded".
+ */
+export async function toBytes(result: IsResourceResult): Promise<Uint8Array> {
+  if (result.kind !== 'binary') {
+    const err = new Error('Expected file bytes, got a page') as Error & {
+      sessionExpired?: boolean;
+    };
+    err.sessionExpired = true;
+    throw err;
+  }
+  return new Uint8Array(await result.blob.arrayBuffer());
+}
