@@ -42,6 +42,13 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
       setCookie: (o) => CapacitorCookies.setCookie(o),
       httpGet: (o) => CapacitorHttp.get(o),
       httpPost: (o) => CapacitorHttp.post(o),
+    }, {
+      method: options.method,
+      body: options.body as string | undefined,
+      // Deliberately options.headers, NOT the DEFAULT_HEADERS-merged `headers`
+      // above: sync's GETs are device-verified with no caller headers, and
+      // changing what they put on the wire is a risk with no upside here.
+      headers: options.headers as Record<string, string> | undefined,
     });
   }
 
