@@ -46,12 +46,19 @@ export async function fetchEduroamPassword(): Promise<string | null> {
 }
 
 async function generateCert(): Promise<void> {
-  // The only IS write in reIS. It must stay student-initiated: a certificate is
-  // valid for 366 days and generating one silently would rotate a credential
-  // the student may already have installed on other devices.
+  // One of only two IS writes in reIS (outlookSync.ts has the other). It must
+  // stay student-initiated: a certificate is valid for 366 days and generating
+  // one silently would rotate a credential the student may already have
+  // installed on other devices.
+  //
+  // No explicit Content-Type. Both transports already supply it, and adding a
+  // differently-cased copy DOUBLED it: DEFAULT_HEADERS uses lowercase
+  // `content-type`, both keys survive client.ts's object spread, and `Headers`
+  // appends rather than replaces — so IS received
+  // `application/x-www-form-urlencoded, application/x-www-form-urlencoded`,
+  // failed to parse the body, and no certificate was ever created.
   const res = await fetchWithAuth(CERT_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `lang=cz&gen=${encodeURIComponent('Vygenerovat certifikát')}`,
   });
   if (!res.ok) throw new Error(`eduroam: generate -> ${res.status}`);
