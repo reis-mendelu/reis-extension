@@ -69,8 +69,9 @@ export function normalizeCapacitorBody(body: BodyInit | null | undefined): strin
  * Content-Type and IS refusing to parse the body. No caller passes `Headers`
  * today; this exists so that the day one does, it does not fail silently.
  *
- * `Headers` lowercases its keys on the way out. That is fine: the transport
- * reads header names case-insensitively.
+ * The key casing a `Headers` iteration yields is implementation-dependent (the
+ * spec lowercases). That is fine: every header lookup on this path goes through
+ * readHeader, which is case-insensitive.
  */
 export function normalizeHeadersInit(init: HeadersInit | undefined): Record<string, string> {
   if (!init) return {};

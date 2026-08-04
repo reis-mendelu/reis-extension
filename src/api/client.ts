@@ -1,6 +1,7 @@
 import { fetchViaProxy, isInIframe } from './proxyClient';
 import { getPlatform } from '../platform';
 import { fetchViaCapacitor } from './capacitorTransport';
+import { buildCapacitorRequestOptions } from './capacitorRequest';
 import { loadStoredToken } from '../platform/tokenStore';
 
 export const BASE_URL = 'https://is.mendelu.cz';
@@ -46,14 +47,12 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
         httpGet: (o) => CapacitorHttp.get(o),
         httpPost: (o) => CapacitorHttp.post(o),
       },
-      {
-        method: options.method,
-        body: options.body,
-        // Deliberately options.headers, NOT the DEFAULT_HEADERS-merged `headers`
-        // above: sync's GETs are device-verified with no caller headers, and
-        // changing what they put on the wire is a risk with no upside here.
-        headers: options.headers as Record<string, string> | undefined,
-      }
+      // Built by an exported pure function rather than inline, so the rules it
+      // encodes are pinned by tests. This branch cannot be unit-tested directly
+      // (it needs @capacitor/core mocked, which this repo does not do), so
+      // inline the options and deleting `method`/`body` puts a POST back on the
+      // wire as a bodyless GET with a fully green suite.
+      buildCapacitorRequestOptions(options)
     );
   }
 
