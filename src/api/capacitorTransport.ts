@@ -1,4 +1,9 @@
 import { UIS_AUTH_COOKIE } from '../platform/sessionToken';
+import {
+  normalizeCapacitorBody,
+  readHeader,
+  type CapacitorRequestOptions,
+} from './capacitorRequest';
 
 export interface CookieDelivery {
   headers: Record<string, string>;
@@ -8,17 +13,6 @@ export interface CookieDelivery {
 export interface CapacitorHttpResponse {
   status: number;
   data?: unknown;
-  headers?: Record<string, string>;
-}
-
-/** The request shape fetchWithAuth forwards. `headers` are the CALLER's own —
- *  see client.ts, which deliberately does not forward DEFAULT_HEADERS here.
- *  `body` is the real RequestInit type, not narrowed to `string`: callers
- *  (e.g. schedule.ts) build POST bodies with `new URLSearchParams(...)`, and
- *  normalizeCapacitorBody below is what turns that into wire-safe text. */
-export interface CapacitorRequestOptions {
-  method?: string;
-  body?: BodyInit | null;
   headers?: Record<string, string>;
 }
 
@@ -67,36 +61,6 @@ function sessionExpired(message: string): Error {
   const err = new Error(message) as Error & { sessionExpired?: boolean };
   err.sessionExpired = true;
   return err;
-}
-
-/**
- * CapacitorHttp.post JSON.stringify's a non-string `data` before it goes over
- * the native bridge. `URLSearchParams` has no enumerable own properties, so
- * that stringify silently produces `"{}"` — the schedule POST (calendar sync)
- * hit exactly this and sent an empty body while looking like it succeeded.
- *
- * `String(params)` is what actually reproduces the urlencoded form a browser
- * `fetch` would have sent. Anything else (FormData, Blob, a stream) has no
- * safe equivalent here, so it throws rather than shipping a silently wrong
- * request — the same failure mode this function exists to close off.
- */
-export function normalizeCapacitorBody(body: BodyInit | null | undefined): string {
-  if (body === null || body === undefined) {
-    return '';
-  }
-  if (typeof body === 'string') {
-    return body;
-  }
-  if (body instanceof URLSearchParams) {
-    return String(body);
-  }
-  const kind = typeof body === 'object' && body !== null ? body.constructor?.name : typeof body;
-  throw new Error(`reIS: unsupported Capacitor POST body type: ${kind}`);
-}
-
-function hasContentTypeHeader(headers: Record<string, string> | undefined): boolean {
-  if (!headers) return false;
-  return Object.keys(headers).some((key) => key.toLowerCase() === 'content-type');
 }
 
 /** Kept local rather than imported from client.ts, which imports this module. */
@@ -148,14 +112,23 @@ export async function fetchViaCapacitor(
     });
   }
 
-  const isPost = (options.method ?? 'GET').toUpperCase() === 'POST';
+  // Only GET and POST have a native transport. Anything else used to fall
+  // through to httpGet with the body dropped, and the caller got a 200 for a
+  // request that never happened — the silent-wrong-request shape this module
+  // exists to eliminate, so it throws for the same reason an unrepresentable
+  // body does.
+  const method = (options.method ?? 'GET').toUpperCase();
+  if (method !== 'GET' && method !== 'POST') {
+    throw new Error(`reIS: unsupported Capacitor request method: ${method}`);
+  }
+  const isPost = method === 'POST';
 
   // A POST body needs a Content-Type or IS will not parse it. GET must never
   // gain headers it didn't have before (~236 device-verified GETs on this
   // path), so the default is applied for POST only, and only when the caller
   // didn't already supply one — a caller-set Content-Type always wins.
   const contentTypeDefault: Record<string, string> =
-    isPost && !hasContentTypeHeader(options.headers)
+    isPost && readHeader(options.headers, 'content-type') === undefined
       ? { 'Content-Type': 'application/x-www-form-urlencoded' }
       : {};
 
@@ -181,14 +154,21 @@ export async function fetchViaCapacitor(
   // A 200 that is not authenticated means either the session lapsed OR the
   // cookie was delivered the wrong way for this platform. Both are auth
   // failures; neither must be allowed to reach a parser as if it were data.
-  if (!isAuthenticatedHtml(body)) {
+  //
+  // The check is HTML-ONLY, because `logout.pl` is a property of IS's page
+  // chrome and nothing else. schedule.ts POSTs rozvrhy_view.pl with
+  // `format: "json"`; that JSON can never contain a logout link, so applying
+  // the gate to it rejected healthy responses on every mobile sync cycle.
+  // A response with no content-type keeps the old assumption — IS's HTML is
+  // the overwhelming majority here, and a header-less login page must still be
+  // caught.
+  const contentType = readHeader(res.headers, 'content-type') ?? 'text/html';
+  if (contentType.toLowerCase().includes('text/html') && !isAuthenticatedHtml(body)) {
     throw sessionExpired('Authenticated request returned an unauthenticated page');
   }
 
   return new Response(body, {
     status: res.status,
-    headers: new Headers({
-      'Content-Type': res.headers?.['Content-Type'] ?? 'text/html',
-    }),
+    headers: new Headers({ 'Content-Type': contentType }),
   });
 }

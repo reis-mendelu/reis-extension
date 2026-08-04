@@ -4,9 +4,9 @@ import {
   isAuthenticatedHtml,
   fetchViaCapacitor,
   assertIsOrigin,
-  normalizeCapacitorBody,
   type CapacitorTransportDeps,
 } from '../capacitorTransport';
+import { normalizeCapacitorBody } from '../capacitorRequest';
 
 const TOKEN = 'AAAAAAAAAAAAAAAAAAAAAAAA%2FBBBBBBBBBBBBBBBBBBB';
 
@@ -272,6 +272,116 @@ describe('fetchViaCapacitor', () => {
     };
     expect(sent.headers).toEqual({ 'X-Custom': 'value' });
   });
+
+  // Regression: the logout.pl gate is an HTML-only auth signal. schedule.ts POSTs
+  // rozvrhy_view.pl with `format: "json"` and IS answers with JSON, which can
+  // never contain a logout link — applying the gate there rejected a perfectly
+  // healthy response and fired a telemetry report every sync cycle, per language.
+  it('passes a JSON POST response through instead of calling it a lapsed session', async () => {
+    const d = deps({
+      httpPost: vi.fn(async () => ({
+        status: 200,
+        data: '{"rozvrh":[]}',
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+      })),
+    });
+    const res = await fetchViaCapacitor(
+      'https://is.mendelu.cz/auth/katalog/rozvrhy_view.pl',
+      TOKEN,
+      d,
+      { method: 'POST', body: 'format=json' }
+    );
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe('{"rozvrh":[]}');
+  });
+
+  it('carries the real content-type onto the Response — schedule.ts reads it to decide it got JSON', async () => {
+    const d = deps({
+      httpPost: vi.fn(async () => ({
+        status: 200,
+        data: '{"rozvrh":[]}',
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+      })),
+    });
+    const res = await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, {
+      method: 'POST',
+      body: 'format=json',
+    });
+    expect(res.headers.get('content-type')).toContain('application/json');
+  });
+
+  // Android's native layer commonly hands back lowercase header names, so an
+  // exact-cased lookup silently reported every JSON response as text/html.
+  it('reads the content-type case-insensitively, as the native layer returns it', async () => {
+    const d = deps({
+      httpPost: vi.fn(async () => ({
+        status: 200,
+        data: '{"rozvrh":[]}',
+        headers: { 'content-type': 'application/json' },
+      })),
+    });
+    const res = await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, {
+      method: 'POST',
+      body: 'format=json',
+    });
+    expect(res.headers.get('content-type')).toContain('application/json');
+    expect(await res.text()).toBe('{"rozvrh":[]}');
+  });
+
+  it('still refuses an HTML body without a logout link, whatever the casing of its content-type', async () => {
+    const d = deps({
+      httpPost: vi.fn(async () => ({
+        status: 200,
+        data: '<form action="/system/login.pl">',
+        headers: { 'content-type': 'text/html; charset=UTF-8' },
+      })),
+    });
+    await expect(
+      fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, { method: 'POST', body: 'a=1' })
+    ).rejects.toMatchObject({ sessionExpired: true });
+  });
+
+  it('accepts an HTML body that does carry the logout link', async () => {
+    const d = deps({
+      httpPost: vi.fn(async () => ({
+        status: 200,
+        data: '<a href="/system/logout.pl">out</a>',
+        headers: { 'Content-Type': 'text/html' },
+      })),
+    });
+    const res = await fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, {
+      method: 'POST',
+      body: 'a=1',
+    });
+    expect(await res.text()).toContain('logout.pl');
+  });
+
+  // A response with no content-type at all keeps the old assumption: IS's HTML
+  // pages are the overwhelming majority of this path, and a login page arriving
+  // header-less must still be caught.
+  it('treats a content-type-less body as HTML, so a bare login page is still refused', async () => {
+    const d = deps({
+      httpGet: vi.fn(async () => ({ status: 200, data: '<form action="/system/login.pl">' })),
+    });
+    await expect(fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d)).rejects.toMatchObject({
+      sessionExpired: true,
+    });
+  });
+
+  // A PUT/PATCH/DELETE used to fall through to httpGet with the body dropped and
+  // the caller saw a 200 — the exact silent-wrong-request shape this transport
+  // exists to eliminate.
+  it.each(['PUT', 'PATCH', 'DELETE'])(
+    'refuses to send a %s rather than downgrading it',
+    async (m) => {
+      const d = deps();
+      await expect(
+        fetchViaCapacitor('https://is.mendelu.cz/auth/', TOKEN, d, { method: m, body: 'a=1' })
+      ).rejects.toThrow(/unsupported/i);
+      expect(d.httpGet).not.toHaveBeenCalled();
+      expect(d.httpPost).not.toHaveBeenCalled();
+    }
+  );
 });
 
 describe('normalizeCapacitorBody', () => {
