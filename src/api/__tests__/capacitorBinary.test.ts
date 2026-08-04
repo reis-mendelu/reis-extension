@@ -118,6 +118,22 @@ describe('fetchIsBinary', () => {
     expect(err.sessionExpired).toBeUndefined();
   });
 
+  // Android forwards the server's own header casing, so the VALUE arrives
+  // exactly as IS sent it. An exact-cased check would let `Text/Html` past and
+  // save a login page as the document.
+  it('detects HTML whatever the casing of the content-type value', async () => {
+    const d = deps({
+      httpGet: vi.fn(async () => ({
+        status: 200,
+        data: btoa('<html>login</html>'),
+        headers: { 'Content-Type': 'Text/Html; charset=UTF-8' },
+      })),
+    });
+    await expect(fetchIsBinary('https://is.mendelu.cz/f.p12', TOKEN, d)).rejects.toMatchObject({
+      sessionExpired: true,
+    });
+  });
+
   it('THROWS on HTML with no logout link — that is a lapsed session, not a document', async () => {
     // btoa('<html>login</html>')
     const d = deps({

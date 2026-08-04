@@ -123,7 +123,10 @@ export async function fetchAuthedBytes(url: string): Promise<Uint8Array> {
   // a direct credentialed fetch, no DEFAULT_HEADERS, no proxy hop.
   const res = await fetch(url, { credentials: 'include' });
   if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
-  const contentType = res.headers.get('content-type') ?? '';
+  // Lowercased because `Headers` normalises header NAMES but not VALUES — a
+  // `Content-Type: Text/Html` would otherwise slip past and be written to disk
+  // as a certificate.
+  const contentType = (res.headers.get('content-type') ?? '').toLowerCase();
   if (contentType.includes('text/html')) {
     throw new Error('Expected file bytes, got HTML (session expired?)');
   }

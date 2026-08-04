@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildCapacitorRequestOptions,
+  normalizeCapacitorBody,
   normalizeHeadersInit,
   readHeader,
 } from '../capacitorRequest';
@@ -112,5 +113,30 @@ describe('readHeader', () => {
   it('returns undefined for a missing header or a missing bag', () => {
     expect(readHeader({ Accept: '*/*' }, 'content-type')).toBeUndefined();
     expect(readHeader(undefined, 'content-type')).toBeUndefined();
+  });
+});
+
+describe('normalizeCapacitorBody', () => {
+  it('returns an empty string for a missing body', () => {
+    expect(normalizeCapacitorBody(undefined)).toBe('');
+    expect(normalizeCapacitorBody(null)).toBe('');
+  });
+
+  it('leaves a string body unchanged', () => {
+    expect(normalizeCapacitorBody('rozvrh_student=123&lang=cz')).toBe('rozvrh_student=123&lang=cz');
+  });
+
+  it('serialises a URLSearchParams body to its urlencoded form', () => {
+    // This is the exact bug: URLSearchParams has no enumerable own properties,
+    // so JSON.stringify-ing it (what the native bridge does to non-string data)
+    // silently produces "{}" — an empty POST body. String(params) is what a
+    // browser would actually have put on the wire.
+    const params = new URLSearchParams({ rozvrh_student: '123', lang: 'cz' });
+    expect(normalizeCapacitorBody(params)).toBe('rozvrh_student=123&lang=cz');
+  });
+
+  it('throws for an unsupported body type instead of silently corrupting it', () => {
+    expect(() => normalizeCapacitorBody(new FormData())).toThrow();
+    expect(() => normalizeCapacitorBody(new Blob(['x']))).toThrow();
   });
 });

@@ -57,6 +57,21 @@ describe('fetchAuthedBytes on the extension', () => {
     await expect(fetchAuthedBytes('https://is.mendelu.cz/x')).rejects.toThrow(/HTML/i);
   });
 
+  // `Headers` normalises header NAMES to lowercase but leaves VALUES alone, so
+  // a server answering `Content-Type: Text/Html` reaches an exact-cased check
+  // unchanged — and the HTML would then be written to disk as a .p12 that only
+  // fails at install time. The Capacitor transport already lowercases here.
+  it('THROWS on HTML whatever the casing of the content-type value', async () => {
+    setPlatform(stub('extension'));
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('<html>login</html>', {
+        status: 200,
+        headers: { 'content-type': 'Text/Html; charset=UTF-8' },
+      })
+    );
+    await expect(fetchAuthedBytes('https://is.mendelu.cz/x')).rejects.toThrow(/HTML/i);
+  });
+
   it('THROWS on a non-2xx', async () => {
     setPlatform(stub('extension'));
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('', { status: 500 }));

@@ -100,8 +100,11 @@ All four bare `fetch` calls in `src/api/eduroam.ts` go away:
 than slipped in:
 
 1. `getText`/`generateCert` now send `DEFAULT_HEADERS`. These mimic a browser
-   navigation, and the content-type already matches what `generateCert` set by
-   hand.
+   navigation, and they already carry the form content-type — so `generateCert`
+   sets **no** `Content-Type` of its own. Adding one doubles the header:
+   `DEFAULT_HEADERS` spells it lowercase, both keys survive the object spread,
+   and `Headers` appends rather than replaces, so IS gets the value twice and
+   parses no body at all.
 2. A 401/403 now redirects to the IS login page instead of throwing. That is
    `fetchWithAuth`'s existing contract and is correct for a lapsed session.
 

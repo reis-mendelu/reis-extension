@@ -96,7 +96,12 @@ export async function fetchIsBinary(
   //   - a real IS page (dokumenty_cteni.pl is a document *viewer*) -> perfectly
   //     valid, just not a file. It must be shown, not downloaded.
   // `logout.pl` is the same authentication signal the HTML transport uses.
-  if (contentType.includes('text/html')) {
+  //
+  // Matched case-insensitively: Android forwards the server's own header
+  // casing, so the VALUE arrives as IS wrote it, and a `Text/Html` login page
+  // must not be saved as the document. The original casing is kept for the
+  // error message and the blob's MIME type.
+  if (contentType.toLowerCase().includes('text/html')) {
     if (isAuthenticatedBase64Html(body)) return { kind: 'page' };
     throw sessionExpired(`Expected a document, got ${contentType}`);
   }

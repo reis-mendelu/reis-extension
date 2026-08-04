@@ -531,9 +531,13 @@ async function generateCert(): Promise<void> {
   // The only IS write in reIS. It must stay student-initiated: a certificate is
   // valid for 366 days and generating one silently would rotate a credential
   // the student may already have installed on other devices.
+  // No explicit Content-Type: both transports already supply it. Adding a
+  // differently-cased copy DOUBLES it — DEFAULT_HEADERS uses lowercase
+  // `content-type`, both keys survive client.ts's object spread, and `Headers`
+  // appends rather than replaces, so IS receives the value twice, fails to
+  // parse the body, and silently creates no certificate.
   const res = await fetchWithAuth(CERT_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `lang=cz&gen=${encodeURIComponent('Vygenerovat certifikát')}`,
   });
   if (!res.ok) throw new Error(`eduroam: generate -> ${res.status}`);
