@@ -19,7 +19,7 @@ measurements) and `2026-08-02-capacitor-transport-decision.md` (why Model C).
 |---|---|
 | Shell: boot, login, session restore, back button | **Done**, device-verified on Android |
 | Transport (`CapacitorHttp`, per-platform cookie) | **Done** — GET **and POST**, plus raw bytes |
-| Sync (14 endpoints, ~236 requests) | **Done** via postMessage loopback |
+| Sync (14 endpoints, ~236 requests) | **Done** via postMessage loopback — **except the zaznamnik batch**, see below |
 | File download → Downloads + notification | **Done**, device-verified |
 | Duplicate file listings | **Fixed** (also fixes the extension) |
 | Study documents (Task 1/2) | **Done**, device-verified — PR #179 |
@@ -30,6 +30,12 @@ measurements) and `2026-08-02-capacitor-transport-decision.md` (why Model C).
 **The one owed check:** PR #181 merged on green unit tests with the Android device
 verification still undone. Nothing has ever exercised POST on real hardware. Do that
 before treating eduroam on mobile as working — details in Task 3.
+
+**"Sync is done" has one hole.** `syncZaznamnik` runs *inside* the same sync
+(`injector/syncService.ts:381`) but reaches IS through a bare `fetch`
+(`api/zaznamnik.ts:186`), so it is CORS-blocked on Capacitor. In student terms:
+continuous assessment — průběžné hodnocení and practice-test scores — silently never
+arrives on the phone, while everything around it does. It is row 6 of Task 4.
 
 ---
 
@@ -163,7 +169,7 @@ constant or a variable at most of these sites.
 | `src/api/odevzdavarny.ts` | 56 | submissions | open |
 | `src/api/kontrola.ts` | 17 | study check | open |
 | `src/utils/serverTime.ts` | 29 | tablet-only path | open |
-| `src/api/zaznamnik.ts` | 186 (two in one `Promise.all`) | **sync** (`services/sync/syncZaznamnik.ts`) | open |
+| `src/api/zaznamnik.ts` | 186 (two in one `Promise.all`) | **sync** — `syncZaznamnik` runs inside the main sync run (`injector/syncService.ts:381`), so continuous assessment silently never arrives on the phone | open |
 | `src/api/search/searchService.ts` | 22, 38, 57, 80, 102 | search + `PersonHoverCard` | open |
 | `src/hooks/ui/useFileActions.ts` | 45, 85, 104, 142, 144 | **`components/mobile/sheets/SubjectDrawerSheet.tsx`** | open |
 | `src/hooks/ui/useFileDownload.ts` + `useFileDownload/urlResolver.ts` | 19, 45 / 16 | nothing — dead code, see Task 8 | delete, don't migrate |
@@ -186,11 +192,19 @@ These all work on the extension only because a Chrome extension's `fetch` bypass
 hosts in `host_permissions` — a privilege the Capacitor app does not have. That is the whole
 reason this task exists, and why "it works in the extension" proves nothing here.
 
-Genuinely fine, verified: `iskam/*` (out of scope), `injector/*` (content-script-only —
-`menuScraper` is imported solely by `injector/sniper.ts`, which never runs on Capacitor),
-`client.ts:76,124` (the transport itself), `PdfViewer.tsx:15` (`chrome.runtime.getURL`, a
-local asset), `loadRealDataSnapshot`/`logger` (dev-only), and the CDN / Google / Supabase /
-MS-Bookings / Photon / HuggingFace / Discord-webhook calls.
+**Not Task 4 targets** (verified — "not a target" is not the same as "works"):
+
+- `iskam/*` — **still broken on mobile**, just not fixable here: ISKAM is Shibboleth, a
+  second sign-in flow rather than a transport problem, and is out of scope for a first
+  release (see the status table and "Out of scope" below). Do not read this row as green.
+- `injector/*` — content-script-only, so it never executes on Capacitor. `menuScraper` is
+  imported solely by `injector/sniper.ts`.
+- `client.ts:76,124` — the transport itself.
+- `PdfViewer.tsx:15` — `chrome.runtime.getURL`, a local asset. (It *does* break on the
+  tablet path, for a different reason — see Task 8.)
+- `loadRealDataSnapshot`, `logger` — dev-only.
+- CDN / Google / Supabase / MS-Bookings / Photon / HuggingFace / Discord-webhook — not IS,
+  and CORS-clean.
 
 **Adjacent, found while doing eduroam:** `src/api/outlookSync.ts:73` passes its own
 `Content-Type` into `fetchWithAuth`, which already sets a lowercase one — both keys
