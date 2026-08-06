@@ -151,12 +151,26 @@ Capacitor:
 | `src/api/odevzdavarny.ts` | 56 | open |
 | `src/api/kontrola.ts` | 17 | open |
 | `src/utils/serverTime.ts` | 29 (tablet-only path) | open |
+| `src/api/zaznamnik.ts` | 186 (two, in one `Promise.all`) | open — **missing from the original list** |
+| `src/api/search/searchService.ts` | 57, 80, 102 | open — **missing from the original list** |
 
 ⚠️ Not a blind sed: `fetchWithAuth` also imposes `DEFAULT_HEADERS` and a 401/403 login
-redirect, which changes **extension** behaviour. Check each call site. The four remaining
+redirect, which changes **extension** behaviour. Check each call site. The remaining ones
 are independent of each other, so they need not land together.
 
-Other bare fetches in `src/api/` target the CDN, Google or Supabase and are fine.
+The last two rows were **absent from this table until 2026-08-04** — the line below used to
+claim every other bare fetch was a CDN/Google/Supabase call, which was wrong, and anyone
+working the list would have skipped them. They matter: `zaznamnik.ts` is called from the
+**sync** path (`src/services/sync/syncZaznamnik.ts`), and `searchService.ts` backs search
+and the person hover card. Both are reachable on mobile and both are CORS-blocked there.
+
+These work on the extension only because a Chrome extension's `fetch` bypasses CORS for
+hosts in `host_permissions` — a privilege the Capacitor app does not have. That is the
+whole reason this task exists, and it is why "it works in the extension" proves nothing here.
+
+Genuinely fine, for the record: `iskam/skmDocuments.ts:5` (ISKAM, out of scope),
+`injector/menuScraper.ts:132` (content-script-only — imported solely by `injector/sniper.ts`,
+which never runs on Capacitor), and the `CDN_BASE_URL` / Google / Supabase calls.
 
 **Adjacent, found while doing eduroam:** `src/api/outlookSync.ts:73` passes its own
 `Content-Type` into `fetchWithAuth`, which already sets a lowercase one — both keys
