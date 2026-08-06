@@ -144,33 +144,53 @@ shapes the **native layer never produces**. Assume this trap on any future trans
 These call `fetch(...)` directly instead of `fetchWithAuth`, so they are CORS-blocked on
 Capacitor:
 
-| File | Line | State |
-|---|---|---|
-| `src/api/eduroam.ts` | ~~31, 37, 55~~ | ✅ done in PR #181 — all four gone |
-| `src/api/cvicneTests.ts` | 23 | open |
-| `src/api/odevzdavarny.ts` | 56 | open |
-| `src/api/kontrola.ts` | 17 | open |
-| `src/utils/serverTime.ts` | 29 (tablet-only path) | open |
-| `src/api/zaznamnik.ts` | 186 (two, in one `Promise.all`) | open — **missing from the original list** |
-| `src/api/search/searchService.ts` | 57, 80, 102 | open — **missing from the original list** |
+**The list below was wrong twice before it was right.** It originally held 5 files and a
+line dismissing everything else as CDN/Google/Supabase; two review rounds on PR #182 found
+more each time. Do not trust it as folklore — **re-derive it** and diff against this table:
+
+```bash
+grep -rn "\bfetch(" src/ --include='*.ts' --include='*.tsx' \
+  | grep -v "__tests__\|\.test\.\|fetchWithAuth(\|fetchViaProxy(\|fetchJsonViaProxy(\|fetchAuthedBytes(\|fetchIsBinary(\|fetchViaCapacitor("
+```
+
+Grepping for `mendelu` on the same line as `fetch(` is what missed them — the URL is a
+constant or a variable at most of these sites.
+
+| File | Line | Reaches mobile via | State |
+|---|---|---|---|
+| `src/api/eduroam.ts` | ~~31, 37, 55~~ | eduroam sheet | ✅ done, PR #181 |
+| `src/api/cvicneTests.ts` | 23 | subject detail | open |
+| `src/api/odevzdavarny.ts` | 56 | submissions | open |
+| `src/api/kontrola.ts` | 17 | study check | open |
+| `src/utils/serverTime.ts` | 29 | tablet-only path | open |
+| `src/api/zaznamnik.ts` | 186 (two in one `Promise.all`) | **sync** (`services/sync/syncZaznamnik.ts`) | open |
+| `src/api/search/searchService.ts` | 22, 38, 57, 80, 102 | search + `PersonHoverCard` | open |
+| `src/hooks/ui/useFileActions.ts` | 45, 85, 104, 142, 144 | **`components/mobile/sheets/SubjectDrawerSheet.tsx`** | open |
+| `src/hooks/ui/useFileDownload.ts` + `useFileDownload/urlResolver.ts` | 19, 45 / 16 | nothing — dead code, see Task 8 | delete, don't migrate |
+| `src/utils/user_id_fetcher.ts` | 7 | nothing — **orphaned**, zero importers | delete, don't migrate |
+
+`useFileActions` is the sharpest of these: it is imported by a **mobile sheet**, and
+`normalizeFileUrl` (`src/utils/fileUrl.ts:14`) resolves every one of its links to
+`https://is.mendelu.cz`. Subject-file open and download on mobile go through it.
+
+Two rows are traps rather than work: `useFileDownload` has no consumer but the
+`hooks/ui/index.ts` barrel, and `user_id_fetcher.ts` has **no importer at all** — the live
+path is `api/user.ts`, which already uses `fetchWithAuth` against the same URL. Migrating
+either one is wasted effort; deleting them is the actual fix.
 
 ⚠️ Not a blind sed: `fetchWithAuth` also imposes `DEFAULT_HEADERS` and a 401/403 login
 redirect, which changes **extension** behaviour. Check each call site. The remaining ones
-are independent of each other, so they need not land together.
+are independent, so they need not land together.
 
-The last two rows were **absent from this table until 2026-08-04** — the line below used to
-claim every other bare fetch was a CDN/Google/Supabase call, which was wrong, and anyone
-working the list would have skipped them. They matter: `zaznamnik.ts` is called from the
-**sync** path (`src/services/sync/syncZaznamnik.ts`), and `searchService.ts` backs search
-and the person hover card. Both are reachable on mobile and both are CORS-blocked there.
+These all work on the extension only because a Chrome extension's `fetch` bypasses CORS for
+hosts in `host_permissions` — a privilege the Capacitor app does not have. That is the whole
+reason this task exists, and why "it works in the extension" proves nothing here.
 
-These work on the extension only because a Chrome extension's `fetch` bypasses CORS for
-hosts in `host_permissions` — a privilege the Capacitor app does not have. That is the
-whole reason this task exists, and it is why "it works in the extension" proves nothing here.
-
-Genuinely fine, for the record: `iskam/skmDocuments.ts:5` (ISKAM, out of scope),
-`injector/menuScraper.ts:132` (content-script-only — imported solely by `injector/sniper.ts`,
-which never runs on Capacitor), and the `CDN_BASE_URL` / Google / Supabase calls.
+Genuinely fine, verified: `iskam/*` (out of scope), `injector/*` (content-script-only —
+`menuScraper` is imported solely by `injector/sniper.ts`, which never runs on Capacitor),
+`client.ts:76,124` (the transport itself), `PdfViewer.tsx:15` (`chrome.runtime.getURL`, a
+local asset), `loadRealDataSnapshot`/`logger` (dev-only), and the CDN / Google / Supabase /
+MS-Bookings / Photon / HuggingFace / Discord-webhook calls.
 
 **Adjacent, found while doing eduroam:** `src/api/outlookSync.ts:73` passes its own
 `Content-Type` into `fetchWithAuth`, which already sets a lowercase one — both keys
@@ -234,7 +254,11 @@ should be re-checked, in particular:
   (`ShortcutGrid.tsx:53-66`). Present these in the in-app browser instead.
 - **Dead code that is a live trap:** `src/hooks/ui/useFileDownload.ts` has no consumers
   but contains every breakage class at once (bare `fetch`, `window.open`, `a[download]`,
-  `saveAs`). Delete it before someone ports by example.
+  `saveAs`). Delete it before someone ports by example. Take
+  `useFileDownload/urlResolver.ts` with it, and `src/utils/user_id_fetcher.ts` too —
+  the latter is orphaned outright (zero importers; the live path is `api/user.ts`, which
+  already uses `fetchWithAuth` against the same URL). All three surface in the Task 4
+  grep, so deleting them shortens that list rather than adding to it.
 - **Tablet path is unhandled.** `resolvePhoneViewport` needs touch **and** narrow, so a
   tablet renders the *desktop* tree — which reaches `PdfViewer.tsx:15`
   (`chrome.runtime.getURL` → `ReferenceError`, swallowed at `:61` → permanent spinner) and
