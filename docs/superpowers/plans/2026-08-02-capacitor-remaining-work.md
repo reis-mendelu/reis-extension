@@ -19,7 +19,7 @@ measurements) and `2026-08-02-capacitor-transport-decision.md` (why Model C).
 |---|---|
 | Shell: boot, login, session restore, back button | **Done**, device-verified on Android |
 | Transport (`CapacitorHttp`, per-platform cookie) | **Done** — GET **and POST**, plus raw bytes |
-| Sync (14 endpoints, ~236 requests) | **Done** via postMessage loopback — **except the zaznamnik batch**, see below |
+| Sync (14 endpoints, ~236 requests) | **Done** via postMessage loopback — the zaznamnik hole is now closed too (Task 4) |
 | File download → Downloads + notification | **Done**, device-verified |
 | Duplicate file listings | **Fixed** (also fixes the extension) |
 | Study documents (Task 1/2) | **Done**, device-verified — PR #179 |
@@ -27,15 +27,18 @@ measurements) and `2026-08-02-capacitor-transport-decision.md` (why Model C).
 | iOS app | **Never built** — only the throwaway spike ran there |
 | ISKAM, Drive, native Wi-Fi | **Broken** — see below |
 
-**The one owed check:** PR #181 merged on green unit tests with the Android device
-verification still undone. Nothing has ever exercised POST on real hardware. Do that
-before treating eduroam on mobile as working — details in Task 3.
+**The owed device check has grown.** PR #181 merged on green unit tests with the Android
+verification still undone — nothing has ever exercised POST on real hardware. The Task 4
+migrations since then are in the same position: unit-tested, never run on a handset. When
+a cable is next to hand, do them in one pass — eduroam (Task 3), then confirm continuous
+assessment, search, submissions, practice tests and the study check actually populate on
+the phone.
 
-**"Sync is done" has one hole.** `syncZaznamnik` runs *inside* the same sync
-(`injector/syncService.ts:381`) but reaches IS through a bare `fetch`
-(`api/zaznamnik.ts:186`), so it is CORS-blocked on Capacitor. In student terms:
-continuous assessment — průběžné hodnocení and practice-test scores — silently never
-arrives on the phone, while everything around it does. It is row 6 of Task 4.
+**~~"Sync is done" has one hole.~~ Closed.** `syncZaznamnik` runs *inside* the same sync
+(`injector/syncService.ts:381`) and used to reach IS through a bare `fetch`, so it was
+CORS-blocked on Capacitor: continuous assessment — průběžné hodnocení and practice-test
+scores — silently never arrived on the phone while everything around it did. It now goes
+through `fetchWithAuth`. **Unverified on a device**, like everything else since PR #181.
 
 ---
 
@@ -165,24 +168,49 @@ constant or a variable at most of these sites.
 | File | Line | Reaches mobile via | State |
 |---|---|---|---|
 | `src/api/eduroam.ts` | ~~31, 37, 55~~ | eduroam sheet | ✅ done, PR #181 |
-| `src/api/cvicneTests.ts` | 23 | subject detail | open |
-| `src/api/odevzdavarny.ts` | 56 | submissions | open |
-| `src/api/kontrola.ts` | 17 | study check | open |
-| `src/utils/serverTime.ts` | 29 | tablet-only path | open |
-| `src/api/zaznamnik.ts` | 186 (two in one `Promise.all`) | **sync** — `syncZaznamnik` runs inside the main sync run (`injector/syncService.ts:381`), so continuous assessment silently never arrives on the phone | open |
-| `src/api/search/searchService.ts` | 22, 38, 57, 80, 102 | search + `PersonHoverCard` | open |
-| `src/hooks/ui/useFileActions.ts` | 45, 85, 104, 142, 144 | **`components/mobile/sheets/SubjectDrawerSheet.tsx`** | open |
-| `src/hooks/ui/useFileDownload.ts` + `useFileDownload/urlResolver.ts` | 19, 45 / 16 | nothing — dead code, see Task 8 | delete, don't migrate |
-| `src/utils/user_id_fetcher.ts` | 7 | nothing — **orphaned**, zero importers | delete, don't migrate |
+| `src/api/zaznamnik.ts` | ~~186 (two in one `Promise.all`)~~ | **sync** — continuous assessment | ✅ done |
+| `src/api/search/searchService.ts` | ~~22, 38, 57, 80, 102~~ | search + `PersonHoverCard` | ✅ done |
+| `src/api/cvicneTests.ts` | ~~23~~ | subject detail | ✅ done |
+| `src/api/odevzdavarny.ts` | ~~56~~ | submissions | ✅ done |
+| `src/api/kontrola.ts` | ~~17~~ | study check | ✅ done |
+| `src/utils/serverTime.ts` | 29 | tablet-only path | **deliberately left** — see below |
+| ~~`src/hooks/ui/useFileActions.ts`~~ | — | — | **not a target — the row was wrong**, see below |
+| `src/hooks/ui/useFileDownload.ts` + `useFileDownload/urlResolver.ts` | 19, 45 / 16 | nothing — dead code, see Task 8 | ✅ deleted |
+| `src/utils/user_id_fetcher.ts` | 7 | nothing — **orphaned**, zero importers | ✅ deleted |
 
-`useFileActions` is the sharpest of these: it is imported by a **mobile sheet**, and
-`normalizeFileUrl` (`src/utils/fileUrl.ts:14`) resolves every one of its links to
-`https://is.mendelu.cz`. Subject-file open and download on mobile go through it.
+**Correction — `useFileActions` was never broken on mobile.** This plan called it "the
+sharpest of these"; that was wrong, and re-checking cost less than the migration would
+have. All three student-reachable functions (`openFile`, `openPdfInline`,
+`downloadSingle`) have had an `isNativeHost()` branch that returns *before* the bare fetch
+since **#169**, the original shell PR — which predates this document. The two remaining
+bare fetches are inside `downloadZip`, and ZIP is desktop-only by product decision and
+already unreachable on phone (`SubjectDrawerSheet.tsx` passes `selectable={false}` and
+destructures only `openFile`/`downloadSingle`). Nothing to do here.
 
-Two rows are traps rather than work: `useFileDownload` has no consumer but the
-`hooks/ui/index.ts` barrel, and `user_id_fetcher.ts` has **no importer at all** — the live
-path is `api/user.ts`, which already uses `fetchWithAuth` against the same URL. Migrating
-either one is wasted effort; deleting them is the actual fix.
+**`serverTime` deliberately left as a bare fetch.** It is the one row that is not a
+mechanical swap: it issues a **HEAD** request and reads the `Date` *response* header.
+`buildCapacitorRequestOptions` dispatches GET and POST only, and the native bridge would
+have to forward response headers for the read to survive. That is real transport work for
+a **tablet-only** path whose product status is itself undecided (Task 8). Revisit it with
+the tablet decision, not before.
+
+**The search migration needed care, not a swap.** All four search POSTs passed their own
+`'Content-Type': 'application/x-www-form-urlencoded'`. Handing that to `fetchWithAuth`
+reproduces the defect found in eduroam and still live in `outlookSync`: DEFAULT_HEADERS
+carries a lowercase `content-type`, the caller's capitalised one survives the object
+spread as a second key, and `Headers` **appends** — IS then parses no body and returns an
+ok-looking page, so search silently yields zero results with nothing reporting an error.
+The caller headers were dropped; `searchService.test.ts` now pins one content-type on the
+wire, counting keys on the object handed to `fetch` rather than reading them back through
+`new Headers` (happy-dom replaces duplicates, so an assertion routed through it would pass
+while the wire stayed malformed). **That is three sites with the same defect — treat a
+caller-supplied `Content-Type` as a bug wherever it meets `fetchWithAuth`.**
+
+⚠️ **Behaviour change to know about:** `fetchWithAuth` redirects to the IS login page on
+401/403. These call sites previously swallowed that (`return null`). The redirect only
+fires on the *direct* branch — the iframe goes through the proxy and Capacitor goes
+native — so in practice it affects the dev webapp and the content script, where every
+other sync endpoint already behaves this way.
 
 ⚠️ Not a blind sed: `fetchWithAuth` also imposes `DEFAULT_HEADERS` and a 401/403 login
 redirect, which changes **extension** behaviour. Check each call site. The remaining ones
@@ -266,13 +294,12 @@ should be re-checked, in particular:
 - **`target="_blank"` escapes to the system browser** (no IS session): the "Žádost na
   studijní oddělení" row (`DocsSheet.tsx:84-94`), `ISBacklink`, and the ISKAM card
   (`ShortcutGrid.tsx:53-66`). Present these in the in-app browser instead.
-- **Dead code that is a live trap:** `src/hooks/ui/useFileDownload.ts` has no consumers
-  but contains every breakage class at once (bare `fetch`, `window.open`, `a[download]`,
-  `saveAs`). Delete it before someone ports by example. Take
-  `useFileDownload/urlResolver.ts` with it, and `src/utils/user_id_fetcher.ts` too —
-  the latter is orphaned outright (zero importers; the live path is `api/user.ts`, which
-  already uses `fetchWithAuth` against the same URL). All three surface in the Task 4
-  grep, so deleting them shortens that list rather than adding to it.
+- ~~**Dead code that is a live trap**~~ **✅ deleted.** `useFileDownload.ts` (every
+  breakage class at once: bare `fetch`, `window.open`, `a[download]`, `saveAs`),
+  `useFileDownload/urlResolver.ts`, and the orphaned `src/utils/user_id_fetcher.ts` are
+  gone. `src/hooks/ui/index.ts` went with them: it was `useFileDownload`'s only importer,
+  **nothing imported the barrel itself**, and re-export files are banned by the iron rules
+  in CLAUDE.md. The three surviving hooks it re-exported are imported directly.
 - **Tablet path is unhandled.** `resolvePhoneViewport` needs touch **and** narrow, so a
   tablet renders the *desktop* tree — which reaches `PdfViewer.tsx:15`
   (`chrome.runtime.getURL` → `ReferenceError`, swallowed at `:61` → permanent spinner) and

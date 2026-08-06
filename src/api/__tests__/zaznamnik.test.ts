@@ -1,7 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { parsePhPage, parseVtPage } from '../zaznamnik';
+import { parsePhPage, parseVtPage, fetchSubjectZaznamnik } from '../zaznamnik';
+import { setPlatform, __resetPlatformForTests } from '../../platform';
+import type { ReisPlatform } from '../../platform/types';
 
 const fixture = (name: string) =>
   readFileSync(resolve(__dirname, 'fixtures/zaznamnik', name), 'utf-8');
@@ -123,5 +125,57 @@ describe('parseVtPage', () => {
       expect(t.name.length).toBeGreaterThan(0);
     }
     expect(typeof result.fetchedAt).toBe('number');
+  });
+});
+
+function stubPlatform(): ReisPlatform {
+  const bag = new Map<string, unknown>();
+  return {
+    kind: 'extension',
+    storage: {
+      async get(k) {
+        return bag.get(k);
+      },
+      async set(k, v) {
+        bag.set(k, v);
+      },
+      async remove(k) {
+        bag.delete(k);
+      },
+    },
+    getAssetUrl: (p) => `/${p}`,
+  };
+}
+
+/**
+ * syncZaznamnik runs INSIDE the main sync run (injector/syncService.ts), so when
+ * these two requests are bare `fetch` calls they are CORS-blocked on Capacitor
+ * and continuous assessment silently never arrives on the phone — while every
+ * endpoint around it syncs fine. Routing through fetchWithAuth is what fixes
+ * that, and going through the shared transport is observable on the wire:
+ * a bare fetch sends neither credentials nor the IS headers.
+ */
+describe('fetchSubjectZaznamnik on the wire', () => {
+  afterEach(() => {
+    __resetPlatformForTests();
+    vi.restoreAllMocks();
+  });
+
+  it('sends both requests through the authenticated transport', async () => {
+    setPlatform(stubPlatform());
+    const inits: (RequestInit | undefined)[] = [];
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_input, init) => {
+      inits.push(init);
+      return new Response('<html><body></body></html>', { status: 200 });
+    });
+
+    await fetchSubjectZaznamnik('123', '456', '789');
+
+    expect(inits).toHaveLength(2);
+    for (const init of inits) {
+      expect(init?.credentials).toBe('include');
+      expect((init?.headers as Record<string, string>)?.['accept-language']).toBeDefined();
+    }
   });
 });

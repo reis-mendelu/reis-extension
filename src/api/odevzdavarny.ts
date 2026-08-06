@@ -1,4 +1,5 @@
 import { logError } from '../utils/reportError';
+import { fetchWithAuth } from './client';
 
 export interface Odevzdavarna {
   courseId: string;
@@ -57,7 +58,7 @@ async function fetchLang(
 ): Promise<RawOdevzdavarna[] | null> {
   try {
     const url = `https://is.mendelu.cz/auth/student/odevzdavarny.pl?studium=${studium};obdobi=${obdobi};lang=${lang}`;
-    const res = await fetch(url);
+    const res = await fetchWithAuth(url);
     if (!res.ok) throw new Error('Failed to fetch odevzdavarny');
 
     const html = await res.text();

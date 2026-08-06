@@ -1,4 +1,5 @@
 import { logError } from '../utils/reportError';
+import { fetchWithAuth } from './client';
 import type {
   SubjectZaznamnik,
   SubjectPh,
@@ -204,7 +205,10 @@ export async function fetchSubjectZaznamnik(
     const phUrl = `${BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${predmetId};prubezne=1;lang=cz`;
     const vtUrl = `${BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${predmetId};test=1;lang=cz`;
 
-    const [phRes, vtRes] = await Promise.all([fetch(phUrl), fetch(vtUrl)]);
+    // fetchWithAuth, not a bare fetch: this runs inside the main sync run, and
+    // on Capacitor a bare fetch is CORS-blocked — continuous assessment would
+    // silently never arrive on the phone while everything around it synced.
+    const [phRes, vtRes] = await Promise.all([fetchWithAuth(phUrl), fetchWithAuth(vtUrl)]);
     if (!phRes.ok || !vtRes.ok)
       throw new Error(`HTTP error: PH=${phRes.status} VT=${vtRes.status}`);
 

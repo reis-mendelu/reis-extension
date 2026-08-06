@@ -1,4 +1,5 @@
 import { logError } from '../utils/reportError';
+import { fetchWithAuth } from './client';
 
 export interface KontrolaData {
   datumNarozeni: string; // ISO date: "YYYY-MM-DD"
@@ -14,7 +15,7 @@ function parseDDMMYYYY(raw: string): string | null {
 
 export async function fetchKontrolaData(): Promise<KontrolaData | null> {
   try {
-    const res = await fetch('https://is.mendelu.cz/auth/kontrola/?lang=cz');
+    const res = await fetchWithAuth('https://is.mendelu.cz/auth/kontrola/?lang=cz');
     if (!res.ok) return null;
 
     const html = await res.text();

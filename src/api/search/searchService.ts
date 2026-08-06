@@ -1,3 +1,4 @@
+import { fetchWithAuth } from '../client';
 import type { Person, Subject } from './types';
 import { parseMendeluResults, parseGlobalPeopleResults } from './peopleParser';
 import { parseMendeluProfileResult } from './peopleParserProfile';
@@ -24,11 +25,13 @@ async function postHledani(
   formData.append('pocet', String(SUBJECT_RESULT_CAP));
   if (subjekt) formData.append('subjekt', subjekt);
 
-  const response = await fetch(HLEDANI_URL, {
+  // No `Content-Type` and no `credentials` here: fetchWithAuth's DEFAULT_HEADERS
+  // already sends the form-urlencoded content-type in lowercase, and passing one
+  // too would survive the spread as a second key that `Headers` APPENDS — IS then
+  // parses no body and returns an ok-looking page with zero results.
+  const response = await fetchWithAuth(HLEDANI_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: formData.toString(),
-    credentials: 'include',
   });
   return await response.text();
 }
@@ -40,7 +43,7 @@ async function postHledani(
 export async function fetchPersonProfile(studentId: string): Promise<Person | null> {
   try {
     const url = `${BASE_LIDE_URL}clovek.pl?id=${studentId};lang=cz`;
-    const response = await fetch(url, { credentials: 'include' });
+    const response = await fetchWithAuth(url);
     const html = await response.text();
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
@@ -59,11 +62,10 @@ export async function searchPeople(personName: string): Promise<Person[]> {
   formData.append('pocet', '1000');
 
   try {
-    const response = await fetch('https://is.mendelu.cz/auth/lide/index.pl', {
+    // See postHledani on why no Content-Type is passed.
+    const response = await fetchWithAuth('https://is.mendelu.cz/auth/lide/index.pl', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData.toString(),
-      credentials: 'include',
     });
 
     const html = await response.text();
@@ -82,11 +84,10 @@ export async function searchSubjects(query: string): Promise<Subject[]> {
   formData.append('pocet', '20');
 
   try {
-    const response = await fetch('https://is.mendelu.cz/auth/hledani/index.pl', {
+    // See postHledani on why no Content-Type is passed.
+    const response = await fetchWithAuth('https://is.mendelu.cz/auth/hledani/index.pl', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData.toString(),
-      credentials: 'include',
     });
     return parseSubjectResults(await response.text());
   } catch {
@@ -104,11 +105,10 @@ export async function searchSubjectsCatalog(query: string, limit = 50): Promise<
   formData.append('pocet', String(limit));
 
   try {
-    const response = await fetch('https://is.mendelu.cz/auth/hledani/index.pl', {
+    // See postHledani on why no Content-Type is passed.
+    const response = await fetchWithAuth('https://is.mendelu.cz/auth/hledani/index.pl', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData.toString(),
-      credentials: 'include',
     });
     return parseSubjectResults(await response.text());
   } catch {

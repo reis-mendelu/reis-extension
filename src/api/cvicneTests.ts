@@ -1,4 +1,5 @@
 import { logError } from '../utils/reportError';
+import { fetchWithAuth } from './client';
 
 export interface CvicnyTest {
   courseId: string;
@@ -20,7 +21,7 @@ interface RawTest {
 async function fetchLang(studium: string, lang: 'cz' | 'en'): Promise<RawTest[] | null> {
   try {
     const url = `https://is.mendelu.cz/auth/elis/student/seznam_osnov.pl?studium=${studium};lang=${lang}`;
-    const res = await fetch(url);
+    const res = await fetchWithAuth(url);
     if (!res.ok) throw new Error('Failed to fetch seznam_osnov');
 
     const html = await res.text();
