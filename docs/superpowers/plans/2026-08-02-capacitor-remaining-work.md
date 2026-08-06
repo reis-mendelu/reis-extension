@@ -297,7 +297,9 @@ should be re-checked, in particular:
 - ~~**Dead code that is a live trap**~~ **✅ deleted.** `useFileDownload.ts` (every
   breakage class at once: bare `fetch`, `window.open`, `a[download]`, `saveAs`),
   `useFileDownload/urlResolver.ts`, and the orphaned `src/utils/user_id_fetcher.ts` are
-  gone. `src/hooks/ui/index.ts` went with them: it was `useFileDownload`'s only importer,
+  gone. **Only that orphaned utility file** — the live `fetchUserId()` in `src/api/user.ts`
+  is a different thing entirely and stays; it already uses `fetchWithAuth` against the same
+  URL. `src/hooks/ui/index.ts` went with them: it was `useFileDownload`'s only importer,
   **nothing imported the barrel itself**, and re-export files are banned by the iron rules
   in CLAUDE.md. The three surviving hooks it re-exported are imported directly.
 - **Tablet path is unhandled.** `resolvePhoneViewport` needs touch **and** narrow, so a
