@@ -476,15 +476,41 @@ suite on any header-merging question.
   mistake self-corrects, since a retry over a network that did save returns
   ALREADY_EXISTS, which reads as success.
 
-**What is NOT verified, and how to verify it:**
+**DEVICE-VERIFIED 2026-08-08** on the A001 handset (Android 16 / API 36), end to end
+against the student's real IS certificate. `./gradlew :app:compileDebugJavaWithJavac`
+succeeds (JDK 21 via `brew install openjdk@21`; the machine had no JVM at all before).
 
-- **The Java has never been compiled.** There is no JDK on the dev machine
-  (`/usr/bin/java` is the macOS stub; no JVMs installed, no Android Studio). Install one
-  (`brew install --cask temurin`) and run
-  `./gradlew :app:compileDebugJavaWithJavac` before trusting any of the above.
-- **Nothing has run on a handset.** The decisive check is on campus: acceptance is not
-  connection — the spike's emulator returned `FAILURE_NETWORK_NOT_FOUND` purely because
-  no eduroam AP was in range. That remains the last real unknown on the Android path.
+The flow: profile → eduroam → one tap → Android's own dialog
+(**"Save this network? / reIS wants to save a network to your phone / eduroam"**,
+activity `com.android.settings.wifi.addappnetworks.AddAppNetworksActivity`) → Save.
+Two taps, exactly as promised.
+
+`dumpsys wifi` afterwards, i.e. Android's record and not the app's claim:
+
+```
+ID: 73 SSID: "eduroam"
+KeyMgmt: WPA_EAP IEEE8021X          (Type 3 + Type 9 → WPA2- and WPA3-Enterprise)
+eap_method: TLS
+identity "xholek1@mendelu.cz"
+domain_suffix_match "mendelu.cz"
+client_cert "keystore://USRCERT_..."
+ca_cert     "keystore://CACERT_..."
+```
+
+**The identity line proves the design call.** It was derived inside the plugin from the
+client cert's subject CN — no `?get=user-der` request, no ASN.1 parser in TypeScript —
+and it produced the exact string EAP-TLS needs. The `keystore://` entries confirm the
+framework auto-installs the key and CA: no cert-install dialog, no Settings dance.
+
+A read-only check of `certifikat.pl` ran FIRST to confirm a certificate already existed
+(issued 21 Jun 2026), so the flow read it and never POSTed `gen=`. **Keep that order** —
+generating rotates a 366-day credential the student may have installed elsewhere.
+
+**Still not verified:**
+
+- **Association on campus.** Acceptance is not connection. The phone had no eduroam AP
+  in range (`cmd wifi list-scan-results` was empty for it), so this still needs the
+  handset on MENDELU grounds. It is now the ONLY unknown on the Android path.
 - The **API 30 floor** is not gated in JS on purpose. `minSdkVersion` is 24, so Android
   7–10 devices reach the plugin and get an explicit rejection rather than a silently
   different flow. **Product decision still open:** leave them on the manual instructions,
