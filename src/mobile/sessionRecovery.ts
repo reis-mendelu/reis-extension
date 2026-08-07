@@ -47,8 +47,20 @@ async function runRecovery(): Promise<string> {
   return token;
 }
 
-/** How long to wait for an in-flight sync before giving up on the re-sync. */
-const RESYNC_IDLE_TIMEOUT_MS = 30_000;
+/**
+ * How long to wait for an in-flight sync before giving up on the re-sync.
+ *
+ * Sized against `SYNC_INTERVAL` (5 min), not guessed: past that point the
+ * periodic run fires on its own and waiting longer buys nothing. 30 s was too
+ * short — a full sync is ~236 requests, which on mobile data can easily run
+ * past it.
+ *
+ * A bound is needed at all because `isSyncing` is not guaranteed to clear:
+ * `syncAllData` sets it and then calls `sendToIframe` BEFORE entering its
+ * `try`, so a throw there leaves the flag stuck true and its `finally` never
+ * runs. Waiting unbounded on that would spin for the life of the app.
+ */
+const RESYNC_IDLE_TIMEOUT_MS = 2 * 60 * 1000;
 const RESYNC_POLL_MS = 250;
 
 /**
@@ -72,10 +84,14 @@ async function resyncWhenIdle(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, RESYNC_POLL_MS));
   }
 
-  // Still busy after the deadline means a wedged run, which is its own problem;
-  // calling anyway just no-ops, so record it rather than pretending it synced.
+  // Still busy after the deadline. The data is not lost — the periodic run
+  // (SYNC_INTERVAL) picks it up within a few minutes — but the student sees
+  // pre-expiry data until then, so this is recorded rather than swallowed.
   if (sync.isSyncing) {
-    logError('Mobile.recoverSession.resync', new Error('Sync still in flight; skipped re-sync'));
+    logError(
+      'Mobile.recoverSession.resync',
+      new Error('Sync still in flight past the deadline; leaving it to the periodic run')
+    );
     return;
   }
 
