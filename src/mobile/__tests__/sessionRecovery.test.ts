@@ -12,11 +12,21 @@ vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 vi.mock('../../store/useAppStore', () => ({
   useAppStore: { getState: () => ({ language: 'cs' }) },
 }));
+vi.mock('../../injector/syncService', () => ({
+  syncAllData: vi.fn(async () => {}),
+  get isSyncing() {
+    return syncState.busy;
+  },
+}));
+
+/** Mutable stand-in for syncService's exported `let isSyncing` live binding. */
+const syncState = { busy: false };
 
 import { recoverSession, promptSessionRecovery } from '../sessionRecovery';
 import { ensureSession } from '../ensureSession';
 import { getPlatform } from '../../platform';
 import { logError } from '../../utils/reportError';
+import { syncAllData } from '../../injector/syncService';
 
 const deferred = () => {
   let resolve!: (v: string) => void;
@@ -146,5 +156,47 @@ describe('promptSessionRecovery', () => {
     promptSessionRecovery();
 
     expect(toast.error).not.toHaveBeenCalled();
+  });
+});
+
+describe('re-sync after recovery', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useRealTimers();
+    syncState.busy = false;
+    vi.mocked(getPlatform).mockReturnValue({
+      kind: 'capacitor',
+      storage,
+    } as unknown as ReturnType<typeof getPlatform>);
+    vi.mocked(ensureSession).mockResolvedValue('TOKEN-123');
+  });
+
+  // Without this the student signs back in and still sees pre-expiry data
+  // until the next SYNC_INTERVAL tick.
+  it('refreshes the store once the login succeeds', async () => {
+    await recoverSession();
+
+    await vi.waitFor(() => expect(syncAllData).toHaveBeenCalledTimes(1));
+  });
+
+  // syncAllData opens with `if (isSyncing) return`, and the run that DETECTED
+  // the lapse is often still winding down its ~236 requests when the student
+  // finishes logging in — so calling straight away drops the re-sync silently.
+  it('waits for an in-flight sync instead of being dropped by its guard', async () => {
+    syncState.busy = true;
+    await recoverSession();
+
+    // Still busy: the re-sync must not have fired yet.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(syncAllData).not.toHaveBeenCalled();
+
+    syncState.busy = false;
+    await vi.waitFor(() => expect(syncAllData).toHaveBeenCalledTimes(1));
+  });
+
+  it('does not fail the recovery when the re-sync throws', async () => {
+    vi.mocked(syncAllData).mockRejectedValueOnce(new Error('sync blew up'));
+
+    await expect(recoverSession()).resolves.toBe(true);
   });
 });

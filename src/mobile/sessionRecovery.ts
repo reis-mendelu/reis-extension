@@ -34,18 +34,52 @@ async function runRecovery(): Promise<string> {
   await getPlatform().storage.remove(TOKEN_KEY);
   const token = await ensureSession(await buildInAppLoginDeps());
 
-  // Re-sync immediately. Whatever failed during the lapse left the store
-  // holding pre-expiry data, and without this it would sit there until the
-  // next SYNC_INTERVAL tick or app resume — so a student who just signed back
-  // in would still be looking at stale exams and grades.
+  // Re-sync. Whatever failed during the lapse left the store holding
+  // pre-expiry data, and without this it would sit there until the next
+  // SYNC_INTERVAL tick or app resume — so a student who just signed back in
+  // would still be looking at stale exams and grades.
   //
   // Lazily imported and fire-and-forget: recovery has already succeeded by
   // this point, so a failing sync must not turn it into a failure, and the
   // static import would pull the sync graph into the app's login path.
-  const { syncAllData } = await import('../injector/syncService');
-  void syncAllData().catch((e) => logError('Mobile.recoverSession.resync', e));
+  void resyncWhenIdle().catch((e) => logError('Mobile.recoverSession.resync', e));
 
   return token;
+}
+
+/** How long to wait for an in-flight sync before giving up on the re-sync. */
+const RESYNC_IDLE_TIMEOUT_MS = 30_000;
+const RESYNC_POLL_MS = 250;
+
+/**
+ * Runs a sync once no other run owns it.
+ *
+ * `syncAllData` opens with `if (isSyncing) return` — so calling it straight
+ * after login is a coin flip: the very run that DETECTED the lapse is often
+ * still winding down its ~236 requests, and the re-sync would be dropped
+ * silently, leaving the student staring at pre-expiry data they just signed in
+ * to refresh.
+ *
+ * The module object is kept whole rather than destructured: `isSyncing` is an
+ * exported `let`, and destructuring would snapshot it instead of reading the
+ * live binding — which would busy-wait forever or not at all.
+ */
+async function resyncWhenIdle(): Promise<void> {
+  const sync = await import('../injector/syncService');
+
+  const deadline = Date.now() + RESYNC_IDLE_TIMEOUT_MS;
+  while (sync.isSyncing && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, RESYNC_POLL_MS));
+  }
+
+  // Still busy after the deadline means a wedged run, which is its own problem;
+  // calling anyway just no-ops, so record it rather than pretending it synced.
+  if (sync.isSyncing) {
+    logError('Mobile.recoverSession.resync', new Error('Sync still in flight; skipped re-sync'));
+    return;
+  }
+
+  await sync.syncAllData();
 }
 
 /**
