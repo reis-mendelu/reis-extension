@@ -14,7 +14,9 @@
  * and pays nothing.
  */
 
-type SessionExpiredHandler = () => void;
+/** Receives the token the failing request used, so the handler can tell a
+ *  live lapse from a straggler issued before an earlier re-login. */
+type SessionExpiredHandler = (failedToken?: string) => void;
 
 let handler: SessionExpiredHandler | null = null;
 
@@ -28,6 +30,6 @@ export function setSessionExpiredHandler(fn: SessionExpiredHandler | null): void
  * handler is registered — on the extension the content script has already
  * navigated the host page to login.pl, so there is nothing to add.
  */
-export function notifySessionExpired(): void {
-  handler?.();
+export function notifySessionExpired(failedToken?: string): void {
+  handler?.(failedToken);
 }

@@ -27,12 +27,27 @@ const PROMPT_ID = 'reis-session-expired';
 /** In-flight recovery, so a fanned-out failure opens one login, not a dozen. */
 let inFlight: Promise<string> | null = null;
 
+/**
+ * The token the last successful recovery installed, used to tell a live failure
+ * from a straggler.
+ *
+ * Never logged, never sent anywhere — it exists only to be compared by identity
+ * with the token a failing request used.
+ */
+let activeToken: string | null = null;
+
 async function runRecovery(): Promise<string> {
   // ensureSession returns the stored token when it still looks plausible, and
   // a lapsed UISAuth looks exactly like a live one. Clearing first is what
   // makes this a re-login rather than a no-op that returns the dead token.
   await getPlatform().storage.remove(TOKEN_KEY);
   const token = await ensureSession(await buildInAppLoginDeps());
+
+  activeToken = token;
+  // The prompt is `duration: Infinity` with a stable id, so it does NOT go away
+  // on its own once the student has signed back in. Left up, it invites a
+  // second tap that would clear the token they just obtained.
+  toast.dismiss(PROMPT_ID);
 
   // Re-sync. Whatever failed during the lapse left the store holding
   // pre-expiry data, and without this it would sit there until the next
@@ -128,9 +143,25 @@ export async function recoverSession(): Promise<boolean> {
  * Safe to call from anywhere that catches a `sessionExpired` error, including
  * non-React code — the string is resolved through `translate` against the
  * store's current language rather than a hook.
+ *
+ * `failedToken` is the token the failing request actually used. A sync fans out
+ * ~236 requests, and one issued BEFORE a re-login can land well after it — that
+ * response is unauthenticated because its token is dead, not because the
+ * current session is. Prompting on it would offer to repair a session that is
+ * already healthy, and accepting would delete the token the student had just
+ * obtained and send them through the login again.
+ *
+ * Comparing tokens rather than waiting out a grace period keeps this exact:
+ * there is no window to tune, and a genuine second lapse — which carries the
+ * CURRENT token — still prompts.
  */
-export function promptSessionRecovery(): void {
+export function promptSessionRecovery(failedToken?: string): void {
   if (getPlatform().kind !== 'capacitor') return;
+
+  // Only suppress when we can prove the failure belongs to a superseded
+  // session. Before any recovery has run, activeToken is null and everything
+  // through — a failure must never be swallowed for lack of information.
+  if (failedToken && activeToken && failedToken !== activeToken) return;
 
   const language = useAppStore.getState().language;
   toast.error(translate(language, 'session.expired'), {

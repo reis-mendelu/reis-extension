@@ -293,6 +293,20 @@ not throw a full-screen WebView over whatever the student is reading, so
 choose. On success it re-syncs immediately — otherwise the student signs back in and is still
 looking at the pre-expiry data until the next `SYNC_INTERVAL` tick.
 
+⚠️ **A prompt must never be able to destroy a healthy session.** Two ways it could, both
+fixed after #185 merged:
+
+- The prompt is `duration: Infinity` with a stable id, so it did **not** disappear once the
+  student signed back in. Left on screen, a second tap ran recovery again — which clears the
+  token. `recoverSession` now dismisses it on success.
+- A request issued *before* a re-login carries the dead token and can land well after it.
+  That response is unauthenticated because *its* token is dead, not because the current
+  session is. `promptSessionRecovery(failedToken)` now discards it by comparing against the
+  token the last recovery installed — **exact, not a grace period**: there is no window to
+  tune, and a genuine second lapse (which carries the *current* token) still prompts. The
+  token is threaded from `capacitorTransport`/`capacitorBinary` for comparison only; it is
+  never logged or transmitted.
+
 ⚠️ **The notification fires from where the error is MINTED, not where it is caught.** This
 was wrong in the first draft and both PR reviewers caught it. The original hook sat in
 `syncAllData`'s outer catch, which *cannot* fire: `getUserParams` swallows into `null`

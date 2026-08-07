@@ -54,6 +54,24 @@ describe('session expiry reaches the handler from the transport', () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
+  // The handler discards stragglers by comparing this against the token it
+  // last installed, so a notification that arrives without one cannot be
+  // filtered and would re-prompt after a successful re-login.
+  it.each([
+    ['a 401', { status: 401, data: '', headers: {} }],
+    [
+      'an unauthenticated 200',
+      { status: 200, data: '<html>login</html>', headers: { 'content-type': 'text/html' } },
+    ],
+  ])('forwards the token the failing request used on %s', async (_name, response) => {
+    deps.httpGet.mockResolvedValue(response);
+
+    await expect(
+      fetchViaCapacitor('https://is.mendelu.cz/auth/x', 'DEAD-TOKEN', deps)
+    ).rejects.toThrow();
+    expect(handler).toHaveBeenCalledWith('DEAD-TOKEN');
+  });
+
   it('stays silent on a healthy authenticated page', async () => {
     deps.httpGet.mockResolvedValue({
       status: 200,
