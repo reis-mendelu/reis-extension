@@ -6,6 +6,7 @@ import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
 import { NotificationItem } from '../../Notifications/NotificationItem';
 import { DeadlineAlertItem } from '../../Notifications/DeadlineAlertItem';
 import { trackNotificationClick } from '../../../services/spolky';
+import { openExternal } from '../../../mobile/openExternal';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 export interface NotificationsSheetProps {
@@ -55,7 +56,9 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
                 onClick={() => {
                   if (n.link) {
                     if (!n.associationId?.startsWith('academic_')) trackNotificationClick(n.id);
-                    window.open(n.link, '_blank');
+                    // openExternal, not window.open: on Capacitor that hands
+                    // the URL to the system browser, which has no IS session.
+                    void openExternal(n.link);
                     onClose();
                   }
                 }}

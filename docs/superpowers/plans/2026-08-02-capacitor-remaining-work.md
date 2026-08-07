@@ -13,29 +13,57 @@ measurements) and `2026-08-02-capacitor-transport-decision.md` (why Model C).
 
 ## Where it stands
 
-*Updated 2026-08-04, after PR #179 (`1ad5d030`) and PR #181 (`c9e6160f`).*
+*Updated 2026-08-07, after PR #185 (Task 4, Task 8 external links, session recovery).*
+
+⚠️ **One coverage gap knowingly accepted at merge:** `searchService` moved from a direct
+iframe `fetch` onto the content-script proxy, and nothing tests that hop end to end —
+`e2e/tests/search.spec.ts` only asserts the search bar renders, and **CI does not run e2e at
+all**. The mechanism is proven in production elsewhere (`events.ts:57` POSTs through the same
+proxy, as does `outlookSync`), and the URLs and bodies are unit-pinned, but a real search query
+on the extension is the check that would actually confirm it.
 
 | Area | State |
 |---|---|
 | Shell: boot, login, session restore, back button | **Done**, device-verified on Android |
 | Transport (`CapacitorHttp`, per-platform cookie) | **Done** — GET **and POST**, plus raw bytes |
-| Sync (14 endpoints, ~236 requests) | **Done** via postMessage loopback — **except the zaznamnik batch**, see below |
+| Sync (14 endpoints, ~236 requests) | **Done** via postMessage loopback; the zaznamnik hole is closed — **unverified on a device** |
 | File download → Downloads + notification | **Done**, device-verified |
 | Duplicate file listings | **Fixed** (also fixes the extension) |
 | Study documents (Task 1/2) | **Done**, device-verified — PR #179 |
 | eduroam cert fetch (Task 3 + eduroam half of Task 4) | **Merged unverified** — PR #181, see Task 3 |
+| Bare `fetch` sites (Task 4) | **Done** — all migratable rows on `fetchWithAuth`; `serverTime` excluded on purpose. **Unverified on a device** |
+| Search, cvicne testy, odevzdávárny, kontrola | **Done** (Task 4) — **unverified on a device** |
+| External links → in-app browser (Task 8) | **Done** — **unverified on a device** |
+| Re-login after a lapsed session | **Done**, prompt-first — **unverified on a device** |
+| Secure storage for `UISAuth` (Task 6) | **Not started** — the one hard release gate |
 | iOS app | **Never built** — only the throwaway spike ran there |
 | ISKAM, Drive, native Wi-Fi | **Broken** — see below |
 
-**The one owed check:** PR #181 merged on green unit tests with the Android device
-verification still undone. Nothing has ever exercised POST on real hardware. Do that
-before treating eduroam on mobile as working — details in Task 3.
+**Everything shipped since PR #181 is unit-tested only.** That is the single largest risk
+in this document, and it compounds: this transport's own record is *four* bugs shipping
+green because the tests stubbed shapes the native layer never produces (Task 3). One
+Android session is now worth more than any further code.
 
-**"Sync is done" has one hole.** `syncZaznamnik` runs *inside* the same sync
-(`injector/syncService.ts:381`) but reaches IS through a bare `fetch`
-(`api/zaznamnik.ts:186`), so it is CORS-blocked on Capacitor. In student terms:
-continuous assessment — průběžné hodnocení and practice-test scores — silently never
-arrives on the phone, while everything around it does. It is row 6 of Task 4.
+**The owed device check, in one place.** It started as eduroam-only and has grown:
+
+1. **eduroam** — sheet opens with no telemetry report; extraction password renders; the
+   POST returns an authenticated page; both certs start `0x30 0x82`. Full method and the
+   `gen=`-omission warning in Task 3.
+2. **zaznamnik** — open a subject with průběžné hodnocení and confirm scores appear.
+3. **search** — the search box returns people *and* subjects; `PersonHoverCard` fills.
+4. **subject files** — open and download from `SubjectDrawerSheet`.
+5. **external links** — the ISKAM card and "Otevřít v IS MENDELU" open *in-app* and
+   *authenticated*, not in Chrome.
+6. **re-login** — let a session lapse, confirm the toast offers sign-in, that tapping it
+   opens the login WebView once, and that data flows again afterwards.
+
+~~**"Sync is done" has one hole.**~~ `syncZaznamnik` runs *inside* the same sync
+(`injector/syncService.ts:381`) but reached IS through a bare `fetch`, so it was
+CORS-blocked on Capacitor: continuous assessment — průběžné hodnocení and practice-test
+scores — silently never arrived on the phone while everything around it did. **Now on
+`fetchWithAuth`** (`api/zaznamnik.ts:194`), like its thirteen siblings in the same run.
+Unit-tested, **not yet seen on a handset** — fold it into the device check owed in Task 3:
+open a subject with průběžné hodnocení and confirm scores appear.
 
 ---
 
@@ -145,14 +173,17 @@ shapes the **native layer never produces**. Assume this trap on any future trans
 - a `Text/Html` content-type slipped exact-cased guards, returning a login page as
   certificate bytes (`Headers` lowercases header *names*, not *values*)
 
-## Task 4 — Bare `fetch` call sites that bypass the transport (eduroam done)
+## Task 4 — Bare `fetch` call sites that bypass the transport ✅ DONE (except serverTime, deliberately)
 
 These call `fetch(...)` directly instead of `fetchWithAuth`, so they are CORS-blocked on
 Capacitor:
 
-**The list below was wrong twice before it was right.** It originally held 5 files and a
-line dismissing everything else as CDN/Google/Supabase; two review rounds on PR #182 found
-more each time. Do not trust it as folklore — **re-derive it** and diff against this table:
+**The list below has now been wrong three times.** It originally held 5 files and a line
+dismissing everything else as CDN/Google/Supabase; two review rounds on PR #182 found more
+each time — and the third correction went the *other* way: `useFileActions` was listed as
+open when it had already been migrated, because the grep sees `fetch(` but not the
+`isNativeHost()` guard above it. Do not trust it as folklore — **re-derive it**, then open
+each hit and check for a guard before calling it work:
 
 ```bash
 grep -rn "\bfetch(" src/ --include='*.ts' --include='*.tsx' \
@@ -165,19 +196,124 @@ constant or a variable at most of these sites.
 | File | Line | Reaches mobile via | State |
 |---|---|---|---|
 | `src/api/eduroam.ts` | ~~31, 37, 55~~ | eduroam sheet | ✅ done, PR #181 |
-| `src/api/cvicneTests.ts` | 23 | subject detail | open |
-| `src/api/odevzdavarny.ts` | 56 | submissions | open |
-| `src/api/kontrola.ts` | 17 | study check | open |
-| `src/utils/serverTime.ts` | 29 | tablet-only path | open |
-| `src/api/zaznamnik.ts` | 186 (two in one `Promise.all`) | **sync** — `syncZaznamnik` runs inside the main sync run (`injector/syncService.ts:381`), so continuous assessment silently never arrives on the phone | open |
-| `src/api/search/searchService.ts` | 22, 38, 57, 80, 102 | search + `PersonHoverCard` | open |
-| `src/hooks/ui/useFileActions.ts` | 45, 85, 104, 142, 144 | **`components/mobile/sheets/SubjectDrawerSheet.tsx`** | open |
-| `src/hooks/ui/useFileDownload.ts` + `useFileDownload/urlResolver.ts` | 19, 45 / 16 | nothing — dead code, see Task 8 | delete, don't migrate |
-| `src/utils/user_id_fetcher.ts` | 7 | nothing — **orphaned**, zero importers | delete, don't migrate |
+| `src/api/cvicneTests.ts` | ~~23~~ | subject detail | ✅ done — transport line only, parser untouched |
+| `src/api/odevzdavarny.ts` | ~~56~~ | submissions | ✅ done |
+| `src/api/kontrola.ts` | ~~17~~ | study check | ✅ done |
+| `src/utils/serverTime.ts` | 29 | tablet-only path | **do NOT migrate** — see below |
+| `src/api/zaznamnik.ts` | ~~186 (two in one `Promise.all`)~~ | **sync** — `syncZaznamnik` runs inside the main sync run (`injector/syncService.ts:381`), so continuous assessment silently never arrived on the phone | ✅ done — see below |
+| `src/api/search/searchService.ts` | ~~22, 38, 57, 80, 102~~ | search + `PersonHoverCard` | ✅ done |
+| `src/hooks/ui/useFileActions.ts` | ~~45, 85, 104~~ / 142, 144 | **`components/mobile/sheets/SubjectDrawerSheet.tsx`** | ✅ already native since PR #169 — see below |
+| ~~`src/hooks/ui/useFileDownload.ts` + `useFileDownload/urlResolver.ts`~~ | — | nothing — dead code | ✅ deleted |
+| ~~`src/utils/user_id_fetcher.ts`~~ | — | nothing — **orphaned**, zero importers | ✅ deleted |
 
-`useFileActions` is the sharpest of these: it is imported by a **mobile sheet**, and
-`normalizeFileUrl` (`src/utils/fileUrl.ts:14`) resolves every one of its links to
-`https://is.mendelu.cz`. Subject-file open and download on mobile go through it.
+**Task 4 is closed apart from one deliberate exclusion.** All seven migratable rows are on
+`fetchWithAuth`, the three dead files are deleted, and `serverTime` is documented below as
+a non-target. What is *not* done is device verification — every one of these is unit-tested
+only, and this transport's record is that unit tests miss what the native layer actually
+produces (see Task 3).
+
+⚠️ **`serverTime.ts` must NOT be migrated. Migrating it breaks a working feature.** It is a
+`HEAD` request whose entire purpose is reading the `Date` *response header*, and neither
+transport can carry that:
+
+- the iframe-proxy branch reconstructs a `Response` from text alone
+  (`client.ts:68`), so `Date` is gone and `fetchServerTimeOffset` would fall to its 0-offset
+  fallback on the extension, where it works fine today;
+- `fetchViaCapacitor` throws on any method other than GET/POST by design, so `HEAD` cannot
+  reach IS natively either.
+
+It is also unreachable on mobile: its only consumer is `useAutoRegistration`, imported
+solely by `ExamPanel/index.tsx` — the desktop tree. The mobile `ExamsScreen` uses
+`useExamActions` and never touches it. On Capacitor it already degrades correctly (catch →
+offset 0 → trust the local clock), which is the right answer for a clock-sync nicety. Leave
+it alone; if the tablet path is ever supported (Task 8), the fix is a dedicated native
+time probe, not this function.
+
+**`searchService` is migrated** — all five sites, and each POST now sets **no Content-Type
+of its own**. That is the fix for the `outlookSync.ts:73` defect recorded below, applied
+pre-emptively: a capitalised `Content-Type` does not overwrite `DEFAULT_HEADERS`' lowercase
+one, so IS would have received it twice. Both transports already supply exactly the right
+value — `DEFAULT_HEADERS` on the extension, `capacitorTransport`'s POST-only default on
+native. A test asserts no call carries a content-type header, so it cannot creep back.
+
+Note this changes the extension path too: search ran a bare `fetch` from the iframe and now
+hops through the content-script proxy like every other endpoint. The proxy handles POST with
+a body (`messageHandler.ts:100`), and all five functions already swallowed failures into an
+empty result, which the tests pin.
+
+**The three dead files are deleted**, along with `hooks/ui/index.ts` — the barrel was
+`useFileDownload`'s only referent, had zero importers of its own, and re-export barrels are
+forbidden by the Iron Rules anyway. This also clears the one repo-wide lint error that lived
+in `useFileDownload.ts` (42 → 41).
+
+**`zaznamnik` is migrated.** Both fetches in the `Promise.all` now go through
+`fetchWithAuth`, closing the sync hole described at the top of this document. The behaviour
+change flagged in the warning below is real and was accepted deliberately: a 401/403 now
+sends the student to `login.pl` instead of being swallowed into a `null` result. That is
+what the other thirteen endpoints in the same sync run already do, and a 401 there means the
+session is genuinely gone. The soft failure is otherwise preserved — a non-auth error still
+returns `null`, because `syncZaznamnik` swallows per-subject failures and the slice's merge
+guard keeps previously synced scores. The explicit `!phRes.ok` check stays: the iframe-proxy
+branch of `fetchWithAuth` synthesises a 200 for everything, so without it a proxied failure
+would be parsed as a real page. Tests: `api/__tests__/zaznamnikFetch.test.ts`.
+
+**`useFileActions` was listed in error — the grep sees the `fetch(` calls but not the
+`isNativeHost()` guards in front of them.** All three reachable sites (`openFile:45`,
+`openPdfInline:85`, `downloadSingle:104`) already branch to `openIsFileNatively` /
+`fetchIsBinary`; PR #169 migrated them along with the rest of the shell. The remaining two
+(142, 144) are `downloadZip`, which `SubjectDrawerSheet.tsx:144` makes unreachable on phone
+with `selectable={false}` and which Task 8 keeps desktop-only by product decision. Nothing
+to migrate. `hooks/ui/__tests__/useFileActions.native.test.ts` now asserts that both
+reachable methods reach `openIsFileNatively` and never touch `global.fetch`, so the guards
+cannot silently regress.
+
+**What the guards did leave broken, now fixed.** The native branches sat *outside* the
+try/catch the web path has, and every caller drops the returned promise — the prop type is
+`(link: string) => void` (`FileListItem.tsx:31`). So a failure from `openIsFileNatively`
+(IS served a page, or the session lapsed) escaped as an **unhandled rejection**: a telemetry
+report fired and the student saw a tap that did nothing. The native path now catches, routes
+through `logError`, and toasts — naming a lapsed session separately, since that is the one
+failure a student can act on. Extracted to `hooks/ui/openNativeFile.ts`; desktop behaviour
+is untouched, since none of this is on the web branch.
+
+`useFileActions.ts` is 208 lines, just over the 200-line convention. The natural next split
+is `downloadZip`, deliberately left alone here — it is the desktop-only path this change had
+no reason to disturb.
+
+✅ ~~**Mobile still has no re-login route.**~~ **Built** — `mobile/sessionRecovery.ts`.
+`recoverSession()` clears the dead token (without which `ensureSession` would short-circuit
+and hand back the very token that failed) and re-runs the same login WebView boot uses —
+now a shared `mobile/inAppLoginDeps.ts`, because ensureSession's cookie-polling contract
+only holds if `onPageLoaded` and `readCookies` come from the WebView `openLogin` presented.
+Single-flight, so a sync fanning out ~236 requests opens one login rather than a dozen.
+
+**Prompt-first by decision: nothing here opens a login on its own.** A background sync must
+not throw a full-screen WebView over whatever the student is reading, so
+`promptSessionRecovery()` shows a non-expiring toast with a "sign in" action and lets them
+choose. On success it re-syncs immediately — otherwise the student signs back in and is still
+looking at the pre-expiry data until the next `SYNC_INTERVAL` tick.
+
+⚠️ **The notification fires from where the error is MINTED, not where it is caught.** This
+was wrong in the first draft and both PR reviewers caught it. The original hook sat in
+`syncAllData`'s outer catch, which *cannot* fire: `getUserParams` swallows into `null`
+(`utils/userParams.ts:42`) and the whole fan-out is wrapped in `Promise.allSettled`. Nor
+would a catch anywhere else have worked — search and the three GET endpoints swallow into
+`null`/`[]` by design. `capacitorTransport` and `capacitorBinary` now call
+`notifySessionExpired()` inside their `sessionExpired()` factories, the one point every
+unauthenticated response passes through. A 5xx deliberately does NOT notify: IS being broken
+is not the student being logged out.
+
+`injector/syncService.ts` is consequently untouched by this branch, and
+`services/sessionExpiry.ts` is a one-slot handler registry the Capacitor bootstrap fills and
+the extension leaves empty. That registry is still load-bearing: `capacitorTransport` is
+reachable from the content script, and importing the prompt there — even lazily — pulled
+sonner, the login plugin, the store and both locale files into a script injected on every IS
+page (416 kB → 966 kB). Measured back at exactly 416,547 bytes. Do not "simplify" it away.
+
+⚠️ **Superseded note, kept for context:** on the extension, `messageHandler.ts:203`
+redirects to `login.pl` when it sees `sessionExpired`; there is no Capacitor equivalent
+anywhere, so the app can only *tell* the student their session died. Worth its own task —
+it affects every authenticated path on mobile, not just files.
 
 Two rows are traps rather than work: `useFileDownload` has no consumer but the
 `hooks/ui/index.ts` barrel, and `user_id_fetcher.ts` has **no importer at all** — the live
@@ -206,11 +342,18 @@ reason this task exists, and why "it works in the extension" proves nothing here
 - CDN / Google / Supabase / MS-Bookings / Photon / HuggingFace / Discord-webhook — not IS,
   and CORS-clean.
 
-**Adjacent, found while doing eduroam:** `src/api/outlookSync.ts:73` passes its own
-`Content-Type` into `fetchWithAuth`, which already sets a lowercase one — both keys
-survive the object spread and `Headers` *appends*, so IS receives the value twice, parses
-no body, and yet `response.ok` is true and the UI reports success. Extension-only; the
-Capacitor path forwards caller headers alone and is unaffected.
+~~**Adjacent, found while doing eduroam:**~~ ✅ **fixed.** `src/api/outlookSync.ts:73` passed
+its own `Content-Type` into `fetchWithAuth`, which already sets a lowercase one — both keys
+survive the object spread and `Headers` *appends*, so IS received
+`"application/x-www-form-urlencoded, application/x-www-form-urlencoded"`, parsed no body,
+and still answered 200 while the UI reported success. Confirmed against a spec-compliant
+`Headers` before fixing. Extension-only; the Capacitor path forwards caller headers alone
+and was unaffected.
+
+⚠️ The test asserts the **cause** (no caller-set `Content-Type`), not the effect: happy-dom's
+`Headers` *overwrites* duplicate keys instead of appending, so this class of bug cannot be
+reproduced in this repo's test environment at all. Worth knowing before trusting a green
+suite on any header-merging question.
 
 ## Task 5 — eduroam native one-tap (#159)
 
@@ -261,18 +404,38 @@ should be re-checked, in particular:
   share sheet there (`src/mobile/deliverFile.ts`). Verify that is the right feel.
 - Cold-start session restore.
 
-## Task 8 — Smaller, known items
+## Task 8 — Smaller, known items (two of four done)
 
-- **`target="_blank"` escapes to the system browser** (no IS session): the "Žádost na
-  studijní oddělení" row (`DocsSheet.tsx:84-94`), `ISBacklink`, and the ISKAM card
-  (`ShortcutGrid.tsx:53-66`). Present these in the in-app browser instead.
-- **Dead code that is a live trap:** `src/hooks/ui/useFileDownload.ts` has no consumers
-  but contains every breakage class at once (bare `fetch`, `window.open`, `a[download]`,
-  `saveAs`). Delete it before someone ports by example. Take
-  `useFileDownload/urlResolver.ts` with it, and `src/utils/user_id_fetcher.ts` too —
-  the latter is orphaned outright (zero importers; the live path is `api/user.ts`, which
-  already uses `fetchWithAuth` against the same URL). All three surface in the Task 4
-  grep, so deleting them shortens that list rather than adding to it.
+- ~~**`target="_blank"` escapes to the system browser**~~ ✅ **done.** `mobile/openExternal.ts`
+  routes external links through `@capgo/capacitor-inappbrowser`, which shares the native
+  cookie jar the transport already seeds — so an IS link opens *authenticated* instead of on
+  a login page.
+
+  **The three sites listed here were the wrong three.** Re-deriving against the phone tree
+  (`MobileApp` → 5 screens + `SheetHost`) gives five, and `ISBacklink` is not among them —
+  it lives in `SubjectFileDrawer`, the desktop tree. The list missed
+  `SubjectDrawerSheet.tsx:150` ("Otevřít v IS MENDELU"), `NotificationsSheet.tsx:58` and
+  `StudentScreen.tsx:66`.
+
+  Rather than edit each one, `installExternalLinkHandler()` is a document-level capture
+  interceptor installed from the Capacitor bootstrap only. It covers every
+  `a[target="_blank"]` at once — present, future, and the whole desktop tree, which is what
+  the tablet path would need. The two `window.open` sites are converted explicitly, since no
+  anchor interceptor can see them.
+
+  Guard worth knowing: it rejects **same-origin** URLs, not merely non-http ones. Capacitor
+  serves the app from `http://localhost` on Android, so a protocol-only check would have
+  handed the app's own pages to the in-app browser. A test pins this.
+
+  A failed `openWebView` reports via `logError` and nothing else — the interceptor runs from
+  a document listener with no React context, so there is no `t` to translate a toast with.
+  The tap looks inert in that case; that is a known, deliberate gap.
+- ~~**Dead code that is a live trap:**~~ ✅ **done.** `hooks/ui/useFileDownload.ts`,
+  `useFileDownload/urlResolver.ts` and `utils/user_id_fetcher.ts` are deleted, along with
+  `hooks/ui/index.ts` — the barrel was `useFileDownload`'s only referent and had no
+  importers of its own. `useFileDownload` contained every breakage class at once (bare
+  `fetch`, `window.open`, `a[download]`, `saveAs`) and was the thing most likely to get
+  ported by example.
 - **Tablet path is unhandled.** `resolvePhoneViewport` needs touch **and** narrow, so a
   tablet renders the *desktop* tree — which reaches `PdfViewer.tsx:15`
   (`chrome.runtime.getURL` → `ReferenceError`, swallowed at `:61` → permanent spinner) and
@@ -282,6 +445,38 @@ should be re-checked, in particular:
   "fix" it later.
 
 ---
+
+## Found in passing — pre-existing, NOT fixed here
+
+Two real defects surfaced while doing the work above. Neither was introduced by it, both were
+deliberately left alone, and both are recorded here because a PR comment is easy to lose.
+
+**1. `isSyncing` can wedge true forever, killing all syncing for the life of the app.**
+`syncAllData` (`injector/syncService.ts:52-56`) does:
+
+```js
+isSyncing = true;
+sendToIframe(Messages.syncUpdate({ ... }));   // ← OUTSIDE the try
+try { ... } finally { isSyncing = false; }
+```
+
+If `sendToIframe` throws, the flag stays true, the `finally` never runs, and every later
+`syncAllData()` hits the `if (isSyncing) return` guard and no-ops — silently, forever. Moving
+the flag assignment inside the `try` (or the `sendToIframe` call after it) is the fix. This is
+also why `mobile/sessionRecovery.ts` cannot wait unboundedly for an idle sync.
+
+**2. `zaznamnik.ts` never strips non-breaking spaces, despite trying to.** All three
+`replace(/ /g, ' ')` calls (lines ~20, ~41, ~49) are ASCII-space → ASCII-space — a no-op. The
+intent was clearly ` ` normalisation; the rest of the repo spells it ` `
+(`kontrola.ts:32`, `gradeHistory.ts`, `events.ts`). Confirmed present in `45f7228` too, so it
+predates the Task 4 work.
+
+**It is currently harmless, and that is why it was not touched.** Running the parsers over all
+eight committed fixtures — which contain 30–80 `&nbsp;` each — yields **zero** U+00A0 in parsed
+output. Per Parser Rules a change needs a real IS sample proving it correct, and the available
+evidence says current behaviour is already correct on every sample we have. It would bite on an
+IS page that puts `&nbsp;` inside an arch name or the `nemáte dosud` marker — get such a page
+first, then fix it with that fixture.
 
 ## Out of scope / tracked elsewhere
 
@@ -306,4 +501,22 @@ adb shell am start -n cz.reis.app/.MainActivity
   coordinates proved unreliable** — drive probes from code instead of guessing.
 - **Never tap inside a live authenticated IS WebView**; it hit the logout link once.
 - 5 test failures are **pre-existing** — missing `.agent/fixtures/**` for the ISKAM
-  parsers, absent from this worktree.
+  parsers. `.agent/` is **gitignored**, so a fresh clone never has them and this is
+  permanent, not a broken worktree. CI already excludes that directory
+  (`vitest run --exclude '**/parsers/iskam/__tests__/**'`), so CI is green — do not
+  "fix" these locally.
+- **A fresh Claude Code container has no `~/android-toolchain/`** and no Android SDK, so
+  Tasks 5–7 cannot be built or verified there at all — only TypeScript work is possible.
+  Plan device work for a machine that has the toolchain.
+
+### Two bundle traps this repo will let you walk into
+
+- **A dynamic `import()` inside a content script is inlined, not split.** WXT bundles
+  content scripts as one file, so the `await import('@capacitor/*')` idiom used everywhere
+  else does NOT keep anything out of `content.js` there. Importing the session-recovery
+  prompt from `injector/syncService` took it from **416 kB to 966 kB** on every IS page.
+  Check `.output/chrome-mv3/content-scripts/content.js` after any change that reaches an
+  `injector/` module from app code.
+- **happy-dom's `Headers` overwrites duplicate keys; the spec appends.** A duplicated
+  header (see the outlookSync note in Task 4) therefore cannot be reproduced by any test in
+  this repo. A green suite proves nothing about header merging.

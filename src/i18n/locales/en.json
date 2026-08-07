@@ -387,6 +387,9 @@
       "updated": "Updated",
       "updatedJustNow": "Updated just now"
     },
+    "file": {
+      "openFailed": "Couldn't open the file."
+    },
     "documentNote": {
       "add": "Add note...",
       "edit": "Edit note",
@@ -1223,5 +1226,9 @@
       "sync": "Sync",
       "societies": "Societies on the map"
     }
+  },
+  "session": {
+    "expired": "Your IS session has expired.",
+    "signIn": "Sign in"
   }
 }
