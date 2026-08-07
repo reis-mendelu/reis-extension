@@ -39,10 +39,10 @@ export function filenameFromResponse(headers: Record<string, string>): string {
 
 /** Mints the tagged auth error and reports it — see the twin in
  *  capacitorTransport for why reporting happens here and not at a catch. */
-function sessionExpired(message: string): Error {
+function sessionExpired(message: string, failedToken?: string): Error {
   const err = new Error(message) as Error & { sessionExpired?: boolean };
   err.sessionExpired = true;
-  notifySessionExpired();
+  notifySessionExpired(failedToken);
   return err;
 }
 
@@ -78,7 +78,7 @@ export async function fetchIsBinary(
   });
 
   if (res.status === 401 || res.status === 403) {
-    throw sessionExpired(`HTTP ${res.status}`);
+    throw sessionExpired(`HTTP ${res.status}`, token);
   }
   // Anything else non-2xx is IS being broken, not the student being logged out
   // — the same separation fetchViaCapacitor makes. It has to happen BEFORE the
@@ -107,7 +107,7 @@ export async function fetchIsBinary(
   // error message and the blob's MIME type.
   if (contentType.toLowerCase().includes('text/html')) {
     if (isAuthenticatedBase64Html(body)) return { kind: 'page' };
-    throw sessionExpired(`Expected a document, got ${contentType}`);
+    throw sessionExpired(`Expected a document, got ${contentType}`, token);
   }
 
   const blob = base64ToBlob(body, contentType || 'application/octet-stream');

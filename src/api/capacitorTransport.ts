@@ -71,10 +71,12 @@ export function isAuthenticatedHtml(html: string): boolean {
  * `notifySessionExpired` is a no-op wherever no handler is registered, which is
  * everywhere but the Capacitor app.
  */
-function sessionExpired(message: string): Error {
+function sessionExpired(message: string, failedToken?: string): Error {
   const err = new Error(message) as Error & { sessionExpired?: boolean };
   err.sessionExpired = true;
-  notifySessionExpired();
+  // The token is forwarded, never logged: it lets the handler discard a
+  // straggler from a session that has already been replaced.
+  notifySessionExpired(failedToken);
   return err;
 }
 
@@ -170,7 +172,7 @@ export async function fetchViaCapacitor(
         : JSON.stringify(res.data);
 
   if (res.status === 401 || res.status === 403) {
-    throw sessionExpired(`HTTP ${res.status}`);
+    throw sessionExpired(`HTTP ${res.status}`, token);
   }
   // Anything else non-2xx is IS being broken (5xx, a maintenance page), NOT the
   // student being logged out. Tagging it sessionExpired would throw them back to
@@ -197,7 +199,7 @@ export async function fetchViaCapacitor(
   // unauthenticated login page through as if it were data.
   const contentType = readHeader(res.headers, 'content-type') || 'text/html';
   if (contentType.toLowerCase().includes('text/html') && !isAuthenticatedHtml(body)) {
-    throw sessionExpired('Authenticated request returned an unauthenticated page');
+    throw sessionExpired('Authenticated request returned an unauthenticated page', token);
   }
 
   return new Response(body, {

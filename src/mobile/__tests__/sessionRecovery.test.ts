@@ -8,7 +8,7 @@ vi.mock('../../platform', () => ({
 vi.mock('../ensureSession', () => ({ ensureSession: vi.fn() }));
 vi.mock('../inAppLoginDeps', () => ({ buildInAppLoginDeps: vi.fn(async () => ({})) }));
 vi.mock('../../utils/reportError', () => ({ logError: vi.fn() }));
-vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn(), dismiss: vi.fn() } }));
 vi.mock('../../store/useAppStore', () => ({
   useAppStore: { getState: () => ({ language: 'cs' }) },
 }));
@@ -198,5 +198,72 @@ describe('re-sync after recovery', () => {
     vi.mocked(syncAllData).mockRejectedValueOnce(new Error('sync blew up'));
 
     await expect(recoverSession()).resolves.toBe(true);
+  });
+});
+
+/**
+ * Both defects here were found immediately after #185 merged. Neither loses
+ * data, but both end with a student who has a perfectly good session being
+ * made to log in again.
+ */
+describe('stale prompts cannot destroy a fresh session', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    syncState.busy = false;
+    vi.mocked(getPlatform).mockReturnValue({
+      kind: 'capacitor',
+      storage,
+    } as unknown as ReturnType<typeof getPlatform>);
+    vi.mocked(ensureSession).mockResolvedValue('NEW-TOKEN');
+  });
+
+  // The toast is duration: Infinity with a stable id, so without an explicit
+  // dismiss it simply stays on screen after a SUCCESSFUL re-login — and
+  // tapping it again runs recovery, which clears the valid token.
+  it('dismisses the prompt once recovery succeeds', async () => {
+    promptSessionRecovery('DEAD-TOKEN');
+    await recoverSession();
+
+    expect(toast.dismiss).toHaveBeenCalledWith('reis-session-expired');
+  });
+
+  it('leaves the prompt up when the student backs out of the login', async () => {
+    vi.mocked(ensureSession).mockRejectedValue(new Error('Login cancelled'));
+
+    promptSessionRecovery('DEAD-TOKEN');
+    await recoverSession();
+
+    expect(toast.dismiss).not.toHaveBeenCalled();
+  });
+
+  // A request issued BEFORE the re-login carries the old token and can land
+  // after it. Re-prompting on that would offer to "fix" a session that is
+  // already healthy, and accepting would delete the new token.
+  it('ignores a failure carrying a token that has already been replaced', async () => {
+    await recoverSession();
+    vi.mocked(toast.error).mockClear();
+
+    promptSessionRecovery('DEAD-TOKEN');
+
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  // A genuine second lapse carries the CURRENT token and must still prompt,
+  // otherwise recovery only ever works once per app launch.
+  it('still prompts when the current session lapses again', async () => {
+    await recoverSession();
+    vi.mocked(toast.error).mockClear();
+
+    promptSessionRecovery('NEW-TOKEN');
+
+    expect(toast.error).toHaveBeenCalledTimes(1);
+  });
+
+  // Before any recovery has run there is nothing to compare against, so a
+  // failure with no token must not be silently swallowed.
+  it('prompts for an untagged failure before any recovery has happened', () => {
+    promptSessionRecovery();
+
+    expect(toast.error).toHaveBeenCalledTimes(1);
   });
 });

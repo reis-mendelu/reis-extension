@@ -91,12 +91,12 @@ describe('useFileActions on Capacitor', () => {
     }
   );
 
-  // A lapsed session is the one failure the student can act on, so it gets the
-  // recovery prompt (message + "sign in" action) instead of the generic
-  // "couldn't open" toast. Before this the app could only say the session had
-  // died; there was no way back short of killing and reopening it.
+  // A lapsed session shows no toast from here. fetchIsBinary already raised
+  // the recovery prompt when it minted the error — and did so WITH the token
+  // the request used, which is what lets a straggler from a superseded session
+  // be filtered out. Re-prompting from here would pass no token and defeat it.
   it.each([['openFile'], ['downloadSingle']] as const)(
-    '%s offers session recovery rather than a generic failure',
+    '%s stays silent on a lapsed session, leaving the prompt to the transport',
     async (method) => {
       vi.mocked(openIsFileNatively).mockRejectedValue(expired());
       const { result } = renderHook(() => useFileActions());
@@ -105,7 +105,7 @@ describe('useFileActions on Capacitor', () => {
         await result.current[method]('slozka.pl?download=1');
       });
 
-      expect(promptSessionRecovery).toHaveBeenCalledTimes(1);
+      expect(promptSessionRecovery).not.toHaveBeenCalled();
       expect(toast.error).not.toHaveBeenCalled();
     }
   );
