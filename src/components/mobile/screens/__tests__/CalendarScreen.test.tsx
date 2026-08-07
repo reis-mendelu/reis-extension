@@ -62,24 +62,29 @@ describe('CalendarScreen', () => {
     expect(screen.getByTestId('agenda-gap')).toBeInTheDocument();
   });
 
-  it('falls back to a name-less greeting and a User icon avatar when fullName is absent', () => {
+  // The greeting was dropped as redundant — it told the student their own name.
+  // The date, previously the small eyebrow above it, is the title now.
+  it('shows no greeting, and a User icon avatar when fullName is absent', () => {
     useAppStore.setState({
       schedule: { data: [], status: 'success', weekStart: null } as never,
       fullName: null,
     });
     render(<CalendarScreen />);
-    expect(screen.getByText('Ahoj')).toBeInTheDocument();
-    expect(screen.queryByText(/Ahoj,/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Ahoj/)).not.toBeInTheDocument();
+    // Asserted, not merely absent: "no greeting" also passes on a blank title.
+    // The selected day is 2026-04-20 and the header is capitalised.
+    expect(screen.getByText('Pondělí 20. dubna')).toBeInTheDocument();
     expect(screen.getByLabelText('Profil').querySelector('svg')).toBeInTheDocument();
   });
 
-  it('renders the named greeting and initials when fullName is present', () => {
+  it('still derives avatar initials from fullName', () => {
     useAppStore.setState({
       schedule: { data: [], status: 'success', weekStart: null } as never,
       fullName: 'Jana Nováková',
     });
     render(<CalendarScreen />);
-    expect(screen.getByText('Ahoj, Jana')).toBeInTheDocument();
+    expect(screen.queryByText(/^Ahoj/)).not.toBeInTheDocument();
+    expect(screen.getByText('Pondělí 20. dubna')).toBeInTheDocument();
     expect(screen.getByLabelText('Profil')).toHaveTextContent('JN');
   });
 

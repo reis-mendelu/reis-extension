@@ -13,7 +13,45 @@ measurements) and `2026-08-02-capacitor-transport-decision.md` (why Model C).
 
 ## Where it stands
 
-*Updated 2026-08-07, after PR #185 (Task 4, Task 8 external links, session recovery).*
+*Updated 2026-08-07 (evening), after the first real Android handset pass.*
+
+**THE DEVICE PASS HAPPENED.** Handset A001, 1080x2392, dpr 2.625. Cold start → login →
+**115 requests, all HTTP 200, zero telemetry**, covering all four Task 4 endpoint families
+(`student/list.pl` prubezne+test, `odevzdavarny.pl`, `studijni_povinnosti.pl`,
+`wifi/certifikat.pl`) plus 4 POSTs (`rozvrhy_view.pl` cz/en). The whole
+"silently CORS-blocked on Capacitor" class is confirmed dead on hardware.
+
+**How to debug this app on a device — reuse this, it found every root cause below.**
+The debug build exposes the WebView over Chrome DevTools Protocol:
+`adb forward tcp:9222 localabstract:webview_devtools_remote_<pid>`, then drive
+`Runtime.evaluate` over the websocket (Node 22+ has a global `WebSocket`; no dependency
+needed). That gives real geometry, scrollTop, computed styles, event streams — and it can
+fetch authenticated IS HTML on demand, which is exactly the "real IS sample" this repo
+requires before touching a parser. **Screenshots repeatedly lied** (one caught a login sheet
+mid-close and read as a failure; two raced a toast). Resolve tap targets from the DOM in
+device px (`rect * devicePixelRatio`), never by eyeballing a screenshot. Gate every
+screencap on `dumpsys window | grep mCurrentFocus` containing `cz.reis.app` — this is the
+user's personal phone.
+
+**Fixed and device-verified this session**
+
+| Symptom | Root cause | Verified |
+|---|---|---|
+| Downloads "do nothing" | File saved fine (577500 B); the only feedback was a notification, and `POST_NOTIFICATIONS` was never requested → denied → silence | Toast on device; permission now `granted=true` |
+| Every file badge reads "FILE" | **IS changed its markup**: `img[sysid]` → `span[data-sysid]`. Zero `img[sysid]` left. **Hits the extension too** | Badges read PDF / DOCX / ZIP |
+| Header under the status bar | `ScreenHeader` used flat `pt-5`, never read `--safe-top` (which correctly reports 48px) | Date title clear of the clock |
+| Sheets won't swipe closed | `Sheet` drew a drag pill with no drag handling; adding one was not enough — `touch-action: auto` let the browser claim the drag and fire `pointercancel` after ~20px of a 350px swipe | Panel 1 → 0 on a header drag; content still scrolls |
+| Two identical IS links per tab | Tab bodies render `ISBacklink` while the sheet pins its own footer | Exactly 1 link on all 5 tabs |
+| Back quits from vývěska | The overlay is NOT a sheet — own `bulletinExpanded` flag, portals to body, so the stack read empty | Back closes overlay, app stays |
+| Feedback is a desktop popup | Centred card on phones | Bottom sheet: flex-end, 20px top radius, flush |
+
+Also verified on device: eduroam sheet opens from settings and renders the extraction
+password with **no telemetry report** (the old symptom); map has no Knihovna tab; settings
+has the eduroam row and no Drive toggle.
+
+---
+
+*Previous update, after PR #185 (Task 4, Task 8 external links, session recovery).*
 
 ⚠️ **One coverage gap knowingly accepted at merge:** `searchService` moved from a direct
 iframe `fetch` onto the content-script proxy, and nothing tests that hop end to end —
@@ -44,7 +82,44 @@ in this document, and it compounds: this transport's own record is *four* bugs s
 green because the tests stubbed shapes the native layer never produces (Task 3). One
 Android session is now worth more than any further code.
 
-**The owed device check, in one place.** It started as eduroam-only and has grown:
+## What is still owed
+
+**1. The predictive-back GESTURE — the one thing a human must check.**
+`android:enableOnBackInvokedCallback="true"` is now in the merged manifest, which is the
+documented fix for targetSdk 36. It is NOT confirmed: `adb shell input swipe` only reaches
+the app window, and `input keyevent 4` exercises the legacy path, which worked all along.
+Only a thumb settles it. **The single decisive test: open vývěska and swipe back.** If the
+noticeboard closes and the app stays, both this and the bulletin fix are confirmed at once —
+before, the two failure modes were indistinguishable (the app closed either way).
+
+**2. eduroam, the half that must not be automated.** The sheet opens and the extraction
+password renders. The cert download was deliberately NOT tapped: it can generate a
+certificate and rotate a 366-day credential the student may have installed elsewhere. When
+checking by hand, assert the bytes start `0x30 0x82` — an HTML error page is also non-empty,
+so a length check proves nothing. Native Wi-Fi config (#159) remains unstarted.
+
+**3. Search and external links.** `searchService` moved onto the content-script proxy and
+still has no end-to-end coverage (`e2e/tests/search.spec.ts` only asserts the bar renders,
+and CI does not run e2e). External links opening in-app AND authenticated is likewise
+unverified. Both were mid-check when this session ended.
+
+**4. UI polish backlog.** `MobileSearchOverlay` still lacks its `--safe-top` inset and is
+BLOCKED by pre-existing react-hooks lint debt in the same file (a setState-in-effect error
+on HEAD) — the changed-files CI gate makes that file untouchable until the effect is fixed.
+Other top-anchored surfaces were swept. The bottom nav sits at `bottom-[18px]` against a
+24px `--safe-bottom`.
+
+**5. Unchanged blockers.** Secure storage for `UISAuth` (#172) is still the one hard release
+gate. iOS has still never been built (#174). Drive on mobile (#168) is now hidden rather
+than fixed. The Discord webhook still ships in the client bundle (#163/#183).
+
+**6. Other parsers may share the FILE bug.** IS's `img[sysid]` → `span[data-sysid]`
+migration is unlikely to stop at the document server. Audit `grep -rn "sysid" src/` and
+verify each against real IS HTML via the CDP route above.
+
+---
+
+**The original device checklist, for reference.** It started as eduroam-only and grew:
 
 1. **eduroam** — sheet opens with no telemetry report; extraction password renders; the
    POST returns an authenticated page; both certs start `0x30 0x82`. Full method and the

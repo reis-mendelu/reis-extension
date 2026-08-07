@@ -76,10 +76,21 @@ describe('ProfileSheet', () => {
     expect(outlookToggle).toHaveBeenCalledTimes(1);
   });
 
-  it('calls the Drive hook connect', () => {
+  /**
+   * Drive backup is non-functional on mobile on every axis (issue #168), so the
+   * toggle only ever promised something the app could not deliver. Pinned as an
+   * absence rather than deleted, so restoring it is a deliberate act.
+   */
+  it('offers no Google Drive backup toggle', () => {
     render(<ProfileSheet onClose={vi.fn()} />);
-    fireEvent.click(screen.getByRole('checkbox', { name: /Záloha na Google Disk/i }));
-    expect(driveConnect).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('checkbox', { name: /Záloha na Google Disk/i })).toBeNull();
+    expect(driveConnect).not.toHaveBeenCalled();
+  });
+
+  it('opens the eduroam sheet from settings in one tap', () => {
+    render(<ProfileSheet onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('Eduroam'));
+    expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'eduroam' }]);
   });
 
   it('shows a hidden event and restores it, removing it from the hidden list', () => {

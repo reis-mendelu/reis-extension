@@ -18,7 +18,13 @@ import { useAppStore } from '@/store/useAppStore';
  */
 void CapApp.addListener('backButton', () => {
   const s = useAppStore.getState();
-  if (handleBackPress({ sheetCount: s.mobileSheets.length, popSheet: s.popSheet }) === 'exit') {
+  const result = handleBackPress({
+    sheetCount: s.mobileSheets.length,
+    popSheet: s.popSheet,
+    bulletinOpen: s.bulletinExpanded,
+    closeBulletin: () => void s.setBulletinExpanded(false),
+  });
+  if (result === 'exit') {
     void CapApp.exitApp();
   }
 });

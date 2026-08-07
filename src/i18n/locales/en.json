@@ -388,7 +388,8 @@
       "updatedJustNow": "Updated just now"
     },
     "file": {
-      "openFailed": "Couldn't open the file."
+      "openFailed": "Couldn't open the file.",
+      "savedToDownloads": "Saved to Downloads"
     },
     "documentNote": {
       "add": "Add note...",
@@ -1115,8 +1116,6 @@
       "student": "Student"
     },
     "calendar": {
-      "greeting": "Hi, {name}",
-      "greetingNoName": "Hi",
       "nowRunning": "On now",
       "endsIn": "ends in {minutes} min",
       "next": "Next: {title}",

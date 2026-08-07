@@ -8,7 +8,7 @@ import { promptSessionRecovery } from '../../../mobile/sessionRecovery';
 
 vi.mock('../../../mobile/openIsFile', () => ({
   isNativeHost: vi.fn(() => true),
-  openIsFileNatively: vi.fn(async () => ({ usedFallback: false })),
+  openIsFileNatively: vi.fn(async () => ({ usedFallback: false, delivered: 'downloads' })),
 }));
 
 vi.mock('sonner', () => ({
@@ -33,7 +33,10 @@ describe('useFileActions on Capacitor', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(isNativeHost).mockReturnValue(true);
-    vi.mocked(openIsFileNatively).mockResolvedValue({ usedFallback: false });
+    vi.mocked(openIsFileNatively).mockResolvedValue({
+      usedFallback: false,
+      delivered: 'downloads',
+    });
     global.fetch = vi.fn();
   });
 

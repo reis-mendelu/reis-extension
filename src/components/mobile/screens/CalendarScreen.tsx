@@ -98,15 +98,23 @@ export function CalendarScreen() {
 
   return (
     <div data-testid="calendar-screen" className="flex flex-1 flex-col overflow-hidden">
+      {/* The date IS the title now. It was the eyebrow under a "Ahoj, {name}"
+          greeting that told the student nothing they did not already know. */}
       <ScreenHeader
-        eyebrow={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
-        title={
-          fullName
-            ? t('mobile.calendar.greeting', { name: fullName.split(' ')[0] ?? '' })
-            : t('mobile.calendar.greetingNoName')
-        }
+        title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
         action={
           <div className="flex items-center gap-2">
+            {/* Vývěska joins the other two header actions. As a lone pill between
+                the alerts and the day chips it read as misplaced and cost a row
+                of vertical space for one tap target. */}
+            <button
+              type="button"
+              onClick={openBulletin}
+              aria-label={t('bulletin.expand')}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-base-300 bg-base-100"
+            >
+              <Pin size={18} className="text-primary" />
+            </button>
             <button
               type="button"
               onClick={() => pushSheet({ kind: 'notifications' })}
@@ -153,15 +161,6 @@ export function CalendarScreen() {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={openBulletin}
-        aria-label={t('bulletin.expand')}
-        className="mx-4 mt-3 flex flex-shrink-0 items-center gap-1.5 self-start rounded-lg border border-base-300 bg-base-100/60 px-3 py-1.5"
-      >
-        <Pin size={14} className="text-primary" />
-        <span className="text-sm font-semibold text-base-content">{t('bulletin.title')}</span>
-      </button>
       <MobileBulletinOverlay
         isOpen={bulletinExpanded}
         onClose={() => {

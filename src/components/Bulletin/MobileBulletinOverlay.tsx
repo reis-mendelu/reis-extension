@@ -7,18 +7,18 @@ import type { BulletinPost } from '../../types/bulletin';
 const VYVESKA_URL = 'https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl?zalozka=2';
 
 const DOT_COLOR: Record<string, string> = {
-  'Ubytování': 'bg-info',
-  'Housing':   'bg-info',
-  'Inzerce':   'bg-primary',
-  'Notice':    'bg-primary',
-  'Nabízím':   'bg-success',
-  'Offered':   'bg-success',
-  'Prodám':    'bg-success',
-  'Hledám':    'bg-warning',
-  'Wanted':    'bg-warning',
-  'Koupím':    'bg-warning',
-  'Ostatní':   'bg-base-content/40',
-  'Other':     'bg-base-content/40',
+  Ubytování: 'bg-info',
+  Housing: 'bg-info',
+  Inzerce: 'bg-primary',
+  Notice: 'bg-primary',
+  Nabízím: 'bg-success',
+  Offered: 'bg-success',
+  Prodám: 'bg-success',
+  Hledám: 'bg-warning',
+  Wanted: 'bg-warning',
+  Koupím: 'bg-warning',
+  Ostatní: 'bg-base-content/40',
+  Other: 'bg-base-content/40',
 };
 
 function dotColor(cat: string | undefined): string {
@@ -47,7 +47,9 @@ export function MobileBulletinOverlay({
   // background scrolling and rubber-banding don't bleed through the overlay.
   useEffect(() => {
     if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     document.addEventListener('keydown', onKey);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -60,7 +62,13 @@ export function MobileBulletinOverlay({
   if (!isOpen) return null;
 
   const content = (
-    <div className="fixed inset-0 z-50 bg-base-100 flex flex-col md:hidden">
+    <div
+      className="fixed inset-0 z-50 bg-base-100 flex flex-col md:hidden"
+      // Full-screen and top-anchored: at targetSdk 36 the WebView draws under
+      // the status bar and camera cutout, so this surface must inset itself.
+      // --safe-top is 0 off-device, making this a no-op on desktop.
+      style={{ paddingTop: 'var(--safe-top, 0px)' }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-base-300">
         <div className="flex items-center gap-3">
@@ -73,9 +81,7 @@ export function MobileBulletinOverlay({
           </button>
           <div className="flex items-center gap-2">
             <Pin className="w-4 h-4 text-primary" />
-            <h1 className="text-base font-bold text-base-content">
-              {t('bulletin.title')}
-            </h1>
+            <h1 className="text-base font-bold text-base-content">{t('bulletin.title')}</h1>
           </div>
         </div>
         <a
@@ -111,7 +117,10 @@ export function MobileBulletinOverlay({
         )}
 
         {!loading && error && posts.length === 0 && (
-          <div className="alert alert-error shadow-sm rounded-xl text-sm" data-testid="bulletin-error">
+          <div
+            className="alert alert-error shadow-sm rounded-xl text-sm"
+            data-testid="bulletin-error"
+          >
             <span>{t('bulletin.error')}</span>
           </div>
         )}
@@ -139,7 +148,9 @@ export function MobileBulletinOverlay({
               {/* Categories */}
               {post.categories.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 items-center">
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor(mainCategory)}`} />
+                  <span
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor(mainCategory)}`}
+                  />
                   {post.categories.map((cat, cIdx) => (
                     <span
                       key={cIdx}

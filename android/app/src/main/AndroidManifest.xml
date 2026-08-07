@@ -9,8 +9,18 @@
          every byte of reIS data is re-synced from IS on first launch.
          dataExtractionRules covers Android 12+, where allowBackup alone no
          longer governs device transfer. -->
+    <!-- enableOnBackInvokedCallback is REQUIRED, not optional, at targetSdk 36.
+         Android 16 turns predictive back on by default: the back *gesture* goes
+         straight to the platform OnBackInvokedDispatcher, and with no callback
+         registered there the system just finishes the activity — so swiping back
+         anywhere closed the app instead of popping a sheet. The legacy KEYCODE_BACK
+         path kept working the whole time (verified on device), which is what made
+         this look like it worked. Setting this lets AndroidX's
+         OnBackPressedDispatcher — which @capacitor/app registers its backButton
+         callback on — receive the gesture too. -->
     <application
         android:allowBackup="false"
+        android:enableOnBackInvokedCallback="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         tools:targetApi="31"
         android:icon="@mipmap/ic_launcher"

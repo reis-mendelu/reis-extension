@@ -39,16 +39,18 @@ describe('StudentScreen', () => {
       'true'
     );
     expect(screen.getByRole('tab', { name: 'Lidé' })).toHaveAttribute('aria-selected', 'false');
-    expect(screen.getByText('Eduroam')).toBeInTheDocument();
+    // Eduroam is deliberately absent: one-time device setup belongs in settings,
+    // not among the everyday shortcuts. It lives in ProfileSheet now.
+    expect(screen.queryByText('Eduroam')).not.toBeInTheDocument();
     expect(screen.getByText('Dokumenty')).toBeInTheDocument();
     expect(screen.getByText('Erasmus')).toBeInTheDocument();
     expect(screen.getByText('ISKAM')).toBeInTheDocument();
   });
 
-  it('pushes an eduroam sheet when the Eduroam shortcut is tapped', () => {
+  it('pushes a docs sheet when the Dokumenty shortcut is tapped', () => {
     render(<StudentScreen />);
-    fireEvent.click(screen.getByText('Eduroam'));
-    expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'eduroam' }]);
+    fireEvent.click(screen.getByText('Dokumenty'));
+    expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'docs' }]);
   });
 
   it('renders the ISKAM shortcut as a real link, not a sheet trigger', () => {
