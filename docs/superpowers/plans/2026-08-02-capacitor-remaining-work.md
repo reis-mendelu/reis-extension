@@ -307,6 +307,10 @@ fixed after #185 merged:
   token is threaded from `capacitorTransport`/`capacitorBinary` for comparison only; it is
   never logged or transmitted.
 
+  Consequently `hooks/ui/openNativeFile.ts` no longer raises the prompt itself — it returns
+  silently on a lapsed session. The transport already prompted, *with* the token; a second
+  call from there would pass none, which is precisely the case the filter cannot catch.
+
 ⚠️ **The notification fires from where the error is MINTED, not where it is caught.** This
 was wrong in the first draft and both PR reviewers caught it. The original hook sat in
 `syncAllData`'s outer catch, which *cannot* fire: `getUserParams` swallows into `null`
