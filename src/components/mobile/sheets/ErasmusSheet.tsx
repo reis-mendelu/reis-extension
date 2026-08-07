@@ -29,7 +29,11 @@ export function ErasmusSheet({ onClose }: ErasmusSheetProps) {
     <Sheet size="full" onClose={onClose}>
       <SheetHeader title={t('mobile.student.erasmus')} onClose={onClose} />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <ErasmusPanel onOpenSubject={openSubject} onSearchSubject={() => {}} />
+        <ErasmusPanel
+          onOpenSubject={openSubject}
+          onSearchSubject={() => {}}
+          showLearningAgreement={false}
+        />
       </div>
     </Sheet>
   );

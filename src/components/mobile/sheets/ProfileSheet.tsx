@@ -5,7 +5,7 @@ import {
   Moon,
   Languages,
   Calendar,
-  HardDrive,
+  Wifi,
   MessageSquarePlus,
   LogOut,
   ChevronRight,
@@ -15,7 +15,6 @@ import { Sheet } from '../primitives/Sheet';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTheme } from '../../../hooks/useTheme';
 import { useOutlookSync } from '../../../hooks/data/useOutlookSync';
-import { useDriveBackup } from '../../../hooks/data/useDriveBackup';
 import { useSpolkySettings } from '../../../hooks/useSpolkySettings';
 import { useStudyPlan } from '../../../hooks/useStudyPlan';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -39,8 +38,8 @@ function initials(name: string): string {
 }
 
 /**
- * Full-size settings sheet: theme, language, Outlook/Drive sync, hidden
- * items, society map filters, feedback and logout. Reuses desktop's
+ * Full-size settings sheet: theme, language, Outlook sync, eduroam setup,
+ * hidden items, society map filters, feedback and logout. Reuses desktop's
  * `SpolkySection` / `HiddenItemsSection` / `FeedbackModal` wholesale rather
  * than rebuilding them — only the row layout around them is phone-specific.
  *
@@ -60,21 +59,13 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
     isLoading: outlookLoading,
     toggle: toggleOutlook,
   } = useOutlookSync();
-  const {
-    connected: driveConnected,
-    busy: driveBusy,
-    connect: driveConnect,
-    disconnect: driveDisconnect,
-  } = useDriveBackup();
   const { isSubscribed, toggleAssociation } = useSpolkySettings();
+  const pushSheet = useAppStore((s) => s.pushSheet);
   const plan = useStudyPlan();
   const [spolkyOpen, setSpolkyOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const name = fullName ?? '';
-  const toggleDrive = () => {
-    void (driveConnected ? driveDisconnect() : driveConnect());
-  };
 
   return (
     <Sheet size="full" onClose={onClose}>
@@ -155,22 +146,29 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
             onChange={toggleOutlook}
           />
         </label>
-        <label className="flex items-center gap-3 px-4 py-2.5">
-          <HardDrive size={16} className="flex-shrink-0 text-base-content/50" />
+        {/* Google Drive backup is deliberately absent on mobile. It is
+            non-functional there on every axis (issue #168), so the toggle only
+            ever promised something the app could not deliver. The desktop
+            sidebar keeps it. */}
+
+        {/* eduroam lives here rather than on the Student hub: it is a one-time
+            device setup, which is what a settings screen is for, and it was
+            competing for attention with everyday shortcuts. One tap, same
+            sheet — SheetHost stacks it above this one. */}
+        <button
+          type="button"
+          onClick={() => pushSheet({ kind: 'eduroam' })}
+          className="flex w-full items-center gap-3 px-4 py-2.5 text-left"
+        >
+          <Wifi size={16} className="flex-shrink-0 text-base-content/50" />
           <div className="flex min-w-0 flex-1 flex-col">
-            <span className="text-md font-medium">{t('drive.title')}</span>
+            <span className="text-md font-medium">{t('mobile.student.eduroam')}</span>
             <span className="truncate text-xs text-base-content/60">
-              {driveConnected ? t('drive.connected') : t('drive.connectHint')}
+              {t('mobile.student.eduroamSub')}
             </span>
           </div>
-          <input
-            type="checkbox"
-            className="toggle toggle-primary toggle-sm"
-            checked={driveConnected ?? false}
-            disabled={driveBusy}
-            onChange={toggleDrive}
-          />
-        </label>
+          <ChevronRight size={16} className="flex-shrink-0 text-base-content/40" />
+        </button>
 
         <HiddenItemsSection />
 

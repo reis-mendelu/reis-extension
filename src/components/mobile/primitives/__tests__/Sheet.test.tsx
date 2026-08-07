@@ -48,4 +48,45 @@ describe('Sheet', () => {
     );
     expect(screen.getByTestId('sheet-panel').className).not.toContain('top-[70px]');
   });
+
+  /**
+   * Drag-to-dismiss, driven through the panel's pointer handlers. jsdom has no
+   * gesture model, so this asserts the decision rather than the animation: a
+   * long downward drag must call onClose.
+   */
+  it('closes on a long downward drag', () => {
+    const onClose = vi.fn();
+    render(
+      <Sheet size="full" onClose={onClose}>
+        x
+      </Sheet>
+    );
+    const panel = screen.getByTestId('sheet-panel');
+    fireEvent.pointerDown(panel, { clientY: 100, timeStamp: 0 });
+    fireEvent.pointerMove(panel, { clientY: 300, timeStamp: 200 });
+    fireEvent.pointerUp(panel, { clientY: 300, timeStamp: 200 });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  // The distance-vs-velocity rules live in sheetDrag.test.ts, not here: jsdom
+  // stamps its own event timeStamps and ignores the ones fireEvent is given, so
+  // every drag reads as an instant flick and a "slow drag" cannot be expressed.
+
+  /**
+   * An upward drag on a bottom-anchored sheet has nowhere to travel, and must
+   * never be mistaken for a dismissal.
+   */
+  it('ignores an upward drag', () => {
+    const onClose = vi.fn();
+    render(
+      <Sheet size="full" onClose={onClose}>
+        x
+      </Sheet>
+    );
+    const panel = screen.getByTestId('sheet-panel');
+    fireEvent.pointerDown(panel, { clientY: 400, timeStamp: 0 });
+    fireEvent.pointerMove(panel, { clientY: 100, timeStamp: 200 });
+    fireEvent.pointerUp(panel, { clientY: 100, timeStamp: 200 });
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });

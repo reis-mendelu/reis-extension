@@ -48,6 +48,8 @@ export interface FileListProps {
    *  download. The phone drawer has neither, so it turns them off — a
    *  checkbox that only ever selects one row at a time is noise. */
   selectable?: boolean;
+  /** Off for the phone sheet, which pins its own IS MENDELU footer. */
+  showIsBacklink?: boolean;
 }
 
 export interface DragSelectionState {

@@ -19,46 +19,74 @@ interface NotificationDropdownProps {
   deadlineAlerts: DeadlineAlert[];
 }
 
-export function NotificationDropdown({ notifications, loading, onClose, onVisible, dropdownRef, deadlineAlerts }: NotificationDropdownProps) {
+export function NotificationDropdown({
+  notifications,
+  loading,
+  onClose,
+  onVisible,
+  dropdownRef,
+  deadlineAlerts,
+}: NotificationDropdownProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const hasStudyJamContent = useAppStore(s => s.studyJamSuggestions.length > 0 || s.studyJamMatch !== null);
+  const hasStudyJamContent = useAppStore(
+    (s) => s.studyJamSuggestions.length > 0 || s.studyJamMatch !== null
+  );
   const hasContent = notifications.length > 0 || hasStudyJamContent || deadlineAlerts.length > 0;
 
   const notificationList = (
     <>
       {deadlineAlerts.length > 0 && (
         <div className="divide-y divide-base-300">
-          {deadlineAlerts.map(alert => (
+          {deadlineAlerts.map((alert) => (
             <DeadlineAlertItem key={alert.id} alert={alert} />
           ))}
         </div>
       )}
       <StudyJamSuggestions onClose={onClose} />
-      {(loading && !notifications.length) ? <div className="p-4 text-center text-base-content/60">{t('notifications.loading')}</div> :
-       (!hasContent) ? <div className="p-8 text-center text-base-content/60"><Bell size={48} className="mx-auto mb-2 opacity-40" /><p>{t('notifications.empty')}</p></div> :
+      {loading && !notifications.length ? (
+        <div className="p-4 text-center text-base-content/60">{t('notifications.loading')}</div>
+      ) : !hasContent ? (
+        <div className="p-8 text-center text-base-content/60">
+          <Bell size={48} className="mx-auto mb-2 opacity-40" />
+          <p>{t('notifications.empty')}</p>
+        </div>
+      ) : (
         <div className="divide-y divide-base-300">
           {notifications.map((n) => (
-            <NotificationItem key={n.id} notification={n} onVisible={() => onVisible(n.id)}
+            <NotificationItem
+              key={n.id}
+              notification={n}
+              onVisible={() => onVisible(n.id)}
               onClick={() => {
                 if (n.link) {
                   if (!n.associationId?.startsWith('academic_')) trackNotificationClick(n.id);
                   window.open(n.link, '_blank');
                   onClose();
                 }
-              }} />
+              }}
+            />
           ))}
         </div>
-      }
+      )}
     </>
   );
 
   if (isMobile) {
     return createPortal(
-      <div ref={dropdownRef} className="fixed inset-0 z-50 bg-base-100 flex flex-col">
+      <div
+        ref={dropdownRef}
+        className="fixed inset-0 z-50 bg-base-100 flex flex-col"
+        // Full-screen and top-anchored: at targetSdk 36 the WebView draws under
+        // the status bar and camera cutout, so this surface must inset itself.
+        // --safe-top is 0 off-device, making this a no-op on desktop.
+        style={{ paddingTop: 'var(--safe-top, 0px)' }}
+      >
         <div className="flex items-center justify-between px-4 py-3 border-b border-base-300">
           <h3 className="font-semibold text-lg text-base-content">{t('notifications.title')}</h3>
-          <button onClick={onClose} className="p-1 hover:bg-base-300 rounded"><X size={20} /></button>
+          <button onClick={onClose} className="p-1 hover:bg-base-300 rounded">
+            <X size={20} />
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto">{notificationList}</div>
       </div>,
@@ -67,10 +95,15 @@ export function NotificationDropdown({ notifications, loading, onClose, onVisibl
   }
 
   return (
-    <div ref={dropdownRef} className="absolute right-0 top-12 z-50 w-96 bg-base-100 border border-base-300 rounded-lg shadow-xl max-h-[320px] overflow-hidden flex flex-col">
+    <div
+      ref={dropdownRef}
+      className="absolute right-0 top-12 z-50 w-96 bg-base-100 border border-base-300 rounded-lg shadow-xl max-h-[320px] overflow-hidden flex flex-col"
+    >
       <div className="flex items-center justify-between px-4 py-3 border-b border-base-300">
         <h3 className="font-semibold text-lg text-base-content">{t('notifications.title')}</h3>
-        <button onClick={onClose} className="p-1 hover:bg-base-300 rounded"><X size={16} /></button>
+        <button onClick={onClose} className="p-1 hover:bg-base-300 rounded">
+          <X size={16} />
+        </button>
       </div>
       <div className="flex-1 overflow-y-auto">{notificationList}</div>
     </div>

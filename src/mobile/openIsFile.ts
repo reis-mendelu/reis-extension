@@ -3,7 +3,7 @@ import { getPlatform } from '../platform';
 import { loadStoredToken } from '../platform/tokenStore';
 import { fetchIsBinary, blobToBase64 } from '../api/capacitorBinary';
 import { toDirectDownloadUrl } from '../api/isDocumentUrl';
-import { deliverFile } from './deliverFile';
+import { deliverFile, type DeliveryKind } from './deliverFile';
 
 interface DownloadsPlugin {
   save(o: {
@@ -11,6 +11,7 @@ interface DownloadsPlugin {
     base64: string;
     mime: string;
   }): Promise<{ uri: string; bytes: number }>;
+  requestNotificationPermission(): Promise<{ granted: boolean }>;
 }
 
 /** Android-only native plugin: writes into Downloads and posts a notification.
@@ -54,7 +55,7 @@ export async function openIsFileNatively(
   url: string,
   filenameOverride?: string,
   fallbackUrl?: string
-): Promise<{ usedFallback: boolean }> {
+): Promise<{ usedFallback: boolean; delivered: DeliveryKind }> {
   const token = await loadStoredToken();
   const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
   const platform = Capacitor.getPlatform() as 'ios' | 'android' | 'web';
@@ -87,13 +88,23 @@ export async function openIsFileNatively(
   }
 
   const base64 = await blobToBase64(result.blob);
-  await deliverFile(
+  // The delivery kind is returned rather than discarded: it is what tells the
+  // caller whether the student has already SEEN confirmation (iOS share sheet)
+  // or needs to be told (Android, where the file lands silently in Downloads).
+  const delivered = await deliverFile(
     chooseFilename(filenameOverride, result.filename),
     base64,
     result.blob.type || 'application/pdf',
     {
       platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
-      saveToDownloads: (o) => Downloads.save(o),
+      saveToDownloads: async (o) => {
+        // Asked for here, at the moment the student requested a file, and never
+        // awaited: the notification is a convenience (tap to open), so a denied
+        // or slow permission dialog must not delay or fail the save. The toast
+        // in openNativeFile is what actually tells them it worked.
+        void Downloads.requestNotificationPermission().catch(() => {});
+        return Downloads.save(o);
+      },
       shareFile: async (o) => {
         // iOS has no Downloads folder: write to Documents, then offer the file to
         // the Files/share sheet, which is that platform's native save flow.
@@ -114,5 +125,5 @@ export async function openIsFileNatively(
     }
   );
 
-  return { usedFallback };
+  return { usedFallback, delivered };
 }

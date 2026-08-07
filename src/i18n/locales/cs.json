@@ -388,7 +388,8 @@
       "updatedJustNow": "Aktualizováno právě teď"
     },
     "file": {
-      "openFailed": "Soubor se nepodařilo otevřít."
+      "openFailed": "Soubor se nepodařilo otevřít.",
+      "savedToDownloads": "Uloženo do Stažených souborů"
     },
     "documentNote": {
       "add": "Přidat poznámku...",
@@ -1115,8 +1116,6 @@
       "student": "Student"
     },
     "calendar": {
-      "greeting": "Ahoj, {name}",
-      "greetingNoName": "Ahoj",
       "nowRunning": "Teď běží",
       "endsIn": "konec za {minutes} min",
       "next": "Pak: {title}",

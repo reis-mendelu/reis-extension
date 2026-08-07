@@ -16,11 +16,18 @@ import android.util.Base64;
 
 import androidx.core.content.FileProvider;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+
+import androidx.core.content.ContextCompat;
+
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -34,10 +41,52 @@ import java.io.OutputStream;
  * Android-only on purpose. iOS has no Downloads folder; there the Files/share
  * sheet IS the native pattern, so the JS side keeps using Share on iOS.
  */
-@CapacitorPlugin(name = "Downloads")
+@CapacitorPlugin(
+        name = "Downloads",
+        permissions = {
+                @Permission(alias = DownloadsPlugin.NOTIFICATIONS, strings = {
+                        Manifest.permission.POST_NOTIFICATIONS
+                })
+        })
 public class DownloadsPlugin extends Plugin {
 
+    static final String NOTIFICATIONS = "notifications";
+
     private static final String CHANNEL_ID = "reis-downloads";
+
+    /**
+     * POST_NOTIFICATIONS is a RUNTIME grant on Android 13+, and nothing ever
+     * asked for it — so notifyDownloaded's nm.notify() was dropped on the floor
+     * and every download completed with no visible sign whatsoever (verified on
+     * device: the file saved, granted=false, student saw nothing).
+     *
+     * Requested from the download path rather than at boot so the prompt appears
+     * when the student has just asked for a file, which is both the Android
+     * guidance and the only moment the request makes sense. Deliberately
+     * fire-and-forget: the save itself must never wait on, or fail because of,
+     * a notification permission. The in-app toast is the real confirmation; this
+     * only buys back the tap-to-open notification.
+     */
+    @PluginMethod
+    public void requestNotificationPermission(PluginCall call) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || hasNotificationPermission()) {
+            call.resolve(new JSObject().put("granted", hasNotificationPermission()));
+            return;
+        }
+        requestPermissionForAlias(NOTIFICATIONS, call, "notificationPermissionResult");
+    }
+
+    @PermissionCallback
+    private void notificationPermissionResult(PluginCall call) {
+        call.resolve(new JSObject().put("granted", hasNotificationPermission()));
+    }
+
+    private boolean hasNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true;
+        return ContextCompat.checkSelfPermission(
+                getContext(), Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED;
+    }
 
     @PluginMethod
     public void save(PluginCall call) {
@@ -116,6 +165,11 @@ public class DownloadsPlugin extends Plugin {
     }
 
     private void notifyDownloaded(String filename, String mime, Uri uri) {
+        // Without the runtime grant nm.notify() is a silent no-op on Android
+        // 13+. Returning early keeps that fact visible in the code instead of
+        // pretending a notification was posted.
+        if (!hasNotificationPermission()) return;
+
         NotificationManager nm =
                 (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;

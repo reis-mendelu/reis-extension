@@ -9,32 +9,54 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { ISBacklink } from './ISBacklink';
 
 interface SyllabusTabProps {
-    courseCode: string;
-    courseId?: string;
-    courseName?: string;
-    prefetchedResult?: { syllabus: SyllabusRequirements | null; isLoading: boolean };
+  /** Off for the phone sheet, which pins its own IS MENDELU footer. */
+  showIsBacklink?: boolean;
+  courseCode: string;
+  courseId?: string;
+  courseName?: string;
+  prefetchedResult?: { syllabus: SyllabusRequirements | null; isLoading: boolean };
 }
 
-export function SyllabusTab({ courseCode, courseId, courseName, prefetchedResult }: SyllabusTabProps) {
-    const hookRes = useSyllabus(courseCode, courseId, courseName);
-    const { syllabus, isLoading } = prefetchedResult || hookRes;
-    const { params } = useUserParams();
-    const { t, language } = useTranslation();
+export function SyllabusTab({
+  courseCode,
+  courseId,
+  courseName,
+  prefetchedResult,
+  showIsBacklink = true,
+}: SyllabusTabProps) {
+  const hookRes = useSyllabus(courseCode, courseId, courseName);
+  const { syllabus, isLoading } = prefetchedResult || hookRes;
+  const { params } = useUserParams();
+  const { t, language } = useTranslation();
 
-    const lang = language === 'cz' ? 'cz' : 'en';
-    const syllabusUrl = courseId 
-        ? `https://is.mendelu.cz/auth/katalog/syllabus.pl?predmet=${courseId};lang=${lang}` 
-        : null;
+  const lang = language === 'cz' ? 'cz' : 'en';
+  const syllabusUrl = courseId
+    ? `https://is.mendelu.cz/auth/katalog/syllabus.pl?predmet=${courseId};lang=${lang}`
+    : null;
 
-    if (isLoading) return <div className="flex flex-col items-center justify-center h-full p-8 animate-pulse"><div className="w-12 h-12 bg-base-300 rounded mb-4" /><div className="h-4 bg-base-300 rounded w-1/2 mb-2" /></div>;
-    if (!syllabus || (!syllabus.requirementsText && !syllabus.requirementsTable.length)) return <div className="flex flex-col items-center justify-center h-full p-6 opacity-40 text-center"><BookOpen className="w-12 h-12 mb-3" /><p className="text-sm">{t('syllabus.noData')}</p></div>;
-
+  if (isLoading)
     return (
-        <div className="h-full overflow-y-auto bg-base-100 p-4 space-y-4 text-[13px]">
-            <SubjectTimeline courseCode={courseCode} />
-            {syllabus.requirementsText && <RequirementsSection text={syllabus.requirementsText} />}
-            {syllabus.requirementsTable.length > 0 && <GradingTable table={syllabus.requirementsTable} studyForm={params?.studyForm || 'prez'} />}
-            {syllabusUrl && <ISBacklink href={syllabusUrl} />}
-        </div>
+      <div className="flex flex-col items-center justify-center h-full p-8 animate-pulse">
+        <div className="w-12 h-12 bg-base-300 rounded mb-4" />
+        <div className="h-4 bg-base-300 rounded w-1/2 mb-2" />
+      </div>
     );
+  if (!syllabus || (!syllabus.requirementsText && !syllabus.requirementsTable.length))
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-6 opacity-40 text-center">
+        <BookOpen className="w-12 h-12 mb-3" />
+        <p className="text-sm">{t('syllabus.noData')}</p>
+      </div>
+    );
+
+  return (
+    <div className="h-full overflow-y-auto bg-base-100 p-4 space-y-4 text-[13px]">
+      <SubjectTimeline courseCode={courseCode} />
+      {syllabus.requirementsText && <RequirementsSection text={syllabus.requirementsText} />}
+      {syllabus.requirementsTable.length > 0 && (
+        <GradingTable table={syllabus.requirementsTable} studyForm={params?.studyForm || 'prez'} />
+      )}
+      {syllabusUrl && showIsBacklink && <ISBacklink href={syllabusUrl} />}
+    </div>
+  );
 }

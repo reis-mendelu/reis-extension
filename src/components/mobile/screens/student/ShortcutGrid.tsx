@@ -1,4 +1,4 @@
-import { Wifi, FileText, GraduationCap, UtensilsCrossed } from 'lucide-react';
+import { FileText, GraduationCap, UtensilsCrossed } from 'lucide-react';
 import { useTranslation } from '../../../../hooks/useTranslation';
 
 export type ShortcutSheetKind = 'eduroam' | 'docs' | 'erasmus';
@@ -23,15 +23,9 @@ export function ShortcutGrid({ onOpenSheet }: ShortcutGridProps) {
 
   return (
     <div className="grid grid-cols-2 gap-2.5 px-4 pb-1 pt-0.5">
-      <button type="button" onClick={() => onOpenSheet('eduroam')} className={cardClassName}>
-        <Wifi size={20} className="text-primary" />
-        <span>
-          <span className="block text-md font-semibold">{t('mobile.student.eduroam')}</span>
-          <span className="block text-2sm text-base-content/60">
-            {t('mobile.student.eduroamSub')}
-          </span>
-        </span>
-      </button>
+      {/* eduroam moved to the settings sheet: it is one-time device setup, not
+          an everyday shortcut. `ShortcutSheetKind` keeps its 'eduroam' member —
+          SheetHost still renders that sheet, it is just opened from settings. */}
       <button type="button" onClick={() => onOpenSheet('docs')} className={cardClassName}>
         <FileText size={20} className="text-primary" />
         <span>

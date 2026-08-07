@@ -64,7 +64,8 @@ describe('MapScreen', () => {
     expect(useAppStore.getState().mapSheetState).toBe('expanded');
     expect(screen.getByRole('tablist')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Akce' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Knihovna' })).toBeInTheDocument();
+    // Library study-room reservation is hidden on mobile.
+    expect(screen.queryByRole('tab', { name: 'Knihovna' })).not.toBeInTheDocument();
   });
 
   it('the map canvas stays mounted through the peek/expanded transition', () => {
@@ -76,12 +77,16 @@ describe('MapScreen', () => {
     expect(screen.getByTestId('mock-map-canvas')).toBeInTheDocument();
   });
 
-  it('clicking the Knihovna tab switches mapTab and swaps the tab body', () => {
-    useAppStore.setState({ mapSheetState: 'expanded' });
+  /**
+   * mapTab persists, so a student who last used Knihovna on desktop would come
+   * back to a tab this sheet no longer renders — and, before the fallback, to an
+   * empty body with no tab to click. Akce is what they get instead.
+   */
+  it('falls back to Akce when a persisted Knihovna tab is no longer offered', () => {
+    useAppStore.setState({ mapSheetState: 'expanded', mapTab: 'knihovna' });
     render(<MapScreen />);
-    fireEvent.click(screen.getByRole('tab', { name: 'Knihovna' }));
-    expect(useAppStore.getState().mapTab).toBe('knihovna');
-    expect(screen.getByText('Studovny knihovny')).toBeInTheDocument();
+    expect(screen.queryByText('Studovny knihovny')).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Akce' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('typing in the search bar updates mapSearchQuery', () => {

@@ -5,7 +5,6 @@ import type { MapSheetTab } from '../../../../store/types';
 import buildingsJson from '../../../../data/map/buildings.json';
 import type { BuildingsMeta } from '../../../../types/campusMap';
 import { MapEventsSection } from '../../../CampusMap/MapEventsSection';
-import { MapLibrarySection } from '../../../CampusMap/MapLibrarySection';
 import { BuildingRoomList } from './BuildingRoomList';
 
 const META = buildingsJson as BuildingsMeta;
@@ -42,7 +41,11 @@ export function MapSheet() {
   // deselected (exitToCampus) — fall back to Akce instead of rendering
   // nothing, mirroring how MapSidePanel's `active` override handles its own
   // mode/tab mismatch.
-  const activeTab: MapSheetTab = tab === 'budova' && !showBudova ? 'akce' : tab;
+  // 'knihovna' joins that fallback: the library study-room tab is hidden on
+  // mobile, and a persisted selection of it would otherwise leave the sheet
+  // rendering nothing with no tab to click back to.
+  const activeTab: MapSheetTab =
+    (tab === 'budova' && !showBudova) || tab === 'knihovna' ? 'akce' : tab;
   const toggle = () => setSheetState(expanded ? 'peek' : 'expanded');
 
   const buildingName =
@@ -98,12 +101,11 @@ export function MapSheet() {
         <>
           <div role="tablist" className="mx-4 flex flex-shrink-0 gap-1 rounded-lg bg-base-200 p-1">
             {tabBtn('akce', t('mobile.map.tabEvents'))}
-            {tabBtn('knihovna', t('mobile.map.tabLibrary'))}
+            {/* Library study-room reservation is hidden on mobile. */}
             {showBudova && tabBtn('budova', t('mobile.map.tabBuilding', { name: buildingName }))}
           </div>
           <div className="flex-1 overflow-y-auto pb-24 pt-2">
             {activeTab === 'akce' && <MapEventsSection />}
-            {activeTab === 'knihovna' && <MapLibrarySection flush />}
             {activeTab === 'budova' && activeBuildingId !== null && (
               <BuildingRoomList buildingId={activeBuildingId} />
             )}

@@ -19,7 +19,7 @@ function FacultyFilters() {
 
   return (
     <div className="flex gap-1.5 px-4 py-2 overflow-x-auto border-b border-base-300">
-      {ALL_FACULTY_KEYS.map(key => {
+      {ALL_FACULTY_KEYS.map((key) => {
         const org = ORGANIZERS[key];
         const active = isSubscribed(key);
         return (
@@ -46,7 +46,9 @@ export function EventsDropdown({ events, loading, onClose, dropdownRef }: Events
   const isMobile = useIsMobile();
 
   const today = new Date();
-  const dayName = today.toLocaleDateString(language === 'en' ? 'en-US' : 'cs-CZ', { weekday: 'long' });
+  const dayName = today.toLocaleDateString(language === 'en' ? 'en-US' : 'cs-CZ', {
+    weekday: 'long',
+  });
   const dateStr = `${language === 'en' ? dayName : dayName.toLowerCase()} ${today.getDate()}.${today.getMonth() + 1}.`;
 
   const content = (
@@ -62,7 +64,14 @@ export function EventsDropdown({ events, loading, onClose, dropdownRef }: Events
       ) : (
         <div className="divide-y divide-base-300">
           {events.map((e, i) => (
-            <EventItem key={`${e.url}-${i}`} event={e} onClick={() => { window.open(e.url, '_blank'); onClose(); }} />
+            <EventItem
+              key={`${e.url}-${i}`}
+              event={e}
+              onClick={() => {
+                window.open(e.url, '_blank');
+                onClose();
+              }}
+            />
           ))}
         </div>
       )}
@@ -71,12 +80,21 @@ export function EventsDropdown({ events, loading, onClose, dropdownRef }: Events
 
   if (isMobile) {
     return createPortal(
-      <div ref={dropdownRef} className="fixed inset-0 z-50 bg-base-100 flex flex-col">
+      <div
+        ref={dropdownRef}
+        className="fixed inset-0 z-50 bg-base-100 flex flex-col"
+        // Full-screen and top-anchored: at targetSdk 36 the WebView draws under
+        // the status bar and camera cutout, so this surface must inset itself.
+        // --safe-top is 0 off-device, making this a no-op on desktop.
+        style={{ paddingTop: 'var(--safe-top, 0px)' }}
+      >
         <div className="flex items-center justify-between px-4 py-3 border-b border-base-300">
           <h3 className="font-semibold text-lg text-base-content whitespace-nowrap overflow-hidden">
             {t('events.title')} <span className="opacity-40 font-normal ml-1">- {dateStr}</span>
           </h3>
-          <button onClick={onClose} className="p-1 hover:bg-base-300 rounded ml-2 flex-shrink-0"><X size={20} /></button>
+          <button onClick={onClose} className="p-1 hover:bg-base-300 rounded ml-2 flex-shrink-0">
+            <X size={20} />
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto">{content}</div>
       </div>,
@@ -85,12 +103,17 @@ export function EventsDropdown({ events, loading, onClose, dropdownRef }: Events
   }
 
   return (
-    <div ref={dropdownRef} className="absolute right-0 top-12 z-50 w-96 bg-base-100 border border-base-300 rounded-lg shadow-xl max-h-[400px] overflow-hidden flex flex-col">
+    <div
+      ref={dropdownRef}
+      className="absolute right-0 top-12 z-50 w-96 bg-base-100 border border-base-300 rounded-lg shadow-xl max-h-[400px] overflow-hidden flex flex-col"
+    >
       <div className="flex items-center justify-between px-4 py-3 border-b border-base-300">
         <h3 className="font-semibold text-lg text-base-content whitespace-nowrap overflow-hidden">
           {t('events.title')} <span className="opacity-40 font-normal ml-1">- {dateStr}</span>
         </h3>
-        <button onClick={onClose} className="p-1 hover:bg-base-300 rounded ml-2 flex-shrink-0"><X size={16} /></button>
+        <button onClick={onClose} className="p-1 hover:bg-base-300 rounded ml-2 flex-shrink-0">
+          <X size={16} />
+        </button>
       </div>
       <div className="flex-1 overflow-y-auto">{content}</div>
     </div>

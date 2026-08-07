@@ -24,7 +24,13 @@ export async function openNativeFile(
   t: (key: string) => string
 ): Promise<void> {
   try {
-    await openIsFileNatively(fullUrl);
+    const { delivered } = await openIsFileNatively(fullUrl);
+    // Android saves into Downloads and posts a notification — but
+    // POST_NOTIFICATIONS is a runtime grant, and a student who declined it (or
+    // was never asked, which was the case) got NO signal at all while the file
+    // saved perfectly. Confirmation must not ride on a droppable permission.
+    // iOS is deliberately silent: its share sheet is already the confirmation.
+    if (delivered === 'downloads') toast.success(t('course.file.savedToDownloads'));
   } catch (e) {
     logError(context, e);
     // A lapsed session returns silently here on purpose: `fetchIsBinary`

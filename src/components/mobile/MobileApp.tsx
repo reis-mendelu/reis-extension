@@ -30,7 +30,29 @@ export function MobileApp() {
       data-testid="mobile-app"
       className="relative flex h-screen w-full flex-col overflow-hidden bg-base-200 text-base-content"
     >
-      <Toaster position="top-center" />
+      {/* Offset by the safe-area inset: a top-center toast otherwise lands on
+          top of the status bar under targetSdk 36's forced edge-to-edge, with
+          the clock showing through the "Saved to Downloads" confirmation.
+          `mobileOffset` is the one that matters and `offset` alone is a no-op
+          here — sonner 2.x switches to mobileOffset below a 600px viewport, and
+          this device is 411px wide. Both are set so the toast is inset whichever
+          branch sonner takes. The 16px sides/bottom are sonner's own mobile
+          defaults, restated because passing an object replaces them. */}
+      <Toaster
+        position="top-center"
+        offset={{
+          top: 'calc(1.5rem + var(--safe-top, 0px))',
+          right: '24px',
+          left: '24px',
+          bottom: '24px',
+        }}
+        mobileOffset={{
+          top: 'calc(1rem + var(--safe-top, 0px))',
+          right: '16px',
+          left: '16px',
+          bottom: '16px',
+        }}
+      />
       {tab === 'calendar' && <CalendarScreen />}
       {tab === 'exams' && <ExamsScreen />}
       {tab === 'subjects' && <SubjectsScreen />}

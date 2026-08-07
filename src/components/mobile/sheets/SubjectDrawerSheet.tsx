@@ -142,6 +142,10 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           syllabusResult={syllabusResult}
           folderUrl={subjectInfo?.folderUrl}
           selectable={false}
+          // The pinned 'Otevrit v IS MENDELU' footer below is this sheet's single
+          // IS link. Left on, every tab also rendered its own 'IS MENDELU' at the
+          // end of its content — two identical-looking links to the same place.
+          showIsBacklink={false}
         />
       </div>
       {openInIsHref && (
