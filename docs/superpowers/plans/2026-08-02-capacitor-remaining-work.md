@@ -13,7 +13,14 @@ measurements) and `2026-08-02-capacitor-transport-decision.md` (why Model C).
 
 ## Where it stands
 
-*Updated 2026-08-07, after the Task 4 / Task 8 / session-recovery branch.*
+*Updated 2026-08-07, after PR #185 (Task 4, Task 8 external links, session recovery).*
+
+⚠️ **One coverage gap knowingly accepted at merge:** `searchService` moved from a direct
+iframe `fetch` onto the content-script proxy, and nothing tests that hop end to end —
+`e2e/tests/search.spec.ts` only asserts the search bar renders, and **CI does not run e2e at
+all**. The mechanism is proven in production elsewhere (`events.ts:57` POSTs through the same
+proxy, as does `outlookSync`), and the URLs and bodies are unit-pinned, but a real search query
+on the extension is the check that would actually confirm it.
 
 | Area | State |
 |---|---|
@@ -438,6 +445,38 @@ should be re-checked, in particular:
   "fix" it later.
 
 ---
+
+## Found in passing — pre-existing, NOT fixed here
+
+Two real defects surfaced while doing the work above. Neither was introduced by it, both were
+deliberately left alone, and both are recorded here because a PR comment is easy to lose.
+
+**1. `isSyncing` can wedge true forever, killing all syncing for the life of the app.**
+`syncAllData` (`injector/syncService.ts:52-56`) does:
+
+```js
+isSyncing = true;
+sendToIframe(Messages.syncUpdate({ ... }));   // ← OUTSIDE the try
+try { ... } finally { isSyncing = false; }
+```
+
+If `sendToIframe` throws, the flag stays true, the `finally` never runs, and every later
+`syncAllData()` hits the `if (isSyncing) return` guard and no-ops — silently, forever. Moving
+the flag assignment inside the `try` (or the `sendToIframe` call after it) is the fix. This is
+also why `mobile/sessionRecovery.ts` cannot wait unboundedly for an idle sync.
+
+**2. `zaznamnik.ts` never strips non-breaking spaces, despite trying to.** All three
+`replace(/ /g, ' ')` calls (lines ~20, ~41, ~49) are ASCII-space → ASCII-space — a no-op. The
+intent was clearly ` ` normalisation; the rest of the repo spells it ` `
+(`kontrola.ts:32`, `gradeHistory.ts`, `events.ts`). Confirmed present in `45f7228` too, so it
+predates the Task 4 work.
+
+**It is currently harmless, and that is why it was not touched.** Running the parsers over all
+eight committed fixtures — which contain 30–80 `&nbsp;` each — yields **zero** U+00A0 in parsed
+output. Per Parser Rules a change needs a real IS sample proving it correct, and the available
+evidence says current behaviour is already correct on every sample we have. It would bite on an
+IS page that puts `&nbsp;` inside an arch name or the `nemáte dosud` marker — get such a page
+first, then fix it with that fixture.
 
 ## Out of scope / tracked elsewhere
 
