@@ -5,6 +5,8 @@ import { fetchEduroamCertMaterial, fetchEduroamPassword } from '../../api/eduroa
 import { generateEduroamMobileconfig } from '../../services/eduroam/mobileconfig';
 import { generateEapConfig } from '../../services/eduroam/eapConfig';
 import { putTransfer, buildTransferUrl } from '../../api/eduroamTransfer';
+import { configureEduroam, type EduroamConfigOutcome } from '../../mobile/configureEduroam';
+import { canConfigureEduroamNatively, nativeEduroamDeps } from '../../mobile/eduroamNative';
 import { logError } from '../../utils/reportError';
 
 export type EduroamStatus = 'idle' | 'working' | 'done' | 'error';
@@ -30,6 +32,8 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
   const [password, setPassword] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Native-path only: what Android did with the network. Null on file paths. */
+  const [outcome, setOutcome] = useState<EduroamConfigOutcome | null>(null);
 
   // The .p12 password is NEVER embedded: the macOS path prompts at install, and
   // the iOS transfer path must keep the profile from being a standalone credential.
@@ -38,8 +42,24 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     setError(null);
     setPassword(null);
     setQrDataUrl(null);
+    setOutcome(null);
     try {
-      const { rootCaDer, clientP12, password: extractionPw } = await fetchEduroamCertMaterial();
+      const material = await fetchEduroamCertMaterial();
+      const { rootCaDer, clientP12, password: extractionPw } = material;
+
+      // On the phone itself, Android configures eduroam directly: no profile
+      // file, no transfer, and no QR — a QR here would be pointing the device
+      // at itself. Everything below this branch is desktop→phone delivery.
+      if (canConfigureEduroamNatively(t)) {
+        const result = await configureEduroam(material, nativeEduroamDeps);
+        setOutcome(result);
+        setPassword(extractionPw);
+        // Dismissing Android's dialog is a choice, not a fault: go back to idle
+        // so the button is simply offered again, with no error banner.
+        setStatus(result === 'cancelled' ? 'idle' : result === 'failed' ? 'error' : 'done');
+        return;
+      }
+
       const xml = generateEduroamMobileconfig({ rootCaDer, clientP12 });
 
       if (t === 'ios') {
@@ -84,6 +104,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     setError(null);
     setPassword(null);
     setQrDataUrl(null);
+    setOutcome(null);
     // Prefetch the extraction password so the chip can show it before Download.
     // Only populates when a cert already exists; first-time users get it from
     // run(). Never overwrites a value run() may have already set.
@@ -99,6 +120,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     setError(null);
     setPassword(null);
     setQrDataUrl(null);
+    setOutcome(null);
   }, []);
 
   // Fires selectTarget exactly once, only when a caller (the sheet) hands us a
@@ -128,6 +150,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     password,
     qrDataUrl,
     error,
+    outcome,
     run,
     reset,
     openProfilesSettings,
