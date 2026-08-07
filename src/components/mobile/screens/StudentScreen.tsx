@@ -5,6 +5,7 @@ import { useSearch } from '../../SearchBar/useSearch';
 import { SearchResultItem } from '../../SearchBar/SearchResultItem';
 import type { SearchResult } from '../../SearchBar/types';
 import { pagesData, injectUserParams } from '../../../data/pages';
+import { openExternal } from '../../../mobile/openExternal';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { StudentSearch, type StudentMode } from './student/StudentSearch';
 import { ShortcutGrid, type ShortcutSheetKind } from './student/ShortcutGrid';
@@ -63,7 +64,9 @@ export function StudentScreen() {
   };
 
   const openHref = (href: string) => {
-    window.open(injectUserParams(href, studiumId, language === 'en' ? 'en' : 'cz'), '_blank');
+    // openExternal, not window.open: on Capacitor that hands the URL to the
+    // system browser, which has no IS session.
+    void openExternal(injectUserParams(href, studiumId, language === 'en' ? 'en' : 'cz'));
   };
 
   const openSheet = (kind: ShortcutSheetKind) => {

@@ -341,11 +341,32 @@ should be re-checked, in particular:
   share sheet there (`src/mobile/deliverFile.ts`). Verify that is the right feel.
 - Cold-start session restore.
 
-## Task 8 — Smaller, known items
+## Task 8 — Smaller, known items (two of four done)
 
-- **`target="_blank"` escapes to the system browser** (no IS session): the "Žádost na
-  studijní oddělení" row (`DocsSheet.tsx:84-94`), `ISBacklink`, and the ISKAM card
-  (`ShortcutGrid.tsx:53-66`). Present these in the in-app browser instead.
+- ~~**`target="_blank"` escapes to the system browser**~~ ✅ **done.** `mobile/openExternal.ts`
+  routes external links through `@capgo/capacitor-inappbrowser`, which shares the native
+  cookie jar the transport already seeds — so an IS link opens *authenticated* instead of on
+  a login page.
+
+  **The three sites listed here were the wrong three.** Re-deriving against the phone tree
+  (`MobileApp` → 5 screens + `SheetHost`) gives five, and `ISBacklink` is not among them —
+  it lives in `SubjectFileDrawer`, the desktop tree. The list missed
+  `SubjectDrawerSheet.tsx:150` ("Otevřít v IS MENDELU"), `NotificationsSheet.tsx:58` and
+  `StudentScreen.tsx:66`.
+
+  Rather than edit each one, `installExternalLinkHandler()` is a document-level capture
+  interceptor installed from the Capacitor bootstrap only. It covers every
+  `a[target="_blank"]` at once — present, future, and the whole desktop tree, which is what
+  the tablet path would need. The two `window.open` sites are converted explicitly, since no
+  anchor interceptor can see them.
+
+  Guard worth knowing: it rejects **same-origin** URLs, not merely non-http ones. Capacitor
+  serves the app from `http://localhost` on Android, so a protocol-only check would have
+  handed the app's own pages to the in-app browser. A test pins this.
+
+  A failed `openWebView` reports via `logError` and nothing else — the interceptor runs from
+  a document listener with no React context, so there is no `t` to translate a toast with.
+  The tap looks inert in that case; that is a known, deliberate gap.
 - ~~**Dead code that is a live trap:**~~ ✅ **done.** `hooks/ui/useFileDownload.ts`,
   `useFileDownload/urlResolver.ts` and `utils/user_id_fetcher.ts` are deleted, along with
   `hooks/ui/index.ts` — the barrel was `useFileDownload`'s only referent and had no

@@ -9,6 +9,7 @@ import { TOKEN_KEY } from '@/platform/tokenStore';
 import { ensureSession } from '@/mobile/ensureSession';
 import { handleBackPress } from '@/mobile/backButton';
 import { installMobileActionHandler } from '@/mobile/actionHandler';
+import { installExternalLinkHandler } from '@/mobile/openExternal';
 import { useAppStore } from '@/store/useAppStore';
 
 const IS_LOGIN_URL = 'https://is.mendelu.cz/system/login.pl?lang=cz';
@@ -54,6 +55,13 @@ async function boot(): Promise<void> {
   // (a watchdog exam refresh, a tapped download), and with no responder those
   // sit until the 30 s timeout. Installing first means none are missed.
   installMobileActionHandler();
+
+  // Before the React root too: a target="_blank" link that slips through opens
+  // in the SYSTEM BROWSER, which has no IS session, so the student lands on a
+  // login page instead of their document. One document-level interceptor
+  // covers every such link rather than an edit per call site — a list of these
+  // has already gone stale three times in the plan.
+  installExternalLinkHandler();
 
   // Dynamic import on purpose: this module renders the React root on
   // evaluation, so a static import would boot the app BEFORE a session exists
