@@ -19,7 +19,7 @@ measurements) and `2026-08-02-capacitor-transport-decision.md` (why Model C).
 |---|---|
 | Shell: boot, login, session restore, back button | **Done**, device-verified on Android |
 | Transport (`CapacitorHttp`, per-platform cookie) | **Done** — GET **and POST**, plus raw bytes |
-| Sync (14 endpoints, ~236 requests) | **Done** via postMessage loopback — **except the zaznamnik batch**, see below |
+| Sync (14 endpoints, ~236 requests) | **Done** via postMessage loopback — the zaznamnik hole is now closed (Task 4), unverified on a device |
 | File download → Downloads + notification | **Done**, device-verified |
 | Duplicate file listings | **Fixed** (also fixes the extension) |
 | Study documents (Task 1/2) | **Done**, device-verified — PR #179 |
@@ -31,11 +31,13 @@ measurements) and `2026-08-02-capacitor-transport-decision.md` (why Model C).
 verification still undone. Nothing has ever exercised POST on real hardware. Do that
 before treating eduroam on mobile as working — details in Task 3.
 
-**"Sync is done" has one hole.** `syncZaznamnik` runs *inside* the same sync
-(`injector/syncService.ts:381`) but reaches IS through a bare `fetch`
-(`api/zaznamnik.ts:186`), so it is CORS-blocked on Capacitor. In student terms:
-continuous assessment — průběžné hodnocení and practice-test scores — silently never
-arrives on the phone, while everything around it does. It is row 6 of Task 4.
+~~**"Sync is done" has one hole.**~~ `syncZaznamnik` runs *inside* the same sync
+(`injector/syncService.ts:381`) but reached IS through a bare `fetch`, so it was
+CORS-blocked on Capacitor: continuous assessment — průběžné hodnocení and practice-test
+scores — silently never arrived on the phone while everything around it did. **Now on
+`fetchWithAuth`** (`api/zaznamnik.ts:194`), like its thirteen siblings in the same run.
+Unit-tested, **not yet seen on a handset** — fold it into the device check owed in Task 3:
+open a subject with průběžné hodnocení and confirm scores appear.
 
 ---
 
@@ -172,11 +174,22 @@ constant or a variable at most of these sites.
 | `src/api/odevzdavarny.ts` | 56 | submissions | open |
 | `src/api/kontrola.ts` | 17 | study check | open |
 | `src/utils/serverTime.ts` | 29 | tablet-only path | open |
-| `src/api/zaznamnik.ts` | 186 (two in one `Promise.all`) | **sync** — `syncZaznamnik` runs inside the main sync run (`injector/syncService.ts:381`), so continuous assessment silently never arrives on the phone | open |
+| `src/api/zaznamnik.ts` | ~~186 (two in one `Promise.all`)~~ | **sync** — `syncZaznamnik` runs inside the main sync run (`injector/syncService.ts:381`), so continuous assessment silently never arrived on the phone | ✅ done — see below |
 | `src/api/search/searchService.ts` | 22, 38, 57, 80, 102 | search + `PersonHoverCard` | open |
 | `src/hooks/ui/useFileActions.ts` | ~~45, 85, 104~~ / 142, 144 | **`components/mobile/sheets/SubjectDrawerSheet.tsx`** | ✅ already native since PR #169 — see below |
 | `src/hooks/ui/useFileDownload.ts` + `useFileDownload/urlResolver.ts` | 19, 45 / 16 | nothing — dead code, see Task 8 | delete, don't migrate |
 | `src/utils/user_id_fetcher.ts` | 7 | nothing — **orphaned**, zero importers | delete, don't migrate |
+
+**`zaznamnik` is migrated.** Both fetches in the `Promise.all` now go through
+`fetchWithAuth`, closing the sync hole described at the top of this document. The behaviour
+change flagged in the warning below is real and was accepted deliberately: a 401/403 now
+sends the student to `login.pl` instead of being swallowed into a `null` result. That is
+what the other thirteen endpoints in the same sync run already do, and a 401 there means the
+session is genuinely gone. The soft failure is otherwise preserved — a non-auth error still
+returns `null`, because `syncZaznamnik` swallows per-subject failures and the slice's merge
+guard keeps previously synced scores. The explicit `!phRes.ok` check stays: the iframe-proxy
+branch of `fetchWithAuth` synthesises a 200 for everything, so without it a proxied failure
+would be parsed as a real page. Tests: `api/__tests__/zaznamnikFetch.test.ts`.
 
 **`useFileActions` was listed in error — the grep sees the `fetch(` calls but not the
 `isNativeHost()` guards in front of them.** All three reachable sites (`openFile:45`,

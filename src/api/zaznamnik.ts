@@ -1,7 +1,8 @@
+import { fetchWithAuth, BASE_URL } from './client';
 import { logError } from '../utils/reportError';
 import type { SubjectZaznamnik, SubjectPh, SubjectVt, PhSection, PhArch, VtTestAttempt } from '../types/zaznamnik';
 
-const BASE = 'https://is.mendelu.cz';
+const BASE = BASE_URL;
 
 function parseCzechFloat(text: string): number {
     const n = parseFloat(text.replace(/\s/g, '').replace(',', '.'));
@@ -183,7 +184,15 @@ export async function fetchSubjectZaznamnik(
         const phUrl = `${BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${predmetId};prubezne=1;lang=cz`;
         const vtUrl = `${BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${predmetId};test=1;lang=cz`;
 
-        const [phRes, vtRes] = await Promise.all([fetch(phUrl), fetch(vtUrl)]);
+        // fetchWithAuth, not a bare fetch: this runs inside the main sync run
+        // (injector/syncService.ts:381), which on Capacitor executes in the app
+        // rather than a content script. IS denies CORS to every origin, so a
+        // bare fetch from the app's own origin cannot reach it — continuous
+        // assessment silently never arrived on the phone while everything
+        // around it did. On the extension this is the same direct credentialed
+        // fetch as before, plus the DEFAULT_HEADERS and 401/403 handling every
+        // other endpoint in this sync already goes through.
+        const [phRes, vtRes] = await Promise.all([fetchWithAuth(phUrl), fetchWithAuth(vtUrl)]);
         if (!phRes.ok || !vtRes.ok) throw new Error(`HTTP error: PH=${phRes.status} VT=${vtRes.status}`);
 
         const [phHtml, vtHtml] = await Promise.all([phRes.text(), vtRes.text()]);
