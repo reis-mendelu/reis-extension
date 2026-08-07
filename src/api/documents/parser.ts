@@ -2,78 +2,8 @@ import { sanitizeString, validateFileName, validateUrl } from '../../utils/valid
 import { ParserError } from '../../utils/parsers/parserGuards';
 import { logError } from '../../utils/reportError';
 import type { ParsedFile, FileAttachment } from '../../types/documents';
-
-/**
- * Maps table header names to their corresponding column indices.
- */
-function getColumnIndices(table: Element): Record<string, number> {
-  const indices: Record<string, number> = {};
-  const headers = Array.from(table.querySelectorAll('thead th, tr.zahlavi th, tr.zahlavi td'));
-
-  headers.forEach((th, i) => {
-    const text = th.textContent?.trim().toLowerCase() || '';
-    if ((text.includes('název') || text.includes('name')) && indices.name === undefined)
-      indices.name = i;
-    else if (
-      (text.includes('vložil') || text.includes('entered by')) &&
-      indices.author === undefined
-    )
-      indices.author = i;
-    else if (
-      (text.includes('datum dokumentu') || text.includes('document date')) &&
-      indices.date === undefined
-    )
-      indices.date = i;
-    else if (
-      text.includes('poslední změna') ||
-      text.includes('last change') ||
-      text.includes('modifikace')
-    ) {
-      if (indices.date === undefined) indices.date = i;
-    } else if (
-      (text.includes('komentář') || text.includes('comment')) &&
-      indices.comment === undefined
-    )
-      indices.comment = i;
-    else if (
-      (text.includes('ozn.') || text.includes('subfolder')) &&
-      indices.subfolder === undefined
-    )
-      indices.subfolder = i;
-  });
-
-  return indices;
-}
-
-/**
- * The icon sysid within `scope`, across both markups IS has served, preferring
- * the mime icon over any other.
- *
- * On 2026-08-07 a live fetch of `slozka.pl?ds=1;id=153918` contained ZERO
- * `img[sysid]` elements: IS had replaced `<img sysid="mime-pdf">` with
- * `<span class="uf-icon" data-sysid="mime-pdf">` wrapping an inline SVG. Every
- * file therefore parsed as 'unknown' and the UI badge read "FILE" for a folder
- * of PDFs.
- *
- * Two orderings matter, and both are load-bearing:
- *  - mime FIRST, because a row also carries 'stav-precteno' (read status) and
- *    'prohlizeni-info', and the read-status icon comes earlier in DOM order.
- *  - a non-mime data-sysid STILL returned when there is no mime icon, because
- *    callers below identify IS's view-info link by its 'prohlizeni-info' icon
- *    and skip it. Returning '' there let that link through as a phantom
- *    'unknown' attachment beside every real file.
- *
- * The legacy branch stays: only slozka.pl was re-verified, and other IS pages
- * may still serve the old markup.
- */
-function iconSysid(scope: Element | null | undefined): string {
-  if (!scope) return '';
-  const mime = scope.querySelector('[data-sysid^="mime-"]')?.getAttribute('data-sysid');
-  if (mime) return mime;
-  const anyModern = scope.querySelector('[data-sysid]')?.getAttribute('data-sysid');
-  if (anyModern) return anyModern;
-  return scope.querySelector('img[sysid]')?.getAttribute('sysid') || '';
-}
+import { getColumnIndices } from './columnIndices';
+import { iconSysid } from './iconSysid';
 
 export function parseServerFiles(html: string): {
   files: ParsedFile[];

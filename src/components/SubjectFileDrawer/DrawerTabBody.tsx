@@ -147,7 +147,8 @@ export function DrawerTabBody({
     );
   if (tab === 'classmates')
     return <ClassmatesTab courseCode={lesson?.courseCode || ''} showIsBacklink={showIsBacklink} />;
-  if (tab === 'zaznamnik') return <ZaznamnikTab courseCode={lesson?.courseCode || ''} />;
+  if (tab === 'zaznamnik')
+    return <ZaznamnikTab courseCode={lesson?.courseCode || ''} showIsBacklink={showIsBacklink} />;
 
   return (
     <SuccessRateTab

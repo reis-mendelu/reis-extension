@@ -71,6 +71,9 @@ describe('CalendarScreen', () => {
     });
     render(<CalendarScreen />);
     expect(screen.queryByText(/^Ahoj/)).not.toBeInTheDocument();
+    // Asserted, not merely absent: "no greeting" also passes on a blank title.
+    // The selected day is 2026-04-20 and the header is capitalised.
+    expect(screen.getByText('Pondělí 20. dubna')).toBeInTheDocument();
     expect(screen.getByLabelText('Profil').querySelector('svg')).toBeInTheDocument();
   });
 
@@ -81,6 +84,7 @@ describe('CalendarScreen', () => {
     });
     render(<CalendarScreen />);
     expect(screen.queryByText(/^Ahoj/)).not.toBeInTheDocument();
+    expect(screen.getByText('Pondělí 20. dubna')).toBeInTheDocument();
     expect(screen.getByLabelText('Profil')).toHaveTextContent('JN');
   });
 

@@ -1,6 +1,7 @@
 import { X, Newspaper } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { EventItem } from './EventItem';
+import { openExternal } from '../../mobile/openExternal';
 import { useEventsFacultySettings } from '../../hooks/useEventsFacultySettings';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useIsMobile } from '../../hooks/ui/useIsMobile';
@@ -68,7 +69,12 @@ export function EventsDropdown({ events, loading, onClose, dropdownRef }: Events
               key={`${e.url}-${i}`}
               event={e}
               onClick={() => {
-                window.open(e.url, '_blank');
+                // openExternal, not window.open: this dropdown portals to a
+                // full-screen mobile surface too, and on Capacitor window.open
+                // hands the URL to the system browser. Off Capacitor it opens
+                // with noopener,noreferrer so the event page keeps no handle on
+                // the opener.
+                void openExternal(e.url);
                 onClose();
               }}
             />

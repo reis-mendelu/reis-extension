@@ -12,13 +12,13 @@ export interface SheetHeaderProps {
 export function SheetHeader({ title, subtitle, eyebrow, onClose }: SheetHeaderProps) {
   const { t } = useTranslation();
   return (
-    // touchAction 'none' is what makes the drag pill below more than decoration.
-    // Sheet owns the pointer handlers and these events bubble up to it, but with
-    // the default 'auto' the browser claims the gesture as a pan partway through
-    // and fires pointercancel — measured on device, the drag was cut off after
-    // ~20px of a 350px swipe, so it never met the dismiss threshold. Scoped to
-    // the header so the content below keeps scrolling normally.
-    <div className="flex-shrink-0" style={{ touchAction: 'none' }}>
+    // touch-none is what makes the drag pill below more than decoration. Sheet
+    // owns the pointer handlers and these events bubble up to it, but with the
+    // default touch-action the browser claims the gesture as a pan partway
+    // through and fires pointercancel — measured on device, the drag was cut off
+    // after ~20px of a 350px swipe, so it never met the dismiss threshold.
+    // Scoped to the header so the content below keeps scrolling normally.
+    <div className="flex-shrink-0 touch-none">
       <div className="mx-auto mt-2 mb-1 h-1 w-9 rounded-full bg-base-300" />
       <div className="flex items-start gap-3 px-4 pb-3 pt-2">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">

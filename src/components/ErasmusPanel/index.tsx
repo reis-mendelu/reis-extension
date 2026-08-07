@@ -67,14 +67,21 @@ export function ErasmusPanel({
   const [dob, setDob] = useState('');
 
   useEffect(() => {
+    // getUserParams is unconditional: the Explore tab's faculty filter reads
+    // userParams.facultyLabel, and Explore is the one tab the phone shows.
     getUserParams().then(setUserParams);
+    // The date of birth is not. It renders in exactly one place —
+    // StudentInfoSection, inside the Learning Agreement tab — so with the LA
+    // hidden this was pulling a student's birth date that nothing could
+    // display. Fetch no personal data a surface cannot render.
+    if (!showLearningAgreement) return;
     fetchKontrolaData().then((data) => {
       if (!data) return;
       const [year, month, day] = data.datumNarozeni.split('-');
       const formatted = `${day}.${month}.${year}`;
       setDob(formatted);
     });
-  }, []);
+  }, [showLearningAgreement]);
 
   const currentCountry = useMemo(
     () => ERASMUS_COUNTRIES.find((c) => c.file === countryFile),

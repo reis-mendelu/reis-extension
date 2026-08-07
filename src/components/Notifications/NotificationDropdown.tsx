@@ -1,6 +1,7 @@
 import { Bell, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { NotificationItem } from './NotificationItem';
+import { openExternal } from '../../mobile/openExternal';
 import { DeadlineAlertItem } from './DeadlineAlertItem';
 import { trackNotificationClick } from '../../services/spolky';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -61,7 +62,12 @@ export function NotificationDropdown({
               onClick={() => {
                 if (n.link) {
                   if (!n.associationId?.startsWith('academic_')) trackNotificationClick(n.id);
-                  window.open(n.link, '_blank');
+                  // openExternal, not window.open: this dropdown portals to a
+                  // full-screen mobile surface too, and on Capacitor
+                  // window.open hands the URL to the system browser. It also
+                  // validates the link — a notification's URL is data from
+                  // outside the app — and adds noopener,noreferrer elsewhere.
+                  void openExternal(n.link);
                   onClose();
                 }
               }}

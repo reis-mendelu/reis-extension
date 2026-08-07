@@ -73,6 +73,41 @@ describe('Sheet', () => {
   // every drag reads as an instant flick and a "slow drag" cannot be expressed.
 
   /**
+   * A cancelled gesture is not a completed one. The browser fires pointercancel
+   * when it takes the gesture over (a pan, a system edge swipe), and the student
+   * never lifted a finger to say "close" — reusing the pointerup handler there
+   * would dismiss the sheet out from under them mid-drag.
+   */
+  it('does not close when the browser cancels the drag', () => {
+    const onClose = vi.fn();
+    render(
+      <Sheet size="full" onClose={onClose}>
+        x
+      </Sheet>
+    );
+    const panel = screen.getByTestId('sheet-panel');
+    fireEvent.pointerDown(panel, { clientY: 100, timeStamp: 0 });
+    fireEvent.pointerMove(panel, { clientY: 300, timeStamp: 200 });
+    fireEvent.pointerCancel(panel, { clientY: 300, timeStamp: 200 });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  /** And the panel must settle back, not stay parked where the finger left it. */
+  it('resets the drag offset after a cancelled gesture', () => {
+    render(
+      <Sheet size="full" onClose={() => {}}>
+        x
+      </Sheet>
+    );
+    const panel = screen.getByTestId('sheet-panel');
+    fireEvent.pointerDown(panel, { clientY: 100, timeStamp: 0 });
+    fireEvent.pointerMove(panel, { clientY: 300, timeStamp: 200 });
+    expect(panel.style.transform).toBe('translateY(200px)');
+    fireEvent.pointerCancel(panel, { clientY: 300, timeStamp: 200 });
+    expect(panel.style.transform).toBe('');
+  });
+
+  /**
    * An upward drag on a bottom-anchored sheet has nowhere to travel, and must
    * never be mistaken for a dismissal.
    */

@@ -55,6 +55,16 @@ export function Sheet({ size, onClose, children, elevated }: SheetProps) {
     setDragY(0);
   };
 
+  // Not onPointerUp: a cancel is the BROWSER taking the gesture over (a pan it
+  // decided to own, a system edge swipe), not the student letting go. Running
+  // the dismiss decision on it closes the sheet mid-drag — a 30px cancel inside
+  // 50ms reads as a dismissing flick by velocity alone. A cancelled drag has no
+  // outcome but "put it back".
+  const onPointerCancel = () => {
+    start.current = null;
+    setDragY(0);
+  };
+
   const dragging = dragY > 0;
 
   return (
@@ -70,7 +80,7 @@ export function Sheet({ size, onClose, children, elevated }: SheetProps) {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        onPointerCancel={onPointerCancel}
         // The entry animation is dropped the moment a drag starts: it animates
         // the same transform this does, and leaving both on makes the sheet
         // fight the finger.

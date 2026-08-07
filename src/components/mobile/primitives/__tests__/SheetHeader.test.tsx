@@ -24,6 +24,6 @@ describe('SheetHeader', () => {
   it('opts the header out of browser touch panning so the sheet can be dragged', () => {
     const { container } = render(<SheetHeader title="Internet věcí" />);
     const header = container.firstElementChild as HTMLElement;
-    expect(header.style.touchAction).toBe('none');
+    expect(header.className).toContain('touch-none');
   });
 });
