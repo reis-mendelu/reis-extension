@@ -32,7 +32,20 @@ async function runRecovery(): Promise<string> {
   // a lapsed UISAuth looks exactly like a live one. Clearing first is what
   // makes this a re-login rather than a no-op that returns the dead token.
   await getPlatform().storage.remove(TOKEN_KEY);
-  return ensureSession(await buildInAppLoginDeps());
+  const token = await ensureSession(await buildInAppLoginDeps());
+
+  // Re-sync immediately. Whatever failed during the lapse left the store
+  // holding pre-expiry data, and without this it would sit there until the
+  // next SYNC_INTERVAL tick or app resume — so a student who just signed back
+  // in would still be looking at stale exams and grades.
+  //
+  // Lazily imported and fire-and-forget: recovery has already succeeded by
+  // this point, so a failing sync must not turn it into a failure, and the
+  // static import would pull the sync graph into the app's login path.
+  const { syncAllData } = await import('../injector/syncService');
+  void syncAllData().catch((e) => logError('Mobile.recoverSession.resync', e));
+
+  return token;
 }
 
 /**

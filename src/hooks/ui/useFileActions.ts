@@ -50,20 +50,20 @@ export function useFileActions(): UseFileActionsResult {
 
         if (!response.ok) {
           log.warn('Fetch failed, falling back to direct link');
-          window.open(fullUrl, '_blank');
+          window.open(fullUrl, '_blank', 'noopener,noreferrer');
           return;
         }
 
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
 
-        window.open(blobUrl, '_blank');
+        window.open(blobUrl, '_blank', 'noopener,noreferrer');
 
         // Clean up after 5 minutes
         setTimeout(() => URL.revokeObjectURL(blobUrl), 5 * 60 * 1000);
       } catch (e) {
         log.error('Failed to fetch file as blob, falling back to direct link', e);
-        window.open(fullUrl, '_blank');
+        window.open(fullUrl, '_blank', 'noopener,noreferrer');
       }
     },
     [t]
@@ -110,7 +110,7 @@ export function useFileActions(): UseFileActionsResult {
       try {
         const response = await fetch(fullUrl, { credentials: 'include' });
         if (!response.ok) {
-          window.open(fullUrl, '_blank');
+          window.open(fullUrl, '_blank', 'noopener,noreferrer');
           return;
         }
         const blob = await response.blob();
@@ -127,7 +127,7 @@ export function useFileActions(): UseFileActionsResult {
         setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
       } catch (e) {
         log.error('Failed to download file', e);
-        window.open(fullUrl, '_blank');
+        window.open(fullUrl, '_blank', 'noopener,noreferrer');
       }
     },
     [t]

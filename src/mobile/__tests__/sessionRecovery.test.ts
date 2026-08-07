@@ -46,9 +46,12 @@ describe('recoverSession', () => {
     await recoverSession();
 
     expect(storage.remove).toHaveBeenCalledWith('reis.session.uisAuth');
-    expect(storage.remove.mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(ensureSession).mock.invocationCallOrder[0]
-    );
+
+    const clearedAt = storage.remove.mock.invocationCallOrder[0];
+    const askedAt = vi.mocked(ensureSession).mock.invocationCallOrder[0];
+    expect(clearedAt).toBeDefined();
+    expect(askedAt).toBeDefined();
+    expect(clearedAt!).toBeLessThan(askedAt!);
   });
 
   // A sync fans out ~236 requests. If a dozen come back unauthenticated, the

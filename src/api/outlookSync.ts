@@ -1,8 +1,6 @@
- 
- 
 /**
  * Outlook Sync API - Check and set calendar sync status with IS Mendelu.
- * 
+ *
  * Syncs both:
  * - zdroj=1 (Výuka - lectures)
  * - zdroj=4 (Zkoušky - exams)
@@ -21,38 +19,38 @@ const SOURCES = [1, 4] as const; // 1 = Výuka, 4 = Zkoušky
  * Returns true only if BOTH sources have sync enabled.
  */
 export async function checkOutlookSyncStatus(): Promise<boolean> {
-    try {
-        const results = await Promise.all(
-            SOURCES.map(async (id) => {
-                const label = id === 1 ? 'Výuka' : 'Zkoušky';
+  try {
+    const results = await Promise.all(
+      SOURCES.map(async (id) => {
+        const label = id === 1 ? 'Výuka' : 'Zkoušky';
 
-                // Route through fetchWithAuth: in the iframe (no auth cookies)
-                // this proxies via the content script; Firefox blocks a direct
-                // cross-origin authenticated fetch from the extension origin.
-                const response = await fetchWithAuth(`${SYNC_URL}?editace=1;zdroj=${id};lang=cz`);
+        // Route through fetchWithAuth: in the iframe (no auth cookies)
+        // this proxies via the content script; Firefox blocks a direct
+        // cross-origin authenticated fetch from the extension origin.
+        const response = await fetchWithAuth(`${SYNC_URL}?editace=1;zdroj=${id};lang=cz`);
 
-                if (!response.ok) {
-                    logger.warn(`Failed to fetch ${label}: ${response.status}`);
-                    return false;
-                }
+        if (!response.ok) {
+          logger.warn(`Failed to fetch ${label}: ${response.status}`);
+          return false;
+        }
 
-                const html = await response.text();
-                const doc = new DOMParser().parseFromString(html, 'text/html');
-                const activeInput = doc.querySelector('input[name="prenos_o365"][value="1"]');
-                const isActive = activeInput?.hasAttribute('checked') ?? false;
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const activeInput = doc.querySelector('input[name="prenos_o365"][value="1"]');
+        const isActive = activeInput?.hasAttribute('checked') ?? false;
 
-                return isActive;
-            })
-        );
+        return isActive;
+      })
+    );
 
-        // Both must be enabled for overall status to be "enabled"
-        const allEnabled = results.every(Boolean);
+    // Both must be enabled for overall status to be "enabled"
+    const allEnabled = results.every(Boolean);
 
-        return allEnabled;
-    } catch (error) {
-        logger.error('Failed to check sync status:', error);
-        return false;
-    }
+    return allEnabled;
+  } catch (error) {
+    logger.error('Failed to check sync status:', error);
+    return false;
+  }
 }
 
 /**
@@ -61,42 +59,42 @@ export async function checkOutlookSyncStatus(): Promise<boolean> {
  * @returns true if successful, false otherwise
  */
 export async function setOutlookSyncStatus(enabled: boolean): Promise<boolean> {
-    void (enabled ? 'ENABLING' : 'DISABLING');
+  void (enabled ? 'ENABLING' : 'DISABLING');
 
-    try {
-        const results = await Promise.all(
-            SOURCES.map(async (id) => {
-                const label = id === 1 ? 'Výuka' : 'Zkoušky';
+  try {
+    const results = await Promise.all(
+      SOURCES.map(async (id) => {
+        const label = id === 1 ? 'Výuka' : 'Zkoušky';
 
-                // No Content-Type here on purpose. DEFAULT_HEADERS already sets
-                // a lowercase one, and a capitalised key does NOT overwrite it:
-                // both survive client.ts's object spread and the `Headers`
-                // constructor APPENDS, so IS received
-                // "application/x-www-form-urlencoded, application/x-www-form-urlencoded",
-                // parsed no body, and still answered 200 — the toggle reported
-                // success while the setting never applied.
-                const response = await fetchWithAuth(SYNC_URL, {
-                    method: 'POST',
-                    body: `lang=cz&editace=1&zdroj=${id}&prenos_o365=${enabled ? 1 : 0}&ulozit=Uložit`
-                });
+        // No Content-Type here on purpose. DEFAULT_HEADERS already sets
+        // a lowercase one, and a capitalised key does NOT overwrite it:
+        // both survive client.ts's object spread and the `Headers`
+        // constructor APPENDS, so IS received
+        // "application/x-www-form-urlencoded, application/x-www-form-urlencoded",
+        // parsed no body, and still answered 200 — the toggle reported
+        // success while the setting never applied.
+        const response = await fetchWithAuth(SYNC_URL, {
+          method: 'POST',
+          body: `lang=cz&editace=1&zdroj=${id}&prenos_o365=${enabled ? 1 : 0}&ulozit=Uložit`,
+        });
 
-                if (!response.ok) {
-                    logger.warn(`Failed to set ${label}: ${response.status}`);
-                    return false;
-                }
-
-                return true;
-            })
-        );
-
-        const allSuccess = results.every(Boolean);
-        if (!allSuccess) {
-            logger.warn(`⚠️ Some sources failed to update`);
+        if (!response.ok) {
+          logger.warn(`Failed to set ${label}: ${response.status}`);
+          return false;
         }
 
-        return allSuccess;
-    } catch (error) {
-        logger.error('Failed to set sync status:', error);
-        return false;
+        return true;
+      })
+    );
+
+    const allSuccess = results.every(Boolean);
+    if (!allSuccess) {
+      logger.warn(`⚠️ Some sources failed to update`);
     }
+
+    return allSuccess;
+  } catch (error) {
+    logger.error('Failed to set sync status:', error);
+    return false;
+  }
 }

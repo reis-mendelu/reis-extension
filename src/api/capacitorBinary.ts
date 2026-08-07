@@ -1,4 +1,5 @@
 import { assertIsOrigin, buildCookieDelivery } from './capacitorTransport';
+import { notifySessionExpired } from '../services/sessionExpiry';
 
 export interface BinaryDeps {
   platform: 'ios' | 'android' | 'web';
@@ -36,9 +37,12 @@ export function filenameFromResponse(headers: Record<string, string>): string {
   return match?.[1]?.trim() || 'dokument.pdf';
 }
 
+/** Mints the tagged auth error and reports it — see the twin in
+ *  capacitorTransport for why reporting happens here and not at a catch. */
 function sessionExpired(message: string): Error {
   const err = new Error(message) as Error & { sessionExpired?: boolean };
   err.sessionExpired = true;
+  notifySessionExpired();
   return err;
 }
 

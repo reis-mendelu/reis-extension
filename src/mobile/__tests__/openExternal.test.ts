@@ -3,7 +3,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 vi.mock('../../platform', () => ({ getPlatform: vi.fn(() => ({ kind: 'capacitor' })) }));
 vi.mock('../../utils/reportError', () => ({ logError: vi.fn() }));
 
-import { externalHrefFromClick, installExternalLinkHandler } from '../openExternal';
+import { logError } from '../../utils/reportError';
+import { getPlatform } from '../../platform';
+
+import { externalHrefFromClick, installExternalLinkHandler, openExternal } from '../openExternal';
 
 /** The app's own origin — Capacitor serves from http://localhost on Android,
  *  which is why a bare protocol check is not enough to spot the app's own
@@ -144,5 +147,48 @@ describe('installExternalLinkHandler', () => {
     const child = anchor({ href: 'https://is.mendelu.cz/', target: '_blank' });
 
     expect(click(child).defaultPrevented).toBe(false);
+  });
+});
+
+describe('openExternal', () => {
+  beforeEach(() => {
+    setAppOrigin();
+    vi.clearAllMocks();
+    vi.mocked(getPlatform).mockReturnValue({
+      kind: 'capacitor',
+    } as unknown as ReturnType<typeof getPlatform>);
+    window.open = vi.fn();
+  });
+
+  // StudentScreen and NotificationsSheet call openExternal directly, bypassing
+  // externalHrefFromClick — and a notification's `link` is data from outside
+  // the app. Without validation here a javascript: or app-scheme URL would
+  // reach window.open or a native scheme handler untouched.
+  it.each([
+    ['javascript:alert(1)'],
+    ['mailto:a@b.cz'],
+    ['not a url at all'],
+    ['http://localhost:3000/own-page'],
+  ])('refuses to open %s', async (url) => {
+    await openExternal(url);
+
+    expect(window.open).not.toHaveBeenCalled();
+    expect(logError).toHaveBeenCalledWith('Mobile.openExternal', expect.any(Error));
+  });
+
+  // The non-Capacitor branch: the extension and dev webapp still render the
+  // mobile tree at a narrow viewport, so these call sites run there too.
+  it('opens a genuine external URL with noopener off Capacitor', async () => {
+    vi.mocked(getPlatform).mockReturnValue({
+      kind: 'extension',
+    } as unknown as ReturnType<typeof getPlatform>);
+
+    await openExternal('https://is.mendelu.cz/auth/dok_server/');
+
+    expect(window.open).toHaveBeenCalledWith(
+      'https://is.mendelu.cz/auth/dok_server/',
+      '_blank',
+      'noopener,noreferrer'
+    );
   });
 });

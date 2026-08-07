@@ -1,4 +1,5 @@
 import { UIS_AUTH_COOKIE } from '../platform/sessionToken';
+import { notifySessionExpired } from '../services/sessionExpiry';
 import {
   normalizeCapacitorBody,
   readHeader,
@@ -57,9 +58,23 @@ export function isAuthenticatedHtml(html: string): boolean {
   return /logout\.pl/.test(html);
 }
 
+/**
+ * Mints the tagged auth error AND reports it.
+ *
+ * Reporting here rather than where the error is caught is the whole point:
+ * almost every caller swallows a failure into `null` or `[]` (search, the GET
+ * endpoints, each sync helper), and `syncAllData` wraps its fan-out in
+ * `Promise.allSettled` — so a lapsed session reaches no catch block that could
+ * tell the student. This is the one place every unauthenticated response
+ * passes through.
+ *
+ * `notifySessionExpired` is a no-op wherever no handler is registered, which is
+ * everywhere but the Capacitor app.
+ */
 function sessionExpired(message: string): Error {
   const err = new Error(message) as Error & { sessionExpired?: boolean };
   err.sessionExpired = true;
+  notifySessionExpired();
   return err;
 }
 

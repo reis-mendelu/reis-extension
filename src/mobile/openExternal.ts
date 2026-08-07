@@ -15,6 +15,26 @@ import { logError } from '../utils/reportError';
 const OPENABLE_PROTOCOL = /^https?:$/;
 
 /**
+ * The absolute http(s) URL to hand a browser, or null if this is not something
+ * that may leave the app: a malformed URL, a non-http scheme, or one of the
+ * app's own pages.
+ *
+ * Same-origin, not just "is it http": Capacitor serves the app from
+ * http://localhost on Android, so a protocol check alone would happily hand the
+ * app's OWN page to the in-app browser.
+ */
+export function validateExternalUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url, window.location.href);
+    if (!OPENABLE_PROTOCOL.test(parsed.protocol)) return null;
+    if (parsed.origin === window.location.origin) return null;
+    return parsed.href;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * The URL a click should open externally, or null to leave the event alone.
  *
  * Split from the listener so the rules are testable without a plugin: which
@@ -37,18 +57,7 @@ export function externalHrefFromClick(event: MouseEvent): string | null {
   const href = anchor.getAttribute('href');
   if (!href) return null;
 
-  try {
-    const url = new URL(href, window.location.href);
-    if (!OPENABLE_PROTOCOL.test(url.protocol)) return null;
-    // Same-origin, not just "is it http": Capacitor serves the app from
-    // http://localhost on Android, so a protocol check alone would happily
-    // hand the app's OWN page to the in-app browser. Comparing origins is the
-    // rule that actually holds on every platform.
-    if (url.origin === window.location.origin) return null;
-    return url.href;
-  } catch {
-    return null;
-  }
+  return validateExternalUrl(href);
 }
 
 /**
@@ -59,8 +68,18 @@ export function externalHrefFromClick(event: MouseEvent): string | null {
  * `@capgo/capacitor-inappbrowser`.
  */
 export async function openExternal(url: string): Promise<void> {
+  // Validated here, not only in externalHrefFromClick: StudentScreen and
+  // NotificationsSheet call this directly, and a notification's `link` is
+  // data from outside the app. Without this, a `javascript:` or app-scheme
+  // URL would reach window.open or a native scheme handler untouched.
+  const target = validateExternalUrl(url);
+  if (!target) {
+    logError('Mobile.openExternal', new Error('Refused to open a non-external URL'));
+    return;
+  }
+
   if (getPlatform().kind !== 'capacitor') {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(target, '_blank', 'noopener,noreferrer');
     return;
   }
 

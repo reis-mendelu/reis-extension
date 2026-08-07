@@ -283,20 +283,25 @@ Single-flight, so a sync fanning out ~236 requests opens one login rather than a
 **Prompt-first by decision: nothing here opens a login on its own.** A background sync must
 not throw a full-screen WebView over whatever the student is reading, so
 `promptSessionRecovery()` shows a non-expiring toast with a "sign in" action and lets them
-choose. Raised from two places: the file-open path (`hooks/ui/openNativeFile.ts`) and the
-sync's outer catch (`injector/syncService.ts`), which is the single chokepoint where a
-lapsed session surfaces from the whole run.
+choose. On success it re-syncs immediately — otherwise the student signs back in and is still
+looking at the pre-expiry data until the next `SYNC_INTERVAL` tick.
 
-⚠️ **The wiring is dependency-inverted for a measured reason.** `syncService` is the CONTENT
-SCRIPT on the extension, and WXT bundles content scripts as one file — a dynamic `import()`
-there is inlined, not split. Importing the prompt from the sync, *even lazily*, took
-`content.js` from **416 kB to 966 kB** on every IS page, for code that can never run in that
-context. It now goes through `services/sessionExpiry.ts`, a one-slot handler registry the
-Capacitor bootstrap fills and the extension leaves empty (measured back at 416 kB). Do not
-"simplify" that indirection away.
+⚠️ **The notification fires from where the error is MINTED, not where it is caught.** This
+was wrong in the first draft and both PR reviewers caught it. The original hook sat in
+`syncAllData`'s outer catch, which *cannot* fire: `getUserParams` swallows into `null`
+(`utils/userParams.ts:42`) and the whole fan-out is wrapped in `Promise.allSettled`. Nor
+would a catch anywhere else have worked — search and the three GET endpoints swallow into
+`null`/`[]` by design. `capacitorTransport` and `capacitorBinary` now call
+`notifySessionExpired()` inside their `sessionExpired()` factories, the one point every
+unauthenticated response passes through. A 5xx deliberately does NOT notify: IS being broken
+is not the student being logged out.
 
-Still unprompted: any path that catches `sessionExpired` and swallows it into `null`/`[]`
-(search, the three GET endpoints). They degrade quietly rather than asking to re-auth.
+`injector/syncService.ts` is consequently untouched by this branch, and
+`services/sessionExpiry.ts` is a one-slot handler registry the Capacitor bootstrap fills and
+the extension leaves empty. That registry is still load-bearing: `capacitorTransport` is
+reachable from the content script, and importing the prompt there — even lazily — pulled
+sonner, the login plugin, the store and both locale files into a script injected on every IS
+page (416 kB → 966 kB). Measured back at exactly 416,547 bytes. Do not "simplify" it away.
 
 ⚠️ **Superseded note, kept for context:** on the extension, `messageHandler.ts:203`
 redirects to `login.pl` when it sees `sessionExpired`; there is no Capacitor equivalent

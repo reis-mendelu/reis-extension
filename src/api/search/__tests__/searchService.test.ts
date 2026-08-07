@@ -44,8 +44,8 @@ describe('searchGlobal', () => {
     await searchGlobal('management', 'en', '43110');
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const bodies = fetchMock.mock.calls.map(bodyOf);
-    const peopleReq = bodies.find(b => b.getAll('oblasti').includes('lide'))!;
-    const subjectReq = bodies.find(b => b.getAll('oblasti').includes('predmety'))!;
+    const peopleReq = bodies.find((b) => b.getAll('oblasti').includes('lide'))!;
+    const subjectReq = bodies.find((b) => b.getAll('oblasti').includes('predmety'))!;
 
     expect(peopleReq.getAll('oblasti')).toEqual(['lide']);
     expect(peopleReq.get('subjekt')).toBeNull(); // people NOT faculty-scoped
@@ -57,8 +57,9 @@ describe('searchGlobal', () => {
   });
 
   it('flags truncation when the subject result count hits the cap', async () => {
-    const links = Array.from({ length: 100 }, (_, i) =>
-      `<a href="../katalog/syllabus.pl?predmet=${i}">EBC-X${i} Subj ${i}</a>`
+    const links = Array.from(
+      { length: 100 },
+      (_, i) => `<a href="../katalog/syllabus.pl?predmet=${i}">EBC-X${i} Subj ${i}</a>`
     ).join('');
     fetchMock.mockResolvedValue(htmlResponse(`<html><body>${links}</body></html>`));
     const res = await searchGlobal('a');
@@ -66,7 +67,11 @@ describe('searchGlobal', () => {
   });
 
   it('does not flag truncation for a small result set', async () => {
-    fetchMock.mockResolvedValue(htmlResponse('<html><body><a href="../katalog/syllabus.pl?predmet=1">EBC-WGD Web</a></body></html>'));
+    fetchMock.mockResolvedValue(
+      htmlResponse(
+        '<html><body><a href="../katalog/syllabus.pl?predmet=1">EBC-WGD Web</a></body></html>'
+      )
+    );
     const res = await searchGlobal('webova');
     expect(res.subjectsTruncated).toBe(false);
     expect(res.subjects).toHaveLength(1);
