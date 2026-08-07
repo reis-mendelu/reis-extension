@@ -1,3 +1,4 @@
+import { fetchWithAuth, BASE_URL } from './client';
 import { logError } from '../utils/reportError';
 
 export interface KontrolaData {
@@ -14,7 +15,9 @@ function parseDDMMYYYY(raw: string): string | null {
 
 export async function fetchKontrolaData(): Promise<KontrolaData | null> {
     try {
-        const res = await fetch('https://is.mendelu.cz/auth/kontrola/?lang=cz');
+        // fetchWithAuth, not a bare fetch: IS denies CORS to every origin, so
+        // this cannot reach it from the Capacitor app's own origin.
+        const res = await fetchWithAuth(`${BASE_URL}/auth/kontrola/?lang=cz`);
         if (!res.ok) return null;
 
         const html = await res.text();

@@ -1,21 +1,33 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Mocks fetchWithAuth rather than global.fetch: search moved onto the shared
+// transport so it survives Capacitor, where a bare fetch is CORS-blocked. The
+// assertions below are unchanged — the request body is what they care about,
+// and it rides through fetchWithAuth untouched.
+vi.mock('../../client', () => ({
+  BASE_URL: 'https://is.mendelu.cz',
+  fetchWithAuth: vi.fn(),
+}));
+
 import { searchGlobal } from '../searchService';
+import { fetchWithAuth } from '../../client';
 
 function bodyOf(call: unknown): URLSearchParams {
   const [, init] = call as [unknown, { body: string }];
   return new URLSearchParams(init.body);
 }
 
-const htmlResponse = (html: string) => ({ text: async () => html }) as unknown as Response;
+const htmlResponse = (html: string) =>
+  ({ ok: true, text: async () => html }) as unknown as Response;
 
 describe('searchGlobal', () => {
-  let fetchMock: ReturnType<typeof vi.fn>;
+  let fetchMock: ReturnType<typeof vi.mocked<typeof fetchWithAuth>>;
 
   beforeEach(() => {
-    fetchMock = vi.fn(async () => htmlResponse('<html></html>'));
-    vi.stubGlobal('fetch', fetchMock);
+    vi.clearAllMocks();
+    fetchMock = vi.mocked(fetchWithAuth);
+    fetchMock.mockResolvedValue(htmlResponse('<html></html>'));
   });
-  afterEach(() => vi.unstubAllGlobals());
 
   it('university-wide (no subjekt): single combined request for people + subjects, default lang cz', async () => {
     await searchGlobal('marketing');

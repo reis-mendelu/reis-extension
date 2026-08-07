@@ -1,10 +1,24 @@
+import { fetchWithAuth, BASE_URL } from '../client';
 import type { Person, Subject } from './types';
 import { parseMendeluResults, parseGlobalPeopleResults } from './peopleParser';
 import { parseMendeluProfileResult } from './peopleParserProfile';
 import { parseSubjectResults } from './subjectParser';
 
-const BASE_LIDE_URL = 'https://is.mendelu.cz/auth/lide/';
-const HLEDANI_URL = 'https://is.mendelu.cz/auth/hledani/index.pl';
+const BASE_LIDE_URL = `${BASE_URL}/auth/lide/`;
+const HLEDANI_URL = `${BASE_URL}/auth/hledani/index.pl`;
+const LIDE_INDEX_URL = `${BASE_URL}/auth/lide/index.pl`;
+
+/**
+ * Every POST here is form-urlencoded, and NONE of them sets its own
+ * Content-Type. That is deliberate, not an omission: both transports already
+ * supply it — DEFAULT_HEADERS on the extension, capacitorTransport's POST-only
+ * default on native — and passing a capitalised `Content-Type` into
+ * fetchWithAuth does not overwrite DEFAULT_HEADERS' lowercase one. Both keys
+ * survive the object spread and `Headers` APPENDS, so IS would receive the
+ * value twice, parse no body, and still answer 200. That defect is live in
+ * outlookSync.ts:73; do not reintroduce it here.
+ */
+const FORM_POST = { method: 'POST' } as const;
 
 /** Max records the catalog search returns per area. Higher = fewer truncated subject lists. */
 export const SUBJECT_RESULT_CAP = 100;
@@ -19,12 +33,7 @@ async function postHledani(query: string, lang: 'cz' | 'en', oblasti: string[], 
     formData.append('pocet', String(SUBJECT_RESULT_CAP));
     if (subjekt) formData.append('subjekt', subjekt);
 
-    const response = await fetch(HLEDANI_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formData.toString(),
-        credentials: 'include',
-    });
+    const response = await fetchWithAuth(HLEDANI_URL, { ...FORM_POST, body: formData.toString() });
     return await response.text();
 }
 
@@ -35,7 +44,7 @@ async function postHledani(query: string, lang: 'cz' | 'en', oblasti: string[], 
 export async function fetchPersonProfile(studentId: string): Promise<Person | null> {
     try {
         const url = `${BASE_LIDE_URL}clovek.pl?id=${studentId};lang=cz`;
-        const response = await fetch(url, { credentials: 'include' });
+        const response = await fetchWithAuth(url);
         const html = await response.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
@@ -54,11 +63,9 @@ export async function searchPeople(personName: string): Promise<Person[]> {
     formData.append('pocet', '1000');
 
     try {
-        const response = await fetch('https://is.mendelu.cz/auth/lide/index.pl', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        const response = await fetchWithAuth(LIDE_INDEX_URL, {
+            ...FORM_POST,
             body: formData.toString(),
-            credentials: 'include',
         });
 
         const html = await response.text();
@@ -77,11 +84,9 @@ export async function searchSubjects(query: string): Promise<Subject[]> {
     formData.append('pocet', '20');
 
     try {
-        const response = await fetch('https://is.mendelu.cz/auth/hledani/index.pl', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        const response = await fetchWithAuth(HLEDANI_URL, {
+            ...FORM_POST,
             body: formData.toString(),
-            credentials: 'include',
         });
         return parseSubjectResults(await response.text());
     } catch {
@@ -99,11 +104,9 @@ export async function searchSubjectsCatalog(query: string, limit = 50): Promise<
     formData.append('pocet', String(limit));
 
     try {
-        const response = await fetch('https://is.mendelu.cz/auth/hledani/index.pl', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        const response = await fetchWithAuth(HLEDANI_URL, {
+            ...FORM_POST,
             body: formData.toString(),
-            credentials: 'include',
         });
         return parseSubjectResults(await response.text());
     } catch {

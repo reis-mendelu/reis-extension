@@ -1,3 +1,4 @@
+import { fetchWithAuth, BASE_URL } from './client';
 import { logError } from '../utils/reportError';
 
 export interface Odevzdavarna {
@@ -52,8 +53,10 @@ function findOpenTable(doc: Document, lang: 'cz' | 'en'): HTMLTableElement | nul
 
 async function fetchLang(studium: string, obdobi: string, lang: 'cz' | 'en'): Promise<RawOdevzdavarna[] | null> {
     try {
-        const url = `https://is.mendelu.cz/auth/student/odevzdavarny.pl?studium=${studium};obdobi=${obdobi};lang=${lang}`;
-        const res = await fetch(url);
+        const url = `${BASE_URL}/auth/student/odevzdavarny.pl?studium=${studium};obdobi=${obdobi};lang=${lang}`;
+        // fetchWithAuth, not a bare fetch: IS denies CORS to every origin, so
+        // this cannot reach it from the Capacitor app's own origin.
+        const res = await fetchWithAuth(url);
         if (!res.ok) throw new Error("Failed to fetch odevzdavarny");
 
         const html = await res.text();

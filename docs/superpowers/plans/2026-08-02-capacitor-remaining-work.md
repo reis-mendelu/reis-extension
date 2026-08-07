@@ -147,7 +147,7 @@ shapes the **native layer never produces**. Assume this trap on any future trans
 - a `Text/Html` content-type slipped exact-cased guards, returning a login page as
   certificate bytes (`Headers` lowercases header *names*, not *values*)
 
-## Task 4 — Bare `fetch` call sites that bypass the transport (eduroam done)
+## Task 4 — Bare `fetch` call sites that bypass the transport ✅ DONE (except serverTime, deliberately)
 
 These call `fetch(...)` directly instead of `fetchWithAuth`, so they are CORS-blocked on
 Capacitor:
@@ -170,15 +170,55 @@ constant or a variable at most of these sites.
 | File | Line | Reaches mobile via | State |
 |---|---|---|---|
 | `src/api/eduroam.ts` | ~~31, 37, 55~~ | eduroam sheet | ✅ done, PR #181 |
-| `src/api/cvicneTests.ts` | 23 | subject detail | open |
-| `src/api/odevzdavarny.ts` | 56 | submissions | open |
-| `src/api/kontrola.ts` | 17 | study check | open |
-| `src/utils/serverTime.ts` | 29 | tablet-only path | open |
+| `src/api/cvicneTests.ts` | ~~23~~ | subject detail | ✅ done — transport line only, parser untouched |
+| `src/api/odevzdavarny.ts` | ~~56~~ | submissions | ✅ done |
+| `src/api/kontrola.ts` | ~~17~~ | study check | ✅ done |
+| `src/utils/serverTime.ts` | 29 | tablet-only path | **do NOT migrate** — see below |
 | `src/api/zaznamnik.ts` | ~~186 (two in one `Promise.all`)~~ | **sync** — `syncZaznamnik` runs inside the main sync run (`injector/syncService.ts:381`), so continuous assessment silently never arrived on the phone | ✅ done — see below |
-| `src/api/search/searchService.ts` | 22, 38, 57, 80, 102 | search + `PersonHoverCard` | open |
+| `src/api/search/searchService.ts` | ~~22, 38, 57, 80, 102~~ | search + `PersonHoverCard` | ✅ done |
 | `src/hooks/ui/useFileActions.ts` | ~~45, 85, 104~~ / 142, 144 | **`components/mobile/sheets/SubjectDrawerSheet.tsx`** | ✅ already native since PR #169 — see below |
-| `src/hooks/ui/useFileDownload.ts` + `useFileDownload/urlResolver.ts` | 19, 45 / 16 | nothing — dead code, see Task 8 | delete, don't migrate |
-| `src/utils/user_id_fetcher.ts` | 7 | nothing — **orphaned**, zero importers | delete, don't migrate |
+| ~~`src/hooks/ui/useFileDownload.ts` + `useFileDownload/urlResolver.ts`~~ | — | nothing — dead code | ✅ deleted |
+| ~~`src/utils/user_id_fetcher.ts`~~ | — | nothing — **orphaned**, zero importers | ✅ deleted |
+
+**Task 4 is closed apart from one deliberate exclusion.** All seven migratable rows are on
+`fetchWithAuth`, the three dead files are deleted, and `serverTime` is documented below as
+a non-target. What is *not* done is device verification — every one of these is unit-tested
+only, and this transport's record is that unit tests miss what the native layer actually
+produces (see Task 3).
+
+⚠️ **`serverTime.ts` must NOT be migrated. Migrating it breaks a working feature.** It is a
+`HEAD` request whose entire purpose is reading the `Date` *response header*, and neither
+transport can carry that:
+
+- the iframe-proxy branch reconstructs a `Response` from text alone
+  (`client.ts:68`), so `Date` is gone and `fetchServerTimeOffset` would fall to its 0-offset
+  fallback on the extension, where it works fine today;
+- `fetchViaCapacitor` throws on any method other than GET/POST by design, so `HEAD` cannot
+  reach IS natively either.
+
+It is also unreachable on mobile: its only consumer is `useAutoRegistration`, imported
+solely by `ExamPanel/index.tsx` — the desktop tree. The mobile `ExamsScreen` uses
+`useExamActions` and never touches it. On Capacitor it already degrades correctly (catch →
+offset 0 → trust the local clock), which is the right answer for a clock-sync nicety. Leave
+it alone; if the tablet path is ever supported (Task 8), the fix is a dedicated native
+time probe, not this function.
+
+**`searchService` is migrated** — all five sites, and each POST now sets **no Content-Type
+of its own**. That is the fix for the `outlookSync.ts:73` defect recorded below, applied
+pre-emptively: a capitalised `Content-Type` does not overwrite `DEFAULT_HEADERS`' lowercase
+one, so IS would have received it twice. Both transports already supply exactly the right
+value — `DEFAULT_HEADERS` on the extension, `capacitorTransport`'s POST-only default on
+native. A test asserts no call carries a content-type header, so it cannot creep back.
+
+Note this changes the extension path too: search ran a bare `fetch` from the iframe and now
+hops through the content-script proxy like every other endpoint. The proxy handles POST with
+a body (`messageHandler.ts:100`), and all five functions already swallowed failures into an
+empty result, which the tests pin.
+
+**The three dead files are deleted**, along with `hooks/ui/index.ts` — the barrel was
+`useFileDownload`'s only referent, had zero importers of its own, and re-export barrels are
+forbidden by the Iron Rules anyway. This also clears the one repo-wide lint error that lived
+in `useFileDownload.ts` (42 → 41).
 
 **`zaznamnik` is migrated.** Both fetches in the `Promise.all` now go through
 `fetchWithAuth`, closing the sync hole described at the top of this document. The behaviour
@@ -306,13 +346,12 @@ should be re-checked, in particular:
 - **`target="_blank"` escapes to the system browser** (no IS session): the "Žádost na
   studijní oddělení" row (`DocsSheet.tsx:84-94`), `ISBacklink`, and the ISKAM card
   (`ShortcutGrid.tsx:53-66`). Present these in the in-app browser instead.
-- **Dead code that is a live trap:** `src/hooks/ui/useFileDownload.ts` has no consumers
-  but contains every breakage class at once (bare `fetch`, `window.open`, `a[download]`,
-  `saveAs`). Delete it before someone ports by example. Take
-  `useFileDownload/urlResolver.ts` with it, and `src/utils/user_id_fetcher.ts` too —
-  the latter is orphaned outright (zero importers; the live path is `api/user.ts`, which
-  already uses `fetchWithAuth` against the same URL). All three surface in the Task 4
-  grep, so deleting them shortens that list rather than adding to it.
+- ~~**Dead code that is a live trap:**~~ ✅ **done.** `hooks/ui/useFileDownload.ts`,
+  `useFileDownload/urlResolver.ts` and `utils/user_id_fetcher.ts` are deleted, along with
+  `hooks/ui/index.ts` — the barrel was `useFileDownload`'s only referent and had no
+  importers of its own. `useFileDownload` contained every breakage class at once (bare
+  `fetch`, `window.open`, `a[download]`, `saveAs`) and was the thing most likely to get
+  ported by example.
 - **Tablet path is unhandled.** `resolvePhoneViewport` needs touch **and** narrow, so a
   tablet renders the *desktop* tree — which reaches `PdfViewer.tsx:15`
   (`chrome.runtime.getURL` → `ReferenceError`, swallowed at `:61` → permanent spinner) and

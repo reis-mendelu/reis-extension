@@ -1,3 +1,4 @@
+import { fetchWithAuth, BASE_URL } from './client';
 import { logError } from '../utils/reportError';
 
 export interface CvicnyTest {
@@ -19,8 +20,11 @@ interface RawTest {
 
 async function fetchLang(studium: string, lang: 'cz' | 'en'): Promise<RawTest[] | null> {
     try {
-        const url = `https://is.mendelu.cz/auth/elis/student/seznam_osnov.pl?studium=${studium};lang=${lang}`;
-        const res = await fetch(url);
+        const url = `${BASE_URL}/auth/elis/student/seznam_osnov.pl?studium=${studium};lang=${lang}`;
+        // fetchWithAuth, not a bare fetch: IS denies CORS to every origin, so
+        // this cannot reach it from the Capacitor app's own origin. Transport
+        // only — the parser below is untouched (CLAUDE.md > Parser Rules).
+        const res = await fetchWithAuth(url);
         if (!res.ok) throw new Error("Failed to fetch seznam_osnov");
 
         const html = await res.text();
