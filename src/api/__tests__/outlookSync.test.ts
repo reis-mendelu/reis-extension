@@ -59,4 +59,28 @@ describe('setOutlookSyncStatus', () => {
         const [, opts] = fetchWithAuth.mock.calls[0];
         expect(opts.body).toContain('prenos_o365=0');
     });
+
+    /**
+     * Passing a capitalised `Content-Type` does NOT overwrite DEFAULT_HEADERS'
+     * lowercase one: both keys survive client.ts's object spread, and the
+     * `Headers` constructor APPENDS rather than replaces. Verified against a
+     * spec-compliant implementation — the value arrives as
+     * "application/x-www-form-urlencoded, application/x-www-form-urlencoded",
+     * which IS cannot parse, so it stores nothing while still answering 200 and
+     * the toggle reports success.
+     *
+     * This asserts the CAUSE, not the effect: happy-dom's Headers overwrites
+     * duplicate keys instead of appending, so the doubling itself cannot be
+     * reproduced in this environment. DEFAULT_HEADERS already supplies exactly
+     * the content-type these POSTs need.
+     */
+    it('sets no Content-Type of its own, which client.ts would double', async () => {
+        fetchWithAuth.mockResolvedValue(new Response('OK'));
+        await setOutlookSyncStatus(true);
+
+        for (const [, opts] of fetchWithAuth.mock.calls) {
+            const names = Object.keys(opts?.headers ?? {}).map((k: string) => k.toLowerCase());
+            expect(names).not.toContain('content-type');
+        }
+    });
 });

@@ -8,6 +8,7 @@ import { fetchDualLanguageStudyPlan } from '../api/studyPlan';
 import { fetchStudyStats } from '../api/studyStats';
 import { fetchStudyComparison } from '../api/studyComparison';
 import { fetchSyllabus } from '../api/syllabus';
+import { notifySessionExpired } from '../services/sessionExpiry';
 import { syncZaznamnik } from '../services/sync/syncZaznamnik';
 import { syncCvicneTests } from '../services/sync/syncCvicneTests';
 import { syncOdevzdavarny } from '../services/sync/syncOdevzdavarny';
@@ -265,6 +266,18 @@ export async function syncAllData() {
     sendToIframe(
       Messages.syncUpdate({ isSyncing: false, error: String(e), lastSync: cachedData.lastSync })
     );
+    // The only chokepoint where a lapsed session surfaces from the whole sync.
+    // On the extension the content script has already navigated the host page
+    // to login.pl; on Capacitor there is no host page, so the student is asked
+    // whether to sign in again. The prompt never opens the login itself — a
+    // background sync must not throw a full-screen WebView over whatever they
+    // are reading.
+    //
+    // Reported through the registry rather than by importing the prompt: this
+    // module is the CONTENT SCRIPT, where WXT inlines dynamic imports, so even
+    // a lazy import pulled 550 kB of Capacitor-only code onto every IS page.
+    // See services/sessionExpiry.
+    if ((e as { sessionExpired?: boolean } | null)?.sessionExpired) notifySessionExpired();
   } finally {
     isSyncing = false;
   }

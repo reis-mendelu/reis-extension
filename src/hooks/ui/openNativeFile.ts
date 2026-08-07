@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { logError } from '../../utils/reportError';
 import { openIsFileNatively } from '../../mobile/openIsFile';
+import { promptSessionRecovery } from '../../mobile/sessionRecovery';
 
 /**
  * The native branch of useFileActions' openFile/downloadSingle, with the error
@@ -27,11 +28,13 @@ export async function openNativeFile(
     await openIsFileNatively(fullUrl);
   } catch (e) {
     logError(context, e);
-    // A lapsed session is the one failure the student can act on, so it is
-    // named rather than folded into the generic message. Re-login is not wired
-    // up on mobile yet — the extension redirects to login.pl from
-    // messageHandler, which has no Capacitor equivalent.
-    const expired = (e as { sessionExpired?: boolean } | null)?.sessionExpired;
-    toast.error(expired ? t('course.file.sessionExpired') : t('course.file.openFailed'));
+    // A lapsed session is the one failure the student can act on, so it gets
+    // the recovery prompt — a message plus a "sign in" action — rather than
+    // being folded into the generic "couldn't open" toast.
+    if ((e as { sessionExpired?: boolean } | null)?.sessionExpired) {
+      promptSessionRecovery();
+      return;
+    }
+    toast.error(t('course.file.openFailed'));
   }
 }

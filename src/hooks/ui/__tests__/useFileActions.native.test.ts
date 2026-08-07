@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useFileActions } from '../useFileActions';
 import { isNativeHost, openIsFileNatively } from '../../../mobile/openIsFile';
 import { logError } from '../../../utils/reportError';
+import { promptSessionRecovery } from '../../../mobile/sessionRecovery';
 
 vi.mock('../../../mobile/openIsFile', () => ({
   isNativeHost: vi.fn(() => true),
@@ -15,6 +16,8 @@ vi.mock('sonner', () => ({
 }));
 
 vi.mock('../../../utils/reportError', () => ({ logError: vi.fn() }));
+
+vi.mock('../../../mobile/sessionRecovery', () => ({ promptSessionRecovery: vi.fn() }));
 
 vi.mock('../../../utils/fileUrl', () => ({
   normalizeFileUrl: (url: string) => url,
@@ -88,12 +91,12 @@ describe('useFileActions on Capacitor', () => {
     }
   );
 
-  // A lapsed session is the one failure the student can act on, so it must not
-  // be dressed up as a generic fault. The mobile app has no re-login route yet
-  // (the extension redirects to login.pl in messageHandler.ts:203), so saying
-  // so is all this can do.
+  // A lapsed session is the one failure the student can act on, so it gets the
+  // recovery prompt (message + "sign in" action) instead of the generic
+  // "couldn't open" toast. Before this the app could only say the session had
+  // died; there was no way back short of killing and reopening it.
   it.each([['openFile'], ['downloadSingle']] as const)(
-    '%s names an expired session rather than reporting a generic failure',
+    '%s offers session recovery rather than a generic failure',
     async (method) => {
       vi.mocked(openIsFileNatively).mockRejectedValue(expired());
       const { result } = renderHook(() => useFileActions());
@@ -102,7 +105,8 @@ describe('useFileActions on Capacitor', () => {
         await result.current[method]('slozka.pl?download=1');
       });
 
-      expect(toast.error).toHaveBeenCalledWith('Přihlášení vypršelo. Přihlas se znovu.');
+      expect(promptSessionRecovery).toHaveBeenCalledTimes(1);
+      expect(toast.error).not.toHaveBeenCalled();
     }
   );
 

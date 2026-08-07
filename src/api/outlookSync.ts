@@ -68,9 +68,15 @@ export async function setOutlookSyncStatus(enabled: boolean): Promise<boolean> {
             SOURCES.map(async (id) => {
                 const label = id === 1 ? 'Výuka' : 'Zkoušky';
 
+                // No Content-Type here on purpose. DEFAULT_HEADERS already sets
+                // a lowercase one, and a capitalised key does NOT overwrite it:
+                // both survive client.ts's object spread and the `Headers`
+                // constructor APPENDS, so IS received
+                // "application/x-www-form-urlencoded, application/x-www-form-urlencoded",
+                // parsed no body, and still answered 200 — the toggle reported
+                // success while the setting never applied.
                 const response = await fetchWithAuth(SYNC_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: `lang=cz&editace=1&zdroj=${id}&prenos_o365=${enabled ? 1 : 0}&ulozit=Uložit`
                 });
 

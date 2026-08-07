@@ -388,8 +388,7 @@
       "updatedJustNow": "Updated just now"
     },
     "file": {
-      "openFailed": "Couldn't open the file.",
-      "sessionExpired": "Your session expired. Sign in again."
+      "openFailed": "Couldn't open the file."
     },
     "documentNote": {
       "add": "Add note...",
@@ -1227,5 +1226,9 @@
       "sync": "Sync",
       "societies": "Societies on the map"
     }
+  },
+  "session": {
+    "expired": "Your IS session has expired.",
+    "signIn": "Sign in"
   }
 }

@@ -388,8 +388,7 @@
       "updatedJustNow": "Aktualizováno právě teď"
     },
     "file": {
-      "openFailed": "Soubor se nepodařilo otevřít.",
-      "sessionExpired": "Přihlášení vypršelo. Přihlas se znovu."
+      "openFailed": "Soubor se nepodařilo otevřít."
     },
     "documentNote": {
       "add": "Přidat poznámku...",
@@ -1227,5 +1226,9 @@
       "sync": "Synchronizace",
       "societies": "Spolky na mapě"
     }
+  },
+  "session": {
+    "expired": "Přihlášení do IS vypršelo.",
+    "signIn": "Přihlásit se"
   }
 }

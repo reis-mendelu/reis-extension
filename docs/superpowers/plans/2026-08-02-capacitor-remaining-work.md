@@ -254,7 +254,32 @@ is untouched, since none of this is on the web branch.
 is `downloadZip`, deliberately left alone here — it is the desktop-only path this change had
 no reason to disturb.
 
-⚠️ **Mobile still has no re-login route.** On the extension, `messageHandler.ts:203`
+✅ ~~**Mobile still has no re-login route.**~~ **Built** — `mobile/sessionRecovery.ts`.
+`recoverSession()` clears the dead token (without which `ensureSession` would short-circuit
+and hand back the very token that failed) and re-runs the same login WebView boot uses —
+now a shared `mobile/inAppLoginDeps.ts`, because ensureSession's cookie-polling contract
+only holds if `onPageLoaded` and `readCookies` come from the WebView `openLogin` presented.
+Single-flight, so a sync fanning out ~236 requests opens one login rather than a dozen.
+
+**Prompt-first by decision: nothing here opens a login on its own.** A background sync must
+not throw a full-screen WebView over whatever the student is reading, so
+`promptSessionRecovery()` shows a non-expiring toast with a "sign in" action and lets them
+choose. Raised from two places: the file-open path (`hooks/ui/openNativeFile.ts`) and the
+sync's outer catch (`injector/syncService.ts`), which is the single chokepoint where a
+lapsed session surfaces from the whole run.
+
+⚠️ **The wiring is dependency-inverted for a measured reason.** `syncService` is the CONTENT
+SCRIPT on the extension, and WXT bundles content scripts as one file — a dynamic `import()`
+there is inlined, not split. Importing the prompt from the sync, *even lazily*, took
+`content.js` from **416 kB to 966 kB** on every IS page, for code that can never run in that
+context. It now goes through `services/sessionExpiry.ts`, a one-slot handler registry the
+Capacitor bootstrap fills and the extension leaves empty (measured back at 416 kB). Do not
+"simplify" that indirection away.
+
+Still unprompted: any path that catches `sessionExpired` and swallows it into `null`/`[]`
+(search, the three GET endpoints). They degrade quietly rather than asking to re-auth.
+
+⚠️ **Superseded note, kept for context:** on the extension, `messageHandler.ts:203`
 redirects to `login.pl` when it sees `sessionExpired`; there is no Capacitor equivalent
 anywhere, so the app can only *tell* the student their session died. Worth its own task —
 it affects every authenticated path on mobile, not just files.
@@ -286,11 +311,18 @@ reason this task exists, and why "it works in the extension" proves nothing here
 - CDN / Google / Supabase / MS-Bookings / Photon / HuggingFace / Discord-webhook — not IS,
   and CORS-clean.
 
-**Adjacent, found while doing eduroam:** `src/api/outlookSync.ts:73` passes its own
-`Content-Type` into `fetchWithAuth`, which already sets a lowercase one — both keys
-survive the object spread and `Headers` *appends*, so IS receives the value twice, parses
-no body, and yet `response.ok` is true and the UI reports success. Extension-only; the
-Capacitor path forwards caller headers alone and is unaffected.
+~~**Adjacent, found while doing eduroam:**~~ ✅ **fixed.** `src/api/outlookSync.ts:73` passed
+its own `Content-Type` into `fetchWithAuth`, which already sets a lowercase one — both keys
+survive the object spread and `Headers` *appends*, so IS received
+`"application/x-www-form-urlencoded, application/x-www-form-urlencoded"`, parsed no body,
+and still answered 200 while the UI reported success. Confirmed against a spec-compliant
+`Headers` before fixing. Extension-only; the Capacitor path forwards caller headers alone
+and was unaffected.
+
+⚠️ The test asserts the **cause** (no caller-set `Content-Type`), not the effect: happy-dom's
+`Headers` *overwrites* duplicate keys instead of appending, so this class of bug cannot be
+reproduced in this repo's test environment at all. Worth knowing before trusting a green
+suite on any header-merging question.
 
 ## Task 5 — eduroam native one-tap (#159)
 
