@@ -150,9 +150,12 @@ shapes the **native layer never produces**. Assume this trap on any future trans
 These call `fetch(...)` directly instead of `fetchWithAuth`, so they are CORS-blocked on
 Capacitor:
 
-**The list below was wrong twice before it was right.** It originally held 5 files and a
-line dismissing everything else as CDN/Google/Supabase; two review rounds on PR #182 found
-more each time. Do not trust it as folklore — **re-derive it** and diff against this table:
+**The list below has now been wrong three times.** It originally held 5 files and a line
+dismissing everything else as CDN/Google/Supabase; two review rounds on PR #182 found more
+each time — and the third correction went the *other* way: `useFileActions` was listed as
+open when it had already been migrated, because the grep sees `fetch(` but not the
+`isNativeHost()` guard above it. Do not trust it as folklore — **re-derive it**, then open
+each hit and check for a guard before calling it work:
 
 ```bash
 grep -rn "\bfetch(" src/ --include='*.ts' --include='*.tsx' \
@@ -171,13 +174,37 @@ constant or a variable at most of these sites.
 | `src/utils/serverTime.ts` | 29 | tablet-only path | open |
 | `src/api/zaznamnik.ts` | 186 (two in one `Promise.all`) | **sync** — `syncZaznamnik` runs inside the main sync run (`injector/syncService.ts:381`), so continuous assessment silently never arrives on the phone | open |
 | `src/api/search/searchService.ts` | 22, 38, 57, 80, 102 | search + `PersonHoverCard` | open |
-| `src/hooks/ui/useFileActions.ts` | 45, 85, 104, 142, 144 | **`components/mobile/sheets/SubjectDrawerSheet.tsx`** | open |
+| `src/hooks/ui/useFileActions.ts` | ~~45, 85, 104~~ / 142, 144 | **`components/mobile/sheets/SubjectDrawerSheet.tsx`** | ✅ already native since PR #169 — see below |
 | `src/hooks/ui/useFileDownload.ts` + `useFileDownload/urlResolver.ts` | 19, 45 / 16 | nothing — dead code, see Task 8 | delete, don't migrate |
 | `src/utils/user_id_fetcher.ts` | 7 | nothing — **orphaned**, zero importers | delete, don't migrate |
 
-`useFileActions` is the sharpest of these: it is imported by a **mobile sheet**, and
-`normalizeFileUrl` (`src/utils/fileUrl.ts:14`) resolves every one of its links to
-`https://is.mendelu.cz`. Subject-file open and download on mobile go through it.
+**`useFileActions` was listed in error — the grep sees the `fetch(` calls but not the
+`isNativeHost()` guards in front of them.** All three reachable sites (`openFile:45`,
+`openPdfInline:85`, `downloadSingle:104`) already branch to `openIsFileNatively` /
+`fetchIsBinary`; PR #169 migrated them along with the rest of the shell. The remaining two
+(142, 144) are `downloadZip`, which `SubjectDrawerSheet.tsx:144` makes unreachable on phone
+with `selectable={false}` and which Task 8 keeps desktop-only by product decision. Nothing
+to migrate. `hooks/ui/__tests__/useFileActions.native.test.ts` now asserts that both
+reachable methods reach `openIsFileNatively` and never touch `global.fetch`, so the guards
+cannot silently regress.
+
+**What the guards did leave broken, now fixed.** The native branches sat *outside* the
+try/catch the web path has, and every caller drops the returned promise — the prop type is
+`(link: string) => void` (`FileListItem.tsx:31`). So a failure from `openIsFileNatively`
+(IS served a page, or the session lapsed) escaped as an **unhandled rejection**: a telemetry
+report fired and the student saw a tap that did nothing. The native path now catches, routes
+through `logError`, and toasts — naming a lapsed session separately, since that is the one
+failure a student can act on. Extracted to `hooks/ui/openNativeFile.ts`; desktop behaviour
+is untouched, since none of this is on the web branch.
+
+`useFileActions.ts` is 208 lines, just over the 200-line convention. The natural next split
+is `downloadZip`, deliberately left alone here — it is the desktop-only path this change had
+no reason to disturb.
+
+⚠️ **Mobile still has no re-login route.** On the extension, `messageHandler.ts:203`
+redirects to `login.pl` when it sees `sessionExpired`; there is no Capacitor equivalent
+anywhere, so the app can only *tell* the student their session died. Worth its own task —
+it affects every authenticated path on mobile, not just files.
 
 Two rows are traps rather than work: `useFileDownload` has no consumer but the
 `hooks/ui/index.ts` barrel, and `user_id_fetcher.ts` has **no importer at all** — the live

@@ -387,6 +387,10 @@
       "updated": "Aktualizováno",
       "updatedJustNow": "Aktualizováno právě teď"
     },
+    "file": {
+      "openFailed": "Soubor se nepodařilo otevřít.",
+      "sessionExpired": "Přihlášení vypršelo. Přihlas se znovu."
+    },
     "documentNote": {
       "add": "Přidat poznámku...",
       "edit": "Upravit poznámku",

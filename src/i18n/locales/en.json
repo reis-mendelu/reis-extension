@@ -387,6 +387,10 @@
       "updated": "Updated",
       "updatedJustNow": "Updated just now"
     },
+    "file": {
+      "openFailed": "Couldn't open the file.",
+      "sessionExpired": "Your session expired. Sign in again."
+    },
     "documentNote": {
       "add": "Add note...",
       "edit": "Edit note",
