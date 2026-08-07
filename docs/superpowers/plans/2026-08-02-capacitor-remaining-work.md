@@ -448,33 +448,54 @@ and was unaffected.
 reproduced in this repo's test environment at all. Worth knowing before trusting a green
 suite on any header-merging question.
 
-## Task 5 — eduroam native one-tap (#159)
+## Task 5 — eduroam native one-tap (#159) — Android BUILT, unverified on a device
 
-**Nothing exists in the product.** Verified: `android/app/src/main/java/cz/reis/app/`
-holds only `MainActivity.java` and `DownloadsPlugin.java`; the manifest declares no
-`ACCESS_WIFI_STATE` / `CHANGE_WIFI_STATE`; there is no iOS hotspot code or entitlement.
-Only the throwaway spike proved the approach.
+**The Android half is written** (branch `worktree-eduroam-android-native`). What landed:
 
-~~Today the sheet is 100% non-functional and fails at the first network call~~ — **the
-network half is fixed** (Task 3 / PR #181). `fetchEduroamPassword` is no longer a
-CORS-blocked bare `fetch`, so the sheet should stop firing a telemetry report on every
-open and the password should render. **Unconfirmed on a device** — that is the owed check
-in Task 3, and it is the first thing to do here, because everything below assumes the
-cert material actually arrives.
+1. `android/.../EduroamPlugin.java` — a port of the spike's `EduroamProbePlugin`, which
+   verified on API 35 with real MENDELU cert material that `ACTION_WIFI_ADD_NETWORKS`
+   accepts an EAP-TLS config backed by a **self-signed** root. Java, not Kotlin: the app
+   module has no Kotlin Gradle plugin. Registered in `MainActivity`.
+2. `ACCESS_WIFI_STATE` + `CHANGE_WIFI_STATE` in the manifest — both normal permissions,
+   granted at install, no runtime prompt.
+3. `src/mobile/configureEduroam.ts` (pure, 11 tests) + `src/mobile/eduroamNative.ts`
+   (the `registerPlugin` wiring and the capability gate).
+4. `useEduroamSetup` native branch ahead of every file/transfer path; `EduroamSheet`
+   drops to two steps on the phone. Android chosen in a *desktop* browser is untouched
+   and still gets the QR transfer.
 
-What remains is the **native Wi-Fi configuration** — nothing joins a network yet.
+**Two departures from the sketch in #159, both deliberate:**
 
-Task 3 (POST + bytes) is now **done**, so this is unblocked. Then:
+- **The identity is derived in the plugin, not passed from JS.** #159 is right that
+  Android does not derive it (an empty Identity is what greys out CONNECT), but the
+  plugin already opens the PKCS#12 for the private key, and the IS-issued cert's subject
+  CN *is* `<login>@mendelu.cz`. Reading it there avoids both an extra `?get=user-der`
+  request and a second ASN.1 parser in TypeScript. An explicit override still wins.
+- **Unknown and missing result codes fail CLOSED.** Claiming success when the network
+  was not saved sends a student to campus with wi-fi that never connects; the opposite
+  mistake self-corrects, since a retry over a network that did save returns
+  ALREADY_EXISTS, which reads as success.
 
-1. Android plugin `configure({p12Base64, passphrase, caDerBase64, login})` — the spike's
-   `EduroamProbePlugin` is the working reference. **`setWifiEnterpriseConfig()` does not
-   exist**; use `setWpa2EnterpriseConfig`. Min API 30.
-2. Manifest permissions.
-3. `EduroamTarget` gains a `native` branch, bypassing `putTransfer` / QR / `saveAs`
-   entirely — and `EduroamSheet.tsx:88` must stop rendering a QR on the very device being
-   configured (it is a desktop→phone artifact; unscannable here).
+**What is NOT verified, and how to verify it:**
+
+- **The Java has never been compiled.** There is no JDK on the dev machine
+  (`/usr/bin/java` is the macOS stub; no JVMs installed, no Android Studio). Install one
+  (`brew install --cask temurin`) and run
+  `./gradlew :app:compileDebugJavaWithJavac` before trusting any of the above.
+- **Nothing has run on a handset.** The decisive check is on campus: acceptance is not
+  connection — the spike's emulator returned `FAILURE_NETWORK_NOT_FOUND` purely because
+  no eduroam AP was in range. That remains the last real unknown on the Android path.
+- The **API 30 floor** is not gated in JS on purpose. `minSdkVersion` is 24, so Android
+  7–10 devices reach the plugin and get an explicit rejection rather than a silently
+  different flow. **Product decision still open:** leave them on the manual instructions,
+  or raise minSdk.
+
+**Still not started:**
+
 4. iOS `NEHotspotEAPSettings` + entitlement — **still unverified** whether iOS accepts
-   MENDELU's self-signed root.
+   MENDELU's self-signed root. Blocked behind Task 7 (the iOS app has never been built).
+   Note the same QR-pointing-at-itself absurdity exists on the iOS app today: target
+   resolves to `ios`, which takes the transfer path. Pre-existing, not introduced here.
 5. Cert expiry is 366 days and silent; renewal is a POST (an IS write) and must stay
    student-initiated.
 
