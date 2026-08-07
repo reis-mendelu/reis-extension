@@ -13,23 +13,42 @@ measurements) and `2026-08-02-capacitor-transport-decision.md` (why Model C).
 
 ## Where it stands
 
-*Updated 2026-08-04, after PR #179 (`1ad5d030`) and PR #181 (`c9e6160f`).*
+*Updated 2026-08-07, after the Task 4 / Task 8 / session-recovery branch.*
 
 | Area | State |
 |---|---|
 | Shell: boot, login, session restore, back button | **Done**, device-verified on Android |
 | Transport (`CapacitorHttp`, per-platform cookie) | **Done** — GET **and POST**, plus raw bytes |
-| Sync (14 endpoints, ~236 requests) | **Done** via postMessage loopback — the zaznamnik hole is now closed (Task 4), unverified on a device |
+| Sync (14 endpoints, ~236 requests) | **Done** via postMessage loopback; the zaznamnik hole is closed — **unverified on a device** |
 | File download → Downloads + notification | **Done**, device-verified |
 | Duplicate file listings | **Fixed** (also fixes the extension) |
 | Study documents (Task 1/2) | **Done**, device-verified — PR #179 |
 | eduroam cert fetch (Task 3 + eduroam half of Task 4) | **Merged unverified** — PR #181, see Task 3 |
+| Bare `fetch` sites (Task 4) | **Done** — all migratable rows on `fetchWithAuth`; `serverTime` excluded on purpose. **Unverified on a device** |
+| Search, cvicne testy, odevzdávárny, kontrola | **Done** (Task 4) — **unverified on a device** |
+| External links → in-app browser (Task 8) | **Done** — **unverified on a device** |
+| Re-login after a lapsed session | **Done**, prompt-first — **unverified on a device** |
+| Secure storage for `UISAuth` (Task 6) | **Not started** — the one hard release gate |
 | iOS app | **Never built** — only the throwaway spike ran there |
 | ISKAM, Drive, native Wi-Fi | **Broken** — see below |
 
-**The one owed check:** PR #181 merged on green unit tests with the Android device
-verification still undone. Nothing has ever exercised POST on real hardware. Do that
-before treating eduroam on mobile as working — details in Task 3.
+**Everything shipped since PR #181 is unit-tested only.** That is the single largest risk
+in this document, and it compounds: this transport's own record is *four* bugs shipping
+green because the tests stubbed shapes the native layer never produces (Task 3). One
+Android session is now worth more than any further code.
+
+**The owed device check, in one place.** It started as eduroam-only and has grown:
+
+1. **eduroam** — sheet opens with no telemetry report; extraction password renders; the
+   POST returns an authenticated page; both certs start `0x30 0x82`. Full method and the
+   `gen=`-omission warning in Task 3.
+2. **zaznamnik** — open a subject with průběžné hodnocení and confirm scores appear.
+3. **search** — the search box returns people *and* subjects; `PersonHoverCard` fills.
+4. **subject files** — open and download from `SubjectDrawerSheet`.
+5. **external links** — the ISKAM card and "Otevřít v IS MENDELU" open *in-app* and
+   *authenticated*, not in Chrome.
+6. **re-login** — let a session lapse, confirm the toast offers sign-in, that tapping it
+   opens the login WebView once, and that data flows again afterwards.
 
 ~~**"Sync is done" has one hole.**~~ `syncZaznamnik` runs *inside* the same sync
 (`injector/syncService.ts:381`) but reached IS through a bare `fetch`, so it was
@@ -438,4 +457,22 @@ adb shell am start -n cz.reis.app/.MainActivity
   coordinates proved unreliable** — drive probes from code instead of guessing.
 - **Never tap inside a live authenticated IS WebView**; it hit the logout link once.
 - 5 test failures are **pre-existing** — missing `.agent/fixtures/**` for the ISKAM
-  parsers, absent from this worktree.
+  parsers. `.agent/` is **gitignored**, so a fresh clone never has them and this is
+  permanent, not a broken worktree. CI already excludes that directory
+  (`vitest run --exclude '**/parsers/iskam/__tests__/**'`), so CI is green — do not
+  "fix" these locally.
+- **A fresh Claude Code container has no `~/android-toolchain/`** and no Android SDK, so
+  Tasks 5–7 cannot be built or verified there at all — only TypeScript work is possible.
+  Plan device work for a machine that has the toolchain.
+
+### Two bundle traps this repo will let you walk into
+
+- **A dynamic `import()` inside a content script is inlined, not split.** WXT bundles
+  content scripts as one file, so the `await import('@capacitor/*')` idiom used everywhere
+  else does NOT keep anything out of `content.js` there. Importing the session-recovery
+  prompt from `injector/syncService` took it from **416 kB to 966 kB** on every IS page.
+  Check `.output/chrome-mv3/content-scripts/content.js` after any change that reaches an
+  `injector/` module from app code.
+- **happy-dom's `Headers` overwrites duplicate keys; the spec appends.** A duplicated
+  header (see the outlookSync note in Task 4) therefore cannot be reproduced by any test in
+  this repo. A green suite proves nothing about header merging.
