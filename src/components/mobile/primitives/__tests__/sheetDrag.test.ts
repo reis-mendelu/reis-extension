@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { shouldDismiss, dragOwnsGesture, DISMISS_DISTANCE_PX } from '../sheetDrag';
+import {
+  shouldDismiss,
+  dragOwnsGesture,
+  snapDetent,
+  consumesTravel,
+  DISMISS_DISTANCE_PX,
+  DETENT_DISTANCE_PX,
+} from '../sheetDrag';
 
 describe('shouldDismiss', () => {
   it('closes on a long drag regardless of speed', () => {
@@ -22,6 +29,66 @@ describe('shouldDismiss', () => {
 
   it('does not divide by a zero timestamp delta', () => {
     expect(shouldDismiss(10, 0)).toBe(false);
+  });
+});
+
+/**
+ * The map sheet does not dismiss — it moves between two detents — so it needs a
+ * rule that works in BOTH directions. `shouldDismiss` deliberately ignores
+ * upward travel, which is why it could not be reused as-is.
+ */
+describe('snapDetent', () => {
+  it('expands on a long upward drag from peek', () => {
+    expect(snapDetent('peek', -DETENT_DISTANCE_PX, 5000)).toBe('expanded');
+  });
+
+  it('expands on a short fast upward flick from peek', () => {
+    expect(snapDetent('peek', -40, 50)).toBe('expanded');
+  });
+
+  it('collapses on a long downward drag from expanded', () => {
+    expect(snapDetent('expanded', DETENT_DISTANCE_PX, 5000)).toBe('peek');
+  });
+
+  it('collapses on a short fast downward flick from expanded', () => {
+    expect(snapDetent('expanded', 40, 50)).toBe('peek');
+  });
+
+  it('stays put on a short slow drag in either direction', () => {
+    expect(snapDetent('peek', -40, 2000)).toBe('peek');
+    expect(snapDetent('expanded', 40, 2000)).toBe('expanded');
+  });
+
+  /**
+   * Dragging further into the detent you are already at has nowhere to travel.
+   * Pulling up while expanded must not "re-expand" and, more importantly,
+   * pulling DOWN while at peek must not collapse it out of existence — peek is
+   * the floor.
+   */
+  it('ignores travel that pushes past the detent already held', () => {
+    expect(snapDetent('expanded', -200, 50)).toBe('expanded');
+    expect(snapDetent('peek', 200, 50)).toBe('peek');
+  });
+
+  it('does not divide by a zero timestamp delta', () => {
+    expect(snapDetent('peek', -10, 0)).toBe('peek');
+  });
+});
+
+describe('consumesTravel', () => {
+  it('absorbs downward travel only when expanded', () => {
+    expect(consumesTravel('expanded', 20)).toBe(true);
+    expect(consumesTravel('expanded', -20)).toBe(false);
+  });
+
+  it('absorbs upward travel only when at peek', () => {
+    expect(consumesTravel('peek', -20)).toBe(true);
+    expect(consumesTravel('peek', 20)).toBe(false);
+  });
+
+  it('absorbs nothing at rest', () => {
+    expect(consumesTravel('peek', 0)).toBe(false);
+    expect(consumesTravel('expanded', 0)).toBe(false);
   });
 });
 

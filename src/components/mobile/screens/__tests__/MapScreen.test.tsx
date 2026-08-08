@@ -175,3 +175,197 @@ describe('MapScreen', () => {
     expect(screen.getByText('Posluchárna')).toBeInTheDocument();
   });
 });
+
+/**
+ * targetSdk 36 forces edge-to-edge, so anything anchored to the top of a screen
+ * renders UNDER the status bar (clock, 5G, notification icons) unless it carries
+ * --safe-top. Every other screen gets that through ScreenHeader; the map floats
+ * its own search bar instead and was missing it, so the search sat behind the
+ * clock on a real handset.
+ */
+describe('MapScreen safe-area inset', () => {
+  // Asserted on the CLASS, not an inline style: happy-dom's CSS parser rejects a
+  // calc() containing a var() outright, leaving both el.style.marginTop and the
+  // style attribute empty for a declaration real browsers apply fine. A Tailwind
+  // arbitrary value survives as plain text and matches how the rest of this tree
+  // expresses one-off values (h-[70vh], z-[1000]).
+  const barClass = () =>
+    screen.getByPlaceholderText('Najdi místnost, budovu, akci…').closest('div')?.className ?? '';
+
+  it('insets the floating search bar below the status bar', () => {
+    render(<MapScreen />);
+    expect(barClass()).toContain('var(--safe-top');
+  });
+
+  /**
+   * A flat margin is exactly the bug: it looks right in a desktop browser, where
+   * --safe-top resolves to 0, and fails only on the device.
+   */
+  it('keeps the base spacing on top of the inset', () => {
+    render(<MapScreen />);
+    expect(barClass()).toMatch(/calc\(.*rem/);
+  });
+});
+
+/**
+ * The handle was drawn as a drag pill but wired to nothing but onClick, so the
+ * sheet could only be tapped open — swiping it did nothing at all, which reads
+ * as a frozen app rather than an unimplemented gesture.
+ */
+describe('MapSheet drag', () => {
+  // The distance-vs-velocity rules live in sheetDrag.test.ts, not here: jsdom
+  // stamps its own event timeStamps and ignores the ones fireEvent is given, so
+  // every drag reads as an instant flick and a "slow drag" cannot be expressed.
+  // Same reason Sheet.test.tsx leaves those cases to the pure tests.
+  const drag = (from: number, to: number) => {
+    const handle = screen.getByLabelText(/panel mapy/);
+    fireEvent.pointerDown(handle, { clientY: from });
+    fireEvent.pointerMove(handle, { clientY: to });
+    fireEvent.pointerUp(handle, { clientY: to });
+  };
+
+  it('expands when the handle is dragged up', () => {
+    render(<MapScreen />);
+    drag(600, 400);
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+  });
+
+  it('collapses when the handle is dragged down', () => {
+    useAppStore.setState({ mapSheetState: 'expanded' } as never);
+    render(<MapScreen />);
+    drag(300, 500);
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+  });
+
+  /**
+   * Peek is the floor: this sheet is the only route to Akce, so dragging down
+   * from it must not collapse it away.
+   */
+  it('stays at peek when dragged further down', () => {
+    render(<MapScreen />);
+    drag(400, 600);
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+  });
+
+  /**
+   * A drag ends in a click as well. Without suppression that click runs the tap
+   * toggle and puts the sheet straight back where the drag just took it from —
+   * the gesture would look like it did nothing, which is the original bug.
+   */
+  it('does not let the drag-ending click undo the snap', () => {
+    render(<MapScreen />);
+    const handle = screen.getByLabelText(/panel mapy/);
+    fireEvent.pointerDown(handle, { clientY: 600, timeStamp: 0 });
+    fireEvent.pointerMove(handle, { clientY: 400, timeStamp: 100 });
+    fireEvent.pointerUp(handle, { clientY: 400, timeStamp: 100 });
+    fireEvent.click(handle);
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+  });
+
+  /**
+   * The handle is a 4px pill at the very top of a 70vh sheet. Reaching it to
+   * collapse means stretching to the top of the screen, so the tab row below it
+   * drags too — the nearest thing to the content you are already looking at.
+   */
+  it('drags from the tab row, not just the handle', () => {
+    useAppStore.setState({ mapSheetState: 'expanded' } as never);
+    render(<MapScreen />);
+    const tabRow = screen.getByRole('tablist');
+    fireEvent.pointerDown(tabRow, { clientY: 300 });
+    fireEvent.pointerMove(tabRow, { clientY: 500 });
+    fireEvent.pointerUp(tabRow, { clientY: 500 });
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+  });
+
+  /**
+   * The tabs are buttons, so a drag that starts on one ends in a click on it.
+   * Without suppression that click switches tab as a side effect of collapsing.
+   */
+  /**
+   * Needs TWO tabs and a starting tab that is not the one being dragged from,
+   * otherwise the assertion passes whether or not the click is suppressed.
+   */
+  it('does not switch tab when a drag starts on a tab button', () => {
+    useAppStore.setState({
+      mapSheetState: 'expanded',
+      mapTab: 'budova',
+      activeBuildingId: BUILDING_ID,
+      activeFloorId: FLOOR_ID,
+    } as never);
+    render(<MapScreen />);
+    const akce = screen.getByRole('tab', { name: 'Akce' });
+    fireEvent.pointerDown(akce, { clientY: 300 });
+    fireEvent.pointerMove(akce, { clientY: 500 });
+    fireEvent.pointerUp(akce, { clientY: 500 });
+    fireEvent.click(akce);
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+    expect(useAppStore.getState().mapTab).toBe('budova');
+  });
+
+  it('still switches tab on a plain tap', () => {
+    useAppStore.setState({
+      mapSheetState: 'expanded',
+      mapTab: 'budova',
+      activeBuildingId: BUILDING_ID,
+      activeFloorId: FLOOR_ID,
+    } as never);
+    render(<MapScreen />);
+    const akce = screen.getByRole('tab', { name: 'Akce' });
+    fireEvent.pointerDown(akce, { clientY: 300 });
+    fireEvent.pointerUp(akce, { clientY: 300 });
+    fireEvent.click(akce);
+    // A tap selects the tab and must not collapse the sheet.
+    expect(useAppStore.getState().mapTab).toBe('akce');
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+  });
+
+  /**
+   * Dragging a sheet down anywhere on it is what every native sheet does — the
+   * handle is an affordance, not the only grab point.
+   */
+  it('collapses when dragged down from the content area', () => {
+    useAppStore.setState({ mapSheetState: 'expanded' } as never);
+    render(<MapScreen />);
+    const body = screen.getByText('Žádné akce');
+    fireEvent.pointerDown(body, { clientY: 300 });
+    fireEvent.pointerMove(body, { clientY: 500 });
+    fireEvent.pointerUp(body, { clientY: 500 });
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+  });
+
+  /**
+   * The mirror image: while expanded, an UPWARD drag in the content is the
+   * student scrolling the list. The sheet is already at its ceiling, so
+   * absorbing it would freeze the list in place.
+   */
+  it('leaves an upward drag in the content to the list', () => {
+    useAppStore.setState({ mapSheetState: 'expanded' } as never);
+    render(<MapScreen />);
+    const body = screen.getByText('Žádné akce');
+    fireEvent.pointerDown(body, { clientY: 500 });
+    fireEvent.pointerMove(body, { clientY: 300 });
+    fireEvent.pointerUp(body, { clientY: 300 });
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+  });
+
+  /**
+   * jsdom has no touch-action, so only the class can be asserted here. It is
+   * load-bearing rather than cosmetic: without it the browser claims the drag as
+   * a pan and fires pointercancel partway through — measured at ~20px of a 350px
+   * swipe when the other sheets hit this.
+   */
+  it('marks the tab row as a drag surface for the browser', () => {
+    useAppStore.setState({ mapSheetState: 'expanded' } as never);
+    render(<MapScreen />);
+    expect(screen.getByRole('tablist').className).toContain('touch-none');
+  });
+
+  it('still toggles on a plain tap, with no drag in between', () => {
+    render(<MapScreen />);
+    const handle = screen.getByLabelText(/panel mapy/);
+    fireEvent.pointerDown(handle, { clientY: 600, timeStamp: 0 });
+    fireEvent.pointerUp(handle, { clientY: 600, timeStamp: 40 });
+    fireEvent.click(handle);
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+  });
+});

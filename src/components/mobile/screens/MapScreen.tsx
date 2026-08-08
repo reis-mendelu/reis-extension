@@ -54,7 +54,14 @@ export function MapScreen() {
     <div data-testid="map-screen" className="relative isolate flex flex-1 flex-col overflow-hidden">
       <MapCanvas />
       <FloorSwitcher />
-      <div className="relative z-[1000] mx-4 mt-4">
+      {/* marginTop carries --safe-top because this floating bar is the topmost
+          element on the map screen and targetSdk 36 forces edge-to-edge: without
+          it the search sits UNDER the status bar's clock and signal icons. Every
+          other screen inherits this from ScreenHeader, which the map does not
+          use — it floats its own chrome over the canvas instead. A flat mt-4 was
+          the bug, and it looks correct in any desktop browser, where --safe-top
+          resolves to 0. */}
+      <div className="relative z-[1000] mx-4 mt-[calc(1rem_+_var(--safe-top,0px))]">
         <label
           className="flex items-center gap-2.5 rounded-full px-4 py-3 backdrop-blur-md"
           style={{ background: 'rgba(31,41,55,.94)', border: '1px solid rgba(243,244,246,.1)' }}
