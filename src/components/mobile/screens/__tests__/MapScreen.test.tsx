@@ -175,3 +175,68 @@ describe('MapScreen', () => {
     expect(screen.getByText('Posluchárna')).toBeInTheDocument();
   });
 });
+
+/**
+ * The handle was drawn as a drag pill but wired to nothing but onClick, so the
+ * sheet could only be tapped open — swiping it did nothing at all, which reads
+ * as a frozen app rather than an unimplemented gesture.
+ */
+describe('MapSheet drag', () => {
+  // The distance-vs-velocity rules live in sheetDrag.test.ts, not here: jsdom
+  // stamps its own event timeStamps and ignores the ones fireEvent is given, so
+  // every drag reads as an instant flick and a "slow drag" cannot be expressed.
+  // Same reason Sheet.test.tsx leaves those cases to the pure tests.
+  const drag = (from: number, to: number) => {
+    const handle = screen.getByLabelText(/panel mapy/);
+    fireEvent.pointerDown(handle, { clientY: from });
+    fireEvent.pointerMove(handle, { clientY: to });
+    fireEvent.pointerUp(handle, { clientY: to });
+  };
+
+  it('expands when the handle is dragged up', () => {
+    render(<MapScreen />);
+    drag(600, 400);
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+  });
+
+  it('collapses when the handle is dragged down', () => {
+    useAppStore.setState({ mapSheetState: 'expanded' } as never);
+    render(<MapScreen />);
+    drag(300, 500);
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+  });
+
+  /**
+   * Peek is the floor: this sheet is the only route to Akce, so dragging down
+   * from it must not collapse it away.
+   */
+  it('stays at peek when dragged further down', () => {
+    render(<MapScreen />);
+    drag(400, 600);
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+  });
+
+  /**
+   * A drag ends in a click as well. Without suppression that click runs the tap
+   * toggle and puts the sheet straight back where the drag just took it from —
+   * the gesture would look like it did nothing, which is the original bug.
+   */
+  it('does not let the drag-ending click undo the snap', () => {
+    render(<MapScreen />);
+    const handle = screen.getByLabelText(/panel mapy/);
+    fireEvent.pointerDown(handle, { clientY: 600, timeStamp: 0 });
+    fireEvent.pointerMove(handle, { clientY: 400, timeStamp: 100 });
+    fireEvent.pointerUp(handle, { clientY: 400, timeStamp: 100 });
+    fireEvent.click(handle);
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+  });
+
+  it('still toggles on a plain tap, with no drag in between', () => {
+    render(<MapScreen />);
+    const handle = screen.getByLabelText(/panel mapy/);
+    fireEvent.pointerDown(handle, { clientY: 600, timeStamp: 0 });
+    fireEvent.pointerUp(handle, { clientY: 600, timeStamp: 40 });
+    fireEvent.click(handle);
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+  });
+});

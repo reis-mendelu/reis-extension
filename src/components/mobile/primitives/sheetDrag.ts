@@ -21,6 +21,32 @@ export function shouldDismiss(dy: number, dtMs: number): boolean {
   return dtMs > 0 && dy / dtMs >= DISMISS_VELOCITY_PX_PER_MS;
 }
 
+/** Past this much travel the map sheet changes detent regardless of speed. */
+export const DETENT_DISTANCE_PX = 64;
+
+export type Detent = 'peek' | 'expanded';
+
+/**
+ * Where a two-detent sheet lands when the finger lifts.
+ *
+ * The map sheet never closes — it moves between peek and expanded — so it needs
+ * the dismissal rules mirrored to work upward as well. `shouldDismiss` cannot
+ * serve here: it ignores upward travel by design, which is exactly the "I
+ * cannot pull it up" half.
+ *
+ * Travel deeper into the detent already held is ignored rather than clamped
+ * later: peek is the floor, and dragging down from it must not collapse the
+ * sheet out of existence, since the sheet is the only way to reach Akce.
+ */
+export function snapDetent(from: Detent, dy: number, dtMs: number): Detent {
+  // Negative dy is upward, so the direction that can still travel flips.
+  const travel = from === 'peek' ? -dy : dy;
+  if (travel <= 0) return from;
+  const target: Detent = from === 'peek' ? 'expanded' : 'peek';
+  if (travel >= DETENT_DISTANCE_PX) return target;
+  return dtMs > 0 && travel / dtMs >= DISMISS_VELOCITY_PX_PER_MS ? target : from;
+}
+
 /**
  * Whether a downward drag starting on `target` should move the SHEET rather
  * than scroll the content under the finger.
