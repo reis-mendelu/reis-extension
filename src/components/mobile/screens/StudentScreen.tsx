@@ -70,9 +70,7 @@ export function StudentScreen() {
   };
 
   const openSheet = (kind: ShortcutSheetKind) => {
-    if (kind === 'eduroam') pushSheet({ kind: 'eduroam' });
-    else if (kind === 'docs') pushSheet({ kind: 'docs' });
-    else pushSheet({ kind: 'erasmus' });
+    pushSheet(kind === 'eduroam' ? { kind: 'eduroam' } : { kind: 'docs' });
   };
 
   const openPerson = (result: SearchResult) => {

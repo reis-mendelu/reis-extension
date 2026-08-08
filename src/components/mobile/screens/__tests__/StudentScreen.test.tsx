@@ -43,8 +43,12 @@ describe('StudentScreen', () => {
     // not among the everyday shortcuts. It lives in ProfileSheet now.
     expect(screen.queryByText('Eduroam')).not.toBeInTheDocument();
     expect(screen.getByText('Dokumenty')).toBeInTheDocument();
-    expect(screen.getByText('Erasmus')).toBeInTheDocument();
     expect(screen.getByText('ISKAM')).toBeInTheDocument();
+    // Erasmus is gone from the phone entirely: it hosted the desktop panel
+    // wholesale, whose Learning Agreement tables and Europe map do not survive
+    // a narrow screen, and it offered every student a shortcut to something
+    // only exchange students use. It stays on desktop.
+    expect(screen.queryByText('Erasmus')).not.toBeInTheDocument();
   });
 
   it('pushes a docs sheet when the Dokumenty shortcut is tapped', () => {

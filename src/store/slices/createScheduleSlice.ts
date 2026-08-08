@@ -6,26 +6,20 @@ export const createScheduleSlice: AppSlice<ScheduleSlice> = (set, get) => ({
   schedule: {
     data: [],
     status: 'idle',
-    weekStart: null,
   },
   fetchSchedule: async () => {
     if (get().schedule.data.length === 0) {
       set((state) => ({ schedule: { ...state.schedule, status: 'loading' } }));
     }
     try {
-      const [data, weekStartStr] = await Promise.all([
-        IndexedDBService.get('schedule', 'current'),
-        IndexedDBService.get('meta', 'schedule_week_start'),
-      ]);
+      const data = await IndexedDBService.get('schedule', 'current');
 
       set(() => ({
         schedule: {
           data: data || [],
           status: 'success',
-          weekStart: weekStartStr ? new Date(weekStartStr) : null,
         },
       }));
-
     } catch (e) {
       logError('ScheduleSlice.fetchSchedule', e);
       set((state) => ({ schedule: { ...state.schedule, status: 'error' } }));
@@ -36,5 +30,4 @@ export const createScheduleSlice: AppSlice<ScheduleSlice> = (set, get) => ({
       schedule: { ...state.schedule, data: data || [] },
     }));
   },
-
 });

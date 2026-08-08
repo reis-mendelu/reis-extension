@@ -23,14 +23,14 @@ describe('CalendarScreen', () => {
   afterEach(() => vi.useRealTimers());
 
   it('shows the empty state when the day has no lessons', () => {
-    useAppStore.setState({ schedule: { data: [], status: 'success', weekStart: null } as never });
+    useAppStore.setState({ schedule: { data: [], status: 'success' } as never });
     render(<CalendarScreen />);
     expect(screen.getByText('Nic nemáš, pohodička')).toBeInTheDocument();
   });
 
   it('renders the now-running hero while a lesson is in progress', () => {
     useAppStore.setState({
-      schedule: { data: [lesson({})], status: 'success', weekStart: null } as never,
+      schedule: { data: [lesson({})], status: 'success' } as never,
     });
     render(<CalendarScreen />);
     expect(within(screen.getByTestId('now-next-card')).getByText('Teď běží')).toBeInTheDocument();
@@ -43,7 +43,7 @@ describe('CalendarScreen', () => {
     // lesson is currently running. Regression guard for the dedup filter that
     // used to strip the running lesson out of the agenda list.
     useAppStore.setState({
-      schedule: { data: [lesson({})], status: 'success', weekStart: null } as never,
+      schedule: { data: [lesson({})], status: 'success' } as never,
     });
     render(<CalendarScreen />);
     expect(within(screen.getByTestId('now-next-card')).getByText(/Management/)).toBeInTheDocument();
@@ -55,7 +55,6 @@ describe('CalendarScreen', () => {
       schedule: {
         data: [lesson({ id: 'a' }), lesson({ id: 'b', startTime: '13:00', endTime: '14:50' })],
         status: 'success',
-        weekStart: null,
       } as never,
     });
     render(<CalendarScreen />);
@@ -66,7 +65,7 @@ describe('CalendarScreen', () => {
   // The date, previously the small eyebrow above it, is the title now.
   it('shows no greeting, and a User icon avatar when fullName is absent', () => {
     useAppStore.setState({
-      schedule: { data: [], status: 'success', weekStart: null } as never,
+      schedule: { data: [], status: 'success' } as never,
       fullName: null,
     });
     render(<CalendarScreen />);
@@ -79,7 +78,7 @@ describe('CalendarScreen', () => {
 
   it('still derives avatar initials from fullName', () => {
     useAppStore.setState({
-      schedule: { data: [], status: 'success', weekStart: null } as never,
+      schedule: { data: [], status: 'success' } as never,
       fullName: 'Jana Nováková',
     });
     render(<CalendarScreen />);
@@ -89,25 +88,19 @@ describe('CalendarScreen', () => {
   });
 
   it('gives the avatar and bulletin buttons accessible names', () => {
-    useAppStore.setState({ schedule: { data: [], status: 'success', weekStart: null } as never });
+    useAppStore.setState({ schedule: { data: [], status: 'success' } as never });
     render(<CalendarScreen />);
     expect(screen.getByLabelText('Profil')).toBeInTheDocument();
     expect(screen.getByLabelText('Rozbalit vývěsku')).toBeInTheDocument();
   });
 
-  it('offers the selected day’s own week, not the semester start in schedule.weekStart', () => {
-    // `syncSchedule` writes `schedule_week_start` as the SEMESTER start
-    // (Feb 1 / Sep 1), not a Monday of anything — the name lies. DayChips
-    // used to anchor on it, so a student in April was offered five days in
-    // February and could not reach the current week at all. Every other test
-    // here passes `weekStart: null`, which is exactly why this survived.
-    useAppStore.setState({
-      schedule: {
-        data: [],
-        status: 'success',
-        weekStart: new Date('2026-02-01T00:00:00'),
-      } as never,
-    });
+  it('offers the selected day’s own week', () => {
+    // The row used to be anchored on a stored `schedule.weekStart`, which
+    // `syncSchedule` wrote as the SEMESTER start (Feb 1 / Sep 1) despite the
+    // name — so a student in April was offered five days in February and could
+    // not reach the current week at all. The field is gone; the week comes
+    // from the selected day, so the row and the header cannot disagree.
+    useAppStore.setState({ schedule: { data: [], status: 'success' } as never });
     render(<CalendarScreen />);
 
     // Selected day is Monday 2026-04-20 → the row is 20–24 April.
@@ -118,7 +111,7 @@ describe('CalendarScreen', () => {
 
   it('omits an event hidden via hiddenItems.events from the day agenda', () => {
     useAppStore.setState({
-      schedule: { data: [lesson({ id: 'l1' })], status: 'success', weekStart: null } as never,
+      schedule: { data: [lesson({ id: 'l1' })], status: 'success' } as never,
       hiddenItems: {
         events: [{ id: 'l1', courseCode: 'EBC-MAN', courseName: 'Management', date: '20260420' }],
         courses: [],

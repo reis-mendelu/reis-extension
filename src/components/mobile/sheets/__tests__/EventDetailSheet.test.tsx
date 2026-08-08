@@ -34,7 +34,7 @@ describe('EventDetailSheet', () => {
     focusRoomByCode.mockClear();
     useAppStore.setState({
       language: 'cz',
-      schedule: { data: [lesson], status: 'success', weekStart: null },
+      schedule: { data: [lesson], status: 'success' },
       hiddenItems: { courses: [], events: [] },
       mobileTab: 'calendar',
       setMobileTab,
@@ -76,5 +76,57 @@ describe('EventDetailSheet', () => {
       <EventDetailSheet sheet={{ kind: 'eventDetail', eventId: 'missing' }} onClose={vi.fn()} />
     );
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe('EventDetailSheet across a repeating lesson', () => {
+  // The store holds the WHOLE semester, and IS reuses a lesson id across the
+  // weeks it repeats — `fetchDualLanguageSchedule` merges its two languages on
+  // `id_date_startTime` precisely because the id alone does not identify an
+  // occurrence. Looking a lesson up by id therefore returned the first week's
+  // copy whatever day the student tapped, and "hide this occurrence" recorded
+  // that first date, so the event they wanted gone stayed put.
+  const week1: BlockLesson = { ...lesson, date: '20260401', room: 'Q01 (Poříčí)' };
+  const week2: BlockLesson = { ...lesson, date: '20260408', room: 'Z18 (Poříčí)' };
+
+  const hideEvent = vi.fn();
+
+  beforeEach(() => {
+    hideEvent.mockClear();
+    useAppStore.setState({
+      language: 'cz',
+      schedule: { data: [week1, week2], status: 'success' },
+      hiddenItems: { courses: [], events: [] },
+      mobileTab: 'calendar',
+      hideEvent,
+    } as never);
+  });
+
+  it('shows the occurrence for the day that was tapped', () => {
+    render(
+      <EventDetailSheet
+        sheet={{ kind: 'eventDetail', eventId: 'ev1', dayIso: '2026-04-08' }}
+        onClose={vi.fn()}
+      />
+    );
+    expect(screen.getByText(/Z18/)).toBeInTheDocument();
+  });
+
+  it('hides the occurrence the student is looking at, not the first one', () => {
+    render(
+      <EventDetailSheet
+        sheet={{ kind: 'eventDetail', eventId: 'ev1', dayIso: '2026-04-08' }}
+        onClose={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByText('Skrýt tuto hodinu'));
+    expect(hideEvent).toHaveBeenCalledWith('ev1', 'ALG', 'Algoritmizace', '20260408');
+  });
+
+  it('falls back to the id alone when no day came with the sheet', () => {
+    // Sheets pushed before this carried no day; they must keep opening rather
+    // than rendering nothing.
+    render(<EventDetailSheet sheet={{ kind: 'eventDetail', eventId: 'ev1' }} onClose={vi.fn()} />);
+    expect(screen.getByText(/Q01/)).toBeInTheDocument();
   });
 });

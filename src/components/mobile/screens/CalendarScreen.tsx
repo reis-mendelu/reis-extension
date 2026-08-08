@@ -195,7 +195,11 @@ export function CalendarScreen() {
         ) : (
           <DayAgenda
             rows={agenda}
-            onOpenEvent={(eventId) => pushSheet({ kind: 'eventDetail', eventId })}
+            // The day travels with the id: a lesson that repeats weekly shares
+            // one id across the whole semester the store holds.
+            onOpenEvent={(eventId) =>
+              pushSheet({ kind: 'eventDetail', eventId, dayIso: selectedIso })
+            }
           />
         )}
       </div>

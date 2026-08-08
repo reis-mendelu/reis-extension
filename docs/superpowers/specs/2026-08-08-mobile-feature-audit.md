@@ -7,7 +7,8 @@ anything to exist in this app.
 Method: read every screen and sheet in `src/components/mobile/`, trace each to
 the transport and hooks behind it, then drive the running webapp at 320/390/430
 with a three-week schedule fixture. Findings marked **fixed** landed on
-`worktree-mobile-feature-audit`; the rest are open with a recommendation.
+`worktree-mobile-feature-audit`; every product call was put to the owner and
+the decision recorded beside it.
 
 ## What was broken
 
@@ -100,7 +101,9 @@ Verified by tracing the transport and by driving the running app.
 
 ## What should not be here
 
-### The 95-link IS portal directory — recommend cutting to a handful
+Each of these was put to the owner; the decision is recorded with it.
+
+### The 95-link IS portal directory — reviewed, KEPT
 
 The Student tab carries `pagesData`: **95 links across 13 categories**, every
 one opening IS's desktop site in an in-app browser on a 390px screen. The
@@ -111,49 +114,69 @@ This is desktop parity for its own sake. The extension lives *inside* IS, where
 a link tree is a natural shortcut; the app does not, and each tap is a context
 switch into an interface built for a mouse.
 
-Recommendation: keep the handful a student actually opens on a phone (E-index,
-Portál studenta, Moji spolužáci, Informace o studiu) and drop the rest. The
-search box stays useful for the long tail only if the long tail is worth
-opening on a phone — it mostly is not.
+**Decision: kept as is.** The search box makes the long tail cheap to ignore,
+and an occasional deep link beats a dead end — a student who needs an obscure
+IS page on a phone has nowhere else to go. Recorded here so the question is not
+re-opened without a reason.
 
-### The ISKAM shortcut — recommend removing
+### The ISKAM shortcut — reviewed, KEPT
 
-`ShortcutGrid` links to `webiskam.mendelu.cz`. ISKAM is Shibboleth, a second
-sign-in the app does not have, and is documented as out of scope for the first
-release. The card promises a feature the app does not ship and lands the
-student on a login they cannot complete with their IS session.
+`ShortcutGrid` links to `webiskam.mendelu.cz`. ISKAM is Shibboleth — a second
+sign-in the app does not have — and is out of scope for the first release, so
+the card cannot become a real integration soon.
 
-(Its comment also says "the four Student-hub shortcut cards" and there are
-three — eduroam moved to settings.)
+**Decision: kept.** It is an in-app-browser convenience, not a promise of an
+integration: the external-link handler opens it authenticated-if-possible and
+the student signs in there as they would anywhere else. Canteen and dorm
+balances are a real thing to want on a phone.
 
-### Erasmus in a sheet — recommend gating
+(Its comment claimed "the four Student-hub shortcut cards" while rendering
+three; now two, and the comment says why.)
 
-`ErasmusSheet` hosts the desktop `ErasmusPanel` wholesale, and its own comment
-concedes the Learning Agreement tables and Europe map "stay cramped on a
-phone". It is a shortcut card for every student, but only relevant to those on
-an exchange. Recommendation: show the card only when the student has Erasmus
-data, and treat the cramped tables as the accepted limitation they are.
+### Erasmus in a sheet — REMOVED
+
+`ErasmusSheet` hosted the desktop `ErasmusPanel` wholesale, and its own comment
+conceded that the Learning Agreement tables and the Europe map "stay cramped on
+a phone". It was a shortcut card shown to every student for something only
+exchange students use.
+
+**Decision: removed from mobile entirely** — sheet, card, sheet kind and
+strings. It remains on desktop, where the tables have the width they need.
+Gating it on having Erasmus data was considered and rejected: a surface that
+does not work on a phone should not be shown to a smaller audience, it should
+not be shown.
 
 ### Study plan in a sheet — keep
 
 Same pattern (desktop `StudyPlanPage` in a full sheet) but the content is a
 list, which survives a narrow screen. No change.
 
-## Smaller things left open
+## Smaller things
 
-- **`EventDetailSheet` resolves a lesson by `id` alone** across the whole
-  semester (`schedule.find(l => l.id === sheet.eventId)`). If IS reuses a
-  lesson id across weeks — and `fetchDualLanguageSchedule` merges on
-  `id_date_startTime`, which suggests it does — the sheet describes the first
-  occurrence and "hide this occurrence" records the wrong date. Passing the
-  day alongside the id is correct under either semantics. Not changed here:
-  no real multi-week sample was available to confirm the id semantics, and the
-  hide-by-id predicate is shared with desktop.
-- **`schedule.weekStart` is now vestigial.** Nothing reads it since #1. Leaving
-  a field whose name misdescribes its contents invites the same bug back;
-  either delete it or rename it to `semesterStart`.
+Fixed here unless marked otherwise.
+
+- **`EventDetailSheet` resolved a lesson by `id` alone** across the whole
+  semester. `fetchDualLanguageSchedule` merges on `id_date_startTime`, which
+  says the id does not identify an occurrence, so the sheet could describe the
+  first week's copy and "hide this occurrence" record its date — the lesson the
+  student wanted gone stayed. **Fixed:** the tapped day travels with the id and
+  the lookup matches on both, with a fallback to the id alone so sheets pushed
+  before this still open. Correct under either id semantics, so no IS sample
+  was needed. (The hide-by-id predicate itself is shared with desktop and
+  untouched.)
+- **`schedule.weekStart` was vestigial** once #1 stopped reading it. **Fixed by
+  deletion** — the store field, the hook's return, the IndexedDB write and the
+  legacy migration branch. A field whose name misdescribes its contents is how
+  this bug happened once already.
 - **`pushSheet` does not dedupe.** Two taps on the same shortcut stack two
   identical sheets. Only observed with the backdrop parked off-screen, so this
   is a note rather than a finding.
+- **`npm run verify:ui --view <x>` does not reach the phone tree.** It seeds
+  `meta.reis_current_view`, which the desktop tree reads; the phone routes on
+  `mobileTab`, so every run measures whatever tab the app opened on. The
+  calendar runs in this audit were valid because calendar is the start
+  destination — a `--view student` run silently measured the calendar. Worth
+  teaching the script `mobileTab`, or the next screen "verified" this way will
+  not have been.
 - **The header date truncates at 320px** ("Sobota 8…."). Pre-existing, degrades
   gracefully, not flagged by the geometry checks.

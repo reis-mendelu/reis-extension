@@ -34,7 +34,7 @@ describe('PersonSheet', () => {
     focusRoomByCode.mockClear();
     useAppStore.setState({
       language: 'cz',
-      schedule: { data: [taughtLesson], status: 'success', weekStart: null },
+      schedule: { data: [taughtLesson], status: 'success' },
       personProfiles: {
         42: {
           data: {
@@ -80,7 +80,7 @@ describe('PersonSheet', () => {
   });
 
   it('does not show the map button when no room can be resolved', () => {
-    useAppStore.setState({ schedule: { data: [], status: 'success', weekStart: null } } as never);
+    useAppStore.setState({ schedule: { data: [], status: 'success' } } as never);
     render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
     expect(screen.queryByText('Ukázat kancelář na mapě')).not.toBeInTheDocument();
   });
