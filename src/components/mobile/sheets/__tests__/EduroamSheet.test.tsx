@@ -72,7 +72,7 @@ describe('EduroamSheet', () => {
     expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('abc123')).toBeInTheDocument();
     expect(screen.getByText('Stáhnout eduroam profil')).toBeInTheDocument();
-    expect(screen.getByText('Na fakultě se připoj k eduroam Wi-Fi')).toBeInTheDocument();
+    expect(screen.getByText('Ve škole se připoj k síti eduroam')).toBeInTheDocument();
   });
 
   it('copies the credentials to the clipboard when the copy button is clicked', async () => {

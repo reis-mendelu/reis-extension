@@ -105,7 +105,7 @@ Each of these was put to the owner; the decision is recorded with it.
 
 ### The 95-link IS portal directory — reviewed, KEPT
 
-The Student tab carries `pagesData`: **95 links across 13 categories**, every
+The Student tab carries `pagesData`: **94 links across 13 categories**, every
 one opening IS's desktop site in an in-app browser on a 390px screen. The
 categories include Herna (IS's arcade), Správa IS, Dokumentace, Personalizace,
 Nastavení IS and Ochrana údajů — IS administration, on a phone.
@@ -114,10 +114,12 @@ This is desktop parity for its own sake. The extension lives *inside* IS, where
 a link tree is a natural shortcut; the app does not, and each tap is a context
 switch into an interface built for a mouse.
 
-**Decision: kept as is.** The search box makes the long tail cheap to ignore,
-and an occasional deep link beats a dead end — a student who needs an obscure
-IS page on a phone has nowhere else to go. Recorded here so the question is not
-re-opened without a reason.
+**Decision: kept, behind a disclosure row.** Every link stays — the search box
+makes the long tail cheap to ignore, and an occasional deep link beats a dead
+end for a student who needs an obscure IS page on a phone. What changed is that
+they no longer sit open on the tab, burying the two shortcuts opened daily
+under a list nobody scrolls. Searching still reaches all 94 without expanding
+anything, which is what makes hiding them safe.
 
 ### The ISKAM shortcut — reviewed, KEPT
 
@@ -125,10 +127,11 @@ re-opened without a reason.
 sign-in the app does not have — and is out of scope for the first release, so
 the card cannot become a real integration soon.
 
-**Decision: kept.** It is an in-app-browser convenience, not a promise of an
-integration: the external-link handler opens it authenticated-if-possible and
-the student signs in there as they would anywhere else. Canteen and dorm
-balances are a real thing to want on a phone.
+**Decision: kept, and now marked as what it is.** It is a browser convenience,
+not a promise of an integration — and nothing said so. It carries the same
+external-link icon every other row that leaves the app carries, and it opens in
+the real browser rather than the app's WebView, which is where a separate
+sign-in belongs.
 
 (Its comment claimed "the four Student-hub shortcut cards" while rendering
 three; now two, and the comment says why.)

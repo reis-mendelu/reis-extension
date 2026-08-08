@@ -95,12 +95,12 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
         <div className="px-4 pb-1 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
           {t('mobile.profile.appearance')}
         </div>
+        {/* No caption under the label. A dark-mode switch does not need one,
+            and "šetří oči i baterku" was a second line of type for a control
+            whose entire meaning is its own name. */}
         <label className="flex items-center gap-3 px-4 py-2.5">
           <Moon size={16} className="flex-shrink-0 text-base-content/50" />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <span className="text-md font-medium">{t('settings.darkMode')}</span>
-            <span className="text-xs text-base-content/60">{t('mobile.profile.darkModeHint')}</span>
-          </div>
+          <span className="min-w-0 flex-1 text-md font-medium">{t('settings.darkMode')}</span>
           <input
             type="checkbox"
             className="toggle toggle-primary toggle-sm"

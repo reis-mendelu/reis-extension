@@ -3,11 +3,17 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { EduroamTutorial } from '../EduroamTutorial';
 import { useAppStore } from '../../../store/useAppStore';
 
-afterEach(() => { cleanup(); useAppStore.setState({ language: 'en' }); });
+afterEach(() => {
+  cleanup();
+  useAppStore.setState({ language: 'en' });
+});
 
 const base = {
-  status: 'idle' as const, qrDataUrl: null, password: null,
-  onRun: () => {}, onOpenSettings: () => {},
+  status: 'idle' as const,
+  qrDataUrl: null,
+  password: null,
+  onRun: () => {},
+  onOpenSettings: () => {},
 };
 
 describe('EduroamTutorial', () => {
@@ -23,13 +29,17 @@ describe('EduroamTutorial', () => {
     useAppStore.setState({ language: 'en' });
     const onRun = vi.fn();
     render(<EduroamTutorial target="ios" {...base} onRun={onRun} />);
-    fireEvent.click(screen.getByRole('button', { name: /Create QR code|Download eduroam profile/i }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /Create QR code|Download eduroam profile/i })
+    );
     expect(onRun).toHaveBeenCalledTimes(1);
   });
 
   it('shows the QR image once qrDataUrl is set', () => {
     useAppStore.setState({ language: 'en' });
-    render(<EduroamTutorial target="ios" {...base} status="done" qrDataUrl="data:image/png;base64,AAA" />);
+    render(
+      <EduroamTutorial target="ios" {...base} status="done" qrDataUrl="data:image/png;base64,AAA" />
+    );
     expect(screen.getByAltText(/eduroam QR/i)).toBeTruthy();
   });
 
@@ -44,7 +54,7 @@ describe('EduroamTutorial', () => {
   it('always shows the final connect-on-campus step, even before download', () => {
     useAppStore.setState({ language: 'en' });
     render(<EduroamTutorial target="mac" {...base} />);
-    expect(screen.getByText('Connect to eduroam Wi-Fi on campus')).toBeTruthy();
+    expect(screen.getByText('On campus, connect to eduroam')).toBeTruthy();
   });
 
   it('calls onOpenSettings from the mac open-settings step', () => {

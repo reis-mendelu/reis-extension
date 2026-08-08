@@ -54,7 +54,7 @@ describe('MapScreen', () => {
 
   it('renders the sheet in peek state by default, with no tabs visible', () => {
     render(<MapScreen />);
-    expect(screen.getByText('Vytáhni pro události a rezervaci')).toBeInTheDocument();
+    expect(screen.getByText('Akce na kampusu')).toBeInTheDocument();
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   });
 

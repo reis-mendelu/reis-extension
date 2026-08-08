@@ -15,6 +15,25 @@ import { logError } from '../utils/reportError';
 const OPENABLE_PROTOCOL = /^https?:$/;
 
 /**
+ * The one host whose pages need the session the app holds.
+ *
+ * `capacitorTransport` replays the student's UISAuth into the app's own WebView
+ * jar, and only the in-app view can see it. Everything else — WebISKAM, which
+ * is a separate Shibboleth sign-in, and any third-party link — gains nothing
+ * from staying inside the app and is better off in the browser the student
+ * actually uses.
+ */
+const NEEDS_APP_SESSION = /^is\.mendelu\.cz$/i;
+
+export function needsAppSession(url: string): boolean {
+  try {
+    return NEEDS_APP_SESSION.test(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * The absolute http(s) URL to hand a browser, or null if this is not something
  * that may leave the app: a malformed URL, a non-http scheme, or one of the
  * app's own pages.
@@ -85,12 +104,27 @@ export async function openExternal(url: string): Promise<void> {
 
   try {
     const { InAppBrowser } = await import('@capgo/capacitor-inappbrowser');
+
+    // Anything that does not need our session goes to the real browser —
+    // Chrome Custom Tabs on Android, SFSafariViewController on iOS. Both carry
+    // the student's own cookies, a visible URL bar, and pinch-to-zoom, which
+    // the plain WebView withheld: a desktop IS page at 390px is unreadable
+    // without it, and that was the complaint.
+    if (!needsAppSession(target)) {
+      await InAppBrowser.open({ url: target });
+      return;
+    }
+
     await InAppBrowser.openWebView({
-      url,
-      // The host, not a fixed string: these links span IS, WebISKAM and the
-      // occasional third party, and the student should be able to see which.
-      title: new URL(url).hostname,
+      url: target,
+      // The host, not a fixed string: the student should be able to see where
+      // a link took them.
+      title: new URL(target).hostname,
       isPresentAfterPageLoad: true,
+      // IS's pages are built for a desktop; without this the WebView refuses
+      // to zoom and half of them cannot be read on a phone. Android only —
+      // iOS's WKWebView zooms by default.
+      enableZoom: true,
     });
   } catch (e) {
     // No toast: this runs from a document listener with no React context, so

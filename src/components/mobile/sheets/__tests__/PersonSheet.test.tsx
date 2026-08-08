@@ -73,16 +73,20 @@ describe('PersonSheet', () => {
   it("deep-links to the map at their taught lesson's room and closes the stack", () => {
     render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
 
-    fireEvent.click(screen.getByText('Ukázat kancelář na mapě'));
+    // The button names the room, and hands the map the index's own code for
+    // it: the timetable prints "Q01 (Poříčí)", the index knows that room as
+    // BA39N1009. Resolving first is what stops an unmatched string becoming a
+    // button that silently does nothing.
+    fireEvent.click(screen.getByText('Ukázat Q01 na mapě'));
 
     expect(setMobileTab).toHaveBeenCalledWith('map');
-    expect(focusRoomByCode).toHaveBeenCalledWith('Q01');
+    expect(focusRoomByCode).toHaveBeenCalledWith('BA39N1009');
   });
 
   it('does not show the map button when no room can be resolved', () => {
     useAppStore.setState({ schedule: { data: [], status: 'success' } } as never);
     render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
-    expect(screen.queryByText('Ukázat kancelář na mapě')).not.toBeInTheDocument();
+    expect(screen.queryByText(/na mapě/)).not.toBeInTheDocument();
   });
 
   it('shows the personName from the search result immediately, before the profile fetch resolves (no raw-id flash)', () => {
@@ -130,5 +134,66 @@ describe('PersonSheet', () => {
     render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
     expect(screen.getByText('network error')).toBeInTheDocument();
     expect(screen.queryByText('42')).not.toBeInTheDocument();
+  });
+});
+
+describe('PersonSheet — a staff profile', () => {
+  const setMobileTab = vi.fn();
+  const focusRoomByCode = vi.fn();
+
+  beforeEach(() => {
+    setMobileTab.mockClear();
+    focusRoomByCode.mockClear();
+    useAppStore.setState({
+      language: 'cz',
+      schedule: { data: [taughtLesson], status: 'success' },
+      personProfiles: {
+        42: {
+          data: {
+            personId: 42,
+            name: 'Ing. David Procházka, Ph.D.',
+            universityEmail: 'david.prochazka@mendelu.cz',
+            privateEmail: null,
+            programmeCode: null,
+            programmeName: null,
+            studyTypeSentence: null,
+            yearSemesterSentence: null,
+            roles: ['Akademický pracovník - odborný asistent - Ústav informatiky (PEF)'],
+            officeCode: 'BA39N2056',
+            officeName: 'Q2.56',
+            phone: '+420 545 132 240',
+            workplace: 'ÚI PEF, Zemědělská 1, 61300 Brno',
+            consultationHours: null,
+          },
+          fetchedAt: Date.now(),
+        },
+      },
+      personProfilesLoading: {},
+      setMobileTab,
+      focusRoomByCode,
+    } as never);
+  });
+
+  it('leads with what they do, not with a study programme they do not have', () => {
+    render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
+    expect(
+      screen.getByText('Akademický pracovník - odborný asistent - Ústav informatiky (PEF)')
+    ).toBeInTheDocument();
+  });
+
+  it('offers the work phone as a real call link', () => {
+    render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
+    expect(screen.getByText('Zavolat').closest('a')).toHaveAttribute('href', 'tel:+420545132240');
+  });
+
+  it('navigates to the OFFICE, not to a room they happen to teach in', () => {
+    // A lesson's room is where this person is for ninety minutes a week. The
+    // office is where a student goes looking for them, so it wins whenever IS
+    // publishes one — even though the schedule also offers Q01 here.
+    render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByText('Ukázat Q2.56 na mapě'));
+    expect(setMobileTab).toHaveBeenCalledWith('map');
+    expect(focusRoomByCode).toHaveBeenCalledWith('BA39N2056');
   });
 });

@@ -509,7 +509,7 @@
   },
   "sync": {
     "schedule": "Calendar sync",
-    "tooltip": "Syncs your schedule and exam terms to Outlook.",
+    "tooltip": "Schedule and exams into Outlook",
     "spolky": "Subscribed societies",
     "lastSync": "Last synced: {time}"
   },
@@ -606,8 +606,8 @@
   },
   "eduroam": {
     "title": "eduroam Wi-Fi",
-    "subtitle": "Set up eduroam on your device in a few clicks",
-    "heroTitle": "Get on eduroam in a few minutes",
+    "subtitle": "University Wi-Fi, set up once",
+    "heroTitle": "eduroam",
     "heroSub": "Pick your device — we'll walk you through the setup, step by step.",
     "s1": "Pick your device",
     "s2": "Set up eduroam",
@@ -617,7 +617,7 @@
     "copied": "Copied!",
     "viewImage": "Enlarge screenshot",
     "closeImage": "Close",
-    "connectStep": "Connect to eduroam Wi-Fi on campus",
+    "connectStep": "On campus, connect to eduroam",
     "restart": "Pick another device",
     "footer": "Built by students, for students",
     "footerSub": "reIS · a student initiative at PEF MENDELU",
@@ -641,7 +641,7 @@
       "cancelled": "Setup wasn't finished. Tap again to retry.",
       "failed": "Android didn't save the eduroam network. Please try again.",
       "error": "eduroam setup didn't go through",
-      "privacyNote": "Your certificate never leaves this phone — reIS hands it straight to Android, which saves eduroam like any other network you can see and delete."
+      "privacyNote": "The certificate never leaves your phone — reIS hands it straight to Android."
     },
     "manual": {
       "ios": {
@@ -1193,11 +1193,9 @@
     },
     "map": {
       "searchPlaceholder": "Find a room, building, event…",
-      "wholeCampus": "Whole campus",
       "tabEvents": "Events",
-      "tabLibrary": "Library",
       "tabBuilding": "Building {name}",
-      "peekHint": "Pull up for events and booking",
+      "peekHint": "Campus events",
       "thisWeek": "This week",
       "emptyTitle": "Map didn't load",
       "emptyBody": "Please try again.",
@@ -1215,11 +1213,12 @@
       "yourTeachers": "Your teachers",
       "noResults": "Nothing found. Try something else.",
       "eduroam": "Eduroam",
-      "eduroamSub": "Wi-Fi in two taps",
+      "eduroamSub": "university Wi-Fi",
       "documents": "Documents",
       "documentsSub": "proof of study",
       "iskam": "ISKAM",
-      "iskamSub": "canteen and dorms"
+      "iskamSub": "canteen and dorms",
+      "allPages": "All IS pages"
     },
     "sheet": {
       "close": "Close",
@@ -1227,14 +1226,14 @@
       "openInIsMendelu": "Open in IS MENDELU",
       "showOnMap": "Show on map",
       "writeEmail": "Write email",
-      "showOfficeOnMap": "Show office on map",
       "personLoading": "Loading…",
       "personLoadError": "Couldn't load this person.",
-      "back": "Back"
+      "back": "Back",
+      "callPerson": "Call",
+      "navigateToRoom": "Show {room} on the map"
     },
     "profile": {
       "appearance": "Appearance",
-      "darkModeHint": "saves your eyes and battery",
       "sync": "Sync",
       "societies": "Societies on the map"
     }

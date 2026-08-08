@@ -67,9 +67,10 @@ export function MapCanvas() {
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup>(L.layerGroup());
   const exitHandlerRef = useRef<((e: L.LeafletMouseEvent) => void) | null>(null);
-  // Set only by the floor-view tap-away, never by the "Celý kampus" button, so
-  // the redraw below can tell "I'm done with this building" from "take me back
-  // to the whole campus" — both dispatch the same `exitToCampus`.
+  // Set only by the floor-view tap-away, so the redraw below can tell "I'm done
+  // with this building" (leave the camera where the finger left it) from any
+  // other caller of `exitToCampus`, which means "take me back to the whole
+  // campus" and should fly there.
   const keepViewRef = useRef(false);
   // Live room polygons keyed by placeId, with their unselected base style — lets
   // a plain map click re-highlight in place without a full redraw or camera move.

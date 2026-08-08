@@ -1,4 +1,4 @@
-import { FileText, UtensilsCrossed } from 'lucide-react';
+import { ExternalLink, FileText, UtensilsCrossed } from 'lucide-react';
 import { useTranslation } from '../../../../hooks/useTranslation';
 
 export type ShortcutSheetKind = 'eduroam' | 'docs';
@@ -49,7 +49,13 @@ export function ShortcutGrid({ onOpenSheet }: ShortcutGridProps) {
         rel="noopener noreferrer"
         className={cardClassName}
       >
-        <UtensilsCrossed size={20} className="text-primary" />
+        {/* The card leaves the app — WebISKAM is a separate site with its own
+            sign-in — and nothing said so. Every other row that opens a browser
+            carries this icon; this one now matches. */}
+        <span className="flex w-full items-start justify-between">
+          <UtensilsCrossed size={20} className="text-primary" />
+          <ExternalLink size={13} className="flex-shrink-0 text-base-content/40" />
+        </span>
         <span>
           <span className="block text-md font-semibold">{t('mobile.student.iskam')}</span>
           <span className="block text-2sm text-base-content/60">
