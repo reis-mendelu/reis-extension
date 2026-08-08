@@ -50,12 +50,15 @@ describe('SheetHost', () => {
     expect(panels[1]!.textContent).toContain('Matematika');
   });
 
+  /**
+   * `studyPlan` rather than `subjectDrawer`: the drawer presents as a SCREEN
+   * now (Sheet variant="screen") and deliberately renders no backdrop, so it
+   * can no longer stand in for "a sheet with a backdrop". The behaviour under
+   * test — one backdrop click pops exactly one level — is unchanged.
+   */
   it('pops exactly one sheet when a backdrop is clicked', () => {
     useAppStore.setState({
-      mobileSheets: [
-        { kind: 'subjectDrawer', courseCode: 'ALG', courseName: 'Algoritmizace' },
-        { kind: 'subjectDrawer', courseCode: 'MAT', courseName: 'Matematika' },
-      ],
+      mobileSheets: [{ kind: 'studyPlan' }, { kind: 'studyPlan' }],
     } as never);
     render(<SheetHost />);
 

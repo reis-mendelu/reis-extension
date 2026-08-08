@@ -1227,7 +1227,8 @@
       "writeEmail": "Write email",
       "showOfficeOnMap": "Show office on map",
       "personLoading": "Loading…",
-      "personLoadError": "Couldn't load this person."
+      "personLoadError": "Couldn't load this person.",
+      "back": "Back"
     },
     "profile": {
       "appearance": "Appearance",

@@ -125,3 +125,71 @@ describe('Sheet', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * The subject drawer is a whole screen, not a sheet: it already filled all but
+ * 70px, so the strip of dimmed screen above it and the slide-up-from-the-bottom
+ * entrance were suggesting a temporary overlay over something you could get
+ * back to by looking past it. It stays in the same sheet STACK — back still
+ * pops it — but presents as a pushed screen.
+ */
+describe('Sheet variant="screen"', () => {
+  it('covers the whole viewport instead of stopping below the status area', () => {
+    render(
+      <Sheet size="full" variant="screen" onClose={() => {}}>
+        x
+      </Sheet>
+    );
+    const panel = screen.getByTestId('sheet-panel');
+    expect(panel.className).toContain('inset-0');
+    expect(panel.className).not.toContain('top-[70px]');
+  });
+
+  it('insets its content below the status bar', () => {
+    render(
+      <Sheet size="full" variant="screen" onClose={() => {}}>
+        x
+      </Sheet>
+    );
+    expect(screen.getByTestId('sheet-panel').className).toContain('var(--safe-top');
+  });
+
+  // No dimmed layer: there is nothing behind a screen to see through to.
+  it('renders no backdrop', () => {
+    render(
+      <Sheet size="full" variant="screen" onClose={() => {}}>
+        x
+      </Sheet>
+    );
+    expect(screen.queryByTestId('sheet-backdrop')).not.toBeInTheDocument();
+  });
+
+  /**
+   * A screen is left via back, not by being thrown downward — and with no
+   * backdrop there is nothing to tap outside of either, so an accidental
+   * dismissal would have no undo.
+   */
+  it('does not dismiss on a downward drag', () => {
+    const onClose = vi.fn();
+    render(
+      <Sheet size="full" variant="screen" onClose={onClose}>
+        x
+      </Sheet>
+    );
+    const panel = screen.getByTestId('sheet-panel');
+    fireEvent.pointerDown(panel, { clientY: 100 });
+    fireEvent.pointerMove(panel, { clientY: 500 });
+    fireEvent.pointerUp(panel, { clientY: 500 });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('still defaults to sheet presentation for every other caller', () => {
+    render(
+      <Sheet size="full" onClose={() => {}}>
+        x
+      </Sheet>
+    );
+    expect(screen.getByTestId('sheet-backdrop')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-panel').className).toContain('top-[70px]');
+  });
+});

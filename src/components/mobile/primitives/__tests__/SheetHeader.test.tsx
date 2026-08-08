@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { SheetHeader } from '../SheetHeader';
 
 vi.mock('../../../../hooks/useTranslation', () => ({
@@ -26,4 +26,41 @@ describe('SheetHeader', () => {
     const header = container.firstElementChild as HTMLElement;
     expect(header.className).toContain('touch-none');
   });
+});
+
+/**
+ * A screen is left by going back, not by being dismissed, so its header shows a
+ * back chevron rather than a close X — and drops the drag pill, which would be
+ * promising a gesture the screen variant deliberately does not have.
+ */
+describe('SheetHeader onBack', () => {
+  it('renders a back control instead of the close X', () => {
+    const onBack = vi.fn();
+    render(<SheetHeader title="Internet věcí" onBack={onBack} />);
+    fireEvent.click(screen.getByLabelText('mobile.sheet.back'));
+    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(screen.queryByLabelText('mobile.sheet.close')).not.toBeInTheDocument();
+  });
+
+  it('drops the drag pill, which a screen cannot honour', () => {
+    const { container } = render(<SheetHeader title="Internet věcí" onBack={() => {}} />);
+    expect(container.querySelector('.w-9.rounded-full')).toBeNull();
+  });
+
+  it('keeps the pill and the X for ordinary sheets', () => {
+    const { container } = render(<SheetHeader title="Internet věcí" onClose={() => {}} />);
+    expect(screen.getByLabelText('mobile.sheet.close')).toBeInTheDocument();
+    expect(container.querySelector('.w-9.rounded-full')).not.toBeNull();
+  });
+});
+
+/**
+ * Back and close are alternatives, not a pair — a screen is left by going back,
+ * a sheet by being closed. Rendering both would put two competing controls in
+ * one header, so onBack wins and the X is suppressed.
+ */
+it('renders only the back control when given both onBack and onClose', () => {
+  render(<SheetHeader title="Internet věcí" onBack={() => {}} onClose={() => {}} />);
+  expect(screen.getByLabelText('mobile.sheet.back')).toBeInTheDocument();
+  expect(screen.queryByLabelText('mobile.sheet.close')).not.toBeInTheDocument();
 });

@@ -108,12 +108,12 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   };
 
   return (
-    <Sheet size="full" onClose={onClose}>
+    <Sheet size="full" variant="screen" onClose={onClose}>
       <SheetHeader
         eyebrow={courseCode}
         title={courseName || courseCode}
         subtitle={teacherLine}
-        onClose={onClose}
+        onBack={onClose}
       />
       <SubjectDrawerTabs
         activeTab={activeTab}
