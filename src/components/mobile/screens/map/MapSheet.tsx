@@ -116,7 +116,15 @@ export function MapSheet() {
       type="button"
       role="tab"
       aria-selected={activeTab === key}
-      onClick={() => setTab(key)}
+      // Same suppression as the handle: a drag that starts on a tab ends in a
+      // click on it, which would switch tab as a side effect of collapsing.
+      onClick={() => {
+        if (dragged.current) {
+          dragged.current = false;
+          return;
+        }
+        setTab(key);
+      }}
       className={`flex-1 whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-semibold ${
         activeTab === key ? 'bg-base-100 text-base-content shadow-sm' : 'text-base-content/60'
       }`}
@@ -170,7 +178,14 @@ export function MapSheet() {
 
       {expanded && (
         <>
-          <div role="tablist" className="mx-4 flex flex-shrink-0 gap-1 rounded-lg bg-base-200 p-1">
+          {/* touch-none here too, not just on the handle: the handle is a 4px
+              pill at the top of a 70vh sheet, so collapsing meant reaching to
+              the top of the screen. The tab row is the nearest grab surface to
+              the content the student is actually looking at. */}
+          <div
+            role="tablist"
+            className="mx-4 flex flex-shrink-0 touch-none gap-1 rounded-lg bg-base-content/5 p-1"
+          >
             {tabBtn('akce', t('mobile.map.tabEvents'))}
             {/* Library study-room reservation is hidden on mobile. */}
             {showBudova && tabBtn('budova', t('mobile.map.tabBuilding', { name: buildingName }))}

@@ -43,7 +43,13 @@ export function MapEventsSection() {
   // resting state says "filter" at a glance and takes far less room.
   const chipBase =
     'flex h-7 flex-shrink-0 items-center whitespace-nowrap rounded-full border px-2.5 text-xs font-semibold transition-colors';
-  const chipIdle = 'border-base-300 bg-base-200 text-base-content/70';
+  // Tinted from base-content rather than the base-100/200/300 ramp, which
+  // INVERTS between themes: in dark, base-200 (#111827) and base-300 (#0f172a)
+  // are both darker than the base-100 surface these chips sit on, so an idle
+  // chip was a near-black border around a near-black fill — measured at 1.006:1
+  // against its backdrop, the recurring reIS dark-theme bug. An alpha of the
+  // foreground colour reads as a raised pill on any surface, in either theme.
+  const chipIdle = 'border-base-content/15 bg-base-content/5 text-base-content/70';
 
   return (
     <div className="flex max-h-[60vh] flex-col">
