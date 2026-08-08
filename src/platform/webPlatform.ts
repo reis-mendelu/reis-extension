@@ -20,6 +20,19 @@ export function createWebPlatform(): ReisPlatform {
         bag.delete(key);
       },
     },
+    // Same bag: the dev webapp has no secure store and needs none — it never
+    // holds a real IS session.
+    secureStorage: {
+      async get(key) {
+        return bag.get(key);
+      },
+      async set(key, value) {
+        bag.set(key, value);
+      },
+      async remove(key) {
+        bag.delete(key);
+      },
+    },
     getAssetUrl: (path) => '/' + path.replace(/^\//, ''),
   };
 }

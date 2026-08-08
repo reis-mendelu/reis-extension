@@ -1,5 +1,6 @@
 import { Preferences } from '@capacitor/preferences';
 import type { ReisPlatform } from './types';
+import { capacitorSecureStorage } from './secureStore';
 
 /**
  * Capacitor host. Preferences is UserDefaults / SharedPreferences — fine for
@@ -29,6 +30,8 @@ export function createCapacitorPlatform(): ReisPlatform {
         await Preferences.remove({ key });
       },
     },
+    // Credentials go to the Keystore-backed native plugin, never to Preferences.
+    secureStorage: capacitorSecureStorage,
     // Capacitor serves bundled assets from the WebView root.
     getAssetUrl: (path) => '/' + path.replace(/^\//, ''),
   };

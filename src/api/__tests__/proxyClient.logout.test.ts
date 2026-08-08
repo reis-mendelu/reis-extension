@@ -19,6 +19,19 @@ function stub(kind: ReisPlatform['kind']): ReisPlatform {
         bag.delete(k);
       },
     },
+    // Shares the plain bag: these tests exercise the transport, not the
+    // storage guarantee — tokenStore.test.ts owns that.
+    secureStorage: {
+      async get(k) {
+        return bag.get(k);
+      },
+      async set(k, v) {
+        bag.set(k, v);
+      },
+      async remove(k) {
+        bag.delete(k);
+      },
+    },
     getAssetUrl: (p) => `/${p}`,
   };
 }
