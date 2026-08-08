@@ -13,7 +13,7 @@ measurements) and `2026-08-02-capacitor-transport-decision.md` (why Model C).
 
 ## Where it stands
 
-*Updated 2026-08-07 (evening), after the first real Android handset pass.*
+*Updated 2026-08-08, after a UI-polish round (#192–#194) and secure storage (#195).*
 
 **THE DEVICE PASS HAPPENED.** Handset A001, 1080x2392, dpr 2.625. Cold start → login →
 **115 requests, all HTTP 200, zero telemetry**, covering all four Task 4 endpoint families
@@ -64,55 +64,67 @@ on the extension is the check that would actually confirm it.
 |---|---|
 | Shell: boot, login, session restore, back button | **Done**, device-verified on Android |
 | Transport (`CapacitorHttp`, per-platform cookie) | **Done** — GET **and POST**, plus raw bytes |
-| Sync (14 endpoints, ~236 requests) | **Done** via postMessage loopback; the zaznamnik hole is closed — **unverified on a device** |
+| Sync (14 endpoints, ~236 requests) | **Done**, device-verified — 115 requests, all HTTP 200 |
 | File download → Downloads + notification | **Done**, device-verified |
 | Duplicate file listings | **Fixed** (also fixes the extension) |
 | Study documents (Task 1/2) | **Done**, device-verified — PR #179 |
-| eduroam cert fetch (Task 3 + eduroam half of Task 4) | **Merged unverified** — PR #181, see Task 3 |
-| Bare `fetch` sites (Task 4) | **Done** — all migratable rows on `fetchWithAuth`; `serverTime` excluded on purpose. **Unverified on a device** |
-| Search, cvicne testy, odevzdávárny, kontrola | **Done** (Task 4) — **unverified on a device** |
-| External links → in-app browser (Task 8) | **Done** — **unverified on a device** |
-| Re-login after a lapsed session | **Done**, prompt-first — **unverified on a device** |
-| Secure storage for `UISAuth` (Task 6) | **Not started** — the one hard release gate |
-| iOS app | **Never built** — only the throwaway spike ran there |
+| eduroam cert fetch (Task 3 + eduroam half of Task 4) | **Done** — superseded by the native path (#189), proven on hardware |
+| Bare `fetch` sites (Task 4) | **Done**, device-verified — `serverTime` excluded on purpose |
+| Search, cvicne testy, odevzdávárny, kontrola | **Done** — search device-verified (people + subjects, person card fills) |
+| External links → in-app browser (Task 8) | **Done** — ⚠️ still **unverified on a device**, one of two owed checks |
+| Re-login after a lapsed session | **Done**, prompt-first — device-verified via the #172 purge, which forced a real re-login |
+| Secure storage for `UISAuth` (Task 6) | **Done for Android** (#195), device-verified — iOS half owed |
+| iOS app | **Never built** — only the spike ran there. **Now the top remaining item** |
 | Native Wi-Fi (eduroam, Android) | **Done**, device-verified — Task 5 |
 | ISKAM, Drive | **Broken** — see below |
 
-**Everything shipped since PR #181 is unit-tested only.** That is the single largest risk
-in this document, and it compounds: this transport's own record is *four* bugs shipping
-green because the tests stubbed shapes the native layer never produces (Task 3). One
-Android session is now worth more than any further code.
+~~**Everything shipped since PR #181 is unit-tested only.**~~ **Largely closed.** Two
+handset sessions (2026-08-07, 2026-08-08) verified sync, downloads, search, back
+navigation, the map sheet and secure storage on real hardware. The warning that produced
+this line still stands as a rule, though: this transport's record is *four* bugs shipping
+green because the tests stubbed shapes the native layer never produces (Task 3) — and this
+session added a second class, where jsdom cannot express `touch-action` at all, so a
+gesture can pass every test and still be dead on a device.
 
 ## What is still owed
 
-**1. The predictive-back GESTURE — the one thing a human must check.**
-`android:enableOnBackInvokedCallback="true"` is now in the merged manifest, which is the
-documented fix for targetSdk 36. It is NOT confirmed: `adb shell input swipe` only reaches
-the app window, and `input keyevent 4` exercises the legacy path, which worked all along.
-Only a thumb settles it. **The single decisive test: open vývěska and swipe back.** If the
-noticeboard closes and the app stays, both this and the bulletin fix are confirmed at once —
-before, the two failure modes were indistinguishable (the app closed either way).
+*Rewritten 2026-08-08. The five items that stood here are resolved except where noted.*
 
-**2. eduroam, the half that must not be automated.** The sheet opens and the extraction
-password renders. The cert download was deliberately NOT tapped: it can generate a
-certificate and rotate a 366-day credential the student may have installed elsewhere. When
-checking by hand, assert the bytes start `0x30 0x82` — an HTML error page is also non-empty,
-so a length check proves nothing. Native Wi-Fi config (#159) remains unstarted.
+**1. iOS has still never been compiled — this is now the top of the list (#174).**
+With #172 done for Android, iOS is the only thing between this app and a release
+candidate, and it is entirely unmeasured: the inverted cookie delivery has run only in
+the throwaway spike, `deliverFile`'s share-sheet branch has never been seen, and the
+Keychain half of secure storage is deliberately unwritten (Task 6). Everything about it
+is assumption until something compiles.
 
-**3. Search and external links.** `searchService` moved onto the content-script proxy and
-still has no end-to-end coverage (`e2e/tests/search.spec.ts` only asserts the bar renders,
-and CI does not run e2e). External links opening in-app AND authenticated is likewise
-unverified. Both were mid-check when this session ended.
+**2. Two device checks, neither needing new code.** External links must open **in-app and
+authenticated**, not in Chrome. And the map sheet's drag-vs-scroll hand-off is unverified
+because the Akce list currently has no events, so nothing overflows to scroll against —
+that path is `dragOwnsGesture` + `consumesTravel`, both unit-tested.
+
+**3. Lower-severity credentials.** Google OAuth tokens still sit in plain storage (#196,
+found while doing #172). Lower bar than UISAuth was: `drive.file`-scoped, they expire,
+and they are revocable. The Discord webhook still ships in the client bundle (#163/#183).
 
 **4. UI polish backlog.** `MobileSearchOverlay` still lacks its `--safe-top` inset and is
 BLOCKED by pre-existing react-hooks lint debt in the same file (a setState-in-effect error
 on HEAD) — the changed-files CI gate makes that file untouchable until the effect is fixed.
-Other top-anchored surfaces were swept. The bottom nav sits at `bottom-[18px]` against a
-24px `--safe-bottom`.
+The map's floating search bar had the same defect and is fixed (#193); it was the only
+other top-anchored surface that did not inherit the inset from `ScreenHeader`.
 
-**5. Unchanged blockers.** Secure storage for `UISAuth` (#172) is still the one hard release
-gate. iOS has still never been built (#174). Drive on mobile (#168) is now hidden rather
-than fixed. The Discord webhook still ships in the client bundle (#163/#183).
+**5. Unchanged.** Drive on mobile (#168) is hidden rather than fixed. Tablets still get the
+desktop tree (#175). Three unguarded IDB reads can still setState after unmount (#176).
+
+### Resolved since this list was written
+
+- ~~predictive-back gesture~~ **confirmed by thumb.** It exposed a separate defect — back
+  from any non-calendar tab *quit the app*, because `handleBackPress` knew about sheets and
+  the bulletin but never about `mobileTab`. Fixed in #192; the chain is now
+  sheet → bulletin → tab → exit, with calendar as the start destination.
+- ~~eduroam~~ **native Android one-tap merged** (#189) — see Task 5. The cert-bytes check is
+  moot: the native path proved the whole chain on hardware.
+- ~~search~~ **verified on device** — people *and* subjects, live from IS, person card fills.
+- ~~secure storage for UISAuth~~ **done for Android** (#172 / PR #195) — see Task 6.
 
 **6. Other parsers may share the FILE bug.** IS's `img[sysid]` → `span[data-sysid]`
 migration is unlikely to stop at the document server. Audit `grep -rn "sysid" src/` and
@@ -449,7 +461,7 @@ and was unaffected.
 reproduced in this repo's test environment at all. Worth knowing before trusting a green
 suite on any header-merging question.
 
-## Task 5 — eduroam native one-tap (#159) — Android BUILT, unverified on a device
+## Task 5 — eduroam native one-tap (#159) ✅ Android DONE and device-verified (PR #189, `1b5b7fbd`)
 
 **The Android half is written** (branch `worktree-eduroam-android-native`). What landed:
 
@@ -554,24 +566,60 @@ android` after changing branches, and never trust an incremental APK across a sw
 5. Cert expiry is 366 days and silent; renewal is a POST (an IS write) and must stay
    student-initiated.
 
-## Task 6 — Secure storage for `UISAuth`
+## Task 6 — Secure storage for `UISAuth` ✅ DONE for Android (#172, PR #195)
 
-`@capacitor/preferences` is UserDefaults / SharedPreferences, **not** Keychain/Keystore,
-and `UISAuth` is a live credential (`src/platform/tokenStore.ts:8-12` says so). Acceptable
-for a debug build.
+> This was the one item with a security bar rather than a feature bar. **The Android half
+> is closed.** iOS is deliberately unwritten — see below.
 
-> **This is the one item with a security bar rather than a feature bar. It must land
-> before any public release.**
+**The exposure, measured before the fix.** `adb shell run-as cz.reis.app cat
+shared_prefs/CapacitorStorage.xml` returned the live token in plaintext, 56 characters.
 
-## Task 7 — Build and verify on iOS
+**What landed.** `android/.../SecureStorePlugin.java` encrypts with AES-256-GCM under a key
+generated *inside* the Android Keystore — hardware-backed where a TEE/StrongBox exists,
+unexportable, never in the JS heap. Only ciphertext is persisted. Hand-written rather than
+taken as a dependency because it sits on the credential path and because the obvious
+library, `androidx.security:security-crypto` (`EncryptedSharedPreferences`), **was
+deprecated in April 2025** — check this before reaching for it again.
 
-The app has never been built for iOS; only the spike ran there. Everything platform-specific
-should be re-checked, in particular:
+`secureStorage` joins `ReisPlatform` (`src/platform/types.ts`), **required not optional**:
+an optional field would let a host silently lack it and fall back to plaintext, the exact
+failure being prevented.
+
+**The finding worth more than the code.** Three call sites reached
+`storage.get/set/remove(TOKEN_KEY)` directly, and `saveStoredToken` had **no callers at
+all** — the login flow wrote the credential straight to plaintext while the module meant to
+own it sat unused. Swapping only `tokenStore`'s internals would have left login writing
+plaintext and reads coming from the Keystore: a broken session, not a leftover copy.
+`TOKEN_KEY` is now private to `tokenStore`, which is what stops this recurring.
+
+**Device evidence** (the 74-byte figure is the one that proves encryption rather than
+encoding): blob = 46 plaintext + 12 IV + 16 GCM tag = **74 bytes exactly**; entropy
+5.93 bits/byte against a 6.21 ceiling for that sample size; no printable run ≥ 8 chars;
+decrypt round-trips; cold restart restores the session with no login prompt.
+
+**Migration is deletion, not copying.** Boot purges the plaintext copy before
+`ensureSession`, so the student signs in once. A decrypt failure — key invalidated by a
+credential change or a restore onto new hardware — reads as a lapsed session: never a
+crash, never grounds to look in plaintext.
+
+**Still owed: the iOS half.** Keychain via the Security framework, landing with Task 7
+where it can actually be compiled. Calling the plugin on iOS today rejects from the bridge,
+which is the intended behaviour — a missing implementation must fail loudly rather than
+quietly store a credential in the clear.
+
+## Task 7 — Build and verify on iOS ← **the top remaining item**
+
+The app has never been built for iOS; only the spike ran there. With Task 6 closed for
+Android, this is the last thing between the app and a release candidate — and it is
+entirely unmeasured. Everything platform-specific should be re-checked, in particular:
 
 - The **inverted cookie delivery** (iOS needs the explicit header, Android the native jar).
 - **File delivery** — iOS has no Downloads folder, so `deliverFile` deliberately uses the
   share sheet there (`src/mobile/deliverFile.ts`). Verify that is the right feel.
 - Cold-start session restore.
+- **The Keychain half of Task 6** — `SecureStorePlugin` is Android-only by design, and the
+  bridge rejects on iOS rather than falling back to plaintext. Until this is written, an
+  iOS build cannot store a session at all, which is the intended failure.
 
 ## Task 8 — Smaller, known items (two of four done)
 
