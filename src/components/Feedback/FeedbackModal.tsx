@@ -5,6 +5,7 @@ import { DISCORD_WEBHOOK_URL } from '../../constants/config';
 import { toast } from 'sonner';
 import { useTranslation } from '../../hooks/useTranslation';
 import { logError } from '../../utils/reportError';
+import { getAppVersion, getHostLabel } from '../../utils/appIdentity';
 import { useAppStore } from '../../store/useAppStore';
 
 interface FeedbackModalProps {
@@ -30,7 +31,11 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     setIsSending(true);
 
     const contextData = {
-      version: '4.0.0', // Updated for next release
+      // Read, not hand-maintained: this said 4.0.0 while the app shipped 5.x,
+      // so every report that arrived — from the extension and from the phone
+      // alike — named a version that had not existed for two majors.
+      version: getAppVersion(),
+      host: getHostLabel(),
       url: window.location.href,
       userAgent: navigator.userAgent,
       screen: `${window.innerWidth}x${window.innerHeight}`,

@@ -18,6 +18,12 @@ export default defineConfig({
   root: resolve(__dirname, 'capacitor'),
   publicDir: resolve(__dirname, 'public'),
   plugins: [react(), tailwindcss()],
+  // The app has no extension manifest to read a version out of, so telemetry
+  // and the feedback form reported 0.0.0 / a hand-edited constant for every
+  // report a phone ever sent. Injected here instead.
+  define: {
+    __REIS_APP_VERSION__: JSON.stringify(createRequire(import.meta.url)('./package.json').version),
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
