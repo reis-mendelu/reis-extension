@@ -11,3 +11,9 @@ capacitor-cordova-ios-plugins
 # Generated Config files
 App/App/capacitor.config.json
 App/App/config.xml
+
+# Xcode's SPM resolution. Not tracked on purpose: `cap sync` rewrites
+# CapApp-SPM/Package.swift on every plugin change, so a committed Package.resolved
+# would be perpetually stale — and the Capacitor version is already pinned `exact:`
+# in that file.
+App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm

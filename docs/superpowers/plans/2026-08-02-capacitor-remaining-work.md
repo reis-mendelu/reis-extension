@@ -73,8 +73,8 @@ on the extension is the check that would actually confirm it.
 | Search, cvicne testy, odevzdávárny, kontrola | **Done** — search device-verified (people + subjects, person card fills) |
 | External links → in-app browser (Task 8) | **Done** — ⚠️ still **unverified on a device**, one of two owed checks |
 | Re-login after a lapsed session | **Done**, prompt-first — device-verified via the #172 purge, which forced a real re-login |
-| Secure storage for `UISAuth` (Task 6) | **Done for Android** (#195), device-verified — iOS half owed |
-| iOS app | **Never built** — only the spike ran there. **Now the top remaining item** |
+| Secure storage for `UISAuth` (Task 6) | **Done on BOTH platforms** — Android Keystore (#195), iOS Keychain, each verified |
+| iOS app | **Builds and runs** (simulator, 2026-08-08). Logged in, 121 IS requests, no login redirects |
 | Native Wi-Fi (eduroam, Android) | **Done**, device-verified — Task 5 |
 | ISKAM, Drive | **Broken** — see below |
 
@@ -90,12 +90,13 @@ gesture can pass every test and still be dead on a device.
 
 *Rewritten 2026-08-08. The five items that stood here are resolved except where noted.*
 
-**1. iOS has still never been compiled — this is now the top of the list (#174).**
-With #172 done for Android, iOS is the only thing between this app and a release
-candidate, and it is entirely unmeasured: the inverted cookie delivery has run only in
-the throwaway spike, `deliverFile`'s share-sheet branch has never been seen, and the
-Keychain half of secure storage is deliberately unwritten (Task 6). Everything about it
-is assumption until something compiles.
+**1. ~~iOS has still never been compiled~~ — DONE 2026-08-08 (#174).** It compiles, launches,
+signs in and syncs: **121 IS requests with zero login redirects and zero telemetry**, the token
+served from the Keychain on every one of them. The inverted cookie delivery is therefore
+exercised too — iOS's explicit `Cookie` header carried all of it. What remains on iOS is
+narrower than "unmeasured": the share-sheet download branch, a clean-install login (proven once,
+not repeatedly), the default app icon, and no analogue of the Android back-button chain. Full
+detail and the plugin-packaging rule in Task 7.
 
 **2. Two device checks, neither needing new code.** External links must open **in-app and
 authenticated**, not in Chrome. And the map sheet's drag-vs-scroll hand-off is unverified
@@ -602,24 +603,71 @@ decrypt round-trips; cold restart restores the session with no login prompt.
 credential change or a restore onto new hardware — reads as a lapsed session: never a
 crash, never grounds to look in plaintext.
 
-**Still owed: the iOS half.** Keychain via the Security framework, landing with Task 7
-where it can actually be compiled. Calling the plugin on iOS today rejects from the bridge,
-which is the intended behaviour — a missing implementation must fail loudly rather than
-quietly store a credential in the clear.
+✅ **The iOS half is written and verified** — `native/capacitor-secure-store`, Keychain via the
+Security framework. Round-trip proved on a simulator:
+`before=undefined after=probe-value-4711 afterRemove=undefined`.
 
-## Task 7 — Build and verify on iOS ← **the top remaining item**
+`kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, chosen deliberately: **AfterFirstUnlock**
+because the token is read at cold start and by background sync, and WhenUnlocked would fail
+those reads on a locked device and prompt a needless sign-in; **ThisDeviceOnly** so the item
+never travels in a backup, matching Android's non-exportable Keystore key. No biometric gate,
+for the same reason Android does not set `setUserAuthenticationRequired`. Where Android had to
+hand-roll AES-256-GCM, iOS writes no cipher code at all — the Keychain *is* the primitive.
 
-The app has never been built for iOS; only the spike ran there. With Task 6 closed for
-Android, this is the last thing between the app and a release candidate — and it is
-entirely unmeasured. Everything platform-specific should be re-checked, in particular:
+## Task 7 — Build and verify on iOS — FIRST BUILD DONE 2026-08-08
 
-- The **inverted cookie delivery** (iOS needs the explicit header, Android the native jar).
-- **File delivery** — iOS has no Downloads folder, so `deliverFile` deliberately uses the
-  share sheet there (`src/mobile/deliverFile.ts`). Verify that is the right feel.
-- Cold-start session restore.
-- **The Keychain half of Task 6** — `SecureStorePlugin` is Android-only by design, and the
-  bridge rejects on iOS rather than falling back to plaintext. Until this is written, an
-  iOS build cannot store a session at all, which is the intended failure.
+**The iOS app has now been built and launched** (simulator, iPhone 17 / iOS 26.5, Xcode 26.6;
+SPM, no CocoaPods). It boots to its own UI: safe-area header clear of the notch, bottom nav,
+Czech copy.
+
+**Capacitor 8 will not let an app-local iOS plugin talk to JS. This cost four build cycles.**
+Full evidence trail in `native/capacitor-secure-store/README.md`; short version:
+
+1. A Swift file in the app target with `@objc(...)` + `CAPBridgedPlugin` compiles, its symbols
+   land in the binary, and every call still rejects with `"SecureStore" plugin is not
+   implemented on ios`. There is no ObjC-runtime scan any more.
+2. `bridge?.registerPluginType(...)` from `capacitorDidLoad()` does **not** fix it. It fills the
+   *native* registry but emits no JSExport user script (measured: `WKUserContentController`
+   script count 13 → 13, none mentioning SecureStore). JS resolves plugins against
+   `window.Capacitor.PluginHeaders` and throws **without ever calling native**.
+3. What actually registers a plugin is `packageClassList` in `ios/App/App/capacitor.config.json`
+   — which is gitignored AND rewritten by `cap sync`, from installed plugin *packages* only
+   (`getPluginFiles` + `findPluginClasses`, `@capacitor/cli/dist/util/iosplugin.js`).
+4. So the plugin is a **local package** — `native/capacitor-secure-store`, a `file:` dependency.
+   `cap sync` generates the `packageClassList` entry and the `CapApp-SPM` dependency itself, and
+   the Xcode project needs **no** modification at all.
+
+`Downloads` and `Eduroam` are app-local Java today. Fine on Android, where
+`MainActivity.registerPlugin` runs before bridge init — but their iOS halves must start life as
+packages, never as files in the app target.
+
+⚠️ **`Package.swift` has the same symlink trap as `capacitor.settings.gradle`.** With a
+symlinked `node_modules`, `cap sync ios` rewrote every path to the resolved target
+(`../../../../eduroam-android-native/node_modules/...`) — builds locally, breaks every other
+checkout. A real `npm install` in the worktree fixes it; check `git diff` on that file anyway.
+
+⚠️ The plugin's SPM package **and** product name must match the CLI's derivation from the npm
+name (`@reis/capacitor-secure-store` → `ReisCapacitorSecureStore`). A mismatch fails at
+dependency resolution before any Swift compiles.
+
+### Still owed on iOS
+
+- A login was completed in the simulator and the session works (121 IS requests, no login
+  redirects), but it has **not** been repeated from a clean install, so the capture-at-login step
+  is proven once rather than reliably.
+- The **inverted cookie delivery** is now exercised — iOS's explicit `Cookie` header carried 119
+  GETs and 2 POSTs with no unauthenticated response. Still worth a second run to be sure.
+- **File delivery** — iOS has no Downloads folder, so `deliverFile` deliberately uses the share
+  sheet there (`src/mobile/deliverFile.ts`). Verify that is the right feel.
+- ~~Cold-start session restore with a genuine token.~~ **Done** — a launch after app kill and
+  after a reinstall presented no login and served the token from the Keychain on all 121
+  requests. What is untested is the *unlucky* cold start: a read before the device's first
+  unlock returns `errSecInteractionNotAllowed`, which now resolves as "no session" without
+  deleting the item, so the following launch should recover. That recovery path is reasoned,
+  not observed.
+- The **app icon is still the default Capacitor placeholder**; Android got the real logo in #190.
+- No iOS analogue of `mobile/backButton.ts`'s sheet-unwind chain; the edge-swipe is all there is.
+- eduroam on iOS (`NEHotspotConfiguration`) needs a paid Apple account and a real device.
 
 ## Task 8 — Smaller, known items (two of four done)
 
