@@ -56,8 +56,12 @@ public class SecureStorePlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     /**
-     * Delete-then-add rather than SecItemUpdate: one path instead of two, and
-     * it cannot leave a stale attribute set behind from an earlier write.
+     * Add, and fall back to an in-place update when the item already exists.
+     *
+     * **Never delete-then-add.** That reads as the simpler single path, but if
+     * the add then fails the student is left with NO token — logged out by a
+     * write whose only job was to refresh a value they already had. Updating in
+     * place keeps the previous credential intact through a failure.
      *
      * A failure REJECTS. Resolving on a failed credential write is the worst
      * outcome available here — login would report success while nothing
@@ -74,13 +78,22 @@ public class SecureStorePlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
-        SecItemDelete(query(for: key) as CFDictionary)
-
         var attributes = query(for: key)
         attributes[kSecValueData as String] = data
         attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
 
-        let status = SecItemAdd(attributes as CFDictionary, nil)
+        var status = SecItemAdd(attributes as CFDictionary, nil)
+        if status == errSecDuplicateItem {
+            // The accessibility attribute is re-applied here too, so an item
+            // written by an older build cannot keep a weaker one forever.
+            status = SecItemUpdate(
+                query(for: key) as CFDictionary,
+                [
+                    kSecValueData as String: data,
+                    kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+                ] as CFDictionary)
+        }
+
         if status == errSecSuccess {
             call.resolve()
         } else {
@@ -90,11 +103,23 @@ public class SecureStorePlugin: CAPPlugin, CAPBridgedPlugin {
 
     /**
      * Resolves `{value: null}` for "not stored" AND for "stored but unreadable",
-     * matching the Android plugin.
+     * matching the Android plugin. Both mean the same thing to the app: no
+     * session, present login. Rejecting would turn a recoverable lapse into a
+     * boot failure.
      *
-     * Both mean the same thing to the app: no session, present login. Rejecting
-     * would turn a recoverable lapse into a boot failure. A present-but-
-     * unreadable entry is dropped so the next write starts clean.
+     * ⚠️ **A failed read must not delete the item.** Several Keychain statuses are
+     * TRANSIENT — `errSecInteractionNotAllowed` for a read before the first
+     * unlock, `errSecNotAvailable` when the service is not up yet. Deleting on
+     * those converts "try again in a moment" into "sign in again, permanently".
+     * Only a value that is present and *not decodable as UTF-8* is genuinely
+     * unusable, and that is the one case that clears the entry.
+     *
+     * This is where iOS deliberately diverges from the Android plugin, which
+     * deletes on any decrypt failure. There it is correct: a Keystore key
+     * invalidated by a credential change makes the ciphertext permanently
+     * unrecoverable. iOS holds no app-side key, so it has no equivalent of that
+     * permanent case — which is why copying Android's behaviour here would be a
+     * bug rather than symmetry.
      */
     @objc func get(_ call: CAPPluginCall) {
         guard let key = call.getString("key") else {
@@ -109,21 +134,24 @@ public class SecureStorePlugin: CAPPlugin, CAPBridgedPlugin {
         var item: CFTypeRef?
         let status = SecItemCopyMatching(lookup as CFDictionary, &item)
 
-        if status == errSecItemNotFound {
-            call.resolve(["value": NSNull()])
+        if status == errSecSuccess {
+            guard let data = item as? Data,
+                let value = String(data: data, encoding: .utf8)
+            else {
+                // Present but not a string: no retry will fix it, so clear it
+                // and let the next write start from a known state.
+                SecItemDelete(query(for: key) as CFDictionary)
+                call.resolve(["value": NSNull()])
+                return
+            }
+            call.resolve(["value": value])
             return
         }
 
-        guard status == errSecSuccess,
-            let data = item as? Data,
-            let value = String(data: data, encoding: .utf8)
-        else {
-            SecItemDelete(query(for: key) as CFDictionary)
-            call.resolve(["value": NSNull()])
-            return
-        }
-
-        call.resolve(["value": value])
+        // errSecItemNotFound and every transient status land here: no session
+        // for now, and the stored item — if any — is left untouched so a later
+        // read can still succeed.
+        call.resolve(["value": NSNull()])
     }
 
     /// `errSecItemNotFound` is success: the caller asked for the key to be gone,

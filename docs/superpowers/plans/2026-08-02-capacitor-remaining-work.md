@@ -659,7 +659,12 @@ dependency resolution before any Swift compiles.
   GETs and 2 POSTs with no unauthenticated response. Still worth a second run to be sure.
 - **File delivery** — iOS has no Downloads folder, so `deliverFile` deliberately uses the share
   sheet there (`src/mobile/deliverFile.ts`). Verify that is the right feel.
-- Cold-start session restore with a genuine token.
+- ~~Cold-start session restore with a genuine token.~~ **Done** — a launch after app kill and
+  after a reinstall presented no login and served the token from the Keychain on all 121
+  requests. What is untested is the *unlucky* cold start: a read before the device's first
+  unlock returns `errSecInteractionNotAllowed`, which now resolves as "no session" without
+  deleting the item, so the following launch should recover. That recovery path is reasoned,
+  not observed.
 - The **app icon is still the default Capacitor placeholder**; Android got the real logo in #190.
 - No iOS analogue of `mobile/backButton.ts`'s sheet-unwind chain; the edge-swipe is all there is.
 - eduroam on iOS (`NEHotspotConfiguration`) needs a paid Apple account and a real device.
