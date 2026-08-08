@@ -701,10 +701,20 @@ dependency resolution before any Swift compiles.
   importers of its own. `useFileDownload` contained every breakage class at once (bare
   `fetch`, `window.open`, `a[download]`, `saveAs`) and was the thing most likely to get
   ported by example.
-- **Tablet path is unhandled.** `resolvePhoneViewport` needs touch **and** narrow, so a
-  tablet renders the *desktop* tree — which reaches `PdfViewer.tsx:15`
-  (`chrome.runtime.getURL` → `ReferenceError`, swallowed at `:61` → permanent spinner) and
-  the ZIP path. Decide whether tablets are supported.
+- ~~**Tablet path is unhandled.**~~ ✅ **Decided and fixed: the native app is always the phone
+  tree.** `resolvePhoneViewport` needed touch **and** narrow, and an iPad is 834pt wide in
+  portrait, so a tablet rendered the *desktop* tree — which reaches `PdfViewer.tsx:15`
+  (`chrome.runtime.getURL` → `ReferenceError`, swallowed at `:61` → permanent spinner) and the
+  ZIP path. The gate now short-circuits to `true` on the Capacitor host, because the app ships
+  no desktop tree at all: being the app IS the answer to "is this a phone". A tablet on a phone
+  layout at worst looks roomy; a tablet on the desktop tree cannot open a file.
+
+  Note the accidental split this replaces: **iPad mini portrait is 744pt**, so it slipped under
+  the 767px breakpoint and got the phone tree while every larger iPad did not. Two different
+  behaviours across the iPad line, neither chosen.
+
+  The **browser** gate is unchanged — a tablet visiting IS in Safari still gets the desktop
+  tree, which is right there, since the extension's desktop tree works.
 - **ZIP stays desktop-only** by product decision. It is already unreachable on phone
   (`SubjectDrawerSheet.tsx:144` passes `selectable={false}`); no work needed, just do not
   "fix" it later.
