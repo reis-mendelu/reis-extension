@@ -48,7 +48,7 @@ the `packageClassList` entry, and a fresh clone works with no manual step.
 
 Copied from `@capacitor/preferences`, the closest sibling:
 
-```
+```text
 package.json                                  capacitor.ios.src = "ios"
 Package.swift                                 target SecureStorePlugin
 ios/Sources/SecureStorePlugin/SecureStorePlugin.swift
