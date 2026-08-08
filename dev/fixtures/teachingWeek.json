@@ -1,0 +1,203 @@
+{
+  "_comment": "Synthetic teaching-week fixture. NO real student data — fictional courses, teachers and rooms. Lesson dates are authored as dayOffset from 'now' and materialised to IS's compact YYYYMMDD by scripts/lib/fixtureRebase.ts, so this never rots. Ids are named after their offset (fx-d0-, fx-d7-, fx-dm7-) rather than a weekday, because which weekday an offset lands on depends on the day you run it. It spans three weeks on purpose: the phone's day switcher is the only way to reach another day, and an empty adjacent week hides whether it works. Serve with: npm run dev:web:week",
+  "schedule": [
+    {
+      "id": "fx-d0-alg",
+      "dayOffset": 0,
+      "startTime": "08:00",
+      "endTime": "09:50",
+      "courseCode": "EBC-ALG",
+      "courseName": "Algoritmizace",
+      "courseNameCs": "Algoritmizace",
+      "courseNameEn": "Algorithms",
+      "room": "Q01",
+      "roomCs": "Q01",
+      "roomEn": "Q01",
+      "roomStructured": {
+        "name": "Q01",
+        "id": "q01"
+      },
+      "teachers": [
+        {
+          "fullName": "doc. Ing. Jan Novák, Ph.D.",
+          "shortName": "Novák",
+          "id": "1"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "false",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-alg",
+      "campus": "Brno",
+      "periodId": ""
+    },
+    {
+      "id": "fx-d0-stat",
+      "dayOffset": 0,
+      "startTime": "13:00",
+      "endTime": "14:50",
+      "courseCode": "EBC-STA",
+      "courseName": "Statistika",
+      "courseNameCs": "Statistika",
+      "courseNameEn": "Statistics",
+      "room": "Z18",
+      "roomCs": "Z18",
+      "roomEn": "Z18",
+      "roomStructured": {
+        "name": "Z18",
+        "id": "z18"
+      },
+      "teachers": [
+        {
+          "fullName": "Mgr. Eva Dvořáková",
+          "shortName": "Dvořáková",
+          "id": "2"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "true",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-sta",
+      "campus": "Brno",
+      "periodId": ""
+    },
+    {
+      "id": "fx-d1-mkt",
+      "dayOffset": 1,
+      "startTime": "10:00",
+      "endTime": "11:50",
+      "courseCode": "EBC-MKT",
+      "courseName": "Marketing",
+      "courseNameCs": "Marketing",
+      "courseNameEn": "Marketing",
+      "room": "Q02",
+      "roomCs": "Q02",
+      "roomEn": "Q02",
+      "roomStructured": {
+        "name": "Q02",
+        "id": "q02"
+      },
+      "teachers": [
+        {
+          "fullName": "Ing. Petr Svoboda",
+          "shortName": "Svoboda",
+          "id": "3"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "false",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-mkt",
+      "campus": "Brno",
+      "periodId": ""
+    },
+    {
+      "id": "fx-d7-alg",
+      "dayOffset": 7,
+      "startTime": "08:00",
+      "endTime": "09:50",
+      "courseCode": "EBC-ALG",
+      "courseName": "Algoritmizace",
+      "courseNameCs": "Algoritmizace",
+      "courseNameEn": "Algorithms",
+      "room": "Q01",
+      "roomCs": "Q01",
+      "roomEn": "Q01",
+      "roomStructured": {
+        "name": "Q01",
+        "id": "q01"
+      },
+      "teachers": [
+        {
+          "fullName": "doc. Ing. Jan Novák, Ph.D.",
+          "shortName": "Novák",
+          "id": "1"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "false",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-alg",
+      "campus": "Brno",
+      "periodId": ""
+    },
+    {
+      "id": "fx-d8-uml",
+      "dayOffset": 8,
+      "startTime": "09:00",
+      "endTime": "10:50",
+      "courseCode": "EBC-UML",
+      "courseName": "Modelování systémů",
+      "courseNameCs": "Modelování systémů",
+      "courseNameEn": "Systems Modelling",
+      "room": "A03",
+      "roomCs": "A03",
+      "roomEn": "A03",
+      "roomStructured": {
+        "name": "A03",
+        "id": "a03"
+      },
+      "teachers": [
+        {
+          "fullName": "Ing. Lucie Horáková",
+          "shortName": "Horáková",
+          "id": "4"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "true",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-uml",
+      "campus": "Brno",
+      "periodId": ""
+    },
+    {
+      "id": "fx-dm7-fin",
+      "dayOffset": -7,
+      "startTime": "11:00",
+      "endTime": "12:50",
+      "courseCode": "EBC-FIN",
+      "courseName": "Finance podniku",
+      "courseNameCs": "Finance podniku",
+      "courseNameEn": "Corporate Finance",
+      "room": "Q05",
+      "roomCs": "Q05",
+      "roomEn": "Q05",
+      "roomStructured": {
+        "name": "Q05",
+        "id": "q05"
+      },
+      "teachers": [
+        {
+          "fullName": "Ing. Tomáš Beneš, Ph.D.",
+          "shortName": "Beneš",
+          "id": "5"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "false",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-fin",
+      "campus": "Brno",
+      "periodId": ""
+    }
+  ]
+}

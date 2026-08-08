@@ -82,6 +82,10 @@ export function CalendarScreen() {
   const nowNext = resolveNowNext(schedule, now);
   const visibleSchedule = schedule.filter((l) => !isLessonHidden(l, hiddenItems));
   const agenda = buildDayAgenda(visibleSchedule, selectedIso);
+  // Which days the chip row may need to offer beyond Mon–Fri. Built from the
+  // lessons the student can actually see, so a hidden Saturday lesson does not
+  // conjure a chip for an empty day.
+  const lessonDates = new Set(visibleSchedule.map((l) => l.date));
   const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
 
   const openBulletin = () => {
@@ -171,7 +175,11 @@ export function CalendarScreen() {
         error={bulletinError}
       />
 
-      <DayChips selectedIso={selectedIso} onSelect={setMobileSelectedDay} />
+      <DayChips
+        selectedIso={selectedIso}
+        onSelect={setMobileSelectedDay}
+        lessonDates={lessonDates}
+      />
 
       <div className="flex-1 overflow-y-auto pb-24">
         {agenda.length === 0 ? (

@@ -20,6 +20,16 @@ export function formatIsDate(d: Date): string {
   return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}`;
 }
 
+/**
+ * The OTHER IS date format. Exam terms are `DD.MM.YYYY`; schedule lessons carry
+ * a compact `YYYYMMDD`, and `buildDayAgenda` compares against it directly, so a
+ * fixture lesson written in the term format simply never matches a day.
+ */
+export function formatCompactIsDate(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`;
+}
+
 function shift(now: Date, days: number): Date {
   const d = new Date(now.getTime());
   d.setDate(d.getDate() + days);
@@ -76,6 +86,17 @@ export function rebaseFixture(fixture: unknown, now: Date): Json {
         s['sections'] = s['sections'].map((sec) => (isObj(sec) ? rebaseSection(sec, now) : sec));
       }
       return s;
+    });
+  }
+
+  if (Array.isArray(out['schedule'])) {
+    out['schedule'] = out['schedule'].map((lesson) => {
+      if (!isObj(lesson)) return lesson;
+      const raw = lesson['dayOffset'];
+      if (typeof raw !== 'number') return lesson;
+      const l: Json = { ...lesson, date: formatCompactIsDate(shift(now, raw)) };
+      delete l['dayOffset'];
+      return l;
     });
   }
 
