@@ -33,6 +33,13 @@
       "runtimeArgs": ["run", "dev:web:exams"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "reis-webapp-admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:web:admin"],
+      "port": 3000,
+      "autoPort": true
     }
   ]
 }
