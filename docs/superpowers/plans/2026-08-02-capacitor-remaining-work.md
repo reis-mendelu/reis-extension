@@ -74,7 +74,7 @@ on the extension is the check that would actually confirm it.
 | eduroam cert fetch (Task 3 + eduroam half of Task 4) | **Done** — superseded by the native path (#189), proven on hardware |
 | Bare `fetch` sites (Task 4) | **Done**, device-verified — `serverTime` excluded on purpose |
 | Search, cvicne testy, odevzdávárny, kontrola | **Done** — search device-verified (people + subjects, person card fills) |
-| External links → in-app browser (Task 8) | **Done** — ⚠️ still **unverified on a device**, the last owed check |
+| External links → in-app browser (Task 8) | **Done** — ⚠️ still **unverified on a device**, one of two owed checks |
 | Re-login after a lapsed session | **Done**, prompt-first — device-verified via the #172 purge, which forced a real re-login |
 | Secure storage for `UISAuth` (Task 6) | **Done on BOTH platforms** — Android Keystore (#195), iOS Keychain, each verified |
 | iOS app | **Done and DEVICE-VERIFIED** on a real iPad (8th gen) — see Task 7 |
@@ -100,12 +100,12 @@ login presented**, then **131 IS requests (129 GET + 2 POST) with zero `login.pl
 sessionExpired, zero telemetry and zero JS errors**. Downloads work through the iOS share sheet,
 subjects list, and the header clears the status bar. The inverted cookie delivery is exercised —
 iOS's explicit `Cookie` header carried all of it. Icon shipped in #202; the tablet layout in
-#201. Full detail and the plugin-packaging rule in Task 7.
+issue #201. Full detail and the plugin-packaging rule in Task 7.
 
-**2. One device check left, needing no new code.** External links must open **in-app and
-authenticated**, not in the system browser. (The map sheet's drag-vs-scroll hand-off is also
+**2. Two device checks left, neither needing new code.** External links must open **in-app and
+authenticated**, not in the system browser. And the map sheet's drag-vs-scroll hand-off is still
 unverified, because the Akce list currently has no events so nothing overflows to scroll
-against — that path is `dragOwnsGesture` + `consumesTravel`, both unit-tested.)
+against — that path is `dragOwnsGesture` + `consumesTravel`, both unit-tested.
 
 **3. Lower-severity credentials.** Google OAuth tokens still sit in plain storage (#196,
 found while doing #172). Lower bar than UISAuth was: `drive.file`-scoped, they expire,
@@ -120,7 +120,7 @@ other top-anchored surface that did not inherit the inset from `ScreenHeader`.
 **5. Unchanged.** Drive on mobile (#168) is hidden rather than fixed. Three unguarded IDB reads
 can still setState after unmount (#176). ~~Tablets get the desktop tree~~ — fixed in #201.
 
-**6. New, found while measuring iOS: sync is far chattier than it needs to be (#197).** One run
+**7. New, found while measuring iOS: sync is far chattier than it needs to be (#197).** One run
 is ~121–131 requests, and it fires on boot, every 5 minutes, AND on every app resume, with no
 per-endpoint staleness check. Shared with the extension.
 
@@ -701,7 +701,9 @@ The free **Personal Team** is enough; no paid account needed for a 7-day build.
    `project.pbxproj`** — revert it after building and pass the team on the command line instead,
    so a personal team ID never lands in the repo.
 3. `xcodebuild -project App.xcodeproj -scheme App -destination 'platform=iOS,id=<devicectl id>'
-   -allowProvisioningUpdates build`
+   -allowProvisioningUpdates DEVELOPMENT_TEAM=<team id> build` — the `DEVELOPMENT_TEAM=` override
+   is what step 2 means by "pass it on the command line". Without it, and with the pbxproj
+   reverted, the build fails with *"Signing for App requires a development team"*.
 4. `xcrun devicectl device install app --device <id> <App.app>`
 5. First launch is refused until the certificate is trusted on the device: Settings → General →
    VPN & Device Management.
