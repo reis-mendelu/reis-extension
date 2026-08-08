@@ -61,4 +61,9 @@
     <!-- Runtime-requested on Android 13+; without it the download notification
          is silently dropped (the file still saves). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- eduroam setup (EduroamPlugin). Both are normal permissions — granted at
+         install, no runtime prompt. The network itself is saved by Android's own
+         dialog via ACTION_WIFI_ADD_NETWORKS, not by us. -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
 </manifest>

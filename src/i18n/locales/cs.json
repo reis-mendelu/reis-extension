@@ -631,6 +631,16 @@
     "openSettings": "Otevřít nastavení Profily",
     "privacyNoteLocal": "Vše se generuje ve vašem zařízení a váš soukromý klíč zůstává chráněn heslem, které zadáte jen vy při instalaci.",
     "privacyNoteTransfer": "Vše se generuje ve vašem zařízení a váš soukromý klíč je chráněn heslem, které zadáte jen vy při instalaci. Přenosový odkaz je jednorázový a vyprší během několika minut.",
+    "native": {
+      "button": "Nastavit eduroam",
+      "working": "Otevírám nastavení Androidu…",
+      "saved": "Hotovo — eduroam je uložený. Na fakultě se připojíš automaticky.",
+      "already": "eduroam už na tomto telefonu nastavený je.",
+      "cancelled": "Nastavení nebylo dokončeno. Klepni znovu.",
+      "failed": "Android síť eduroam neuložil. Zkus to prosím znovu.",
+      "error": "Nastavení eduroamu se nepodařilo",
+      "privacyNote": "Certifikát z telefonu nikam neodchází — reIS ho předá přímo Androidu, který eduroam uloží jako každou jinou síť, kterou vidíš a můžeš smazat."
+    },
     "manual": {
       "ios": {
         "hint": "Naskenuj QR kód",

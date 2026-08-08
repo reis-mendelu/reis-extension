@@ -631,6 +631,16 @@
     "openSettings": "Open Profiles settings",
     "privacyNoteLocal": "Everything is generated on your device and your private key stays protected by a password only you enter at install time.",
     "privacyNoteTransfer": "Everything is generated on your device and your private key is protected by a password only you enter at install time. The transfer link is one-time and expires within a few minutes.",
+    "native": {
+      "button": "Set up eduroam",
+      "working": "Opening Android setup…",
+      "saved": "Done — eduroam is saved. You'll connect automatically on campus.",
+      "already": "eduroam is already set up on this phone.",
+      "cancelled": "Setup wasn't finished. Tap again to retry.",
+      "failed": "Android didn't save the eduroam network. Please try again.",
+      "error": "eduroam setup didn't go through",
+      "privacyNote": "Your certificate never leaves this phone — reIS hands it straight to Android, which saves eduroam like any other network you can see and delete."
+    },
     "manual": {
       "ios": {
         "hint": "Scan a QR code",
