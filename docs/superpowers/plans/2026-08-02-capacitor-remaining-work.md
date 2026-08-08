@@ -75,7 +75,8 @@ on the extension is the check that would actually confirm it.
 | Re-login after a lapsed session | **Done**, prompt-first — **unverified on a device** |
 | Secure storage for `UISAuth` (Task 6) | **Not started** — the one hard release gate |
 | iOS app | **Never built** — only the throwaway spike ran there |
-| ISKAM, Drive, native Wi-Fi | **Broken** — see below |
+| Native Wi-Fi (eduroam, Android) | **Done**, device-verified — Task 5 |
+| ISKAM, Drive | **Broken** — see below |
 
 **Everything shipped since PR #181 is unit-tested only.** That is the single largest risk
 in this document, and it compounds: this transport's own record is *four* bugs shipping
@@ -505,6 +506,34 @@ framework auto-installs the key and CA: no cert-install dialog, no Settings danc
 A read-only check of `certifikat.pl` ran FIRST to confirm a certificate already existed
 (issued 21 Jun 2026), so the flow read it and never POSTed `gen=`. **Keep that order** —
 generating rotates a 366-day credential the student may have installed elsewhere.
+
+**Re-running is safe, and that replaces "detection".** Verified on the same handset with
+the network already saved: the system dialog appears again (Android does NOT pre-suppress
+it), the result is `SUCCESS` rather than `ADD_WIFI_RESULT_ALREADY_EXISTS`, and network 73
+is updated **in place** — `cmd wifi list-networks` still shows one `eduroam`, no duplicate.
+
+Two consequences:
+
+- The `already-configured` branch is kept as a defensive mapping (documented API, OEMs
+  vary) but **nothing may depend on it** — it appears unreachable on Android 16.
+- **Certificate expiry needs no special mechanism.** At ~366 days the student taps the
+  same button and the credential is replaced in place. Renewal stays student-initiated
+  because generating is an IS write; the *config* side is already idempotent.
+
+**Detecting an existing eduroam config before setup is not possible, by design.**
+`WifiManager.getConfiguredNetworks()` is deprecated at API 29 and since Android 10
+returns only networks the calling app created. Scan results prove range, not
+configuration. `getConnectionInfo().getSSID()` needs location permission and only answers
+while connected on campus. So do not gate an onboarding prompt on detection — offer it,
+record completion locally, and let idempotency absorb the rest.
+
+**Build trap that cost a broken install.** `android/app/src/main/assets/public` is
+**gitignored**, so a `cap sync`'d web bundle SURVIVES a branch switch while the Java does
+not. Switching to a branch without `EduroamPlugin.java` and rebuilding produced an APK
+with eduroam-aware JavaScript over Java that had no such plugin — Capacitor threw
+"Eduroam plugin is not implemented on android", which the sheet then reported as
+"couldn't prepare the profile". Always re-run `npm run build:capacitor && npx cap sync
+android` after changing branches, and never trust an incremental APK across a switch.
 
 **Still not verified:**
 

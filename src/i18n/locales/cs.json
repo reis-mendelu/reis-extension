@@ -638,6 +638,7 @@
       "already": "eduroam už na tomto telefonu nastavený je.",
       "cancelled": "Nastavení nebylo dokončeno. Klepni znovu.",
       "failed": "Android síť eduroam neuložil. Zkus to prosím znovu.",
+      "error": "Nastavení eduroamu se nepodařilo",
       "privacyNote": "Certifikát z telefonu nikam neodchází — reIS ho předá přímo Androidu, který eduroam uloží jako každou jinou síť, kterou vidíš a můžeš smazat."
     },
     "manual": {

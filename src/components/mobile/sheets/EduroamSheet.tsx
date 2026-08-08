@@ -61,10 +61,15 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
           <div className="alert alert-error text-base">
             <AlertTriangle className="h-4 w-4 flex-shrink-0" />
             <span>
-              {/* On the native path nothing was prepared or downloaded, so the
-                  profile wording would describe a step that never happened. */}
-              {native && outcome === 'failed'
-                ? t('eduroam.native.failed')
+              {/* On the native path nothing is prepared or downloaded, so the
+                  profile wording would describe a step that never happens —
+                  including when the throw lands before Android is ever reached
+                  (a lapsed IS session, a blip fetching the certificate) and
+                  outcome is therefore still null. */}
+              {native
+                ? outcome === 'failed'
+                  ? t('eduroam.native.failed')
+                  : `${t('eduroam.native.error')}${error ? `: ${error}` : ''}`
                 : `${t('eduroam.error')}${error ? `: ${error}` : ''}`}
             </span>
           </div>

@@ -195,6 +195,18 @@ describe('EduroamSheet', () => {
     expect(screen.getByText('Nastavit eduroam')).toBeInTheDocument();
   });
 
+  it('never blames a profile on the native path, whatever failed', () => {
+    // A throw before Android is even reached — a lapsed IS session, a network
+    // blip fetching the certificate — leaves outcome null. The generic copy
+    // ("couldn't prepare the profile") describes a step this path never takes.
+    onPhone({ status: 'error', outcome: null, error: 'Failed to fetch' });
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(screen.queryByText(/Profil se nepodařilo připravit/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Nastavení eduroamu se nepodařilo/)).toBeInTheDocument();
+  });
+
   it('names the real failure when Android refuses the network', () => {
     // "Couldn't prepare the profile" is the wrong sentence here: no profile is
     // involved, and nothing was downloaded.
