@@ -8,6 +8,7 @@ export function SocietyAdminOverlay() {
   const close = useAppStore((s) => s.closeAdminOverlay);
   const logout = useAppStore((s) => s.adminLogout);
   const session = useAppStore((s) => s.adminSession);
+  const adminRole = useAppStore((s) => s.adminRole);
   const { t } = useTranslation();
   if (!open) return null;
   return (
@@ -22,8 +23,14 @@ export function SocietyAdminOverlay() {
         {session ? (
           <>
             <p className="text-sm text-base-content/70">{t('admin.reisAdminNote')}</p>
-            <h4 className="font-semibold text-sm mt-4 mb-2">{t('admin.suggestionsTitle')}</h4>
-            <SuggestionsInbox />
+            {adminRole === 'reis_admin' && (
+              <>
+                <h4 className="font-semibold text-sm mt-4 mb-2">
+                  {t('admin.suggestionsTitle')}
+                </h4>
+                <SuggestionsInbox />
+              </>
+            )}
             <button className="btn btn-ghost btn-sm mt-4" onClick={() => void logout()}>
               {t('admin.logout')}
             </button>

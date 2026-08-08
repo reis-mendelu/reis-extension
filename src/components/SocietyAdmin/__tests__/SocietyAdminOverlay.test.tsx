@@ -34,4 +34,26 @@ describe('SocietyAdminOverlay', () => {
       screen.getByText('Přihlášen jako reIS admin. Akce se spravují u konkrétního spolku.')
     ).toBeInTheDocument();
   });
+  it('shows the suggestions inbox heading for a reis_admin session', () => {
+    useAppStore.setState({
+      adminOverlayOpen: true,
+      adminSession: { user: { email: 'reis.mendelu@gmail.com' } } as never,
+      adminRole: 'reis_admin',
+      language: 'en',
+    });
+    render(<SocietyAdminOverlay />);
+    expect(screen.getByRole('heading', { name: /student suggestions/i })).toBeInTheDocument();
+  });
+  it('hides the suggestions inbox but keeps the logout button for an association session with no association id', () => {
+    useAppStore.setState({
+      adminOverlayOpen: true,
+      adminSession: { user: { email: 'someone@example.com' } } as never,
+      adminRole: 'association',
+      adminAssociationId: null,
+      language: 'en',
+    });
+    render(<SocietyAdminOverlay />);
+    expect(screen.queryByText(/suggestions/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /log ?out/i })).toBeInTheDocument();
+  });
 });
