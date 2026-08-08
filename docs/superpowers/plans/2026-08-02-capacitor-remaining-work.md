@@ -13,7 +13,10 @@ measurements) and `2026-08-02-capacitor-transport-decision.md` (why Model C).
 
 ## Where it stands
 
-*Updated 2026-08-08, after a UI-polish round (#192–#194) and secure storage (#195).*
+*Updated 2026-08-08, after the iOS real-device pass. Both platforms are now release-candidate
+complete: Android device-verified including eduroam connecting on campus, iOS device-verified on
+an iPad including session restore from the Keychain and downloads via the share sheet. What is
+left is either tracked in its own issue or needs an Apple Developer account.*
 
 **THE DEVICE PASS HAPPENED.** Handset A001, 1080x2392, dpr 2.625. Cold start → login →
 **115 requests, all HTTP 200, zero telemetry**, covering all four Task 4 endpoint families
@@ -74,8 +77,9 @@ on the extension is the check that would actually confirm it.
 | External links → in-app browser (Task 8) | **Done** — ⚠️ still **unverified on a device**, one of two owed checks |
 | Re-login after a lapsed session | **Done**, prompt-first — device-verified via the #172 purge, which forced a real re-login |
 | Secure storage for `UISAuth` (Task 6) | **Done on BOTH platforms** — Android Keystore (#195), iOS Keychain, each verified |
-| iOS app | **Builds and runs** (simulator, 2026-08-08). Logged in, 121 IS requests, no login redirects |
-| Native Wi-Fi (eduroam, Android) | **Done**, device-verified — Task 5 |
+| iOS app | **Done and DEVICE-VERIFIED** on a real iPad (8th gen) — see Task 7 |
+| iOS app icon | **Done** (#202) — generated from the same brand SVG as Android |
+| Native Wi-Fi (eduroam, Android) | **Done, END TO END** — campus association confirmed 2026-08-08 |
 | ISKAM, Drive | **Broken** — see below |
 
 ~~**Everything shipped since PR #181 is unit-tested only.**~~ **Largely closed.** Two
@@ -90,18 +94,18 @@ gesture can pass every test and still be dead on a device.
 
 *Rewritten 2026-08-08. The five items that stood here are resolved except where noted.*
 
-**1. ~~iOS has still never been compiled~~ — DONE 2026-08-08 (#174).** It compiles, launches,
-signs in and syncs: **121 IS requests with zero login redirects and zero telemetry**, the token
-served from the Keychain on every one of them. The inverted cookie delivery is therefore
-exercised too — iOS's explicit `Cookie` header carried all of it. What remains on iOS is
-narrower than "unmeasured": the share-sheet download branch, a clean-install login (proven once,
-not repeatedly), the default app icon, and no analogue of the Android back-button chain. Full
-detail and the plugin-packaging rule in Task 7.
+**1. ~~iOS has still never been compiled~~ — DONE AND DEVICE-VERIFIED 2026-08-08 (#174).**
+On a real iPad (8th gen, iPad11,6): cold start restored the session **from the Keychain with no
+login presented**, then **131 IS requests (129 GET + 2 POST) with zero `login.pl` redirects, zero
+sessionExpired, zero telemetry and zero JS errors**. Downloads work through the iOS share sheet,
+subjects list, and the header clears the status bar. The inverted cookie delivery is exercised —
+iOS's explicit `Cookie` header carried all of it. Icon shipped in #202; the tablet layout in
+issue #201. Full detail and the plugin-packaging rule in Task 7.
 
-**2. Two device checks, neither needing new code.** External links must open **in-app and
-authenticated**, not in Chrome. And the map sheet's drag-vs-scroll hand-off is unverified
-because the Akce list currently has no events, so nothing overflows to scroll against —
-that path is `dragOwnsGesture` + `consumesTravel`, both unit-tested.
+**2. Two device checks left, neither needing new code.** External links must open **in-app and
+authenticated**, not in the system browser. And the map sheet's drag-vs-scroll hand-off is still
+unverified, because the Akce list currently has no events so nothing overflows to scroll
+against — that path is `dragOwnsGesture` + `consumesTravel`, both unit-tested.
 
 **3. Lower-severity credentials.** Google OAuth tokens still sit in plain storage (#196,
 found while doing #172). Lower bar than UISAuth was: `drive.file`-scoped, they expire,
@@ -113,8 +117,12 @@ on HEAD) — the changed-files CI gate makes that file untouchable until the eff
 The map's floating search bar had the same defect and is fixed (#193); it was the only
 other top-anchored surface that did not inherit the inset from `ScreenHeader`.
 
-**5. Unchanged.** Drive on mobile (#168) is hidden rather than fixed. Tablets still get the
-desktop tree (#175). Three unguarded IDB reads can still setState after unmount (#176).
+**5. Unchanged.** Drive on mobile (#168) is hidden rather than fixed. Three unguarded IDB reads
+can still setState after unmount (#176). ~~Tablets get the desktop tree~~ — fixed in #201.
+
+**7. New, found while measuring iOS: sync is far chattier than it needs to be (#197).** One run
+is ~121–131 requests, and it fires on boot, every 5 minutes, AND on every app resume, with no
+per-endpoint staleness check. Shared with the extension.
 
 ### Resolved since this list was written
 
@@ -550,9 +558,11 @@ android` after changing branches, and never trust an incremental APK across a sw
 
 **Still not verified:**
 
-- **Association on campus.** Acceptance is not connection. The phone had no eduroam AP
-  in range (`cmd wifi list-scan-results` was empty for it), so this still needs the
-  handset on MENDELU grounds. It is now the ONLY unknown on the Android path.
+- ~~**Association on campus.**~~ ✅ **CONFIRMED on campus by the user, 2026-08-08.** The config
+  the plugin writes actually connects to the real MENDELU APs, not merely "accepted by the OS".
+  **Native Android eduroam is now done end to end**, with nothing outstanding on that path. The
+  gap existed only because the test handset had no eduroam AP in range at the desk, so
+  acceptance could not be separated from connection there.
 - The **API 30 floor** is not gated in JS on purpose. `minSdkVersion` is 24, so Android
   7–10 devices reach the plugin and get an explicit rejection rather than a silently
   different flow. **Product decision still open:** leave them on the manual instructions,
@@ -652,22 +662,57 @@ dependency resolution before any Swift compiles.
 
 ### Still owed on iOS
 
-- A login was completed in the simulator and the session works (121 IS requests, no login
-  redirects), but it has **not** been repeated from a clean install, so the capture-at-login step
-  is proven once rather than reliably.
-- The **inverted cookie delivery** is now exercised — iOS's explicit `Cookie` header carried 119
-  GETs and 2 POSTs with no unauthenticated response. Still worth a second run to be sure.
-- **File delivery** — iOS has no Downloads folder, so `deliverFile` deliberately uses the share
-  sheet there (`src/mobile/deliverFile.ts`). Verify that is the right feel.
-- ~~Cold-start session restore with a genuine token.~~ **Done** — a launch after app kill and
-  after a reinstall presented no login and served the token from the Keychain on all 121
-  requests. What is untested is the *unlucky* cold start: a read before the device's first
-  unlock returns `errSecInteractionNotAllowed`, which now resolves as "no session" without
-  deleting the item, so the following launch should recover. That recovery path is reasoned,
-  not observed.
-- The **app icon is still the default Capacitor placeholder**; Android got the real logo in #190.
+*Updated 2026-08-08 after a real-device pass on an iPad (8th gen, iPad11,6).*
+
+**What the device run proved.** Cold start restored the session **from the Keychain with no login
+presented** — then 131 IS requests (129 GET + 2 POST), 132 `SecureStore get`, and **zero**
+`login.pl` redirects, sessionExpired, telemetry, JS errors, or `chrome.runtime` hits. That last
+count is what proves the phone tree rather than the desktop one, independently of the layout
+looking right. Confirmed by eye at the same time: phone layout, responsive, header clear of the
+status bar, subjects listed, **and file downloads working through the iOS share sheet** — the
+branch `deliverFile` takes on iOS, which had never run anywhere before.
+
+- ~~A clean-install login proven only once.~~ Still true in the narrow sense: login capture has
+  been seen work, but not repeatedly from a fresh install. Low risk now that the restore path is
+  proven on hardware.
+- ~~The inverted cookie delivery.~~ **Exercised** — iOS's explicit `Cookie` header carried all
+  131 requests with no unauthenticated response.
+- ~~File delivery / share sheet.~~ **Verified on the device.**
+- ~~Cold-start session restore.~~ **Verified on the device.** What remains untested is the
+  *unlucky* cold start: a read before the device's first unlock returns
+  `errSecInteractionNotAllowed`, which resolves as "no session" **without deleting the item**, so
+  the next launch should recover. That recovery is reasoned, not observed.
+- ~~The app icon is the default Capacitor placeholder.~~ **Shipped in #202.**
 - No iOS analogue of `mobile/backButton.ts`'s sheet-unwind chain; the edge-swipe is all there is.
-- eduroam on iOS (`NEHotspotConfiguration`) needs a paid Apple account and a real device.
+- eduroam on iOS (`NEHotspotConfiguration`) needs a paid Apple account and a real device, and it
+  is still unknown whether iOS accepts MENDELU's self-signed root at all.
+- Nothing has run on an **iPhone** — only an iPad. The phone tree is identical, but the
+  safe-area geometry of a notched device on iOS is untested.
+
+### Building to a real device (this worked — reuse it)
+
+The free **Personal Team** is enough; no paid account needed for a 7-day build.
+
+1. **Developer Mode must be ON** on the device: Settings → Privacy & Security → Developer Mode.
+   The row only appears *after* a Mac has attempted a development connection, so try the build
+   first, then look for it.
+2. Add an Apple ID in Xcode → Settings → Accounts, then pick the team once in the target's
+   Signing & Capabilities. ⚠️ That **writes `DEVELOPMENT_TEAM` into the tracked
+   `project.pbxproj`** — revert it after building and pass the team on the command line instead,
+   so a personal team ID never lands in the repo.
+3. `xcodebuild -project App.xcodeproj -scheme App -destination 'platform=iOS,id=<devicectl id>'
+   -allowProvisioningUpdates DEVELOPMENT_TEAM=<team id> build` — the `DEVELOPMENT_TEAM=` override
+   is what step 2 means by "pass it on the command line". Without it, and with the pbxproj
+   reverted, the build fails with *"Signing for App requires a development team"*.
+4. `xcrun devicectl device install app --device <id> <App.app>`
+5. First launch is refused until the certificate is trusted on the device: Settings → General →
+   VPN & Device Management.
+6. `xcrun devicectl device process launch --console --terminate-existing --device <id> cz.reis.app`
+   streams the JS console — the device equivalent of `--console-pty` on the simulator, and how
+   the request counts above were measured.
+
+Free-team builds **expire after 7 days**; reinstall to refresh, or use TestFlight once a paid
+account exists.
 
 ## Task 8 — Smaller, known items (two of four done)
 
