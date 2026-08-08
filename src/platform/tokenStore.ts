@@ -1,7 +1,7 @@
 import { getPlatform } from './index';
 import { isPlausibleToken } from './sessionToken';
 
-export const TOKEN_KEY = 'reis.session.uisAuth';
+const TOKEN_KEY = 'reis.session.uisAuth';
 
 /**
  * The ONLY module that touches the IS session token.

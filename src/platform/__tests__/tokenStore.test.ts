@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setPlatform, __resetPlatformForTests } from '../index';
 import {
-  TOKEN_KEY,
   saveStoredToken,
   loadStoredToken,
   clearStoredToken,
@@ -11,6 +10,13 @@ import type { ReisPlatform } from '../types';
 
 /** A live-looking UISAuth value; isPlausibleToken rejects short/empty strings. */
 const TOKEN = 'a'.repeat(40);
+
+/**
+ * Duplicated rather than imported: the key is private to tokenStore so nothing
+ * can reach plain storage under it. Spelling it out here also makes a rename
+ * fail the suite, which is right — the on-disk key is migration-relevant.
+ */
+const TOKEN_KEY = 'reis.session.uisAuth';
 
 function makeBag() {
   const map = new Map<string, unknown>();
