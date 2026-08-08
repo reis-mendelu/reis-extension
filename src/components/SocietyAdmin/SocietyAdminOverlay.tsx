@@ -25,9 +25,7 @@ export function SocietyAdminOverlay() {
             <p className="text-sm text-base-content/70">{t('admin.reisAdminNote')}</p>
             {adminRole === 'reis_admin' && (
               <>
-                <h4 className="font-semibold text-sm mt-4 mb-2">
-                  {t('admin.suggestionsTitle')}
-                </h4>
+                <h4 className="font-semibold text-sm mt-4 mb-2">{t('admin.suggestionsTitle')}</h4>
                 <SuggestionsInbox />
               </>
             )}

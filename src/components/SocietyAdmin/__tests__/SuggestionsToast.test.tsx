@@ -46,7 +46,7 @@ describe('SuggestionsToast', () => {
     });
     render(<SuggestionsToast />);
     expect(toastInfo).toHaveBeenCalledTimes(1);
-    expect(String(toastInfo.mock.calls[0][0])).toContain('4');
+    expect(String(toastInfo.mock.calls[0]?.[0])).toContain('4');
   });
 
   it('announces once per admin session, not on every store change', () => {
@@ -84,7 +84,7 @@ describe('SuggestionsToast', () => {
       });
     });
     expect(toastInfo).toHaveBeenCalledTimes(2);
-    expect(String(toastInfo.mock.calls[1][0])).toContain('2');
+    expect(String(toastInfo.mock.calls[1]?.[0])).toContain('2');
   });
 
   it('renders nothing', () => {

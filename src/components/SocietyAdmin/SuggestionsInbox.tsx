@@ -14,7 +14,9 @@ export function SuggestionsInbox() {
   const { t } = useTranslation();
 
   if (items.length === 0) {
-    return <p className="text-sm text-base-content/60 py-6 text-center">{t('admin.noSuggestions')}</p>;
+    return (
+      <p className="text-sm text-base-content/60 py-6 text-center">{t('admin.noSuggestions')}</p>
+    );
   }
 
   return (

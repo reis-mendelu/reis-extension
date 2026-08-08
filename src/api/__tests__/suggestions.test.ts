@@ -3,10 +3,7 @@ import { buildSuggestionPayload, resolveScreen, submitSuggestion } from '../sugg
 
 describe('buildSuggestionPayload', () => {
   it('sends the reIS screen and never the host URL', () => {
-    const p = buildSuggestionPayload(
-      { type: 'bug', title: 'T', body: 'B' },
-      'exams'
-    );
+    const p = buildSuggestionPayload({ type: 'bug', title: 'T', body: 'B' }, 'exams');
     expect(p.screen).toBe('exams');
     expect(JSON.stringify(p)).not.toContain('mendelu.cz');
     expect(JSON.stringify(p)).not.toContain('http');

@@ -34,10 +34,7 @@ function extVersion(): string {
   }
 }
 
-export function buildSuggestionPayload(
-  draft: SuggestionDraft,
-  screen: AppView
-): SuggestionPayload {
+export function buildSuggestionPayload(draft: SuggestionDraft, screen: AppView): SuggestionPayload {
   const browser = getBrowserInfo();
   return {
     ...draft,

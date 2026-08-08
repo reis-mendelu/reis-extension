@@ -1,8 +1,5 @@
 import type { AppSlice } from '../types';
-import {
-  listSuggestions,
-  setSuggestionStatus as apiSetStatus,
-} from '../../api/suggestionsAdmin';
+import { listSuggestions, setSuggestionStatus as apiSetStatus } from '../../api/suggestionsAdmin';
 import type { SuggestionRow, SuggestionStatus } from '../../types/suggestions';
 
 export interface SuggestionsSlice {
@@ -12,8 +9,7 @@ export interface SuggestionsSlice {
   updateSuggestionStatus: (id: number, status: SuggestionStatus) => Promise<void>;
 }
 
-const unread = (rows: SuggestionRow[]): number =>
-  rows.filter((r) => r.status === 'new').length;
+const unread = (rows: SuggestionRow[]): number => rows.filter((r) => r.status === 'new').length;
 
 // Student suggestions, visible only to a reis_admin session. Loaded from the
 // admin slice once the role resolves at boot — never from a component effect.

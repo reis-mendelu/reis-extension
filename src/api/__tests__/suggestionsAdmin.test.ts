@@ -59,7 +59,7 @@ describe('suggestionsAdmin.listSuggestions', () => {
     const result = await listSuggestions();
     expect(result).toBeNull();
     expect(logError).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(logError).mock.calls[0][0]).toBe('Api.listSuggestions');
+    expect(vi.mocked(logError).mock.calls[0]?.[0]).toBe('Api.listSuggestions');
   });
 
   it('returns [] when the query genuinely yields no rows', async () => {
@@ -90,6 +90,6 @@ describe('suggestionsAdmin.setSuggestionStatus', () => {
     const ok = await setSuggestionStatus(1, 'done');
     expect(ok).toBe(false);
     expect(logError).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(logError).mock.calls[0][0]).toBe('Api.setSuggestionStatus');
+    expect(vi.mocked(logError).mock.calls[0]?.[0]).toBe('Api.setSuggestionStatus');
   });
 });

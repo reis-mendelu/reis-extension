@@ -28,10 +28,7 @@ export async function listSuggestions(): Promise<SuggestionRow[] | null> {
 
 // Only `status` is grantable to authenticated (see the migration), so any other
 // column in this patch would be rejected by Postgres, not silently written.
-export async function setSuggestionStatus(
-  id: number,
-  status: SuggestionStatus
-): Promise<boolean> {
+export async function setSuggestionStatus(id: number, status: SuggestionStatus): Promise<boolean> {
   if (DEV_SOCIETY) {
     devSuggestionsStore.setStatus(id, status);
     return true;

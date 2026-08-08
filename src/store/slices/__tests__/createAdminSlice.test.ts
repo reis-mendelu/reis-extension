@@ -291,15 +291,23 @@ describe('createAdminSlice boot', () => {
   });
 
   it('loads suggestions for a reis_admin session', async () => {
-    getSession.mockResolvedValue({ data: { session: { user: { email: 'reis.mendelu@gmail.com' } } } });
-    maybeSingle.mockResolvedValue({ data: { role: 'reis_admin', association_id: null }, error: null });
+    getSession.mockResolvedValue({
+      data: { session: { user: { email: 'reis.mendelu@gmail.com' } } },
+    });
+    maybeSingle.mockResolvedValue({
+      data: { role: 'reis_admin', association_id: null },
+      error: null,
+    });
     await (state.loadAdminSession as () => Promise<void>)();
     expect(loadSuggestions).toHaveBeenCalledTimes(1);
   });
 
   it('does not load suggestions for an association session', async () => {
     getSession.mockResolvedValue({ data: { session: { user: { email: 'admin@supef.cz' } } } });
-    maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'supef' }, error: null });
+    maybeSingle.mockResolvedValue({
+      data: { role: 'association', association_id: 'supef' },
+      error: null,
+    });
     await (state.loadAdminSession as () => Promise<void>)();
     expect(loadSuggestions).not.toHaveBeenCalled();
   });

@@ -32,5 +32,4 @@ export interface SuggestionRow {
 }
 
 export type SubmitResult =
-  | { ok: true }
-  | { ok: false; error: 'rate_limited' | 'invalid' | 'upstream' | 'offline' };
+  { ok: true } | { ok: false; error: 'rate_limited' | 'invalid' | 'upstream' | 'offline' };

@@ -69,8 +69,13 @@ describe('createSuggestionsSlice resync races', () => {
     let resolveA: (ok: boolean) => void = () => {};
     let resolveB: (ok: boolean) => void = () => {};
     setSuggestionStatus.mockImplementation((id: number) => {
-      if (id === 1) return new Promise((resolve) => { resolveA = resolve; });
-      return new Promise((resolve) => { resolveB = resolve; });
+      if (id === 1)
+        return new Promise((resolve) => {
+          resolveA = resolve;
+        });
+      return new Promise((resolve) => {
+        resolveB = resolve;
+      });
     });
 
     const pA = state.updateSuggestionStatus(1, 'done'); // will fail
@@ -96,7 +101,10 @@ describe('createSuggestionsSlice resync races', () => {
 
     let resolveWrite: (ok: boolean) => void = () => {};
     setSuggestionStatus.mockImplementation(
-      () => new Promise((resolve) => { resolveWrite = resolve; })
+      () =>
+        new Promise((resolve) => {
+          resolveWrite = resolve;
+        })
     );
 
     const pUpdate = state.updateSuggestionStatus(1, 'done');
@@ -129,8 +137,13 @@ describe('createSuggestionsSlice resync races', () => {
     let call = 0;
     setSuggestionStatus.mockImplementation(() => {
       call += 1;
-      if (call === 1) return new Promise((resolve) => { resolveA = resolve; });
-      return new Promise((resolve) => { resolveB = resolve; });
+      if (call === 1)
+        return new Promise((resolve) => {
+          resolveA = resolve;
+        });
+      return new Promise((resolve) => {
+        resolveB = resolve;
+      });
     });
 
     const pA = state.updateSuggestionStatus(1, 'done'); // optimistic 'done', will fail
@@ -160,7 +173,10 @@ describe('createSuggestionsSlice resync races', () => {
 
     let resolveWrite: (ok: boolean) => void = () => {};
     setSuggestionStatus.mockImplementation(
-      () => new Promise((resolve) => { resolveWrite = resolve; })
+      () =>
+        new Promise((resolve) => {
+          resolveWrite = resolve;
+        })
     );
 
     const pUpdate = state.updateSuggestionStatus(1, 'done'); // optimistic 'done', will fail
