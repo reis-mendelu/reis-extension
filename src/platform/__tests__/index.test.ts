@@ -17,6 +17,19 @@ function stub(kind: ReisPlatform['kind']): ReisPlatform {
         bag.delete(k);
       },
     },
+    // Credentials share the same bag here: this stub exists to exercise the
+    // platform resolver, not the storage guarantee, which tokenStore.test.ts owns.
+    secureStorage: {
+      async get(k) {
+        return bag.get(k);
+      },
+      async set(k, v) {
+        bag.set(k, v);
+      },
+      async remove(k) {
+        bag.delete(k);
+      },
+    },
     getAssetUrl: (p) => `/${p}`,
   };
 }

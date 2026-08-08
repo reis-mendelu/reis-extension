@@ -2,8 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { toast } from 'sonner';
 
 const storage = { get: vi.fn(), set: vi.fn(), remove: vi.fn() };
+// The token lives in secureStorage now (#172) — Keystore-encrypted on device,
+// never the plaintext Preferences that `storage` is. Both are stubbed so a
+// regression that reaches for the wrong one shows up as a failed assertion
+// rather than a passing test against the wrong store.
+const secureStorage = { get: vi.fn(), set: vi.fn(), remove: vi.fn() };
 vi.mock('../../platform', () => ({
-  getPlatform: vi.fn(() => ({ kind: 'capacitor', storage })),
+  getPlatform: vi.fn(() => ({ kind: 'capacitor', storage, secureStorage })),
 }));
 vi.mock('../ensureSession', () => ({ ensureSession: vi.fn() }));
 vi.mock('../inAppLoginDeps', () => ({ buildInAppLoginDeps: vi.fn(async () => ({})) }));
@@ -44,6 +49,7 @@ describe('recoverSession', () => {
     vi.mocked(getPlatform).mockReturnValue({
       kind: 'capacitor',
       storage,
+      secureStorage,
     } as unknown as ReturnType<typeof getPlatform>);
     vi.mocked(ensureSession).mockResolvedValue('TOKEN-123');
   });
@@ -55,9 +61,11 @@ describe('recoverSession', () => {
   it('clears the dead token before asking for a new one', async () => {
     await recoverSession();
 
-    expect(storage.remove).toHaveBeenCalledWith('reis.session.uisAuth');
+    expect(secureStorage.remove).toHaveBeenCalledWith('reis.session.uisAuth');
+    // And never from plaintext storage: that is where it used to live.
+    expect(storage.remove).not.toHaveBeenCalled();
 
-    const clearedAt = storage.remove.mock.invocationCallOrder[0];
+    const clearedAt = secureStorage.remove.mock.invocationCallOrder[0];
     const askedAt = vi.mocked(ensureSession).mock.invocationCallOrder[0];
     expect(clearedAt).toBeDefined();
     expect(askedAt).toBeDefined();
@@ -101,7 +109,7 @@ describe('recoverSession', () => {
 
     await expect(recoverSession()).resolves.toBe(false);
     expect(ensureSession).not.toHaveBeenCalled();
-    expect(storage.remove).not.toHaveBeenCalled();
+    expect(secureStorage.remove).not.toHaveBeenCalled();
   });
 });
 
@@ -111,6 +119,7 @@ describe('promptSessionRecovery', () => {
     vi.mocked(getPlatform).mockReturnValue({
       kind: 'capacitor',
       storage,
+      secureStorage,
     } as unknown as ReturnType<typeof getPlatform>);
   });
 
@@ -167,6 +176,7 @@ describe('re-sync after recovery', () => {
     vi.mocked(getPlatform).mockReturnValue({
       kind: 'capacitor',
       storage,
+      secureStorage,
     } as unknown as ReturnType<typeof getPlatform>);
     vi.mocked(ensureSession).mockResolvedValue('TOKEN-123');
   });
@@ -213,6 +223,7 @@ describe('stale prompts cannot destroy a fresh session', () => {
     vi.mocked(getPlatform).mockReturnValue({
       kind: 'capacitor',
       storage,
+      secureStorage,
     } as unknown as ReturnType<typeof getPlatform>);
     vi.mocked(ensureSession).mockResolvedValue('NEW-TOKEN');
   });

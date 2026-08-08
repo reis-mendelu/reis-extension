@@ -9,6 +9,7 @@ import { handleBackPress } from '@/mobile/backButton';
 import { installMobileActionHandler } from '@/mobile/actionHandler';
 import { installExternalLinkHandler } from '@/mobile/openExternal';
 import { promptSessionRecovery } from '@/mobile/sessionRecovery';
+import { purgePlaintextToken } from '@/platform/tokenStore';
 import { setSessionExpiredHandler } from '@/services/sessionExpiry';
 import { useAppStore } from '@/store/useAppStore';
 
@@ -33,6 +34,13 @@ void CapApp.addListener('backButton', () => {
 });
 
 async function boot(): Promise<void> {
+  // BEFORE ensureSession, which is what reads the token and decides whether to
+  // present login. Installs from before #172 hold a live UISAuth in plain
+  // Preferences; it is deleted rather than migrated, so the student signs in
+  // once and the plaintext copy is gone by deletion rather than by trusting a
+  // copy step.
+  await purgePlaintextToken();
+
   // Same deps as re-login after a lapse (mobile/sessionRecovery), deliberately
   // shared: ensureSession's cookie-polling contract only holds if onPageLoaded
   // and readCookies come from the same WebView openLogin presented, and two

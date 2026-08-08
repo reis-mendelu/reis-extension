@@ -1,5 +1,4 @@
-import { getPlatform } from '../platform';
-import { TOKEN_KEY } from '../platform/tokenStore';
+import { loadStoredToken, saveStoredToken } from '../platform/tokenStore';
 import type { SessionDeps } from './ensureSession';
 
 export const IS_LOGIN_URL = 'https://is.mendelu.cz/system/login.pl?lang=cz';
@@ -19,11 +18,14 @@ export const IS_COOKIE_URL = 'https://is.mendelu.cz/';
  */
 export async function buildInAppLoginDeps(): Promise<SessionDeps> {
   const { InAppBrowser } = await import('@capgo/capacitor-inappbrowser');
-  const storage = getPlatform().storage;
-
   return {
-    getStored: () => storage.get(TOKEN_KEY),
-    save: (token) => storage.set(TOKEN_KEY, token),
+    // Through tokenStore, never platform.storage: the login flow is what WRITES
+    // the credential, so a raw storage.set here would put a live UISAuth into
+    // plaintext Preferences no matter how the read side is secured.
+    // loadStoredToken throws on a missing/unreadable token; ensureSession wants
+    // "is there one?", so the throw becomes undefined and it presents login.
+    getStored: () => loadStoredToken().catch(() => undefined),
+    save: (token) => saveStoredToken(token),
     openLogin: async () => {
       await InAppBrowser.openWebView({
         url: IS_LOGIN_URL,

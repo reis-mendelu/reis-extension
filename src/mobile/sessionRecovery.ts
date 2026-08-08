@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 import { getPlatform } from '../platform';
-import { TOKEN_KEY } from '../platform/tokenStore';
+import { clearStoredToken } from '../platform/tokenStore';
 import { logError } from '../utils/reportError';
 import { translate } from '../i18n/translate';
 import { useAppStore } from '../store/useAppStore';
@@ -40,7 +40,7 @@ async function runRecovery(): Promise<string> {
   // ensureSession returns the stored token when it still looks plausible, and
   // a lapsed UISAuth looks exactly like a live one. Clearing first is what
   // makes this a re-login rather than a no-op that returns the dead token.
-  await getPlatform().storage.remove(TOKEN_KEY);
+  await clearStoredToken();
   const token = await ensureSession(await buildInAppLoginDeps());
 
   activeToken = token;
