@@ -2,8 +2,12 @@
 // The repo has no SVG rasteriser (no ImageMagick/rsvg/cairosvg), but Playwright's
 // Chromium is already installed for e2e — and it renders the real SVG rather than
 // approximating the R path with drawing primitives.
-import { chromium } from 'playwright';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+// From @playwright/test, which is the declared devDependency and re-exports
+// chromium. Importing 'playwright' directly worked only because it happens to be
+// hoisted underneath @playwright/test — an undeclared dependency that a fresh
+// lockfile or a stricter installer is entitled to stop resolving.
+import { chromium } from '@playwright/test';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -125,7 +129,20 @@ const DENSITIES = [
 
 const RES = process.argv[2];
 if (!RES) {
-  console.error('usage: genicons.mjs <path-to-res-dir>');
+  console.error('usage: gen-android-icons.mjs <path-to-res-dir>');
+  process.exit(1);
+}
+
+// Check the target really is an Android res root before writing anything. The
+// script mkdirSync(recursive)s its way to every output, so a mistyped path does
+// not fail — it silently builds a mipmap tree somewhere harmless-looking and
+// writes play-store-icon.png four levels above it. This marker is the res
+// directory's own file, and it is one this PR edits.
+if (!existsSync(`${RES}/values/ic_launcher_background.xml`)) {
+  console.error(
+    `not an Android res directory: ${RES}\n` +
+      '(expected values/ic_launcher_background.xml beneath it)'
+  );
   process.exit(1);
 }
 
