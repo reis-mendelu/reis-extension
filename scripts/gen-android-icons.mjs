@@ -3,30 +3,45 @@
 // Chromium is already installed for e2e — and it renders the real SVG rather than
 // approximating the R path with drawing primitives.
 import { chromium } from 'playwright';
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const NAVY = '#111827';
+// Everything below is READ from the brand asset, never transcribed. An earlier
+// version inlined a copy of the artwork here, which meant editing the logo and
+// re-running this script produced the old icon — exactly the drift the file
+// header claims cannot happen. Anything that cannot be found is a hard failure:
+// falling back to a default would restore the drift silently.
+const LOGO = resolve(fileURLToPath(new URL('.', import.meta.url)), '../public/reIS_logo.svg');
+const SOURCE = readFileSync(LOGO, 'utf8');
 
-// The logo artwork, minus the background rect. Kept byte-identical to
-// public/reIS_logo.svg so the app icon cannot drift from the brand asset.
-const ART = `
-  <g transform="translate(7,0)">
-    <path d="
-      M38 88V86h4V42h-4V40h24c12 0 20 8 20 18s-7 17-17 18l18 12H69L55 76H54v10h4v2H38z
-      M54 66h10c6 0 10-4 10-10s-4-8-10-8H54v18z
-    " fill="#ffffff" fill-rule="evenodd"/>
-    <circle cx="32" cy="96" r="16" fill="#79be15" stroke="${NAVY}" stroke-width="4" />
-  </g>`;
+function extract(re, what) {
+  const m = SOURCE.match(re);
+  if (!m) {
+    throw new Error(`${LOGO} has no ${what} — the generator cannot derive the icon from it`);
+  }
+  return m[1];
+}
+
+// Carried through verbatim so Chromium resolves `class="letter"` and the
+// `var(--logo-bg, …)` fallbacks itself. Re-deriving those colours here is what
+// let the copy diverge in the first place.
+const STYLE = `<style>${extract(/<style>([\s\S]*?)<\/style>/, '<style> block')}</style>`;
+
+/** The artwork group — the mark without the background rect behind it. */
+const ART = extract(/(<g transform="translate\(7,0\)">[\s\S]*?<\/g>)/, 'artwork <g>');
+
+/** The brand background, taken from the `--logo-bg` fallback in that <style>. */
+const NAVY = extract(/--logo-bg,\s*(#[0-9a-fA-F]{3,8})/, '--logo-bg fallback colour');
 
 /** Legacy square icon: the full brand mark, rounded corners and all. */
 const full = () =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">${STYLE}
     <rect width="128" height="128" rx="24" fill="${NAVY}"/>${ART}</svg>`;
 
 /** Legacy round icon: same mark, circular field. */
 const round = () =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">${STYLE}
     <circle cx="64" cy="64" r="64" fill="${NAVY}"/>${ART}</svg>`;
 
 // Painted extents in ART units, read off getBBox() rather than eyeballed. The
@@ -94,7 +109,9 @@ const foreground = () => {
   const s = maxScale(ax, ay);
   const tx = 54 - ax * s;
   const ty = 54 - ay * s;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
+  // STYLE must come along here too — ART carries `class="letter"`, and without
+  // the rule the R silently renders black-on-navy instead of white.
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">${STYLE}
     <g transform="translate(${tx.toFixed(3)},${ty.toFixed(3)}) scale(${s.toFixed(5)})">${ART}</g></svg>`;
 };
 
@@ -131,18 +148,23 @@ async function render(svg, size, outPath) {
   return buf.length;
 }
 
-for (const [density, legacy, fg] of DENSITIES) {
-  const dir = `${RES}/mipmap-${density}`;
-  const a = await render(full(), legacy, `${dir}/ic_launcher.png`);
-  const b = await render(round(), legacy, `${dir}/ic_launcher_round.png`);
-  const c = await render(foreground(), fg, `${dir}/ic_launcher_foreground.png`);
-  console.log(
-    `${density}: launcher ${legacy}px (${a}B) round ${legacy}px (${b}B) fg ${fg}px (${c}B)`
-  );
+// try/finally, not a trailing close(): a screenshot or a write that throws
+// half-way would otherwise leave the Chromium process alive for the shell to
+// clean up by hand.
+try {
+  for (const [density, legacy, fg] of DENSITIES) {
+    const dir = `${RES}/mipmap-${density}`;
+    const a = await render(full(), legacy, `${dir}/ic_launcher.png`);
+    const b = await render(round(), legacy, `${dir}/ic_launcher_round.png`);
+    const c = await render(foreground(), fg, `${dir}/ic_launcher_foreground.png`);
+    console.log(
+      `${density}: launcher ${legacy}px (${a}B) round ${legacy}px (${b}B) fg ${fg}px (${c}B)`
+    );
+  }
+
+  // A 512 mark for the Play listing, straight from the same source.
+  await render(full(), 512, `${RES}/../../../../play-store-icon.png`);
+  console.log('play-store-icon.png 512px');
+} finally {
+  await browser.close();
 }
-
-// A 512 mark for the Play listing, straight from the same source.
-await render(full(), 512, `${RES}/../../../../play-store-icon.png`);
-console.log('play-store-icon.png 512px');
-
-await browser.close();
