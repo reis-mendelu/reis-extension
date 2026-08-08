@@ -8,6 +8,13 @@ export interface SheetProps {
   children: ReactNode;
   /** Raises the sheet above other sheets (confirm dialogs). */
   elevated?: boolean;
+  /**
+   * `screen` presents a pushed screen rather than a bottom sheet: full bleed,
+   * no backdrop, slide in from the right, and no drag-to-dismiss. It stays in
+   * the same sheet STACK — back still pops it — only the presentation differs.
+   * Defaults to `sheet` so the other callers are untouched.
+   */
+  variant?: 'sheet' | 'screen';
 }
 
 /**
@@ -15,20 +22,31 @@ export interface SheetProps {
  * backdrop fade, slide-up, tap-outside-to-close, drag-down-to-close, and one of
  * two heights.
  */
-export function Sheet({ size, onClose, children, elevated }: SheetProps) {
+export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: SheetProps) {
+  const isScreen = variant === 'screen';
   // Tailwind's default z-index scale stops at 50 — z-60/z-61 are not real
   // classes and would silently drop the sheet's stacking order. z-50 is
   // on-scale and stays as-is; anything above it (51, 60, 61) needs an
   // arbitrary value.
   const backdropZ = elevated ? 'z-[60]' : 'z-50';
   const panelZ = elevated ? 'z-[61]' : 'z-[51]';
-  const panelPosition = size === 'full' ? 'top-[70px] bottom-0' : 'bottom-0 max-h-[85dvh]';
+  // A screen covers everything and carries its own status-bar inset; the sheet
+  // sizes leave the strip above them visible on purpose.
+  const panelPosition = isScreen
+    ? 'inset-0 pt-[var(--safe-top,0px)]'
+    : size === 'full'
+      ? 'top-[70px] bottom-0'
+      : 'bottom-0 max-h-[85dvh]';
 
   const panelRef = useRef<HTMLDivElement>(null);
   const start = useRef<{ y: number; t: number } | null>(null);
   const [dragY, setDragY] = useState(0);
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    // A screen is left via back, not by being thrown downward — and with no
+    // backdrop there is nothing to tap outside of, so an accidental dismissal
+    // would have no undo.
+    if (isScreen) return;
     // Only a gesture the content does not want. dragOwnsGesture returns false
     // while any scroller under the finger is scrolled past its top, so reading
     // a long list never costs the student their place.
@@ -69,11 +87,13 @@ export function Sheet({ size, onClose, children, elevated }: SheetProps) {
 
   return (
     <>
-      <div
-        data-testid="sheet-backdrop"
-        onClick={onClose}
-        className={`absolute inset-0 bg-black/50 animate-[fadeIn_0.2s_ease-out] ${backdropZ}`}
-      />
+      {!isScreen && (
+        <div
+          data-testid="sheet-backdrop"
+          onClick={onClose}
+          className={`absolute inset-0 bg-black/50 animate-[fadeIn_0.2s_ease-out] ${backdropZ}`}
+        />
+      )}
       <div
         ref={panelRef}
         data-testid="sheet-panel"
@@ -84,9 +104,12 @@ export function Sheet({ size, onClose, children, elevated }: SheetProps) {
         // The entry animation is dropped the moment a drag starts: it animates
         // the same transform this does, and leaving both on makes the sheet
         // fight the finger.
-        className={`absolute inset-x-0 ${panelPosition} ${panelZ} flex flex-col overflow-hidden rounded-t-[20px] bg-base-100 shadow-drawer ${
-          dragging ? '' : 'animate-[sheetUp_0.3s_ease-out]'
-        }`}
+        // A screen enters from the RIGHT and squares off its corners: a rounded
+        // top edge sliding up is the vocabulary of something temporary sitting
+        // over the page, which is exactly the impression to avoid here.
+        className={`absolute ${isScreen ? '' : 'inset-x-0'} ${panelPosition} ${panelZ} flex flex-col overflow-hidden bg-base-100 shadow-drawer ${
+          isScreen ? 'animate-[screenIn_0.25s_ease-out]' : 'rounded-t-[20px]'
+        } ${dragging || isScreen ? '' : 'animate-[sheetUp_0.3s_ease-out]'}`}
         style={
           dragging
             ? { transform: `translateY(${dragY}px)` }

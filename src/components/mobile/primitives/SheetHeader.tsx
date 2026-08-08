@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { ChevronLeft, X } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 export interface SheetHeaderProps {
@@ -6,10 +6,16 @@ export interface SheetHeaderProps {
   subtitle?: string;
   eyebrow?: string;
   onClose?: () => void;
+  /**
+   * Screen presentation: a back chevron in place of the close X, and no drag
+   * pill — a screen is left by going back, and the pill would be advertising a
+   * gesture `Sheet variant="screen"` deliberately does not have.
+   */
+  onBack?: () => void;
 }
 
 /** Drag handle + title block, shared by every sheet. */
-export function SheetHeader({ title, subtitle, eyebrow, onClose }: SheetHeaderProps) {
+export function SheetHeader({ title, subtitle, eyebrow, onClose, onBack }: SheetHeaderProps) {
   const { t } = useTranslation();
   return (
     // touch-none is what makes the drag pill below more than decoration. Sheet
@@ -19,8 +25,17 @@ export function SheetHeader({ title, subtitle, eyebrow, onClose }: SheetHeaderPr
     // after ~20px of a 350px swipe, so it never met the dismiss threshold.
     // Scoped to the header so the content below keeps scrolling normally.
     <div className="flex-shrink-0 touch-none">
-      <div className="mx-auto mt-2 mb-1 h-1 w-9 rounded-full bg-base-300" />
+      {!onBack && <div className="mx-auto mt-2 mb-1 h-1 w-9 rounded-full bg-base-300" />}
       <div className="flex items-start gap-3 px-4 pb-3 pt-2">
+        {onBack && (
+          <button
+            onClick={onBack}
+            aria-label={t('mobile.sheet.back')}
+            className="btn btn-circle btn-ghost btn-sm -ml-1 flex-shrink-0"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+        )}
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           {eyebrow && (
             <span className="font-mono text-xs font-semibold tracking-wider text-primary">

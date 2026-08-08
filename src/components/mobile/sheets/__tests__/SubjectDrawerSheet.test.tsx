@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { SubjectDrawerSheet } from '../SubjectDrawerSheet';
 import { useAppStore } from '../../../../store/useAppStore';
 import type { SubjectInfo } from '../../../../types/documents';
@@ -93,5 +93,46 @@ describe('SubjectDrawerSheet', () => {
 
     // The files body should NOT be rendered; the files empty state message should not appear
     expect(screen.queryByText('Žádné soubory nejsou k dispozici.')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * The drawer is a whole screen, not a sheet. It already filled all but 70px of
+ * the viewport, so the dimmed strip above it and the slide-up entrance were
+ * advertising a temporary overlay you could look past — for what is really a
+ * destination you navigate into and come back from.
+ */
+describe('SubjectDrawerSheet presentation', () => {
+  const renderDrawer = (onClose = vi.fn()) =>
+    render(
+      <SubjectDrawerSheet
+        sheet={{ kind: 'subjectDrawer', courseCode: 'BIO', courseName: 'Biologie' }}
+        onClose={onClose}
+      />
+    );
+
+  it('presents as a full-bleed screen with no backdrop behind it', () => {
+    renderDrawer();
+    expect(screen.queryByTestId('sheet-backdrop')).not.toBeInTheDocument();
+    expect(screen.getByTestId('sheet-panel').className).toContain('inset-0');
+  });
+
+  it('offers back rather than close, since back is how a screen is left', () => {
+    const onClose = vi.fn();
+    renderDrawer(onClose);
+    expect(screen.queryByLabelText('Zavřít')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Zpět'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * The Android back button pops the same sheet stack, so the chevron and the
+   * system gesture are the same code path — this is what keeps them in step.
+   */
+  it('leaves via the same onClose the back button pops the stack with', () => {
+    const onClose = vi.fn();
+    renderDrawer(onClose);
+    fireEvent.click(screen.getByLabelText('Zpět'));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
