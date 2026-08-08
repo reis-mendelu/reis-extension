@@ -1,6 +1,6 @@
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { ChevronUp } from 'lucide-react';
-import { snapDetent, dragOwnsGesture } from '../../primitives/sheetDrag';
+import { snapDetent, dragOwnsGesture, consumesTravel } from '../../primitives/sheetDrag';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import type { MapSheetTab } from '../../../../store/types';
@@ -82,7 +82,10 @@ export function MapSheet() {
     const from = start.current;
     if (!from) return;
     const dy = e.clientY - from.y;
-    if (dy !== 0) dragged.current = true;
+    // Travel the sheet cannot absorb belongs to the content: at peek a downward
+    // drag has nowhere to go, and while expanded an upward one scrolls the list.
+    if (!consumesTravel(sheetState, dy)) return;
+    dragged.current = true;
     // Clamped to the two detents: peek is the floor because this sheet is the
     // only way to reach Akce, and 70vh is the ceiling it snaps to.
     const max = window.innerHeight * EXPANDED_VH;
@@ -97,6 +100,29 @@ export function MapSheet() {
     if (!from) return;
     setSheetState(snapDetent(sheetState, e.clientY - from.y, e.timeStamp - from.t));
   };
+
+  /**
+   * The whole sheet is a drag surface, not just the handle — dragging a sheet
+   * down anywhere on it is what every native sheet does.
+   *
+   * This needs a NON-PASSIVE touchmove: React attaches touch listeners
+   * passively, so `preventDefault` from onPointerMove is a no-op and the
+   * browser takes the gesture as a pan and fires pointercancel mid-drag. Only
+   * while the sheet is actually absorbing the travel — otherwise this would
+   * block the Akce list from ever scrolling.
+   */
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const onTouchMove = (e: TouchEvent) => {
+      const from = start.current;
+      const touch = e.touches[0];
+      if (!from || !touch) return;
+      if (consumesTravel(sheetState, touch.clientY - from.y)) e.preventDefault();
+    };
+    panel.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => panel.removeEventListener('touchmove', onTouchMove);
+  }, [sheetState]);
 
   // A cancel is the BROWSER taking the gesture over, not the student letting
   // go — the only outcome is "put it back". Mirrors Sheet's handling.

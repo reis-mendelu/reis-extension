@@ -320,6 +320,35 @@ describe('MapSheet drag', () => {
   });
 
   /**
+   * Dragging a sheet down anywhere on it is what every native sheet does — the
+   * handle is an affordance, not the only grab point.
+   */
+  it('collapses when dragged down from the content area', () => {
+    useAppStore.setState({ mapSheetState: 'expanded' } as never);
+    render(<MapScreen />);
+    const body = screen.getByText('Žádné akce');
+    fireEvent.pointerDown(body, { clientY: 300 });
+    fireEvent.pointerMove(body, { clientY: 500 });
+    fireEvent.pointerUp(body, { clientY: 500 });
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+  });
+
+  /**
+   * The mirror image: while expanded, an UPWARD drag in the content is the
+   * student scrolling the list. The sheet is already at its ceiling, so
+   * absorbing it would freeze the list in place.
+   */
+  it('leaves an upward drag in the content to the list', () => {
+    useAppStore.setState({ mapSheetState: 'expanded' } as never);
+    render(<MapScreen />);
+    const body = screen.getByText('Žádné akce');
+    fireEvent.pointerDown(body, { clientY: 500 });
+    fireEvent.pointerMove(body, { clientY: 300 });
+    fireEvent.pointerUp(body, { clientY: 300 });
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+  });
+
+  /**
    * jsdom has no touch-action, so only the class can be asserted here. It is
    * load-bearing rather than cosmetic: without it the browser claims the drag as
    * a pan and fires pointercancel partway through — measured at ~20px of a 350px

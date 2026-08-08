@@ -38,6 +38,17 @@ export type Detent = 'peek' | 'expanded';
  * later: peek is the floor, and dragging down from it must not collapse the
  * sheet out of existence, since the sheet is the only way to reach Akce.
  */
+/**
+ * Whether the sheet can absorb travel in this direction from this detent.
+ *
+ * Expanded absorbs downward only, peek upward only — in the other direction it
+ * is already against its stop, and the gesture belongs to whatever is under the
+ * finger (usually the Akce list scrolling).
+ */
+export function consumesTravel(from: Detent, dy: number): boolean {
+  return (from === 'peek' ? -dy : dy) > 0;
+}
+
 export function snapDetent(from: Detent, dy: number, dtMs: number): Detent {
   // Negative dy is upward, so the direction that can still travel flips.
   const travel = from === 'peek' ? -dy : dy;

@@ -3,6 +3,7 @@ import {
   shouldDismiss,
   dragOwnsGesture,
   snapDetent,
+  consumesTravel,
   DISMISS_DISTANCE_PX,
   DETENT_DISTANCE_PX,
 } from '../sheetDrag';
@@ -71,6 +72,23 @@ describe('snapDetent', () => {
 
   it('does not divide by a zero timestamp delta', () => {
     expect(snapDetent('peek', -10, 0)).toBe('peek');
+  });
+});
+
+describe('consumesTravel', () => {
+  it('absorbs downward travel only when expanded', () => {
+    expect(consumesTravel('expanded', 20)).toBe(true);
+    expect(consumesTravel('expanded', -20)).toBe(false);
+  });
+
+  it('absorbs upward travel only when at peek', () => {
+    expect(consumesTravel('peek', -20)).toBe(true);
+    expect(consumesTravel('peek', 20)).toBe(false);
+  });
+
+  it('absorbs nothing at rest', () => {
+    expect(consumesTravel('peek', 0)).toBe(false);
+    expect(consumesTravel('expanded', 0)).toBe(false);
   });
 });
 
