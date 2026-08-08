@@ -45,7 +45,10 @@ export function SheetHeader({ title, subtitle, eyebrow, onClose, onBack }: Sheet
           <span className="font-display text-lg font-bold tracking-tight">{title}</span>
           {subtitle && <span className="text-sm text-base-content/60">{subtitle}</span>}
         </div>
-        {onClose && (
+        {/* Back and close are alternatives, not a pair: a screen is left by
+            going back, a sheet by being closed. onBack wins so a caller passing
+            both cannot end up with two competing controls in one header. */}
+        {onClose && !onBack && (
           <button
             onClick={onClose}
             aria-label={t('mobile.sheet.close')}

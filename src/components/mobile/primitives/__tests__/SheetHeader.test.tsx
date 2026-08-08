@@ -53,3 +53,14 @@ describe('SheetHeader onBack', () => {
     expect(container.querySelector('.w-9.rounded-full')).not.toBeNull();
   });
 });
+
+/**
+ * Back and close are alternatives, not a pair — a screen is left by going back,
+ * a sheet by being closed. Rendering both would put two competing controls in
+ * one header, so onBack wins and the X is suppressed.
+ */
+it('renders only the back control when given both onBack and onClose', () => {
+  render(<SheetHeader title="Internet věcí" onBack={() => {}} onClose={() => {}} />);
+  expect(screen.getByLabelText('mobile.sheet.back')).toBeInTheDocument();
+  expect(screen.queryByLabelText('mobile.sheet.close')).not.toBeInTheDocument();
+});
