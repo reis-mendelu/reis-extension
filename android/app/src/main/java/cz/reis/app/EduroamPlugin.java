@@ -19,10 +19,12 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.io.ByteArrayInputStream;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -101,7 +103,7 @@ public class EduroamPlugin extends Plugin {
                 call.reject("FAILED at stage=keystore: the PKCS#12 contains no entries");
                 return;
             }
-            String alias = ks.aliases().nextElement();
+            String alias = keyEntryAlias(ks);
             PrivateKey key = (PrivateKey) ks.getKey(alias, pass);
             X509Certificate clientCert = (X509Certificate) ks.getCertificate(alias);
             if (key == null || clientCert == null) {
@@ -170,6 +172,30 @@ public class EduroamPlugin extends Plugin {
             call.reject("FAILED at stage=" + stage + ": "
                     + e.getClass().getSimpleName() + ": " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * The alias holding the private key. PKCS#12 entry order is unspecified, so
+     * the first alias is not necessarily the key entry: a bundle that ships its
+     * issuing chain as separate certificate-only entries can enumerate one of
+     * those first, and keying off it would reject material that is perfectly
+     * valid. Falls back to the first alias when no entry claims to be a key
+     * entry — the caller already null-checks the key and certificate, so a
+     * provider that mislabels its entries fails no worse than before.
+     */
+    private static String keyEntryAlias(KeyStore ks) throws KeyStoreException {
+        String first = null;
+        Enumeration<String> aliases = ks.aliases();
+        while (aliases.hasMoreElements()) {
+            String alias = aliases.nextElement();
+            if (ks.isKeyEntry(alias)) {
+                return alias;
+            }
+            if (first == null) {
+                first = alias;
+            }
+        }
+        return first;
     }
 
     /**
