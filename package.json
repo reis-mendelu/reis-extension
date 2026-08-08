@@ -49,6 +49,7 @@
     "@capacitor/splash-screen": "^8.0.2",
     "@capgo/capacitor-inappbrowser": "^8.13.2",
     "@fontsource/inter": "^5.3.0",
+    "@reis/capacitor-secure-store": "file:native/capacitor-secure-store",
     "@supabase/supabase-js": "^2.111.0",
     "clsx": "^2.1.1",
     "daisyui": "^5.7.9",

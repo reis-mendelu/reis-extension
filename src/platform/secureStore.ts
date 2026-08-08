@@ -8,15 +8,21 @@ interface SecureStoreNativePlugin {
 }
 
 /**
- * Android-only native plugin. Values are encrypted with an AES-256-GCM key that
- * lives in the Android Keystore and never enters the JS heap or the filesystem;
- * only ciphertext is persisted.
+ * Native plugin, implemented on both mobile platforms — the credential never
+ * touches `platform.storage`, which is plaintext on either OS.
  *
- * iOS is NOT implemented — the app has never been built for iOS (#174), and the
- * Keychain half lands there, where it can actually be compiled and run. Calling
- * this on iOS rejects from the bridge (no such plugin method), which is the
- * intended outcome: a missing implementation must surface as a failure, never
- * as a quiet fallback that writes a live credential to plaintext.
+ * Android encrypts with an AES-256-GCM key generated inside the Android
+ * Keystore; only ciphertext is persisted. iOS stores the value in the Keychain
+ * (`kSecClassGenericPassword`, accessible after first unlock, this device only),
+ * which encrypts at rest under a key outside the app process — so the iOS half
+ * writes no cipher code of its own.
+ *
+ * This module is the Capacitor implementation only. The other two hosts supply
+ * their own `secureStorage` and neither has a keystore to reach for: the
+ * extension maps it onto `chrome.storage.local` (its threat model is the browser
+ * profile, not a lost handset) and the dev webapp onto an in-memory Map. Do not
+ * "unify" them onto this plugin — `registerPlugin` has nothing to talk to off
+ * Capacitor.
  */
 const SecureStore = registerPlugin<SecureStoreNativePlugin>('SecureStore');
 
