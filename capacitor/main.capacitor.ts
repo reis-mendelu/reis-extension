@@ -13,8 +13,9 @@ import { setSessionExpiredHandler } from '@/services/sessionExpiry';
 import { useAppStore } from '@/store/useAppStore';
 
 /**
- * Android's hardware back unwinds the sheet stack before exiting. Registered
- * before boot so it works even while the login WebView is up.
+ * Android's hardware back unwinds the sheet stack, then the tab, before
+ * exiting. Registered before boot so it works even while the login WebView is
+ * up — no tab exists then, and handleBackPress falls through to exit.
  */
 void CapApp.addListener('backButton', () => {
   const s = useAppStore.getState();
@@ -23,6 +24,8 @@ void CapApp.addListener('backButton', () => {
     popSheet: s.popSheet,
     bulletinOpen: s.bulletinExpanded,
     closeBulletin: () => void s.setBulletinExpanded(false),
+    tab: s.mobileTab,
+    goToCalendar: () => s.setMobileTab('calendar'),
   });
   if (result === 'exit') {
     void CapApp.exitApp();
