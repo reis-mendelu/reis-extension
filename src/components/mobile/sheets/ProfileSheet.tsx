@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
 import {
   X,
   Moon,
@@ -21,7 +20,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { SpolkySection } from '../../Sidebar/Profile/SpolkySection';
 import { HiddenItemsSection } from '../../Sidebar/Profile/HiddenItemsSection';
 import { FeedbackModal } from '../../Feedback/FeedbackModal';
-import { logout } from '../../../api/proxyClient';
+import { SignOutConfirm } from './SignOutConfirm';
 
 export interface ProfileSheetProps {
   onClose: () => void;
@@ -64,6 +63,7 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
   const plan = useStudyPlan();
   const [spolkyOpen, setSpolkyOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
   const name = fullName ?? '';
 
@@ -198,13 +198,7 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
         </button>
         <button
           type="button"
-          onClick={() => {
-            // Sign-out is deferred on mobile until the transport can POST, and
-            // logout() now refuses rather than wiping local data first. Catch
-            // it: an unhandled rejection here would fire a telemetry report on
-            // every tap and tell the student nothing.
-            void logout().catch(() => toast.error(t('settings.logoutUnavailable')));
-          }}
+          onClick={() => setSignOutOpen(true)}
           className="flex w-full items-center gap-3 px-4 py-3 text-error"
         >
           <LogOut size={17} className="flex-shrink-0" />
@@ -212,6 +206,7 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
         </button>
       </div>
 
+      <SignOutConfirm open={signOutOpen} onCancel={() => setSignOutOpen(false)} />
       <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </Sheet>
   );

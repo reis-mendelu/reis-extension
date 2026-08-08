@@ -86,7 +86,6 @@
     "errorReporting": "Error Reporting",
     "errorReportingDesc": "Send anonymous, sanitized error reports to help fix bugs.",
     "logout": "Logout",
-    "logoutUnavailable": "Signing out isn't available in the app yet. Please sign out in IS.",
     "basicDetails": "Basic Details",
     "accounts": "Accounts",
     "cards": "Cards",
@@ -94,7 +93,10 @@
     "housingOverview": "Housing Overview",
     "reservations": "Reservations",
     "foodDebit": "Food Debit",
-    "skmDocuments": "SKM Documents"
+    "skmDocuments": "SKM Documents",
+    "logoutConfirmTitle": "Sign out of the app?",
+    "logoutConfirmBody": "Your sign-in and downloaded data are removed from this phone. You'll need to sign in to IS again next time.",
+    "logoutFailed": "Signing out failed. Please try again."
   },
   "drive": {
     "title": "Google Drive backup",

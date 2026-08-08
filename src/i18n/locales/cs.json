@@ -86,7 +86,6 @@
     "errorReporting": "Hlášení chyb",
     "errorReportingDesc": "Posílat anonymizovaná hlášení chyb, ať můžeme bugy opravit.",
     "logout": "Odhlásit se",
-    "logoutUnavailable": "Odhlášení zatím v aplikaci nefunguje. Odhlaste se prosím v IS.",
     "basicDetails": "Základní údaje",
     "accounts": "Konta",
     "cards": "Karty",
@@ -94,7 +93,10 @@
     "housingOverview": "Přehled ubytování",
     "reservations": "Rezervace",
     "foodDebit": "Inkaso za stravu",
-    "skmDocuments": "Dokumenty SKM"
+    "skmDocuments": "Dokumenty SKM",
+    "logoutConfirmTitle": "Odhlásit se z aplikace?",
+    "logoutConfirmBody": "Z telefonu smažeme tvoje přihlášení i stažená data. Příště se budeš muset znovu přihlásit do IS.",
+    "logoutFailed": "Odhlášení se nepovedlo. Zkus to prosím znovu."
   },
   "drive": {
     "title": "Záloha na Google Disk",
