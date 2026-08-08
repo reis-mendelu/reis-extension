@@ -41,6 +41,7 @@ export function ProfilePopup({
   const setErrorReportingEnabled = useAppStore((state) => state.setErrorReportingEnabled);
   const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
   const onBadge = useTripleClick(openSocietyAdmin);
+  const unread = useAppStore((s) => (s.adminRole === 'reis_admin' ? s.suggestionsUnread : 0));
   const { params } = useUserParams();
 
   if (!isOpen) return null;
@@ -73,6 +74,11 @@ export function ProfilePopup({
                 <span onClick={onBadge} className="opacity-70">
                   {t('settings.studentId')}
                 </span>
+                {unread > 0 && (
+                  <span data-testid="suggestions-badge" className="badge badge-primary badge-xs">
+                    {unread}
+                  </span>
+                )}
                 <span className="font-mono text-xs bg-base-300/50 px-2.5 py-1 rounded-lg border border-base-300/50 select-all ml-auto">
                   {params.studentId}
                 </span>
