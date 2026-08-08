@@ -1,3 +1,5 @@
+import type { MobileTab } from '../store/types';
+
 export interface BackPressState {
   sheetCount: number;
   popSheet(): void;
@@ -9,6 +11,13 @@ export interface BackPressState {
    */
   bulletinOpen?: boolean;
   closeBulletin?(): void;
+  /**
+   * The bottom-nav tab in view. Optional because this listener is registered
+   * before boot, so it also fires while the login WebView is up and no tab
+   * exists yet — that case must still exit.
+   */
+  tab?: MobileTab;
+  goToCalendar?(): void;
 }
 
 export type BackPressResult = 'popped' | 'exit';
@@ -18,6 +27,10 @@ export type BackPressResult = 'popped' | 'exit';
  * The stack genuinely nests (Student → person, Subjects → drawer → confirm), so
  * one press pops exactly one level.
  *
+ * Innermost surface first: sheet → bulletin → tab → exit. Calendar is the start
+ * destination, which is how Android expects a bottom nav to behave — back from
+ * Zkoušky/Předměty/Mapa/Student returns there, and only calendar quits.
+ *
  * Pure on purpose: the @capacitor/app listener is a two-line adapter over this,
  * which keeps the decision testable without a device.
  */
@@ -26,6 +39,8 @@ export function handleBackPress({
   popSheet,
   bulletinOpen,
   closeBulletin,
+  tab,
+  goToCalendar,
 }: BackPressState): BackPressResult {
   // Sheets first: one opened on top of the bulletin is drawn above it, so
   // closing the overlay underneath would look like nothing happened.
@@ -35,6 +50,10 @@ export function handleBackPress({
   }
   if (bulletinOpen && closeBulletin) {
     closeBulletin();
+    return 'popped';
+  }
+  if (tab && tab !== 'calendar' && goToCalendar) {
+    goToCalendar();
     return 'popped';
   }
   return 'exit';
