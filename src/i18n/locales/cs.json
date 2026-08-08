@@ -1134,7 +1134,9 @@
       "emptyBody": "Žádné přednášky ani cvičení. Užij si volno!",
       "gap": "{hours} h volno",
       "gapMinutes": "{minutes} min volno",
-      "notifications": "Oznámení"
+      "notifications": "Oznámení",
+      "prevWeek": "Předchozí týden",
+      "nextWeek": "Další týden"
     },
     "exams": {
       "title": "Zkoušky",

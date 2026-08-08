@@ -51,7 +51,7 @@ function CalendarSkeleton() {
 export function CalendarScreen() {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
-  const { schedule, weekStart } = useSchedule();
+  const { schedule } = useSchedule();
   const fullName = useAppStore((s) => s.fullName);
   const mobileSelectedDayIso = useAppStore((s) => s.mobileSelectedDayIso);
   const setMobileSelectedDay = useAppStore((s) => s.setMobileSelectedDay);
@@ -171,7 +171,7 @@ export function CalendarScreen() {
         error={bulletinError}
       />
 
-      <DayChips weekStart={weekStart} selectedIso={selectedIso} onSelect={setMobileSelectedDay} />
+      <DayChips selectedIso={selectedIso} onSelect={setMobileSelectedDay} />
 
       <div className="flex-1 overflow-y-auto pb-24">
         {agenda.length === 0 ? (

@@ -1134,7 +1134,9 @@
       "emptyBody": "No lectures or seminars today. Take the day.",
       "gap": "{hours} h free",
       "gapMinutes": "{minutes} min free",
-      "notifications": "Notifications"
+      "notifications": "Notifications",
+      "prevWeek": "Previous week",
+      "nextWeek": "Next week"
     },
     "exams": {
       "title": "Exams",

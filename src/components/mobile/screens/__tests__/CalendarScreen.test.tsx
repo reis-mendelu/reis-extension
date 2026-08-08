@@ -95,6 +95,27 @@ describe('CalendarScreen', () => {
     expect(screen.getByLabelText('Rozbalit vývěsku')).toBeInTheDocument();
   });
 
+  it('offers the selected day’s own week, not the semester start in schedule.weekStart', () => {
+    // `syncSchedule` writes `schedule_week_start` as the SEMESTER start
+    // (Feb 1 / Sep 1), not a Monday of anything — the name lies. DayChips
+    // used to anchor on it, so a student in April was offered five days in
+    // February and could not reach the current week at all. Every other test
+    // here passes `weekStart: null`, which is exactly why this survived.
+    useAppStore.setState({
+      schedule: {
+        data: [],
+        status: 'success',
+        weekStart: new Date('2026-02-01T00:00:00'),
+      } as never,
+    });
+    render(<CalendarScreen />);
+
+    // Selected day is Monday 2026-04-20 → the row is 20–24 April.
+    expect(screen.getByRole('button', { name: /20/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /24/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Ne 1$/ })).not.toBeInTheDocument();
+  });
+
   it('omits an event hidden via hiddenItems.events from the day agenda', () => {
     useAppStore.setState({
       schedule: { data: [lesson({ id: 'l1' })], status: 'success', weekStart: null } as never,
