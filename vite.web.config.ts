@@ -31,6 +31,10 @@ export default defineConfig({
     // shipped extension builds via wxt.config.ts and never sees this. Override
     // with `VITE_DEV_SOCIETY= npm run dev:web` to test the real login flow.
     'import.meta.env.VITE_DEV_SOCIETY': JSON.stringify(process.env.VITE_DEV_SOCIETY ?? 'reis'),
+    // Same injection the Capacitor build does: off the extension there is no
+    // manifest to read a version from. Defined here too so the harness renders
+    // the same string the app will, rather than a placeholder.
+    __REIS_APP_VERSION__: JSON.stringify(createRequire(import.meta.url)('./package.json').version),
   },
   server: {
     // Honour PORT so concurrent worktree sessions (and the UI verification

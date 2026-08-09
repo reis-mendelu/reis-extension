@@ -192,3 +192,51 @@ describe('openExternal', () => {
     );
   });
 });
+
+describe('openExternal — which browser', () => {
+  const openWebView = vi.fn();
+  const open = vi.fn();
+
+  beforeEach(() => {
+    setAppOrigin();
+    vi.clearAllMocks();
+    vi.mocked(getPlatform).mockReturnValue({
+      kind: 'capacitor',
+    } as unknown as ReturnType<typeof getPlatform>);
+    vi.doMock('@capgo/capacitor-inappbrowser', () => ({
+      InAppBrowser: { openWebView, open },
+    }));
+  });
+
+  it('keeps IS inside the app, where the session lives, and lets it zoom', async () => {
+    // `capacitorTransport` replays UISAuth into the app's own WebView jar and
+    // nothing else can see it — sending IS to the system browser would land
+    // the student on a login page. The pages are built for a desktop, so the
+    // view has to zoom or half of them are unreadable at 390px.
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
+
+    expect(open).not.toHaveBeenCalled();
+    expect(openWebView).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'https://is.mendelu.cz/auth/student/moje_studium.pl',
+        enableZoom: true,
+      })
+    );
+  });
+
+  it.each([
+    ['https://webiskam.mendelu.cz/', 'a separate Shibboleth sign-in'],
+    ['https://esn.mendelu.cz/event', 'a society page'],
+    ['https://example.org/whatever', 'a third party'],
+  ])('sends %s to the real browser (%s)', async (url) => {
+    // Chrome Custom Tabs / SFSafariViewController: the student's own cookies,
+    // a visible URL bar and pinch-to-zoom. Nothing here gains from the app's
+    // session, so nothing here should be trapped in the app's WebView.
+    const { openExternal } = await import('../openExternal');
+    await openExternal(url);
+
+    expect(openWebView).not.toHaveBeenCalled();
+    expect(open).toHaveBeenCalledWith({ url });
+  });
+});

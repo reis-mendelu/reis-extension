@@ -43,7 +43,6 @@ export interface ScheduleSlice {
   schedule: {
     data: BlockLesson[];
     status: Status;
-    weekStart: Date | null;
   };
   fetchSchedule: () => Promise<void>;
   setSchedule: (data: BlockLesson[]) => void;
@@ -459,14 +458,19 @@ export type MapSheetTab = 'akce' | 'knihovna' | 'budova';
 
 /** Discriminated union of every sheet the phone UI can open. */
 export type MobileSheet =
-  | { kind: 'eventDetail'; eventId: string }
+  // `dayIso` disambiguates the occurrence: the store holds the whole semester
+  // and IS reuses a lesson id across the weeks it repeats, so the id alone does
+  // not identify which one was tapped.
+  | { kind: 'eventDetail'; eventId: string; dayIso?: string }
   | { kind: 'subjectDrawer'; courseCode: string; courseName?: string; courseId?: string }
   | { kind: 'studyPlan' }
   | { kind: 'profile' }
   | { kind: 'person'; personId: string; personName?: string }
   | { kind: 'eduroam' }
   | { kind: 'docs' }
-  | { kind: 'erasmus' }
+  // No 'erasmus': the panel is desktop-only. It hosted the Learning Agreement
+  // tables and the Europe map, which do not survive a phone, and it offered a
+  // shortcut to every student for something only exchange students use.
   | { kind: 'notifications' }
   | { kind: 'confirm'; confirmId: string };
 

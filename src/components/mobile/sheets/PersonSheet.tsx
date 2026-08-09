@@ -1,4 +1,4 @@
-import { Mail, MapPin } from 'lucide-react';
+import { Mail, MapPin, Phone } from 'lucide-react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { usePersonProfile } from '../../../hooks/data/usePersonProfile';
@@ -6,6 +6,7 @@ import { usePersonPhoto } from '../../../hooks/data/usePersonPhoto';
 import { useSchedule } from '../../../hooks/data/useSchedule';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { resolveRoomCode } from '../../../utils/mobile/resolveRoomCode';
 import type { MobileSheet } from '../../../store/types';
 
 type PersonSheetData = Extract<MobileSheet, { kind: 'person' }>;
@@ -26,16 +27,20 @@ function initials(name: string): string {
 }
 
 /**
- * Content-size sheet for a person (teacher/classmate): photo, role, email
- * and a "show on map" jump.
+ * Content-size sheet for a person: photo, what they do, how to reach them, and
+ * where to find them.
  *
- * IS's parsed profile (`api/personProfile`) has no office field to show a
- * real "kancelář" — the closest available real signal for "where to find
- * this person" is a lesson they actually teach, resolved from the schedule
- * already in the store. The map action reuses `CalendarScreen`'s own
- * mechanism exactly (`setMobileTab('map')` + `focusRoomByCode`, including
- * stripping the trailing "(Campus)" suffix) rather than inventing a second
- * one; `setMobileTab` already clears the whole sheet stack.
+ * It used to show a name, an email and — for a teacher — nothing else, because
+ * the profile parser was written for students and returned nulls for every
+ * staff field. IS publishes the work phone, the department, the workplace
+ * address and the office on the same page; the parser reads them now.
+ *
+ * "Where to find them" is the office, not a guess. The previous version showed
+ * the room of any lesson the person happened to teach — which is where they
+ * are for ninety minutes a week, and misleading the rest of the time. The
+ * campus map keys rooms on either the estate code or the friendly name, so
+ * both are tried before the button is offered at all: a button that cannot
+ * resolve its room is worse than no button.
  */
 export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
   const { t } = useTranslation();
@@ -48,35 +53,38 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
 
-  const taughtLesson = schedule.find((l) =>
-    l.teachers.some((teacher) => teacher.id === sheet.personId)
-  );
-  const roomLabel = taughtLesson?.room;
-
   // Never the raw IS id: the search result that opened this sheet already
   // knows the display name (`personName`), so that's the immediate title —
   // no loading flash. `profile.name` supersedes it once the fetch resolves.
-  // If neither is available, show an explicit loading/error state instead
-  // (never falling back to `sheet.personId`).
   const name = profile?.name ?? sheet.personName;
   const title =
     name ?? (isLoading ? t('mobile.sheet.personLoading') : t('mobile.sheet.personLoadError'));
-  const roleLine = profile?.studyTypeSentence || profile?.programmeName || undefined;
+  // The role line for staff, the programme for students — whichever this
+  // person has.
+  const subtitle =
+    profile?.roles?.[0] || profile?.studyTypeSentence || profile?.programmeName || undefined;
   const email = profile?.universityEmail || profile?.privateEmail || null;
   const placeholderText = isLoading
     ? t('mobile.sheet.personLoading')
     : error || t('mobile.sheet.personLoadError');
 
+  // The office if the map knows it; otherwise a room they teach in, which is
+  // at least somewhere they demonstrably are. Both go through the same
+  // resolver so an unknown code never becomes a dead button.
+  const taughtRoom = schedule.find((l) =>
+    l.teachers.some((teacher) => teacher.id === sheet.personId)
+  )?.room;
+  const room = resolveRoomCode([profile?.officeCode, profile?.officeName, taughtRoom]);
+
   const onShowOnMap = () => {
-    if (!taughtLesson) return;
-    const roomCode = taughtLesson.room.replace(/\s*\([^)]*\)\s*$/, '').trim();
+    if (!room) return;
     setMobileTab('map');
-    focusRoomByCode(roomCode);
+    focusRoomByCode(room.code);
   };
 
   return (
     <Sheet size="content" onClose={onClose}>
-      <SheetHeader title={title} subtitle={roleLine} onClose={onClose} />
+      <SheetHeader title={title} subtitle={subtitle} onClose={onClose} />
       {!name ? (
         <p className="px-5 pb-5 text-sm text-base-content/60">{placeholderText}</p>
       ) : (
@@ -96,10 +104,16 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
                   <span className="truncate">{email}</span>
                 </span>
               )}
-              {roomLabel && (
+              {profile?.phone && (
+                <span className="flex items-center gap-2 truncate">
+                  <Phone size={13} className="flex-shrink-0 text-base-content/50" />
+                  <span className="truncate">{profile.phone}</span>
+                </span>
+              )}
+              {room && (
                 <span className="flex items-center gap-2 truncate">
                   <MapPin size={13} className="flex-shrink-0 text-base-content/50" />
-                  <span className="truncate">{roomLabel}</span>
+                  <span className="truncate">{room.label}</span>
                 </span>
               )}
             </div>
@@ -108,18 +122,26 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
             {email && (
               <a
                 href={`mailto:${email}`}
-                className="flex min-h-11 items-center justify-center rounded-xl bg-primary text-base font-semibold text-primary-content"
+                className="flex min-h-11 items-center justify-center rounded-xl bg-primary/15 text-base font-semibold text-primary"
               >
                 {t('mobile.sheet.writeEmail')}
               </a>
             )}
-            {taughtLesson && (
+            {profile?.phone && (
+              <a
+                href={`tel:${profile.phone.replace(/\s/g, '')}`}
+                className="flex min-h-11 items-center justify-center rounded-xl border border-base-300 text-base font-semibold text-base-content/70"
+              >
+                {t('mobile.sheet.callPerson')}
+              </a>
+            )}
+            {room && (
               <button
                 type="button"
                 onClick={onShowOnMap}
                 className="flex min-h-11 items-center justify-center rounded-xl border border-base-300 text-base font-semibold text-base-content/70"
               >
-                {t('mobile.sheet.showOfficeOnMap')}
+                {t('mobile.sheet.navigateToRoom', { room: room.label })}
               </button>
             )}
           </div>

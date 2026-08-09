@@ -74,17 +74,14 @@ export function downloadDocument(
 }
 
 export async function logout(): Promise<void> {
-  // Mobile has no logout responder. The extension's sign-out is DOM-bound in
-  // the content script: it finds IS's own logout FORM in the host page and
-  // submits it (see injector/messageHandler). The app has no host page, and
-  // mobile/actionHandler has no `logout` case at all, so the request throws
-  // immediately. The transport is NOT the blocker any more — it does POST now.
-  //
-  // Bail BEFORE clearing anything: the destructive half must not run when the
-  // sign-out itself cannot, or the student is left with an emptied app AND a
-  // live IS session.
+  // Mobile takes a different route entirely. The extension's sign-out is
+  // DOM-bound in the content script: it finds IS's own logout FORM in the host
+  // page and submits it (see injector/messageHandler). The app has no host
+  // page, so what signs this device out is removing the stored UISAuth token
+  // and the cookie jar that would otherwise restore it — see mobile/signOut.
   if (getPlatform().kind === 'capacitor') {
-    throw new Error('Sign-out is not available in the reIS mobile app yet');
+    const { signOutMobile, buildSignOutDeps } = await import('../mobile/signOut');
+    return signOutMobile(buildSignOutDeps());
   }
   clearUserParamsCache();
   try {

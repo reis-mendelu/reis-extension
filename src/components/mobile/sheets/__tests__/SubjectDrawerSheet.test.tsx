@@ -17,7 +17,7 @@ describe('SubjectDrawerSheet', () => {
         handshakeTimedOut: false,
       },
       subjects: { version: 1, lastUpdated: '', data: {} },
-      schedule: { data: [], status: 'success', weekStart: null },
+      schedule: { data: [], status: 'success' },
     } as never);
   });
 

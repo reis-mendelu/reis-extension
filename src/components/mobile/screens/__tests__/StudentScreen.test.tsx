@@ -43,8 +43,12 @@ describe('StudentScreen', () => {
     // not among the everyday shortcuts. It lives in ProfileSheet now.
     expect(screen.queryByText('Eduroam')).not.toBeInTheDocument();
     expect(screen.getByText('Dokumenty')).toBeInTheDocument();
-    expect(screen.getByText('Erasmus')).toBeInTheDocument();
     expect(screen.getByText('ISKAM')).toBeInTheDocument();
+    // Erasmus is gone from the phone entirely: it hosted the desktop panel
+    // wholesale, whose Learning Agreement tables and Europe map do not survive
+    // a narrow screen, and it offered every student a shortcut to something
+    // only exchange students use. It stays on desktop.
+    expect(screen.queryByText('Erasmus')).not.toBeInTheDocument();
   });
 
   it('pushes a docs sheet when the Dokumenty shortcut is tapped', () => {
@@ -89,5 +93,38 @@ describe('StudentScreen', () => {
     const input = screen.getByRole('textbox', { name: 'Hledej stránku v IS…' });
     fireEvent.change(input, { target: { value: 'zzzznonexistentpage' } });
     expect(screen.getByText('Nic jsme nenašli. Zkus to jinak.')).toBeInTheDocument();
+  });
+});
+
+describe('StudentScreen — the IS page directory', () => {
+  // 95 links across 13 categories, including IS's own administration,
+  // documentation and personalisation sections. Listed outright they buried
+  // the two shortcuts a student opens daily and made the tab read as a site
+  // map. They are kept, behind one row.
+  it('keeps the page list collapsed until asked for', () => {
+    render(<StudentScreen />);
+    expect(screen.queryByText('E-index')).not.toBeInTheDocument();
+    expect(screen.getByText('Všechny stránky IS')).toBeInTheDocument();
+  });
+
+  it('reveals the list when the row is tapped, and hides it again', () => {
+    render(<StudentScreen />);
+    const row = screen.getByRole('button', { name: /Všechny stránky IS/ });
+
+    fireEvent.click(row);
+    expect(screen.getByText('E-index')).toBeInTheDocument();
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(row);
+    expect(screen.queryByText('E-index')).not.toBeInTheDocument();
+  });
+
+  it('searching reaches every page without expanding anything', () => {
+    // This is what makes hiding the long tail safe: the box above is a
+    // complete index of it, collapsed or not.
+    render(<StudentScreen />);
+    const input = screen.getByRole('textbox', { name: 'Hledej stránku v IS…' });
+    fireEvent.change(input, { target: { value: 'E-index' } });
+    expect(screen.getByText('E-index')).toBeInTheDocument();
   });
 });

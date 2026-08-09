@@ -10,6 +10,7 @@ import { ScreenHeader } from './calendar/ScreenHeader';
 import { StudentSearch, type StudentMode } from './student/StudentSearch';
 import { ShortcutGrid, type ShortcutSheetKind } from './student/ShortcutGrid';
 import { PageGroupList, type PageGroup } from './student/PageGroupList';
+import { PagesDisclosure } from './student/PagesDisclosure';
 
 function stripDiacritics(value: string): string {
   return value
@@ -42,6 +43,7 @@ export function StudentScreen() {
   const { t, language } = useTranslation();
   const [mode, setMode] = useState<StudentMode>('pages');
   const [query, setQuery] = useState('');
+  const [pagesOpen, setPagesOpen] = useState(false);
 
   const pushSheet = useAppStore((s) => s.pushSheet);
   const studiumId = useAppStore((s) => s.studiumId);
@@ -57,6 +59,10 @@ export function StudentScreen() {
   const trimmedQuery = query.trim();
   const hasQuery = trimmedQuery.length > 0;
   const pageGroups = useMemo(() => buildPageGroups(query, language), [query, language]);
+  const pageCount = useMemo(
+    () => pagesData.reduce((n, category) => n + category.children.length, 0),
+    []
+  );
 
   const handleModeChange = (next: StudentMode) => {
     setMode(next);
@@ -70,9 +76,7 @@ export function StudentScreen() {
   };
 
   const openSheet = (kind: ShortcutSheetKind) => {
-    if (kind === 'eduroam') pushSheet({ kind: 'eduroam' });
-    else if (kind === 'docs') pushSheet({ kind: 'docs' });
-    else pushSheet({ kind: 'erasmus' });
+    pushSheet(kind === 'eduroam' ? { kind: 'eduroam' } : { kind: 'docs' });
   };
 
   const openPerson = (result: SearchResult) => {
@@ -95,8 +99,20 @@ export function StudentScreen() {
       <div className="flex-1 overflow-y-auto pb-24 pt-2">
         {mode === 'pages' && (
           <>
-            {!hasQuery && <ShortcutGrid onOpenSheet={openSheet} />}
-            {pageGroups.length > 0 ? (
+            {!hasQuery && (
+              <>
+                <ShortcutGrid onOpenSheet={openSheet} />
+                <PagesDisclosure
+                  open={pagesOpen}
+                  count={pageCount}
+                  onToggle={() => setPagesOpen((v) => !v)}
+                />
+              </>
+            )}
+            {/* Searching bypasses the disclosure: the box above reaches every
+                one of the 95 links whether or not the list is expanded, which
+                is what makes hiding the long tail safe. */}
+            {(hasQuery || pagesOpen) && pageGroups.length > 0 ? (
               <PageGroupList groups={pageGroups} onOpen={openHref} />
             ) : hasQuery ? (
               <NoResults text={noResultsText} />

@@ -21,7 +21,20 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set) => ({
   setMobileTab: (tab) => set({ mobileTab: tab, mobileSheets: [] }),
   setMobileSelectedDay: (iso) => set({ mobileSelectedDayIso: iso }),
 
-  pushSheet: (sheet) => set((s) => ({ mobileSheets: [...s.mobileSheets, sheet] })),
+  // A push onto a sheet of the SAME kind swaps in place instead of stacking.
+  // Tapping a second classmate while the first one's card is open is a lateral
+  // move, not a descent, and stacking put two person cards on screen at once —
+  // the new one sliding up over the one it meant to replace. Done as a single
+  // store update so no frame ever renders both, and the sheet UNDERNEATH (the
+  // subject drawer that opened the first card) is untouched, so back still
+  // goes where it should.
+  pushSheet: (sheet) =>
+    set((s) => ({
+      mobileSheets:
+        s.mobileSheets.at(-1)?.kind === sheet.kind
+          ? [...s.mobileSheets.slice(0, -1), sheet]
+          : [...s.mobileSheets, sheet],
+    })),
   popSheet: () => set((s) => ({ mobileSheets: s.mobileSheets.slice(0, -1) })),
   replaceSheet: (sheet) => set((s) => ({ mobileSheets: [...s.mobileSheets.slice(0, -1), sheet] })),
   closeAllSheets: () => set({ mobileSheets: [] }),

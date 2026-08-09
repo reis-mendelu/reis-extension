@@ -13,9 +13,26 @@ interface ClassmatesTabProps {
   /** Off for the phone sheet, which pins its own IS MENDELU footer. */
   showIsBacklink?: boolean;
   courseCode: string;
+  /**
+   * Takes over the row tap. The phone passes this to reach its own
+   * `PersonSheet` — the one search already opens, with roles, office and the
+   * map button — instead of `ClassmatePersonDrawer`, which left the app with
+   * two different person views and gave the phone the weaker one.
+   */
+  onSelectPerson?: (classmate: Classmate) => void;
+  /**
+   * Off for the phone, where the study programme only ever rendered clipped
+   * mid-word ("PEF B-OI-ZBOI prez [se…") and squeezed the name onto two lines.
+   */
+  showStudyInfo?: boolean;
 }
 
-export function ClassmatesTab({ courseCode, showIsBacklink = true }: ClassmatesTabProps) {
+export function ClassmatesTab({
+  courseCode,
+  showIsBacklink = true,
+  onSelectPerson,
+  showStudyInfo = true,
+}: ClassmatesTabProps) {
   const { t, language } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<Classmate | null>(null);
@@ -37,6 +54,9 @@ export function ClassmatesTab({ courseCode, showIsBacklink = true }: ClassmatesT
     const result = t(key);
     return result === key ? fallback : result;
   };
+
+  const openPerson = (student: Classmate) =>
+    onSelectPerson ? onSelectPerson(student) : setSelected(student);
 
   const filteredClassmates = useMemo(() => {
     const list = classmates ?? [];
@@ -78,11 +98,11 @@ export function ClassmatesTab({ courseCode, showIsBacklink = true }: ClassmatesT
             key={student.personId}
             role="button"
             tabIndex={0}
-            onClick={() => setSelected(student)}
+            onClick={() => openPerson(student)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                setSelected(student);
+                openPerson(student);
               }
             }}
             className="flex items-center justify-between p-3 rounded-xl border border-base-200 bg-base-100 hover:border-primary/20 hover:shadow-sm transition-all group cursor-pointer text-left"
@@ -102,10 +122,12 @@ export function ClassmatesTab({ courseCode, showIsBacklink = true }: ClassmatesT
                   />
                 </div>
               </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-base-content leading-tight">{student.name}</span>
-                  {student.studyInfo && (
+              <div className="flex min-w-0 flex-1 flex-col">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate font-bold text-base-content leading-tight">
+                    {student.name}
+                  </span>
+                  {showStudyInfo && student.studyInfo && (
                     <>
                       <span className="text-base-content/20">•</span>
                       <span

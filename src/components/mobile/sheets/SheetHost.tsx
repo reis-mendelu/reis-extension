@@ -7,7 +7,6 @@ import { ProfileSheet } from './ProfileSheet';
 import { PersonSheet } from './PersonSheet';
 import { EduroamSheet } from './EduroamSheet';
 import { DocsSheet } from './DocsSheet';
-import { ErasmusSheet } from './ErasmusSheet';
 
 /**
  * Renders the phone UI's sheet stack, in order, each in its own `Sheet`.
@@ -42,8 +41,6 @@ export function SheetHost() {
             return <EduroamSheet key={index} onClose={popSheet} />;
           case 'docs':
             return <DocsSheet key={index} onClose={popSheet} />;
-          case 'erasmus':
-            return <ErasmusSheet key={index} onClose={popSheet} />;
           default:
             return null;
         }

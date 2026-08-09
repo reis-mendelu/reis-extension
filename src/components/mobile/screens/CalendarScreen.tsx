@@ -51,7 +51,7 @@ function CalendarSkeleton() {
 export function CalendarScreen() {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
-  const { schedule, weekStart } = useSchedule();
+  const { schedule } = useSchedule();
   const fullName = useAppStore((s) => s.fullName);
   const mobileSelectedDayIso = useAppStore((s) => s.mobileSelectedDayIso);
   const setMobileSelectedDay = useAppStore((s) => s.setMobileSelectedDay);
@@ -82,6 +82,10 @@ export function CalendarScreen() {
   const nowNext = resolveNowNext(schedule, now);
   const visibleSchedule = schedule.filter((l) => !isLessonHidden(l, hiddenItems));
   const agenda = buildDayAgenda(visibleSchedule, selectedIso);
+  // Which days the chip row may need to offer beyond Mon–Fri. Built from the
+  // lessons the student can actually see, so a hidden Saturday lesson does not
+  // conjure a chip for an empty day.
+  const lessonDates = new Set(visibleSchedule.map((l) => l.date));
   const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
 
   const openBulletin = () => {
@@ -171,7 +175,11 @@ export function CalendarScreen() {
         error={bulletinError}
       />
 
-      <DayChips weekStart={weekStart} selectedIso={selectedIso} onSelect={setMobileSelectedDay} />
+      <DayChips
+        selectedIso={selectedIso}
+        onSelect={setMobileSelectedDay}
+        lessonDates={lessonDates}
+      />
 
       <div className="flex-1 overflow-y-auto pb-24">
         {agenda.length === 0 ? (
@@ -187,7 +195,11 @@ export function CalendarScreen() {
         ) : (
           <DayAgenda
             rows={agenda}
-            onOpenEvent={(eventId) => pushSheet({ kind: 'eventDetail', eventId })}
+            // The day travels with the id: a lesson that repeats weekly shares
+            // one id across the whole semester the store holds.
+            onOpenEvent={(eventId) =>
+              pushSheet({ kind: 'eventDetail', eventId, dayIso: selectedIso })
+            }
           />
         )}
       </div>

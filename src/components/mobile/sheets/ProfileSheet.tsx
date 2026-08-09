@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
 import {
   X,
   Moon,
@@ -21,7 +20,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { SpolkySection } from '../../Sidebar/Profile/SpolkySection';
 import { HiddenItemsSection } from '../../Sidebar/Profile/HiddenItemsSection';
 import { FeedbackModal } from '../../Feedback/FeedbackModal';
-import { logout } from '../../../api/proxyClient';
+import { SignOutConfirm } from './SignOutConfirm';
 
 export interface ProfileSheetProps {
   onClose: () => void;
@@ -64,6 +63,7 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
   const plan = useStudyPlan();
   const [spolkyOpen, setSpolkyOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
   const name = fullName ?? '';
 
@@ -95,12 +95,12 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
         <div className="px-4 pb-1 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
           {t('mobile.profile.appearance')}
         </div>
+        {/* No caption under the label. A dark-mode switch does not need one,
+            and "šetří oči i baterku" was a second line of type for a control
+            whose entire meaning is its own name. */}
         <label className="flex items-center gap-3 px-4 py-2.5">
           <Moon size={16} className="flex-shrink-0 text-base-content/50" />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <span className="text-md font-medium">{t('settings.darkMode')}</span>
-            <span className="text-xs text-base-content/60">{t('mobile.profile.darkModeHint')}</span>
-          </div>
+          <span className="min-w-0 flex-1 text-md font-medium">{t('settings.darkMode')}</span>
           <input
             type="checkbox"
             className="toggle toggle-primary toggle-sm"
@@ -198,13 +198,7 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
         </button>
         <button
           type="button"
-          onClick={() => {
-            // Sign-out is deferred on mobile until the transport can POST, and
-            // logout() now refuses rather than wiping local data first. Catch
-            // it: an unhandled rejection here would fire a telemetry report on
-            // every tap and tell the student nothing.
-            void logout().catch(() => toast.error(t('settings.logoutUnavailable')));
-          }}
+          onClick={() => setSignOutOpen(true)}
           className="flex w-full items-center gap-3 px-4 py-3 text-error"
         >
           <LogOut size={17} className="flex-shrink-0" />
@@ -212,6 +206,7 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
         </button>
       </div>
 
+      <SignOutConfirm open={signOutOpen} onCancel={() => setSignOutOpen(false)} />
       <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </Sheet>
   );
