@@ -22,8 +22,12 @@ describe('SuggestionsToast', () => {
     });
   });
 
-  it('says nothing to a student session', () => {
-    useAppStore.setState({ adminRole: null, suggestionsUnread: 4 });
+  it('says nothing to a non-reis_admin (association) session', () => {
+    useAppStore.setState({
+      adminSession: sessionFor('admin@supef.cz'),
+      adminRole: 'association',
+      suggestionsUnread: 4,
+    });
     render(<SuggestionsToast />);
     expect(toastInfo).not.toHaveBeenCalled();
   });

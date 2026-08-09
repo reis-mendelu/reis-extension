@@ -124,6 +124,7 @@ export const initializeStore = async () => {
       adminAssociationId: devSeed.adminAssociationId,
       adminSession: { user: { email: devSeed.email } } as unknown as Session,
     });
+    if (devSeed.adminRole === 'reis_admin') void s.loadSuggestions();
     void s.loadSocietyPosts();
   } else {
     s.loadAdminSession();

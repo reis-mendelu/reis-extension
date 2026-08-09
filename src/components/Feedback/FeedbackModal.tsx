@@ -154,6 +154,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                       className="input input-bordered w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors"
                       required
                       autoFocus
+                      maxLength={120}
                       onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                     />
                   </div>
@@ -171,6 +172,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                       placeholder={t('feedback.descriptionPlaceholder')}
                       className="textarea textarea-bordered h-32 w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors leading-relaxed resize-none"
                       required
+                      maxLength={2000}
                     />
                   </div>
 

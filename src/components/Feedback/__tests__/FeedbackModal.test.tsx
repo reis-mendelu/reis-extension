@@ -58,6 +58,12 @@ describe('FeedbackModal', () => {
     expect(await screen.findByText('Sent!')).toBeInTheDocument();
   });
 
+  it('enforces the edge function limits client-side via maxLength', () => {
+    render(<FeedbackModal isOpen onClose={vi.fn()} />);
+    expect(screen.getByPlaceholderText(/Briefly describe/i)).toHaveAttribute('maxLength', '120');
+    expect(screen.getByPlaceholderText(/What happened/i)).toHaveAttribute('maxLength', '2000');
+  });
+
   it('stays on the form when the submission fails', async () => {
     submitSuggestion.mockResolvedValue({ ok: false, error: 'rate_limited' });
     render(<FeedbackModal isOpen onClose={vi.fn()} />);
