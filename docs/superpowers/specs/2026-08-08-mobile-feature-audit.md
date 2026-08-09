@@ -10,6 +10,14 @@ with a three-week schedule fixture. Findings marked **fixed** landed on
 `worktree-mobile-feature-audit`; every product call was put to the owner and
 the decision recorded beside it.
 
+**A second pass ran on real hardware** (A001 handset, Android 16, live IS
+session) over CDP — `adb forward` to the WebView, then `Runtime.evaluate` to
+read the real DOM. It is the reason findings 7 and 8 exist: both are invisible
+in the webapp, which cannot reach IS at all, and both look like ordinary empty
+states rather than failures. **A silent fallback is not evidence a feature
+works.** Anything below that says "device-verified" was measured that way, not
+inferred from a screenshot.
+
 ## What was broken
 
 ### 1. The day switcher pointed at the wrong week — FIXED
@@ -80,6 +88,53 @@ and no local harness could show a populated week. That blind spot is how #1
 survived review. `rebaseFixture` now projects schedule lessons as well as exam
 terms, and `npm run dev:web:week` serves a three-week fixture.
 
+### 7. Nothing in the app answers `REIS_FETCH` — FIXED for photos, OPEN for events
+
+The root cause of a whole class, found on device. `fetchViaProxy` posts a
+`REIS_FETCH` to `window.parent`; in the extension the content script answers it.
+The app has no content script, and `installMobileActionHandler` answers
+**`REIS_ACTION` only** — so every caller without its own
+`getPlatform().kind === 'capacitor'` branch posts into the void, waits the full
+30 s `REQUEST_TIMEOUT`, and rejects. Every one of these callers has a fallback,
+so the failure is silent by construction.
+
+Measured before touching anything: zero `<img>` in the live DOM, and no reply to
+a `REIS_FETCH` probe after 5 s, while a native `CapacitorHttp` GET of the same
+`foto.pl` URL returned `200 image/jpeg`.
+
+Every caller audited:
+
+| Caller | Reaches the phone? | State |
+|---|---|---|
+| `api/client.ts` (`fetchWithAuth`), `fetchAuthedBytes` | yes | already branch natively — fine |
+| `api/personPhoto.ts` | yes — every avatar in the app | **FIXED** — `api/capacitorPhoto.ts`, device-verified 20 real JPEGs |
+| `api/events.ts` → `useEventsFeed` → map Akce tab | yes — the map's only content | **OPEN**, needs a product decision |
+| `api/menu.ts` | no — only `WeeklyCalendarHeader`, desktop | not a mobile bug |
+| `createErasmusSlice` | no — Erasmus was cut from mobile | moot |
+
+Two things the device measurement changed about the photo fix, neither of which
+could have been reasoned out:
+
+- It is **not** built on `fetchIsBinary`, which looks like the same job. That
+  function treats a non-image response as a lapsed session and calls
+  `notifySessionExpired` — one photoless classmate would have signed the student
+  out.
+- IS answers an unknown person id with **`200 image/jpeg` and a zero-byte body**,
+  not a 404. That would have become `data:image/jpeg;base64,` and rendered a
+  broken-image glyph, strictly worse than the fallback icon. An empty body now
+  rejects.
+
+### 8. The map's events feed has never worked in the app — OPEN
+
+Same root cause. `Žádné akce` on the phone is not "no events this week"; the
+request is never answered. The map sheet's only content, on the tab it opens on.
+
+**Needs a decision, and "cut it" is a real answer** — this is exactly the
+question this audit exists to ask. Either wire `api/events.ts` natively the way
+photos now are, or drop the events tab from mobile and let the sheet be the
+building/room list it already earns. Not fixed here because it is a product
+call, not a defect to be quietly patched.
+
 ## What works
 
 Verified by tracing the transport and by driving the running app.
@@ -89,8 +144,9 @@ Verified by tracing the transport and by driving the running app.
 | Calendar: agenda, gaps, now/next, hide occurrence | works |
 | Exams: groups, terms, register/unregister, classmates | works (empty out of season) |
 | Subjects: credit ring, semester card, averages, study plan | works, real data |
-| Subject drawer: files, classmates, success rate, syllabus, záznamník | works |
-| Map: Leaflet canvas, floors, rooms, draggable sheet, events | works |
+| Subject drawer: files, classmates, success rate, syllabus, záznamník | works; classmate photos were dead until finding 7 |
+| Map: Leaflet canvas, floors, rooms, draggable sheet | works |
+| Map: campus events feed | **broken** — see finding 8; the empty state is a lie |
 | Student: people search, IS page search | works (live from IS on device) |
 | Sheets: docs, person, event, notifications, profile, eduroam | works |
 | Outlook sync toggle | works — routed through `fetchWithAuth`, doubled `Content-Type` already fixed |
@@ -171,9 +227,32 @@ Fixed here unless marked otherwise.
   deletion** — the store field, the hook's return, the IndexedDB write and the
   legacy migration branch. A field whose name misdescribes its contents is how
   this bug happened once already.
-- **`pushSheet` does not dedupe.** Two taps on the same shortcut stack two
-  identical sheets. Only observed with the backdrop parked off-screen, so this
-  is a note rather than a finding.
+- **`pushSheet` stacked same-kind sheets — FIXED.** Filed here as a note, then
+  hit for real on device: tapping a second classmate while the first one's card
+  was open put two person cards on screen, the new one sliding up over the one
+  it meant to replace. A push onto a sheet of the **same kind** now swaps in
+  place — one store update, so no frame renders both, and `SheetHost` keys by
+  index so React reuses the instance and only changes props. The sheet
+  underneath is untouched, so back still returns to whatever opened the first
+  card. Fixed in the store rather than at the call site: no caller can see the
+  stack, and the same was true of every sheet kind.
+- **A classmate row carried a truncated programme code — FIXED.** `studyInfo`
+  rendered as `PEF B-OI-ZBOI prez [se…`, clipped mid-word, and the width it took
+  pushed the name onto two lines. Dropped on the phone (`showStudyInfo={false}`),
+  kept on desktop where there is room.
+- **Tapping a classmate opened a second, weaker person view — FIXED.** It landed
+  in `ClassmatePersonDrawer` — no roles, no office, no phone, no map button — so
+  the same student looked different depending on whether you reached them from
+  search or from a seminar roster. The row hands the tap up now and the phone
+  routes it to the `PersonSheet` search already opens. Both changes are opt-in
+  props, matching how `showIsBacklink` already splits this shared component.
+- **The map sheet rendered a one-tab segmented control — FIXED.** Knihovna is
+  hidden on mobile and Budova needs a selected building, so the default expanded
+  sheet was a track plus a white selected pill framing the only thing you could
+  pick. The row could not simply go — it carries `touch-none` and the drag
+  handlers, and is the nearest grab surface for collapsing a 70vh sheet — so it
+  is a plain heading whose tap collapses, reverting to a real tablist when a
+  building gives it a second tab.
 - **`npm run verify:ui --view <x>` does not reach the phone tree.** It seeds
   `meta.reis_current_view`, which the desktop tree reads; the phone routes on
   `mobileTab`, so every run measures whatever tab the app opened on. The
