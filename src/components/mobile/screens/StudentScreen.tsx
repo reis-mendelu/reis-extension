@@ -12,6 +12,8 @@ import { ShortcutGrid, type ShortcutSheetKind } from './student/ShortcutGrid';
 import { PageGroupList, type PageGroup } from './student/PageGroupList';
 import { PagesDisclosure } from './student/PagesDisclosure';
 
+const RECENT_PEOPLE_LIMIT = 5;
+
 function stripDiacritics(value: string): string {
   return value
     .toLowerCase()
@@ -47,14 +49,16 @@ export function StudentScreen() {
 
   const pushSheet = useAppStore((s) => s.pushSheet);
   const studiumId = useAppStore((s) => s.studiumId);
-  const recentSearches = useAppStore((s) => s.recentSearches);
+  const recentPeople = useAppStore((s) => s.recentPeople);
 
   const { sections, saveToHistory } = useSearch(query);
   const peopleResults = sections.find((s) => s.key === 'people')?.results ?? [];
-  const teacherResults = useMemo(
-    () => recentSearches.filter((r) => r.type === 'person' && r.personType === 'teacher'),
-    [recentSearches]
-  );
+  // Everyone the student looked up, not just staff. This read the mixed history
+  // and kept only `personType === 'teacher'` — so a classmate searched
+  // yesterday was dropped here, and three IS-page lookups had already evicted
+  // them from the store anyway. Five is the cap: enough to be useful, few
+  // enough that the search box stays in reach on a phone.
+  const shownPeople = useMemo(() => recentPeople.slice(0, RECENT_PEOPLE_LIMIT), [recentPeople]);
 
   const trimmedQuery = query.trim();
   const hasQuery = trimmedQuery.length > 0;
@@ -122,12 +126,12 @@ export function StudentScreen() {
 
         {mode === 'people' && (
           <>
-            {!hasQuery && (
+            {!hasQuery && shownPeople.length > 0 && (
               <>
                 <div className="px-4 pb-0.5 pt-1 text-xs font-bold uppercase tracking-wider text-base-content/60">
-                  {t('mobile.student.yourTeachers')}
+                  {t('mobile.student.recentPeople')}
                 </div>
-                {teacherResults.map((result) => (
+                {shownPeople.map((result) => (
                   <SearchResultItem
                     key={result.id}
                     result={result}

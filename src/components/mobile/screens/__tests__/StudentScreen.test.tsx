@@ -21,6 +21,7 @@ describe('StudentScreen', () => {
       language: 'cz',
       mobileSheets: [],
       recentSearches: [],
+      recentPeople: [],
       subjects: null,
       studyPlanDual: null,
       studiumId: null,
@@ -65,13 +66,55 @@ describe('StudentScreen', () => {
     expect(useAppStore.getState().mobileSheets).toEqual([]);
   });
 
-  it('switching to Lidé shows the teacher list', () => {
-    useAppStore.setState({ recentSearches: [teacher()] });
+  it('switching to Lidé shows recently searched people', () => {
+    useAppStore.setState({ recentPeople: [teacher()] });
     render(<StudentScreen />);
     fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
     expect(screen.getByRole('tab', { name: 'Lidé' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByText('Tvoji vyučující')).toBeInTheDocument();
+    expect(screen.getByText('Naposledy hledaní')).toBeInTheDocument();
     expect(screen.getByText('Jan Novák')).toBeInTheDocument();
+  });
+
+  it('lists recently searched STUDENTS, not only teachers', () => {
+    // The list filtered on personType === 'teacher', so a classmate you looked
+    // up yesterday was remembered by the store and then thrown away by the
+    // screen. Every person you searched belongs here.
+    useAppStore.setState({
+      recentPeople: [
+        { id: '77', title: 'Dominik Holek', type: 'person', personType: 'student' },
+        teacher(),
+      ],
+    });
+    render(<StudentScreen />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
+
+    expect(screen.getByText('Dominik Holek')).toBeInTheDocument();
+    expect(screen.getByText('Jan Novák')).toBeInTheDocument();
+  });
+
+  it('shows at most five people, newest first', () => {
+    // The store remembers eight; this tab shows five. A phone screen full of
+    // old lookups buries the search box under them.
+    useAppStore.setState({
+      recentPeople: Array.from({ length: 8 }, (_, i) => ({
+        id: `p${i}`,
+        title: `Osoba ${i}`,
+        type: 'person' as const,
+        personType: 'student' as const,
+      })),
+    });
+    render(<StudentScreen />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
+
+    expect(screen.getByText('Osoba 0')).toBeInTheDocument();
+    expect(screen.getByText('Osoba 4')).toBeInTheDocument();
+    expect(screen.queryByText('Osoba 5')).not.toBeInTheDocument();
+  });
+
+  it('shows nothing at all rather than an empty heading before the first search', () => {
+    render(<StudentScreen />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
+    expect(screen.queryByText('Naposledy hledaní')).not.toBeInTheDocument();
   });
 
   it('does not show the shortcut grid once switched to Lidé', () => {

@@ -466,6 +466,10 @@ export type MobileSheet =
   | { kind: 'studyPlan' }
   | { kind: 'profile' }
   | { kind: 'person'; personId: string; personName?: string }
+  // Pushed ON TOP of a person sheet, so back closes the photo and leaves the
+  // person open. `name` rides along for the alt text — the photo sheet has no
+  // reason to fetch a profile just to label an image.
+  | { kind: 'personPhoto'; personId: string; name: string }
   | { kind: 'eduroam' }
   | { kind: 'docs' }
   // No 'erasmus': the panel is desktop-only. It hosted the Learning Agreement

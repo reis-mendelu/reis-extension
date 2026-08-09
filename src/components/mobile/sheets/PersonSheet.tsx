@@ -1,12 +1,15 @@
-import { Mail, MapPin, Phone } from 'lucide-react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
+import { PersonContactRows } from './PersonContactRows';
 import { usePersonProfile } from '../../../hooks/data/usePersonProfile';
 import { usePersonPhoto } from '../../../hooks/data/usePersonPhoto';
 import { useSchedule } from '../../../hooks/data/useSchedule';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { openTeamsChat } from '../../../mobile/teamsLink';
+import { TEAMS_ICON_PATH } from '../../../constants/icons';
 import { resolveRoomCode } from '../../../utils/mobile/resolveRoomCode';
+import { personInitials } from '../../../utils/mobile/personInitials';
 import type { MobileSheet } from '../../../store/types';
 
 type PersonSheetData = Extract<MobileSheet, { kind: 'person' }>;
@@ -16,31 +19,25 @@ export interface PersonSheetProps {
   onClose: () => void;
 }
 
-function initials(name: string): string {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
-
 /**
- * Content-size sheet for a person: photo, what they do, how to reach them, and
- * where to find them.
+ * Content-size sheet for a person: who they are, how to reach them, and — for
+ * staff — where to find them.
  *
- * It used to show a name, an email and — for a teacher — nothing else, because
- * the profile parser was written for students and returned nulls for every
- * staff field. IS publishes the work phone, the department, the workplace
- * address and the office on the same page; the parser reads them now.
+ * Four things, and no fifth. The work phone IS publishes is gone: nobody rings
+ * a lecturer, and on a phone-sized sheet an unused row costs more than it
+ * gives. What is left is what a student actually does — read the name, take the
+ * address, message them on Teams, walk to the office.
+ *
+ * The email is a COPY control rather than a mailto: link. A mailto: hands the
+ * student to whichever mail app the OS picked years ago; the address on the
+ * clipboard works in Outlook, in Teams, in a form — wherever they were going.
  *
  * "Where to find them" is the office, not a guess. The previous version showed
  * the room of any lesson the person happened to teach — which is where they
  * are for ninety minutes a week, and misleading the rest of the time. The
  * campus map keys rooms on either the estate code or the friendly name, so
- * both are tried before the button is offered at all: a button that cannot
- * resolve its room is worse than no button.
+ * both are tried before the row is offered at all: a control that cannot
+ * resolve its room is worse than none.
  */
 export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
   const { t } = useTranslation();
@@ -51,6 +48,7 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
   const photo = usePersonPhoto(sheet.personId);
   const { schedule } = useSchedule();
   const setMobileTab = useAppStore((s) => s.setMobileTab);
+  const pushSheet = useAppStore((s) => s.pushSheet);
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
 
   // Never the raw IS id: the search result that opened this sheet already
@@ -61,16 +59,25 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
     name ?? (isLoading ? t('mobile.sheet.personLoading') : t('mobile.sheet.personLoadError'));
   // The role line for staff, the programme for students — whichever this
   // person has.
-  const subtitle =
-    profile?.roles?.[0] || profile?.studyTypeSentence || profile?.programmeName || undefined;
+  const subtitle = profile?.roles?.[0] || profile?.programmeName || undefined;
+  // What kind of student they are, under the programme in the header. Staff
+  // have neither line, which is why this collapses to nothing rather than
+  // reserving space for it.
+  const studyLines = [profile?.studyTypeSentence, profile?.yearSemesterSentence].filter(
+    (line): line is string => Boolean(line)
+  );
   const email = profile?.universityEmail || profile?.privateEmail || null;
+  // Teams is the university tenant: only a mendelu.cz address resolves to a
+  // person there, so a profile with nothing but a private email gets the copy
+  // row and no Teams button rather than a button that opens an empty search.
+  const teamsEmail = profile?.universityEmail || null;
   const placeholderText = isLoading
     ? t('mobile.sheet.personLoading')
     : error || t('mobile.sheet.personLoadError');
 
   // The office if the map knows it; otherwise a room they teach in, which is
   // at least somewhere they demonstrably are. Both go through the same
-  // resolver so an unknown code never becomes a dead button.
+  // resolver so an unknown code never becomes a dead control.
   const taughtRoom = schedule.find((l) =>
     l.teachers.some((teacher) => teacher.id === sheet.personId)
   )?.room;
@@ -90,61 +97,46 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
       ) : (
         <div className="flex flex-col gap-3 px-4 pb-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-primary">
+            {/* A button only once there is a photo to maximise: initials blown
+                up to full screen are a joke at the student's expense. */}
+            <button
+              type="button"
+              disabled={!photo}
+              aria-label={photo ? t('mobile.sheet.enlargePhoto') : undefined}
+              onClick={() =>
+                photo && pushSheet({ kind: 'personPhoto', personId: sheet.personId, name })
+              }
+              className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-primary"
+            >
               {photo ? (
                 <img src={photo} alt={name} className="h-full w-full object-cover" />
               ) : (
-                initials(name)
+                personInitials(name)
               )}
-            </div>
-            <div className="flex min-w-0 flex-col gap-1.5 text-sm text-base-content/70">
-              {email && (
-                <span className="flex items-center gap-2 truncate">
-                  <Mail size={13} className="flex-shrink-0 text-base-content/50" />
-                  <span className="truncate">{email}</span>
-                </span>
-              )}
-              {profile?.phone && (
-                <span className="flex items-center gap-2 truncate">
-                  <Phone size={13} className="flex-shrink-0 text-base-content/50" />
-                  <span className="truncate">{profile.phone}</span>
-                </span>
-              )}
-              {room && (
-                <span className="flex items-center gap-2 truncate">
-                  <MapPin size={13} className="flex-shrink-0 text-base-content/50" />
-                  <span className="truncate">{room.label}</span>
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            {email && (
-              <a
-                href={`mailto:${email}`}
-                className="flex min-h-11 items-center justify-center rounded-xl bg-primary/15 text-base font-semibold text-primary"
-              >
-                {t('mobile.sheet.writeEmail')}
-              </a>
-            )}
-            {profile?.phone && (
-              <a
-                href={`tel:${profile.phone.replace(/\s/g, '')}`}
-                className="flex min-h-11 items-center justify-center rounded-xl border border-base-300 text-base font-semibold text-base-content/70"
-              >
-                {t('mobile.sheet.callPerson')}
-              </a>
-            )}
-            {room && (
-              <button
-                type="button"
-                onClick={onShowOnMap}
-                className="flex min-h-11 items-center justify-center rounded-xl border border-base-300 text-base font-semibold text-base-content/70"
-              >
-                {t('mobile.sheet.navigateToRoom', { room: room.label })}
-              </button>
+            </button>
+            {studyLines.length > 0 && (
+              <div className="flex min-w-0 flex-col gap-0.5 text-sm leading-snug text-base-content/70">
+                {studyLines.map((line) => (
+                  <span key={line}>{line}</span>
+                ))}
+              </div>
             )}
           </div>
+
+          <PersonContactRows email={email} room={room} onShowOnMap={onShowOnMap} />
+
+          {teamsEmail && (
+            <button
+              type="button"
+              onClick={() => openTeamsChat(teamsEmail)}
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary/15 text-base font-semibold text-primary"
+            >
+              {/* The real Teams mark, not a generic speech bubble: the button
+                  leaves the app, and the student should know where to. */}
+              <img src={TEAMS_ICON_PATH} alt="" className="h-5 w-5" />
+              {t('mobile.sheet.teamsChat')}
+            </button>
+          )}
         </div>
       )}
     </Sheet>
