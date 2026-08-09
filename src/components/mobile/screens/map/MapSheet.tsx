@@ -227,13 +227,17 @@ export function MapSheet() {
             <button
               type="button"
               onClick={toggle}
-              className="flex flex-shrink-0 touch-none items-center justify-between px-5 pb-1 text-left"
+              className="flex flex-shrink-0 touch-none items-center justify-between px-5 pb-2 text-left"
             >
-              <span className="text-[13.5px] font-semibold text-base-content">
+              {/* Sized as the sheet's title, not as the tab it replaced: at
+                  13.5px it read as a label floating above the filter chips
+                  rather than as the heading for everything below it. Matches
+                  the other full sheets' headers. */}
+              <span className="font-display text-lg font-bold tracking-tight text-base-content">
                 {t('mobile.map.tabEvents')}
               </span>
               <ChevronDown
-                size={18}
+                size={20}
                 className="flex-shrink-0 text-base-content/40"
                 aria-hidden="true"
               />
