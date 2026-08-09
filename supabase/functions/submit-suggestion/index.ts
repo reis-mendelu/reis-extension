@@ -7,10 +7,18 @@ const EXTENSION_SECRET = Deno.env.get('EXTENSION_SECRET');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 // @ts-ignore
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-// No default: an unsalted IP hash is reversible and the IP is personal data.
-// Absent → fail closed (checked in the handler), never a known fallback.
+// An unsalted IP hash is reversible and the IP is personal data, so there is
+// never a public or known fallback. A dedicated SUGGESTION_HASH_SALT is
+// preferred and wins whenever it is set; absent one we derive a salt from the
+// service-role key, which is high-entropy, secret, and already required here.
+// That keeps the property that matters: a leaked database (backup, read-only
+// access) cannot brute-force the IPs back, because the key it would need is
+// not stored in the database. If both are missing we still fail closed.
+// Rotating the service-role key harmlessly resets at most one hour of
+// rate-limit counters — the salt only has to be stable for the counting window.
 // @ts-ignore
-const HASH_SALT = Deno.env.get('SUGGESTION_HASH_SALT');
+const EXPLICIT_SALT = Deno.env.get('SUGGESTION_HASH_SALT');
+const HASH_SALT = EXPLICIT_SALT || (SERVICE_ROLE ? `derived:v1:${SERVICE_ROLE}` : '');
 
 const RATE_LIMIT_PER_HOUR = 5;
 
