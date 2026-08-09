@@ -89,6 +89,22 @@ describe('createSearchSlice — recent searches', () => {
     ]);
   });
 
+  it('does not let a slow hydration overwrite a search made while it was in flight', async () => {
+    // loadRecentSearches resolves whenever IndexedDB gets round to it. A person
+    // searched in the meantime is newer than the stored copy, and letting the
+    // hydration win would drop them — permanently, once the next save persists
+    // the stale list.
+    const { IndexedDBService } = await import('../../../services/storage');
+    vi.mocked(IndexedDBService.get).mockResolvedValue([person('9', 'Stará Osoba')] as never);
+
+    const hydration = useAppStore.getState().loadRecentSearches();
+    await useAppStore.getState().saveRecentSearch(person('77', 'Dominik Holek'), 'Student');
+    await hydration;
+
+    expect(useAppStore.getState().recentPeople.map((r) => r.title)).toEqual(['Dominik Holek']);
+    vi.mocked(IndexedDBService.get).mockResolvedValue(null as never);
+  });
+
   it('keeps two different people who happen to share a name', async () => {
     // Deduping by title collapsed namesakes into one entry, and IS has plenty —
     // the id is what identifies a person.

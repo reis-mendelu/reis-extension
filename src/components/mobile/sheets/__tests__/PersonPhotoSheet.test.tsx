@@ -40,6 +40,23 @@ describe('PersonPhotoSheet', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('closes ONCE when the X is tapped, not twice', () => {
+    // The X sits inside the overlay, and the overlay is itself the dismiss
+    // target. Without stopPropagation both handlers fire on one tap, and since
+    // SheetHost passes `popSheet` as onClose, the second call pops the person
+    // sheet underneath — the student taps a close button and the whole stack
+    // vanishes.
+    const onClose = vi.fn();
+    render(
+      <PersonPhotoSheet
+        sheet={{ kind: 'personPhoto', personId: '42', name: 'Jan Novák' }}
+        onClose={onClose}
+      />
+    );
+    fireEvent.click(screen.getByLabelText('Zavřít'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it('closes itself rather than showing an empty frame when the photo is gone', () => {
     // usePersonPhoto returns null while the fetch is in flight AND when it
     // failed. Reaching this sheet means the avatar had already resolved, so a

@@ -49,8 +49,16 @@ export const createSearchSlice: AppSlice<SearchSlice> = (set, get) => ({
         IndexedDBService.get('meta', 'recent_searches'),
         IndexedDBService.get('meta', 'recent_people'),
       ]);
-      if (stored) set({ recentSearches: stored as SearchResult[] });
-      if (storedPeople) set({ recentPeople: storedPeople as SearchResult[] });
+      // Only hydrate a list nothing has written yet. This runs at boot and
+      // resolves whenever IndexedDB gets round to it; a search saved in the
+      // meantime is NEWER than the stored copy, and overwriting it here would
+      // then be persisted by the next save — losing the person entirely.
+      if (stored && get().recentSearches.length === 0) {
+        set({ recentSearches: stored as SearchResult[] });
+      }
+      if (storedPeople && get().recentPeople.length === 0) {
+        set({ recentPeople: storedPeople as SearchResult[] });
+      }
     } catch {
       /* non-critical */
     }

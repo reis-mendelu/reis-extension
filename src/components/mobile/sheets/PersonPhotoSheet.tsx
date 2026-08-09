@@ -43,9 +43,15 @@ export function PersonPhotoSheet({ sheet, onClose }: PersonPhotoSheetProps) {
       onClick={onClose}
       className="absolute inset-0 z-[70] flex items-center justify-center bg-black/90 p-6 animate-[fadeIn_0.2s_ease-out]"
     >
+      {/* stopPropagation: the overlay behind this button closes on click too,
+          and onClose is `popSheet` — letting the event bubble pops the photo
+          AND the person sheet under it. */}
       <button
         type="button"
-        onClick={onClose}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
         aria-label={t('mobile.sheet.close')}
         className="absolute right-4 top-[calc(1rem+var(--safe-top,0px))] flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white"
       >
