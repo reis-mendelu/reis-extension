@@ -49,15 +49,28 @@ export async function signOutMobile(deps: SignOutDeps): Promise<void> {
   // plus a device that can still act as the student is the worst outcome.
   await deps.clearToken();
 
-  // Best-effort from here down. The credential is gone, so the sign-out has
-  // already succeeded in the sense that matters, and no later failure may
-  // strand the student in a half-signed-out app.
+  // Also allowed to throw, and this was wrong before: the cookie is not a
+  // best-effort tidy-up on the way out, it is the half that can UN-DO the
+  // sign-out. `ensureSession` detects a completed login by polling the cookie
+  // jar, so a surviving UISAuth means the next login WebView is answered with
+  // the dashboard, the poll reads the cookie straight back, and the student is
+  // returned to the same account without typing anything. Swallowing this
+  // failure and restarting would walk them into exactly that.
+  //
+  // Reported here rather than at the caller because the throw crosses the
+  // `logout()` boundary as a bare rejection.
   try {
     await deps.clearIsCookies();
   } catch (e) {
     logError('Mobile.signOut:cookies', e);
+    throw e;
   }
 
+  // Best-effort from here down, and only from here: the credential AND the
+  // cookie are both gone, so the sign-out has already succeeded in the sense
+  // that matters, and a stubborn IndexedDB must not strand the student in a
+  // half-signed-out app. The restart puts them at the login, which gates the
+  // data anyway.
   try {
     deps.clearUserParams();
     await deps.clearLocalData();

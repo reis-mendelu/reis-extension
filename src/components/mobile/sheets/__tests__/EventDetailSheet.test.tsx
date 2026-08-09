@@ -129,4 +129,21 @@ describe('EventDetailSheet across a repeating lesson', () => {
     render(<EventDetailSheet sheet={{ kind: 'eventDetail', eventId: 'ev1' }} onClose={vi.fn()} />);
     expect(screen.getByText(/Q01/)).toBeInTheDocument();
   });
+
+  /**
+   * The fallback must not be an `||`. A day that no longer matches — a refresh
+   * dropped the occurrence — would otherwise fall through to the first week's
+   * copy, and `onHide` would record ITS date: the exact bug the day was added
+   * to fix, re-entering through the escape hatch. Nothing is the right answer.
+   */
+  it('renders nothing when a supplied day matches no occurrence', () => {
+    const { container } = render(
+      <EventDetailSheet
+        sheet={{ kind: 'eventDetail', eventId: 'ev1', dayIso: '2026-05-20' }}
+        onClose={vi.fn()}
+      />
+    );
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByText(/Q01/)).not.toBeInTheDocument();
+  });
 });

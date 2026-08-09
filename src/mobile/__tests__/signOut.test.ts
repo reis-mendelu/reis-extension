@@ -79,15 +79,43 @@ describe('signOutMobile', () => {
     expect(deps.restart).toHaveBeenCalled();
   });
 
-  it('still signs out when the cookie jar cannot be cleared', async () => {
+  /**
+   * The cookie is not a nice-to-have on the way out, it is the half that can
+   * un-do the sign-out: `ensureSession` detects a completed login by POLLING
+   * THE COOKIE JAR, so a surviving UISAuth means the next login WebView is
+   * answered with the dashboard, the poll reads the cookie straight back, and
+   * the student is silently returned to the same account without typing
+   * anything.
+   *
+   * So a failure here is a FAILED sign-out, not a partial one. It must reach
+   * the caller — which shows the error toast — rather than restart into a login
+   * that will hand the account back.
+   */
+  it('fails the sign-out when the cookie jar cannot be cleared', async () => {
     const deps = makeDeps({
       clearIsCookies: vi.fn(async () => {
         throw new Error('no plugin');
       }),
     });
 
-    await signOutMobile(deps);
-    expect(deps.clearLocalData).toHaveBeenCalled();
-    expect(deps.restart).toHaveBeenCalled();
+    await expect(signOutMobile(deps)).rejects.toThrow('no plugin');
+    expect(deps.restart).not.toHaveBeenCalled();
+  });
+
+  /**
+   * And it must fail BEFORE the destructive half. Wiping the student's cached
+   * grades and schedule while leaving the device able to act as them is the
+   * worst of both outcomes.
+   */
+  it('does not wipe local data when the cookie clear failed', async () => {
+    const deps = makeDeps({
+      clearIsCookies: vi.fn(async () => {
+        throw new Error('no plugin');
+      }),
+    });
+
+    await expect(signOutMobile(deps)).rejects.toThrow();
+    expect(deps.clearLocalData).not.toHaveBeenCalled();
+    expect(deps.clearUserParams).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parsePersonProfile } from '../personProfile';
 import { TEACHER_PROFILE_HTML } from '../../test/fixtures/personProfileTeacher';
+import { resolveRoomCode } from '../../utils/mobile/resolveRoomCode';
 
 /**
  * The profile parser was written for students, so a teacher's page gave back a
@@ -14,7 +15,7 @@ describe('parsePersonProfile — a staff page', () => {
   it('still reads the fields it always read', () => {
     expect(profile.name).toBe('Ing. David Procházka, Ph.D.');
     expect(profile.universityEmail).toBe('david.prochazka@mendelu.cz');
-    expect(profile.privateEmail).toBe('david.prochazka@gmail.com');
+    expect(profile.privateEmail).toBe('test.osoba@example.com');
   });
 
   it('reads the role and its department', () => {
@@ -27,7 +28,7 @@ describe('parsePersonProfile — a staff page', () => {
   });
 
   it('reads the work phone and the workplace address', () => {
-    expect(profile.phone).toBe('+420 545 132 240');
+    expect(profile.phone).toBe('+420 500 000 000');
     expect(profile.workplace).toBe('ÚI PEF, Zemědělská 1, 61300 Brno');
   });
 
@@ -47,6 +48,24 @@ describe('parsePersonProfile — a staff page', () => {
   it('leaves the student fields alone on a staff page', () => {
     expect(profile.programmeCode).toBeNull();
     expect(profile.studyTypeSentence).toBeNull();
+  });
+
+  /**
+   * The end-to-end claim, pinned against the SHIPPED room index rather than a
+   * mock: the two office identifiers this real page carries both resolve to a
+   * real campus room, so the person card's "show on map" button renders.
+   *
+   * Worth a test of its own because parsing the office and being able to FIND
+   * it are separate failures with the same symptom — `focusRoomByCode` only
+   * logs an unknown room, so an unresolvable code produces a button that looks
+   * fine and does nothing.
+   */
+  it('resolves its office against the real room index, by either identifier', () => {
+    const resolved = resolveRoomCode([profile.officeCode, profile.officeName]);
+    expect(resolved).toEqual({ code: 'BA39N2056', label: 'Q2.56' });
+    // Either one alone is enough — the index keys `code` and matches `name`.
+    expect(resolveRoomCode([profile.officeCode])).toEqual(resolved);
+    expect(resolveRoomCode([profile.officeName])).toEqual(resolved);
   });
 });
 

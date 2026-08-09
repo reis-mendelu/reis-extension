@@ -27,6 +27,20 @@ describe('appIdentity', () => {
     expect(getAppVersion()).toBe('0.0.0');
   });
 
+  /**
+   * The branch the APP actually takes. Vitest defines no `__REIS_APP_VERSION__`,
+   * so without stubbing it the suite only ever exercised the `0.0.0` guard —
+   * and `0.0.0` is the exact marker telemetry uses for "orphaned, unactionable",
+   * which is what every mobile report carried before this. Worth pinning that
+   * the injected value is preferred, not just that the fallback is safe.
+   */
+  it('prefers the build-injected version off the extension', () => {
+    vi.stubGlobal('chrome', undefined);
+    vi.stubGlobal('__REIS_APP_VERSION__', '5.0.0');
+    expect(getAppVersion()).toBe('5.0.0');
+    vi.unstubAllGlobals();
+  });
+
   it('reports the extension host when a chrome runtime is present', () => {
     vi.stubGlobal('chrome', CHROME_STUB);
     __resetPlatformForTests();

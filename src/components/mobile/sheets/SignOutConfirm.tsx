@@ -43,15 +43,20 @@ export function SignOutConfirm({ open, onCancel }: SignOutConfirmProps) {
   };
 
   return (
-    <Sheet size="content" onClose={onCancel} elevated>
-      <SheetHeader title={t('settings.logoutConfirmTitle')} onClose={onCancel} />
+    // Every dismissal path is inert once the sign-out is under way. It cannot
+    // be called off — logout() clears the token and reloads — so letting the
+    // sheet close would read as a cancelled sign-out right before the app
+    // restarts underneath the student.
+    <Sheet size="content" onClose={busy ? () => {} : onCancel} elevated>
+      <SheetHeader title={t('settings.logoutConfirmTitle')} onClose={busy ? () => {} : onCancel} />
       <div className="flex flex-col gap-3 px-4 pb-5">
         <p className="text-sm text-base-content/70">{t('settings.logoutConfirmBody')}</p>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={onCancel}
-            className="min-h-11 flex-1 rounded-xl border border-base-300 text-base font-semibold text-base-content/70"
+            disabled={busy}
+            className="min-h-11 flex-1 rounded-xl border border-base-300 text-base font-semibold text-base-content/70 disabled:opacity-50"
           >
             {t('common.cancel')}
           </button>

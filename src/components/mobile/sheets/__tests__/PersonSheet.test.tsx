@@ -161,7 +161,7 @@ describe('PersonSheet — a staff profile', () => {
             roles: ['Akademický pracovník - odborný asistent - Ústav informatiky (PEF)'],
             officeCode: 'BA39N2056',
             officeName: 'Q2.56',
-            phone: '+420 545 132 240',
+            phone: '+420 500 000 000',
             workplace: 'ÚI PEF, Zemědělská 1, 61300 Brno',
             consultationHours: null,
           },
@@ -183,7 +183,7 @@ describe('PersonSheet — a staff profile', () => {
 
   it('offers the work phone as a real call link', () => {
     render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
-    expect(screen.getByText('Zavolat').closest('a')).toHaveAttribute('href', 'tel:+420545132240');
+    expect(screen.getByText('Zavolat').closest('a')).toHaveAttribute('href', 'tel:+420500000000');
   });
 
   it('navigates to the OFFICE, not to a room they happen to teach in', () => {

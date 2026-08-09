@@ -49,12 +49,17 @@ export function EventDetailSheet({ sheet, onClose }: EventDetailSheetProps) {
   // was tapped, so the room could be wrong and `hideEvent` recorded the first
   // date, leaving the lesson the student wanted gone on screen.
   //
-  // The day is optional: a sheet pushed before this carries none, and falling
-  // back to the id keeps it opening rather than rendering nothing.
+  // The day is optional — a sheet pushed before this carries none — so the
+  // id-only lookup is kept for exactly that case and NO other. It must not be
+  // an `||` fallback: when a day WAS supplied and no longer matches (a refresh
+  // dropped the occurrence), falling through returns the first week's copy and
+  // `onHide` records ITS date — re-entering, through the fallback, the very bug
+  // the day was added to fix. A supplied day that matches nothing renders
+  // nothing.
   const day = sheet.dayIso?.replace(/-/g, '');
-  const lesson =
-    (day && schedule.find((l) => l.id === sheet.eventId && l.date === day)) ||
-    schedule.find((l) => l.id === sheet.eventId);
+  const lesson = day
+    ? schedule.find((l) => l.id === sheet.eventId && l.date === day)
+    : schedule.find((l) => l.id === sheet.eventId);
   if (!lesson) return null;
 
   const courseName = localizedCourseName(lesson, language);

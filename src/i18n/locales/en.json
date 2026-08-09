@@ -509,7 +509,7 @@
   },
   "sync": {
     "schedule": "Calendar sync",
-    "tooltip": "Schedule and exams into Outlook",
+    "tooltip": "Sync schedule and exams to Outlook",
     "spolky": "Subscribed societies",
     "lastSync": "Last synced: {time}"
   },

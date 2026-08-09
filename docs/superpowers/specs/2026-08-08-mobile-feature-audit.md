@@ -159,7 +159,7 @@ Verified by tracing the transport and by driving the running app.
 
 Each of these was put to the owner; the decision is recorded with it.
 
-### The 95-link IS portal directory — reviewed, KEPT
+### The 94-link IS portal directory — reviewed, KEPT
 
 The Student tab carries `pagesData`: **94 links across 13 categories**, every
 one opening IS's desktop site in an in-app browser on a 390px screen. The
