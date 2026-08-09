@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { snapDetent, dragOwnsGesture, consumesTravel } from '../../primitives/sheetDrag';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
@@ -208,14 +208,37 @@ export function MapSheet() {
               pill at the top of a 70vh sheet, so collapsing meant reaching to
               the top of the screen. The tab row is the nearest grab surface to
               the content the student is actually looking at. */}
-          <div
-            role="tablist"
-            className="mx-4 flex flex-shrink-0 touch-none gap-1 rounded-lg bg-base-content/5 p-1"
-          >
-            {tabBtn('akce', t('mobile.map.tabEvents'))}
-            {/* Library study-room reservation is hidden on mobile. */}
-            {showBudova && tabBtn('budova', t('mobile.map.tabBuilding', { name: buildingName }))}
-          </div>
+          {/* Library study-room reservation is hidden on mobile, so unless a
+              building is selected there is exactly ONE tab — and a segmented
+              control around a single choice is all chrome: a track, and a
+              white selected pill framing the only thing you could pick. The
+              row still has to exist (it is the nearest grab surface for
+              collapsing a 70vh sheet — see the touch-none note above), so it
+              becomes a plain heading whose tap collapses instead. */}
+          {showBudova ? (
+            <div
+              role="tablist"
+              className="mx-4 flex flex-shrink-0 touch-none gap-1 rounded-lg bg-base-content/5 p-1"
+            >
+              {tabBtn('akce', t('mobile.map.tabEvents'))}
+              {tabBtn('budova', t('mobile.map.tabBuilding', { name: buildingName }))}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={toggle}
+              className="flex flex-shrink-0 touch-none items-center justify-between px-5 pb-1 text-left"
+            >
+              <span className="text-[13.5px] font-semibold text-base-content">
+                {t('mobile.map.tabEvents')}
+              </span>
+              <ChevronDown
+                size={18}
+                className="flex-shrink-0 text-base-content/40"
+                aria-hidden="true"
+              />
+            </button>
+          )}
           <div className="flex-1 overflow-y-auto pb-24 pt-2">
             {activeTab === 'akce' && <MapEventsSection />}
             {activeTab === 'budova' && activeBuildingId !== null && (
