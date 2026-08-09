@@ -29,7 +29,7 @@ describe('createSearchSlice — recent searches', () => {
 
     const recent = useAppStore.getState().recentSearches;
     expect(recent.length).toBe(3);
-    expect(recent[0].title).toBe('Subject 4');
+    expect(recent[0]?.title).toBe('Subject 4');
   });
 
   it('remembers people in their own list, so page searches cannot evict them', async () => {
@@ -54,8 +54,8 @@ describe('createSearchSlice — recent searches', () => {
     const { saveRecentSearch } = useAppStore.getState();
     await saveRecentSearch({ ...person('1', 'Jan Novák'), detail: 'Vyučující' }, 'Nedávno hledáno');
 
-    expect(useAppStore.getState().recentPeople[0].detail).toBe('Vyučující');
-    expect(useAppStore.getState().recentSearches[0].detail).toBe('Nedávno hledáno');
+    expect(useAppStore.getState().recentPeople[0]?.detail).toBe('Vyučující');
+    expect(useAppStore.getState().recentSearches[0]?.detail).toBe('Nedávno hledáno');
   });
 
   it('keeps students as readily as teachers — every person searched', async () => {
@@ -74,7 +74,7 @@ describe('createSearchSlice — recent searches', () => {
     for (let i = 0; i < 20; i++) await saveRecentSearch(person(String(i), `Osoba ${i}`), 'Student');
 
     expect(useAppStore.getState().recentPeople.length).toBe(8);
-    expect(useAppStore.getState().recentPeople[0].title).toBe('Osoba 19');
+    expect(useAppStore.getState().recentPeople[0]?.title).toBe('Osoba 19');
   });
 
   it('moves a person already in the list to the front instead of duplicating them', async () => {
