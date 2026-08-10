@@ -8,6 +8,12 @@ vi.mock('../../../hooks/useUserParams', () => ({ useUserParams: vi.fn() }));
 
 describe('ProfilePopup suggestions badge', () => {
   beforeEach(() => {
+    // ProfilePopup pulls in useDriveBackup → loadManifest → chrome.storage.local.get,
+    // which the shared setup stubs as a bare vi.fn() resolving to undefined. The
+    // resulting unhandled rejection fails the whole vitest run even though every
+    // assertion here passes, so give it the empty bag it expects.
+    // eslint-disable-next-line no-restricted-syntax -- mocking the stub itself, not storing data
+    vi.mocked(chrome.storage.local.get).mockResolvedValue({} as never);
     useAppStore.setState({ language: 'en', adminRole: null, suggestionsUnread: 3 });
     vi.mocked(useUserParams).mockReturnValue({
       params: { studium: '149707', obdobi: '2025', studentId: '123456', fullName: 'Test Student' },
