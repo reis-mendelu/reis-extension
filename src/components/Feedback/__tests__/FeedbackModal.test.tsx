@@ -64,6 +64,30 @@ describe('FeedbackModal', () => {
     expect(screen.getByPlaceholderText(/What happened/i)).toHaveAttribute('maxLength', '2000');
   });
 
+  // Reviewer-reported (CodeRabbit): the Send button's `disabled` was the only
+  // validation, but Enter in the title/contact fields calls handleSubmit
+  // directly. A half-filled form then posted, the function 400'd it, and the
+  // student got the generic failure toast for input the UI should have caught.
+  it('does not submit on Enter when the message is empty', () => {
+    render(<FeedbackModal isOpen onClose={vi.fn()} />);
+    const titleInput = screen.getByPlaceholderText(/Briefly describe/i);
+    fireEvent.change(titleInput, { target: { value: 'T' } });
+    fireEvent.keyDown(titleInput, { key: 'Enter' });
+    expect(submitSuggestion).not.toHaveBeenCalled();
+  });
+
+  it('treats whitespace-only input as empty', () => {
+    render(<FeedbackModal isOpen onClose={vi.fn()} />);
+    const titleInput = screen.getByPlaceholderText(/Briefly describe/i);
+    fireEvent.change(titleInput, { target: { value: '   ' } });
+    fireEvent.change(screen.getByPlaceholderText(/What happened/i), {
+      target: { value: '   ' },
+    });
+    fireEvent.keyDown(titleInput, { key: 'Enter' });
+    expect(submitSuggestion).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /Send feedback/i })).toBeDisabled();
+  });
+
   it('stays on the form when the submission fails', async () => {
     submitSuggestion.mockResolvedValue({ ok: false, error: 'rate_limited' });
     render(<FeedbackModal isOpen onClose={vi.fn()} />);

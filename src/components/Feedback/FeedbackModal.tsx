@@ -27,6 +27,12 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 
   const handleSubmit = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
+    // The Send button's `disabled` is not the only entry point: Enter in the
+    // title or contact field calls this directly. Without its own check, Enter
+    // on a half-filled form posts an empty body, the function 400s it, and the
+    // student sees the generic failure toast for input the UI should have
+    // caught. Trimmed, so whitespace does not count as filled in either.
+    if (isSending || !title.trim() || !message.trim()) return;
     setIsSending(true);
 
     // Context (screen, version, browser, viewport) is assembled in the API
@@ -211,7 +217,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     <button
                       type="button"
                       onClick={handleSubmit}
-                      disabled={isSending || !title || !message}
+                      disabled={isSending || !title.trim() || !message.trim()}
                       className="btn btn-primary w-full gap-2 font-semibold no-animation"
                     >
                       {isSending ? (
