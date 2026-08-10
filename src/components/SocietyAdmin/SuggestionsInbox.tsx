@@ -29,7 +29,11 @@ export function SuggestionsInbox() {
           }`}
         >
           <div className="flex items-start justify-between gap-2">
-            <span className="font-semibold text-sm break-words">{s.title}</span>
+            {/* min-w-0: a flex item defaults to min-width:auto, which pins it to
+                its longest unbreakable run — a 120-char title with no spaces then
+                pushes the type badge off-screen and makes the row scroll
+                sideways. break-words only takes effect once shrinking is allowed. */}
+            <span className="min-w-0 font-semibold text-sm break-words">{s.title}</span>
             <span className={`badge badge-sm shrink-0 ${TYPE_BADGE[s.type]}`}>{s.type}</span>
           </div>
           <p className="text-xs text-base-content/70 mt-1 whitespace-pre-wrap break-words">

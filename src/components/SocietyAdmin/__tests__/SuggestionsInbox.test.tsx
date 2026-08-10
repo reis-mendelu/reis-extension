@@ -37,6 +37,17 @@ describe('SuggestionsInbox', () => {
     expect(screen.getByText('student@mendelu.cz')).toBeInTheDocument();
   });
 
+  // jsdom has no layout, so the wrap itself cannot be asserted here — it was
+  // measured in a real browser (title span scrollWidth 1250 → 239 at 320px).
+  // This pins the class that makes it possible: without min-w-0 the flex item's
+  // default min-width:auto holds it at the width of an unbreakable title and
+  // the row scrolls sideways, pushing the type badge off screen.
+  it('lets the title shrink so a long unbroken title can wrap', () => {
+    useAppStore.setState({ suggestions: [{ ...row, title: 'A'.repeat(120) }] });
+    render(<SuggestionsInbox />);
+    expect(screen.getByText('A'.repeat(120))).toHaveClass('min-w-0', 'break-words');
+  });
+
   it('marks a suggestion done through the store', () => {
     const updateSuggestionStatus = vi.fn().mockResolvedValue(undefined);
     useAppStore.setState({ suggestions: [row], suggestionsUnread: 1, updateSuggestionStatus });
