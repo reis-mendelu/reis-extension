@@ -5,6 +5,7 @@ import { submitSuggestion } from '../../api/suggestions';
 import { toast } from 'sonner';
 import { useTranslation } from '../../hooks/useTranslation';
 import { logError } from '../../utils/reportError';
+import { useAppStore } from '../../store/useAppStore';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -19,6 +20,10 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   const [isSending, setIsSending] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const { t } = useTranslation();
+  // Phones get a bottom sheet, not a centred dialog: a floating card with a
+  // blurred backdrop is a desktop idiom, and every other mobile surface here
+  // rises from the bottom edge.
+  const isPhone = useAppStore((s) => s.isTouch && s.isNarrow);
 
   const handleSubmit = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
@@ -65,7 +70,11 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+        <div
+          className={`fixed inset-0 z-[60] flex justify-center ${
+            isPhone ? 'items-end px-0' : 'items-center px-4'
+          }`}
+        >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -75,10 +84,14 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
           />
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="w-full max-w-md bg-base-100 rounded-2xl shadow-2xl border border-base-300 overflow-hidden relative z-10"
+            initial={isPhone ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 10 }}
+            animate={isPhone ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+            exit={isPhone ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 10 }}
+            className={`w-full bg-base-100 shadow-2xl border-base-300 overflow-hidden relative z-10 ${
+              isPhone
+                ? 'max-w-none rounded-t-[20px] border-t max-h-[85dvh] overflow-y-auto'
+                : 'max-w-md rounded-2xl border'
+            }`}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-base-300/50">

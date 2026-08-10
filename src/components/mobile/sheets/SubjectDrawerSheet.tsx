@@ -18,6 +18,7 @@ import { useSchedule } from '../../../hooks/data/useSchedule';
 import { useSyncStatus } from '../../../hooks/data/useSyncStatus';
 import { useFileActions } from '../../../hooks/ui/useFileActions';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useAppStore } from '../../../store/useAppStore';
 
 type SubjectDrawerSheetData = Extract<MobileSheet, { kind: 'subjectDrawer' }>;
 
@@ -66,6 +67,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
 
   const { files, isLoading: isFilesLoading } = useFiles(courseCode);
   const { classmates } = useClassmates(courseCode);
+  const pushSheet = useAppStore((s) => s.pushSheet);
   const { data: zaznamnikData } = useZaznamnik(courseCode);
   const syllabusResult = useSyllabus(courseCode, resolvedCourseId, courseName);
 
@@ -108,12 +110,12 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   };
 
   return (
-    <Sheet size="full" onClose={onClose}>
+    <Sheet size="full" variant="screen" onClose={onClose}>
       <SheetHeader
         eyebrow={courseCode}
         title={courseName || courseCode}
         subtitle={teacherLine}
-        onClose={onClose}
+        onBack={onClose}
       />
       <SubjectDrawerTabs
         activeTab={activeTab}
@@ -142,6 +144,23 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           syllabusResult={syllabusResult}
           folderUrl={subjectInfo?.folderUrl}
           selectable={false}
+          // The pinned 'Otevrit v IS MENDELU' footer below is this sheet's single
+          // IS link. Left on, every tab also rendered its own 'IS MENDELU' at the
+          // end of its content — two identical-looking links to the same place.
+          showIsBacklink={false}
+          // A classmate tap reaches the same PersonSheet the Lidé search
+          // opens. Without this it landed in ClassmatePersonDrawer — a second
+          // person view with no office, no phone and no map button, so the
+          // same student looked different depending on where you tapped them.
+          onSelectPerson={(classmate) =>
+            pushSheet({
+              kind: 'person',
+              personId: String(classmate.personId),
+              personName: classmate.name,
+            })
+          }
+          // The programme line only ever rendered clipped mid-word on a phone.
+          showStudyInfo={false}
         />
       </div>
       {openInIsHref && (

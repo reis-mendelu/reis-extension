@@ -37,6 +37,7 @@ export function FileList({
   folderUrl,
   lastVisitedAt,
   selectable = true,
+  showIsBacklink = true,
 }: FileListProps) {
   const { t, language } = useTranslation();
   const { noteKeys } = useDocumentNoteKeys(courseCode);
@@ -99,7 +100,7 @@ export function FileList({
           </div>
         </div>
       ))}
-      {folderUrl && (
+      {folderUrl && showIsBacklink && (
         <ISBacklink
           href={
             folderUrl.includes('?')

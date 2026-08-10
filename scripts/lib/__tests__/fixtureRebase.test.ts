@@ -142,3 +142,49 @@ describe('applyFixture', () => {
     expect(out).toHaveProperty('files');
   });
 });
+
+describe('rebaseFixture — schedule', () => {
+  // Lessons are seasonal in exactly the way exam terms are: a July scrape has
+  // an empty schedule, so the Calendar screen — the app's home tab — could not
+  // be looked at locally at all outside the semester. That blind spot is how a
+  // day switcher anchored to the wrong week survived review.
+  //
+  // Schedule dates are IS's COMPACT form (YYYYMMDD), not the DD.MM.YYYY the
+  // exam terms use, so they need their own projection.
+  const NOW = new Date('2026-04-22T10:00:00');
+
+  it('projects a lesson dayOffset onto the compact IS date', () => {
+    const out = rebaseFixture({ schedule: [{ id: 'a', dayOffset: 0 }] }, NOW);
+    expect((out.schedule as Record<string, unknown>[])[0]).toMatchObject({ date: '20260422' });
+  });
+
+  it('projects negative and positive offsets across a month boundary', () => {
+    const out = rebaseFixture(
+      {
+        schedule: [
+          { id: 'a', dayOffset: -30 },
+          { id: 'b', dayOffset: 9 },
+        ],
+      },
+      NOW
+    );
+    const rows = out.schedule as Record<string, unknown>[];
+    expect(rows[0]!.date).toBe('20260323');
+    expect(rows[1]!.date).toBe('20260501');
+  });
+
+  it('strips the offset key and leaves an absolute date alone', () => {
+    const out = rebaseFixture(
+      {
+        schedule: [
+          { id: 'a', dayOffset: 1 },
+          { id: 'b', date: '20260101' },
+        ],
+      },
+      NOW
+    );
+    const rows = out.schedule as Record<string, unknown>[];
+    expect(rows[0]).not.toHaveProperty('dayOffset');
+    expect(rows[1]!.date).toBe('20260101');
+  });
+});

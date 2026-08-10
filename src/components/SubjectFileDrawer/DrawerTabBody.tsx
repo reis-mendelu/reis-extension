@@ -11,6 +11,7 @@ import type { SyllabusRequirements, ParsedFile } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { SelectedSubject } from '../../types/app';
+import type { Classmate } from '../../types/classmates';
 
 interface DrawerTabBodyProps {
   tab: DrawerTab;
@@ -36,6 +37,17 @@ interface DrawerTabBodyProps {
   lastVisitedAt?: number | null;
   /** Forwarded to FileList — off for the phone drawer. */
   selectable?: boolean;
+  /**
+   * Whether the tab bodies render their own trailing 'IS MENDELU' link.
+   * Off for the phone sheet, which pins its own 'Otevrit v IS MENDELU'
+   * footer — showing both put two identical-looking links to the same
+   * place in every tab.
+   */
+  showIsBacklink?: boolean;
+  /** Forwarded to ClassmatesTab — the phone routes taps to its own PersonSheet. */
+  onSelectPerson?: (classmate: Classmate) => void;
+  /** Forwarded to ClassmatesTab — off for the phone's narrow rows. */
+  showStudyInfo?: boolean;
 }
 
 /**
@@ -65,6 +77,9 @@ export function DrawerTabBody({
   folderUrl,
   lastVisitedAt,
   selectable,
+  showIsBacklink = true,
+  onSelectPerson,
+  showStudyInfo,
 }: DrawerTabBodyProps) {
   const { t, language } = useTranslation();
 
@@ -94,7 +109,7 @@ export function DrawerTabBody({
                 ? t('course.footer.searchOnlyInSchedule')
                 : t('course.footer.noFilesAvailable')}
             </p>
-            {folderUrl && (
+            {folderUrl && showIsBacklink && (
               <ISBacklink
                 href={
                   folderUrl.includes('?')
@@ -120,6 +135,7 @@ export function DrawerTabBody({
             folderUrl={folderUrl}
             lastVisitedAt={lastVisitedAt}
             selectable={selectable}
+            showIsBacklink={showIsBacklink}
           />
         )}
       </>
@@ -129,17 +145,28 @@ export function DrawerTabBody({
   if (tab === 'syllabus')
     return (
       <SyllabusTab
+        showIsBacklink={showIsBacklink}
         courseCode={lesson?.courseCode || ''}
         courseId={resolvedCourseId}
         courseName={lesson?.courseName ?? ''}
         prefetchedResult={syllabusResult}
       />
     );
-  if (tab === 'classmates') return <ClassmatesTab courseCode={lesson?.courseCode || ''} />;
-  if (tab === 'zaznamnik') return <ZaznamnikTab courseCode={lesson?.courseCode || ''} />;
+  if (tab === 'classmates')
+    return (
+      <ClassmatesTab
+        courseCode={lesson?.courseCode || ''}
+        showIsBacklink={showIsBacklink}
+        onSelectPerson={onSelectPerson}
+        showStudyInfo={showStudyInfo}
+      />
+    );
+  if (tab === 'zaznamnik')
+    return <ZaznamnikTab courseCode={lesson?.courseCode || ''} showIsBacklink={showIsBacklink} />;
 
   return (
     <SuccessRateTab
+      showIsBacklink={showIsBacklink}
       courseCode={lesson?.courseCode || ''}
       facultyCode={(lesson as { facultyCode?: string } | null)?.facultyCode}
     />

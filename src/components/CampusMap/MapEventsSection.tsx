@@ -42,8 +42,13 @@ export function MapEventsSection() {
   // them — rather than a set of toggles. A bordered, tinted pill with a muted
   // resting state says "filter" at a glance and takes far less room.
   const chipBase =
-    'flex h-7 flex-shrink-0 items-center whitespace-nowrap rounded-full border px-2.5 text-xs font-semibold transition-colors';
-  const chipIdle = 'border-base-300 bg-base-200 text-base-content/70';
+    'flex h-7 flex-shrink-0 items-center whitespace-nowrap rounded-full px-2.5 text-xs font-semibold transition-colors';
+  // No border at all: the outline was carrying the shape, and on the dark theme
+  // it could not — base-300 (#0f172a) around a base-200 (#111827) fill is
+  // 1.006:1, invisible, the recurring reIS dark-theme bug. The fill alone says
+  // "chip", and tinting it from base-content rather than the base-100/200/300
+  // ramp (which INVERTS between themes) means it reads on any surface in either.
+  const chipIdle = 'bg-base-content/5 text-base-content/70';
 
   return (
     <div className="flex max-h-[60vh] flex-col">
@@ -52,7 +57,7 @@ export function MapEventsSection() {
             brand colour when active, so the colour legend pays off here */}
         <button
           onClick={() => setFilter('all')}
-          className={`${chipBase} ${filter === 'all' ? 'border-transparent bg-primary text-primary-content' : chipIdle}`}
+          className={`${chipBase} ${filter === 'all' ? 'bg-primary text-primary-content' : chipIdle}`}
         >
           {t('map.allSocieties')}
         </button>
@@ -62,7 +67,7 @@ export function MapEventsSection() {
             <button
               key={s.id}
               onClick={() => setFilter(s.id)}
-              className={`${chipBase} ${active ? 'border-transparent' : chipIdle}`}
+              className={`${chipBase} ${active ? '' : chipIdle}`}
               style={
                 active ? { backgroundColor: s.color, color: readableTextColor(s.color) } : undefined
               }

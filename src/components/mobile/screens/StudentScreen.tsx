@@ -5,10 +5,14 @@ import { useSearch } from '../../SearchBar/useSearch';
 import { SearchResultItem } from '../../SearchBar/SearchResultItem';
 import type { SearchResult } from '../../SearchBar/types';
 import { pagesData, injectUserParams } from '../../../data/pages';
+import { openExternal } from '../../../mobile/openExternal';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { StudentSearch, type StudentMode } from './student/StudentSearch';
 import { ShortcutGrid, type ShortcutSheetKind } from './student/ShortcutGrid';
 import { PageGroupList, type PageGroup } from './student/PageGroupList';
+import { PagesDisclosure } from './student/PagesDisclosure';
+
+const RECENT_PEOPLE_LIMIT = 5;
 
 function stripDiacritics(value: string): string {
   return value
@@ -41,21 +45,28 @@ export function StudentScreen() {
   const { t, language } = useTranslation();
   const [mode, setMode] = useState<StudentMode>('pages');
   const [query, setQuery] = useState('');
+  const [pagesOpen, setPagesOpen] = useState(false);
 
   const pushSheet = useAppStore((s) => s.pushSheet);
   const studiumId = useAppStore((s) => s.studiumId);
-  const recentSearches = useAppStore((s) => s.recentSearches);
+  const recentPeople = useAppStore((s) => s.recentPeople);
 
   const { sections, saveToHistory } = useSearch(query);
   const peopleResults = sections.find((s) => s.key === 'people')?.results ?? [];
-  const teacherResults = useMemo(
-    () => recentSearches.filter((r) => r.type === 'person' && r.personType === 'teacher'),
-    [recentSearches]
-  );
+  // Everyone the student looked up, not just staff. This read the mixed history
+  // and kept only `personType === 'teacher'` — so a classmate searched
+  // yesterday was dropped here, and three IS-page lookups had already evicted
+  // them from the store anyway. Five is the cap: enough to be useful, few
+  // enough that the search box stays in reach on a phone.
+  const shownPeople = useMemo(() => recentPeople.slice(0, RECENT_PEOPLE_LIMIT), [recentPeople]);
 
   const trimmedQuery = query.trim();
   const hasQuery = trimmedQuery.length > 0;
   const pageGroups = useMemo(() => buildPageGroups(query, language), [query, language]);
+  const pageCount = useMemo(
+    () => pagesData.reduce((n, category) => n + category.children.length, 0),
+    []
+  );
 
   const handleModeChange = (next: StudentMode) => {
     setMode(next);
@@ -63,13 +74,13 @@ export function StudentScreen() {
   };
 
   const openHref = (href: string) => {
-    window.open(injectUserParams(href, studiumId, language === 'en' ? 'en' : 'cz'), '_blank');
+    // openExternal, not window.open: on Capacitor that hands the URL to the
+    // system browser, which has no IS session.
+    void openExternal(injectUserParams(href, studiumId, language === 'en' ? 'en' : 'cz'));
   };
 
   const openSheet = (kind: ShortcutSheetKind) => {
-    if (kind === 'eduroam') pushSheet({ kind: 'eduroam' });
-    else if (kind === 'docs') pushSheet({ kind: 'docs' });
-    else pushSheet({ kind: 'erasmus' });
+    pushSheet(kind === 'eduroam' ? { kind: 'eduroam' } : { kind: 'docs' });
   };
 
   const openPerson = (result: SearchResult) => {
@@ -92,8 +103,20 @@ export function StudentScreen() {
       <div className="flex-1 overflow-y-auto pb-24 pt-2">
         {mode === 'pages' && (
           <>
-            {!hasQuery && <ShortcutGrid onOpenSheet={openSheet} />}
-            {pageGroups.length > 0 ? (
+            {!hasQuery && (
+              <>
+                <ShortcutGrid onOpenSheet={openSheet} />
+                <PagesDisclosure
+                  open={pagesOpen}
+                  count={pageCount}
+                  onToggle={() => setPagesOpen((v) => !v)}
+                />
+              </>
+            )}
+            {/* Searching bypasses the disclosure: the box above reaches every
+                one of the 95 links whether or not the list is expanded, which
+                is what makes hiding the long tail safe. */}
+            {(hasQuery || pagesOpen) && pageGroups.length > 0 ? (
               <PageGroupList groups={pageGroups} onOpen={openHref} />
             ) : hasQuery ? (
               <NoResults text={noResultsText} />
@@ -103,12 +126,12 @@ export function StudentScreen() {
 
         {mode === 'people' && (
           <>
-            {!hasQuery && (
+            {!hasQuery && shownPeople.length > 0 && (
               <>
                 <div className="px-4 pb-0.5 pt-1 text-xs font-bold uppercase tracking-wider text-base-content/60">
-                  {t('mobile.student.yourTeachers')}
+                  {t('mobile.student.recentPeople')}
                 </div>
-                {teacherResults.map((result) => (
+                {shownPeople.map((result) => (
                   <SearchResultItem
                     key={result.id}
                     result={result}

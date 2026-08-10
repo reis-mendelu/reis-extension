@@ -37,8 +37,9 @@ describe('DocsSheet', () => {
 
     expect(run).toHaveBeenCalledWith(
       'potvrzeni-cz',
-      expect.stringContaining('12345'),
-      'Potvrzeni_o_studiu.pdf'
+      expect.stringContaining('potvrzeni_tisk_el=1'),
+      'Potvrzeni_o_studiu.pdf',
+      expect.stringContaining('potvrzeni_tisk=1')
     );
   });
 

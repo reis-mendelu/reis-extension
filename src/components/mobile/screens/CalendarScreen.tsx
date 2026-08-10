@@ -51,7 +51,7 @@ function CalendarSkeleton() {
 export function CalendarScreen() {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
-  const { schedule, weekStart } = useSchedule();
+  const { schedule } = useSchedule();
   const fullName = useAppStore((s) => s.fullName);
   const mobileSelectedDayIso = useAppStore((s) => s.mobileSelectedDayIso);
   const setMobileSelectedDay = useAppStore((s) => s.setMobileSelectedDay);
@@ -82,6 +82,10 @@ export function CalendarScreen() {
   const nowNext = resolveNowNext(schedule, now);
   const visibleSchedule = schedule.filter((l) => !isLessonHidden(l, hiddenItems));
   const agenda = buildDayAgenda(visibleSchedule, selectedIso);
+  // Which days the chip row may need to offer beyond Mon–Fri. Built from the
+  // lessons the student can actually see, so a hidden Saturday lesson does not
+  // conjure a chip for an empty day.
+  const lessonDates = new Set(visibleSchedule.map((l) => l.date));
   const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
 
   const openBulletin = () => {
@@ -98,15 +102,23 @@ export function CalendarScreen() {
 
   return (
     <div data-testid="calendar-screen" className="flex flex-1 flex-col overflow-hidden">
+      {/* The date IS the title now. It was the eyebrow under a "Ahoj, {name}"
+          greeting that told the student nothing they did not already know. */}
       <ScreenHeader
-        eyebrow={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
-        title={
-          fullName
-            ? t('mobile.calendar.greeting', { name: fullName.split(' ')[0] ?? '' })
-            : t('mobile.calendar.greetingNoName')
-        }
+        title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
         action={
           <div className="flex items-center gap-2">
+            {/* Vývěska joins the other two header actions. As a lone pill between
+                the alerts and the day chips it read as misplaced and cost a row
+                of vertical space for one tap target. */}
+            <button
+              type="button"
+              onClick={openBulletin}
+              aria-label={t('bulletin.expand')}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-base-300 bg-base-100"
+            >
+              <Pin size={18} className="text-primary" />
+            </button>
             <button
               type="button"
               onClick={() => pushSheet({ kind: 'notifications' })}
@@ -153,15 +165,6 @@ export function CalendarScreen() {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={openBulletin}
-        aria-label={t('bulletin.expand')}
-        className="mx-4 mt-3 flex flex-shrink-0 items-center gap-1.5 self-start rounded-lg border border-base-300 bg-base-100/60 px-3 py-1.5"
-      >
-        <Pin size={14} className="text-primary" />
-        <span className="text-sm font-semibold text-base-content">{t('bulletin.title')}</span>
-      </button>
       <MobileBulletinOverlay
         isOpen={bulletinExpanded}
         onClose={() => {
@@ -172,7 +175,11 @@ export function CalendarScreen() {
         error={bulletinError}
       />
 
-      <DayChips weekStart={weekStart} selectedIso={selectedIso} onSelect={setMobileSelectedDay} />
+      <DayChips
+        selectedIso={selectedIso}
+        onSelect={setMobileSelectedDay}
+        lessonDates={lessonDates}
+      />
 
       <div className="flex-1 overflow-y-auto pb-24">
         {agenda.length === 0 ? (
@@ -188,7 +195,11 @@ export function CalendarScreen() {
         ) : (
           <DayAgenda
             rows={agenda}
-            onOpenEvent={(eventId) => pushSheet({ kind: 'eventDetail', eventId })}
+            // The day travels with the id: a lesson that repeats weekly shares
+            // one id across the whole semester the store holds.
+            onOpenEvent={(eventId) =>
+              pushSheet({ kind: 'eventDetail', eventId, dayIso: selectedIso })
+            }
           />
         )}
       </div>

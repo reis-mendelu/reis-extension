@@ -38,6 +38,17 @@ body,
     transform: translateY(0);
   }
 }
+/* Pushed screens (Sheet variant="screen") enter from the right, the way a
+   forward navigation reads — as opposed to sheetUp, which says "temporary
+   surface over the page". */
+@keyframes screenIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
 @keyframes fadeIn {
   from {
     opacity: 0;

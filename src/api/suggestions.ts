@@ -1,6 +1,7 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/services/supabase/config';
 import { logError } from '@/utils/reportError';
 import { getBrowserInfo } from '@/services/errorReporter/sanitize';
+import { getAppVersion } from '@/utils/appIdentity';
 import { IndexedDBService } from '@/services/storage';
 import type { AppView } from '@/types/app';
 import type { SuggestionDraft, SuggestionPayload, SubmitResult } from '@/types/suggestions';
@@ -26,20 +27,15 @@ export function resolveScreen(raw: unknown): AppView {
   return SCREENS.includes(raw as AppView) ? (raw as AppView) : 'calendar';
 }
 
-function extVersion(): string {
-  try {
-    return chrome?.runtime?.getManifest?.().version ?? '0.0.0';
-  } catch {
-    return '0.0.0';
-  }
-}
-
 export function buildSuggestionPayload(draft: SuggestionDraft, screen: AppView): SuggestionPayload {
   const browser = getBrowserInfo();
   return {
     ...draft,
     screen,
-    ext_version: extVersion(),
+    // getAppVersion, not the extension manifest alone: off the extension — the
+    // whole phone app — the manifest is unavailable and a local fallback would
+    // label every report from a phone '0.0.0'.
+    ext_version: getAppVersion(),
     browser_name: browser.name,
     browser_version: browser.version,
     viewport: `${window.innerWidth}x${window.innerHeight}`,

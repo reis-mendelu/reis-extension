@@ -3,51 +3,66 @@ import './installCapacitorPlatform';
 
 import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapApp } from '@capacitor/app';
-import { InAppBrowser } from '@capgo/capacitor-inappbrowser';
-import { getPlatform } from '@/platform';
-import { TOKEN_KEY } from '@/platform/tokenStore';
 import { ensureSession } from '@/mobile/ensureSession';
+import { buildInAppLoginDeps } from '@/mobile/inAppLoginDeps';
 import { handleBackPress } from '@/mobile/backButton';
+import { installMobileActionHandler } from '@/mobile/actionHandler';
+import { installExternalLinkHandler } from '@/mobile/openExternal';
+import { promptSessionRecovery } from '@/mobile/sessionRecovery';
+import { purgePlaintextToken } from '@/platform/tokenStore';
+import { setSessionExpiredHandler } from '@/services/sessionExpiry';
 import { useAppStore } from '@/store/useAppStore';
 
-const IS_LOGIN_URL = 'https://is.mendelu.cz/system/login.pl?lang=cz';
-const IS_COOKIE_URL = 'https://is.mendelu.cz/';
-
 /**
- * Android's hardware back unwinds the sheet stack before exiting. Registered
- * before boot so it works even while the login WebView is up.
+ * Android's hardware back unwinds the sheet stack, then the tab, before
+ * exiting. Registered before boot so it works even while the login WebView is
+ * up — no tab exists then, and handleBackPress falls through to exit.
  */
 void CapApp.addListener('backButton', () => {
   const s = useAppStore.getState();
-  if (handleBackPress({ sheetCount: s.mobileSheets.length, popSheet: s.popSheet }) === 'exit') {
+  const result = handleBackPress({
+    sheetCount: s.mobileSheets.length,
+    popSheet: s.popSheet,
+    bulletinOpen: s.bulletinExpanded,
+    closeBulletin: () => void s.setBulletinExpanded(false),
+    tab: s.mobileTab,
+    goToCalendar: () => s.setMobileTab('calendar'),
+  });
+  if (result === 'exit') {
     void CapApp.exitApp();
   }
 });
 
 async function boot(): Promise<void> {
-  const storage = getPlatform().storage;
+  // BEFORE ensureSession, which is what reads the token and decides whether to
+  // present login. Installs from before #172 hold a live UISAuth in plain
+  // Preferences; it is deleted rather than migrated, so the student signs in
+  // once and the plaintext copy is gone by deletion rather than by trusting a
+  // copy step.
+  await purgePlaintextToken();
 
-  await ensureSession({
-    getStored: () => storage.get(TOKEN_KEY),
-    save: (token) => storage.set(TOKEN_KEY, token),
-    openLogin: async () => {
-      await InAppBrowser.openWebView({
-        url: IS_LOGIN_URL,
-        title: 'Přihlášení do UIS',
-        isPresentAfterPageLoad: true,
-      });
-    },
-    onPageLoaded: (cb) => InAppBrowser.addListener('browserPageLoaded', () => cb()),
-    // Backing out of the login must reject rather than hang the splash screen.
-    onDismissed: (cb) => InAppBrowser.addListener('closeEvent', () => cb()),
-    readCookies: () =>
-      InAppBrowser.getCookies({ url: IS_COOKIE_URL, includeHttpOnly: true }) as Promise<
-        Record<string, string>
-      >,
-    closeWebView: async () => {
-      await InAppBrowser.close();
-    },
-  });
+  // Same deps as re-login after a lapse (mobile/sessionRecovery), deliberately
+  // shared: ensureSession's cookie-polling contract only holds if onPageLoaded
+  // and readCookies come from the same WebView openLogin presented, and two
+  // copies of that would drift.
+  await ensureSession(await buildInAppLoginDeps());
+
+  // Before the React root: the app posts REIS_ACTION as soon as it renders
+  // (a watchdog exam refresh, a tapped download), and with no responder those
+  // sit until the 30 s timeout. Installing first means none are missed.
+  installMobileActionHandler();
+
+  // Before the React root too: a target="_blank" link that slips through opens
+  // in the SYSTEM BROWSER, which has no IS session, so the student lands on a
+  // login page instead of their document. One document-level interceptor
+  // covers every such link rather than an edit per call site — a list of these
+  // has already gone stale three times in the plan.
+  installExternalLinkHandler();
+
+  // The sync reports a lapsed session through a registry it can depend on
+  // without dragging this prompt into the extension's content script. Nothing
+  // registers a handler there, so nothing happens there.
+  setSessionExpiredHandler(promptSessionRecovery);
 
   // Dynamic import on purpose: this module renders the React root on
   // evaluation, so a static import would boot the app BEFORE a session exists

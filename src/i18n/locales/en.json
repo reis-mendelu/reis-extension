@@ -54,6 +54,7 @@
   },
   "documents": {
     "title": "Study documents",
+    "unsealedFallback": "IS can't seal documents right now — we downloaded the unsealed version. Some offices require the seal.",
     "sheetSubtitle": "Electronically signed by the university — accepted by authorities",
     "items": {
       "confirmationCz": "Confirmation of study (Czech)",
@@ -92,7 +93,10 @@
     "housingOverview": "Housing Overview",
     "reservations": "Reservations",
     "foodDebit": "Food Debit",
-    "skmDocuments": "SKM Documents"
+    "skmDocuments": "SKM Documents",
+    "logoutConfirmTitle": "Sign out of the app?",
+    "logoutConfirmBody": "Your sign-in and downloaded data are removed from this phone. You'll need to sign in to IS again next time.",
+    "logoutFailed": "Signing out failed. Please try again."
   },
   "drive": {
     "title": "Google Drive backup",
@@ -385,6 +389,10 @@
       "updated": "Updated",
       "updatedJustNow": "Updated just now"
     },
+    "file": {
+      "openFailed": "Couldn't open the file.",
+      "savedToDownloads": "Saved to Downloads"
+    },
     "documentNote": {
       "add": "Add note...",
       "edit": "Edit note",
@@ -501,7 +509,7 @@
   },
   "sync": {
     "schedule": "Calendar sync",
-    "tooltip": "Syncs your schedule and exam terms to Outlook.",
+    "tooltip": "Sync schedule and exams to Outlook",
     "spolky": "Subscribed societies",
     "lastSync": "Last synced: {time}"
   },
@@ -598,8 +606,8 @@
   },
   "eduroam": {
     "title": "eduroam Wi-Fi",
-    "subtitle": "Set up eduroam on your device in a few clicks",
-    "heroTitle": "Get on eduroam in a few minutes",
+    "subtitle": "University Wi-Fi, set up once",
+    "heroTitle": "eduroam",
     "heroSub": "Pick your device — we'll walk you through the setup, step by step.",
     "s1": "Pick your device",
     "s2": "Set up eduroam",
@@ -609,7 +617,7 @@
     "copied": "Copied!",
     "viewImage": "Enlarge screenshot",
     "closeImage": "Close",
-    "connectStep": "Connect to eduroam Wi-Fi on campus",
+    "connectStep": "On campus, connect to eduroam",
     "restart": "Pick another device",
     "footer": "Built by students, for students",
     "footerSub": "reIS · a student initiative at PEF MENDELU",
@@ -625,6 +633,16 @@
     "openSettings": "Open Profiles settings",
     "privacyNoteLocal": "Everything is generated on your device and your private key stays protected by a password only you enter at install time.",
     "privacyNoteTransfer": "Everything is generated on your device and your private key is protected by a password only you enter at install time. The transfer link is one-time and expires within a few minutes.",
+    "native": {
+      "button": "Set up eduroam",
+      "working": "Opening Android setup…",
+      "saved": "Done — eduroam is saved. You'll connect automatically on campus.",
+      "already": "eduroam is already set up on this phone.",
+      "cancelled": "Setup wasn't finished. Tap again to retry.",
+      "failed": "Android didn't save the eduroam network. Please try again.",
+      "error": "eduroam setup didn't go through",
+      "privacyNote": "The certificate never leaves your phone — reIS hands it straight to Android."
+    },
     "manual": {
       "ios": {
         "hint": "Scan a QR code",
@@ -1115,8 +1133,6 @@
       "student": "Student"
     },
     "calendar": {
-      "greeting": "Hi, {name}",
-      "greetingNoName": "Hi",
       "nowRunning": "On now",
       "endsIn": "ends in {minutes} min",
       "next": "Next: {title}",
@@ -1125,7 +1141,9 @@
       "emptyBody": "No lectures or seminars today. Take the day.",
       "gap": "{hours} h free",
       "gapMinutes": "{minutes} min free",
-      "notifications": "Notifications"
+      "notifications": "Notifications",
+      "prevWeek": "Previous week",
+      "nextWeek": "Next week"
     },
     "exams": {
       "title": "Exams",
@@ -1180,11 +1198,9 @@
     },
     "map": {
       "searchPlaceholder": "Find a room, building, event…",
-      "wholeCampus": "Whole campus",
       "tabEvents": "Events",
-      "tabLibrary": "Library",
       "tabBuilding": "Building {name}",
-      "peekHint": "Pull up for events and booking",
+      "peekHint": "Campus events",
       "thisWeek": "This week",
       "emptyTitle": "Map didn't load",
       "emptyBody": "Please try again.",
@@ -1199,32 +1215,38 @@
       "searchPages": "Search IS pages…",
       "searchPeople": "Search people…",
       "results": "Results",
-      "yourTeachers": "Your teachers",
+      "recentPeople": "Recently searched",
       "noResults": "Nothing found. Try something else.",
       "eduroam": "Eduroam",
-      "eduroamSub": "Wi-Fi in two taps",
+      "eduroamSub": "university Wi-Fi",
       "documents": "Documents",
       "documentsSub": "proof of study",
-      "erasmus": "Erasmus",
-      "erasmusSub": "Learning Agreement",
       "iskam": "ISKAM",
-      "iskamSub": "canteen and dorms"
+      "iskamSub": "canteen and dorms",
+      "allPages": "All IS pages"
     },
     "sheet": {
       "close": "Close",
       "cancel": "Not now",
       "openInIsMendelu": "Open in IS MENDELU",
       "showOnMap": "Show on map",
-      "writeEmail": "Write email",
-      "showOfficeOnMap": "Show office on map",
       "personLoading": "Loading…",
-      "personLoadError": "Couldn't load this person."
+      "personLoadError": "Couldn't load this person.",
+      "back": "Back",
+      "copyEmail": "Copy e-mail",
+      "enlargePhoto": "Enlarge photo",
+      "copied": "Copied!",
+      "teamsChat": "Message on Teams",
+      "navigateToRoom": "Show {room} on the map"
     },
     "profile": {
       "appearance": "Appearance",
-      "darkModeHint": "saves your eyes and battery",
       "sync": "Sync",
       "societies": "Societies on the map"
     }
+  },
+  "session": {
+    "expired": "Your IS session has expired.",
+    "signIn": "Sign in"
   }
 }

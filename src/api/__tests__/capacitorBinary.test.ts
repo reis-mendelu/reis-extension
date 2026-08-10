@@ -3,6 +3,7 @@ import {
   base64ToBlob,
   filenameFromResponse,
   fetchIsBinary,
+  toBytes,
   type BinaryDeps,
 } from '../capacitorBinary';
 
@@ -99,6 +100,40 @@ describe('fetchIsBinary', () => {
     });
   });
 
+  // Android's HttpRequestHandler.readData takes the `errorStream != null`
+  // branch for any error status and returns the body as a RAW STRING, ignoring
+  // responseType:'blob'. Without a status guard a 503 maintenance page fell
+  // through to the HTML branch, where atob() choked on markup that was never
+  // base64 — and the swallowed throw reported the outage as a lapsed session.
+  it('THROWS a plain error on 5xx — an IS outage is not the student being logged out', async () => {
+    const d = deps({
+      httpGet: vi.fn(async () => ({
+        status: 503,
+        data: '<!DOCTYPE html><h1>Odstávka</h1>',
+        headers: { 'Content-Type': 'text/html' },
+      })),
+    });
+    const err = await fetchIsBinary('https://is.mendelu.cz/f.p12', TOKEN, d).catch((e) => e);
+    expect(err.message).toMatch(/503/);
+    expect(err.sessionExpired).toBeUndefined();
+  });
+
+  // Android forwards the server's own header casing, so the VALUE arrives
+  // exactly as IS sent it. An exact-cased check would let `Text/Html` past and
+  // save a login page as the document.
+  it('detects HTML whatever the casing of the content-type value', async () => {
+    const d = deps({
+      httpGet: vi.fn(async () => ({
+        status: 200,
+        data: btoa('<html>login</html>'),
+        headers: { 'Content-Type': 'Text/Html; charset=UTF-8' },
+      })),
+    });
+    await expect(fetchIsBinary('https://is.mendelu.cz/f.p12', TOKEN, d)).rejects.toMatchObject({
+      sessionExpired: true,
+    });
+  });
+
   it('THROWS on HTML with no logout link — that is a lapsed session, not a document', async () => {
     // btoa('<html>login</html>')
     const d = deps({
@@ -134,5 +169,31 @@ describe('fetchIsBinary', () => {
     );
     expect(d.httpGet).not.toHaveBeenCalled();
     expect(d.setCookie).not.toHaveBeenCalled();
+  });
+});
+
+describe('toBytes', () => {
+  it('returns the blob contents as bytes', async () => {
+    const blob = new Blob([new Uint8Array([0x30, 0x82, 0x01])], { type: 'application/x-pkcs12' });
+    const bytes = await toBytes({ kind: 'binary', blob, filename: 'cert.p12' });
+    expect(Array.from(bytes)).toEqual([0x30, 0x82, 0x01]);
+  });
+
+  it('THROWS on a page — an HTML page must never be written as a certificate', async () => {
+    // fetchIsBinary returns kind:'page' for an AUTHENTICATED html response.
+    // For a .p12 request that means IS did not serve the file; saving the page
+    // would produce a corrupt certificate that fails silently at install time.
+    await expect(toBytes({ kind: 'page' })).rejects.toThrow(/page/i);
+  });
+
+  it('does NOT call that a lapsed session — kind:page is positive proof the session is alive', async () => {
+    // fetchIsBinary only returns kind:'page' when the HTML CONTAINED logout.pl.
+    // Tagging it sessionExpired asserts the opposite of what was just measured.
+    // The flag means "the session lapsed, re-authenticate" — see
+    // src/injector/messageHandler.ts:202, which redirects to the IS login page
+    // on it — so any handler acting on it would push the student through
+    // re-auth over a perfectly healthy response.
+    const err = await toBytes({ kind: 'page' }).catch((e) => e);
+    expect(err.sessionExpired).toBeUndefined();
   });
 });

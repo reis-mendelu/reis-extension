@@ -41,7 +41,25 @@ export function EventDetailSheet({ sheet, onClose }: EventDetailSheetProps) {
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
 
-  const lesson = schedule.find((l) => l.id === sheet.eventId);
+  // Matched on the day as well as the id. The store holds the WHOLE semester
+  // and IS reuses a lesson id across the weeks it repeats —
+  // `fetchDualLanguageSchedule` merges its two languages on
+  // `id_date_startTime` precisely because the id alone does not identify an
+  // occurrence. Matching by id only returned the first week's copy whatever day
+  // was tapped, so the room could be wrong and `hideEvent` recorded the first
+  // date, leaving the lesson the student wanted gone on screen.
+  //
+  // The day is optional — a sheet pushed before this carries none — so the
+  // id-only lookup is kept for exactly that case and NO other. It must not be
+  // an `||` fallback: when a day WAS supplied and no longer matches (a refresh
+  // dropped the occurrence), falling through returns the first week's copy and
+  // `onHide` records ITS date — re-entering, through the fallback, the very bug
+  // the day was added to fix. A supplied day that matches nothing renders
+  // nothing.
+  const day = sheet.dayIso?.replace(/-/g, '');
+  const lesson = day
+    ? schedule.find((l) => l.id === sheet.eventId && l.date === day)
+    : schedule.find((l) => l.id === sheet.eventId);
   if (!lesson) return null;
 
   const courseName = localizedCourseName(lesson, language);

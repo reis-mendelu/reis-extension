@@ -1,0 +1,16 @@
+{
+  "name": "@reis/capacitor-secure-store",
+  "version": "1.0.0",
+  "private": true,
+  "description": "iOS Keychain storage for the IS session token. A local Capacitor plugin package, not published.",
+  "license": "Apache-2.0",
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    }
+  },
+  "files": [
+    "ios/Sources",
+    "Package.swift"
+  ]
+}

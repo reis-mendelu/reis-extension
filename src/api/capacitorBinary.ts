@@ -1,4 +1,5 @@
 import { assertIsOrigin, buildCookieDelivery } from './capacitorTransport';
+import { notifySessionExpired } from '../services/sessionExpiry';
 
 export interface BinaryDeps {
   platform: 'ios' | 'android' | 'web';
@@ -36,9 +37,12 @@ export function filenameFromResponse(headers: Record<string, string>): string {
   return match?.[1]?.trim() || 'dokument.pdf';
 }
 
-function sessionExpired(message: string): Error {
+/** Mints the tagged auth error and reports it — see the twin in
+ *  capacitorTransport for why reporting happens here and not at a catch. */
+function sessionExpired(message: string, failedToken?: string): Error {
   const err = new Error(message) as Error & { sessionExpired?: boolean };
   err.sessionExpired = true;
+  notifySessionExpired(failedToken);
   return err;
 }
 
@@ -74,7 +78,16 @@ export async function fetchIsBinary(
   });
 
   if (res.status === 401 || res.status === 403) {
-    throw sessionExpired(`HTTP ${res.status}`);
+    throw sessionExpired(`HTTP ${res.status}`, token);
+  }
+  // Anything else non-2xx is IS being broken, not the student being logged out
+  // — the same separation fetchViaCapacitor makes. It has to happen BEFORE the
+  // content-type branch below: Android returns an error body as a raw string
+  // whatever responseType asked for, so a 503 HTML maintenance page would
+  // otherwise reach atob(), throw on markup that was never base64, and get
+  // swallowed into a fake expired session.
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error(`HTTP ${res.status}`);
   }
 
   const headers = res.headers ?? {};
@@ -87,9 +100,14 @@ export async function fetchIsBinary(
   //   - a real IS page (dokumenty_cteni.pl is a document *viewer*) -> perfectly
   //     valid, just not a file. It must be shown, not downloaded.
   // `logout.pl` is the same authentication signal the HTML transport uses.
-  if (contentType.includes('text/html')) {
+  //
+  // Matched case-insensitively: Android forwards the server's own header
+  // casing, so the VALUE arrives as IS wrote it, and a `Text/Html` login page
+  // must not be saved as the document. The original casing is kept for the
+  // error message and the blob's MIME type.
+  if (contentType.toLowerCase().includes('text/html')) {
     if (isAuthenticatedBase64Html(body)) return { kind: 'page' };
-    throw sessionExpired(`Expected a document, got ${contentType}`);
+    throw sessionExpired(`Expected a document, got ${contentType}`, token);
   }
 
   const blob = base64ToBlob(body, contentType || 'application/octet-stream');
@@ -123,4 +141,27 @@ export function blobToBase64(blob: Blob): Promise<string> {
     };
     reader.readAsDataURL(blob);
   });
+}
+
+/**
+ * Narrows an IsResourceResult to raw bytes.
+ *
+ * The `page` case is the one that matters: `fetchIsBinary` returns it for an
+ * authenticated HTML response, which for a certificate request means IS did not
+ * serve the file. Writing those bytes would produce a `.p12` that is really a
+ * web page — a corruption that only surfaces when the student tries to install
+ * it, long after the download "succeeded".
+ *
+ * It is deliberately NOT tagged sessionExpired. `fetchIsBinary` returns
+ * `kind: 'page'` only when the HTML CONTAINED `logout.pl` — positive proof the
+ * session is alive. That flag means "the session lapsed, send the student back
+ * through login" (the reading `src/injector/messageHandler.ts:202` acts on), so
+ * setting it here would assert the opposite of what was just measured. IS
+ * served the wrong thing; the session is fine.
+ */
+export async function toBytes(result: IsResourceResult): Promise<Uint8Array> {
+  if (result.kind !== 'binary') {
+    throw new Error('Expected file bytes, but IS served an authenticated page instead');
+  }
+  return new Uint8Array(await result.blob.arrayBuffer());
 }

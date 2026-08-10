@@ -8,7 +8,9 @@ import { saveAs } from 'file-saver';
 import { normalizeFileUrl } from '../../utils/fileUrl';
 import { createLogger } from '../../utils/logger';
 import { requestQueue } from '../../utils/requestQueue';
-import { isNativeHost, openIsFileNatively } from '../../mobile/openIsFile';
+import { isNativeHost } from '../../mobile/openIsFile';
+import { openNativeFile } from './openNativeFile';
+import { useTranslation } from '../useTranslation';
 
 const log = createLogger('useFileActions');
 
@@ -29,39 +31,43 @@ interface UseFileActionsResult {
 export function useFileActions(): UseFileActionsResult {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
+  const { t } = useTranslation();
 
-  const openFile = useCallback(async (link: string) => {
-    const fullUrl = normalizeFileUrl(link);
+  const openFile = useCallback(
+    async (link: string) => {
+      const fullUrl = normalizeFileUrl(link);
 
-    // Capacitor: IS denies CORS to every origin, so the browser fetch below
-    // always fails here — and its window.open fallback hands the URL to the
-    // SYSTEM BROWSER, which has no IS session. Fetch natively instead.
-    if (isNativeHost()) {
-      await openIsFileNatively(fullUrl);
-      return;
-    }
-
-    try {
-      const response = await fetch(fullUrl, { credentials: 'include' });
-
-      if (!response.ok) {
-        log.warn('Fetch failed, falling back to direct link');
-        window.open(fullUrl, '_blank');
+      // Capacitor: IS denies CORS to every origin, so the browser fetch below
+      // always fails here — and its window.open fallback hands the URL to the
+      // SYSTEM BROWSER, which has no IS session. Fetch natively instead.
+      if (isNativeHost()) {
+        await openNativeFile(fullUrl, 'useFileActions.openFile', t);
         return;
       }
 
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
+      try {
+        const response = await fetch(fullUrl, { credentials: 'include' });
 
-      window.open(blobUrl, '_blank');
+        if (!response.ok) {
+          log.warn('Fetch failed, falling back to direct link');
+          window.open(fullUrl, '_blank', 'noopener,noreferrer');
+          return;
+        }
 
-      // Clean up after 5 minutes
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 5 * 60 * 1000);
-    } catch (e) {
-      log.error('Failed to fetch file as blob, falling back to direct link', e);
-      window.open(fullUrl, '_blank');
-    }
-  }, []);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        window.open(blobUrl, '_blank', 'noopener,noreferrer');
+
+        // Clean up after 5 minutes
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5 * 60 * 1000);
+      } catch (e) {
+        log.error('Failed to fetch file as blob, falling back to direct link', e);
+        window.open(fullUrl, '_blank', 'noopener,noreferrer');
+      }
+    },
+    [t]
+  );
 
   const openPdfInline = useCallback(async (link: string): Promise<string | null> => {
     const fullUrl = normalizeFileUrl(link);
@@ -92,37 +98,40 @@ export function useFileActions(): UseFileActionsResult {
     }
   }, []);
 
-  const downloadSingle = useCallback(async (link: string) => {
-    const fullUrl = normalizeFileUrl(link);
-    // See openFile: the browser fetch and its window.open fallback are both
-    // dead ends on Capacitor.
-    if (isNativeHost()) {
-      await openIsFileNatively(fullUrl);
-      return;
-    }
-    try {
-      const response = await fetch(fullUrl, { credentials: 'include' });
-      if (!response.ok) {
-        window.open(fullUrl, '_blank');
+  const downloadSingle = useCallback(
+    async (link: string) => {
+      const fullUrl = normalizeFileUrl(link);
+      // See openFile: the browser fetch and its window.open fallback are both
+      // dead ends on Capacitor.
+      if (isNativeHost()) {
+        await openNativeFile(fullUrl, 'useFileActions.downloadSingle', t);
         return;
       }
-      const blob = await response.blob();
-      const cd = response.headers.get('content-disposition');
-      const match = cd?.match(/filename="?([^"]+)"?/);
-      const filename = match?.[1] || link.split('/').pop() || 'download';
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-    } catch (e) {
-      log.error('Failed to download file', e);
-      window.open(fullUrl, '_blank');
-    }
-  }, []);
+      try {
+        const response = await fetch(fullUrl, { credentials: 'include' });
+        if (!response.ok) {
+          window.open(fullUrl, '_blank', 'noopener,noreferrer');
+          return;
+        }
+        const blob = await response.blob();
+        const cd = response.headers.get('content-disposition');
+        const match = cd?.match(/filename="?([^"]+)"?/);
+        const filename = match?.[1] || link.split('/').pop() || 'download';
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      } catch (e) {
+        log.error('Failed to download file', e);
+        window.open(fullUrl, '_blank', 'noopener,noreferrer');
+      }
+    },
+    [t]
+  );
 
   const downloadZip = useCallback(async (fileLinks: string[], zipFileName: string) => {
     if (fileLinks.length < 2) return;

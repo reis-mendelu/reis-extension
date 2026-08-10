@@ -36,6 +36,35 @@ describe('createMobileUiSlice', () => {
     expect(state.mobileSheets.map((s) => s.kind)).toEqual(['profile', 'person']);
   });
 
+  /**
+   * Tapping a second classmate while the first one's card is open is a lateral
+   * move, not a descent — stacking put two person cards on screen at once, the
+   * new one sliding up over the old. Same-kind pushes swap in place, and the
+   * swap is ONE store update so a frame with both never renders.
+   */
+  it('pushSheet swaps in place when the top sheet is already the same kind', () => {
+    state.pushSheet({ kind: 'subjectDrawer', courseCode: 'EBC-IV' });
+    state.pushSheet({ kind: 'person', personId: 'p1' });
+    state.pushSheet({ kind: 'person', personId: 'p2' });
+    expect(state.mobileSheets.map((s) => s.kind)).toEqual(['subjectDrawer', 'person']);
+    expect(state.mobileSheets.at(-1)).toMatchObject({ personId: 'p2' });
+  });
+
+  /** The swap must not eat the way back to whatever opened the first card. */
+  it('leaves the sheet underneath alone when it swaps', () => {
+    state.pushSheet({ kind: 'subjectDrawer', courseCode: 'EBC-IV' });
+    state.pushSheet({ kind: 'person', personId: 'p1' });
+    state.pushSheet({ kind: 'person', personId: 'p2' });
+    state.popSheet();
+    expect(state.mobileSheets.map((s) => s.kind)).toEqual(['subjectDrawer']);
+  });
+
+  it('still stacks when the kinds differ', () => {
+    state.pushSheet({ kind: 'profile' });
+    state.pushSheet({ kind: 'eduroam' });
+    expect(state.mobileSheets.map((s) => s.kind)).toEqual(['profile', 'eduroam']);
+  });
+
   it('popSheet removes only the topmost sheet', () => {
     state.pushSheet({ kind: 'profile' });
     state.pushSheet({ kind: 'person', personId: 'p1' });

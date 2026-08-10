@@ -1,6 +1,7 @@
 import { fetchViaProxy, isInIframe } from './proxyClient';
 import { getPlatform } from '../platform';
 import { fetchViaCapacitor } from './capacitorTransport';
+import { buildCapacitorRequestOptions } from './capacitorRequest';
 import { loadStoredToken } from '../platform/tokenStore';
 
 export const BASE_URL = 'https://is.mendelu.cz';
@@ -37,11 +38,22 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   if (getPlatform().kind === 'capacitor') {
     const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
     const token = await loadStoredToken();
-    return fetchViaCapacitor(url, token, {
-      platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
-      setCookie: (o) => CapacitorCookies.setCookie(o),
-      httpGet: (o) => CapacitorHttp.get(o),
-    });
+    return fetchViaCapacitor(
+      url,
+      token,
+      {
+        platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
+        setCookie: (o) => CapacitorCookies.setCookie(o),
+        httpGet: (o) => CapacitorHttp.get(o),
+        httpPost: (o) => CapacitorHttp.post(o),
+      },
+      // Built by an exported pure function rather than inline, so the rules it
+      // encodes are pinned by tests. This branch cannot be unit-tested directly
+      // (it needs @capacitor/core mocked, which this repo does not do), so
+      // inline the options and deleting `method`/`body` puts a POST back on the
+      // wire as a bodyless GET with a fully green suite.
+      buildCapacitorRequestOptions(options)
+    );
   }
 
   // If we're in an iframe, use the proxy client
@@ -77,4 +89,46 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   }
 
   return response;
+}
+
+/**
+ * Fetch an authenticated IS resource as raw bytes.
+ *
+ * A sibling of fetchWithAuth rather than an option on it: fetchWithAuth imposes
+ * DEFAULT_HEADERS (`accept: text/html…`, a form-urlencoded content-type), which
+ * are wrong to send when asking for a `.p12` — and adding them would change what
+ * the extension puts on the wire today. One function, two contracts.
+ *
+ * The `logout.pl` auth check is deliberately NOT applied here: binary cannot
+ * carry that marker, so the check would report a fake expired session. Expiry is
+ * detected the way fetchIsBinary detects it — 401/403, or an UNAUTHENTICATED
+ * HTML body where a file was expected. Any other non-2xx is a plain error, so a
+ * transient IS outage is never dressed up as a lapsed session.
+ */
+export async function fetchAuthedBytes(url: string): Promise<Uint8Array> {
+  if (getPlatform().kind === 'capacitor') {
+    const { fetchIsBinary, toBytes } = await import('./capacitorBinary');
+    const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
+    const token = await loadStoredToken();
+    return toBytes(
+      await fetchIsBinary(url, token, {
+        platform: Capacitor.getPlatform() as 'ios' | 'android' | 'web',
+        setCookie: (o) => CapacitorCookies.setCookie(o),
+        httpGet: (o) => CapacitorHttp.get(o),
+      })
+    );
+  }
+
+  // Extension / iframe / dev webapp: unchanged from what eduroam did before —
+  // a direct credentialed fetch, no DEFAULT_HEADERS, no proxy hop.
+  const res = await fetch(url, { credentials: 'include' });
+  if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
+  // Lowercased because `Headers` normalises header NAMES but not VALUES — a
+  // `Content-Type: Text/Html` would otherwise slip past and be written to disk
+  // as a certificate.
+  const contentType = (res.headers.get('content-type') ?? '').toLowerCase();
+  if (contentType.includes('text/html')) {
+    throw new Error('Expected file bytes, got HTML (session expired?)');
+  }
+  return new Uint8Array(await res.arrayBuffer());
 }
