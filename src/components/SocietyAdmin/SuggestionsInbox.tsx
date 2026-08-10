@@ -11,6 +11,7 @@ const TYPE_BADGE: Record<SuggestionRow['type'], string> = {
 export function SuggestionsInbox() {
   const items = useAppStore((s) => s.suggestions);
   const update = useAppStore((s) => s.updateSuggestionStatus);
+  const pending = useAppStore((s) => s.suggestionsPending);
   const { t } = useTranslation();
 
   if (items.length === 0) {
@@ -52,14 +53,14 @@ export function SuggestionsInbox() {
             <button
               className="btn btn-xs btn-ghost"
               onClick={() => void update(s.id, 'triaged')}
-              disabled={s.status !== 'new'}
+              disabled={s.status !== 'new' || pending.includes(s.id)}
             >
               {t('admin.markTriaged')}
             </button>
             <button
               className="btn btn-xs btn-ghost"
               onClick={() => void update(s.id, 'done')}
-              disabled={s.status === 'done'}
+              disabled={s.status === 'done' || pending.includes(s.id)}
             >
               {t('admin.markDone')}
             </button>

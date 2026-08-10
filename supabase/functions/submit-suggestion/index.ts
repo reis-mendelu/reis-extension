@@ -99,6 +99,14 @@ function clamp(v: unknown, max: number): string {
   return typeof v === 'string' ? v.trim().slice(0, max) : '';
 }
 
+// Over-limit student text is rejected, not silently shortened: truncating a
+// 2001-character report stores a different message than the one the student
+// wrote and tells them it was accepted. The client enforces the same limits
+// with maxLength, so anything longer arriving here is a forged payload.
+function overLimit(v: unknown, max: number): boolean {
+  return typeof v === 'string' && v.trim().length > max;
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -119,6 +127,9 @@ serve(async (req: Request) => {
     const contact = clamp(raw.contact, 120);
 
     if (!TYPES.has(type) || !title || !body || !SCREENS.has(screen)) {
+      return json({ error: 'invalid' }, 400);
+    }
+    if (overLimit(raw.title, 120) || overLimit(raw.body, 2000) || overLimit(raw.contact, 120)) {
       return json({ error: 'invalid' }, 400);
     }
 

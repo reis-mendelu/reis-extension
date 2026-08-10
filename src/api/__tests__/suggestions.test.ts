@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { buildSuggestionPayload, resolveScreen, submitSuggestion } from '../suggestions';
 
 describe('buildSuggestionPayload', () => {
@@ -33,6 +33,13 @@ describe('resolveScreen', () => {
 describe('submitSuggestion', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    // Real builds inject this. There is deliberately no in-code fallback, so
+    // without it every call short-circuits before fetch — see the last test.
+    vi.stubEnv('VITE_EXTENSION_SECRET', 'test-secret');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('maps 429 to rate_limited', async () => {
@@ -66,5 +73,18 @@ describe('submitSuggestion', () => {
     );
     const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
     expect(r).toEqual({ ok: true });
+  });
+
+  // The header used to fall back to a literal 'reis-secret'. That shipped a
+  // secret-shaped string in the public bundle that was not the secret: the
+  // function 401s it, and the only signal was the generic failure toast.
+  // A misconfigured build must not reach the network at all.
+  it('never sends a fallback secret when the env var is missing', async () => {
+    vi.stubEnv('VITE_EXTENSION_SECRET', '');
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(r).toEqual({ ok: false, error: 'upstream' });
   });
 });

@@ -5,6 +5,10 @@ import type { SuggestionRow, SuggestionStatus } from '../../types/suggestions';
 export interface SuggestionsSlice {
   suggestions: SuggestionRow[];
   suggestionsUnread: number;
+  /** Ids with a status write in flight. Both row actions are enabled at once,
+   *  so without this a fast triaged→done pair can complete out of order and
+   *  leave the store disagreeing with the database. */
+  suggestionsPending: number[];
   loadSuggestions: () => Promise<void>;
   updateSuggestionStatus: (id: number, status: SuggestionStatus) => Promise<void>;
 }
@@ -16,6 +20,7 @@ const unread = (rows: SuggestionRow[]): number => rows.filter((r) => r.status ==
 export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => ({
   suggestions: [],
   suggestionsUnread: 0,
+  suggestionsPending: [],
 
   loadSuggestions: async () => {
     const rows = await listSuggestions();
@@ -29,12 +34,25 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
   updateSuggestionStatus: async (id, status) => {
     const target = get().suggestions.find((r) => r.id === id);
     if (!target) return;
+    // One write per row at a time. Both actions are enabled for a `new` row, so
+    // a fast triaged→done pair would otherwise race: whichever response lands
+    // last wins, and a failure on the first would resync away the second.
+    if (get().suggestionsPending.includes(id)) return;
 
     // Optimistic: triaging should feel instant.
     const after = get().suggestions.map((r) => (r.id === id ? { ...r, status } : r));
-    set({ suggestions: after, suggestionsUnread: unread(after) });
+    set({
+      suggestions: after,
+      suggestionsUnread: unread(after),
+      suggestionsPending: [...get().suggestionsPending, id],
+    });
 
-    const ok = await apiSetStatus(id, status);
+    let ok = false;
+    try {
+      ok = await apiSetStatus(id, status);
+    } finally {
+      set({ suggestionsPending: get().suggestionsPending.filter((p) => p !== id) });
+    }
     if (!ok) {
       // Do not try to reconstruct the previous state locally — with two
       // interleaved writes on the same row, or a reload landing mid-flight,
@@ -45,13 +63,10 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
       // via the slice's own loadSuggestions() — one extra round trip is
       // cheap and always leaves the UI showing authoritative server state.
       //
-      // Residual tradeoff (reviewer-raised): concurrent resyncs have no
-      // sequencing guard, so an out-of-order response can briefly show
-      // stale data until the next load. Accepted — a single admin triages
-      // one row at a time, so building sequencing machinery for this isn't
-      // worth it. loadSuggestions() itself never turns a failed read into
-      // a blanked inbox (see its `null` handling), which is the failure
-      // mode that actually mattered here.
+      // Same-row races are now prevented by suggestionsPending above.
+      // loadSuggestions() itself never turns a failed read into a blanked
+      // inbox (see its `null` handling), which is the failure mode that
+      // actually mattered here.
       await get().loadSuggestions();
     }
   },

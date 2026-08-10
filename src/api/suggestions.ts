@@ -55,13 +55,23 @@ async function currentScreen(): Promise<AppView> {
 
 export async function submitSuggestion(draft: SuggestionDraft): Promise<SubmitResult> {
   try {
+    // No fallback value. A literal like 'reis-secret' would ship in the public
+    // bundle as a secret-shaped string that is not the secret: the function
+    // would 401 every submission and the only signal would be the generic
+    // failure toast. Missing config is a build error, so say so and stop —
+    // the same reasoning that made a hardcoded webhook URL wrong.
+    const secret = import.meta.env.VITE_EXTENSION_SECRET;
+    if (!secret) {
+      logError('Api.submitSuggestion', new Error('VITE_EXTENSION_SECRET is not set'));
+      return { ok: false, error: 'upstream' };
+    }
     const payload = buildSuggestionPayload(draft, await currentScreen());
     const res = await fetch(ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         apikey: SUPABASE_PUBLISHABLE_KEY,
-        'x-reis-extension-secret': import.meta.env.VITE_EXTENSION_SECRET || 'reis-secret',
+        'x-reis-extension-secret': secret,
       },
       body: JSON.stringify(payload),
     });

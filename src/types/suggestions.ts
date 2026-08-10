@@ -1,3 +1,5 @@
+import type { AppView } from './app';
+
 export type SuggestionType = 'bug' | 'idea' | 'other';
 export type SuggestionStatus = 'new' | 'triaged' | 'done';
 
@@ -9,7 +11,10 @@ export interface SuggestionDraft {
 }
 
 export interface SuggestionPayload extends SuggestionDraft {
-  screen: string;
+  // AppView, not string: the screen allowlist is enforced at runtime in the
+  // edge function, the DB constraint and resolveScreen. Typing it as `string`
+  // meant a typo at a call site would only surface as a 400 in production.
+  screen: AppView;
   ext_version: string;
   browser_name: string;
   browser_version: string;
@@ -22,7 +27,7 @@ export interface SuggestionRow {
   title: string;
   body: string;
   contact: string | null;
-  screen: string;
+  screen: AppView;
   ext_version: string;
   browser_name: string;
   browser_version: string;

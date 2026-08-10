@@ -193,3 +193,58 @@ describe('createSuggestionsSlice resync races', () => {
     expect(state.suggestionsUnread).toBe(0);
   });
 });
+
+describe('createSuggestionsSlice same-row serialization', () => {
+  let state: SuggestionsSlice;
+  let set: ReturnType<typeof vi.fn>;
+  let get: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    listSuggestions.mockReset();
+    setSuggestionStatus.mockReset();
+    setSuggestionStatus.mockResolvedValue(true);
+    set = vi.fn((updater) => {
+      const patch = typeof updater === 'function' ? updater(state) : updater;
+      state = { ...state, ...patch };
+    });
+    get = vi.fn(() => state);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    state = createSuggestionsSlice(set, get, {} as any);
+  });
+
+  // Reviewer-reported (CodeRabbit): both row actions are enabled for a `new`
+  // row, so a fast triaged→done pair could interleave — whichever response
+  // landed last won, and a failure on the first would resync away the second.
+  it('ignores a second write on a row that already has one in flight', async () => {
+    listSuggestions.mockResolvedValue([row(1, 'new')]);
+    await state.loadSuggestions();
+
+    let resolveWrite: (ok: boolean) => void = () => {};
+    setSuggestionStatus.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveWrite = resolve;
+        })
+    );
+
+    const first = state.updateSuggestionStatus(1, 'triaged');
+    expect(state.suggestionsPending).toContain(1);
+
+    await state.updateSuggestionStatus(1, 'done'); // must be dropped
+    expect(setSuggestionStatus).toHaveBeenCalledTimes(1);
+    expect(state.suggestions.find((s) => s.id === 1)?.status).toBe('triaged');
+
+    resolveWrite(true);
+    await first;
+    expect(state.suggestionsPending).toEqual([]);
+  });
+
+  it('clears the pending marker even when the write throws', async () => {
+    listSuggestions.mockResolvedValue([row(1, 'new')]);
+    await state.loadSuggestions();
+    setSuggestionStatus.mockRejectedValue(new Error('network'));
+
+    await expect(state.updateSuggestionStatus(1, 'triaged')).rejects.toThrow('network');
+    expect(state.suggestionsPending).toEqual([]);
+  });
+});

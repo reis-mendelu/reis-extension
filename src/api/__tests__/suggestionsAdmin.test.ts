@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const limit = vi.fn();
 const order = vi.fn(() => ({ limit }));
 const select = vi.fn(() => ({ order }));
-const eq = vi.fn();
+const updateSelect = vi.fn();
+const eq = vi.fn(() => ({ select: updateSelect }));
 const update = vi.fn(() => ({ eq }));
 const from = vi.fn((...args: unknown[]) => {
   void args;
@@ -76,7 +77,7 @@ describe('suggestionsAdmin.setSuggestionStatus', () => {
   });
 
   it('writes the status through adminAuthClient and returns true on success', async () => {
-    eq.mockResolvedValue({ error: null });
+    updateSelect.mockResolvedValue({ data: [{ id: 1 }], error: null });
     const ok = await setSuggestionStatus(1, 'done');
     expect(ok).toBe(true);
     expect(from).toHaveBeenCalledWith('suggestions');
@@ -86,8 +87,19 @@ describe('suggestionsAdmin.setSuggestionStatus', () => {
   });
 
   it('returns false (does not throw) when the write errors', async () => {
-    eq.mockResolvedValue({ error: { message: 'denied' } });
+    updateSelect.mockResolvedValue({ data: null, error: { message: 'denied' } });
     const ok = await setSuggestionStatus(1, 'done');
+    expect(ok).toBe(false);
+    expect(logError).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(logError).mock.calls[0]?.[0]).toBe('Api.setSuggestionStatus');
+  });
+
+  // PostgREST reports no error when an UPDATE matches zero rows, so without
+  // .select('id') a row deleted meanwhile — or one RLS refuses — would report
+  // success and strand the optimistic value on screen.
+  it('returns false when the update matched no row', async () => {
+    updateSelect.mockResolvedValue({ data: [], error: null });
+    const ok = await setSuggestionStatus(99, 'done');
     expect(ok).toBe(false);
     expect(logError).toHaveBeenCalledTimes(1);
     expect(vi.mocked(logError).mock.calls[0]?.[0]).toBe('Api.setSuggestionStatus');

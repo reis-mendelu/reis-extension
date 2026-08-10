@@ -33,9 +33,21 @@ export async function setSuggestionStatus(id: number, status: SuggestionStatus):
     devSuggestionsStore.setStatus(id, status);
     return true;
   }
-  const { error } = await adminAuthClient.from('suggestions').update({ status }).eq('id', id);
+  // .select('id') is load-bearing: PostgREST reports no error when an UPDATE
+  // matches zero rows, so a row deleted meanwhile — or one RLS refuses — would
+  // otherwise report success and leave the optimistic value on screen forever.
+  // An empty result is the only signal that nothing was written.
+  const { data, error } = await adminAuthClient
+    .from('suggestions')
+    .update({ status })
+    .eq('id', id)
+    .select('id');
   if (error) {
     logError('Api.setSuggestionStatus', error);
+    return false;
+  }
+  if (!data || data.length === 0) {
+    logError('Api.setSuggestionStatus', new Error(`no row updated for id ${id}`));
     return false;
   }
   return true;
