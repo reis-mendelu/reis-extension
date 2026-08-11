@@ -15,15 +15,14 @@ import { MapSidePanel } from '../MapSidePanel';
 beforeEach(() => {
   useAppStore.setState({
     language: 'cz',
-    mapMode: 'student',
     mapPanelTab: 'events',
     adminRole: null,
     adminAssociationId: null,
+    adminActiveAssociationId: null,
     mapEvents: [],
     societyMapEvents: [],
     eventFilter: 'all',
     mapSelection: null,
-    setMapMode: vi.fn(),
     setMapPanelTab: vi.fn(),
   });
 });
@@ -34,33 +33,25 @@ describe('MapSidePanel tabs', () => {
     expect(screen.getAllByRole('tab')).toHaveLength(2);
   });
 
-  it('shows the third "Moje akce" tab for an association', () => {
-    useAppStore.setState({ adminRole: 'association', adminAssociationId: 'supef' });
-    render(<MapSidePanel />);
-    const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(3);
-  });
-
-  it('clicking the society tab enters society mode', () => {
-    const setMapMode = vi.fn();
-    useAppStore.setState({ adminRole: 'association', adminAssociationId: 'supef', setMapMode });
-    render(<MapSidePanel />);
-    // "Moje akce" — exact accessible name avoids ambiguity with the "Akce" tab.
-    screen.getByRole('tab', { name: 'Moje akce' }).click();
-    expect(setMapMode).toHaveBeenCalledWith('society');
-  });
-
-  it('clicking Events from society mode returns to student mode', () => {
-    const setMapMode = vi.fn();
+  // Authoring moved to AdminConsole, so the panel is student-only: a logged-in
+  // society sees exactly what a student sees, with no third tab and no way to
+  // reach authoring from the map.
+  it('shows no extra tab for a logged-in association', () => {
     useAppStore.setState({
       adminRole: 'association',
       adminAssociationId: 'supef',
-      mapMode: 'society',
-      setMapMode,
+      adminActiveAssociationId: 'supef',
     });
     render(<MapSidePanel />);
-    // Exact "Akce" (not a substring match) so it doesn't also match "Moje akce".
-    screen.getByRole('tab', { name: 'Akce' }).click();
-    expect(setMapMode).toHaveBeenCalledWith('student');
+    expect(screen.getAllByRole('tab')).toHaveLength(2);
+    expect(screen.queryByRole('tab', { name: 'Moje akce' })).toBeNull();
+  });
+
+  it('switches between the two tabs', () => {
+    const setMapPanelTab = vi.fn();
+    useAppStore.setState({ setMapPanelTab });
+    render(<MapSidePanel />);
+    screen.getByRole('tab', { name: 'Místa' }).click();
+    expect(setMapPanelTab).toHaveBeenCalledWith('places');
   });
 });

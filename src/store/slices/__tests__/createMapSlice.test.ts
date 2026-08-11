@@ -277,25 +277,9 @@ describe('mapSlice', () => {
   });
 });
 
-describe('map mode + society events', () => {
-  it('defaults to student mode with no society events', () => {
-    const s = useAppStore.getState();
-    expect(s.mapMode).toBe('student');
-    expect(s.societyMapEvents).toEqual([]);
-  });
-
-  it('setMapMode stays student when no society is logged in', () => {
-    useAppStore.setState({ adminRole: null, adminAssociationId: null });
-    useAppStore.getState().setMapMode('society');
-    expect(useAppStore.getState().mapMode).toBe('student');
-  });
-
-  it('setMapMode enters society mode for a logged-in association', () => {
-    useAppStore.setState({ adminRole: 'association', adminAssociationId: 'supef' });
-    useAppStore.getState().setMapMode('society');
-    expect(useAppStore.getState().mapMode).toBe('society');
-    useAppStore.getState().setMapMode('student');
-    expect(useAppStore.getState().mapMode).toBe('student');
+describe('society events', () => {
+  it('starts with no society events', () => {
+    expect(useAppStore.getState().societyMapEvents).toEqual([]);
   });
 
   it('refreshSocietyMapEvents maps societyPosts to located MapEvents', () => {
@@ -346,14 +330,18 @@ describe('focusEventById resolves against the active pool', () => {
       venueKind: 'campus',
       category: 'quiz',
     };
-    useAppStore.setState({ mapMode: 'society', societyMapEvents: [scheduled], mapEvents: [] });
+    useAppStore.setState({
+      adminConsoleOpen: true,
+      societyMapEvents: [scheduled],
+      mapEvents: [],
+    });
     useAppStore.getState().focusEventById('sch1');
     const s = useAppStore.getState();
     expect(s.mapSelection?.kind).toBe('event');
     expect((s.mapSelection as { event: MapEvent }).event.id).toBe('sch1');
   });
 
-  it('student mode: resolves from mapEvents (not societyMapEvents)', () => {
+  it('student app: resolves from mapEvents (not societyMapEvents)', () => {
     const pub: MapEvent = {
       id: 'pub1',
       title: 'Public Event',
@@ -370,7 +358,7 @@ describe('focusEventById resolves against the active pool', () => {
       venueKind: 'campus',
       category: 'quiz',
     };
-    useAppStore.setState({ mapMode: 'student', mapEvents: [pub], societyMapEvents: [] });
+    useAppStore.setState({ adminConsoleOpen: false, mapEvents: [pub], societyMapEvents: [] });
     useAppStore.getState().focusEventById('pub1');
     const s = useAppStore.getState();
     expect(s.mapSelection?.kind).toBe('event');

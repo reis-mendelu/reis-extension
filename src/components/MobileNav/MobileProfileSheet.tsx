@@ -12,7 +12,6 @@ import { useAppStore } from '../../store/useAppStore';
 import { useIskamStore } from '../../store/iskamStore';
 import { useUserParams } from '../../hooks/useUserParams';
 import { logout } from '../../api/proxyClient';
-import { useTripleClick } from '../../hooks/ui/useTripleClick';
 
 interface MobileProfileSheetProps {
   isOpen: boolean;
@@ -36,8 +35,6 @@ export function MobileProfileSheet({
   const setLanguage = useAppStore((state) => state.setLanguage);
   const errorReportingEnabled = useAppStore((state) => state.errorReportingEnabled);
   const setErrorReportingEnabled = useAppStore((state) => state.setErrorReportingEnabled);
-  const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
-  const onBadge = useTripleClick(openSocietyAdmin);
   const { params } = useUserParams();
 
   const data = useIskamStore((s) => s.data);
@@ -83,9 +80,7 @@ export function MobileProfileSheet({
                     )}
                     <div className="flex items-center gap-3 text-base-content/60">
                       <Hash size={16} className="text-base-content/30" />
-                      <span onClick={onBadge} className="opacity-70">
-                        {t('settings.studentId')}
-                      </span>
+                      <span className="opacity-70">{t('settings.studentId')}</span>
                       <span className="font-mono text-xs bg-base-300/50 px-2.5 py-1 rounded-lg border border-base-300/50 select-all ml-auto">
                         {params.studentId}
                       </span>

@@ -12,12 +12,9 @@ import { EventRow } from './EventRow';
 // into "This week" / "Next week", soonest first. Rows open the bottom-left
 // detail card on desktop (off-campus rows open it too but don't move the map).
 export function MapEventsSection() {
-  const mode = useAppStore((s) => s.mapMode);
-  const publicEvents = useAppStore((s) => s.mapEvents);
-  const societyEvents = useAppStore((s) => s.societyMapEvents);
-  // MapSidePanel renders MyEventsPanel in society mode, so this list is student-only
-  // in practice; the mode check keeps the source correct if that ever changes.
-  const events = mode === 'society' ? societyEvents : publicEvents;
+  // This panel only ever renders on the student map — the admin console has its
+  // own list — so the public feed is the only source.
+  const events = useAppStore((s) => s.mapEvents);
   const filter = useAppStore((s) => s.eventFilter);
   const setFilter = useAppStore((s) => s.setEventFilter);
   const selection = useAppStore((s) => s.mapSelection);

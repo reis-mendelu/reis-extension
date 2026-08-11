@@ -60,7 +60,6 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   bookingError: {},
   mapPanelTab: 'events',
   eventFilter: 'all',
-  mapMode: 'student',
   societyMapEvents: [],
   placingEvent: false,
   draftCoord: null,
@@ -208,12 +207,6 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   setMapPanelTab: (tab) => set({ mapPanelTab: tab }),
   setEventFilter: (filter) => set({ eventFilter: filter }),
 
-  setMapMode: (mode) => {
-    if (mode === 'society' && !get().adminAssociationId) return; // gate: society only
-    set({ mapMode: mode, mapSelection: null, placingEvent: false, draftCoord: null });
-    if (mode === 'society') get().refreshSocietyMapEvents();
-  },
-
   refreshSocietyMapEvents: () => {
     const rows = get().societyPosts;
     set({ societyMapEvents: rows.map((r) => locateEvent(toMapEvent(r))) });
@@ -285,7 +278,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   },
 
   focusEventById: (id, opts) => {
-    const pool = get().mapMode === 'society' ? get().societyMapEvents : get().mapEvents;
+    const pool = get().adminConsoleOpen ? get().societyMapEvents : get().mapEvents;
     const event = pool.find((e) => e.id === id);
     if (!event) {
       logError('MapSlice.focusEventById', new Error(`unknown event ${id}`));

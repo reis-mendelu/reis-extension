@@ -1108,15 +1108,19 @@
     "password": "Password",
     "login": "Log in",
     "loginError": "Invalid email or password",
-    "title_panel": "Society posts",
     "title": "Title",
     "body": "Description",
     "roomCode": "Room code",
     "addPost": "Add post",
     "logout": "Log out",
     "saveError": "Could not save — please try again",
-    "manageButton": "Manage society",
-    "reisAdminNote": "Signed in as reIS admin. Manage events under a specific society."
+    "manageButton": "Manage societies",
+    "consoleTitle": "Society management",
+    "loginTitle": "Society sign-in",
+    "loginSubtitle": "Sign in with your society's account to manage its campus events.",
+    "backToReis": "Back to reIS",
+    "pickSociety": "Choose a society",
+    "pickSocietyPrompt": "Choose a society above to manage its events."
   },
   "mobile": {
     "nav": {

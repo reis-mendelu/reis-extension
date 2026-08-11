@@ -72,24 +72,40 @@ describe('createAdminSlice', () => {
     state = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...createAdminSlice(set, get, {} as any),
-      // refreshSocietyMapEvents lives on MapSlice; this local harness only
-      // constructs AdminSlice, so stub it — loadSocietyPosts now calls it.
+      // refreshSocietyMapEvents / closeComposer live on MapSlice; this local
+      // harness only constructs AdminSlice, so stub what the slice calls.
       refreshSocietyMapEvents: vi.fn(),
+      closeComposer: vi.fn(),
+      clearMapSelection: vi.fn(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
   });
 
-  it('starts logged out with overlay closed', () => {
+  it('starts logged out with the console closed', () => {
     expect(state.adminSession).toBeNull();
     expect(state.adminRole).toBeNull();
-    expect(state.adminOverlayOpen).toBe(false);
+    expect(state.adminConsoleOpen).toBe(false);
+    expect(state.adminActiveAssociationId).toBeNull();
   });
 
-  it('opens and closes the overlay', () => {
-    state.openAdminOverlay();
-    expect(state.adminOverlayOpen).toBe(true);
-    state.closeAdminOverlay();
-    expect(state.adminOverlayOpen).toBe(false);
+  it('openSocietyAdmin opens the console even with no session', () => {
+    state.openSocietyAdmin();
+    expect(state.adminConsoleOpen).toBe(true);
+    expect(state.adminSession).toBeNull();
+  });
+
+  it('closeSocietyAdmin closes the console but keeps the session', async () => {
+    signIn.mockResolvedValue({
+      data: { session: { user: { email: 'admin@supef.cz' } } },
+      error: null,
+    });
+    maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'supef' } });
+    await state.adminLogin('admin@supef.cz', 'pw');
+    state.openSocietyAdmin();
+    state.closeSocietyAdmin();
+    expect(state.adminConsoleOpen).toBe(false);
+    expect(state.adminSession).not.toBeNull();
+    expect(state.adminActiveAssociationId).toBe('supef');
   });
 
   it('login success sets session, role and association', async () => {
@@ -103,6 +119,34 @@ describe('createAdminSlice', () => {
     expect(state.adminRole).toBe('association');
     expect(state.adminAssociationId).toBe('supef');
     expect(state.adminSession).not.toBeNull();
+  });
+
+  it('an association login pins the active society to its own', async () => {
+    signIn.mockResolvedValue({
+      data: { session: { user: { email: 'admin@supef.cz' } } },
+      error: null,
+    });
+    maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'supef' } });
+    await state.adminLogin('admin@supef.cz', 'pw');
+    expect(state.adminActiveAssociationId).toBe('supef');
+  });
+
+  it('a reis_admin login leaves the active society unset until it picks one', async () => {
+    signIn.mockResolvedValue({
+      data: { session: { user: { email: 'dominik@reis.cz' } } },
+      error: null,
+    });
+    maybeSingle.mockResolvedValue({ data: { role: 'reis_admin', association_id: null } });
+    await state.adminLogin('dominik@reis.cz', 'pw');
+    expect(state.adminRole).toBe('reis_admin');
+    expect(state.adminAssociationId).toBeNull();
+    expect(state.adminActiveAssociationId).toBeNull();
+  });
+
+  it('setActiveAssociation switches the society and reloads its posts', async () => {
+    state.setActiveAssociation('esn');
+    expect(state.adminActiveAssociationId).toBe('esn');
+    await vi.waitFor(() => expect(listMyPosts).toHaveBeenCalledWith('esn'));
   });
 
   it('login failure returns an error and stays logged out', async () => {
@@ -124,24 +168,29 @@ describe('createAdminSlice', () => {
     expect(signOut).toHaveBeenCalledTimes(1);
   });
 
-  it('logout clears everything', async () => {
+  it('logout clears everything and closes the console', async () => {
     signIn.mockResolvedValue({
       data: { session: { user: { email: 'admin@esn.cz' } } },
       error: null,
     });
     maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'esn' } });
     await state.adminLogin('admin@esn.cz', 'pw');
+    state.openSocietyAdmin();
     await state.adminLogout();
     expect(state.adminSession).toBeNull();
     expect(state.adminRole).toBeNull();
     expect(state.adminAssociationId).toBeNull();
+    expect(state.adminActiveAssociationId).toBeNull();
+    expect(state.adminConsoleOpen).toBe(false);
   });
 
-  it('loadAdminSession hydrates from a persisted session', async () => {
+  it('loadAdminSession hydrates from a persisted session without opening the console', async () => {
     getSession.mockResolvedValue({ data: { session: { user: { email: 'admin@esn.cz' } } } });
     maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'esn' } });
     await state.loadAdminSession();
     expect(state.adminAssociationId).toBe('esn');
+    expect(state.adminActiveAssociationId).toBe('esn');
+    expect(state.adminConsoleOpen).toBe(false);
   });
 
   it('loadAdminSession signs out when the persisted session has no provisioned account', async () => {
@@ -152,7 +201,7 @@ describe('createAdminSlice', () => {
     expect(signOut).toHaveBeenCalledTimes(1);
   });
 
-  it('loadSocietyPosts populates societyPosts for the logged-in association', async () => {
+  it('loadSocietyPosts populates societyPosts for the active society', async () => {
     // listMyPosts is mocked at the module level (see top of file); override its
     // resolved value for this one call so the propagation assertion below still
     // pins the exact row id, same as before the module-level mock existed.
@@ -176,86 +225,63 @@ describe('createAdminSlice', () => {
         visible_from: null,
       },
     ]);
-    set({ adminAssociationId: 'supef' });
+    set({ adminActiveAssociationId: 'supef' });
     await state.loadSocietyPosts();
     expect(state.societyPosts).toHaveLength(1);
     expect(state.societyPosts[0]!.id).toBe('p1'); // safe: length asserted above
   });
 
-  it('loadSocietyPosts clears posts when there is no association', async () => {
-    set({ adminAssociationId: null });
+  it('loadSocietyPosts clears posts when no society is active', async () => {
+    set({ adminActiveAssociationId: null });
     await state.loadSocietyPosts();
     expect(state.societyPosts).toEqual([]);
   });
 });
 
 describe('admin ↔ map wiring', () => {
-  it('refreshes society map events after loading posts', async () => {
-    useAppStore.setState({ adminAssociationId: 'supef' });
-    await useAppStore.getState().loadSocietyPosts();
-    expect(useAppStore.getState().societyMapEvents.length).toBeGreaterThan(0);
-  });
-
-  it('logout resets map mode to student', async () => {
-    useAppStore.setState({
-      mapMode: 'society',
-      adminRole: 'association',
-      adminAssociationId: 'supef',
-    });
-    await useAppStore.getState().adminLogout();
-    expect(useAppStore.getState().mapMode).toBe('student');
-    expect(useAppStore.getState().societyMapEvents).toEqual([]);
-  });
-});
-
-describe('enterSocietyMode / openSocietyAdmin', () => {
   beforeEach(() =>
     useAppStore.setState({
       adminRole: null,
       adminAssociationId: null,
-      adminOverlayOpen: false,
-      mapMode: 'student',
-      mapFocusRequest: 0,
+      adminActiveAssociationId: null,
+      adminConsoleOpen: false,
       societyPosts: [],
       societyMapEvents: [],
     })
   );
 
-  it('enterSocietyMode flips to society mode, closes overlay, requests map focus', () => {
+  it('refreshes society map events after loading posts', async () => {
+    useAppStore.setState({ adminActiveAssociationId: 'supef' });
+    await useAppStore.getState().loadSocietyPosts();
+    expect(useAppStore.getState().societyMapEvents.length).toBeGreaterThan(0);
+  });
+
+  it('logout closes the console and drops the society events', async () => {
     useAppStore.setState({
+      adminConsoleOpen: true,
       adminRole: 'association',
       adminAssociationId: 'supef',
-      adminOverlayOpen: true,
+      adminActiveAssociationId: 'supef',
     });
-    useAppStore.getState().enterSocietyMode();
+    await useAppStore.getState().adminLogout();
+    expect(useAppStore.getState().adminConsoleOpen).toBe(false);
+    expect(useAppStore.getState().societyMapEvents).toEqual([]);
+  });
+
+  it('closing the console clears in-flight composer state', () => {
+    useAppStore.setState({
+      adminConsoleOpen: true,
+      composerOpen: true,
+      editEventId: 'e1',
+      placingEvent: true,
+      draftCoord: [16.6, 49.2],
+    });
+    useAppStore.getState().closeSocietyAdmin();
     const s = useAppStore.getState();
-    expect(s.mapMode).toBe('society');
-    expect(s.adminOverlayOpen).toBe(false);
-    expect(s.mapFocusRequest).toBe(1);
-  });
-
-  it('openSocietyAdmin enters society mode when logged in as association', () => {
-    useAppStore.setState({ adminRole: 'association', adminAssociationId: 'supef' });
-    useAppStore.getState().openSocietyAdmin();
-    expect(useAppStore.getState().mapMode).toBe('society');
-  });
-
-  it('openSocietyAdmin opens the login overlay when not logged in', () => {
-    useAppStore.getState().openSocietyAdmin();
-    expect(useAppStore.getState().adminOverlayOpen).toBe(true);
-    expect(useAppStore.getState().mapMode).toBe('student');
-  });
-
-  it('openSocietyAdmin still requests map focus when already in society mode (feedback, not a no-op)', () => {
-    useAppStore.setState({
-      adminRole: 'association',
-      adminAssociationId: 'supef',
-      mapMode: 'society',
-      mapFocusRequest: 4,
-    });
-    useAppStore.getState().openSocietyAdmin();
-    // Camera re-frame / view switch fires so the click always resolves to something.
-    expect(useAppStore.getState().mapFocusRequest).toBe(5);
-    expect(useAppStore.getState().mapMode).toBe('society');
+    expect(s.adminConsoleOpen).toBe(false);
+    expect(s.composerOpen).toBe(false);
+    expect(s.editEventId).toBeNull();
+    expect(s.placingEvent).toBe(false);
+    expect(s.draftCoord).toBeNull();
   });
 });

@@ -120,6 +120,7 @@ export const initializeStore = async () => {
     useAppStore.setState({
       adminRole: 'association',
       adminAssociationId: DEV_SOCIETY,
+      adminActiveAssociationId: DEV_SOCIETY,
       adminSession: { user: { email: `${DEV_SOCIETY}@dev.local` } } as unknown as Session,
     });
     void s.loadSocietyPosts();

@@ -1,7 +1,8 @@
 # Admin console: a separate page behind "Spravovat spolky"
 
 **Date:** 2026-08-11
-**Status:** approved, ready for implementation
+**Status:** decisions in the table below were made by the user; the rest follows
+from them and is open to correction during implementation.
 
 ## Problem
 
@@ -115,14 +116,22 @@ Removed with it: `setMapMode`, its `if (!adminAssociationId) return` gate, the
 
 ### Desktop
 
-- **Header** (`h-14`, bottom border): title "Správa spolků"; the society being
-  acted as — a static chip (logo + name) for an association, a `SocietyPicker`
-  dropdown over `ALL_SOCIETIES` for a reIS admin; right side *Odhlásit* and
-  *Zpět do reIS*.
+- **Header** (`h-14`, bottom border): *Zpět do reIS*, title "Správa spolků";
+  right side the society being acted as — a static chip (logo + name) for an
+  association, a `SocietyPicker` dropdown over `ALL_SOCIETIES` for a reIS admin
+  — then *Odhlásit*.
 - **Body**: fixed `w-96` left column with the event list (Live / Scheduled /
   Past + *Vytvořit akci*), replaced in place by `EventComposer` while composing.
   Right pane is `MapCanvas` + `EventLayer` filling the remaining width, with the
   existing "click to place" banner when `placingEvent`.
+
+*Built*: *Vytvořit akci* stayed at the top of the list column rather than moving
+into the console header — next to *Odhlásit* and *Zpět do reIS* it read as
+console chrome rather than as an action on the list below it.
+
+No `DetailPanel` on the console's map. That card is the student's read surface,
+carrying RSVP and directions; in the console the list column is the detail view
+and a selected pin only highlights its row.
 
 ### Mobile
 
@@ -184,12 +193,42 @@ Tests are written before implementation, per the repo's Iron Rules.
 The `verify-ui` skill at 320 / 390 / 430 for the mobile console, plus a desktop
 pass, checking overflow, collision and dark-theme contrast.
 
-## Risks
+## Risks, as they turned out
 
-- **Map reuse across two roots.** `MapCanvas` holds a Leaflet instance keyed to
-  its container. Mounting it in the console after the student map has mounted
-  must not reuse a stale instance — check `mapInstance.ts` teardown when the
-  console opens and closes.
-- **Mobile composer.** `EventComposer` was designed for a 288px desktop panel;
-  its date/time fields and room search need a narrow-width pass, which is the
-  bulk of the mobile work.
+- **Map reuse across two roots** — *not a problem*. `MapCanvas`'s init effect
+  already calls `map.remove()` and `setMapInstance(null)` on unmount, and the
+  two shells never render at once, so exactly one Leaflet instance exists at a
+  time.
+- **Mobile composer** — *one real bug, found by `verify:ui`*. `EventComposer`'s
+  header is `bg-base-200/60`, a tint designed to read over the map panel's
+  `bg-base-100/95`. The phone stack initially put the list straight onto the
+  page's `base-200` backdrop, where that header measured **1.005:1 — invisible
+  in the dark theme**. Fixed by giving the phone content area `bg-base-100`,
+  matching the desktop aside. Nothing else about the composer needed a
+  narrow-width pass.
+- **Bonus AA miss.** `MiniCalendar`'s unset-state placeholder was
+  `text-base-content/50` = 4.48:1, just under WCAG AA. Bumped to `/60`. It had
+  never been measured because the composer had only ever existed in a
+  desktop-only side panel.
+
+## Verification
+
+`npm run verify:ui` at 320 / 390 / 430 — console, composer and login screen,
+dark and light: **no layout or contrast findings**. Desktop measured by hand:
+`1014 = 384 (aside) + 630 (map)`, `964 = 56 (header) + 908`, and
+`scrollHeight === innerHeight`, so nothing overflows.
+
+`verify:ui` needed two small extensions to reach the console at all, since it
+sits three clicks deep behind an icon-only trigger:
+
+- `--click` is now repeatable, clicking each text in order with a settle between
+  steps.
+- Each step falls back from `getByText` to accessible name, so icon-only
+  controls (the phone shell's initials avatar) are reachable.
+
+Not verified end-to-end: clicking the map to drop an off-campus pin. Leaflet
+does not respond to synthetic events, and the browser automation's coordinate
+space does not match the page's, so the click could not be delivered. The
+placing banner does appear on the console's map, and the code path
+(`beginPlacing` → `MapCanvas` click handler → `placeDraftCoord`) is unchanged by
+this work — only its host container moved.

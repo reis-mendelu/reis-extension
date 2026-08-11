@@ -3,21 +3,23 @@ import { toast } from 'sonner';
 import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { sortByDate } from './eventHelpers';
-import { isPastEvent, isScheduledEvent, goLiveDate } from './eventWindow';
-import { societyById } from '../../data/societies';
+import { sortByDate } from '../CampusMap/eventHelpers';
+import { isPastEvent, isScheduledEvent, goLiveDate } from '../CampusMap/eventWindow';
 import { deletePost } from '../../api/societyPosts';
-import { EventRow } from './EventRow';
-import { EventComposer } from './EventComposer';
+import { EventRow } from '../CampusMap/EventRow';
+import { EventComposer } from '../CampusMap/EventComposer';
 import type { MapEvent } from '../../types/events';
 
-// Society-mode side panel: the association's own events grouped by lifecycle,
-// the Create entry point, an inline composer (create/edit, hosted at the top
-// rather than as an overlay), and a logout button. Live = on the public map
-// now; Scheduled = still hidden from students (goes live ~2 weeks out); Past =
-// aged off the map (kept for the society). Rows fly the map to the event. Rows
-// reuse the same EventRow as the public Events tab for a consistent look.
-export function MyEventsPanel() {
+// The console's list column: the active society's events grouped by lifecycle,
+// the Create entry point, and an inline composer that takes the column over
+// while open. Live = on the public map now; Scheduled = still hidden from
+// students (goes live ~2 weeks out); Past = aged off the map but kept for the
+// society. Rows fly the console's map to the event.
+//
+// Was MyEventsPanel, which lived inside the student map's side panel. The
+// society identity moved to AdminConsoleHeader, which is also where the picker
+// lives, so this file no longer knows which society it is showing.
+export function AdminEventList() {
   const events = useAppStore((s) => s.societyMapEvents);
   const focusEvent = useAppStore((s) => s.focusEventById);
   const openComposer = useAppStore((s) => s.openComposer);
@@ -28,12 +30,11 @@ export function MyEventsPanel() {
   const reloadMapEvents = useAppStore((s) => s.reloadMapEvents);
   const clearMapSelection = useAppStore((s) => s.clearMapSelection);
   const selection = useAppStore((s) => s.mapSelection);
-  const assocId = useAppStore((s) => s.adminAssociationId);
+  const activeId = useAppStore((s) => s.adminActiveAssociationId);
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
-  const soc = assocId ? societyById(assocId) : null;
 
-  // Delete is a two-step, in-row confirm so authoring never leaves this panel:
+  // Delete is a two-step, in-row confirm so authoring never leaves this column:
   // the trash icon arms `confirmId`, then a check commits. `busyId` disables the
   // row while the request is in flight.
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -48,7 +49,7 @@ export function MyEventsPanel() {
         toast.error(t('admin.saveError'));
         return;
       }
-      if (selectedId === id) clearMapSelection(); // close the preview card if it was open
+      if (selectedId === id) clearMapSelection(); // drop the highlight if it was on this row
       await loadSocietyPosts();
       void reloadMapEvents(); // drop the pin from the public "Akce" feed too
       toast.success(t('map.toastDeleted'));
@@ -131,31 +132,29 @@ export function MyEventsPanel() {
       </div>
     );
 
+  // A reIS admin arrives with no society picked. Authoring is meaningless until
+  // one is chosen, so the column says so rather than showing an empty list that
+  // looks like a society with no events.
+  if (!activeId) {
+    return (
+      <p className="px-4 py-8 text-center text-sm text-base-content/60">
+        {t('admin.pickSocietyPrompt') as string}
+      </p>
+    );
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* The society identity + Create bar is redundant while composing (the
-          composer has its own header), so hide it then to save vertical space. */}
+      {/* Hidden while composing: the composer has its own header, and the
+          column is narrow enough that the extra bar costs real height. */}
       {!composerOpen && (
-        <div className="flex items-center gap-2 border-b border-base-300 px-3 py-2.5">
-          <span
-            className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md text-[10px] font-bold text-white"
-            style={{
-              backgroundColor: soc?.logo ? undefined : (soc?.color ?? 'var(--fallback-p,#0046a0)'),
-            }}
-          >
-            {soc?.logo ? (
-              <img src={soc.logo} alt="" className="h-full w-full object-contain" />
-            ) : (
-              (soc?.shortName?.slice(0, 2).toUpperCase() ?? '•')
-            )}
-          </span>
-          <span className="text-sm font-bold">{soc?.name ?? t('map.myEvents')}</span>
+        <div className="flex items-center border-b border-base-300 px-3 py-2.5">
           <button
             type="button"
-            className="btn btn-primary btn-xs ml-auto gap-1"
+            className="btn btn-primary btn-sm ml-auto gap-1"
             onClick={() => openComposer()}
           >
-            <Plus size={13} /> {t('map.createEvent')}
+            <Plus size={14} /> {t('map.createEvent') as string}
           </button>
         </div>
       )}
@@ -172,7 +171,7 @@ export function MyEventsPanel() {
             {section(t('map.past'), past)}
             {events.length === 0 && (
               <p className="px-3 py-6 text-center text-sm text-base-content/60">
-                {t('map.noOwnEvents')}
+                {t('map.noOwnEvents') as string}
               </p>
             )}
           </>

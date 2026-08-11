@@ -6,6 +6,9 @@ import { useTranslation } from '../../hooks/useTranslation';
 // `allow-forms`, so a real form submit is blocked. We trigger login from the
 // button's onClick and support Enter via onKeyDown instead. Societies sign in
 // with the real email on their account (e.g. admin@supef.cz).
+//
+// Nothing to navigate on success: AdminConsole renders this form only while
+// `adminSession` is null, so setting the session swaps it for the console.
 export function SocietyLoginForm() {
   const adminLogin = useAppStore((s) => s.adminLogin);
   const { t } = useTranslation();
@@ -20,15 +23,7 @@ export function SocietyLoginForm() {
     setError(false);
     try {
       const res = await adminLogin(email, password);
-      if (res.error) {
-        setError(true);
-        return;
-      }
-      if (
-        useAppStore.getState().adminRole === 'association' &&
-        useAppStore.getState().adminAssociationId
-      )
-        useAppStore.getState().enterSocietyMode();
+      if (res.error) setError(true);
     } catch {
       setError(true);
     } finally {

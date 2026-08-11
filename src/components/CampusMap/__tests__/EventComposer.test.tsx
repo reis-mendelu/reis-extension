@@ -27,6 +27,7 @@ beforeEach(() => {
   useAppStore.setState({
     language: 'cz',
     adminAssociationId: 'supef',
+    adminActiveAssociationId: 'supef',
     adminSession: { user: { email: 'admin@supef.cz' } } as never,
     draftCoord: null,
     editEventId: null,

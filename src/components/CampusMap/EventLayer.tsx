@@ -38,10 +38,13 @@ const PANE_NAME = 'reisEvents';
 // transitions the transform in sync with the basemap. zoomend/viewreset settle
 // the exact positions. Pins only show in campus overview, not floor-view.
 export function EventLayer() {
-  const mode = useAppStore((s) => s.mapMode);
+  // One layer, two hosts: the student map draws the public feed, the admin
+  // console's map draws the active society's own events (including the ones
+  // still scheduled and hidden from students).
+  const authoring = useAppStore((s) => s.adminConsoleOpen);
   const publicEvents = useAppStore((s) => s.mapEvents);
   const societyEvents = useAppStore((s) => s.societyMapEvents);
-  const events = mode === 'society' ? societyEvents : publicEvents;
+  const events = authoring ? societyEvents : publicEvents;
   const eventFilter = useAppStore((s) => s.eventFilter);
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const selection = useAppStore((s) => s.mapSelection);
@@ -49,7 +52,7 @@ export function EventLayer() {
   // The in-progress event location: only meaningful while the composer is open.
   const composerOpen = useAppStore((s) => s.composerOpen);
   const draftCoord = useAppStore((s) => s.draftCoord);
-  const assocId = useAppStore((s) => s.adminAssociationId);
+  const assocId = useAppStore((s) => s.adminActiveAssociationId);
   const beginPlacing = useAppStore((s) => s.beginPlacing);
   const { language, t } = useTranslation();
   const [placed, setPlaced] = useState<Placed[]>([]);
@@ -179,7 +182,7 @@ export function EventLayer() {
           x={p.x}
           y={p.y}
           selected={p.group.events.some((e) => e.id === selectedId)}
-          scheduled={mode === 'society' && p.group.events.some((e) => isScheduledEvent(e.date))}
+          scheduled={authoring && p.group.events.some((e) => isScheduledEvent(e.date))}
           locale={language === 'en' ? 'en-US' : 'cs-CZ'}
           onSelect={focusEvent}
         />

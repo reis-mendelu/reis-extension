@@ -53,11 +53,12 @@ beforeEach(() => {
     activeBuildingId: null,
     mapSelection: null,
     language: 'en',
-    mapMode: 'student',
+    adminConsoleOpen: false,
     societyMapEvents: [],
     composerOpen: false,
     draftCoord: null,
     adminAssociationId: null,
+    adminActiveAssociationId: null,
   });
   setMapInstance(fakeMap);
 });
@@ -111,7 +112,7 @@ describe('EventLayer', () => {
 
   it('renders the society events when in society mode', () => {
     useAppStore.setState({
-      mapMode: 'society',
+      adminConsoleOpen: true,
       societyMapEvents: [
         {
           id: 's1',
@@ -141,8 +142,9 @@ describe('EventLayer', () => {
 
   it('renders a draft pin at draftCoord while the composer is open (no saved events needed)', () => {
     useAppStore.setState({
-      mapMode: 'society',
+      adminConsoleOpen: true,
       adminAssociationId: 'supef',
+      adminActiveAssociationId: 'supef',
       societyMapEvents: [],
       mapEvents: [],
       eventFilter: 'all',
@@ -159,8 +161,9 @@ describe('EventLayer', () => {
   it('re-enters placing mode when the draft pin is clicked', () => {
     const beginPlacing = vi.fn();
     useAppStore.setState({
-      mapMode: 'society',
+      adminConsoleOpen: true,
       adminAssociationId: 'supef',
+      adminActiveAssociationId: 'supef',
       societyMapEvents: [],
       mapEvents: [],
       eventFilter: 'all',
@@ -177,8 +180,9 @@ describe('EventLayer', () => {
 
   it('does not render a draft pin when the composer is closed', () => {
     useAppStore.setState({
-      mapMode: 'society',
+      adminConsoleOpen: true,
       adminAssociationId: 'supef',
+      adminActiveAssociationId: 'supef',
       societyMapEvents: [],
       mapEvents: [],
       eventFilter: 'all',
@@ -195,7 +199,7 @@ describe('EventLayer', () => {
     // one 30+ days out (scheduled). sortByDate puts the live one first, so the old
     // `events[0]` code would miss the scheduled flag entirely.
     useAppStore.setState({
-      mapMode: 'society',
+      adminConsoleOpen: true,
       societyMapEvents: [
         {
           id: 's-live',

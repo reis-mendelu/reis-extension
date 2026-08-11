@@ -39,7 +39,7 @@ beforeEach(() => {
     societyMapEvents: [],
     eventFilter: 'all',
     mapSelection: null,
-    mapMode: 'student',
+    adminConsoleOpen: false,
     adminRole: null,
     libraryAvailability: {},
     libraryAvailabilityLoaded: true,

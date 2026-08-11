@@ -1,9 +1,8 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, ChevronDown, ChevronRight, Shield, LogOut } from 'lucide-react';
+import { Users, ChevronDown, ChevronRight, Shield } from 'lucide-react';
 import { ASSOCIATION_PROFILES } from '../../../services/spolky/config';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
-import { logError } from '../../../utils/reportError';
 
 interface SpolkySectionProps {
   expanded: boolean;
@@ -23,18 +22,14 @@ export function SpolkySection({
 }: SpolkySectionProps) {
   const { t } = useTranslation();
   const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
-  const adminLogout = useAppStore((s) => s.adminLogout);
-  const loggedIn = useAppStore((s) => s.adminRole === 'association' && !!s.adminAssociationId);
+  // The single gate into the admin console, for both roles and whether or not a
+  // session exists — the console renders its own login screen when logged out,
+  // and its own logout once you are in. Rendering this button unconditionally is
+  // what makes it the ONLY entrance; it used to be swapped for a logout row
+  // once signed in, which left the map's "Moje akce" tab as the real way back.
   const manage = () => {
     onNavigate?.();
     openSocietyAdmin();
-  };
-  // Once logged in as a society, the map's "Moje akce" tab is the way back into
-  // authoring, so this row becomes the single logout entry point (replacing the
-  // manage/login action) instead of a stray button in the map panel.
-  const logout = () => {
-    onNavigate?.();
-    adminLogout().catch((e) => logError('SpolkySection.logout', e));
   };
   return (
     <div>
@@ -72,26 +67,16 @@ export function SpolkySection({
                 </label>
               ))}
             </div>
-            {loggedIn ? (
-              <button
-                onClick={logout}
-                className="w-full flex items-center gap-2 px-2 py-1.5 mt-1 hover:bg-base-200 rounded-md text-xs opacity-60 hover:opacity-100 transition-colors"
-              >
-                <LogOut size={14} className="text-base-content/50" />
-                {t('admin.logout') as string}
-              </button>
-            ) : (
-              <button
-                onClick={manage}
-                className="w-full flex items-center justify-between px-2 py-1.5 mt-1 hover:bg-base-200 rounded-md text-xs opacity-60 hover:opacity-100 transition-colors"
-              >
-                <span className="flex items-center gap-2">
-                  <Shield size={14} className="text-base-content/50" />
-                  {t('admin.manageButton') as string}
-                </span>
-                <span aria-hidden="true">→</span>
-              </button>
-            )}
+            <button
+              onClick={manage}
+              className="w-full flex items-center justify-between px-2 py-1.5 mt-1 hover:bg-base-200 rounded-md text-xs opacity-60 hover:opacity-100 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <Shield size={14} className="text-base-content/50" />
+                {t('admin.manageButton') as string}
+              </span>
+              <span aria-hidden="true">→</span>
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
