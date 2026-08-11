@@ -1119,6 +1119,8 @@
     "loginTitle": "Přihlášení pro spolky",
     "loginSubtitle": "Přihlaste se účtem spolku a spravujte jeho akce na mapě kampusu.",
     "backToReis": "Zpět do reIS",
+    "listTab": "Akce",
+    "mapTab": "Mapa",
     "pickSociety": "Vyberte spolek",
     "pickSocietyPrompt": "Nahoře vyberte spolek, jehož akce chcete spravovat."
   },

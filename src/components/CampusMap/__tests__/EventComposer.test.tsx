@@ -53,11 +53,36 @@ describe('EventComposer publish', () => {
     const input = createPost.mock.calls[0][0];
     expect(input.venueKind).toBe('offcampus');
     expect(input.coordLng).toBe(16.61);
+    // Published under the society being authored, and stamped with the signed-in
+    // account's email as created_by.
+    expect(createPost.mock.calls[0][1]).toBe('supef');
+    expect(createPost.mock.calls[0][2]).toBe('admin@supef.cz');
     // Publishing a live event must refresh the public feed so it shows on the
     // student "Akce" tab without a full reload (stale load-once cache fix).
     expect(useAppStore.getState().reloadMapEvents).toHaveBeenCalled();
     // And the society gets a clear confirmation it worked.
     expect(toast.success).toHaveBeenCalled();
+  });
+
+  // A reIS admin belongs to no society: adminAssociationId is null and the
+  // society comes from the console's picker. Publishing must follow the picker,
+  // not the account — reading the old field would send null and the insert
+  // would fail RLS.
+  it('publishes under the picked society when a reIS admin is signed in', async () => {
+    useAppStore.setState({
+      adminRole: 'reis_admin',
+      adminAssociationId: null,
+      adminActiveAssociationId: 'esn',
+      adminSession: { user: { email: 'dominik@reis.cz' } } as never,
+      draftCoord: [16.61, 49.21],
+    });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'ESN párty' } });
+    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    expect(createPost.mock.calls[0][1]).toBe('esn');
   });
 
   it('keeps publish disabled until every field is filled, then enables it', async () => {

@@ -1119,6 +1119,8 @@
     "loginTitle": "Society sign-in",
     "loginSubtitle": "Sign in with your society's account to manage its campus events.",
     "backToReis": "Back to reIS",
+    "listTab": "Events",
+    "mapTab": "Map",
     "pickSociety": "Choose a society",
     "pickSocietyPrompt": "Choose a society above to manage its events."
   },
