@@ -4,6 +4,7 @@ import { createRequire } from 'module';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { reisSnapshotPlugin } from './dev/snapshotPlugin';
+import { reisAdminSessionPlugin } from './dev/adminSessionPlugin';
 
 // Where npm actually installed the dependencies. Identical to `<root>/node_modules`
 // in a normal checkout; in a git worktree it points at the MAIN checkout instead.
@@ -18,7 +19,7 @@ const NODE_MODULES_ROOT = resolve(
 export default defineConfig({
   root: resolve(__dirname, 'dev'),
   publicDir: resolve(__dirname, 'public'),
-  plugins: [react(), tailwindcss(), reisSnapshotPlugin()],
+  plugins: [react(), tailwindcss(), reisSnapshotPlugin(), reisAdminSessionPlugin()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),

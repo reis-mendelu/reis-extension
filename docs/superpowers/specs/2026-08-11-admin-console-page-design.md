@@ -232,3 +232,42 @@ space does not match the page's, so the click could not be delivered. The
 placing banner does appear on the console's map, and the code path
 (`beginPlacing` → `MapCanvas` click handler → `placeDraftCoord`) is unchanged by
 this work — only its host container moved.
+
+## Testing the real publish path (added after review)
+
+The webapp harness could not exercise a real publish. `createPost` returns
+`devSocietyStore.create(...)` whenever `VITE_DEV_SOCIETY` is set
+(`src/api/societyPosts.ts`), so on `npm run dev:web` a publish lands in an
+in-memory object and never reaches Supabase — the fake session that makes the
+console reachable is the same flag that makes its writes meaningless. Clearing
+the flag restores the real Supabase path but leaves a login form.
+
+`npm run dev:web:admin` closes that gap. It clears `VITE_DEV_SOCIETY` and signs
+the harness in as a real account, so publishes hit live Supabase and its RLS
+policies:
+
+```bash
+infisical run --env=dev -- npm run dev:web:admin
+```
+
+Two secrets, `REIS_ADMIN_EMAIL` and `REIS_ADMIN_PASSWORD`. Any env source works
+— Infisical is just the one that keeps them out of the repo and off disk.
+
+**The sign-in happens in the Vite dev server, not the browser**
+(`dev/adminSessionPlugin.ts`). The password stays in the node process; only the
+resulting session crosses to the page, which is exactly what a real login would
+have deposited there. Three reasons this shape was chosen over a `VITE_`-
+prefixed credential: a `VITE_` variable is inlined into client source and would
+put the password in the bundle and in devtools; the plugin is registered only by
+`vite.web.config.ts`, so `wxt build` cannot see it; and with no credentials
+present the route answers 204 and the harness shows the normal login screen, so
+the default `npm run dev:web` is unchanged.
+
+Verified: 204 when unconfigured, 502 + `sign_in_failed` on bad credentials (a
+real round-trip to Supabase), and the client degrades to the login screen with a
+single warning. The success branch needs the real secret and is the one step
+that has not been run.
+
+Use a **society** account, not a reIS-admin one, unless testing the picker: a
+reIS admin can write to every society and read PII (`feedback_responses`,
+`daily_active_usage`), which is more authority than a local harness needs.
