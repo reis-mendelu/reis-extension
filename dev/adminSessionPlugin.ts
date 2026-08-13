@@ -1,3 +1,8 @@
+// Matches how scripts/scrape-real-data.ts takes MENDELU_USER / MENDELU_PASS:
+// a gitignored .env is this repo's existing home for local credentials. dotenv
+// does not overwrite variables already in the environment, so `infisical run`
+// (or a plain export) still wins over .env when both are present.
+import 'dotenv/config';
 import type { Plugin } from 'vite';
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '../src/services/supabase/config';

@@ -131,15 +131,33 @@ describe('createAdminSlice', () => {
     expect(state.adminActiveAssociationId).toBe('supef');
   });
 
-  it('a reis_admin login leaves the active society unset until it picks one', async () => {
+  // The real reis_admin account, as it exists in spolky_accounts: it carries
+  // association_id 'reis' rather than null — 'reis' being a society in its own
+  // right, which posts campus-wide events. So a reIS admin does NOT start at an
+  // empty "choose a society" state; it starts on its own and the header's
+  // picker moves it. Worth pinning, because the obvious assumption (an admin
+  // belongs to no society) is the wrong one.
+  it('a reis_admin login starts on its own society', async () => {
     signIn.mockResolvedValue({
-      data: { session: { user: { email: 'dominik@reis.cz' } } },
+      data: { session: { user: { email: 'reis.mendelu@gmail.com' } } },
+      error: null,
+    });
+    maybeSingle.mockResolvedValue({ data: { role: 'reis_admin', association_id: 'reis' } });
+    await state.adminLogin('reis.mendelu@gmail.com', 'pw');
+    expect(state.adminRole).toBe('reis_admin');
+    expect(state.adminAssociationId).toBe('reis');
+    expect(state.adminActiveAssociationId).toBe('reis');
+  });
+
+  // Kept alongside the above: an account with no society must not crash or
+  // silently author under a bogus id — it lands on the picker's empty state.
+  it('a reis_admin with no society of its own waits for the picker', async () => {
+    signIn.mockResolvedValue({
+      data: { session: { user: { email: 'someone@reis.cz' } } },
       error: null,
     });
     maybeSingle.mockResolvedValue({ data: { role: 'reis_admin', association_id: null } });
-    await state.adminLogin('dominik@reis.cz', 'pw');
-    expect(state.adminRole).toBe('reis_admin');
-    expect(state.adminAssociationId).toBeNull();
+    await state.adminLogin('someone@reis.cz', 'pw');
     expect(state.adminActiveAssociationId).toBeNull();
   });
 

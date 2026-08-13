@@ -64,16 +64,19 @@ describe('EventComposer publish', () => {
     expect(toast.success).toHaveBeenCalled();
   });
 
-  // A reIS admin belongs to no society: adminAssociationId is null and the
-  // society comes from the console's picker. Publishing must follow the picker,
-  // not the account — reading the old field would send null and the insert
-  // would fail RLS.
+  // A reIS admin authors for a society other than its own. In production that
+  // account carries association_id 'reis' (checked against spolky_accounts), so
+  // it starts pinned there and the header's picker moves it elsewhere.
+  // Publishing must follow the picker, not the account — reading the account
+  // field would file every event under 'reis' no matter what was selected.
   it('publishes under the picked society when a reIS admin is signed in', async () => {
     useAppStore.setState({
       adminRole: 'reis_admin',
-      adminAssociationId: null,
+      // Its own society, as production has it — and deliberately NOT the one
+      // being authored, so sending this instead of the picked id is a failure.
+      adminAssociationId: 'reis',
       adminActiveAssociationId: 'esn',
-      adminSession: { user: { email: 'dominik@reis.cz' } } as never,
+      adminSession: { user: { email: 'reis.mendelu@gmail.com' } } as never,
       draftCoord: [16.61, 49.21],
     });
     render(<EventComposer onDone={() => {}} />);
