@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import { ChevronDown, ChevronLeft, ChevronUp } from 'lucide-react';
 import { snapDetent, dragOwnsGesture, consumesTravel } from '../../primitives/sheetDrag';
 import { useAppStore } from '../../../../store/useAppStore';
@@ -139,6 +145,24 @@ export function MapSheet() {
     if (selectedEvent) setSheetState('expanded');
   }, [selectedEvent, setSheetState]);
 
+  /**
+   * A drag ends in a click on whatever was under the finger. The handle and the
+   * tabs guard against that individually, but the sheet's CONTENT never did —
+   * and now that content includes an event card, so collapsing the sheet with a
+   * downward drag that starts on it could cast an RSVP, clear the selected
+   * event, or jump to a room as a side effect.
+   *
+   * Handled once here in the capture phase instead of per control: the click is
+   * swallowed before it reaches any target, so nothing inside needs to know
+   * about dragging.
+   */
+  const swallowClickAfterDrag = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (!dragged.current) return;
+    dragged.current = false;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   // A cancel is the BROWSER taking the gesture over, not the student letting
   // go — the only outcome is "put it back". Mirrors Sheet's handling.
   const onPointerCancel = () => {
@@ -182,6 +206,7 @@ export function MapSheet() {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
+      onClickCapture={swallowClickAfterDrag}
       // The height transition is dropped mid-drag: it animates the same height
       // the finger is setting, and leaving both on makes the sheet lag behind.
       className={`absolute inset-x-0 bottom-0 z-[1000] flex flex-col overflow-hidden rounded-t-[20px] bg-base-100 shadow-drawer ${

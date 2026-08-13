@@ -75,6 +75,31 @@ describe('MapScreen', () => {
   // drew them, because EventLayer was mounted only by the desktop CampusMapView
   // and the admin console. A society could publish an event and find no pin for
   // it on any student's phone.
+  // Regression: a drag ends in a click on whatever was under the finger. The
+  // handle and tabs guarded against that; the sheet's CONTENT did not — so
+  // collapsing the sheet with a drag starting on the event card could cast an
+  // RSVP or clear the selection as a side effect.
+  it('swallows the click that ends a drag, so content actions do not fire', () => {
+    useAppStore.setState({
+      mapEvents: [EVENT],
+      mapSheetState: 'expanded',
+      mapSelection: { kind: 'event', event: EVENT },
+    } as never);
+    render(<MapScreen />);
+    const sheet = screen.getByTestId('map-sheet');
+    const back = screen.getByRole('button', { name: /Akce/ });
+
+    // A drag the sheet absorbs: press on the sheet, move far enough that it
+    // consumes the travel, release — then the click the browser still delivers.
+    fireEvent.pointerDown(sheet, { clientY: 100 });
+    fireEvent.pointerMove(sheet, { clientY: 260 });
+    fireEvent.pointerUp(sheet, { clientY: 260 });
+    fireEvent.click(back);
+
+    // Still selected: the drag collapsed the sheet, it did not press Back.
+    expect(useAppStore.getState().mapSelection).not.toBeNull();
+  });
+
   it('mounts the event layer so society pins are drawn', () => {
     useAppStore.setState({ mapEvents: [EVENT] } as never);
     render(<MapScreen />);
