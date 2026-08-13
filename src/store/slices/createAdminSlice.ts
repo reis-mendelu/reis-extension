@@ -141,6 +141,11 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       return;
     }
     const posts = await listMyPosts(associationId);
+    // Two picker changes in quick succession can resolve out of order. Without
+    // this guard the slower, older response wins and the console shows one
+    // society's events under another's name — and delete/edit act on THOSE
+    // rows, so the damage is to a society nobody is looking at.
+    if (get().adminActiveAssociationId !== associationId) return;
     set({ societyPosts: posts });
     get().refreshSocietyMapEvents();
   },

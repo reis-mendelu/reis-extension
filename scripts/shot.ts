@@ -111,11 +111,15 @@ async function seedMeta(page: Page, entries: Record<string, unknown>): Promise<v
  *  their meaning in `aria-label`, and a text-only lookup can never reach the
  *  surfaces behind them. */
 async function clickByTextOrLabel(page: Page, text: string): Promise<void> {
-  const byText = page.getByText(text, { exact: false }).first();
+  // `visible: true` matters more than it looks: getByText matches hidden nodes
+  // too, and this app keeps large ones around — a collapsed popover, and a
+  // Leaflet pane whose descendants carry event titles. `.first()` on an
+  // unfiltered query happily returns one of those and clicks nothing.
+  const byText = page.getByText(text, { exact: false }).filter({ visible: true }).first();
   if ((await byText.count()) > 0) return byText.click();
-  const byLabel = page.getByLabel(text, { exact: false }).first();
+  const byLabel = page.getByLabel(text, { exact: false }).filter({ visible: true }).first();
   if ((await byLabel.count()) > 0) return byLabel.click();
-  throw new Error(`--click "${text}": no element with that text or accessible name`);
+  throw new Error(`--click "${text}": no visible element with that text or accessible name`);
 }
 
 /** Collect raw numbers only — rects, resolved RGBA, font metrics. Every

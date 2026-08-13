@@ -25,7 +25,7 @@ vi.mock('../../../services/admin/authClient', () => ({
 // tests). Local-harness tests below use a minimal AdminSlice-only get()/set()
 // pair, so loadSocietyPosts's new get().refreshSocietyMapEvents() call (a
 // MapSlice method) is stubbed onto `state` — the "admin ↔ map wiring" suite
-// exercises the real wiring against the full useAppStore instead.
+// wiring against the full useAppStore lives in createAdminSlice.society.test.ts.
 vi.mock('../../../api/societyPosts', async (orig) => ({
   ...(await orig<typeof import('../../../api/societyPosts')>()),
   listMyPosts: vi.fn().mockResolvedValue([
@@ -52,7 +52,6 @@ vi.mock('../../../api/societyPosts', async (orig) => ({
 
 import { createAdminSlice, type AdminSlice } from '../createAdminSlice';
 import { listMyPosts } from '../../../api/societyPosts';
-import { useAppStore } from '../../useAppStore';
 
 describe('createAdminSlice', () => {
   let state: AdminSlice;
@@ -161,31 +160,6 @@ describe('createAdminSlice', () => {
     expect(state.adminActiveAssociationId).toBeNull();
   });
 
-  it('setActiveAssociation switches the society and reloads its posts', async () => {
-    state.setActiveAssociation('esn');
-    expect(state.adminActiveAssociationId).toBe('esn');
-    await vi.waitFor(() => expect(listMyPosts).toHaveBeenCalledWith('esn'));
-  });
-
-  // Regression: switching society left the previous one's authoring state
-  // running. With the composer open, editEventId still referenced the OLD
-  // society's event, so saving would have written to a society the header no
-  // longer named.
-  it("setActiveAssociation drops the previous society's authoring state", () => {
-    useAppStore.setState({
-      adminActiveAssociationId: 'supef',
-      composerOpen: true,
-      editEventId: 'supef-event-1',
-      draftCoord: [16.61, 49.21],
-    });
-    useAppStore.getState().setActiveAssociation('esn');
-    const s = useAppStore.getState();
-    expect(s.adminActiveAssociationId).toBe('esn');
-    expect(s.composerOpen).toBe(false);
-    expect(s.editEventId).toBeNull();
-    expect(s.draftCoord).toBeNull();
-  });
-
   it('login failure returns an error and stays logged out', async () => {
     signIn.mockResolvedValue({ data: { session: null }, error: { message: 'bad' } });
     const res = await state.adminLogin('admin@supef.cz', 'wrong');
@@ -236,89 +210,5 @@ describe('createAdminSlice', () => {
     await state.loadAdminSession();
     expect(state.adminSession).toBeNull();
     expect(signOut).toHaveBeenCalledTimes(1);
-  });
-
-  it('loadSocietyPosts populates societyPosts for the active society', async () => {
-    // listMyPosts is mocked at the module level (see top of file); override its
-    // resolved value for this one call so the propagation assertion below still
-    // pins the exact row id, same as before the module-level mock existed.
-    vi.mocked(listMyPosts).mockResolvedValueOnce([
-      {
-        id: 'p1',
-        association_id: 'supef',
-        title: 'X',
-        body: null,
-        category: 'other',
-        date: '2026-07-10',
-        end_date: null,
-        time: null,
-        venue_kind: 'campus',
-        room_code: null,
-        coord_lng: null,
-        coord_lat: null,
-        location: null,
-        url: null,
-        created_by: null,
-        visible_from: null,
-      },
-    ]);
-    set({ adminActiveAssociationId: 'supef' });
-    await state.loadSocietyPosts();
-    expect(state.societyPosts).toHaveLength(1);
-    expect(state.societyPosts[0]!.id).toBe('p1'); // safe: length asserted above
-  });
-
-  it('loadSocietyPosts clears posts when no society is active', async () => {
-    set({ adminActiveAssociationId: null });
-    await state.loadSocietyPosts();
-    expect(state.societyPosts).toEqual([]);
-  });
-});
-
-describe('admin ↔ map wiring', () => {
-  beforeEach(() =>
-    useAppStore.setState({
-      adminRole: null,
-      adminAssociationId: null,
-      adminActiveAssociationId: null,
-      adminConsoleOpen: false,
-      societyPosts: [],
-      societyMapEvents: [],
-    })
-  );
-
-  it('refreshes society map events after loading posts', async () => {
-    useAppStore.setState({ adminActiveAssociationId: 'supef' });
-    await useAppStore.getState().loadSocietyPosts();
-    expect(useAppStore.getState().societyMapEvents.length).toBeGreaterThan(0);
-  });
-
-  it('logout closes the console and drops the society events', async () => {
-    useAppStore.setState({
-      adminConsoleOpen: true,
-      adminRole: 'association',
-      adminAssociationId: 'supef',
-      adminActiveAssociationId: 'supef',
-    });
-    await useAppStore.getState().adminLogout();
-    expect(useAppStore.getState().adminConsoleOpen).toBe(false);
-    expect(useAppStore.getState().societyMapEvents).toEqual([]);
-  });
-
-  it('closing the console clears in-flight composer state', () => {
-    useAppStore.setState({
-      adminConsoleOpen: true,
-      composerOpen: true,
-      editEventId: 'e1',
-      placingEvent: true,
-      draftCoord: [16.6, 49.2],
-    });
-    useAppStore.getState().closeSocietyAdmin();
-    const s = useAppStore.getState();
-    expect(s.adminConsoleOpen).toBe(false);
-    expect(s.composerOpen).toBe(false);
-    expect(s.editEventId).toBeNull();
-    expect(s.placingEvent).toBe(false);
-    expect(s.draftCoord).toBeNull();
   });
 });
