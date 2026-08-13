@@ -22,6 +22,8 @@ export interface AdminSlice {
   openSocietyAdmin: () => void;
   /** Leave the console for the student app. Keeps the session; only logout drops it. */
   closeSocietyAdmin: () => void;
+  /** Clear in-progress authoring (composer, draft pin, map selection). */
+  resetAuthoringState: () => void;
   /** reIS admin only: author as a different society. */
   setActiveAssociation: (id: string) => void;
   adminLogin: (email: string, password: string) => Promise<{ error?: string }>;
@@ -55,20 +57,27 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   adminConsoleOpen: false,
   societyPosts: [],
   openSocietyAdmin: () => set({ adminConsoleOpen: true }),
-  closeSocietyAdmin: () => {
-    // Leave no half-finished authoring behind: an open composer or an armed
-    // "click to place" would otherwise still be live on the student map.
+  /**
+   * Drop every trace of in-progress authoring. Called at each boundary where
+   * the thing being authored stops being the thing on screen — leaving the
+   * console, switching society, logging out.
+   *
+   * One path rather than three copies, because the copies drifted: logout used
+   * to skip this, so signing out mid-placement dropped you into the STUDENT map
+   * with "click to place" still armed. Switching society was worse — editEventId
+   * survived and pointed at the previous society's event, so saving wrote to a
+   * society the header no longer named.
+   */
+  resetAuthoringState: () => {
     get().closeComposer();
     get().clearMapSelection();
+  },
+  closeSocietyAdmin: () => {
+    get().resetAuthoringState();
     set({ adminConsoleOpen: false });
   },
   setActiveAssociation: (id) => {
-    // Switching society is a context boundary, so the authoring state from the
-    // previous one must not survive it. An open composer is the dangerous case:
-    // editEventId still points at the OLD society's event, so saving would
-    // silently write to a society the header no longer names.
-    get().closeComposer();
-    get().clearMapSelection();
+    get().resetAuthoringState();
     set({ adminActiveAssociationId: id });
     void get().loadSocietyPosts();
   },
@@ -100,6 +109,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     } catch (e) {
       logError('Admin.logout', e);
     }
+    get().resetAuthoringState();
     set({
       adminSession: null,
       adminRole: null,

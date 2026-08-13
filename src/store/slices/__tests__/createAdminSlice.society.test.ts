@@ -148,6 +148,28 @@ describe('admin ↔ map wiring', () => {
     expect(useAppStore.getState().societyMapEvents).toEqual([]);
   });
 
+  // Regression: logout skipped the cleanup that closeSocietyAdmin did, and the
+  // console header offers logout directly — so signing out mid-placement landed
+  // you back on the STUDENT map with "click to place" still armed.
+  it('logout also clears in-flight composer and placing state', async () => {
+    useAppStore.setState({
+      adminConsoleOpen: true,
+      adminRole: 'association',
+      adminAssociationId: 'supef',
+      adminActiveAssociationId: 'supef',
+      composerOpen: true,
+      editEventId: 'e1',
+      placingEvent: true,
+      draftCoord: [16.6, 49.2],
+    });
+    await useAppStore.getState().adminLogout();
+    const s = useAppStore.getState();
+    expect(s.composerOpen).toBe(false);
+    expect(s.editEventId).toBeNull();
+    expect(s.placingEvent).toBe(false);
+    expect(s.draftCoord).toBeNull();
+  });
+
   it('closing the console clears in-flight composer state', () => {
     useAppStore.setState({
       adminConsoleOpen: true,
