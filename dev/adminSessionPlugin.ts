@@ -30,6 +30,36 @@ import { ADMIN_SESSION_ROUTE } from './adminSessionRoute';
  * normal login screen. This plugin is only ever registered by
  * vite.web.config.ts; `wxt build` never sees it, so it cannot reach production.
  */
+/**
+ * Which account to sign in as.
+ *
+ * Default is REIS_ADMIN_* — the reis_admin account, which the console's picker
+ * lets author for every society, so it covers most testing on its own. Set
+ * REIS_ADMIN_SOCIETY to an association id to sign in as that single society
+ * instead, which is the only way to see what one association actually sees:
+ *
+ *   REIS_ADMIN_SOCIETY=esn npm run dev:web:admin
+ *
+ * Ids are lowercase (esn, supef, af, ldf, zf, au_frrms, reis) and map to
+ * REIS_SOCIETY_<ID>_EMAIL / _PASSWORD, uppercased.
+ */
+function pickCredentials(society?: string): { email?: string; password?: string } {
+  if (!society) {
+    return { email: process.env.REIS_ADMIN_EMAIL, password: process.env.REIS_ADMIN_PASSWORD };
+  }
+  const key = society.trim().toUpperCase();
+  const email = process.env[`REIS_SOCIETY_${key}_EMAIL`];
+  const password = process.env[`REIS_SOCIETY_${key}_PASSWORD`];
+  if (!email || !password) {
+    // Loud, because the quiet failure — falling back to the reis_admin — would
+    // look like it worked while testing the wrong role entirely.
+    console.warn(
+      `[reis] REIS_ADMIN_SOCIETY="${society}" has no REIS_SOCIETY_${key}_EMAIL/_PASSWORD configured`
+    );
+  }
+  return { email, password };
+}
+
 export function reisAdminSessionPlugin(): Plugin {
   return {
     name: 'reis-dev-admin-session',
@@ -39,8 +69,7 @@ export function reisAdminSessionPlugin(): Plugin {
         res.setHeader('content-type', 'application/json');
         res.setHeader('cache-control', 'no-store');
 
-        const email = process.env.REIS_ADMIN_EMAIL;
-        const password = process.env.REIS_ADMIN_PASSWORD;
+        const { email, password } = pickCredentials(process.env.REIS_ADMIN_SOCIETY);
         if (!email || !password) {
           // Not configured — not an error. The harness falls back to the login
           // screen, which is the default experience.
