@@ -167,6 +167,25 @@ describe('createAdminSlice', () => {
     await vi.waitFor(() => expect(listMyPosts).toHaveBeenCalledWith('esn'));
   });
 
+  // Regression: switching society left the previous one's authoring state
+  // running. With the composer open, editEventId still referenced the OLD
+  // society's event, so saving would have written to a society the header no
+  // longer named.
+  it("setActiveAssociation drops the previous society's authoring state", () => {
+    useAppStore.setState({
+      adminActiveAssociationId: 'supef',
+      composerOpen: true,
+      editEventId: 'supef-event-1',
+      draftCoord: [16.61, 49.21],
+    });
+    useAppStore.getState().setActiveAssociation('esn');
+    const s = useAppStore.getState();
+    expect(s.adminActiveAssociationId).toBe('esn');
+    expect(s.composerOpen).toBe(false);
+    expect(s.editEventId).toBeNull();
+    expect(s.draftCoord).toBeNull();
+  });
+
   it('login failure returns an error and stays logged out', async () => {
     signIn.mockResolvedValue({ data: { session: null }, error: { message: 'bad' } });
     const res = await state.adminLogin('admin@supef.cz', 'wrong');

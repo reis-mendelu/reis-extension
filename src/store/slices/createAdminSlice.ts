@@ -63,6 +63,12 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     set({ adminConsoleOpen: false });
   },
   setActiveAssociation: (id) => {
+    // Switching society is a context boundary, so the authoring state from the
+    // previous one must not survive it. An open composer is the dangerous case:
+    // editEventId still points at the OLD society's event, so saving would
+    // silently write to a society the header no longer names.
+    get().closeComposer();
+    get().clearMapSelection();
     set({ adminActiveAssociationId: id });
     void get().loadSocietyPosts();
   },

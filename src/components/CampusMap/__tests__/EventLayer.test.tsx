@@ -143,6 +143,41 @@ describe('EventLayer', () => {
     expect(btn).toBeTruthy();
   });
 
+  // Regression: eventFilter is the STUDENT map's society chip and persists in
+  // the shared store. Applying it while authoring hid the society's own events
+  // behind whatever a student last picked — the admin map went blank while the
+  // list beside it still listed the events.
+  it("ignores the student's society filter while the admin console is open", () => {
+    useAppStore.setState({
+      adminConsoleOpen: true,
+      // A student left the map filtered to ESN...
+      eventFilter: 'esn',
+      // ...and this admin authors for SU PEF.
+      societyMapEvents: [
+        {
+          id: 's1',
+          title: 'SUPEF Party',
+          url: '',
+          date: '2026-07-10',
+          endDate: null,
+          time: null,
+          location: null,
+          imageUrl: null,
+          organizerKey: 'pef',
+          societyId: 'supef',
+          coord: [16.61, 49.21],
+          roomCode: null,
+          venueKind: 'offcampus',
+          category: 'party',
+        },
+      ],
+      mapEvents: [],
+      activeBuildingId: null,
+    });
+    render(<EventLayer />);
+    expect(paneEl.querySelector('button[title="SUPEF Party"]')).toBeTruthy();
+  });
+
   it('renders a draft pin at draftCoord while the composer is open (no saved events needed)', () => {
     useAppStore.setState({
       adminConsoleOpen: true,

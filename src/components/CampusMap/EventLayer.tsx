@@ -64,9 +64,14 @@ export function EventLayer() {
   // fetch-in-useEffect here — this layer stays presentational over store state.
 
   const groups = useMemo(() => {
-    const visible = filterEvents(events, eventFilter);
+    // `eventFilter` belongs to the student map's society chips and persists in
+    // the shared store. Applying it while authoring hides the society's OWN
+    // events behind whatever a student last picked: filter to ESN, then open
+    // the console as SU PEF, and filterEvents matches nothing — every pin
+    // disappears while the list beside it still shows the events.
+    const visible = authoring ? events : filterEvents(events, eventFilter);
     return groupEventsByVenue(visible);
-  }, [events, eventFilter]);
+  }, [events, eventFilter, authoring]);
 
   // Re-place pins when the visible groups change (filter toggle, data load).
   const groupsRef = useRef(groups);

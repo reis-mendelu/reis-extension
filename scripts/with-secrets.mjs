@@ -54,7 +54,7 @@ const useInfisical = infisicalUsable();
 console.log(
   useInfisical
     ? `[reis] secrets: Infisical (${ENV})`
-    : '[reis] secrets: .env / environment — Infisical unavailable, run `infisical login && infisical init` to use it'
+    : '[reis] secrets: .env / environment — Infisical unavailable, run `infisical login` to use it (.infisical.json is committed, no init needed)'
 );
 
 const child = useInfisical
