@@ -11,7 +11,10 @@ export function AdminLoginScreen() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex h-full w-full flex-col bg-base-200">
+    // `--safe-top` matters here and not only in MobileAdminConsole: this screen
+    // is what the native app shows FIRST, and without the inset the back button
+    // is drawn underneath the status-bar clock. Resolves to 0px off-mobile.
+    <div className="flex h-full min-h-screen w-full flex-col bg-base-200 pt-[var(--safe-top,0px)]">
       <header className="flex h-14 shrink-0 items-center border-b border-base-300 bg-base-100 px-3">
         <button type="button" className="btn btn-ghost btn-sm gap-1.5" onClick={close}>
           <ArrowLeft size={16} />

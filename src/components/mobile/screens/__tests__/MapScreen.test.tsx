@@ -10,6 +10,13 @@ vi.mock('../../../CampusMap/MapCanvas', () => ({
   MapCanvas: () => <div data-testid="mock-map-canvas" />,
 }));
 
+// Mocked for the same reason as MapCanvas: it portals into a Leaflet pane that
+// does not exist here, and it renders its own copy of each event's title, which
+// collides with the sheet's copy in text queries.
+vi.mock('../../../CampusMap/EventLayer', () => ({
+  EventLayer: () => <div data-testid="mock-event-layer" />,
+}));
+
 // MapEventsSection (Akce tab body) pulls in useEventsFacultySettings, which
 // does async IndexedDB + chrome.storage work via useEffect — mocked the same
 // way MapSidePanel.test.tsx mocks it, so these tab-switch tests stay
@@ -47,6 +54,52 @@ beforeEach(() => {
 });
 
 describe('MapScreen', () => {
+  const EVENT = {
+    id: 'ev1',
+    title: 'Deskovky',
+    url: '',
+    date: '2026-08-18',
+    endDate: null,
+    time: '18:30',
+    location: 'Mystica',
+    imageUrl: null,
+    organizerKey: 'pef',
+    societyId: 'supef',
+    coord: [16.5952946, 49.2235078] as [number, number],
+    roomCode: null,
+    venueKind: 'offcampus' as const,
+    category: 'boardgames' as const,
+  };
+
+  // Regression: the phone map listed society events in the Akce tab but never
+  // drew them, because EventLayer was mounted only by the desktop CampusMapView
+  // and the admin console. A society could publish an event and find no pin for
+  // it on any student's phone.
+  it('mounts the event layer so society pins are drawn', () => {
+    useAppStore.setState({ mapEvents: [EVENT] } as never);
+    render(<MapScreen />);
+    expect(screen.getByTestId('mock-event-layer')).toBeInTheDocument();
+  });
+
+  // Tapping a pin selects the event; desktop shows it in DetailPanel, which has
+  // no room to float over a phone screen — the sheet has to take it, and has to
+  // open itself, or the tap highlights a pin and appears to do nothing.
+  it('opens a tapped event in the sheet and returns to the list', () => {
+    useAppStore.setState({
+      mapEvents: [EVENT],
+      mapSelection: { kind: 'event', event: EVENT },
+    } as never);
+    render(<MapScreen />);
+
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+    // By role, not text: the boardgames category label is also "Deskovky",
+    // so a bare text query matches the card's category row as well.
+    expect(screen.getByRole('heading', { name: 'Deskovky' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Akce/ }));
+    expect(useAppStore.getState().mapSelection).toBeNull();
+  });
+
   it('mounts the map canvas', () => {
     render(<MapScreen />);
     expect(screen.getByTestId('mock-map-canvas')).toBeInTheDocument();

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronUp } from 'lucide-react';
 import { snapDetent, dragOwnsGesture, consumesTravel } from '../../primitives/sheetDrag';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
@@ -7,6 +7,7 @@ import type { MapSheetTab } from '../../../../store/types';
 import buildingsJson from '../../../../data/map/buildings.json';
 import type { BuildingsMeta } from '../../../../types/campusMap';
 import { MapEventsSection } from '../../../CampusMap/MapEventsSection';
+import { EventDetailCard } from '../../../CampusMap/EventDetailCard';
 import { BuildingRoomList } from './BuildingRoomList';
 
 const META = buildingsJson as BuildingsMeta;
@@ -41,7 +42,10 @@ export function MapSheet() {
   const tab = useAppStore((s) => s.mapTab);
   const setTab = useAppStore((s) => s.setMapTab);
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
+  const selection = useAppStore((s) => s.mapSelection);
+  const clearMapSelection = useAppStore((s) => s.clearMapSelection);
   const { t } = useTranslation();
+  const selectedEvent = selection?.kind === 'event' ? selection.event : null;
 
   const expanded = sheetState === 'expanded';
   const showBudova = activeBuildingId !== null;
@@ -123,6 +127,17 @@ export function MapSheet() {
     panel.addEventListener('touchmove', onTouchMove, { passive: false });
     return () => panel.removeEventListener('touchmove', onTouchMove);
   }, [sheetState]);
+
+  /**
+   * Tapping an event pin selects it, and on a phone this sheet is the only
+   * surface that can show it — desktop has DetailPanel floating over the map,
+   * which there is no room for here. A selection made at peek height would
+   * otherwise be invisible: the pin would highlight and nothing else would
+   * happen.
+   */
+  useEffect(() => {
+    if (selectedEvent) setSheetState('expanded');
+  }, [selectedEvent, setSheetState]);
 
   // A cancel is the BROWSER taking the gesture over, not the student letting
   // go — the only outcome is "put it back". Mirrors Sheet's handling.
@@ -215,7 +230,21 @@ export function MapSheet() {
               row still has to exist (it is the nearest grab surface for
               collapsing a 70vh sheet — see the touch-none note above), so it
               becomes a plain heading whose tap collapses instead. */}
-          {showBudova ? (
+          {selectedEvent ? (
+            // A tapped pin replaces the tabs outright: the card IS the answer to
+            // the tap, and leaving a tab row above it invites switching away
+            // from the thing just asked for. Back returns to the list.
+            <button
+              type="button"
+              onClick={clearMapSelection}
+              className="flex flex-shrink-0 touch-none items-center gap-1.5 px-5 pb-2 text-left"
+            >
+              <ChevronLeft size={18} className="flex-shrink-0 text-base-content/40" />
+              <span className="font-display text-lg font-bold tracking-tight text-base-content">
+                {t('mobile.map.tabEvents')}
+              </span>
+            </button>
+          ) : showBudova ? (
             <div
               role="tablist"
               className="mx-4 flex flex-shrink-0 touch-none gap-1 rounded-lg bg-base-content/5 p-1"
@@ -244,9 +273,17 @@ export function MapSheet() {
             </button>
           )}
           <div className="flex-1 overflow-y-auto pb-24 pt-2">
-            {activeTab === 'akce' && <MapEventsSection />}
-            {activeTab === 'budova' && activeBuildingId !== null && (
-              <BuildingRoomList buildingId={activeBuildingId} />
+            {selectedEvent ? (
+              <div className="px-4">
+                <EventDetailCard event={selectedEvent} />
+              </div>
+            ) : (
+              <>
+                {activeTab === 'akce' && <MapEventsSection />}
+                {activeTab === 'budova' && activeBuildingId !== null && (
+                  <BuildingRoomList buildingId={activeBuildingId} />
+                )}
+              </>
             )}
           </div>
         </>
