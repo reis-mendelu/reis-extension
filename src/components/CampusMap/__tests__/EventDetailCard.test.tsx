@@ -34,7 +34,7 @@ describe('EventDetailCard', () => {
   // The card is a read-only preview: a society edits/deletes from the "Moje
   // akce" panel, never here (management stays in one place). Guard that no
   // authoring control leaks into the card, even for the society's own event.
-  it('never renders edit/delete controls, even for an own event in society mode', () => {
+  it('never renders edit/delete controls, even for an own event in the admin console', () => {
     useAppStore.setState({
       adminConsoleOpen: true,
       adminAssociationId: 'supef',

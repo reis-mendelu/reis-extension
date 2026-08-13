@@ -9,7 +9,7 @@ interface SpolkySectionProps {
   onToggle: () => void;
   isSub: (id: string) => boolean;
   onToggleAssoc: (id: string) => void;
-  /** Close the surrounding profile popover so entering society mode is visible. */
+  /** Close the surrounding profile popover before the admin console takes over. */
   onNavigate?: () => void;
 }
 

@@ -110,7 +110,10 @@ describe('EventLayer', () => {
     expect(btn().style.transform).toContain('50px');
   });
 
-  it('renders the society events when in society mode', () => {
+  // The pool swap this layer performs: the student map draws mapEvents, the
+  // admin console's map draws the society's own. `adminConsoleOpen` is the
+  // discriminator — it replaced the old `mapMode`, which no longer exists.
+  it("draws the society's own events when the admin console is open", () => {
     useAppStore.setState({
       adminConsoleOpen: true,
       societyMapEvents: [
@@ -194,7 +197,7 @@ describe('EventLayer', () => {
     expect(paneEl.querySelector('[data-draft-pin="true"]')).toBeNull();
   });
 
-  it('marks a mixed venue group scheduled if ANY event is scheduled (society mode)', () => {
+  it('marks a mixed venue group scheduled if ANY event is scheduled (admin console)', () => {
     // Two events sharing the same coord (same venue group): one this-week (live),
     // one 30+ days out (scheduled). sortByDate puts the live one first, so the old
     // `events[0]` code would miss the scheduled flag entirely.

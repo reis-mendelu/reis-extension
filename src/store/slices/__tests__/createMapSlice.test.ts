@@ -313,7 +313,7 @@ describe('society events', () => {
 });
 
 describe('focusEventById resolves against the active pool', () => {
-  it('society mode: resolves a scheduled/past event from societyMapEvents (not mapEvents)', () => {
+  it('admin console: resolves a scheduled/past event from societyMapEvents (not mapEvents)', () => {
     const scheduled: MapEvent = {
       id: 'sch1',
       title: 'Future Society Event',

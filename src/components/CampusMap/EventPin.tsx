@@ -7,7 +7,7 @@ interface EventPinProps {
   x: number; // centre screen x (container px) = exact coordinate
   y: number; // centre screen y
   selected: boolean;
-  // A society's own far-future event, only ever true in Society mode — rendered
+  // A society's own far-future event, only ever true in the admin console — rendered
   // faded/dashed so the society can tell it's not yet visible to students.
   scheduled?: boolean;
   locale: string;

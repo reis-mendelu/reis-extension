@@ -2,7 +2,7 @@ import { parseEventDate } from './eventHelpers';
 
 // How far ahead the PUBLIC map/feed shows events: this week + next week.
 // Past events and anything further out are hidden from students; a society's own
-// far-future events surface only in Society mode as "scheduled" pins.
+// far-future events surface only in the admin console as "scheduled" pins.
 export const PUBLIC_WINDOW_DAYS = 14;
 
 function startOfDay(ref: Date): Date {
