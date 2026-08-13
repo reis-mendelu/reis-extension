@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
-import { MyEventsPanel } from '../MyEventsPanel';
+import { AdminEventList } from '../AdminEventList';
 import type { MapEvent } from '../../../types/events';
 
 vi.mock('../../../api/societyPosts', () => ({ deletePost: vi.fn().mockResolvedValue({}) }));
@@ -26,7 +26,7 @@ const mk = (id: string, date: string): MapEvent => ({
   category: 'party',
 });
 
-describe('MyEventsPanel', () => {
+describe('AdminEventList', () => {
   beforeEach(() => {
     // NOW is real; pick dates relative to today so the buckets are deterministic.
     const today = new Date();
@@ -36,7 +36,8 @@ describe('MyEventsPanel', () => {
       return t.toISOString().slice(0, 10);
     };
     useAppStore.setState({
-      mapMode: 'society',
+      adminConsoleOpen: true,
+      adminActiveAssociationId: 'supef',
       language: 'en',
       // NOTE: the third fixture uses id 'old' rather than 'past' — a title of
       // "E-past" would collide with the "Past" section heading under a
@@ -46,7 +47,7 @@ describe('MyEventsPanel', () => {
   });
 
   it('groups own events into Live / Scheduled / Past', () => {
-    render(<MyEventsPanel />);
+    render(<AdminEventList />);
     expect(screen.getByText('E-live')).toBeInTheDocument();
     expect(screen.getByText('E-sched')).toBeInTheDocument();
     expect(screen.getByText('E-old')).toBeInTheDocument();
@@ -55,17 +56,34 @@ describe('MyEventsPanel', () => {
     expect(screen.getByText(/scheduled/i)).toBeInTheDocument();
     expect(screen.getByText(/past/i)).toBeInTheDocument();
   });
+
+  // A reIS admin lands here belonging to no society. Showing an empty list would
+  // read as "this society has no events" rather than "you haven't picked one".
+  it('prompts a reIS admin to pick a society instead of listing nothing', () => {
+    useAppStore.setState({
+      language: 'en',
+      adminRole: 'reis_admin',
+      adminActiveAssociationId: null,
+      societyMapEvents: [],
+    });
+    render(<AdminEventList />);
+    expect(screen.getByText(/choose a society/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Create event' })).toBeNull();
+  });
 });
 
-describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
+describe('AdminEventList — rows, inline composer, delete', () => {
   beforeEach(() => {
     // Real strings, not translation keys: useTranslation() is not mocked in this
-    // suite. With language 'cz', "map.createEvent" renders as "Vytvořit akci",
-    // "admin.logout" as "Odhlásit", and the composer's name input placeholder is
-    // "Název akce" — query those literal strings, not the i18n keys.
+    // suite. With language 'cz', "map.createEvent" renders as "Vytvořit akci"
+    // and the composer's name input placeholder is "Název akce" — query those
+    // literal strings, not the i18n keys.
     useAppStore.setState({
       language: 'cz',
+      adminConsoleOpen: true,
+      adminRole: 'association',
       adminAssociationId: 'supef',
+      adminActiveAssociationId: 'supef',
       composerOpen: false,
       editEventId: null,
       societyMapEvents: [
@@ -87,7 +105,6 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
         },
       ],
       openComposer: vi.fn(),
-      adminLogout: vi.fn(async () => {}),
       loadSocietyPosts: vi.fn(async () => {}),
       clearMapSelection: vi.fn(),
     });
@@ -95,7 +112,7 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
   });
 
   it('renders own events as rich rows with the thumbnail', () => {
-    render(<MyEventsPanel />);
+    render(<AdminEventList />);
     expect(screen.getByText('Spring Party')).toBeInTheDocument();
     expect(document.querySelector('img[src="/emoji/1f389.svg"]')).toBeTruthy();
   });
@@ -103,40 +120,39 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
   it('Create calls openComposer with no id', () => {
     const openComposer = vi.fn();
     useAppStore.setState({ openComposer });
-    render(<MyEventsPanel />);
+    render(<AdminEventList />);
     screen.getByRole('button', { name: 'Vytvořit akci' }).click();
     expect(openComposer).toHaveBeenCalledWith();
   });
 
   it('shows the inline composer when composerOpen', () => {
     useAppStore.setState({ composerOpen: true, closeComposer: vi.fn() });
-    render(<MyEventsPanel />);
+    render(<AdminEventList />);
     expect(screen.getByPlaceholderText('Název akce')).toBeInTheDocument();
     // The events list is hidden while composing so the composer is the sole
     // focus — no redundant empty-state or half-scrolled rows below the form.
     expect(screen.queryByText('Spring Party')).toBeNull();
   });
 
-  it('hides the society header while composing to save space', () => {
+  it('hides the Create bar while composing to save space', () => {
     useAppStore.setState({ composerOpen: false });
-    const { rerender } = render(<MyEventsPanel />);
-    // Header "Vytvořit akci" button is present when not composing…
+    const { rerender } = render(<AdminEventList />);
     expect(screen.getByRole('button', { name: 'Vytvořit akci' })).toBeInTheDocument();
     useAppStore.setState({ composerOpen: true, closeComposer: vi.fn() });
-    rerender(<MyEventsPanel />);
-    // …and hidden once the composer takes over (it has its own header).
+    rerender(<AdminEventList />);
+    // …hidden once the composer takes over (it has its own header).
     expect(screen.queryByRole('button', { name: 'Vytvořit akci' })).toBeNull();
   });
 
-  it('has no logout in the map panel (logout lives in the profile Spolky section)', () => {
-    render(<MyEventsPanel />);
+  it('has no logout in the list column (it lives in the console header)', () => {
+    render(<AdminEventList />);
     expect(screen.queryByRole('button', { name: 'Odhlásit' })).toBeNull();
   });
 
-  it('row Edit opens the composer for that event (authoring stays in the panel)', () => {
+  it('row Edit opens the composer for that event (authoring stays in the column)', () => {
     const openComposer = vi.fn();
     useAppStore.setState({ openComposer });
-    render(<MyEventsPanel />);
+    render(<AdminEventList />);
     fireEvent.click(screen.getByRole('button', { name: 'Upravit' }));
     expect(openComposer).toHaveBeenCalledWith('e1');
   });
@@ -145,7 +161,7 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
     const loadSocietyPosts = vi.fn(async () => {});
     const reloadMapEvents = vi.fn(async () => {});
     useAppStore.setState({ loadSocietyPosts, reloadMapEvents });
-    render(<MyEventsPanel />);
+    render(<AdminEventList />);
     // Arm: the trash swaps to a confirm (✓) / cancel (✗) pair, no request yet.
     fireEvent.click(screen.getByRole('button', { name: 'Smazat' }));
     expect(deletePost).not.toHaveBeenCalled();
@@ -160,7 +176,7 @@ describe('MyEventsPanel — EventRow rows, inline composer, logout', () => {
   });
 
   it('Cancel disarms the delete confirm without calling deletePost', () => {
-    render(<MyEventsPanel />);
+    render(<AdminEventList />);
     fireEvent.click(screen.getByRole('button', { name: 'Smazat' }));
     fireEvent.click(screen.getByRole('button', { name: 'Zrušit' }));
     expect(deletePost).not.toHaveBeenCalled();

@@ -23,6 +23,27 @@ When a task involves IS Mendelu data, a new scraper, or the CDN data shape: read
 - Everything else is in `package.json` scripts.
 - Verifying a UI change (screenshots at 320/390/430 + overflow, collision and contrast assertions) → the `verify-ui` skill. Never judge a UI change from a screenshot alone.
 
+### Secrets (Infisical)
+
+Local secrets live in Infisical, not in the repo. `scripts/with-secrets.mjs`
+wraps the scripts that need them, so **just run the npm script** — no
+`infisical run --` prefix. It prints which source it used and falls back to
+`.env` / the ambient environment when the CLI is missing or the login has
+expired. One-time machine setup is `infisical login` (`.infisical.json` is
+committed, so `infisical init` is not needed per worktree).
+
+Testing the admin console against real Supabase:
+
+```bash
+npm run dev:web:admin              # signs in as reis_admin; picker covers every society
+REIS_ADMIN_SOCIETY=esn npm run dev:web:admin   # sign in as one association instead
+```
+
+Plain `npm run dev:web` is unaffected: it keeps `VITE_DEV_SOCIETY=reis`, which
+fakes a session **and routes every write to an in-memory store** — publishes
+there never reach Supabase, so never cite them as evidence a write works.
+`dev:web:admin` clears that flag.
+
 ## Architecture
 
 The manifest is generated from `wxt.config.ts` — never hand-edited.

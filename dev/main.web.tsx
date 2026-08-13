@@ -14,3 +14,9 @@ import './installWebPlatform';
 import './phoneOverride';
 
 import '@/entrypoints/main/main';
+
+// Last, and deliberately after the app: signs the harness in as a real society
+// / reIS-admin account when credentials are configured, so the admin console
+// can be tested against live Supabase instead of the in-memory dev store. Does
+// nothing on a plain `npm run dev:web`. See devAdminSession.ts.
+import './devAdminSession';

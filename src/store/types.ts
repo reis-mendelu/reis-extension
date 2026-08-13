@@ -549,13 +549,11 @@ export interface MapSlice {
   reloadMapEvents: () => Promise<void>;
   /** Select an event for the detail panel. Pass `{ fly: true }` (list click) to also fly the camera to its coordinate; a pin click omits it and the camera stays put. */
   focusEventById: (id: string, opts?: { fly?: boolean }) => void;
-  // --- Society authoring mode ---
-  /** 'student' = public map; 'society' = the logged-in association's own events + authoring. */
-  mapMode: 'student' | 'society';
-  /** The logged-in association's own events (all dates), mapped from societyPosts. */
+  // --- Society authoring ---
+  /** The active society's own events (all dates), mapped from societyPosts. Drawn
+   *  by the admin console's map; the student map draws `mapEvents` instead. Which
+   *  of the two is in play is decided by `adminConsoleOpen`, not by a map flag. */
   societyMapEvents: MapEvent[];
-  /** Switch map mode. Ignored (stays 'student') unless a society is logged in. */
-  setMapMode: (mode: 'student' | 'society') => void;
   /** Rebuild societyMapEvents from the current societyPosts. Called after posts load/change. */
   refreshSocietyMapEvents: () => void;
   /** True while the user is picking a spot: the next map click captures a coordinate. */

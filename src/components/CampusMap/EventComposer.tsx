@@ -25,7 +25,9 @@ const INDEX = roomsIndexJson as RoomIndexEntry[];
 // version hardcoded venueKind:'offcampus' on every save, silently rewriting
 // campus events back to a free point (CodeRabbit Critical).
 export function EventComposer({ onDone }: { onDone: () => void }) {
-  const associationId = useAppStore((s) => s.adminAssociationId);
+  // The society being authored, not the account's own — a reIS admin belongs to
+  // no society and picks one in the console header. RLS accepts either.
+  const associationId = useAppStore((s) => s.adminActiveAssociationId);
   const email = useAppStore((s) => s.adminSession?.user.email ?? '');
   const draftCoord = useAppStore((s) => s.draftCoord);
   const beginPlacing = useAppStore((s) => s.beginPlacing);

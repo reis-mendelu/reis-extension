@@ -1108,15 +1108,21 @@
     "password": "Heslo",
     "login": "Přihlásit",
     "loginError": "Neplatný e-mail nebo heslo",
-    "title_panel": "Příspěvky spolku",
     "title": "Název",
     "body": "Popis",
     "roomCode": "Místnost",
     "addPost": "Přidat příspěvek",
     "logout": "Odhlásit",
     "saveError": "Nepodařilo se uložit — zkuste to znovu",
-    "manageButton": "Spravovat spolek",
-    "reisAdminNote": "Přihlášen jako reIS admin. Akce se spravují u konkrétního spolku."
+    "manageButton": "Spravovat spolky",
+    "consoleTitle": "Správa spolků",
+    "loginTitle": "Přihlášení pro spolky",
+    "loginSubtitle": "Přihlaste se účtem spolku a spravujte jeho akce na mapě kampusu.",
+    "backToReis": "Zpět do reIS",
+    "listTab": "Akce",
+    "mapTab": "Mapa",
+    "pickSociety": "Vyberte spolek",
+    "pickSocietyPrompt": "Nahoře vyberte spolek, jehož akce chcete spravovat."
   },
   "mobile": {
     "nav": {

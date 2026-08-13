@@ -53,11 +53,12 @@ beforeEach(() => {
     activeBuildingId: null,
     mapSelection: null,
     language: 'en',
-    mapMode: 'student',
+    adminConsoleOpen: false,
     societyMapEvents: [],
     composerOpen: false,
     draftCoord: null,
     adminAssociationId: null,
+    adminActiveAssociationId: null,
   });
   setMapInstance(fakeMap);
 });
@@ -109,9 +110,12 @@ describe('EventLayer', () => {
     expect(btn().style.transform).toContain('50px');
   });
 
-  it('renders the society events when in society mode', () => {
+  // The pool swap this layer performs: the student map draws mapEvents, the
+  // admin console's map draws the society's own. `adminConsoleOpen` is the
+  // discriminator — it replaced the old `mapMode`, which no longer exists.
+  it("draws the society's own events when the admin console is open", () => {
     useAppStore.setState({
-      mapMode: 'society',
+      adminConsoleOpen: true,
       societyMapEvents: [
         {
           id: 's1',
@@ -139,10 +143,46 @@ describe('EventLayer', () => {
     expect(btn).toBeTruthy();
   });
 
+  // Regression: eventFilter is the STUDENT map's society chip and persists in
+  // the shared store. Applying it while authoring hid the society's own events
+  // behind whatever a student last picked — the admin map went blank while the
+  // list beside it still listed the events.
+  it("ignores the student's society filter while the admin console is open", () => {
+    useAppStore.setState({
+      adminConsoleOpen: true,
+      // A student left the map filtered to ESN...
+      eventFilter: 'esn',
+      // ...and this admin authors for SU PEF.
+      societyMapEvents: [
+        {
+          id: 's1',
+          title: 'SUPEF Party',
+          url: '',
+          date: '2026-07-10',
+          endDate: null,
+          time: null,
+          location: null,
+          imageUrl: null,
+          organizerKey: 'pef',
+          societyId: 'supef',
+          coord: [16.61, 49.21],
+          roomCode: null,
+          venueKind: 'offcampus',
+          category: 'party',
+        },
+      ],
+      mapEvents: [],
+      activeBuildingId: null,
+    });
+    render(<EventLayer />);
+    expect(paneEl.querySelector('button[title="SUPEF Party"]')).toBeTruthy();
+  });
+
   it('renders a draft pin at draftCoord while the composer is open (no saved events needed)', () => {
     useAppStore.setState({
-      mapMode: 'society',
+      adminConsoleOpen: true,
       adminAssociationId: 'supef',
+      adminActiveAssociationId: 'supef',
       societyMapEvents: [],
       mapEvents: [],
       eventFilter: 'all',
@@ -159,8 +199,9 @@ describe('EventLayer', () => {
   it('re-enters placing mode when the draft pin is clicked', () => {
     const beginPlacing = vi.fn();
     useAppStore.setState({
-      mapMode: 'society',
+      adminConsoleOpen: true,
       adminAssociationId: 'supef',
+      adminActiveAssociationId: 'supef',
       societyMapEvents: [],
       mapEvents: [],
       eventFilter: 'all',
@@ -177,8 +218,9 @@ describe('EventLayer', () => {
 
   it('does not render a draft pin when the composer is closed', () => {
     useAppStore.setState({
-      mapMode: 'society',
+      adminConsoleOpen: true,
       adminAssociationId: 'supef',
+      adminActiveAssociationId: 'supef',
       societyMapEvents: [],
       mapEvents: [],
       eventFilter: 'all',
@@ -190,12 +232,12 @@ describe('EventLayer', () => {
     expect(paneEl.querySelector('[data-draft-pin="true"]')).toBeNull();
   });
 
-  it('marks a mixed venue group scheduled if ANY event is scheduled (society mode)', () => {
+  it('marks a mixed venue group scheduled if ANY event is scheduled (admin console)', () => {
     // Two events sharing the same coord (same venue group): one this-week (live),
     // one 30+ days out (scheduled). sortByDate puts the live one first, so the old
     // `events[0]` code would miss the scheduled flag entirely.
     useAppStore.setState({
-      mapMode: 'society',
+      adminConsoleOpen: true,
       societyMapEvents: [
         {
           id: 's-live',

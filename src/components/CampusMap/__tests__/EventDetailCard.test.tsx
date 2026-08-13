@@ -23,8 +23,9 @@ const ev: MapEvent = {
 describe('EventDetailCard', () => {
   beforeEach(() => {
     useAppStore.setState({
-      mapMode: 'student',
+      adminConsoleOpen: false,
       adminAssociationId: 'supef',
+      adminActiveAssociationId: 'supef',
       language: 'en',
     });
     vi.clearAllMocks();
@@ -33,8 +34,12 @@ describe('EventDetailCard', () => {
   // The card is a read-only preview: a society edits/deletes from the "Moje
   // akce" panel, never here (management stays in one place). Guard that no
   // authoring control leaks into the card, even for the society's own event.
-  it('never renders edit/delete controls, even for an own event in society mode', () => {
-    useAppStore.setState({ mapMode: 'society', adminAssociationId: 'supef' });
+  it('never renders edit/delete controls, even for an own event in the admin console', () => {
+    useAppStore.setState({
+      adminConsoleOpen: true,
+      adminAssociationId: 'supef',
+      adminActiveAssociationId: 'supef',
+    });
     render(<EventDetailCard event={ev} />);
     expect(screen.queryByRole('button', { name: /delete|smazat/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /edit|upravit/i })).toBeNull();

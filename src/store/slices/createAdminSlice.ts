@@ -10,15 +10,22 @@ export type AdminRole = 'association' | 'reis_admin';
 export interface AdminSlice {
   adminSession: Session | null;
   adminRole: AdminRole | null;
+  /** The society this account *belongs to*. Null for a reIS admin, who belongs to none. */
   adminAssociationId: string | null;
-  adminOverlayOpen: boolean;
+  /** The society currently being authored. Pinned to the account's own for an
+   *  association; chosen from the picker for a reIS admin, who may edit any. */
+  adminActiveAssociationId: string | null;
+  /** True while the admin console has taken the whole app over. */
+  adminConsoleOpen: boolean;
   societyPosts: SpolkyEventRow[];
-  openAdminOverlay: () => void;
-  closeAdminOverlay: () => void;
-  /** Enter society map mode (authoring) and switch the app's current view onto the map. */
-  enterSocietyMode: () => void;
-  /** If already logged in as an association, jump straight onto the map; otherwise open the login overlay. */
+  /** Open the console. Unconditional — it renders its own login screen when logged out. */
   openSocietyAdmin: () => void;
+  /** Leave the console for the student app. Keeps the session; only logout drops it. */
+  closeSocietyAdmin: () => void;
+  /** Clear in-progress authoring (composer, draft pin, map selection). */
+  resetAuthoringState: () => void;
+  /** reIS admin only: author as a different society. */
+  setActiveAssociation: (id: string) => void;
   adminLogin: (email: string, password: string) => Promise<{ error?: string }>;
   adminLogout: () => Promise<void>;
   loadAdminSession: () => Promise<void>;
@@ -38,28 +45,41 @@ async function resolveAccount(
 }
 
 // The society/admin auth session. Separate from IS-Mendelu data; hydrated at
-// startup from chrome.storage via loadAdminSession(). isAssociation/role gate the
-// UI only — every write is RLS-gated server-side.
+// startup from chrome.storage via loadAdminSession(). role/association gate the
+// UI only — every write is RLS-gated server-side, and the policies already let a
+// reis_admin write for any association, which is what makes the picker possible
+// without any backend change.
 export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   adminSession: null,
   adminRole: null,
   adminAssociationId: null,
-  adminOverlayOpen: false,
+  adminActiveAssociationId: null,
+  adminConsoleOpen: false,
   societyPosts: [],
-  openAdminOverlay: () => {
-    set({ adminOverlayOpen: true });
+  openSocietyAdmin: () => set({ adminConsoleOpen: true }),
+  /**
+   * Drop every trace of in-progress authoring. Called at each boundary where
+   * the thing being authored stops being the thing on screen — leaving the
+   * console, switching society, logging out.
+   *
+   * One path rather than three copies, because the copies drifted: logout used
+   * to skip this, so signing out mid-placement dropped you into the STUDENT map
+   * with "click to place" still armed. Switching society was worse — editEventId
+   * survived and pointed at the previous society's event, so saving wrote to a
+   * society the header no longer named.
+   */
+  resetAuthoringState: () => {
+    get().closeComposer();
+    get().clearMapSelection();
+  },
+  closeSocietyAdmin: () => {
+    get().resetAuthoringState();
+    set({ adminConsoleOpen: false });
+  },
+  setActiveAssociation: (id) => {
+    get().resetAuthoringState();
+    set({ adminActiveAssociationId: id });
     void get().loadSocietyPosts();
-  },
-  closeAdminOverlay: () => set({ adminOverlayOpen: false }),
-  enterSocietyMode: () => {
-    set({ adminOverlayOpen: false });
-    get().setMapMode('society');
-    get().focusCampus();
-  },
-  openSocietyAdmin: () => {
-    const s = get();
-    if (s.adminRole === 'association' && s.adminAssociationId) get().enterSocietyMode();
-    else get().openAdminOverlay();
   },
   adminLogin: async (emailInput, password) => {
     const email = normalizeEmail(emailInput);
@@ -74,7 +94,12 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       }
       return { error: 'account_unavailable' };
     }
-    set({ adminSession: data.session, adminRole: role, adminAssociationId: associationId });
+    set({
+      adminSession: data.session,
+      adminRole: role,
+      adminAssociationId: associationId,
+      adminActiveAssociationId: associationId,
+    });
     await get().loadSocietyPosts();
     return {};
   },
@@ -84,14 +109,15 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     } catch (e) {
       logError('Admin.logout', e);
     }
+    get().resetAuthoringState();
     set({
       adminSession: null,
       adminRole: null,
       adminAssociationId: null,
-      adminOverlayOpen: false,
+      adminActiveAssociationId: null,
+      adminConsoleOpen: false,
       societyPosts: [],
       societyMapEvents: [],
-      mapMode: 'student',
     });
   },
   loadAdminSession: async () => {
@@ -107,17 +133,29 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       }
       return;
     }
-    set({ adminSession: data.session, adminRole: role, adminAssociationId: associationId });
+    // Deliberately does not open the console: a restored session lands in the
+    // student app, and the "Spravovat spolky" button is the only way in.
+    set({
+      adminSession: data.session,
+      adminRole: role,
+      adminAssociationId: associationId,
+      adminActiveAssociationId: associationId,
+    });
     await get().loadSocietyPosts();
   },
   loadSocietyPosts: async () => {
-    const associationId = get().adminAssociationId;
+    const associationId = get().adminActiveAssociationId;
     if (!associationId) {
       set({ societyPosts: [] });
       get().refreshSocietyMapEvents();
       return;
     }
     const posts = await listMyPosts(associationId);
+    // Two picker changes in quick succession can resolve out of order. Without
+    // this guard the slower, older response wins and the console shows one
+    // society's events under another's name — and delete/edit act on THOSE
+    // rows, so the damage is to a society nobody is looking at.
+    if (get().adminActiveAssociationId !== associationId) return;
     set({ societyPosts: posts });
     get().refreshSocietyMapEvents();
   },

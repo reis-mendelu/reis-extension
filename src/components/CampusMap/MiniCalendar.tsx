@@ -133,7 +133,9 @@ export function MiniCalendar({
         // `.dropdown:focus-within > [tabindex]:first-child { pointer-events:none }`
         // fire on mousedown-focus, so the click landed on the parent and onClick
         // never ran. The popover is now portalled, but keep it plain regardless.
-        className={`input input-bordered flex w-full items-center gap-2 ${value ? '' : 'text-base-content/50'}`}
+        // /60 not /50 in the unset state: /50 measures 4.48:1 in the dark theme,
+        // just under WCAG AA's 4.5:1 for the placeholder text.
+        className={`input input-bordered flex w-full items-center gap-2 ${value ? '' : 'text-base-content/60'}`}
         onClick={() => setOpen((o) => !o)}
       >
         <Calendar size={16} className={value ? 'text-primary' : 'opacity-70'} />

@@ -5,11 +5,14 @@ import { useAppLogic } from './hooks/useAppLogic';
 import { AppMain } from './components/AppMain';
 import { AppOverlays } from './components/AppOverlays';
 import { MobileApp } from './components/mobile/MobileApp';
+import { AdminConsole } from './components/AdminConsole/AdminConsole';
 import { usePhoneViewport } from './hooks/ui/usePhoneViewport';
+import { useAppStore } from './store/useAppStore';
 
 function App() {
   const s = useAppLogic();
   const isPhone = usePhoneViewport();
+  const adminConsoleOpen = useAppStore((state) => state.adminConsoleOpen);
 
   const handlePrevWeek = () => {
     s.setCurrentDate((prev) => {
@@ -36,6 +39,12 @@ function App() {
       ? `${s.currentDate.getDate()}. - ${end.getDate()}.${s.currentDate.getMonth() + 1}.`
       : `${s.currentDate.getDate()}.${s.currentDate.getMonth() + 1}. - ${end.getDate()}.${end.getMonth() + 1}.`;
   };
+
+  // The admin console replaces the whole student app, phone shell included, so
+  // this branch sits above the phone one and covers both. useAppLogic() has
+  // already run — it owns IDB hydration and the REIS_READY handshake — so
+  // leaving for the console and coming back does not re-bootstrap anything.
+  if (adminConsoleOpen) return <AdminConsole />;
 
   if (isPhone) return <MobileApp />;
 

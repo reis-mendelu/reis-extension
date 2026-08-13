@@ -32,7 +32,9 @@ interface Options {
   widths: number[];
   view?: string;
   theme?: string;
-  click?: string;
+  /** Texts to click in order after load. Repeat --click for a multi-step path
+   *  (e.g. open a popover, expand a section, then hit the button inside it). */
+  clicks: string[];
   wait: number;
   onboarding: boolean;
 }
@@ -40,18 +42,23 @@ interface Options {
 function parseArgs(argv: string[]): Options {
   const positional: string[] = [];
   const flags = new Map<string, string>();
+  const clicks: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
     if (a.startsWith('--')) {
       // Boolean flags take no value — don't swallow the next argument.
       const next = argv[i + 1];
-      flags.set(a.slice(2), next === undefined || next.startsWith('--') ? '' : argv[++i]!);
+      const value = next === undefined || next.startsWith('--') ? '' : argv[++i]!;
+      // --click is the one repeatable flag: a Map would keep only the last one,
+      // and reaching a surface can take several steps.
+      if (a === '--click') clicks.push(value);
+      else flags.set(a.slice(2), value);
     } else positional.push(a);
   }
   const rawLabel = positional[0];
   if (!rawLabel) {
     console.error(
-      'usage: npm run verify:ui -- <label> [--view exams] [--theme dark] [--click TEXT]'
+      'usage: npm run verify:ui -- <label> [--view exams] [--theme dark] [--click TEXT ...]'
     );
     process.exit(2);
   }
@@ -71,7 +78,7 @@ function parseArgs(argv: string[]): Options {
     widths,
     view: flags.get('view'),
     theme: flags.get('theme'),
-    click: flags.get('click'),
+    clicks,
     wait: Number(flags.get('wait') ?? 600),
     onboarding: flags.has('onboarding'),
   };
@@ -97,6 +104,22 @@ async function seedMeta(page: Page, entries: Record<string, unknown>): Promise<v
     });
   }, entries);
   await page.reload({ waitUntil: 'networkidle' });
+}
+
+/** Click a step of a `--click` path. Visible text first, then accessible name:
+ *  icon-only controls (the phone shell's initials avatar, a bare chevron) carry
+ *  their meaning in `aria-label`, and a text-only lookup can never reach the
+ *  surfaces behind them. */
+async function clickByTextOrLabel(page: Page, text: string): Promise<void> {
+  // `visible: true` matters more than it looks: getByText matches hidden nodes
+  // too, and this app keeps large ones around — a collapsed popover, and a
+  // Leaflet pane whose descendants carry event titles. `.first()` on an
+  // unfiltered query happily returns one of those and clicks nothing.
+  const byText = page.getByText(text, { exact: false }).filter({ visible: true }).first();
+  if ((await byText.count()) > 0) return byText.click();
+  const byLabel = page.getByLabel(text, { exact: false }).filter({ visible: true }).first();
+  if ((await byLabel.count()) > 0) return byLabel.click();
+  throw new Error(`--click "${text}": no visible element with that text or accessible name`);
 }
 
 /** Collect raw numbers only — rects, resolved RGBA, font metrics. Every
@@ -246,8 +269,11 @@ async function run(): Promise<number> {
       if (opts.theme) seed['reis_theme'] = opts.theme;
       await seedMeta(page, seed);
 
-      if (opts.click) {
-        await page.getByText(opts.click, { exact: false }).first().click();
+      for (const click of opts.clicks) {
+        await clickByTextOrLabel(page, click);
+        // Settle between steps: each click may mount the surface the next one
+        // needs (a popover, an expanding section) behind an animation.
+        await page.waitForTimeout(250);
       }
       await page.waitForTimeout(opts.wait);
 
