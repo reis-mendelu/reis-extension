@@ -1,17 +1,6 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type MouseEvent as ReactMouseEvent,
-  type PointerEvent as ReactPointerEvent,
-} from 'react';
+import { useEffect, useRef } from 'react';
 import { ChevronDown, ChevronLeft, ChevronUp } from 'lucide-react';
-import {
-  snapDetent,
-  dragOwnsGesture,
-  consumesTravel,
-  DRAG_SLOP_PX,
-} from '../../primitives/sheetDrag';
+import { useMapSheetDrag } from './useMapSheetDrag';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import type { MapSheetTab } from '../../../../store/types';
@@ -70,88 +59,20 @@ export function MapSheet() {
   const activeTab: MapSheetTab =
     (tab === 'budova' && !showBudova) || tab === 'knihovna' ? 'akce' : tab;
   const panelRef = useRef<HTMLDivElement>(null);
-  const start = useRef<{ y: number; t: number; height: number } | null>(null);
-  const dragged = useRef(false);
-  const [dragHeight, setDragHeight] = useState<number | null>(null);
+  const { dragHeight, consumeDragClick, handlers } = useMapSheetDrag(
+    sheetState,
+    setSheetState,
+    panelRef,
+    PEEK_PX,
+    EXPANDED_VH
+  );
 
   // A drag ends in a click too, and letting that click through would toggle the
   // sheet straight back out of the detent the drag just chose.
   const toggle = () => {
-    if (dragged.current) {
-      dragged.current = false;
-      return;
-    }
+    if (consumeDragClick()) return;
     setSheetState(expanded ? 'peek' : 'expanded');
   };
-
-  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    // Cleared before the ownership check, not after: a new gesture always starts
-    // undragged. Leaving it to the owned path means a flag set by a previous
-    // drag can survive into a gesture the sheet does not own, and
-    // swallowClickAfterDrag then eats that tap.
-    dragged.current = false;
-    // Only a gesture the content does not want: while the expanded Akce list is
-    // scrolled down, a downward swipe belongs to the list, not the sheet.
-    if (!dragOwnsGesture(e.target as Element, panelRef.current)) return;
-    const height = panelRef.current?.getBoundingClientRect().height ?? PEEK_PX;
-    start.current = { y: e.clientY, t: e.timeStamp, height };
-  };
-
-  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const from = start.current;
-    if (!from) return;
-    const dy = e.clientY - from.y;
-    // Travel the sheet cannot absorb belongs to the content: at peek a downward
-    // drag has nowhere to go, and while expanded an upward one scrolls the list.
-    if (!consumesTravel(sheetState, dy)) return;
-    // The sheet follows the finger from the first pixel, but only past the slop
-    // does the gesture count as a drag for click-suppression — otherwise the
-    // jitter in an ordinary tap swallows it.
-    if (Math.abs(dy) >= DRAG_SLOP_PX) dragged.current = true;
-    // Clamped to the two detents: peek is the floor because this sheet is the
-    // only way to reach Akce, and 70vh is the ceiling it snaps to.
-    const max = window.innerHeight * EXPANDED_VH;
-    const next = from.height - dy;
-    setDragHeight(Math.min(Math.max(next, PEEK_PX), max));
-  };
-
-  const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const from = start.current;
-    start.current = null;
-    setDragHeight(null);
-    if (!from) return;
-    const next = snapDetent(sheetState, e.clientY - from.y, e.timeStamp - from.t);
-    // The slop and snapDetent measure different things, and disagree on a fast
-    // flick shorter than 8px: too small to count as a drag, fast enough to
-    // change detent. The sheet would move AND the trailing click would land on
-    // whatever was under the finger. Whether the gesture MOVED THE SHEET is the
-    // question that matters here, so it gets the final say.
-    if (next !== sheetState) dragged.current = true;
-    setSheetState(next);
-  };
-
-  /**
-   * The whole sheet is a drag surface, not just the handle — dragging a sheet
-   * down anywhere on it is what every native sheet does.
-   *
-   * This needs a NON-PASSIVE touchmove: React attaches touch listeners
-   * passively, so `preventDefault` from onPointerMove is a no-op and the
-   * browser takes the gesture as a pan and fires pointercancel mid-drag. Only
-   * while the sheet is actually absorbing the travel — otherwise this would
-   * block the Akce list from ever scrolling.
-   */
-  useEffect(() => {
-    const panel = panelRef.current;
-    if (!panel) return;
-    const onTouchMove = (e: TouchEvent) => {
-      const from = start.current;
-      const touch = e.touches[0];
-      if (!from || !touch) return;
-      if (consumesTravel(sheetState, touch.clientY - from.y)) e.preventDefault();
-    };
-    panel.addEventListener('touchmove', onTouchMove, { passive: false });
-    return () => panel.removeEventListener('touchmove', onTouchMove);
-  }, [sheetState]);
 
   /**
    * Tapping an event pin selects it, and on a phone this sheet is the only
@@ -163,34 +84,6 @@ export function MapSheet() {
   useEffect(() => {
     if (selectedEvent) setSheetState('expanded');
   }, [selectedEvent, setSheetState]);
-
-  /**
-   * A drag ends in a click on whatever was under the finger. The handle and the
-   * tabs guard against that individually, but the sheet's CONTENT never did —
-   * and now that content includes an event card, so collapsing the sheet with a
-   * downward drag that starts on it could cast an RSVP, clear the selected
-   * event, or jump to a room as a side effect.
-   *
-   * Handled once here in the capture phase instead of per control: the click is
-   * swallowed before it reaches any target, so nothing inside needs to know
-   * about dragging.
-   */
-  const swallowClickAfterDrag = (e: ReactMouseEvent<HTMLDivElement>) => {
-    if (!dragged.current) return;
-    dragged.current = false;
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  // A cancel is the BROWSER taking the gesture over, not the student letting
-  // go — the only outcome is "put it back". Mirrors Sheet's handling.
-  const onPointerCancel = () => {
-    start.current = null;
-    setDragHeight(null);
-    // A cancelled drag produces no click, so the suppression flag has nothing
-    // to suppress — left set, it would eat the student's NEXT real tap instead.
-    dragged.current = false;
-  };
 
   const buildingName =
     activeBuildingId !== null
@@ -206,10 +99,7 @@ export function MapSheet() {
       // Same suppression as the handle: a drag that starts on a tab ends in a
       // click on it, which would switch tab as a side effect of collapsing.
       onClick={() => {
-        if (dragged.current) {
-          dragged.current = false;
-          return;
-        }
+        if (consumeDragClick()) return;
         setTab(key);
       }}
       className={`flex-1 whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-semibold ${
@@ -224,11 +114,7 @@ export function MapSheet() {
     <div
       ref={panelRef}
       data-testid="map-sheet"
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerCancel}
-      onClickCapture={swallowClickAfterDrag}
+      {...handlers}
       // The height transition is dropped mid-drag: it animates the same height
       // the finger is setting, and leaving both on makes the sheet lag behind.
       className={`absolute inset-x-0 bottom-0 z-[1000] flex flex-col overflow-hidden rounded-t-[20px] bg-base-100 shadow-drawer ${
