@@ -145,6 +145,27 @@ describe('MapScreen', () => {
     expect(useAppStore.getState().mapSelection).toBeNull();
   });
 
+  // Regression: a flick shorter than the slop but fast enough for snapDetent
+  // moved the sheet while still counting as a tap, so the trailing click landed
+  // on whatever was under the finger — clearing the event or casting an RSVP as
+  // a side effect of collapsing.
+  it('suppresses the click when a fast micro-flick changes the detent', () => {
+    useAppStore.setState({ mapEvents: [EVENT], mapSheetState: 'expanded' } as never);
+    render(<MapScreen />);
+    const sheet = screen.getByTestId('map-sheet');
+
+    // 3px is under DRAG_SLOP_PX, but across the sub-millisecond gap between
+    // synthetic events it clears snapDetent's velocity threshold.
+    fireEvent.pointerDown(sheet, { clientY: 100 });
+    fireEvent.pointerMove(sheet, { clientY: 103 });
+    fireEvent.pointerUp(sheet, { clientY: 103 });
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+
+    // The click the browser still delivers must not toggle it straight back.
+    fireEvent.click(screen.getByRole('button', { name: /Akce na kampusu/ }));
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+  });
+
   it('mounts the event layer so society pins are drawn', () => {
     useAppStore.setState({ mapEvents: [EVENT] } as never);
     render(<MapScreen />);

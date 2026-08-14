@@ -120,7 +120,14 @@ export function MapSheet() {
     start.current = null;
     setDragHeight(null);
     if (!from) return;
-    setSheetState(snapDetent(sheetState, e.clientY - from.y, e.timeStamp - from.t));
+    const next = snapDetent(sheetState, e.clientY - from.y, e.timeStamp - from.t);
+    // The slop and snapDetent measure different things, and disagree on a fast
+    // flick shorter than 8px: too small to count as a drag, fast enough to
+    // change detent. The sheet would move AND the trailing click would land on
+    // whatever was under the finger. Whether the gesture MOVED THE SHEET is the
+    // question that matters here, so it gets the final say.
+    if (next !== sheetState) dragged.current = true;
+    setSheetState(next);
   };
 
   /**
