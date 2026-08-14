@@ -2,6 +2,7 @@ import { Search } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 import { MapCanvas } from '../../CampusMap/MapCanvas';
+import { EventLayer } from '../../CampusMap/EventLayer';
 import { roomLabel } from '../../CampusMap/mapHelpers';
 import type { MapSelection } from '../../../types/campusMap';
 import { FloorSwitcher } from './map/FloorSwitcher';
@@ -53,6 +54,13 @@ export function MapScreen() {
   return (
     <div data-testid="map-screen" className="relative isolate flex flex-1 flex-col overflow-hidden">
       <MapCanvas />
+      {/* The society event pins. The sheet's Akce tab has always listed these
+          events; without this layer they were listed but never shown on the map
+          they name, so a society could publish an event and find no pin for it
+          on a student's phone. Same component the desktop map and the admin
+          console use — it portals into a Leaflet pane, so it renders nothing
+          here and does not affect this element's layout. */}
+      <EventLayer />
       <FloorSwitcher />
       {/* marginTop carries --safe-top because this floating bar is the topmost
           element on the map screen and targetSdk 36 forces edge-to-edge: without

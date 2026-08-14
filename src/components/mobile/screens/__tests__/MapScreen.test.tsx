@@ -10,6 +10,13 @@ vi.mock('../../../CampusMap/MapCanvas', () => ({
   MapCanvas: () => <div data-testid="mock-map-canvas" />,
 }));
 
+// Mocked for the same reason as MapCanvas: it portals into a Leaflet pane that
+// does not exist here, and it renders its own copy of each event's title, which
+// collides with the sheet's copy in text queries.
+vi.mock('../../../CampusMap/EventLayer', () => ({
+  EventLayer: () => <div data-testid="mock-event-layer" />,
+}));
+
 // MapEventsSection (Akce tab body) pulls in useEventsFacultySettings, which
 // does async IndexedDB + chrome.storage work via useEffect — mocked the same
 // way MapSidePanel.test.tsx mocks it, so these tab-switch tests stay
@@ -47,6 +54,143 @@ beforeEach(() => {
 });
 
 describe('MapScreen', () => {
+  const EVENT = {
+    id: 'ev1',
+    title: 'Deskovky',
+    url: '',
+    date: '2026-08-18',
+    endDate: null,
+    time: '18:30',
+    location: 'Mystica',
+    imageUrl: null,
+    organizerKey: 'pef',
+    societyId: 'supef',
+    coord: [16.5952946, 49.2235078] as [number, number],
+    roomCode: null,
+    venueKind: 'offcampus' as const,
+    category: 'boardgames' as const,
+  };
+
+  // Regression: the phone map listed society events in the Akce tab but never
+  // drew them, because EventLayer was mounted only by the desktop CampusMapView
+  // and the admin console. A society could publish an event and find no pin for
+  // it on any student's phone.
+  // Regression: a drag ends in a click on whatever was under the finger. The
+  // handle and tabs guarded against that; the sheet's CONTENT did not — so
+  // collapsing the sheet with a drag starting on the event card could cast an
+  // RSVP or clear the selection as a side effect.
+  it('swallows the click that ends a drag, so content actions do not fire', () => {
+    useAppStore.setState({
+      mapEvents: [EVENT],
+      mapSheetState: 'expanded',
+      mapSelection: { kind: 'event', event: EVENT },
+    } as never);
+    render(<MapScreen />);
+    const sheet = screen.getByTestId('map-sheet');
+    const back = screen.getByRole('button', { name: /Akce/ });
+
+    // A drag the sheet absorbs: press on the sheet, move far enough that it
+    // consumes the travel, release — then the click the browser still delivers.
+    fireEvent.pointerDown(sheet, { clientY: 100 });
+    fireEvent.pointerMove(sheet, { clientY: 260 });
+    fireEvent.pointerUp(sheet, { clientY: 260 });
+    fireEvent.click(back);
+
+    // Still selected: the drag collapsed the sheet, it did not press Back.
+    expect(useAppStore.getState().mapSelection).not.toBeNull();
+  });
+
+  // Regression: a cancelled drag left the suppression flag set, so the swallow
+  // above would eat the student's NEXT legitimate tap instead of the click that
+  // ended the drag. pointercancel is the browser taking the gesture, and it
+  // produces no click — there is nothing to suppress.
+  it('does not eat the next tap after the browser cancels a drag', () => {
+    useAppStore.setState({
+      mapEvents: [EVENT],
+      mapSheetState: 'expanded',
+      mapSelection: { kind: 'event', event: EVENT },
+    } as never);
+    render(<MapScreen />);
+    const sheet = screen.getByTestId('map-sheet');
+
+    fireEvent.pointerDown(sheet, { clientY: 100 });
+    fireEvent.pointerMove(sheet, { clientY: 260 });
+    fireEvent.pointerCancel(sheet);
+
+    // The next tap is a real one and must go through.
+    fireEvent.click(screen.getByRole('button', { name: /Akce/ }));
+    expect(useAppStore.getState().mapSelection).toBeNull();
+  });
+
+  // Regression: consumesTravel is true for a single pixel, so a tap with the
+  // normal jitter of a finger set the drag flag and the capture handler ate it.
+  // Cards, RSVPs and tabs went intermittently unresponsive.
+  it('treats a tap with slight finger drift as a tap, not a drag', () => {
+    useAppStore.setState({
+      mapEvents: [EVENT],
+      mapSheetState: 'expanded',
+      mapSelection: { kind: 'event', event: EVENT },
+    } as never);
+    render(<MapScreen />);
+    const sheet = screen.getByTestId('map-sheet');
+
+    // No pointerUp on purpose. It does not touch the suppression flag, but it
+    // DOES run snapDetent, and 3px in the sub-millisecond gap between synthetic
+    // events reads as a fast flick — the sheet would collapse and take the back
+    // control off screen, testing the detent rule instead of the slop.
+    fireEvent.pointerDown(sheet, { clientY: 100 });
+    fireEvent.pointerMove(sheet, { clientY: 103 }); // 3px — under the slop
+    fireEvent.click(screen.getByRole('button', { name: /Akce/ }));
+
+    expect(useAppStore.getState().mapSelection).toBeNull();
+  });
+
+  // Regression: a flick shorter than the slop but fast enough for snapDetent
+  // moved the sheet while still counting as a tap, so the trailing click landed
+  // on whatever was under the finger — clearing the event or casting an RSVP as
+  // a side effect of collapsing.
+  it('suppresses the click when a fast micro-flick changes the detent', () => {
+    useAppStore.setState({ mapEvents: [EVENT], mapSheetState: 'expanded' } as never);
+    render(<MapScreen />);
+    const sheet = screen.getByTestId('map-sheet');
+
+    // 3px is under DRAG_SLOP_PX, but across the sub-millisecond gap between
+    // synthetic events it clears snapDetent's velocity threshold.
+    fireEvent.pointerDown(sheet, { clientY: 100 });
+    fireEvent.pointerMove(sheet, { clientY: 103 });
+    fireEvent.pointerUp(sheet, { clientY: 103 });
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+
+    // The click the browser still delivers must not toggle it straight back.
+    fireEvent.click(screen.getByRole('button', { name: /Akce na kampusu/ }));
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+  });
+
+  it('mounts the event layer so society pins are drawn', () => {
+    useAppStore.setState({ mapEvents: [EVENT] } as never);
+    render(<MapScreen />);
+    expect(screen.getByTestId('mock-event-layer')).toBeInTheDocument();
+  });
+
+  // Tapping a pin selects the event; desktop shows it in DetailPanel, which has
+  // no room to float over a phone screen — the sheet has to take it, and has to
+  // open itself, or the tap highlights a pin and appears to do nothing.
+  it('opens a tapped event in the sheet and returns to the list', () => {
+    useAppStore.setState({
+      mapEvents: [EVENT],
+      mapSelection: { kind: 'event', event: EVENT },
+    } as never);
+    render(<MapScreen />);
+
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+    // By role, not text: the boardgames category label is also "Deskovky",
+    // so a bare text query matches the card's category row as well.
+    expect(screen.getByRole('heading', { name: 'Deskovky' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Akce/ }));
+    expect(useAppStore.getState().mapSelection).toBeNull();
+  });
+
   it('mounts the map canvas', () => {
     render(<MapScreen />);
     expect(screen.getByTestId('mock-map-canvas')).toBeInTheDocument();

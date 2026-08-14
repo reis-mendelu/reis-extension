@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
-import { snapDetent, dragOwnsGesture, consumesTravel } from '../../primitives/sheetDrag';
+import { useEffect, useRef } from 'react';
+import { ChevronDown, ChevronLeft, ChevronUp } from 'lucide-react';
+import { useMapSheetDrag } from './useMapSheetDrag';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import type { MapSheetTab } from '../../../../store/types';
 import buildingsJson from '../../../../data/map/buildings.json';
 import type { BuildingsMeta } from '../../../../types/campusMap';
 import { MapEventsSection } from '../../../CampusMap/MapEventsSection';
+import { EventDetailCard } from '../../../CampusMap/EventDetailCard';
 import { BuildingRoomList } from './BuildingRoomList';
 
 const META = buildingsJson as BuildingsMeta;
@@ -41,7 +42,10 @@ export function MapSheet() {
   const tab = useAppStore((s) => s.mapTab);
   const setTab = useAppStore((s) => s.setMapTab);
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
+  const selection = useAppStore((s) => s.mapSelection);
+  const clearMapSelection = useAppStore((s) => s.clearMapSelection);
   const { t } = useTranslation();
+  const selectedEvent = selection?.kind === 'event' ? selection.event : null;
 
   const expanded = sheetState === 'expanded';
   const showBudova = activeBuildingId !== null;
@@ -55,81 +59,31 @@ export function MapSheet() {
   const activeTab: MapSheetTab =
     (tab === 'budova' && !showBudova) || tab === 'knihovna' ? 'akce' : tab;
   const panelRef = useRef<HTMLDivElement>(null);
-  const start = useRef<{ y: number; t: number; height: number } | null>(null);
-  const dragged = useRef(false);
-  const [dragHeight, setDragHeight] = useState<number | null>(null);
+  const { dragHeight, consumeDragClick, handlers } = useMapSheetDrag(
+    sheetState,
+    setSheetState,
+    panelRef,
+    PEEK_PX,
+    EXPANDED_VH
+  );
 
   // A drag ends in a click too, and letting that click through would toggle the
   // sheet straight back out of the detent the drag just chose.
   const toggle = () => {
-    if (dragged.current) {
-      dragged.current = false;
-      return;
-    }
+    if (consumeDragClick()) return;
     setSheetState(expanded ? 'peek' : 'expanded');
   };
 
-  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    // Only a gesture the content does not want: while the expanded Akce list is
-    // scrolled down, a downward swipe belongs to the list, not the sheet.
-    if (!dragOwnsGesture(e.target as Element, panelRef.current)) return;
-    const height = panelRef.current?.getBoundingClientRect().height ?? PEEK_PX;
-    start.current = { y: e.clientY, t: e.timeStamp, height };
-    dragged.current = false;
-  };
-
-  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const from = start.current;
-    if (!from) return;
-    const dy = e.clientY - from.y;
-    // Travel the sheet cannot absorb belongs to the content: at peek a downward
-    // drag has nowhere to go, and while expanded an upward one scrolls the list.
-    if (!consumesTravel(sheetState, dy)) return;
-    dragged.current = true;
-    // Clamped to the two detents: peek is the floor because this sheet is the
-    // only way to reach Akce, and 70vh is the ceiling it snaps to.
-    const max = window.innerHeight * EXPANDED_VH;
-    const next = from.height - dy;
-    setDragHeight(Math.min(Math.max(next, PEEK_PX), max));
-  };
-
-  const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const from = start.current;
-    start.current = null;
-    setDragHeight(null);
-    if (!from) return;
-    setSheetState(snapDetent(sheetState, e.clientY - from.y, e.timeStamp - from.t));
-  };
-
   /**
-   * The whole sheet is a drag surface, not just the handle — dragging a sheet
-   * down anywhere on it is what every native sheet does.
-   *
-   * This needs a NON-PASSIVE touchmove: React attaches touch listeners
-   * passively, so `preventDefault` from onPointerMove is a no-op and the
-   * browser takes the gesture as a pan and fires pointercancel mid-drag. Only
-   * while the sheet is actually absorbing the travel — otherwise this would
-   * block the Akce list from ever scrolling.
+   * Tapping an event pin selects it, and on a phone this sheet is the only
+   * surface that can show it — desktop has DetailPanel floating over the map,
+   * which there is no room for here. A selection made at peek height would
+   * otherwise be invisible: the pin would highlight and nothing else would
+   * happen.
    */
   useEffect(() => {
-    const panel = panelRef.current;
-    if (!panel) return;
-    const onTouchMove = (e: TouchEvent) => {
-      const from = start.current;
-      const touch = e.touches[0];
-      if (!from || !touch) return;
-      if (consumesTravel(sheetState, touch.clientY - from.y)) e.preventDefault();
-    };
-    panel.addEventListener('touchmove', onTouchMove, { passive: false });
-    return () => panel.removeEventListener('touchmove', onTouchMove);
-  }, [sheetState]);
-
-  // A cancel is the BROWSER taking the gesture over, not the student letting
-  // go — the only outcome is "put it back". Mirrors Sheet's handling.
-  const onPointerCancel = () => {
-    start.current = null;
-    setDragHeight(null);
-  };
+    if (selectedEvent) setSheetState('expanded');
+  }, [selectedEvent, setSheetState]);
 
   const buildingName =
     activeBuildingId !== null
@@ -145,10 +99,7 @@ export function MapSheet() {
       // Same suppression as the handle: a drag that starts on a tab ends in a
       // click on it, which would switch tab as a side effect of collapsing.
       onClick={() => {
-        if (dragged.current) {
-          dragged.current = false;
-          return;
-        }
+        if (consumeDragClick()) return;
         setTab(key);
       }}
       className={`flex-1 whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-semibold ${
@@ -163,10 +114,7 @@ export function MapSheet() {
     <div
       ref={panelRef}
       data-testid="map-sheet"
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerCancel}
+      {...handlers}
       // The height transition is dropped mid-drag: it animates the same height
       // the finger is setting, and leaving both on makes the sheet lag behind.
       className={`absolute inset-x-0 bottom-0 z-[1000] flex flex-col overflow-hidden rounded-t-[20px] bg-base-100 shadow-drawer ${
@@ -215,7 +163,21 @@ export function MapSheet() {
               row still has to exist (it is the nearest grab surface for
               collapsing a 70vh sheet — see the touch-none note above), so it
               becomes a plain heading whose tap collapses instead. */}
-          {showBudova ? (
+          {selectedEvent ? (
+            // A tapped pin replaces the tabs outright: the card IS the answer to
+            // the tap, and leaving a tab row above it invites switching away
+            // from the thing just asked for. Back returns to the list.
+            <button
+              type="button"
+              onClick={clearMapSelection}
+              className="flex flex-shrink-0 touch-none items-center gap-1.5 px-5 pb-2 text-left"
+            >
+              <ChevronLeft size={18} className="flex-shrink-0 text-base-content/40" />
+              <span className="font-display text-lg font-bold tracking-tight text-base-content">
+                {t('mobile.map.tabEvents')}
+              </span>
+            </button>
+          ) : showBudova ? (
             <div
               role="tablist"
               className="mx-4 flex flex-shrink-0 touch-none gap-1 rounded-lg bg-base-content/5 p-1"
@@ -244,9 +206,17 @@ export function MapSheet() {
             </button>
           )}
           <div className="flex-1 overflow-y-auto pb-24 pt-2">
-            {activeTab === 'akce' && <MapEventsSection />}
-            {activeTab === 'budova' && activeBuildingId !== null && (
-              <BuildingRoomList buildingId={activeBuildingId} />
+            {selectedEvent ? (
+              <div className="px-4">
+                <EventDetailCard event={selectedEvent} />
+              </div>
+            ) : (
+              <>
+                {activeTab === 'akce' && <MapEventsSection />}
+                {activeTab === 'budova' && activeBuildingId !== null && (
+                  <BuildingRoomList buildingId={activeBuildingId} />
+                )}
+              </>
             )}
           </div>
         </>

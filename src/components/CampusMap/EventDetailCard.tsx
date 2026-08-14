@@ -8,9 +8,28 @@ import { roomCodeToName } from './mapHelpers';
 import type { RoomIndexEntry } from '../../types/campusMap';
 import { parseEventDate } from './eventHelpers';
 import { EventRsvp } from './EventRsvp';
+import { openExternal } from '../../mobile/openExternal';
+import { getPlatform } from '../../platform';
 import type { MapEvent } from '../../types/events';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
+
+/**
+ * On Capacitor a `target="_blank"` anchor hands the URL to the SYSTEM browser,
+ * which holds none of the app's session — see src/mobile/openExternal.ts. This
+ * card became reachable on mobile when the phone map gained event pins, so both
+ * of its links needed routing through the in-app browser.
+ *
+ * Kept as an anchor with an onClick rather than converted to a button:
+ * `openExternal` no-ops off Capacitor, so the href stays the real behaviour on
+ * desktop, and middle-click / "open in new tab" keep working there.
+ */
+function openInApp(e: React.MouseEvent<HTMLAnchorElement>) {
+  const href = e.currentTarget.href;
+  if (getPlatform().kind !== 'capacitor') return;
+  e.preventDefault();
+  void openExternal(href);
+}
 
 // Bottom-left detail body for a selected event — a read-only preview shown to
 // students and societies alike: a small society avatar + title + host, then the
@@ -81,6 +100,7 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
                 href={`https://www.google.com/maps/search/?api=1&query=${event.coord[1]},${event.coord[0]}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={openInApp}
                 className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
               >
                 <MapPin size={13} className="shrink-0" /> {event.location}
@@ -103,6 +123,7 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
             href={event.url}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={openInApp}
             className="btn btn-primary btn-sm btn-block"
           >
             {t('map.moreInfo')} <ExternalLink size={13} />
