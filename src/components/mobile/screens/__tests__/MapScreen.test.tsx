@@ -100,6 +100,28 @@ describe('MapScreen', () => {
     expect(useAppStore.getState().mapSelection).not.toBeNull();
   });
 
+  // Regression: a cancelled drag left the suppression flag set, so the swallow
+  // above would eat the student's NEXT legitimate tap instead of the click that
+  // ended the drag. pointercancel is the browser taking the gesture, and it
+  // produces no click — there is nothing to suppress.
+  it('does not eat the next tap after the browser cancels a drag', () => {
+    useAppStore.setState({
+      mapEvents: [EVENT],
+      mapSheetState: 'expanded',
+      mapSelection: { kind: 'event', event: EVENT },
+    } as never);
+    render(<MapScreen />);
+    const sheet = screen.getByTestId('map-sheet');
+
+    fireEvent.pointerDown(sheet, { clientY: 100 });
+    fireEvent.pointerMove(sheet, { clientY: 260 });
+    fireEvent.pointerCancel(sheet);
+
+    // The next tap is a real one and must go through.
+    fireEvent.click(screen.getByRole('button', { name: /Akce/ }));
+    expect(useAppStore.getState().mapSelection).toBeNull();
+  });
+
   it('mounts the event layer so society pins are drawn', () => {
     useAppStore.setState({ mapEvents: [EVENT] } as never);
     render(<MapScreen />);

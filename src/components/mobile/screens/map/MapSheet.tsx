@@ -80,12 +80,16 @@ export function MapSheet() {
   };
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    // Cleared before the ownership check, not after: a new gesture always starts
+    // undragged. Leaving it to the owned path means a flag set by a previous
+    // drag can survive into a gesture the sheet does not own, and
+    // swallowClickAfterDrag then eats that tap.
+    dragged.current = false;
     // Only a gesture the content does not want: while the expanded Akce list is
     // scrolled down, a downward swipe belongs to the list, not the sheet.
     if (!dragOwnsGesture(e.target as Element, panelRef.current)) return;
     const height = panelRef.current?.getBoundingClientRect().height ?? PEEK_PX;
     start.current = { y: e.clientY, t: e.timeStamp, height };
-    dragged.current = false;
   };
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -168,6 +172,9 @@ export function MapSheet() {
   const onPointerCancel = () => {
     start.current = null;
     setDragHeight(null);
+    // A cancelled drag produces no click, so the suppression flag has nothing
+    // to suppress — left set, it would eat the student's NEXT real tap instead.
+    dragged.current = false;
   };
 
   const buildingName =
