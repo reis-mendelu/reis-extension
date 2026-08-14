@@ -1,5 +1,61 @@
 apply plugin: 'com.android.application'
 
+import groovy.json.JsonSlurper
+
+// ---------------------------------------------------------------------------
+// Version: one source of truth, and it is package.json.
+//
+// The stock Capacitor template hardcodes versionCode 1 / versionName "1.0",
+// which every `npm run release` would silently leave behind — a store upload
+// would be rejected as a duplicate and a tester could never tell two betas
+// apart. Reading the npm version here means the existing release flow (bump
+// package.json, tag, publish) drives the app too, with no second place to edit.
+//
+// versionCode must be a monotonically increasing integer and can never be
+// reused or lowered on a given store listing, so it is DERIVED, not stored:
+// major*10000 + minor*100 + patch. 5.0.5 -> 50005. That allows 100 patches and
+// 100 minors per major, which is far beyond the cadence this project has ever
+// had, and stays well inside Play's 2100000000 ceiling.
+// ---------------------------------------------------------------------------
+def npmVersion = new JsonSlurper().parse(file("../../package.json")).version
+def semver = (npmVersion =~ /^(\d+)\.(\d+)\.(\d+)/)
+if (!semver.find()) {
+    throw new GradleException("package.json version '${npmVersion}' is not a semver this build can turn into a versionCode")
+}
+def reisVersionCode = semver.group(1).toInteger() * 10000 +
+        semver.group(2).toInteger() * 100 +
+        semver.group(3).toInteger()
+
+// ---------------------------------------------------------------------------
+// Release signing.
+//
+// The keystore itself is never in the repo. Config comes from either
+// `android/keystore.properties` (gitignored, what a human uses locally) or the
+// REIS_KEYSTORE_* environment variables (what CI would use). If neither is
+// present the release build is left UNSIGNED on purpose — Gradle then names the
+// output `app-release-unsigned.apk`, so the missing key is visible in the
+// filename instead of producing an artifact that fails silently at install time.
+// ---------------------------------------------------------------------------
+def keystorePropsFile = rootProject.file("keystore.properties")
+def keystoreConfig = null
+if (keystorePropsFile.exists()) {
+    def props = new Properties()
+    keystorePropsFile.withInputStream { props.load(it) }
+    keystoreConfig = [
+        storeFile    : file(props['storeFile']),
+        storePassword: props['storePassword'],
+        keyAlias     : props['keyAlias'],
+        keyPassword  : props['keyPassword'] ?: props['storePassword'],
+    ]
+} else if (System.getenv('REIS_KEYSTORE_FILE')) {
+    keystoreConfig = [
+        storeFile    : file(System.getenv('REIS_KEYSTORE_FILE')),
+        storePassword: System.getenv('REIS_KEYSTORE_PASSWORD'),
+        keyAlias     : System.getenv('REIS_KEYSTORE_ALIAS'),
+        keyPassword  : System.getenv('REIS_KEYSTORE_KEY_PASSWORD') ?: System.getenv('REIS_KEYSTORE_PASSWORD'),
+    ]
+}
+
 android {
     namespace = "cz.reis.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +63,8 @@ android {
         applicationId "cz.reis.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode reisVersionCode
+        versionName npmVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +72,34 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (keystoreConfig != null) {
+            release {
+                storeFile keystoreConfig.storeFile
+                storePassword keystoreConfig.storePassword
+                keyAlias keystoreConfig.keyAlias
+                keyPassword keystoreConfig.keyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // minify stays OFF. Capacitor loads the PACKAGED plugins by class name
+            // out of the generated capacitor.plugins.json — strings, no Java caller
+            // — so R8 sees @capacitor/app, filesystem, share, splash-screen,
+            // preferences and the inappbrowser as unreachable and strips them. The
+            // failure is a runtime "plugin is not implemented on android" in the
+            // RELEASE build only. (Our own three, registered by direct class
+            // reference in MainActivity, would survive; the packaged ones are the
+            // problem.) Turning this on needs keep-rules plus a device pass.
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (keystoreConfig != null) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.warn("reIS: no keystore.properties and no REIS_KEYSTORE_FILE — the release build will be UNSIGNED and cannot be installed. See docs/android-beta-release.md")
+            }
         }
     }
 }
