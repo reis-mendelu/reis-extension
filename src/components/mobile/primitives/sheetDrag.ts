@@ -24,6 +24,17 @@ export function shouldDismiss(dy: number, dtMs: number): boolean {
 /** Past this much travel the map sheet changes detent regardless of speed. */
 export const DETENT_DISTANCE_PX = 64;
 
+/**
+ * How far a finger must move before the gesture counts as a DRAG rather than a
+ * tap, for the purpose of suppressing the click it ends in.
+ *
+ * `consumesTravel` is true for a single pixel in the absorbing direction, which
+ * is right for moving the sheet — it should track the finger immediately — but
+ * wrong for deciding a tap was really a drag. Fingers jitter, so without this a
+ * plain tap on a card, an RSVP or a tab is intermittently swallowed.
+ */
+export const DRAG_SLOP_PX = 8;
+
 export type Detent = 'peek' | 'expanded';
 
 /**

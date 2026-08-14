@@ -122,6 +122,29 @@ describe('MapScreen', () => {
     expect(useAppStore.getState().mapSelection).toBeNull();
   });
 
+  // Regression: consumesTravel is true for a single pixel, so a tap with the
+  // normal jitter of a finger set the drag flag and the capture handler ate it.
+  // Cards, RSVPs and tabs went intermittently unresponsive.
+  it('treats a tap with slight finger drift as a tap, not a drag', () => {
+    useAppStore.setState({
+      mapEvents: [EVENT],
+      mapSheetState: 'expanded',
+      mapSelection: { kind: 'event', event: EVENT },
+    } as never);
+    render(<MapScreen />);
+    const sheet = screen.getByTestId('map-sheet');
+
+    // No pointerUp on purpose. It does not touch the suppression flag, but it
+    // DOES run snapDetent, and 3px in the sub-millisecond gap between synthetic
+    // events reads as a fast flick — the sheet would collapse and take the back
+    // control off screen, testing the detent rule instead of the slop.
+    fireEvent.pointerDown(sheet, { clientY: 100 });
+    fireEvent.pointerMove(sheet, { clientY: 103 }); // 3px — under the slop
+    fireEvent.click(screen.getByRole('button', { name: /Akce/ }));
+
+    expect(useAppStore.getState().mapSelection).toBeNull();
+  });
+
   it('mounts the event layer so society pins are drawn', () => {
     useAppStore.setState({ mapEvents: [EVENT] } as never);
     render(<MapScreen />);

@@ -6,7 +6,12 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { ChevronDown, ChevronLeft, ChevronUp } from 'lucide-react';
-import { snapDetent, dragOwnsGesture, consumesTravel } from '../../primitives/sheetDrag';
+import {
+  snapDetent,
+  dragOwnsGesture,
+  consumesTravel,
+  DRAG_SLOP_PX,
+} from '../../primitives/sheetDrag';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import type { MapSheetTab } from '../../../../store/types';
@@ -99,7 +104,10 @@ export function MapSheet() {
     // Travel the sheet cannot absorb belongs to the content: at peek a downward
     // drag has nowhere to go, and while expanded an upward one scrolls the list.
     if (!consumesTravel(sheetState, dy)) return;
-    dragged.current = true;
+    // The sheet follows the finger from the first pixel, but only past the slop
+    // does the gesture count as a drag for click-suppression — otherwise the
+    // jitter in an ordinary tap swallows it.
+    if (Math.abs(dy) >= DRAG_SLOP_PX) dragged.current = true;
     // Clamped to the two detents: peek is the floor because this sheet is the
     // only way to reach Akce, and 70vh is the ceiling it snaps to.
     const max = window.innerHeight * EXPANDED_VH;
