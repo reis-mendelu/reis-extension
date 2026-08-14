@@ -18,8 +18,8 @@
  * 3. An unsigned release APK installs nowhere. We assert the artifact is signed
  *    rather than leaving that to be discovered on the phone.
  */
-import { execFileSync, execSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -91,14 +91,36 @@ const run = (cmd, args, cwd = ROOT) => {
 // `cap sync` regenerates capacitor.settings.gradle from the resolved location of
 // node_modules; see the header note. Snapshot before, compare after.
 const SETTINGS = resolve(ANDROID, 'capacitor.settings.gradle');
-const settingsBefore = existsSync(SETTINGS) ? readFileSync(SETTINGS, 'utf8') : null;
+
+/**
+ * Read a file, or null if it is not there.
+ *
+ * `existsSync` followed by `readFileSync` is two separate trips to the
+ * filesystem, and `cap sync` is rewriting this very file — so the answer to the
+ * first can be stale by the time the second runs. Catching ENOENT off the read
+ * itself makes the check and the use one operation.
+ */
+function readIfPresent(path) {
+  try {
+    return readFileSync(path, 'utf8');
+  } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
+}
+
+const settingsBefore = readIfPresent(SETTINGS);
 
 run('npm', ['run', 'build:capacitor']);
 run('npx', ['cap', 'sync', 'android']);
 
 if (settingsBefore !== null) {
-  const after = readFileSync(SETTINGS, 'utf8');
-  if (after !== settingsBefore && /\.claude\/worktrees|\.\.\/\.\.\/\.\./.test(after)) {
+  const after = readIfPresent(SETTINGS);
+  if (
+    after !== null &&
+    after !== settingsBefore &&
+    /\.claude\/worktrees|\.\.\/\.\.\/\.\./.test(after)
+  ) {
     console.log('\ncap sync rewrote capacitor.settings.gradle with worktree-absolute paths.');
     console.log('Restoring the committed version — the build works with either.');
     writeFileSync(SETTINGS, settingsBefore);
@@ -115,7 +137,12 @@ const out =
     ? resolve(ANDROID, 'app/build/outputs/apk/release/app-release.apk')
     : resolve(ANDROID, 'app/build/outputs/bundle/release/app-release.aab');
 
-if (!existsSync(out)) {
+// stat once and reuse it, rather than existsSync-then-stat: same check-and-use
+// race as the settings file, and the size is wanted below anyway.
+let outStat;
+try {
+  outStat = statSync(out);
+} catch {
   console.error(`\nExpected artifact missing: ${out}`);
   console.error('If an "app-release-unsigned.apk" exists instead, the keystore was not picked up.');
   process.exit(1);
@@ -123,15 +150,24 @@ if (!existsSync(out)) {
 
 if (target === 'apk') {
   // apksigner ships per build-tools version; take the highest installed.
-  const buildTools = execSync(`ls "${ANDROID_HOME}/build-tools" | sort -V | tail -1`, {
-    encoding: 'utf8',
-  }).trim();
+  // Sorted in JS rather than by shelling out to `ls | sort -V | tail -1`:
+  // ANDROID_HOME comes from the environment, so interpolating it into a shell
+  // string lets a path containing shell metacharacters run arbitrary commands.
+  // readdirSync takes the path as data, so there is no shell to inject into.
+  const buildTools = readdirSync(resolve(ANDROID_HOME, 'build-tools'))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+    .pop();
+  if (!buildTools) {
+    console.error(`No build-tools installed under ${ANDROID_HOME}/build-tools`);
+    process.exit(1);
+  }
   const apksigner = resolve(ANDROID_HOME, 'build-tools', buildTools, 'apksigner');
   console.log(`\n$ apksigner verify --print-certs (build-tools ${buildTools})`);
   execFileSync(apksigner, ['verify', '--print-certs', out], { env, stdio: 'inherit' });
 }
 
-const size = execSync(`du -h "${out}" | cut -f1`, { encoding: 'utf8' }).trim();
+// Same reasoning as above — `du -h "$out"` put a path into a shell string.
+const size = `${(outStat.size / 1024 / 1024).toFixed(1)}M`;
 console.log(`\nBuilt ${target.toUpperCase()}  ${out}  (${size})`);
 console.log(
   target === 'apk'
