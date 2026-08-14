@@ -159,3 +159,6 @@ dist-capacitor/
 /ios/App/App/public/
 /ios/App/build/
 /ios/DerivedData/
+
+# Play Store screenshot output (scripts/store-shots.mjs)
+.store-shots/
