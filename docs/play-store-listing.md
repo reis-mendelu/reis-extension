@@ -100,6 +100,37 @@ with reIS acting as the client. Nothing forks off to us.
   the hashed-ID usage rows, provide a contact address. **YOU**
 - Committed to Google Play Families policy: **No** (not a children's app).
 
+#### Fulfilling a deletion request (operator runbook)
+
+`docs/privacy-policy-app.md` promises that server-side rows are deleted on
+request, so the procedure has to exist before that policy is published. It is
+manual by design — see the warning below.
+
+Both tables key on the **SHA-256 hex of the student ID**, so the operator
+derives the key from the ID the requester provides and deletes by it. In the
+Supabase SQL editor:
+
+```sql
+-- Replace 123456 with the student ID the requester gave you.
+with key as (select encode(extensions.digest('123456', 'sha256'), 'hex') as h)
+delete from daily_active_usage where student_id = (select h from key);
+
+with key as (select encode(extensions.digest('123456', 'sha256'), 'hex') as h)
+delete from feedback_responses where student_id = (select h from key);
+```
+
+Verify the identity of the requester out of band (a mail from their
+`@mendelu.cz` address is the obvious check) before running it.
+
+> **Do not "fix" this by adding a delete RPC.** It looks like the tidier
+> answer and it is strictly worse: the RPC would have to be callable by `anon`
+> like the other reporting RPCs, it would take the hash — or the ID — as its
+> only argument, and the ID space is 6–7 digits. That is an afternoon of
+> enumeration away from letting anyone wipe every usage row in the table, and
+> it hands an attacker a free oracle for which student IDs exist. A manual
+> procedure behind an identity check is the correct design here, not a
+> shortcoming.
+
 ---
 
 ## 3. Content rating questionnaire

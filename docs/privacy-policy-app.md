@@ -140,8 +140,11 @@ you.
 - **Turn off error reporting**: any time, in reIS's settings.
 - **Sign out**: deletes the stored session token and clears cookies.
 - **Delete everything**: uninstall the app or extension.
-- **Ask us**: for anything held server-side, including the hashed usage records,
-  write to the address below and we will delete it.
+- **Ask us**: for anything held server-side — the hashed daily-usage record and
+  any feedback you submitted — write to the address below and we will delete it.
+  We will ask you to confirm your identity first (a message from your MENDELU
+  address is enough), because those rows are keyed by a hash of your student
+  number and we have no other way to tell whose they are.
 
 ## Children
 
