@@ -30,6 +30,13 @@ describe('createPersonProfileSlice', () => {
   let state: SliceState;
   let slice: ReturnType<typeof createPersonProfileSlice>;
 
+  /** The cache entry, asserted present — its absence is itself the failure. */
+  const cached = (personId = 1) => {
+    const found = state.personProfiles[personId];
+    if (!found) throw new Error(`no cache entry for person ${personId}`);
+    return found;
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     state = { language: 'cz', personProfiles: {}, personProfilesLoading: {} };
@@ -52,7 +59,7 @@ describe('createPersonProfileSlice', () => {
     await slice.fetchPersonProfileById(1);
 
     expect(mockFetch).toHaveBeenCalledWith(1, 'cz');
-    expect(state.personProfiles[1].lang).toBe('cz');
+    expect(cached().lang).toBe('cz');
   });
 
   it('re-fetches when the cached entry is in another language', async () => {
@@ -65,7 +72,7 @@ describe('createPersonProfileSlice', () => {
 
     expect(mockFetch).toHaveBeenCalledTimes(2);
     expect(mockFetch).toHaveBeenLastCalledWith(1, 'en');
-    expect(state.personProfiles[1].lang).toBe('en');
+    expect(cached().lang).toBe('en');
   });
 
   it('serves the cache when the language still matches', async () => {
@@ -95,8 +102,8 @@ describe('createPersonProfileSlice', () => {
     await inFlight;
 
     expect(mockFetch).toHaveBeenLastCalledWith(1, 'en');
-    expect(state.personProfiles[1].lang).toBe('en');
-    expect(state.personProfiles[1].data).toEqual(expect.objectContaining({ name: 'Jan Novak' }));
+    expect(cached().lang).toBe('en');
+    expect(cached().data).toEqual(expect.objectContaining({ name: 'Jan Novak' }));
     expect(state.personProfilesLoading[1]).toBe(false);
   });
 
@@ -116,8 +123,8 @@ describe('createPersonProfileSlice', () => {
     await inFlight;
 
     expect(mockFetch).toHaveBeenLastCalledWith(1, 'en');
-    expect(state.personProfiles[1].lang).toBe('en');
-    expect(state.personProfiles[1].error).toBeUndefined();
+    expect(cached().lang).toBe('en');
+    expect(cached().error).toBeUndefined();
   });
 
   it('records the failure when the language did not change', async () => {
@@ -125,7 +132,7 @@ describe('createPersonProfileSlice', () => {
 
     await slice.fetchPersonProfileById(1);
 
-    expect(state.personProfiles[1].error).toBe('network');
+    expect(cached().error).toBe('network');
     expect(state.personProfilesLoading[1]).toBe(false);
   });
 });
