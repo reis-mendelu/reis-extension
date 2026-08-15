@@ -123,9 +123,10 @@ surfaces.
 request, so the procedure has to exist before that policy is published. It is
 manual by design — see the warning below.
 
-Both tables key on the **SHA-256 hex of the student ID**, so the operator
-derives the key from the ID the requester provides and deletes by it. In the
-Supabase SQL editor:
+**Three** tables hold a per-student row, and they do not all key the same way —
+which is the trap here. `daily_active_usage` and `feedback_responses` key on the
+plain **SHA-256 hex of the student ID**, so the operator derives the key from
+the ID the requester provides. In the Supabase SQL editor:
 
 ```sql
 -- Replace 123456 with the student ID the requester gave you.
@@ -136,8 +137,35 @@ with key as (select encode(extensions.digest('123456', 'sha256'), 'hex') as h)
 delete from feedback_responses where student_id = (select h from key);
 ```
 
+`library_bookings_log` (the booking rate-limit log, extension only) is the third
+and needs a **different** derivation. `bookings-create` writes
+`sha256("<BOOKING_HASH_SALT>:<studentId>")` — **salted**, with the salt held in
+that Edge Function's environment and nowhere in the database. The recipe above
+produces the wrong digest and silently deletes nothing, so read the salt from
+the function's config first:
+
+```sql
+-- BOOKING_HASH_SALT comes from the bookings-create function environment.
+with key as (
+  select encode(extensions.digest('<BOOKING_HASH_SALT>:123456', 'sha256'), 'hex') as h
+)
+delete from library_bookings_log where student_hash = (select h from key);
+```
+
+Run all three, then confirm each reported a non-zero row count or that the
+student genuinely never used that feature — a silent zero on the booking table
+usually means the salt was wrong, not that there was nothing to delete.
+
+Two consequences of that salt worth knowing. It is what makes these rows
+genuinely non-enumerable, unlike the unsalted usage hash, so they are the
+better-protected records of the three. But it also means **rotating or losing
+`BOOKING_HASH_SALT` makes the existing rows undeletable by derivation** — there
+would be no way to work out which belong to a requester. If it is ever rotated,
+purge the old rows at the same time; they are a rate-limit log with no value
+past its window.
+
 Verify the identity of the requester out of band (a mail from their
-`@mendelu.cz` address is the obvious check) before running it.
+`@mendelu.cz` address is the obvious check) before running any of it.
 
 > **Do not "fix" this by adding a delete RPC.** It looks like the tidier
 > answer and it is strictly worse: the RPC would have to be callable by `anon`
