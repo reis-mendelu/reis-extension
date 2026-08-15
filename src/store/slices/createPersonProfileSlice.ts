@@ -49,8 +49,26 @@ export const createPersonProfileSlice: StateCreator<AppState, [], [], PersonProf
       personProfilesLoading: { ...s.personProfilesLoading, [personId]: true },
     }));
 
+    /**
+     * The student can flip the language toggle while this request is in the
+     * air. Writing the result then would put the card one language behind —
+     * #206 again — and the loading guard above means no later call can fix it,
+     * because the entry it would land in is the one still being written. So the
+     * stale answer is dropped, the guard is released, and the fetch restarts in
+     * whatever language is current now.
+     */
+    const restartedInNewLanguage = () => {
+      if (get().language === lang) return false;
+      set((s) => ({
+        personProfilesLoading: { ...s.personProfilesLoading, [personId]: false },
+      }));
+      void get().fetchPersonProfileById(personId);
+      return true;
+    };
+
     try {
       const data = await fetchPersonProfile(personId, lang);
+      if (restartedInNewLanguage()) return;
       set((s) => ({
         personProfiles: {
           ...s.personProfiles,
@@ -59,8 +77,11 @@ export const createPersonProfileSlice: StateCreator<AppState, [], [], PersonProf
         personProfilesLoading: { ...s.personProfilesLoading, [personId]: false },
       }));
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      // Reported before the language check: the request genuinely failed, and
+      // that is worth telemetry whether or not its answer is still wanted.
       logError('PersonProfileSlice.fetchPersonProfileById', e, { personId });
+      if (restartedInNewLanguage()) return;
+      const msg = e instanceof Error ? e.message : String(e);
       set((s) => ({
         personProfiles: {
           ...s.personProfiles,

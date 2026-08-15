@@ -13,18 +13,36 @@ import groovy.json.JsonSlurper
 //
 // versionCode must be a monotonically increasing integer and can never be
 // reused or lowered on a given store listing, so it is DERIVED, not stored:
-// major*10000 + minor*100 + patch. 5.0.5 -> 50005. That allows 100 patches and
-// 100 minors per major, which is far beyond the cadence this project has ever
-// had, and stays well inside Play's 2100000000 ceiling.
+// major*10000 + minor*100 + patch. 5.0.5 -> 50005.
+//
+// That encoding is only collision-free while minor and patch stay under 100 —
+// 5.0.100 and 5.1.0 both come to 50100 — and a loose prefix match would give
+// 5.0.5-beta the code already spent on 5.0.5. Both produce a duplicate upload
+// that Play rejects, or worse, a beta that overwrites a release for testers. So
+// the version is matched WHOLE and the components are bounds-checked here,
+// where the build still fails loudly, rather than at the upload.
+//
+// The ceiling is Play's own: versionCode must be below 2100000000, which caps
+// major at 209999 — far past anything that needs planning for.
 // ---------------------------------------------------------------------------
+def MAX_VERSION_CODE = 2100000000
 def npmVersion = new JsonSlurper().parse(file("../../package.json")).version
-def semver = (npmVersion =~ /^(\d+)\.(\d+)\.(\d+)/)
-if (!semver.find()) {
-    throw new GradleException("package.json version '${npmVersion}' is not a semver this build can turn into a versionCode")
+def semver = (npmVersion =~ /^(\d+)\.(\d+)\.(\d+)$/)
+if (!semver.matches()) {
+    throw new GradleException("package.json version '${npmVersion}' is not a plain major.minor.patch semver. " +
+            "Prerelease and build-metadata suffixes are refused: they cannot be encoded into a distinct versionCode.")
 }
-def reisVersionCode = semver.group(1).toInteger() * 10000 +
-        semver.group(2).toInteger() * 100 +
-        semver.group(3).toInteger()
+def (vMajor, vMinor, vPatch) = [1, 2, 3].collect { semver.group(it).toInteger() }
+if (vMinor > 99 || vPatch > 99) {
+    throw new GradleException("package.json version '${npmVersion}' has a minor or patch of 100 or more, which " +
+            "collides with the next component up (5.0.100 and 5.1.0 would share versionCode 50100). " +
+            "Widen the encoding in android/app/build.gradle before releasing this version.")
+}
+def reisVersionCode = vMajor * 10000 + vMinor * 100 + vPatch
+if (reisVersionCode >= MAX_VERSION_CODE) {
+    throw new GradleException("versionCode ${reisVersionCode} derived from '${npmVersion}' is at or above Play's " +
+            "${MAX_VERSION_CODE} ceiling")
+}
 
 // ---------------------------------------------------------------------------
 // Release signing.

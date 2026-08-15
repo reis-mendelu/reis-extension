@@ -46,26 +46,44 @@ const SHOTS = [
   { name: '4-mapa', tab: 'Mapa' },
 ];
 
+/**
+ * Every failure below is fatal on purpose.
+ *
+ * Swallowing them leaves the welcome modal up, which blurs the whole page — so
+ * a "successful" run writes four images of a frosted overlay and exits 0. A
+ * listing asset that is silently wrong is worse than a run that stops.
+ */
 async function seedMeta(page, entries) {
   await page.evaluate(async (kv) => {
-    await new Promise((done) => {
+    await new Promise((resolve, reject) => {
       const req = indexedDB.open('reis_db');
       req.onsuccess = () => {
         const db = req.result;
-        if (!db.objectStoreNames.contains('meta')) return done();
+        if (!db.objectStoreNames.contains('meta')) {
+          return reject(
+            new Error('IndexedDB has no "meta" store — is the app served at this URL?')
+          );
+        }
         const tx = db.transaction('meta', 'readwrite');
         const store = tx.objectStore('meta');
         for (const [k, v] of Object.entries(kv)) store.put(v, k);
-        tx.oncomplete = () => done();
-        tx.onerror = () => done();
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error ?? new Error('IndexedDB write failed'));
       };
-      req.onerror = () => done();
+      req.onerror = () => reject(req.error ?? new Error('IndexedDB open failed'));
     });
   }, entries);
   await page.reload({ waitUntil: 'networkidle' });
 }
 
 const run = async () => {
+  // A typo in --only used to filter every shot away and still exit 0, which
+  // reads exactly like "that screen is up to date".
+  const selected = SHOTS.filter((s) => !ONLY || s.name === ONLY);
+  if (ONLY && selected.length === 0) {
+    throw new Error(`Unknown screenshot "${ONLY}". Known: ${SHOTS.map((s) => s.name).join(', ')}`);
+  }
+
   // A targeted re-shoot must not wipe the screens captured against the other
   // fixture — that is the whole reason --only exists.
   if (!ONLY) rmSync(OUT_DIR, { recursive: true, force: true });
@@ -85,10 +103,11 @@ const run = async () => {
   await seedMeta(page, { welcome_dismissed: true, reis_theme: THEME });
   await page.waitForTimeout(1500);
 
-  for (const { name, tab } of SHOTS.filter((s) => !ONLY || s.name === ONLY)) {
+  const missing = [];
+  for (const { name, tab } of selected) {
     const button = page.getByRole('button', { name: tab, exact: true });
     if ((await button.count()) === 0) {
-      console.log(`  skip ${name} — no "${tab}" tab button on screen`);
+      missing.push(`${name} (no "${tab}" tab button on screen)`);
       continue;
     }
     await button.first().click();
@@ -100,6 +119,14 @@ const run = async () => {
   }
 
   await browser.close();
+
+  // Reported as a failure, not a skip. The bottom nav carries all four tabs on
+  // every fixture, so a missing one means the app did not render — and the
+  // previous run's file is still sitting in .store-shots, ready to be uploaded
+  // as if it were current.
+  if (missing.length > 0) {
+    throw new Error(`Not captured:\n  ${missing.join('\n  ')}`);
+  }
 };
 
 run().catch((e) => {

@@ -58,6 +58,7 @@ describe('PersonSheet', () => {
             yearSemesterSentence: null,
           },
           fetchedAt: Date.now(),
+          lang: 'cz',
         },
       },
       personProfilesLoading: {},
@@ -131,6 +132,7 @@ describe('PersonSheet', () => {
             privateEmail: 'novak@gmail.com',
           },
           fetchedAt: Date.now(),
+          lang: 'cz',
         },
       },
     } as never);
@@ -193,7 +195,9 @@ describe('PersonSheet', () => {
 
   it('shows an error state (not the raw id) when the profile fetch fails and no personName was supplied', () => {
     useAppStore.setState({
-      personProfiles: { 42: { data: null, error: 'network error', fetchedAt: Date.now() } },
+      personProfiles: {
+        42: { data: null, error: 'network error', fetchedAt: Date.now(), lang: 'cz' },
+      },
       personProfilesLoading: {},
       // The hook retries a cached error on every mount (existing.error
       // skips the TTL short-circuit); stub the retry so the test can
@@ -236,6 +240,7 @@ describe('PersonSheet — a staff profile', () => {
             consultationHours: null,
           },
           fetchedAt: Date.now(),
+          lang: 'cz',
         },
       },
       personProfilesLoading: {},
@@ -298,6 +303,7 @@ describe('PersonSheet — a student profile', () => {
             consultationHours: null,
           },
           fetchedAt: Date.now(),
+          lang: 'cz',
         },
       },
       personProfilesLoading: {},

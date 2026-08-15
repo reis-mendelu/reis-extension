@@ -8,14 +8,39 @@ Bumping `package.json` — which `/release` already does — bumps the app.
 
 ## One-time: create the signing key
 
-**You have to run this yourself.** The password is a durable secret, and if the
-key is lost the app can never be updated again — Android identifies an app by
-its signature, so a re-signed reIS installs as a different, unrelated app and
-every tester has to uninstall first.
+**You have to run this yourself.** The password is a durable secret.
 
 ```bash
 keytool -genkeypair -v -keystore ~/reis-upload-key.jks -alias reis-upload -keyalg RSA -keysize 4096 -validity 10000 -storetype PKCS12
 ```
+
+### Which key is this, and what happens if it is lost
+
+The name is not decoration: this is intended as the **Play upload key**, not as
+the app-signing key. Uploading an AAB to a new app enrols it in **Play App
+Signing**, where Google generates and holds the key that actually signs what
+users install, and this `.jks` only proves to Play that an upload is from you.
+Which of the two you are holding decides the recovery path, and they are not
+close:
+
+- **Play App Signing (what an AAB upload gives you).** A lost or compromised
+  upload key is **recoverable**. Generate a new keystore, export its certificate
+  with `keytool -export -rfc -keystore <new>.jks -alias reis-upload -file
+  upload_certificate.pem`, and in the Play Console under *Play Store protection
+  → Manage Play app signing* request an upload key reset with that PEM. Users
+  are unaffected — the app-signing key never changed.
+- **Sideloaded APKs** (`npm run android:apk`, what beta testers install
+  directly) are signed by **this** key and nothing else, so for those installs
+  it *is* the app-signing key. Sign a later APK with a different key and Android
+  refuses it as an update (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`); every tester
+  has to uninstall and log in to IS again.
+- **Self-managed app signing** (opting out of Play App Signing, or a legacy
+  APK-only listing) has **no recovery at all**. Lose the key and that listing can
+  never be updated again.
+
+So: back the `.jks` and its password up as if the third case were true, because
+until the first AAB is uploaded and Play App Signing is confirmed in the Console,
+you do not yet know that it isn't.
 
 Then point the build at it. `android/keystore.properties` is gitignored:
 
@@ -35,13 +60,31 @@ After that:
 1. Back the `.jks` up somewhere that is not this machine.
 2. Put the password in Infisical alongside the other reIS secrets.
 
+Or run `bash scripts/link-keystore.sh` instead of writing the file by hand: it
+checks the password actually opens the keystore before writing anything, asks
+for a separate key password only if the keystore turns out to need one, and
+passes both to `keytool` through a file rather than a command-line argument
+(where `ps` would show them to everyone on the machine).
+
 CI can supply the same four values as `REIS_KEYSTORE_FILE`,
 `REIS_KEYSTORE_PASSWORD`, `REIS_KEYSTORE_ALIAS`, `REIS_KEYSTORE_KEY_PASSWORD`
-instead of the properties file.
+instead of the properties file. The last is optional — with a PKCS12 keystore,
+which is what the `keytool` line above creates, the store password *is* the key
+password. All four are the upload key's secrets, not Google's app-signing key,
+which never leaves Play; a leak is repaired with the upload key reset described
+above.
 
-If neither is present the release build is deliberately left **unsigned** —
-Gradle names the output `app-release-unsigned.apk` so the missing key shows up
-in the filename rather than as a mysterious install failure on a tester's phone.
+### With no key configured
+
+`npm run android:apk` / `:aab` **refuse to run**: `scripts/android-release.mjs`
+checks for `android/keystore.properties` or `REIS_KEYSTORE_FILE` first and exits
+1 with a pointer back here, rather than spending three minutes in Gradle to
+produce something nobody can install.
+
+Reaching for Gradle directly (`cd android && ./gradlew assembleRelease`) skips
+that check. The build then succeeds, unsigned, and Gradle names the output
+`app-release-unsigned.apk` — the missing key shows up in the filename rather
+than as a mysterious install failure on a tester's phone.
 
 ## Building
 

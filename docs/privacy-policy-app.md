@@ -29,10 +29,13 @@ log in on every launch:
 
 Signing out deletes the stored token and clears the app's cookie store.
 
-## Data that stays on your device
+## Data reIS reads but does not collect
 
 reIS fetches the following from MENDELU services and stores it **locally**, in
-on-device storage (IndexedDB). None of it is transmitted to us:
+on-device storage (IndexedDB). Fetching it means your device asks
+`is.mendelu.cz` for it, authenticated as you, exactly as your browser would —
+that request goes to the university, not to us. **None of it is sent to reIS or
+to anyone else**, and none of it is held on any server we run:
 
 - **Your identity as IS holds it**: name, personal number (UIC), study details.
 - **Academic data**: timetable, grades, continuous assessment, exam dates,
@@ -46,16 +49,26 @@ on-device storage (IndexedDB). None of it is transmitted to us:
 
 Uninstalling reIS removes all of this.
 
-## Data that does leave your device
+## Data reIS collects
 
-There are only three, and two of them are optional.
+These three things are sent to servers **we** run or choose, rather than to the
+university on your behalf. Two of the three are optional. (For where your data
+goes when reIS acts on your behalf — IS Mendelu, WebISKAM, your own Google
+Drive — see *Third parties reIS talks to* below.)
 
-### 1. Anonymous daily usage count
+### 1. Pseudonymous daily usage count
 
-Once per day, when you open reIS, an irreversible **SHA-256 hash** of your
-student ID is sent to our Supabase backend so we can count how many people use
-reIS. Your raw student ID is never transmitted, and the hash carries no academic
-data, no browsing history and no page content.
+Once per day, when you open reIS, a **SHA-256 hash** of your student ID is sent
+to our Supabase backend so we can count how many people use reIS. Your raw
+student ID is never transmitted, and the hash carries no academic data, no
+browsing history and no page content.
+
+**This hash is pseudonymous, not anonymous.** It is the same value every day for
+the same person, which is what makes counting possible — and because student
+IDs are only 6–7 digits, anyone holding the hash could hash every possible ID
+and find which one it came from. We therefore treat these records as personal
+data under GDPR: they are covered by the deletion request described under *Your
+control*.
 
 *Lawful basis: legitimate interest under GDPR Art. 6(1)(f) — understanding
 whether the project is worth maintaining.*
@@ -103,7 +116,11 @@ the developers through a Discord channel. Nothing is sent unless you press send.
 | **WebISKAM** (`webiskam.mendelu.cz`) | Canteen profile and meal reservations | Extension only |
 | **Google Drive** (`googleapis.com`) | Back up your own IS files into your own Drive, if you connect it | Extension only |
 
-We do **not** sell, trade, or transfer your personal information to anyone.
+We do **not** sell or trade your personal information, and we transfer it to no
+one beyond the services in the table above — each of which is there because
+reIS cannot do what you asked of it otherwise. The one transfer you initiate
+yourself is feedback: if you submit the form, the message and any contact
+details you typed go to Discord, as described above.
 
 ## Permissions the Android app requests
 
