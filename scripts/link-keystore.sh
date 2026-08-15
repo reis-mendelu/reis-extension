@@ -37,6 +37,14 @@ if [ ! -f "$KEYSTORE" ]; then
   exit 1
 fi
 
+# storeFile MUST be absolute in the properties file. This script resolves a
+# relative argument against the repo root (it cd'd there above), but
+# android/app/build.gradle resolves `file(props['storeFile'])` against
+# android/app — so `link-keystore.sh keys/upload.jks` would verify a keystore
+# here and hand Gradle a path three directories away. It fails at
+# :app:packageRelease, which is the failure this script exists to move earlier.
+KEYSTORE="$(cd "$(dirname "$KEYSTORE")" && pwd)/$(basename "$KEYSTORE")"
+
 # There is no `java` on PATH on this machine; find a JDK the same way
 # scripts/android-release.mjs does.
 KEYTOOL=""
@@ -51,7 +59,10 @@ fi
 
 printf 'Keystore: %s\nAlias:    %s\n\n' "$KEYSTORE" "$ALIAS"
 printf 'Keystore password: '
-read -rs PW
+# IFS= — the default strips leading and trailing whitespace, so a password that
+# starts or ends with a space would be silently altered here and then fail
+# verification below with no hint as to why.
+IFS= read -rs PW
 printf '\n'
 
 if [ -z "$PW" ]; then
@@ -92,7 +103,7 @@ if ! key_opens_with "$STOREPASS_FILE"; then
   echo "The store password does not unlock the private key — this keystore uses a"
   echo "separate key password."
   printf 'Private key password for alias %s: ' "$ALIAS"
-  read -rs KEYPW
+  IFS= read -rs KEYPW
   printf '\n'
 
   KEYPASS_FILE="$PWDIR/key"
@@ -106,7 +117,16 @@ if ! key_opens_with "$STOREPASS_FILE"; then
   KEYPASS_ESCAPED="$(escape_property "$KEYPW")"
 fi
 
+# Written to a fresh 0600 file and renamed into place, NOT redirected onto $OUT.
+# `umask 077` governs the mode of a file it CREATES; redirecting into a
+# keystore.properties that already exists truncates it and keeps whatever mode
+# it had, so a previously world-readable file would quietly receive the signing
+# password. The temp file is a sibling so the rename stays on one filesystem and
+# is therefore atomic — no window where the file is half-written.
 umask 077
+TMP_OUT="$(mktemp "$(dirname "$OUT")/.keystore.properties.XXXXXX")"
+trap 'rm -rf "$PWDIR"; rm -f "$TMP_OUT"' EXIT
+chmod 600 "$TMP_OUT"
 {
   printf 'storeFile=%s\n' "$KEYSTORE"
   printf 'storePassword=%s\n' "$(escape_property "$PW")"
@@ -116,7 +136,8 @@ umask 077
   # Written as an `if` rather than `[ … ] && printf`, whose false branch would
   # be the group's exit status and would trip `set -e`.
   if [ -n "$KEYPASS_ESCAPED" ]; then printf 'keyPassword=%s\n' "$KEYPASS_ESCAPED"; fi
-} >"$OUT"
+} >"$TMP_OUT"
+mv "$TMP_OUT" "$OUT"
 
 echo "Password verified. Wrote $OUT (gitignored, mode 600)."
 echo "Now run:  npm run android:aab"

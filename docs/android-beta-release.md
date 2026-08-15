@@ -34,6 +34,15 @@ close:
   it *is* the app-signing key. Sign a later APK with a different key and Android
   refuses it as an update (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`); every tester
   has to uninstall and log in to IS again.
+
+  **This bites once more, unavoidably, when you move to Play.** Under Play App
+  Signing, Google re-signs the app with the app-signing key it holds, which is
+  *not* the upload key that signed the sideloaded APK. So a tester running a
+  sideloaded build cannot receive the Play version as an update — Play will
+  simply refuse to install over it. Plan the migration explicitly: tell testers
+  to **uninstall the sideloaded reIS first**, then install from the
+  internal-testing link, then log in to IS again. There is no way to avoid this
+  hop; it is a one-time cost of starting outside the store.
 - **Self-managed app signing** (opting out of Play App Signing, or a legacy
   APK-only listing) has **no recovery at all**. Lose the key and that listing can
   never be updated again.

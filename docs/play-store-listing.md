@@ -218,21 +218,40 @@ drives the same React phone tree in a headless browser against a committed
 synthetic fixture, at 1080×1920 (a 360×640 viewport at scale 3 — 16:9, safely
 inside Play's 2:1 cap, which is why the tempting 1080×2400 is not used):
 
+`vite` runs in the foreground, so these are **two terminals** — pasted into one,
+the capture would not start until you killed the server.
+
+Terminal 1:
+
 ```bash
 REIS_FIXTURE=teachingWeek npx vite --config vite.web.config.ts --port 4317
+```
+
+Terminal 2:
+
+```bash
 node scripts/store-shots.mjs --url http://localhost:4317
 ```
 
 Only one fixture is served at a time, so re-shoot a screen that wants a
-different one with `--only`, e.g. an exam season for the exams tab:
+different one with `--only`. Restart the server in terminal 1 with the other
+fixture first, e.g. an exam season for the exams tab:
 
 ```bash
 REIS_FIXTURE=examSeason npx vite --config vite.web.config.ts --port 4317
+```
+
+```bash
 node scripts/store-shots.mjs --url http://localhost:4317 --only 2-zkousky
 ```
 
 Output lands in `.store-shots/` (gitignored). The script exits non-zero if a
-requested screen was not captured, so a green run means every image is current.
+requested screen was not captured — but note what a green `--only` run does and
+does not prove: **only the requested image is current.** The rest of
+`.store-shots/` still holds whatever the previous fixture produced, which is
+correct (that is why `--only` does not wipe the directory) but means the set is
+only coherent if you know which fixture each file came from. Before an upload,
+do a full run first and then the `--only` re-shoots on top.
 
 Do not substitute handset captures for these. The images go out under the
 university's name with nobody's data in them, and that is the whole point.

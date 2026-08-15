@@ -69,6 +69,10 @@ async function seedMeta(page, entries) {
         for (const [k, v] of Object.entries(kv)) store.put(v, k);
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error ?? new Error('IndexedDB write failed'));
+        // A transaction can abort without ever firing onerror — quota exceeded,
+        // an I/O failure, an explicit abort. Without this the promise simply
+        // never settles and the run hangs instead of failing.
+        tx.onabort = () => reject(tx.error ?? new Error('IndexedDB transaction aborted'));
       };
       req.onerror = () => reject(req.error ?? new Error('IndexedDB open failed'));
     });
