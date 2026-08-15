@@ -70,7 +70,7 @@ What bounds it:
 
 ## Data reIS collects
 
-These three things are sent to servers **we** run or choose, rather than to the
+These four things are sent to servers **we** run or choose, rather than to the
 university on your behalf. Two of the three are optional. (For where your data
 goes when reIS acts on your behalf — IS Mendelu, WebISKAM, your own Google
 Drive — see *Third parties reIS talks to* below.)
@@ -124,6 +124,20 @@ If you open the feedback form and submit it, the message and any contact details
 **you type**, plus the app version and basic technical context, are delivered to
 the developers through a Discord channel. Nothing is sent unless you press send.
 
+### 4. A library study-room booking you make (browser extension only)
+
+If you book a study room from the campus map, the booking is made in MENDELU's
+own Microsoft Bookings system, and your **student or employee number** goes with
+it — that system requires it, exactly as it does when you book on the library's
+own page. The request passes through a reIS server so we can rate-limit it, and
+that server stores a **salted** hash of your number with a timestamp, purely to
+count how many bookings you have attempted in the last hour. The salt stays on
+the server and is never shipped to your device, so that record cannot be linked
+back to you by anyone who does not already hold it.
+
+Nothing is sent unless you make a booking. *This feature does not exist in the
+Android app.*
+
 ## Third parties reIS talks to
 
 | Service | Why | Applies to |
@@ -134,6 +148,7 @@ the developers through a Discord channel. Nothing is sent unless you press send.
 | **Discord** (`discord.com`) | Deliver feedback you submit | Both |
 | **WebISKAM** (`webiskam.mendelu.cz`) | Canteen profile and meal reservations | Extension only |
 | **Google Drive** (`googleapis.com`) | Back up your own IS files into your own Drive, if you connect it | Extension only |
+| **Microsoft Bookings** (`outlook.office.com`) | Make a library study-room booking, if you make one. Carries your student/employee number, as that system requires | Extension only |
 
 We do **not** sell or trade your personal information, and we transfer it to no
 one beyond the services in the table above — each of which is there because
@@ -159,7 +174,8 @@ you.
 - **Turn off error reporting**: any time, in reIS's settings.
 - **Sign out**: deletes the stored session token and clears cookies.
 - **Delete everything**: uninstall the app or extension.
-- **Ask us**: for anything held server-side — the hashed daily-usage record and
+- **Ask us**: for anything held server-side — the hashed daily-usage record, the
+  hashed library-booking rate-limit rows, and
   any feedback you submitted — write to the address below and we will delete it.
   We will ask you to confirm your identity first (a message from your MENDELU
   address is enough), because those rows are keyed by a hash of your student
