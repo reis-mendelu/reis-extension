@@ -57,14 +57,47 @@ function deobfuscate(email: string | null | undefined): string | null {
   return email.replace(/\s*\[at\]\s*/g, '@').trim() || null;
 }
 
-function findMatchInTds(doc: Document, marker: RegExp): string | null {
+/**
+ * The whole text of the first `td.odsazena` whose content matches `marker`.
+ *
+ * Returns the CELL, not the matched substring. The study sentences each occupy
+ * a cell of their own on both language versions, so the cell text is already
+ * exactly the sentence — and matching on a frame word ("typ studia" / "type of
+ * study") instead of on an enumeration of degree names means the parser does
+ * not have to know every value IS can put there. Enumerating them is what made
+ * this Czech-only: `Bakalářský|Magisterský|…` has no English equivalent that
+ * stays true as MENDELU adds programmes.
+ */
+function findTdMatching(doc: Document, marker: RegExp): string | null {
   const tds = Array.from(doc.querySelectorAll('td.odsazena'));
   for (const td of tds) {
+    // LEAF cells only. The header's photo/detail layout nests a whole table
+    // inside a `td.odsazena`, so the outer cell's textContent is every study
+    // line concatenated — and being an ancestor it comes FIRST in document
+    // order, so a container check is what stops the match returning the entire
+    // header block instead of the one sentence.
+    if (td.querySelector('td')) continue;
     const text = (td.textContent ?? '').replace(/\s+/g, ' ').trim();
-    const m = text.match(marker);
-    if (m) return m[0].trim();
+    if (marker.test(text)) return text;
   }
   return null;
+}
+
+/**
+ * First present label among `aliases`, which are the same row in each language.
+ *
+ * IS translates every contact label, so a lookup that knows only the Czech one
+ * returns null on an English page rather than failing loudly — the exact shape
+ * of #206. Aliases are matched exactly (after `readLabelledRows` has tidied and
+ * dropped the trailing colon), so "Office number" cannot collide with "Office
+ * phone number" or "Office address".
+ */
+function labelled(rows: Map<string, HTMLTableCellElement>, ...aliases: string[]) {
+  for (const alias of aliases) {
+    const cell = rows.get(alias);
+    if (cell) return cell;
+  }
+  return undefined;
 }
 
 export function parsePersonProfile(html: string, personId: number): PersonProfile | null {
@@ -100,14 +133,17 @@ export function parsePersonProfile(html: string, personId: number): PersonProfil
     }
   }
 
-  const studyTypeSentence = findMatchInTds(
-    doc,
-    /(Bakalářský|Magisterský|Navazující|Doktorský)[^,]*,\s*(prezenční|kombinovaná)\s*forma/i
-  );
+  // "Bakalářský typ studia, prezenční forma" / "Bachelor type of study,
+  // full-time form".
+  const studyTypeSentence = findTdMatching(doc, /typ studia|type of study/i);
 
-  const yearSemesterSentence = findMatchInTds(
+  // "1. ročník / 2. semestr studia" / "1st year of study / 2nd semester of
+  // study". Both halves are required: the study-code line one row above reads
+  // "PEF B-OI-ZBOI prez [sem 2, roč 1]" / "FBE B-OI-ZBOI pres [term 2, year 1]"
+  // and would match a looser "year" or "roč" pattern.
+  const yearSemesterSentence = findTdMatching(
     doc,
-    /\d+\.\s*ročník\s*\/\s*\d+\.\s*semestr\s*studia/i
+    /(ročník\s*\/.*semestr|year of study\s*\/.*semester)/i
   );
 
   // Staff role lines sit in the HEADER table with no label column at all —
@@ -118,17 +154,19 @@ export function parsePersonProfile(html: string, personId: number): PersonProfil
     .map((a) => tidy(a.closest('td')?.textContent))
     .filter((line): line is string => Boolean(line));
 
-  const labelled = readLabelledRows(doc);
-  const phone = tidy(labelled.get('Telefon do zaměstnání')?.textContent);
-  const workplace = tidy(labelled.get('Adresa pracoviště')?.textContent);
-  const consultationHours = tidy(labelled.get('Konzultační hodiny')?.textContent);
+  const rows = readLabelledRows(doc);
+  const phone = tidy(labelled(rows, 'Telefon do zaměstnání', 'Office phone number')?.textContent);
+  const workplace = tidy(labelled(rows, 'Adresa pracoviště', 'Office address')?.textContent);
+  const consultationHours = tidy(
+    labelled(rows, 'Konzultační hodiny', 'Consulting hours')?.textContent
+  );
 
   // The office cell holds both codes and they are not interchangeable: the
   // anchor TEXT is "BA39N2056 (Q2.56)" — estate code plus friendly name —
   // while the HREF carries only the friendly one as `placeName`. The campus
   // map's room index stores them as `code` and `name` respectively and will
   // match on either, so both are kept and the caller tries them in turn.
-  const officeCell = labelled.get('Označení kanceláře');
+  const officeCell = labelled(rows, 'Označení kanceláře', 'Office number');
   const officeText = tidy(officeCell?.textContent) ?? '';
   const officeCode = officeText.match(/^([A-Z0-9]+)/)?.[1] ?? null;
   const officeHref = officeCell?.querySelector('a')?.getAttribute('href') ?? '';
@@ -153,8 +191,20 @@ export function parsePersonProfile(html: string, personId: number): PersonProfil
   };
 }
 
-export async function fetchPersonProfile(personId: number): Promise<PersonProfile | null> {
-  const url = `${PROFILE_URL}?id=${personId};lang=cz`;
+/**
+ * `lang` defaults to Czech so existing callers keep their behaviour, but the
+ * store passes the app language — the point of #206. Only ONE language is
+ * fetched, deliberately: the project's `{ cz, en }` dual-fetch pattern exists
+ * for data the student flips between constantly, and a person card is opened
+ * from search or a roster, so paying a second `clovek.pl` request per person
+ * to make a rare language toggle instant is the wrong trade. The store re-fetches
+ * on a language change instead.
+ */
+export async function fetchPersonProfile(
+  personId: number,
+  lang: 'cz' | 'en' = 'cz'
+): Promise<PersonProfile | null> {
+  const url = `${PROFILE_URL}?id=${personId};lang=${lang}`;
   try {
     const response = await fetchWithAuth(url);
     const html = await response.text();

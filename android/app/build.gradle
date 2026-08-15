@@ -1,5 +1,79 @@
 apply plugin: 'com.android.application'
 
+import groovy.json.JsonSlurper
+
+// ---------------------------------------------------------------------------
+// Version: one source of truth, and it is package.json.
+//
+// The stock Capacitor template hardcodes versionCode 1 / versionName "1.0",
+// which every `npm run release` would silently leave behind — a store upload
+// would be rejected as a duplicate and a tester could never tell two betas
+// apart. Reading the npm version here means the existing release flow (bump
+// package.json, tag, publish) drives the app too, with no second place to edit.
+//
+// versionCode must be a monotonically increasing integer and can never be
+// reused or lowered on a given store listing, so it is DERIVED, not stored:
+// major*10000 + minor*100 + patch. 5.0.5 -> 50005.
+//
+// That encoding is only collision-free while minor and patch stay under 100 —
+// 5.0.100 and 5.1.0 both come to 50100 — and a loose prefix match would give
+// 5.0.5-beta the code already spent on 5.0.5. Both produce a duplicate upload
+// that Play rejects, or worse, a beta that overwrites a release for testers. So
+// the version is matched WHOLE and the components are bounds-checked here,
+// where the build still fails loudly, rather than at the upload.
+//
+// The ceiling is Play's own: versionCode must be below 2100000000, which caps
+// major at 209999 — far past anything that needs planning for.
+// ---------------------------------------------------------------------------
+def MAX_VERSION_CODE = 2100000000
+def npmVersion = new JsonSlurper().parse(file("../../package.json")).version
+def semver = (npmVersion =~ /^(\d+)\.(\d+)\.(\d+)$/)
+if (!semver.matches()) {
+    throw new GradleException("package.json version '${npmVersion}' is not a plain major.minor.patch semver. " +
+            "Prerelease and build-metadata suffixes are refused: they cannot be encoded into a distinct versionCode.")
+}
+def (vMajor, vMinor, vPatch) = [1, 2, 3].collect { semver.group(it).toInteger() }
+if (vMinor > 99 || vPatch > 99) {
+    throw new GradleException("package.json version '${npmVersion}' has a minor or patch of 100 or more, which " +
+            "collides with the next component up (5.0.100 and 5.1.0 would share versionCode 50100). " +
+            "Widen the encoding in android/app/build.gradle before releasing this version.")
+}
+def reisVersionCode = vMajor * 10000 + vMinor * 100 + vPatch
+if (reisVersionCode >= MAX_VERSION_CODE) {
+    throw new GradleException("versionCode ${reisVersionCode} derived from '${npmVersion}' is at or above Play's " +
+            "${MAX_VERSION_CODE} ceiling")
+}
+
+// ---------------------------------------------------------------------------
+// Release signing.
+//
+// The keystore itself is never in the repo. Config comes from either
+// `android/keystore.properties` (gitignored, what a human uses locally) or the
+// REIS_KEYSTORE_* environment variables (what CI would use). If neither is
+// present the release build is left UNSIGNED on purpose — Gradle then names the
+// output `app-release-unsigned.apk`, so the missing key is visible in the
+// filename instead of producing an artifact that fails silently at install time.
+// ---------------------------------------------------------------------------
+def keystorePropsFile = rootProject.file("keystore.properties")
+def keystoreConfig = null
+if (keystorePropsFile.exists()) {
+    def props = new Properties()
+    keystorePropsFile.withInputStream { props.load(it) }
+    keystoreConfig = [
+        storeFile    : file(props['storeFile']),
+        storePassword: props['storePassword'],
+        keyAlias     : props['keyAlias'],
+        keyPassword  : props['keyPassword'] ?: props['storePassword'],
+    ]
+} else if (System.getenv('REIS_KEYSTORE_FILE')) {
+    keystoreConfig = [
+        storeFile    : file(System.getenv('REIS_KEYSTORE_FILE')),
+        storePassword: System.getenv('REIS_KEYSTORE_PASSWORD'),
+        keyAlias     : System.getenv('REIS_KEYSTORE_ALIAS'),
+        keyPassword  : System.getenv('REIS_KEYSTORE_KEY_PASSWORD') ?: System.getenv('REIS_KEYSTORE_PASSWORD'),
+    ]
+}
+
 android {
     namespace = "cz.reis.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +81,8 @@ android {
         applicationId "cz.reis.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode reisVersionCode
+        versionName npmVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +90,34 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (keystoreConfig != null) {
+            release {
+                storeFile keystoreConfig.storeFile
+                storePassword keystoreConfig.storePassword
+                keyAlias keystoreConfig.keyAlias
+                keyPassword keystoreConfig.keyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // minify stays OFF. Capacitor loads the PACKAGED plugins by class name
+            // out of the generated capacitor.plugins.json — strings, no Java caller
+            // — so R8 sees @capacitor/app, filesystem, share, splash-screen,
+            // preferences and the inappbrowser as unreachable and strips them. The
+            // failure is a runtime "plugin is not implemented on android" in the
+            // RELEASE build only. (Our own three, registered by direct class
+            // reference in MainActivity, would survive; the packaged ones are the
+            // problem.) Turning this on needs keep-rules plus a device pass.
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (keystoreConfig != null) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.warn("reIS: no keystore.properties and no REIS_KEYSTORE_FILE — the release build will be UNSIGNED and cannot be installed. See docs/android-beta-release.md")
+            }
         }
     }
 }

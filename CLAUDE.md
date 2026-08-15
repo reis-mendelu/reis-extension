@@ -61,8 +61,14 @@ Store uses the **slice pattern**: `src/store/slices/create*Slice.ts` composed in
 ### Dual-Language (CZ/EN)
 - Language-sensitive data stored as `{ cz: Data, en: Data }`
 - Sync services fetch both languages in parallel for instant switching
-- Internal code uses `'cs'`/`'en'`; IS Mendelu API uses `'cz'`/`'en'` — mapping applied in API layer
-- UI strings via `useTranslation()` hook reading from `src/i18n/locales/{cs,en}.json`
+- The app's language code is `'cz'`/`'en'` everywhere — `Language` in `src/store/types.ts` is
+  `'cz' | 'en'`, and that is the same vocabulary IS Mendelu's `lang=` takes, so store values pass
+  to the API layer unmapped. Do **not** add a `cs`→`cz` mapping at a store call site.
+- `'cs'` is a **BCP-47 locale**, not an app language code. It appears only where a value is handed
+  to `Intl` / `toLocaleDateString` or names a locale file, and those sites convert at the boundary
+  (`language === 'cz' ? 'cs' : language`).
+- UI strings via `useTranslation()` hook reading from `src/i18n/locales/{cs,en}.json` — the
+  filenames are locales, which is why they read `cs` while the language code is `cz`
 
 ## Host Integration Contract
 
