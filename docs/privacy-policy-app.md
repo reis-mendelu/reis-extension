@@ -32,22 +32,41 @@ Signing out deletes the stored token and clears the app's cookie store.
 ## Data reIS reads but does not collect
 
 reIS fetches the following from MENDELU services and stores it **locally**, in
-on-device storage (IndexedDB). Fetching it means your device asks
-`is.mendelu.cz` for it, authenticated as you, exactly as your browser would —
-that request goes to the university, not to us. **None of it is sent to reIS or
-to anyone else**, and none of it is held on any server we run:
+on-device storage (IndexedDB). Fetching it means your device asks the university
+for it, authenticated as you, exactly as your browser would — that request goes
+to MENDELU, not to us. **None of it is sent to reIS**, and none of it is held on
+any server we run:
 
 - **Your identity as IS holds it**: name, personal number (UIC), study details.
 - **Academic data**: timetable, grades, continuous assessment, exam dates,
   courses, study materials, submission folders, study-progress checks.
 - **Dining data** (browser extension only): your canteen profile and meal
   reservations from WebISKAM. *WebISKAM is not part of the Android app.*
-- **Google Drive backup** (browser extension only): if you connect it, reIS
-  mirrors your current-semester IS files into **your own** Drive, using the
-  narrow `drive.file` scope, which grants access only to files reIS itself
-  created. *Drive backup is not available in the Android app.*
 
-Uninstalling reIS removes all of this.
+This data does move between your device and MENDELU in both directions —
+signing up for an exam or uploading to a submission folder sends it back to
+`is.mendelu.cz`, because that is what you asked reIS to do. It is your session,
+your record, and your university at the other end.
+
+Uninstalling reIS removes the local copy.
+
+### The exception: Google Drive backup (browser extension only)
+
+If — and only if — you connect it, reIS copies your current-semester IS files
+into **your own** Google Drive. That does send file contents off your device, to
+Google, so it does not belong in the list above.
+
+What bounds it:
+
+- It is **off unless you turn it on**, and you authorise it on Google's own
+  consent screen.
+- The scope is `drive.file`, the narrowest available: it grants reIS access only
+  to files reIS itself created, never to the rest of your Drive.
+- The destination is **your** Drive account. Once a file is there it is yours —
+  retention, sharing and deletion are governed by your Google account and
+  Google's privacy policy, not by us. Disconnecting reIS stops new copies; it
+  does not remove files already in your Drive, which you delete yourself.
+- **Drive backup does not exist in the Android app at all.**
 
 ## Data reIS collects
 

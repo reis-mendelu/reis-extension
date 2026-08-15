@@ -15,7 +15,11 @@
  * the aspect ratio of a phone screenshot at 2:1, so the tempting 1080x2400
  * (2.22:1) is rejected — 16:9 is the safe shape.
  */
-import { chromium } from 'playwright';
+// `@playwright/test` rather than `playwright`: only the former is declared in
+// package.json. The bare `playwright` package is present today only as a
+// transitive dependency, so importing it works right up until the dependency
+// tree shifts underneath us.
+import { chromium } from '@playwright/test';
 import { mkdirSync, rmSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -105,7 +109,16 @@ const run = async () => {
   await page.goto(URL, { waitUntil: 'networkidle' });
   // The welcome modal blurs the whole page behind it; every shot would be of it.
   await seedMeta(page, { welcome_dismissed: true, reis_theme: THEME });
-  await page.waitForTimeout(1500);
+
+  // Wait for the bottom nav rather than for a stopwatch. The store hydrates
+  // from IndexedDB asynchronously after the reload, so a fixed delay is a bet
+  // on how long that takes on this machine today — it shoots a half-built
+  // screen when the bet is short and wastes time when it is long. The nav is
+  // rendered by the phone tree itself, so its arrival is the app being up.
+  await page.getByRole('button', { name: SHOTS[0].tab, exact: true }).first().waitFor({
+    state: 'visible',
+    timeout: 30_000,
+  });
 
   const missing = [];
   for (const { name, tab } of selected) {
@@ -115,8 +128,16 @@ const run = async () => {
       continue;
     }
     await button.first().click();
-    // Tab transitions animate; a shot fired immediately catches a half-slid panel.
-    await page.waitForTimeout(1200);
+    // BottomNav sets aria-current="page" on the active tab, so this waits for
+    // the transition to have actually landed instead of guessing its duration.
+    await button
+      .and(page.locator('[aria-current="page"]'))
+      .first()
+      .waitFor({ state: 'visible', timeout: 15_000 });
+    // The panel cross-fades after the nav state flips, and that animation is
+    // CSS with no completion signal in the DOM — so this one stays a wait on
+    // the clock. A shot fired early catches a half-slid panel.
+    await page.waitForTimeout(600);
     const out = resolve(OUT_DIR, `${name}.png`);
     await page.screenshot({ path: out });
     console.log(`  ${WIDTH * SCALE}x${HEIGHT * SCALE}  ${out}`);

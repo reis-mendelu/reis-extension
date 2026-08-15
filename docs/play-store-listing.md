@@ -68,28 +68,44 @@ truthful ones for the Android app.
 | **Crash logs** | Yes | No | Diagnostics | Optional | The `report_error_v2` RPC. Fields: an ephemeral random session UUID (regenerated every app start, not tied to a person), error type, message, file path, line, stack excerpt, timestamp, app version, browser name/version. Sanitised first (`src/services/errorReporter/sanitize.ts`): e-mail addresses, bearer/cookie tokens, all `*.mendelu.cz` URLs and 6–7-digit student/staff IDs are redacted. |
 | **Other in-app messages** | Yes | Yes | App functionality | Optional | Only if the student opens the feedback form and submits it. The text they type is delivered to a Discord channel — that is a third party, so this row is `Shared: Yes`. See §1.1. |
 
-### Handled but NOT collected by reIS
+### Academic data: the row that needs a human decision **YOU**
 
-Declare these as **not collected**. Google's definition of *collected* is
-"transmitted off the device to a server the developer controls", and none of
-these are — they never reach a server we run.
+Read Google's definition before answering this part, because the intuitive test
+is the wrong one. Play defines **collected** as *transmitting user data off the
+device* — full stop. It is **not** limited to servers the developer runs; it
+covers transmission to any third-party server, and from a WebView the app
+controls. "It only ever goes to the university, never to us" is therefore not by
+itself an answer to the collection question.
 
-They are not motionless, though, and the distinction matters if a reviewer asks:
-this data comes **from** `is.mendelu.cz` over the network, requested by the
-student's own authenticated session, and edits (an exam sign-up, a submission)
-go back the same way. That traffic is between the student and their university,
-with reIS acting as the client. Nothing forks off to us.
+So each flow has to be classified on its own terms:
 
-- **Name, student ID (UIC), study details** — read from IS Mendelu, stored in
-  IndexedDB on the device.
-- **Grades, schedules, exam dates, course files, submissions** — same.
-- **Credentials** — the student logs in on **IS Mendelu's own page** inside a
-  WebView. reIS never sees the password. The resulting session token is stored
-  in the Android Keystore (AES-256-GCM, key non-exportable,
-  `SecureStorePlugin.java`) and sent only back to `is.mendelu.cz`.
-- **Location** — the campus map has no geolocation permission; it renders a
-  static basemap and room data. `AndroidManifest.xml` requests no location
-  permission, which the reviewer can verify.
+| Flow | Off the device? | Notes for the form |
+|---|---|---|
+| Login on IS Mendelu's own page in a WebView | Yes, to `is.mendelu.cz` | reIS never sees the password; the student types it into the university's own page. The session token is stored in the Android Keystore (AES-256-GCM, key non-exportable, `SecureStorePlugin.java`) and sent only back to `is.mendelu.cz`. |
+| Reading name, UIC, study details, grades, timetable, exams, files | Inbound, from `is.mendelu.cz` | Data arriving **at** the device is not collection. Stored in IndexedDB and nowhere else. |
+| Exam sign-up / sign-off, submissions | Yes, to `is.mendelu.cz` | Outbound, and each one is an explicit tap by the student on their own university record. |
+| **Location** | No | The campus map has no geolocation permission; it renders a static basemap and room data. `AndroidManifest.xml` requests no location permission, which a reviewer can verify. This row is genuinely *not collected*, no argument required. |
+
+The outbound rows are the ones to think about. Two of Play's published
+exceptions look applicable — the transfer is a **specific action initiated by
+the user**, who plainly expects it (signing up for their own exam), and MENDELU
+is not a *third party* receiving data from us but the service the student holds
+the account with, for which reIS is only a client. On that reading these are
+declared **not collected**.
+
+That reading is defensible and it matches what the app does, but it is an
+attestation a human signs, not a fact the code settles. **Read the two Play
+pages and decide deliberately** — [Data safety
+definitions](https://support.google.com/googleplay/android-developer/answer/10787469)
+and [the collection and sharing
+exceptions](https://support.google.com/googleplay/answer/11416267) — rather than
+copying the table above because it is here. A wrong Data safety answer is an
+enforcement matter, not a typo. **YOU**
+
+**Google Drive is deliberately absent from this section**: the backup is
+browser-extension only and does not exist in the Android build, so it is out of
+scope for this form. It does belong in the privacy policy, which covers both
+surfaces.
 
 ### Security practices (the three checkboxes)
 
@@ -97,7 +113,8 @@ with reIS acting as the client. Nothing forks off to us.
   permitted, and the manifest sets no `usesCleartextTraffic`).
 - Users can request data deletion: **Yes** — signing out clears the stored
   token and the WebView cookie jar; uninstalling removes all local data. For
-  the hashed-ID usage rows, provide a contact address. **YOU**
+  the hashed-ID usage rows, provide a contact address. **YOU** The procedure for
+  actually honouring that is the runbook below.
 - Committed to Google Play Families policy: **No** (not a children's app).
 
 #### Fulfilling a deletion request (operator runbook)

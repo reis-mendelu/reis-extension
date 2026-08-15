@@ -25,7 +25,27 @@ trap 'rm -rf "$PWDIR"' EXIT
 
 # Java's Properties format treats \ as an escape, so a password containing one
 # would be silently mangled on read. Escape it on the way in.
-escape_property() { printf '%s' "${1//\\/\\\\}"; }
+escape_property() {
+  local escaped="${1//\\/\\\\}"
+  # Leading whitespace is stripped by Properties.load, so " hunter2" arrives as
+  # "hunter2" and Gradle fails to open a keystore with a password the human is
+  # certain is right. Escaping each leading space or tab preserves it — the same
+  # thing java.util.Properties.store does on the way out. Only the LEADING run
+  # is skipped, so trailing whitespace needs nothing.
+  #
+  # This half matters more now that the read is lossless: `IFS= read` keeps the
+  # leading space that the old `read` silently trimmed, so without escaping here
+  # the password reaches the file intact and is then mangled on load.
+  local out=''
+  while [ -n "$escaped" ]; do
+    case $escaped in
+      ' '*) out+='\ '; escaped=${escaped# } ;;
+      "$(printf '\t')"*) out+='\\t'; escaped=${escaped#?} ;;
+      *) break ;;
+    esac
+  done
+  printf '%s%s' "$out" "$escaped"
+}
 
 KEYSTORE="${1:-$HOME/reis-upload-key.jks}"
 ALIAS="${2:-reis-upload}"
