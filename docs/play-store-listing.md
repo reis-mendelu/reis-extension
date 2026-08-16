@@ -68,8 +68,14 @@ truthful ones for the Android app.
 
 Submitting feedback also writes a **salted** hash of the source IP to
 `suggestions_rate_log`, purely to count submissions from that connection in the
-last hour; rows older than an hour are deleted. The same pattern already covers
-library bookings.
+last hour. The same pattern already covers library bookings.
+
+Be precise about the retention, because the obvious phrasing overstates it: the
+prune is **lazy**. `check_and_log_suggestion` deletes expired rows when it runs,
+and it only runs on a submission — so with a quiet form an expired hash can
+outlive its hour. It stops counting at the hour regardless. A guaranteed ceiling
+needs a scheduled prune, which needs `pg_cron` (not currently enabled on the
+project); tracked separately rather than done here.
 
 Whether that needs declaring is a judgement, not a fact the code settles, which
 is why it is not answered here. The argument for **not** declaring it is Play's

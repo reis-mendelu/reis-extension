@@ -133,8 +133,13 @@ So that nobody can flood the form, we also store a **salted** hash of the IP
 address the submission came from, used only to count how many submissions have
 arrived from that connection in the past hour. The salt stays on the server and
 is never shipped to your device, so that record cannot be linked back to you by
-anyone who does not already hold it. Rows older than an hour are deleted, since
-they can no longer affect the count.
+anyone who does not already hold it.
+
+An entry stops counting once it is an hour old, and is deleted the next time
+anyone submits feedback. In normal use that is within the hour — but we would
+rather be exact than flattering: if nobody uses the form for a while, an expired
+entry can sit there until someone does. It is a salted hash, not an address, and
+it is ignored from the hour onwards.
 
 Nothing is sent unless you press send.
 
