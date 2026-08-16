@@ -30,3 +30,10 @@ jobs:
 
       - name: Deploy gemini-proxy function
         run: supabase functions deploy gemini-proxy --project-ref $PROJECT_ID --no-verify-jwt
+
+      # --no-verify-jwt matches how the client actually calls this: an `apikey`
+      # header and the shared secret, with no Authorization bearer. Deployed with
+      # JWT verification on, every feedback submission would be rejected at the
+      # gateway before the function's own secret check ever ran.
+      - name: Deploy feedback-relay function
+        run: supabase functions deploy feedback-relay --project-ref $PROJECT_ID --no-verify-jwt
