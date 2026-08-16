@@ -30,8 +30,11 @@ answers rather than just history:
 - **The privacy defect that came with it is fixed.** The old payload included
   `window.location.href`, which on IS Mendelu carries `studium=`, `obdobi=`,
   `predmet=` and `termin=` — a pointer to the student's specific enrolment. The
-  payload now carries a reIS screen name from a fixed allowlist, and an unknown
-  value is rejected with a 400 rather than stored.
+  payload now carries a reIS screen name from a fixed allowlist. Two different
+  guards, worth not conflating: the **client** normalises an unrecognised stored
+  value to `calendar` (`src/api/suggestions.ts:27`), so the app never submits one;
+  the **edge function** rejects an unrecognised value with a 400, which is what
+  catches a payload posted directly rather than through the app.
 
 Kept as a standing rule, because it was nearly repeated: **rotating a webhook is
 not a mitigation.** The replacement ships in the next build exactly as the old
@@ -60,6 +63,20 @@ truthful ones for the Android app.
 | **User IDs** | Yes | No | Analytics | Optional | `trackDailyUsage` (`src/api/feedback.ts:30`) sends a **SHA-256 hash** of the student ID to Supabase once per day, to count active users. The raw ID never leaves the device. The hash is **pseudonymous, not anonymous** — it is stable per student and the ID space is only 6–7 digits, so it is enumerable and must be declared as a collected user identifier, which is why this row says `Collected: Yes`. Runs on Android — it is in `initializeStore`, which the phone tree reaches through `useAppLogic`. |
 | **Crash logs** | Yes | No | Diagnostics | Optional | The `report_error_v2` RPC. Fields: an ephemeral random session UUID (regenerated every app start, not tied to a person), error type, message, file path, line, stack excerpt, timestamp, app version, browser name/version. Sanitised first (`src/services/errorReporter/sanitize.ts`): e-mail addresses, bearer/cookie tokens, all `*.mendelu.cz` URLs and 6–7-digit student/staff IDs are redacted. |
 | **Other in-app messages** | Yes | **No** | App functionality | Optional | Only if the student opens the feedback form and submits it. The text goes to reIS's own Supabase `suggestions` table via the `submit-suggestion` edge function — **not** to any third party, which is why `Shared` is `No`. It was `Yes` while delivery went to a Discord channel; that integration is gone (§1.1), so answering `Yes` here would now be wrong. Stored alongside it: the reIS screen name from a fixed allowlist, app version, browser name/version and viewport — no URL, and so no enrolment identifiers. |
+
+#### The feedback rate-limit hash — a second row to decide **YOU**
+
+Submitting feedback also writes a **salted** hash of the source IP to
+`suggestions_rate_log`, purely to count submissions from that connection in the
+last hour; rows older than an hour are deleted. The same pattern already covers
+library bookings.
+
+Whether that needs declaring is a judgement, not a fact the code settles, which
+is why it is not answered here. The argument for **not** declaring it is Play's
+security-and-abuse-prevention exception; the argument against is that it is
+retained rather than processed ephemerally, and an IP is personal data. It is
+disclosed in the privacy policy either way, so the only open question is the
+Data safety form. Decide it deliberately.
 
 ### Academic data: the row that needs a human decision **YOU**
 

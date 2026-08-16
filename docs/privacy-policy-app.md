@@ -129,6 +129,13 @@ the browser name and version, and the window size. The screen is recorded as a
 name from a fixed list — never the page address, which on IS Mendelu would
 identify your specific studies, subject or exam.
 
+So that nobody can flood the form, we also store a **salted** hash of the IP
+address the submission came from, used only to count how many submissions have
+arrived from that connection in the past hour. The salt stays on the server and
+is never shipped to your device, so that record cannot be linked back to you by
+anyone who does not already hold it. Rows older than an hour are deleted, since
+they can no longer affect the count.
+
 Nothing is sent unless you press send.
 
 ### 4. A library study-room booking you make (browser extension only)
