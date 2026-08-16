@@ -110,4 +110,41 @@ describe('AdminConsole', () => {
     expect(screen.getByTestId('admin-console-mobile')).toBeInTheDocument();
     expect(screen.queryByTestId('admin-console')).toBeNull();
   });
+  it('gives the reIS admin a suggestions tab, with the unread count on it', () => {
+    // The inbox is reIS-wide, so it must not appear for a society login — a
+    // society has no business reading another society's students.
+    loggedIn({
+      adminRole: 'reis_admin',
+      suggestions: [
+        {
+          id: 1,
+          type: 'bug',
+          title: 'Rozvrh se nenacita',
+          body: 'Po prihlaseni je kalendar prazdny.',
+          contact: null,
+          screen: 'calendar',
+          status: 'new',
+          created_at: '2026-08-16T10:00:00Z',
+          ext_version: '5.0.6',
+          browser_name: 'Chrome',
+          browser_version: '140',
+          viewport: '1280x800',
+        },
+      ],
+      suggestionsUnread: 1,
+    });
+    render(<AdminConsole />);
+
+    const tab = screen.getByRole('tab', { name: /Návrhy/ });
+    expect(screen.getByTestId('suggestions-badge')).toHaveTextContent('1');
+    fireEvent.click(tab);
+    expect(screen.getByText('Rozvrh se nenacita')).toBeInTheDocument();
+  });
+
+  it('shows no suggestions tab for a society login', () => {
+    loggedIn({ adminRole: 'association', suggestionsUnread: 3 });
+    render(<AdminConsole />);
+    expect(screen.queryByRole('tab', { name: /Návrhy/ })).toBeNull();
+    expect(screen.queryByTestId('suggestions-badge')).toBeNull();
+  });
 });

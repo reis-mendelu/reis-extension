@@ -14,6 +14,27 @@
       "runtimeArgs": ["run", "dev:web:mock"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "reis-webapp-exams",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:web:exams"],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "reis-webapp-admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:web:admin"],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "reis-webapp-reis-admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:web:reis-admin"],
+      "port": 3000,
+      "autoPort": true
     }
   ]
 }

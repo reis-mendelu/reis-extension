@@ -256,7 +256,7 @@
     "description": "Details",
     "descriptionPlaceholder": "What happened? Where? How to reproduce?",
     "contact": "Contact (optional)",
-    "contactPlaceholder": "Email / Discord",
+    "contactPlaceholder": "Email",
     "submit": "Send feedback",
     "sending": "Sending...",
     "successTitle": "Sent!",
@@ -1122,7 +1122,13 @@
     "listTab": "Events",
     "mapTab": "Map",
     "pickSociety": "Choose a society",
-    "pickSocietyPrompt": "Choose a society above to manage its events."
+    "pickSocietyPrompt": "Choose a society above to manage its events.",
+    "newSuggestions": "{count} new suggestion(s) from students",
+    "noSuggestions": "No suggestions yet.",
+    "markTriaged": "Triaged",
+    "markDone": "Done",
+    "suggestionsTab": "Suggestions",
+    "suggestionsTitle": "Student suggestions"
   },
   "mobile": {
     "nav": {

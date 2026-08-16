@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, Loader2, CheckCircle2 } from 'lucide-react';
-import { sendFeedbackReport } from '../../api/feedbackReport';
+import { submitSuggestion } from '../../api/suggestions';
 import { toast } from 'sonner';
 import { useTranslation } from '../../hooks/useTranslation';
+import { logError } from '../../utils/reportError';
 import { useAppStore } from '../../store/useAppStore';
 
 interface FeedbackModalProps {
@@ -26,21 +27,38 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 
   const handleSubmit = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
+    // The Send button's `disabled` is not the only entry point: Enter in the
+    // title or contact field calls this directly. Without its own check, Enter
+    // on a half-filled form posts an empty body, the function 400s it, and the
+    // student sees the generic failure toast for input the UI should have
+    // caught. Trimmed, so whitespace does not count as filled in either.
+    if (isSending || !title.trim() || !message.trim()) return;
     setIsSending(true);
 
-    // Delivery — the destination, the diagnostic context and Discord's envelope
-    // — belongs to the relay now. This component only knows what the student
-    // typed. sendFeedbackReport resolves false rather than throwing, so there is
-    // no catch here: a failed report is a toast, not an error report.
-    const sent = await sendFeedbackReport({ type, title, message, contact });
+    // Context (screen, version, browser, viewport) is assembled in the API
+    // layer. Deliberately no window.location.href: on IS it carries
+    // studium=/obdobi=/predmet=/termin=.
+    // NOTE the rename: SuggestionDraft's field is `body`, the component's state
+    // variable is `message`.
+    // try/finally is the safety net: submitSuggestion catches internally and
+    // resolves { ok: false, error: 'offline' } today, but if that invariant
+    // ever breaks, an unexpected rejection must not leave the Send button
+    // stuck on "Sending…" with the user's text trapped behind it.
+    try {
+      const result = await submitSuggestion({ type, title, body: message, contact });
 
-    if (sent) {
-      setIsSuccess(true);
-      toast.success(t('feedback.toastSuccess'));
-    } else {
+      if (result.ok) {
+        setIsSuccess(true);
+        toast.success(t('feedback.toastSuccess'));
+      } else {
+        toast.error(t('feedback.toastError'));
+      }
+    } catch (err) {
+      logError('FeedbackModal.handleSubmit', err);
       toast.error(t('feedback.toastError'));
+    } finally {
+      setIsSending(false);
     }
-    setIsSending(false);
   };
 
   const handleClose = () => {
@@ -155,6 +173,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                       className="input input-bordered w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors"
                       required
                       autoFocus
+                      maxLength={120}
                       onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                     />
                   </div>
@@ -172,6 +191,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                       placeholder={t('feedback.descriptionPlaceholder')}
                       className="textarea textarea-bordered h-32 w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors leading-relaxed resize-none"
                       required
+                      maxLength={2000}
                     />
                   </div>
 
@@ -197,7 +217,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     <button
                       type="button"
                       onClick={handleSubmit}
-                      disabled={isSending || !title || !message}
+                      disabled={isSending || !title.trim() || !message.trim()}
                       className="btn btn-primary w-full gap-2 font-semibold no-animation"
                     >
                       {isSending ? (
