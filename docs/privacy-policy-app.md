@@ -121,8 +121,15 @@ student/staff numbers.
 ### 3. Feedback you choose to send
 
 If you open the feedback form and submit it, the message and any contact details
-**you type**, plus the app version and basic technical context, are delivered to
-the developers through a Discord channel. Nothing is sent unless you press send.
+**you type** are stored in reIS's own database, where the developers read and
+triage them. They are not passed to any third party.
+
+Alongside your message we store which reIS screen you were on, the app version,
+the browser name and version, and the window size. The screen is recorded as a
+name from a fixed list — never the page address, which on IS Mendelu would
+identify your specific studies, subject or exam.
+
+Nothing is sent unless you press send.
 
 ### 4. A library study-room booking you make (browser extension only)
 
@@ -143,18 +150,16 @@ Android app.*
 | Service | Why | Applies to |
 |---|---|---|
 | **IS Mendelu** (`is.mendelu.cz`) | Fetch your academic data, authenticated as you | Both |
-| **Supabase** (`*.supabase.co`) | Public notifications, student society events, the daily usage count, sanitised error reports | Both |
+| **Supabase** (`*.supabase.co`) | Public notifications, student society events, the daily usage count, sanitised error reports, and any feedback you submit | Both |
 | **jsDelivr CDN** | Public, anonymous course-difficulty statistics. No request carries anything about you | Both |
-| **Discord** (`discord.com`) | Deliver feedback you submit | Both |
 | **WebISKAM** (`webiskam.mendelu.cz`) | Canteen profile and meal reservations | Extension only |
 | **Google Drive** (`googleapis.com`) | Back up your own IS files into your own Drive, if you connect it | Extension only |
 | **Microsoft Bookings** (`outlook.office.com`) | Make a library study-room booking, if you make one. Carries your student/employee number, as that system requires | Extension only |
 
 We do **not** sell or trade your personal information, and we transfer it to no
 one beyond the services in the table above — each of which is there because
-reIS cannot do what you asked of it otherwise. The one transfer you initiate
-yourself is feedback: if you submit the form, the message and any contact
-details you typed go to Discord, as described above.
+reIS cannot do what you asked of it otherwise. Feedback you submit is **not** one
+of these transfers: it stays in reIS's own database and reaches no third party.
 
 ## Permissions the Android app requests
 
