@@ -39,7 +39,8 @@
     "cap:android": "npm run cap:sync && npx cap run android",
     "cap:ios": "npm run cap:sync && npx cap run ios",
     "android:apk": "node scripts/android-release.mjs apk",
-    "android:aab": "node scripts/android-release.mjs aab"
+    "android:aab": "node scripts/android-release.mjs aab",
+    "android:feature-graphic": "node scripts/gen-feature-graphic.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
