@@ -162,16 +162,23 @@ Android app.*
 | Service | Why | Applies to |
 |---|---|---|
 | **IS Mendelu** (`is.mendelu.cz`) | Fetch your academic data, authenticated as you | Both |
-| **Supabase** (`*.supabase.co`) | Public notifications, student society events, the daily usage count, sanitised error reports, and any feedback you submit | Both |
+| **Supabase** (`*.supabase.co`) | **reIS's own database and servers**, not an outside recipient — see the note below. Holds public notifications, student society events, the daily usage count, sanitised error reports, and any feedback you submit | Both |
 | **jsDelivr CDN** | Public, anonymous course-difficulty statistics. No request carries anything about you | Both |
 | **WebISKAM** (`webiskam.mendelu.cz`) | Canteen profile and meal reservations | Extension only |
 | **Google Drive** (`googleapis.com`) | Back up your own IS files into your own Drive, if you connect it | Extension only |
 | **Microsoft Bookings** (`outlook.office.com`) | Make a library study-room booking, if you make one. Carries your student/employee number, as that system requires | Extension only |
 
+**Supabase is not in the same category as the rest of that table.** The others
+are organisations that receive your data and do something of their own with it.
+Supabase is the company that hosts reIS's database and servers: the data there is
+reIS's, held on reIS's behalf and used for nothing else. Where this policy says
+something "reaches no third party", that is what it means — it stays on reIS's
+own systems, which happen to run on Supabase's infrastructure. Feedback you
+submit is in that category.
+
 We do **not** sell or trade your personal information, and we transfer it to no
 one beyond the services in the table above — each of which is there because
-reIS cannot do what you asked of it otherwise. Feedback you submit is **not** one
-of these transfers: it stays in reIS's own database and reaches no third party.
+reIS cannot do what you asked of it otherwise.
 
 ## Permissions the Android app requests
 
