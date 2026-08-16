@@ -35,7 +35,25 @@ export const ART = extract(/(<g transform="translate\(7,0\)">[\s\S]*?<\/g>)/, 'a
 /** The brand background, taken from the `--logo-bg` fallback in that <style>. */
 export const NAVY = extract(/--logo-bg,\s*(#[0-9a-fA-F]{3,8})/, '--logo-bg fallback colour');
 
-export const launchBrowser = () => chromium.launch();
+/**
+ * Chromium is the rasteriser for every generated asset here — the repo has no
+ * ImageMagick/rsvg/cairosvg, and Playwright's browser is already installed for
+ * e2e. But `npm ci` does not install it: that is `npm run test:e2e:setup`. In a
+ * fresh checkout the failure is otherwise a Playwright stack trace about a
+ * missing executable, which reads as a broken script rather than a one-command
+ * setup step — the same class of trap android-release.mjs already names for the
+ * missing JDK.
+ */
+export const launchBrowser = async () => {
+  try {
+    return await chromium.launch();
+  } catch (err) {
+    throw new Error(
+      `could not launch Chromium, which renders these assets: ${err.message}\n` +
+        'Install it once with:  npx playwright install chromium'
+    );
+  }
+};
 
 /**
  * Renders an SVG string to a PNG of exactly `width` x `height`.
