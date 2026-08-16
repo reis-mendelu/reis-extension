@@ -77,7 +77,7 @@ export function AdminConsole() {
                 onClick={() => setPane('suggestions')}
                 className={`tab flex-1 gap-1 ${pane === 'suggestions' ? 'tab-active font-semibold' : ''}`}
               >
-                {t('admin.suggestionsTitle')}
+                {t('admin.suggestionsTab')}
                 {unread > 0 && (
                   <span data-testid="suggestions-badge" className="badge badge-primary badge-xs">
                     {unread}

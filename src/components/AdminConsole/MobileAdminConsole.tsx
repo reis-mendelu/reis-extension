@@ -64,7 +64,7 @@ export function MobileAdminConsole() {
         <div role="tablist" className="tabs tabs-box tabs-sm m-1 mb-0 shrink-0 flex-nowrap">
           {tabBtn('list', t('admin.listTab') as string)}
           {tabBtn('map', t('admin.mapTab') as string)}
-          {isReisAdmin && tabBtn('suggestions', t('admin.suggestionsTitle') as string, unread)}
+          {isReisAdmin && tabBtn('suggestions', t('admin.suggestionsTab') as string, unread)}
         </div>
       )}
       <div className="relative min-h-0 flex-1">

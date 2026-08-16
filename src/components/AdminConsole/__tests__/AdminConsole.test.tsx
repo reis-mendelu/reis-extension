@@ -135,7 +135,7 @@ describe('AdminConsole', () => {
     });
     render(<AdminConsole />);
 
-    const tab = screen.getByRole('tab', { name: /Návrhy studentů/ });
+    const tab = screen.getByRole('tab', { name: /Návrhy/ });
     expect(screen.getByTestId('suggestions-badge')).toHaveTextContent('1');
     fireEvent.click(tab);
     expect(screen.getByText('Rozvrh se nenacita')).toBeInTheDocument();
@@ -144,7 +144,7 @@ describe('AdminConsole', () => {
   it('shows no suggestions tab for a society login', () => {
     loggedIn({ adminRole: 'association', suggestionsUnread: 3 });
     render(<AdminConsole />);
-    expect(screen.queryByRole('tab', { name: /Návrhy studentů/ })).toBeNull();
+    expect(screen.queryByRole('tab', { name: /Návrhy/ })).toBeNull();
     expect(screen.queryByTestId('suggestions-badge')).toBeNull();
   });
 });
