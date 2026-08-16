@@ -24,6 +24,7 @@
 
 // @ts-ignore - Deno is not recognized by the main TS config
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { buildContent } from './content.ts';
 
 // @ts-ignore
 const EXTENSION_SECRET = Deno.env.get('EXTENSION_SECRET');
@@ -44,10 +45,14 @@ function json(body: unknown, status = 200) {
   });
 }
 
-// Length caps, applied before anything is forwarded. Discord's own limit is
-// 2000 characters for `content`, and the envelope below wraps the message in
-// several hundred of its own — so a message that passes here still has to fit,
-// which is why the cap is well under 2000 rather than exactly at it.
+// Input hygiene: reject absurdly large fields before anything is forwarded.
+//
+// These caps do NOT keep the assembled message inside Discord's 2000-character
+// limit, and it is worth being explicit because an earlier comment here claimed
+// they did. They are additive — 1200 + 120 + the diagnostic JSON + the envelope
+// reached 2295, which Discord rejects, losing a long report to a 502. A limit on
+// the sum cannot be expressed as per-field caps, so it is enforced on the
+// assembled string in buildContent, and covered by tests there.
 const MAX = { title: 140, message: 1200, contact: 120 };
 
 const TYPES = new Set(['bug', 'idea', 'other']);
@@ -91,13 +96,6 @@ interface Body {
   context?: Record<string, unknown>;
 }
 
-/** Discord renders markdown, so anything echoed back has to be defanged. */
-function fence(value: unknown): string {
-  return JSON.stringify(value ?? {}, null, 2)
-    .slice(0, 900)
-    .replace(/```/g, '`​``');
-}
-
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -135,9 +133,7 @@ serve(async (req: Request) => {
       // `allowed_mentions: {parse: []}` is not cosmetic: without it a student
       // typing @everyone into the feedback box pings the whole server.
       allowed_mentions: { parse: [] as string[] },
-      content:
-        `**Typ:** ${type}\n**Kontakt:** ${contact || 'N/A'}\n**Zpráva:**\n${message}\n\n` +
-        `__Technické info:__\n\`\`\`json\n${fence(body.context)}\n\`\`\``,
+      content: buildContent({ type, contact, message, context: body.context }),
     };
 
     const res = await fetch(DISCORD_WEBHOOK_URL, {

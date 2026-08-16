@@ -8,7 +8,16 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.{test,spec}.{js,ts,jsx,tsx}', 'scripts/**/*.{test,spec}.{js,ts,jsx,tsx}'],
+    // supabase/ is included for edge-function logic that is pure TypeScript and
+    // imports no Deno globals. `tsc` covers only src/, so without this an edge
+    // function's rules — like the Discord length budget — could only be checked
+    // by reading them, which is how a 2295-character payload got past a comment
+    // asserting it fitted in 2000.
+    include: [
+      'src/**/*.{test,spec}.{js,ts,jsx,tsx}',
+      'scripts/**/*.{test,spec}.{js,ts,jsx,tsx}',
+      'supabase/**/*.{test,spec}.{js,ts}',
+    ],
     coverage: {
       provider: 'v8' as const,
       reporter: ['text', 'html'],
