@@ -121,8 +121,27 @@ student/staff numbers.
 ### 3. Feedback you choose to send
 
 If you open the feedback form and submit it, the message and any contact details
-**you type**, plus the app version and basic technical context, are delivered to
-the developers through a Discord channel. Nothing is sent unless you press send.
+**you type** are stored in reIS's own database, where the developers read and
+triage them. They are not passed to any third party.
+
+Alongside your message we store which reIS screen you were on, the app version,
+the browser name and version, and the window size. The screen is recorded as a
+name from a fixed list — never the page address, which on IS Mendelu would
+identify your specific studies, subject or exam.
+
+So that nobody can flood the form, we also store a **salted** hash of the IP
+address the submission came from, used only to count how many submissions have
+arrived from that connection in the past hour. The salt stays on the server and
+is never shipped to your device, so that record cannot be linked back to you by
+anyone who does not already hold it.
+
+An entry stops counting once it is an hour old, and is deleted the next time
+anyone submits feedback. In normal use that is within the hour — but we would
+rather be exact than flattering: if nobody uses the form for a while, an expired
+entry can sit there until someone does. It is a salted hash, not an address, and
+it is ignored from the hour onwards.
+
+Nothing is sent unless you press send.
 
 ### 4. A library study-room booking you make (browser extension only)
 
@@ -143,18 +162,23 @@ Android app.*
 | Service | Why | Applies to |
 |---|---|---|
 | **IS Mendelu** (`is.mendelu.cz`) | Fetch your academic data, authenticated as you | Both |
-| **Supabase** (`*.supabase.co`) | Public notifications, student society events, the daily usage count, sanitised error reports | Both |
+| **Supabase** (`*.supabase.co`) | **reIS's own database and servers**, not an outside recipient — see the note below. Holds public notifications, student society events, the daily usage count, sanitised error reports, and any feedback you submit | Both |
 | **jsDelivr CDN** | Public, anonymous course-difficulty statistics. No request carries anything about you | Both |
-| **Discord** (`discord.com`) | Deliver feedback you submit | Both |
 | **WebISKAM** (`webiskam.mendelu.cz`) | Canteen profile and meal reservations | Extension only |
 | **Google Drive** (`googleapis.com`) | Back up your own IS files into your own Drive, if you connect it | Extension only |
 | **Microsoft Bookings** (`outlook.office.com`) | Make a library study-room booking, if you make one. Carries your student/employee number, as that system requires | Extension only |
 
+**Supabase is not in the same category as the rest of that table.** The others
+are organisations that receive your data and do something of their own with it.
+Supabase is the company that hosts reIS's database and servers: the data there is
+reIS's, held on reIS's behalf and used for nothing else. Where this policy says
+something "reaches no third party", that is what it means — it stays on reIS's
+own systems, which happen to run on Supabase's infrastructure. Feedback you
+submit is in that category.
+
 We do **not** sell or trade your personal information, and we transfer it to no
 one beyond the services in the table above — each of which is there because
-reIS cannot do what you asked of it otherwise. The one transfer you initiate
-yourself is feedback: if you submit the form, the message and any contact
-details you typed go to Discord, as described above.
+reIS cannot do what you asked of it otherwise.
 
 ## Permissions the Android app requests
 

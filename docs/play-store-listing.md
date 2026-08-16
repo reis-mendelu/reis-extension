@@ -9,40 +9,36 @@ payment, or a secret.
 
 ---
 
-## 1. Before you submit — two real blockers
+## 1. Before you submit — one remaining blocker
 
-### 1.1 The Discord feedback webhook ships inside the APK
+### 1.1 The Discord feedback webhook — RESOLVED
 
-`src/constants/config.ts:1` hardcodes a Discord webhook URL, and
-`FeedbackModal` is reachable on mobile from the profile sheet
-(`ProfileSheet.tsx:210`). This was already public — the repo is open source —
-but a Play Store listing hands the same URL to anyone who unzips the APK, and a
-Discord webhook accepts unauthenticated POSTs from anyone holding it. Expect
-channel spam eventually.
+**No longer a blocker.** Feedback no longer touches Discord at all. The webhook
+constant (`src/constants/config.ts`) is deleted, the webhook itself was deleted
+at Discord's end and confirmed dead (HTTP 404, code 10015), and `FeedbackModal`
+now posts to the `submit-suggestion` edge function, which validates,
+rate-limits and inserts into the `suggestions` table. Triage happens inside reIS
+under "Spravovat spolky", visible only to the `reis_admin` login.
 
-This is issue #163, and it **blocks a public listing** until the client stops
-carrying a write-capable webhook.
+Two consequences that matter for the rest of this document, because they change
+answers rather than just history:
 
-**Rotating the webhook is not a mitigation.** The replacement URL ships in the
-next APK exactly as the current one does, so the attacker who unzipped the first
-build unzips the second. Rotation only resets the clock on a URL that has
-already leaked; it does nothing about the one you are about to publish. It is
-worth doing *after* the fix, not instead of it.
+- **The Data safety "Shared" answer changed.** Feedback text used to go to a
+  Discord channel, which is a third party, so the row below was `Shared: Yes`.
+  It now goes to reIS's own Supabase project, so it is `Shared: No`. Submitting
+  the old answer would be inaccurate — see §2.
+- **The privacy defect that came with it is fixed.** The old payload included
+  `window.location.href`, which on IS Mendelu carries `studium=`, `obdobi=`,
+  `predmet=` and `termin=` — a pointer to the student's specific enrolment. The
+  payload now carries a reIS screen name from a fixed allowlist. Two different
+  guards, worth not conflating: the **client** normalises an unrecognised stored
+  value to `calendar` (`src/api/suggestions.ts:27`), so the app never submits one;
+  the **edge function** rejects an unrecognised value with a 400, which is what
+  catches a payload posted directly rather than through the app.
 
-The fix is to move delivery behind a Supabase Edge Function, the way the other
-proxies already gate on `x-reis-extension-secret`. Then the APK holds a
-function URL that only accepts calls carrying the shared secret, and the Discord
-URL never leaves the server. Needs a deploy.
-
-Until that lands, the honest options are:
-
-1. **Ship to a closed test only.** Exposure is the testers you invited rather
-   than anyone on the store, which is a genuinely smaller number — but it is a
-   smaller number, not zero, and every APK you hand out still contains the URL.
-2. **Hold the listing.** Correct if the relay is close.
-
-I have not changed the code. Whichever you pick, note that "rotate and ship
-publicly" is not on this list on purpose.
+Kept as a standing rule, because it was nearly repeated: **rotating a webhook is
+not a mitigation.** The replacement ships in the next build exactly as the old
+one did. That reasoning applies to any client-held credential, not just this one.
 
 ### 1.2 New personal developer accounts must run a closed test first
 
@@ -66,7 +62,28 @@ truthful ones for the Android app.
 |---|---|---|---|---|---|
 | **User IDs** | Yes | No | Analytics | Optional | `trackDailyUsage` (`src/api/feedback.ts:30`) sends a **SHA-256 hash** of the student ID to Supabase once per day, to count active users. The raw ID never leaves the device. The hash is **pseudonymous, not anonymous** — it is stable per student and the ID space is only 6–7 digits, so it is enumerable and must be declared as a collected user identifier, which is why this row says `Collected: Yes`. Runs on Android — it is in `initializeStore`, which the phone tree reaches through `useAppLogic`. |
 | **Crash logs** | Yes | No | Diagnostics | Optional | The `report_error_v2` RPC. Fields: an ephemeral random session UUID (regenerated every app start, not tied to a person), error type, message, file path, line, stack excerpt, timestamp, app version, browser name/version. Sanitised first (`src/services/errorReporter/sanitize.ts`): e-mail addresses, bearer/cookie tokens, all `*.mendelu.cz` URLs and 6–7-digit student/staff IDs are redacted. |
-| **Other in-app messages** | Yes | Yes | App functionality | Optional | Only if the student opens the feedback form and submits it. The text they type is delivered to a Discord channel — that is a third party, so this row is `Shared: Yes`. See §1.1. |
+| **Email address** | Yes | No | App functionality | Optional | Only from the feedback form's optional contact box, stored as `suggestions.contact`. The field is labelled "Email / Discord" in both locales, so it collects an e-mail address often enough that Play's own data type applies — declaring only "Other in-app messages" would under-report it. Blank unless the student types something; never used for anything but replying to that report. |
+| **Other in-app messages** | Yes | **No** | App functionality | Optional | Only if the student opens the feedback form and submits it. The text goes to reIS's own Supabase `suggestions` table via the `submit-suggestion` edge function — **not** to any third party, which is why `Shared` is `No`. It was `Yes` while delivery went to a Discord channel; that integration is gone (§1.1), so answering `Yes` here would now be wrong. Stored alongside it: the reIS screen name from a fixed allowlist, app version, browser name/version and viewport. **The page address is never recorded automatically** — that is the fix for the old leak. It is not a claim about the message itself: the title, body and contact are free text, so a student can always type a URL or an enrolment detail into them, and the schema cannot prevent that. |
+
+#### The feedback rate-limit hash — a second row to decide **YOU**
+
+Submitting feedback also writes a **salted** hash of the source IP to
+`suggestions_rate_log`, purely to count submissions from that connection in the
+last hour. The same pattern already covers library bookings.
+
+Be precise about the retention, because the obvious phrasing overstates it: the
+prune is **lazy**. `check_and_log_suggestion` deletes expired rows when it runs,
+and it only runs on a submission — so with a quiet form an expired hash can
+outlive its hour. It stops counting at the hour regardless. A guaranteed ceiling
+needs a scheduled prune, which needs `pg_cron` (not currently enabled on the
+project); tracked separately rather than done here.
+
+Whether that needs declaring is a judgement, not a fact the code settles, which
+is why it is not answered here. The argument for **not** declaring it is Play's
+security-and-abuse-prevention exception; the argument against is that it is
+retained rather than processed ephemerally, and an IP is personal data. It is
+disclosed in the privacy policy either way, so the only open question is the
+Data safety form. Decide it deliberately.
 
 ### Academic data: the row that needs a human decision **YOU**
 
