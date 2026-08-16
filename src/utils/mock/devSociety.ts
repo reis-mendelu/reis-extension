@@ -66,3 +66,34 @@ export const devSocietyStore = {
     counter = 0;
   },
 };
+
+export interface DevAdminSeed {
+  adminRole: 'association' | 'reis_admin';
+  adminAssociationId: string | null;
+  email: string;
+}
+
+// Dev-only seed for the standalone webapp. VITE_DEV_ADMIN_ROLE=reis_admin makes
+// localhost:3000 the reIS-admin surface (suggestions inbox); anything else keeps
+// the existing association/organizer behaviour. Pure so it can be tested without
+// touching import.meta.env.
+export function devAdminSeed(
+  society: string | false = DEV_SOCIETY,
+  role: string | undefined = import.meta.env.DEV
+    ? (import.meta.env.VITE_DEV_ADMIN_ROLE as string | undefined)
+    : undefined
+): DevAdminSeed | null {
+  if (!society) return null;
+  if (role === 'reis_admin') {
+    return {
+      adminRole: 'reis_admin',
+      adminAssociationId: null,
+      email: 'reis.mendelu@gmail.com',
+    };
+  }
+  return {
+    adminRole: 'association',
+    adminAssociationId: society,
+    email: `${society}@dev.local`,
+  };
+}

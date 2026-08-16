@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { AdminConsoleHeader } from './AdminConsoleHeader';
 import { AdminEventList } from './AdminEventList';
+import { SuggestionsInbox } from './SuggestionsInbox';
 import { AdminConsoleMap } from './AdminConsoleMap';
 
 /**
@@ -27,13 +28,20 @@ import { AdminConsoleMap } from './AdminConsoleMap';
  * `placingEvent` forces the map and hides the toggle: that flow has its own
  * instruction banner and Cancel, so a second way out would just be ambiguous.
  */
+type Tab = 'list' | 'map' | 'suggestions';
+
 export function MobileAdminConsole() {
   const placing = useAppStore((s) => s.placingEvent);
   const { t } = useTranslation();
-  const [tab, setTab] = useState<'list' | 'map'>('list');
+  // Suggestions are a reIS-wide inbox, so the third tab exists only for the
+  // reIS admin login; a society gets the same two tabs it always had.
+  const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
+  const unread = useAppStore((s) => s.suggestionsUnread);
+  const [tab, setTab] = useState<Tab>('list');
   const showMap = placing || tab === 'map';
+  const showSuggestions = !placing && isReisAdmin && tab === 'suggestions';
 
-  const tabBtn = (key: 'list' | 'map', label: string) => (
+  const tabBtn = (key: Tab, label: string, badge = 0) => (
     <button
       type="button"
       role="tab"
@@ -42,6 +50,7 @@ export function MobileAdminConsole() {
       onClick={() => setTab(key)}
     >
       {label}
+      {badge > 0 && <span className="badge badge-primary badge-xs ml-1">{badge}</span>}
     </button>
   );
 
@@ -55,15 +64,21 @@ export function MobileAdminConsole() {
         <div role="tablist" className="tabs tabs-box tabs-sm m-1 mb-0 shrink-0 flex-nowrap">
           {tabBtn('list', t('admin.listTab') as string)}
           {tabBtn('map', t('admin.mapTab') as string)}
+          {isReisAdmin && tabBtn('suggestions', t('admin.suggestionsTitle') as string, unread)}
         </div>
       )}
       <div className="relative min-h-0 flex-1">
         {/* Hidden, not unmounted — see rule 1 above. `bg-base-100` matches the
             desktop aside: EventComposer's bg-base-200/60 header is a tint meant
             for base-100 and measures 1.005:1 (invisible) on base-200. */}
-        <div className={showMap ? 'hidden' : 'h-full bg-base-100'}>
+        <div className={showMap || showSuggestions ? 'hidden' : 'h-full bg-base-100'}>
           <AdminEventList />
         </div>
+        {showSuggestions && (
+          <div className="h-full overflow-y-auto bg-base-100 p-2">
+            <SuggestionsInbox />
+          </div>
+        )}
         {showMap && (
           <div className="h-full">
             <AdminConsoleMap />

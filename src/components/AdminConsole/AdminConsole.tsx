@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { Toaster } from '../ui/sonner';
 import { useAppStore } from '../../store/useAppStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
 import { AdminConsoleHeader } from './AdminConsoleHeader';
 import { AdminEventList } from './AdminEventList';
 import { AdminConsoleMap } from './AdminConsoleMap';
 import { AdminLoginScreen } from './AdminLoginScreen';
 import { MobileAdminConsole } from './MobileAdminConsole';
+import { SuggestionsInbox } from './SuggestionsInbox';
 
 /**
  * The admin surface, reached only through "Spravovat spolky" in the profile
@@ -21,6 +24,13 @@ import { MobileAdminConsole } from './MobileAdminConsole';
 export function AdminConsole() {
   const session = useAppStore((s) => s.adminSession);
   const isPhone = usePhoneViewport();
+  // Student suggestions are a reIS-wide inbox, not a per-society one, so the
+  // pane exists only for the reIS admin login. A society sees its events and
+  // nothing else — it has no business reading another society's students.
+  const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
+  const unread = useAppStore((s) => s.suggestionsUnread);
+  const [pane, setPane] = useState<'events' | 'suggestions'>('events');
+  const { t } = useTranslation();
 
   if (!session) {
     return (
@@ -48,8 +58,37 @@ export function AdminConsole() {
       <Toaster position="top-center" />
       <AdminConsoleHeader />
       <div className="flex min-h-0 flex-1">
-        <aside className="w-96 shrink-0 border-r border-base-300 bg-base-100">
-          <AdminEventList />
+        <aside className="flex w-96 shrink-0 flex-col border-r border-base-300 bg-base-100">
+          {isReisAdmin && (
+            <div role="tablist" className="tabs tabs-box tabs-sm m-1 mb-0 shrink-0 flex-nowrap">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={pane === 'events'}
+                onClick={() => setPane('events')}
+                className={`tab flex-1 ${pane === 'events' ? 'tab-active font-semibold' : ''}`}
+              >
+                {t('admin.listTab')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={pane === 'suggestions'}
+                onClick={() => setPane('suggestions')}
+                className={`tab flex-1 gap-1 ${pane === 'suggestions' ? 'tab-active font-semibold' : ''}`}
+              >
+                {t('admin.suggestionsTitle')}
+                {unread > 0 && (
+                  <span data-testid="suggestions-badge" className="badge badge-primary badge-xs">
+                    {unread}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {isReisAdmin && pane === 'suggestions' ? <SuggestionsInbox /> : <AdminEventList />}
+          </div>
         </aside>
         <div className="min-w-0 flex-1">
           <AdminConsoleMap />
