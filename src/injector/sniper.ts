@@ -1,7 +1,7 @@
 import { IFRAME_ID } from './config';
 import { injectIframe } from './iframeManager';
 import { handleMessage } from './messageHandler';
-import { startSyncService } from './syncService';
+import { startSyncService } from './syncGate';
 import { scrapeNavMenu, fetchOtherLanguage, mergeDual } from './menuScraper';
 import { sendToIframe } from './iframeManager';
 import { Messages } from '../types/messages';

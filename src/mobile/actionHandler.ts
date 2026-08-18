@@ -113,8 +113,10 @@ export function installMobileActionHandler(): void {
       await refreshExams();
     },
     syncAllData: async () => {
-      const { syncAllData } = await import('../injector/syncService');
-      await syncAllData();
+      // 'user': a refresh the student asked for, so it skips the foreground
+      // gate and the minimum gap, and clears the freshness stamps first.
+      const { requestSync } = await import('../injector/syncGate');
+      await requestSync('user');
     },
   };
 
