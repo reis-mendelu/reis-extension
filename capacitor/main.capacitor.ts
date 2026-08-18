@@ -74,15 +74,20 @@ async function boot(): Promise<void> {
   // iframe. Capacitor has neither, so the app drives its own sync; sendToIframe
   // loops the results back to this same window, where useAppLogic's existing
   // handler consumes them unchanged.
-  // startSyncService fires an immediate syncAllData() and then sets the
+  // startSyncService fires an immediate boot sync and then sets the
   // SYNC_INTERVAL timer — no separate first call needed.
-  const { syncAllData, startSyncService } = await import('@/injector/syncService');
+  const { requestSync, startSyncService } = await import('@/injector/syncGate');
   startSyncService();
 
   // IS's session is a sliding inactivity window, so a returning student is
   // usually still authenticated — refresh on resume rather than only at boot.
+  //
+  // Through the gate, not straight into syncAllData: unconditionally, this cost
+  // a full ~120-request crawl every time the student tabbed away and back, even
+  // for ten seconds. MIN_SYNC_GAP collapses those; a resume after a real
+  // absence still syncs.
   void CapApp.addListener('resume', () => {
-    void syncAllData().catch(() => {});
+    void requestSync('resume');
   });
 }
 
