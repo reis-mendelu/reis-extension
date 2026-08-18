@@ -33,7 +33,7 @@ The extension uses a **push-based postMessage IPC** for each injected host. Ther
 
 | Reason | Fired by | Foreground-gated | Subject to `MIN_SYNC_GAP` | Clears TTL stamps |
 |---|---|---|---|---|
-| `boot` | `startSyncService()`, first `REIS_REQUEST_DATA('all')` | no | no | no |
+| `boot` | `startSyncService()`, first `REIS_REQUEST_DATA('all')` | no | no | **yes** |
 | `tick` | the `SYNC_INTERVAL` timer | yes | yes | no |
 | `poke` | `bgPokeListener` (background alarm) | yes | yes | no |
 | `resume` | Capacitor `resume` | no — resume *is* foreground | yes | no |
@@ -42,6 +42,12 @@ The extension uses a **push-based postMessage IPC** for each injected host. Ther
 - Automatic runs also take a per-origin Web Lock (`SYNC_LOCK_NAME`) with
   `ifAvailable`, so N open IS tabs no longer mean N simultaneous crawls. `boot`
   and `user` queue for it instead, bounded by `SYNC_LOCK_WAIT_MS`.
+- `boot` and `user` are the **full crawls**: both mean "fetch everything, now",
+  both clear the TTL stamps, and only one runs at a time — a second such request
+  joins the one already going (`fullCrawl`, which spans the lock wait as well as
+  the run) rather than queueing a duplicate behind it. Automatic runs are
+  partial, so they never stand in for one: a `user` request waits for an
+  in-flight tick to finish and then runs its own.
 - `syncTtl.ts` holds its stamps **in memory on purpose**: a fresh content script
   starts empty and does one full crawl, so a skip can never leave a surface with
   no data. A resource is skipped only when this context already holds the value

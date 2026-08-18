@@ -277,6 +277,40 @@ describe('requestSync', () => {
     expect(mockedSync).toHaveBeenCalledTimes(1);
   });
 
+  // Regression: an explicit refresh used to await the queued boot's whole lock
+  // wait AND its full crawl, then run a second full crawl of its own — the
+  // slowest possible way to answer a student who just asked for fresh data.
+  // A boot already fetches everything, so joining it is both faster and
+  // equivalent.
+  it('joins a queued boot on an explicit refresh rather than crawling twice', async () => {
+    const { releaseHolder } = installQueuingLocks();
+
+    const boot = requestSync('boot');
+    const user = requestSync('user');
+    releaseHolder();
+
+    await expect(boot).resolves.toBe(true);
+    await expect(user, 'the refresh joined the full crawl already coming').resolves.toBe(false);
+    expect(mockedSync).toHaveBeenCalledTimes(1);
+  });
+
+  // The other side of that rule: an automatic run only refreshes the hot tier,
+  // so it can never stand in for a request for everything.
+  it('still runs its own crawl when only a partial automatic run is going', async () => {
+    const { gate, release } = blockingSync();
+    mockedSync.mockImplementationOnce(async () => {
+      await gate;
+    });
+
+    const tick = requestSync('tick');
+    const user = requestSync('user');
+    release();
+
+    await expect(tick).resolves.toBe(true);
+    await expect(user).resolves.toBe(true);
+    expect(mockedSync).toHaveBeenCalledTimes(2);
+  });
+
   it('drops an automatic run while a boot is queued for the lock', async () => {
     const { releaseHolder } = installQueuingLocks();
 

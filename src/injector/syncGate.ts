@@ -45,21 +45,25 @@ let syncIntervalId: ReturnType<typeof setInterval> | null = null;
 let inFlight: Promise<void> | null = null;
 
 /**
- * A boot request working its way through the gate, including the time it spends
- * queued for the cross-tab lock.
+ * A full crawl — `boot` or `user` — queued or running in this context.
  *
- * `inFlight` is not enough on its own: it is set when `run` starts, and a boot
- * waiting for another tab to release the lock has not reached `run` yet. A
- * second boot arriving in that window saw nothing in flight and queued its own
- * lock request, so the two ran back to back — the very duplicate crawl the
- * join was meant to prevent.
+ * Both reasons mean "fetch everything, now", so a second such request joins
+ * this one instead of running another: two full crawls back to back return the
+ * same data twice as slowly. Automatic runs are deliberately excluded, because
+ * they are partial (the hot tier only) and so can never satisfy a request for
+ * everything.
+ *
+ * Spans the wait for the cross-tab lock as well as the run itself. `inFlight`
+ * alone is not enough — it is set when `run` starts, and a request still queued
+ * behind another tab's lock has not reached `run` yet, so a second one would
+ * sail past and queue its own redundant crawl.
  */
-let pendingBoot: Promise<boolean> | null = null;
+let fullCrawl: Promise<boolean> | null = null;
 
 export function __resetSyncGateForTests(): void {
   lastRunAt = 0;
   inFlight = null;
-  pendingBoot = null;
+  fullCrawl = null;
   resetSyncTtl();
 }
 
@@ -76,7 +80,12 @@ async function run(reason: SyncReason): Promise<true> {
   // before the run that belongs to them. Resetting earlier let a run already in
   // flight re-stamp resources afterwards, and the refresh the student asked for
   // then skipped every one of them.
-  if (reason === 'user') resetSyncTtl();
+  //
+  // `boot` clears them too. In a fresh context the map is already empty, so this
+  // is a no-op — but it also makes "a full crawl fetches everything" true by
+  // construction, which is what lets a `user` request join a `boot` instead of
+  // running a second crawl behind it.
+  if (reason === 'boot' || reason === 'user') resetSyncTtl();
 
   const active = (async () => {
     try {
@@ -132,9 +141,9 @@ async function runUnderLock(reason: SyncReason): Promise<boolean> {
 export async function requestSync(reason: SyncReason): Promise<boolean> {
   if (VISIBILITY_GATED.has(reason) && !isForeground()) return false;
 
-  // A run under way, or a boot still queued for the cross-tab lock. Read once,
-  // synchronously, so two triggers in the same tick cannot both see it empty.
-  const active = inFlight ?? pendingBoot;
+  // Read once, synchronously, so two triggers in the same tick cannot both see
+  // this empty and each start a crawl.
+  const active = inFlight ?? fullCrawl;
 
   if (AUTOMATIC.has(reason)) {
     // Something already owns this round — matches what the cross-tab lock does,
@@ -144,31 +153,30 @@ export async function requestSync(reason: SyncReason): Promise<boolean> {
     return runUnderLock(reason);
   }
 
-  if (reason === 'boot') {
-    // Both boot triggers want the same first crawl, not two of them, so join
-    // whatever is already happening rather than queueing behind it.
-    if (active) {
-      await active;
-      return false;
-    }
-    return trackBoot();
+  // boot and user both mean "everything, now", so one already under way answers
+  // this request in full. Joining it hands the student data after one crawl
+  // instead of two, and inherits that crawl's bounded lock wait rather than
+  // stacking a second one on top of it.
+  if (fullCrawl) {
+    await fullCrawl;
+    return false;
   }
 
-  // An explicit refresh wants data fresher than whatever is under way, so wait
-  // for that to finish and then do a real run of its own.
-  if (active) await active;
-  return runUnderLock(reason);
+  // Only a partial automatic run is going: let it finish, then do a real run,
+  // because the hot tier alone is not what was asked for.
+  if (inFlight) await inFlight;
+  return trackFullCrawl(reason);
 }
 
-/** Publishes the boot attempt for the whole of its life — lock wait included —
- *  so a second boot can join it rather than start another. */
-async function trackBoot(): Promise<boolean> {
-  const attempt = runUnderLock('boot');
-  pendingBoot = attempt;
+/** Publishes a full crawl for the whole of its life — lock wait included — so
+ *  another `boot` or `user` request can join it rather than start a second. */
+async function trackFullCrawl(reason: SyncReason): Promise<boolean> {
+  const attempt = runUnderLock(reason);
+  fullCrawl = attempt;
   try {
     return await attempt;
   } finally {
-    if (pendingBoot === attempt) pendingBoot = null;
+    if (fullCrawl === attempt) fullCrawl = null;
   }
 }
 
