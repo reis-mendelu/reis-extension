@@ -12,10 +12,10 @@ export const BG_POKE_MESSAGE = 'REIS_BG_POKE';
  * the sync lock.
  */
 export function startBgPokeListener(): void {
-    chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-        if (message?.type !== BG_POKE_MESSAGE) return false;
-        void requestSync('poke');
-        sendResponse({ ok: true });
-        return false;
-    });
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type !== BG_POKE_MESSAGE) return false;
+    void requestSync('poke');
+    sendResponse({ ok: true });
+    return false;
+  });
 }
