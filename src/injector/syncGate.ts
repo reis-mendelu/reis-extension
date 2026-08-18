@@ -44,9 +44,22 @@ let syncIntervalId: ReturnType<typeof setInterval> | null = null;
  */
 let inFlight: Promise<void> | null = null;
 
+/**
+ * A boot request working its way through the gate, including the time it spends
+ * queued for the cross-tab lock.
+ *
+ * `inFlight` is not enough on its own: it is set when `run` starts, and a boot
+ * waiting for another tab to release the lock has not reached `run` yet. A
+ * second boot arriving in that window saw nothing in flight and queued its own
+ * lock request, so the two ran back to back — the very duplicate crawl the
+ * join was meant to prevent.
+ */
+let pendingBoot: Promise<boolean> | null = null;
+
 export function __resetSyncGateForTests(): void {
   lastRunAt = 0;
   inFlight = null;
+  pendingBoot = null;
   resetSyncTtl();
 }
 
@@ -119,25 +132,44 @@ async function runUnderLock(reason: SyncReason): Promise<boolean> {
 export async function requestSync(reason: SyncReason): Promise<boolean> {
   if (VISIBILITY_GATED.has(reason) && !isForeground()) return false;
 
+  // A run under way, or a boot still queued for the cross-tab lock. Read once,
+  // synchronously, so two triggers in the same tick cannot both see it empty.
+  const active = inFlight ?? pendingBoot;
+
   if (AUTOMATIC.has(reason)) {
-    // A run already owns this round — matches what the cross-tab lock does, and
-    // holds even where Web Locks are unavailable.
-    if (inFlight) return false;
+    // Something already owns this round — matches what the cross-tab lock does,
+    // and holds even where Web Locks are unavailable.
+    if (active) return false;
     if (Date.now() - lastRunAt < MIN_SYNC_GAP) return false;
     return runUnderLock(reason);
   }
 
-  // Boot joins a run already under way instead of repeating it: both boot
-  // triggers want the same first crawl, not two of them.
-  if (reason === 'boot' && inFlight) {
-    await inFlight;
-    return false;
+  if (reason === 'boot') {
+    // Both boot triggers want the same first crawl, not two of them, so join
+    // whatever is already happening rather than queueing behind it.
+    if (active) {
+      await active;
+      return false;
+    }
+    return trackBoot();
   }
 
-  // An explicit refresh wants data fresher than the run in flight, so wait for
-  // that one to finish and then do a real run of its own.
-  if (inFlight) await inFlight;
+  // An explicit refresh wants data fresher than whatever is under way, so wait
+  // for that to finish and then do a real run of its own.
+  if (active) await active;
   return runUnderLock(reason);
+}
+
+/** Publishes the boot attempt for the whole of its life — lock wait included —
+ *  so a second boot can join it rather than start another. */
+async function trackBoot(): Promise<boolean> {
+  const attempt = runUnderLock('boot');
+  pendingBoot = attempt;
+  try {
+    return await attempt;
+  } finally {
+    if (pendingBoot === attempt) pendingBoot = null;
+  }
 }
 
 export function startSyncService(): void {

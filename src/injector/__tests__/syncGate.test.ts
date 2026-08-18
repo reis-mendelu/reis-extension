@@ -47,6 +47,35 @@ function installLocks(held: boolean) {
   return locks;
 }
 
+/**
+ * A Web Locks stand-in that really queues: another tab holds the lock until
+ * `releaseHolder()`, and waiting requests are then granted one at a time. The
+ * simpler `installLocks` fake cannot show this, because it never models the
+ * window where a request is queued but has not yet run.
+ */
+function installQueuingLocks() {
+  let releaseHolder!: () => void;
+  let chain: Promise<unknown> = new Promise<void>((resolve) => {
+    releaseHolder = resolve;
+  });
+  const locks = {
+    request: vi.fn(
+      async (
+        name: string,
+        options: { ifAvailable?: boolean },
+        callback: (lock: unknown) => Promise<unknown>
+      ) => {
+        if (options.ifAvailable) return callback(null); // held by the other tab
+        const mine = chain.then(() => callback({ name }));
+        chain = mine.catch(() => undefined);
+        return mine;
+      }
+    ),
+  };
+  Object.defineProperty(navigator, 'locks', { value: locks, configurable: true });
+  return { releaseHolder: () => releaseHolder() };
+}
+
 describe('requestSync', () => {
   beforeEach(() => {
     __resetSyncGateForTests();
@@ -231,6 +260,32 @@ describe('requestSync', () => {
       expect(mockedSync).toHaveBeenCalledTimes(2);
       expect(isFresh('studyPlan', TTL.SEMESTER), 'stamps cleared after the active run').toBe(false);
     });
+  });
+
+  // Regression: inFlight is only set once run() starts, so while a boot sat
+  // queued for a lock another tab held, a second boot saw nothing in flight and
+  // queued its own crawl behind it — two full cold-start crawls back to back.
+  it('joins a boot still queued for a lock another tab holds', async () => {
+    const { releaseHolder } = installQueuingLocks();
+
+    const first = requestSync('boot');
+    const second = requestSync('boot');
+    releaseHolder();
+
+    await expect(first).resolves.toBe(true);
+    await expect(second, 'the second boot joined the queued one').resolves.toBe(false);
+    expect(mockedSync).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops an automatic run while a boot is queued for the lock', async () => {
+    const { releaseHolder } = installQueuingLocks();
+
+    const boot = requestSync('boot');
+    await expect(requestSync('tick')).resolves.toBe(false);
+    releaseHolder();
+
+    await boot;
+    expect(mockedSync).toHaveBeenCalledTimes(1);
   });
 
   // syncAllData reports its own failures; the gate's job is only to make sure a
