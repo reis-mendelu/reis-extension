@@ -56,7 +56,12 @@ vi.mock('../../services/sync/syncOdevzdavarny', () => ({
 vi.mock('../../api/documents', () => ({
   fetchFilesFromFolder: (...a: unknown[]) => api.files(...a),
 }));
-vi.mock('../../api/syllabus', () => ({ fetchSyllabus: (...a: unknown[]) => api.syllabus(...a) }));
+// importOriginal so SYLLABUS_FETCH_FAILED is the real sentinel, not a copy that
+// would silently stop matching if the source changed.
+vi.mock('../../api/syllabus', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../api/syllabus')>()),
+  fetchSyllabus: (...a: unknown[]) => api.syllabus(...a),
+}));
 vi.mock('../../services/sync/syncZaznamnik', () => ({
   syncZaznamnik: (...a: unknown[]) => api.zaznamnik(...a),
 }));
@@ -69,7 +74,10 @@ vi.mock('../../utils/userParams', () => ({
   getUserParams: async () => ({ studium: 'st1', obdobi: 'ob1' }),
 }));
 vi.mock('../iframeManager', () => ({ sendToIframe: vi.fn() }));
-vi.mock('../../services/sync/mergePastSubjects', () => ({ mergePastSubjects: vi.fn() }));
+const mergePastSubjectsMock = vi.fn();
+vi.mock('../../services/sync/mergePastSubjects', () => ({
+  mergePastSubjects: (...a: unknown[]) => mergePastSubjectsMock(...a),
+}));
 vi.mock('../../services/sync/syncPastSemesters', () => ({
   syncPastSemesters: vi.fn(async () => {}),
 }));
@@ -130,6 +138,7 @@ const HOT = ['exams', 'odevzdavarny', 'zaznamnik'] as const;
 describe('sync tiers across consecutive runs', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mergePastSubjectsMock.mockReset();
     primeResponses();
   });
 
@@ -196,6 +205,47 @@ describe('sync tiers across consecutive runs', () => {
     await syncAllData();
 
     expect(api.cvicneTests).toHaveBeenCalledTimes(1);
+  });
+
+  // Regression: subjects (daily) comes due while pastSubjects (semester) is
+  // still fresh. Without a retained copy of the past-subject payload that run
+  // replaced the merged map with a current-semester-only one, and fulfilled
+  // subjects vanished from the UI until the longer TTL expired.
+  it('still merges past subjects when only the subject list came due', async () => {
+    const { syncAllData } = await loadSync();
+    const { markFetched, TTL } = await import('../syncTtl');
+
+    await syncAllData();
+    expect(mergePastSubjectsMock).toHaveBeenCalledTimes(1);
+
+    // Age the subject list past its tier while pastSubjects stays fresh.
+    markFetched('subjects', Date.now() - (TTL.DAILY + 1));
+    await syncAllData();
+
+    expect(api.subjects, 'subjects came due').toHaveBeenCalledTimes(2);
+    expect(api.pastSubjects, 'past subjects stayed fresh').toHaveBeenCalledTimes(1);
+    expect(
+      mergePastSubjectsMock,
+      'the merge still ran, on the retained copy'
+    ).toHaveBeenCalledTimes(2);
+    expect(mergePastSubjectsMock.mock.calls[1]![1]).toEqual({ cz: {}, en: {} });
+  });
+
+  // fetchSyllabus degrades to an error sentinel rather than throwing, and an
+  // object always looks "useful" — so a transient failure could be stamped
+  // fresh and pin the error for a whole semester.
+  it('retries a syllabus whose fetch returned the failure sentinel', async () => {
+    const { SYLLABUS_FETCH_FAILED } = await import('../../api/syllabus');
+    api.syllabus.mockResolvedValue({
+      requirementsText: SYLLABUS_FETCH_FAILED,
+      requirementsTable: [],
+    });
+
+    const { syncAllData } = await loadSync();
+    await syncAllData();
+    await syncAllData();
+
+    expect(api.syllabus).toHaveBeenCalledTimes(2);
   });
 
   // Phase 3 keys off the enrolled subjects, which it now reads from the cache

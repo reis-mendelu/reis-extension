@@ -4,6 +4,15 @@ import { MIN_SYNC_GAP, SYNC_LOCK_WAIT_MS } from '../config';
 import { syncAllData } from '../syncService';
 import { isFresh, markFetched, TTL } from '../syncTtl';
 
+/** A sync that blocks until released, so a second request can land mid-run. */
+function blockingSync() {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  return { gate, release: () => release() };
+}
+
 vi.mock('../syncService', () => ({ syncAllData: vi.fn(async () => {}) }));
 
 const mockedSync = vi.mocked(syncAllData);
@@ -167,6 +176,60 @@ describe('requestSync', () => {
     it('syncs normally where Web Locks are unavailable', async () => {
       await expect(requestSync('tick')).resolves.toBe(true);
       expect(mockedSync).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('a request landing while a run is already in flight', () => {
+    // Regression: startSyncService() and the iframe's first REQUEST_DATA both
+    // fire 'boot'. syncAllData's isSyncing guard used to absorb the second as a
+    // no-op; queueing for the lock instead would run a redundant second crawl.
+    it('joins a boot already under way instead of crawling twice', async () => {
+      const { gate, release } = blockingSync();
+      mockedSync.mockImplementationOnce(async () => {
+        await gate;
+      });
+
+      const first = requestSync('boot');
+      const second = requestSync('boot');
+      release();
+
+      await expect(first).resolves.toBe(true);
+      await expect(second, 'the second boot joined rather than started').resolves.toBe(false);
+      expect(mockedSync).toHaveBeenCalledTimes(1);
+    });
+
+    it('drops an automatic run while one is already in flight', async () => {
+      const { gate, release } = blockingSync();
+      mockedSync.mockImplementationOnce(async () => {
+        await gate;
+      });
+
+      const first = requestSync('boot');
+      await expect(requestSync('tick')).resolves.toBe(false);
+      release();
+      await first;
+      expect(mockedSync).toHaveBeenCalledTimes(1);
+    });
+
+    // Regression: the reset used to happen before waiting, so the run already in
+    // flight re-stamped resources afterwards and the student's refresh skipped
+    // every one of them.
+    it('queues an explicit refresh behind it and clears the stamps only then', async () => {
+      const { gate, release } = blockingSync();
+      mockedSync.mockImplementationOnce(async () => {
+        await gate;
+        // The active run stamps a resource AFTER the refresh was requested.
+        markFetched('studyPlan');
+      });
+
+      const auto = requestSync('tick');
+      const user = requestSync('user');
+      release();
+
+      await expect(auto).resolves.toBe(true);
+      await expect(user, 'the refresh ran for real').resolves.toBe(true);
+      expect(mockedSync).toHaveBeenCalledTimes(2);
+      expect(isFresh('studyPlan', TTL.SEMESTER), 'stamps cleared after the active run').toBe(false);
     });
   });
 

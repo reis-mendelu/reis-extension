@@ -7,7 +7,7 @@ import { fetchFilesFromFolder } from '../api/documents';
 import { fetchDualLanguageStudyPlan } from '../api/studyPlan';
 import { fetchStudyStats } from '../api/studyStats';
 import { fetchStudyComparison } from '../api/studyComparison';
-import { fetchSyllabus } from '../api/syllabus';
+import { fetchSyllabus, SYLLABUS_FETCH_FAILED } from '../api/syllabus';
 import { syncZaznamnik } from '../services/sync/syncZaznamnik';
 import { syncCvicneTests } from '../services/sync/syncCvicneTests';
 import { syncOdevzdavarny } from '../services/sync/syncOdevzdavarny';
@@ -47,6 +47,17 @@ export function setNotesHtmlOverride(code: string, html: string): void {
   notesHtmlOverrides[code] = html;
 }
 let currentSemesterCodes: string[] = [];
+
+/**
+ * Last past-subject payload we successfully fetched.
+ *
+ * `mergePastSubjects` folds these into each newly fetched subject list, and the
+ * two have different TTLs — so the subjects fetch comes back due while this one
+ * is still fresh. Without a retained copy that run would replace the merged map
+ * with a current-semester-only one, and fulfilled subjects would vanish from
+ * the UI until the longer TTL expired.
+ */
+let lastPastSubjects: { cz: Record<string, unknown>; en: Record<string, unknown> } | null = null;
 
 export async function syncAllData() {
   if (isSyncing) return;
@@ -88,9 +99,12 @@ export async function syncAllData() {
 
     // Past-semester folders from doc server history — used to backfill
     // SubjectInfo for fulfilled subjects that list.pl no longer returns.
-    const pastSubjectsPromise = ttlGated('pastSubjects', TTL.SEMESTER, !!cachedData.subjects, () =>
+    const pastSubjectsPromise = ttlGated('pastSubjects', TTL.SEMESTER, !!lastPastSubjects, () =>
       fetchDualLanguagePastSubjects()
-    );
+    ).then((value) => {
+      if (value) lastPastSubjects = value as typeof lastPastSubjects;
+      return value;
+    });
 
     const studyStatsPromise =
       studium && userParams?.obdobi
@@ -158,12 +172,14 @@ export async function syncAllData() {
       studyComparisonPromise,
     ]);
 
-    if (
-      subjects.status === 'fulfilled' &&
-      subjects.value &&
-      pastSubjects.status === 'fulfilled' &&
-      pastSubjects.value
-    ) {
+    // Falls back to the retained copy when the past-subject fetch was skipped as
+    // fresh, so a subjects refresh still gets its merge.
+    const pastSubjectsForMerge =
+      pastSubjects.status === 'fulfilled' && pastSubjects.value
+        ? pastSubjects.value
+        : lastPastSubjects;
+
+    if (subjects.status === 'fulfilled' && subjects.value && pastSubjectsForMerge) {
       // Inject already-cached past semester subjects (richer data than dok_server)
       // before mergePastSubjects so dok_server only fills truly old subjects.
       if (studium && userParams?.obdobi && subjects.value.availablePeriods.length > 0) {
@@ -186,7 +202,7 @@ export async function syncAllData() {
 
       mergePastSubjects(
         subjects.value.subjects,
-        pastSubjects.value,
+        pastSubjectsForMerge as Parameters<typeof mergePastSubjects>[1],
         studyPlan.status === 'fulfilled' ? studyPlan.value : null
       );
     }
@@ -389,9 +405,13 @@ async function syncSubjectDetails(
         );
       if (subjectFull.subjectId)
         subTasks.push(
-          ttlGated(`syllabus:${code}`, TTL.SEMESTER, !!cachedSyllabuses?.[code], () =>
-            fetchSyllabus(subjectFull.subjectId!)
-          )
+          ttlGated(`syllabus:${code}`, TTL.SEMESTER, !!cachedSyllabuses?.[code], async () => {
+            // fetchSyllabus degrades to a sentinel rather than throwing, and an
+            // object always looks "useful" — so without this a transient failure
+            // would be stamped fresh and pin the error for a whole semester.
+            const syllabus = await fetchSyllabus(subjectFull.subjectId!);
+            return syllabus.requirementsText === SYLLABUS_FETCH_FAILED ? null : syllabus;
+          })
             .then((s) => {
               if (!s) return;
               if (!cachedData.syllabuses) cachedData.syllabuses = {};
