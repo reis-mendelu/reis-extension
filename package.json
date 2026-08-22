@@ -68,7 +68,7 @@
     "jszip": "^3.10.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.31.0",
-    "motion": "^12.43.0",
+    "motion": "^13.1.0",
     "p-limit": "^7.3.1",
     "qrcode": "^1.5.4",
     "react": "^19.2.8",
