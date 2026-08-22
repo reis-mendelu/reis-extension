@@ -79,8 +79,8 @@ been corrected to match what was actually filed — see the **User IDs** row.
 
 | Data type | Collected | Shared | Purpose | Required | Notes |
 |---|---|---|---|---|---|
-| **User IDs** | Yes | No | Analytics | **Required** | `trackDailyUsage` (`src/api/feedback.ts:30`) sends a **SHA-256 hash** of the student ID to Supabase once per day, to count active users. The raw ID never leaves the device. The hash is **pseudonymous, not anonymous** — it is stable per student and the ID space is only 6–7 digits, so it is enumerable and must be declared as a collected user identifier, which is why this row says `Collected: Yes`. Runs on Android — it is in `initializeStore`, which the phone tree reaches through `useAppLogic`. **Required, not optional** (corrected at filing time): `initializeStore` calls `trackDailyUsage` unconditionally (`src/store/useAppStore.ts:166`) — it is not gated on `errorReportingEnabled` or on any other setting, so there is no switch a student can turn off. Contrast **Crash logs**, which genuinely is optional because `initTelemetry` is handed a live read of `errorReportingEnabled` (`src/entrypoints/main/main.tsx:20`) and the profile sheet exposes that toggle. If daily-usage tracking is ever put behind the same toggle, this row becomes Optional — change the code and the form together. |
-| **Crash logs** | Yes | No | Diagnostics | Optional | The `report_error_v2` RPC. Fields: an ephemeral random session UUID (regenerated every app start, not tied to a person), error type, message, file path, line, stack excerpt, timestamp, app version, browser name/version. Sanitised first (`src/services/errorReporter/sanitize.ts`): e-mail addresses, bearer/cookie tokens, all `*.mendelu.cz` URLs and 6–7-digit student/staff IDs are redacted. |
+| **User IDs** | Yes | No | Analytics | **Required** | `trackDailyUsage` (`src/api/feedback.ts:31`) sends a **SHA-256 hash** of the student ID to Supabase once per day, to count active users. The raw ID never leaves the device. The hash is **pseudonymous, not anonymous** — it is stable per student and the ID space is only 6–7 digits, so it is enumerable and must be declared as a collected user identifier, which is why this row says `Collected: Yes`. Runs on Android — it is in `initializeStore`, which the phone tree reaches through `useAppLogic`. **Required, not optional** (corrected at filing time): `initializeStore` calls `trackDailyUsage` unconditionally (`src/store/useAppStore.ts:166`) — it is not gated on `errorReportingEnabled` or on any other setting, so there is no switch a student can turn off. Contrast **Crash logs**, which genuinely is optional because `initTelemetry` is handed a live read of `errorReportingEnabled` (`src/entrypoints/main/main.tsx:20`) and the profile sheet exposes that toggle. If daily-usage tracking is ever put behind the same toggle, this row becomes Optional — change the code and the form together. |
+| **Crash logs** | Yes | No | Diagnostics | Optional | **`Optional` was not actually true until PR #237** — worth recording, because the row was filed before the fix. The reporters are installed at module load, but the persisted opt-out is read from IndexedDB asynchronously, so a student who had switched reporting OFF still transmitted during startup — precisely when errors fire. Reporting now requires `errorReportingHydrated` AND `errorReportingEnabled`, so an unknown preference means silence. The `report_error_v2` RPC. Fields: an ephemeral random session UUID (regenerated every app start, not tied to a person), error type, message, file path, line, stack excerpt, timestamp, app version, browser name/version. Sanitised first (`src/services/errorReporter/sanitize.ts`): e-mail addresses, bearer/cookie tokens, all `*.mendelu.cz` URLs and 6–7-digit student/staff IDs are redacted. |
 | **Email address** | Yes | No | App functionality | Optional | Only from the feedback form's optional contact box, stored as `suggestions.contact`. The field is labelled "Email / Discord" in both locales, so it collects an e-mail address often enough that Play's own data type applies — declaring only "Other in-app messages" would under-report it. Blank unless the student types something; never used for anything but replying to that report. |
 | **Other in-app messages** | Yes | **No** | App functionality | Optional | Only if the student opens the feedback form and submits it. The text goes to reIS's own Supabase `suggestions` table via the `submit-suggestion` edge function — **not** to any third party, which is why `Shared` is `No`. It was `Yes` while delivery went to a Discord channel; that integration is gone (§1.1), so answering `Yes` here would now be wrong. Stored alongside it: the reIS screen name from a fixed allowlist, app version, browser name/version and viewport. **The page address is never recorded automatically** — that is the fix for the old leak. It is not a claim about the message itself: the title, body and contact are free text, so a student can always type a URL or an enrolment detail into them, and the schema cannot prevent that. |
 
@@ -106,6 +106,17 @@ either way, so the only open question was the Data safety form.
 **Decided 2026-08-22: not declared**, resting on the abuse-prevention exception.
 Worth re-opening if the lazy prune is ever replaced by something that retains
 longer, or if the hash is ever used for anything other than counting.
+
+**A review challenged this (2026-08-23) and the challenge is recorded rather
+than dismissed**, because it is arguable and the decision is a judgement, not a
+fact: the argument against is that Play's security exemption covers the
+*purpose* of processing but does not by itself waive the *collection*
+disclosure, so the honest answer would be to declare the type with a
+fraud-prevention/security purpose rather than omit it. The counter — and the
+reason the decision stands — is that the hash is never joined to a student, is
+retained for an hour of counting and nothing else, and appears in the privacy
+policy either way. **If Google ever queries it, amend the form; do not defend
+it.** Declaring it costs almost nothing, so this is a cheap thing to concede.
 
 ### Academic data: DECIDED: not collected
 
@@ -147,6 +158,19 @@ the account with, and reIS is only a client of it. If reIS ever routes IS data
 through a server of its own, that stops being true and this answer must change
 before the build that does it ships.
 
+**A review challenged this too (2026-08-23), and it is the more serious of the
+two challenges.** The argument: exam sign-up, sign-off and submissions do
+transmit academic data off the device, Play defines *collected* as exactly that,
+and the user-initiated and service-provider exceptions are framed around
+*sharing* rather than *collection*. That reading is not obviously wrong. The
+decision stands because the alternative — declaring the student's own grades and
+enrolment as data reIS collects — would materially misdescribe an app that never
+receives a byte of it on any server it controls, and would read worse to a
+student than the truth. **This is the answer most likely to need revisiting if
+Google pushes back, and it should be conceded quickly rather than argued**, for
+the same reason as above: the cost of declaring is a worse-looking listing, and
+the cost of being wrong is an enforcement matter.
+
 **Google Drive is deliberately absent from this section**: the backup is
 browser-extension only and does not exist in the Android build, so it is out of
 scope for this form. It does belong in the privacy policy, which covers both
@@ -168,8 +192,10 @@ surfaces.
 request, so the procedure has to exist before that policy is published. It is
 manual by design — see the warning below.
 
-**Three** tables hold a per-student row, and they do not all key the same way —
-which is the trap here. `daily_active_usage` and `feedback_responses` key on the
+**Four** tables hold student-supplied data, and they do not all key the same way
+— which is the trap here. Three key on a derived digest of the student ID; the
+fourth (`suggestions`) holds no student identifier at all and needs a different
+approach entirely, described at the end. `daily_active_usage` and `feedback_responses` key on the
 plain **SHA-256 hex of the student ID**, so the operator derives the key from
 the ID the requester provides. In the Supabase SQL editor:
 
@@ -242,6 +268,44 @@ Category: **Utility / Productivity / Communication**. Truthful answers:
 ### Title (30 chars max)
 
 ```
+
+##### `suggestions` — the one that cannot be keyed by student ID
+
+Added after a review flagged that the runbook deleted three tables while the
+Data safety form declared **Email address** and **Other in-app messages** as
+collected. Both of those live here, so a deletion request answered with the
+recipes above left them behind and the "we delete server-side rows" promise was
+incomplete.
+
+It needs its own treatment because **`suggestions` stores no student
+identifier** — not a hash, not a UIC, nothing. That is deliberate (see §1.1),
+and it is why the rows above cannot simply be extended with a fourth `delete`.
+The only handle is the **optional** free-text `contact` box the student may have
+filled in:
+
+```sql
+-- Only reaches rows where the student actually left a contact.
+-- Case-insensitive and trimmed: it is free text, typed by hand.
+delete from public.suggestions
+where contact is not null
+  and lower(btrim(contact)) = lower(btrim('student@example.com'));
+```
+
+Two honest limits an operator has to understand rather than work around:
+
+- **A report submitted with the contact box empty cannot be attributed to the
+  requester, and must not be guessed at.** That is not a gap in the procedure —
+  such a row carries nothing linking it to a person, which is the whole point of
+  collecting no identifier. Deleting an arbitrary row because it looks like
+  theirs would destroy someone else's report.
+- **`title` and `body` are free text**, so a student can always have typed
+  identifying details into them. If the requester describes their report, search
+  those columns too and delete on that basis — but confirm the match with them
+  first, for the same reason as above.
+
+`suggestions_rate_log` is deliberately NOT part of this. It holds a salted IP
+hash with no link to a student ID, expires within the hour, and cannot be
+matched to a requester at all — see the retention note in §2.
 reIS — IS MENDELU jednoduše
 ```
 
