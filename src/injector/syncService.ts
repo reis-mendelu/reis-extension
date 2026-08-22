@@ -7,7 +7,7 @@ import { fetchFilesFromFolder } from '../api/documents';
 import { fetchDualLanguageStudyPlan } from '../api/studyPlan';
 import { fetchStudyStats } from '../api/studyStats';
 import { fetchStudyComparison } from '../api/studyComparison';
-import { fetchSyllabus } from '../api/syllabus';
+import { fetchSyllabus, SYLLABUS_FETCH_FAILED } from '../api/syllabus';
 import { syncZaznamnik } from '../services/sync/syncZaznamnik';
 import { syncCvicneTests } from '../services/sync/syncCvicneTests';
 import { syncOdevzdavarny } from '../services/sync/syncOdevzdavarny';
@@ -18,7 +18,7 @@ import { syncPastSemesters } from '../services/sync/syncPastSemesters';
 import { getUserParams } from '../utils/userParams';
 import { fetchFullSemesterSchedule } from './dataFetchers';
 import { sendToIframe } from './iframeManager';
-import { SYNC_INTERVAL } from './config';
+import { TTL, ttlGated, isFresh, markFetched } from './syncTtl';
 import type { SyncedData } from '../types/messages';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
 import { syncDriveBackup, type DriveBackupSubject } from '../services/drive/driveBackup';
@@ -47,22 +47,34 @@ export function setNotesHtmlOverride(code: string, html: string): void {
   notesHtmlOverrides[code] = html;
 }
 let currentSemesterCodes: string[] = [];
-let syncIntervalId: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Last past-subject payload we successfully fetched.
+ *
+ * `mergePastSubjects` folds these into each newly fetched subject list, and the
+ * two have different TTLs — so the subjects fetch comes back due while this one
+ * is still fresh. Without a retained copy that run would replace the merged map
+ * with a current-semester-only one, and fulfilled subjects would vanish from
+ * the UI until the longer TTL expired.
+ */
+let lastPastSubjects: { cz: Record<string, unknown>; en: Record<string, unknown> } | null = null;
 
 export async function syncAllData() {
   if (isSyncing) return;
 
   isSyncing = true;
-  sendToIframe(Messages.syncUpdate({ isSyncing: true, lastSync: cachedData.lastSync }));
 
   try {
+    // Inside the try on purpose: this used to sit above it, so a throw here
+    // left isSyncing stuck true and no sync ever ran again.
+    sendToIframe(Messages.syncUpdate({ isSyncing: true, lastSync: cachedData.lastSync }));
+
     const userParams = await getUserParams();
     const studium = userParams?.studium;
 
     // Phase 2a: Start subjects early — fast fetch (explicit obdobi prevents session-state coupling)
-    const subjectsPromise = fetchDualLanguageSubjects(
-      studium || undefined,
-      userParams?.obdobi || undefined
+    const subjectsPromise = ttlGated('subjects', TTL.DAILY, !!cachedData.subjects, () =>
+      fetchDualLanguageSubjects(studium || undefined, userParams?.obdobi || undefined)
     ).then((result) => {
       if (result) {
         cachedData = { ...cachedData, subjects: result.subjects, attendance: result.attendance };
@@ -75,7 +87,9 @@ export async function syncAllData() {
 
     // Phase 2a-II: Fetch study plan + study stats concurrently with early subjects
     const studyPlanPromise = studium
-      ? fetchDualLanguageStudyPlan(studium).then((plan) => {
+      ? ttlGated('studyPlan', TTL.SEMESTER, !!cachedData.studyPlan, () =>
+          fetchDualLanguageStudyPlan(studium)
+        ).then((plan) => {
           if (plan) {
             cachedData = { ...cachedData, studyPlan: plan };
           }
@@ -85,11 +99,18 @@ export async function syncAllData() {
 
     // Past-semester folders from doc server history — used to backfill
     // SubjectInfo for fulfilled subjects that list.pl no longer returns.
-    const pastSubjectsPromise = fetchDualLanguagePastSubjects();
+    const pastSubjectsPromise = ttlGated('pastSubjects', TTL.SEMESTER, !!lastPastSubjects, () =>
+      fetchDualLanguagePastSubjects()
+    ).then((value) => {
+      if (value) lastPastSubjects = value as typeof lastPastSubjects;
+      return value;
+    });
 
     const studyStatsPromise =
       studium && userParams?.obdobi
-        ? fetchStudyStats(studium, userParams.obdobi).then((stats) => {
+        ? ttlGated('studyStats', TTL.DAILY, !!cachedData.studyStats, () =>
+            fetchStudyStats(studium, userParams.obdobi!)
+          ).then((stats) => {
             if (stats) cachedData = { ...cachedData, studyStats: stats };
             return stats;
           })
@@ -97,14 +118,18 @@ export async function syncAllData() {
 
     const studyComparisonPromise =
       studium && userParams?.obdobi
-        ? fetchStudyComparison(studium, userParams.obdobi).then((c) => {
+        ? ttlGated('studyComparison', TTL.DAILY, !!cachedData.studyComparison, () =>
+            fetchStudyComparison(studium, userParams.obdobi!)
+          ).then((c) => {
             if (c) cachedData = { ...cachedData, studyComparison: c };
             return c;
           })
         : Promise.resolve(null);
 
     const cvicneTestsPromise = studium
-      ? syncCvicneTests(studium).then((result) => {
+      ? ttlGated('cvicneTests', TTL.DAILY, !!cachedData.cvicneTests, () =>
+          syncCvicneTests(studium)
+        ).then((result) => {
           if (result) {
             cachedData = { ...cachedData, cvicneTests: result.tests };
           }
@@ -134,7 +159,9 @@ export async function syncAllData() {
       pastSubjects,
       studyComparison,
     ] = await Promise.allSettled([
-      fetchFullSemesterSchedule(),
+      ttlGated('schedule', TTL.SEMESTER, !!cachedData.schedule, () => fetchFullSemesterSchedule()),
+      // exams and odevzdavarny stay hot: registration state and submission
+      // deadlines are the two things that genuinely move within a day.
       fetchDualLanguageExams(),
       subjectsPromise,
       studyPlanPromise,
@@ -145,12 +172,14 @@ export async function syncAllData() {
       studyComparisonPromise,
     ]);
 
-    if (
-      subjects.status === 'fulfilled' &&
-      subjects.value &&
-      pastSubjects.status === 'fulfilled' &&
-      pastSubjects.value
-    ) {
+    // Falls back to the retained copy when the past-subject fetch was skipped as
+    // fresh, so a subjects refresh still gets its merge.
+    const pastSubjectsForMerge =
+      pastSubjects.status === 'fulfilled' && pastSubjects.value
+        ? pastSubjects.value
+        : lastPastSubjects;
+
+    if (subjects.status === 'fulfilled' && subjects.value && pastSubjectsForMerge) {
       // Inject already-cached past semester subjects (richer data than dok_server)
       // before mergePastSubjects so dok_server only fills truly old subjects.
       if (studium && userParams?.obdobi && subjects.value.availablePeriods.length > 0) {
@@ -173,7 +202,7 @@ export async function syncAllData() {
 
       mergePastSubjects(
         subjects.value.subjects,
-        pastSubjects.value,
+        pastSubjectsForMerge as Parameters<typeof mergePastSubjects>[1],
         studyPlan.status === 'fulfilled' ? studyPlan.value : null
       );
     }
@@ -236,9 +265,15 @@ export async function syncAllData() {
       })
     );
 
-    if (subjects.status === 'fulfilled' && subjects.value) {
+    // Falls back to the cached list when the subjects fetch was skipped as
+    // fresh — Phase 3 keys off the enrolled subjects, not off a new fetch.
+    const subjectsForDetails =
+      subjects.status === 'fulfilled' && subjects.value
+        ? subjects.value.subjects
+        : (cachedData.subjects as SubjectsData | undefined);
+    if (subjectsForDetails) {
       await syncSubjectDetails(
-        subjects.value.subjects,
+        subjectsForDetails,
         fullSchedule.status === 'fulfilled' ? fullSchedule.value : null
       );
     }
@@ -354,18 +389,31 @@ async function syncSubjectDetails(
     limit(async () => {
       const subjectFull = subject as { folderUrl?: string; subjectId?: string };
       const subTasks = [];
+      const cachedFiles = cachedData.files as Record<string, unknown> | undefined;
+      const cachedSyllabuses = cachedData.syllabuses as Record<string, unknown> | undefined;
       if (subjectFull.folderUrl)
         subTasks.push(
-          fetchFilesFromFolder(subjectFull.folderUrl)
+          // fetchFilesFromFolder recurses two levels deep and follows every
+          // pagination link, so this one call is several requests per subject.
+          ttlGated(`files:${code}`, TTL.FILES, !!cachedFiles?.[code], () =>
+            fetchFilesFromFolder(subjectFull.folderUrl!)
+          )
             .then((f) => {
-              (cachedData.files as Record<string, unknown>)[code] = f;
+              if (f) (cachedData.files as Record<string, unknown>)[code] = f;
             })
             .catch(() => {})
         );
       if (subjectFull.subjectId)
         subTasks.push(
-          fetchSyllabus(subjectFull.subjectId)
+          ttlGated(`syllabus:${code}`, TTL.SEMESTER, !!cachedSyllabuses?.[code], async () => {
+            // fetchSyllabus degrades to a sentinel rather than throwing, and an
+            // object always looks "useful" — so without this a transient failure
+            // would be stamped fresh and pin the error for a whole semester.
+            const syllabus = await fetchSyllabus(subjectFull.subjectId!);
+            return syllabus.requirementsText === SYLLABUS_FETCH_FAILED ? null : syllabus;
+          })
             .then((s) => {
+              if (!s) return;
               if (!cachedData.syllabuses) cachedData.syllabuses = {};
               (cachedData.syllabuses as Record<string, unknown>)[code] = s;
             })
@@ -403,6 +451,15 @@ async function syncSubjectDetails(
   // then match to subjects by subjectId to get the right courseCode IDB key
   if (!studium || !obdobi) return;
 
+  // A semester's seminar groups do not change. When every enrolled subject is
+  // still fresh there is nothing to fetch — including the shared group map,
+  // which would otherwise cost one request per run for no result.
+  const cachedClassmates = cachedData.classmates as Record<string, unknown> | undefined;
+  const classmatesDue = subjectEntries.filter(
+    ([code]) => !cachedClassmates?.[code] || !isFresh(`classmates:${code}`, TTL.SEMESTER)
+  );
+  if (classmatesDue.length === 0) return;
+
   try {
     // predmetIdMap: { [predmetId]: skupinaId }
     let predmetIdMap: Record<string, string>;
@@ -419,7 +476,7 @@ async function syncSubjectDetails(
     // Build tasks by iterating enrolled subjects and matching their subjectId.
     // Per-subject failures are reported individually only when the group map
     // succeeded (root cause is then the per-subject fetch, not the map).
-    const classmateTasks = subjectEntries
+    const classmateTasks = classmatesDue
       .filter(([, subject]) => subject.subjectId && predmetIdMap[subject.subjectId])
       .map(([courseCode, subject]) =>
         limit(async () => {
@@ -430,6 +487,7 @@ async function syncSubjectDetails(
             const data = await fetchClassmates(predmetId, studium!, obdobi!, skupinaId);
             await IndexedDBService.set('classmates', courseCode, data);
             (cachedData.classmates as Record<string, unknown>)[courseCode] = data;
+            markFetched(`classmates:${courseCode}`);
             // Persist skupinaId for use in the UI if needed
             // safe: courseCode came from Object.entries(subjectsValue.data) above
             subjectsValue.data[courseCode]!.skupinaId = skupinaId;
@@ -445,15 +503,6 @@ async function syncSubjectDetails(
     // Per-subject classmate fetches are skipped (no map), so no cascade.
     sendToIframe(Messages.telemetryError('Sync.fetchSeminarGroupIds.retry', e));
   }
-}
-
-export function startSyncService() {
-  syncAllData();
-  syncIntervalId = setInterval(syncAllData, SYNC_INTERVAL);
-}
-
-export function stopSyncService() {
-  if (syncIntervalId) clearInterval(syncIntervalId);
 }
 
 export async function refreshExams(): Promise<void> {

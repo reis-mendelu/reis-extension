@@ -65,15 +65,15 @@ async function runRecovery(): Promise<string> {
 /**
  * How long to wait for an in-flight sync before giving up on the re-sync.
  *
- * Sized against `SYNC_INTERVAL` (5 min), not guessed: past that point the
- * periodic run fires on its own and waiting longer buys nothing. 30 s was too
- * short — a full sync is ~236 requests, which on mobile data can easily run
- * past it.
+ * Sized against `SYNC_INTERVAL`, not guessed: past that point the periodic run
+ * fires on its own and waiting longer buys nothing. 30 s was too short — a cold
+ * sync is ~120 requests, which on mobile data can easily run past it.
  *
- * A bound is needed at all because `isSyncing` is not guaranteed to clear:
- * `syncAllData` sets it and then calls `sendToIframe` BEFORE entering its
- * `try`, so a throw there leaves the flag stuck true and its `finally` never
- * runs. Waiting unbounded on that would spin for the life of the app.
+ * The bound also used to guard a wedge: `syncAllData` set `isSyncing` and then
+ * called `sendToIframe` BEFORE entering its `try`, so a throw there left the
+ * flag stuck true forever. That push now sits inside the `try`, but the bound
+ * stays — an unbounded wait on someone else's in-flight run is worth avoiding
+ * on its own.
  */
 const RESYNC_IDLE_TIMEOUT_MS = 2 * 60 * 1000;
 const RESYNC_POLL_MS = 250;
@@ -110,7 +110,10 @@ async function resyncWhenIdle(): Promise<void> {
     return;
   }
 
-  await sync.syncAllData();
+  // 'user', not an automatic reason: the student just signed back in to see
+  // fresh data, so every freshness stamp is cleared rather than trusted.
+  const { requestSync } = await import('../injector/syncGate');
+  await requestSync('user');
 }
 
 /**

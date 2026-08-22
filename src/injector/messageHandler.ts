@@ -2,7 +2,6 @@ import { Messages, isIframeMessage } from '../types/messages';
 import { iframeElement, sendToIframe, markIframeReady } from './iframeManager';
 import {
   cachedData,
-  syncAllData,
   runDriveBackupNow,
   runNotesBackupNow,
   setNotesSnapshot,
@@ -10,6 +9,7 @@ import {
   isSyncing,
   refreshExams,
 } from './syncService';
+import { requestSync } from './syncGate';
 import { fetchFullSemesterSchedule } from './dataFetchers';
 import { fetchExamData, registerExam, unregisterExam } from '../api/exams';
 import { fetchSubjects } from '../api/subjects';
@@ -51,7 +51,7 @@ export async function handleMessage(event: MessageEvent) {
 async function handleDataRequest(dataType: DataRequestType) {
   try {
     if (dataType === 'all') {
-      if (cachedData.lastSync === 0) await syncAllData();
+      if (cachedData.lastSync === 0) await requestSync('boot');
       sendToIframe(Messages.data('all', { ...cachedData, isSyncing }));
     } else {
       let data: unknown = null;
@@ -157,7 +157,9 @@ async function handleAction(id: string, action: string, payload: unknown) {
         break;
       }
       case 'trigger_sync':
-        await syncAllData();
+        // The student asked, so this bypasses the foreground gate and the
+        // minimum gap, and clears every freshness stamp first.
+        await requestSync('user');
         result = { success: true };
         break;
       case 'trigger_drive_backup':

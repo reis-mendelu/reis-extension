@@ -159,6 +159,13 @@ export interface ThemeSlice {
 
 export interface ErrorReportingSlice {
   errorReportingEnabled: boolean;
+  /**
+   * False until the persisted choice has actually been read. Reporting must
+   * check this as well as `errorReportingEnabled`: the flag above holds an
+   * optimistic default, so acting on it alone transmits for a student who
+   * opted out, during the startup window where errors are most likely.
+   */
+  errorReportingHydrated: boolean;
   loadErrorReportingEnabled: () => Promise<void>;
   setErrorReportingEnabled: (enabled: boolean) => Promise<void>;
 }
