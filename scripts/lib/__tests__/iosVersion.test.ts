@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { deriveIosVersion, patchPbxproj } from '../iosVersion';
+import {
+  deriveIosVersion,
+  patchPbxproj,
+  reconcileBundleVersion,
+  readBundleVersion,
+} from '../iosVersion';
 
 describe('deriveIosVersion', () => {
   it('derives the same integer Android uses, so one number identifies a build on both stores', () => {
@@ -80,4 +85,48 @@ describe('patchPbxproj', () => {
       ).toThrow(new RegExp(key));
     }
   );
+});
+
+describe('reconcileBundleVersion', () => {
+  // The bug this exists for: ios:version is wired into cap:sync, so a plain
+  // `npm run cap:ios` re-runs it WITHOUT REIS_IOS_BUILD. Without reconciliation
+  // that rewrote a stamped 50006.2 back to 50006, and App Store Connect
+  // rejected the archive as a duplicate build — after the stamp had looked
+  // like it worked.
+  it('keeps a stamped rebuild when a later sync runs without the env var', () => {
+    expect(reconcileBundleVersion('50006.2', '50006')).toBe('50006.2');
+  });
+
+  it('lets an explicit higher rebuild move forward', () => {
+    expect(reconcileBundleVersion('50006.2', '50006.3')).toBe('50006.3');
+  });
+
+  it('refuses to move backwards within one marketing version', () => {
+    expect(reconcileBundleVersion('50006.3', '50006.1')).toBe('50006.3');
+  });
+
+  // A new marketing version starts a fresh CFBundleVersion train, so the
+  // counter from the previous one must NOT be carried over.
+  it('resets on a version bump rather than inheriting the old counter', () => {
+    expect(reconcileBundleVersion('50006.4', '50007')).toBe('50007');
+  });
+
+  it('replaces the Capacitor template default', () => {
+    expect(reconcileBundleVersion('1', '50006')).toBe('50006');
+  });
+
+  it('starts fresh when the project has no readable value', () => {
+    expect(reconcileBundleVersion(null, '50006')).toBe('50006');
+    expect(reconcileBundleVersion('not-a-number', '50006')).toBe('50006');
+  });
+});
+
+describe('readBundleVersion', () => {
+  it('reads the value Xcode currently holds', () => {
+    expect(readBundleVersion('\t\tCURRENT_PROJECT_VERSION = 50006.2;\n')).toBe('50006.2');
+  });
+
+  it('returns null when the setting is absent', () => {
+    expect(readBundleVersion('MARKETING_VERSION = 5.0.6;')).toBeNull();
+  });
 });

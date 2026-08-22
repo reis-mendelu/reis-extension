@@ -14,7 +14,12 @@
 // bumped integer.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { deriveIosVersion, patchPbxproj } from './lib/iosVersion';
+import {
+  deriveIosVersion,
+  patchPbxproj,
+  readBundleVersion,
+  reconcileBundleVersion,
+} from './lib/iosVersion';
 
 const PBXPROJ = resolve(process.cwd(), 'ios/App/App.xcodeproj/project.pbxproj');
 const PACKAGE_JSON = resolve(process.cwd(), 'package.json');
@@ -23,14 +28,26 @@ const { version } = JSON.parse(readFileSync(PACKAGE_JSON, 'utf8')) as { version:
 const ios = deriveIosVersion(version, process.env.REIS_IOS_BUILD);
 
 const before = readFileSync(PBXPROJ, 'utf8');
-const after = patchPbxproj(before, ios);
+
+// Never lower CFBundleVersion within one marketing version. cap:sync re-runs
+// this script without REIS_IOS_BUILD, which would otherwise undo a stamped
+// rebuild and get the archive rejected as a duplicate. See reconcileBundleVersion.
+const stamped = readBundleVersion(before);
+const bundleVersion = reconcileBundleVersion(stamped, ios.bundleVersion);
+if (bundleVersion !== ios.bundleVersion) {
+  console.log(
+    `ios: keeping stamped build ${bundleVersion} (would have written ${ios.bundleVersion}) —` +
+      ' pass REIS_IOS_BUILD to move it forward'
+  );
+}
+const after = patchPbxproj(before, { ...ios, bundleVersion });
 
 if (before === after) {
-  console.log(`ios: already at ${ios.marketingVersion} (${ios.bundleVersion}) — nothing to write`);
+  console.log(`ios: already at ${ios.marketingVersion} (${bundleVersion}) — nothing to write`);
 } else {
   writeFileSync(PBXPROJ, after);
   console.log(
-    `ios: MARKETING_VERSION ${ios.marketingVersion}, CURRENT_PROJECT_VERSION ${ios.bundleVersion}` +
+    `ios: MARKETING_VERSION ${ios.marketingVersion}, CURRENT_PROJECT_VERSION ${bundleVersion}` +
       ` — from package.json ${version}`
   );
 }

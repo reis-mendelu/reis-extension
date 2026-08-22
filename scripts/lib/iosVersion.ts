@@ -64,6 +64,46 @@ export function deriveIosVersion(npmVersion: string, rebuild?: number | string):
 }
 
 /**
+ * Split a CFBundleVersion into the derived base and its rebuild counter.
+ * Returns null for anything that is not one or two integers — including the
+ * Capacitor template's bare `1`, which parses fine, and genuine junk, which
+ * does not.
+ */
+function parseBundleVersion(value: string): { base: number; counter: number } | null {
+  const m = /^(\d+)(?:\.(\d+))?$/.exec(value.trim());
+  if (!m) return null;
+  return { base: Number(m[1]), counter: m[2] === undefined ? 0 : Number(m[2]) };
+}
+
+/** The CFBundleVersion currently stamped into an Xcode project, if any. */
+export function readBundleVersion(source: string): string | null {
+  const m = /CURRENT_PROJECT_VERSION = ([^;]+);/.exec(source);
+  return m ? m[1].trim() : null;
+}
+
+/**
+ * Never let CFBundleVersion move backwards within one marketing version.
+ *
+ * This exists because `ios:version` is wired into `cap:sync`. A developer who
+ * stamps a rebuild with REIS_IOS_BUILD=2 and then runs the ordinary
+ * `npm run cap:ios` re-runs the script WITHOUT the variable — which naively
+ * rewrote 50006.2 back to 50006, and App Store Connect rejected the archive as
+ * a duplicate build. The stamp appeared to work, and the failure surfaced only
+ * at upload.
+ *
+ * A version bump deliberately does NOT inherit the counter: a new
+ * CFBundleShortVersionString starts a fresh train, so 5.0.7 begins at 50007
+ * rather than 50007.4.
+ */
+export function reconcileBundleVersion(existing: string | null, candidate: string): string {
+  const wanted = parseBundleVersion(candidate);
+  const current = existing === null ? null : parseBundleVersion(existing);
+  if (!wanted || !current) return candidate;
+  if (current.base !== wanted.base) return candidate;
+  return current.counter > wanted.counter ? existing! : candidate;
+}
+
+/**
  * Rewrite the version settings in an Xcode project file.
  *
  * Xcode repeats every build setting once per configuration, so this replaces
