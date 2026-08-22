@@ -50,22 +50,41 @@ not a paperwork step. **YOU**
 
 ---
 
-## 2. Data safety form
+## 2. Data safety form — SUBMITTED 2026-08-22
 
 Google asks, per data type: is it *collected*, is it *shared*, is it
 *processed ephemerally*, is it *required*, and *why*. These answers are the
 truthful ones for the Android app.
 
+**Filed in Play Console on 2026-08-22** and saved to Publishing overview (it
+reaches Google with the next "send for review", not before). What went in:
+
+- Collects required data types **Yes**; encrypted in transit **Yes**; account
+  creation **"My app does not allow users to create an account"**; log-in with
+  outside accounts **Yes → through employment or enterprise accounts**; data
+  deletion **Yes**, pointing at the privacy-policy gist.
+- Exactly four data types: **Email address**, **User IDs**, **Other in-app
+  messages**, **Crash logs**. Nothing shared with anyone; nothing processed
+  ephemerally.
+- The two open judgement calls below were both decided the permissive way:
+  academic data **not declared as collected**, and the rate-limit IP hash
+  **not declared**. Both are defensible under Play's exceptions and both are
+  disclosed in the privacy policy; neither is a fact the code settles, so if a
+  reviewer challenges either, the answer is to amend the form, not to argue.
+
+One answer changed against the table below during filing, and the table has
+been corrected to match what was actually filed — see the **User IDs** row.
+
 ### Collected and sent off the device
 
 | Data type | Collected | Shared | Purpose | Required | Notes |
 |---|---|---|---|---|---|
-| **User IDs** | Yes | No | Analytics | Optional | `trackDailyUsage` (`src/api/feedback.ts:30`) sends a **SHA-256 hash** of the student ID to Supabase once per day, to count active users. The raw ID never leaves the device. The hash is **pseudonymous, not anonymous** — it is stable per student and the ID space is only 6–7 digits, so it is enumerable and must be declared as a collected user identifier, which is why this row says `Collected: Yes`. Runs on Android — it is in `initializeStore`, which the phone tree reaches through `useAppLogic`. |
+| **User IDs** | Yes | No | Analytics | **Required** | `trackDailyUsage` (`src/api/feedback.ts:30`) sends a **SHA-256 hash** of the student ID to Supabase once per day, to count active users. The raw ID never leaves the device. The hash is **pseudonymous, not anonymous** — it is stable per student and the ID space is only 6–7 digits, so it is enumerable and must be declared as a collected user identifier, which is why this row says `Collected: Yes`. Runs on Android — it is in `initializeStore`, which the phone tree reaches through `useAppLogic`. **Required, not optional** (corrected at filing time): `initializeStore` calls `trackDailyUsage` unconditionally (`src/store/useAppStore.ts:166`) — it is not gated on `errorReportingEnabled` or on any other setting, so there is no switch a student can turn off. Contrast **Crash logs**, which genuinely is optional because `initTelemetry` is handed a live read of `errorReportingEnabled` (`src/entrypoints/main/main.tsx:20`) and the profile sheet exposes that toggle. If daily-usage tracking is ever put behind the same toggle, this row becomes Optional — change the code and the form together. |
 | **Crash logs** | Yes | No | Diagnostics | Optional | The `report_error_v2` RPC. Fields: an ephemeral random session UUID (regenerated every app start, not tied to a person), error type, message, file path, line, stack excerpt, timestamp, app version, browser name/version. Sanitised first (`src/services/errorReporter/sanitize.ts`): e-mail addresses, bearer/cookie tokens, all `*.mendelu.cz` URLs and 6–7-digit student/staff IDs are redacted. |
 | **Email address** | Yes | No | App functionality | Optional | Only from the feedback form's optional contact box, stored as `suggestions.contact`. The field is labelled "Email / Discord" in both locales, so it collects an e-mail address often enough that Play's own data type applies — declaring only "Other in-app messages" would under-report it. Blank unless the student types something; never used for anything but replying to that report. |
 | **Other in-app messages** | Yes | **No** | App functionality | Optional | Only if the student opens the feedback form and submits it. The text goes to reIS's own Supabase `suggestions` table via the `submit-suggestion` edge function — **not** to any third party, which is why `Shared` is `No`. It was `Yes` while delivery went to a Discord channel; that integration is gone (§1.1), so answering `Yes` here would now be wrong. Stored alongside it: the reIS screen name from a fixed allowlist, app version, browser name/version and viewport. **The page address is never recorded automatically** — that is the fix for the old leak. It is not a claim about the message itself: the title, body and contact are free text, so a student can always type a URL or an enrolment detail into them, and the schema cannot prevent that. |
 
-#### The feedback rate-limit hash — a second row to decide **YOU**
+#### The feedback rate-limit hash — DECIDED: not declared
 
 Submitting feedback also writes a **salted** hash of the source IP to
 `suggestions_rate_log`, purely to count submissions from that connection in the
@@ -78,14 +97,17 @@ outlive its hour. It stops counting at the hour regardless. A guaranteed ceiling
 needs a scheduled prune, which needs `pg_cron` (not currently enabled on the
 project); tracked separately rather than done here.
 
-Whether that needs declaring is a judgement, not a fact the code settles, which
-is why it is not answered here. The argument for **not** declaring it is Play's
-security-and-abuse-prevention exception; the argument against is that it is
-retained rather than processed ephemerally, and an IP is personal data. It is
-disclosed in the privacy policy either way, so the only open question is the
-Data safety form. Decide it deliberately.
+Whether that needs declaring is a judgement, not a fact the code settles. The
+argument for **not** declaring it is Play's security-and-abuse-prevention
+exception; the argument against is that it is retained rather than processed
+ephemerally, and an IP is personal data. It is disclosed in the privacy policy
+either way, so the only open question was the Data safety form.
 
-### Academic data: the row that needs a human decision **YOU**
+**Decided 2026-08-22: not declared**, resting on the abuse-prevention exception.
+Worth re-opening if the lazy prune is ever replaced by something that retains
+longer, or if the hash is ever used for anything other than counting.
+
+### Academic data: DECIDED: not collected
 
 Read Google's definition before answering this part, because the intuitive test
 is the wrong one. Play defines **collected** as *transmitting user data off the
@@ -111,13 +133,19 @@ the account with, for which reIS is only a client. On that reading these are
 declared **not collected**.
 
 That reading is defensible and it matches what the app does, but it is an
-attestation a human signs, not a fact the code settles. **Read the two Play
-pages and decide deliberately** — [Data safety
+attestation a human signs, not a fact the code settles. The two Play pages it
+rests on are [Data safety
 definitions](https://support.google.com/googleplay/android-developer/answer/10787469)
 and [the collection and sharing
-exceptions](https://support.google.com/googleplay/answer/11416267) — rather than
-copying the table above because it is here. A wrong Data safety answer is an
-enforcement matter, not a typo. **YOU**
+exceptions](https://support.google.com/googleplay/answer/11416267). A wrong Data
+safety answer is an enforcement matter, not a typo.
+
+**Decided 2026-08-22: academic data is not declared as collected**, on the
+reading above. The load-bearing part is that MENDELU is not a third party
+receiving student data from reIS — it is the service the student already holds
+the account with, and reIS is only a client of it. If reIS ever routes IS data
+through a server of its own, that stops being true and this answer must change
+before the build that does it ships.
 
 **Google Drive is deliberately absent from this section**: the backup is
 browser-extension only and does not exist in the Android build, so it is out of
