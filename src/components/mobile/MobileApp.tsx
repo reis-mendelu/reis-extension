@@ -25,6 +25,7 @@ import { SheetHost } from './sheets/SheetHost';
  */
 export function MobileApp() {
   const tab = useAppStore((s) => s.mobileTab);
+  const demoMode = useAppStore((s) => s.demoMode);
 
   return (
     <div
@@ -62,11 +63,26 @@ export function MobileApp() {
           bottom: '16px',
         }}
       />
-      {tab === 'calendar' && <CalendarScreen />}
-      {tab === 'exams' && <ExamsScreen />}
-      {tab === 'subjects' && <SubjectsScreen />}
-      {tab === 'map' && <MapScreen />}
-      {tab === 'student' && <StudentScreen />}
+      {/* DemoBanner (above) already spends --safe-top on its own top padding.
+          When it's mounted, it — not the active screen — is the topmost thing
+          on screen, so the active screen must not pad for the inset a second
+          time. Screens read --safe-top through several independent paths
+          (ScreenHeader's paddingTop, MapScreen's own floating search bar), so
+          rather than special-case demoMode into each one, this wrapper
+          shadows the custom property to 0 for the whole subtree — every
+          consumer below it sees the inset as already spent, with no per-file
+          coordination required. `[--safe-top:0px]` is a Tailwind arbitrary
+          property, not a stylesheet: it compiles to the same var() the rest
+          of the mobile UI already reads. Off (demoMode false, the common
+          case), this is a no-op and every screen keeps reading the real
+          inset exactly as before. */}
+      <div className={`flex flex-1 flex-col overflow-hidden${demoMode ? ' [--safe-top:0px]' : ''}`}>
+        {tab === 'calendar' && <CalendarScreen />}
+        {tab === 'exams' && <ExamsScreen />}
+        {tab === 'subjects' && <SubjectsScreen />}
+        {tab === 'map' && <MapScreen />}
+        {tab === 'student' && <StudentScreen />}
+      </div>
       <BottomNav />
       <SheetHost />
     </div>

@@ -1,4 +1,5 @@
 import type { SocietyDataset } from '../MockManager';
+import { addDays, formatCompactIsDate, formatIsDate } from './demoDates';
 
 /**
  * The dataset behind demo mode.
@@ -10,7 +11,25 @@ import type { SocietyDataset } from '../MockManager';
  * Czech throughout, deliberately. An earlier draft reused the English ESN
  * dataset for exams and schedule, which put English course names next to this
  * Czech study plan on the same screen.
+ *
+ * Dates are computed relative to `now`, not committed as literals: a reviewer
+ * can open this build on any day, and a hardcoded date (the previous version
+ * used February 2027) is only ever "soon" for a few weeks before every
+ * schedule and exam term falls outside the calendar's visible range and the
+ * demo quietly regresses to its empty state. `now` is captured once, at
+ * module evaluation, so every date below is consistent with the others.
  */
+const now = new Date();
+
+/** An exam-term date, "DD.MM.YYYY", `dayOffset` days from now. */
+const term = (dayOffset: number) => formatIsDate(addDays(now, dayOffset));
+
+/** The same, with a time suffix — for registeredTerm / registration fields. */
+const termAt = (dayOffset: number, time: string) => `${term(dayOffset)} ${time}`;
+
+/** A schedule-lesson date, "YYYYMMDD", `dayOffset` days from now. */
+const lessonDay = (dayOffset: number) => formatCompactIsDate(addDays(now, dayOffset));
+
 export const demoDataset: SocietyDataset = {
   id: 'demo',
   name: 'Ukázka',
@@ -29,25 +48,25 @@ export const demoDataset: SocietyDataset = {
           status: 'registered',
           registeredTerm: {
             id: 'alg-term-1',
-            date: '15.02.2027',
+            date: term(14),
             time: '09:00',
             room: 'Q01',
             teacher: 'doc. Ing. Petr Novák, Ph.D.',
             teacherId: 'novak-petr',
-            deregistrationDeadline: '14.02.2027 23:59',
+            deregistrationDeadline: termAt(13, '23:59'),
           },
           terms: [
             {
               id: 'alg-term-1',
-              date: '15.02.2027',
+              date: term(14),
               time: '09:00',
               capacity: { occupied: 18, total: 25, raw: '18/25' },
               full: false,
               room: 'Q01',
               teacher: 'doc. Ing. Petr Novák, Ph.D.',
               teacherId: 'novak-petr',
-              registrationStart: '01.02.2027 00:00',
-              registrationEnd: '14.02.2027 23:59',
+              registrationStart: termAt(0, '00:00'),
+              registrationEnd: termAt(13, '23:59'),
               attemptTypes: ['regular'],
               canRegisterNow: true,
             },
@@ -69,15 +88,15 @@ export const demoDataset: SocietyDataset = {
           terms: [
             {
               id: 'sta-term-1',
-              date: '18.02.2027',
+              date: term(21),
               time: '10:00',
               capacity: { occupied: 15, total: 20, raw: '15/20' },
               full: false,
               room: 'Z18',
               teacher: 'Ing. Jana Dvořáková, Ph.D.',
               teacherId: 'dvorakova-jana',
-              registrationStart: '05.02.2027 00:00',
-              registrationEnd: '17.02.2027 23:59',
+              registrationStart: termAt(8, '00:00'),
+              registrationEnd: termAt(20, '23:59'),
               attemptTypes: ['regular'],
               canRegisterNow: true,
             },
@@ -89,8 +108,8 @@ export const demoDataset: SocietyDataset = {
 
   schedule: [
     {
-      id: 'sched-mon-alg',
-      date: '20270215',
+      id: 'sched-today-alg',
+      date: lessonDay(0),
       startTime: '08:00',
       endTime: '09:30',
       courseCode: 'DEM-ALG',
@@ -109,8 +128,8 @@ export const demoDataset: SocietyDataset = {
       periodId: '',
     },
     {
-      id: 'sched-mon-sta',
-      date: '20270215',
+      id: 'sched-today-sta',
+      date: lessonDay(0),
       startTime: '10:00',
       endTime: '11:30',
       courseCode: 'DEM-STA',
@@ -131,8 +150,8 @@ export const demoDataset: SocietyDataset = {
       periodId: '',
     },
     {
-      id: 'sched-wed-eko',
-      date: '20270217',
+      id: 'sched-yesterday-eko',
+      date: lessonDay(-1),
       startTime: '13:00',
       endTime: '14:30',
       courseCode: 'DEM-EKO',
@@ -151,8 +170,8 @@ export const demoDataset: SocietyDataset = {
       periodId: '',
     },
     {
-      id: 'sched-wed-sta-seminar',
-      date: '20270217',
+      id: 'sched-tomorrow-sta-seminar',
+      date: lessonDay(1),
       startTime: '15:00',
       endTime: '16:30',
       courseCode: 'DEM-STA',
