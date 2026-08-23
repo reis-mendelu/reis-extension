@@ -11,8 +11,22 @@ import { requestQueue } from '../../utils/requestQueue';
 import { isNativeHost } from '../../mobile/openIsFile';
 import { openNativeFile } from './openNativeFile';
 import { useTranslation } from '../useTranslation';
+import { useAppStore } from '../../store/useAppStore';
+import { DemoModeError } from '../../errors/demoMode';
 
 const log = createLogger('useFileActions');
+
+/**
+ * Demo mode exists only on Capacitor today, and every branch below already
+ * sits behind `isNativeHost()`, which routes Capacitor through
+ * `openNativeFile` instead — so this can never trip in production. It stays
+ * here as defence in depth, not a live bug fix: if demo mode ever reaches a
+ * non-native host, these credentialed fetches must not become the way a
+ * reviewer's tap reaches a real IS session.
+ */
+function assertNotDemo(): void {
+  if (useAppStore.getState().demoMode) throw new DemoModeError();
+}
 
 interface DownloadProgress {
   completed: number;
@@ -46,6 +60,7 @@ export function useFileActions(): UseFileActionsResult {
       }
 
       try {
+        assertNotDemo();
         const response = await fetch(fullUrl, { credentials: 'include' });
 
         if (!response.ok) {
@@ -88,6 +103,7 @@ export function useFileActions(): UseFileActionsResult {
         if (result.kind !== 'binary') return null;
         return URL.createObjectURL(result.blob);
       }
+      assertNotDemo();
       const response = await fetch(fullUrl, { credentials: 'include' });
       if (!response.ok) return null;
       const blob = await response.blob();
@@ -108,6 +124,7 @@ export function useFileActions(): UseFileActionsResult {
         return;
       }
       try {
+        assertNotDemo();
         const response = await fetch(fullUrl, { credentials: 'include' });
         if (!response.ok) {
           window.open(fullUrl, '_blank', 'noopener,noreferrer');
@@ -146,6 +163,7 @@ export function useFileActions(): UseFileActionsResult {
         return requestQueue.add(async () => {
           try {
             const fullUrl = normalizeFileUrl(link);
+            assertNotDemo();
 
             // Basic retry logic (1 retry)
             let response = await fetch(fullUrl, { credentials: 'include' });

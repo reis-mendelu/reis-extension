@@ -37,4 +37,43 @@ describe('createDemoSlice', () => {
 
     expect(await IndexedDBService.get('meta', 'reis_error_reporting_enabled')).toBe(false);
   });
+
+  it("enterDemo wipes a real student's IS-derived data even in stores the demo never writes", async () => {
+    // 'subjects' is never touched by the demo dataset — it's real IS data
+    // left behind by an earlier real login. If enterDemo only cleared what
+    // it writes, this row would sit under the "Ukázka" banner forever.
+    await IndexedDBService.set('subjects', 'current', {
+      version: 1,
+      lastUpdated: new Date().toISOString(),
+      data: {
+        REAL101: {
+          displayName: 'Skutečný předmět studenta',
+          fullName: 'Skutečný předmět studenta',
+          subjectCode: 'REAL101',
+          folderUrl: '/real-student-folder',
+          fetchedAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    await useAppStore.getState().enterDemo();
+
+    expect(await IndexedDBService.get('subjects', 'current')).toBeFalsy();
+  });
+
+  it('enterDemo preserves student-authored data that nothing restores', async () => {
+    await IndexedDBService.set('custom_events', 'real-event-1', {
+      id: 'real-event-1',
+      title: 'Skutečná studentova událost',
+      date: '2026-09-01',
+      startTime: '10:00',
+      endTime: '11:00',
+    });
+    await IndexedDBService.set('meta', 'reis_error_reporting_enabled', false);
+
+    await useAppStore.getState().enterDemo();
+
+    expect(await IndexedDBService.get('custom_events', 'real-event-1')).toBeTruthy();
+    expect(await IndexedDBService.get('meta', 'reis_error_reporting_enabled')).toBe(false);
+  });
 });
