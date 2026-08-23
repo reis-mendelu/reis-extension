@@ -37,6 +37,7 @@ import { createMapSlice } from './slices/createMapSlice';
 import { createRsvpSlice } from './slices/createRsvpSlice';
 import { createAdminSlice } from './slices/createAdminSlice';
 import { createSuggestionsSlice } from './slices/createSuggestionsSlice';
+import { createDemoSlice } from './slices/createDemoSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { resetRealDataStores } from '../services/loadRealDataSnapshot';
@@ -82,6 +83,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createRsvpSlice(...a),
   ...createAdminSlice(...a),
   ...createSuggestionsSlice(...a),
+  ...createDemoSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
