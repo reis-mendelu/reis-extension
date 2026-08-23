@@ -4,6 +4,23 @@ import './installCapacitorPlatform';
 import { createRoot } from 'react-dom/client';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapApp } from '@capacitor/app';
+// Static on purpose, unlike the `@/entrypoints/main/main` import below: that
+// module renders the React root on evaluation, which is why IT stays dynamic
+// (see the comment in startApp). A stylesheet has no such side effect — it
+// only affects paint — so importing it here up front is safe, and it is the
+// only way LoginGate (rendered before startApp ever runs) gets styled at all.
+// Keep this list identical to src/entrypoints/main/main.tsx lines 3-11; if
+// that list changes, mirror it here too, or the gate silently regresses to
+// unstyled again.
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-600.css';
+import '@fontsource/inter/latin-700.css';
+import '@fontsource/inter/latin-ext-400.css';
+import '@fontsource/inter/latin-ext-500.css';
+import '@fontsource/inter/latin-ext-600.css';
+import '@fontsource/inter/latin-ext-700.css';
+import '@/index.css';
 import { ensureSession, LoginCancelledError } from '@/mobile/ensureSession';
 import { buildInAppLoginDeps } from '@/mobile/inAppLoginDeps';
 import { handleBackPress } from '@/mobile/backButton';
@@ -121,7 +138,20 @@ function showFatalError(e: unknown): void {
   document.getElementById('root')!.textContent = `reIS failed to start: ${String(e)}`;
 }
 
-function showLoginGate(): void {
+// Exported for startApp.test.ts to verify the pre-render theme fix directly,
+// the same reason startApp itself is exported below.
+export async function showLoginGate(): Promise<void> {
+  // Reused rather than re-reading IndexedDB here: createThemeSlice.loadTheme
+  // already does exactly this (read 'reis_theme', validate, fall back to
+  // DEFAULT_THEME, set data-theme) and every other theme-sync path in the app
+  // (BroadcastChannel listeners, THEME_UPDATE) goes through the same action —
+  // a second copy of the validation would drift the day DEFAULT_THEME changes.
+  // Calling it here is safe because it is idempotent: it only reads storage
+  // and re-applies the attribute, and startApp's own boot sequence calls it
+  // again once the real app mounts. Awaited so the gate never paints one
+  // frame in DaisyUI's unthemed default before the real theme lands.
+  await useAppStore.getState().loadTheme();
+
   const root = createRoot(document.getElementById('root')!);
   root.render(
     <LoginGate
@@ -147,7 +177,7 @@ void boot().catch(async (e) => {
   // without a MENDELU account has, App Store reviewers included. Anything
   // else keeps the old error text.
   if (e instanceof LoginCancelledError) {
-    showLoginGate();
+    await showLoginGate();
     return;
   }
 

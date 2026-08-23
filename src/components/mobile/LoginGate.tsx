@@ -53,7 +53,14 @@ export function LoginGate({
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-base-100 p-6">
+    // px-6/pb-6 replace p-6's uniform padding, and pt- adds --safe-top to the
+    // same 1.5rem instead of overriding it outright: this is the first screen
+    // the native app can show, so without the inset the title is drawn under
+    // the Dynamic Island / status bar. Matches MapScreen's/DemoBanner's
+    // calc(...) pattern, not AdminLoginScreen's bare var(), because that
+    // screen's header had no top padding to preserve and this one does.
+    // Resolves to the original 1.5rem off-device.
+    <div className="flex min-h-dvh items-center justify-center bg-base-100 px-6 pb-6 pt-[calc(1.5rem_+_var(--safe-top,0px))]">
       <div className="flex w-full max-w-sm flex-col gap-4 text-center">
         <h1 className="font-display text-2xl font-bold">{t('demo.gateTitle')}</h1>
         <p className="text-sm text-base-content/70">{t('demo.gateBody')}</p>
