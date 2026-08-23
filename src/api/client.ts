@@ -114,6 +114,12 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
  * transient IS outage is never dressed up as a lapsed session.
  */
 export async function fetchAuthedBytes(url: string): Promise<Uint8Array> {
+  // Same guard as fetchWithAuth, first statement so no request can escape:
+  // this is a second, separate authenticated path to is.mendelu.cz (the
+  // eduroam cert flow calls it directly for the root cert and the user-p12),
+  // so fetchWithAuth's own guard does not cover it.
+  if (useAppStore.getState().demoMode) throw new DemoModeError();
+
   if (getPlatform().kind === 'capacitor') {
     const { fetchIsBinary, toBytes } = await import('./capacitorBinary');
     const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
