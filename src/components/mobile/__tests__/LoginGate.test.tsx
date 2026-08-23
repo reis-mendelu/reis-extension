@@ -9,7 +9,7 @@ describe('LoginGate', () => {
   });
 
   it('offers sign-in and demo, and says the app is unofficial', () => {
-    render(<LoginGate onSignIn={() => {}} />);
+    render(<LoginGate onSignIn={() => {}} onDemoStarted={() => {}} />);
 
     expect(screen.getByRole('button', { name: 'Přihlásit se' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Prohlédnout ukázku' })).toBeInTheDocument();
@@ -18,7 +18,7 @@ describe('LoginGate', () => {
 
   it('calls onSignIn when sign-in is tapped', () => {
     const onSignIn = vi.fn();
-    render(<LoginGate onSignIn={onSignIn} />);
+    render(<LoginGate onSignIn={onSignIn} onDemoStarted={() => {}} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Přihlásit se' }));
 
@@ -28,7 +28,7 @@ describe('LoginGate', () => {
   it('enters demo mode when the demo is tapped', async () => {
     const enterDemo = vi.fn().mockResolvedValue(undefined);
     useAppStore.setState({ enterDemo });
-    render(<LoginGate onSignIn={() => {}} />);
+    render(<LoginGate onSignIn={() => {}} onDemoStarted={() => {}} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Prohlédnout ukázku' }));
 
@@ -47,7 +47,7 @@ describe('LoginGate', () => {
         })
     );
     useAppStore.setState({ enterDemo });
-    render(<LoginGate onSignIn={() => {}} />);
+    render(<LoginGate onSignIn={() => {}} onDemoStarted={() => {}} />);
 
     const demoButton = screen.getByRole('button', { name: 'Prohlédnout ukázku' });
     fireEvent.click(demoButton);
@@ -70,7 +70,7 @@ describe('LoginGate', () => {
         })
     );
     useAppStore.setState({ enterDemo });
-    render(<LoginGate onSignIn={() => {}} />);
+    render(<LoginGate onSignIn={() => {}} onDemoStarted={() => {}} />);
 
     const demoButton = screen.getByRole('button', { name: 'Prohlédnout ukázku' });
     fireEvent.click(demoButton);
@@ -82,5 +82,14 @@ describe('LoginGate', () => {
 
     fireEvent.click(demoButton);
     expect(enterDemo).toHaveBeenCalledTimes(2);
+  });
+
+  it('starts the app once demo data is seeded', async () => {
+    const onDemoStarted = vi.fn();
+    useAppStore.setState({ enterDemo: vi.fn().mockResolvedValue(undefined) });
+    render(<LoginGate onSignIn={() => {}} onDemoStarted={onDemoStarted} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Prohlédnout ukázku' }));
+    await vi.waitFor(() => expect(onDemoStarted).toHaveBeenCalledOnce());
   });
 });

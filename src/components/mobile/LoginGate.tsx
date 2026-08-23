@@ -20,7 +20,13 @@ import { logError } from '../../utils/reportError';
  * Centred with a max width rather than stretched: the app ships the phone tree
  * on iPad too, so this renders at 1024pt as well as at 390.
  */
-export function LoginGate({ onSignIn }: { onSignIn: () => void }) {
+export function LoginGate({
+  onSignIn,
+  onDemoStarted,
+}: {
+  onSignIn: () => void;
+  onDemoStarted: () => void;
+}) {
   const { t } = useTranslation();
   const enterDemo = useAppStore((s) => s.enterDemo);
   // enterDemo() sequentially wipes 12 IndexedDB stores and 2 meta keys before
@@ -35,6 +41,7 @@ export function LoginGate({ onSignIn }: { onSignIn: () => void }) {
     setDemoPending(true);
     try {
       await enterDemo();
+      onDemoStarted();
     } catch (err) {
       // Leaving the button disabled here would strand the student on a dead
       // control with no account and no way forward, so clear pending on

@@ -1,9 +1,10 @@
 // MUST be first: installs the Capacitor host before anything reads it.
 import './installCapacitorPlatform';
 
+import { createRoot } from 'react-dom/client';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapApp } from '@capacitor/app';
-import { ensureSession } from '@/mobile/ensureSession';
+import { ensureSession, LoginCancelledError } from '@/mobile/ensureSession';
 import { buildInAppLoginDeps } from '@/mobile/inAppLoginDeps';
 import { handleBackPress } from '@/mobile/backButton';
 import { installMobileActionHandler } from '@/mobile/actionHandler';
@@ -12,6 +13,7 @@ import { promptSessionRecovery } from '@/mobile/sessionRecovery';
 import { purgePlaintextToken } from '@/platform/tokenStore';
 import { setSessionExpiredHandler } from '@/services/sessionExpiry';
 import { useAppStore } from '@/store/useAppStore';
+import { LoginGate } from '@/components/mobile/LoginGate';
 
 /**
  * Android's hardware back unwinds the sheet stack, then the tab, before
@@ -47,6 +49,17 @@ async function boot(): Promise<void> {
   // copies of that would drift.
   await ensureSession(await buildInAppLoginDeps());
 
+  await startApp({ demo: false });
+}
+
+/**
+ * Everything after a session exists — or after someone chose the demo.
+ *
+ * Extracted rather than duplicated for the demo path: the order below is
+ * load-bearing and each step carries a comment saying why it sits where it
+ * does. Two copies would drift on the first change.
+ */
+export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // Before the React root: the app posts REIS_ACTION as soon as it renders
   // (a watchdog exam refresh, a tapped download), and with no responder those
   // sit until the 30 s timeout. Installing first means none are missed.
@@ -70,6 +83,10 @@ async function boot(): Promise<void> {
   await import('@/entrypoints/main/main');
   await SplashScreen.hide();
 
+  // Demo data is seeded, static and complete. Syncing would only produce
+  // failed IS requests, and fetchWithAuth throws DemoModeError anyway.
+  if (demo) return;
+
   // In the extension the CONTENT SCRIPT drives this and posts results into the
   // iframe. Capacitor has neither, so the app drives its own sync; sendToIframe
   // loops the results back to this same window, where useAppLogic's existing
@@ -91,8 +108,36 @@ async function boot(): Promise<void> {
   });
 }
 
+/** The sign-in gate, rendered without a session and without the app behind it. */
+function showLoginGate(): void {
+  const root = createRoot(document.getElementById('root')!);
+  root.render(
+    <LoginGate
+      onSignIn={() => {
+        void (async () => {
+          await ensureSession(await buildInAppLoginDeps());
+          root.unmount();
+          await startApp({ demo: false });
+        })();
+      }}
+      onDemoStarted={() => {
+        root.unmount();
+        void startApp({ demo: true });
+      }}
+    />
+  );
+}
+
 void boot().catch(async (e) => {
-  // Never leave the student on a splash screen with no explanation.
   await SplashScreen.hide();
+
+  // Backing out of login is not a failure — it is the only path someone
+  // without a MENDELU account has, App Store reviewers included. Anything
+  // else keeps the old error text.
+  if (e instanceof LoginCancelledError) {
+    showLoginGate();
+    return;
+  }
+
   document.getElementById('root')!.textContent = `reIS failed to start: ${String(e)}`;
 });
