@@ -63,10 +63,21 @@ the binary that ships.
 | Login cancelled (`onDismissed`) | raw error string in `#root` | React `LoginGate` screen |
 | Anything else | raw error string in `#root` | same path, unchanged |
 
-`LoginGate` offers two actions:
+`LoginGate` offers two actions and one line of text:
 
 - **Přihlásit se** — re-runs `ensureSession(await buildInAppLoginDeps())`.
 - **Prohlédnout ukázku** — enters demo mode.
+- A disclaimer: *"Neoficiální studentská aplikace. Není provozována Mendelovou
+  univerzitou."* / *"Unofficial student app. Not operated by Mendel
+  University."*
+
+The disclaimer is not decoration. It was decided on 2026-08-23 that **MENDELU
+will not be asked for permission** (`docs/app-store-listing.md` §4), which makes
+saying "unofficial" prominently one of only three remaining mitigations for
+Guideline 5.2.2 — and today the word appears exactly once in the whole product,
+as the last line of a 4000-character store description. This screen is the
+natural place to fix that, because it is the first thing both a reviewer and a
+first-run student see.
 
 Distinguishing the two causes needs a typed error rather than a string match, so
 `ensureSession` rejects with a `LoginCancelledError` instead of a bare `Error`.
@@ -226,6 +237,11 @@ is a boot sequence in a native shell. Before this is called done:
 2. Enter the demo and visit all five tabs; confirm none is empty and none is
    stuck loading.
 3. Tap something network-bound and confirm the toast, not a silent failure.
-4. Repeat on Android, since Play's App access answer depends on the same path.
-5. Re-shoot the store screenshots if the banner changes what they look like
-   (`npm run store:shots -- --preset ios-6.9`).
+4. **Repeat on the iPad simulator.** iPad support is a requirement as of
+   2026-08-23, and the gate screen is new UI that has never been seen at tablet
+   width — the phone tree at 1024pt is exactly where a centred two-button layout
+   goes wrong.
+5. Repeat on Android, since Play's App access answer depends on the same path.
+6. Re-shoot the store screenshots at both iOS sizes if the banner changes what
+   they look like (`npm run store:shots -- --preset ios-6.9` and `--preset
+   ios-13`).

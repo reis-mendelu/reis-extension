@@ -174,10 +174,16 @@ Two things worth knowing before uploading:
   `resolvePhoneViewport` returns true for `isNativeApp` without measuring
   anything, deliberately: the desktop tree is genuinely broken under Capacitor
   (`PdfViewer.tsx` calls bare `chrome.runtime.getURL`, and the failure is
-  swallowed into a spinner that never resolves). So the honest choice is
-  between a roomy-looking iPad listing and dropping iPad support by setting
-  `TARGETED_DEVICE_FAMILY = 1`. **YOU** — iOS is already device-verified on a
-  real iPad, so this is a product call, not a technical one.
+  swallowed into a spinner that never resolves).
+
+  **DECIDED 2026-08-23: iPad support stays.** `TARGETED_DEVICE_FAMILY` remains
+  `"1,2"`. Two consequences to act on rather than absorb: the reviewer notes
+  now explain the full-width phone layout up front (§5), because that shape is
+  exactly what gets flagged under Guideline 4.2; and the iPad screenshots
+  should be shot against the **fullest** fixture available, since empty space
+  is what makes them look thin. `dev/fixtures/` has `teachingWeek` and
+  `examSeason` — the first capture landed on a Sunday with two lessons, which
+  is the worst case rather than a typical one.
 - Because a browser at 1032px wide measures as desktop, the `ios-13` preset
   patches `matchMedia` in an init script to force the narrow answer. That is
   emulating `isNativeApp`, not faking a screenshot: it makes the browser render
@@ -203,17 +209,57 @@ first screen a reviewer sees is MENDELU's own branded login page. Apple rejects
 unofficial university and school clients under 5.2.2 with some regularity, and
 this is the guideline most likely to cost us the September deadline.
 
-What actually helps, in order:
+**DECIDED 2026-08-23: we are not asking MENDELU for permission.** Written
+permission is the only thing that would close 5.2.2 outright, so declining to
+seek it is a real increase in rejection risk and the decision is recorded as
+such rather than smoothed over. It is also defensible — asking has weeks of lead
+time against a 15 September deadline, a "no" is worse than never having asked,
+and the substantive argument below does not depend on permission. Stated once,
+now built around; the fallback if Apple rejects on 5.2.2 is to ask then, having
+spent review cycles.
 
-1. **Written permission from MENDELU** — a mail from the IS/system-integrator
-   side saying reIS may act as a client. This is the only thing that closes
-   5.2.2 outright. It is also the highest-value item on the whole iOS track,
-   and it has a lead time measured in weeks. **YOU** — worth starting before
-   anything else on this page.
-2. **Reviewer notes that pre-empt the question** rather than waiting to be
+### 4.1 The argument that does not need permission
+
+The strongest position is that **reIS is a user agent, not a republisher**. It
+is worth getting this framing right, because it is the difference between "an
+app displaying a third party's content" (which 5.2.2 is about) and "an app
+helping a person reach their own account" (which it is not):
+
+- Every request is made **with the student's own credentials, for the student's
+  own records**, at their explicit instruction. reIS holds no MENDELU data of
+  its own and has no account of its own.
+- **Nothing is redistributed.** Data is parsed on the device and shown only to
+  the account holder. There is no server of ours in the path — the same
+  argument the privacy answers in §2 rest on, and it is checkable.
+- reIS **never sees the password**: the student types it into MENDELU's own page
+  in a WebView. So it is not even credential-proxying.
+
+That is the same relationship a browser or an email client has to the service it
+talks to.
+
+### 4.2 What to actually do instead
+
+1. **Say "unofficial" loudly, in three places.** Today it appears exactly once,
+   as the **last line of a 4000-character store description** — which is
+   effectively nowhere. It should be: (a) in the App Store description's
+   **opening** lines, not its closing ones; (b) **inside the app**, on the
+   sign-in gate screen being built for demo mode — "Neoficiální studentská
+   aplikace. Není provozována Mendelovou univerzitou."; (c) in the reviewer
+   notes. This is the cheapest mitigation available and it is currently missing
+   from two of the three.
+2. **Demo mode** (§1.1) so the reviewer can evaluate reIS without authenticating
+   into a third-party system at all.
+3. **Reviewer notes that pre-empt the question** rather than waiting to be
    asked. Draft in §5.
-3. **A demo mode** (§1.1 option C) so the reviewer can evaluate reIS without
-   authenticating into a third-party system at all.
+
+### 4.3 One thing a reviewer may query, left as-is for now
+
+The listing title is **"reIS — IS MENDELU jednoduše"**, which uses the
+university's name. Nominative use to describe what an app works with is
+generally defensible, and dropping "MENDELU" would gut discoverability for the
+only audience that wants this app. Left unchanged deliberately — but if Apple
+objects specifically to the title, renaming is a cheap concession to make at
+that point, and cheaper than arguing.
 
 Two adjacent guidelines, lower risk but worth knowing:
 
@@ -231,31 +277,44 @@ Two adjacent guidelines, lower risk but worth knowing:
 
 ## 5. App Review notes — draft
 
-To paste into App Store Connect → App Review Information → Notes. Adjust once
-the §4.1 permission question has an answer, because the honest wording differs
-a lot depending on it.
+To paste into App Store Connect → App Review Information → Notes. Written for
+the no-permission position decided in §4, so it leads with the user-agent
+framing rather than with an authorisation claim it cannot make.
 
-> reIS is a free, non-commercial student client for the MENDELU university
-> information system (is.mendelu.cz). It has no ads, no in-app purchases and no
-> subscriptions.
+Keep it short. Reviewer notes are skimmed, and the first two sentences carry
+almost all the weight.
+
+> reIS is a free, non-commercial, open-source app made by students of Mendel
+> University in Brno. **It is not an official university app and is not
+> operated by or affiliated with the university.**
+>
+> WHAT IT IS: a client that helps a student read and act on **their own**
+> records in the university information system (is.mendelu.cz), the same
+> records they can already open in a browser. reIS holds no university data of
+> its own and has no account of its own. Nothing is republished — everything is
+> shown only to the account holder, on their own device.
 >
 > HOW IT WORKS: the student signs in on the university's own web page, shown in
-> a WebView. reIS never sees or stores the password. The resulting session
+> a WebView, so reIS never sees or stores the password. The resulting session
 > token is kept in the iOS Keychain and used only to fetch that student's own
-> records from is.mendelu.cz, which are parsed on the device and shown in a
-> simplified interface. No academic data is transmitted to us or to anyone
-> else; it stays on the device.
+> records, which are parsed on the device. No academic data is transmitted to
+> us or to anyone else.
 >
-> DEMO: because a MENDELU account is required, we have included a demo mode —
-> tap "[label]" on the sign-in screen to browse the app with sample data. No
-> account needed. [Replace with the demo credentials if we go the account
-> route instead.]
+> DEMO: a university account is required to use the app, so we have included a
+> demo mode that needs no account — on the sign-in screen, tap "[label]" to
+> browse the app with sample data. The sample student is fictional.
 >
 > PERMISSIONS: the app requests none. There is no location access; the campus
 > map is a static basemap.
 >
-> [If permission is granted: "MENDELU has confirmed in writing that reIS may
-> operate as a client of the information system; contact <name, role, email>."]
+> ON IPAD: reIS deliberately shows its phone layout on iPad. This is not an
+> unadapted iPhone app — the layout is the tested one, and the tablet-specific
+> layout is disabled because it depends on a browser-extension API that does
+> not exist in the app.
+
+That last paragraph exists because iPad support is now a requirement (§3) and
+a full-width phone layout is exactly the shape a reviewer flags under
+Guideline 4.2. Better to explain it than to be asked.
 
 ---
 
@@ -279,11 +338,17 @@ for a re-upload of the same marketing version.
 
 ## 7. Order of work
 
-1. **Ask MENDELU about permission** (§4.1). Longest lead time, highest value,
-   and the answer changes the reviewer notes. **YOU**
-2. **Build demo mode** (§1.1 option C). Unblocks the reviewer and Play's App
-   access in one change.
+1. **Build demo mode** (§1.1 option C). Unblocks the reviewer and Play's App
+   access in one change, and carries the in-app "unofficial" disclaimer that
+   §4.2 says is missing. Spec:
+   `docs/superpowers/specs/2026-08-23-demo-mode-design.md`.
+2. **Move the "unofficial" line to the top of the store description** (§4.2).
+   Minutes of work, and it is one of only three 5.2.2 mitigations left now that
+   permission is not being sought. **YOU** — it is listing copy.
 3. **App Privacy answers** into App Store Connect (§2). No blockers — these can
    be filed as soon as the app record exists.
-4. **Reviewer notes** (§5), finalised against the answer to 1.
-5. ~~Screenshots~~ — done, §3.
+4. **Reviewer notes** (§5).
+5. **Re-shoot the iPad screenshots** against the fullest fixture once the demo
+   banner exists (§3).
+6. ~~Ask MENDELU for permission~~ — decided against, §4.
+7. ~~Screenshots~~ — captured, §3.
