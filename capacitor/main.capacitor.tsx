@@ -109,6 +109,18 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
 }
 
 /** The sign-in gate, rendered without a session and without the app behind it. */
+/**
+ * The last-resort message.
+ *
+ * Shared by boot() and by the gate's own handlers rather than written twice:
+ * once the gate has unmounted there is no React tree left, so a rejection with
+ * no handler leaves a blank screen — which is the failure this whole screen
+ * exists to remove.
+ */
+function showFatalError(e: unknown): void {
+  document.getElementById('root')!.textContent = `reIS failed to start: ${String(e)}`;
+}
+
 function showLoginGate(): void {
   const root = createRoot(document.getElementById('root')!);
   root.render(
@@ -118,11 +130,11 @@ function showLoginGate(): void {
           await ensureSession(await buildInAppLoginDeps());
           root.unmount();
           await startApp({ demo: false });
-        })();
+        })().catch(showFatalError);
       }}
       onDemoStarted={() => {
         root.unmount();
-        void startApp({ demo: true });
+        void startApp({ demo: true }).catch(showFatalError);
       }}
     />
   );
@@ -139,5 +151,5 @@ void boot().catch(async (e) => {
     return;
   }
 
-  document.getElementById('root')!.textContent = `reIS failed to start: ${String(e)}`;
+  showFatalError(e);
 });
