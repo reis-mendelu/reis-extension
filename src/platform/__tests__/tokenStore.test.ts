@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { setPlatform, __resetPlatformForTests } from '../index';
 import {
   saveStoredToken,
@@ -7,6 +7,8 @@ import {
   purgePlaintextToken,
 } from '../tokenStore';
 import type { ReisPlatform } from '../types';
+import { DemoModeError } from '../../errors/demoMode';
+import { useAppStore } from '../../store/useAppStore';
 
 /** A live-looking UISAuth value; isPlausibleToken rejects short/empty strings. */
 const TOKEN = 'a'.repeat(40);
@@ -92,6 +94,24 @@ describe('tokenStore', () => {
   it('treats an unreadable secure store as a lapsed session', async () => {
     secure.api.get.mockRejectedValueOnce(new Error('KeyPermanentlyInvalidatedException'));
     await expect(loadStoredToken()).rejects.toMatchObject({ sessionExpired: true });
+  });
+});
+
+describe('loadStoredToken in demo mode', () => {
+  beforeEach(() => useAppStore.setState({ demoMode: true }));
+  afterEach(() => useAppStore.setState({ demoMode: false }));
+
+  /**
+   * This is the real boundary, not the per-call-site guards in fetchWithAuth /
+   * fetchAuthedBytes / openExternal — those are cheap early exits, but every
+   * authenticated path (fetchWithAuth, fetchAuthedBytes, personPhoto,
+   * openIsFileNatively, openPdfInline, inAppLoginDeps) ends up here to get the
+   * token it would send. Guarding the source instead of every drain is what
+   * stops the next unguarded call site from being a third whack-a-mole miss.
+   */
+  it('throws DemoModeError before touching secure storage', async () => {
+    await expect(loadStoredToken()).rejects.toBeInstanceOf(DemoModeError);
+    expect(secure.api.get).not.toHaveBeenCalled();
   });
 });
 
