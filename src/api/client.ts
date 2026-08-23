@@ -3,6 +3,8 @@ import { getPlatform } from '../platform';
 import { fetchViaCapacitor } from './capacitorTransport';
 import { buildCapacitorRequestOptions } from './capacitorRequest';
 import { loadStoredToken } from '../platform/tokenStore';
+import { DemoModeError } from '../errors/demoMode';
+import { useAppStore } from '../store/useAppStore';
 
 export const BASE_URL = 'https://is.mendelu.cz';
 
@@ -29,6 +31,12 @@ export const DEFAULT_HEADERS: Record<string, string> = {
  * - Iframe context: Proxied through content script via postMessage
  */
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  // One guard rather than one per call site. Every IS request on every
+  // platform funnels through here, so demo mode cannot leak a request by
+  // someone forgetting a check — the pattern installExternalLinkHandler
+  // already uses for the same reason.
+  if (useAppStore.getState().demoMode) throw new DemoModeError();
+
   const headers = { ...DEFAULT_HEADERS, ...(options.headers as Record<string, string>) };
 
   // Capacitor: IS denies CORS to every origin, so a browser fetch from the

@@ -5,6 +5,8 @@ vi.mock('../../utils/reportError', () => ({ logError: vi.fn() }));
 
 import { logError } from '../../utils/reportError';
 import { getPlatform } from '../../platform';
+import { DemoModeError } from '../../errors/demoMode';
+import { useAppStore } from '../../store/useAppStore';
 
 import { externalHrefFromClick, installExternalLinkHandler, openExternal } from '../openExternal';
 
@@ -174,6 +176,15 @@ describe('openExternal', () => {
 
     expect(window.open).not.toHaveBeenCalled();
     expect(logError).toHaveBeenCalledWith('Mobile.openExternal', expect.any(Error));
+  });
+
+  // Guards the other network chokepoint: fetchWithAuth carries IS data
+  // traffic, openExternal carries the page links. Without this guard a
+  // reviewer could tap a link and land on MENDELU's real login in Safari.
+  it('refuses to open anything in demo mode', async () => {
+    useAppStore.setState({ demoMode: true });
+    await expect(openExternal('https://is.mendelu.cz/auth/')).rejects.toBeInstanceOf(DemoModeError);
+    useAppStore.setState({ demoMode: false });
   });
 
   // The non-Capacitor branch: the extension and dev webapp still render the
