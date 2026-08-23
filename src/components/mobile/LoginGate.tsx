@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { logError } from '../../utils/reportError';
 
 /**
  * Shown when the student dismisses the IS login WebView.
@@ -21,6 +23,27 @@ import { useTranslation } from '../../hooks/useTranslation';
 export function LoginGate({ onSignIn }: { onSignIn: () => void }) {
   const { t } = useTranslation();
   const enterDemo = useAppStore((s) => s.enterDemo);
+  // enterDemo() sequentially wipes 12 IndexedDB stores and 2 meta keys before
+  // seeding the mock dataset. A slow device is exactly this screen's expected
+  // audience (first run, no account yet), so a bare fire-and-forget click
+  // handler invites a second tap that interleaves one call's wipe with the
+  // other's seed and leaves the store half-populated.
+  const [demoPending, setDemoPending] = useState(false);
+
+  const handleDemoTap = async () => {
+    if (demoPending) return;
+    setDemoPending(true);
+    try {
+      await enterDemo();
+    } catch (err) {
+      // Leaving the button disabled here would strand the student on a dead
+      // control with no account and no way forward, so clear pending on
+      // failure and let them retry.
+      logError('LoginGate.enterDemo', err);
+    } finally {
+      setDemoPending(false);
+    }
+  };
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-base-100 p-6">
@@ -31,11 +54,24 @@ export function LoginGate({ onSignIn }: { onSignIn: () => void }) {
         <button className="btn btn-primary" onClick={onSignIn}>
           {t('demo.signIn')}
         </button>
-        <button className="btn btn-ghost" onClick={() => void enterDemo()}>
-          {t('demo.tryDemo')}
+        <button
+          className="btn btn-ghost"
+          onClick={() => void handleDemoTap()}
+          disabled={demoPending}
+        >
+          {demoPending ? (
+            <span className="loading loading-spinner loading-xs" />
+          ) : (
+            t('demo.tryDemo')
+          )}
         </button>
 
-        <p className="pt-2 text-xs text-base-content/50">{t('demo.disclaimer')}</p>
+        {/* Legible compliance copy, not a footnote: this is one of only three
+            remaining mitigations for App Store Guideline 5.2.2 (no MENDELU
+            permission was sought), so it must read at body weight, not fine
+            print. Matches text-sm/base-content of the body copy above and
+            adds font-medium so a reviewer's eye lands on it. */}
+        <p className="pt-2 text-sm font-medium text-base-content">{t('demo.disclaimer')}</p>
       </div>
     </div>
   );

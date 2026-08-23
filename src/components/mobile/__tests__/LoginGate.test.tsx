@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { LoginGate } from '../LoginGate';
 import { useAppStore } from '../../../store/useAppStore';
 
@@ -33,5 +33,54 @@ describe('LoginGate', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Prohlédnout ukázku' }));
 
     expect(enterDemo).toHaveBeenCalledOnce();
+    // Let the pending-state reset (added for the in-flight guard below) settle
+    // inside act, instead of leaking into the next test as an unawaited update.
+    await waitFor(() => expect(enterDemo).toHaveBeenCalledOnce());
+  });
+
+  it('ignores a second tap while enterDemo is still in flight', async () => {
+    let resolveDemo: () => void = () => {};
+    const enterDemo = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveDemo = resolve;
+        })
+    );
+    useAppStore.setState({ enterDemo });
+    render(<LoginGate onSignIn={() => {}} />);
+
+    const demoButton = screen.getByRole('button', { name: 'Prohlédnout ukázku' });
+    fireEvent.click(demoButton);
+    fireEvent.click(demoButton);
+    fireEvent.click(demoButton);
+
+    expect(enterDemo).toHaveBeenCalledOnce();
+    expect(demoButton).toBeDisabled();
+
+    resolveDemo();
+    await waitFor(() => expect(demoButton).not.toBeDisabled());
+  });
+
+  it('re-enables the demo button so the student can retry after enterDemo rejects', async () => {
+    let rejectDemo: (err: Error) => void = () => {};
+    const enterDemo = vi.fn(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          rejectDemo = reject;
+        })
+    );
+    useAppStore.setState({ enterDemo });
+    render(<LoginGate onSignIn={() => {}} />);
+
+    const demoButton = screen.getByRole('button', { name: 'Prohlédnout ukázku' });
+    fireEvent.click(demoButton);
+
+    expect(demoButton).toBeDisabled();
+
+    rejectDemo(new Error('IDB wipe failed'));
+    await waitFor(() => expect(demoButton).not.toBeDisabled());
+
+    fireEvent.click(demoButton);
+    expect(enterDemo).toHaveBeenCalledTimes(2);
   });
 });
