@@ -1,4 +1,5 @@
 import { supabase } from '../services/spolky/supabaseClient';
+import { useAppStore } from '../store/useAppStore';
 
 async function hashId(raw: string): Promise<string> {
     const data = new TextEncoder().encode(raw);
@@ -29,6 +30,11 @@ export async function submitFeedback(
 }
 
 export async function trackDailyUsage(studentId: string): Promise<void> {
+    // The demo student is fabricated, so this would send a hash of a fiction.
+    // The Data safety and App Privacy filings both describe this row as a hash
+    // of a real student identifier — keep that literally true.
+    if (useAppStore.getState().demoMode) return;
+
     const hashedId = await hashId(studentId);
     const { error } = await supabase.rpc('track_daily_usage', {
         p_student_id: hashedId,
