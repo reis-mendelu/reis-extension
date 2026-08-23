@@ -1255,5 +1255,15 @@
   "session": {
     "expired": "Přihlášení do IS vypršelo.",
     "signIn": "Přihlásit se"
+  },
+  "demo": {
+    "gateTitle": "Přihlaste se do IS",
+    "gateBody": "reIS potřebuje váš univerzitní účet. Přihlášení probíhá na stránce IS MENDELU — reIS vaše heslo nikdy nevidí.",
+    "signIn": "Přihlásit se",
+    "tryDemo": "Prohlédnout ukázku",
+    "disclaimer": "Neoficiální studentská aplikace. Není provozována Mendelovou univerzitou.",
+    "bannerLabel": "Ukázka",
+    "bannerExit": "Přihlásit se",
+    "toast": "Toto je jen ukázka."
   }
 }
