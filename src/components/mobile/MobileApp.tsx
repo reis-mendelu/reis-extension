@@ -1,5 +1,6 @@
 import { Toaster } from '../ui/sonner';
 import { useAppStore } from '../../store/useAppStore';
+import { DemoBanner } from './DemoBanner';
 import { BottomNav } from './nav/BottomNav';
 import { CalendarScreen } from './screens/CalendarScreen';
 import { ExamsScreen } from './screens/ExamsScreen';
@@ -30,6 +31,14 @@ export function MobileApp() {
       data-testid="mobile-app"
       className="relative flex h-screen w-full flex-col overflow-hidden bg-base-200 text-base-content"
     >
+      {/* First child, above every screen's own ScreenHeader: each screen is a
+          flex-1 sibling below this one, so DemoBanner occupies its own row
+          rather than sitting inside (and scrolling away with) tab content,
+          and it survives tab switches because it isn't part of the `tab ===`
+          branches below. Renders null itself when demo mode is off, so this
+          is a no-op for every real student and for the Chrome extension /
+          ISKAM trees, which never mount MobileApp at all. */}
+      <DemoBanner />
       {/* Offset by the safe-area inset: a top-center toast otherwise lands on
           top of the status bar under targetSdk 36's forced edge-to-edge, with
           the clock showing through the "Saved to Downloads" confirmation.
