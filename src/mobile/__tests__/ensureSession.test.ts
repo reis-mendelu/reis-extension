@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { ensureSession, type SessionDeps } from '../ensureSession';
+import { ensureSession, LoginCancelledError, type SessionDeps } from '../ensureSession';
 
 const TOKEN = 'AAAAAAAAAAAAAAAAAAAAAAAA%2FBBBBBBBBBBBBBBBBBBB';
 
@@ -166,5 +166,20 @@ describe('ensureSession', () => {
     });
     await ensureSession(d);
     expect(remove).toHaveBeenCalled();
+  });
+
+  it('rejects with LoginCancelledError when the student backs out', async () => {
+    let dismiss: () => void = () => {};
+    const d = deps({
+      readCookies: vi.fn(async () => ({})),
+      onDismissed: vi.fn(async (cb: () => void) => {
+        dismiss = cb;
+        return { remove: vi.fn(async () => {}) };
+      }),
+      openLogin: vi.fn(async () => {
+        dismiss();
+      }),
+    });
+    await expect(ensureSession(d)).rejects.toBeInstanceOf(LoginCancelledError);
   });
 });
