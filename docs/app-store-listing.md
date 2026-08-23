@@ -41,11 +41,15 @@ Three ways out, and they are genuinely different in cost and in risk:
 | **B. Ask MENDELU for a dedicated test UIS account** | An email and a wait, with no guarantee | Clean if granted. Out of our hands, and it is also the moment MENDELU learns reIS exists — which is either fine or is the §4 conversation arriving early. |
 | **C. Build a demo mode into reIS** | Real engineering — see below | None externally. Fully in our control. |
 
-**Recommended: C.** Not only because it is the safe one, but because it is the
-only option that also solves three other things at once — App Store screenshots
-(§3), Play's "App access" declaration when we apply for production, and letting
+**Recommended: C.** Not only because it is the safe one, but because it also
+answers Play's "App access" declaration when we apply for production, and lets
 a reviewer judge reIS without ever touching MENDELU's servers, which takes some
 weight off §4.
+
+It does **not** unblock screenshots — an earlier draft of this page claimed it
+did, and that was wrong. `scripts/store-shots.mjs` already renders the app from
+synthetic fixtures with no login at all, and the iOS sizes are captured. See
+§3.
 
 **How much work C actually is** — worth stating honestly rather than as "we
 already have mocks":
@@ -133,27 +137,59 @@ position to be in than an over-inclusive label. Disclosing costs nothing here.
 
 ---
 
-## 3. Screenshots
+## 3. Screenshots — DONE
 
-Required sizes, confirmed against Apple's current spec on 2026-08-23:
+**Not blocked on §1, which is the useful surprise here.** The Play listing's
+screenshots were never shot on a device either — `scripts/store-shots.mjs`
+renders the same React phone tree in headless Chromium against a synthetic
+fixture, precisely so that no real student's name, enrolment or grades end up
+on a public store page forever. That pipeline has no login gate, so it works
+for the App Store today.
 
-| Display | Required | Portrait px | Simulator that produces it natively |
-|---|---|---|---|
-| 6.9″ iPhone | Yes | **1320 × 2868** | iPhone 17 Pro Max — **verified: `simctl io screenshot` emits exactly 1320 × 2868**, no scaling |
-| 13″ iPad | Yes, for an iPad-capable app | **2064 × 2752** | iPad Pro 13-inch (M5) |
+`--preset` now selects the store:
 
-Both simulators are installed on this machine. 1–10 shots per size; PNG or
-JPEG; **no alpha channel**. Smaller iPhone and iPad sizes are optional — Apple
-scales them down from these.
+| Preset | Output | Pixels | Viewport | Required by |
+|---|---|---|---|---|
+| `play` | `.store-shots/` | 1080 × 1920 | 360 × 640 @3 | Play (2:1 aspect cap) |
+| `ios-6.9` | `.store-shots-ios-6.9/` | **1320 × 2868** | 440 × 956 @3 | App Store, 6.9″ iPhone |
+| `ios-13` | `.store-shots-ios-13/` | **2064 × 2752** | 1032 × 1376 @2 | App Store, 13″ iPad |
 
-**Blocked on §1.** Everything past the sign-in page needs a session, so there
-is nothing to photograph yet. When it unblocks, take them from the demo dataset
-rather than from a real login: App Store screenshots are public, and a real
-login puts a real student's name, grades and timetable on a public product
-page permanently.
+```bash
+REIS_FIXTURE=teachingWeek npx vite --config vite.web.config.ts --port 4317
+```
 
-Captured so far, kept only as evidence of the blocker, not as submissions:
-`shot1.png` (splash), `shot2.png` (the UIS sign-in WebView).
+```bash
+npm run store:shots -- --preset ios-6.9
+```
+
+**Captured 2026-08-23: four screens × both iOS sizes, at exactly the required
+pixel counts** (calendar, exams, subjects, map). Apple imposes no aspect cap,
+so the iOS viewports are simply the pixel target divided by the scale rather
+than real device point sizes.
+
+Two things worth knowing before uploading:
+
+- **The iPad shots are the phone tree at full width, and they look sparse.**
+  That is not a bug in the capture — it is what the iPad app shows.
+  `resolvePhoneViewport` returns true for `isNativeApp` without measuring
+  anything, deliberately: the desktop tree is genuinely broken under Capacitor
+  (`PdfViewer.tsx` calls bare `chrome.runtime.getURL`, and the failure is
+  swallowed into a spinner that never resolves). So the honest choice is
+  between a roomy-looking iPad listing and dropping iPad support by setting
+  `TARGETED_DEVICE_FAMILY = 1`. **YOU** — iOS is already device-verified on a
+  real iPad, so this is a product call, not a technical one.
+- Because a browser at 1032px wide measures as desktop, the `ios-13` preset
+  patches `matchMedia` in an init script to force the narrow answer. That is
+  emulating `isNativeApp`, not faking a screenshot: it makes the browser render
+  the same tree the app does.
+
+Simulator captures, kept only as evidence of §1 and not as submissions:
+`shot1.png` (splash) and `shot2.png` (the UIS sign-in WebView). Worth recording
+that `simctl io screenshot` on iPhone 17 Pro Max emits exactly 1320 × 2868
+natively — useful if a future screen can only be shot on a real device.
+
+Format rules either way: 1–10 shots per size, PNG or JPEG, **no alpha
+channel**. Smaller iPhone and iPad sizes are optional; Apple scales them down.
 
 ---
 
@@ -245,9 +281,9 @@ for a re-upload of the same marketing version.
 
 1. **Ask MENDELU about permission** (§4.1). Longest lead time, highest value,
    and the answer changes the reviewer notes. **YOU**
-2. **Build demo mode** (§1.1 option C). Unblocks the reviewer, the screenshots
-   and Play's App access in one change.
-3. **Screenshots** from the demo dataset, 6.9″ and 13″ (§3).
-4. **App Privacy answers** into App Store Connect (§2). No blockers — these can
+2. **Build demo mode** (§1.1 option C). Unblocks the reviewer and Play's App
+   access in one change.
+3. **App Privacy answers** into App Store Connect (§2). No blockers — these can
    be filed as soon as the app record exists.
-5. **Reviewer notes** (§5), finalised against the answer to 1.
+4. **Reviewer notes** (§5), finalised against the answer to 1.
+5. ~~Screenshots~~ — done, §3.
