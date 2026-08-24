@@ -167,6 +167,17 @@ export function useFileActions(): UseFileActionsResult {
   const downloadZip = useCallback(async (fileLinks: string[], zipFileName: string) => {
     if (fileLinks.length < 2) return;
 
+    // Checked once, before the workers spawn, rather than relying on the
+    // per-worker assertNotDemo below: that one throws inside each queued task,
+    // whose catch only logs and ticks progress, so a demo user watched a
+    // progress bar run to completion and produce an empty zip with no
+    // explanation. One toast for the action, not one per file — and the
+    // per-worker guard stays as the actual network boundary.
+    if (useAppStore.getState().demoMode) {
+      logError('useFileActions.downloadZip', new DemoModeError());
+      return;
+    }
+
     setIsDownloading(true);
     setDownloadProgress({ completed: 0, total: fileLinks.length });
 

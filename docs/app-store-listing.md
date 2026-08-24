@@ -361,6 +361,11 @@ for a re-upload of the same marketing version.
 
 ## 7. Order of work
 
+> **Historical — every item here is done.** It is the plan that produced the
+> submission, kept for the reasoning rather than as a live checklist. §10 is
+> the record of what was actually filed.
+
+
 1. **Build demo mode** (§1.1 option C). Unblocks the reviewer and Play's App
    access in one change, and carries the in-app "unofficial" disclaimer that
    §4.2 says is missing. Spec:
@@ -527,8 +532,9 @@ reIS is an open-source project by MENDELU students.
 
 ## 10. Submission state — 2026-08-24
 
-The app record exists and every field Apple requires is filled. `Add for
-Review` is enabled; the version has **not** been submitted.
+**Submitted to App Review on 2026-08-24 at 23:49.** Status: *Waiting for
+Review*, release set to automatic on approval. Every field below was filed
+before submission; Apple's estimate is up to 48 hours.
 
 | Item | State |
 |---|---|
