@@ -11,8 +11,22 @@ import { requestQueue } from '../../utils/requestQueue';
 import { isNativeHost } from '../../mobile/openIsFile';
 import { openNativeFile } from './openNativeFile';
 import { useTranslation } from '../useTranslation';
+import { DemoModeError, isDemoMode } from '../../errors/demoMode';
+import { logError } from '../../utils/reportError';
 
 const log = createLogger('useFileActions');
+
+/**
+ * Demo mode exists only on Capacitor today, and every branch below already
+ * sits behind `isNativeHost()`, which routes Capacitor through
+ * `openNativeFile` instead — so this can never trip in production. It stays
+ * here as defence in depth, not a live bug fix: if demo mode ever reaches a
+ * non-native host, these credentialed fetches must not become the way a
+ * reviewer's tap reaches a real IS session.
+ */
+function assertNotDemo(): void {
+  if (isDemoMode()) throw new DemoModeError();
+}
 
 interface DownloadProgress {
   completed: number;
@@ -46,6 +60,7 @@ export function useFileActions(): UseFileActionsResult {
       }
 
       try {
+        assertNotDemo();
         const response = await fetch(fullUrl, { credentials: 'include' });
 
         if (!response.ok) {
@@ -62,6 +77,14 @@ export function useFileActions(): UseFileActionsResult {
         // Clean up after 5 minutes
         setTimeout(() => URL.revokeObjectURL(blobUrl), 5 * 60 * 1000);
       } catch (e) {
+        // A demo block must not fall through to the direct link: window.open
+        // would hand the real IS URL to the browser and step straight over the
+        // boundary assertNotDemo exists to hold. logError shows the demo toast
+        // and reports nothing, so the student gets told instead.
+        if (e instanceof DemoModeError) {
+          logError('useFileActions.openFile', e);
+          return;
+        }
         log.error('Failed to fetch file as blob, falling back to direct link', e);
         window.open(fullUrl, '_blank', 'noopener,noreferrer');
       }
@@ -88,6 +111,7 @@ export function useFileActions(): UseFileActionsResult {
         if (result.kind !== 'binary') return null;
         return URL.createObjectURL(result.blob);
       }
+      assertNotDemo();
       const response = await fetch(fullUrl, { credentials: 'include' });
       if (!response.ok) return null;
       const blob = await response.blob();
@@ -108,6 +132,7 @@ export function useFileActions(): UseFileActionsResult {
         return;
       }
       try {
+        assertNotDemo();
         const response = await fetch(fullUrl, { credentials: 'include' });
         if (!response.ok) {
           window.open(fullUrl, '_blank', 'noopener,noreferrer');
@@ -126,6 +151,11 @@ export function useFileActions(): UseFileActionsResult {
         document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
       } catch (e) {
+        // See openFile: the direct-link fallback would bypass the demo guard.
+        if (e instanceof DemoModeError) {
+          logError('useFileActions.downloadSingle', e);
+          return;
+        }
         log.error('Failed to download file', e);
         window.open(fullUrl, '_blank', 'noopener,noreferrer');
       }
@@ -135,6 +165,17 @@ export function useFileActions(): UseFileActionsResult {
 
   const downloadZip = useCallback(async (fileLinks: string[], zipFileName: string) => {
     if (fileLinks.length < 2) return;
+
+    // Checked once, before the workers spawn, rather than relying on the
+    // per-worker assertNotDemo below: that one throws inside each queued task,
+    // whose catch only logs and ticks progress, so a demo user watched a
+    // progress bar run to completion and produce an empty zip with no
+    // explanation. One toast for the action, not one per file — and the
+    // per-worker guard stays as the actual network boundary.
+    if (isDemoMode()) {
+      logError('useFileActions.downloadZip', new DemoModeError());
+      return;
+    }
 
     setIsDownloading(true);
     setDownloadProgress({ completed: 0, total: fileLinks.length });
@@ -146,6 +187,7 @@ export function useFileActions(): UseFileActionsResult {
         return requestQueue.add(async () => {
           try {
             const fullUrl = normalizeFileUrl(link);
+            assertNotDemo();
 
             // Basic retry logic (1 retry)
             let response = await fetch(fullUrl, { credentials: 'include' });

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { downloadDocument } from '../../api/proxyClient';
 import { logError } from '../../utils/reportError';
+import { DemoModeError } from '../../errors/demoMode';
 import { useTranslation } from '../useTranslation';
 
 export type DownloadStatus = 'idle' | 'loading' | 'done' | 'error';
@@ -47,8 +48,12 @@ export function useDocumentDownload() {
         })
         .catch((e) => {
           inFlight.current.delete(id);
+          // logError shows the demo toast for a DemoModeError and reports
+          // nothing. The row goes back to idle rather than 'error' to match:
+          // the download was refused on purpose, and a warning triangle next
+          // to it would say the app is broken instead.
           logError('Documents.download', e);
-          setStatus((s) => ({ ...s, [id]: 'error' }));
+          setStatus((s) => ({ ...s, [id]: e instanceof DemoModeError ? 'idle' : 'error' }));
         });
     },
     [tr]

@@ -3,6 +3,7 @@ import { getPlatform } from '../platform';
 import { fetchViaCapacitor } from './capacitorTransport';
 import { buildCapacitorRequestOptions } from './capacitorRequest';
 import { loadStoredToken } from '../platform/tokenStore';
+import { DemoModeError, isDemoMode } from '../errors/demoMode';
 
 export const BASE_URL = 'https://is.mendelu.cz';
 
@@ -29,6 +30,12 @@ export const DEFAULT_HEADERS: Record<string, string> = {
  * - Iframe context: Proxied through content script via postMessage
  */
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  // One guard rather than one per call site. Every IS request on every
+  // platform funnels through here, so demo mode cannot leak a request by
+  // someone forgetting a check — the pattern installExternalLinkHandler
+  // already uses for the same reason.
+  if (isDemoMode()) throw new DemoModeError();
+
   const headers = { ...DEFAULT_HEADERS, ...(options.headers as Record<string, string>) };
 
   // Capacitor: IS denies CORS to every origin, so a browser fetch from the
@@ -106,6 +113,12 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
  * transient IS outage is never dressed up as a lapsed session.
  */
 export async function fetchAuthedBytes(url: string): Promise<Uint8Array> {
+  // Same guard as fetchWithAuth, first statement so no request can escape:
+  // this is a second, separate authenticated path to is.mendelu.cz (the
+  // eduroam cert flow calls it directly for the root cert and the user-p12),
+  // so fetchWithAuth's own guard does not cover it.
+  if (isDemoMode()) throw new DemoModeError();
+
   if (getPlatform().kind === 'capacitor') {
     const { fetchIsBinary, toBytes } = await import('./capacitorBinary');
     const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');

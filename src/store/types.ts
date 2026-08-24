@@ -580,6 +580,17 @@ export interface MapSlice {
   closeComposer: () => void;
 }
 
+export interface DemoSlice {
+  /**
+   * True only in the Capacitor app, and only when someone chose the demo from
+   * the sign-in gate. Defaults false everywhere, which is what keeps the
+   * extension and ISKAM builds untouched without a build flag.
+   */
+  demoMode: boolean;
+  enterDemo(): Promise<void>;
+  exitDemo(): Promise<void>;
+}
+
 export type AppState = ScheduleSlice &
   ExamSlice &
   SyllabusSlice &
@@ -616,6 +627,7 @@ export type AppState = ScheduleSlice &
   MapSlice &
   import('./slices/createRsvpSlice').RsvpSlice &
   import('./slices/createAdminSlice').AdminSlice &
-  import('./slices/createSuggestionsSlice').SuggestionsSlice;
+  import('./slices/createSuggestionsSlice').SuggestionsSlice &
+  DemoSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

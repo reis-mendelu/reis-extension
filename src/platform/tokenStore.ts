@@ -1,5 +1,6 @@
 import { getPlatform } from './index';
 import { isPlausibleToken } from './sessionToken';
+import { DemoModeError, isDemoMode } from '../errors/demoMode';
 
 const TOKEN_KEY = 'reis.session.uisAuth';
 
@@ -28,8 +29,21 @@ export async function saveStoredToken(token: string): Promise<void> {
  * by a credential change or a restore onto new hardware, and decryption then
  * throws; that is a lapsed session, not a crash — and emphatically not a reason
  * to look in plaintext storage instead.
+ *
+ * The demo-mode check is guarded HERE rather than at each caller (fetchWithAuth,
+ * fetchAuthedBytes, personPhoto, openIsFile, useFileActions, inAppLoginDeps).
+ * This is the one place every authenticated path converges to actually obtain
+ * the token it would send — a per-call-site guard is whack-a-mole (already
+ * missed twice: personPhoto and the file-open paths shipped unguarded), while
+ * a new call site added tomorrow gets this for free just by calling the only
+ * function that can hand it a real credential. The fetchWithAuth /
+ * fetchAuthedBytes / openExternal guards stay in place too — failing before
+ * this function is even reached is cheaper — but they are defence in depth,
+ * not the actual boundary.
  */
 export async function loadStoredToken(): Promise<string> {
+  if (isDemoMode()) throw new DemoModeError();
+
   let value: unknown;
   try {
     value = await getPlatform().secureStorage.get(TOKEN_KEY);

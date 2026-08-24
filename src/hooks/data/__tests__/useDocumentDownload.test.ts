@@ -3,6 +3,7 @@ import { renderHook, act, waitFor, cleanup } from '@testing-library/react';
 import { toast } from 'sonner';
 import { useDocumentDownload } from '../useDocumentDownload';
 import * as proxy from '../../../api/proxyClient';
+import { DemoModeError } from '../../../errors/demoMode';
 
 describe('useDocumentDownload', () => {
   beforeEach(() => vi.useRealTimers());
@@ -30,6 +31,19 @@ describe('useDocumentDownload', () => {
       result.current.run('reg-arch', 'https://x', 'f.pdf');
     });
     await waitFor(() => expect(result.current.status['reg-arch']).toBe('error'));
+  });
+
+  // A demo block is not a failure of the download. Leaving the row in 'error'
+  // put a red warning triangle next to a button that did exactly what it was
+  // supposed to — which reads, to an App Store reviewer taking the demo, as a
+  // broken app rather than an explained limit. The toast does the explaining.
+  it('returns a demo-blocked row to idle rather than flagging an error', async () => {
+    vi.spyOn(proxy, 'downloadDocument').mockRejectedValue(new DemoModeError());
+    const { result } = renderHook(() => useDocumentDownload());
+    act(() => {
+      result.current.run('potvrzeni-cz', 'https://x', 'f.pdf');
+    });
+    await waitFor(() => expect(result.current.status['potvrzeni-cz']).toBe('idle'));
   });
 
   it('ignores a ghost re-click on a row already in flight', async () => {

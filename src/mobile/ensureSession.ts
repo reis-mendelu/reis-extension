@@ -1,5 +1,19 @@
 import { extractSessionToken, isPlausibleToken } from '../platform/sessionToken';
 
+/**
+ * The student dismissed the login WebView rather than failing to sign in.
+ *
+ * A distinct type rather than a message match: boot branches on this to show
+ * the sign-in gate instead of an error, and the message is user-facing copy
+ * that will be reworded.
+ */
+export class LoginCancelledError extends Error {
+  constructor() {
+    super('Login cancelled: the sign-in window was dismissed');
+    this.name = 'LoginCancelledError';
+  }
+}
+
 export interface ListenerHandle {
   remove(): Promise<void>;
 }
@@ -74,7 +88,7 @@ export async function ensureSession(deps: SessionDeps): Promise<string> {
       if (settled) return;
       settled = true;
       void cleanup();
-      reject(new Error('Login cancelled: the sign-in window was dismissed'));
+      reject(new LoginCancelledError());
     };
 
     const onLoad = () => {

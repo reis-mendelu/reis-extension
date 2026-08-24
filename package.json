@@ -42,7 +42,8 @@
     "android:apk": "node scripts/android-release.mjs apk",
     "android:aab": "node scripts/android-release.mjs aab",
     "android:feature-graphic": "node scripts/gen-feature-graphic.mjs",
-    "ios:version": "tsx --tsconfig tsconfig.app.json scripts/sync-ios-version.ts"
+    "ios:version": "tsx --tsconfig tsconfig.app.json scripts/sync-ios-version.ts",
+    "store:shots": "node scripts/store-shots.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

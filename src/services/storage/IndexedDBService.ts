@@ -221,7 +221,12 @@ class IndexedDBServiceImpl {
   ): Promise<ReisDB[K]['value'] | undefined> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const value = await this.run((db) => db.get(storeName as any, key));
-    return value ? this.validate(storeName, value) : undefined;
+    // A truthiness check here (`value ? ... : undefined`) would read back a
+    // stored `false` — a real, legitimate value for boolean meta keys like
+    // the crash-report opt-out — as "missing" and silently fall back to
+    // whatever default the caller uses for undefined. Check for the actual
+    // "not found" sentinel instead.
+    return value !== undefined ? this.validate(storeName, value) : undefined;
   }
 
   async set<K extends StoreName>(
@@ -229,9 +234,12 @@ class IndexedDBServiceImpl {
     key: string,
     value: ReisDB[K]['value']
   ): Promise<void> {
-    // Validate before saving to prevent corrupt data ingress
+    // Validate before saving to prevent corrupt data ingress. Check against
+    // `undefined` specifically (validate()'s actual failure sentinel) rather
+    // than falsiness — a truthiness check here would drop a legitimate
+    // `false`/`0`/`''`/`null` value, e.g. the crash-report opt-out.
     const validated = this.validate(storeName, value);
-    if (!validated) return; // Drop invalid data rather than saving it
+    if (validated === undefined) return; // Drop invalid data rather than saving it
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.run((db) => db.put(storeName as any, validated, key));

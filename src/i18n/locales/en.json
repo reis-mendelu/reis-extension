@@ -1255,5 +1255,15 @@
   "session": {
     "expired": "Your IS session has expired.",
     "signIn": "Sign in"
+  },
+  "demo": {
+    "gateTitle": "Sign in to IS",
+    "gateBody": "reIS needs your university account. You sign in on IS MENDELU's own page — reIS never sees your password.",
+    "signIn": "Sign in",
+    "tryDemo": "Try the demo",
+    "disclaimer": "Unofficial student app. Not operated by Mendel University.",
+    "bannerLabel": "Demo",
+    "bannerExit": "Sign in",
+    "toast": "This is only a demo."
   }
 }

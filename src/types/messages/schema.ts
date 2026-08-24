@@ -106,6 +106,7 @@ const ActionResultMsg = z.object({
   success: z.boolean(),
   data: z.unknown().optional(),
   error: z.string().optional(),
+  demoMode: z.boolean().optional(),
 });
 const SyncUpdateMsg = z.object({
   type: z.literal('REIS_SYNC_UPDATE'),

@@ -17,6 +17,10 @@ export default defineConfig({
       'src/**/*.{test,spec}.{js,ts,jsx,tsx}',
       'scripts/**/*.{test,spec}.{js,ts,jsx,tsx}',
       'supabase/**/*.{test,spec}.{js,ts}',
+      // main.capacitor.tsx lives outside src/ (it's the Capacitor entry point,
+      // built by a separate vite config) but still needs coverage for the
+      // demo-mode boot branch.
+      'capacitor/**/*.{test,spec}.{js,ts,jsx,tsx}',
     ],
     coverage: {
       provider: 'v8' as const,

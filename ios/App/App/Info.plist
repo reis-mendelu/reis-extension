@@ -22,6 +22,14 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<!-- reIS implements no encryption of its own: HTTPS is Apple's, the session
+	     token sits in Apple's Keychain, and the only crypto in the app is
+	     SHA-256 hashing (crypto.subtle.digest), which is not encryption. That
+	     makes it exempt, and declaring it here means App Store Connect stops
+	     asking the export-compliance question on every single upload — it
+	     blocked build 50006 as "Missing Compliance" until answered by hand. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

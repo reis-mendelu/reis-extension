@@ -3,6 +3,7 @@ import { StoreSchemas, type StoreName } from '../../types/storage';
 import type { SyllabusRequirements, SubjectSuccessRate } from '../../types/documents';
 import type { ExamSubject } from '../../types/exams';
 import type { BlockLesson } from '../../types/calendarTypes';
+import type { DualLanguageStudyPlan, StudyStats, StudyComparison } from '../../types/studyPlan';
 
 export interface SocietyDataset {
   id: string;
@@ -11,6 +12,15 @@ export interface SocietyDataset {
   schedule: BlockLesson[];
   syllabuses?: Record<string, SyllabusRequirements>;
   success_rates?: Record<string, SubjectSuccessRate>;
+
+  /**
+   * Optional so the three society datasets stay valid. Only the `demo`
+   * dataset fills them — they exist to make the subjects tab render for a
+   * reviewer who has no account.
+   */
+  studyPlan?: DualLanguageStudyPlan;
+  studyStats?: StudyStats;
+  studyComparison?: StudyComparison;
 }
 
 class MockManagerImpl {
@@ -50,6 +60,20 @@ class MockManagerImpl {
         await IndexedDBService.set('success_rates', code, rate);
       }
     }
+
+    if (dataset.studyPlan) {
+      await IndexedDBService.set('study_plan', 'current', dataset.studyPlan);
+    }
+
+    // study_stats and study_comparison are KEYS IN `meta`, not stores of
+    // their own — see createStudyPlanSlice. Never clear `meta` to seed them:
+    // the theme, the language and the crash-report opt-out live there too.
+    if (dataset.studyStats) {
+      await IndexedDBService.set('meta', 'study_stats', dataset.studyStats);
+    }
+    if (dataset.studyComparison) {
+      await IndexedDBService.set('meta', 'study_comparison', dataset.studyComparison);
+    }
   }
 
   private validate(data: unknown, storeName: StoreName) {
@@ -58,7 +82,10 @@ class MockManagerImpl {
 
     const result = schema.safeParse(data);
     if (!result.success) {
-      console.error(`[MockManager] Validation FAILED for ${storeName} in dataset ${this.activeDataset?.id}:`, result.error);
+      console.error(
+        `[MockManager] Validation FAILED for ${storeName} in dataset ${this.activeDataset?.id}:`,
+        result.error
+      );
       throw new Error(`Data corruption detected in mock dataset: ${storeName}`);
     }
   }

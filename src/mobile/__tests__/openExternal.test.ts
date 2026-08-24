@@ -5,6 +5,8 @@ vi.mock('../../utils/reportError', () => ({ logError: vi.fn() }));
 
 import { logError } from '../../utils/reportError';
 import { getPlatform } from '../../platform';
+import { DemoModeError } from '../../errors/demoMode';
+import { useAppStore } from '../../store/useAppStore';
 
 import { externalHrefFromClick, installExternalLinkHandler, openExternal } from '../openExternal';
 
@@ -176,6 +178,15 @@ describe('openExternal', () => {
     expect(logError).toHaveBeenCalledWith('Mobile.openExternal', expect.any(Error));
   });
 
+  // Guards the other network chokepoint: fetchWithAuth carries IS data
+  // traffic, openExternal carries the page links. Without this guard a
+  // reviewer could tap a link and land on MENDELU's real login in Safari.
+  it('refuses to open anything in demo mode', async () => {
+    useAppStore.setState({ demoMode: true });
+    await expect(openExternal('https://is.mendelu.cz/auth/')).rejects.toBeInstanceOf(DemoModeError);
+    useAppStore.setState({ demoMode: false });
+  });
+
   // The non-Capacitor branch: the extension and dev webapp still render the
   // mobile tree at a narrow viewport, so these call sites run there too.
   it('opens a genuine external URL with noopener off Capacitor', async () => {
@@ -238,5 +249,37 @@ describe('openExternal — which browser', () => {
 
     expect(openWebView).not.toHaveBeenCalled();
     expect(open).toHaveBeenCalledWith({ url });
+  });
+});
+
+describe('installExternalLinkHandler in demo mode', () => {
+  // The click handler used to fire-and-forget with `void`. openExternal
+  // rejects with DemoModeError in demo mode, and installErrorReporter's
+  // unhandledrejection listener POSTs to Supabase without going through
+  // logError — so a blocked tap was reported as a crash. It must reach
+  // logError instead, which suppresses the report and shows the toast.
+  it('routes the rejection through logError rather than leaving it unhandled', async () => {
+    const { installExternalLinkHandler } = await import('../openExternal');
+    const { useAppStore } = await import('../../store/useAppStore');
+    const reportError = await import('../../utils/reportError');
+    const spy = vi.spyOn(reportError, 'logError').mockImplementation(() => {});
+    useAppStore.setState({ demoMode: true });
+
+    const remove = installExternalLinkHandler(document);
+    const a = document.createElement('a');
+    a.href = 'https://example.com/';
+    document.body.appendChild(a);
+
+    const unhandled = vi.fn();
+    window.addEventListener('unhandledrejection', unhandled);
+    a.click();
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(unhandled).not.toHaveBeenCalled();
+    window.removeEventListener('unhandledrejection', unhandled);
+    document.body.removeChild(a);
+    remove();
+    useAppStore.setState({ demoMode: false });
+    spy.mockRestore();
   });
 });

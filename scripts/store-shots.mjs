@@ -11,9 +11,18 @@
  * from the same React source, so pointing it at a synthetic fixture gives a
  * listing image with nobody's data in it.
  *
- * Size: 1080x1920, from a 360x640 viewport at deviceScaleFactor 3. Play caps
- * the aspect ratio of a phone screenshot at 2:1, so the tempting 1080x2400
- * (2.22:1) is rejected — 16:9 is the safe shape.
+ * Three store presets, selected with --preset:
+ *
+ *   play      1080x1920  (360x640 @3)   — Play caps a phone screenshot at 2:1,
+ *                                          so the tempting 1080x2400 (2.22:1)
+ *                                          is rejected; 16:9 is the safe shape.
+ *   ios-6.9   1320x2868  (440x956 @3)   — App Store 6.9" iPhone, required.
+ *   ios-13    2064x2752  (1032x1376 @2) — App Store 13" iPad, required because
+ *                                          TARGETED_DEVICE_FAMILY is "1,2".
+ *
+ * Apple has no aspect cap; it wants those exact pixel counts, which is why the
+ * iOS viewports are the pixel targets divided by the scale rather than real
+ * device point sizes.
  */
 // `@playwright/test` rather than `playwright`: only the former is declared in
 // package.json. The bare `playwright` package is present today only as a
@@ -25,22 +34,43 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const OUT_DIR = resolve(ROOT, '.store-shots');
 
 const args = process.argv.slice(2);
 const urlFlag = args.indexOf('--url');
 const URL = urlFlag !== -1 ? args[urlFlag + 1] : 'http://localhost:4317';
 const themeFlag = args.indexOf('--theme');
 const THEME = themeFlag !== -1 ? args[themeFlag + 1] : 'dark';
+const presetFlag = args.indexOf('--preset');
+const PRESET = presetFlag !== -1 ? args[presetFlag + 1] : 'play';
 // Only one fixture can be served at a time, and the screens want different
 // ones — a teaching week for the calendar, an exam season for the exams tab.
 // `--only` re-shoots a single screen against whichever server is running.
 const onlyFlag = args.indexOf('--only');
 const ONLY = onlyFlag !== -1 ? args[onlyFlag + 1] : null;
 
-const WIDTH = 360;
-const HEIGHT = 640;
-const SCALE = 3;
+/**
+ * `forcePhone` exists only for the iPad preset. The native app ships the phone
+ * tree on every device — `resolvePhoneViewport` returns true for
+ * `isNativeApp` without measuring anything — but a browser at 1032px wide is
+ * measured as desktop and would render the tree the iPad app never shows. The
+ * shot has to match the app, so the browser is told it is narrow.
+ */
+const PRESETS = {
+  play: { width: 360, height: 640, scale: 3, out: '.store-shots' },
+  'ios-6.9': { width: 440, height: 956, scale: 3, out: '.store-shots-ios-6.9' },
+  'ios-13': { width: 1032, height: 1376, scale: 2, out: '.store-shots-ios-13', forcePhone: true },
+};
+
+const preset = PRESETS[PRESET];
+if (!preset) {
+  console.error(`Unknown --preset "${PRESET}". Known: ${Object.keys(PRESETS).join(', ')}`);
+  process.exit(1);
+}
+
+const WIDTH = preset.width;
+const HEIGHT = preset.height;
+const SCALE = preset.scale;
+const OUT_DIR = resolve(ROOT, preset.out);
 
 /** Bottom-nav tabs, by their Czech accessible name. */
 const SHOTS = [
@@ -103,8 +133,33 @@ const run = async () => {
     deviceScaleFactor: SCALE,
     colorScheme: THEME === 'light' ? 'light' : 'dark',
     locale: 'cs-CZ',
+    hasTouch: true,
   });
   const page = await context.newPage();
+
+  // Runs before any app code on every document, so AppShell's very first
+  // matchMedia read already sees the forced answer — a patch applied after
+  // load would be too late, the tree having already mounted as desktop.
+  if (preset.forcePhone) {
+    await page.addInitScript(() => {
+      const real = window.matchMedia.bind(window);
+      window.matchMedia = (query) => {
+        if (/max-width/.test(query)) {
+          return {
+            matches: true,
+            media: query,
+            onchange: null,
+            addEventListener() {},
+            removeEventListener() {},
+            addListener() {},
+            removeListener() {},
+            dispatchEvent: () => false,
+          };
+        }
+        return real(query);
+      };
+    });
+  }
 
   await page.goto(URL, { waitUntil: 'networkidle' });
   // The welcome modal blurs the whole page behind it; every shot would be of it.
