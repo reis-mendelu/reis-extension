@@ -16,6 +16,12 @@ export async function submitFeedback(
   semesterCode: string,
   reason?: string
 ): Promise<boolean> {
+  // Same reasoning as trackDailyUsage below, and the same table family: the
+  // demo student is invented, so a submission from demo mode would put a hash
+  // of a fiction into the real feedback rows. Returning false rather than
+  // throwing keeps the caller's "did it send?" contract intact.
+  if (useAppStore.getState().demoMode) return false;
+
   const hashedId = await hashId(studentId);
   const { error } = await supabase.rpc('submit_feedback', {
     p_student_id: hashedId,

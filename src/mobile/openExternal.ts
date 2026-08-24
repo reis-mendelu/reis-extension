@@ -161,7 +161,13 @@ export function installExternalLinkHandler(doc: Document = document): () => void
     const url = externalHrefFromClick(event as MouseEvent);
     if (!url) return;
     event.preventDefault();
-    void openExternal(url);
+    // Not `void`: openExternal rejects with DemoModeError in demo mode, and an
+    // unhandled rejection is picked up by installErrorReporter's own
+    // 'unhandledrejection' listener, which POSTs straight to Supabase without
+    // passing through logError — so a deliberately blocked tap would be
+    // transmitted as a crash report. Routing it through logError instead shows
+    // the demo toast and reports nothing.
+    void openExternal(url).catch((e) => logError('openExternal.click', e));
   };
 
   doc.addEventListener('click', onClick, true);

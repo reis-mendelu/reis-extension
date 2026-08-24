@@ -13,6 +13,7 @@ import { openNativeFile } from './openNativeFile';
 import { useTranslation } from '../useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { DemoModeError } from '../../errors/demoMode';
+import { logError } from '../../utils/reportError';
 
 const log = createLogger('useFileActions');
 
@@ -77,6 +78,14 @@ export function useFileActions(): UseFileActionsResult {
         // Clean up after 5 minutes
         setTimeout(() => URL.revokeObjectURL(blobUrl), 5 * 60 * 1000);
       } catch (e) {
+        // A demo block must not fall through to the direct link: window.open
+        // would hand the real IS URL to the browser and step straight over the
+        // boundary assertNotDemo exists to hold. logError shows the demo toast
+        // and reports nothing, so the student gets told instead.
+        if (e instanceof DemoModeError) {
+          logError('useFileActions.openFile', e);
+          return;
+        }
         log.error('Failed to fetch file as blob, falling back to direct link', e);
         window.open(fullUrl, '_blank', 'noopener,noreferrer');
       }
@@ -143,6 +152,11 @@ export function useFileActions(): UseFileActionsResult {
         document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
       } catch (e) {
+        // See openFile: the direct-link fallback would bypass the demo guard.
+        if (e instanceof DemoModeError) {
+          logError('useFileActions.downloadSingle', e);
+          return;
+        }
         log.error('Failed to download file', e);
         window.open(fullUrl, '_blank', 'noopener,noreferrer');
       }

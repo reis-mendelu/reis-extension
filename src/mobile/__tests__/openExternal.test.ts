@@ -251,3 +251,35 @@ describe('openExternal — which browser', () => {
     expect(open).toHaveBeenCalledWith({ url });
   });
 });
+
+describe('installExternalLinkHandler in demo mode', () => {
+  // The click handler used to fire-and-forget with `void`. openExternal
+  // rejects with DemoModeError in demo mode, and installErrorReporter's
+  // unhandledrejection listener POSTs to Supabase without going through
+  // logError — so a blocked tap was reported as a crash. It must reach
+  // logError instead, which suppresses the report and shows the toast.
+  it('routes the rejection through logError rather than leaving it unhandled', async () => {
+    const { installExternalLinkHandler } = await import('../openExternal');
+    const { useAppStore } = await import('../../store/useAppStore');
+    const reportError = await import('../../utils/reportError');
+    const spy = vi.spyOn(reportError, 'logError').mockImplementation(() => {});
+    useAppStore.setState({ demoMode: true });
+
+    const remove = installExternalLinkHandler(document);
+    const a = document.createElement('a');
+    a.href = 'https://example.com/';
+    document.body.appendChild(a);
+
+    const unhandled = vi.fn();
+    window.addEventListener('unhandledrejection', unhandled);
+    a.click();
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(unhandled).not.toHaveBeenCalled();
+    window.removeEventListener('unhandledrejection', unhandled);
+    document.body.removeChild(a);
+    remove();
+    useAppStore.setState({ demoMode: false });
+    spy.mockRestore();
+  });
+});
