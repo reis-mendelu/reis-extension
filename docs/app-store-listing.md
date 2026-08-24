@@ -398,3 +398,112 @@ the banner never appears in them. The four images at each of 1320×2868 and
 in-memory state). Relaunching returns to the IS login, and cancelling it
 reaches the gate again in two taps. Not worth persisting: a student who signs
 in should not be able to be dropped back into fabricated data by a restart.
+
+---
+
+## 9. Listing copy — iOS
+
+Adapted from the Play copy in `play-store-listing.md` §4, with four deliberate
+differences. Do not simply paste the Play text.
+
+1. **The "not official" line leads.** §4.2 lists this as one of only three
+   remaining Guideline 5.2.2 mitigations, and it is worth nothing buried at the
+   bottom where the Play version has it.
+2. **Keychain, not Keystore.**
+3. **eduroam is not mentioned.** It is advertised on Play because it works
+   there — natively, campus-verified. On iOS the sheet still falls through to
+   the desktop→phone QR path (`canConfigureEduroamNatively` is
+   `android`-only), so the app would show a QR code the same device would have
+   to scan. That is issue #212, still open. Advertising it would be describing
+   a feature the app does not have on this platform.
+4. **The demo is called out**, so a student who has not signed in yet — and a
+   reviewer skimming the description — knows there is a way in.
+
+### Name (30) / Subtitle (30)
+
+```
+reIS — IS MENDELU jednoduše
+```
+
+```
+Rozvrh, známky a zkoušky
+```
+
+### Keywords (100, comma-separated, no spaces after commas)
+
+```
+mendelu,uis,is mendelu,rozvrh,zkoušky,známky,studium,univerzita,brno,kampus,student,předměty
+```
+
+### Description — Czech (primary)
+
+```
+reIS je studentský projekt. NENÍ to oficiální aplikace Mendelovy univerzity a
+univerzita ji neprovozuje ani nezaštiťuje.
+
+reIS zpřehledňuje Univerzitní informační systém MENDELU. Přihlásíš se svým
+běžným univerzitním účtem přímo na stránce IS — reIS tvoje heslo nikdy nevidí —
+a všechno podstatné máš hned po ruce.
+
+CO UMÍ
+
+• Rozvrh — aktuální týden, přepínání mezi dny i týdny, detail každé hodiny
+  včetně místnosti a vyučujícího.
+• Známky a průběžné hodnocení — bez proklikávání se do hloubky IS.
+• Zkoušky — termíny, přihlášení i odhlášení přímo z telefonu.
+• Předměty a soubory — studijní materiály stáhneš na pár klepnutí.
+• Odevzdávárny a kontrola studia.
+• Lidé — vyhledávání studentů i vyučujících, kontakt, kancelář a odkaz na Teams.
+• Mapa kampusu — najdeš místnost, do které máš namířeno, i akce studentských
+  spolků.
+
+CHCEŠ SE JEN PODÍVAT?
+
+Na přihlašovací obrazovce klepni na „Prohlédnout ukázku“. Projdeš si celou
+aplikaci s vymyšlenými ukázkovými daty, bez univerzitního účtu.
+
+SOUKROMÍ
+
+Tvoje studijní data zůstávají v zařízení. reIS je nikam neposílá — čte je z IS
+stejně, jako by sis je otevřel v prohlížeči, a ukládá je jen lokálně.
+Přihlašovací token je uložený v iOS Keychain a nikdy se nesynchronizuje na
+iCloud.
+
+reIS je otevřený projekt studentů MENDELU.
+```
+
+### Description — English
+
+```
+reIS is a student project. It is NOT an official Mendel University app, and the
+university neither operates nor endorses it.
+
+reIS makes the MENDELU University Information System usable on a phone. You sign
+in with your usual university account on IS Mendelu's own page — reIS never sees
+your password — and everything you need is one tap away.
+
+WHAT IT DOES
+
+• Timetable — the current week, day and week switching, and full lesson detail
+  including room and teacher.
+• Grades and continuous assessment, without digging through IS.
+• Exams — dates, sign-up and sign-off straight from your phone.
+• Courses and files — download study materials in a couple of taps.
+• Submission folders and study-progress checks.
+• People — search students and staff, with contact details, office and a Teams
+  link.
+• Campus map — find the room you are heading to, plus student society events.
+
+WANT TO LOOK AROUND FIRST?
+
+Tap "Try the demo" on the sign-in screen to browse the whole app with invented
+sample data, no university account needed.
+
+PRIVACY
+
+Your academic data stays on your device. reIS reads it from IS exactly as your
+browser would and stores it locally only. Your session token is kept in the iOS
+Keychain and is never synchronised to iCloud.
+
+reIS is an open-source project by MENDELU students.
+```
