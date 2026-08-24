@@ -507,3 +507,31 @@ Keychain and is never synchronised to iCloud.
 
 reIS is an open-source project by MENDELU students.
 ```
+
+
+---
+
+## 10. Submission state — 2026-08-24
+
+The app record exists and every field Apple requires is filled. `Add for
+Review` is enabled; the version has **not** been submitted.
+
+| Item | State |
+|---|---|
+| App ID `cz.reis.app` | Registered, team **RG38V3SV8X**, no capabilities (the app declares no entitlements). |
+| App record | **6804832714** — "reIS — IS MENDELU jednoduše", Czech, SKU `reis-ios-5`. |
+| Build | **50006 / 5.0.6** uploaded, processed, attached. Signed *Apple Distribution: Dominik Holek (RG38V3SV8X)*. |
+| Export compliance | Answered "None of the algorithms mentioned above" — verified, the app implements no encryption of its own. Now also declared in `Info.plist` so it stops being asked. |
+| Screenshots | 4 at 1320×2868 (iPhone 6.9"), 4 at 2064×2752 (iPad 13"), in order. 6.5" inherits from 6.9" automatically. |
+| Description / keywords / subtitle | Filed from §9. Support URL is the GitHub repo. |
+| Pricing | Free, 175 countries or regions. |
+| Age rating | **4+** — matches the Play PEGI 3 answer. |
+| App Privacy | Published: Email Address, Customer Support, User ID (linked); Crash Data (not linked). Tracking No on every row. |
+| Privacy policy | Gist `e3007a01…` **rewritten** to cover iOS and the Keychain, and linked. It described a Chrome extension until now. |
+| Content Rights | "Does not contain, show, or access third-party content" — the user-agent reading, consistent with the §5 reviewer notes. |
+| App Review Information | Sign-in **not** required (that is what demo mode bought), notes filed with the real button labels, contact complete. |
+| Release | Set to release automatically once approved. |
+
+**The remaining risk is unchanged and is not a form field: Guideline 5.2.2.**
+No permission from MENDELU was sought (§4). The three mitigations in the
+binary are the gate disclaimer, the in-app banner and the reviewer notes.
