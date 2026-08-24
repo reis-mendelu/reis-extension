@@ -301,8 +301,17 @@ almost all the weight.
 > us or to anyone else.
 >
 > DEMO: a university account is required to use the app, so we have included a
-> demo mode that needs no account — on the sign-in screen, tap "[label]" to
-> browse the app with sample data. The sample student is fictional.
+> demo mode that needs no account. On first launch the app opens the
+> university's sign-in page — **close it with the X in the top-right corner**,
+> and the app's own sign-in screen appears underneath. Tap the second button,
+> **"Prohlédnout ukázku"** ("Try the demo"), to browse the app with sample
+> data. Every tab is populated; the banner across the top reads "Ukázka"
+> (Demo). The sample student is fictional and no university account is
+> contacted.
+>
+> LANGUAGE: the app opens in Czech, since it serves a Czech university. English
+> is available under the person icon (top right) → language. The demo button's
+> English label is "Try the demo".
 >
 > PERMISSIONS: the app requests none. There is no location access; the campus
 > map is a static basemap.
@@ -352,3 +361,40 @@ for a re-upload of the same marketing version.
    banner exists (§3).
 6. ~~Ask MENDELU for permission~~ — decided against, §4.
 7. ~~Screenshots~~ — captured, §3.
+
+---
+
+## 8. Device verification — done 2026-08-24
+
+Run on a clean install of the demo build, taking the reviewer's own path
+(cancel the IS login, then the demo), not a developer's.
+
+| Device | Result |
+|---|---|
+| iPhone 17 Pro Max (iOS 26.5) | **Pass.** Cancelling login opens the gate, not an error string. Demo enters; all five tabs render populated; a blocked download shows the toast and leaves no error state. |
+| iPad Pro 13-inch M5 (iOS 26.5) | **Pass.** The gate is centred at 1032pt rather than stretched. Demo enters and the calendar renders. The phone tree at full width is sparse — expected, and explained in the §5 reviewer notes. |
+| Android | Not re-run for the demo path. It does not gate this submission; it gates Play's App access answer, which is tracked in `play-store-listing.md`. |
+
+Three defects were found by doing this rather than assuming, and fixed:
+
+1. **The documents sheet was dead in demo mode.** `DocsSheet` disables every
+   download button while `studiumId` is null, and nothing set it — `enterDemo`
+   never supplied a context and `loadContext` reads IS, which demo mode blocks.
+   A reviewer tapped five live-looking buttons and got nothing. `enterDemo` now
+   sets a fabricated identity.
+2. **A blocked tap could not explain itself.** `openIsFileNatively` throws
+   `DemoModeError`, but the reply crosses postMessage, where the class was
+   already flattened to a string — so the toast never fired and telemetry got a
+   report about an intentional block. The reply now carries a `demoMode` flag.
+3. **The toast covered the banner.** Both were anchored top and both spent
+   `--safe-top`.
+
+**Screenshots did not need re-shooting.** `store-shots.mjs` renders the phone
+tree against a synthetic fixture in the dev webapp, where demo mode is off — so
+the banner never appears in them. The four images at each of 1320×2868 and
+2064×2752 taken on 2026-08-23 stand.
+
+**Known and accepted:** demo mode does not survive an app relaunch (it is
+in-memory state). Relaunching returns to the IS login, and cancelling it
+reaches the gate again in two taps. Not worth persisting: a student who signs
+in should not be able to be dropped back into fabricated data by a restart.
