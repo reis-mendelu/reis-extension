@@ -25,6 +25,12 @@ MENDELU account, no app.
 
 Two things follow from that, and they are not the same problem:
 
+> **Status: RESOLVED — this section is the original finding, not current
+> state.** Option C was built and shipped; 5.0.6 opens a gate with a demo entry
+> when the login is dismissed, `Sign-In Required` is unchecked, and the version
+> was submitted on 2026-08-24. Kept in the present tense because it is the
+> reasoning that produced demo mode, and §8/§10 record what actually happened.
+
 ### 1.1 Apple requires working demo credentials — Guideline 2.1
 
 App Store Connect has a mandatory **App Review Information → Sign-In Required**
@@ -201,8 +207,15 @@ channel**. Smaller iPhone and iPad sizes are optional; Apple scales them down.
 
 ## 4. Guideline 5.2.2 — the real rejection risk
 
-> "If your app displays content from a third party, ensure you have the
-> rights."
+Guideline 5.2.2 is broader than the one line it usually gets summarised as.
+It covers apps that **use, access, monetise access to, or display** a
+third-party service, requires permission under that service's own terms, and
+lets Apple ask for evidence of that authorisation at any point. Read the
+current text before arguing with a reviewer rather than relying on this
+paraphrase: <https://developer.apple.com/app-store/review/guidelines/>
+
+Every clause of that matters here, and "display" is the one reIS cannot argue
+its way around — it plainly displays IS Mendelu content.
 
 reIS is an unofficial client for a university system it does not own, and the
 first screen a reviewer sees is MENDELU's own branded login page. Apple rejects
@@ -297,8 +310,9 @@ almost all the weight.
 > HOW IT WORKS: the student signs in on the university's own web page, shown in
 > a WebView, so reIS never sees or stores the password. The resulting session
 > token is kept in the iOS Keychain and used only to fetch that student's own
-> records, which are parsed on the device. No academic data is transmitted to
-> us or to anyone else.
+> records, which are parsed on the device. Academic data moves between the
+> student's device and the university's own system and nowhere else: none of it
+> reaches a reIS server, and none of it is analysed or shared.
 >
 > DEMO: a university account is required to use the app, so we have included a
 > demo mode that needs no account. On first launch the app opens the
