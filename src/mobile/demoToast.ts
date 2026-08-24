@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { DemoModeError } from '../errors/demoMode';
 import { translate } from '../i18n/translate';
+import { getCurrentLanguage } from '../i18n/currentLanguage';
 
 /**
  * Call from a catch. Returns true if it handled the error, false if the caller
@@ -11,21 +12,18 @@ import { translate } from '../i18n/translate';
  * blocks, not from render. That is the same reason `promptSessionRecovery`
  * uses it (`src/mobile/sessionRecovery.ts:169`).
  *
- * The store is imported **dynamically**, and that is load-bearing rather than
- * stylistic. `logError` calls this, and a dozen store slices call `logError`,
- * so a static `import { useAppStore }` here closes a cycle —
- * slice → reportError → demoToast → useAppStore → slice — which leaves the
- * store undefined at module-evaluation time and breaks every slice that
- * imports logError (it took out createMapSlice and createAdminSlice in CI).
- * Deferring the import breaks the cycle; the toast is fire-and-forget, so
- * showing it a microtask later costs nothing.
+ * The language comes from `getCurrentLanguage` rather than the store, and that
+ * is load-bearing. `logError` calls this and a dozen slices call `logError`,
+ * so importing `useAppStore` here closes the cycle slice → reportError →
+ * demoToast → useAppStore → slice, which leaves the store undefined at module
+ * evaluation. Importing it dynamically broke the cycle but bought a worse
+ * problem: the toast then fired after the caller had returned, which in tests
+ * is after the environment is torn down ("window is not defined"). A plain
+ * module-level value is synchronous and has no edge back into the store.
  */
 export function handleDemoError(error: unknown): boolean {
   if (!(error instanceof DemoModeError)) return false;
 
-  void import('../store/useAppStore').then(({ useAppStore }) => {
-    toast(translate(useAppStore.getState().language, 'demo.toast'));
-  });
-
+  toast(translate(getCurrentLanguage(), 'demo.toast'));
   return true;
 }

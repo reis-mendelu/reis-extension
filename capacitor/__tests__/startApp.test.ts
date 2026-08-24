@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { act } from '@testing-library/react';
 import { useAppStore } from '@/store/useAppStore';
 
 const startSyncService = vi.fn();
@@ -18,9 +19,26 @@ describe('startApp', () => {
     document.body.innerHTML = '<div id="root"></div>';
 
     const { startApp } = await import('../main.capacitor');
-    await startApp({ demo: true });
+    // Inside act: startApp renders the real entrypoint, and React's scheduler
+    // was still doing work after the test returned — vitest then tore the
+    // environment down underneath it and reported an unhandled
+    // "window is not defined" from react-dom. act flushes that work while the
+    // DOM still exists. The demo path made it visible because a populated
+    // demo renders far more than an empty one did.
+    await act(async () => {
+      await startApp({ demo: true });
+    });
+    // A second flush: React's scheduler drains through setImmediate, so the
+    // work queued by the first render lands a macrotask later — after the
+    // test would otherwise have returned.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
     expect(startSyncService).not.toHaveBeenCalled();
-  });
+    // 15s, not the 5s default: this test boots the real entrypoint (~3s on its
+    // own) and then waits for React's scheduler to drain, which is over the
+    // default once the full suite is competing for the machine.
+  }, 15000);
 });
 
 describe('showLoginGate', () => {

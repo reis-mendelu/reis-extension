@@ -6,12 +6,8 @@ import { sendTelemetry } from '../../services/errorReporter/telemetry';
 
 vi.mock('sonner', () => ({ toast: vi.fn() }));
 vi.mock('../../services/errorReporter/telemetry', () => ({ sendTelemetry: vi.fn() }));
-// demoToast reads the language off the real store; pinning it here keeps the
-// assertion below about the exact translated copy meaningful rather than
-// coupled to whatever the store's default happens to be.
-vi.mock('../../store/useAppStore', () => ({
-  useAppStore: { getState: () => ({ language: 'cz' }) },
-}));
+// demoToast reads the language from the store-free i18n module; 'cz' is its
+// default, which is what keeps the exact-copy assertion below meaningful.
 
 describe('logError', () => {
   beforeEach(() => {
@@ -22,15 +18,11 @@ describe('logError', () => {
   // guarded path (fetchWithAuth, fetchAuthedBytes, loadStoredToken) already
   // catches into logError, so this is the one place a blocked demo tap can be
   // turned into "this is only a demo" instead of a reported fault.
-  // Awaited because demoToast imports the store dynamically to stay out of the
-  // slice → reportError → demoToast → useAppStore cycle, so the toast lands a
-  // microtask after logError returns. Telemetry is still suppressed
-  // synchronously — that part must not depend on the import resolving.
-  it('shows the demo toast and reports nothing to telemetry for a DemoModeError', async () => {
+  it('shows the demo toast and reports nothing to telemetry for a DemoModeError', () => {
     logError('Api.fetchWithAuth', new DemoModeError());
 
+    expect(toast).toHaveBeenCalledWith('Toto je jen ukázka.');
     expect(sendTelemetry).not.toHaveBeenCalled();
-    await vi.waitFor(() => expect(toast).toHaveBeenCalledWith('Toto je jen ukázka.'));
   });
 
   it('still reports normally for an ordinary error', () => {
