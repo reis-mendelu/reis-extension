@@ -1,14 +1,14 @@
 # Privacy Policy for reIS
 
-**Last Updated: 14 August 2026**
+**Last Updated: 24 August 2026**
 
 ## Introduction
 
 reIS ("we", "our", or "us") is a student-built project that simplifies the
 Mendel University in Brno Information System (IS Mendelu). reIS is available as
-a **browser extension** (Chrome, Edge, Firefox) and as an **Android
-application**. This policy covers both, and calls out anything that applies to
-only one of them.
+a **browser extension** (Chrome, Edge, Firefox) and as a **mobile app for
+Android and iOS (iPhone and iPad)**. This policy covers all of them, and calls
+out anything that applies to only one.
 
 reIS is not an official application of Mendel University.
 
@@ -24,6 +24,11 @@ log in on every launch:
 - **Android app** — the token is encrypted with AES-256-GCM using a key
   generated inside the Android Keystore. The key cannot be exported from the
   device, and only the ciphertext is written to storage.
+- **iOS app (iPhone and iPad)** — the token is stored in the iOS Keychain,
+  which encrypts it at rest under a key held by the device's Secure Enclave.
+  The item is written with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`:
+  it is readable only after the device has been unlocked once since boot, and
+  it is **never synchronised to iCloud or restored onto another device**.
 - **Browser extension** — the session cookie is held by your browser, as it
   would be for any website you log into.
 
@@ -41,7 +46,7 @@ any server we run:
 - **Academic data**: timetable, grades, continuous assessment, exam dates,
   courses, study materials, submission folders, study-progress checks.
 - **Dining data** (browser extension only): your canteen profile and meal
-  reservations from WebISKAM. *WebISKAM is not part of the Android app.*
+  reservations from WebISKAM. *WebISKAM is not part of the mobile app.*
 
 This data does move between your device and MENDELU in both directions —
 signing up for an exam or uploading to a submission folder sends it back to
@@ -66,7 +71,7 @@ What bounds it:
   retention, sharing and deletion are governed by your Google account and
   Google's privacy policy, not by us. Disconnecting reIS stops new copies; it
   does not remove files already in your Drive, which you delete yourself.
-- **Drive backup does not exist in the Android app at all.**
+- **Drive backup does not exist in the mobile app at all.**
 
 ## Data reIS collects
 
@@ -155,7 +160,7 @@ the server and is never shipped to your device, so that record cannot be linked
 back to you by anyone who does not already hold it.
 
 Nothing is sent unless you make a booking. *This feature does not exist in the
-Android app.*
+mobile app.*
 
 ## Third parties reIS talks to
 
@@ -180,7 +185,9 @@ We do **not** sell or trade your personal information, and we transfer it to no
 one beyond the services in the table above — each of which is there because
 reIS cannot do what you asked of it otherwise.
 
-## Permissions the Android app requests
+## Permissions the mobile app requests
+
+**Android:**
 
 - **Internet** — to reach IS Mendelu.
 - **Notifications** — so a file download can tell you it finished. The file
@@ -189,8 +196,13 @@ reIS cannot do what you asked of it otherwise.
   setup. The network itself is saved by Android's own confirmation dialog, not
   silently by reIS.
 
-The app requests **no location permission**. The campus map shows the campus, not
-you.
+**iOS (iPhone and iPad): none.** The app declares no usage-description keys at
+all, so iOS never shows you a permission prompt on its behalf. One-tap eduroam
+setup is an Android-only feature; on iOS the Wi-Fi profile is installed by
+iOS's own Settings flow, which you confirm yourself.
+
+Neither app requests **any location permission**. The campus map shows the
+campus, not you.
 
 ## Your control
 
