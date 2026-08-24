@@ -14,17 +14,17 @@ import { sendTelemetry } from '../services/errorReporter/telemetry';
 import { handleDemoError } from '../mobile/demoToast';
 
 export function logError(context: string, err: unknown, extra?: Record<string, unknown>): void {
-    if (handleDemoError(err)) return;
+  if (handleDemoError(err)) return;
 
-    const msg = err instanceof Error ? err.message : String(err);
-    const stack = err instanceof Error ? err.stack : undefined;
-    const payload: Record<string, unknown> = { context, msg };
-    if (stack) payload.stack = stack;
-    if (extra) Object.assign(payload, extra);
-    console.error(`[reIS:error] ${context}: ${msg}`, payload);
-    try {
-        sendTelemetry(context, err);
-    } catch (telemetryErr) {
-        console.warn('[reIS:error] telemetry dispatch failed', telemetryErr);
-    }
+  const msg = err instanceof Error ? err.message : String(err);
+  const stack = err instanceof Error ? err.stack : undefined;
+  const payload: Record<string, unknown> = { context, msg };
+  if (stack) payload.stack = stack;
+  if (extra) Object.assign(payload, extra);
+  console.error(`[reIS:error] ${context}: ${msg}`, payload);
+  try {
+    sendTelemetry(context, err);
+  } catch (telemetryErr) {
+    console.warn('[reIS:error] telemetry dispatch failed', telemetryErr);
+  }
 }
