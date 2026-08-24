@@ -22,11 +22,15 @@ describe('logError', () => {
   // guarded path (fetchWithAuth, fetchAuthedBytes, loadStoredToken) already
   // catches into logError, so this is the one place a blocked demo tap can be
   // turned into "this is only a demo" instead of a reported fault.
-  it('shows the demo toast and reports nothing to telemetry for a DemoModeError', () => {
+  // Awaited because demoToast imports the store dynamically to stay out of the
+  // slice → reportError → demoToast → useAppStore cycle, so the toast lands a
+  // microtask after logError returns. Telemetry is still suppressed
+  // synchronously — that part must not depend on the import resolving.
+  it('shows the demo toast and reports nothing to telemetry for a DemoModeError', async () => {
     logError('Api.fetchWithAuth', new DemoModeError());
 
-    expect(toast).toHaveBeenCalledWith('Toto je jen ukázka.');
     expect(sendTelemetry).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(toast).toHaveBeenCalledWith('Toto je jen ukázka.'));
   });
 
   it('still reports normally for an ordinary error', () => {
