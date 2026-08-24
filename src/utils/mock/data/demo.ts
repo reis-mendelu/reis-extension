@@ -1,5 +1,5 @@
 import type { SocietyDataset } from '../MockManager';
-import { addDays, formatCompactIsDate, formatIsDate } from './demoDates';
+import { addDays, demoPeriodLabel, formatCompactIsDate, formatIsDate } from './demoDates';
 
 /**
  * The dataset behind demo mode.
@@ -29,6 +29,29 @@ const termAt = (dayOffset: number, time: string) => `${term(dayOffset)} ${time}`
 
 /** A schedule-lesson date, "YYYYMMDD", `dayOffset` days from now. */
 const lessonDay = (dayOffset: number) => formatCompactIsDate(addDays(now, dayOffset));
+
+/**
+ * Who the demo student is.
+ *
+ * Not cosmetic. Screens gate real controls on these IDs — DocsSheet disables
+ * every download button while `studiumId` is null — so without an identity the
+ * demo renders five live-looking buttons that do nothing when tapped, which is
+ * a worse first impression than not offering them. With it, a tap reaches the
+ * network guard and the student is told why it stopped.
+ *
+ * The IDs are outside IS Mendelu's real 6-digit student range and every
+ * request carrying them is blocked before it leaves the device anyway; they
+ * exist only so the URL builders have something to build with.
+ */
+export const demoContext = {
+  studiumId: '900001',
+  studentId: '900001',
+  obdobiId: '900',
+  facultyId: '900',
+  fullName: 'Jana Ukázková',
+  userFaculty: 'PEF',
+  userSemester: demoPeriodLabel(now),
+} as const;
 
 export const demoDataset: SocietyDataset = {
   id: 'demo',

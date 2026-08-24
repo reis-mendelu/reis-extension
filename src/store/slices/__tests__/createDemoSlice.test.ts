@@ -21,6 +21,30 @@ describe('createDemoSlice', () => {
     expect(await IndexedDBService.get('meta', 'study_stats')).toBeTruthy();
   });
 
+  // Without an identity the demo is not just missing a name: DocsSheet
+  // disables every download button on `!studiumId`, so a reviewer taps five
+  // live-looking buttons and nothing happens at all.
+  it('enterDemo supplies a fabricated student context', async () => {
+    await useAppStore.getState().enterDemo();
+
+    const s = useAppStore.getState();
+    expect(s.studiumId).toBeTruthy();
+    expect(s.studentId).toBeTruthy();
+    expect(s.obdobiId).toBeTruthy();
+    expect(s.fullName).toBeTruthy();
+    expect(s.userFaculty).toBeTruthy();
+    expect(s.userSemester).toBeTruthy();
+  });
+
+  it('exitDemo clears the fabricated context with the rest of it', async () => {
+    await useAppStore.getState().enterDemo();
+    await useAppStore.getState().exitDemo();
+
+    const s = useAppStore.getState();
+    expect(s.studiumId).toBeNull();
+    expect(s.fullName).toBeNull();
+  });
+
   it('exitDemo wipes the seeded data and clears the flag', async () => {
     await useAppStore.getState().enterDemo();
     await useAppStore.getState().exitDemo();

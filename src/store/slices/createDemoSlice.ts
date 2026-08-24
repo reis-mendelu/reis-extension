@@ -2,6 +2,7 @@ import type { AppSlice, DemoSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import { MockManager } from '../../utils/mock/MockManager';
 import { MOCK_REGISTRY } from '../../utils/mock/registry';
+import { demoContext } from '../../utils/mock/data/demo';
 
 /**
  * IS-derived stores: everything a real sync would repopulate. Cleared on the
@@ -70,14 +71,30 @@ export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
     // Load-bearing and easy to miss. The screens gate their content on
     // handshakeDone, and demo mode never starts the sync that would set it —
     // so without this every tab sits in its loading state forever.
+    // The fabricated identity goes in with the flag, not through
+    // loadContext: that path reads IS and is blocked in demo mode, and
+    // several screens gate live controls on these IDs being present.
     set((state) => ({
       demoMode: true,
+      ...demoContext,
       syncStatus: { ...state.syncStatus, handshakeDone: true },
     }));
   },
 
   exitDemo: async () => {
     await wipeSeeded();
-    set({ demoMode: false });
+    // The fabricated identity leaves with the fabricated data. A real sign-in
+    // repopulates it through loadContext; leaving it set would show one
+    // student's name over another's session.
+    set({
+      demoMode: false,
+      studiumId: null,
+      studentId: null,
+      obdobiId: null,
+      facultyId: null,
+      fullName: null,
+      userFaculty: null,
+      userSemester: null,
+    });
   },
 });

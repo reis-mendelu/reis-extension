@@ -33,3 +33,21 @@ export function addDays(base: Date, days: number): Date {
   d.setDate(d.getDate() + days);
   return d;
 }
+
+/**
+ * The academic period the demo student is "in", e.g. "ZS 2026/2027".
+ *
+ * Computed rather than committed for the same reason every date above is: this
+ * string ships in the binary and is shown next to the student's name, so a
+ * literal would be quietly wrong for most of the release's life. September to
+ * January is the winter semester (ZS) of year/year+1; the rest is the summer
+ * semester (LS) of year-1/year.
+ */
+export function demoPeriodLabel(now: Date): string {
+  const month = now.getMonth(); // 0-based
+  const year = now.getFullYear();
+  const isWinter = month >= 8 || month === 0; // September–January
+  return isWinter
+    ? `ZS ${month === 0 ? year - 1 : year}/${month === 0 ? year : year + 1}`
+    : `LS ${year - 1}/${year}`;
+}
