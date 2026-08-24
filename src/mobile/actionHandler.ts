@@ -1,6 +1,7 @@
 import { Messages, isIframeMessage } from '../types/messages';
 import type { ActionResultMessage } from '../types/messages/base';
 import { sendToIframe } from '../injector/iframeManager';
+import { DemoModeError } from '../errors/demoMode';
 
 /**
  * The app-side responder for `REIS_ACTION`.
@@ -90,7 +91,12 @@ export async function handleMobileActionMessage(
     const result = await runMobileAction(data.action, data.payload, deps);
     reply(Messages.actionResult(data.id, true, result));
   } catch (e) {
-    reply(Messages.actionResult(data.id, false, undefined, String(e)));
+    // The `demoMode` flag survives the postMessage hop below even though
+    // `String(e)` does not: openIsFileNatively (download_document's deps)
+    // throws DemoModeError from loadStoredToken, and without this flag the
+    // reconstructed rejection on the other side would just be a generic Error
+    // — logError's demo-toast branch could never recognise it.
+    reply(Messages.actionResult(data.id, false, undefined, String(e), e instanceof DemoModeError));
   }
 }
 

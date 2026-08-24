@@ -15,7 +15,12 @@ export interface ActionRequestMessage { type: 'REIS_ACTION'; id: string; action:
 
 export interface DataResponseMessage { type: 'REIS_DATA'; dataType: DataRequestType; data: unknown; error?: string; }
 export interface FetchResultMessage { type: 'REIS_FETCH_RESULT'; id: string; success: boolean; data?: string; error?: string; }
-export interface ActionResultMessage { type: 'REIS_ACTION_RESULT'; id: string; success: boolean; data?: unknown; error?: string; }
+// `demoMode` marks a failure as DemoModeError rather than a real fault. Needed
+// because on Capacitor this reply loops back through postMessage to the app's
+// own window (see sendToIframe) purely to reuse this listener — there is no
+// real process boundary — and that hop otherwise stringifies the error, so the
+// receiving end could no longer tell a blocked demo tap from a genuine one.
+export interface ActionResultMessage { type: 'REIS_ACTION_RESULT'; id: string; success: boolean; data?: unknown; error?: string; demoMode?: boolean; }
 export interface SyncUpdateMessage { type: 'REIS_SYNC_UPDATE'; data: SyncedData; }
 export interface PopupStateMessage { type: 'REIS_POPUP_STATE'; open: boolean; }
 export interface NavMenuMessage { type: 'REIS_NAV_MENU'; categories: { id: string; label: string; icon?: string; expandable?: boolean; children: { id: string; label: string; labelEn?: string; href: string }[] }[]; }
