@@ -1,5 +1,5 @@
 import { supabase } from '../services/spolky/supabaseClient';
-import { useAppStore } from '../store/useAppStore';
+import { isDemoMode } from '../errors/demoMode';
 
 async function hashId(raw: string): Promise<string> {
   const data = new TextEncoder().encode(raw);
@@ -20,7 +20,7 @@ export async function submitFeedback(
   // demo student is invented, so a submission from demo mode would put a hash
   // of a fiction into the real feedback rows. Returning false rather than
   // throwing keeps the caller's "did it send?" contract intact.
-  if (useAppStore.getState().demoMode) return false;
+  if (isDemoMode()) return false;
 
   const hashedId = await hashId(studentId);
   const { error } = await supabase.rpc('submit_feedback', {
@@ -41,7 +41,7 @@ export async function trackDailyUsage(studentId: string): Promise<void> {
   // The demo student is fabricated, so this would send a hash of a fiction.
   // The Data safety and App Privacy filings both describe this row as a hash
   // of a real student identifier — keep that literally true.
-  if (useAppStore.getState().demoMode) return;
+  if (isDemoMode()) return;
 
   const hashedId = await hashId(studentId);
   const { error } = await supabase.rpc('track_daily_usage', {

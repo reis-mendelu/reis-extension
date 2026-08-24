@@ -1,7 +1,6 @@
 import { getPlatform } from './index';
 import { isPlausibleToken } from './sessionToken';
-import { DemoModeError } from '../errors/demoMode';
-import { useAppStore } from '../store/useAppStore';
+import { DemoModeError, isDemoMode } from '../errors/demoMode';
 
 const TOKEN_KEY = 'reis.session.uisAuth';
 
@@ -43,7 +42,7 @@ export async function saveStoredToken(token: string): Promise<void> {
  * not the actual boundary.
  */
 export async function loadStoredToken(): Promise<string> {
-  if (useAppStore.getState().demoMode) throw new DemoModeError();
+  if (isDemoMode()) throw new DemoModeError();
 
   let value: unknown;
   try {

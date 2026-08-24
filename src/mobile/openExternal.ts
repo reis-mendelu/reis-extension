@@ -1,7 +1,6 @@
 import { getPlatform } from '../platform';
 import { logError } from '../utils/reportError';
-import { DemoModeError } from '../errors/demoMode';
-import { useAppStore } from '../store/useAppStore';
+import { DemoModeError, isDemoMode } from '../errors/demoMode';
 
 /**
  * Opening external links without escaping to the system browser.
@@ -92,7 +91,7 @@ export async function openExternal(url: string): Promise<void> {
   // Same guard as fetchWithAuth, first statement so no request can escape:
   // this is the other chokepoint a reviewer's tap could reach MENDELU's real
   // login through.
-  if (useAppStore.getState().demoMode) throw new DemoModeError();
+  if (isDemoMode()) throw new DemoModeError();
 
   // Validated here, not only in externalHrefFromClick: StudentScreen and
   // NotificationsSheet call this directly, and a notification's `link` is

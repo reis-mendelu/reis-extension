@@ -11,8 +11,7 @@ import { requestQueue } from '../../utils/requestQueue';
 import { isNativeHost } from '../../mobile/openIsFile';
 import { openNativeFile } from './openNativeFile';
 import { useTranslation } from '../useTranslation';
-import { useAppStore } from '../../store/useAppStore';
-import { DemoModeError } from '../../errors/demoMode';
+import { DemoModeError, isDemoMode } from '../../errors/demoMode';
 import { logError } from '../../utils/reportError';
 
 const log = createLogger('useFileActions');
@@ -26,7 +25,7 @@ const log = createLogger('useFileActions');
  * reviewer's tap reaches a real IS session.
  */
 function assertNotDemo(): void {
-  if (useAppStore.getState().demoMode) throw new DemoModeError();
+  if (isDemoMode()) throw new DemoModeError();
 }
 
 interface DownloadProgress {
@@ -173,7 +172,7 @@ export function useFileActions(): UseFileActionsResult {
     // progress bar run to completion and produce an empty zip with no
     // explanation. One toast for the action, not one per file — and the
     // per-worker guard stays as the actual network boundary.
-    if (useAppStore.getState().demoMode) {
+    if (isDemoMode()) {
       logError('useFileActions.downloadZip', new DemoModeError());
       return;
     }

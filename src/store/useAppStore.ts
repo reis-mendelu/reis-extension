@@ -44,6 +44,7 @@ import { resetRealDataStores } from '../services/loadRealDataSnapshot';
 import { devAdminSeed } from '../utils/mock/devSociety';
 import type { Session } from '@supabase/supabase-js';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
+import { setDemoModeFlag } from '../errors/demoMode';
 
 export const useAppStore = create<AppState>()((...a) => ({
   ...createScheduleSlice(...a),
@@ -240,3 +241,9 @@ export const initializeStore = async () => {
     bcFiles.close();
   };
 };
+
+// Keeps the store the single source of truth for demo mode while letting the
+// network guards read it without importing this module — see errors/demoMode.
+// Subscribing rather than writing from the slice means `setState({ demoMode })`
+// in a test propagates too.
+useAppStore.subscribe((state) => setDemoModeFlag(state.demoMode));

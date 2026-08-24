@@ -3,8 +3,7 @@ import { getPlatform } from '../platform';
 import { fetchViaCapacitor } from './capacitorTransport';
 import { buildCapacitorRequestOptions } from './capacitorRequest';
 import { loadStoredToken } from '../platform/tokenStore';
-import { DemoModeError } from '../errors/demoMode';
-import { useAppStore } from '../store/useAppStore';
+import { DemoModeError, isDemoMode } from '../errors/demoMode';
 
 export const BASE_URL = 'https://is.mendelu.cz';
 
@@ -35,7 +34,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   // platform funnels through here, so demo mode cannot leak a request by
   // someone forgetting a check — the pattern installExternalLinkHandler
   // already uses for the same reason.
-  if (useAppStore.getState().demoMode) throw new DemoModeError();
+  if (isDemoMode()) throw new DemoModeError();
 
   const headers = { ...DEFAULT_HEADERS, ...(options.headers as Record<string, string>) };
 
@@ -118,7 +117,7 @@ export async function fetchAuthedBytes(url: string): Promise<Uint8Array> {
   // this is a second, separate authenticated path to is.mendelu.cz (the
   // eduroam cert flow calls it directly for the root cert and the user-p12),
   // so fetchWithAuth's own guard does not cover it.
-  if (useAppStore.getState().demoMode) throw new DemoModeError();
+  if (isDemoMode()) throw new DemoModeError();
 
   if (getPlatform().kind === 'capacitor') {
     const { fetchIsBinary, toBytes } = await import('./capacitorBinary');
