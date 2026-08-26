@@ -587,6 +587,43 @@ device.** Two facts settle how:
 - **This device has never run the phone tree at 810×1080.** §8 verified iPad on
   the 13-inch Pro simulator. Walk the five tabs once after installing 50006 and
   before starting the take.
+
+**Installing 50006 on that iPad, 2026-08-26 — what actually worked.** The
+device build is one command; the obstacle was the old binary, not signing:
+
+```
+xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+  -destination 'id=<device-udid>' -allowProvisioningUpdates \
+  -allowProvisioningDeviceRegistration \
+  DEVELOPMENT_TEAM=RG38V3SV8X CODE_SIGN_STYLE=Automatic build
+```
+
+`-allowProvisioningDeviceRegistration` is the load-bearing flag — without it
+the build fails with "Device isn't registered in your developer account", and
+`-allowProvisioningUpdates` alone will not register it. `DEVELOPMENT_TEAM` has
+to come from the command line because the project is deliberately teamless
+(§10). Install with `xcrun devicectl device install app`.
+
+**The old build could not be removed, and the cause is a third-party app.** The
+iPad carried reIS **1.0 (1)** signed under the old *free personal team*
+`Z87FKZ59LL`; iOS refuses to upgrade that with anything signed
+`RG38V3SV8X.cz.reis.app`. Deleting it was impossible: no Delete App button in
+iPad Storage, no long-press menu, and `devicectl` answering `IXErrorDomain
+error 22 — Uninstall prohibited` even though the app reports `removable: true`.
+Allowing "Deleting Apps" in Screen Time did not help, and neither did a reboot.
+**`devicectl device info processes` shows `screenzenapp` running** — ScreenZen
+is a focus/blocker app, and blockers use Family Controls precisely to forbid
+app removal so they cannot be uninstalled around. That restriction is what
+holds reIS 1.0 in place; it has to be switched off inside ScreenZen, not in
+Settings.
+
+Rather than fight it, 50006 was installed **alongside** under
+`PRODUCT_BUNDLE_IDENTIFIER=cz.reis.app.demo`, which the wildcard team profile
+covers (so no new App ID was created in the account). It is the same Release
+bundle, the same 5.0.6 (50006), the same web assets; only the signing
+certificate and the bundle id differ, and neither is visible on screen. Two
+identical **reIS** icons now exist — the 5.0.6 one is the only one with demo
+mode, which is the quick way to tell them apart before recording.
 - The reIS build installed on it is **1.0 (1)** — a stale dev build from before
   PR #236 stamped versions. Recording that binary would show Apple something
   other than what was submitted. Install **50006 / 5.0.6 through TestFlight**
