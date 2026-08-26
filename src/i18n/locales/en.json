@@ -1150,7 +1150,8 @@
       "gapMinutes": "{minutes} min free",
       "notifications": "Notifications",
       "prevWeek": "Previous week",
-      "nextWeek": "Next week"
+      "nextWeek": "Next week",
+      "loading": "Loading your timetable…"
     },
     "exams": {
       "title": "Exams",
@@ -1180,7 +1181,8 @@
       "termCountOne": "{count} slot",
       "termCountFew": "{count} slots",
       "termCountOther": "{count} slots",
-      "freeOf": "{free} of {total} free"
+      "freeOf": "{free} of {total} free",
+      "loading": "Loading your exams…"
     },
     "subjects": {
       "title": "Courses",
@@ -1201,7 +1203,8 @@
       "emptyBody": "Courses appear once you've enrolled.",
       "creditOne": "credit",
       "creditFew": "credits",
-      "creditOther": "credits"
+      "creditOther": "credits",
+      "loading": "Loading your courses…"
     },
     "map": {
       "searchPlaceholder": "Find a room, building, event…",

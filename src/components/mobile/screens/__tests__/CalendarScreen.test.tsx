@@ -154,6 +154,14 @@ describe('CalendarScreen first-sync loading', () => {
     expect(screen.queryByText('Nic nemáš, pohodička')).not.toBeInTheDocument();
   });
 
+  it('says it is loading rather than only drawing shapes', () => {
+    // The first version of this screen drew bars in bg-base-300 — darker than
+    // the dark theme's page — and was reported as "a grey screen with no
+    // components". A sentence survives a low-contrast placeholder.
+    render(<CalendarScreen />);
+    expect(screen.getByText('Načítám rozvrh…')).toBeInTheDocument();
+  });
+
   it('shows the empty state once that sync has finished with nothing in it', () => {
     useAppStore.setState({
       firstSyncSettled: true,

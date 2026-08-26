@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Calendar, Users } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
+import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useExams } from '../../../hooks/data/useExams';
 import { useExamClassmates } from '../../../hooks/data/useExamClassmates';
@@ -22,13 +23,13 @@ import { NextUpStrip } from './exams/NextUpStrip';
 import { ConfirmSheet } from '../sheets/ConfirmSheet';
 
 function ExamsSkeleton() {
+  const { t } = useTranslation();
   return (
-    <div data-testid="exams-skeleton" className="flex flex-1 flex-col gap-3 overflow-hidden p-5">
-      <div className="h-6 w-40 animate-pulse rounded-lg bg-base-300" />
-      <div className="h-20 animate-pulse rounded-2xl bg-base-300" />
-      <div className="h-20 animate-pulse rounded-xl bg-base-300" />
-      <div className="h-20 animate-pulse rounded-xl bg-base-300" />
-    </div>
+    <ScreenSkeleton
+      testId="exams-skeleton"
+      label={t('mobile.exams.loading')}
+      rows={['h-6 w-40', 'h-20', 'h-20', 'h-20']}
+    />
   );
 }
 

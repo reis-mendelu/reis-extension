@@ -1,6 +1,7 @@
 import { BookOpen } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
+import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { useStudyPlan } from '../../../hooks/useStudyPlan';
 import { getSemesterState } from '../../SubjectsPanel/utils';
 import type { SubjectStatus } from '../../../types/studyPlan';
@@ -10,13 +11,13 @@ import { SemesterCard } from './subjects/SemesterCard';
 import { AverageAccordion } from './subjects/AverageAccordion';
 
 function SubjectsSkeleton() {
+  const { t } = useTranslation();
   return (
-    <div data-testid="subjects-skeleton" className="flex flex-1 flex-col gap-3 overflow-hidden p-5">
-      <div className="h-6 w-40 animate-pulse rounded-lg bg-base-300" />
-      <div className="h-20 animate-pulse rounded-2xl bg-base-300" />
-      <div className="h-40 animate-pulse rounded-2xl bg-base-300" />
-      <div className="h-14 animate-pulse rounded-2xl bg-base-300" />
-    </div>
+    <ScreenSkeleton
+      testId="subjects-skeleton"
+      label={t('mobile.subjects.loading')}
+      rows={['h-6 w-40', 'h-20', 'h-40', 'h-14']}
+    />
   );
 }
 

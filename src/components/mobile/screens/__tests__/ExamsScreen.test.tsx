@@ -304,6 +304,7 @@ describe('ExamsScreen first-sync loading', () => {
   it('keeps the skeleton up while the first sync is still fetching', () => {
     render(<ExamsScreen />);
     expect(screen.getByTestId('exams-skeleton')).toBeInTheDocument();
+    expect(screen.getByText('Načítám zkoušky…')).toBeInTheDocument();
   });
 
   it('drops the skeleton once that sync has finished', () => {

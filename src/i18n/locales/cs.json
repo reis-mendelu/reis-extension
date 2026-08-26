@@ -1150,7 +1150,8 @@
       "gapMinutes": "{minutes} min volno",
       "notifications": "Oznámení",
       "prevWeek": "Předchozí týden",
-      "nextWeek": "Další týden"
+      "nextWeek": "Další týden",
+      "loading": "Načítám rozvrh…"
     },
     "exams": {
       "title": "Zkoušky",
@@ -1180,7 +1181,8 @@
       "termCountOne": "{count} termín",
       "termCountFew": "{count} termíny",
       "termCountOther": "{count} termínů",
-      "freeOf": "volno {free} z {total}"
+      "freeOf": "volno {free} z {total}",
+      "loading": "Načítám zkoušky…"
     },
     "subjects": {
       "title": "Předměty",
@@ -1201,7 +1203,8 @@
       "emptyBody": "Předměty se objeví po zápisu.",
       "creditOne": "kredit",
       "creditFew": "kredity",
-      "creditOther": "kreditů"
+      "creditOther": "kreditů",
+      "loading": "Načítám předměty…"
     },
     "map": {
       "searchPlaceholder": "Najdi místnost, budovu, akci…",

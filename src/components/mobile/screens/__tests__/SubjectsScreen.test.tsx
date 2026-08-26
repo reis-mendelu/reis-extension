@@ -183,6 +183,7 @@ describe('SubjectsScreen first-sync loading', () => {
   it('keeps the skeleton up while the first sync is still fetching', () => {
     render(<SubjectsScreen />);
     expect(screen.getByTestId('subjects-skeleton')).toBeInTheDocument();
+    expect(screen.getByText('Načítám předměty…')).toBeInTheDocument();
   });
 
   it('drops the skeleton once that sync has finished', () => {
