@@ -78,11 +78,18 @@ jobs:
       - name: noUncheckedIndexedAccess ratchet gate
         run: npm run nuia:gate
 
-  # Full unit-test suite. The iskam parser specs read HTML fixtures from the
-  # gitignored .agent/ dir (real IS Mendelu HTML, intentionally not committed),
-  # so they are excluded here — they can only run locally with those fixtures.
+  # Full unit-test suite, with coverage enforced as a ratchet.
+  #
+  # The iskam parser specs used to be excluded here: they read HTML fixtures from
+  # the gitignored .agent/ dir, so they could only ever run on the machine that
+  # had scraped them. They now ship synthetic fixtures next to the specs and run
+  # everywhere, so nothing is excluded — CI runs the whole suite.
+  #
+  # That exclusion was costing more than five specs: vitest only emits its
+  # coverage report when the run is fully green, so the failures it was hiding
+  # locally had also disabled coverage reporting entirely.
   test:
-    name: Unit tests
+    name: Unit tests + coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -91,4 +98,21 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npx vitest run --exclude '**/parsers/iskam/__tests__/**'
+      # Thresholds live in vitest.config.ts and fail the run when coverage drops
+      # below them, so the number can only ratchet upward.
+      - run: npm run test:coverage
+
+  # Unreferenced files are deleted, not left to rot: 39 of them (1,799 LOC) had
+  # accumulated before this gate existed. knip's entry list encodes the roots a
+  # bundler-blind tool cannot infer (WXT entrypoints, Deno functions, scripts).
+  deadcode:
+    name: Dead code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint:dead
