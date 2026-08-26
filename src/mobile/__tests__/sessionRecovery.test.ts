@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { toast } from 'sonner';
 
 const storage = { get: vi.fn(), set: vi.fn(), remove: vi.fn() };
@@ -42,6 +42,22 @@ const deferred = () => {
   });
   return { promise, resolve, reject };
 };
+
+/**
+ * Drain any recovery continuation before the next test starts.
+ *
+ * recoverSession schedules its re-sync behind a poll on syncState.busy, and
+ * awaiting recoverSession() does NOT await that continuation -- nor does the
+ * toast action in the promptSessionRecovery block, which starts the same chain.
+ * Left pending it crosses into a later test and lands inside its timing window
+ * as a syncAllData call nobody made, which is how "waits for an in-flight sync"
+ * failed under --sequence.shuffle. clearAllMocks cannot help: the call arrives
+ * after it. File-level on purpose -- the leak crosses describe boundaries.
+ */
+afterEach(async () => {
+  syncState.busy = false;
+  await new Promise((r) => setTimeout(r, 80));
+});
 
 describe('recoverSession', () => {
   beforeEach(() => {

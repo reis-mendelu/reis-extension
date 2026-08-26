@@ -12,7 +12,26 @@ permissions:
   contents: read
 
 jobs:
+  # This workflow deploys straight to the production Supabase project on a push
+  # to main, and used to do so with no gate whatsoever -- over the least-checked
+  # code in the repo (supabase/ is globalIgnores'd by eslint and ignored by knip).
+  # The suite covers these functions (vitest's include has a supabase/ entry, and
+  # coverage now measures it), so at minimum that has to be green first.
+  verify:
+    name: Verify before deploying
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:coverage
+
   deploy:
+    needs: verify
     runs-on: ubuntu-latest
 
     env:

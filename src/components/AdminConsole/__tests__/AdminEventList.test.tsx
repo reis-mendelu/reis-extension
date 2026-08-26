@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
+
+// Captured before any test swaps it for a spy.
+const realCloseComposer = useAppStore.getState().closeComposer;
 import { AdminEventList } from '../AdminEventList';
 import type { MapEvent } from '../../../types/events';
 
@@ -39,6 +42,13 @@ describe('AdminEventList', () => {
       adminConsoleOpen: true,
       adminActiveAssociationId: 'supef',
       language: 'en',
+      // Reset with the rest. Tests below set each of these and nothing put them
+      // back, so in a shuffled run a later test inherited another's role or an
+      // open composer. closeComposer is an ACTION swapped for a spy, which stays
+      // swapped for the whole file unless the real one is restored.
+      adminRole: null,
+      composerOpen: false,
+      closeComposer: realCloseComposer,
       // NOTE: the third fixture uses id 'old' rather than 'past' — a title of
       // "E-past" would collide with the "Past" section heading under a
       // case-insensitive /past/i text match (getByText would find two nodes).

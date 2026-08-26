@@ -1,5 +1,5 @@
 // Ratchet gate for the repo-wide eslint backlog, in the same spirit as
-// nuia-gate.mjs: the count may fall, never rise, and a drop must be banked by
+// nuia-gate.mjs: the counts may fall, never rise, and a drop must be banked by
 // lowering the baseline in the same PR.
 //
 // The existing `ui-gate` CI job lints only files changed in the PR, with
@@ -7,7 +7,13 @@
 // everything untouched, and a PR that edits only tests lints nothing at all and
 // still reports green. This job covers the whole repo.
 //
-// Delete this script and its baseline once the count reaches zero.
+// Errors and warnings are tracked SEPARATELY and deliberately. A single combined
+// total makes severities fungible: with one scalar at 50, adding three fresh
+// errors to a tree sitting at 47 lands exactly on the baseline and the gate goes
+// green -- it rewards adding errors. Two counters make that impossible, because
+// new errors always breach maxErrors whatever the warnings do.
+//
+// Delete this script and its baseline once both counts reach zero.
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -33,39 +39,46 @@ try {
 const results = JSON.parse(raw);
 const errors = results.reduce((n, f) => n + f.errorCount, 0);
 const warnings = results.reduce((n, f) => n + f.warningCount, 0);
-const total = errors + warnings;
 
 const worst = results
   .filter((f) => f.errorCount + f.warningCount > 0)
   .sort((a, b) => b.errorCount + b.warningCount - (a.errorCount + a.warningCount))
   .slice(0, 5)
   .map(
-    (f) => `   ${f.filePath.replace(process.cwd() + '/', '')} (${f.errorCount + f.warningCount})`
+    (f) =>
+      `   ${f.filePath.replace(process.cwd() + '/', '')} ` + `(${f.errorCount}E ${f.warningCount}W)`
   );
 
-if (total > baseline.maxProblems) {
+const rose = errors > baseline.maxErrors || warnings > baseline.maxWarnings;
+const fell = errors < baseline.maxErrors || warnings < baseline.maxWarnings;
+
+if (rose) {
   console.error(
-    `❌ eslint problems rose to ${total} (${errors} errors, ${warnings} warnings); ` +
-      `baseline allows ${baseline.maxProblems}.`
+    `❌ eslint regressed: ${errors} errors / ${warnings} warnings; ` +
+      `baseline allows ${baseline.maxErrors} / ${baseline.maxWarnings}.`
   );
   if (worst.length) console.error('Worst offenders:\n' + worst.join('\n'));
   process.exit(1);
 }
 
-if (total < baseline.maxProblems) {
+if (fell) {
   if (process.argv.includes('--write')) {
     writeFileSync(
       BASELINE_FILE,
-      JSON.stringify({ ...baseline, maxProblems: total }, null, 2) + '\n'
+      JSON.stringify({ ...baseline, maxErrors: errors, maxWarnings: warnings }, null, 2) + '\n'
     );
-    console.log(`✅ baseline lowered ${baseline.maxProblems} → ${total}`);
+    console.log(
+      `✅ baseline banked: errors ${baseline.maxErrors} → ${errors}, ` +
+        `warnings ${baseline.maxWarnings} → ${warnings}`
+    );
     process.exit(0);
   }
   console.error(
-    `❌ eslint problems dropped to ${total} (baseline ${baseline.maxProblems}). ` +
-      `Bank it: npm run lint:gate -- --write`
+    `❌ eslint improved to ${errors} errors / ${warnings} warnings ` +
+      `(baseline ${baseline.maxErrors} / ${baseline.maxWarnings}). ` +
+      `Bank it so it cannot regress: npm run lint:gate -- --write`
   );
   process.exit(1);
 }
 
-console.log(`✅ lint ratchet ok — ${total} problems (${errors} errors, ${warnings} warnings)`);
+console.log(`✅ lint ratchet ok — ${errors} errors, ${warnings} warnings`);

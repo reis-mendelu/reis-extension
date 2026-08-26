@@ -9,7 +9,29 @@ permissions:
   contents: read
 
 jobs:
+  # Tag pushes did not run CI: `ci.yml` triggers on pull_request and pushes to
+  # main, so a release built from a tag reached the Chrome, Firefox and Edge
+  # stores without a single test, typecheck or lint having run on that ref.
+  # Cross-workflow `needs:` does not exist, so the gates are re-run here and
+  # publish depends on them -- on the SAME node version that builds the artifact,
+  # which is the one that actually ships.
+  verify:
+    name: Verify before publishing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run nuia:gate
+      - run: npm run lint:gate
+      - run: npm run test:coverage
+
   publish:
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

@@ -1,4 +1,5 @@
 {
-  "//": "Repo-wide eslint backlog. Ratcheted by scripts/lint-gate.mjs: may fall, never rise.",
-  "maxProblems": 50
+  "//": "Repo-wide eslint backlog, ratcheted by scripts/lint-gate.mjs. Errors and warnings are tracked separately so severities are not fungible: one combined total lets three new errors offset three fixed warnings and pass. Both may fall, neither may rise; bank a drop with: npm run lint:gate -- --write",
+  "maxErrors": 34,
+  "maxWarnings": 13
 }

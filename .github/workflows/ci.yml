@@ -107,8 +107,12 @@ jobs:
   # return value that outlived `clearAllMocks`, a Zustand key never reset, and a
   # spy restored over a module mock. Default order hid all of them.
   #
-  # A fixed seed keeps a failure reproducible; bump it deliberately to widen
-  # coverage of orderings.
+  # The seed is RANDOM per run, and printed so a failure is reproducible locally.
+  #
+  # Deliberately not pinned. A fixed seed only ever proves the one ordering it
+  # encodes, and picking one because it passes is choosing the gate to be green --
+  # an earlier revision of this job did exactly that while a third of seeds still
+  # failed. A fresh seed each run means order-dependence surfaces on its own.
   test-shuffled:
     name: Unit tests (random order)
     runs-on: ubuntu-latest
@@ -119,7 +123,11 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npx vitest run --sequence.shuffle --sequence.seed=20260827
+      - name: Unit tests, shuffled
+        run: |
+          SEED=$(( RANDOM * 32768 + RANDOM ))
+          echo "::notice::shuffle seed $SEED — reproduce with: npx vitest run --sequence.shuffle --sequence.seed=$SEED"
+          npx vitest run --sequence.shuffle --sequence.seed="$SEED"
 
   # Nothing in CI compiled the artifact that ships. A change could break all
   # three web-store builds or the Capacitor bundle and merge green, to be found

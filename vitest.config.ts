@@ -41,25 +41,29 @@ export default defineConfig({
       // go up. Raise them when a run comfortably clears them.
       //
       // Coverage is only a signal where it tracks risk, so the boundaries that
-      // can silently corrupt or strand a student's data are held far higher than
-      // the global floor rather than being allowed to average out against the UI:
+      // can silently corrupt or strand a student's data get their own floors
+      // rather than averaging out against the UI:
       //   - entrypoints  — the content-script/background boundary that holds the
       //                    auth cookies and every postMessage into the iframe
       //   - services/sync — per CLAUDE.md, the only authorised writer to
       //                    persistent state
-      // Margin is ~0.4pp, sized to MEASURED run-to-run drift rather than guessed.
+      // Margins are ~3x the MEASURED run-to-run spread, not a guess and not a
+      // single multiple of it.
       //
       // Most of the old drift was unit tests reaching the real jsDelivr CDN, so
       // an identical commit measured differently depending on what landed before
-      // teardown; src/test/setup.ts now rejects unmocked fetches. What remains
-      // (~0.1pp, measured over repeated runs) is startApp.test.ts booting the
-      // real entrypoint and racing React's scheduler, so how far the render gets
-      // varies. Tightening below that buys nothing and costs spurious CI reds.
+      // teardown; src/test/setup.ts now rejects unmocked fetches. What remains is
+      // startApp.test.ts booting the real entrypoint and racing React's
+      // scheduler, so how far the render gets varies. Observed across repeated
+      // runs: statements 55.55-55.70, branches 79.56-79.74, functions
+      // 63.41-63.61 -- a spread of up to 0.20pp. An earlier revision left the
+      // functions margin at 0.21pp, i.e. one bad run from a spurious red.
+      // A real regression moves whole points, so the looser floor still catches it.
       thresholds: {
-        statements: 55.3,
-        branches: 79.3,
-        functions: 63.2,
-        lines: 55.3,
+        statements: 55.0,
+        branches: 79.0,
+        functions: 62.8,
+        lines: 55.0,
         // Deliberately the whole subtree, iskam/ and main/ included -- the glob,
         // not the directory row. Scoping this to `src/entrypoints/*.ts` would
         // have quietly exempted the ISKAM iframe bootstrap, which is the half
@@ -70,11 +74,15 @@ export default defineConfig({
           functions: 95,
           lines: 90,
         },
+        // Measured 57.06 / 82.60 / 67.64, set just under. All three sit above
+        // the global floor, which is the whole point of a per-area threshold --
+        // an earlier revision set statements to 55 while the global floor was
+        // 55.3, making this "stricter" gate looser than the repo-wide one.
         'src/services/sync/**': {
-          statements: 55,
-          branches: 80,
-          functions: 65,
-          lines: 55,
+          statements: 56.8,
+          branches: 82.3,
+          functions: 67,
+          lines: 56.8,
         },
       },
     },
