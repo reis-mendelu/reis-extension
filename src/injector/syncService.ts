@@ -69,6 +69,23 @@ export async function syncAllData() {
     // left isSyncing stuck true and no sync ever ran again.
     sendToIframe(Messages.syncUpdate({ isSyncing: true, lastSync: cachedData.lastSync }));
 
+    /**
+     * Hands one Phase 2 result to the UI the moment it lands.
+     *
+     * Phase 2 fetches nine things in parallel and then posted all of them in a
+     * single message once the slowest had finished, so the timetable waited on
+     * a study comparison nobody was looking at. Each screen gates on its own
+     * data, so an early partial paints that screen and leaves the others on
+     * their skeletons — which is what the student is actually waiting for.
+     *
+     * `isSyncing` stays true: the crawl is not over, and the app's
+     * `firstSyncSettled` latch keys off the false that ends it.
+     */
+    const pushEarly = (partial: Partial<SyncedData>) =>
+      sendToIframe(
+        Messages.syncUpdate({ ...partial, isSyncing: true, lastSync: cachedData.lastSync })
+      );
+
     const userParams = await getUserParams();
     const studium = userParams?.studium;
 
@@ -92,6 +109,7 @@ export async function syncAllData() {
         ).then((plan) => {
           if (plan) {
             cachedData = { ...cachedData, studyPlan: plan };
+            pushEarly({ studyPlan: plan });
           }
           return plan;
         })
@@ -111,7 +129,10 @@ export async function syncAllData() {
         ? ttlGated('studyStats', TTL.DAILY, !!cachedData.studyStats, () =>
             fetchStudyStats(studium, userParams.obdobi!)
           ).then((stats) => {
-            if (stats) cachedData = { ...cachedData, studyStats: stats };
+            if (stats) {
+              cachedData = { ...cachedData, studyStats: stats };
+              pushEarly({ studyStats: stats });
+            }
             return stats;
           })
         : Promise.resolve(null);
@@ -148,6 +169,28 @@ export async function syncAllData() {
         : Promise.resolve(null);
 
     // Phase 2b: Full schedule + exams in parallel (subjects/studyPlan/studyStats re-uses already-started promises)
+    // Named rather than inline in the allSettled below, so each can post the
+    // moment it resolves. These two are the screens a student opens first.
+    const schedulePromise = ttlGated('schedule', TTL.SEMESTER, !!cachedData.schedule, () =>
+      fetchFullSemesterSchedule()
+    ).then((value) => {
+      if (value) {
+        cachedData = { ...cachedData, schedule: value };
+        pushEarly({ schedule: value });
+      }
+      return value;
+    });
+
+    // exams and odevzdavarny stay hot: registration state and submission
+    // deadlines are the two things that genuinely move within a day.
+    const examsPromise = fetchDualLanguageExams().then((value) => {
+      if (value.length > 0) {
+        cachedData = { ...cachedData, exams: value };
+        pushEarly({ exams: value });
+      }
+      return value;
+    });
+
     const [
       fullSchedule,
       exams,
@@ -159,10 +202,8 @@ export async function syncAllData() {
       pastSubjects,
       studyComparison,
     ] = await Promise.allSettled([
-      ttlGated('schedule', TTL.SEMESTER, !!cachedData.schedule, () => fetchFullSemesterSchedule()),
-      // exams and odevzdavarny stay hot: registration state and submission
-      // deadlines are the two things that genuinely move within a day.
-      fetchDualLanguageExams(),
+      schedulePromise,
+      examsPromise,
       subjectsPromise,
       studyPlanPromise,
       studyStatsPromise,
