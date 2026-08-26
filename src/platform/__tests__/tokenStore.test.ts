@@ -5,6 +5,7 @@ import {
   loadStoredToken,
   clearStoredToken,
   purgePlaintextToken,
+  __resetTokenMemoForTests,
 } from '../tokenStore';
 import type { ReisPlatform } from '../types';
 import { DemoModeError } from '../../errors/demoMode';
@@ -37,6 +38,7 @@ let secure: ReturnType<typeof makeBag>;
 
 beforeEach(() => {
   __resetPlatformForTests();
+  __resetTokenMemoForTests();
   plain = makeBag();
   secure = makeBag();
   setPlatform({
@@ -145,5 +147,62 @@ describe('purgePlaintextToken', () => {
   it('swallows a storage failure rather than blocking boot', async () => {
     plain.api.remove.mockRejectedValueOnce(new Error('nope'));
     await expect(purgePlaintextToken()).resolves.toBeUndefined();
+  });
+});
+
+describe('the in-memory token', () => {
+  /**
+   * Why this exists: on Capacitor every authenticated request calls
+   * `loadStoredToken`, and one cold sync is ~120 requests — so a run cost 120
+   * Keychain reads across the native bridge before a single byte went to IS.
+   * Measured in issue #197.
+   */
+  it('reads secure storage once and serves the rest from memory', async () => {
+    await saveStoredToken(TOKEN);
+    __resetTokenMemoForTests();
+
+    await expect(loadStoredToken()).resolves.toBe(TOKEN);
+    await expect(loadStoredToken()).resolves.toBe(TOKEN);
+    await expect(loadStoredToken()).resolves.toBe(TOKEN);
+
+    expect(secure.api.get).toHaveBeenCalledTimes(1);
+  });
+
+  it('serves a freshly saved token without reading it back', async () => {
+    // Re-login writes the new token through here, so the memo is authoritative
+    // the moment the write succeeds.
+    await saveStoredToken(TOKEN);
+    await expect(loadStoredToken()).resolves.toBe(TOKEN);
+    expect(secure.api.get).not.toHaveBeenCalled();
+  });
+
+  it('replaces the memo when a new token is saved over an old one', async () => {
+    const NEXT = 'b'.repeat(40);
+    await saveStoredToken(TOKEN);
+    await loadStoredToken();
+    await saveStoredToken(NEXT);
+    await expect(loadStoredToken()).resolves.toBe(NEXT);
+  });
+
+  it('forgets the memo when the token is cleared', async () => {
+    // Sign-out and the re-login path both clear. A memo that outlived the
+    // Keychain entry would keep signing requests as a student who has left.
+    await saveStoredToken(TOKEN);
+    await loadStoredToken();
+    await clearStoredToken();
+    await expect(loadStoredToken()).rejects.toMatchObject({ sessionExpired: true });
+  });
+
+  it('still refuses in demo mode with a token already in memory', async () => {
+    // The memo must not become a way around the one guard every authenticated
+    // path converges on.
+    await saveStoredToken(TOKEN);
+    await loadStoredToken();
+    useAppStore.setState({ demoMode: true });
+    try {
+      await expect(loadStoredToken()).rejects.toBeInstanceOf(DemoModeError);
+    } finally {
+      useAppStore.setState({ demoMode: false });
+    }
   });
 });

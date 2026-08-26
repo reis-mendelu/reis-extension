@@ -5,6 +5,29 @@ import { DemoModeError, isDemoMode } from '../errors/demoMode';
 const TOKEN_KEY = 'reis.session.uisAuth';
 
 /**
+ * The token, once read, for the life of this context.
+ *
+ * On Capacitor every authenticated request calls `loadStoredToken`, and one
+ * cold sync is ~120 requests — so a run paid ~120 Keychain/Keystore reads
+ * across the native bridge before a single byte reached IS (measured in #197).
+ * The value itself never rotates: IS issues one UISAuth per login and it stays
+ * valid until the session lapses, so there is nothing to re-read for.
+ *
+ * Memory only, deliberately — this is a cache of the secure store, not a second
+ * home for the credential. It dies with the process, and the two things that
+ * can invalidate it both go through this module: a re-login writes through
+ * `saveStoredToken`, and sign-out or a lapsed session clears through
+ * `clearStoredToken`. Nothing outside this file can write the key (see above),
+ * which is what makes that guarantee hold.
+ */
+let memo: string | null = null;
+
+/** Drops the cached token. Tests only — the module holds it for the process. */
+export function __resetTokenMemoForTests(): void {
+  memo = null;
+}
+
+/**
  * The ONLY module that touches the IS session token.
  *
  * UISAuth authenticates as the student on its own, never rotates, and IS allows
@@ -18,6 +41,9 @@ const TOKEN_KEY = 'reis.session.uisAuth';
  */
 export async function saveStoredToken(token: string): Promise<void> {
   await getPlatform().secureStorage.set(TOKEN_KEY, token);
+  // After the write, not before: a failed write must not leave the app acting
+  // on a token that was never persisted.
+  memo = token;
 }
 
 /**
@@ -42,7 +68,12 @@ export async function saveStoredToken(token: string): Promise<void> {
  * not the actual boundary.
  */
 export async function loadStoredToken(): Promise<string> {
+  // Before the memo, not after: the demo guard is the boundary every
+  // authenticated path converges on, and a cached token must not become the way
+  // around it for a student who signed in earlier in this session.
   if (isDemoMode()) throw new DemoModeError();
+
+  if (memo !== null) return memo;
 
   let value: unknown;
   try {
@@ -55,10 +86,15 @@ export async function loadStoredToken(): Promise<string> {
     err.sessionExpired = true;
     throw err;
   }
+  memo = value;
   return value;
 }
 
 export async function clearStoredToken(): Promise<void> {
+  // Before the remove, not after: if the remove throws, the process must
+  // already have forgotten the token rather than keep serving it from memory
+  // to a student who asked to be signed out.
+  memo = null;
   await getPlatform().secureStorage.remove(TOKEN_KEY);
 }
 
