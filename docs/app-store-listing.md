@@ -555,3 +555,229 @@ before submission; Apple's estimate is up to 48 hours.
 **The remaining risk is unchanged and is not a form field: Guideline 5.2.2.**
 No permission from MENDELU was sought (§4). The three mitigations in the
 binary are the gate disclaimer, the in-app banner and the reviewer notes.
+
+---
+
+## 11. Rejection 1 — Guideline 2.1 Information Needed (2026-08-26)
+
+**Not a 5.2.2 rejection.** Apple replied on 2026-08-26 at 02:58 with the
+standard new-app information request: seven questions, no defect claimed, no
+guideline argued. Submission ID `80588968-d9f1-4411-82d6-f1d40fd51994`; the
+version sits in *Rejected* until the reply goes in, and the same build can be
+resubmitted — no new binary is required.
+
+Worth being clear about what this is: Apple did **not** say the app is broken,
+and did not raise the unofficial-client question of §4. Item 7 is the only one
+that touches it, and it is answered from the §4.1 user-agent position, with the
+absence of a permission stated plainly rather than papered over.
+
+### 11.1 What only a human can do
+
+**The screen recording (item 1) has to be captured by hand on a physical
+device.** Two facts settle how:
+
+- The wired iPad is an **iPad (8th generation) on iPadOS 26.6**, developer mode
+  enabled (`xcrun devicectl list devices`). That is a physical device on the
+  current OS, so it satisfies the request on its own.
+- The reIS build installed on it is **1.0 (1)** — a stale dev build from before
+  PR #236 stamped versions. Recording that binary would show Apple something
+  other than what was submitted. Install **50006 / 5.0.6 through TestFlight**
+  before recording; it is the exact reviewed binary and needs no local signing.
+
+Shot list, in order, one take, no cuts:
+
+1. Home screen → tap reIS. Show the splash and the university sign-in page
+   loading. (Apple asked for the recording to *begin* with launch.)
+2. Sign in with a real account and let the first sync finish. *(Your data will
+   be in the video — the alternative is to show only the sign-in page and do
+   the tour in demo mode. Apple asked to see the login flow, so at minimum the
+   page and a successful sign-in should appear.)*
+3. Timetable → open one lesson detail (room, teacher).
+4. Grades tab. Exams tab → open a term detail (sign-up sheet visible; no need
+   to actually sign up).
+5. Courses → open a subject → the files sheet → download one file.
+6. Campus map → search a room → the room highlighted.
+7. Profile (person icon) → language switch to English and back → **Sign out**,
+   showing the confirmation and the return to the sign-in page.
+8. Relaunch → close the university page with the **X** → the gate screen with
+   the unofficial disclaimer → **"Prohlédnout ukázku"** → one pass through the
+   five demo tabs, banner visible.
+
+The recording attaches to the App Review reply directly; if it is rejected for
+size, an unlisted link is accepted.
+
+### 11.2 The reply — paste into Reply to App Review
+
+> Thank you for the list. Answers to all seven points follow; the same
+> information is now also in App Review Information → Notes.
+>
+> **1. Screen recording.** Attached: captured on a physical iPad (8th
+> generation) running iPadOS 26.6, beginning with the app launch, and showing
+> the timetable, grades, exams, course files, campus map and sign-out, followed
+> by the app's built-in demo mode. On the specific flows listed:
+>
+> - *Registration:* none exists. reIS creates no accounts of its own. Signing
+>   in uses the student's existing Mendel University account, entered on the
+>   university's own sign-in page shown in a web view; the app never sees the
+>   password.
+> - *Login:* shown in the recording.
+> - *Account deletion:* there is no reIS account to delete. "Odhlásit se"
+>   (Sign out) is shown: it removes the session token from the iOS Keychain and
+>   clears all locally cached data from the device.
+> - *Paid content:* none anywhere in the app. It is free, with no in-app
+>   purchases, no subscriptions, no paid tier and no advertising.
+> - *User-generated content:* the app has no user-to-user content and no way to
+>   create content inside it. Two adjacent things exist and both are shown: the
+>   campus map can display event listings published by recognised university
+>   student societies through a separate access-controlled web console that we
+>   moderate (that console does not exist in the iOS app), and the feedback form
+>   sends free text to us alone, where it is never shown to another user.
+> - *Permission prompts:* there are none. The app requests no device
+>   permissions at all — its Info.plist contains no usage-description keys, the
+>   campus map is a static basemap that never asks where the device is, and
+>   there is no App Tracking Transparency prompt because the app does no
+>   tracking.
+>
+> **2. Devices and operating systems tested.**
+>
+> - iPad (8th generation), iPadOS 26.6 — physical device; clean-install run of
+>   the whole flow, including the demo path a reviewer would take.
+> - iPhone 17 Pro Max, iOS 26.5 — Simulator.
+> - iPad Pro 13-inch (M5), iPadOS 26.5 — Simulator.
+>
+> The deployment target is iOS 15.0 and the app is built for both iPhone and
+> iPad.
+>
+> **3. What the app does, and for whom.** reIS is a free, non-commercial,
+> open-source app written by students of Mendel University in Brno, Czech
+> Republic, for the roughly eight thousand students of that university. It is
+> not an official university app and is not operated or endorsed by the
+> university — stated in the opening line of the App Store description and on
+> the app's own sign-in screen.
+>
+> The problem it solves: the university's information system (is.mendelu.cz) is
+> a large desktop web application. A student who wants to know which room their
+> next lecture is in has to work through several pages of a layout that was
+> never made for a phone. reIS signs in to that same system with the student's
+> own account, parses the pages on the device, and shows only the parts a
+> student uses daily: timetable, grades and continuous assessment, exam dates
+> with sign-up and sign-off, course materials and submission folders, the
+> study-progress check, a staff and student directory with contact details and
+> office location, and a campus map that locates a room. It adds two things the
+> university system has no equivalent of: subject pass-rate statistics compiled
+> from public data, and the campus map itself.
+>
+> **4. Setting up and accessing the main features.** No credentials are needed
+> and none are supplied, because the app ships with a demo mode:
+>
+> 1. Launch the app. It opens the university's own sign-in page.
+> 2. Close that page with the **X in the top-right corner**. The app's own
+>    sign-in screen appears underneath.
+> 3. Tap the second button, **"Prohlédnout ukázku"** ("Try the demo").
+>
+> The app then opens with invented sample data for a fictional student. All
+> five tabs are populated and a banner reading "Ukázka" (Demo) stays across the
+> top. No university account is contacted in this mode, and no sample files are
+> needed — the course-materials screen already contains sample documents.
+> Downloading is deliberately blocked while in demo mode and explains itself
+> with a short message.
+>
+> The app opens in Czech, since it serves a Czech university. English is under
+> the person icon (top right) → language; the demo button then reads "Try the
+> demo".
+>
+> On iPad, reIS deliberately shows its phone layout. That is the tested layout
+> rather than an unadapted iPhone app: the wide layout is disabled because it
+> depends on a browser-extension API that does not exist in the app.
+>
+> **5. External services used.**
+>
+> - **Mendel University's information system (is.mendelu.cz)** — the source of
+>   every piece of academic data. The student signs in on the university's own
+>   page; the resulting session token is kept in the iOS Keychain and used only
+>   to fetch that student's own records, which are parsed on the device.
+> - **Supabase (EU region), our own backend** — the in-app notice feed, the
+>   student-society event listings shown on the map, the feedback form, and
+>   optional crash reports. It holds no academic data of any kind.
+> - **jsDelivr**, serving our own open dataset repository
+>   (github.com/reis-mendelu/reis-data) — static JSON files: subject pass-rate
+>   statistics and campus building and room data. Read-only; the requests carry
+>   nothing about the user.
+> - **CARTO basemap tiles** (OpenStreetMap data) — the background of the campus
+>   map.
+>
+> To be explicit about what is *not* used: no third-party authentication
+> provider, no payment processor, no advertising network or SDK, no third-party
+> analytics SDK, no AI or machine-learning service, and no data brokers. The
+> only usage metric is a once-a-day counter keyed to a SHA-256 hash of the
+> student's university ID, stored in our own Supabase and declared in the
+> privacy label under Identifiers, used for analytics and never for tracking.
+> Links to Microsoft Teams, e-mail and maps hand off to the system's own apps
+> and are not services the app calls.
+>
+> **6. Regional differences.** There are none. The app behaves identically in
+> every region: the same features, the same content, the same servers, free
+> everywhere, with no geo-gating and nothing region-specific. It serves one
+> university in the Czech Republic, so what a user sees depends on their own
+> university account and not on where they are. The only variation is the
+> interface language, which is a manual switch between Czech and English.
+>
+> **7. Regulated industry and third-party material.** reIS is in no regulated
+> industry: no financial services, no health or medical data, no gambling, no
+> cryptocurrency. It is free and non-commercial.
+>
+> On third-party material, stated plainly: reIS is an unofficial, student-made
+> client for our university's information system, and we hold no written
+> authorisation from the university. We do not claim one. Our position is that
+> none is required, because the app acts as a user agent rather than as a
+> publisher of the university's content:
+>
+> - Every request it makes is made with the student's own credentials, for the
+>   student's own records, at that student's explicit instruction — the same
+>   records the same student can open in Safari.
+> - Nothing is republished or redistributed. Pages are parsed on the device and
+>   shown only to the account holder. We operate no server in that path and hold
+>   no university data.
+> - reIS never sees the password. It is typed into the university's own page in
+>   a web view.
+> - The app carries no university branding of its own and says it is unofficial
+>   in three places: the first line of the App Store description, the sign-in
+>   screen, and here.
+>
+> That is the same relationship a web browser or an e-mail client has with the
+> service it connects to. The source is public at
+> github.com/reis-mendelu/reis-extension if that is useful. If the team would
+> nonetheless like a statement from the university, we will ask for one — we
+> would only like to know that it is required before starting a process that
+> takes weeks.
+
+### 11.3 Notes field — condensed
+
+App Review Information → Notes caps at 4000 characters, so it cannot hold §11.2
+whole. Replace the §5 notes with the §5 text plus these three paragraphs
+appended (they are the parts of the reply a future reviewer will look for, and
+Apple asked for exactly this):
+
+> TESTED ON: iPad (8th generation), iPadOS 26.6 (physical device); iPhone 17
+> Pro Max, iOS 26.5 and iPad Pro 13-inch (M5), iPadOS 26.5 (Simulator).
+> Deployment target iOS 15.0, built for iPhone and iPad.
+>
+> EXTERNAL SERVICES: is.mendelu.cz (the university's own system, the student's
+> own account); our own Supabase backend in the EU (notice feed, society event
+> listings, feedback form, optional crash reports — no academic data);
+> jsDelivr serving our open dataset (subject pass-rate statistics, campus room
+> data); CARTO basemap tiles for the map. No advertising, no third-party
+> analytics, no payment processor, no AI service, no tracking.
+>
+> NO PURCHASES, NO REGISTRATION, NO USER-TO-USER CONTENT. The app is free with
+> no in-app purchases. It creates no account of its own, so there is nothing to
+> register or delete; signing out clears the Keychain token and all local data.
+> Users cannot create content in the app. Identical in every region.
+
+### 11.4 Recorded for next time
+
+Apple sends this seven-item request routinely on **new** app submissions, and
+every answer above could have been filed in the Notes on 2026-08-24 for free.
+It costs a review cycle to learn that, so: on a first submission to a new app
+record, put items 2–7 in the Notes before submitting, and have a physical-device
+recording ready.
