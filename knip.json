@@ -19,14 +19,6 @@
     "*.config.{ts,js}",
     "src/api/successRate.validators.ts"
   ],
-  "project": [
-    "src/**/*.{ts,tsx}",
-    "capacitor/**/*.{ts,tsx}"
-  ],
-  "ignore": [
-    "supabase/functions/**",
-    "android/**",
-    "ios/**",
-    "src/services/sync/SyncMigration.ts"
-  ]
+  "project": ["src/**/*.{ts,tsx}", "capacitor/**/*.{ts,tsx}"],
+  "ignore": ["supabase/functions/**", "android/**", "ios/**", "src/services/sync/SyncMigration.ts"]
 }
