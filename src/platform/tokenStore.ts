@@ -62,6 +62,16 @@ let writes: Promise<unknown> = Promise.resolve();
  */
 let clearing = 0;
 
+/**
+ * The read in flight right now, if any.
+ *
+ * The memo only starts paying once the first read has RESOLVED, and a cold sync
+ * fires its requests together — so the first ~dozen callers each opened their
+ * own native read, which is exactly the cost this module exists to remove.
+ * They now share one.
+ */
+let reading: Promise<string> | null = null;
+
 function serialized<T>(op: () => Promise<T>): Promise<T> {
   const next = writes.then(op, op);
   writes = next.catch(() => undefined);
@@ -73,6 +83,7 @@ export function __resetTokenMemoForTests(): void {
   memo = null;
   generation = 0;
   clearing = 0;
+  reading = null;
   writes = Promise.resolve();
 }
 
@@ -136,10 +147,28 @@ export async function loadStoredToken(): Promise<string> {
 
   if (memo !== null) return memo;
 
+  // Everyone who arrives before the first read resolves waits on that one.
+  if (reading) return reading;
+  reading = readFromStore().finally(() => {
+    reading = null;
+  });
+  return reading;
+}
+
+async function readFromStore(): Promise<string> {
   const mine = generation;
+  // A sign-out that was decided before this read started is still landing, and
+  // the store will happily answer with the credential it is about to delete.
+  const clearingAtStart = clearing;
+
+  // Outside the try on purpose: getPlatform throws when no platform has been
+  // installed, and swallowing that would report a wiring bug as an expired
+  // session — sending the student to a login screen that fails the same way
+  // every time. Only the secure-store read itself is a lapsed session.
+  const platform = getPlatform();
   let value: unknown;
   try {
-    value = await getPlatform().secureStorage.get(TOKEN_KEY);
+    value = await platform.secureStorage.get(TOKEN_KEY);
   } catch {
     value = undefined;
   }
@@ -152,11 +181,12 @@ export async function loadStoredToken(): Promise<string> {
     throw expired();
   }
 
-  // Issued before this read even started, still landing: the store answered
-  // with a credential that is on its way out. Handing it back would send one
-  // more request as a student who asked to leave, and caching it would send
-  // every request after that.
-  if (clearing > 0) throw expired();
+  // A sign-out overlapping this read at either end: still pending now, or
+  // already pending when the read began and finished while it was in flight.
+  // The store answered with a credential on its way out; handing it back would
+  // send one more request as a student who asked to leave, and caching it would
+  // send every request after that.
+  if (clearing > 0 || clearingAtStart > 0) throw expired();
 
   memo = value;
   return value;

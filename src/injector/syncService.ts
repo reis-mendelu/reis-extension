@@ -47,7 +47,9 @@ const notesHtmlOverrides: Record<string, string> = {};
 export function setNotesHtmlOverride(code: string, html: string): void {
   notesHtmlOverrides[code] = html;
 }
-let currentSemesterCodes: string[] = [];
+// null until a subjects fetch says otherwise: an empty array is a real answer
+// ("enrolled in nothing"), and subjectScope treats the two differently.
+let currentSemesterCodes: string[] | null = null;
 
 /**
  * Last past-subject payload we successfully fetched.
@@ -98,7 +100,7 @@ export async function syncAllData() {
         cachedData = { ...cachedData, subjects: result.subjects, attendance: result.attendance };
         // Capture current-semester codes BEFORE mergePastSubjects adds past ones —
         // the Drive backup is scoped to the current semester only.
-        currentSemesterCodes = result.subjects?.data ? Object.keys(result.subjects.data) : [];
+        currentSemesterCodes = result.subjects?.data ? Object.keys(result.subjects.data) : null;
       }
       return result;
     });
@@ -372,8 +374,9 @@ export async function runDriveBackupNow(): Promise<void> {
   try {
     const subjectsData = (cachedData.subjects as SubjectsData | undefined)?.data;
     const filesData = cachedData.files as Record<string, ParsedFile[]> | undefined;
-    if (!currentSemesterCodes.length || !subjectsData || !filesData) return;
-    const backupSubjects = currentSemesterCodes
+    const codes = currentSemesterCodes;
+    if (!codes?.length || !subjectsData || !filesData) return;
+    const backupSubjects = codes
       .map((code): DriveBackupSubject | null => {
         const info = subjectsData[code];
         const files = filesData[code];

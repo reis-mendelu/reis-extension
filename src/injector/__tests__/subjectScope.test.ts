@@ -17,7 +17,13 @@ describe('currentSemesterEntries', () => {
     // The subjects fetch failed or never ran in this context. Crawling
     // everything is wasteful; crawling nothing leaves the student with no
     // files at all, which is worse than the cost this exists to cut.
-    expect(currentSemesterEntries(entries, [])).toHaveLength(3);
+    expect(currentSemesterEntries(entries, null)).toHaveLength(3);
+  });
+
+  it('crawls nothing when the student is enrolled in nothing this semester', () => {
+    // An empty list is an answer, not a missing one — the difference between it
+    // and null is the whole point of the null.
+    expect(currentSemesterEntries(entries, [])).toHaveLength(0);
   });
 
   it('keeps everything when the codes match nothing in the map', () => {

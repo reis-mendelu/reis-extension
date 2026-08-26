@@ -585,13 +585,13 @@ device.** Two facts settle how:
   be the full-width phone layout of §3, so the reply flags it in item 1 and
   explains it in item 4 instead of letting it land as a surprise.
 - **This device has never run the phone tree at 810×1080.** §8 verified iPad on
-  the 13-inch Pro simulator. Walk the five tabs once after installing 50006 and
+  the 13-inch Pro simulator. Walk the five tabs once after installing 50006.1 and
   before starting the take.
 
 **Installing 50006 on that iPad, 2026-08-26 — what actually worked.** The
 device build is one command; the obstacle was the old binary, not signing:
 
-```
+```bash
 xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
   -destination 'id=<device-udid>' -allowProvisioningUpdates \
   -allowProvisioningDeviceRegistration \
@@ -626,7 +626,7 @@ identical **reIS** icons now exist — the 5.0.6 one is the only one with demo
 mode, which is the quick way to tell them apart before recording.
 - The reIS build installed on it is **1.0 (1)** — a stale dev build from before
   PR #236 stamped versions. Recording that binary would show Apple something
-  other than what was submitted. Install **50006 / 5.0.6 through TestFlight**
+  other than what was submitted. Install **50006.1 / 5.0.6 through TestFlight**
   before recording; it is the exact reviewed binary and needs no local signing.
 
 Shot list, in order, one take, no cuts:

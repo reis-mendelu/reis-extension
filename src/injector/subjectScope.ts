@@ -18,13 +18,18 @@
  */
 export function currentSemesterEntries<T>(
   entries: readonly (readonly [string, T])[],
-  currentCodes: readonly string[]
+  currentCodes: readonly string[] | null
 ): (readonly [string, T])[] {
-  // An empty list means "we do not know which semester is current" — the
-  // subjects fetch failed, or was skipped before this context ever ran one.
-  // Crawling everything is wasteful; crawling nothing would leave the student
-  // with no files at all, so the unknown case keeps the old behaviour.
-  if (currentCodes.length === 0) return [...entries];
+  // `null`, not `[]`, is "we do not know which semester is current" — the
+  // subjects fetch failed, or never ran in this context. Crawling everything is
+  // wasteful; crawling nothing would leave the student with no files at all, so
+  // the unknown case keeps the old behaviour.
+  if (currentCodes === null) return [...entries];
+
+  // An empty list is an answer: the fetch succeeded and the student is enrolled
+  // in nothing this semester. Falling back here would crawl every subject they
+  // ever took, which is the exact cost this exists to remove.
+  if (currentCodes.length === 0) return [];
 
   const current = new Set(currentCodes);
   const scoped = entries.filter(([code]) => current.has(code));
