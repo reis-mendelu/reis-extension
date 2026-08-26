@@ -865,3 +865,21 @@ The lesson §8 half-learned, now stated plainly: **walk each path twice.** The
 first dismissal is the one everyone tests; the second is the one a reviewer
 actually performs, because the first thing they try after seeing a sign-in
 screen is the sign-in button.
+
+**Two more first-run defects went into the same build**, both found by signing
+in on the device rather than by reading code:
+
+1. **No loading state after a first sign-in.** Every tab showed its *empty*
+   state — "Nic nemáš, pohodička", "Žádné zkoušky" — for the whole first crawl.
+   The screens gated on `handshakeDone`, which `setSyncStatus` sets on the first
+   status message, and `syncService` posts one when a crawl *starts*. A latched
+   `firstSyncSettled` now separates "nothing" from "not yet" (`8ed69d5a`).
+2. **Phase 2 reported in one lump.** Nine parallel fetches were handed to the UI
+   only once the slowest finished, so a finished timetable waited on a study
+   comparison nobody had asked to see. Schedule, exams, study plan and study
+   stats now post as each resolves (`8bea3378`). No extra requests: `pLimit(3)`
+   only ever wrapped Phase 3, so the wait was in the reporting, not the
+   fetching.
+
+Both matter for the recording as much as for students: a reviewer signing in
+would otherwise film an app that looks empty and then slow.
