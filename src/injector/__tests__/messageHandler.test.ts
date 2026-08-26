@@ -22,6 +22,10 @@ const fetchFullSemesterSchedule = vi.hoisted(() => vi.fn());
 const fetchExamData = vi.hoisted(() => vi.fn());
 const fetchSubjects = vi.hoisted(() => vi.fn());
 const isIsMendeluUrl = vi.hoisted(() => vi.fn());
+const registerExam = vi.hoisted(() => vi.fn());
+const unregisterExam = vi.hoisted(() => vi.fn());
+const downloadDocumentInPage = vi.hoisted(() => vi.fn());
+const refreshExams = vi.hoisted(() => vi.fn());
 
 const contentWindow = { name: 'iframe-window' } as unknown as Window;
 
@@ -37,18 +41,14 @@ vi.mock('../syncService', () => ({
   runNotesBackupNow: vi.fn(),
   setNotesSnapshot: vi.fn(),
   setNotesHtmlOverride: vi.fn(),
-  refreshExams: vi.fn(),
+  refreshExams,
 }));
 vi.mock('../syncGate', () => ({ requestSync }));
 vi.mock('../dataFetchers', () => ({ fetchFullSemesterSchedule }));
-vi.mock('../../api/exams', () => ({
-  fetchExamData,
-  registerExam: vi.fn(),
-  unregisterExam: vi.fn(),
-}));
+vi.mock('../../api/exams', () => ({ fetchExamData, registerExam, unregisterExam }));
 vi.mock('../../api/subjects', () => ({ fetchSubjects }));
 vi.mock('../sniper', () => ({ scrapedNavMenu: null }));
-vi.mock('../documentDownloader', () => ({ downloadDocumentInPage: vi.fn() }));
+vi.mock('../documentDownloader', () => ({ downloadDocumentInPage }));
 vi.mock('../isMendeluUrl', () => ({ isIsMendeluUrl }));
 
 const ORIGIN = 'chrome-extension://abcdef';
@@ -198,6 +198,45 @@ describe('REIS_FETCH against IS', () => {
     );
   });
 
+  it('sends the student back to the login page when the session has lapsed', async () => {
+    // A 401 from IS means the cookie died, and every later request will fail the
+    // same way. Reporting the error without redirecting leaves the app retrying
+    // forever against a session that cannot come back.
+    let navigatedTo = '';
+    const loc = window.location;
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...loc,
+        get href() {
+          return '';
+        },
+        set href(v: string) {
+          navigatedTo = v;
+        },
+        pathname: '/auth/index.pl',
+      },
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: false,
+        status: 401,
+        text: async () => 'login page',
+        headers: new Headers(),
+      }))
+    );
+
+    const msg = Messages.fetch('https://is.mendelu.cz/auth/x');
+    await handleMessage(event({ data: msg }));
+
+    expect(navigatedTo).toContain('login.pl');
+    expect(sendToIframe).toHaveBeenCalledWith(
+      expect.objectContaining({ id: msg.id, success: false })
+    );
+    Object.defineProperty(window, 'location', { configurable: true, value: loc });
+  });
+
   it('rejects an image response that is not actually an image', async () => {
     // An expired session answers a photo request with the HTML login page. Data-
     // URL-ing that would paint the login form into an <img> as the student's face.
@@ -283,5 +322,149 @@ describe('REIS_FETCH via the background worker', () => {
     expect(sendToIframe).toHaveBeenCalledWith(
       expect.objectContaining({ id: msg.id, success: false })
     );
+  });
+});
+
+/**
+ * handleAction is the WRITE half of the boundary. Everything above only reads;
+ * these cases change state on the university's servers on the student's behalf,
+ * or navigate them away from the page.
+ *
+ * The direction of an exam action is the sharpest thing here: register and
+ * unregister take the same argument and differ only in which function is called,
+ * so a transposition type-checks, reads correctly, and silently does the exact
+ * opposite of what the student clicked.
+ */
+describe('REIS_ACTION', () => {
+  /** Dispatch an action and hand back the message, for its generated id. */
+  async function act(action: string, payload: unknown = {}) {
+    const msg = Messages.action(action as Parameters<typeof Messages.action>[0], payload);
+    await handleMessage(event({ data: msg }));
+    return msg;
+  }
+
+  const resultFor = (id: string) =>
+    sendToIframe.mock.calls
+      .map((c) => c[0] as { type: string; id?: string; success?: boolean; error?: string })
+      .find((m) => m.type === 'REIS_ACTION_RESULT' && m.id === id);
+
+  describe('exam registration', () => {
+    it('registers — and does NOT unregister', async () => {
+      registerExam.mockResolvedValue(true);
+
+      const msg = await act('register_exam', { termId: 'T-1' });
+
+      expect(registerExam).toHaveBeenCalledWith('T-1');
+      expect(unregisterExam).not.toHaveBeenCalled();
+      expect(resultFor(msg.id)?.success).toBe(true);
+    });
+
+    it('unregisters — and does NOT register', async () => {
+      unregisterExam.mockResolvedValue(true);
+
+      const msg = await act('unregister_exam', { termId: 'T-1' });
+
+      expect(unregisterExam).toHaveBeenCalledWith('T-1');
+      expect(registerExam).not.toHaveBeenCalled();
+      expect(resultFor(msg.id)?.success).toBe(true);
+    });
+
+    it('refuses to register without a term id rather than guessing', async () => {
+      const msg = await act('register_exam', {});
+
+      expect(registerExam).not.toHaveBeenCalled();
+      expect(resultFor(msg.id)).toMatchObject({
+        success: false,
+        error: expect.stringContaining('missing termId'),
+      });
+    });
+
+    it('refuses to unregister without a term id', async () => {
+      const msg = await act('unregister_exam', {});
+
+      expect(unregisterExam).not.toHaveBeenCalled();
+      expect(resultFor(msg.id)?.success).toBe(false);
+    });
+
+    it('reports a rejected registration back instead of claiming success', async () => {
+      registerExam.mockRejectedValue(new Error('term full'));
+
+      const msg = await act('register_exam', { termId: 'T-9' });
+
+      expect(resultFor(msg.id)).toMatchObject({
+        success: false,
+        error: expect.stringContaining('term full'),
+      });
+    });
+  });
+
+  describe('sync and refresh', () => {
+    it('triggers a user-initiated sync, which bypasses the foreground gate', async () => {
+      const msg = await act('trigger_sync');
+
+      expect(requestSync).toHaveBeenCalledWith('user');
+      expect(resultFor(msg.id)?.success).toBe(true);
+    });
+
+    it('refreshes exams on demand', async () => {
+      const msg = await act('refresh_exams');
+
+      expect(refreshExams).toHaveBeenCalledTimes(1);
+      expect(resultFor(msg.id)?.success).toBe(true);
+    });
+  });
+
+  describe('document download', () => {
+    it('passes the fallback URL through, so the unsealed copy is reachable', async () => {
+      downloadDocumentInPage.mockResolvedValue({ usedFallback: true });
+
+      const msg = await act('download_document', {
+        url: 'https://is.mendelu.cz/auth/dok.pl?id=1',
+        filename: 'zadani.pdf',
+        fallbackUrl: 'https://is.mendelu.cz/auth/dok.pl?id=1&fallback=1',
+      });
+
+      expect(downloadDocumentInPage).toHaveBeenCalledWith(
+        'https://is.mendelu.cz/auth/dok.pl?id=1',
+        'zadani.pdf',
+        'https://is.mendelu.cz/auth/dok.pl?id=1&fallback=1'
+      );
+      // usedFallback must survive to the iframe: the student is getting a
+      // DIFFERENT document from the one they asked for and has to be told.
+      expect(resultFor(msg.id)).toMatchObject({ success: true });
+    });
+
+    it('refuses a request missing its url or filename', async () => {
+      const msg = await act('download_document', { url: 'https://is.mendelu.cz/x' });
+
+      expect(downloadDocumentInPage).not.toHaveBeenCalled();
+      expect(resultFor(msg.id)?.success).toBe(false);
+    });
+
+    it('does NOT navigate away on an ordinary download failure', async () => {
+      // A transient IS 5xx must leave a still-logged-in student where they are;
+      // the row shows an error instead. Force-navigating would discard whatever
+      // else they had open.
+      downloadDocumentInPage.mockRejectedValue(new Error('IS 502'));
+
+      const msg = await act('download_document', { url: 'https://is/x', filename: 'a.pdf' });
+
+      expect(window.location.href).not.toContain('login.pl');
+      expect(resultFor(msg.id)?.success).toBe(false);
+    });
+  });
+
+  it('drops an unknown action at the schema, before the dispatcher sees it', async () => {
+    // handleAction has a `default: throw new Error('Unknown action')`, but it is
+    // unreachable from here by design: the Zod validator only admits the known
+    // action names, so an invented one is discarded with the rest of the
+    // malformed traffic and never reaches the switch. Asserting the throw would
+    // document a path that cannot be taken; the guarantee worth pinning is that
+    // nothing happens and nothing is answered.
+    const msg = await act('not_a_real_action');
+
+    expect(resultFor(msg.id)).toBeUndefined();
+    expect(registerExam).not.toHaveBeenCalled();
+    expect(requestSync).not.toHaveBeenCalled();
   });
 });
