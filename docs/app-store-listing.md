@@ -750,8 +750,7 @@ size, an unlisted link is accepted.
 >   (github.com/reis-mendelu/reis-data) — static JSON files: subject pass-rate
 >   statistics and campus building and room data. Read-only; the requests carry
 >   nothing about the user.
-> - **CARTO basemap tiles** (OpenStreetMap data) — the background of the campus
->   map.
+> - **OpenStreetMap tiles** — the background of the campus map.
 >
 > To be explicit about what is *not* used: no third-party authentication
 > provider, no payment processor, no advertising network or SDK, no third-party
@@ -813,7 +812,7 @@ Apple asked for exactly this):
 > own account); our own Supabase backend in the EU (notice feed, society event
 > listings, feedback form, optional crash reports — no academic data);
 > jsDelivr serving our open dataset (subject pass-rate statistics, campus room
-> data); CARTO basemap tiles for the map. No advertising, no third-party
+> data); OpenStreetMap tiles for the map. No advertising, no third-party
 > analytics, no payment processor, no AI service, no tracking.
 >
 > NO PURCHASES, NO REGISTRATION, NO USER-TO-USER CONTENT. The app is free with
@@ -883,3 +882,21 @@ in on the device rather than by reading code:
 
 Both matter for the recording as much as for students: a reviewer signing in
 would otherwise film an app that looks empty and then slow.
+
+### 11.6 The basemap lost its keyless tier mid-submission (2026-08-26)
+
+CARTO began stamping **"API KEY REQUIRED · carto.com/basemaps/apikey"**
+diagonally across every keyless tile — confirmed by fetching the MENDELU tile
+directly rather than by trusting the screenshot. The campus map had used
+CartoDB Positron since it was built.
+
+Now OpenStreetMap's own tiles, desaturated to the grey the overlays were drawn
+against with Tailwind's `grayscale` utility on the tile pane. No key ships in
+the client, which rules out the obvious alternative: a CARTO key in a bundle
+anyone can read is not a secret. If reIS outgrows OSM's "modest use", the next
+step is self-hosting or a keyed provider behind the Supabase proxy.
+
+**The App Review answer moved with it** (§11.2 item 5 and §11.3 both said
+CARTO). Worth stating as a rule: every external service named in that reply is
+a claim about the binary, and any swap has to be reflected there before the
+reply is sent.
