@@ -51,6 +51,17 @@ let generation = 0;
  */
 let writes: Promise<unknown> = Promise.resolve();
 
+/**
+ * How many sign-outs are between "decided" and "landed".
+ *
+ * The generation counter cannot see this window: `clearStoredToken` bumps the
+ * generation and empties the memo, then awaits a native remove that has not
+ * happened yet — so a read starting *after* the bump still finds the token on
+ * disk, at an unchanged generation, and would cache it. Every later request in
+ * the process would then act as a student who asked to leave.
+ */
+let clearing = 0;
+
 function serialized<T>(op: () => Promise<T>): Promise<T> {
   const next = writes.then(op, op);
   writes = next.catch(() => undefined);
@@ -61,6 +72,7 @@ function serialized<T>(op: () => Promise<T>): Promise<T> {
 export function __resetTokenMemoForTests(): void {
   memo = null;
   generation = 0;
+  clearing = 0;
   writes = Promise.resolve();
 }
 
@@ -109,6 +121,13 @@ export async function saveStoredToken(token: string): Promise<void> {
  * this function is even reached is cheaper — but they are defence in depth,
  * not the actual boundary.
  */
+/** "Send the student to login" — the one failure this module reports. */
+function expired(): Error & { sessionExpired?: boolean } {
+  const err = new Error('No stored IS session') as Error & { sessionExpired?: boolean };
+  err.sessionExpired = true;
+  return err;
+}
+
 export async function loadStoredToken(): Promise<string> {
   // Before the memo, not after: the demo guard is the boundary every
   // authenticated path converges on, and a cached token must not become the way
@@ -124,16 +143,22 @@ export async function loadStoredToken(): Promise<string> {
   } catch {
     value = undefined;
   }
-  if (!isPlausibleToken(value)) {
-    const err = new Error('No stored IS session') as Error & { sessionExpired?: boolean };
-    err.sessionExpired = true;
-    throw err;
+  if (!isPlausibleToken(value)) throw expired();
+  if (mine !== generation) {
+    // Something authoritative happened while this read was in flight. A save
+    // has already put its token in the memo and that is the answer; a clear has
+    // emptied it, and then there is no session to hand back.
+    if (memo !== null) return memo;
+    throw expired();
   }
-  // Only when the token has not changed while this read was in flight. The
-  // value is still returned either way: it is what the store held when asked,
-  // and the caller's request is already in flight too — what must not happen is
-  // it becoming the answer for every later request.
-  if (mine === generation) memo = value;
+
+  // Issued before this read even started, still landing: the store answered
+  // with a credential that is on its way out. Handing it back would send one
+  // more request as a student who asked to leave, and caching it would send
+  // every request after that.
+  if (clearing > 0) throw expired();
+
+  memo = value;
   return value;
 }
 
@@ -144,7 +169,12 @@ export async function clearStoredToken(): Promise<void> {
   // that is mid-flight right now.
   generation++;
   memo = null;
-  await serialized(() => getPlatform().secureStorage.remove(TOKEN_KEY));
+  clearing++;
+  try {
+    await serialized(() => getPlatform().secureStorage.remove(TOKEN_KEY));
+  } finally {
+    clearing--;
+  }
 }
 
 /**

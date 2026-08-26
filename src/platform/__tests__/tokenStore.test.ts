@@ -229,7 +229,9 @@ describe('the memo under concurrency', () => {
     const inFlight = loadStoredToken();
     await clearStoredToken();
     release(TOKEN);
-    await expect(inFlight).resolves.toBe(TOKEN); // the caller still gets what it asked for
+    // Not even this caller: it asked before the sign-out, but it would send its
+    // request after one, and a dropped credential is dropped for everybody.
+    await expect(inFlight).rejects.toMatchObject({ sessionExpired: true });
 
     await expect(loadStoredToken()).rejects.toMatchObject({ sessionExpired: true });
   });
@@ -287,5 +289,58 @@ describe('write ordering in the secure store', () => {
     await clearStoredToken();
     await saveStoredToken(TOKEN);
     expect(secure.map.get(TOKEN_KEY)).toBe(TOKEN);
+  });
+});
+
+describe('reads during a pending sign-out', () => {
+  it('refuses a token that is in the middle of being removed', async () => {
+    // The window the generation counter cannot see: the bump has happened, the
+    // native remove has not landed, and the store still holds the token. A read
+    // starting here would find it, cache it at the current generation, and keep
+    // every later request signed in as a student who asked to leave.
+    await saveStoredToken(TOKEN);
+    __resetTokenMemoForTests();
+
+    let releaseRemove!: () => void;
+    secure.api.remove.mockImplementationOnce(
+      (k: string) =>
+        new Promise<undefined>((resolve) => {
+          releaseRemove = () => {
+            secure.map.delete(k);
+            resolve(undefined);
+          };
+        })
+    );
+
+    const clearing = clearStoredToken();
+    await Promise.resolve();
+    await expect(loadStoredToken()).rejects.toMatchObject({ sessionExpired: true });
+
+    releaseRemove();
+    await clearing;
+    await expect(loadStoredToken()).rejects.toMatchObject({ sessionExpired: true });
+  });
+
+  it('serves the new token when a save lands while a read is in flight', async () => {
+    // The other side of the same check: a read overtaken by a save must defer
+    // to the save rather than fail — there IS a session, it is just newer.
+    const NEXT = 'b'.repeat(40);
+    await saveStoredToken(TOKEN);
+    __resetTokenMemoForTests();
+
+    let releaseRead!: () => void;
+    secure.api.get.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseRead = () => resolve(TOKEN);
+        })
+    );
+
+    const reading = loadStoredToken();
+    await Promise.resolve();
+    await saveStoredToken(NEXT);
+    releaseRead();
+
+    await expect(reading).resolves.toBe(NEXT);
   });
 });
