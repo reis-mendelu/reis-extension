@@ -117,9 +117,11 @@ export async function syncAllData() {
           }
           return plan;
         })
-      : // No studium: there is no plan to fetch, and the screen would otherwise
-        // wait for a run that never happens.
-        (pushEarly({ loaded: ['studyPlan'] }), Promise.resolve(null));
+      : // No studium — nothing is fetched, so nothing arrives. Deliberately NOT
+        // reported as loaded: that would be a lie, and the Předměty screen
+        // would drop its skeleton to announce "no subjects" about a plan this
+        // run never asked for. The end-of-sync latch releases it instead.
+        Promise.resolve(null);
 
     // Past-semester folders from doc server history — used to backfill
     // SubjectInfo for fulfilled subjects that list.pl no longer returns.

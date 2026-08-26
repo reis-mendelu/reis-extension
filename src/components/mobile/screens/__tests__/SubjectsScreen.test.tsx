@@ -186,6 +186,22 @@ describe('SubjectsScreen first-sync loading', () => {
     expect(screen.getByText('Načítám předměty…')).toBeInTheDocument();
   });
 
+  it('keeps the skeleton when the plan parsed to an empty husk mid-sync', () => {
+    // KontrolaPlanu that fails to parse comes back as an object with no
+    // subjects rather than null. Rendering the empty state for it while the
+    // sync is still running says "you have no subjects" about data that has not
+    // finished arriving — the Předměty tab showing nothing while the study-plan
+    // sheet showed a spinner.
+    useAppStore.setState({
+      studyPlanDual: {
+        cz: { title: '', isFulfilled: false, creditsAcquired: 0, creditsRequired: 0, blocks: [] },
+        en: { title: '', isFulfilled: false, creditsAcquired: 0, creditsRequired: 0, blocks: [] },
+      } as never,
+    });
+    render(<SubjectsScreen />);
+    expect(screen.getByTestId('subjects-skeleton')).toBeInTheDocument();
+  });
+
   it('drops the skeleton as soon as the study plan reports back, empty or not', () => {
     useAppStore.setState({ syncLoaded: { studyPlan: true } });
     render(<SubjectsScreen />);

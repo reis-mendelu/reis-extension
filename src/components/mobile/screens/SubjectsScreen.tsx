@@ -52,9 +52,16 @@ export function SubjectsScreen() {
   // actually completed (`firstSyncSettled`) and while one is in flight, an
   // absence of a study plan means it has not arrived yet — show the skeleton rather than
   // an empty state that reads as a wrong answer.
+  // A KontrolaPlanu that failed to parse still comes back as an object
+  // (creditsAcquired: 0, creditsRequired: 0, blocks: []) rather than null —
+  // Erasmus/exchange students in particular never have a parseable plan.
+  // Treat that shape as absent so we render the empty state instead of a
+  // broken "0 %" ring. Mirrors desktop's planUsable check (SubjectsPanel/index.tsx).
+  const planUsable = !!plan && plan.blocks.some((b) => b.groups.some((g) => g.subjects.length > 0));
+
   if (
     (!handshakeDone && !handshakeTimedOut) ||
-    (isSyncing && !firstSyncSettled && !syncLoaded.studyPlan && !plan)
+    (isSyncing && !firstSyncSettled && !syncLoaded.studyPlan && !planUsable)
   ) {
     return <SubjectsSkeleton />;
   }
@@ -70,12 +77,7 @@ export function SubjectsScreen() {
     </button>
   );
 
-  // A KontrolaPlanu that failed to parse still comes back as an object
-  // (creditsAcquired: 0, creditsRequired: 0, blocks: []) rather than null —
-  // Erasmus/exchange students in particular never have a parseable plan.
-  // Treat that shape as absent so we render the empty state instead of a
-  // broken "0 %" ring. Mirrors desktop's planUsable check (SubjectsPanel/index.tsx).
-  if (!plan || !plan.blocks.some((b) => b.groups.some((g) => g.subjects.length > 0))) {
+  if (!planUsable) {
     return (
       <div data-testid="subjects-screen" className="flex flex-1 flex-col overflow-hidden">
         <ScreenHeader eyebrow="" title={t('mobile.subjects.title')} action={headerAction} />
