@@ -828,3 +828,40 @@ every answer above could have been filed in the Notes on 2026-08-24 for free.
 It costs a review cycle to learn that, so: on a first submission to a new app
 record, put items 2–7 in the Notes before submitting, and have a physical-device
 recording ready.
+
+### 11.5 A second dead-end, found on the device — fixed in 50006.1
+
+Installing 5.0.6 on the iPad and walking the reviewer's path **before**
+recording caught a defect that the simulator pass in §8 missed, because §8
+took the path once and this takes it twice:
+
+> Back out of the IS login → the gate appears → tap **"Přihlásit se"** → back
+> out of the login again → **`reIS failed to start: LoginCancelledError: Login
+> cancelled: the sign-in window was dismissed`** on a dead screen.
+
+Same class of failure demo mode was built to remove (§1), one tap deeper, and
+on exactly the path a reviewer with no MENDELU account walks. Reproduced on an
+iPhone 17 Pro Max simulator against the shipped 5.0.6 binary, so it is in the
+build Apple has.
+
+**Root cause.** `boot()` maps `LoginCancelledError` to `showLoginGate()`, but
+the gate's own sign-in handler in `capacitor/main.capacitor.tsx` sent every
+rejection to `showFatalError`, which sets `textContent` on `#root` — wiping the
+mounted gate, its demo button included. The handler needed the same judgement
+`boot()` already makes, and nothing more: `root.unmount()` runs only *after*
+`ensureSession` resolves, so on a cancellation the gate is still on screen and
+the fix is to leave it there.
+
+Covered by `capacitor/__tests__/loginGateCancel.test.tsx`, which drives both
+dismissals through the real module and fails against the old handler. Fixed in
+commit `048c112b`; **`CURRENT_PROJECT_VERSION` stamped `50006.1`** for the
+re-upload (`REIS_IOS_BUILD=1`), marketing version unchanged at 5.0.6.
+
+**Consequence for the resubmission:** upload 50006.1 and attach it to the
+version before replying, and record *that* build. Replying against 50006 would
+hand Apple a video of a binary with a known 2.1 dead-end in it.
+
+The lesson §8 half-learned, now stated plainly: **walk each path twice.** The
+first dismissal is the one everyone tests; the second is the one a reviewer
+actually performs, because the first thing they try after seeing a sign-in
+screen is the sign-in button.
