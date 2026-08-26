@@ -18,6 +18,11 @@ export const createSyncSlice: AppSlice<SyncSlice> = (set) => {
     },
     isSyncing: true,
     firstSyncSettled: false,
+    syncLoaded: {},
+    markSyncLoaded: (domains) =>
+      set((state) => ({
+        syncLoaded: { ...state.syncLoaded, ...Object.fromEntries(domains.map((d) => [d, true])) },
+      })),
     fetchSyncStatus: async () => {
       const currentStatus = await syncService.getStatus();
       set((state) => ({

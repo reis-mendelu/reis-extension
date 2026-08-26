@@ -76,6 +76,7 @@ export function ExamsScreen() {
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
+  const syncLoaded = useAppStore((s) => s.syncLoaded);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
@@ -171,7 +172,7 @@ export function ExamsScreen() {
   // an empty state that reads as a wrong answer.
   if (
     (!handshakeDone && !handshakeTimedOut) ||
-    (isSyncing && !firstSyncSettled && exams.length === 0)
+    (isSyncing && !firstSyncSettled && !syncLoaded.exams && exams.length === 0)
   ) {
     return <ExamsSkeleton />;
   }

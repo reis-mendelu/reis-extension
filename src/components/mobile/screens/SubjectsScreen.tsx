@@ -44,6 +44,7 @@ export function SubjectsScreen() {
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
+  const syncLoaded = useAppStore((s) => s.syncLoaded);
 
   // Two different questions, and only one of them is `handshakeDone`. That
   // flag flips on the first status message, which the sync posts as it STARTS,
@@ -51,7 +52,10 @@ export function SubjectsScreen() {
   // actually completed (`firstSyncSettled`) and while one is in flight, an
   // absence of a study plan means it has not arrived yet — show the skeleton rather than
   // an empty state that reads as a wrong answer.
-  if ((!handshakeDone && !handshakeTimedOut) || (isSyncing && !firstSyncSettled && !plan)) {
+  if (
+    (!handshakeDone && !handshakeTimedOut) ||
+    (isSyncing && !firstSyncSettled && !syncLoaded.studyPlan && !plan)
+  ) {
     return <SubjectsSkeleton />;
   }
 

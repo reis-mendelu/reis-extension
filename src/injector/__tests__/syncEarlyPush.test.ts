@@ -167,6 +167,47 @@ describe('Phase 2 reaches the UI as it arrives', () => {
     await run;
   });
 
+  it('reports a domain as loaded even when its answer is empty', async () => {
+    // Every summer: no lessons, no exam terms. Without an arrival signal the
+    // screens cannot tell "none" from "not yet" and wait out the whole crawl —
+    // twenty seconds, measured on a device, to be told nothing twice.
+    api.exams.mockResolvedValue([]);
+    api.schedule.mockResolvedValue([]);
+    let release!: (v: unknown) => void;
+    api.studyComparison.mockReturnValue(
+      new Promise((resolve) => {
+        release = resolve;
+      })
+    );
+
+    const { syncAllData } = await loadSync();
+    const run = syncAllData();
+    await flush();
+
+    const loaded = (await updates()).flatMap((m) => (m.data.loaded as string[]) ?? []);
+    expect(loaded).toContain('exams');
+    expect(loaded).toContain('schedule');
+    expect(loaded).toContain('studyPlan');
+
+    release({ rank: 1 });
+    await run;
+  });
+
+  it('does not push an empty exam list as data, only as arrival', async () => {
+    // The completed batch keeps the cached list when a read comes back empty,
+    // because a parse failure looks exactly like an empty season. An empty
+    // data push here would undo that guard.
+    api.exams.mockResolvedValue([]);
+
+    const { syncAllData } = await loadSync();
+    await syncAllData();
+
+    const carriedEmptyExams = (await updates()).some(
+      (m) => Array.isArray(m.data.exams) && (m.data.exams as unknown[]).length === 0
+    );
+    expect(carriedEmptyExams).toBe(false);
+  });
+
   it('still sends the completed batch when everything has landed', async () => {
     const { syncAllData } = await loadSync();
     await syncAllData();

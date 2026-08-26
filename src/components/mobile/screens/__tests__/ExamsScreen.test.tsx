@@ -307,6 +307,14 @@ describe('ExamsScreen first-sync loading', () => {
     expect(screen.getByText('Načítám zkoušky…')).toBeInTheDocument();
   });
 
+  it('drops the skeleton as soon as the exam fetch reports back, empty or not', () => {
+    // The 20-second wait: outside exam season the answer is "none", and
+    // emptiness alone cannot say whether it has arrived.
+    useAppStore.setState({ syncLoaded: { exams: true } });
+    render(<ExamsScreen />);
+    expect(screen.queryByTestId('exams-skeleton')).not.toBeInTheDocument();
+  });
+
   it('drops the skeleton once that sync has finished', () => {
     useAppStore.setState({
       firstSyncSettled: true,

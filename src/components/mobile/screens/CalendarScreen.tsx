@@ -62,6 +62,7 @@ export function CalendarScreen() {
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
+  const syncLoaded = useAppStore((s) => s.syncLoaded);
   const hiddenItems = useAppStore((s) => s.hiddenItems);
 
   const { notifications, readIds } = useNotificationFeed();
@@ -83,7 +84,7 @@ export function CalendarScreen() {
   // an empty state that reads as a wrong answer.
   if (
     (!handshakeDone && !handshakeTimedOut) ||
-    (isSyncing && !firstSyncSettled && schedule.length === 0)
+    (isSyncing && !firstSyncSettled && !syncLoaded.schedule && schedule.length === 0)
   ) {
     return <CalendarSkeleton />;
   }

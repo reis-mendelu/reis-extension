@@ -186,6 +186,12 @@ describe('SubjectsScreen first-sync loading', () => {
     expect(screen.getByText('Načítám předměty…')).toBeInTheDocument();
   });
 
+  it('drops the skeleton as soon as the study plan reports back, empty or not', () => {
+    useAppStore.setState({ syncLoaded: { studyPlan: true } });
+    render(<SubjectsScreen />);
+    expect(screen.queryByTestId('subjects-skeleton')).not.toBeInTheDocument();
+  });
+
   it('drops the skeleton once that sync has finished', () => {
     useAppStore.setState({
       firstSyncSettled: true,

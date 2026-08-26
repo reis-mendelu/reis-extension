@@ -16,7 +16,19 @@ export type ActionType =
   | 'open_url'
   | 'logout';
 
+/**
+ * A Phase 2 domain whose fetch can finish with a legitimately empty answer.
+ *
+ * "No exams this month" and "your exams have not arrived yet" are the same
+ * payload without this: an absent or empty array either way. The screens need
+ * to tell them apart, or a student whose real answer is nothing sits on a
+ * loading state until the entire crawl ends.
+ */
+export type SyncDomain = 'schedule' | 'exams' | 'studyPlan';
+
 export interface SyncedData {
+  /** Domains whose fetch has completed in this run, empty results included. */
+  loaded?: SyncDomain[];
   schedule?: unknown;
   exams?: unknown;
   subjects?: unknown;

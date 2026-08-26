@@ -162,6 +162,12 @@ describe('CalendarScreen first-sync loading', () => {
     expect(screen.getByText('Načítám rozvrh…')).toBeInTheDocument();
   });
 
+  it('drops the skeleton as soon as the schedule fetch reports back, empty or not', () => {
+    useAppStore.setState({ syncLoaded: { schedule: true } });
+    render(<CalendarScreen />);
+    expect(screen.getByText('Nic nemáš, pohodička')).toBeInTheDocument();
+  });
+
   it('shows the empty state once that sync has finished with nothing in it', () => {
     useAppStore.setState({
       firstSyncSettled: true,

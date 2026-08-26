@@ -109,11 +109,17 @@ export async function syncAllData() {
         ).then((plan) => {
           if (plan) {
             cachedData = { ...cachedData, studyPlan: plan };
-            pushEarly({ studyPlan: plan });
+            pushEarly({ studyPlan: plan, loaded: ['studyPlan'] });
+          } else {
+            // Skipped as still-fresh by ttlGated, or genuinely absent. Either
+            // way the screen has its answer and must stop waiting.
+            pushEarly({ loaded: ['studyPlan'] });
           }
           return plan;
         })
-      : Promise.resolve(null);
+      : // No studium: there is no plan to fetch, and the screen would otherwise
+        // wait for a run that never happens.
+        (pushEarly({ loaded: ['studyPlan'] }), Promise.resolve(null));
 
     // Past-semester folders from doc server history — used to backfill
     // SubjectInfo for fulfilled subjects that list.pl no longer returns.
@@ -176,7 +182,11 @@ export async function syncAllData() {
     ).then((value) => {
       if (value) {
         cachedData = { ...cachedData, schedule: value };
-        pushEarly({ schedule: value });
+        pushEarly({ schedule: value, loaded: ['schedule'] });
+      } else {
+        // ttlGated skipped it as still fresh: the cached schedule stands, and
+        // the screen is done waiting either way.
+        pushEarly({ loaded: ['schedule'] });
       }
       return value;
     });
@@ -186,7 +196,14 @@ export async function syncAllData() {
     const examsPromise = fetchDualLanguageExams().then((value) => {
       if (value.length > 0) {
         cachedData = { ...cachedData, exams: value };
-        pushEarly({ exams: value });
+        pushEarly({ exams: value, loaded: ['exams'] });
+      } else {
+        // The fetch finished and the answer is "none" — which is the common
+        // answer outside exam season. Reported as arrival WITHOUT data on
+        // purpose: the batch below deliberately keeps the cached list rather
+        // than letting an empty read wipe it (a parse failure looks the same),
+        // and an empty data push here would undo that guard.
+        pushEarly({ loaded: ['exams'] });
       }
       return value;
     });
