@@ -44,7 +44,6 @@ export function SubjectsScreen() {
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
-  const syncLoaded = useAppStore((s) => s.syncLoaded);
 
   // Two different questions, and only one of them is `handshakeDone`. That
   // flag flips on the first status message, which the sync posts as it STARTS,
@@ -59,10 +58,13 @@ export function SubjectsScreen() {
   // broken "0 %" ring. Mirrors desktop's planUsable check (SubjectsPanel/index.tsx).
   const planUsable = !!plan && plan.blocks.some((b) => b.groups.some((g) => g.subjects.length > 0));
 
-  if (
-    (!handshakeDone && !handshakeTimedOut) ||
-    (isSyncing && !firstSyncSettled && !syncLoaded.studyPlan && !planUsable)
-  ) {
+  // No per-domain shortcut here, unlike the calendar and exams screens. The
+  // plan's fetch is TTL-gated, so "nothing came back" covers skipped-as-fresh,
+  // no-studium and genuinely-none — and releasing on it showed "Zatím žádné
+  // předměty" to a student who has plenty, which everyone reads as a statement
+  // of fact. The skeleton stays until there is a usable plan to draw, or until
+  // a whole sync has finished and the emptiness is the real answer.
+  if ((!handshakeDone && !handshakeTimedOut) || (isSyncing && !firstSyncSettled && !planUsable)) {
     return <SubjectsSkeleton />;
   }
 

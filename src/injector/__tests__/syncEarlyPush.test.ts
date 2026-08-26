@@ -71,7 +71,7 @@ vi.mock('../../api/classmates', () => ({
   fetchClassmates: (...a: unknown[]) => api.classmates(...a),
 }));
 
-let userParams: { studium?: string; obdobi?: string } | null = { studium: 'st1', obdobi: 'ob1' };
+const userParams: { studium?: string; obdobi?: string } | null = { studium: 'st1', obdobi: 'ob1' };
 vi.mock('../../utils/userParams', () => ({
   getUserParams: async () => userParams,
 }));
@@ -188,7 +188,8 @@ describe('Phase 2 reaches the UI as it arrives', () => {
     const loaded = (await updates()).flatMap((m) => (m.data.loaded as string[]) ?? []);
     expect(loaded).toContain('exams');
     expect(loaded).toContain('schedule');
-    expect(loaded).toContain('studyPlan');
+    // The study plan is deliberately not in here — see SyncDomain.
+    expect(loaded).not.toContain('studyPlan');
 
     release({ rank: 1 });
     await run;
@@ -207,20 +208,6 @@ describe('Phase 2 reaches the UI as it arrives', () => {
       (m) => Array.isArray(m.data.exams) && (m.data.exams as unknown[]).length === 0
     );
     expect(carriedEmptyExams).toBe(false);
-  });
-
-  it('does not claim the study plan arrived when there is no studium to fetch it for', async () => {
-    // Nothing was fetched, so "loaded" would be a lie — and the Předměty screen
-    // would drop its skeleton and announce "no subjects" mid-sync.
-    userParams = { obdobi: 'ob1' };
-    try {
-      const { syncAllData } = await loadSync();
-      await syncAllData();
-      const loaded = (await updates()).flatMap((m) => (m.data.loaded as string[]) ?? []);
-      expect(loaded).not.toContain('studyPlan');
-    } finally {
-      userParams = { studium: 'st1', obdobi: 'ob1' };
-    }
   });
 
   it('still sends the completed batch when everything has landed', async () => {

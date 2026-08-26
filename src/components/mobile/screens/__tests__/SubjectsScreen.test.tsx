@@ -202,10 +202,13 @@ describe('SubjectsScreen first-sync loading', () => {
     expect(screen.getByTestId('subjects-skeleton')).toBeInTheDocument();
   });
 
-  it('drops the skeleton as soon as the study plan reports back, empty or not', () => {
-    useAppStore.setState({ syncLoaded: { studyPlan: true } });
+  it('waits for a usable plan rather than for the fetch to report back', () => {
+    // The study plan's fetch is TTL-gated, so "nothing came back" is
+    // ambiguous. Releasing on it told a student with a full timetable "Zatím
+    // žádné předměty", which reads as a statement of fact.
+    useAppStore.setState({ syncLoaded: { schedule: true, exams: true } });
     render(<SubjectsScreen />);
-    expect(screen.queryByTestId('subjects-skeleton')).not.toBeInTheDocument();
+    expect(screen.getByTestId('subjects-skeleton')).toBeInTheDocument();
   });
 
   it('drops the skeleton once that sync has finished', () => {

@@ -109,18 +109,14 @@ export async function syncAllData() {
         ).then((plan) => {
           if (plan) {
             cachedData = { ...cachedData, studyPlan: plan };
-            pushEarly({ studyPlan: plan, loaded: ['studyPlan'] });
-          } else {
-            // Skipped as still-fresh by ttlGated, or genuinely absent. Either
-            // way the screen has its answer and must stop waiting.
-            pushEarly({ loaded: ['studyPlan'] });
+            // Data only, no arrival flag: see SyncDomain. A null here is
+            // ambiguous (fresh / absent / not fetched), and the screen must not
+            // be released by an ambiguous signal.
+            pushEarly({ studyPlan: plan });
           }
           return plan;
         })
-      : // No studium — nothing is fetched, so nothing arrives. Deliberately NOT
-        // reported as loaded: that would be a lie, and the Předměty screen
-        // would drop its skeleton to announce "no subjects" about a plan this
-        // run never asked for. The end-of-sync latch releases it instead.
+      : // No studium — nothing to fetch, and nothing to report.
         Promise.resolve(null);
 
     // Past-semester folders from doc server history — used to backfill
@@ -185,11 +181,11 @@ export async function syncAllData() {
       if (value) {
         cachedData = { ...cachedData, schedule: value };
         pushEarly({ schedule: value, loaded: ['schedule'] });
-      } else {
-        // ttlGated skipped it as still fresh: the cached schedule stands, and
-        // the screen is done waiting either way.
-        pushEarly({ loaded: ['schedule'] });
       }
+      // No else: a null here means ttlGated skipped the fetch as still fresh,
+      // which is not an answer about this student's week — the same ambiguity
+      // that made Předměty claim "no subjects". The cached schedule is already
+      // on screen in that case, and the end-of-sync latch covers the rest.
       return value;
     });
 
