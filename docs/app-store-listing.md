@@ -578,7 +578,15 @@ device.** Two facts settle how:
 
 - The wired iPad is an **iPad (8th generation) on iPadOS 26.6**, developer mode
   enabled (`xcrun devicectl list devices`). That is a physical device on the
-  current OS, so it satisfies the request on its own.
+  current OS, so it satisfies the request on its own — and it is the only
+  choice: **there is no iPhone here** (confirmed 2026-08-26), so the physical
+  half of the device list is one iPad and the reply says so rather than
+  implying more. Consequence to accept: the reviewer's first sight of reIS will
+  be the full-width phone layout of §3, so the reply flags it in item 1 and
+  explains it in item 4 instead of letting it land as a surprise.
+- **This device has never run the phone tree at 810×1080.** §8 verified iPad on
+  the 13-inch Pro simulator. Walk the five tabs once after installing 50006 and
+  before starting the take.
 - The reIS build installed on it is **1.0 (1)** — a stale dev build from before
   PR #236 stamped versions. Recording that binary would show Apple something
   other than what was submitted. Install **50006 / 5.0.6 through TestFlight**
@@ -614,7 +622,9 @@ size, an unlisted link is accepted.
 > **1. Screen recording.** Attached: captured on a physical iPad (8th
 > generation) running iPadOS 26.6, beginning with the app launch, and showing
 > the timetable, grades, exams, course files, campus map and sign-out, followed
-> by the app's built-in demo mode. On the specific flows listed:
+> by the app's built-in demo mode. It is an iPad recording because iPad is the
+> iOS hardware we own; note that reIS deliberately shows its phone layout there,
+> which point 4 explains. On the specific flows listed:
 >
 > - *Registration:* none exists. reIS creates no accounts of its own. Signing
 >   in uses the student's existing Mendel University account, entered on the
