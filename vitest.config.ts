@@ -25,8 +25,17 @@ export default defineConfig({
     coverage: {
       provider: 'v8' as const,
       reporter: ['text', 'html'],
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/test/**', 'src/**/*.d.ts'],
+      // All four roots that `include` above runs tests for. Measuring only src/
+      // meant the supabase edge functions, the build scripts and the Capacitor
+      // entry were tested but never counted -- including the edge function whose
+      // 2295-character payload bug is the reason supabase/ was added at all.
+      include: [
+        'src/**/*.{ts,tsx}',
+        'scripts/**/*.{ts,mjs}',
+        'supabase/functions/**/*.ts',
+        'capacitor/**/*.{ts,tsx}',
+      ],
+      exclude: ['src/test/**', 'src/**/*.d.ts', '**/__tests__/**', '**/*.{test,spec}.*'],
       // A ratchet, in the same spirit as nuia-baseline.json: the global numbers
       // sit just under what the suite currently produces, so coverage can only
       // go up. Raise them when a run comfortably clears them.
@@ -38,11 +47,23 @@ export default defineConfig({
       //                    auth cookies and every postMessage into the iframe
       //   - services/sync — per CLAUDE.md, the only authorised writer to
       //                    persistent state
+      // Margin is ~0.4pp, sized to MEASURED run-to-run drift rather than guessed.
+      //
+      // Most of the old drift was unit tests reaching the real jsDelivr CDN, so
+      // an identical commit measured differently depending on what landed before
+      // teardown; src/test/setup.ts now rejects unmocked fetches. What remains
+      // (~0.1pp, measured over repeated runs) is startApp.test.ts booting the
+      // real entrypoint and racing React's scheduler, so how far the render gets
+      // varies. Tightening below that buys nothing and costs spurious CI reds.
       thresholds: {
-        statements: 57,
-        branches: 79,
-        functions: 62,
-        lines: 57,
+        statements: 55.3,
+        branches: 79.3,
+        functions: 63.2,
+        lines: 55.3,
+        // Deliberately the whole subtree, iskam/ and main/ included -- the glob,
+        // not the directory row. Scoping this to `src/entrypoints/*.ts` would
+        // have quietly exempted the ISKAM iframe bootstrap, which is the half
+        // that was at 0%.
         'src/entrypoints/**': {
           statements: 90,
           branches: 90,

@@ -11,6 +11,11 @@ describe('CalendarScreen', () => {
     useAppStore.setState({
       language: 'cz',
       mobileSelectedDayIso: '2026-04-20',
+      // Reset explicitly: the store is module state shared by every test in this
+      // file, and the hidden-event case below writes 'l1' into it. Declared last
+      // it poisoned nothing, but under --sequence.shuffle it ran first and hid
+      // that lesson from every test after it.
+      hiddenItems: { events: [], courses: [] },
       syncStatus: {
         isSyncing: false,
         lastSync: 1,

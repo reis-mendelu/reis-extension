@@ -1,0 +1,4 @@
+{
+  "//": "Repo-wide eslint backlog. Ratcheted by scripts/lint-gate.mjs: may fall, never rise.",
+  "maxProblems": 50
+}

@@ -1,8 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { logError } from '../../utils/reportError';
 import { societyById } from '../societies';
 
 vi.mock('../../utils/reportError', () => ({ logError: vi.fn() }));
+
+// One test asserts logError was called and another that it was not, with nothing
+// clearing the call log between them. Declaration order happened to run the
+// clean one first; shuffled, the recorded call leaked backwards.
+beforeEach(() => vi.clearAllMocks());
 
 describe('societyById', () => {
   it('resolves the reIS team association (reis_admin) without an ESN fallback or error', () => {

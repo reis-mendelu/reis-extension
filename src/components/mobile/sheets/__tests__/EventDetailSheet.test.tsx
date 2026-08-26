@@ -4,6 +4,9 @@ import { EventDetailSheet } from '../EventDetailSheet';
 import { useAppStore } from '../../../../store/useAppStore';
 import type { BlockLesson } from '../../../../types/calendarTypes';
 
+// Captured before any test swaps it for a spy.
+const realHideEvent = useAppStore.getState().hideEvent;
+
 const lesson: BlockLesson = {
   id: 'ev1',
   date: '20260401',
@@ -39,6 +42,11 @@ describe('EventDetailSheet', () => {
       mobileTab: 'calendar',
       setMobileTab,
       focusRoomByCode,
+      // Put the REAL action back. The block below swaps hideEvent for a spy to
+      // assert its arguments, and a store action replaced that way stays replaced
+      // for the whole file -- so shuffled, this test called the spy and the store
+      // was never actually written to.
+      hideEvent: realHideEvent,
     } as never);
   });
 

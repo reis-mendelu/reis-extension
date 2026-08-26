@@ -102,6 +102,58 @@ jobs:
       # below them, so the number can only ratchet upward.
       - run: npm run test:coverage
 
+  # Runs the suite in randomised order. Four suites here passed only because they
+  # were declared in a forgiving order and leaked state into each other: a mock
+  # return value that outlived `clearAllMocks`, a Zustand key never reset, and a
+  # spy restored over a module mock. Default order hid all of them.
+  #
+  # A fixed seed keeps a failure reproducible; bump it deliberately to widen
+  # coverage of orderings.
+  test-shuffled:
+    name: Unit tests (random order)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run --sequence.shuffle --sequence.seed=20260827
+
+  # Nothing in CI compiled the artifact that ships. A change could break all
+  # three web-store builds or the Capacitor bundle and merge green, to be found
+  # at release time by publish.yml -- the first job that ever ran a build.
+  build:
+    name: Build (chrome, firefox, capacitor)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run build:firefox
+      - run: npm run build:capacitor
+
+  # ui-gate lints only the files a PR touches, and exits 0 when that list is
+  # empty -- so a tests-only PR reported a passing lint gate having linted
+  # nothing. This job covers the whole repo and is never vacuous. It is a ratchet,
+  # not a wall: the existing backlog is baselined and may only shrink.
+  lint-full:
+    name: Lint (whole repo, ratcheted)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint:gate
+
   # Unreferenced files are deleted, not left to rot: 39 of them (1,799 LOC) had
   # accumulated before this gate existed. knip's entry list encodes the roots a
   # bundler-blind tool cannot infer (WXT entrypoints, Deno functions, scripts).

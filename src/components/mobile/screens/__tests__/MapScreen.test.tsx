@@ -25,9 +25,38 @@ vi.mock('../../../../hooks/useEventsFacultySettings', () => ({
   useEventsFacultySettings: () => ({ subscribedFaculties: ['mendelu'], isLoading: false }),
 }));
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, createEvent } from '@testing-library/react';
 import { MapScreen } from '../MapScreen';
 import { useAppStore } from '../../../../store/useAppStore';
+
+/**
+ * Dispatch a pointer event with a REAL, controlled `timeStamp`.
+ *
+ * `fireEvent.pointerUp(el, { timeStamp })` silently ignores it -- timeStamp is
+ * readonly on Event, so the handler still sees performance.now(). snapDetent
+ * derives velocity as dy/dt from exactly that field, so any test asserting a
+ * flick was riding on how fast the machine happened to dispatch two synthetic
+ * events. Defining the property on a created event is what actually pins it.
+ *
+ * `t` must be NON-ZERO. React builds its synthetic event with
+ * `timeStamp: nativeEvent.timeStamp || Date.now()`, and 0 is falsy -- a t of 0
+ * silently becomes a wall-clock epoch, so a pointerDown at 0 and a pointerUp at 1
+ * produce a dt of about -1.8e12 and every velocity rule quietly inverts.
+ */
+function pointer(
+  el: Element,
+  type: 'pointerDown' | 'pointerMove' | 'pointerUp',
+  init: { clientY: number; t: number }
+) {
+  const ev = createEvent[type](el, { clientY: init.clientY });
+  // clientY has to be defined explicitly too: happy-dom's PointerEvent drops it
+  // from the init dict, and an undefined clientY makes dy NaN -- which loses
+  // every comparison in snapDetent and silently returns the current detent, so
+  // the test reads as "the sheet did not move" no matter what it was given.
+  Object.defineProperty(ev, 'clientY', { value: init.clientY, configurable: true });
+  Object.defineProperty(ev, 'timeStamp', { value: init.t, configurable: true });
+  fireEvent(el, ev);
+}
 
 // A real building id/floor id from src/data/map/buildings.json so FloorStack
 // and BuildingRoomList have something real to key off.
@@ -159,9 +188,9 @@ describe('MapScreen', () => {
     // so without them this rides on real elapsed time between synthetic events
     // and flips under load. 3px over 1ms clears DISMISS_VELOCITY_PX_PER_MS
     // deterministically, on any machine.
-    fireEvent.pointerDown(sheet, { clientY: 100, timeStamp: 0 });
-    fireEvent.pointerMove(sheet, { clientY: 103, timeStamp: 1 });
-    fireEvent.pointerUp(sheet, { clientY: 103, timeStamp: 1 });
+    pointer(sheet, 'pointerDown', { clientY: 100, t: 1000 });
+    pointer(sheet, 'pointerMove', { clientY: 103, t: 1001 });
+    pointer(sheet, 'pointerUp', { clientY: 103, t: 1001 });
     expect(useAppStore.getState().mapSheetState).toBe('peek');
 
     // The click the browser still delivers must not toggle it straight back.
@@ -409,9 +438,9 @@ describe('MapSheet drag', () => {
   it('does not let the drag-ending click undo the snap', () => {
     render(<MapScreen />);
     const handle = screen.getByLabelText(/panel mapy/);
-    fireEvent.pointerDown(handle, { clientY: 600, timeStamp: 0 });
-    fireEvent.pointerMove(handle, { clientY: 400, timeStamp: 100 });
-    fireEvent.pointerUp(handle, { clientY: 400, timeStamp: 100 });
+    pointer(handle, 'pointerDown', { clientY: 600, t: 1000 });
+    pointer(handle, 'pointerMove', { clientY: 400, t: 1100 });
+    pointer(handle, 'pointerUp', { clientY: 400, t: 1100 });
     fireEvent.click(handle);
     expect(useAppStore.getState().mapSheetState).toBe('expanded');
   });
@@ -563,8 +592,8 @@ describe('MapSheet drag', () => {
   it('still toggles on a plain tap, with no drag in between', () => {
     render(<MapScreen />);
     const handle = screen.getByLabelText(/panel mapy/);
-    fireEvent.pointerDown(handle, { clientY: 600, timeStamp: 0 });
-    fireEvent.pointerUp(handle, { clientY: 600, timeStamp: 40 });
+    pointer(handle, 'pointerDown', { clientY: 600, t: 1000 });
+    pointer(handle, 'pointerUp', { clientY: 600, t: 1040 });
     fireEvent.click(handle);
     expect(useAppStore.getState().mapSheetState).toBe('expanded');
   });

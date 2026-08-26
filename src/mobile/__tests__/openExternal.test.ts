@@ -261,8 +261,11 @@ describe('installExternalLinkHandler in demo mode', () => {
   it('routes the rejection through logError rather than leaving it unhandled', async () => {
     const { installExternalLinkHandler } = await import('../openExternal');
     const { useAppStore } = await import('../../store/useAppStore');
-    const reportError = await import('../../utils/reportError');
-    const spy = vi.spyOn(reportError, 'logError').mockImplementation(() => {});
+    // logError is already a vi.fn() from the module mock at the top of the file.
+    // Spying on top of that and then mockRestore()-ing it put a PLAIN function
+    // back in the module namespace, so every later `expect(logError)` in this
+    // file died with "is not a spy". Harmless in declaration order, because this
+    // is the last test; under --sequence.shuffle it ran first and broke four.
     useAppStore.setState({ demoMode: true });
 
     const remove = installExternalLinkHandler(document);
@@ -280,6 +283,5 @@ describe('installExternalLinkHandler in demo mode', () => {
     document.body.removeChild(a);
     remove();
     useAppStore.setState({ demoMode: false });
-    spy.mockRestore();
   });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { saveAs } from 'file-saver';
 import { useEduroamSetup } from '../useEduroamSetup';
@@ -47,6 +47,16 @@ async function onPhone(perNetwork: string, resultCode = -1) {
   vi.mocked(native.nativeEduroamDeps.configure).mockResolvedValue({ resultCode, perNetwork });
   return native;
 }
+
+// Reset the platform probe per test. The vi.mock factory's `false` is applied
+// once for the file and `clearAllMocks` does not undo a later mockReturnValue, so
+// a single `onPhone()` left it true for everything after it -- the desktop cases
+// then silently took the native branch. They only passed because they happened to
+// be declared first.
+beforeEach(async () => {
+  const native = await import('../../../mobile/eduroamNative');
+  vi.mocked(native.canConfigureEduroamNatively).mockReturnValue(false);
+});
 
 afterEach(() => {
   vi.clearAllMocks();

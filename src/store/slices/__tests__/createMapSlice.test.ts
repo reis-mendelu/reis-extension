@@ -86,6 +86,12 @@ beforeEach(() => {
     mapFocusRequest: 0,
     mapEvents: [],
     mapEventsLoaded: false,
+    // Both reset with the rest, because focusEventById picks its pool as
+    // `adminConsoleOpen ? societyMapEvents : mapEvents`. The 'society events'
+    // block below sets each of them and nothing put either back, so a shuffled
+    // run resolved ids against the admin pool and found nothing.
+    societyMapEvents: [],
+    adminConsoleOpen: false,
     mapPanelTab: 'places',
     eventFilter: 'all',
     placingEvent: false,

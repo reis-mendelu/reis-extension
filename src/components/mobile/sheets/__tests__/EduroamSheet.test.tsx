@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { EduroamSheet } from '../EduroamSheet';
 import { useAppStore } from '../../../../store/useAppStore';
@@ -49,6 +49,18 @@ function onPhone(over: Partial<HookState> = {}) {
   mockedUseEduroamSetup.mockReturnValue({ ...baseHookState(), target: 'android', ...over });
   useAppStore.setState({ language: 'cz' } as never);
 }
+
+// Re-assert the platform defaults per test rather than relying on the values in
+// the vi.mock factories. Those run once for the file, and `clearAllMocks` resets
+// call history but NOT return values -- so a single `onPhone()` left
+// canConfigureEduroamNatively stuck on true for every test after it, and the
+// desktop cases only passed because they happened to run first. Order-dependent,
+// and it failed the moment the suite was shuffled.
+beforeEach(() => {
+  mockedIsMobile.mockReturnValue(false);
+  mockedIsMac.mockReturnValue(false);
+  mockedCanConfigureNatively.mockReturnValue(false);
+});
 
 afterEach(() => {
   cleanup();
