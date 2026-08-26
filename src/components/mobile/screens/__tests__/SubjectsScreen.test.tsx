@@ -202,6 +202,22 @@ describe('SubjectsScreen first-sync loading', () => {
     expect(screen.getByTestId('subjects-skeleton')).toBeInTheDocument();
   });
 
+  it('says the load failed when the sync itself errored', () => {
+    useAppStore.setState({
+      firstSyncSettled: true,
+      studyPlanDual: null as never,
+      syncStatus: {
+        isSyncing: false,
+        lastSync: 1,
+        error: 'boom',
+        handshakeDone: true,
+        handshakeTimedOut: false,
+      },
+    });
+    render(<SubjectsScreen />);
+    expect(screen.getByTestId('subjects-error')).toBeInTheDocument();
+  });
+
   it('waits for a usable plan rather than for the fetch to report back', () => {
     // The study plan's fetch is TTL-gated, so "nothing came back" is
     // ambiguous. Releasing on it told a student with a full timetable "Zatím

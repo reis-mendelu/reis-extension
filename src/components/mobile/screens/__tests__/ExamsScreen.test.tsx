@@ -307,6 +307,28 @@ describe('ExamsScreen first-sync loading', () => {
     expect(screen.getByText('Načítám zkoušky…')).toBeInTheDocument();
   });
 
+  it('says the load failed rather than showing an empty exam list', () => {
+    useAppStore.setState({
+      firstSyncSettled: true,
+      syncLoaded: {},
+      syncStatus: {
+        isSyncing: false,
+        lastSync: 1,
+        error: 'boom',
+        handshakeDone: true,
+        handshakeTimedOut: false,
+      },
+    });
+    render(<ExamsScreen />);
+    expect(screen.getByTestId('exams-error')).toBeInTheDocument();
+  });
+
+  it('shows the real empty state when the exam fetch succeeded with none', () => {
+    useAppStore.setState({ firstSyncSettled: true, syncLoaded: { exams: true } });
+    render(<ExamsScreen />);
+    expect(screen.queryByTestId('exams-error')).not.toBeInTheDocument();
+  });
+
   it('drops the skeleton as soon as the exam fetch reports back, empty or not', () => {
     // The 20-second wait: outside exam season the answer is "none", and
     // emptiness alone cannot say whether it has arrived.

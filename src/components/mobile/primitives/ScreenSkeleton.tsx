@@ -18,10 +18,26 @@
  *    ("Načítám rozvrh…") so a student knows which of the parallel fetches they
  *    are waiting on.
  *
- * `paddingTop` carries `--safe-top` for the same reason ScreenHeader does: this
- * is the topmost element on the screen while it shows, and without it the
- * spinner renders under the status bar and camera cutout.
+ * The top padding carries `--safe-top` for the same reason ScreenHeader does:
+ * this is the topmost element on the screen while it shows, and without it the
+ * spinner renders under the status bar and camera cutout. Expressed as a
+ * Tailwind arbitrary value rather than a style prop, matching LoginGate — the
+ * "no custom CSS" rule is about keeping the visual system in utilities, and an
+ * arbitrary utility still is one.
  */
+/**
+ * Staggered starts, so the rows read as a queue filling in rather than one
+ * block flashing. Spelled out as literal classes because Tailwind scans source
+ * text — a computed `[animation-delay:${i * 120}ms]` would emit no CSS at all.
+ */
+const DELAYS = [
+  '',
+  '[animation-delay:120ms]',
+  '[animation-delay:240ms]',
+  '[animation-delay:360ms]',
+  '[animation-delay:480ms]',
+];
+
 export function ScreenSkeleton({
   testId,
   label,
@@ -35,8 +51,7 @@ export function ScreenSkeleton({
   return (
     <div
       data-testid={testId}
-      className="flex flex-1 flex-col gap-3 overflow-hidden px-5 pb-5"
-      style={{ paddingTop: 'calc(1.25rem + var(--safe-top, 0px))' }}
+      className="flex flex-1 flex-col gap-3 overflow-hidden px-5 pb-5 pt-[calc(1.25rem_+_var(--safe-top,0px))]"
     >
       <div className="flex items-center gap-2.5 pb-1 text-sm font-medium text-base-content/70">
         <span className="loading loading-spinner loading-md text-primary" />
@@ -45,10 +60,7 @@ export function ScreenSkeleton({
       {rows.map((height, i) => (
         <div
           key={i}
-          className={`${height} animate-pulse rounded-2xl bg-base-content/20`}
-          // Staggered so the row reads as a queue filling in rather than one
-          // block flashing: same trick the DaisyUI docs use for list loaders.
-          style={{ animationDelay: `${i * 120}ms` }}
+          className={`${height} ${DELAYS[i] ?? ''} animate-pulse rounded-2xl bg-base-content/20`}
         />
       ))}
     </div>

@@ -22,9 +22,23 @@ const TOKEN_KEY = 'reis.session.uisAuth';
  */
 let memo: string | null = null;
 
+/**
+ * Bumped by every write and every clear, so an in-flight read can tell whether
+ * the token changed underneath it.
+ *
+ * Without it there is a real race, not a theoretical one: `loadStoredToken`
+ * awaits the secure store, and a sign-out or a re-login can land in that gap.
+ * The read would then resolve and cache the value it fetched *before* the
+ * change — re-populating the memo with a token the student just signed out of,
+ * or clobbering a freshly issued one with the expired token it replaced. Both
+ * outlive the process, because nothing re-reads once the memo is warm.
+ */
+let generation = 0;
+
 /** Drops the cached token. Tests only — the module holds it for the process. */
 export function __resetTokenMemoForTests(): void {
   memo = null;
+  generation = 0;
 }
 
 /**
@@ -40,10 +54,15 @@ export function __resetTokenMemoForTests(): void {
  * key private to this file is what stops that from coming back.
  */
 export async function saveStoredToken(token: string): Promise<void> {
+  // Claimed before the write: any read already in flight is now stale, whatever
+  // order the two finish in.
+  const mine = ++generation;
   await getPlatform().secureStorage.set(TOKEN_KEY, token);
   // After the write, not before: a failed write must not leave the app acting
-  // on a token that was never persisted.
-  memo = token;
+  // on a token that was never persisted. And only if nothing has happened
+  // since — a later save or a sign-out must not be undone by this one landing
+  // late.
+  if (mine === generation) memo = token;
 }
 
 /**
@@ -75,6 +94,7 @@ export async function loadStoredToken(): Promise<string> {
 
   if (memo !== null) return memo;
 
+  const mine = generation;
   let value: unknown;
   try {
     value = await getPlatform().secureStorage.get(TOKEN_KEY);
@@ -86,14 +106,20 @@ export async function loadStoredToken(): Promise<string> {
     err.sessionExpired = true;
     throw err;
   }
-  memo = value;
+  // Only when the token has not changed while this read was in flight. The
+  // value is still returned either way: it is what the store held when asked,
+  // and the caller's request is already in flight too — what must not happen is
+  // it becoming the answer for every later request.
+  if (mine === generation) memo = value;
   return value;
 }
 
 export async function clearStoredToken(): Promise<void> {
   // Before the remove, not after: if the remove throws, the process must
   // already have forgotten the token rather than keep serving it from memory
-  // to a student who asked to be signed out.
+  // to a student who asked to be signed out. The bump does the same for a read
+  // that is mid-flight right now.
+  generation++;
   memo = null;
   await getPlatform().secureStorage.remove(TOKEN_KEY);
 }

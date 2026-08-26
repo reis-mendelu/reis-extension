@@ -1,6 +1,7 @@
 import { Bell, Calendar, AlertTriangle, Pin, User } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
+import { ScreenError } from '../primitives/ScreenError';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useSchedule } from '../../../hooks/data/useSchedule';
 import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
@@ -87,6 +88,15 @@ export function CalendarScreen() {
     (isSyncing && !firstSyncSettled && !syncLoaded.schedule && schedule.length === 0)
   ) {
     return <CalendarSkeleton />;
+  }
+
+  // The third state. A finished sync that never delivered this domain, with
+  // nothing cached to fall back on, means the fetch failed — and "Nic nemáš,
+  // pohodička" over a failed fetch is the same lie as showing it mid-sync,
+  // just later. (The first run in a process always fetches, so a missing
+  // arrival here cannot be a TTL skip.)
+  if (firstSyncSettled && !syncLoaded.schedule && schedule.length === 0) {
+    return <ScreenError testId="calendar-error" />;
   }
 
   const now = new Date();

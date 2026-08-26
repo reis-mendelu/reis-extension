@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Calendar, Users } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
+import { ScreenError } from '../primitives/ScreenError';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useExams } from '../../../hooks/data/useExams';
 import { useExamClassmates } from '../../../hooks/data/useExamClassmates';
@@ -175,6 +176,12 @@ export function ExamsScreen() {
     (isSyncing && !firstSyncSettled && !syncLoaded.exams && exams.length === 0)
   ) {
     return <ExamsSkeleton />;
+  }
+
+  // Same rule as the calendar: a settled sync that never delivered exams, with
+  // nothing cached, is a failure and not an answer.
+  if (firstSyncSettled && !syncLoaded.exams && exams.length === 0) {
+    return <ScreenError testId="exams-error" />;
   }
 
   return (

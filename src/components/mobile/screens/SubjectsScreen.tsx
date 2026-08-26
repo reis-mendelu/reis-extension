@@ -2,6 +2,7 @@ import { BookOpen } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
+import { ScreenError } from '../primitives/ScreenError';
 import { useStudyPlan } from '../../../hooks/useStudyPlan';
 import { getSemesterState } from '../../SubjectsPanel/utils';
 import type { SubjectStatus } from '../../../types/studyPlan';
@@ -44,6 +45,7 @@ export function SubjectsScreen() {
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
+  const syncError = useAppStore((s) => s.syncStatus.error);
 
   // Two different questions, and only one of them is `handshakeDone`. That
   // flag flips on the first status message, which the sync posts as it STARTS,
@@ -78,6 +80,16 @@ export function SubjectsScreen() {
       {t('mobile.subjects.studyPlan')}
     </button>
   );
+
+  // Narrower than the other two screens on purpose: the study plan carries no
+  // arrival signal (its fetch is TTL-gated, so a null is ambiguous — see
+  // SyncDomain), leaving the whole-sync error as the only failure this screen
+  // can distinguish. A lone study-plan rejection inside an otherwise healthy
+  // run still reads as "no subjects"; narrowing that needs a fetched/skipped
+  // distinction inside ttlGated, which is a separate change.
+  if (!planUsable && syncError) {
+    return <ScreenError testId="subjects-error" />;
+  }
 
   if (!planUsable) {
     return (

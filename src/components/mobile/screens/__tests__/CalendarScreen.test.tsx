@@ -162,6 +162,32 @@ describe('CalendarScreen first-sync loading', () => {
     expect(screen.getByText('Načítám rozvrh…')).toBeInTheDocument();
   });
 
+  it('says the load failed rather than "you have nothing" when the fetch never came back', () => {
+    // A settled sync that never delivered the schedule, with nothing cached:
+    // the fetch failed, and the cheerful empty state would be a lie one step
+    // later than the one it replaced.
+    useAppStore.setState({
+      firstSyncSettled: true,
+      syncLoaded: {},
+      syncStatus: {
+        isSyncing: false,
+        lastSync: 1,
+        error: 'boom',
+        handshakeDone: true,
+        handshakeTimedOut: false,
+      },
+    });
+    render(<CalendarScreen />);
+    expect(screen.getByTestId('calendar-error')).toBeInTheDocument();
+    expect(screen.queryByText('Nic nemáš, pohodička')).not.toBeInTheDocument();
+  });
+
+  it('still shows the empty state when the fetch succeeded and there is nothing', () => {
+    useAppStore.setState({ firstSyncSettled: true, syncLoaded: { schedule: true } });
+    render(<CalendarScreen />);
+    expect(screen.getByText('Nic nemáš, pohodička')).toBeInTheDocument();
+  });
+
   it('drops the skeleton as soon as the schedule fetch reports back, empty or not', () => {
     useAppStore.setState({ syncLoaded: { schedule: true } });
     render(<CalendarScreen />);

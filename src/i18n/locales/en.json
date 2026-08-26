@@ -1253,6 +1253,11 @@
       "appearance": "Appearance",
       "sync": "Sync",
       "societies": "Societies on the map"
+    },
+    "loadFailed": {
+      "title": "Couldn't load your data",
+      "body": "Check your connection and try again.",
+      "retry": "Try again"
     }
   },
   "session": {

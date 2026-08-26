@@ -206,3 +206,47 @@ describe('the in-memory token', () => {
     }
   });
 });
+
+describe('the memo under concurrency', () => {
+  /** A secure store whose reads hang until the test releases them. */
+  function slowRead() {
+    let release!: (v: unknown) => void;
+    const pending = new Promise((resolve) => {
+      release = resolve;
+    });
+    secure.api.get.mockImplementationOnce(async () => pending);
+    return release;
+  }
+
+  it('does not re-cache a token that was signed out while the read was in flight', async () => {
+    // Sign-out during a background sync: the sync's read resolves after
+    // clearStoredToken has already run. Caching what it fetched would hand every
+    // later request the credential of a student who has left.
+    await saveStoredToken(TOKEN);
+    __resetTokenMemoForTests();
+
+    const release = slowRead();
+    const inFlight = loadStoredToken();
+    await clearStoredToken();
+    release(TOKEN);
+    await expect(inFlight).resolves.toBe(TOKEN); // the caller still gets what it asked for
+
+    await expect(loadStoredToken()).rejects.toMatchObject({ sessionExpired: true });
+  });
+
+  it('does not clobber a freshly issued token with the expired one it replaced', async () => {
+    // Re-login: the failing request's read overlaps saveStoredToken. Landing
+    // late must not put the old token back.
+    const NEXT = 'b'.repeat(40);
+    await saveStoredToken(TOKEN);
+    __resetTokenMemoForTests();
+
+    const release = slowRead();
+    const inFlight = loadStoredToken();
+    await saveStoredToken(NEXT);
+    release(TOKEN);
+    await inFlight;
+
+    await expect(loadStoredToken()).resolves.toBe(NEXT);
+  });
+});
