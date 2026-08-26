@@ -282,3 +282,48 @@ describe('ExamTimeline', () => {
     expect(screen.getByText('b-label').parentElement).toHaveStyle({ left: '50%' });
   });
 });
+
+describe('ExamsScreen first-sync loading', () => {
+  // Same defect as CalendarScreen's: handshakeDone lands when the crawl STARTS,
+  // so "Žádné zkoušky" used to stand in for "still fetching your exams".
+  beforeEach(() => {
+    useAppStore.setState({
+      language: 'cz',
+      exams: { data: [], status: 'loading' } as never,
+      firstSyncSettled: false,
+      syncStatus: {
+        isSyncing: true,
+        lastSync: null,
+        error: null,
+        handshakeDone: true,
+        handshakeTimedOut: false,
+      },
+    });
+  });
+
+  it('keeps the skeleton up while the first sync is still fetching', () => {
+    render(<ExamsScreen />);
+    expect(screen.getByTestId('exams-skeleton')).toBeInTheDocument();
+  });
+
+  it('drops the skeleton once that sync has finished', () => {
+    useAppStore.setState({
+      firstSyncSettled: true,
+      syncStatus: {
+        isSyncing: false,
+        lastSync: 1,
+        error: null,
+        handshakeDone: true,
+        handshakeTimedOut: false,
+      },
+    });
+    render(<ExamsScreen />);
+    expect(screen.queryByTestId('exams-skeleton')).not.toBeInTheDocument();
+  });
+
+  it('does not fall back to the skeleton on a later background sync', () => {
+    useAppStore.setState({ firstSyncSettled: true });
+    render(<ExamsScreen />);
+    expect(screen.queryByTestId('exams-skeleton')).not.toBeInTheDocument();
+  });
+});

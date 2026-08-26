@@ -73,6 +73,8 @@ export function ExamsScreen() {
   const userSemester = useAppStore((s) => s.userSemester);
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
+  const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
+  const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
@@ -160,7 +162,18 @@ export function ExamsScreen() {
     );
   };
 
-  if (!handshakeDone && !handshakeTimedOut) return <ExamsSkeleton />;
+  // Two different questions, and only one of them is `handshakeDone`. That
+  // flag flips on the first status message, which the sync posts as it STARTS,
+  // so on a first run it says "connected", not "finished". Until a crawl has
+  // actually completed (`firstSyncSettled`) and while one is in flight, an
+  // absence of exam terms means it has not arrived yet — show the skeleton rather than
+  // an empty state that reads as a wrong answer.
+  if (
+    (!handshakeDone && !handshakeTimedOut) ||
+    (isSyncing && !firstSyncSettled && exams.length === 0)
+  ) {
+    return <ExamsSkeleton />;
+  }
 
   return (
     <div data-testid="exams-screen" className="flex flex-1 flex-col overflow-hidden">

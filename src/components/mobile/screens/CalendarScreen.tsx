@@ -60,6 +60,8 @@ export function CalendarScreen() {
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
+  const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
+  const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const hiddenItems = useAppStore((s) => s.hiddenItems);
 
   const { notifications, readIds } = useNotificationFeed();
@@ -73,7 +75,16 @@ export function CalendarScreen() {
   const setBulletinExpanded = useAppStore((s) => s.setBulletinExpanded);
   const loadBulletinIfStale = useAppStore((s) => s.loadBulletinIfStale);
 
-  if (!handshakeDone && !handshakeTimedOut) {
+  // Two different questions, and only one of them is `handshakeDone`. That
+  // flag flips on the first status message, which the sync posts as it STARTS,
+  // so on a first run it says "connected", not "finished". Until a crawl has
+  // actually completed (`firstSyncSettled`) and while one is in flight, an
+  // absence of lessons means it has not arrived yet — show the skeleton rather than
+  // an empty state that reads as a wrong answer.
+  if (
+    (!handshakeDone && !handshakeTimedOut) ||
+    (isSyncing && !firstSyncSettled && schedule.length === 0)
+  ) {
     return <CalendarSkeleton />;
   }
 

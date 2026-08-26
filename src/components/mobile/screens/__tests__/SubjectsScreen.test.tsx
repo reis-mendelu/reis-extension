@@ -160,3 +160,43 @@ describe('SubjectsScreen', () => {
     expect(screen.queryByText(/Jsi v top/)).not.toBeInTheDocument();
   });
 });
+
+describe('SubjectsScreen first-sync loading', () => {
+  // The study plan arrives in the same Phase 2 push as the schedule, so this
+  // screen had the same gap: plan absent because it has not landed yet reads
+  // identically to plan absent because the student has none.
+  beforeEach(() => {
+    useAppStore.setState({
+      language: 'cz',
+      studyPlanDual: null as never,
+      firstSyncSettled: false,
+      syncStatus: {
+        isSyncing: true,
+        lastSync: null,
+        error: null,
+        handshakeDone: true,
+        handshakeTimedOut: false,
+      },
+    });
+  });
+
+  it('keeps the skeleton up while the first sync is still fetching', () => {
+    render(<SubjectsScreen />);
+    expect(screen.getByTestId('subjects-skeleton')).toBeInTheDocument();
+  });
+
+  it('drops the skeleton once that sync has finished', () => {
+    useAppStore.setState({
+      firstSyncSettled: true,
+      syncStatus: {
+        isSyncing: false,
+        lastSync: 1,
+        error: null,
+        handshakeDone: true,
+        handshakeTimedOut: false,
+      },
+    });
+    render(<SubjectsScreen />);
+    expect(screen.queryByTestId('subjects-skeleton')).not.toBeInTheDocument();
+  });
+});

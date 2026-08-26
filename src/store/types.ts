@@ -146,6 +146,14 @@ export interface SubjectsSlice {
 export interface SyncSlice {
   syncStatus: SyncStatus;
   isSyncing: boolean;
+  /**
+   * Whether a sync has run to completion since the app started.
+   *
+   * `handshakeDone` cannot answer that question: it flips on the FIRST status
+   * message, and a sync posts one as it starts. Screens that show "you have
+   * nothing" need to know the difference between nothing and not-yet.
+   */
+  firstSyncSettled: boolean;
   fetchSyncStatus: () => Promise<void>;
   setSyncStatus: (status: Partial<SyncStatus>) => void;
 }

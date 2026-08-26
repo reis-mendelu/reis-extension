@@ -122,3 +122,58 @@ describe('CalendarScreen', () => {
     expect(screen.getByText('Nic nemáš, pohodička')).toBeInTheDocument();
   });
 });
+
+describe('CalendarScreen first-sync loading', () => {
+  // The bug this guards: setSyncStatus marks handshakeDone on the FIRST status
+  // message, and the sync posts one the moment it starts — so the skeleton used
+  // to vanish at the beginning of the first crawl and leave "Nic nemáš" on
+  // screen for the minutes the crawl actually takes. Looks like an empty
+  // timetable; is an unfinished fetch.
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-20T10:00:00'));
+    useAppStore.setState({
+      language: 'cz',
+      mobileSelectedDayIso: '2026-04-20',
+      schedule: { data: [], status: 'loading' } as never,
+      firstSyncSettled: false,
+      syncStatus: {
+        isSyncing: true,
+        lastSync: null,
+        error: null,
+        handshakeDone: true,
+        handshakeTimedOut: false,
+      },
+    });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('keeps the skeleton up while the first sync is still fetching', () => {
+    render(<CalendarScreen />);
+    expect(screen.getByTestId('calendar-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText('Nic nemáš, pohodička')).not.toBeInTheDocument();
+  });
+
+  it('shows the empty state once that sync has finished with nothing in it', () => {
+    useAppStore.setState({
+      firstSyncSettled: true,
+      syncStatus: {
+        isSyncing: false,
+        lastSync: 1,
+        error: null,
+        handshakeDone: true,
+        handshakeTimedOut: false,
+      },
+    });
+    render(<CalendarScreen />);
+    expect(screen.getByText('Nic nemáš, pohodička')).toBeInTheDocument();
+  });
+
+  it('does not fall back to the skeleton on a later background sync', () => {
+    // A student with a genuinely empty week must not watch the screen flip to
+    // a skeleton every time the 15-minute resync runs.
+    useAppStore.setState({ firstSyncSettled: true });
+    render(<CalendarScreen />);
+    expect(screen.getByText('Nic nemáš, pohodička')).toBeInTheDocument();
+  });
+});
