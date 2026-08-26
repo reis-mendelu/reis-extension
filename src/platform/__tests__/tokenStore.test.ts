@@ -250,3 +250,42 @@ describe('the memo under concurrency', () => {
     await expect(loadStoredToken()).resolves.toBe(NEXT);
   });
 });
+
+describe('write ordering in the secure store', () => {
+  it('does not let a save that was issued first land after a sign-out', async () => {
+    // Sign-out during re-login: the recovery save and the sign-out clear are
+    // independent native operations, so without ordering the set could land
+    // last and leave the credential on disk — where the next launch reads it
+    // and silently signs the student back in. Pre-dates the memo; the memo just
+    // made it visible.
+    let releaseSet!: () => void;
+    secure.api.set.mockImplementationOnce(
+      (k: string, v: unknown) =>
+        new Promise<undefined>((resolve) => {
+          releaseSet = () => {
+            secure.map.set(k, v);
+            resolve(undefined);
+          };
+        })
+    );
+
+    const saving = saveStoredToken(TOKEN);
+    const clearing = clearStoredToken();
+    // A tick: writes go through a queue now, so the set reaches the mock a
+    // microtask after saveStoredToken is called.
+    await Promise.resolve();
+    releaseSet();
+    await Promise.all([saving, clearing]);
+
+    expect(secure.map.has(TOKEN_KEY)).toBe(false);
+    await expect(loadStoredToken()).rejects.toMatchObject({ sessionExpired: true });
+  });
+
+  it('keeps a save issued after a sign-out', async () => {
+    // The other direction, which must not be broken by the ordering: signing in
+    // again after signing out has to leave a usable token behind.
+    await clearStoredToken();
+    await saveStoredToken(TOKEN);
+    expect(secure.map.get(TOKEN_KEY)).toBe(TOKEN);
+  });
+});

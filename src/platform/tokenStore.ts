@@ -35,10 +35,33 @@ let memo: string | null = null;
  */
 let generation = 0;
 
+/**
+ * One lane for every write to the secure store, so `set` and `remove` reach it
+ * in the order they were issued.
+ *
+ * Without it the two are independent native calls and can land in either order:
+ * a save issued during re-login, overtaken by a sign-out, could complete last
+ * and leave the credential on disk — where the next launch reads it and signs
+ * the student straight back into an account they left. The memo did not cause
+ * that (both calls already raced before this PR), but it is the same ordering
+ * bug one layer down, and the fix belongs beside the one above.
+ *
+ * Rejections are swallowed for the chain only: each caller still awaits — and
+ * sees — its own result, but one failed write must not wedge every later one.
+ */
+let writes: Promise<unknown> = Promise.resolve();
+
+function serialized<T>(op: () => Promise<T>): Promise<T> {
+  const next = writes.then(op, op);
+  writes = next.catch(() => undefined);
+  return next;
+}
+
 /** Drops the cached token. Tests only — the module holds it for the process. */
 export function __resetTokenMemoForTests(): void {
   memo = null;
   generation = 0;
+  writes = Promise.resolve();
 }
 
 /**
@@ -57,7 +80,7 @@ export async function saveStoredToken(token: string): Promise<void> {
   // Claimed before the write: any read already in flight is now stale, whatever
   // order the two finish in.
   const mine = ++generation;
-  await getPlatform().secureStorage.set(TOKEN_KEY, token);
+  await serialized(() => getPlatform().secureStorage.set(TOKEN_KEY, token));
   // After the write, not before: a failed write must not leave the app acting
   // on a token that was never persisted. And only if nothing has happened
   // since — a later save or a sign-out must not be undone by this one landing
@@ -121,7 +144,7 @@ export async function clearStoredToken(): Promise<void> {
   // that is mid-flight right now.
   generation++;
   memo = null;
-  await getPlatform().secureStorage.remove(TOKEN_KEY);
+  await serialized(() => getPlatform().secureStorage.remove(TOKEN_KEY));
 }
 
 /**
