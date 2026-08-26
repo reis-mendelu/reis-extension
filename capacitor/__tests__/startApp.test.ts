@@ -35,10 +35,12 @@ describe('startApp', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
     });
     expect(startSyncService).not.toHaveBeenCalled();
-    // 15s, not the 5s default: this test boots the real entrypoint (~3s on its
-    // own) and then waits for React's scheduler to drain, which is over the
-    // default once the full suite is competing for the machine.
-  }, 15000);
+    // 30s, not the 5s default: this test boots the real entrypoint and then
+    // waits for React's scheduler to drain. In isolation that is ~2-5s, but the
+    // full suite runs it alongside every other worker and 15s was not enough --
+    // it timed out there while passing on its own. The budget is sized for
+    // contention, not for the work: the assertion itself is instant.
+  }, 30000);
 });
 
 describe('showLoginGate', () => {

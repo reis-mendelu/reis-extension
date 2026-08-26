@@ -3,10 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parsePendingPayments } from '../pendingPayments';
 
-const FIXTURE = readFileSync(
-  resolve(__dirname, '../../../../../.agent/fixtures/webiskam/informaceoklientovi.html'),
-  'utf-8'
-);
+const FIXTURE = readFileSync(resolve(__dirname, './fixtures/informaceoklientovi.html'), 'utf-8');
 
 describe('parsePendingPayments', () => {
   it('parses one payment row and excludes the total row', () => {

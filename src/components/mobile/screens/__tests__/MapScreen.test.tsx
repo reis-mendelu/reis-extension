@@ -154,11 +154,14 @@ describe('MapScreen', () => {
     render(<MapScreen />);
     const sheet = screen.getByTestId('map-sheet');
 
-    // 3px is under DRAG_SLOP_PX, but across the sub-millisecond gap between
-    // synthetic events it clears snapDetent's velocity threshold.
-    fireEvent.pointerDown(sheet, { clientY: 100 });
-    fireEvent.pointerMove(sheet, { clientY: 103 });
-    fireEvent.pointerUp(sheet, { clientY: 103 });
+    // 3px is under DRAG_SLOP_PX, but it clears snapDetent's velocity threshold.
+    // The timeStamps must be explicit: snapDetent takes dt from `e.timeStamp`,
+    // so without them this rides on real elapsed time between synthetic events
+    // and flips under load. 3px over 1ms clears DISMISS_VELOCITY_PX_PER_MS
+    // deterministically, on any machine.
+    fireEvent.pointerDown(sheet, { clientY: 100, timeStamp: 0 });
+    fireEvent.pointerMove(sheet, { clientY: 103, timeStamp: 1 });
+    fireEvent.pointerUp(sheet, { clientY: 103, timeStamp: 1 });
     expect(useAppStore.getState().mapSheetState).toBe('peek');
 
     // The click the browser still delivers must not toggle it straight back.

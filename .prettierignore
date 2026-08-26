@@ -10,3 +10,8 @@ package-lock.json
 src/data/map/rooms-index.json
 # Written by `infisical init` — reformatting it just loses to the next init
 .infisical.json
+
+# Parser test fixtures: exact bytes are the test input. Reformatting can alter
+# textContent (e.g. splitting "5 000" across lines) and silently change what the
+# parsers under test receive.
+src/utils/parsers/iskam/__tests__/fixtures/

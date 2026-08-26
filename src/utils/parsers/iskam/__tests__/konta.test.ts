@@ -3,10 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseKonta } from '../konta';
 
-const FIXTURE = readFileSync(
-  resolve(__dirname, '../../../../../.agent/fixtures/webiskam/konta.html'),
-  'utf-8'
-);
+const FIXTURE = readFileSync(resolve(__dirname, './fixtures/konta.html'), 'utf-8');
 
 describe('parseKonta', () => {
   it('returns the three account rows from the fixture', () => {
