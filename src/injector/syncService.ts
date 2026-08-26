@@ -1,4 +1,5 @@
 import pLimit from 'p-limit';
+import { currentSemesterEntries } from './subjectScope';
 import { Messages } from '../types/messages';
 import { fetchDualLanguageExams } from '../api/exams';
 import { fetchDualLanguageSubjects } from '../api/subjects';
@@ -429,7 +430,15 @@ async function syncSubjectDetails(
   },
   scheduleValue: { studyId?: string; periodId?: string }[] | null
 ) {
-  const subjectEntries = Object.entries(subjectsValue.data);
+  // Scoped, not everything in the map: `subjects.data` has been through
+  // mergePastSubjects by now and holds every subject the student ever took.
+  // See subjectScope for what that cost and where past subjects are fetched
+  // instead — the drawer already fetches its own files, syllabus and
+  // classmates on open.
+  const subjectEntries = currentSemesterEntries(
+    Object.entries(subjectsValue.data),
+    currentSemesterCodes
+  );
   const userParams = await getUserParams();
   let studium = userParams?.studium;
   let obdobi = userParams?.obdobi;
