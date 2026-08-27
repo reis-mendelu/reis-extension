@@ -1,6 +1,6 @@
 {
   "//": "Files no test has ever executed. Ratcheted by scripts/zero-coverage-gate.mjs: the COUNT may fall, never rise. A global percentage floor cannot see a NEW untested file — it moves the headline by a fraction of a point and merges green — which is how 50 of these accumulated. Bank a drop with: npm run coverage:zero-gate -- --write. A rise is never banked automatically: it has to be an explicit, reviewed edit to this file.",
-  "maxZeroCoverageFiles": 46,
+  "maxZeroCoverageFiles": 43,
   "knownFiles": [
     "scripts/android-release.mjs",
     "scripts/computeErasmusStats.mjs",
@@ -36,10 +36,7 @@
     "src/components/MobileNav/MobileProfileSheet.tsx",
     "src/components/SubjectFileDrawer/PdfViewer.tsx",
     "src/i18n/iskamTranslate.ts",
-    "src/injector/bgPokeListener.ts",
-    "src/injector/dataFetchers.ts",
     "src/injector/iskamInjector.ts",
-    "src/injector/iskamSyncService.ts",
     "src/injector/menuScraper.ts",
     "src/services/sync/mergePastSubjects.ts",
     "src/services/sync/syncCvicneTests.ts",
