@@ -182,3 +182,35 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint:dead
+
+  # Dependabot auto-merge claims it "never bypasses CI or CodeQL", but nothing in
+  # this repo audited dependencies. A bumped transitive dep with a known advisory
+  # could merge itself.
+  #
+  # --audit-level=high, not critical: the threshold is what actually blocks, and
+  # the tree is at 0 advisories today (verified), so there is no backlog to
+  # baseline around. Dev dependencies are included -- a compromised build-time
+  # package reaches the artifact that ships just as surely as a runtime one.
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=high
+
+  # NOT RUN HERE, deliberately: e2e.
+  #
+  # The 20 Playwright/Serenity specs under e2e/ need real MENDELU_USER /
+  # MENDELU_PASS credentials — e2e/global-setup.ts signs in to the live
+  # is.mendelu.cz and writes storageState.json (gitignored). Adding a job that
+  # cannot authenticate would produce a red-or-skipped gate that teaches people
+  # to ignore CI, which is worse than the honest gap.
+  #
+  # Making them runnable means either a dedicated test account in repo secrets,
+  # or a mock-data subset that never touches IS. Both are decisions for the
+  # maintainers, not something to paper over with a job that always passes.

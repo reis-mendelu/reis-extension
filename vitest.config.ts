@@ -8,6 +8,18 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./src/test/setup.ts'],
+    // NOT set: restoreMocks / unstubGlobals / clearMocks.
+    //
+    // They are the structural answer to the state-leak bugs that made this suite
+    // order-dependent, and they were tried: `restoreMocks` alone fails 46 tests,
+    // with `unstubGlobals` 71. Many suites set mock implementations at module
+    // scope or stub a global once per file, and both options undo that between
+    // tests. Turning them on means repairing ~70 suites in the same change,
+    // which is its own piece of work — flipping the switch and leaving the suite
+    // red would be worse than the leak.
+    //
+    // The leaks themselves are fixed per-file, and the `test-shuffled` CI job
+    // (random seed each run) is what stops new ones surviving unnoticed.
     // supabase/ is included for edge-function logic that is pure TypeScript and
     // imports no Deno globals. `tsc` covers only src/, so without this an edge
     // function's rules — like the Discord length budget — could only be checked
