@@ -1,6 +1,6 @@
 {
   "//": "Files no test has ever executed. Ratcheted by scripts/zero-coverage-gate.mjs: the COUNT may fall, never rise. A global percentage floor cannot see a NEW untested file — it moves the headline by a fraction of a point and merges green — which is how 50 of these accumulated. Bank a drop with: npm run coverage:zero-gate -- --write. A rise is never banked automatically: it has to be an explicit, reviewed edit to this file.",
-  "maxZeroCoverageFiles": 50,
+  "maxZeroCoverageFiles": 46,
   "knownFiles": [
     "scripts/android-release.mjs",
     "scripts/computeErasmusStats.mjs",
@@ -19,11 +19,7 @@
     "scripts/with-secrets.mjs",
     "scripts/zero-coverage-gate.mjs",
     "src/api/iskam/index.ts",
-    "src/api/iskam/konta.ts",
     "src/api/iskam/kontaTransactions.ts",
-    "src/api/iskam/profile.ts",
-    "src/api/iskam/reservations.ts",
-    "src/api/iskam/ubytovani.ts",
     "src/api/studyPlan.ts",
     "src/components/IskamPanel/EmptyIskamState.tsx",
     "src/components/IskamPanel/IskamPanel.tsx",
