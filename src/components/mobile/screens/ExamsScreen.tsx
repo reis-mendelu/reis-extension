@@ -171,9 +171,13 @@ export function ExamsScreen() {
   // actually completed (`firstSyncSettled`) and while one is in flight, an
   // absence of exam terms means it has not arrived yet — show the skeleton rather than
   // an empty state that reads as a wrong answer.
+  //
+  // Same rule as the calendar: not gated on the latched `firstSyncSettled`, so
+  // a retry shows the skeleton instead of parking on ScreenError. A student
+  // with genuinely no exams is protected by `syncLoaded.exams` instead.
   if (
     (!handshakeDone && !handshakeTimedOut) ||
-    (isSyncing && !firstSyncSettled && !syncLoaded.exams && exams.length === 0)
+    (isSyncing && !syncLoaded.exams && exams.length === 0)
   ) {
     return <ExamsSkeleton />;
   }

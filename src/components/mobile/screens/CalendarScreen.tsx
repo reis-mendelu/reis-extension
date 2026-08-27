@@ -83,9 +83,14 @@ export function CalendarScreen() {
   // actually completed (`firstSyncSettled`) and while one is in flight, an
   // absence of lessons means it has not arrived yet — show the skeleton rather than
   // an empty state that reads as a wrong answer.
+  //
+  // Deliberately not gated on `!firstSyncSettled`: that flag is latched, so a
+  // retry after a failed run would otherwise sit on ScreenError for its whole
+  // duration. `syncLoaded.schedule` is what protects a genuinely empty week
+  // from getting a skeleton thrown back over it every fifteen minutes.
   if (
     (!handshakeDone && !handshakeTimedOut) ||
-    (isSyncing && !firstSyncSettled && !syncLoaded.schedule && schedule.length === 0)
+    (isSyncing && !syncLoaded.schedule && schedule.length === 0)
   ) {
     return <CalendarSkeleton />;
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { act } from '@testing-library/react';
+import { act, waitFor } from '@testing-library/react';
 
 // Rejecting every time is the point: this file reproduces the reviewer's path,
 // where there is no account to sign in with, so BOTH the boot-time login and
@@ -24,27 +24,26 @@ describe('cancelling login from the gate', () => {
     ensureSession.mockRejectedValue(new LoginCancelledError());
 
     // Importing runs boot(), which presents login, is dismissed, and lands on
-    // the gate — the same first two steps a reviewer takes.
+    // the gate — the same first two steps a reviewer takes. boot() and
+    // showLoginGate() both settle asynchronously, so wait for the gate to be on
+    // screen rather than for a fixed delay that can expire before it renders.
     await act(async () => {
       await import('../main.capacitor');
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    });
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    });
-
-    const signIn = document.querySelectorAll('button')[0];
-    expect(document.getElementById('root')!.textContent).not.toContain('failed to start');
-    expect(signIn).toBeTruthy();
-
-    // The second dismissal: tap the gate's own sign-in button, back out again.
-    await act(async () => {
-      signIn.click();
-      await new Promise((resolve) => setTimeout(resolve, 50));
     });
 
     const root = document.getElementById('root')!;
+    await waitFor(() => expect(document.querySelectorAll('button').length).toBeGreaterThan(0));
     expect(root.textContent).not.toContain('failed to start');
-    expect(document.querySelectorAll('button').length).toBeGreaterThan(0);
+
+    // The second dismissal: tap the gate's own sign-in button, back out again.
+    const signIn = document.querySelectorAll('button')[0];
+    await act(async () => {
+      signIn.click();
+    });
+    await waitFor(() => expect(ensureSession).toHaveBeenCalledTimes(2));
+
+    // Still the gate, not the fatal error text.
+    await waitFor(() => expect(document.querySelectorAll('button').length).toBeGreaterThan(0));
+    expect(root.textContent).not.toContain('failed to start');
   }, 15000);
 });

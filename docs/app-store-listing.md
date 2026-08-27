@@ -602,7 +602,16 @@ xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
 the build fails with "Device isn't registered in your developer account", and
 `-allowProvisioningUpdates` alone will not register it. `DEVELOPMENT_TEAM` has
 to come from the command line because the project is deliberately teamless
-(§10). Install with `xcrun devicectl device install app`.
+(§10). Install with:
+
+```bash
+xcrun devicectl list devices            # the CoreDevice identifier, not the xcodebuild UDID
+xcrun devicectl device install app --device <core-device-id> \
+  ~/Library/Developer/Xcode/DerivedData/App-*/Build/Products/Release-iphoneos/App.app
+```
+
+`devicectl` keys off the **CoreDevice** identifier from `list devices`, which
+is not the same string `xcodebuild -destination 'id=…'` takes.
 
 **The old build could not be removed, and the cause is a third-party app.** The
 iPad carried reIS **1.0 (1)** signed under the old *free personal team*

@@ -36,7 +36,16 @@ export const createSyncSlice: AppSlice<SyncSlice> = (set) => {
     },
     setSyncStatus: (status) =>
       set((state) => ({
-        syncStatus: { ...state.syncStatus, ...status, handshakeDone: true },
+        syncStatus: {
+          ...state.syncStatus,
+          // A run that is starting has not failed yet. useAppLogic forwards
+          // REIS_SYNC_UPDATE as `{ isSyncing }` alone, so without this the
+          // merge carried the previous run's error into the retry and the
+          // screens keying off it stayed on their failure state throughout.
+          ...(status.isSyncing === true ? { error: null } : {}),
+          ...status,
+          handshakeDone: true,
+        },
         isSyncing: status.isSyncing !== undefined ? status.isSyncing : state.isSyncing,
         // `isSyncing: false` is the only message that means a crawl
         // finished. Latched, never cleared: once a sync has completed, an
