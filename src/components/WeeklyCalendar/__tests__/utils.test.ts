@@ -195,3 +195,29 @@ describe('organizeLessons and the visual block floor', () => {
     expect(lessons[0]!.endTime).toBe('12:10');
   });
 });
+
+describe('the floor near the end of the grid', () => {
+  // The grid stops at 21:00. Floors are for legibility, so one must never push
+  // a block past the bottom edge — the calendar is overflow-hidden and would
+  // clip the card it was trying to make readable.
+  it('shortens the floor rather than overflowing 21:00', () => {
+    expect(renderedBlockMinutes('20:30', '20:40')).toBe(30);
+    expect(renderedBlockMinutes('20:00', '20:50')).toBe(60);
+  });
+
+  it('keeps the full floor when there is room for it', () => {
+    expect(renderedBlockMinutes('12:00', '12:10')).toBe(90);
+    expect(renderedBlockMinutes('19:30', '19:40')).toBe(90);
+  });
+
+  it('never shortens a block below its real length', () => {
+    // A genuinely long late event still runs off the grid, exactly as it did
+    // before any floor existed. The cap bounds the floor, not the truth.
+    expect(renderedBlockMinutes('20:00', '22:00')).toBe(120);
+  });
+
+  it('leaves top + height inside the grid for a late short block', () => {
+    const { top, height } = getEventStyle('20:30', '20:40');
+    expect(parseFloat(top) + parseFloat(height)).toBeCloseTo(100, 5);
+  });
+});

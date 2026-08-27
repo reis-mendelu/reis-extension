@@ -1,5 +1,6 @@
 import type { BlockLesson, LessonWithRow, OrganizedLessons } from '../../types/calendarTypes';
 
+const GRID_START_HOUR = 7;
 const TOTAL_HOURS = 14; // 7:00 to 21:00
 
 export const DAYS = [
@@ -14,7 +15,7 @@ export const HOURS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 
 export function timeToPercent(time: string): number {
   const [hours, minutes] = time.split(':').map(Number);
-  const hoursFrom7 = hours - 7;
+  const hoursFrom7 = hours - GRID_START_HOUR;
   const totalMinutesFrom7 = hoursFrom7 * 60 + minutes;
   const totalMinutesInDay = TOTAL_HOURS * 60;
   return (totalMinutesFrom7 / totalMinutesInDay) * 100;
@@ -37,7 +38,14 @@ export const MIN_VISUAL_BLOCK_MINUTES = 90;
 
 /** Grid space a block actually occupies — its real length, floored for legibility. */
 export function renderedBlockMinutes(startTime: string, endTime: string): number {
-  return Math.max(timeToMinutes(endTime) - timeToMinutes(startTime), MIN_VISUAL_BLOCK_MINUTES);
+  const real = timeToMinutes(endTime) - timeToMinutes(startTime);
+  // The grid stops at 21:00 and the calendar is overflow-hidden, so a floor
+  // applied blindly to a 20:30 block would push the card off the bottom and
+  // clip the very thing it was widening for legibility. Shorten the floor to
+  // what is left of the grid — but never below the real length, so a genuinely
+  // long late event still runs over exactly as it did before any floor existed.
+  const toGridEnd = TOTAL_HOURS * 60 - (timeToMinutes(startTime) - GRID_START_HOUR * 60);
+  return Math.max(real, Math.min(MIN_VISUAL_BLOCK_MINUTES, toGridEnd));
 }
 
 export function getEventStyle(startTime: string, endTime: string): { top: string; height: string } {
