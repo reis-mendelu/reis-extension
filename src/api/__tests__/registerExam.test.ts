@@ -114,6 +114,20 @@ describe('registerExam', () => {
     expect(res.success).toBe(false);
   });
 
+  it('treats a generic IS error page as a failure even with a matching link', async () => {
+    // The third arm of hasError. IS renders 'Chyba' for problems that are
+    // neither "full" nor "cannot register", and the page can still carry this
+    // term's unregister link from before the attempt -- so without this arm the
+    // student is told an errored registration succeeded.
+    vi.mocked(client.fetchWithAuth).mockResolvedValue(
+      htmlResponse(registeredPage('555') + '<p>Chyba pri zpracovani</p>')
+    );
+
+    const res = await registerExam('555');
+
+    expect(res.success).toBe(false);
+  });
+
   it('falls back to "check IS yourself" when the page is unrecognisable', async () => {
     // Honest uncertainty. IS changed something and we cannot tell — saying so is
     // better than guessing in either direction.

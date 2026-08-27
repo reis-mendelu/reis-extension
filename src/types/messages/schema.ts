@@ -29,7 +29,12 @@ const SyncedDataSchema = z.object({
 });
 
 const dataRequestType = z.enum(['schedule', 'exams', 'subjects', 'files', 'all']);
-const actionType = z.enum([
+// Exported so base.ts can DERIVE ActionType from it. The TS union and this enum
+// used to be maintained by hand as two independent lists, and they drifted:
+// 'push_notes_html' was in the union and the dispatcher but not here, so every
+// one of those messages was silently rejected at the trust boundary. Deriving
+// makes that class of bug unrepresentable rather than merely tested for.
+export const actionType = z.enum([
   'register_exam',
   'unregister_exam',
   'toggle_outlook_sync',

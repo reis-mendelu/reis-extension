@@ -7,6 +7,23 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'happy-dom',
+    // happy-dom fetches subresources with its OWN internal Fetch, not the global
+    // one, so the unmocked-fetch guard in src/test/setup.ts never sees them. The
+    // IS HTML fixtures carry <link rel=stylesheet> and <script src> tags, and a
+    // full run made ~70 real requests to http://localhost:3000/css/... -- which
+    // is the port `npm run dev:web` serves on, so a developer with the dev server
+    // running had those ANSWERED, and some attempts reached is.mendelu.cz itself.
+    // It also made the run nondeterministic: the count varied 71-77 on an
+    // identical commit, which is precisely what a coverage ratchet cannot afford.
+    environmentOptions: {
+      happyDOM: {
+        settings: {
+          disableCSSFileLoading: true,
+          disableJavaScriptFileLoading: true,
+          disableIframePageLoading: true,
+        },
+      },
+    },
     setupFiles: ['./src/test/setup.ts'],
     // NOT set: restoreMocks / unstubGlobals / clearMocks.
     //
@@ -67,34 +84,38 @@ export default defineConfig({
       // teardown; src/test/setup.ts now rejects unmocked fetches. What remains is
       // startApp.test.ts booting the real entrypoint and racing React's
       // scheduler, so how far the render gets varies. Observed across repeated
-      // runs: statements 55.55-55.70, branches 79.56-79.74, functions
-      // 63.41-63.61 -- a spread of up to 0.20pp. An earlier revision left the
-      // functions margin at 0.21pp, i.e. one bad run from a spurious red.
-      // A real regression moves whole points, so the looser floor still catches it.
+      // runs: a spread of up to ~0.1pp. These floors were also RE-BANKED after
+      // the tests added since they were first set -- left at their old values
+      // they had drifted to 2-8pp of slack, enough to delete whole test files
+      // without tripping anything. Verified: removing a single test file from
+      // entrypoints/ now fails the run.
+      //
+      // The happy-dom subresource loading that used to make the numbers move
+      // between identical runs is disabled in environmentOptions above.
       thresholds: {
-        statements: 55.0,
-        branches: 79.0,
-        functions: 62.8,
-        lines: 55.0,
+        statements: 56.3,
+        branches: 79.1,
+        functions: 63.3,
+        lines: 56.3,
         // Deliberately the whole subtree, iskam/ and main/ included -- the glob,
         // not the directory row. Scoping this to `src/entrypoints/*.ts` would
         // have quietly exempted the ISKAM iframe bootstrap, which is the half
         // that was at 0%.
         'src/entrypoints/**': {
-          statements: 90,
-          branches: 90,
-          functions: 95,
-          lines: 90,
+          statements: 98,
+          branches: 97,
+          functions: 100,
+          lines: 98,
         },
-        // Measured 57.06 / 82.60 / 67.64, set just under. All three sit above
+        // Measured 63.56 / 87.80 / 70.59, set just under. All three sit above
         // the global floor, which is the whole point of a per-area threshold --
         // an earlier revision set statements to 55 while the global floor was
         // 55.3, making this "stricter" gate looser than the repo-wide one.
         'src/services/sync/**': {
-          statements: 56.8,
-          branches: 82.3,
-          functions: 67,
-          lines: 56.8,
+          statements: 62.9,
+          branches: 87,
+          functions: 70,
+          lines: 62.9,
         },
       },
     },

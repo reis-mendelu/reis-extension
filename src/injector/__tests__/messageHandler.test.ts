@@ -60,7 +60,13 @@ const ORIGIN = 'chrome-extension://abcdef';
 let handleMessage: (e: MessageEvent) => Promise<void>;
 
 beforeEach(async () => {
-  vi.clearAllMocks();
+  // resetAllMocks, not clearAllMocks: clear wipes call history but LEAVES
+  // implementations, so a `mockRejectedValue` set by one test (drive quota,
+  // IS 502, term full, IS timeout) stayed installed for every test after it.
+  // Under --sequence.shuffle that put a rejection in front of the test that
+  // expects success, and the suite failed on roughly half the seeds. These mocks
+  // are all bare vi.fn()s with no factory default, so resetting them is safe.
+  vi.resetAllMocks();
   vi.resetModules();
   vi.stubGlobal('chrome', {
     runtime: { getURL: () => `${ORIGIN}/`, sendMessage: vi.fn() },
@@ -248,6 +254,38 @@ describe('REIS_FETCH against IS', () => {
     expect(sendToIframe).toHaveBeenCalledWith(
       expect.objectContaining({ id: msg.id, success: false })
     );
+  });
+
+  it('also redirects on 403, not only 401', async () => {
+    // IS answers a dead session with either. Handling only 401 leaves a
+    // 403-expired student in a silent retry loop.
+    let navigatedTo = '';
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...realLocation,
+        get href() {
+          return '';
+        },
+        set href(v: string) {
+          navigatedTo = v;
+        },
+        pathname: '/auth/index.pl',
+      },
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: false,
+        status: 403,
+        text: async () => 'forbidden',
+        headers: new Headers(),
+      }))
+    );
+
+    await handleMessage(event({ data: Messages.fetch('https://is.mendelu.cz/auth/x') }));
+
+    expect(navigatedTo).toContain('login.pl');
   });
 
   it('rejects an image response that is not actually an image', async () => {

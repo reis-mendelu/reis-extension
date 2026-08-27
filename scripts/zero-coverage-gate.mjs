@@ -37,19 +37,29 @@ const zero = Object.entries(summary)
   .sort();
 
 const count = zero.length;
+const known = new Set(baseline.knownFiles ?? []);
+const fresh = zero.filter((f) => !known.has(f));
+
+// Compare the SET, not just the count. Counting alone lets a SWAP through: cover
+// one baselined file, add a brand-new untested module, and the total is
+// unchanged — the gate says ok, and knownFiles quietly goes stale so the
+// "newly untested" diagnostic never fires again. Any file that is untested and
+// was not untested before is a regression regardless of what the total did.
+if (fresh.length) {
+  console.error(
+    `❌ ${fresh.length} file(s) with zero test coverage are new since the baseline ` +
+      `(total ${count}, baseline ${baseline.maxZeroCoverageFiles}):`
+  );
+  for (const f of fresh) console.error(`   ${f}`);
+  console.error('\nAdd a test, or if the file is genuinely untestable, say why in the baseline.');
+  process.exit(1);
+}
 
 if (count > baseline.maxZeroCoverageFiles) {
-  const known = new Set(baseline.knownFiles ?? []);
-  const fresh = zero.filter((f) => !known.has(f));
   console.error(
     `❌ files with zero test coverage rose to ${count}; ` +
       `baseline allows ${baseline.maxZeroCoverageFiles}.`
   );
-  if (fresh.length) {
-    console.error('Newly untested:');
-    for (const f of fresh) console.error(`   ${f}`);
-  }
-  console.error('\nAdd a test, or if the file is genuinely untestable, say why in the baseline.');
   process.exit(1);
 }
 
@@ -69,4 +79,37 @@ if (count < baseline.maxZeroCoverageFiles) {
   process.exit(1);
 }
 
-console.log(`✅ zero-coverage ratchet ok — ${count} files still untested`);
+// Every per-area threshold glob in vitest.config.ts must match at least one
+// MEASURED file. vitest silently ignores a glob that matches nothing, so a typo
+// ('src/entrypoint/**' for 'src/entrypoints/**') turns a strict 90%-floor into a
+// gate that can never fail, with no warning anywhere.
+const config = readFileSync('vitest.config.ts', 'utf8');
+const thresholdBlock = config.slice(config.indexOf('thresholds: {'));
+const globs = [...thresholdBlock.matchAll(/'([^']*\*[^']*)':\s*\{/g)].map((m) => m[1]);
+const measured = Object.keys(summary)
+  .filter((k) => k !== 'total')
+  .map((k) => k.replace(cwd, ''));
+
+const toRegExp = (glob) =>
+  new RegExp(
+    '^' +
+      glob
+        .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+        .replace(/\*\*\//g, '(?:.*/)?')
+        .replace(/\*\*/g, '.*')
+        .replace(/\*/g, '[^/]*') +
+      '$'
+  );
+
+const deadGlobs = globs.filter((g) => !measured.some((f) => toRegExp(g).test(f)));
+if (deadGlobs.length) {
+  console.error('❌ coverage threshold glob(s) match no measured file — the gate cannot fail:');
+  for (const g of deadGlobs) console.error(`   '${g}'`);
+  console.error('\nFix the pattern, or drop the threshold if the area is gone.');
+  process.exit(1);
+}
+
+console.log(
+  `✅ zero-coverage ratchet ok — ${count} files still untested; ` +
+    `${globs.length} threshold glob(s) all match measured files`
+);

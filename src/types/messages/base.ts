@@ -1,21 +1,14 @@
+import type { z } from 'zod';
+import type { actionType as actionTypeSchema } from './schema';
 import type { DualLanguageStudyPlan, StudyStats, StudyComparison } from '../studyPlan';
 import type { IskamData } from '../iskam';
 import type { SubjectZaznamnik } from '../zaznamnik';
 
 export type DataRequestType = 'schedule' | 'exams' | 'subjects' | 'files' | 'all';
-export type ActionType =
-  | 'register_exam'
-  | 'unregister_exam'
-  | 'toggle_outlook_sync'
-  | 'download_file'
-  | 'download_document'
-  | 'trigger_sync'
-  | 'trigger_drive_backup'
-  | 'push_notes'
-  | 'push_notes_html'
-  | 'refresh_exams'
-  | 'open_url'
-  | 'logout';
+// Derived from the runtime validator, never written out by hand: a member that
+// exists here but not in the Zod enum is a message the boundary silently drops
+// (see the note in schema.ts). Adding an action means adding it in ONE place.
+export type ActionType = z.infer<typeof actionTypeSchema>;
 
 export interface SyncedData {
   schedule?: unknown;
