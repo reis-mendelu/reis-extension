@@ -21,6 +21,17 @@ export default defineConfig({
           disableCSSFileLoading: true,
           disableJavaScriptFileLoading: true,
           disableIframePageLoading: true,
+          // Subresources are only half of it. A dispatched click on an
+          // <a href="https://is.mendelu.cz/"> makes happy-dom NAVIGATE, and that
+          // opens a real TLS connection to the live university system — six per
+          // run, from openExternal.test.ts alone, plus webiskam and example.com.
+          // An earlier revision disabled the three settings above and claimed the
+          // count was zero; it was ten. These are the settings that close it.
+          navigation: {
+            disableMainFrameNavigation: true,
+            disableChildPageNavigation: true,
+            disableFallbackToSetURL: true,
+          },
         },
       },
     },

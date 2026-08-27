@@ -64,3 +64,87 @@ describe('messageListener REIS_ACTION_RESULT', () => {
     });
   });
 });
+
+/**
+ * The iframe-side half of the trust boundary, and the twin of the checks in
+ * injector/messageHandler.ts. This listener resolves PENDING PROMISES from an
+ * incoming message — so an attacker who can post to this window can hand the app
+ * fabricated IS data as the answer to a request the app itself made, and the
+ * whole UI will render it as genuine.
+ *
+ * Both guards were previously deletable with the entire 2,517-test suite green:
+ * trustedOrigin.ts measured 100% with dedicated tests, but nothing asserted that
+ * this listener CALLS it. Coverage of a guard is not coverage of its use.
+ */
+describe('messageListener trust boundary', () => {
+  beforeEach(() => {
+    initProxyListener();
+    pendingActions.clear();
+  });
+
+  /** A reply that is well-formed apart from the field under test. */
+  function replyFrom(over: { origin?: string; source?: unknown }, id: string) {
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { type: 'REIS_ACTION_RESULT', id, success: true, data: 'ATTACKER PAYLOAD' },
+        origin: over.origin ?? window.location.origin,
+        source: (over.source ?? window.parent) as Window,
+      })
+    );
+  }
+
+  it('ignores a reply from an untrusted origin', async () => {
+    let settled: unknown = 'PENDING';
+    pendingActions.set('a1', {
+      resolve: (v) => {
+        settled = v;
+      },
+      reject: () => {
+        settled = 'REJECTED';
+      },
+      timeout: setTimeout(() => {}, 0) as unknown as ReturnType<typeof setTimeout>,
+    });
+
+    replyFrom({ origin: 'https://evil.example' }, 'a1');
+
+    expect(settled).toBe('PENDING');
+    // Still pending: the request must not be consumed either, or the real reply
+    // would arrive to an empty map and hang.
+    expect(pendingActions.has('a1')).toBe(true);
+  });
+
+  it('ignores a reply whose source is not the parent frame', async () => {
+    let settled: unknown = 'PENDING';
+    pendingActions.set('a2', {
+      resolve: (v) => {
+        settled = v;
+      },
+      reject: () => {
+        settled = 'REJECTED';
+      },
+      timeout: setTimeout(() => {}, 0) as unknown as ReturnType<typeof setTimeout>,
+    });
+
+    // Right origin, wrong window — a nested frame, or anything holding a handle
+    // to this one. Origin alone is not enough.
+    replyFrom({ source: { name: 'not-the-parent' } }, 'a2');
+
+    expect(settled).toBe('PENDING');
+    expect(pendingActions.has('a2')).toBe(true);
+  });
+
+  it('resolves a reply that passes both checks', async () => {
+    // The positive control: without it the two assertions above would also pass
+    // if the listener were simply broken.
+    const p = settle('a3');
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { type: 'REIS_ACTION_RESULT', id: 'a3', success: true, data: 'genuine' },
+        origin: window.location.origin,
+        source: window.parent,
+      })
+    );
+
+    await expect(p).resolves.toBe('genuine');
+  });
+});

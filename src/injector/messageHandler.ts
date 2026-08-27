@@ -148,12 +148,17 @@ async function handleAction(id: string, action: string, payload: unknown) {
     switch (action) {
       case 'register_exam': {
         if (!p.termId) throw new Error('register_exam: missing termId');
-        result = { success: await registerExam(p.termId) };
+        // Passed through, NOT wrapped. registerExam returns ExamActionResult
+        // ({ success, error }), so `{ success: await registerExam(...) }` made
+        // result.success the whole object -- truthy even on failure, and it
+        // discarded the error message. Unreachable today (useExamActions calls
+        // the API in-process), but wrong the moment a sender is wired.
+        result = await registerExam(p.termId);
         break;
       }
       case 'unregister_exam': {
         if (!p.termId) throw new Error('unregister_exam: missing termId');
-        result = { success: await unregisterExam(p.termId) };
+        result = await unregisterExam(p.termId);
         break;
       }
       case 'trigger_sync':

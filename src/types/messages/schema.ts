@@ -28,17 +28,23 @@ const SyncedDataSchema = z.object({
   error: z.string().optional(),
 });
 
-const dataRequestType = z.enum(['schedule', 'exams', 'subjects', 'files', 'all']);
+// Exported for the same reason as actionType below: base.ts DERIVES
+// DataRequestType from it, so the union and the validator cannot drift.
+export const dataRequestType = z.enum(['schedule', 'exams', 'subjects', 'files', 'all']);
 // Exported so base.ts can DERIVE ActionType from it. The TS union and this enum
 // used to be maintained by hand as two independent lists, and they drifted:
 // 'push_notes_html' was in the union and the dispatcher but not here, so every
 // one of those messages was silently rejected at the trust boundary. Deriving
 // makes that class of bug unrepresentable rather than merely tested for.
+// Every member here must have a handler case — asserted by
+// __tests__/actionEnumParity.test.ts. 'toggle_outlook_sync' and 'download_file'
+// were accepted by this validator with no case on ANY platform, so a message
+// carrying them passed the guard and then hit `default: throw`. Removed: an
+// allowlist that admits actions nothing implements is a worse contract than one
+// that rejects them at the door.
 export const actionType = z.enum([
   'register_exam',
   'unregister_exam',
-  'toggle_outlook_sync',
-  'download_file',
   'download_document',
   'trigger_sync',
   'trigger_drive_backup',

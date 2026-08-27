@@ -5,10 +5,12 @@ import { collectReferencedImages } from '../../services/notes/collectReferencedI
 import { sweepOrphans, getImage } from '../../services/notes/noteImageStore';
 import { blobToBase64 } from '../../services/notes/imageNormalize';
 import { renderSubjectNotesHtmlWithImages } from '../../services/drive/notesDoc';
+// Typed factory, not a hand-written literal — see the note in SyncService.ts.
+import { Messages } from '../../types/messages';
 
 const imageBase64Lookup = async (hash: string): Promise<string | null> => {
-    const img = await getImage(hash);
-    return img ? blobToBase64(img.blob) : null;
+  const img = await getImage(hash);
+  return img ? blobToBase64(img.blob) : null;
 };
 
 const MAX_NOTE_LENGTH = 100000;
@@ -19,178 +21,194 @@ const pendingSaves: Record<string, string> = {};
 const pendingNames: Record<string, string> = {};
 
 export function getDocumentNoteKey(courseCode: string, fileLink: string): string {
-    return `${courseCode}:${fileLink}`;
+  return `${courseCode}:${fileLink}`;
 }
 
 export const createNotesSlice: AppSlice<NotesSlice> = (set, get) => {
-    const saveToStorage = (key: string, value: string, courseCode: string, fileLink: string, fileName: string) => {
-        set((state) => {
-            const nextSaving = { ...state.documentNotesSaving, [key]: true };
-            const nextError = { ...state.documentNotesError };
-            delete nextError[key];
-            return { documentNotesSaving: nextSaving, documentNotesError: nextError };
-        });
+  const saveToStorage = (
+    key: string,
+    value: string,
+    courseCode: string,
+    fileLink: string,
+    fileName: string
+  ) => {
+    set((state) => {
+      const nextSaving = { ...state.documentNotesSaving, [key]: true };
+      const nextError = { ...state.documentNotesError };
+      delete nextError[key];
+      return { documentNotesSaving: nextSaving, documentNotesError: nextError };
+    });
 
-        const op = value.trim()
-            ? IndexedDBService.set('document_notes', key, { note: value, updatedAt: Date.now(), fileName })
-            : IndexedDBService.delete('document_notes', key);
-
-        op.then(async () => {
-            if (pendingSaves[key] === value) {
-                delete pendingSaves[key];
-            }
-            set((state) => {
-                const nextSaving = { ...state.documentNotesSaving };
-                delete nextSaving[key];
-                return { documentNotesSaving: nextSaving };
-            });
-            window.dispatchEvent(new CustomEvent('document-note-changed', {
-                detail: { courseCode, fileLink, hasNote: !!value.trim() }
-            }));
-            // Reclaim image blobs no note references any more (grace-period guarded).
-            // Include not-yet-persisted edits (live Zustand + debounced saves) so the
-            // sweep can't delete an image a card already references but whose note
-            // write hasn't landed in IDB yet.
-            void IndexedDBService.getAllWithKeys('document_notes')
-                .then((entries) => {
-                    const inFlight = [...Object.values(get().documentNotes), ...Object.values(pendingSaves)]
-                        .map((note) => ({ note: note ?? '' }));
-                    const referenced = collectReferencedImages([
-                        ...entries.map((e) => ({ note: e.value.note ?? '' })),
-                        ...inFlight,
-                    ]);
-                    return sweepOrphans(referenced, Date.now());
-                })
-                .catch((e) => logError('Notes.imageGc', e));
-            // Render this subject's HTML (base64-inlined when it has images) and
-            // CACHE it in the content script BEFORE the snapshot below triggers the
-            // backup — otherwise the snapshot's text-only pass records the content
-            // hash first and the image pass is skipped as a no-op. Cache-only: the
-            // push_notes that follows is the single backup trigger.
-            try {
-                const entries = await IndexedDBService.getAllWithKeys('document_notes');
-                const files = entries
-                    .filter((e) => e.key.startsWith(`${courseCode}:`) && e.value.note?.trim())
-                    .map((e) => ({ fileLink: e.key.slice(e.key.indexOf(':') + 1), fileName: e.value.fileName ?? '', note: e.value.note }));
-                const html = await renderSubjectNotesHtmlWithImages(
-                    { code: courseCode, folderName: '', title: `Poznámky – ${courseCode}`, files },
-                    imageBase64Lookup,
-                );
-                window.parent.postMessage(
-                    { type: 'REIS_ACTION', id: crypto.randomUUID(), action: 'push_notes_html', payload: { code: courseCode, html } },
-                    '*',
-                );
-            } catch (e) { logError('Notes.pushHtml', e); }
-            // Snapshot push (triggers the single notes-backup pass, now using the
-            // override cached just above).
-            void get().pushNotesSnapshot();
+    const op = value.trim()
+      ? IndexedDBService.set('document_notes', key, {
+          note: value,
+          updatedAt: Date.now(),
+          fileName,
         })
-        .catch((error) => {
-            logError('useDocumentNote.save', error);
-            if (pendingSaves[key] === value) {
-                delete pendingSaves[key];
-            }
-            set((state) => {
-                const nextSaving = { ...state.documentNotesSaving };
-                const nextError = { ...state.documentNotesError, [key]: true };
-                delete nextSaving[key];
-                return { documentNotesSaving: nextSaving, documentNotesError: nextError };
-            });
+      : IndexedDBService.delete('document_notes', key);
+
+    op.then(async () => {
+      if (pendingSaves[key] === value) {
+        delete pendingSaves[key];
+      }
+      set((state) => {
+        const nextSaving = { ...state.documentNotesSaving };
+        delete nextSaving[key];
+        return { documentNotesSaving: nextSaving };
+      });
+      window.dispatchEvent(
+        new CustomEvent('document-note-changed', {
+          detail: { courseCode, fileLink, hasNote: !!value.trim() },
+        })
+      );
+      // Reclaim image blobs no note references any more (grace-period guarded).
+      // Include not-yet-persisted edits (live Zustand + debounced saves) so the
+      // sweep can't delete an image a card already references but whose note
+      // write hasn't landed in IDB yet.
+      void IndexedDBService.getAllWithKeys('document_notes')
+        .then((entries) => {
+          const inFlight = [
+            ...Object.values(get().documentNotes),
+            ...Object.values(pendingSaves),
+          ].map((note) => ({ note: note ?? '' }));
+          const referenced = collectReferencedImages([
+            ...entries.map((e) => ({ note: e.value.note ?? '' })),
+            ...inFlight,
+          ]);
+          return sweepOrphans(referenced, Date.now());
+        })
+        .catch((e) => logError('Notes.imageGc', e));
+      // Render this subject's HTML (base64-inlined when it has images) and
+      // CACHE it in the content script BEFORE the snapshot below triggers the
+      // backup — otherwise the snapshot's text-only pass records the content
+      // hash first and the image pass is skipped as a no-op. Cache-only: the
+      // push_notes that follows is the single backup trigger.
+      try {
+        const entries = await IndexedDBService.getAllWithKeys('document_notes');
+        const files = entries
+          .filter((e) => e.key.startsWith(`${courseCode}:`) && e.value.note?.trim())
+          .map((e) => ({
+            fileLink: e.key.slice(e.key.indexOf(':') + 1),
+            fileName: e.value.fileName ?? '',
+            note: e.value.note,
+          }));
+        const html = await renderSubjectNotesHtmlWithImages(
+          { code: courseCode, folderName: '', title: `Poznámky – ${courseCode}`, files },
+          imageBase64Lookup
+        );
+        window.parent.postMessage(
+          Messages.action('push_notes_html', { code: courseCode, html }),
+          '*'
+        );
+      } catch (e) {
+        logError('Notes.pushHtml', e);
+      }
+      // Snapshot push (triggers the single notes-backup pass, now using the
+      // override cached just above).
+      void get().pushNotesSnapshot();
+    }).catch((error) => {
+      logError('useDocumentNote.save', error);
+      if (pendingSaves[key] === value) {
+        delete pendingSaves[key];
+      }
+      set((state) => {
+        const nextSaving = { ...state.documentNotesSaving };
+        const nextError = { ...state.documentNotesError, [key]: true };
+        delete nextSaving[key];
+        return { documentNotesSaving: nextSaving, documentNotesError: nextError };
+      });
+    });
+  };
+
+  return {
+    documentNotes: {},
+    documentNotesLoading: {},
+    documentNotesSaving: {},
+    documentNotesError: {},
+
+    fetchDocumentNote: async (courseCode, fileLink) => {
+      const key = getDocumentNoteKey(courseCode, fileLink);
+      const { documentNotes, documentNotesLoading } = get();
+
+      if (documentNotes[key] !== undefined || documentNotesLoading[key]) return;
+
+      set((state) => ({
+        documentNotesLoading: { ...state.documentNotesLoading, [key]: true },
+      }));
+
+      try {
+        const data = await IndexedDBService.get('document_notes', key);
+        const loadedNote = data?.note ?? '';
+        set((state) => {
+          const nextNotes = { ...state.documentNotes, [key]: loadedNote };
+          const nextLoading = { ...state.documentNotesLoading };
+          delete nextLoading[key];
+          return { documentNotes: nextNotes, documentNotesLoading: nextLoading };
         });
-    };
+      } catch (error) {
+        logError('useDocumentNote.load', error);
+        set((state) => {
+          const nextNotes = { ...state.documentNotes, [key]: '' };
+          const nextLoading = { ...state.documentNotesLoading };
+          delete nextLoading[key];
+          return { documentNotes: nextNotes, documentNotesLoading: nextLoading };
+        });
+      }
+    },
 
-    return {
-        documentNotes: {},
-        documentNotesLoading: {},
-        documentNotesSaving: {},
-        documentNotesError: {},
+    setDocumentNote: (courseCode, fileLink, value, fileName) => {
+      const key = getDocumentNoteKey(courseCode, fileLink);
+      const truncated = value.slice(0, MAX_NOTE_LENGTH);
 
-        fetchDocumentNote: async (courseCode, fileLink) => {
-            const key = getDocumentNoteKey(courseCode, fileLink);
-            const { documentNotes, documentNotesLoading } = get();
+      set((state) => ({
+        documentNotes: { ...state.documentNotes, [key]: truncated },
+        documentNotesSaving: { ...state.documentNotesSaving, [key]: true },
+      }));
 
-            if (documentNotes[key] !== undefined || documentNotesLoading[key]) return;
+      pendingSaves[key] = truncated;
+      pendingNames[key] = fileName;
 
-            set((state) => ({
-                documentNotesLoading: { ...state.documentNotesLoading, [key]: true }
-            }));
+      if (debounceTimers[key]) clearTimeout(debounceTimers[key]);
 
-            try {
-                const data = await IndexedDBService.get('document_notes', key);
-                const loadedNote = data?.note ?? '';
-                set((state) => {
-                    const nextNotes = { ...state.documentNotes, [key]: loadedNote };
-                    const nextLoading = { ...state.documentNotesLoading };
-                    delete nextLoading[key];
-                    return { documentNotes: nextNotes, documentNotesLoading: nextLoading };
-                });
-            } catch (error) {
-                logError('useDocumentNote.load', error);
-                set((state) => {
-                    const nextNotes = { ...state.documentNotes, [key]: '' };
-                    const nextLoading = { ...state.documentNotesLoading };
-                    delete nextLoading[key];
-                    return { documentNotes: nextNotes, documentNotesLoading: nextLoading };
-                });
-            }
-        },
+      debounceTimers[key] = setTimeout(() => {
+        delete debounceTimers[key];
+        saveToStorage(key, truncated, courseCode, fileLink, fileName);
+      }, DEBOUNCE_MS);
+    },
 
-        setDocumentNote: (courseCode, fileLink, value, fileName) => {
-            const key = getDocumentNoteKey(courseCode, fileLink);
-            const truncated = value.slice(0, MAX_NOTE_LENGTH);
-
-            set((state) => ({
-                documentNotes: { ...state.documentNotes, [key]: truncated },
-                documentNotesSaving: { ...state.documentNotesSaving, [key]: true }
-            }));
-
-            pendingSaves[key] = truncated;
-            pendingNames[key] = fileName;
-
-            if (debounceTimers[key]) clearTimeout(debounceTimers[key]);
-
-            debounceTimers[key] = setTimeout(() => {
-                delete debounceTimers[key];
-                saveToStorage(key, truncated, courseCode, fileLink, fileName);
-            }, DEBOUNCE_MS);
-        },
-
-        flushDocumentNotes: () => {
-            Object.keys(debounceTimers).forEach(key => {
-                clearTimeout(debounceTimers[key]);
-                delete debounceTimers[key];
-                const value = pendingSaves[key];
-                if (value !== undefined) {
-                    const idx = key.indexOf(':');
-                    const courseCode = key.slice(0, idx);
-                    const fileLink = key.slice(idx + 1);
-                    saveToStorage(key, value, courseCode, fileLink, pendingNames[key] ?? '');
-                }
-            });
-        },
-
-        pushNotesSnapshot: async () => {
-            try {
-                const entries = await IndexedDBService.getAllWithKeys('document_notes');
-                const snapshot: Record<string, Record<string, { note: string; fileName: string }>> = {};
-                for (const { key, value } of entries) {
-                    if (!value?.note?.trim()) continue; // never ship empty notes
-                    const idx = key.indexOf(':');
-                    if (idx < 0) continue;
-                    const courseCode = key.slice(0, idx);
-                    const fileLink = key.slice(idx + 1);
-                    (snapshot[courseCode] ??= {})[fileLink] = {
-                        note: value.note,
-                        fileName: value.fileName ?? '',
-                    };
-                }
-                window.parent.postMessage(
-                    { type: 'REIS_ACTION', id: crypto.randomUUID(), action: 'push_notes', payload: snapshot },
-                    '*',
-                );
-            } catch (error) {
-                logError('Notes.pushSnapshot', error);
-            }
+    flushDocumentNotes: () => {
+      Object.keys(debounceTimers).forEach((key) => {
+        clearTimeout(debounceTimers[key]);
+        delete debounceTimers[key];
+        const value = pendingSaves[key];
+        if (value !== undefined) {
+          const idx = key.indexOf(':');
+          const courseCode = key.slice(0, idx);
+          const fileLink = key.slice(idx + 1);
+          saveToStorage(key, value, courseCode, fileLink, pendingNames[key] ?? '');
         }
-    };
+      });
+    },
+
+    pushNotesSnapshot: async () => {
+      try {
+        const entries = await IndexedDBService.getAllWithKeys('document_notes');
+        const snapshot: Record<string, Record<string, { note: string; fileName: string }>> = {};
+        for (const { key, value } of entries) {
+          if (!value?.note?.trim()) continue; // never ship empty notes
+          const idx = key.indexOf(':');
+          if (idx < 0) continue;
+          const courseCode = key.slice(0, idx);
+          const fileLink = key.slice(idx + 1);
+          (snapshot[courseCode] ??= {})[fileLink] = {
+            note: value.note,
+            fileName: value.fileName ?? '',
+          };
+        }
+        window.parent.postMessage(Messages.action('push_notes', snapshot), '*');
+      } catch (error) {
+        logError('Notes.pushSnapshot', error);
+      }
+    },
+  };
 };

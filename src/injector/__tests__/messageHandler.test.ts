@@ -410,17 +410,20 @@ describe('REIS_ACTION', () => {
 
   describe('exam registration', () => {
     it('registers — and does NOT unregister', async () => {
-      registerExam.mockResolvedValue(true);
+      registerExam.mockResolvedValue({ success: true });
 
       const msg = await act('register_exam', { termId: 'T-1' });
 
       expect(registerExam).toHaveBeenCalledWith('T-1');
       expect(unregisterExam).not.toHaveBeenCalled();
       expect(resultFor(msg.id)?.success).toBe(true);
+      // The API's own result reaches the iframe intact, not nested inside
+      // another success field where a failure would read as truthy.
+      expect(resultFor(msg.id)?.data).toEqual({ success: true });
     });
 
     it('unregisters — and does NOT register', async () => {
-      unregisterExam.mockResolvedValue(true);
+      unregisterExam.mockResolvedValue({ success: true });
 
       const msg = await act('unregister_exam', { termId: 'T-1' });
 
@@ -444,6 +447,20 @@ describe('REIS_ACTION', () => {
 
       expect(unregisterExam).not.toHaveBeenCalled();
       expect(resultFor(msg.id)?.success).toBe(false);
+    });
+
+    it('passes a failed registration through with its error message', async () => {
+      // The API reports refusals as a RESOLVED ExamActionResult, not a throw.
+      // Wrapping it in another object made success truthy and dropped the text
+      // the student needs.
+      registerExam.mockResolvedValue({ success: false, error: 'Termín je již plný.' });
+
+      const msg = await act('register_exam', { termId: 'T-8' });
+
+      expect(resultFor(msg.id)?.data).toEqual({
+        success: false,
+        error: 'Termín je již plný.',
+      });
     });
 
     it('reports a rejected registration back instead of claiming success', async () => {

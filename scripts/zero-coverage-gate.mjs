@@ -85,7 +85,10 @@ if (count < baseline.maxZeroCoverageFiles) {
 // gate that can never fail, with no warning anywhere.
 const config = readFileSync('vitest.config.ts', 'utf8');
 const thresholdBlock = config.slice(config.indexOf('thresholds: {'));
-const globs = [...thresholdBlock.matchAll(/'([^']*\*[^']*)':\s*\{/g)].map((m) => m[1]);
+// Every quoted KEY that opens an object, wildcard or not. An earlier revision
+// required a '*', so a literal path key ('src/entrypoints/gone.ts') was never
+// validated and its threshold silently applied to nothing.
+const globs = [...thresholdBlock.matchAll(/'([^']+)':\s*\{/g)].map((m) => m[1]);
 const measured = Object.keys(summary)
   .filter((k) => k !== 'total')
   .map((k) => k.replace(cwd, ''));

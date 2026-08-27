@@ -1,10 +1,15 @@
 import type { z } from 'zod';
-import type { actionType as actionTypeSchema } from './schema';
+import type {
+  actionType as actionTypeSchema,
+  dataRequestType as dataRequestTypeSchema,
+} from './schema';
 import type { DualLanguageStudyPlan, StudyStats, StudyComparison } from '../studyPlan';
 import type { IskamData } from '../iskam';
 import type { SubjectZaznamnik } from '../zaznamnik';
 
-export type DataRequestType = 'schedule' | 'exams' | 'subjects' | 'files' | 'all';
+// Derived, not hand-written — the identical bug class to ActionType below. A
+// member here that the Zod enum lacks is a request the boundary silently drops.
+export type DataRequestType = z.infer<typeof dataRequestTypeSchema>;
 // Derived from the runtime validator, never written out by hand: a member that
 // exists here but not in the Zod enum is a message the boundary silently drops
 // (see the note in schema.ts). Adding an action means adding it in ONE place.
