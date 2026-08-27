@@ -38,6 +38,10 @@ const actionType = z.enum([
   'trigger_sync',
   'trigger_drive_backup',
   'push_notes',
+  // Sent by createNotesSlice right before push_notes. It was missing here, so
+  // every one of those messages failed validation and was dropped at the trust
+  // boundary -- the handler case for it exists and simply never ran.
+  'push_notes_html',
   'refresh_exams',
   'open_url',
   'logout',

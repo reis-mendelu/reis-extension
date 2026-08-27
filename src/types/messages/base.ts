@@ -12,6 +12,7 @@ export type ActionType =
   | 'trigger_sync'
   | 'trigger_drive_backup'
   | 'push_notes'
+  | 'push_notes_html'
   | 'refresh_exams'
   | 'open_url'
   | 'logout';

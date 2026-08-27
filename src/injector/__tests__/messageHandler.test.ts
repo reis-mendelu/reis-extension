@@ -26,6 +26,10 @@ const registerExam = vi.hoisted(() => vi.fn());
 const unregisterExam = vi.hoisted(() => vi.fn());
 const downloadDocumentInPage = vi.hoisted(() => vi.fn());
 const refreshExams = vi.hoisted(() => vi.fn());
+const runDriveBackupNow = vi.hoisted(() => vi.fn());
+const runNotesBackupNow = vi.hoisted(() => vi.fn());
+const setNotesSnapshot = vi.hoisted(() => vi.fn());
+const setNotesHtmlOverride = vi.hoisted(() => vi.fn());
 
 const contentWindow = { name: 'iframe-window' } as unknown as Window;
 
@@ -37,10 +41,10 @@ vi.mock('../iframeManager', () => ({
 vi.mock('../syncService', () => ({
   cachedData: { lastSync: 1, files: { CZ: [] } },
   isSyncing: false,
-  runDriveBackupNow: vi.fn(),
-  runNotesBackupNow: vi.fn(),
-  setNotesSnapshot: vi.fn(),
-  setNotesHtmlOverride: vi.fn(),
+  runDriveBackupNow,
+  runNotesBackupNow,
+  setNotesSnapshot,
+  setNotesHtmlOverride,
   refreshExams,
 }));
 vi.mock('../syncGate', () => ({ requestSync }));
@@ -354,7 +358,16 @@ describe('REIS_ACTION', () => {
 
   const resultFor = (id: string) =>
     sendToIframe.mock.calls
-      .map((c) => c[0] as { type: string; id?: string; success?: boolean; error?: string })
+      .map(
+        (c) =>
+          c[0] as {
+            type: string;
+            id?: string;
+            success?: boolean;
+            error?: string;
+            data?: unknown;
+          }
+      )
       .find((m) => m.type === 'REIS_ACTION_RESULT' && m.id === id);
 
   describe('exam registration', () => {
@@ -460,6 +473,111 @@ describe('REIS_ACTION', () => {
 
       expect(window.location.href).not.toContain('login.pl');
       expect(resultFor(msg.id)?.success).toBe(false);
+    });
+  });
+
+  describe('notes and Drive backup', () => {
+    it('pushes the snapshot AND runs the backup', async () => {
+      // Storing the snapshot without running the backup is the silent failure
+      // here: the student sees notes saved locally and nothing ever reaches Drive.
+      const snapshot = { 'EBC-OS': { f1: { note: 'text', fileName: 'a.pdf' } } };
+
+      const msg = await act('push_notes', snapshot);
+
+      expect(setNotesSnapshot).toHaveBeenCalledWith(snapshot);
+      expect(runNotesBackupNow).toHaveBeenCalledTimes(1);
+      expect(resultFor(msg.id)?.success).toBe(true);
+    });
+
+    // REGRESSION: 'push_notes_html' was absent from the Zod action enum while
+    // createNotesSlice.ts sent it and messageHandler implemented a case for it.
+    // Every message was therefore dropped at the trust boundary, the HTML
+    // override was never cached, and the notes backup silently uploaded the
+    // text-only rendering -- formatted notes and their images never reached
+    // Drive. This test is what caught it: it could not be made to pass.
+    it('caches note HTML WITHOUT triggering a backup', async () => {
+      // Deliberately cache-only: this arrives immediately before push_notes,
+      // which is the single backup trigger. Backing up here as well would race
+      // the snapshot's text-only pass and lose to the hash diff.
+      const msg = await act('push_notes_html', { code: 'EBC-OS', html: '<p>hi</p>' });
+
+      expect(setNotesHtmlOverride).toHaveBeenCalledWith('EBC-OS', '<p>hi</p>');
+      expect(runNotesBackupNow).not.toHaveBeenCalled();
+      expect(resultFor(msg.id)?.success).toBe(true);
+    });
+
+    it('runs a Drive backup on demand', async () => {
+      const msg = await act('trigger_drive_backup');
+
+      expect(runDriveBackupNow).toHaveBeenCalledTimes(1);
+      expect(resultFor(msg.id)?.success).toBe(true);
+    });
+
+    it('reports a failed backup rather than claiming it saved', async () => {
+      runDriveBackupNow.mockRejectedValue(new Error('drive quota'));
+
+      const msg = await act('trigger_drive_backup');
+
+      expect(resultFor(msg.id)).toMatchObject({
+        success: false,
+        error: expect.stringContaining('drive quota'),
+      });
+    });
+  });
+
+  describe('logout', () => {
+    it('refuses when the page is not an authenticated session', async () => {
+      // Outside /auth/ there is no session to end, and submitting the form would
+      // just bounce the student somewhere confusing.
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: { ...realLocation, pathname: '/public/index.pl' },
+      });
+
+      const msg = await act('logout');
+
+      expect(resultFor(msg.id)?.data).toMatchObject({
+        success: false,
+        reason: 'not_authenticated',
+      });
+    });
+
+    it("clicks IS's own logout button when the page already has the form", async () => {
+      // Reusing the real form carries whatever hidden fields IS put in it; a
+      // hand-built POST would drop them.
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: { ...realLocation, pathname: '/auth/index.pl' },
+      });
+      document.body.innerHTML =
+        '<form action="/auth/system/logout.pl"><input name="odhlaseni" type="submit"></form>';
+      const button = document.querySelector('input[name="odhlaseni"]') as HTMLInputElement;
+      const click = vi.spyOn(button, 'click').mockImplementation(() => {});
+
+      const msg = await act('logout');
+
+      expect(click).toHaveBeenCalledTimes(1);
+      expect(resultFor(msg.id)?.success).toBe(true);
+      document.body.innerHTML = '';
+    });
+
+    it('builds and submits a form when the page has none', async () => {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: { ...realLocation, pathname: '/auth/index.pl' },
+      });
+      document.body.innerHTML = '';
+      const submit = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => {});
+
+      const msg = await act('logout');
+
+      expect(submit).toHaveBeenCalledTimes(1);
+      const form = document.querySelector('form[action="/auth/system/logout.pl"]');
+      expect(form).not.toBeNull();
+      expect(form!.querySelector('input[name="odhlaseni"]')).not.toBeNull();
+      expect(resultFor(msg.id)?.success).toBe(true);
+      submit.mockRestore();
+      document.body.innerHTML = '';
     });
   });
 
