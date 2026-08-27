@@ -1,6 +1,6 @@
 /**
  * Exam-related type definitions.
- * 
+ *
  * Extracted from ExamDrawer for shared usage across:
  * - ExamPanel
  * - useExams hook
@@ -8,63 +8,63 @@
  */
 
 export interface ExamCapacity {
-    occupied: number;
-    total: number;
-    raw: string; // "10/20"
+  occupied: number;
+  total: number;
+  raw: string; // "10/20"
 }
 
 export interface ExamTerm {
-    id: string;
-    date: string;         // Format: "DD.MM.YYYY"
-    time: string;         // Format: "HH:MM"
-    capacity?: ExamCapacity;
-    full?: boolean;
-    room?: string;
-    teacher?: string;
-    teacherId?: string;   // Teacher's MENDELU ID for linking
-    roomCs?: string;      // Localized room name (Czech)
-    roomEn?: string;      // Localized room name (English)
-    registrationStart?: string;  // When registration opens
-    registrationEnd?: string;    // When registration closes
-    deregistrationDeadline?: string;  // When deregistration closes (format: "DD.MM.YYYY HH:MM")
-    attemptTypes?: ('regular' | 'retake1' | 'retake2' | 'retake3')[];  // One or more attempt types (e.g. a term can serve as both regular and retake)
-    canRegisterNow?: boolean;  // True if registration link is available now
-    sectionForm?: string;      // Form qualifier from "Druh (forma)" cell — e.g. "písemná", "písemná a ústní", "e-test"
-    sectionFormCs?: string;    // Localized form (Czech)
-    sectionFormEn?: string;    // Localized form (English)
-    watchdogUrl?: string;      // IS Mendelu "hlídací pes" activation link (aktivace=1), present only when watchable
-    blockReasonUrl?: string;   // IS Mendelu "Zobrazit důvod" link (zobraz_duvod=1), present only when blocked
-    detailUrl?: string;        // IS Mendelu "Podrobnosti" link (terminy_info.pl)
+  id: string;
+  date: string; // Format: "DD.MM.YYYY"
+  time: string; // Format: "HH:MM"
+  capacity?: ExamCapacity;
+  full?: boolean;
+  room?: string;
+  teacher?: string;
+  teacherId?: string; // Teacher's MENDELU ID for linking
+  roomCs?: string; // Localized room name (Czech)
+  roomEn?: string; // Localized room name (English)
+  registrationStart?: string; // When registration opens
+  registrationEnd?: string; // When registration closes
+  deregistrationDeadline?: string; // When deregistration closes (format: "DD.MM.YYYY HH:MM")
+  attemptTypes?: ('regular' | 'retake1' | 'retake2' | 'retake3')[]; // One or more attempt types (e.g. a term can serve as both regular and retake)
+  canRegisterNow?: boolean; // True if registration link is available now
+  sectionForm?: string; // Form qualifier from "Druh (forma)" cell — e.g. "písemná", "písemná a ústní", "e-test"
+  sectionFormCs?: string; // Localized form (Czech)
+  sectionFormEn?: string; // Localized form (English)
+  watchdogUrl?: string; // IS Mendelu "hlídací pes" activation link (aktivace=1), present only when watchable
+  blockReasonUrl?: string; // IS Mendelu "Zobrazit důvod" link (zobraz_duvod=1), present only when blocked
+  detailUrl?: string; // IS Mendelu "Podrobnosti" link (terminy_info.pl)
 }
 
 export interface ExamSection {
-    id: string;
-    name: string;         // Section name (e.g., "zkouška")
-    nameCs?: string;      // Localized section name (Czech)
-    nameEn?: string;      // Localized section name (English)
-    type: string;         // Exam type
-    status: 'registered' | 'available' | 'open';  // open = not yet registered for
-    registeredTerm?: {
-        id?: string;
-        date: string;
-        time: string;
-        room?: string;
-        teacher?: string;
-        teacherId?: string;  // Teacher's MENDELU ID for linking
-        roomCs?: string;     // Localized room name (Czech)
-        roomEn?: string;     // Localized room name (English)
-        deregistrationDeadline?: string;  // When deregistration closes (format: "DD.MM.YYYY HH:MM")
-        durationMinutes?: number;  // "Délka trvání akce" from terminy_info.pl; undefined when IS omits it
-    };
-    terms: ExamTerm[];
+  id: string;
+  name: string; // Section name (e.g., "zkouška")
+  nameCs?: string; // Localized section name (Czech)
+  nameEn?: string; // Localized section name (English)
+  type: string; // Exam type
+  status: 'registered' | 'available' | 'open'; // open = not yet registered for
+  registeredTerm?: {
+    id?: string;
+    date: string;
+    time: string;
+    room?: string;
+    teacher?: string;
+    teacherId?: string; // Teacher's MENDELU ID for linking
+    roomCs?: string; // Localized room name (Czech)
+    roomEn?: string; // Localized room name (English)
+    deregistrationDeadline?: string; // When deregistration closes (format: "DD.MM.YYYY HH:MM")
+    durationMinutes?: number; // "Délka trvání akce" from terminy_info.pl; undefined when IS omits it
+  };
+  terms: ExamTerm[];
 }
 
 export interface ExamSubject {
-    version: 1;
-    id: string;
-    name: string;         // Full subject name
-    nameCs?: string;      // Localized subject name (Czech)
-    nameEn?: string;      // Localized subject name (English)
-    code: string;         // e.g., "EBC-ALG"
-    sections: ExamSection[];
+  version: 1;
+  id: string;
+  name: string; // Full subject name
+  nameCs?: string; // Localized subject name (Czech)
+  nameEn?: string; // Localized subject name (English)
+  code: string; // e.g., "EBC-ALG"
+  sections: ExamSection[];
 }

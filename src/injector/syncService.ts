@@ -284,7 +284,7 @@ export async function syncAllData() {
               exams.value,
               cachedExams(),
               studium ?? '',
-              userParams?.obdobi ?? '',
+              userParams?.obdobi ?? ''
             )
           : cachedData.exams,
       subjects:
@@ -594,9 +594,11 @@ export async function refreshExams(): Promise<void> {
       fresh,
       cachedExams(),
       params?.studium ?? '',
-      params?.obdobi ?? '',
+      params?.obdobi ?? ''
     );
     cachedData = { ...cachedData, exams: enriched };
-    sendToIframe(Messages.syncUpdate({ exams: enriched, isSyncing, lastSync: cachedData.lastSync }));
+    sendToIframe(
+      Messages.syncUpdate({ exams: enriched, isSyncing, lastSync: cachedData.lastSync })
+    );
   }
 }

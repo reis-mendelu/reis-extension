@@ -1,7 +1,15 @@
 import { useTranslation } from '@/hooks/useTranslation';
 import { useUserParams } from '@/hooks/useUserParams';
 import type { StudyPlan, StudyStats } from '@/types/studyPlan';
-import { AlertTriangle, CheckCircle2, ShieldAlert, Layers, ClipboardList, Star, type LucideIcon } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ShieldAlert,
+  Layers,
+  ClipboardList,
+  Star,
+  type LucideIcon,
+} from 'lucide-react';
 import { Fragment } from 'react';
 
 export interface ZameraniProgress {
@@ -22,12 +30,21 @@ interface SubjectsPanelHeaderProps {
 
 type ProgressionLevel = 'safe' | 'warning' | 'danger';
 
-function getProgressionInfo(stats: StudyStats): { level: ProgressionLevel; threshold: number; earned: number; deficit: number; enrolledEnough: boolean } {
-  if (stats.totalEarnedCredits >= 150) return { level: 'safe', threshold: 0, earned: 0, deficit: 0, enrolledEnough: true };
+function getProgressionInfo(stats: StudyStats): {
+  level: ProgressionLevel;
+  threshold: number;
+  earned: number;
+  deficit: number;
+  enrolledEnough: boolean;
+} {
+  if (stats.totalEarnedCredits >= 150)
+    return { level: 'safe', threshold: 0, earned: 0, deficit: 0, enrolledEnough: true };
 
   const isFirstSemester = stats.previousSemester === null;
   const threshold = isFirstSemester ? 12 : 40;
-  const earned = isFirstSemester ? stats.currentSemester.earnedCredits : stats.creditsLastTwoPeriods;
+  const earned = isFirstSemester
+    ? stats.currentSemester.earnedCredits
+    : stats.creditsLastTwoPeriods;
   const deficit = Math.max(0, threshold - earned);
   const available = stats.currentSemester.enrolledCredits;
   const enrolledEnough = available >= deficit;
@@ -41,9 +58,27 @@ function getProgressionInfo(stats: StudyStats): { level: ProgressionLevel; thres
 }
 
 const levelConfig = {
-  safe: { bg: 'bg-success/8', border: 'border-success/20', text: 'text-success', bar: 'bg-success', Icon: CheckCircle2 },
-  warning: { bg: 'bg-warning/8', border: 'border-warning/20', text: 'text-warning', bar: 'bg-warning', Icon: AlertTriangle },
-  danger: { bg: 'bg-error/8', border: 'border-error/20', text: 'text-error', bar: 'bg-error', Icon: ShieldAlert },
+  safe: {
+    bg: 'bg-success/8',
+    border: 'border-success/20',
+    text: 'text-success',
+    bar: 'bg-success',
+    Icon: CheckCircle2,
+  },
+  warning: {
+    bg: 'bg-warning/8',
+    border: 'border-warning/20',
+    text: 'text-warning',
+    bar: 'bg-warning',
+    Icon: AlertTriangle,
+  },
+  danger: {
+    bg: 'bg-error/8',
+    border: 'border-error/20',
+    text: 'text-error',
+    bar: 'bg-error',
+    Icon: ShieldAlert,
+  },
 };
 
 /**
@@ -103,7 +138,14 @@ function ISShortcutGroup({ items }: { items: ISShortcut[] }) {
   );
 }
 
-export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studyStats, plan, zameraniProgress, enrolledCredits }: SubjectsPanelHeaderProps) {
+export function SubjectsPanelHeader({
+  creditsAcquired,
+  creditsRequired,
+  studyStats,
+  plan,
+  zameraniProgress,
+  enrolledCredits,
+}: SubjectsPanelHeaderProps) {
   const { t, language } = useTranslation();
   const { params } = useUserParams();
   const studium = params?.studium || '';
@@ -113,11 +155,15 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
   const evaluationUrl = isStudentUrl('vyplneni_ankety.pl', studium, lang);
 
   const zameraniMin = plan?.zameraniMinimum;
-  const zameraniTouched = zameraniProgress ? Array.from(zameraniProgress.values()).filter(p => p.touched).length : 0;
+  const zameraniTouched = zameraniProgress
+    ? Array.from(zameraniProgress.values()).filter((p) => p.touched).length
+    : 0;
 
-  const pct = creditsRequired > 0 ? Math.min(100, Math.round((creditsAcquired / creditsRequired) * 100)) : 0;
+  const pct =
+    creditsRequired > 0 ? Math.min(100, Math.round((creditsAcquired / creditsRequired) * 100)) : 0;
   const progressionInfo = studyStats ? getProgressionInfo(studyStats) : null;
-  const hasDetailLine = (studyStats && progressionInfo && progressionInfo.threshold > 0) ||
+  const hasDetailLine =
+    (studyStats && progressionInfo && progressionInfo.threshold > 0) ||
     (enrolledCredits != null && enrolledCredits > 0);
   const level = progressionInfo?.level ?? 'safe';
   const cfg = levelConfig[level];
@@ -153,18 +199,24 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
         <div className="flex items-center gap-2 mb-1.5">
           <Icon className={`w-4 h-4 ${cfg.text} shrink-0`} />
           <span className={`text-sm font-semibold ${cfg.text}`}>
-            {level === 'safe' ? t('subjects.progressionSafe') :
-             level === 'warning' ? t('subjects.progressionWarning') :
-             t('subjects.progressionDanger')}
+            {level === 'safe'
+              ? t('subjects.progressionSafe')
+              : level === 'warning'
+                ? t('subjects.progressionWarning')
+                : t('subjects.progressionDanger')}
           </span>
           <span className="ml-auto text-xs text-base-content/50 font-medium">
-            {creditsAcquired} / {creditsRequired}<span className="hidden md:inline"> {t('subjects.credits')}</span>
+            {creditsAcquired} / {creditsRequired}
+            <span className="hidden md:inline"> {t('subjects.credits')}</span>
           </span>
         </div>
 
         {/* Progress bar */}
         <div className="w-full h-1.5 bg-base-content/10 rounded-full overflow-hidden mb-1.5">
-          <div className={`h-full rounded-full transition-all duration-500 ${cfg.bar}`} style={{ width: `${pct}%` }} />
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${cfg.bar}`}
+            style={{ width: `${pct}%` }}
+          />
         </div>
 
         {/* Detail / zaměření line */}
@@ -173,17 +225,23 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
             {zameraniMin !== undefined && zameraniMin > 0 ? (
               <span className="flex items-center gap-1.5 text-[10px] text-base-content/60">
                 <Layers className="w-3 h-3 shrink-0" />
-                <span className="md:hidden">{zameraniTouched} / {zameraniMin}</span>
-                <span className="hidden md:inline">{t('subjects.zameraniProgress', { touched: zameraniTouched, min: zameraniMin })}</span>
+                <span className="md:hidden">
+                  {zameraniTouched} / {zameraniMin}
+                </span>
+                <span className="hidden md:inline">
+                  {t('subjects.zameraniProgress', { touched: zameraniTouched, min: zameraniMin })}
+                </span>
               </span>
-            ) : (studyStats && progressionInfo && progressionInfo.threshold > 0) ? (
+            ) : studyStats && progressionInfo && progressionInfo.threshold > 0 ? (
               <span>
                 {progressionInfo.threshold === 12
                   ? `${progressionInfo.earned}/${progressionInfo.threshold}`
-                  : `${t('subjects.creditsLastTwo')}: ${progressionInfo.earned}/${progressionInfo.threshold}`
-                }
+                  : `${t('subjects.creditsLastTwo')}: ${progressionInfo.earned}/${progressionInfo.threshold}`}
                 {progressionInfo.deficit > 0 && (
-                  <span className={cfg.text}> · {t('subjects.needMore', { n: progressionInfo.deficit })}</span>
+                  <span className={cfg.text}>
+                    {' '}
+                    · {t('subjects.needMore', { n: progressionInfo.deficit })}
+                  </span>
                 )}
                 {!progressionInfo.enrolledEnough && progressionInfo.deficit > 0 && (
                   <span className="text-error"> · {t('subjects.notEnoughEnrolled')}</span>
@@ -192,12 +250,13 @@ export function SubjectsPanelHeader({ creditsAcquired, creditsRequired, studySta
             ) : null}
             <span className="flex items-center gap-2 ml-auto">
               {enrolledCredits != null && enrolledCredits > 0 && (
-                <span>{enrolledCredits} {t('subjects.enrolledCreditsLabel')}</span>
+                <span>
+                  {enrolledCredits} {t('subjects.enrolledCreditsLabel')}
+                </span>
               )}
             </span>
           </div>
         )}
-
       </div>
     </div>
   );
