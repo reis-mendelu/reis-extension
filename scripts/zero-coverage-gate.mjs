@@ -30,9 +30,20 @@ const baseline = JSON.parse(readFileSync(BASELINE_FILE, 'utf8'));
 const summary = JSON.parse(readFileSync(SUMMARY, 'utf8'));
 const cwd = process.cwd() + '/';
 
+// Zero FUNCTIONS executed, not zero statements.
+//
+// Counting statements undercounted by 4x: 139 files had a module-level statement
+// touched by a transitive import — an import binding, a `const` at top level —
+// while not one of their functions had ever run. src/api/claude.ts read 2/72
+// statements and 0/2 functions, and was invisible to this gate. A file whose
+// functions have never executed is untested however many of its lines a bare
+// import happened to evaluate.
+//
+// Files with no functions at all (pure data, type-only) are excluded: there is
+// nothing there to execute.
 const zero = Object.entries(summary)
   .filter(([k]) => k !== 'total')
-  .filter(([, v]) => v.statements.total > 0 && v.statements.covered === 0)
+  .filter(([, v]) => v.functions.total > 0 && v.functions.covered === 0)
   .map(([k]) => k.replace(cwd, ''))
   .sort();
 

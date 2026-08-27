@@ -1,5 +1,31 @@
 {
   "//": "Repo-wide eslint backlog, ratcheted by scripts/lint-gate.mjs. Errors and warnings are tracked separately so severities are not fungible: one combined total lets three new errors offset three fixed warnings and pass. Both may fall, neither may rise; bank a drop with: npm run lint:gate -- --write",
   "maxErrors": 34,
-  "maxWarnings": 13
+  "maxWarnings": 13,
+  "perFile": {
+    "src/api/terminyInfo.ts": [2, 0],
+    "src/components/SearchBar/MobileSearchOverlay.tsx": [1, 0],
+    "src/components/SearchBar/useSearch.ts": [3, 0],
+    "src/components/SubjectFileDrawer/DocumentNoteEditor.tsx": [2, 0],
+    "src/components/SubjectFileDrawer/Header/DriveBackupStatus.tsx": [0, 1],
+    "src/components/WeeklyCalendar/DailyView.tsx": [1, 0],
+    "src/hooks/data/useDriveBackup.ts": [1, 0],
+    "src/hooks/useEventsFacultySettings.ts": [1, 0],
+    "src/services/drive/__tests__/driveManifest.test.ts": [0, 4],
+    "src/services/drive/driveManifest.ts": [0, 8],
+    "src/types/schemas/__tests__/classmates.schema.test.ts": [2, 0],
+    "src/types/schemas/__tests__/cvicneTests.schema.test.ts": [1, 0],
+    "src/types/schemas/__tests__/documentNotes.schema.test.ts": [2, 0],
+    "src/types/schemas/__tests__/erasmus.schema.test.ts": [2, 0],
+    "src/types/schemas/__tests__/exams.schema.test.ts": [1, 0],
+    "src/types/schemas/__tests__/files.schema.test.ts": [1, 0],
+    "src/types/schemas/__tests__/gradeHistory.schema.test.ts": [2, 0],
+    "src/types/schemas/__tests__/mapRooms.schema.test.ts": [1, 0],
+    "src/types/schemas/__tests__/odevzdavarny.schema.test.ts": [1, 0],
+    "src/types/schemas/__tests__/schedule.schema.test.ts": [2, 0],
+    "src/types/schemas/__tests__/studyPlan.schema.test.ts": [3, 0],
+    "src/types/schemas/__tests__/subjects.schema.test.ts": [2, 0],
+    "src/types/schemas/__tests__/successRates.schema.test.ts": [2, 0],
+    "src/types/schemas/__tests__/syllabus.schema.test.ts": [1, 0]
+  }
 }

@@ -49,8 +49,33 @@ const worst = results
       `   ${f.filePath.replace(process.cwd() + '/', '')} ` + `(${f.errorCount}E ${f.warningCount}W)`
   );
 
+// PER-FILE comparison, not just the totals. Two scalars are set-blind: a fresh
+// violation in one file can be paid for by suppressing an old one in another,
+// and the gate waves the trade through with the counts unchanged. Any file whose
+// own count RISES is a regression regardless of what the totals did — the same
+// property zero-coverage-gate.mjs gets by diffing the file set.
+const perFile = Object.fromEntries(
+  results
+    .filter((f) => f.errorCount + f.warningCount > 0)
+    .map((f) => [f.filePath.replace(process.cwd() + '/', ''), [f.errorCount, f.warningCount]])
+);
+const basePerFile = baseline.perFile ?? {};
+const worsened = Object.entries(perFile).filter(([file, [e, w]]) => {
+  const [be, bw] = basePerFile[file] ?? [0, 0];
+  return e > be || w > bw;
+});
+
 const rose = errors > baseline.maxErrors || warnings > baseline.maxWarnings;
 const fell = errors < baseline.maxErrors || warnings < baseline.maxWarnings;
+
+if (worsened.length) {
+  console.error('❌ eslint regressed in these files, even though the totals may not have:');
+  for (const [file, [e, w]] of worsened) {
+    const [be, bw] = basePerFile[file] ?? [0, 0];
+    console.error(`   ${file}: ${be}E ${bw}W -> ${e}E ${w}W`);
+  }
+  process.exit(1);
+}
 
 if (rose) {
   console.error(
@@ -65,7 +90,8 @@ if (fell) {
   if (process.argv.includes('--write')) {
     writeFileSync(
       BASELINE_FILE,
-      JSON.stringify({ ...baseline, maxErrors: errors, maxWarnings: warnings }, null, 2) + '\n'
+      JSON.stringify({ ...baseline, maxErrors: errors, maxWarnings: warnings, perFile }, null, 2) +
+        '\n'
     );
     console.log(
       `✅ baseline banked: errors ${baseline.maxErrors} → ${errors}, ` +
