@@ -25,7 +25,17 @@ vi.mock('@/services/sync/mergePastSubjects', () => ({ mergePastSubjects: vi.fn()
 import { collectRealData } from '../collectRealData';
 
 describe('collectRealData', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    // Stub fetch: collectRealData reaches modules whose own fetches are not
+    // mocked here (classmates, the subject catalogue). Left to the global guard
+    // they REJECT, and those catch paths run after the test returns — a late
+    // continuation that moves coverage between otherwise identical runs.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('<html></html>', { status: 200 }))
+    );
+    vi.clearAllMocks();
+  });
 
   it('assembles schedule/exams/subjects into SyncedData', async () => {
     const data = await collectRealData();

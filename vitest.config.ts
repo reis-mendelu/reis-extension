@@ -95,7 +95,22 @@ export default defineConfig({
       // teardown; src/test/setup.ts now rejects unmocked fetches. What remains is
       // startApp.test.ts booting the real entrypoint and racing React's
       // scheduler, so how far the render gets varies. Observed across repeated
-      // runs: a spread of up to ~0.1pp. These floors were also RE-BANKED after
+      // runs: a spread of up to ~0.18pp (77 statements of 43,540), measured over
+      // three consecutive runs. An earlier revision of this comment said ~0.1pp;
+      // that was wrong, and the floors are ~1.2pp below actual — roughly 6x the
+      // measured drift — so a spurious red is not plausible.
+      //
+      // The residual comes from tests that leave async work in flight at
+      // teardown. The four suites making UNMOCKED requests were fixed — each is
+      // now clean in isolation — and that stabilised the statement DENOMINATOR at
+      // 43,540, which used to move too.
+      //
+      // Not fully fixed, and worth stating plainly: a FULL run still shows ~19
+      // late continuations, because a promise left floating by one file resolves
+      // while another is running. Eliminating those means auditing every suite
+      // for floating promises, which is its own piece of work. Until then the
+      // margins carry it.
+      // These floors were also RE-BANKED after
       // the tests added since they were first set -- left at their old values
       // they had drifted to 2-8pp of slack, enough to delete whole test files
       // without tripping anything. Verified: removing a single test file from

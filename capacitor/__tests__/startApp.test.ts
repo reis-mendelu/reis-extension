@@ -17,6 +17,13 @@ describe('startApp', () => {
     // capacitor/index.html does — unlike the DOM built by testing-library's
     // render(), nothing here provides that container.
     document.body.innerHTML = '<div id="root"></div>';
+    // Booting the real entrypoint reaches modules whose fetches nothing here
+    // mocks. Left to the global guard they REJECT, and those catch paths land
+    // after the test returns.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('<html></html>', { status: 200 }))
+    );
 
     const { startApp } = await import('../main.capacitor');
     // Inside act: startApp renders the real entrypoint, and React's scheduler

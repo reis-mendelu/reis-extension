@@ -38,6 +38,15 @@ vi.mock('../../../../hooks/data/useDriveBackup', () => ({
 
 describe('ProfileSheet', () => {
   beforeEach(() => {
+    // Stub fetch for this suite. Rendering the sheet kicks off a user-params
+    // read against IS, which nothing here asserts. Left to the global guard it
+    // REJECTS, and the catch path runs after the test has returned — the
+    // resulting late continuation is what made coverage of the userParams and
+    // successRate modules move between identical runs.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('<html></html>', { status: 200 }))
+    );
     outlookToggle.mockClear();
     driveConnect.mockClear();
     driveDisconnect.mockClear();
