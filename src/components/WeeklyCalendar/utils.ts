@@ -62,7 +62,9 @@ export function organizeLessons(lessons: BlockLesson[]): OrganizedLessons {
       const startA = timeToMinutes(a.startTime);
       const startB = timeToMinutes(b.startTime);
       if (startA !== startB) return startA - startB;
-      return timeToMinutes(a.endTime) - timeToMinutes(b.endTime);
+      return (
+        renderedBlockMinutes(a.startTime, a.endTime) - renderedBlockMinutes(b.startTime, b.endTime)
+      );
     });
 
   if (sortedLessons.length === 0) return { lessons: [], totalRows: 1 };
@@ -74,7 +76,12 @@ export function organizeLessons(lessons: BlockLesson[]): OrganizedLessons {
 
   sortedLessons.forEach((lesson) => {
     const start = timeToMinutes(lesson.startTime);
-    const end = timeToMinutes(lesson.endTime);
+    // The space the block OCCUPIES, not when it ends. getEventStyle floors a
+    // short block's height for legibility, so laying lanes out by the true end
+    // let a 10-minute exam drawn down to 13:30 sit in the same lane as a 12:30
+    // lesson and cover it. `lesson.endTime` is untouched — the card and its
+    // tooltip still read the real time.
+    const end = start + renderedBlockMinutes(lesson.startTime, lesson.endTime);
 
     // Skip invalid times
     if (isNaN(start) || isNaN(end)) return;

@@ -18,6 +18,14 @@ import type { ExamSubject } from '../../types/exams';
 // on-demand Poznámka path in createExamSlice caps itself the same way.
 const MAX_CONCURRENT = 3;
 
+// syncAllData awaits this call before it assembles the end-of-phase batch and
+// reports the run finished, and fetchWithAuth carries no timeout of its own —
+// so one stalled terminy_info.pl request would leave the app syncing forever
+// (and, on mobile, never latch firstSyncSettled). Bound the whole enrichment
+// instead of each request: every term that did not answer in time simply keeps
+// no duration, which is the same fallback a failed fetch already takes.
+export const ENRICHMENT_BUDGET_MS = 20000;
+
 /** Map termId → durationMinutes for every registered term already carrying one. */
 function cachedDurations(exams: ExamSubject[]): Map<string, number> {
   const map = new Map<string, number>();
@@ -75,16 +83,25 @@ export async function enrichExamsWithDurations(
     }
   }
 
-  await runCapped(
-    pending.map((terminId) => async () => {
-      try {
-        const minutes = await fetchTermDuration(terminId, studiumId, obdobiId);
-        if (minutes !== null) resolved.set(terminId, minutes);
-      } catch (e) {
-        logError('Sync.enrichExamsWithDurations', e, { terminId });
-      }
-    })
-  );
+  let expired: ReturnType<typeof setTimeout> | undefined;
+  await Promise.race([
+    runCapped(
+      pending.map((terminId) => async () => {
+        try {
+          const minutes = await fetchTermDuration(terminId, studiumId, obdobiId);
+          if (minutes !== null) resolved.set(terminId, minutes);
+        } catch (e) {
+          logError('Sync.enrichExamsWithDurations', e, { terminId });
+        }
+      })
+    ),
+    new Promise<void>((resolve) => {
+      expired = setTimeout(resolve, ENRICHMENT_BUDGET_MS);
+    }),
+  ]);
+  // Whichever side won, stop holding a timer open — a pending one keeps the
+  // content script's event loop alive for the full budget on every sync.
+  clearTimeout(expired);
 
   return exams.map((subject) => ({
     ...subject,

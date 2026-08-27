@@ -154,3 +154,44 @@ describe('getEventStyle minimum visual height', () => {
     expect(pct(getEventStyle('09:00', '12:00').height)).toBeCloseTo((180 / (14 * 60)) * 100, 5);
   });
 });
+
+describe('organizeLessons and the visual block floor', () => {
+  // The floor enlarges a short block for legibility, but lane assignment used
+  // the true end time — so a 10-minute exam at 12:00 (drawn down to 13:30) and
+  // a lesson at 12:30 landed in the SAME lane and the exam covered it. Layout
+  // has to reason about the space a block actually occupies.
+  const block = (id: string, startTime: string, endTime: string): BlockLesson =>
+    ({ id, date: '20260601', startTime, endTime }) as BlockLesson;
+
+  it('gives a short exam and the lesson under its floored height separate lanes', () => {
+    const { lessons, totalRows } = organizeLessons([
+      block('exam', '12:00', '12:10'),
+      block('lesson', '12:30', '14:00'),
+    ]);
+    expect(totalRows).toBe(2);
+    expect(lessons[0]!.row).not.toBe(lessons[1]!.row);
+  });
+
+  it('still shares a lane once the later block clears the floored height', () => {
+    const { lessons, totalRows } = organizeLessons([
+      block('exam', '12:00', '12:10'),
+      block('lesson', '13:30', '15:00'),
+    ]);
+    expect(totalRows).toBe(1);
+    expect(lessons[0]!.row).toBe(lessons[1]!.row);
+  });
+
+  it('leaves normal-length lessons laid out exactly as before', () => {
+    const { lessons, totalRows } = organizeLessons([
+      block('a', '08:00', '09:50'),
+      block('b', '10:00', '11:50'),
+    ]);
+    expect(totalRows).toBe(1);
+    expect(lessons[0]!.row).toBe(lessons[1]!.row);
+  });
+
+  it('keeps endTime truthful — the floor is layout only', () => {
+    const { lessons } = organizeLessons([block('exam', '12:00', '12:10')]);
+    expect(lessons[0]!.endTime).toBe('12:10');
+  });
+});

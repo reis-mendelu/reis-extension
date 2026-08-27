@@ -8,7 +8,7 @@ vi.mock('../../../api/termDuration', () => ({
   fetchTermDuration: vi.fn(),
 }));
 
-import { enrichExamsWithDurations } from '../examDurations';
+import { enrichExamsWithDurations, ENRICHMENT_BUDGET_MS } from '../examDurations';
 import { fetchTermDuration } from '../../../api/termDuration';
 import { logError } from '../../../utils/reportError';
 import type { ExamSubject } from '../../../types/exams';
@@ -115,5 +115,29 @@ describe('enrichExamsWithDurations', () => {
     await enrichExamsWithDurations(exams, [], '111', '222');
     expect(fetchTermDuration).toHaveBeenCalledTimes(9);
     expect(peak).toBeLessThanOrEqual(3);
+  });
+});
+
+describe('the enrichment budget', () => {
+  it('gives up and returns the exams when the fetches outlast the budget', async () => {
+    // fetchWithAuth carries no timeout, and syncAllData awaits this call before
+    // it assembles the batch and reports the run finished. One stalled IS
+    // request must not leave the app syncing forever.
+    vi.useFakeTimers();
+    try {
+      vi.mocked(fetchTermDuration).mockImplementation(() => new Promise(() => {}));
+      const promise = enrichExamsWithDurations([subject('A', { id: '1' })], [], '111', '222');
+      await vi.advanceTimersByTimeAsync(ENRICHMENT_BUDGET_MS + 1000);
+      const result = await promise;
+      expect(result[0]!.sections[0]!.registeredTerm?.durationMinutes).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not wait out the budget when every fetch answers', async () => {
+    vi.mocked(fetchTermDuration).mockResolvedValue(10);
+    const result = await enrichExamsWithDurations([subject('A', { id: '1' })], [], '111', '222');
+    expect(result[0]!.sections[0]!.registeredTerm?.durationMinutes).toBe(10);
   });
 });
