@@ -555,3 +555,357 @@ before submission; Apple's estimate is up to 48 hours.
 **The remaining risk is unchanged and is not a form field: Guideline 5.2.2.**
 No permission from MENDELU was sought (§4). The three mitigations in the
 binary are the gate disclaimer, the in-app banner and the reviewer notes.
+
+---
+
+## 11. Rejection 1 — Guideline 2.1 Information Needed (2026-08-26)
+
+**Not a 5.2.2 rejection.** Apple replied on 2026-08-26 at 02:58 with the
+standard new-app information request: seven questions, no defect claimed, no
+guideline argued. Submission ID `80588968-d9f1-4411-82d6-f1d40fd51994`; the
+version sits in *Rejected* until the reply goes in, and the same build can be
+resubmitted — no new binary is required.
+
+Worth being clear about what this is: Apple did **not** say the app is broken,
+and did not raise the unofficial-client question of §4. Item 7 is the only one
+that touches it, and it is answered from the §4.1 user-agent position, with the
+absence of a permission stated plainly rather than papered over.
+
+### 11.1 What only a human can do
+
+**The screen recording (item 1) has to be captured by hand on a physical
+device.** Two facts settle how:
+
+- The wired iPad is an **iPad (8th generation) on iPadOS 26.6**, developer mode
+  enabled (`xcrun devicectl list devices`). That is a physical device on the
+  current OS, so it satisfies the request on its own — and it is the only
+  choice: **there is no iPhone here** (confirmed 2026-08-26), so the physical
+  half of the device list is one iPad and the reply says so rather than
+  implying more. Consequence to accept: the reviewer's first sight of reIS will
+  be the full-width phone layout of §3, so the reply flags it in item 1 and
+  explains it in item 4 instead of letting it land as a surprise.
+- **This device has never run the phone tree at 810×1080.** §8 verified iPad on
+  the 13-inch Pro simulator. Walk the five tabs once after installing 50006.1 and
+  before starting the take.
+
+**Installing 50006 on that iPad, 2026-08-26 — what actually worked.** The
+device build is one command; the obstacle was the old binary, not signing:
+
+```bash
+xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+  -destination 'id=<device-udid>' -allowProvisioningUpdates \
+  -allowProvisioningDeviceRegistration \
+  DEVELOPMENT_TEAM=RG38V3SV8X CODE_SIGN_STYLE=Automatic build
+```
+
+`-allowProvisioningDeviceRegistration` is the load-bearing flag — without it
+the build fails with "Device isn't registered in your developer account", and
+`-allowProvisioningUpdates` alone will not register it. `DEVELOPMENT_TEAM` has
+to come from the command line because the project is deliberately teamless
+(§10). Install with:
+
+```bash
+xcrun devicectl list devices            # the CoreDevice identifier, not the xcodebuild UDID
+xcrun devicectl device install app --device <core-device-id> \
+  ~/Library/Developer/Xcode/DerivedData/App-*/Build/Products/Release-iphoneos/App.app
+```
+
+`devicectl` keys off the **CoreDevice** identifier from `list devices`, which
+is not the same string `xcodebuild -destination 'id=…'` takes.
+
+**The old build could not be removed, and the cause is a third-party app.** The
+iPad carried reIS **1.0 (1)** signed under the old *free personal team*
+`Z87FKZ59LL`; iOS refuses to upgrade that with anything signed
+`RG38V3SV8X.cz.reis.app`. Deleting it was impossible: no Delete App button in
+iPad Storage, no long-press menu, and `devicectl` answering `IXErrorDomain
+error 22 — Uninstall prohibited` even though the app reports `removable: true`.
+Allowing "Deleting Apps" in Screen Time did not help, and neither did a reboot.
+**`devicectl device info processes` shows `screenzenapp` running** — ScreenZen
+is a focus/blocker app, and blockers use Family Controls precisely to forbid
+app removal so they cannot be uninstalled around. That restriction is what
+holds reIS 1.0 in place; it has to be switched off inside ScreenZen, not in
+Settings.
+
+Rather than fight it, 50006 was installed **alongside** under
+`PRODUCT_BUNDLE_IDENTIFIER=cz.reis.app.demo`, which the wildcard team profile
+covers (so no new App ID was created in the account). It is the same Release
+bundle, the same 5.0.6 (50006), the same web assets; only the signing
+certificate and the bundle id differ, and neither is visible on screen. Two
+identical **reIS** icons now exist — the 5.0.6 one is the only one with demo
+mode, which is the quick way to tell them apart before recording.
+- The reIS build installed on it is **1.0 (1)** — a stale dev build from before
+  PR #236 stamped versions. Recording that binary would show Apple something
+  other than what was submitted. Install **50006.1 / 5.0.6 through TestFlight**
+  before recording; it is the exact reviewed binary and needs no local signing.
+
+Shot list, in order, one take, no cuts:
+
+1. Home screen → tap reIS. Show the splash and the university sign-in page
+   loading. (Apple asked for the recording to *begin* with launch.)
+2. Sign in with a real account and let the first sync finish. *(Your data will
+   be in the video — the alternative is to show only the sign-in page and do
+   the tour in demo mode. Apple asked to see the login flow, so at minimum the
+   page and a successful sign-in should appear.)*
+3. Timetable → open one lesson detail (room, teacher).
+4. Grades tab. Exams tab → open a term detail (sign-up sheet visible; no need
+   to actually sign up).
+5. Courses → open a subject → the files sheet → download one file.
+6. Campus map → search a room → the room highlighted.
+7. Profile (person icon) → language switch to English and back → **Sign out**,
+   showing the confirmation and the return to the sign-in page.
+8. Relaunch → close the university page with the **X** → the gate screen with
+   the unofficial disclaimer → **"Prohlédnout ukázku"** → one pass through the
+   five demo tabs, banner visible.
+
+The recording attaches to the App Review reply directly; if it is rejected for
+size, an unlisted link is accepted.
+
+### 11.2 The reply — paste into Reply to App Review
+
+> Thank you for the list. Answers to all seven points follow; the same
+> information is now also in App Review Information → Notes.
+>
+> **1. Screen recording.** Attached: captured on a physical iPad (8th
+> generation) running iPadOS 26.6, beginning with the app launch, and showing
+> the timetable, grades, exams, course files, campus map and sign-out, followed
+> by the app's built-in demo mode. It is an iPad recording because iPad is the
+> iOS hardware we own; note that reIS deliberately shows its phone layout there,
+> which point 4 explains. On the specific flows listed:
+>
+> - *Registration:* none exists. reIS creates no accounts of its own. Signing
+>   in uses the student's existing Mendel University account, entered on the
+>   university's own sign-in page shown in a web view; the app never sees the
+>   password.
+> - *Login:* shown in the recording.
+> - *Account deletion:* there is no reIS account to delete. "Odhlásit se"
+>   (Sign out) is shown: it removes the session token from the iOS Keychain and
+>   clears all locally cached data from the device.
+> - *Paid content:* none anywhere in the app. It is free, with no in-app
+>   purchases, no subscriptions, no paid tier and no advertising.
+> - *User-generated content:* the app has no user-to-user content and no way to
+>   create content inside it. Two adjacent things exist and both are shown: the
+>   campus map can display event listings published by recognised university
+>   student societies through a separate access-controlled web console that we
+>   moderate (that console does not exist in the iOS app), and the feedback form
+>   sends free text to us alone, where it is never shown to another user.
+> - *Permission prompts:* there are none. The app requests no device
+>   permissions at all — its Info.plist contains no usage-description keys, the
+>   campus map is a static basemap that never asks where the device is, and
+>   there is no App Tracking Transparency prompt because the app does no
+>   tracking.
+>
+> **2. Devices and operating systems tested.**
+>
+> - iPad (8th generation), iPadOS 26.6 — physical device; clean-install run of
+>   the whole flow, including the demo path a reviewer would take.
+> - iPhone 17 Pro Max, iOS 26.5 — Simulator.
+> - iPad Pro 13-inch (M5), iPadOS 26.5 — Simulator.
+>
+> The deployment target is iOS 15.0 and the app is built for both iPhone and
+> iPad.
+>
+> **3. What the app does, and for whom.** reIS is a free, non-commercial,
+> open-source app written by students of Mendel University in Brno, Czech
+> Republic, for the roughly eight thousand students of that university. It is
+> not an official university app and is not operated or endorsed by the
+> university — stated in the opening line of the App Store description and on
+> the app's own sign-in screen.
+>
+> The problem it solves: the university's information system (is.mendelu.cz) is
+> a large desktop web application. A student who wants to know which room their
+> next lecture is in has to work through several pages of a layout that was
+> never made for a phone. reIS signs in to that same system with the student's
+> own account, parses the pages on the device, and shows only the parts a
+> student uses daily: timetable, grades and continuous assessment, exam dates
+> with sign-up and sign-off, course materials and submission folders, the
+> study-progress check, a staff and student directory with contact details and
+> office location, and a campus map that locates a room. It adds two things the
+> university system has no equivalent of: subject pass-rate statistics compiled
+> from public data, and the campus map itself.
+>
+> **4. Setting up and accessing the main features.** No credentials are needed
+> and none are supplied, because the app ships with a demo mode:
+>
+> 1. Launch the app. It opens the university's own sign-in page.
+> 2. Close that page with the **X in the top-right corner**. The app's own
+>    sign-in screen appears underneath.
+> 3. Tap the second button, **"Prohlédnout ukázku"** ("Try the demo").
+>
+> The app then opens with invented sample data for a fictional student. All
+> five tabs are populated and a banner reading "Ukázka" (Demo) stays across the
+> top. No university account is contacted in this mode, and no sample files are
+> needed — the course-materials screen already contains sample documents.
+> Downloading is deliberately blocked while in demo mode and explains itself
+> with a short message.
+>
+> The app opens in Czech, since it serves a Czech university. English is under
+> the person icon (top right) → language; the demo button then reads "Try the
+> demo".
+>
+> On iPad, reIS deliberately shows its phone layout. That is the tested layout
+> rather than an unadapted iPhone app: the wide layout is disabled because it
+> depends on a browser-extension API that does not exist in the app.
+>
+> **5. External services used.**
+>
+> - **Mendel University's information system (is.mendelu.cz)** — the source of
+>   every piece of academic data. The student signs in on the university's own
+>   page; the resulting session token is kept in the iOS Keychain and used only
+>   to fetch that student's own records, which are parsed on the device.
+> - **Supabase (EU region), our own backend** — the in-app notice feed, the
+>   student-society event listings shown on the map, the feedback form, and
+>   optional crash reports. It holds no academic data of any kind.
+> - **jsDelivr**, serving our own open dataset repository
+>   (github.com/reis-mendelu/reis-data) — static JSON files: subject pass-rate
+>   statistics and campus building and room data. Read-only; the requests carry
+>   nothing about the user.
+> - **OpenStreetMap tiles** — the background of the campus map.
+>
+> To be explicit about what is *not* used: no third-party authentication
+> provider, no payment processor, no advertising network or SDK, no third-party
+> analytics SDK, no AI or machine-learning service, and no data brokers. The
+> only usage metric is a once-a-day counter keyed to a SHA-256 hash of the
+> student's university ID, stored in our own Supabase and declared in the
+> privacy label under Identifiers, used for analytics and never for tracking.
+> Links to Microsoft Teams, e-mail and maps hand off to the system's own apps
+> and are not services the app calls.
+>
+> **6. Regional differences.** There are none. The app behaves identically in
+> every region: the same features, the same content, the same servers, free
+> everywhere, with no geo-gating and nothing region-specific. It serves one
+> university in the Czech Republic, so what a user sees depends on their own
+> university account and not on where they are. The only variation is the
+> interface language, which is a manual switch between Czech and English.
+>
+> **7. Regulated industry and third-party material.** reIS is in no regulated
+> industry: no financial services, no health or medical data, no gambling, no
+> cryptocurrency. It is free and non-commercial.
+>
+> On third-party material, stated plainly: reIS is an unofficial, student-made
+> client for our university's information system, and we hold no written
+> authorisation from the university. We do not claim one. Our position is that
+> none is required, because the app acts as a user agent rather than as a
+> publisher of the university's content:
+>
+> - Every request it makes is made with the student's own credentials, for the
+>   student's own records, at that student's explicit instruction — the same
+>   records the same student can open in Safari.
+> - Nothing is republished or redistributed. Pages are parsed on the device and
+>   shown only to the account holder. We operate no server in that path and hold
+>   no university data.
+> - reIS never sees the password. It is typed into the university's own page in
+>   a web view.
+> - The app carries no university branding of its own and says it is unofficial
+>   in three places: the first line of the App Store description, the sign-in
+>   screen, and here.
+>
+> That is the same relationship a web browser or an e-mail client has with the
+> service it connects to. The source is public at
+> github.com/reis-mendelu/reis-extension if that is useful. If the team would
+> nonetheless like a statement from the university, we will ask for one — we
+> would only like to know that it is required before starting a process that
+> takes weeks.
+
+### 11.3 Notes field — condensed
+
+App Review Information → Notes caps at 4000 characters, so it cannot hold §11.2
+whole. Replace the §5 notes with the §5 text plus these three paragraphs
+appended (they are the parts of the reply a future reviewer will look for, and
+Apple asked for exactly this):
+
+> TESTED ON: iPad (8th generation), iPadOS 26.6 (physical device); iPhone 17
+> Pro Max, iOS 26.5 and iPad Pro 13-inch (M5), iPadOS 26.5 (Simulator).
+> Deployment target iOS 15.0, built for iPhone and iPad.
+>
+> EXTERNAL SERVICES: is.mendelu.cz (the university's own system, the student's
+> own account); our own Supabase backend in the EU (notice feed, society event
+> listings, feedback form, optional crash reports — no academic data);
+> jsDelivr serving our open dataset (subject pass-rate statistics, campus room
+> data); OpenStreetMap tiles for the map. No advertising, no third-party
+> analytics, no payment processor, no AI service, no tracking.
+>
+> NO PURCHASES, NO REGISTRATION, NO USER-TO-USER CONTENT. The app is free with
+> no in-app purchases. It creates no account of its own, so there is nothing to
+> register or delete; signing out clears the Keychain token and all local data.
+> Users cannot create content in the app. Identical in every region.
+
+### 11.4 Recorded for next time
+
+Apple sends this seven-item request routinely on **new** app submissions, and
+every answer above could have been filed in the Notes on 2026-08-24 for free.
+It costs a review cycle to learn that, so: on a first submission to a new app
+record, put items 2–7 in the Notes before submitting, and have a physical-device
+recording ready.
+
+### 11.5 A second dead-end, found on the device — fixed in 50006.1
+
+Installing 5.0.6 on the iPad and walking the reviewer's path **before**
+recording caught a defect that the simulator pass in §8 missed, because §8
+took the path once and this takes it twice:
+
+> Back out of the IS login → the gate appears → tap **"Přihlásit se"** → back
+> out of the login again → **`reIS failed to start: LoginCancelledError: Login
+> cancelled: the sign-in window was dismissed`** on a dead screen.
+
+Same class of failure demo mode was built to remove (§1), one tap deeper, and
+on exactly the path a reviewer with no MENDELU account walks. Reproduced on an
+iPhone 17 Pro Max simulator against the shipped 5.0.6 binary, so it is in the
+build Apple has.
+
+**Root cause.** `boot()` maps `LoginCancelledError` to `showLoginGate()`, but
+the gate's own sign-in handler in `capacitor/main.capacitor.tsx` sent every
+rejection to `showFatalError`, which sets `textContent` on `#root` — wiping the
+mounted gate, its demo button included. The handler needed the same judgement
+`boot()` already makes, and nothing more: `root.unmount()` runs only *after*
+`ensureSession` resolves, so on a cancellation the gate is still on screen and
+the fix is to leave it there.
+
+Covered by `capacitor/__tests__/loginGateCancel.test.tsx`, which drives both
+dismissals through the real module and fails against the old handler. Fixed in
+commit `048c112b`; **`CURRENT_PROJECT_VERSION` stamped `50006.1`** for the
+re-upload (`REIS_IOS_BUILD=1`), marketing version unchanged at 5.0.6.
+
+**Consequence for the resubmission:** upload 50006.1 and attach it to the
+version before replying, and record *that* build. Replying against 50006 would
+hand Apple a video of a binary with a known 2.1 dead-end in it.
+
+The lesson §8 half-learned, now stated plainly: **walk each path twice.** The
+first dismissal is the one everyone tests; the second is the one a reviewer
+actually performs, because the first thing they try after seeing a sign-in
+screen is the sign-in button.
+
+**Two more first-run defects went into the same build**, both found by signing
+in on the device rather than by reading code:
+
+1. **No loading state after a first sign-in.** Every tab showed its *empty*
+   state — "Nic nemáš, pohodička", "Žádné zkoušky" — for the whole first crawl.
+   The screens gated on `handshakeDone`, which `setSyncStatus` sets on the first
+   status message, and `syncService` posts one when a crawl *starts*. A latched
+   `firstSyncSettled` now separates "nothing" from "not yet" (`8ed69d5a`).
+2. **Phase 2 reported in one lump.** Nine parallel fetches were handed to the UI
+   only once the slowest finished, so a finished timetable waited on a study
+   comparison nobody had asked to see. Schedule, exams, study plan and study
+   stats now post as each resolves (`8bea3378`). No extra requests: `pLimit(3)`
+   only ever wrapped Phase 3, so the wait was in the reporting, not the
+   fetching.
+
+Both matter for the recording as much as for students: a reviewer signing in
+would otherwise film an app that looks empty and then slow.
+
+### 11.6 The basemap lost its keyless tier mid-submission (2026-08-26)
+
+CARTO began stamping **"API KEY REQUIRED · carto.com/basemaps/apikey"**
+diagonally across every keyless tile — confirmed by fetching the MENDELU tile
+directly rather than by trusting the screenshot. The campus map had used
+CartoDB Positron since it was built.
+
+Now OpenStreetMap's own tiles, desaturated to the grey the overlays were drawn
+against with Tailwind's `grayscale` utility on the tile pane. No key ships in
+the client, which rules out the obvious alternative: a CARTO key in a bundle
+anyone can read is not a secret. If reIS outgrows OSM's "modest use", the next
+step is self-hosting or a keyed provider behind the Supabase proxy.
+
+**The App Review answer moved with it** (§11.2 item 5 and §11.3 both said
+CARTO). Worth stating as a rule: every external service named in that reply is
+a claim about the binary, and any swap has to be reflected there before the
+reply is sent.

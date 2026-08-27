@@ -26,10 +26,27 @@ const LANDMARK_LABELS = landmarkGroupLabels(LANDMARKS);
 // instead of the hover name. The Místa picker still carries the full pair name.
 const LANDMARK_LETTERS: Record<number, string> = { 1587: 'Z' };
 
-// CartoDB Positron: clean grey basemap with no tree dots and minimal labels.
-// Free, keyless, retina-aware. maxNativeZoom 20 (one better than OSM's 19)
-// reduces upscaling blur at floor-zoom levels. Creates the map, wires the tile
-// layer + label-visibility toggle, and returns it (caller owns layers/cleanup).
+// OpenStreetMap's own tiles, desaturated to the grey the overlays were drawn
+// against.
+//
+// This was CartoDB Positron until 2026-08-26, when CARTO began stamping
+// "API KEY REQUIRED · carto.com/basemaps/apikey" diagonally across every
+// keyless tile — verified by fetching the MENDELU tile directly. Their free
+// keyless basemaps are simply over, and a client-side key would ship in the
+// bundle for anyone to lift.
+//
+// OSM is the one remaining source that needs no key and states its terms
+// plainly (attribution, modest volume, no bulk downloading — a campus map for
+// one faculty's students is squarely inside that). Its standard style is
+// colourful, which the overlays were never designed for, so the tile pane is
+// desaturated with Tailwind's own `grayscale` utility rather than a stylesheet
+// of ours. maxNativeZoom drops 20 → 19, which is OSM's deepest, so floor-level
+// zooms upscale one step more than before.
+//
+// If reIS ever outgrows "modest", the next step is self-hosting or a keyed
+// provider behind our Supabase proxy — not a key in the client.
+// Creates the map, wires the tile layer + label-visibility toggle, and returns
+// it (caller owns layers/cleanup).
 export function initLeafletMap(
   container: HTMLElement,
   campusBounds: L.LatLngBoundsExpression,
@@ -54,12 +71,16 @@ export function initLeafletMap(
   // The search box + floor selector own the top-left now, so move the native
   // +/- control to the bottom-right where it no longer sits under them.
   map.zoomControl.setPosition('bottomright');
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd',
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 22,
-    maxNativeZoom: 20,
+    maxNativeZoom: 19,
+    // Utilities, not a stylesheet: Leaflet puts this on the tile pane and the
+    // filter applies to every tile image under it. `grayscale` alone reads
+    // muddy against the light-on-light overlays, so it is lifted and flattened
+    // to land near where Positron sat.
+    className: 'grayscale brightness-[1.06] contrast-[0.92]',
     attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map);
   // Show the lettered building names only when zoomed in past the overview.
   // restZoom = the zoom at which the whole campus fits (matches flyToBounds'

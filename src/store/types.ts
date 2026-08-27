@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { BlockLesson, HiddenItems, CalendarCustomEvent } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
+import type { SyncDomain } from '../types/messages/base';
 import type {
   SyllabusRequirements,
   ParsedFile,
@@ -146,6 +147,23 @@ export interface SubjectsSlice {
 export interface SyncSlice {
   syncStatus: SyncStatus;
   isSyncing: boolean;
+  /**
+   * Whether a sync has run to completion since the app started.
+   *
+   * `handshakeDone` cannot answer that question: it flips on the FIRST status
+   * message, and a sync posts one as it starts. Screens that show "you have
+   * nothing" need to know the difference between nothing and not-yet.
+   */
+  firstSyncSettled: boolean;
+  /**
+   * Per-domain arrival, so one screen need not wait for the whole crawl.
+   *
+   * `firstSyncSettled` alone is too coarse: a student with no lessons and no
+   * exams — every summer — would sit on two loading screens for the twenty
+   * seconds the full crawl takes, to be told nothing twice.
+   */
+  syncLoaded: Partial<Record<SyncDomain, boolean>>;
+  markSyncLoaded: (domains: SyncDomain[]) => void;
   fetchSyncStatus: () => Promise<void>;
   setSyncStatus: (status: Partial<SyncStatus>) => void;
 }

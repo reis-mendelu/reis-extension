@@ -257,3 +257,54 @@ describe('sync tiers across consecutive runs', () => {
     expect(api.zaznamnik).toHaveBeenCalledTimes(2);
   });
 });
+
+/**
+ * The other half of "fetch only what is due": WHICH subjects.
+ *
+ * `subjects.data` has been through mergePastSubjects by the time Phase 3 reads
+ * it, so it holds every subject the student ever enrolled in. Each one costs a
+ * recursive, paginated file crawl plus a syllabus — for folders that stopped
+ * changing years ago.
+ */
+describe('Phase 3 stays inside the current semester', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mergePastSubjectsMock.mockReset();
+    primeResponses();
+    // What the real merge does: past subjects appear in the same map, and only
+    // in it — currentSemesterCodes was captured before this ran.
+    mergePastSubjectsMock.mockImplementation((subjects: { data: Record<string, unknown> }) => {
+      subjects.data['OLD-101'] = { subjectId: 'p-old', folderUrl: 'https://is.mendelu.cz/old' };
+    });
+  });
+
+  it('crawls files and syllabus for the enrolled subject only', async () => {
+    const { syncAllData } = await loadSync();
+    await syncAllData();
+
+    expect(api.files).toHaveBeenCalledTimes(1);
+    expect(api.files.mock.calls[0]![0]).toBe('https://is.mendelu.cz/f');
+    expect(api.syllabus).toHaveBeenCalledTimes(1);
+    expect(api.syllabus.mock.calls[0]![0]).toBe('p1');
+  });
+
+  it('keeps the past subject out of the zaznamnik batch too', async () => {
+    const { syncAllData } = await loadSync();
+    await syncAllData();
+
+    const batch = api.zaznamnik.mock.calls[0]![2] as { courseCode: string }[];
+    expect(batch.map((i) => i.courseCode)).toEqual(['MT101']);
+  });
+
+  it('falls back to the whole map when the subject fetch never told us the semester', async () => {
+    // Crawling everything is wasteful; crawling nothing would leave a student
+    // with no files at all, so an unknown semester keeps the old behaviour.
+    api.subjects.mockRejectedValue(new Error('IS down'));
+    mergePastSubjectsMock.mockReset();
+
+    const { syncAllData } = await loadSync();
+    await syncAllData();
+
+    expect(api.files).not.toHaveBeenCalled(); // no subject list at all this run
+  });
+});

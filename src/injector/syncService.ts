@@ -1,4 +1,5 @@
 import pLimit from 'p-limit';
+import { currentSemesterEntries } from './subjectScope';
 import { Messages } from '../types/messages';
 import { fetchDualLanguageExams } from '../api/exams';
 import { fetchDualLanguageSubjects } from '../api/subjects';
@@ -46,7 +47,9 @@ const notesHtmlOverrides: Record<string, string> = {};
 export function setNotesHtmlOverride(code: string, html: string): void {
   notesHtmlOverrides[code] = html;
 }
-let currentSemesterCodes: string[] = [];
+// null until a subjects fetch says otherwise: an empty array is a real answer
+// ("enrolled in nothing"), and subjectScope treats the two differently.
+let currentSemesterCodes: string[] | null = null;
 
 /**
  * Last past-subject payload we successfully fetched.
@@ -69,6 +72,23 @@ export async function syncAllData() {
     // left isSyncing stuck true and no sync ever ran again.
     sendToIframe(Messages.syncUpdate({ isSyncing: true, lastSync: cachedData.lastSync }));
 
+    /**
+     * Hands one Phase 2 result to the UI the moment it lands.
+     *
+     * Phase 2 fetches nine things in parallel and then posted all of them in a
+     * single message once the slowest had finished, so the timetable waited on
+     * a study comparison nobody was looking at. Each screen gates on its own
+     * data, so an early partial paints that screen and leaves the others on
+     * their skeletons — which is what the student is actually waiting for.
+     *
+     * `isSyncing` stays true: the crawl is not over, and the app's
+     * `firstSyncSettled` latch keys off the false that ends it.
+     */
+    const pushEarly = (partial: Partial<SyncedData>) =>
+      sendToIframe(
+        Messages.syncUpdate({ ...partial, isSyncing: true, lastSync: cachedData.lastSync })
+      );
+
     const userParams = await getUserParams();
     const studium = userParams?.studium;
 
@@ -80,7 +100,7 @@ export async function syncAllData() {
         cachedData = { ...cachedData, subjects: result.subjects, attendance: result.attendance };
         // Capture current-semester codes BEFORE mergePastSubjects adds past ones —
         // the Drive backup is scoped to the current semester only.
-        currentSemesterCodes = result.subjects?.data ? Object.keys(result.subjects.data) : [];
+        currentSemesterCodes = result.subjects?.data ? Object.keys(result.subjects.data) : null;
       }
       return result;
     });
@@ -92,10 +112,15 @@ export async function syncAllData() {
         ).then((plan) => {
           if (plan) {
             cachedData = { ...cachedData, studyPlan: plan };
+            // Data only, no arrival flag: see SyncDomain. A null here is
+            // ambiguous (fresh / absent / not fetched), and the screen must not
+            // be released by an ambiguous signal.
+            pushEarly({ studyPlan: plan });
           }
           return plan;
         })
-      : Promise.resolve(null);
+      : // No studium — nothing to fetch, and nothing to report.
+        Promise.resolve(null);
 
     // Past-semester folders from doc server history — used to backfill
     // SubjectInfo for fulfilled subjects that list.pl no longer returns.
@@ -111,7 +136,10 @@ export async function syncAllData() {
         ? ttlGated('studyStats', TTL.DAILY, !!cachedData.studyStats, () =>
             fetchStudyStats(studium, userParams.obdobi!)
           ).then((stats) => {
-            if (stats) cachedData = { ...cachedData, studyStats: stats };
+            if (stats) {
+              cachedData = { ...cachedData, studyStats: stats };
+              pushEarly({ studyStats: stats });
+            }
             return stats;
           })
         : Promise.resolve(null);
@@ -148,6 +176,39 @@ export async function syncAllData() {
         : Promise.resolve(null);
 
     // Phase 2b: Full schedule + exams in parallel (subjects/studyPlan/studyStats re-uses already-started promises)
+    // Named rather than inline in the allSettled below, so each can post the
+    // moment it resolves. These two are the screens a student opens first.
+    const schedulePromise = ttlGated('schedule', TTL.SEMESTER, !!cachedData.schedule, () =>
+      fetchFullSemesterSchedule()
+    ).then((value) => {
+      if (value) {
+        cachedData = { ...cachedData, schedule: value };
+        pushEarly({ schedule: value, loaded: ['schedule'] });
+      }
+      // No else: a null here means ttlGated skipped the fetch as still fresh,
+      // which is not an answer about this student's week — the same ambiguity
+      // that made Předměty claim "no subjects". The cached schedule is already
+      // on screen in that case, and the end-of-sync latch covers the rest.
+      return value;
+    });
+
+    // exams and odevzdavarny stay hot: registration state and submission
+    // deadlines are the two things that genuinely move within a day.
+    const examsPromise = fetchDualLanguageExams().then((value) => {
+      if (value.length > 0) {
+        cachedData = { ...cachedData, exams: value };
+        pushEarly({ exams: value, loaded: ['exams'] });
+      } else {
+        // The fetch finished and the answer is "none" — which is the common
+        // answer outside exam season. Reported as arrival WITHOUT data on
+        // purpose: the batch below deliberately keeps the cached list rather
+        // than letting an empty read wipe it (a parse failure looks the same),
+        // and an empty data push here would undo that guard.
+        pushEarly({ loaded: ['exams'] });
+      }
+      return value;
+    });
+
     const [
       fullSchedule,
       exams,
@@ -159,10 +220,8 @@ export async function syncAllData() {
       pastSubjects,
       studyComparison,
     ] = await Promise.allSettled([
-      ttlGated('schedule', TTL.SEMESTER, !!cachedData.schedule, () => fetchFullSemesterSchedule()),
-      // exams and odevzdavarny stay hot: registration state and submission
-      // deadlines are the two things that genuinely move within a day.
-      fetchDualLanguageExams(),
+      schedulePromise,
+      examsPromise,
       subjectsPromise,
       studyPlanPromise,
       studyStatsPromise,
@@ -315,8 +374,9 @@ export async function runDriveBackupNow(): Promise<void> {
   try {
     const subjectsData = (cachedData.subjects as SubjectsData | undefined)?.data;
     const filesData = cachedData.files as Record<string, ParsedFile[]> | undefined;
-    if (!currentSemesterCodes.length || !subjectsData || !filesData) return;
-    const backupSubjects = currentSemesterCodes
+    const codes = currentSemesterCodes;
+    if (!codes?.length || !subjectsData || !filesData) return;
+    const backupSubjects = codes
       .map((code): DriveBackupSubject | null => {
         const info = subjectsData[code];
         const files = filesData[code];
@@ -373,7 +433,15 @@ async function syncSubjectDetails(
   },
   scheduleValue: { studyId?: string; periodId?: string }[] | null
 ) {
-  const subjectEntries = Object.entries(subjectsValue.data);
+  // Scoped, not everything in the map: `subjects.data` has been through
+  // mergePastSubjects by now and holds every subject the student ever took.
+  // See subjectScope for what that cost and where past subjects are fetched
+  // instead — the drawer already fetches its own files, syllabus and
+  // classmates on open.
+  const subjectEntries = currentSemesterEntries(
+    Object.entries(subjectsValue.data),
+    currentSemesterCodes
+  );
   const userParams = await getUserParams();
   let studium = userParams?.studium;
   let obdobi = userParams?.obdobi;

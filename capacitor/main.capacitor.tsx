@@ -160,7 +160,18 @@ export async function showLoginGate(): Promise<void> {
           await ensureSession(await buildInAppLoginDeps());
           root.unmount();
           await startApp({ demo: false });
-        })().catch(showFatalError);
+        })().catch((e: unknown) => {
+          // The same judgement boot() makes below, and for the same reason:
+          // dismissing login is a choice, not a failure. It needs repeating
+          // here because this is the SECOND dismissal — someone who reached
+          // the gate by backing out once, tried the button, and backed out
+          // again — and showFatalError would wipe #root, leaving a dead
+          // string where a mounted gate and its demo button already are.
+          // Nothing to re-render: root.unmount() above runs only after
+          // ensureSession resolves, so the gate is still on screen.
+          if (e instanceof LoginCancelledError) return;
+          showFatalError(e);
+        });
       }}
       onDemoStarted={() => {
         root.unmount();

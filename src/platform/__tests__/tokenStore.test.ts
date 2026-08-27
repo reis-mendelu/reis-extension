@@ -5,6 +5,7 @@ import {
   loadStoredToken,
   clearStoredToken,
   purgePlaintextToken,
+  __resetTokenMemoForTests,
 } from '../tokenStore';
 import type { ReisPlatform } from '../types';
 import { DemoModeError } from '../../errors/demoMode';
@@ -37,6 +38,7 @@ let secure: ReturnType<typeof makeBag>;
 
 beforeEach(() => {
   __resetPlatformForTests();
+  __resetTokenMemoForTests();
   plain = makeBag();
   secure = makeBag();
   setPlatform({
@@ -145,5 +147,200 @@ describe('purgePlaintextToken', () => {
   it('swallows a storage failure rather than blocking boot', async () => {
     plain.api.remove.mockRejectedValueOnce(new Error('nope'));
     await expect(purgePlaintextToken()).resolves.toBeUndefined();
+  });
+});
+
+describe('the in-memory token', () => {
+  /**
+   * Why this exists: on Capacitor every authenticated request calls
+   * `loadStoredToken`, and one cold sync is ~120 requests — so a run cost 120
+   * Keychain reads across the native bridge before a single byte went to IS.
+   * Measured in issue #197.
+   */
+  it('reads secure storage once and serves the rest from memory', async () => {
+    await saveStoredToken(TOKEN);
+    __resetTokenMemoForTests();
+
+    await expect(loadStoredToken()).resolves.toBe(TOKEN);
+    await expect(loadStoredToken()).resolves.toBe(TOKEN);
+    await expect(loadStoredToken()).resolves.toBe(TOKEN);
+
+    expect(secure.api.get).toHaveBeenCalledTimes(1);
+  });
+
+  it('serves a freshly saved token without reading it back', async () => {
+    // Re-login writes the new token through here, so the memo is authoritative
+    // the moment the write succeeds.
+    await saveStoredToken(TOKEN);
+    await expect(loadStoredToken()).resolves.toBe(TOKEN);
+    expect(secure.api.get).not.toHaveBeenCalled();
+  });
+
+  it('replaces the memo when a new token is saved over an old one', async () => {
+    const NEXT = 'b'.repeat(40);
+    await saveStoredToken(TOKEN);
+    await loadStoredToken();
+    await saveStoredToken(NEXT);
+    await expect(loadStoredToken()).resolves.toBe(NEXT);
+  });
+
+  it('forgets the memo when the token is cleared', async () => {
+    // Sign-out and the re-login path both clear. A memo that outlived the
+    // Keychain entry would keep signing requests as a student who has left.
+    await saveStoredToken(TOKEN);
+    await loadStoredToken();
+    await clearStoredToken();
+    await expect(loadStoredToken()).rejects.toMatchObject({ sessionExpired: true });
+  });
+
+  it('still refuses in demo mode with a token already in memory', async () => {
+    // The memo must not become a way around the one guard every authenticated
+    // path converges on.
+    await saveStoredToken(TOKEN);
+    await loadStoredToken();
+    useAppStore.setState({ demoMode: true });
+    try {
+      await expect(loadStoredToken()).rejects.toBeInstanceOf(DemoModeError);
+    } finally {
+      useAppStore.setState({ demoMode: false });
+    }
+  });
+});
+
+describe('the memo under concurrency', () => {
+  /** A secure store whose reads hang until the test releases them. */
+  function slowRead() {
+    let release!: (v: unknown) => void;
+    const pending = new Promise((resolve) => {
+      release = resolve;
+    });
+    secure.api.get.mockImplementationOnce(async () => pending);
+    return release;
+  }
+
+  it('does not re-cache a token that was signed out while the read was in flight', async () => {
+    // Sign-out during a background sync: the sync's read resolves after
+    // clearStoredToken has already run. Caching what it fetched would hand every
+    // later request the credential of a student who has left.
+    await saveStoredToken(TOKEN);
+    __resetTokenMemoForTests();
+
+    const release = slowRead();
+    const inFlight = loadStoredToken();
+    await clearStoredToken();
+    release(TOKEN);
+    // Not even this caller: it asked before the sign-out, but it would send its
+    // request after one, and a dropped credential is dropped for everybody.
+    await expect(inFlight).rejects.toMatchObject({ sessionExpired: true });
+
+    await expect(loadStoredToken()).rejects.toMatchObject({ sessionExpired: true });
+  });
+
+  it('does not clobber a freshly issued token with the expired one it replaced', async () => {
+    // Re-login: the failing request's read overlaps saveStoredToken. Landing
+    // late must not put the old token back.
+    const NEXT = 'b'.repeat(40);
+    await saveStoredToken(TOKEN);
+    __resetTokenMemoForTests();
+
+    const release = slowRead();
+    const inFlight = loadStoredToken();
+    await saveStoredToken(NEXT);
+    release(TOKEN);
+    await inFlight;
+
+    await expect(loadStoredToken()).resolves.toBe(NEXT);
+  });
+});
+
+describe('write ordering in the secure store', () => {
+  it('does not let a save that was issued first land after a sign-out', async () => {
+    // Sign-out during re-login: the recovery save and the sign-out clear are
+    // independent native operations, so without ordering the set could land
+    // last and leave the credential on disk — where the next launch reads it
+    // and silently signs the student back in. Pre-dates the memo; the memo just
+    // made it visible.
+    let releaseSet!: () => void;
+    secure.api.set.mockImplementationOnce(
+      (k: string, v: unknown) =>
+        new Promise<undefined>((resolve) => {
+          releaseSet = () => {
+            secure.map.set(k, v);
+            resolve(undefined);
+          };
+        })
+    );
+
+    const saving = saveStoredToken(TOKEN);
+    const clearing = clearStoredToken();
+    // A tick: writes go through a queue now, so the set reaches the mock a
+    // microtask after saveStoredToken is called.
+    await Promise.resolve();
+    releaseSet();
+    await Promise.all([saving, clearing]);
+
+    expect(secure.map.has(TOKEN_KEY)).toBe(false);
+    await expect(loadStoredToken()).rejects.toMatchObject({ sessionExpired: true });
+  });
+
+  it('keeps a save issued after a sign-out', async () => {
+    // The other direction, which must not be broken by the ordering: signing in
+    // again after signing out has to leave a usable token behind.
+    await clearStoredToken();
+    await saveStoredToken(TOKEN);
+    expect(secure.map.get(TOKEN_KEY)).toBe(TOKEN);
+  });
+});
+
+describe('reads during a pending sign-out', () => {
+  it('refuses a token that is in the middle of being removed', async () => {
+    // The window the generation counter cannot see: the bump has happened, the
+    // native remove has not landed, and the store still holds the token. A read
+    // starting here would find it, cache it at the current generation, and keep
+    // every later request signed in as a student who asked to leave.
+    await saveStoredToken(TOKEN);
+    __resetTokenMemoForTests();
+
+    let releaseRemove!: () => void;
+    secure.api.remove.mockImplementationOnce(
+      (k: string) =>
+        new Promise<undefined>((resolve) => {
+          releaseRemove = () => {
+            secure.map.delete(k);
+            resolve(undefined);
+          };
+        })
+    );
+
+    const clearing = clearStoredToken();
+    await Promise.resolve();
+    await expect(loadStoredToken()).rejects.toMatchObject({ sessionExpired: true });
+
+    releaseRemove();
+    await clearing;
+    await expect(loadStoredToken()).rejects.toMatchObject({ sessionExpired: true });
+  });
+
+  it('serves the new token when a save lands while a read is in flight', async () => {
+    // The other side of the same check: a read overtaken by a save must defer
+    // to the save rather than fail — there IS a session, it is just newer.
+    const NEXT = 'b'.repeat(40);
+    await saveStoredToken(TOKEN);
+    __resetTokenMemoForTests();
+
+    let releaseRead!: () => void;
+    secure.api.get.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseRead = () => resolve(TOKEN);
+        })
+    );
+
+    const reading = loadStoredToken();
+    await Promise.resolve();
+    await saveStoredToken(NEXT);
+    releaseRead();
+
+    await expect(reading).resolves.toBe(NEXT);
   });
 });
