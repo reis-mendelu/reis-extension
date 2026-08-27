@@ -9,7 +9,7 @@ const MIKRO_SYLLABUS: SyllabusRequirements = {
     ['Průběžný test 1', '20'],
     ['Průběžný test 2', '20'],
     ['Zkouška', '60'],
-    ['Celkem', '100']
+    ['Celkem', '100'],
   ],
   courseInfo: {
     credits: '6',
@@ -17,8 +17,8 @@ const MIKRO_SYLLABUS: SyllabusRequirements = {
     teachers: [{ name: 'Ing. Alena Melicharová, Ph.D.', roles: 'přednášející, garant' }],
     status: 'active',
     courseNameCs: 'Mikroekonomie 1',
-    courseNameEn: 'Microeconomics 1'
-  }
+    courseNameEn: 'Microeconomics 1',
+  },
 };
 
 const PRAVO_SYLLABUS: SyllabusRequirements = {
@@ -28,7 +28,7 @@ const PRAVO_SYLLABUS: SyllabusRequirements = {
   requirementsTable: [
     ['Zápočet', '30'],
     ['Zkouška', '70'],
-    ['Celkem', '100']
+    ['Celkem', '100'],
   ],
   courseInfo: {
     credits: '5',
@@ -36,8 +36,8 @@ const PRAVO_SYLLABUS: SyllabusRequirements = {
     teachers: [{ name: 'doc. JUDr. Martin Janků, CSc.', roles: 'přednášející, garant' }],
     status: 'active',
     courseNameCs: 'Právo',
-    courseNameEn: 'Law'
-  }
+    courseNameEn: 'Law',
+  },
 };
 
 export const supefDataset: SocietyDataset = {
@@ -62,7 +62,9 @@ export const supefDataset: SocietyDataset = {
             room: 'Q01',
             teacher: 'Ing. Alena Melicharová, Ph.D.',
             teacherId: 'melicharova-alena',
-            deregistrationDeadline: '11.02.2026 23:59'
+            deregistrationDeadline: '11.02.2026 23:59',
+            // Long written exam — renders visibly taller than the old flat 1.5h.
+            durationMinutes: 180,
           },
           terms: [
             {
@@ -77,11 +79,90 @@ export const supefDataset: SocietyDataset = {
               registrationStart: '01.01.2026 00:00',
               registrationEnd: '11.02.2026 23:59',
               attemptTypes: ['regular'],
-              canRegisterNow: true
-            }
-          ]
-        }
-      ]
+              canRegisterNow: true,
+            },
+          ],
+        },
+      ],
+    },
+    // Three more registered terms on the same day so the weekly calendar shows
+    // every exam-duration case side by side: a 10-minute oral (clamped to the
+    // minimum readable block height), a 90-minute written, and one where IS
+    // published no length at all (falls back to 90).
+    {
+      version: 1,
+      id: 'exam-hp',
+      name: 'Hospodářská politika',
+      code: 'EBC-HP',
+      sections: [
+        {
+          id: 'hp-zkouska',
+          name: 'exam',
+          type: 'exam',
+          status: 'registered',
+          registeredTerm: {
+            id: 'hp-term-1',
+            date: '12.02.2026',
+            time: '12:00',
+            room: '5.28',
+            teacher: 'Ing. Aleš Franc, Ph.D.',
+            teacherId: 'franc-ales',
+            deregistrationDeadline: '11.02.2026 23:59',
+            durationMinutes: 10,
+          },
+          terms: [],
+        },
+      ],
+    },
+    {
+      version: 1,
+      id: 'exam-stat',
+      name: 'Statistika',
+      code: 'EBC-ST',
+      sections: [
+        {
+          id: 'stat-zkouska',
+          name: 'exam',
+          type: 'exam',
+          status: 'registered',
+          registeredTerm: {
+            id: 'stat-term-1',
+            date: '12.02.2026',
+            time: '13:30',
+            room: 'Q02',
+            teacher: 'doc. Ing. Petr Dvořák, Ph.D.',
+            teacherId: 'dvorak-petr',
+            deregistrationDeadline: '11.02.2026 23:59',
+            durationMinutes: 90,
+          },
+          terms: [],
+        },
+      ],
+    },
+    {
+      version: 1,
+      id: 'exam-ucetnictvi',
+      name: 'Účetnictví',
+      code: 'EBC-UC',
+      sections: [
+        {
+          id: 'uc-zkouska',
+          name: 'exam',
+          type: 'exam',
+          status: 'registered',
+          registeredTerm: {
+            id: 'uc-term-1',
+            date: '12.02.2026',
+            time: '15:30',
+            room: 'Q03',
+            teacher: 'Ing. Eva Nováková, Ph.D.',
+            teacherId: 'novakova-eva',
+            deregistrationDeadline: '11.02.2026 23:59',
+            // durationMinutes intentionally absent — exercises the 90-min fallback.
+          },
+          terms: [],
+        },
+      ],
     },
     {
       version: 1,
@@ -107,11 +188,11 @@ export const supefDataset: SocietyDataset = {
               registrationStart: '05.02.2026 00:00',
               registrationEnd: '18.02.2026 23:59',
               attemptTypes: ['regular'],
-              canRegisterNow: true
-            }
-          ]
-        }
-      ]
+              canRegisterNow: true,
+            },
+          ],
+        },
+      ],
     },
     {
       version: 1,
@@ -137,11 +218,11 @@ export const supefDataset: SocietyDataset = {
               registrationStart: '01.02.2026 00:00',
               registrationEnd: '22.02.2026 23:59',
               attemptTypes: ['regular'],
-              canRegisterNow: true
-            }
-          ]
-        }
-      ]
+              canRegisterNow: true,
+            },
+          ],
+        },
+      ],
     },
     {
       version: 1,
@@ -167,11 +248,11 @@ export const supefDataset: SocietyDataset = {
               registrationStart: '01.02.2026 00:00',
               registrationEnd: '24.02.2026 23:59',
               attemptTypes: ['regular'],
-              canRegisterNow: true
-            }
-          ]
-        }
-      ]
+              canRegisterNow: true,
+            },
+          ],
+        },
+      ],
     },
     {
       version: 1,
@@ -197,11 +278,11 @@ export const supefDataset: SocietyDataset = {
               registrationStart: '01.02.2026 00:00',
               registrationEnd: '25.02.2026 23:59',
               attemptTypes: ['regular'],
-              canRegisterNow: true
-            }
-          ]
-        }
-      ]
+              canRegisterNow: true,
+            },
+          ],
+        },
+      ],
     },
     {
       version: 1,
@@ -227,11 +308,11 @@ export const supefDataset: SocietyDataset = {
               registrationStart: '01.02.2026 00:00',
               registrationEnd: '01.03.2026 23:59',
               attemptTypes: ['regular'],
-              canRegisterNow: true
-            }
-          ]
-        }
-      ]
+              canRegisterNow: true,
+            },
+          ],
+        },
+      ],
     },
     {
       version: 1,
@@ -257,12 +338,12 @@ export const supefDataset: SocietyDataset = {
               registrationStart: '01.02.2026 00:00',
               registrationEnd: '02.03.2026 23:59',
               attemptTypes: ['regular'],
-              canRegisterNow: true
-            }
-          ]
-        }
-      ]
-    }
+              canRegisterNow: true,
+            },
+          ],
+        },
+      ],
+    },
   ],
   schedule: [
     {
@@ -274,7 +355,13 @@ export const supefDataset: SocietyDataset = {
       courseName: 'Mikroekonomie 1',
       room: 'Q01',
       roomStructured: { name: 'Q01', id: 'q01' },
-      teachers: [{ fullName: 'Ing. Alena Melicharová, Ph.D.', shortName: 'Melicharová', id: 'melicharova-alena' }],
+      teachers: [
+        {
+          fullName: 'Ing. Alena Melicharová, Ph.D.',
+          shortName: 'Melicharová',
+          id: 'melicharova-alena',
+        },
+      ],
       isExam: false,
       isConsultation: 'false',
       studyId: '',
@@ -283,7 +370,7 @@ export const supefDataset: SocietyDataset = {
       courseId: 'ebc-mi',
       campus: 'Brno',
       isSeminar: 'false',
-      periodId: ''
+      periodId: '',
     },
     {
       id: 'sched-mon-alg',
@@ -294,7 +381,9 @@ export const supefDataset: SocietyDataset = {
       courseName: 'Algoritmizace',
       room: 'Q11',
       roomStructured: { name: 'Q11', id: 'q11' },
-      teachers: [{ fullName: 'doc. Ing. Oldřich Trenz, Ph.D.', shortName: 'Trenz', id: 'trenz-oldrich' }],
+      teachers: [
+        { fullName: 'doc. Ing. Oldřich Trenz, Ph.D.', shortName: 'Trenz', id: 'trenz-oldrich' },
+      ],
       isExam: false,
       isConsultation: 'false',
       studyId: '',
@@ -303,7 +392,7 @@ export const supefDataset: SocietyDataset = {
       courseId: 'ebc-alg',
       campus: 'Brno',
       isSeminar: 'false',
-      periodId: ''
+      periodId: '',
     },
     {
       id: 'sched-mon-aj1',
@@ -323,7 +412,7 @@ export const supefDataset: SocietyDataset = {
       courseId: 'eba-aj1',
       campus: 'Brno',
       isSeminar: 'true',
-      periodId: ''
+      periodId: '',
     },
     {
       id: 'sched-tue-pravo',
@@ -334,7 +423,9 @@ export const supefDataset: SocietyDataset = {
       courseName: 'Právo',
       room: 'Aula',
       roomStructured: { name: 'Aula', id: 'aula' },
-      teachers: [{ fullName: 'doc. JUDr. Martin Janků, CSc.', shortName: 'Janků', id: 'janku-martin' }],
+      teachers: [
+        { fullName: 'doc. JUDr. Martin Janků, CSc.', shortName: 'Janků', id: 'janku-martin' },
+      ],
       isExam: false,
       isConsultation: 'false',
       studyId: '',
@@ -343,7 +434,7 @@ export const supefDataset: SocietyDataset = {
       courseId: 'ebc-p',
       campus: 'Brno',
       isSeminar: 'false',
-      periodId: ''
+      periodId: '',
     },
     {
       id: 'sched-wed-mar',
@@ -354,7 +445,13 @@ export const supefDataset: SocietyDataset = {
       courseName: 'Marketing 1',
       room: 'Q11',
       roomStructured: { name: 'Q11', id: 'q11' },
-      teachers: [{ fullName: 'doc. Ing. Jana Turčínková, Ph.D.', shortName: 'Turčínková', id: 'turcinkova-jana' }],
+      teachers: [
+        {
+          fullName: 'doc. Ing. Jana Turčínková, Ph.D.',
+          shortName: 'Turčínková',
+          id: 'turcinkova-jana',
+        },
+      ],
       isExam: false,
       isConsultation: 'false',
       studyId: '',
@@ -363,7 +460,7 @@ export const supefDataset: SocietyDataset = {
       courseId: 'ebc-mar',
       campus: 'Brno',
       isSeminar: 'false',
-      periodId: ''
+      periodId: '',
     },
     {
       id: 'sched-wed-ft',
@@ -374,7 +471,13 @@ export const supefDataset: SocietyDataset = {
       courseName: 'Finanční trhy',
       room: 'Q21',
       roomStructured: { name: 'Q21', id: 'q21' },
-      teachers: [{ fullName: 'doc. Ing. Svatopluk Kapounek, Ph.D.', shortName: 'Kapounek', id: 'kapounek-svatopluk' }],
+      teachers: [
+        {
+          fullName: 'doc. Ing. Svatopluk Kapounek, Ph.D.',
+          shortName: 'Kapounek',
+          id: 'kapounek-svatopluk',
+        },
+      ],
       isExam: false,
       isConsultation: 'false',
       studyId: '',
@@ -383,7 +486,7 @@ export const supefDataset: SocietyDataset = {
       courseId: 'ebc-ft',
       campus: 'Brno',
       isSeminar: 'true',
-      periodId: ''
+      periodId: '',
     },
     {
       id: 'sched-thu-man',
@@ -394,7 +497,9 @@ export const supefDataset: SocietyDataset = {
       courseName: 'Management',
       room: 'Q01',
       roomStructured: { name: 'Q01', id: 'q01' },
-      teachers: [{ fullName: 'doc. Ing. Pavel Žufan, Ph.D.', shortName: 'Žufan', id: 'zufan-pavel' }],
+      teachers: [
+        { fullName: 'doc. Ing. Pavel Žufan, Ph.D.', shortName: 'Žufan', id: 'zufan-pavel' },
+      ],
       isExam: false,
       isConsultation: 'false',
       studyId: '',
@@ -403,7 +508,7 @@ export const supefDataset: SocietyDataset = {
       courseId: 'ebc-man',
       campus: 'Brno',
       isSeminar: 'false',
-      periodId: ''
+      periodId: '',
     },
     {
       id: 'sched-thu-st',
@@ -414,7 +519,9 @@ export const supefDataset: SocietyDataset = {
       courseName: 'Statistika',
       room: 'Q11',
       roomStructured: { name: 'Q11', id: 'q11' },
-      teachers: [{ fullName: 'doc. Ing. Luboš Střelec, Ph.D.', shortName: 'Střelec', id: 'strelec-lubos' }],
+      teachers: [
+        { fullName: 'doc. Ing. Luboš Střelec, Ph.D.', shortName: 'Střelec', id: 'strelec-lubos' },
+      ],
       isExam: false,
       isConsultation: 'false',
       studyId: '',
@@ -423,12 +530,12 @@ export const supefDataset: SocietyDataset = {
       courseId: 'ebc-st',
       campus: 'Brno',
       isSeminar: 'false',
-      periodId: ''
-    }
+      periodId: '',
+    },
   ],
   syllabuses: {
     'EBC-MI': MIKRO_SYLLABUS,
-    'EBC-P': PRAVO_SYLLABUS
+    'EBC-P': PRAVO_SYLLABUS,
   },
   success_rates: {
     'EBC-MI': {
@@ -447,11 +554,11 @@ export const supefDataset: SocietyDataset = {
               term: 'Všechny termíny',
               pass: 450,
               fail: 150,
-              grades: { A: 50, B: 80, C: 120, D: 100, E: 100, F: 150, FN: 0 }
-            }
-          ]
-        }
-      ]
+              grades: { A: 50, B: 80, C: 120, D: 100, E: 100, F: 150, FN: 0 },
+            },
+          ],
+        },
+      ],
     },
     'EBC-P': {
       courseCode: 'EBC-P',
@@ -469,11 +576,11 @@ export const supefDataset: SocietyDataset = {
               term: 'Všechny termíny',
               pass: 300,
               fail: 50,
-              grades: { A: 100, B: 80, C: 60, D: 40, E: 20, F: 50, FN: 0 }
-            }
-          ]
-        }
-      ]
+              grades: { A: 100, B: 80, C: 60, D: 40, E: 20, F: 50, FN: 0 },
+            },
+          ],
+        },
+      ],
     },
     'EBC-ALG': {
       courseCode: 'EBC-ALG',
@@ -486,13 +593,34 @@ export const supefDataset: SocietyDataset = {
           totalPass: 100,
           totalFail: 138,
           type: 'exam',
-          sourceUrl: 'https://is.mendelu.cz/auth/student/hodnoceni.pl?fakulta=2;obdobi=801;predmet=159410;lang=cz',
+          sourceUrl:
+            'https://is.mendelu.cz/auth/student/hodnoceni.pl?fakulta=2;obdobi=801;predmet=159410;lang=cz',
           terms: [
-            { term: 'Všechny termíny', pass: 100, fail: 138, grades: { A: 8, B: 8, C: 14, D: 18, E: 52, F: 115, FN: 23 } },
-            { term: 'Řádný termín', pass: 52, fail: 186, grades: { A: 6, B: 7, C: 10, D: 11, E: 18, F: 163, FN: 23 } },
-            { term: '1. opravný', pass: 30, fail: 88, grades: { A: 1, B: 0, C: 3, D: 5, E: 21, F: 88, FN: 0 } },
-            { term: '2. opravný', pass: 18, fail: 57, grades: { A: 1, B: 1, C: 1, D: 2, E: 13, F: 57, FN: 0 } }
-          ]
+            {
+              term: 'Všechny termíny',
+              pass: 100,
+              fail: 138,
+              grades: { A: 8, B: 8, C: 14, D: 18, E: 52, F: 115, FN: 23 },
+            },
+            {
+              term: 'Řádný termín',
+              pass: 52,
+              fail: 186,
+              grades: { A: 6, B: 7, C: 10, D: 11, E: 18, F: 163, FN: 23 },
+            },
+            {
+              term: '1. opravný',
+              pass: 30,
+              fail: 88,
+              grades: { A: 1, B: 0, C: 3, D: 5, E: 21, F: 88, FN: 0 },
+            },
+            {
+              term: '2. opravný',
+              pass: 18,
+              fail: 57,
+              grades: { A: 1, B: 1, C: 1, D: 2, E: 13, F: 57, FN: 0 },
+            },
+          ],
         },
         {
           semesterName: 'ZS 2024/2025 - PEF',
@@ -502,11 +630,31 @@ export const supefDataset: SocietyDataset = {
           totalFail: 57,
           type: 'exam',
           terms: [
-            { term: 'Všechny termíny', pass: 51, fail: 57, grades: { A: 5, B: 1, C: 12, D: 4, E: 29, F: 42, FN: 15 } },
-            { term: 'Řádný termín', pass: 23, fail: 85, grades: { A: 4, B: 0, C: 7, D: 2, E: 12, F: 67, FN: 16 } },
-            { term: '1. opravný', pass: 12, fail: 42, grades: { A: 0, B: 1, C: 2, D: 1, E: 8, F: 42, FN: 0 } },
-            { term: '2. opravný', pass: 16, fail: 1, grades: { A: 1, B: 0, C: 3, D: 1, E: 9, F: 3, FN: 0 } }
-          ]
+            {
+              term: 'Všechny termíny',
+              pass: 51,
+              fail: 57,
+              grades: { A: 5, B: 1, C: 12, D: 4, E: 29, F: 42, FN: 15 },
+            },
+            {
+              term: 'Řádný termín',
+              pass: 23,
+              fail: 85,
+              grades: { A: 4, B: 0, C: 7, D: 2, E: 12, F: 67, FN: 16 },
+            },
+            {
+              term: '1. opravný',
+              pass: 12,
+              fail: 42,
+              grades: { A: 0, B: 1, C: 2, D: 1, E: 8, F: 42, FN: 0 },
+            },
+            {
+              term: '2. opravný',
+              pass: 16,
+              fail: 1,
+              grades: { A: 1, B: 0, C: 3, D: 1, E: 9, F: 3, FN: 0 },
+            },
+          ],
         },
         {
           semesterName: 'ZS 2023/2024 - PEF',
@@ -516,10 +664,15 @@ export const supefDataset: SocietyDataset = {
           totalFail: 40,
           type: 'exam',
           terms: [
-            { term: 'Všechny termíny', pass: 80, fail: 40, grades: { A: 10, B: 15, C: 20, D: 15, E: 20, F: 30, FN: 10 } }
-          ]
-        }
-      ]
-    }
-  }
+            {
+              term: 'Všechny termíny',
+              pass: 80,
+              fail: 40,
+              grades: { A: 10, B: 15, C: 20, D: 15, E: 20, F: 30, FN: 10 },
+            },
+          ],
+        },
+      ],
+    },
+  },
 };

@@ -40,7 +40,6 @@
   "src/api/terminyInfo.ts",
   "src/api/user.ts",
   "src/api/zaznamnik.ts",
-  "src/components/CalendarEventCard.tsx",
   "src/components/CampusMap/EventPin.tsx",
   "src/components/CampusMap/LandmarkPicker.tsx",
   "src/components/CampusMap/MapCanvas.tsx",
