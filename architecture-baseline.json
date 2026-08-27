@@ -1,0 +1,4 @@
+{
+  "//": "Hooks that still reach the sync layer directly, contrary to the Iron Rules in CLAUDE.md. Ratcheted by scripts/test-architecture.js: no NEW hook may join this list, and a hook that is fixed must be removed from it in the same PR. Both call sites here post messages (triggerDriveBackup, triggerRefresh) rather than fetching data, which is a weaker violation than the rule targets — recorded, not excused. Delete the script when this list is empty.",
+  "hooksImportingSyncService": ["src/hooks/data/useDriveBackup.ts", "src/hooks/useAppLogic.ts"]
+}

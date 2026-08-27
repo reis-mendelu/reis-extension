@@ -77,6 +77,11 @@ jobs:
       - run: npm run typecheck
       - name: noUncheckedIndexedAccess ratchet gate
         run: npm run nuia:gate
+      # The Iron Rule that data hooks must not reach the sync layer directly.
+      # The script existed but was wired to no npm script and no job, so nobody
+      # noticed it had been failing on main; it is a ratchet now, and it runs.
+      - name: Architecture ratchet gate
+        run: npm run lint:arch
 
   # Full unit-test suite, with coverage enforced as a ratchet.
   #
@@ -182,6 +187,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint:dead
+      # `lint:dead` runs `knip --include files`, which answers only "is any file
+      # unreachable" and hid everything else knip found: 128 unused exports, 121
+      # unused exported types, 2 unused dependencies, 5 unused devDependencies.
+      # Ratcheted per category so the backlog can only shrink.
+      - run: npm run lint:dead:full
 
   # Dependabot auto-merge claims it "never bypasses CI or CodeQL", but nothing in
   # this repo audited dependencies. A bumped transitive dep with a known advisory

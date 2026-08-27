@@ -46,7 +46,9 @@
     "ios:version": "tsx --tsconfig tsconfig.app.json scripts/sync-ios-version.ts",
     "store:shots": "node scripts/store-shots.mjs",
     "lint:gate": "node scripts/lint-gate.mjs",
-    "coverage:zero-gate": "node scripts/zero-coverage-gate.mjs"
+    "coverage:zero-gate": "node scripts/zero-coverage-gate.mjs",
+    "lint:arch": "node scripts/test-architecture.js",
+    "lint:dead:full": "node scripts/knip-gate.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

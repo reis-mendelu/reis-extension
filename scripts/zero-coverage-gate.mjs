@@ -99,7 +99,12 @@ const thresholdBlock = config.slice(config.indexOf('thresholds: {'));
 // Every quoted KEY that opens an object, wildcard or not. An earlier revision
 // required a '*', so a literal path key ('src/entrypoints/gone.ts') was never
 // validated and its threshold silently applied to nothing.
-const globs = [...thresholdBlock.matchAll(/'([^']+)':\s*\{/g)].map((m) => m[1]);
+// Both quote styles. The check used to match single quotes only, so a
+// double-quoted key slipped past it entirely and its threshold silently applied
+// to nothing — the gate reported "all globs match" having inspected one fewer
+// than existed. Only .prettierrc's singleQuote stood between that and a dead
+// gate, and format.yml checks changed files only.
+const globs = [...thresholdBlock.matchAll(/['"]([^'"]+)['"]:\s*\{/g)].map((m) => m[1]);
 const measured = Object.keys(summary)
   .filter((k) => k !== 'total')
   .map((k) => k.replace(cwd, ''));

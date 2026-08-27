@@ -1,0 +1,13 @@
+{
+  "//": "knip full-report backlog. Ratcheted by scripts/knip-gate.mjs: each category may fall, never rise. lint:dead runs , which answers only \"is any file unreachable\" and hid all of this. Bank a drop with: npm run lint:dead:full -- --write",
+  "counts": {
+    "dependencies": 2,
+    "devDependencies": 5,
+    "binaries": 1,
+    "unlisted": 2,
+    "exports": 128,
+    "types": 121,
+    "duplicates": 3,
+    "files": 0
+  }
+}
