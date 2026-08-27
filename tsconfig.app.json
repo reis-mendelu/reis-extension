@@ -3,16 +3,9 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "types": [
-      "vite/client",
-      "chrome"
-    ],
+    "types": ["vite/client", "chrome"],
     "skipLibCheck": true,
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -35,9 +28,13 @@
     "noUncheckedSideEffectImports": true
   },
   "include": [
-    "src"
+    "src",
+    // capacitor/ is the iOS and Android entry point and ships to both app
+    // stores, but sat outside every tsconfig: `tsc -b` reached only src/ and
+    // wxt.config.ts, so a type error in main.capacitor.tsx passed `npm run
+    // typecheck` AND `npm run build:capacitor` (vite transpiles without
+    // checking). Nothing in CI would have caught it.
+    "capacitor"
   ],
-  "exclude": [
-    "../_figma_desing"
-  ]
+  "exclude": ["../_figma_desing"]
 }

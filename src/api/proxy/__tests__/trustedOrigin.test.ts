@@ -44,4 +44,17 @@ describe('isTrustedProxyOrigin', () => {
     expect(isTrustedProxyOrigin('null', 'capacitor', 'https://localhost')).toBe(false);
     expect(isTrustedProxyOrigin('', 'capacitor', 'https://localhost')).toBe(false);
   });
+
+  // The two cases above do NOT exercise the `origin === 'null'` guard: with an
+  // ownOrigin of https://localhost they are already rejected by the final
+  // `origin === ownOrigin` comparison, so deleting the guard leaves them green.
+  //
+  // The guard only decides the answer when the app's OWN origin is opaque too --
+  // a sandboxed document reports origin 'null', and then 'null' === ownOrigin
+  // and the capacitor branch would trust it. That is the case the guard exists
+  // for, and it is the one that has to be asserted.
+  it('does not trust an opaque origin even when its own origin is opaque', () => {
+    expect(isTrustedProxyOrigin('null', 'capacitor', 'null')).toBe(false);
+    expect(isTrustedProxyOrigin('', 'capacitor', '')).toBe(false);
+  });
 });

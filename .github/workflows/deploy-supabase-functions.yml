@@ -13,22 +13,47 @@ permissions:
 
 jobs:
   # This workflow deploys straight to the production Supabase project on a push
-  # to main, and used to do so with no gate whatsoever -- over the least-checked
-  # code in the repo (supabase/ is globalIgnores'd by eslint and ignored by knip).
-  # The suite covers these functions (vitest's include has a supabase/ entry, and
-  # coverage now measures it), so at minimum that has to be green first.
+  # to main, and used to do so with no gate whatsoever.
+  #
+  # supabase/functions is the least-checked code in the repo and every existing
+  # gate is blind to it BY CONFIGURATION: eslint globalIgnores it
+  # (eslint.config.js), knip ignores it (knip.json), and tsc never sees it
+  # (tsconfig.app.json includes only src + capacitor). vitest's
+  # `supabase/**/*.{test,spec}.{js,ts}` glob currently matches ZERO files, so
+  # running the node suite here would prove nothing about this directory --
+  # a probe violating five rules at once passed all four gates.
+  #
+  # These are Deno modules, so Deno is what can actually check them. `deno check`
+  # type-checks the entry of every function including its remote imports, which
+  # is the class of error most likely to take production down on deploy.
   verify:
     name: Verify before deploying
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: denoland/setup-deno@v2
         with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run test:coverage
+          deno-version: v2.x
+      # --node-modules-dir=auto is required, not optional: functions-js pulls
+      # `npm:openai` types transitively, and without it the check aborts on
+      # resolution before type-checking anything.
+      #
+      # Verified locally against deno 2.9.5: passes on a clean tree, and exits 1
+      # with TS2322 on a deliberate type error in submit-suggestion.
+      #
+      # `deno lint` is deliberately NOT run yet: it reports 38 pre-existing
+      # problems (mostly no-explicit-any) and would land red. It wants the same
+      # baseline-ratchet treatment as scripts/lint-gate.mjs before it can gate.
+      - name: Type-check every edge function
+        run: |
+          shopt -s nullglob
+          fns=(supabase/functions/*/index.ts)
+          if [ ${#fns[@]} -eq 0 ]; then
+            echo "No edge functions found — nothing to check."
+            exit 0
+          fi
+          printf 'Checking %s\n' "${fns[@]}"
+          deno check --node-modules-dir=auto "${fns[@]}"
 
   deploy:
     needs: verify

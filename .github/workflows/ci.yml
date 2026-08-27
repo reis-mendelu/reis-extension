@@ -100,7 +100,13 @@ jobs:
       - run: npm ci
       # Thresholds live in vitest.config.ts and fail the run when coverage drops
       # below them, so the number can only ratchet upward.
-      - run: npm run test:coverage
+      # json-summary as well as the configured reporters, so the zero-coverage
+      # ratchet below has a machine-readable file to read.
+      - run: npm run test:coverage -- --coverage.reporter=json-summary --coverage.reporter=text
+      # Percentage floors are blind to a NEW untested file: a few hundred
+      # uncovered statements move a 44k-statement average by a fraction of a
+      # point and merge green. This ratchets the COUNT of never-executed files.
+      - run: npm run coverage:zero-gate
 
   # Runs the suite in randomised order. Four suites here passed only because they
   # were declared in a forgiving order and leaked state into each other: a mock

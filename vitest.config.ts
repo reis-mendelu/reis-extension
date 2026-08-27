@@ -29,12 +29,12 @@ export default defineConfig({
       // meant the supabase edge functions, the build scripts and the Capacitor
       // entry were tested but never counted -- including the edge function whose
       // 2295-character payload bug is the reason supabase/ was added at all.
-      include: [
-        'src/**/*.{ts,tsx}',
-        'scripts/**/*.{ts,mjs}',
-        'supabase/functions/**/*.ts',
-        'capacitor/**/*.{ts,tsx}',
-      ],
+      // supabase/functions is deliberately absent: it is Deno code that this
+      // node suite cannot execute (the `supabase/**` test glob matches zero
+      // files), so including it only padded the denominator with 687
+      // never-executable statements and flattered nothing. It is gated on its own
+      // terms by `deno check` in deploy-supabase-functions.yml instead.
+      include: ['src/**/*.{ts,tsx}', 'scripts/**/*.{ts,mjs}', 'capacitor/**/*.{ts,tsx}'],
       exclude: ['src/test/**', 'src/**/*.d.ts', '**/__tests__/**', '**/*.{test,spec}.*'],
       // A ratchet, in the same spirit as nuia-baseline.json: the global numbers
       // sit just under what the suite currently produces, so coverage can only

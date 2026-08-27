@@ -12,7 +12,7 @@
  * them would leave the actual validation untested.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Messages } from '../../types/messages';
 
 const sendToIframe = vi.hoisted(() => vi.fn());
@@ -62,6 +62,17 @@ beforeEach(async () => {
     runtime: { getURL: () => `${ORIGIN}/`, sendMessage: vi.fn() },
   });
   handleMessage = (await import('../messageHandler')).handleMessage;
+});
+
+/**
+ * Restored in a hook, not at the end of the test body. The session-expiry case
+ * replaces window.location to capture the navigation; restoring it inline means a
+ * failed assertion above returns early and leaves it clobbered for every later
+ * test in the file -- and intra-file order is shuffled in CI.
+ */
+const realLocation = window.location;
+afterEach(() => {
+  Object.defineProperty(window, 'location', { configurable: true, value: realLocation });
 });
 
 /** A well-formed event from the real iframe, so only the field under test differs. */
@@ -203,11 +214,10 @@ describe('REIS_FETCH against IS', () => {
     // same way. Reporting the error without redirecting leaves the app retrying
     // forever against a session that cannot come back.
     let navigatedTo = '';
-    const loc = window.location;
     Object.defineProperty(window, 'location', {
       configurable: true,
       value: {
-        ...loc,
+        ...realLocation,
         get href() {
           return '';
         },
@@ -234,7 +244,6 @@ describe('REIS_FETCH against IS', () => {
     expect(sendToIframe).toHaveBeenCalledWith(
       expect.objectContaining({ id: msg.id, success: false })
     );
-    Object.defineProperty(window, 'location', { configurable: true, value: loc });
   });
 
   it('rejects an image response that is not actually an image', async () => {
