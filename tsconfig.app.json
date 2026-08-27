@@ -34,7 +34,11 @@
     // wxt.config.ts, so a type error in main.capacitor.tsx passed `npm run
     // typecheck` AND `npm run build:capacitor` (vite transpiles without
     // checking). Nothing in CI would have caught it.
-    "capacitor"
+    "capacitor",
+    // Build and release tooling: it runs via tsx, which strips types without
+    // checking them, so a type error in scrape-real-data.ts or shot.ts shipped
+    // silently. Same hole capacitor/ had.
+    "scripts"
   ],
   "exclude": ["../_figma_desing"]
 }

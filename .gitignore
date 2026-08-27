@@ -164,3 +164,7 @@ dist-capacitor/
 .store-shots/
 .store-shots-ios-6.9/
 .store-shots-ios-13/
+
+# Created by `deno check` when verifying supabase/functions locally.
+# Deno is used here only to type-check edge functions, not to manage deps.
+deno.lock

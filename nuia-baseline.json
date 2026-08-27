@@ -1,4 +1,6 @@
 [
+  "scripts/lib/__tests__/nodeRuntime.test.ts",
+  "scripts/lib/iosVersion.ts",
   "src/api/__tests__/bulletin.test.ts",
   "src/api/__tests__/campusMap.test.ts",
   "src/api/__tests__/classmates.test.ts",

@@ -70,7 +70,7 @@ const MAX_PER_KIND = 12;
 
 const area = (r: Rect) => Math.max(0, r.w) * Math.max(0, r.h);
 
-function isOpaqueEnough(c: Rgba | null): c is Rgba {
+function isOpaqueEnough(c: Rgba | null | undefined): c is Rgba {
   return c != null && c.a > 0.01;
 }
 

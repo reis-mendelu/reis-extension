@@ -13,8 +13,12 @@ jobs:
   # main, so a release built from a tag reached the Chrome, Firefox and Edge
   # stores without a single test, typecheck or lint having run on that ref.
   # Cross-workflow `needs:` does not exist, so the gates are re-run here and
-  # publish depends on them -- on the SAME node version that builds the artifact,
-  # which is the one that actually ships.
+  # publish depends on them.
+  #
+  # node 22 deliberately: the version the publish job builds with, i.e. the
+  # runtime that actually ships. ci.yml runs node 20, so without this the artifact
+  # reaching three web stores would be built on a version no gate had ever been
+  # measured against.
   verify:
     name: Verify before publishing
     runs-on: ubuntu-latest
@@ -28,7 +32,22 @@ jobs:
       - run: npm run typecheck
       - run: npm run nuia:gate
       - run: npm run lint:gate
-      - run: npm run test:coverage
+      - run: npm run lint:dead
+      - run: npm audit --audit-level=high
+      # json-summary so the zero-coverage ratchet has its input, exactly as in ci.yml.
+      - run: npm run test:coverage -- --coverage.reporter=json-summary --coverage.reporter=text
+      - run: npm run coverage:zero-gate
+      # The release path was gated MORE WEAKLY than an ordinary PR: it ran four
+      # gates where ci.yml runs eight, and it skipped the one that catches
+      # order-dependence entirely. A tag is the last moment to find any of this.
+      - name: Unit tests, shuffled
+        run: |
+          SEED=$(( RANDOM * 32768 + RANDOM ))
+          echo "::notice::shuffle seed $SEED"
+          npx vitest run --sequence.shuffle --sequence.seed="$SEED"
+      # Capacitor is not part of `npm run zip`, but the same tag drives the
+      # iOS/Android release, so a broken mobile bundle must stop the tag too.
+      - run: npm run build:capacitor
 
   publish:
     needs: verify
