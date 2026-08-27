@@ -4,6 +4,7 @@ import {
   LIBRARY_ROOMS,
   LIBRARY_PLACE_IDS,
   libraryRoomsByPlaceId,
+  libraryHoverLabel,
   indexAvailabilityByRoom,
 } from '@/data/map/libraryRooms';
 import type { RoomAvailability } from '@/types/library';
@@ -44,6 +45,26 @@ describe('libraryRooms', () => {
   it('groups the two IC rooms under the shared placeId 57640', () => {
     expect(libraryRoomsByPlaceId(57640)).toHaveLength(2);
     expect(LIBRARY_PLACE_IDS.has(57640)).toBe(true);
+  });
+});
+
+describe('libraryHoverLabel', () => {
+  // For these two place IDs the map API's own `nickname` is the raw passport
+  // code ("A011", "AS01"), so roomLabel's nickname preference has nothing
+  // friendly to prefer and the hover reads as a code. Upstream data gap.
+  it('names the two places whose nickname is a raw code', () => {
+    expect(libraryHoverLabel(57631)).toBe('Seminární místnost');
+    // 57640 carries two bookable rooms, so it gets the plural group name
+    // rather than either room's own nameCs.
+    expect(libraryHoverLabel(57640)).toBe('Studovny IC');
+  });
+
+  it('returns undefined elsewhere, so roomLabel stays in charge', () => {
+    for (const id of LIBRARY_PLACE_IDS) {
+      if (id === 57631 || id === 57640) continue;
+      expect(libraryHoverLabel(id)).toBeUndefined();
+    }
+    expect(libraryHoverLabel(1)).toBeUndefined();
   });
 });
 
