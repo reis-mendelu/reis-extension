@@ -104,11 +104,50 @@ shipped red for the same reason one commit later.
 
 ---
 
+## What the gates caught on the merge from main
+
+The branch was rebased onto seven commits that landed on `main` while it was
+being built. That merge is the first real trial of the gates, because the code
+arriving through it was written without them. Four fired, none of them on code
+this branch wrote:
+
+| Gate | What arrived | Resolution |
+| --- | --- | --- |
+| `nuia:gate` | a new test indexing a `NodeList` — `Element \| undefined` under the flag | fixed, not baselined; the gate has no `--write` by design |
+| `lint:dead:full` | a new `export` read only inside its own file | un-exported |
+| `coverage:zero-gate` | one file left the zero-coverage set | banked 176 → 175 |
+| `test-shuffled` | five tests green in declared order, red under shuffle | two leaks fixed |
+
+The shuffle finding is the one worth reading. Both new screens gate their
+skeleton and error states on `syncLoaded`, and neither suite's `beforeEach`
+reset it — so "renders the empty state" passed only while some earlier file
+happened to leave the flag set, and rendered the *error* state under a different
+file order. Resetting it then exposed a second leak underneath: three tests
+asserted the empty state while setting only `firstSyncSettled`, free-riding on
+`syncLoaded` written by the tests declared immediately above them.
+
+Each now states its own premise. "The fetch came back" is the entire difference
+between an empty timetable and a failed load, and it is the kind of thing that
+should be written down rather than inherited.
+
+One conflict was resolved *against* this branch, deliberately. Both sides had
+independently fixed the same `MapScreen` flake — this branch by feeding
+`snapDetent` real timestamps, `main` by stubbing it behind a flag and moving the
+velocity coverage to `sheetDrag.test.ts`. Checked before deferring:
+`sheetDrag.test.ts` does assert the threshold from both directions and at
+`dt = 0` against the real `snapDetent`, so `main`'s comment is accurate and
+nothing was lost. The `pointer()` helper survives at the two sites that did not
+conflict — one of which is a real fix, since `fireEvent(el, { timeStamp })`
+silently ignores the value: `timeStamp` is readonly on `Event`, so the handler
+kept reading `performance.now()`.
+
+---
+
 ## What is not done
 
 Stated plainly so nobody reads the green checkmarks as more than they are.
 
-- **Coverage is 57.5%.** Every audit puts 8/10 at ~70% with no zero-coverage
+- **Coverage is 58.3%.** Every audit puts 8/10 at ~70% with no zero-coverage
   files. That is ~5,500 more covered statements, and most of the remainder is
   the React component tree (`src/components` is roughly half of all statements).
 - **175 files have never had a function execute.** Ratcheted, so the number can
