@@ -2,27 +2,16 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Loader2, ZoomIn, ZoomOut, X, StickyNote } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
-// Dynamic import() of ES modules fails under chrome-extension:// protocol.
-// Fetch the worker script as text and serve it via a blob URL instead.
-import workerPath from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { resolvePdfWorkerSource } from './pdfWorkerSource';
 import { computeRenderWindow } from './pdfWindow';
 
-let workerReadyPromise: Promise<void> | null = null;
-
+// Resolving the worker moved to pdfWorkerSource so it goes through the platform
+// seam: the old `chrome.runtime.getURL` here is undefined on Capacitor, which is
+// why this viewer could never open on the phone/tablet app.
 function getWorkerReady(): Promise<void> {
-    if (!workerReadyPromise) {
-        try {
-            workerReadyPromise = fetch(chrome.runtime.getURL(workerPath))
-                .then(r => r.text())
-                .then(text => {
-                    const url = URL.createObjectURL(new Blob([text], { type: 'application/javascript' }));
-                    pdfjs.GlobalWorkerOptions.workerSrc = url;
-                });
-        } catch {
-            return Promise.reject(new Error('Extension context invalidated'));
-        }
-    }
-    return workerReadyPromise;
+    return resolvePdfWorkerSource().then(src => {
+        pdfjs.GlobalWorkerOptions.workerSrc = src;
+    });
 }
 
 interface PdfViewerProps {

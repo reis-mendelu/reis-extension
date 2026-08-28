@@ -189,3 +189,86 @@ describe('EventComposer publish', () => {
     expect(screen.queryByText('BA39N1009')).toBeNull();
   });
 });
+
+/**
+ * Sprint 08: "Spolky se nemůžou podívat, kde plánují akci na mapě před
+ * publikem." The draft pin was never the problem — EventLayer has always drawn
+ * one from `draftCoord`. A CAMPUS venue simply never wrote its coordinate
+ * there: the room lived in the composer's own useState and the map had nothing
+ * to draw, so the only venue kind you could check before publishing was the
+ * off-campus one.
+ */
+describe('EventComposer — seeing the planned location before publishing', () => {
+  const pickRoom = () => {
+    fireEvent.click(screen.getByRole('button', { name: /Kampus/ }));
+    fireEvent.change(screen.getByPlaceholderText('Hledat místnost nebo budovu…'), {
+      target: { value: 'Q01' },
+    });
+    const firstMatch = screen.getAllByRole('button').find((b) => /Q01/.test(b.textContent ?? ''));
+    fireEvent.click(firstMatch as HTMLElement);
+  };
+
+  it('puts a picked campus room on the map as the draft pin', () => {
+    render(<EventComposer onDone={() => {}} />);
+    expect(useAppStore.getState().draftCoord).toBeNull();
+
+    pickRoom();
+
+    const coord = useAppStore.getState().draftCoord;
+    expect(coord).not.toBeNull();
+    expect(coord?.[0]).toBeGreaterThan(16);
+    expect(coord?.[1]).toBeGreaterThan(49);
+  });
+
+  it('takes the pin off the map when the room is cleared', () => {
+    render(<EventComposer onDone={() => {}} />);
+    pickRoom();
+    expect(useAppStore.getState().draftCoord).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Změnit místo' }));
+    expect(useAppStore.getState().draftCoord).toBeNull();
+  });
+
+  it('offers a way to look at the pin once a campus room is chosen', () => {
+    render(<EventComposer onDone={() => {}} />);
+    pickRoom();
+    const before = useAppStore.getState().draftFocusRequest;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ukázat na mapě' }));
+    expect(useAppStore.getState().draftFocusRequest).toBe(before + 1);
+  });
+
+  it('offers the same look at an off-campus point', () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    const before = useAppStore.getState().draftFocusRequest;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ukázat na mapě' }));
+    expect(useAppStore.getState().draftFocusRequest).toBe(before + 1);
+  });
+
+  it('has nothing to show before a venue is chosen', () => {
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.queryByRole('button', { name: 'Ukázat na mapě' })).not.toBeInTheDocument();
+  });
+
+  // Publishing still has to carry the room's own coordinate, not whatever the
+  // store happens to hold — the draft pin is a view of it, not the source.
+  it('publishes the room coordinate for a campus event', async () => {
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Přednáška' } });
+    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    pickRoom();
+    // Read the mirrored coord before publishing: closing the composer clears it.
+    const pinned = useAppStore.getState().draftCoord;
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    const input = createPost.mock.calls[0][0];
+    expect(input.venueKind).toBe('campus');
+    expect(input.roomCode).toBeTruthy();
+    expect(input.coordLng).toBe(pinned?.[0]);
+    expect(input.coordLat).toBe(pinned?.[1]);
+  });
+});

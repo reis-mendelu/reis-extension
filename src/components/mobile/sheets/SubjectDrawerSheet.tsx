@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
 import type { SyntheticEvent } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { Sheet } from '../primitives/Sheet';
@@ -16,9 +16,15 @@ import { useSyllabus } from '../../../hooks/data/useSyllabus';
 import { useSubjects } from '../../../hooks/data/useSubjects';
 import { useSchedule } from '../../../hooks/data/useSchedule';
 import { useSyncStatus } from '../../../hooks/data/useSyncStatus';
-import { useFileActions } from '../../../hooks/ui/useFileActions';
+import { usePdfPreview } from '../../../hooks/ui/usePdfPreview';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
+
+// pdf.js and its worker are the heaviest thing the app can load; a student who
+// never opens a PDF should never pay for it.
+const PdfViewer = lazy(() =>
+  import('../../SubjectFileDrawer/PdfViewer').then((m) => ({ default: m.PdfViewer }))
+);
 
 type SubjectDrawerSheetData = Extract<MobileSheet, { kind: 'subjectDrawer' }>;
 
@@ -60,7 +66,10 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   const subjectInfo = getSubject(courseCode);
   const { schedule } = useSchedule();
   const { isSyncing } = useSyncStatus();
-  const { openFile, downloadSingle } = useFileActions();
+  // Tapping a PDF opens it in the reader rather than exporting it: on iOS the
+  // download path is the share sheet, so "just let me read page 3" meant saving
+  // the file out of the app first. The row's own download button is untouched.
+  const { previewUrl, viewPdf, closePreview, openFile, downloadSingle } = usePdfPreview();
 
   const resolvedCourseId =
     courseId || schedule.find((s) => s.courseCode === courseCode && s.courseId)?.courseId || '';
@@ -139,6 +148,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           ignoreClickRef={ignoreClickRef}
           toggleSelect={toggleSelect}
           openFile={openFile}
+          onViewPdf={viewPdf}
           onDownloadSingle={downloadSingle}
           resolvedCourseId={resolvedCourseId}
           syllabusResult={syllabusResult}
@@ -163,6 +173,20 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           showStudyInfo={false}
         />
       </div>
+      {previewUrl && (
+        // Over the whole screen, not inside the tab body: a phone/tablet has no
+        // room for the desktop's side-by-side drawer, and the reader needs every
+        // pixel. Back closes the reader first, the drawer second.
+        <div className="absolute inset-0 z-20 bg-base-100">
+          <Suspense fallback={null}>
+            <PdfViewer
+              key={previewUrl}
+              blobUrl={previewUrl}
+              onClose={closePreview}
+            />
+          </Suspense>
+        </div>
+      )}
       {openInIsHref && (
         <a
           href={openInIsHref}

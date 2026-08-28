@@ -590,6 +590,10 @@ export interface MapSlice {
   /** Record a picked coordinate and leave placing mode. */
   placeDraftCoord: (coord: [number, number]) => void;
   clearDraftCoord: () => void;
+  /** Bumped to ask the map to fly to the draft pin; the camera watches the counter. */
+  draftFocusRequest: number;
+  /** "Show me where this lands" — point the map at the draft before publishing. */
+  previewDraftOnMap: () => void;
   /** True while the event-composer overlay is open. */
   composerOpen: boolean;
   /** Id of the societyMapEvents entry being edited, or null when composing a new event. */

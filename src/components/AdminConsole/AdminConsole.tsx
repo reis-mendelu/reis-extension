@@ -8,6 +8,7 @@ import { AdminEventList } from './AdminEventList';
 import { AdminConsoleMap } from './AdminConsoleMap';
 import { AdminLoginScreen } from './AdminLoginScreen';
 import { MobileAdminConsole } from './MobileAdminConsole';
+import { useDraftCamera } from '../CampusMap/useDraftCamera';
 import { SuggestionsInbox } from './SuggestionsInbox';
 
 /**
@@ -31,6 +32,11 @@ export function AdminConsole() {
   const unread = useAppStore((s) => s.suggestionsUnread);
   const [pane, setPane] = useState<'events' | 'suggestions'>('events');
   const { t } = useTranslation();
+  // Owned by the console root rather than the map pane, and by exactly one of
+  // them: on a phone the map unmounts with its tab, so a preview requested from
+  // the list would be fired at nothing. Hosting it here means the request
+  // outlives the pane in both layouts, and only one camera move ever fires.
+  useDraftCamera();
 
   if (!session) {
     return (

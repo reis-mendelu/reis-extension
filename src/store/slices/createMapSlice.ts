@@ -63,6 +63,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   societyMapEvents: [],
   placingEvent: false,
   draftCoord: null,
+  draftFocusRequest: 0,
   composerOpen: false,
   editEventId: null,
 
@@ -223,6 +224,21 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   cancelPlacing: () => set({ placingEvent: false }),
   placeDraftCoord: (coord) => set({ draftCoord: coord, placingEvent: false }),
   clearDraftCoord: () => set({ draftCoord: null }),
+
+  // Deliberately its own counter rather than `mapFocusRequest`: that one is
+  // consumed by MapCanvas's heavy draw effect, whose camera branch keys off
+  // `mapSelection`, and a draft is not a selectable entity. Bumping this asks
+  // the (much smaller) draft camera effect to move, and nothing else redraws.
+  //
+  // Leaving floor-view is part of the move: pins are only drawn in the campus
+  // overview, so flying to a draft while inside a building would land on a
+  // floor plan with no pin on it.
+  previewDraftOnMap: () =>
+    set({
+      draftFocusRequest: get().draftFocusRequest + 1,
+      activeBuildingId: null,
+      activeFloorId: null,
+    }),
 
   openComposer: (editId) => {
     const ev = editId ? get().societyMapEvents.find((e) => e.id === editId) : null;

@@ -358,7 +358,9 @@
       "other": "Ostatní",
       "noFiles": "Žádné soubory",
       "searchOnlyInSchedule": "Soubory jsou dostupné jen pro předměty v rozvrhu.",
-      "noFilesAvailable": "Žádné soubory nejsou k dispozici."
+      "noFilesAvailable": "Žádné soubory nejsou k dispozici.",
+      "download": "Stáhnout",
+      "openInSidebar": "Otevřít náhled"
     },
     "pdf": {
       "loadFailed": "PDF se nepodařilo otevřít.",
@@ -994,7 +996,7 @@
     "seats": "Míst",
     "projector": "Projektor",
     "whiteboard": "Tabule",
-    "showOnMap": "Zobrazit na mapě",
+    "showOnMap": "Ukázat na mapě",
     "places": "Místa",
     "placesCampus": "Kampus",
     "placesOther": "Další pracoviště",
