@@ -590,8 +590,17 @@ export interface MapSlice {
   /** Record a picked coordinate and leave placing mode. */
   placeDraftCoord: (coord: [number, number]) => void;
   clearDraftCoord: () => void;
-  /** Bumped to ask the map to fly to the draft pin; the camera watches the counter. */
+  /** Bumped alongside mapFocusRequest so the phone console can bring the map tab forward. */
   draftFocusRequest: number;
+  /**
+   * WHERE the latest focus request pointed the camera. Stated rather than
+   * consumed: MapCanvas's draw effect runs more than once per request (React
+   * re-invokes it, and `roomsByBuilding` lands after mount), so a
+   * "have I flown yet" flag was spent on the first run and the second run
+   * re-fitted the campus on top of the move. Re-reading this gives the same
+   * answer every time, which is what makes the camera stay put.
+   */
+  mapFocusTarget: 'campus' | 'draft';
   /** "Show me where this lands" — point the map at the draft before publishing. */
   previewDraftOnMap: () => void;
   /** True while the event-composer overlay is open. */
