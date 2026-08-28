@@ -1,6 +1,6 @@
 {
   "//": "Files where NOT ONE FUNCTION has ever executed. Ratcheted by scripts/zero-coverage-gate.mjs: the set may shrink, never grow. Counting zero-STATEMENT files instead undercounted this by 4x — a transitive import evaluating one module-level line made a wholly untested file look covered. Bank a drop with: npm run coverage:zero-gate -- --write. A rise is never banked automatically.",
-  "maxZeroCoverageFiles": 176,
+  "maxZeroCoverageFiles": 175,
   "knownFiles": [
     "scripts/android-release.mjs",
     "scripts/computeErasmusStats.mjs",
@@ -122,7 +122,6 @@
     "src/components/SubjectFileDrawer/useSubjectFileDrawerState.ts",
     "src/components/SubjectsPanel/EnrolledNowSection.tsx",
     "src/components/SubjectsPanel/HardestUpcomingCard.tsx",
-    "src/components/SubjectsPanel/SubjectsPanelHeader.tsx",
     "src/components/SubjectsPanel/ZameraniComparisonCard.tsx",
     "src/components/SubjectsPanel/ZaznamnikLine.tsx",
     "src/components/SuccessRate/GradeBarChart.tsx",

@@ -38,6 +38,11 @@ describe('ExamsScreen', () => {
   beforeEach(() => {
     useAppStore.setState({
       language: 'cz',
+      // ExamsScreen shows the error state when firstSyncSettled is set and
+      // syncLoaded.exams is not. Neither was reset here, so 'renders the
+      // empty state' passed on inherited state and failed under shuffle.
+      firstSyncSettled: true,
+      syncLoaded: { exams: true },
       syncStatus: {
         isSyncing: false,
         lastSync: 1,
@@ -291,6 +296,9 @@ describe('ExamsScreen first-sync loading', () => {
       language: 'cz',
       exams: { data: [], status: 'loading' } as never,
       firstSyncSettled: false,
+      // The skeleton is gated on !syncLoaded.exams; reset it or an earlier
+      // file's leftover true hides the skeleton this suite is about.
+      syncLoaded: {},
       syncStatus: {
         isSyncing: true,
         lastSync: null,
@@ -353,7 +361,9 @@ describe('ExamsScreen first-sync loading', () => {
   });
 
   it('does not fall back to the skeleton on a later background sync', () => {
-    useAppStore.setState({ firstSyncSettled: true });
+    // syncLoaded stated, not inherited from the test above: an already-loaded
+    // exam list is the whole premise of 'a LATER background sync'.
+    useAppStore.setState({ firstSyncSettled: true, syncLoaded: { exams: true } });
     render(<ExamsScreen />);
     expect(screen.queryByTestId('exams-skeleton')).not.toBeInTheDocument();
   });

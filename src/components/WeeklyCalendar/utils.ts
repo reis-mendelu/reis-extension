@@ -34,7 +34,9 @@ export function timeToPercent(time: string): number {
  * a 12:00 oral exam still reads "12:00 - 12:10" on the card and in its tooltip
  * even though it occupies an hour and a half of grid.
  */
-export const MIN_VISUAL_BLOCK_MINUTES = 90;
+// Module-private: renderedBlockMinutes below is its only reader. Exporting it
+// put it on the unused-export ratchet without giving anything a way in.
+const MIN_VISUAL_BLOCK_MINUTES = 90;
 
 /** Grid space a block actually occupies — its real length, floored for legibility. */
 export function renderedBlockMinutes(startTime: string, endTime: string): number {

@@ -36,7 +36,9 @@ describe('cancelling login from the gate', () => {
     expect(root.textContent).not.toContain('failed to start');
 
     // The second dismissal: tap the gate's own sign-in button, back out again.
-    const signIn = document.querySelectorAll('button')[0];
+    // Non-null: the waitFor above already asserted there is at least one
+    // button. Matches the `getElementById('root')!` idiom a few lines up.
+    const signIn = document.querySelectorAll('button')[0]!;
     await act(async () => {
       signIn.click();
     });

@@ -16,6 +16,14 @@ describe('CalendarScreen', () => {
       // it poisoned nothing, but under --sequence.shuffle it ran first and hid
       // that lesson from every test after it.
       hiddenItems: { events: [], courses: [] },
+      // Same reason as hiddenItems: these are read by the skeleton/error
+      // gate in CalendarScreen and were never reset here, so the empty-state
+      // tests below passed only while some earlier file happened to leave
+      // syncLoaded.schedule set. Premise stated outright: the first sync
+      // finished and delivered a schedule, which is what makes an empty day
+      // an empty day rather than a failed fetch.
+      firstSyncSettled: true,
+      syncLoaded: { schedule: true },
       syncStatus: {
         isSyncing: false,
         lastSync: 1,
@@ -142,6 +150,9 @@ describe('CalendarScreen first-sync loading', () => {
       mobileSelectedDayIso: '2026-04-20',
       schedule: { data: [], status: 'loading' } as never,
       firstSyncSettled: false,
+      // The skeleton is gated on !syncLoaded.schedule. Without this reset a
+      // preceding file leaves it true and the skeleton never renders.
+      syncLoaded: {},
       syncStatus: {
         isSyncing: true,
         lastSync: null,
@@ -202,6 +213,10 @@ describe('CalendarScreen first-sync loading', () => {
   it('shows the empty state once that sync has finished with nothing in it', () => {
     useAppStore.setState({
       firstSyncSettled: true,
+      // 'finished' means the fetch came back. Stated here rather than
+      // inherited from the test above: without it this is the FAILED-fetch
+      // case, which renders the error state, not the empty one.
+      syncLoaded: { schedule: true },
       syncStatus: {
         isSyncing: false,
         lastSync: 1,
@@ -217,7 +232,7 @@ describe('CalendarScreen first-sync loading', () => {
   it('does not fall back to the skeleton on a later background sync', () => {
     // A student with a genuinely empty week must not watch the screen flip to
     // a skeleton every time the 15-minute resync runs.
-    useAppStore.setState({ firstSyncSettled: true });
+    useAppStore.setState({ firstSyncSettled: true, syncLoaded: { schedule: true } });
     render(<CalendarScreen />);
     expect(screen.getByText('Nic nemáš, pohodička')).toBeInTheDocument();
   });
