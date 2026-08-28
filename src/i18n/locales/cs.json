@@ -1106,7 +1106,8 @@
     "libraryBookRateLimited": "Nedávno jste rezervovali několik místností — zkuste to později.",
     "libraryBookOffline": "Bez připojení — rezervace se nezdařila.",
     "libraryBookInvalid": "Rezervaci se nepodařilo odeslat.",
-    "libraryBookMissing": "Doplňte prosím zvýrazněná pole."
+    "libraryBookMissing": "Doplňte prosím zvýrazněná pole.",
+    "reminderLead": "Za 2 hodiny"
   },
   "admin": {
     "email": "E-mail",

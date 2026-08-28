@@ -260,6 +260,11 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     try {
       const events = await fetchMapEvents();
       set({ mapEvents: events.map(locateEvent), mapEventsLoaded: true });
+      // Attendance is loaded here, with the events, rather than by the cards:
+      // one RPC covers every visible event, and components do not fetch.
+      // Detached on purpose — a card renders with 0/0 while this is in flight,
+      // and a failure must not take the events down with it.
+      void get().loadRsvps(events.map((e) => e.id));
     } catch (err) {
       logError('MapSlice.reloadMapEvents', err);
     }

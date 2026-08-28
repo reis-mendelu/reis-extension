@@ -33,6 +33,13 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
           fullName: params.fullName ?? null,
           userEmail: params.email ?? null,
         });
+        // The student's own Going/Interested can only be read back once their
+        // id is known, and loadContext races loadMapEvents rather than
+        // preceding it. Re-asking here costs one RPC and is what stops a
+        // student's own answer from vanishing on every reload; the counts
+        // themselves were already correct without it.
+        const events = get().mapEvents;
+        if (events.length > 0) void get().loadRsvps(events.map((e) => e.id));
       }
     } catch (err) {
       logError('ContextSlice.loadContext', err);

@@ -1106,7 +1106,8 @@
     "libraryBookRateLimited": "You've booked several rooms recently — try again later.",
     "libraryBookOffline": "You're offline — booking failed.",
     "libraryBookInvalid": "Couldn't submit the booking.",
-    "libraryBookMissing": "Please fill the highlighted fields."
+    "libraryBookMissing": "Please fill the highlighted fields.",
+    "reminderLead": "In 2 hours"
   },
   "admin": {
     "email": "Email",
