@@ -78,6 +78,10 @@ export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
       demoMode: true,
       ...demoContext,
       syncStatus: { ...state.syncStatus, handshakeDone: true },
+      // For the same reason, one step further: the demo dataset is already
+      // complete, and no sync will ever run to set this, so without it every
+      // screen with no rows in the fixture would sit on a skeleton forever.
+      firstSyncSettled: true,
     }));
   },
 

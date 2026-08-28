@@ -1,6 +1,8 @@
 import { BookOpen } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
+import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
+import { ScreenError } from '../primitives/ScreenError';
 import { useStudyPlan } from '../../../hooks/useStudyPlan';
 import { getSemesterState } from '../../SubjectsPanel/utils';
 import type { SubjectStatus } from '../../../types/studyPlan';
@@ -10,13 +12,13 @@ import { SemesterCard } from './subjects/SemesterCard';
 import { AverageAccordion } from './subjects/AverageAccordion';
 
 function SubjectsSkeleton() {
+  const { t } = useTranslation();
   return (
-    <div data-testid="subjects-skeleton" className="flex flex-1 flex-col gap-3 overflow-hidden p-5">
-      <div className="h-6 w-40 animate-pulse rounded-lg bg-base-300" />
-      <div className="h-20 animate-pulse rounded-2xl bg-base-300" />
-      <div className="h-40 animate-pulse rounded-2xl bg-base-300" />
-      <div className="h-14 animate-pulse rounded-2xl bg-base-300" />
-    </div>
+    <ScreenSkeleton
+      testId="subjects-skeleton"
+      label={t('mobile.subjects.loading')}
+      rows={['h-6 w-40', 'h-20', 'h-40', 'h-14']}
+    />
   );
 }
 
@@ -41,8 +43,30 @@ export function SubjectsScreen() {
   const pushSheet = useAppStore((s) => s.pushSheet);
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
+  const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
+  const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
+  const syncError = useAppStore((s) => s.syncStatus.error);
 
-  if (!handshakeDone && !handshakeTimedOut) {
+  // Two different questions, and only one of them is `handshakeDone`. That
+  // flag flips on the first status message, which the sync posts as it STARTS,
+  // so on a first run it says "connected", not "finished". Until a crawl has
+  // actually completed (`firstSyncSettled`) and while one is in flight, an
+  // absence of a study plan means it has not arrived yet — show the skeleton rather than
+  // an empty state that reads as a wrong answer.
+  // A KontrolaPlanu that failed to parse still comes back as an object
+  // (creditsAcquired: 0, creditsRequired: 0, blocks: []) rather than null —
+  // Erasmus/exchange students in particular never have a parseable plan.
+  // Treat that shape as absent so we render the empty state instead of a
+  // broken "0 %" ring. Mirrors desktop's planUsable check (SubjectsPanel/index.tsx).
+  const planUsable = !!plan && plan.blocks.some((b) => b.groups.some((g) => g.subjects.length > 0));
+
+  // No per-domain shortcut here, unlike the calendar and exams screens. The
+  // plan's fetch is TTL-gated, so "nothing came back" covers skipped-as-fresh,
+  // no-studium and genuinely-none — and releasing on it showed "Zatím žádné
+  // předměty" to a student who has plenty, which everyone reads as a statement
+  // of fact. The skeleton stays until there is a usable plan to draw, or until
+  // a whole sync has finished and the emptiness is the real answer.
+  if ((!handshakeDone && !handshakeTimedOut) || (isSyncing && !firstSyncSettled && !planUsable)) {
     return <SubjectsSkeleton />;
   }
 
@@ -57,12 +81,17 @@ export function SubjectsScreen() {
     </button>
   );
 
-  // A KontrolaPlanu that failed to parse still comes back as an object
-  // (creditsAcquired: 0, creditsRequired: 0, blocks: []) rather than null —
-  // Erasmus/exchange students in particular never have a parseable plan.
-  // Treat that shape as absent so we render the empty state instead of a
-  // broken "0 %" ring. Mirrors desktop's planUsable check (SubjectsPanel/index.tsx).
-  if (!plan || !plan.blocks.some((b) => b.groups.some((g) => g.subjects.length > 0))) {
+  // Narrower than the other two screens on purpose: the study plan carries no
+  // arrival signal (its fetch is TTL-gated, so a null is ambiguous — see
+  // SyncDomain), leaving the whole-sync error as the only failure this screen
+  // can distinguish. A lone study-plan rejection inside an otherwise healthy
+  // run still reads as "no subjects"; narrowing that needs a fetched/skipped
+  // distinction inside ttlGated, which is a separate change.
+  if (!planUsable && syncError) {
+    return <ScreenError testId="subjects-error" />;
+  }
+
+  if (!planUsable) {
     return (
       <div data-testid="subjects-screen" className="flex flex-1 flex-col overflow-hidden">
         <ScreenHeader eyebrow="" title={t('mobile.subjects.title')} action={headerAction} />

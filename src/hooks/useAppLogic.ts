@@ -28,6 +28,7 @@ import type {
 import type { ClassmatesData } from '../types/classmates';
 import type { SubjectZaznamnik } from '../types/zaznamnik';
 import { getPlatform } from '../platform';
+import type { SyncDomain } from '../types/messages/base';
 
 interface SyncedData {
   schedule?: BlockLesson[];
@@ -49,6 +50,8 @@ interface SyncedData {
   odevzdavarny?: any[];
   lastSync?: string;
   isSyncing?: boolean;
+  /** Domains whose fetch finished in this run — empty answers included. */
+  loaded?: SyncDomain[];
 }
 
 export function useAppLogic() {
@@ -158,6 +161,10 @@ export function useAppLogic() {
       if (!r) return;
 
       // Instantly update store for reactivity, then persist to IDB in background
+      // Before the data branches: a domain can finish with nothing to send
+      // (no exams this month), and the screen still has to stop waiting.
+      if (r.loaded) useAppStore.getState().markSyncLoaded(r.loaded);
+
       if (r.schedule) {
         useAppStore.getState().setSchedule(r.schedule as any);
       }

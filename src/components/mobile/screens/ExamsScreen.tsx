@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Calendar, Users } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
+import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
+import { ScreenError } from '../primitives/ScreenError';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useExams } from '../../../hooks/data/useExams';
 import { useExamClassmates } from '../../../hooks/data/useExamClassmates';
@@ -22,13 +24,13 @@ import { NextUpStrip } from './exams/NextUpStrip';
 import { ConfirmSheet } from '../sheets/ConfirmSheet';
 
 function ExamsSkeleton() {
+  const { t } = useTranslation();
   return (
-    <div data-testid="exams-skeleton" className="flex flex-1 flex-col gap-3 overflow-hidden p-5">
-      <div className="h-6 w-40 animate-pulse rounded-lg bg-base-300" />
-      <div className="h-20 animate-pulse rounded-2xl bg-base-300" />
-      <div className="h-20 animate-pulse rounded-xl bg-base-300" />
-      <div className="h-20 animate-pulse rounded-xl bg-base-300" />
-    </div>
+    <ScreenSkeleton
+      testId="exams-skeleton"
+      label={t('mobile.exams.loading')}
+      rows={['h-6 w-40', 'h-20', 'h-20', 'h-20']}
+    />
   );
 }
 
@@ -73,6 +75,9 @@ export function ExamsScreen() {
   const userSemester = useAppStore((s) => s.userSemester);
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
+  const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
+  const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
+  const syncLoaded = useAppStore((s) => s.syncLoaded);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
@@ -160,7 +165,28 @@ export function ExamsScreen() {
     );
   };
 
-  if (!handshakeDone && !handshakeTimedOut) return <ExamsSkeleton />;
+  // Two different questions, and only one of them is `handshakeDone`. That
+  // flag flips on the first status message, which the sync posts as it STARTS,
+  // so on a first run it says "connected", not "finished". Until a crawl has
+  // actually completed (`firstSyncSettled`) and while one is in flight, an
+  // absence of exam terms means it has not arrived yet — show the skeleton rather than
+  // an empty state that reads as a wrong answer.
+  //
+  // Same rule as the calendar: not gated on the latched `firstSyncSettled`, so
+  // a retry shows the skeleton instead of parking on ScreenError. A student
+  // with genuinely no exams is protected by `syncLoaded.exams` instead.
+  if (
+    (!handshakeDone && !handshakeTimedOut) ||
+    (isSyncing && !syncLoaded.exams && exams.length === 0)
+  ) {
+    return <ExamsSkeleton />;
+  }
+
+  // Same rule as the calendar: a settled sync that never delivered exams, with
+  // nothing cached, is a failure and not an answer.
+  if (firstSyncSettled && !syncLoaded.exams && exams.length === 0) {
+    return <ScreenError testId="exams-error" />;
+  }
 
   return (
     <div data-testid="exams-screen" className="flex flex-1 flex-col overflow-hidden">

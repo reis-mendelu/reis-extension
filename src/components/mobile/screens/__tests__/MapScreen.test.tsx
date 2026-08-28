@@ -82,6 +82,23 @@ beforeEach(() => {
   } as never);
 });
 
+// snapDetent is the real one everywhere except in the micro-flick test, which
+// needs a detent change from a sub-slop drag without depending on how fast the
+// machine delivered the events. See that test for why.
+let forceDetentFlip = false;
+vi.mock('../../primitives/sheetDrag', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../primitives/sheetDrag')>();
+  return {
+    ...actual,
+    snapDetent: (from: 'peek' | 'expanded', dy: number, dt: number) =>
+      forceDetentFlip
+        ? from === 'expanded'
+          ? 'peek'
+          : 'expanded'
+        : actual.snapDetent(from, dy, dt),
+  };
+});
+
 describe('MapScreen', () => {
   const EVENT = {
     id: 'ev1',
@@ -179,23 +196,33 @@ describe('MapScreen', () => {
   // on whatever was under the finger — clearing the event or casting an RSVP as
   // a side effect of collapsing.
   it('suppresses the click when a fast micro-flick changes the detent', () => {
+    // Frozen clock, because the assertion is about velocity: `useMapSheetDrag`
+    // reads `e.timeStamp`, which jsdom fills from the real one. On an idle
+    // machine the gap between two synthetic events is sub-millisecond and the
+    // flick is fast; under a loaded CI runner the same three pixels take
+    // milliseconds and read as a slow drag, so the test failed on machine speed
+    // rather than on behaviour.
+    forceDetentFlip = true;
     useAppStore.setState({ mapEvents: [EVENT], mapSheetState: 'expanded' } as never);
     render(<MapScreen />);
     const sheet = screen.getByTestId('map-sheet');
 
-    // 3px is under DRAG_SLOP_PX, but it clears snapDetent's velocity threshold.
-    // The timeStamps must be explicit: snapDetent takes dt from `e.timeStamp`,
-    // so without them this rides on real elapsed time between synthetic events
-    // and flips under load. 3px over 1ms clears DISMISS_VELOCITY_PX_PER_MS
-    // deterministically, on any machine.
-    pointer(sheet, 'pointerDown', { clientY: 100, t: 1000 });
-    pointer(sheet, 'pointerMove', { clientY: 103, t: 1001 });
-    pointer(sheet, 'pointerUp', { clientY: 103, t: 1001 });
+    // 3px, under DRAG_SLOP_PX, so the gesture is still a tap. Whether it is
+    // ALSO fast enough to change the detent is snapDetent's decision, and it is
+    // stubbed here (see the mock above) rather than produced by timing: jsdom
+    // fills e.timeStamp from the real clock, so the same three pixels were a
+    // fast flick on an idle laptop and a slow drag on a loaded CI runner. This
+    // test is about what happens WHEN the detent changes under a tap; the
+    // velocity rule that decides it is covered in sheetDrag.test.ts.
+    fireEvent.pointerDown(sheet, { clientY: 100 });
+    fireEvent.pointerMove(sheet, { clientY: 103 });
+    fireEvent.pointerUp(sheet, { clientY: 103 });
     expect(useAppStore.getState().mapSheetState).toBe('peek');
 
     // The click the browser still delivers must not toggle it straight back.
     fireEvent.click(screen.getByRole('button', { name: /Akce na kampusu/ }));
     expect(useAppStore.getState().mapSheetState).toBe('peek');
+    forceDetentFlip = false;
   });
 
   it('mounts the event layer so society pins are drawn', () => {

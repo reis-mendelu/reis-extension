@@ -5,6 +5,89 @@ import { DemoModeError, isDemoMode } from '../errors/demoMode';
 const TOKEN_KEY = 'reis.session.uisAuth';
 
 /**
+ * The token, once read, for the life of this context.
+ *
+ * On Capacitor every authenticated request calls `loadStoredToken`, and one
+ * cold sync is ~120 requests — so a run paid ~120 Keychain/Keystore reads
+ * across the native bridge before a single byte reached IS (measured in #197).
+ * The value itself never rotates: IS issues one UISAuth per login and it stays
+ * valid until the session lapses, so there is nothing to re-read for.
+ *
+ * Memory only, deliberately — this is a cache of the secure store, not a second
+ * home for the credential. It dies with the process, and the two things that
+ * can invalidate it both go through this module: a re-login writes through
+ * `saveStoredToken`, and sign-out or a lapsed session clears through
+ * `clearStoredToken`. Nothing outside this file can write the key (see above),
+ * which is what makes that guarantee hold.
+ */
+let memo: string | null = null;
+
+/**
+ * Bumped by every write and every clear, so an in-flight read can tell whether
+ * the token changed underneath it.
+ *
+ * Without it there is a real race, not a theoretical one: `loadStoredToken`
+ * awaits the secure store, and a sign-out or a re-login can land in that gap.
+ * The read would then resolve and cache the value it fetched *before* the
+ * change — re-populating the memo with a token the student just signed out of,
+ * or clobbering a freshly issued one with the expired token it replaced. Both
+ * outlive the process, because nothing re-reads once the memo is warm.
+ */
+let generation = 0;
+
+/**
+ * One lane for every write to the secure store, so `set` and `remove` reach it
+ * in the order they were issued.
+ *
+ * Without it the two are independent native calls and can land in either order:
+ * a save issued during re-login, overtaken by a sign-out, could complete last
+ * and leave the credential on disk — where the next launch reads it and signs
+ * the student straight back into an account they left. The memo did not cause
+ * that (both calls already raced before this PR), but it is the same ordering
+ * bug one layer down, and the fix belongs beside the one above.
+ *
+ * Rejections are swallowed for the chain only: each caller still awaits — and
+ * sees — its own result, but one failed write must not wedge every later one.
+ */
+let writes: Promise<unknown> = Promise.resolve();
+
+/**
+ * How many sign-outs are between "decided" and "landed".
+ *
+ * The generation counter cannot see this window: `clearStoredToken` bumps the
+ * generation and empties the memo, then awaits a native remove that has not
+ * happened yet — so a read starting *after* the bump still finds the token on
+ * disk, at an unchanged generation, and would cache it. Every later request in
+ * the process would then act as a student who asked to leave.
+ */
+let clearing = 0;
+
+/**
+ * The read in flight right now, if any.
+ *
+ * The memo only starts paying once the first read has RESOLVED, and a cold sync
+ * fires its requests together — so the first ~dozen callers each opened their
+ * own native read, which is exactly the cost this module exists to remove.
+ * They now share one.
+ */
+let reading: Promise<string> | null = null;
+
+function serialized<T>(op: () => Promise<T>): Promise<T> {
+  const next = writes.then(op, op);
+  writes = next.catch(() => undefined);
+  return next;
+}
+
+/** Drops the cached token. Tests only — the module holds it for the process. */
+export function __resetTokenMemoForTests(): void {
+  memo = null;
+  generation = 0;
+  clearing = 0;
+  reading = null;
+  writes = Promise.resolve();
+}
+
+/**
  * The ONLY module that touches the IS session token.
  *
  * UISAuth authenticates as the student on its own, never rotates, and IS allows
@@ -17,7 +100,15 @@ const TOKEN_KEY = 'reis.session.uisAuth';
  * key private to this file is what stops that from coming back.
  */
 export async function saveStoredToken(token: string): Promise<void> {
-  await getPlatform().secureStorage.set(TOKEN_KEY, token);
+  // Claimed before the write: any read already in flight is now stale, whatever
+  // order the two finish in.
+  const mine = ++generation;
+  await serialized(() => getPlatform().secureStorage.set(TOKEN_KEY, token));
+  // After the write, not before: a failed write must not leave the app acting
+  // on a token that was never persisted. And only if nothing has happened
+  // since — a later save or a sign-out must not be undone by this one landing
+  // late.
+  if (mine === generation) memo = token;
 }
 
 /**
@@ -41,25 +132,79 @@ export async function saveStoredToken(token: string): Promise<void> {
  * this function is even reached is cheaper — but they are defence in depth,
  * not the actual boundary.
  */
+/** "Send the student to login" — the one failure this module reports. */
+function expired(): Error & { sessionExpired?: boolean } {
+  const err = new Error('No stored IS session') as Error & { sessionExpired?: boolean };
+  err.sessionExpired = true;
+  return err;
+}
+
 export async function loadStoredToken(): Promise<string> {
+  // Before the memo, not after: the demo guard is the boundary every
+  // authenticated path converges on, and a cached token must not become the way
+  // around it for a student who signed in earlier in this session.
   if (isDemoMode()) throw new DemoModeError();
 
+  if (memo !== null) return memo;
+
+  // Everyone who arrives before the first read resolves waits on that one.
+  if (reading) return reading;
+  reading = readFromStore().finally(() => {
+    reading = null;
+  });
+  return reading;
+}
+
+async function readFromStore(): Promise<string> {
+  const mine = generation;
+  // A sign-out that was decided before this read started is still landing, and
+  // the store will happily answer with the credential it is about to delete.
+  const clearingAtStart = clearing;
+
+  // Outside the try on purpose: getPlatform throws when no platform has been
+  // installed, and swallowing that would report a wiring bug as an expired
+  // session — sending the student to a login screen that fails the same way
+  // every time. Only the secure-store read itself is a lapsed session.
+  const platform = getPlatform();
   let value: unknown;
   try {
-    value = await getPlatform().secureStorage.get(TOKEN_KEY);
+    value = await platform.secureStorage.get(TOKEN_KEY);
   } catch {
     value = undefined;
   }
-  if (!isPlausibleToken(value)) {
-    const err = new Error('No stored IS session') as Error & { sessionExpired?: boolean };
-    err.sessionExpired = true;
-    throw err;
+  if (!isPlausibleToken(value)) throw expired();
+  if (mine !== generation) {
+    // Something authoritative happened while this read was in flight. A save
+    // has already put its token in the memo and that is the answer; a clear has
+    // emptied it, and then there is no session to hand back.
+    if (memo !== null) return memo;
+    throw expired();
   }
+
+  // A sign-out overlapping this read at either end: still pending now, or
+  // already pending when the read began and finished while it was in flight.
+  // The store answered with a credential on its way out; handing it back would
+  // send one more request as a student who asked to leave, and caching it would
+  // send every request after that.
+  if (clearing > 0 || clearingAtStart > 0) throw expired();
+
+  memo = value;
   return value;
 }
 
 export async function clearStoredToken(): Promise<void> {
-  await getPlatform().secureStorage.remove(TOKEN_KEY);
+  // Before the remove, not after: if the remove throws, the process must
+  // already have forgotten the token rather than keep serving it from memory
+  // to a student who asked to be signed out. The bump does the same for a read
+  // that is mid-flight right now.
+  generation++;
+  memo = null;
+  clearing++;
+  try {
+    await serialized(() => getPlatform().secureStorage.remove(TOKEN_KEY));
+  } finally {
+    clearing--;
+  }
 }
 
 /**

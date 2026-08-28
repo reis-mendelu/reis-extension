@@ -15,7 +15,25 @@ export type DataRequestType = z.infer<typeof dataRequestTypeSchema>;
 // (see the note in schema.ts). Adding an action means adding it in ONE place.
 export type ActionType = z.infer<typeof actionTypeSchema>;
 
+/**
+ * A Phase 2 domain whose fetch can finish with a legitimately empty answer.
+ *
+ * "No exams this month" and "your exams have not arrived yet" are the same
+ * payload without this: an absent or empty array either way. The screens need
+ * to tell them apart, or a student whose real answer is nothing sits on a
+ * loading state until the entire crawl ends.
+ *
+ * The study plan is deliberately absent from this union. Its fetch is
+ * TTL-gated, so a null result means "skipped as fresh" and "there is none" and
+ * "no studium this run" alike — and the Předměty screen releasing on that said
+ * "Zatím žádné předměty" to a student who has plenty. That screen waits for a
+ * usable plan or for the sync to finish, and nothing shorter.
+ */
+export type SyncDomain = 'schedule' | 'exams';
+
 export interface SyncedData {
+  /** Domains whose fetch has completed in this run, empty results included. */
+  loaded?: SyncDomain[];
   schedule?: unknown;
   exams?: unknown;
   subjects?: unknown;

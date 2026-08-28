@@ -55,6 +55,14 @@ The extension uses a **push-based postMessage IPC** for each injected host. Ther
 - Adding a fetch to `syncAllData`? Wrap it in `ttlGated` with the tier that
   matches how fast it really changes. `TTL.HOT` (never skipped) is for grades,
   submissions and exam terms only.
+- **Phase 3 crawls the current semester only.** `subjects.data` has been
+  through `mergePastSubjects` by then, so it holds every subject the student
+  ever enrolled in — and each entry costs a recursive, paginated file crawl
+  plus a syllabus. `subjectScope.ts` narrows it to `currentSemesterCodes`
+  (captured before the merge), falling back to the whole map when the semester
+  is unknown, so a skip can never leave a student with no files. Past subjects
+  are fetched when one is opened: `createFilesSlice`, `createSyllabusSlice` and
+  `fetchClassmatesPriority` each own that path already.
 
 **ISKAM-specific behaviors:**
 - The content script replaces the entire WebISKAM page via `document.open/write/close` — it owns the DOM entirely, there is no partial injection.

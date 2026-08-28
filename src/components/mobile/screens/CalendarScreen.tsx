@@ -1,5 +1,7 @@
 import { Bell, Calendar, AlertTriangle, Pin, User } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
+import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
+import { ScreenError } from '../primitives/ScreenError';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useSchedule } from '../../../hooks/data/useSchedule';
 import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
@@ -37,14 +39,13 @@ function formatHeaderDate(date: Date, locale: string): string {
 }
 
 function CalendarSkeleton() {
+  const { t } = useTranslation();
   return (
-    <div data-testid="calendar-skeleton" className="flex flex-1 flex-col gap-3 overflow-hidden p-5">
-      <div className="h-6 w-40 animate-pulse rounded-lg bg-base-300" />
-      <div className="h-28 animate-pulse rounded-2xl bg-base-300" />
-      <div className="h-10 animate-pulse rounded-full bg-base-300" />
-      <div className="h-20 animate-pulse rounded-xl bg-base-300" />
-      <div className="h-20 animate-pulse rounded-xl bg-base-300" />
-    </div>
+    <ScreenSkeleton
+      testId="calendar-skeleton"
+      label={t('mobile.calendar.loading')}
+      rows={['h-6 w-40', 'h-28', 'h-10', 'h-20', 'h-20']}
+    />
   );
 }
 
@@ -60,6 +61,9 @@ export function CalendarScreen() {
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
+  const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
+  const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
+  const syncLoaded = useAppStore((s) => s.syncLoaded);
   const hiddenItems = useAppStore((s) => s.hiddenItems);
 
   const { notifications, readIds } = useNotificationFeed();
@@ -73,8 +77,31 @@ export function CalendarScreen() {
   const setBulletinExpanded = useAppStore((s) => s.setBulletinExpanded);
   const loadBulletinIfStale = useAppStore((s) => s.loadBulletinIfStale);
 
-  if (!handshakeDone && !handshakeTimedOut) {
+  // Two different questions, and only one of them is `handshakeDone`. That
+  // flag flips on the first status message, which the sync posts as it STARTS,
+  // so on a first run it says "connected", not "finished". Until a crawl has
+  // actually completed (`firstSyncSettled`) and while one is in flight, an
+  // absence of lessons means it has not arrived yet — show the skeleton rather than
+  // an empty state that reads as a wrong answer.
+  //
+  // Deliberately not gated on `!firstSyncSettled`: that flag is latched, so a
+  // retry after a failed run would otherwise sit on ScreenError for its whole
+  // duration. `syncLoaded.schedule` is what protects a genuinely empty week
+  // from getting a skeleton thrown back over it every fifteen minutes.
+  if (
+    (!handshakeDone && !handshakeTimedOut) ||
+    (isSyncing && !syncLoaded.schedule && schedule.length === 0)
+  ) {
     return <CalendarSkeleton />;
+  }
+
+  // The third state. A finished sync that never delivered this domain, with
+  // nothing cached to fall back on, means the fetch failed — and "Nic nemáš,
+  // pohodička" over a failed fetch is the same lie as showing it mid-sync,
+  // just later. (The first run in a process always fetches, so a missing
+  // arrival here cannot be a TTL skip.)
+  if (firstSyncSettled && !syncLoaded.schedule && schedule.length === 0) {
+    return <ScreenError testId="calendar-error" />;
   }
 
   const now = new Date();
