@@ -1,12 +1,15 @@
 import { getPlatform } from '../../platform';
 import { logError } from '../../utils/reportError';
 import type { PlannedReminder } from './plan';
+import type { PermissionState } from '@capacitor/core';
 
-// Capacitor's own PermissionState, mirrored rather than imported so this module
-// stays loadable off Capacitor. `prompt-with-rationale` is the Android state
-// after a first refusal; casting it away made it fall through every branch,
-// so the student was never asked again and nothing was ever scheduled.
-export type ReminderPermission = 'granted' | 'denied' | 'prompt' | 'prompt-with-rationale';
+// Capacitor's own type, imported rather than restated so the four states cannot
+// drift apart. `import type` is erased at compile time, so this module still
+// loads on hosts with no Capacitor runtime. `prompt-with-rationale` is the
+// Android state after a first refusal; an earlier hand-written union left it
+// out and cast it away, so it fell through every branch — the student was never
+// asked again and nothing was ever scheduled.
+export type ReminderPermission = PermissionState;
 
 /** Both prompt states mean "not answered yet" — ask. */
 function shouldAsk(p: ReminderPermission): boolean {

@@ -612,4 +612,31 @@ describe('createRsvpSlice — failure handling', () => {
     expect(state.rsvp.e1).toBeUndefined();
     expect(idb.get('event_rsvps_mine')).toEqual({});
   });
+
+  // The count request is issued before a tap and answered after it. Merging the
+  // older response back would drop the student's own accepted answer off the
+  // card until some later load happened to refresh it.
+  it('does not let a stale load overwrite counts for an event answered meanwhile', async () => {
+    let finishFetch!: (v: { counts: Record<string, unknown>; ok: boolean }) => void;
+    fetchEventRsvps.mockImplementationOnce(() => new Promise((r) => (finishFetch = r)));
+    const loading = state.loadRsvps(['e1', 'e2']);
+    await flush();
+
+    setEventRsvp.mockResolvedValueOnce(true);
+    await state.setRsvp('e1', 'going');
+    await flush();
+    expect(state.rsvpCounts.e1).toEqual({ going: 1, interested: 0 });
+
+    // The load finally answers, carrying the pre-tap numbers.
+    finishFetch({
+      counts: { e1: { going: 0, interested: 0 }, e2: { going: 5, interested: 2 } },
+      ok: true,
+    });
+    await loading;
+
+    // e1 keeps the count that includes this device's accepted answer…
+    expect(state.rsvpCounts.e1).toEqual({ going: 1, interested: 0 });
+    // …while e2, untouched by this session, takes the server's numbers.
+    expect(state.rsvpCounts.e2).toEqual({ going: 5, interested: 2 });
+  });
 });

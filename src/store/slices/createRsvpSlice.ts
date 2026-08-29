@@ -161,6 +161,17 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
 
     loadRsvps: async (eventIds) => {
       if (eventIds.length === 0) return;
+      // Snapshot each event's revision before any await. Everything this load
+      // carries — answers AND counts — was true at this instant; a tap that
+      // settles while the reads are out makes it stale for that event only, and
+      // comparing revisions afterwards is how we tell which ones.
+      //
+      // A snapshot rather than "has this event ever been mutated": the latter
+      // would make a mutated event permanently unable to receive fresh counts,
+      // so other students' answers would stop appearing on that card.
+      const startRevisions = new Map(eventIds.map((id) => [id, revisions.get(id) ?? 0]));
+      const supersededDuringLoad = (id: string) =>
+        (revisions.get(id) ?? 0) !== (startRevisions.get(id) ?? 0);
       // Own answers come from the device, not the server: the server is never
       // told who this is, so it could not return them even if we asked.
       // Caught separately: a storage failure must not take the counts down with
@@ -186,7 +197,7 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       // write in this session and is by definition newer than the disk.
       if (stored) {
         for (const [id, answer] of Object.entries(stored)) {
-          if (!confirmed.has(id) && !revisions.has(id)) confirmed.set(id, answer);
+          if (!confirmed.has(id) && !supersededDuringLoad(id)) confirmed.set(id, answer);
         }
       }
 
@@ -200,12 +211,24 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
         // session has touched, so those are left alone in both directions.
         const hydrated = { ...s.rsvp };
         for (const [id, answer] of Object.entries(stored ?? {})) {
-          if (!revisions.has(id) && !(id in hydrated)) hydrated[id] = answer;
+          if (!supersededDuringLoad(id) && !(id in hydrated)) hydrated[id] = answer;
         }
+
+        // Counts go stale the same way the answers do: a tap that lands while
+        // this request was out already moved the number, and merging the older
+        // response back would drop the student's own accepted answer off the
+        // card until some later load happened to refresh it.
+        const mergedCounts = { ...s.rsvpCounts };
+        if (ok) {
+          for (const [id, c] of Object.entries(counts)) {
+            if (!supersededDuringLoad(id)) mergedCounts[id] = c;
+          }
+        }
+
         return {
           // A failed load returns zeroes; writing those over known counts would
           // replace real numbers with a confident-looking lie.
-          rsvpCounts: ok ? { ...s.rsvpCounts, ...counts } : s.rsvpCounts,
+          rsvpCounts: ok ? mergedCounts : s.rsvpCounts,
           rsvp: hydrated,
         };
       });
