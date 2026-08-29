@@ -30,7 +30,7 @@ To understand how actively reIS is used, we record:
 
 **What this means for our numbers**: because the identifier belongs to an installation rather than to a person, these figures count **installations, not people**. If you use reIS on a phone and a laptop, you are counted twice.
 
-**Previously**: until August 2026 these events were keyed on a SHA-256 hash of your student ID. We described that as irreversible. That was wrong — MENDELU student IDs are six or seven digits, so the hash can be reversed by brute force in seconds, which made it a recoverable identifier. We have replaced it in the app. The historical rows written under the old scheme are being irreversibly re-keyed so the original hashes cannot be recovered by anyone, including us; until that is done they remain in the database.
+**Previously**: until August 2026 these events were keyed on a SHA-256 hash of your student ID. We described that as irreversible. That was wrong — MENDELU student IDs are six or seven digits, so the hash can be reversed by brute force in seconds, which made it a recoverable identifier. We have replaced it in the app, and we have irreversibly re-keyed every historical row: each old hash was passed through HMAC-SHA256 under a random key that was generated for that one operation and immediately discarded. The original hashes cannot be recovered by anyone, including us. We verified this by brute-forcing the entire six- and seven-digit student-ID space against the stored values: zero matches.
 
 ### 5. User Feedback (Voluntary)
 If you use the built-in "Report Bug / Feedback" feature, the following data is sent to our support channel:

@@ -60,13 +60,13 @@ const SUPABASE_CALLERS = new Set([
   // (errorReporter/sanitize.ts strips emails, *.mendelu.cz URLs and 6-7 digit
   // ids); the session id is a per-load random value.
   'src/services/errorReporter/telemetry.ts',
-  // KNOWN ISSUE, listed so the guard stays green while it is fixed — do NOT
-  // read this entry as "safe". p_teacher_id is staff rather than a student, but
-  // the session id here is PERSISTENT (chrome.storage.local, never rotated), so
-  // the set of teacher ids bound to one session reconstructs the student's
-  // course load — IS-derived academic data. `get_subject_rating_counts` also
-  // takes a raw person id as a read argument with no auth, which makes any
-  // named teacher's ratings enumerable. Needs a per-teacher unlinkable vote key.
+  // Teacher grading votes. p_teacher_id is STAFF, not a student. The vote id is
+  // now scoped per teacher (crypto.randomUUID() under reis_grading_vote_<id>),
+  // so two votes by the same student are unlinkable — a single persistent
+  // session id previously let the server reconstruct a course load from the set
+  // of teachers voted on. Note `get_subject_rating_counts` still takes a raw
+  // person id as an unauthenticated read argument, so any named teacher's
+  // ratings remain enumerable; that is a staff-data concern, not student data.
   'src/components/SubjectFileDrawer/Header/TeacherGradingPill.tsx',
 ]);
 
