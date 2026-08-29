@@ -159,6 +159,17 @@ describe('eventStartsAt — values the Date constructor would silently move', ()
     expect(eventStartsAt(ev({ date: '2026-02-30' }))).toBeNull();
   });
 
+  // split('-') ignores trailing fields, so this would otherwise read as a valid
+  // 2026-09-10 and pass the component round-trip.
+  it('rejects a date with trailing junk', () => {
+    expect(eventStartsAt(ev({ date: '2026-09-10-extra' }))).toBeNull();
+  });
+
+  it('rejects a short or non-numeric date', () => {
+    expect(eventStartsAt(ev({ date: '2026-9-10' }))).toBeNull();
+    expect(eventStartsAt(ev({ date: 'not-a-date' }))).toBeNull();
+  });
+
   it('rejects a month past December', () => {
     expect(eventStartsAt(ev({ date: '2026-13-01' }))).toBeNull();
   });

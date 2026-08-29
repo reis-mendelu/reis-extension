@@ -37,9 +37,14 @@ CREATE TABLE public.event_rsvps (
   -- never charged to the first-answer cap below. Both count queries use
   -- FILTER (WHERE status = ...), so a NULL is excluded from the totals for free.
   -- The tombstone is deleted once it is older than the rate-limit window (see
-  -- set_event_rsvp), so withdrawal still erases the row — within the hour, not
-  -- instantly. Nothing about the student is in it either way: just a random
-  -- install UUID.
+  -- the sweep in set_event_rsvp), so withdrawal does erase the row — eventually
+  -- rather than instantly, and to be precise about it: the sweep is opportunistic,
+  -- so a tombstone is removed by the next set_event_rsvp call that happens after
+  -- it expires, not at the moment it expires. On a database with no RSVP traffic
+  -- at all it can outlive the hour. Installing pg_cron and scheduling this sweep
+  -- would turn that into a hard guarantee; it is not installed here, so the claim
+  -- is stated as what the code actually does. What persists in the meantime is a
+  -- random install UUID and an event id — nothing about the student.
   status     text        NULL CHECK (status IS NULL OR status IN ('going', 'interested')),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -96,12 +101,17 @@ BEGIN
   PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_event_id::text));
 
   -- Sweep tombstones that have outlived the rate-limit window they exist for.
-  -- Opportunistic rather than scheduled: the only reader of a tombstone is the
-  -- cap below, so once it is older than the window it has no purpose and the
-  -- row goes. Scoped to this event, so the work stays proportional.
+  -- The only reader of a tombstone is the cap below, so once it is older than
+  -- the window it has no purpose and the row goes.
+  --
+  -- Deliberately NOT scoped to this event. Scoping it meant a withdrawn row was
+  -- only ever cleared by later traffic on the SAME event, so a withdrawal from
+  -- an event nobody touches again kept its install id indefinitely — which is
+  -- not what the table comment promised. Sweeping globally means any RSVP
+  -- anywhere clears every expired tombstone. The predicate is selective (only
+  -- NULL-status rows), and this table holds one row per install per event.
   DELETE FROM public.event_rsvps
-   WHERE event_id = p_event_id
-     AND status IS NULL
+   WHERE status IS NULL
      AND updated_at < now() - interval '1 hour';
 
   IF p_status IS NULL THEN

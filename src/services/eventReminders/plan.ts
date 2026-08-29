@@ -57,6 +57,11 @@ export function eventStartsAt(event: MapEvent): number | null {
   // pinged at a time no one chose.
   if (hour > 23 || minute > 59) return null;
 
+  // The shape is checked before the parts are read: `split('-')` ignores
+  // trailing fields, so "2026-09-10-extra" would yield a perfectly valid
+  // 2026-09-10 and pass the round-trip check below.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(event.date)) return null;
+
   // Constructed from parts rather than parsed from a string: `new Date('...')`
   // treats a bare date as UTC and a date+time as local, which would shift
   // every reminder by the timezone offset.

@@ -186,17 +186,29 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       // write in this session and is by definition newer than the disk.
       if (stored) {
         for (const [id, answer] of Object.entries(stored)) {
-          if (!confirmed.has(id)) confirmed.set(id, answer);
+          if (!confirmed.has(id) && !revisions.has(id)) confirmed.set(id, answer);
         }
       }
 
       const { counts, ok } = await fetchEventRsvps(eventIds);
-      set((s) => ({
-        // A failed load returns zeroes; writing those over known counts would
-        // replace real numbers with a confident-looking lie.
-        rsvpCounts: ok ? { ...s.rsvpCounts, ...counts } : s.rsvpCounts,
-        rsvp: { ...(stored ?? {}), ...s.rsvp },
-      }));
+      set((s) => {
+        // Spreading `stored` under the live map is not enough. A WITHDRAWAL that
+        // settles during this load removes its event from `s.rsvp` entirely, so
+        // the spread silently re-inserts the answer the student just took back —
+        // and refreshReminders below then schedules a reminder for it, while
+        // disk already says otherwise. `revisions` names every event this
+        // session has touched, so those are left alone in both directions.
+        const hydrated = { ...s.rsvp };
+        for (const [id, answer] of Object.entries(stored ?? {})) {
+          if (!revisions.has(id) && !(id in hydrated)) hydrated[id] = answer;
+        }
+        return {
+          // A failed load returns zeroes; writing those over known counts would
+          // replace real numbers with a confident-looking lie.
+          rsvpCounts: ok ? { ...s.rsvpCounts, ...counts } : s.rsvpCounts,
+          rsvp: hydrated,
+        };
+      });
       // Only reconcile once the answers are actually known — from BOTH sides.
       // Reconciling from a failed load means an empty plan, and syncReminders
       // cancels everything not in the plan, silently wiping reminders for
