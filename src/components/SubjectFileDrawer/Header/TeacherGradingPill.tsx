@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../services/spolky/supabaseClient';
 import { ChromeAsyncStorage } from '../../../services/storage/ChromeAsyncStorage';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { getOrCreateVoteId } from '../../../services/identity/voteId';
 
 type GradingValue = 'strict' | 'fair' | 'generous';
 
@@ -32,8 +33,6 @@ const ACTIVE: Record<GradingValue, string> = {
   generous: 'text-success',
 };
 
-const VOTE_KEY_PREFIX = 'reis_grading_vote_';
-
 const LABEL_KEY: Record<GradingValue, string> = {
   strict: 'course.teacherRating.strict',
   fair: 'course.teacherRating.fair',
@@ -44,25 +43,6 @@ function getWinners(counts: Counts): GradingValue[] {
   const max = Math.max(counts.strict, counts.fair, counts.generous);
   if (max === 0) return [];
   return (['strict', 'fair', 'generous'] as GradingValue[]).filter((k) => counts[k] === max);
-}
-
-/**
- * A fresh random id PER TEACHER, not one id for the whole device.
- *
- * This used to be a single persistent `reis_session_id` reused for every vote.
- * Each vote sends that id alongside a teacher id, so the set of teacher ids
- * carrying the same session id reconstructed the student's course load — IS
- * academic data, assembled server-side, from a feature that only meant to count
- * votes. Scoping the id to one teacher makes two votes by the same student
- * unlinkable, while still letting this device change or withdraw its own vote.
- */
-async function getOrCreateVoteId(teacherId: string): Promise<string> {
-  const key = VOTE_KEY_PREFIX + teacherId;
-  const existing = await ChromeAsyncStorage.get<string>(key);
-  if (existing) return existing;
-  const id = crypto.randomUUID();
-  await ChromeAsyncStorage.set(key, id);
-  return id;
 }
 
 export function TeacherGradingPill({ teacherId }: { teacherId: string }) {
