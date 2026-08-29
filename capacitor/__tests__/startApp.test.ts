@@ -55,8 +55,20 @@ describe('showLoginGate', () => {
     useAppStore.setState({ language: 'cz' });
 
     const { showLoginGate } = await import('../main.capacitor');
-    await showLoginGate();
+    // Same treatment as the boot test above, and for the same reason: this
+    // renders a real React root, and React's scheduler drains through
+    // setImmediate, so the commit lands a macrotask after the test would
+    // otherwise return. Unguarded, vitest tears the environment down first and
+    // react-dom throws from commitRoot into nobody's handler — which fails the
+    // run without failing a single test, and only when file scheduling happens
+    // to put this last.
+    await act(async () => {
+      await showLoginGate();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
 
     expect(document.documentElement.getAttribute('data-theme')).toBe(useAppStore.getState().theme);
-  });
+  }, 15000);
 });
