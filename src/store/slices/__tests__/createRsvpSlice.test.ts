@@ -639,4 +639,34 @@ describe('createRsvpSlice — failure handling', () => {
     // …while e2, untouched by this session, takes the server's numbers.
     expect(state.rsvpCounts.e2).toEqual({ going: 5, interested: 2 });
   });
+
+  // The withdrawal starts BEFORE the load, so its revision bump is already
+  // inside the load's baseline snapshot and reads as unchanged. Its persist has
+  // not flushed either, so disk still holds the old answer — hydration would put
+  // it straight back on the card and schedule a reminder for it.
+  it('does not hydrate over a withdrawal that began before the load', async () => {
+    idb.set('event_rsvps_mine', { e1: 'going' });
+    state.rsvp = { e1: 'going' };
+
+    // Withdrawal issued first, still unanswered.
+    let settleWithdraw!: (v: boolean) => void;
+    setEventRsvp.mockImplementationOnce(() => new Promise<boolean>((r) => (settleWithdraw = r)));
+    const withdrawing = state.setRsvp('e1', 'going'); // tapping the active choice
+    await flush();
+    expect(state.rsvp.e1).toBeUndefined();
+
+    // The load starts now: the revision is already bumped, and disk still says
+    // 'going' because the withdrawal has not settled.
+    fetchEventRsvps.mockResolvedValue({ counts: { e1: { going: 0, interested: 0 } }, ok: true });
+    await state.loadRsvps(['e1']);
+
+    expect(state.rsvp.e1).toBeUndefined();
+
+    settleWithdraw(true);
+    await withdrawing;
+    await flush();
+
+    expect(state.rsvp.e1).toBeUndefined();
+    expect(idb.get('event_rsvps_mine')).toEqual({});
+  });
 });
