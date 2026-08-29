@@ -72,6 +72,23 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
   const revisions = new Map<string, number>();
 
   /**
+   * One in-flight write per event, in tap order.
+   *
+   * The revision counter above keeps the CLIENT consistent, but it cannot keep
+   * the SERVER consistent: two requests issued back to back can reach Postgres
+   * in either order, so a Going issued first and arriving last wins the upsert
+   * while the device sits on Interested. `get_event_rsvps` returns counts only —
+   * by design, since a per-identity read would be a lookup oracle — so nothing
+   * would ever detect the divergence.
+   *
+   * Chaining per event means the next write is only issued after the previous
+   * one has been answered, which is what makes "last tap wins" true at the
+   * server too. Per event rather than globally: answering one card must not
+   * queue behind another card's request.
+   */
+  const inFlight = new Map<string, Promise<unknown>>();
+
+  /**
    * Re-derive every reminder from the current answers, after any change to
    * them. Recomputing the whole set rather than nudging one is what makes
    * un-RSVPing cancel its notification: the reminder simply stops being in the
@@ -144,11 +161,28 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
         };
       });
 
-      const ok = await setEventRsvp(eventId, next ?? null);
+      // Wait for this event's previous write, then send. `.catch` keeps one
+      // rejected turn from wedging the chain for the rest of the session.
+      const previousWrite = inFlight.get(eventId) ?? Promise.resolve();
+      const thisWrite = previousWrite
+        .catch(() => {})
+        .then(async () => {
+          // Superseded while queued: the newer tap will write the final state, so
+          // sending this one only costs a round trip and a chance to land last.
+          if (revisions.get(eventId) !== revision) return null;
+          return setEventRsvp(eventId, next ?? null);
+        });
+      inFlight.set(eventId, thisWrite);
 
-      // Superseded while in flight. The newer tap owns this event's outcome in
-      // both directions — applying ours would resurrect a replaced answer.
-      if (revisions.get(eventId) !== revision) return;
+      const ok = await thisWrite;
+      // Only the newest tap clears the slot, so a slower predecessor cannot
+      // erase a successor's entry and let the next tap race it.
+      if (revisions.get(eventId) === revision) inFlight.delete(eventId);
+
+      // Skipped above, or superseded while actually in flight. Either way the
+      // newer tap owns this event's outcome in both directions — applying ours
+      // would resurrect an answer the student already replaced.
+      if (ok === null || revisions.get(eventId) !== revision) return;
 
       if (ok) {
         // The device is the only record of its own answer, so persist it — from

@@ -82,6 +82,14 @@ BEGIN
   -- can make that impossible; a cap makes it bounded and slow, which is the
   -- same posture report_error_v2 and check_and_log_booking already take.
   --
+  -- The lock is taken BEFORE the existence check, not inside it. Checking first
+  -- reads a snapshot that the lock then invalidates: two overlapping writes for
+  -- the same install could both see "no row", and the one that acquired the lock
+  -- second would put what is by then an UPDATE through the first-answer cap —
+  -- rejecting a legitimate Going->Interested switch at a busy event. Released at
+  -- commit; contention is per event and the body is two indexed reads.
+  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_event_id::text));
+
   -- Only FIRST answers are counted. Changing or withdrawing your own answer
   -- touches an existing row and must never be throttled — a student toggling
   -- Going/Interested on a popular event is not an attacker.
@@ -89,10 +97,6 @@ BEGIN
     SELECT 1 FROM public.event_rsvps
      WHERE event_id = p_event_id AND install_id = p_install_id
   ) THEN
-    -- Serialise concurrent first answers for this event so the count-then-insert
-    -- cannot race past the cap. Released at commit.
-    PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_event_id::text));
-
     SELECT count(*) INTO v_recent
       FROM public.event_rsvps
      WHERE event_id = p_event_id

@@ -204,6 +204,12 @@ describe('createRsvpSlice', () => {
  * Two failure modes reviewers caught, both of which quietly destroy state.
  */
 describe('createRsvpSlice — failure handling', () => {
+  // Writes are chained per event, so even the first one is issued a microtask
+  // after the tap. Tests that assert on what has been SENT have to let that
+  // turn run; tests that assert on store state do not, because the optimistic
+  // update is synchronous.
+  const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
   const party = {
     id: 'e1',
     title: 'Beánie',
@@ -284,42 +290,119 @@ describe('createRsvpSlice — failure handling', () => {
     expect(syncReminders).not.toHaveBeenCalled();
   });
 
-  // Tap Going, then Interested on the SAME card while the first is in flight.
-  // The first request loses the race and fails; its rollback must not resurrect
-  // the answer the student already replaced.
+  // Tap Going, wait for it to actually be sent, then tap Interested while it is
+  // still unanswered. The first request loses and fails; its rollback must not
+  // resurrect the answer the student already replaced.
   it('ignores a superseded request that fails after a newer one succeeded', async () => {
     let failFirst!: (v: boolean) => void;
     setEventRsvp
       .mockImplementationOnce(() => new Promise<boolean>((r) => (failFirst = r)))
-      .mockResolvedValueOnce(true);
+      .mockResolvedValue(true);
 
     const first = state.setRsvp('e1', 'going');
-    await state.setRsvp('e1', 'interested');
+    await flush(); // the Going request is now genuinely out
+    const second = state.setRsvp('e1', 'interested');
     expect(state.rsvp.e1).toBe('interested');
 
     failFirst(false);
-    await first;
+    await Promise.all([first, second]);
 
     expect(state.rsvp.e1).toBe('interested');
     expect(state.rsvpCounts.e1?.interested).toBe(1);
   });
 
-  // The mirror case: the loser SUCCEEDS late. It must not persist its stale
-  // snapshot over the newer answer.
+  // The mirror case: the loser SUCCEEDS. It must not persist its stale answer.
   it('ignores a superseded request that succeeds late', async () => {
     let landFirst!: (v: boolean) => void;
     setEventRsvp
       .mockImplementationOnce(() => new Promise<boolean>((r) => (landFirst = r)))
-      .mockResolvedValueOnce(true);
+      .mockResolvedValue(true);
 
     const first = state.setRsvp('e1', 'going');
-    await state.setRsvp('e1', 'interested');
+    await flush();
+    const second = state.setRsvp('e1', 'interested');
 
     landFirst(true);
-    await first;
+    await Promise.all([first, second]);
 
     expect(state.rsvp.e1).toBe('interested');
     expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'interested' });
+  });
+
+  // The client-side revision guard cannot fix the SERVER: two requests issued
+  // back to back can reach Postgres in either order, and the upsert has no
+  // ordering guard, so a Going issued first and arriving last would win the row
+  // while the device sits on Interested. get_event_rsvps returns counts only —
+  // by design — so nothing would ever detect the divergence. Chaining per event
+  // is what makes "last tap wins" true at the server too.
+  it('sends the next write only after the previous one is answered', async () => {
+    const sent: (string | null)[] = [];
+    let releaseFirst!: (v: boolean) => void;
+    setEventRsvp
+      .mockImplementationOnce((_id: string, status: string | null) => {
+        sent.push(status);
+        return new Promise<boolean>((r) => (releaseFirst = r));
+      })
+      .mockImplementation(async (_id: string, status: string | null) => {
+        sent.push(status);
+        return true;
+      });
+
+    const first = state.setRsvp('e1', 'going');
+    await flush();
+    expect(sent).toEqual(['going']);
+
+    const second = state.setRsvp('e1', 'interested');
+    await flush();
+    // Still one: the second is queued behind an unanswered request rather than
+    // racing it to the database.
+    expect(sent).toEqual(['going']);
+
+    releaseFirst(true);
+    await Promise.all([first, second]);
+
+    expect(sent).toEqual(['going', 'interested']);
+  });
+
+  // Taps faster than a round trip collapse: a tap that is already obsolete when
+  // its turn comes is dropped rather than sent, so three quick taps cost one
+  // request and the server is told the answer the student actually left on.
+  it('collapses taps made faster than a round trip into one write', async () => {
+    const sent: (string | null)[] = [];
+    setEventRsvp.mockImplementation(async (_id: string, status: string | null) => {
+      sent.push(status);
+      return true;
+    });
+
+    const a = state.setRsvp('e1', 'going');
+    const b = state.setRsvp('e1', 'interested');
+    const c = state.setRsvp('e1', 'going');
+    await Promise.all([a, b, c]);
+
+    expect(sent).toEqual(['going']);
+    expect(state.rsvp.e1).toBe('going');
+  });
+
+  // Queueing is per event: answering one card must not wait on another's
+  // request, which would make an unrelated tap feel stuck.
+  it('does not queue one event behind another', async () => {
+    const sent: string[] = [];
+    setEventRsvp
+      .mockImplementationOnce((id: string) => {
+        sent.push(id);
+        return new Promise<boolean>(() => {});
+      })
+      .mockImplementation(async (id: string) => {
+        sent.push(id);
+        return true;
+      });
+
+    void state.setRsvp('e1', 'going');
+    await flush();
+    await state.setRsvp('e2', 'interested');
+
+    expect(sent).toEqual(['e1', 'e2']);
+    expect(state.rsvp.e2).toBe('interested');
   });
 
   // Persistence reads the live map, not the snapshot the request captured, so
