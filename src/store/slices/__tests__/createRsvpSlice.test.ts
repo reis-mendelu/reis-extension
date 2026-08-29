@@ -7,6 +7,14 @@ vi.mock('../../../api/eventRsvp', () => ({
   setEventRsvp: (...a: unknown[]) => setEventRsvp(...a),
 }));
 
+const idb = new Map<string, unknown>();
+vi.mock('../../../services/storage', () => ({
+  IndexedDBService: {
+    get: vi.fn(async (_s: string, k: string) => idb.get(k)),
+    set: vi.fn(async (_s: string, k: string, v: unknown) => void idb.set(k, v)),
+  },
+}));
+
 const syncReminders = vi.fn();
 vi.mock('../../../services/eventReminders/sync', () => ({
   syncReminders: (...a: unknown[]) => syncReminders(...a),
@@ -18,12 +26,13 @@ import type { MapEvent } from '../../../types/events';
 describe('createRsvpSlice', () => {
   // The slice reads studentId and mapEvents off the composed store; the test
   // supplies just those two neighbours rather than the whole thing.
-  let state: RsvpSlice & { studentId: string | null; mapEvents: MapEvent[] };
+  let state: RsvpSlice & { mapEvents: MapEvent[] };
   let set: ReturnType<typeof vi.fn>;
   let get: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    fetchEventRsvps.mockReset().mockResolvedValue({ counts: {}, mine: {} });
+    idb.clear();
+    fetchEventRsvps.mockReset().mockResolvedValue({ counts: {}, ok: true });
     setEventRsvp.mockReset().mockResolvedValue(true);
     syncReminders.mockReset().mockResolvedValue(undefined);
     set = vi.fn((updater) => {
@@ -32,7 +41,7 @@ describe('createRsvpSlice', () => {
     });
     get = vi.fn(() => state);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    state = { ...createRsvpSlice(set, get, {} as any), studentId: '123456', mapEvents: [] };
+    state = { ...createRsvpSlice(set, get, {} as any), mapEvents: [] };
   });
 
   it('starts with no responses and no counts', () => {
@@ -42,20 +51,23 @@ describe('createRsvpSlice', () => {
 
   describe('loading real counts', () => {
     it('replaces the invented numbers with what the backend reports', async () => {
+      idb.set('event_rsvps_mine', { e1: 'interested' });
       fetchEventRsvps.mockResolvedValue({
         counts: { e1: { going: 4, interested: 2 } },
-        mine: { e1: 'interested' },
+        ok: true,
       });
       await state.loadRsvps(['e1']);
-      expect(fetchEventRsvps).toHaveBeenCalledWith(['e1'], '123456');
+      // No identity is sent — the server is never told who is asking.
+      expect(fetchEventRsvps).toHaveBeenCalledWith(['e1']);
       expect(state.rsvpCounts.e1).toEqual({ going: 4, interested: 2 });
+      // The device's own answer comes from IndexedDB, not the response.
       expect(state.rsvp.e1).toBe('interested');
     });
 
     // An event nobody has answered is a real, honest zero — not a missing
     // number and certainly not a hashed-up 108.
     it('reports a genuine zero for an event with no attendance', async () => {
-      fetchEventRsvps.mockResolvedValue({ counts: { e1: { going: 0, interested: 0 } }, mine: {} });
+      fetchEventRsvps.mockResolvedValue({ counts: { e1: { going: 0, interested: 0 } }, ok: true });
       await state.loadRsvps(['e1']);
       expect(state.rsvpCounts.e1).toEqual({ going: 0, interested: 0 });
     });
@@ -95,7 +107,7 @@ describe('createRsvpSlice', () => {
       await state.setRsvp('e1', 'going');
       expect(state.rsvp.e1).toBeUndefined();
       expect(state.rsvpCounts.e1?.going).toBe(4);
-      expect(setEventRsvp).toHaveBeenLastCalledWith('e1', '123456', null);
+      expect(setEventRsvp).toHaveBeenLastCalledWith('e1', null);
     });
 
     it('keeps per-event responses independent', async () => {
@@ -180,12 +192,80 @@ describe('createRsvpSlice', () => {
     // to come back with them — on a fresh install there is nothing pending.
     it('restores reminders for answers loaded from the backend', async () => {
       state.mapEvents = [party] as never;
-      fetchEventRsvps.mockResolvedValue({
-        counts: { e1: { going: 1, interested: 0 } },
-        mine: { e1: 'going' },
-      });
+      idb.set('event_rsvps_mine', { e1: 'going' });
+      fetchEventRsvps.mockResolvedValue({ counts: { e1: { going: 1, interested: 0 } }, ok: true });
       await state.loadRsvps(['e1']);
       expect(syncReminders).toHaveBeenCalledWith([expect.objectContaining({ eventId: 'e1' })]);
     });
+  });
+});
+
+/**
+ * Two failure modes reviewers caught, both of which quietly destroy state.
+ */
+describe('createRsvpSlice — failure handling', () => {
+  const party = {
+    id: 'e1',
+    title: 'Beánie',
+    url: '',
+    date: '2999-09-10',
+    endDate: null,
+    time: '19:00',
+    location: 'Q01',
+    imageUrl: null,
+    organizerKey: 'pef',
+    societyId: 'supef',
+    coord: [16.61, 49.21],
+    roomCode: null,
+    venueKind: 'campus',
+    category: 'party',
+  };
+  let state: RsvpSlice & { mapEvents: MapEvent[] };
+  let set: ReturnType<typeof vi.fn>;
+  let get: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    idb.clear();
+    fetchEventRsvps.mockReset().mockResolvedValue({ counts: {}, ok: true });
+    setEventRsvp.mockReset().mockResolvedValue(true);
+    syncReminders.mockReset().mockResolvedValue(undefined);
+    set = vi.fn((u) => {
+      const p = typeof u === 'function' ? u(state) : u;
+      state = { ...state, ...p };
+    });
+    get = vi.fn(() => state);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    state = { ...createRsvpSlice(set, get, {} as any), mapEvents: [party] as never };
+  });
+
+  // A failed load leaves `rsvp` empty; reconciling from that would cancel every
+  // pending notification for events the student is still going to.
+  it('does not touch reminders when the load failed', async () => {
+    idb.set('event_rsvps_mine', { e1: 'going' });
+    fetchEventRsvps.mockResolvedValue({ counts: {}, ok: false });
+    await state.loadRsvps(['e1']);
+    expect(syncReminders).not.toHaveBeenCalled();
+  });
+
+  it('keeps the previous counts rather than overwriting them with zeroes', async () => {
+    state.rsvpCounts = { e1: { going: 7, interested: 1 } };
+    fetchEventRsvps.mockResolvedValue({ counts: { e1: { going: 0, interested: 0 } }, ok: false });
+    await state.loadRsvps(['e1']);
+    expect(state.rsvpCounts.e1).toEqual({ going: 7, interested: 1 });
+  });
+
+  // An older request failing after a newer one succeeded must not erase the
+  // newer choice, nor an unrelated event's.
+  it('rolls back only the event that failed', async () => {
+    await state.setRsvp('e2', 'going');
+    setEventRsvp.mockResolvedValue(false);
+    await state.setRsvp('e1', 'going');
+    expect(state.rsvp.e2).toBe('going');
+    expect(state.rsvp.e1).toBeUndefined();
+  });
+
+  it('persists the answer to the device once the write lands', async () => {
+    await state.setRsvp('e1', 'going');
+    expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'going' });
   });
 });

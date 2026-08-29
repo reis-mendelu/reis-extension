@@ -1,5 +1,6 @@
 import type { AppSlice } from '../types';
 import { fetchEventRsvps, setEventRsvp, type RsvpStatus } from '../../api/eventRsvp';
+import { IndexedDBService } from '../../services/storage';
 import { planReminders } from '../../services/eventReminders/plan';
 import { syncReminders } from '../../services/eventReminders/sync';
 import { translate } from '../../i18n/translate';
@@ -16,13 +17,16 @@ export interface RsvpSlice {
   rsvp: Record<string, RsvpStatus>;
   /** Real attendance per event id, as reported by Supabase. */
   rsvpCounts: Record<string, RsvpCounts>;
-  /** Load counts and the student's own answers for a set of events. */
+  /** Load counts for a set of events, and this device's own answers from IDB. */
   loadRsvps: (eventIds: string[]) => Promise<void>;
   /** Toggle an RSVP: tapping the active status clears it, otherwise it switches. */
   setRsvp: (eventId: string, status: RsvpStatus) => Promise<void>;
 }
 
 const EMPTY: RsvpCounts = { going: 0, interested: 0 };
+// The device is the sole record of its own answers — the server is never told
+// who this is, so it cannot hand them back on a new session.
+const RSVP_KEY = 'event_rsvps_mine';
 
 /**
  * Applies one student's answer to a count, in whichever direction.
@@ -79,15 +83,23 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
 
     loadRsvps: async (eventIds) => {
       if (eventIds.length === 0) return;
-      const { counts, mine } = await fetchEventRsvps(eventIds, get().studentId ?? null);
+      // Own answers come from the device, not the server: the server is never
+      // told who this is, so it could not return them even if we asked.
+      const stored = ((await IndexedDBService.get('meta', RSVP_KEY)) ?? {}) as Record<
+        string,
+        RsvpStatus
+      >;
+      const { counts, ok } = await fetchEventRsvps(eventIds);
       set((s) => ({
-        rsvpCounts: { ...s.rsvpCounts, ...counts },
-        rsvp: { ...s.rsvp, ...mine },
+        // A failed load returns zeroes; writing those over known counts would
+        // replace real numbers with a confident-looking lie.
+        rsvpCounts: ok ? { ...s.rsvpCounts, ...counts } : s.rsvpCounts,
+        rsvp: { ...stored, ...s.rsvp },
       }));
-      // Reopening the app restores the student's answers from Supabase, so their
-      // reminders have to come back with them — a reinstalled app has nothing
-      // pending on the device.
-      refreshReminders();
+      // Only reconcile once the answers are actually known. Reconciling from a
+      // failed load means an empty plan, and syncReminders cancels everything
+      // not in the plan — silently wiping reminders for events still attended.
+      if (ok) refreshReminders();
     },
 
     setRsvp: async (eventId, status) => {
@@ -107,17 +119,22 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
         rsvpCounts: { ...s.rsvpCounts, [eventId]: applyAnswer(beforeCounts, previous, next) },
       }));
 
-      const ok = await setEventRsvp(eventId, get().studentId ?? null, next ?? null);
+      const ok = await setEventRsvp(eventId, next ?? null);
       if (ok) {
+        // The device is the only record of its own answer, so persist it.
+        void IndexedDBService.set('meta', RSVP_KEY, optimisticRsvp);
         refreshReminders();
         return;
       }
-      // Put back exactly what was there — including a previous answer, not merely
-      // the absence of one.
-      set((s) => ({
-        rsvp: beforeRsvp,
-        rsvpCounts: { ...s.rsvpCounts, [eventId]: beforeCounts },
-      }));
+      // Roll back ONLY this event. Restoring the whole `beforeRsvp` snapshot
+      // meant an older request failing after a newer one succeeded erased the
+      // newer choice — including an unrelated event's.
+      set((s) => {
+        const rolledBack = { ...s.rsvp };
+        if (previous) rolledBack[eventId] = previous;
+        else delete rolledBack[eventId];
+        return { rsvp: rolledBack, rsvpCounts: { ...s.rsvpCounts, [eventId]: beforeCounts } };
+      });
       // The rollback is a change to the answers too: a reminder must never
       // outlive an RSVP that did not actually land.
       refreshReminders();

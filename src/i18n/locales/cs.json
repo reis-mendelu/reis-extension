@@ -210,8 +210,6 @@
       "single": "Jedna událost",
       "all": "Všechny události"
     },
-    "pickTutoringTime": "Vyberte čas pro doučování",
-    "selectedTime": "Vybráno: {time}",
     "clickFreeSlot": "Klikněte na volné místo v kalendáři",
     "pickTime": "Vyber čas:",
     "publicHoliday": "Státní svátek"
@@ -955,33 +953,6 @@
     "collapse": "Sbalit vývěsku",
     "loading": "Načítání…",
     "error": "Nepodařilo se načíst"
-  },
-  "studyJam": {
-    "titlePrefix": "reIS doučování",
-    "tutorIntro": "Nechceš některého z prváků zachránit před jistou zkázou?",
-    "tutorBenefitRetention": "Vysvětlování látky zvyšuje tvoje udržení znalostí o",
-    "justNeed": "Stačí",
-    "oneHour": "jedna hodina",
-    "tutorOutro": "Spárujeme tě s někým, kdo potřebuje pomoc. Když vám to oběma sedne, můžete se domluvit na další.",
-    "tuteeIntro": "Máme studenty, kteří {course} zvládli a chtějí pomoct.",
-    "tuteeBenefitPair": "Spárujeme tě s tutorem",
-    "free": "zdarma",
-    "tuteeOutro": "Přihlásíš se a my tě spojíme s někým, kdo ti pomůže.",
-    "decline": "Nemám zájem",
-    "optIn": "Jdu do toho!",
-    "successTitle": "Super, díky!",
-    "successTutor": "Jakmile najdeme tutea, dáme ti vědět!",
-    "successTutee": "Jakmile tě spárujeme s tutorem, dáme ti vědět!",
-    "close": "Zavřít",
-    "matchTutorFound": "Tutor nalezen",
-    "matchTuteeAssigned": "Tutee přiřazen",
-    "matchUnregister": "Odhlásit se",
-    "matchConfirmUnregister": "Opravdu odhlásit?",
-    "matchHide": "Skrýt",
-    "checklistTutorWrote": "Napsal/a jsem tutorovi na Teams",
-    "checklistTuteeWrote": "Odpověděl/a jsem tuteovi na Teams",
-    "checklistConfirmedTime": "Potvrdili jsme čas schůzky",
-    "matchWriteTeams": "Napsat na Teams"
   },
   "customEvent": {
     "titlePlaceholder": "Přidat název",

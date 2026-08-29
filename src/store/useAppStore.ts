@@ -13,7 +13,6 @@ import { createThemeSlice } from './slices/createThemeSlice';
 import { createI18nSlice } from './slices/createI18nSlice';
 import { createErrorReportingSlice } from './slices/createErrorReportingSlice';
 import { createSuccessRateSlice } from './slices/createSuccessRateSlice';
-import { createStudyJamsSlice } from './slices/createStudyJamsSlice';
 import { createEduroamSlice } from './slices/createEduroamSlice';
 import { createDocumentsSlice } from './slices/createDocumentsSlice';
 import { createFeedbackSlice } from './slices/createFeedbackSlice';
@@ -60,7 +59,6 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createI18nSlice(...a),
   ...createErrorReportingSlice(...a),
   ...createSuccessRateSlice(...a),
-  ...createStudyJamsSlice(...a),
   ...createEduroamSlice(...a),
   ...createDocumentsSlice(...a),
   ...createFeedbackSlice(...a),

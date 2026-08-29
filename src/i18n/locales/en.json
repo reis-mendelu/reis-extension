@@ -165,8 +165,6 @@
       "all": "All occurrences",
       "recurring": "Hide all {course} lessons"
     },
-    "pickTutoringTime": "Pick a time for tutoring",
-    "selectedTime": "Selected: {time}",
     "clickFreeSlot": "Click a free slot in the calendar",
     "pickTime": "Pick a time:",
     "publicHoliday": "Public holiday"
@@ -955,33 +953,6 @@
     "collapse": "Collapse bulletin board",
     "loading": "Loading…",
     "error": "Failed to load"
-  },
-  "studyJam": {
-    "titlePrefix": "reIS tutoring",
-    "tutorIntro": "Want to save a first-year from certain doom?",
-    "tutorBenefitRetention": "Explaining material boosts your knowledge retention by",
-    "justNeed": "All it takes is",
-    "oneHour": "one hour",
-    "tutorOutro": "We'll pair you with someone who needs help. If you both click, you can arrange more sessions.",
-    "tuteeIntro": "We have students who aced {course} and want to help.",
-    "tuteeBenefitPair": "We'll pair you with a tutor",
-    "free": "for free",
-    "tuteeOutro": "Sign up and we'll connect you with someone who can help.",
-    "decline": "Not interested",
-    "optIn": "I'm in!",
-    "successTitle": "Awesome, thanks!",
-    "successTutor": "We'll let you know as soon as we find a tutee!",
-    "successTutee": "We'll let you know as soon as we pair you with a tutor!",
-    "close": "Close",
-    "matchTutorFound": "Tutor found",
-    "matchTuteeAssigned": "Tutee assigned",
-    "matchUnregister": "Unregister",
-    "matchConfirmUnregister": "Really unregister?",
-    "matchHide": "Hide",
-    "checklistTutorWrote": "I messaged the tutor on Teams",
-    "checklistTuteeWrote": "I replied to the tutee on Teams",
-    "checklistConfirmedTime": "We confirmed the meeting time",
-    "matchWriteTeams": "Message on Teams"
   },
   "customEvent": {
     "titlePlaceholder": "Add title",

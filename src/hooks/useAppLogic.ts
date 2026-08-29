@@ -79,7 +79,6 @@ export function useAppLogic() {
     outlookSyncService.init();
     syncGradeHistory()
       .then(() => {
-        useAppStore.getState().loadStudyJamSuggestions();
         useAppStore.getState().loadGradeHistory();
       })
       .catch(() => {});
@@ -315,7 +314,6 @@ export function useAppLogic() {
           useAppStore.getState().fetchAllExamClassmates();
           syncGradeHistory()
             .then(() => {
-              useAppStore.getState().loadStudyJamSuggestions();
               useAppStore.getState().loadGradeHistory();
             })
             .catch(() => {});

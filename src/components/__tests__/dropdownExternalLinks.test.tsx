@@ -20,7 +20,6 @@ vi.mock('../../services/spolky', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   trackNotificationClick: vi.fn(),
 }));
-vi.mock('../StudyJams/StudyJamSuggestions', () => ({ StudyJamSuggestions: () => null }));
 // Stubbed, not exercised: its real load is an async IDB read that resolves after
 // this test tears down, and the resulting setState lands on an unmounted tree —
 // an unhandled error that fails the whole file regardless of assertions.
