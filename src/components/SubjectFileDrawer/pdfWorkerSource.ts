@@ -26,9 +26,7 @@ export function resolvePdfWorkerSource(deps?: Partial<PdfWorkerDeps>): Promise<s
   const pending = Promise.resolve()
     .then(() => fetchFn(getAssetUrl(workerPath)))
     .then((r) => r.text())
-    .then((text) =>
-      URL.createObjectURL(new Blob([text], { type: 'application/javascript' }))
-    );
+    .then((text) => URL.createObjectURL(new Blob([text], { type: 'application/javascript' })));
 
   // A rejection is NOT cached: a failed fetch (offline, a cold WebView) would
   // otherwise poison every later attempt to open a PDF for the whole session.

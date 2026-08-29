@@ -33,10 +33,7 @@ describe('resolvePdfWorkerSource', () => {
     const fetchFn = vi.fn().mockResolvedValue({ text: () => Promise.resolve('worker') });
     const deps = { getAssetUrl: (p: string) => p, fetchFn };
 
-    const [a, b] = await Promise.all([
-      resolvePdfWorkerSource(deps),
-      resolvePdfWorkerSource(deps),
-    ]);
+    const [a, b] = await Promise.all([resolvePdfWorkerSource(deps), resolvePdfWorkerSource(deps)]);
 
     expect(fetchFn).toHaveBeenCalledTimes(1);
     expect(a).toBe(b);
@@ -49,8 +46,8 @@ describe('resolvePdfWorkerSource', () => {
     ).rejects.toThrow();
 
     const ok = vi.fn().mockResolvedValue({ text: () => Promise.resolve('worker') });
-    await expect(
-      resolvePdfWorkerSource({ getAssetUrl: (p) => p, fetchFn: ok })
-    ).resolves.toMatch(/^blob:/);
+    await expect(resolvePdfWorkerSource({ getAssetUrl: (p) => p, fetchFn: ok })).resolves.toMatch(
+      /^blob:/
+    );
   });
 });
