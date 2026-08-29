@@ -72,6 +72,22 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
   const revisions = new Map<string, number>();
 
   /**
+   * The last answer per event the SERVER is known to hold. Absent = no answer.
+   *
+   * A rollback cannot restore "whatever the map said when this tap happened":
+   * taps faster than a round trip are collapsed, so the intermediate ones never
+   * reached the server. Tap Going, Interested, Going quickly and let the final
+   * write fail, and restoring the tap-time value leaves the card — and
+   * IndexedDB — on Interested, an answer nothing ever accepted, which then
+   * schedules a reminder for an event the student is not signed up to.
+   *
+   * Confirmed values come from two places only: what was read off the device at
+   * load (which is written exclusively by settled outcomes), and a write the
+   * server actually accepted.
+   */
+  const confirmed = new Map<string, RsvpStatus | undefined>();
+
+  /**
    * One in-flight write per event, in tap order.
    *
    * The revision counter above keeps the CLIENT consistent, but it cannot keep
@@ -89,16 +105,6 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
   const inFlight = new Map<string, Promise<unknown>>();
 
   /**
-   * Re-derive every reminder from the current answers, after any change to
-   * them. Recomputing the whole set rather than nudging one is what makes
-   * un-RSVPing cancel its notification: the reminder simply stops being in the
-   * plan, and syncReminders cancels whatever the device is holding that the
-   * plan no longer contains.
-   *
-   * Detached from its caller: a notification is a courtesy and must not be able
-   * to fail an RSVP.
-   */
-  /**
    * Write the device's own answers to IndexedDB.
    *
    * Always from the live map, never from a snapshot the request captured: a
@@ -112,6 +118,16 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
     void IndexedDBService.set('meta', RSVP_KEY, get().rsvp);
   };
 
+  /**
+   * Re-derive every reminder from the current answers, after any change to
+   * them. Recomputing the whole set rather than nudging one is what makes
+   * un-RSVPing cancel its notification: the reminder simply stops being in the
+   * plan, and syncReminders cancels whatever the device is holding that the
+   * plan no longer contains.
+   *
+   * Detached from its caller: a notification is a courtesy and must not be able
+   * to fail an RSVP.
+   */
   const refreshReminders = () => {
     // `translate` rather than useTranslation: this runs in the store, outside
     // any component, which is exactly what that helper exists for.
@@ -139,6 +155,12 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       } catch (err) {
         logError('RsvpSlice.loadRsvps', err);
       }
+      // The stored map is written only by settled outcomes, so it is exactly
+      // the set of answers the server has accepted — the right rollback target.
+      if (stored) {
+        for (const [id, answer] of Object.entries(stored)) confirmed.set(id, answer);
+      }
+
       const { counts, ok } = await fetchEventRsvps(eventIds);
       set((s) => ({
         // A failed load returns zeroes; writing those over known counts would
@@ -199,17 +221,31 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       if (ok === null || revisions.get(eventId) !== revision) return;
 
       if (ok) {
+        confirmed.set(eventId, next);
         persistAnswers();
         refreshReminders();
         return;
       }
-      // Roll back ONLY this event. Restoring a whole snapshot of the answers
-      // erased unrelated events that were answered while this was in flight.
+      // Roll back ONLY this event, and to the last answer the SERVER accepted —
+      // not to whatever the map held when this tap happened, which after
+      // collapsed taps can be a selection no request ever carried. Restoring a
+      // whole snapshot also erased unrelated events answered meanwhile.
       set((s) => {
+        const shown = s.rsvp[eventId];
+        const settled = confirmed.get(eventId);
         const rolledBack = { ...s.rsvp };
-        if (previous) rolledBack[eventId] = previous;
+        if (settled) rolledBack[eventId] = settled;
         else delete rolledBack[eventId];
-        return { rsvp: rolledBack, rsvpCounts: { ...s.rsvpCounts, [eventId]: beforeCounts } };
+        return {
+          rsvp: rolledBack,
+          // Derived from the counts as DISPLAYED, so the number moves by exactly
+          // the answer being withdrawn. `beforeCounts` is a tap-time snapshot and
+          // carries the same staleness the answer did.
+          rsvpCounts: {
+            ...s.rsvpCounts,
+            [eventId]: applyAnswer(s.rsvpCounts[eventId] ?? EMPTY, shown, settled),
+          },
+        };
       });
       // Persist the rollback too, not just the success. Writing the live map on
       // success can capture ANOTHER event's still-unconfirmed answer; if that

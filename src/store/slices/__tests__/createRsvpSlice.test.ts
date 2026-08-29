@@ -451,4 +451,49 @@ describe('createRsvpSlice — failure handling', () => {
     expect(state.rsvp.e2).toBeUndefined();
     expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'going' });
   });
+
+  // Going -> Interested -> Going, all faster than a round trip. Only the final
+  // Going is sent; if it fails, rolling back to "what the map said at tap time"
+  // lands on Interested — an answer no request ever carried and the server has
+  // never heard of. It would then persist and schedule a reminder.
+  it('rolls back to the last answer the server accepted, not an uncommitted one', async () => {
+    setEventRsvp.mockResolvedValue(false);
+
+    const a = state.setRsvp('e1', 'going');
+    const b = state.setRsvp('e1', 'interested');
+    const c = state.setRsvp('e1', 'going');
+    await Promise.all([a, b, c]);
+
+    // Nothing was ever confirmed, so the card shows no answer at all.
+    expect(state.rsvp.e1).toBeUndefined();
+    expect(idb.get('event_rsvps_mine')).toEqual({});
+    expect(state.rsvpCounts.e1).toEqual({ going: 0, interested: 0 });
+  });
+
+  // The same rollback must land on a REAL previous answer when there is one.
+  it('rolls back to a previously confirmed answer', async () => {
+    setEventRsvp.mockResolvedValueOnce(true);
+    await state.setRsvp('e1', 'going');
+    expect(state.rsvp.e1).toBe('going');
+
+    setEventRsvp.mockResolvedValue(false);
+    await state.setRsvp('e1', 'interested');
+
+    expect(state.rsvp.e1).toBe('going');
+    expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'going' });
+  });
+
+  // An answer restored from the device at load counts as confirmed: it only got
+  // there because a write settled.
+  it('treats an answer loaded from the device as confirmed', async () => {
+    idb.set('event_rsvps_mine', { e1: 'going' });
+    fetchEventRsvps.mockResolvedValue({ counts: { e1: { going: 1, interested: 0 } }, ok: true });
+    await state.loadRsvps(['e1']);
+
+    setEventRsvp.mockResolvedValue(false);
+    await state.setRsvp('e1', 'interested');
+
+    expect(state.rsvp.e1).toBe('going');
+    expect(state.rsvpCounts.e1).toEqual({ going: 1, interested: 0 });
+  });
 });

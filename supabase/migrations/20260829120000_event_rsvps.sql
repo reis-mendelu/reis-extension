@@ -32,7 +32,15 @@ DROP TABLE IF EXISTS public.event_rsvps;
 CREATE TABLE public.event_rsvps (
   event_id   uuid        NOT NULL REFERENCES public.spolky_events(id) ON DELETE CASCADE,
   install_id uuid        NOT NULL,
-  status     text        NOT NULL CHECK (status IN ('going', 'interested')),
+  -- NULL means withdrawn. Kept as a short-lived tombstone rather than deleting
+  -- the row outright, so that re-answering is recognised as a CHANGE and is
+  -- never charged to the first-answer cap below. Both count queries use
+  -- FILTER (WHERE status = ...), so a NULL is excluded from the totals for free.
+  -- The tombstone is deleted once it is older than the rate-limit window (see
+  -- set_event_rsvp), so withdrawal still erases the row — within the hour, not
+  -- instantly. Nothing about the student is in it either way: just a random
+  -- install UUID.
+  status     text        NULL CHECK (status IS NULL OR status IN ('going', 'interested')),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   -- One answer per install per event, so switching Going->Interested is an
@@ -67,8 +75,21 @@ AS $$
 DECLARE
   v_recent int;
 BEGIN
+  -- Sweep tombstones that have outlived the rate-limit window they exist for.
+  -- Opportunistic rather than scheduled: the only reader of a tombstone is the
+  -- cap below, so once it is older than the window it has no purpose and the
+  -- row goes. Scoped to this event, so the work stays proportional.
+  DELETE FROM public.event_rsvps
+   WHERE event_id = p_event_id
+     AND status IS NULL
+     AND updated_at < now() - interval '1 hour';
+
   IF p_status IS NULL THEN
-    DELETE FROM public.event_rsvps
+    -- Withdrawal marks the row rather than removing it, so a student who
+    -- changes their mind again is not mistaken for a brand-new respondent and
+    -- refused by the first-answer cap. No-op when there is nothing to withdraw.
+    UPDATE public.event_rsvps
+       SET status = NULL, updated_at = now()
      WHERE event_id = p_event_id AND install_id = p_install_id;
     RETURN;
   END IF;
@@ -90,9 +111,12 @@ BEGIN
   -- commit; contention is per event and the body is two indexed reads.
   PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_event_id::text));
 
-  -- Only FIRST answers are counted. Changing or withdrawing your own answer
-  -- touches an existing row and must never be throttled — a student toggling
-  -- Going/Interested on a popular event is not an attacker.
+  -- Only FIRST answers are counted. Changing, withdrawing, or returning after a
+  -- withdrawal all touch an existing row and must never be throttled — a
+  -- student toggling Going/Interested on a popular event is not an attacker.
+  -- This is exactly why withdrawal tombstones rather than deletes: without the
+  -- row, coming back would look like a new identity and could be refused at a
+  -- busy event, which is the opposite of the contract stated here.
   IF NOT EXISTS (
     SELECT 1 FROM public.event_rsvps
      WHERE event_id = p_event_id AND install_id = p_install_id
