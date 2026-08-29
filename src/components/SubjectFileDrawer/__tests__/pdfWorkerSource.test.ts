@@ -12,7 +12,11 @@ describe('resolvePdfWorkerSource', () => {
   });
 
   it('serves the worker from a blob URL built out of the host asset', async () => {
-    const fetchSpy = vi.fn().mockResolvedValue({ text: () => Promise.resolve('self.onmessage=1') });
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve('self.onmessage=1'),
+    });
     const getAssetUrl = vi.fn().mockReturnValue('/assets/pdf.worker.js');
 
     const src = await resolvePdfWorkerSource({ getAssetUrl, fetchFn: fetchSpy });
@@ -24,13 +28,17 @@ describe('resolvePdfWorkerSource', () => {
 
   it('resolves on a host with no chrome global (Capacitor)', async () => {
     const getAssetUrl = (p: string) => '/' + p.replace(/^\//, '');
-    const fetchFn = vi.fn().mockResolvedValue({ text: () => Promise.resolve('worker') });
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue({ ok: true, status: 200, text: () => Promise.resolve('worker') });
 
     await expect(resolvePdfWorkerSource({ getAssetUrl, fetchFn })).resolves.toMatch(/^blob:/);
   });
 
   it('fetches once and reuses the result across viewers', async () => {
-    const fetchFn = vi.fn().mockResolvedValue({ text: () => Promise.resolve('worker') });
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue({ ok: true, status: 200, text: () => Promise.resolve('worker') });
     const deps = { getAssetUrl: (p: string) => p, fetchFn };
 
     const [a, b] = await Promise.all([resolvePdfWorkerSource(deps), resolvePdfWorkerSource(deps)]);
@@ -45,7 +53,32 @@ describe('resolvePdfWorkerSource', () => {
       resolvePdfWorkerSource({ getAssetUrl: (p) => p, fetchFn: failing })
     ).rejects.toThrow();
 
-    const ok = vi.fn().mockResolvedValue({ text: () => Promise.resolve('worker') });
+    const ok = vi
+      .fn()
+      .mockResolvedValue({ ok: true, status: 200, text: () => Promise.resolve('worker') });
+    await expect(resolvePdfWorkerSource({ getAssetUrl: (p) => p, fetchFn: ok })).resolves.toMatch(
+      /^blob:/
+    );
+  });
+
+  // A 404 or 500 RESOLVES rather than rejecting, so without an explicit check the
+  // error page is blobbed as the worker — and cached, because only rejections
+  // clear the memo. Every PDF opened afterwards would get that dead worker.
+  it('rejects a non-success response instead of blobbing the error body', async () => {
+    const notFound = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      text: () => Promise.resolve('<html>404</html>'),
+    });
+
+    await expect(
+      resolvePdfWorkerSource({ getAssetUrl: (p) => p, fetchFn: notFound })
+    ).rejects.toThrow(/404/);
+
+    // …and it is not cached, so the next viewer gets a working one.
+    const ok = vi
+      .fn()
+      .mockResolvedValue({ ok: true, status: 200, text: () => Promise.resolve('worker') });
     await expect(resolvePdfWorkerSource({ getAssetUrl: (p) => p, fetchFn: ok })).resolves.toMatch(
       /^blob:/
     );

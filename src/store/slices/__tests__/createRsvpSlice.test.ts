@@ -421,4 +421,34 @@ describe('createRsvpSlice — failure handling', () => {
 
     expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'going', e2: 'interested' });
   });
+
+  // Persisting on success writes the LIVE map, which can still hold another
+  // event's unconfirmed answer. If that one is then refused, rolling it back
+  // only in Zustand leaves the rejected answer on disk — where the next launch
+  // reads it back as real and schedules a reminder for an event the student
+  // never signed up to.
+  it('takes a refused answer back out of storage, not just out of the store', async () => {
+    let settleE1!: (v: boolean) => void;
+    let settleE2!: (v: boolean) => void;
+    setEventRsvp
+      .mockImplementationOnce(() => new Promise<boolean>((r) => (settleE1 = r)))
+      .mockImplementationOnce(() => new Promise<boolean>((r) => (settleE2 = r)));
+
+    const first = state.setRsvp('e1', 'going');
+    const second = state.setRsvp('e2', 'interested');
+    await flush();
+
+    // e1 lands while e2 is still out, so the map it persists carries e2's
+    // optimistic — and as yet unconfirmed — answer.
+    settleE1(true);
+    await first;
+    expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'going', e2: 'interested' });
+
+    // e2 is then refused. Undoing it only in Zustand would leave it on disk.
+    settleE2(false);
+    await second;
+
+    expect(state.rsvp.e2).toBeUndefined();
+    expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'going' });
+  });
 });

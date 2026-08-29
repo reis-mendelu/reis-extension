@@ -11,7 +11,7 @@ import { getPlatform } from '../../platform';
 
 export interface PdfWorkerDeps {
   getAssetUrl(path: string): string;
-  fetchFn(url: string): Promise<{ text(): Promise<string> }>;
+  fetchFn(url: string): Promise<{ ok: boolean; status: number; text(): Promise<string> }>;
 }
 
 // The blob URL is minted once per app session and shared: every viewer needs
@@ -25,7 +25,14 @@ export function resolvePdfWorkerSource(deps?: Partial<PdfWorkerDeps>): Promise<s
 
   const pending = Promise.resolve()
     .then(() => fetchFn(getAssetUrl(workerPath)))
-    .then((r) => r.text())
+    .then((r) => {
+      // fetch() RESOLVES on 404 and 500. Without this the error page becomes the
+      // blob's contents — a syntactically valid "worker" that does nothing — and
+      // since only rejections clear the cache below, every PDF opened for the
+      // rest of the session would get that same dead worker.
+      if (!r.ok) throw new Error(`pdf worker fetch failed: HTTP ${r.status}`);
+      return r.text();
+    })
     .then((text) => URL.createObjectURL(new Blob([text], { type: 'application/javascript' })));
 
   // A rejection is NOT cached: a failed fetch (offline, a cold WebView) would

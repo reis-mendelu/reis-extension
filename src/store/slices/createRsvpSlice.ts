@@ -98,6 +98,20 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
    * Detached from its caller: a notification is a courtesy and must not be able
    * to fail an RSVP.
    */
+  /**
+   * Write the device's own answers to IndexedDB.
+   *
+   * Always from the live map, never from a snapshot the request captured: a
+   * snapshot would write away an answer given to another event while this one
+   * was in flight. Called after every settled outcome — success AND rollback —
+   * because the live map at success time can contain another event's
+   * still-unconfirmed answer, and a rollback that only touched Zustand would
+   * leave that refused answer on disk to be read back as real next launch.
+   */
+  const persistAnswers = () => {
+    void IndexedDBService.set('meta', RSVP_KEY, get().rsvp);
+  };
+
   const refreshReminders = () => {
     // `translate` rather than useTranslation: this runs in the store, outside
     // any component, which is exactly what that helper exists for.
@@ -185,9 +199,7 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       if (ok === null || revisions.get(eventId) !== revision) return;
 
       if (ok) {
-        // The device is the only record of its own answer, so persist it — from
-        // the live map, so a concurrent answer to a DIFFERENT event survives.
-        void IndexedDBService.set('meta', RSVP_KEY, get().rsvp);
+        persistAnswers();
         refreshReminders();
         return;
       }
@@ -199,6 +211,12 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
         else delete rolledBack[eventId];
         return { rsvp: rolledBack, rsvpCounts: { ...s.rsvpCounts, [eventId]: beforeCounts } };
       });
+      // Persist the rollback too, not just the success. Writing the live map on
+      // success can capture ANOTHER event's still-unconfirmed answer; if that
+      // one is then refused, undoing it only in Zustand leaves the rejected
+      // answer in IndexedDB, where the next launch reads it back as real and
+      // schedules a reminder for an event the student never signed up to.
+      persistAnswers();
       // The rollback is a change to the answers too: a reminder must never
       // outlive an RSVP that did not actually land.
       refreshReminders();
