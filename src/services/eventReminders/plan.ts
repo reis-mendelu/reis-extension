@@ -50,14 +50,28 @@ export function eventStartsAt(event: MapEvent): number | null {
   // scraped rows, so both separators are accepted.
   const match = /^(\d{1,2})[:.](\d{2})$/.exec(event.time.trim());
   if (!match) return null;
-  const [, hh, mm] = match;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  // The regex shape allows "25:70"; the Date constructor would happily roll
+  // that into the next day rather than reject it, and the student would be
+  // pinged at a time no one chose.
+  if (hour > 23 || minute > 59) return null;
+
   // Constructed from parts rather than parsed from a string: `new Date('...')`
   // treats a bare date as UTC and a date+time as local, which would shift
   // every reminder by the timezone offset.
   const [y, mo, d] = event.date.split('-').map(Number);
   if (!y || !mo || !d) return null;
-  const at = new Date(y, mo - 1, d, Number(hh), Number(mm), 0, 0).getTime();
-  return Number.isFinite(at) ? at : null;
+  const start = new Date(y, mo - 1, d, hour, minute, 0, 0);
+  const at = start.getTime();
+  if (!Number.isFinite(at)) return null;
+  // Same normalisation trap on the date half: "2026-02-30" becomes 2 March.
+  // Reading the components back is the only way to tell a real date from one
+  // the constructor quietly moved.
+  if (start.getFullYear() !== y || start.getMonth() !== mo - 1 || start.getDate() !== d) {
+    return null;
+  }
+  return at;
 }
 
 /**

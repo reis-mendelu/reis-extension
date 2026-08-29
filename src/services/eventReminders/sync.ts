@@ -2,7 +2,16 @@ import { getPlatform } from '../../platform';
 import { logError } from '../../utils/reportError';
 import type { PlannedReminder } from './plan';
 
-export type ReminderPermission = 'granted' | 'denied' | 'prompt';
+// Capacitor's own PermissionState, mirrored rather than imported so this module
+// stays loadable off Capacitor. `prompt-with-rationale` is the Android state
+// after a first refusal; casting it away made it fall through every branch,
+// so the student was never asked again and nothing was ever scheduled.
+export type ReminderPermission = 'granted' | 'denied' | 'prompt' | 'prompt-with-rationale';
+
+/** Both prompt states mean "not answered yet" — ask. */
+function shouldAsk(p: ReminderPermission): boolean {
+  return p === 'prompt' || p === 'prompt-with-rationale';
+}
 
 export interface PendingReminder {
   id: number;
@@ -34,10 +43,27 @@ export interface ReminderDeps {
  * Never throws. A reminder is a courtesy; it must not be able to take down the
  * event load that triggered it.
  */
-export async function syncReminders(
+export function syncReminders(
   planned: PlannedReminder[],
   deps: ReminderDeps = capacitorReminderDeps()
 ): Promise<void> {
+  // Callers fire this with `void` on every RSVP change, so two runs can overlap
+  // and the slower one lands last — an older plan re-scheduling a reminder the
+  // newer, emptier plan had just cancelled. Chaining makes the last plan handed
+  // in the last one applied, which is the only ordering that is ever correct.
+  queue = queue.then(() => reconcile(planned, deps));
+  return queue;
+}
+
+/** Serialises `syncReminders`; never rejects, so one failure cannot wedge it. */
+let queue: Promise<void> = Promise.resolve();
+
+/** Test seam: drop the pending chain so one test cannot serialise into the next. */
+export function resetReminderQueue(): void {
+  queue = Promise.resolve();
+}
+
+async function reconcile(planned: PlannedReminder[], deps: ReminderDeps): Promise<void> {
   if (!deps.isSupported()) return;
 
   try {
@@ -61,7 +87,7 @@ export async function syncReminders(
     // student has actually asked to be reminded of something, not on a cold
     // boot before they have interacted with a single event.
     let permission = await deps.checkPermission();
-    if (permission === 'prompt') permission = await deps.requestPermission();
+    if (shouldAsk(permission)) permission = await deps.requestPermission();
     if (permission !== 'granted') return;
 
     await deps.schedule(toSchedule);

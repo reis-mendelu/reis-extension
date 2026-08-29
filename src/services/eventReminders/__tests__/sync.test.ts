@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { syncReminders, type ReminderDeps } from '../sync';
+import { syncReminders, resetReminderQueue, type ReminderDeps } from '../sync';
 import type { PlannedReminder } from '../plan';
 
 function reminder(over: Partial<PlannedReminder> = {}): PlannedReminder {
@@ -18,7 +18,12 @@ function deps(over: Partial<ReminderDeps> = {}): ReminderDeps {
   };
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  // Each test gets a fresh chain; otherwise one test's pending run serialises
+  // into the next and the assertions race.
+  resetReminderQueue();
+});
 
 describe('syncReminders', () => {
   it('schedules a reminder the device does not have yet', async () => {
@@ -114,5 +119,76 @@ describe('syncReminders', () => {
   it('never throws when the plugin fails', async () => {
     const d = deps({ schedule: vi.fn().mockRejectedValue(new Error('no channel')) });
     await expect(syncReminders([reminder()], d)).resolves.toBeUndefined();
+  });
+});
+
+describe('syncReminders — permission states', () => {
+  // Android returns this after a first refusal. It used to be cast to the
+  // narrower union, matched no branch, and left the student never asked again.
+  it('still asks when the platform reports prompt-with-rationale', async () => {
+    const d = deps({
+      checkPermission: vi.fn().mockResolvedValue('prompt-with-rationale'),
+      requestPermission: vi.fn().mockResolvedValue('granted'),
+    });
+    await syncReminders([reminder()], d);
+    expect(d.requestPermission).toHaveBeenCalled();
+    expect(d.schedule).toHaveBeenCalled();
+  });
+
+  it('does not schedule when the student refuses at the prompt', async () => {
+    const d = deps({
+      checkPermission: vi.fn().mockResolvedValue('prompt-with-rationale'),
+      requestPermission: vi.fn().mockResolvedValue('denied'),
+    });
+    await syncReminders([reminder()], d);
+    expect(d.schedule).not.toHaveBeenCalled();
+  });
+});
+
+describe('syncReminders — overlapping runs', () => {
+  // Un-RSVPing right after RSVPing fires two reconciliations. Unserialised, the
+  // first can schedule after the second has already cancelled, leaving a
+  // notification for an event the student backed out of.
+  it('applies the newest plan last even when an older run is slower', async () => {
+    // A stand-in for the device's own pending list, so the second run sees what
+    // the first actually did rather than a fixed empty array.
+    let device: { id: number; at: number }[] = [];
+    let releaseFirst!: () => void;
+    const gate = new Promise<void>((r) => (releaseFirst = r));
+    let call = 0;
+
+    const d = deps({
+      listPending: vi.fn(async () => {
+        if (call++ === 0) await gate;
+        return device;
+      }),
+      schedule: vi.fn(async (rs: PlannedReminder[]) => {
+        device = [...device, ...rs.map((r) => ({ id: r.id, at: r.at }))];
+      }),
+      cancel: vi.fn(async (ids: number[]) => {
+        device = device.filter((p) => !ids.includes(p.id));
+      }),
+    });
+
+    // RSVP, then immediately un-RSVP. The first run is the slow one.
+    const first = syncReminders([reminder()], d);
+    const second = syncReminders([], d);
+
+    releaseFirst();
+    await Promise.all([first, second]);
+
+    // The student backed out, so the device must hold nothing. Unserialised,
+    // the empty plan reads an empty device, cancels nothing, and the slow first
+    // run then schedules a reminder for an event that was just declined.
+    expect(device).toEqual([]);
+  });
+
+  it('keeps running after a failed reconciliation', async () => {
+    const failing = deps({ listPending: vi.fn().mockRejectedValue(new Error('plugin gone')) });
+    await syncReminders([reminder()], failing);
+
+    const d = deps();
+    await syncReminders([reminder()], d);
+    expect(d.schedule).toHaveBeenCalled();
   });
 });

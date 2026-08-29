@@ -268,4 +268,74 @@ describe('createRsvpSlice — failure handling', () => {
     await state.setRsvp('e1', 'going');
     expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'going' });
   });
+
+  // A storage failure must not take the counts down with it: real attendance
+  // still renders, the device just does not know its own answer yet.
+  it('still loads counts when the local answers cannot be read', async () => {
+    const { IndexedDBService } = await import('../../../services/storage');
+    vi.mocked(IndexedDBService.get).mockRejectedValueOnce(new Error('idb closed'));
+    fetchEventRsvps.mockResolvedValue({ counts: { e1: { going: 4, interested: 2 } }, ok: true });
+
+    await expect(state.loadRsvps(['e1'])).resolves.toBeUndefined();
+
+    expect(state.rsvpCounts.e1).toEqual({ going: 4, interested: 2 });
+    // …and reminders are NOT reconciled from answers we failed to read, which
+    // would be an empty plan and would cancel everything.
+    expect(syncReminders).not.toHaveBeenCalled();
+  });
+
+  // Tap Going, then Interested on the SAME card while the first is in flight.
+  // The first request loses the race and fails; its rollback must not resurrect
+  // the answer the student already replaced.
+  it('ignores a superseded request that fails after a newer one succeeded', async () => {
+    let failFirst!: (v: boolean) => void;
+    setEventRsvp
+      .mockImplementationOnce(() => new Promise<boolean>((r) => (failFirst = r)))
+      .mockResolvedValueOnce(true);
+
+    const first = state.setRsvp('e1', 'going');
+    await state.setRsvp('e1', 'interested');
+    expect(state.rsvp.e1).toBe('interested');
+
+    failFirst(false);
+    await first;
+
+    expect(state.rsvp.e1).toBe('interested');
+    expect(state.rsvpCounts.e1?.interested).toBe(1);
+  });
+
+  // The mirror case: the loser SUCCEEDS late. It must not persist its stale
+  // snapshot over the newer answer.
+  it('ignores a superseded request that succeeds late', async () => {
+    let landFirst!: (v: boolean) => void;
+    setEventRsvp
+      .mockImplementationOnce(() => new Promise<boolean>((r) => (landFirst = r)))
+      .mockResolvedValueOnce(true);
+
+    const first = state.setRsvp('e1', 'going');
+    await state.setRsvp('e1', 'interested');
+
+    landFirst(true);
+    await first;
+
+    expect(state.rsvp.e1).toBe('interested');
+    expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'interested' });
+  });
+
+  // Persistence reads the live map, not the snapshot the request captured, so
+  // an answer to a different event given mid-flight is not written away.
+  it('persists an answer given to another event while a write was in flight', async () => {
+    let landFirst!: (v: boolean) => void;
+    setEventRsvp
+      .mockImplementationOnce(() => new Promise<boolean>((r) => (landFirst = r)))
+      .mockResolvedValueOnce(true);
+
+    const first = state.setRsvp('e1', 'going');
+    await state.setRsvp('e2', 'interested');
+
+    landFirst(true);
+    await first;
+
+    expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'going', e2: 'interested' });
+  });
 });

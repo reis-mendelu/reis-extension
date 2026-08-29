@@ -142,3 +142,36 @@ describe('planReminders — what the notification actually says', () => {
     expect(planReminders([ev()], answered, now, 'In 2 hours')[0]?.body).toBe('In 2 hours · Q01');
   });
 });
+
+// `new Date(y, mo, d, h, m)` rolls out-of-range parts forward instead of
+// rejecting them, so a bad row would schedule a notification at a moment
+// nobody chose rather than being skipped.
+describe('eventStartsAt — values the Date constructor would silently move', () => {
+  it('rejects an impossible hour', () => {
+    expect(eventStartsAt(ev({ time: '25:00' }))).toBeNull();
+  });
+
+  it('rejects an impossible minute', () => {
+    expect(eventStartsAt(ev({ time: '19:99' }))).toBeNull();
+  });
+
+  it('rejects a day that does not exist in that month', () => {
+    expect(eventStartsAt(ev({ date: '2026-02-30' }))).toBeNull();
+  });
+
+  it('rejects a month past December', () => {
+    expect(eventStartsAt(ev({ date: '2026-13-01' }))).toBeNull();
+  });
+
+  it('still accepts a real leap day', () => {
+    expect(eventStartsAt(ev({ date: '2028-02-29', time: '19:00' }))).toBe(
+      new Date(2028, 1, 29, 19, 0, 0, 0).getTime()
+    );
+  });
+
+  it('still accepts the last minute of the day', () => {
+    expect(eventStartsAt(ev({ time: '23:59' }))).toBe(
+      new Date(2026, 8, 10, 23, 59, 0, 0).getTime()
+    );
+  });
+});

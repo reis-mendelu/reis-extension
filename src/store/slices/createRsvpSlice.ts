@@ -4,6 +4,7 @@ import { IndexedDBService } from '../../services/storage';
 import { planReminders } from '../../services/eventReminders/plan';
 import { syncReminders } from '../../services/eventReminders/sync';
 import { translate } from '../../i18n/translate';
+import { logError } from '../../utils/reportError';
 
 export type { RsvpStatus };
 
@@ -61,6 +62,16 @@ function applyAnswer(
  */
 export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
   /**
+   * Per-event mutation counter. Tapping bumps it; a request that finishes when
+   * it is no longer the latest for its event must not touch state.
+   *
+   * Without it, tap Going then Interested on one card and let the FIRST request
+   * fail after the second succeeded: the loser's rollback restores the answer
+   * the student already replaced, and reminders are then rebuilt from it.
+   */
+  const revisions = new Map<string, number>();
+
+  /**
    * Re-derive every reminder from the current answers, after any change to
    * them. Recomputing the whole set rather than nudging one is what makes
    * un-RSVPing cancel its notification: the reminder simply stops being in the
@@ -85,21 +96,30 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       if (eventIds.length === 0) return;
       // Own answers come from the device, not the server: the server is never
       // told who this is, so it could not return them even if we asked.
-      const stored = ((await IndexedDBService.get('meta', RSVP_KEY)) ?? {}) as Record<
-        string,
-        RsvpStatus
-      >;
+      // Caught separately: a storage failure must not take the counts down with
+      // it. The cards can render real attendance without knowing this device's
+      // own answer — the reverse is the useless half.
+      let stored: Record<string, RsvpStatus> | null = null;
+      try {
+        stored = ((await IndexedDBService.get('meta', RSVP_KEY)) ?? {}) as Record<
+          string,
+          RsvpStatus
+        >;
+      } catch (err) {
+        logError('RsvpSlice.loadRsvps', err);
+      }
       const { counts, ok } = await fetchEventRsvps(eventIds);
       set((s) => ({
         // A failed load returns zeroes; writing those over known counts would
         // replace real numbers with a confident-looking lie.
         rsvpCounts: ok ? { ...s.rsvpCounts, ...counts } : s.rsvpCounts,
-        rsvp: { ...stored, ...s.rsvp },
+        rsvp: { ...(stored ?? {}), ...s.rsvp },
       }));
-      // Only reconcile once the answers are actually known. Reconciling from a
-      // failed load means an empty plan, and syncReminders cancels everything
-      // not in the plan — silently wiping reminders for events still attended.
-      if (ok) refreshReminders();
+      // Only reconcile once the answers are actually known — from BOTH sides.
+      // Reconciling from a failed load means an empty plan, and syncReminders
+      // cancels everything not in the plan, silently wiping reminders for
+      // events still attended. An unread `stored` is exactly that empty plan.
+      if (ok && stored) refreshReminders();
     },
 
     setRsvp: async (eventId, status) => {
@@ -108,27 +128,37 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       // always had, now expressed to the backend as a null status.
       const next = previous === status ? undefined : status;
       const beforeCounts = get().rsvpCounts[eventId] ?? EMPTY;
-      const beforeRsvp = get().rsvp;
 
-      const optimisticRsvp = { ...beforeRsvp };
-      if (next) optimisticRsvp[eventId] = next;
-      else delete optimisticRsvp[eventId];
+      const revision = (revisions.get(eventId) ?? 0) + 1;
+      revisions.set(eventId, revision);
 
-      set((s) => ({
-        rsvp: optimisticRsvp,
-        rsvpCounts: { ...s.rsvpCounts, [eventId]: applyAnswer(beforeCounts, previous, next) },
-      }));
+      // Derived from the CURRENT map inside `set`, never from a snapshot taken
+      // before the await: a snapshot silently reverts whatever landed meanwhile.
+      set((s) => {
+        const optimistic = { ...s.rsvp };
+        if (next) optimistic[eventId] = next;
+        else delete optimistic[eventId];
+        return {
+          rsvp: optimistic,
+          rsvpCounts: { ...s.rsvpCounts, [eventId]: applyAnswer(beforeCounts, previous, next) },
+        };
+      });
 
       const ok = await setEventRsvp(eventId, next ?? null);
+
+      // Superseded while in flight. The newer tap owns this event's outcome in
+      // both directions — applying ours would resurrect a replaced answer.
+      if (revisions.get(eventId) !== revision) return;
+
       if (ok) {
-        // The device is the only record of its own answer, so persist it.
-        void IndexedDBService.set('meta', RSVP_KEY, optimisticRsvp);
+        // The device is the only record of its own answer, so persist it — from
+        // the live map, so a concurrent answer to a DIFFERENT event survives.
+        void IndexedDBService.set('meta', RSVP_KEY, get().rsvp);
         refreshReminders();
         return;
       }
-      // Roll back ONLY this event. Restoring the whole `beforeRsvp` snapshot
-      // meant an older request failing after a newer one succeeded erased the
-      // newer choice — including an unrelated event's.
+      // Roll back ONLY this event. Restoring a whole snapshot of the answers
+      // erased unrelated events that were answered while this was in flight.
       set((s) => {
         const rolledBack = { ...s.rsvp };
         if (previous) rolledBack[eventId] = previous;

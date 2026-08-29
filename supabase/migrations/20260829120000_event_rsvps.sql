@@ -16,6 +16,14 @@
 -- Consequence, accepted deliberately: this counts INSTALLS, not people. One
 -- student on a phone and a tablet counts twice, and a reinstall counts again.
 -- Where a per-person number is needed, ask the student rather than infer it.
+--
+-- Second consequence: an identity the caller mints is an identity the caller
+-- can mint again, so the counts are inflatable in principle. That is inherent
+-- to answering anonymously and is not solvable by tightening this function —
+-- the alternative is requiring a login, which would reintroduce exactly the
+-- identifier this migration exists to remove. What IS done about it is a
+-- per-event hourly cap on FIRST answers (below), bounding a scripted caller
+-- without ever throttling a student changing their own mind.
 
 DROP FUNCTION IF EXISTS public.get_event_rsvps(uuid[], text);
 DROP FUNCTION IF EXISTS public.set_event_rsvp(uuid, text, text);
@@ -56,6 +64,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
+DECLARE
+  v_recent int;
 BEGIN
   IF p_status IS NULL THEN
     DELETE FROM public.event_rsvps
@@ -65,6 +75,35 @@ BEGIN
 
   IF p_status NOT IN ('going', 'interested') THEN
     RAISE EXCEPTION 'unknown rsvp status: %', p_status;
+  END IF;
+
+  -- A caller-supplied identity can be minted at will, so a fresh UUID per
+  -- request would let anyone inflate a count without limit. Nothing anonymous
+  -- can make that impossible; a cap makes it bounded and slow, which is the
+  -- same posture report_error_v2 and check_and_log_booking already take.
+  --
+  -- Only FIRST answers are counted. Changing or withdrawing your own answer
+  -- touches an existing row and must never be throttled — a student toggling
+  -- Going/Interested on a popular event is not an attacker.
+  IF NOT EXISTS (
+    SELECT 1 FROM public.event_rsvps
+     WHERE event_id = p_event_id AND install_id = p_install_id
+  ) THEN
+    -- Serialise concurrent first answers for this event so the count-then-insert
+    -- cannot race past the cap. Released at commit.
+    PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_event_id::text));
+
+    SELECT count(*) INTO v_recent
+      FROM public.event_rsvps
+     WHERE event_id = p_event_id
+       AND created_at > now() - interval '1 hour';
+
+    -- Deliberately generous: a real MENDELU society event drawing 300 first
+    -- answers inside one hour would be the largest in the app's history, so the
+    -- cap costs nothing real while bounding a scripted caller to 300/hour.
+    IF v_recent >= 300 THEN
+      RAISE EXCEPTION 'rsvp rate limit reached for this event';
+    END IF;
   END IF;
 
   INSERT INTO public.event_rsvps (event_id, install_id, status)

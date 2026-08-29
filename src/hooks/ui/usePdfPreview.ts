@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFileActions } from './useFileActions';
 
 export interface PdfPreviewFile {
@@ -33,12 +33,28 @@ export function usePdfPreview() {
     };
   }, [previewUrl]);
 
+  // The cleanup above only ever sees a URL that reached state. Close the drawer
+  // while the fetch is still running and the URL lands on a dead hook: no state
+  // update, no cleanup, and the blob is pinned for the life of the document.
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+
   const viewPdf = useCallback(
     async (link: string, name?: string) => {
       if (isPreviewLoading) return;
       setIsPreviewLoading(true);
       try {
         const blobUrl = await openPdfInline(link);
+        if (!alive.current) {
+          // Nobody is left to show it to, and nobody is left to revoke it.
+          if (blobUrl) URL.revokeObjectURL(blobUrl);
+          return;
+        }
         if (blobUrl) {
           setPreviewUrl(blobUrl);
           setPreviewFile({ link, name: name ?? 'PDF' });
@@ -46,7 +62,7 @@ export function usePdfPreview() {
           await openFile(link);
         }
       } finally {
-        setIsPreviewLoading(false);
+        if (alive.current) setIsPreviewLoading(false);
       }
     },
     [openPdfInline, openFile, isPreviewLoading]
