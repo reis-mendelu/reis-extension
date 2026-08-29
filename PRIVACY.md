@@ -65,8 +65,9 @@ reIS contacts the following services. Only the first two ever receive your acade
 
 **Only when you use the relevant feature:**
 6. **Google** (`googleapis.com`, `google.com`) — if you enable Drive backup, your IS course files are copied to **your own** Google Drive. The permission requested is `drive.file`, which grants access only to files reIS itself creates.
-7. **Microsoft Bookings** (`bookings.cloud.microsoft`) — if you book a library study room, your **name, university email address and student ID** are sent, because the library's booking system requires them to make a reservation in your name.
-8. **Anthropic** (`anthropic.com`, via reIS's server) — if you use Erasmus syllabus comparison, the **PDF you choose to upload** and the MENDELU course details are sent for analysis. Only upload a document you are willing to share; a Transcript of Records contains personal data.
+7. **Anthropic** (`anthropic.com`, via reIS's server) — if you use Erasmus syllabus comparison, the **PDF you choose to upload** and the MENDELU course details are sent for analysis. The document this feature asks for is a foreign course **syllabus** — a public course description, not a personal record — and the app says so at the point you pick the file. Nothing is uploaded unless you choose a file.
+
+**Library study rooms**: reIS shows live room availability, which requires sending nothing about you. To actually book, reIS opens the library's own Microsoft Bookings page for that room and you enter your details there, directly into the university's system. reIS previously collected your name, email and student ID in-app and posted them through its own server; that path has been removed.
 9. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
 10. **Photon** (`photon.komoot.io`) — venue search, used only by student-society administrators when creating an event.
 

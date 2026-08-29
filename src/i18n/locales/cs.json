@@ -884,7 +884,8 @@
     "pasteManualTitle": "Ruční vložení",
     "pastePlaceholder": "Zkopírujte sem obsah sylabu ze zahraniční univerzity...",
     "pastedTextLabel": "Vložený text",
-    "pasteSaveContinue": "Uložit a pokračovat"
+    "pasteSaveContinue": "Uložit a pokračovat",
+    "verifyAiNotice": "Sylabus se odešle ke zpracování AI (Anthropic). Nahrávej jen sylabus předmětu — nikdy dokumenty s osobními údaji, jako je výpis známek."
   },
   "transfer": {
     "title": "Ověření přenosu předmětu",

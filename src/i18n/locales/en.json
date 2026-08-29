@@ -884,7 +884,8 @@
     "pasteManualTitle": "Manual entry",
     "pastePlaceholder": "Paste the syllabus content from the foreign university here...",
     "pastedTextLabel": "Pasted text",
-    "pasteSaveContinue": "Save and continue"
+    "pasteSaveContinue": "Save and continue",
+    "verifyAiNotice": "The syllabus is sent to an AI service (Anthropic) for analysis. Upload the course syllabus only — never documents containing personal data, such as a transcript of records."
   },
   "transfer": {
     "title": "Check credit transfer",

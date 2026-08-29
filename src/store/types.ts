@@ -29,7 +29,7 @@ import type {
   RoomProperties,
 } from '../types/campusMap';
 import type { MapEvent } from '../types/events';
-import type { RoomAvailability, LibraryRoom, BookingIdentity, BookingError } from '@/types/library';
+import type { RoomAvailability } from '@/types/library';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type Theme = 'mendelu' | 'mendelu-dark';
@@ -511,10 +511,7 @@ export interface MapSlice {
   libraryAvailabilityLoaded: boolean;
   loadLibraryAvailability: () => Promise<void>;
   /** Booking lifecycle per `${staffGuid}|${slotIso}` key. */
-  bookingStatus: Record<string, 'submitting' | 'success' | 'error'>;
-  bookingError: Record<string, BookingError>;
   /** Create a real reservation for a room + 1-hour slot; on success, force-refetch availability so the panel reflects it. Always an explicit, confirmed user action. */
-  bookRoom: (room: LibraryRoom, slotIso: string, identity: BookingIdentity) => Promise<void>;
   /** Open the library study-room overview panel (the library pin). Does not enter a building or move the camera — the overview lists all rooms with today's live availability. */
   openLibraryOverview: () => void;
   /** Which tab the top-right panel shows. */
