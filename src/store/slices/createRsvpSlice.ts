@@ -244,10 +244,20 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       // erase a successor's entry and let the next tap race it.
       if (revisions.get(eventId) === revision) inFlight.delete(eventId);
 
-      // Skipped above, or superseded while actually in flight. Either way the
-      // newer tap owns this event's outcome in both directions — applying ours
-      // would resurrect an answer the student already replaced.
-      if (ok === null || revisions.get(eventId) !== revision) return;
+      // Never sent, because a newer tap had already superseded it while it
+      // queued. Nothing happened, so there is nothing to record.
+      if (ok === null) return;
+
+      // Sent, and superseded while in flight. The newer tap owns what the CARD
+      // shows, so no state is applied here — but the server did accept this
+      // write, so disk has to say so. Skipping the persist meant that killing
+      // the app before the newer write settled left storage on an older answer
+      // while the server held this one, and the next launch restored the
+      // disagreement along with a reminder built from it.
+      if (revisions.get(eventId) !== revision) {
+        if (ok) persistAnswers();
+        return;
+      }
 
       if (ok) {
         persistAnswers();

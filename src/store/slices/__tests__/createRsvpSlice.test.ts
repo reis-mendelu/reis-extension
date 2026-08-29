@@ -644,4 +644,26 @@ describe('createRsvpSlice — failure handling', () => {
     expect(state.rsvp.e1).toBe('going');
     expect(state.rsvpCounts.e1).toEqual({ going: 1, interested: 0 });
   });
+
+  // A superseded write the server ACCEPTED still has to reach disk. If the app
+  // dies before the newer write settles, storage would otherwise hold an older
+  // answer than the server does, and the next launch restores that
+  // disagreement — plus a reminder built from it.
+  it('persists a superseded write that the server accepted', async () => {
+    let landGoing!: (v: boolean) => void;
+    setEventRsvp
+      .mockImplementationOnce(() => new Promise<boolean>((r) => (landGoing = r)))
+      // The newer Interested never settles — the app dies first.
+      .mockImplementationOnce(() => new Promise<boolean>(() => {}));
+
+    const first = state.setRsvp('e1', 'going');
+    await flush();
+    void state.setRsvp('e1', 'interested');
+
+    landGoing(true);
+    await first;
+    await flush();
+
+    expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'going' });
+  });
 });
