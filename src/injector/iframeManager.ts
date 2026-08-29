@@ -80,9 +80,14 @@ export function sendToIframe(message: unknown) {
   // exactly the check that handler makes. This keeps ONE sync implementation
   // instead of forking syncService per host.
   if (getPlatform().kind === 'capacitor') {
-    // Same-window post on Capacitor: the app IS the receiver, so the target is
-    // our own origin rather than a wildcard.
-    window.postMessage(message, window.location.origin);
+    // Deliberately '*' here, unlike the iframe path below. This posts to our
+    // OWN window — the message never crosses a document boundary, so there is
+    // no other origin that could receive it. Pinning it would add no security
+    // and would silently break mobile sync on any Capacitor scheme whose
+    // `location.origin` does not round-trip (e.g. "null"), which is a real risk
+    // for zero benefit. The leak the audit found was the cross-document post
+    // below, and that is what is pinned.
+    window.postMessage(message, '*');
     return;
   }
   if (!iframeElement?.contentWindow) return;
