@@ -54,11 +54,20 @@ export function injectIframe() {
  * Mark the iframe as ready and flush any queued messages.
  * Called when the iframe sends REIS_READY.
  */
+/**
+ * The extension's own origin. Every message on this channel carries the
+ * student's IS dataset — grades, schedule, exams, classmates, documents — so it
+ * is pinned rather than broadcast. With `'*'`, any script on the host page that
+ * could retarget the iframe's `src` would receive all of it. The ISKAM channel
+ * has always pinned its origin this way; this path simply had not.
+ */
+const IFRAME_ORIGIN = chrome.runtime.getURL('').replace(/\/$/, '');
+
 export function markIframeReady() {
   iframeReady = true;
   if (messageQueue.length > 0 && iframeElement?.contentWindow) {
     for (const msg of messageQueue) {
-      iframeElement.contentWindow.postMessage(msg, '*');
+      iframeElement.contentWindow.postMessage(msg, IFRAME_ORIGIN);
     }
   }
   messageQueue = [];
@@ -71,7 +80,9 @@ export function sendToIframe(message: unknown) {
   // exactly the check that handler makes. This keeps ONE sync implementation
   // instead of forking syncService per host.
   if (getPlatform().kind === 'capacitor') {
-    window.postMessage(message, '*');
+    // Same-window post on Capacitor: the app IS the receiver, so the target is
+    // our own origin rather than a wildcard.
+    window.postMessage(message, window.location.origin);
     return;
   }
   if (!iframeElement?.contentWindow) return;
@@ -79,5 +90,5 @@ export function sendToIframe(message: unknown) {
     messageQueue.push(message);
     return;
   }
-  iframeElement.contentWindow.postMessage(message, '*');
+  iframeElement.contentWindow.postMessage(message, IFRAME_ORIGIN);
 }

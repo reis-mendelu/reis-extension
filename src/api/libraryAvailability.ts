@@ -12,7 +12,7 @@ export async function fetchLibraryAvailability(): Promise<RoomAvailability[]> {
       headers: {
         'Content-Type': 'application/json',
         apikey: SUPABASE_PUBLISHABLE_KEY,
-        'x-reis-extension-secret': import.meta.env.VITE_EXTENSION_SECRET || 'reis-secret',
+        'x-reis-extension-secret': import.meta.env.VITE_EXTENSION_SECRET,
       },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);

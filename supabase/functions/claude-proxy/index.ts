@@ -1,31 +1,36 @@
 // @ts-ignore - Deno is not recognized by the main TS config
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 // @ts-ignore
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 // @ts-ignore
-const EXTENSION_SECRET = Deno.env.get("EXTENSION_SECRET");
-const CLAUDE_MODEL = "claude-haiku-4-5-20251001";
-const ANTHROPIC_ENDPOINT = "https://api.anthropic.com/v1/messages";
+const EXTENSION_SECRET = Deno.env.get('EXTENSION_SECRET');
+const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
+const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-reis-extension-secret',
-}
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type, x-reis-extension-secret',
+};
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     if (!ANTHROPIC_API_KEY) {
-      throw new Error("ANTHROPIC_API_KEY is not set in the Edge Function environment");
+      throw new Error('ANTHROPIC_API_KEY is not set in the Edge Function environment');
     }
 
-    const secretHeader = req.headers.get("x-reis-extension-secret");
-    if (EXTENSION_SECRET && secretHeader !== EXTENSION_SECRET) {
-      return new Response(JSON.stringify({ error: "Unauthorized: Invalid extension secret" }), {
+    const secretHeader = req.headers.get('x-reis-extension-secret');
+    // Fail CLOSED. This used to be `if (EXTENSION_SECRET && ...)`, so an unset
+    // env var disabled authentication altogether and left an LLM relay billed
+    // to reIS's own API key open to the internet. A missing secret is a
+    // deployment fault, and the safe response to it is to refuse.
+    if (!EXTENSION_SECRET || secretHeader !== EXTENSION_SECRET) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Invalid extension secret' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       });
@@ -37,21 +42,21 @@ serve(async (req: Request) => {
 
     if (pdfBase64) {
       userContent.push({
-        type: "document",
-        source: { type: "base64", media_type: "application/pdf", data: pdfBase64 }
+        type: 'document',
+        source: { type: 'base64', media_type: 'application/pdf', data: pdfBase64 },
       });
     }
 
     if (foreignText) {
-      userContent.push({ type: "text", text: `Foreign course syllabus text:\n\n${foreignText}` });
+      userContent.push({ type: 'text', text: `Foreign course syllabus text:\n\n${foreignText}` });
     }
 
-    userContent.push({ type: "text", text: prompt });
+    userContent.push({ type: 'text', text: prompt });
 
     const body: any = {
       model: CLAUDE_MODEL,
       max_tokens: 1024,
-      messages: [{ role: "user", content: userContent }],
+      messages: [{ role: 'user', content: userContent }],
     };
 
     if (systemInstruction) {
@@ -91,7 +96,7 @@ serve(async (req: Request) => {
     });
   } catch (error: any) {
     if (error.name === 'AbortError') {
-      return new Response(JSON.stringify({ error: "Claude API Timeout" }), {
+      return new Response(JSON.stringify({ error: 'Claude API Timeout' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 504,
       });
@@ -101,4 +106,4 @@ serve(async (req: Request) => {
       status: 500,
     });
   }
-})
+});

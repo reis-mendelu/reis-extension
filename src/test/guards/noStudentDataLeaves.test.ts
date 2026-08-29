@@ -98,7 +98,64 @@ function walk(dir: string, out: string[] = []): string[] {
 
 const files = walk(SRC).map((f) => ({ path: relative(ROOT, f), text: readFileSync(f, 'utf-8') }));
 
+/**
+ * Every non-MENDELU host the app may contact. An audit found reIS talking to
+ * Anthropic, Google, Microsoft, Komoot and a personal HuggingFace Space while
+ * PRIVACY.md claimed it spoke "exclusively" to IS Mendelu, WebISKAM and
+ * Supabase. Adding a destination now means adding it here AND to PRIVACY.md.
+ */
+const ALLOWED_HOSTS = [
+  // --- reIS's own / the university's ---
+  'is.mendelu.cz',
+  'webiskam.mendelu.cz',
+  'mendelu.cz',
+  'supabase.co',
+
+  // --- fetched from, carrying no student identity ---
+  'cdn.jsdelivr.net', // static subject-difficulty JSON. NOTE: the request set
+  // reveals which subjects are enrolled, so it is an enrolment fingerprint to
+  // the CDN even though no identifier is sent.
+  'openstreetmap.org', // campus map tiles
+  'photon.komoot.io', // off-campus venue search — SOCIETY ADMINS only
+  'hei.api.uni-foundation.eu', // public Erasmus university directory (read-only)
+
+  // --- fetched from, carrying student data. Each must stay disclosed. ---
+  'googleapis.com', // Drive backup of the student's own files (drive.file)
+  'google.com', // OAuth consent
+  'bookings.cloud.microsoft', // library booking: name, email, student id
+  'anthropic.com', // syllabus comparison: a student-chosen PDF
+
+  // --- deep links the STUDENT opens; no background request is made ---
+  'teams.microsoft.com',
+  'outlook.office.com',
+  'www.geteduroam.app',
+  'supef.cz',
+
+  // --- not destinations ---
+  'localhost.that.never.exists', // CORS sentinel in capacitorTransport
+  'is.mendelu.cz.evil.com', // negative example in the URL validator
+  'is.mendelu.cz.evil.example', // ditto, in trustedOrigin
+];
+
 describe('no student data leaves the device', () => {
+  it('contacts no undeclared third-party host', () => {
+    const offences: string[] = [];
+    for (const f of files) {
+      for (const m of f.text.matchAll(/https:\/\/([a-z0-9.-]+\.[a-z]{2,})/gi)) {
+        const host = m[1]!.toLowerCase();
+        if (ALLOWED_HOSTS.some((a) => host === a || host.endsWith('.' + a))) continue;
+        offences.push(`${f.path}  ${host}`);
+      }
+    }
+    expect(
+      [...new Set(offences)],
+      `Undeclared outbound host(s). Every destination must be listed here AND ` +
+        `disclosed in PRIVACY.md, which is what backs the App Store and Play ` +
+        `Store privacy filings:\n` +
+        [...new Set(offences)].join('\n')
+    ).toEqual([]);
+  });
+
   it('only reviewed files talk to Supabase', () => {
     const callers = files
       .filter((f) => /\bsupabase\s*\.\s*(rpc|from)\s*\(/.test(f.text))

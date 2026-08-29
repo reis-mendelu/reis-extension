@@ -17,14 +17,6 @@ We fetch and store the following information directly from MENDELU services to y
 
 This data is stored **locally on your device** using highly efficient storage (IndexedDB) and is **never** transmitted to our servers.
 
-### 2. Tutoring Matching (reučko)
-If you opt in to the peer tutoring feature, the following data is sent to and stored on our Supabase backend:
-- **Participation Data**: Your MENDELU student ID, course code, role (tutor or tutee), and academic semester.
-- **Dismissals**: Records of tutoring suggestions you have declined, linked to your student ID and course code.
-- **Matching**: If an administrator pairs you with another student, both student IDs and the course code are stored. Your matched partner's full name is then retrieved directly from IS Mendelu (not stored in the extension) and displayed to you.
-
-This data is used solely to facilitate tutoring connections. Eligibility (based on your grades and semester) is determined locally on your device and is never sent externally. Participation is entirely voluntary.
-
 ### 3. Anonymous Usage Analytics
 We collect anonymous usage data to improve the extension:
 - **Interaction Data**: Clicks on notifications and views of the notification feed.
@@ -32,11 +24,13 @@ We collect anonymous usage data to improve the extension:
 - **Privacy**: This data is **not linked** to your identity, IS credentials, or personal content.
 
 ### 4. Daily Usage & NPS Feedback
-To understand how actively the extension is used and to improve user experience, we collect:
-- **Daily Usage**: Each day you open the extension, a SHA-256 hash of your student ID is sent to our Supabase backend to record a daily active usage event. Your raw student ID is **never transmitted** — only an irreversible hash. No academic data, browsing history, or page content is sent.
-- **NPS Rating (Voluntary)**: Once per semester, after a few sessions, you may be shown a satisfaction prompt. If you choose to rate, a hashed student ID and numeric rating are sent to Supabase. You can dismiss the prompt without submitting any data.
+To understand how actively reIS is used, we record:
+- **Daily Usage**: Each day you open reIS, a **random identifier generated on your device** is sent to our Supabase backend to record one usage event. This identifier is a random UUID created the first time you use the app and stored locally. It is **not derived from your student ID, your name, or anything else about you**, and it cannot be linked back to you.
+- **NPS Rating (Voluntary)**: Once per semester you may be shown a satisfaction prompt. If you choose to rate, the same random identifier and your rating are sent. You can dismiss the prompt without sending anything.
 
-This data is used solely for aggregate usage statistics and product improvement. It is **not shared with third parties**.
+**What this means for our numbers**: because the identifier belongs to an installation rather than to a person, these figures count **installations, not people**. If you use reIS on a phone and a laptop, you are counted twice.
+
+**Previously**: until August 2026 these events were keyed on a SHA-256 hash of your student ID. We described that as irreversible. That was wrong — MENDELU student IDs are six or seven digits, so the hash can be reversed by brute force in seconds, which made it a recoverable identifier. We have replaced it in the app. The historical rows written under the old scheme are being irreversibly re-keyed so the original hashes cannot be recovered by anyone, including us; until that is done they remain in the database.
 
 ### 5. User Feedback (Voluntary)
 If you use the built-in "Report Bug / Feedback" feature, the following data is sent to our support channel:
@@ -59,15 +53,28 @@ When an unhandled error or warning occurs in the extension, a sanitized diagnost
 - **No Third-Party Sales**: We do not sell, trade, or transfer your personally identifiable information to outside parties.
 
 ## Third-Party Access
-The extension communicates exclusively with:
-1.  **IS Mendelu** (`is.mendelu.cz`): To fetch your academic data (authenticated by you).
-2.  **WebISKAM** (`webiskam.mendelu.cz`): To display your canteen profile and meal reservations. The extension replaces the WebISKAM page with its own interface; all dining data remains local.
-3.  **Supabase** (`*.supabase.co`): To fetch public notifications, store anonymous interaction stats, manage tutoring participation data if you opt in, receive sanitized error diagnostic reports, and deliver your feedback messages to the developers (only when you submit feedback).
+
+reIS contacts the following services. Only the first two ever receive your academic data, and only because they are the university's own systems.
+
+**Always:**
+1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you.
+2. **WebISKAM** (`webiskam.mendelu.cz`) — your canteen profile and meal reservations.
+3. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events and their attendance counts, anonymous usage events, sanitized error reports, and feedback you submit. Identified only by the random installation identifier described above.
+4. **jsDelivr** (`cdn.jsdelivr.net`) — static subject-difficulty data. No identifier is sent, but the set of subjects requested does reveal to the CDN which courses you are enrolled in.
+5. **OpenStreetMap** — campus map tiles.
+
+**Only when you use the relevant feature:**
+6. **Google** (`googleapis.com`, `google.com`) — if you enable Drive backup, your IS course files are copied to **your own** Google Drive. The permission requested is `drive.file`, which grants access only to files reIS itself creates.
+7. **Microsoft Bookings** (`bookings.cloud.microsoft`) — if you book a library study room, your **name, university email address and student ID** are sent, because the library's booking system requires them to make a reservation in your name.
+8. **Anthropic** (`anthropic.com`, via reIS's server) — if you use Erasmus syllabus comparison, the **PDF you choose to upload** and the MENDELU course details are sent for analysis. Only upload a document you are willing to share; a Transcript of Records contains personal data.
+9. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
+10. **Photon** (`photon.komoot.io`) — venue search, used only by student-society administrators when creating an event.
+
+**Links you open yourself** (Teams, Outlook, geteduroam, society websites) are handed to your browser or the relevant app. reIS makes no background request to them.
 
 ## User Control
 You have full control over your data:
 - **Access**: You can view all data displayed by the extension within its interface.
-- **Tutoring Opt-Out**: You can withdraw from the tutoring feature at any time, which removes your availability record from our servers.
 - **Error Reporting Opt-Out**: You can disable automatic error reporting at any time via the extension's profile/settings panel.
 - **Deletion**: You can remove all locally stored data by uninstalling the extension or clearing the extension's storage in your browser settings.
 

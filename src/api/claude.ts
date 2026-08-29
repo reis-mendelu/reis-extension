@@ -15,7 +15,7 @@ async function askClaude(
   prompt: string,
   systemInstruction?: string,
   pdfBase64?: string,
-  foreignText?: string,
+  foreignText?: string
 ): Promise<string> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 45000);
@@ -25,8 +25,8 @@ async function askClaude(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': SUPABASE_PUBLISHABLE_KEY,
-        'x-reis-extension-secret': import.meta.env.VITE_EXTENSION_SECRET || 'reis-secret',
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+        'x-reis-extension-secret': import.meta.env.VITE_EXTENSION_SECRET,
       },
       body: JSON.stringify({ prompt, systemInstruction, pdfBase64, foreignText }),
       signal: controller.signal,
@@ -39,7 +39,7 @@ async function askClaude(
       throw new Error(errorData.error || `Proxy Error: ${response.statusText}`);
     }
 
-    const data = await response.json() as { text: string };
+    const data = (await response.json()) as { text: string };
     if (!data.text) throw new Error('Empty response from Claude proxy');
     return data.text;
   } catch (error) {
@@ -55,7 +55,7 @@ export async function compareSyllabiAI(
   mendeluSyllabus: string,
   mendeluMetadata: { credits: number; type: string; code: string; name: string },
   pdfBase64?: string,
-  foreignText?: string,
+  foreignText?: string
 ): Promise<AIComparisonResult> {
   if (
     mendeluMetadata.code.toUpperCase().startsWith('EXA-UP') ||
@@ -65,7 +65,8 @@ export async function compareSyllabiAI(
     return {
       similarity: 1.0,
       verdict: 'approved',
-      reasoning: 'Automaticky schváleno. Předměty typu "Uznaný předmět ze zahraničního výjezdu" slouží jako volitelný blok a nevyžadují obsahovou shodu.',
+      reasoning:
+        'Automaticky schváleno. Předměty typu "Uznaný předmět ze zahraničního výjezdu" slouží jako volitelný blok a nevyžadují obsahovou shodu.',
       mismatches: [],
       creditsMatch: true,
       typeMatch: true,
@@ -103,13 +104,18 @@ OUTPUT FORMAT (JSON ONLY, no markdown):
 }
 `;
 
-  const systemInstruction = "You are a senior academic advisor at Mendel University in Brno. You are an expert at evaluating syllabus equivalence for Erasmus+ students. You are strict but fair, ensuring MENDELU standards are met while supporting student mobility. Always respond with valid JSON only, no markdown fences.";
+  const systemInstruction =
+    'You are a senior academic advisor at Mendel University in Brno. You are an expert at evaluating syllabus equivalence for Erasmus+ students. You are strict but fair, ensuring MENDELU standards are met while supporting student mobility. Always respond with valid JSON only, no markdown fences.';
 
   const responseText = await askClaude(prompt, systemInstruction, pdfBase64, foreignText);
 
   const jsonMatch = responseText.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error("AI failed to return a structured JSON response. Raw output: " + responseText.substring(0, 100) + "...");
+    throw new Error(
+      'AI failed to return a structured JSON response. Raw output: ' +
+        responseText.substring(0, 100) +
+        '...'
+    );
   }
 
   return JSON.parse(jsonMatch[0]) as AIComparisonResult;
