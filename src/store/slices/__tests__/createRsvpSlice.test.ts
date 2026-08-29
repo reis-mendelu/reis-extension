@@ -669,4 +669,35 @@ describe('createRsvpSlice — failure handling', () => {
     expect(state.rsvp.e1).toBeUndefined();
     expect(idb.get('event_rsvps_mine')).toEqual({});
   });
+
+  // The mirror of the case above, and the reason `confirmed` seeds from disk
+  // even for an event with a write in flight: a returning student changes a
+  // stored answer before the startup read lands, and the write fails. The
+  // server still holds the previous answer, so the rollback has to restore it —
+  // not clear the card and cancel a reminder that is still valid.
+  it('rolls back to the stored answer when a write fails before the load lands', async () => {
+    idb.set('event_rsvps_mine', { e1: 'going' });
+    state.rsvp = { e1: 'going' };
+
+    let finishRead!: (v: Record<string, string>) => void;
+    const { IndexedDBService } = await import('../../../services/storage');
+    vi.mocked(IndexedDBService.get).mockImplementationOnce(
+      () => new Promise((r) => (finishRead = r as (v: Record<string, string>) => void))
+    );
+    fetchEventRsvps.mockResolvedValue({ counts: { e1: { going: 1, interested: 0 } }, ok: true });
+    const loading = state.loadRsvps(['e1']);
+    await flush();
+
+    // The student switches to Interested before the read returns, and it fails.
+    setEventRsvp.mockResolvedValueOnce(false);
+    await state.setRsvp('e1', 'interested');
+
+    finishRead({ e1: 'going' });
+    await loading;
+    await flush();
+
+    // The server never stopped holding Going, so that is what the card shows.
+    expect(state.rsvp.e1).toBe('going');
+    expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'going' });
+  });
 });

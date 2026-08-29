@@ -161,26 +161,35 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
 
     loadRsvps: async (eventIds) => {
       if (eventIds.length === 0) return;
-      // Two different questions, and they need two different answers.
+      // Three sources of truth meet in this function, and every bug here has
+      // come from blurring them. Each one has exactly one owner:
       //
-      // COUNTS are a server fact, so a load may refresh them — unless this
-      // session moved that number while the request was out. A revision
-      // snapshot taken before any await says exactly which ones moved, and it
-      // has to be a snapshot rather than "ever mutated": the latter would leave
-      // a card permanently unable to receive fresh counts, so other students'
-      // answers would stop appearing on it.
+      //   rsvpCounts — the SERVER's number. A load refreshes it, unless this
+      //     session moved it while the request was out. That needs a revision
+      //     snapshot taken before any await, not "has this ever been mutated":
+      //     the latter would leave a card permanently unable to receive fresh
+      //     counts, so other students' answers would stop appearing on it.
+      //
+      //   confirmed — what the SERVER is known to hold. Disk is authoritative
+      //     for this: persistAnswers writes only settled outcomes, so a stored
+      //     answer IS a server answer until this session learns otherwise. It
+      //     seeds wherever the session has no settled knowledge yet — including
+      //     for an event with a write in flight, because the server still holds
+      //     the old answer until that write lands, and that is precisely what a
+      //     rollback needs to restore.
+      //
+      //   rsvp — what the STUDENT intends. The session owns this outright: an
+      //     optimistic withdrawal has deliberately removed the event, and disk
+      //     must never put it back.
+      //
+      // Reading `confirmed` off disk while refusing to hydrate `rsvp` from it
+      // looks contradictory and is not: one records what the server has, the
+      // other what the student asked for, and mid-flight they legitimately
+      // disagree.
       const startRevisions = new Map(eventIds.map((id) => [id, revisions.get(id) ?? 0]));
-      const countSupersededDuringLoad = (id: string) =>
+      const countMovedDuringLoad = (id: string) =>
         (revisions.get(id) ?? 0) !== (startRevisions.get(id) ?? 0);
-
-      // ANSWERS are this device's own record, and the session always knows
-      // better than the disk. The snapshot is the wrong test for them: a
-      // withdrawal that bumped its revision just BEFORE this load started is
-      // inside the baseline, so it reads as unchanged — and because its persist
-      // had not flushed yet, the disk still held the old answer and hydration
-      // put it straight back, reminder and all. If this session has touched an
-      // event at all, its own state wins, in flight or settled.
-      const answerOwnedBySession = (id: string) => revisions.has(id);
+      const intentOwnedBySession = (id: string) => revisions.has(id);
       // Own answers come from the device, not the server: the server is never
       // told who this is, so it could not return them even if we asked.
       // Caught separately: a storage failure must not take the counts down with
@@ -206,7 +215,7 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       // write in this session and is by definition newer than the disk.
       if (stored) {
         for (const [id, answer] of Object.entries(stored)) {
-          if (!confirmed.has(id) && !answerOwnedBySession(id)) confirmed.set(id, answer);
+          if (!confirmed.has(id)) confirmed.set(id, answer);
         }
       }
 
@@ -220,7 +229,7 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
         // session has touched, so those are left alone in both directions.
         const hydrated = { ...s.rsvp };
         for (const [id, answer] of Object.entries(stored ?? {})) {
-          if (!answerOwnedBySession(id) && !(id in hydrated)) hydrated[id] = answer;
+          if (!intentOwnedBySession(id) && !(id in hydrated)) hydrated[id] = answer;
         }
 
         // Counts go stale the same way the answers do: a tap that lands while
@@ -230,7 +239,7 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
         const mergedCounts = { ...s.rsvpCounts };
         if (ok) {
           for (const [id, c] of Object.entries(counts)) {
-            if (!countSupersededDuringLoad(id)) mergedCounts[id] = c;
+            if (!countMovedDuringLoad(id)) mergedCounts[id] = c;
           }
         }
 
@@ -323,7 +332,19 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       // whole snapshot also erased unrelated events answered meanwhile.
       set((s) => {
         const shown = s.rsvp[eventId];
-        const settled = confirmed.get(eventId);
+        // What the server still holds. Usually `confirmed` knows; when it does
+        // not, the FIRST mutation of an event is a special case worth handling
+        // rather than treating as "no answer". Its pre-tap value is whatever the
+        // card was already showing, which came from the server by way of the
+        // stored map — so on a returning student whose startup read has not
+        // landed yet, that is the right thing to restore. Only the first: a
+        // later tap's pre-tap value can be an earlier uncommitted tap, which is
+        // exactly the uncommitted answer this rollback must never resurrect.
+        const settled = confirmed.has(eventId)
+          ? confirmed.get(eventId)
+          : revision === 1
+            ? previous
+            : undefined;
         const rolledBack = { ...s.rsvp };
         if (settled) rolledBack[eventId] = settled;
         else delete rolledBack[eventId];
