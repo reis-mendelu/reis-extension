@@ -48,6 +48,8 @@ describe('EventComposer publish', () => {
     // choose date through MiniCalendar
     fireEvent.click(screen.getByText('Vyberte datum'));
     fireEvent.click(screen.getByRole('button', { name: '15' }));
+    // A start time is required now, so every publish path sets one.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
     fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
     await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
     const input = createPost.mock.calls[0][0];
@@ -83,6 +85,8 @@ describe('EventComposer publish', () => {
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'ESN párty' } });
     fireEvent.click(screen.getByText('Vyberte datum'));
     fireEvent.click(screen.getByRole('button', { name: '15' }));
+    // A start time is required now, so every publish path sets one.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
     fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
     await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
     expect(createPost.mock.calls[0][1]).toBe('esn');
@@ -98,6 +102,8 @@ describe('EventComposer publish', () => {
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
     fireEvent.click(screen.getByText('Vyberte datum'));
     fireEvent.click(screen.getByRole('button', { name: '15' }));
+    // A start time is required now, so every publish path sets one.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
     await waitFor(() => expect(publish).not.toBeDisabled());
   });
 
@@ -122,6 +128,8 @@ describe('EventComposer publish', () => {
     });
     fireEvent.click(screen.getByText('Vyberte datum'));
     fireEvent.click(screen.getByRole('button', { name: '15' }));
+    // A start time is required now, so every publish path sets one.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
     // Pick the "Kvíz" (quiz) category instead of leaving the default party.
     fireEvent.click(screen.getByRole('button', { name: 'Kvíz' }));
     fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
@@ -152,9 +160,14 @@ describe('EventComposer publish', () => {
       ],
     });
     render(<EventComposer onDone={() => {}} />);
+    // This fixture is a legacy row with time: null. Saving it now requires a
+    // start time — that is the point: editing an old event backfills the one
+    // field its reminder needs.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
     fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
     await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
     const patch = updatePost.mock.calls[0][1];
+    expect(patch.time).toBe('19:30');
     expect(patch.venue_kind).toBe('campus');
     expect(patch.room_code).toBe('BA39N6006');
     expect(patch.category).toBe('boardgames');
@@ -259,6 +272,8 @@ describe('EventComposer — seeing the planned location before publishing', () =
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Přednáška' } });
     fireEvent.click(screen.getByText('Vyberte datum'));
     fireEvent.click(screen.getByRole('button', { name: '15' }));
+    // A start time is required now, so every publish path sets one.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
     pickRoom();
     // Read the mirrored coord before publishing: closing the composer clears it.
     const pinned = useAppStore.getState().draftCoord;
@@ -327,5 +342,51 @@ describe('EventComposer — changing your mind about the venue kind', () => {
     expect(screen.getByRole('button', { name: 'Ukázat na mapě' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Ve městě/ }));
     expect(screen.queryByRole('button', { name: 'Ukázat na mapě' })).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Every event gets a start time.
+ *
+ * Time used to be optional, which left `time: null` rows in spolky_events —
+ * and an event with no start has no "two hours before", so it silently got no
+ * reminder at all. Rather than inventing a default hour to notify at, the
+ * composer now requires the time, which is the only source these rows have
+ * (mapEvents reads spolky_events exclusively).
+ */
+describe('EventComposer — a start time is required', () => {
+  const fillTitleAndDate = () => {
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Kvíz' } });
+    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+  };
+
+  it('keeps publish disabled until a time is given', () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fillTitleAndDate();
+
+    // Title, date and venue are all present — only the time is missing.
+    expect(screen.getByRole('button', { name: 'Zveřejnit akci' })).toBeDisabled();
+  });
+
+  it('enables publish once the time is set', () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fillTitleAndDate();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+
+    expect(screen.getByRole('button', { name: 'Zveřejnit akci' })).toBeEnabled();
+  });
+
+  it('publishes the time rather than a null', async () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fillTitleAndDate();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    expect(createPost.mock.calls[0][0].time).toBe('19:30');
   });
 });

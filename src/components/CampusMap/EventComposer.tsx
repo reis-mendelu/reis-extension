@@ -72,7 +72,12 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   // The room stays the source of truth for a campus venue; draftCoord is the
   // map's VIEW of it, kept in step by selectRoom/clearRoom below.
   const coord = venue === 'campus' ? (room?.coord ?? null) : draftCoord;
-  const ready = !!title.trim() && !!date && !!coord;
+  // Time is required, not optional. A `time: null` row has no start, so it has
+  // no "two hours before" and silently got no reminder at all — and the
+  // composer is the only place these rows come from (the map reads
+  // spolky_events exclusively). Requiring it here is what makes "every event
+  // gets a reminder" true, rather than inventing a default hour to notify at.
+  const ready = !!title.trim() && !!date && !!time && !!coord;
   const scheduled = date ? isScheduledEvent(date) : false;
 
   const close = () => {
