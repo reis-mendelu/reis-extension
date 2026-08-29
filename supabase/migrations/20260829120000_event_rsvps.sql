@@ -75,6 +75,26 @@ AS $$
 DECLARE
   v_recent int;
 BEGIN
+  -- Every path through this function is serialised per event, and the lock is
+  -- taken first thing for two separate reasons.
+  --
+  -- Withdrawal used to run outside it. Two contexts sharing an install id — two
+  -- IS Mendelu tabs, which share IndexedDB and therefore the id, but not the
+  -- client's in-memory write queue — could then submit a first answer and a
+  -- withdrawal concurrently: the unlocked UPDATE matched zero rows, the locked
+  -- INSERT landed afterwards, and the withdrawn RSVP stayed and stayed counted.
+  -- That outcome corresponds to no serial order of the two calls at all.
+  --
+  -- And on the insert path the lock must precede the existence check, because
+  -- checking first reads a snapshot the lock then invalidates: two overlapping
+  -- writes for one install could both see "no row", and the one that took the
+  -- lock second would put what is by then an UPDATE through the first-answer
+  -- cap, rejecting a legitimate Going->Interested switch at a busy event.
+  --
+  -- Released at commit. Contention is per event and the body is a small sweep
+  -- plus two indexed reads.
+  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_event_id::text));
+
   -- Sweep tombstones that have outlived the rate-limit window they exist for.
   -- Opportunistic rather than scheduled: the only reader of a tombstone is the
   -- cap below, so once it is older than the window it has no purpose and the
@@ -103,14 +123,6 @@ BEGIN
   -- can make that impossible; a cap makes it bounded and slow, which is the
   -- same posture report_error_v2 and check_and_log_booking already take.
   --
-  -- The lock is taken BEFORE the existence check, not inside it. Checking first
-  -- reads a snapshot that the lock then invalidates: two overlapping writes for
-  -- the same install could both see "no row", and the one that acquired the lock
-  -- second would put what is by then an UPDATE through the first-answer cap —
-  -- rejecting a legitimate Going->Interested switch at a busy event. Released at
-  -- commit; contention is per event and the body is two indexed reads.
-  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_event_id::text));
-
   -- Only FIRST answers are counted. Changing, withdrawing, or returning after a
   -- withdrawal all touch an existing row and must never be throttled — a
   -- student toggling Going/Interested on a popular event is not an attacker.
