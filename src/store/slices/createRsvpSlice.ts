@@ -105,17 +105,37 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
   const inFlight = new Map<string, Promise<unknown>>();
 
   /**
-   * Write the device's own answers to IndexedDB.
+   * Write the device's own answers to IndexedDB — only the CONFIRMED ones.
    *
-   * Always from the live map, never from a snapshot the request captured: a
-   * snapshot would write away an answer given to another event while this one
-   * was in flight. Called after every settled outcome — success AND rollback —
-   * because the live map at success time can contain another event's
-   * still-unconfirmed answer, and a rollback that only touched Zustand would
-   * leave that refused answer on disk to be read back as real next launch.
+   * Writing the live map was wrong in a way that outlived the session: it
+   * captured any other event's still-optimistic answer, so killing the app
+   * before that write settled left an unaccepted answer on disk, and the next
+   * launch read it back as real and treated it as confirmed.
+   *
+   * Merged over what is already stored rather than replacing it, because
+   * `loadRsvps` is detached and a tap can beat it: replacing wholesale would
+   * drop stored answers for events this session has not loaded yet.
    */
+  let persistQueue: Promise<void> = Promise.resolve();
   const persistAnswers = () => {
-    void IndexedDBService.set('meta', RSVP_KEY, get().rsvp);
+    // Serialised: this is a read-modify-write, and two of them interleaving
+    // would let the slower one write back a map it had already gone stale on.
+    persistQueue = persistQueue.then(async () => {
+      try {
+        const onDisk = ((await IndexedDBService.get('meta', RSVP_KEY)) ?? {}) as Record<
+          string,
+          RsvpStatus
+        >;
+        const next = { ...onDisk };
+        for (const [id, answer] of confirmed) {
+          if (answer) next[id] = answer;
+          else delete next[id];
+        }
+        await IndexedDBService.set('meta', RSVP_KEY, next);
+      } catch (err) {
+        logError('RsvpSlice.persistAnswers', err);
+      }
+    });
   };
 
   /**
@@ -155,8 +175,8 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       } catch (err) {
         logError('RsvpSlice.loadRsvps', err);
       }
-      // The stored map is written only by settled outcomes, so it is exactly
-      // the set of answers the server has accepted — the right rollback target.
+      // The stored map holds only confirmed answers (see persistAnswers), so it
+      // is exactly the set the server has accepted — the right rollback target.
       if (stored) {
         for (const [id, answer] of Object.entries(stored)) confirmed.set(id, answer);
       }
@@ -211,6 +231,15 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       inFlight.set(eventId, thisWrite);
 
       const ok = await thisWrite;
+
+      // Recorded BEFORE the supersede check below: the server accepted this
+      // write, and that is true whether or not a newer tap has since arrived.
+      // Skipping it meant a superseded-but-successful Going left `confirmed`
+      // empty, so when the queued Interested then failed the card rolled back
+      // to "no answer" while the server still held Going — and persisted it.
+      // Writes are chained per event, so the last accepted one wins here.
+      if (ok === true) confirmed.set(eventId, next);
+
       // Only the newest tap clears the slot, so a slower predecessor cannot
       // erase a successor's entry and let the next tap race it.
       if (revisions.get(eventId) === revision) inFlight.delete(eventId);
@@ -221,7 +250,6 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       if (ok === null || revisions.get(eventId) !== revision) return;
 
       if (ok) {
-        confirmed.set(eventId, next);
         persistAnswers();
         refreshReminders();
         return;
