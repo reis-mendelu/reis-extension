@@ -122,6 +122,7 @@ const ALLOWED_HOSTS = [
   // --- fetched from, carrying student data. Each must stay disclosed. ---
   'googleapis.com', // Drive backup of the student's own files (drive.file)
   'google.com', // OAuth consent
+  'bookings.cloud.microsoft', // library booking: name, email, student id
   'anthropic.com', // syllabus comparison: a student-chosen PDF
 
   // --- deep links the STUDENT opens; no background request is made ---

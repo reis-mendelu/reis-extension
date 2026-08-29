@@ -7,7 +7,7 @@ import { bookableRangesOnDay, isRoomFreeAt } from '@/services/library/nextSlot';
 import { pickableDays, openStartHours } from '@/services/library/availabilityView';
 import type { LibraryRoom, RoomAvailability } from '@/types/library';
 import { LibrarySlotPicker } from './LibrarySlotPicker';
-import { openExternal } from '@/mobile/openExternal';
+import { LibraryBookingDialog } from './LibraryBookingDialog';
 
 // A room is "solo" (just you, or a study partner) when it holds at most two
 // people; everything larger is a group room. This is the axis the student asks
@@ -132,6 +132,7 @@ export function MapLibrarySection({ flush = false }: MapLibrarySectionProps) {
   const loc = language === 'cz' ? 'cs' : language;
   const [dayIdx, setDayIdx] = useState(0);
   const [hour, setHour] = useState<number | null>(null);
+  const [booking, setBooking] = useState<{ room: LibraryRoom; slotIso: string } | null>(null);
 
   const unionBlocks = LIBRARY_ROOMS.flatMap((r) => availabilityMap[r.staffGuid]?.blocks ?? []);
   const days = pickableDays(unionBlocks, now);
@@ -152,13 +153,7 @@ export function MapLibrarySection({ flush = false }: MapLibrarySectionProps) {
       hour={activeHour}
       now={now}
       loading={!loaded}
-      // Hands off to the library's OWN Bookings page for that room rather than
-      // collecting the student's name, email and student id in-app and posting
-      // them through reIS. The student enters their details directly into the
-      // library's system, exactly as they would on its website, so reIS
-      // transmits nothing about them. Availability above stays read-only and
-      // anonymous.
-      onBook={(r) => void openExternal(r.bookingUrl)}
+      onBook={(r, slotIso) => setBooking({ room: r, slotIso })}
     />
   );
 
@@ -215,6 +210,13 @@ export function MapLibrarySection({ flush = false }: MapLibrarySectionProps) {
           {t('map.libraryBook')} <ExternalLink size={13} />
         </a>
       </div>
+      {booking && (
+        <LibraryBookingDialog
+          room={booking.room}
+          slotIso={booking.slotIso}
+          onClose={() => setBooking(null)}
+        />
+      )}
     </div>
   );
 }

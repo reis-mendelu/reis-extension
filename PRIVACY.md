@@ -17,13 +17,15 @@ We fetch and store the following information directly from MENDELU services to y
 
 This data is stored **locally on your device** using highly efficient storage (IndexedDB) and is **never** transmitted to our servers.
 
-### 3. Anonymous Usage Analytics
+The one exception is the library study-room booking, and only if you use it: the booking dialog pre-fills your name, university email and student ID from this local data, and when you confirm, those three fields are relayed through reIS's server to the library's booking system. They are passed through, never stored, and nothing is sent unless you press the button. See *Third-Party Access* below.
+
+### 2. Anonymous Usage Analytics
 We collect anonymous usage data to improve the extension:
 - **Interaction Data**: Clicks on notifications and views of the notification feed.
 - **Purpose**: To rank relevance of student association notifications.
 - **Privacy**: This data is **not linked** to your identity, IS credentials, or personal content.
 
-### 4. Daily Usage & NPS Feedback
+### 3. Daily Usage & NPS Feedback
 To understand how actively reIS is used, we record:
 - **Daily Usage**: Each day you open reIS, a **random identifier generated on your device** is sent to our Supabase backend to record one usage event. This identifier is a random UUID created the first time you use the app and stored locally. It is **not derived from your student ID, your name, or anything else about you**, and it cannot be linked back to you.
 - **NPS Rating (Voluntary)**: Once per semester you may be shown a satisfaction prompt. If you choose to rate, the same random identifier and your rating are sent. You can dismiss the prompt without sending anything.
@@ -32,14 +34,14 @@ To understand how actively reIS is used, we record:
 
 **Previously**: until August 2026 these events were keyed on a SHA-256 hash of your student ID. We described that as irreversible. That was wrong — MENDELU student IDs are six or seven digits, so the hash can be reversed by brute force in seconds, which made it a recoverable identifier. We have replaced it in the app, and we have irreversibly re-keyed every historical row: each old hash was passed through HMAC-SHA256 under a random key that was generated for that one operation and immediately discarded. The original hashes cannot be recovered by anyone, including us. We verified this by brute-forcing the entire six- and seven-digit student-ID space against the stored values: zero matches.
 
-### 5. User Feedback (Voluntary)
+### 4. User Feedback (Voluntary)
 If you use the built-in "Report Bug / Feedback" feature, the following data is sent to our support channel:
 - **Content**: The subject/title, the category you select (bug, idea, or other), the message, and contact details you explicitly provide.
 - **Technical Context**: Extension version, browser name and version, viewport size, and the current in-app screen (e.g. `calendar`, `exams`, `settings` — an app view name, not a URL or page address) to help debug issues.
 - **Storage**: Suggestions are stored in reIS's own Supabase project. Read access is restricted by a database policy to signed-in accounts holding the `reis_admin` role — in practice the small maintainer team. No other account, and no anonymous visitor, can read them.
 - **Abuse Prevention**: To limit abuse of the suggestion form, a salted SHA-256 hash of the sending IP address is kept only to rate-limit further submissions. It is used for at most one hour, and is deleted as soon as the next suggestion is submitted (submissions are infrequent, so in practice a hash can persist longer than an hour before that cleanup runs — it is simply never *used* past the one-hour window). The raw IP is never stored.
 
-### 6. Automatic Error Reporting
+### 5. Automatic Error Reporting
 When an unhandled error or warning occurs in the extension, a sanitized diagnostic report is automatically sent to our Supabase backend so we can detect and fix bugs.
 - **What is sent**: Error type, error message string, file path and line number, extension version, browser name and version, a sanitized excerpt of the JavaScript stack trace (top frames, run through the same redaction regex as the message), a client-side timestamp of when the error fired, and an anonymous per-session identifier.
 - **About the session identifier**: A random UUID generated when the extension iframe loads and held only in memory for that browser tab. It is **not persisted** to disk, **not synced** across devices, and **regenerated every page load**. Its sole purpose is to let us tell apart "one user retrying the same broken request 30 times" from "30 different users each hit a real bug once." It cannot be linked back to your account or browser across sessions.
@@ -65,9 +67,8 @@ reIS contacts the following services. Only the first two ever receive your acade
 
 **Only when you use the relevant feature:**
 6. **Google** (`googleapis.com`, `google.com`) — if you enable Drive backup, your IS course files are copied to **your own** Google Drive. The permission requested is `drive.file`, which grants access only to files reIS itself creates.
-7. **Anthropic** (`anthropic.com`, via reIS's server) — if you use Erasmus syllabus comparison, the **PDF you choose to upload** and the MENDELU course details are sent for analysis. The document this feature asks for is a foreign course **syllabus** — a public course description, not a personal record — and the app says so at the point you pick the file. Nothing is uploaded unless you choose a file.
-
-**Library study rooms**: reIS shows live room availability, which requires sending nothing about you. To actually book, reIS opens the library's own Microsoft Bookings page for that room and you enter your details there, directly into the university's system. reIS previously collected your name, email and student ID in-app and posted them through its own server; that path has been removed.
+7. **Microsoft Bookings** (`bookings.cloud.microsoft`, via reIS's server) — only if you book a library study room. The **name, university email address and student ID** you confirm in the booking dialog are passed on, because the library's system requires all three to hold a reservation in your name; the student ID is a required field on the library's own form. reIS keeps none of it and sends nothing at any other time — browsing live room availability transmits nothing about you.
+8. **Anthropic** (`anthropic.com`, via reIS's server) — if you use Erasmus syllabus comparison, the **PDF you choose to upload** and the MENDELU course details are sent for analysis. The document this feature asks for is a foreign course **syllabus** — a public course description, not a personal record — and the app says so at the point you pick the file. Nothing is uploaded unless you choose a file.
 9. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
 10. **Photon** (`photon.komoot.io`) — venue search, used only by student-society administrators when creating an event.
 
