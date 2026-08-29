@@ -666,4 +666,39 @@ describe('createRsvpSlice — failure handling', () => {
 
     expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'going' });
   });
+
+  // loadRsvps is detached and its IndexedDB read is awaited, so a tap can settle
+  // during that read. Seeding unconditionally afterwards would replace the
+  // freshly confirmed answer with the disk value it just superseded, and the
+  // next failed write would roll the card back to that obsolete answer.
+  it('does not let a slow startup load overwrite an answer confirmed meanwhile', async () => {
+    const { IndexedDBService } = await import('../../../services/storage');
+    let finishRead!: (v: Record<string, string>) => void;
+    vi.mocked(IndexedDBService.get).mockImplementationOnce(
+      () => new Promise((r) => (finishRead = r as (v: Record<string, string>) => void))
+    );
+    fetchEventRsvps.mockResolvedValue({ counts: { e1: { going: 0, interested: 1 } }, ok: true });
+
+    const loading = state.loadRsvps(['e1']);
+    await flush();
+
+    // The student switches to Interested and the server accepts it, all while
+    // the startup read is still out.
+    setEventRsvp.mockResolvedValueOnce(true);
+    await state.setRsvp('e1', 'interested');
+    await flush();
+
+    // Only now does the read return, carrying the older answer.
+    finishRead({ e1: 'going' });
+    await loading;
+
+    // A later write fails: the rollback must land on Interested, not on the
+    // stale Going the load was carrying.
+    setEventRsvp.mockResolvedValue(false);
+    await state.setRsvp('e1', 'going');
+    await flush();
+
+    expect(state.rsvp.e1).toBe('interested');
+    expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'interested' });
+  });
 });

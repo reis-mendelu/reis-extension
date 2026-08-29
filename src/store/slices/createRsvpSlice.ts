@@ -177,8 +177,17 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       }
       // The stored map holds only confirmed answers (see persistAnswers), so it
       // is exactly the set the server has accepted — the right rollback target.
+      //
+      // Seeded only where this session knows nothing yet. The read above is
+      // awaited and this load is detached, so a tap can settle in between: an
+      // unconditional seed would then overwrite a freshly confirmed answer with
+      // the disk value it superseded, and the next failed write would roll the
+      // card back to it. Anything already in `confirmed` came from a settled
+      // write in this session and is by definition newer than the disk.
       if (stored) {
-        for (const [id, answer] of Object.entries(stored)) confirmed.set(id, answer);
+        for (const [id, answer] of Object.entries(stored)) {
+          if (!confirmed.has(id)) confirmed.set(id, answer);
+        }
       }
 
       const { counts, ok } = await fetchEventRsvps(eventIds);
