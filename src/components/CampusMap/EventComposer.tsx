@@ -85,7 +85,14 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     setVenue(v);
     setRoom(null);
     setPlaceName(null);
-    if (v === 'campus') clearDraftCoord();
+    // Both directions, not just the switch TO campus. Once a campus room began
+    // mirroring its coordinate into draftCoord (so the map can draw its pin),
+    // switching AWAY from campus left that coordinate behind: the composer read
+    // it as an off-campus venue already chosen, hid the place search, and would
+    // have published an off-campus event sitting on a lecture hall with no
+    // location name. Changing the venue KIND invalidates whatever point either
+    // kind had picked.
+    clearDraftCoord();
   };
 
   // A campus room used to keep its coordinate here and nowhere else, so the map

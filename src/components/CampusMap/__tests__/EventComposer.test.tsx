@@ -272,3 +272,60 @@ describe('EventComposer — seeing the planned location before publishing', () =
     expect(input.coordLat).toBe(pinned?.[1]);
   });
 });
+
+/**
+ * Regression, caught by driving the composer rather than by reading it.
+ *
+ * Mirroring a campus room into `draftCoord` (so the map can draw its pin) gave
+ * `switchVenue` a stale value it never used to have: it clears the draft when
+ * you switch TO campus, but not when you switch AWAY from it. So picking room
+ * Q01 and then changing your mind to "Ve městě" left the room's coordinate in
+ * the store — the composer showed a venue as already chosen instead of the
+ * place search, and Publish would have posted an OFF-CAMPUS event sitting on a
+ * lecture hall, with no location name.
+ */
+describe('EventComposer — changing your mind about the venue kind', () => {
+  const pickRoom = () => {
+    fireEvent.click(screen.getByRole('button', { name: /Kampus/ }));
+    fireEvent.change(screen.getByPlaceholderText('Hledat místnost nebo budovu…'), {
+      target: { value: 'Q01' },
+    });
+    const match = screen.getAllByRole('button').find((b) => /Q01/.test(b.textContent ?? ''));
+    fireEvent.click(match as HTMLElement);
+  };
+
+  it('drops the campus coordinate when switching to an off-campus venue', () => {
+    render(<EventComposer onDone={() => {}} />);
+    pickRoom();
+    expect(useAppStore.getState().draftCoord).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Ve městě/ }));
+
+    expect(useAppStore.getState().draftCoord).toBeNull();
+  });
+
+  it('offers the place search again rather than a venue already chosen', () => {
+    render(<EventComposer onDone={() => {}} />);
+    pickRoom();
+    fireEvent.click(screen.getByRole('button', { name: /Ve městě/ }));
+
+    expect(screen.getByPlaceholderText('Hledat místo (bar, klub, park…)')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Změnit místo' })).not.toBeInTheDocument();
+  });
+
+  it('drops an off-campus point when switching to campus, as it always did', () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /Kampus/ }));
+    expect(useAppStore.getState().draftCoord).toBeNull();
+  });
+
+  // With no venue of either kind, there is nothing to preview.
+  it('takes the show-on-map button away with the venue', () => {
+    render(<EventComposer onDone={() => {}} />);
+    pickRoom();
+    expect(screen.getByRole('button', { name: 'Ukázat na mapě' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Ve městě/ }));
+    expect(screen.queryByRole('button', { name: 'Ukázat na mapě' })).not.toBeInTheDocument();
+  });
+});
