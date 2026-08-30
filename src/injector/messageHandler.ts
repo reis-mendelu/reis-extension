@@ -1,14 +1,6 @@
 import { Messages, isIframeMessage } from '../types/messages';
 import { iframeElement, sendToIframe, markIframeReady } from './iframeManager';
-import {
-  cachedData,
-  runDriveBackupNow,
-  runNotesBackupNow,
-  setNotesSnapshot,
-  setNotesHtmlOverride,
-  isSyncing,
-  refreshExams,
-} from './syncService';
+import { cachedData, isSyncing, refreshExams } from './syncService';
 import { requestSync } from './syncGate';
 import { fetchFullSemesterSchedule } from './dataFetchers';
 import { fetchExamData, registerExam, unregisterExam } from '../api/exams';
@@ -162,26 +154,6 @@ async function handleAction(id: string, action: string, payload: unknown) {
         await requestSync('user');
         result = { success: true };
         break;
-      case 'trigger_drive_backup':
-        await runDriveBackupNow();
-        result = { success: true };
-        break;
-      case 'push_notes':
-        setNotesSnapshot(
-          payload as Record<string, Record<string, { note: string; fileName: string }>>
-        );
-        await runNotesBackupNow();
-        result = { success: true };
-        break;
-      case 'push_notes_html': {
-        // Cache-only: this message is posted right before push_notes, which
-        // is the single backup trigger. Triggering a backup here too would
-        // race the snapshot's text-only pass and get skipped by the hash diff.
-        const { code, html } = payload as { code: string; html: string };
-        setNotesHtmlOverride(code, html);
-        result = { success: true };
-        break;
-      }
       case 'refresh_exams':
         await refreshExams();
         result = { success: true };

@@ -104,14 +104,6 @@ Telemetry is sent via the `report_error_v2` Supabase RPC (`src/services/errorRep
 - Table: `error_groups` — fingerprint-based aggregation of reports for triage (added with v2 pipeline).
 - RPC: `report_error_v2(...)` — `SECURITY DEFINER`, grants `EXECUTE` to `anon` role, enforces 500 reports/hour server-side rate limit per `(browser, version)` window. Migration: `supabase/migrations/20260520120000_error_reports_v2.sql`. Legacy `report_error(...)` RPC (migration `supabase/migrations/20260506120000_error_reports_rate_limit.sql`) still exists for back-compat.
 
-## Google Drive Backup
-
-One-way mirror of the student's current-semester IS files into their own Google Drive. Details: `src/services/drive/CLAUDE.md`.
-
-- **Never escalate the OAuth scope** past `drive.file` — not to `drive`, `drive.readonly`, or `documents`.
-- **Never build bidirectional sync.** Phase 2 (notes) is strictly one-way, drawer-as-source.
-- **Never dedupe backed-up files by filename** — IS legitimately serves many files with the same display name; only the `appProperties.reisLink` hash is unique.
-
 ## Parser Rules
 
 IS Mendelu HTML parsers (`src/api/documents/parser.ts`, `src/api/cvicneTests.ts`, `src/utils/parsers/`) are **extremely brittle** and must almost never be altered.

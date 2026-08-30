@@ -81,10 +81,6 @@ vi.mock('../../services/sync/mergePastSubjects', () => ({
 vi.mock('../../services/sync/syncPastSemesters', () => ({
   syncPastSemesters: vi.fn(async () => {}),
 }));
-vi.mock('../../services/drive/driveBackup', () => ({ syncDriveBackup: vi.fn(async () => {}) }));
-vi.mock('../../services/drive/driveNotesBackup', () => ({
-  syncDriveNotesBackup: vi.fn(async () => {}),
-}));
 vi.mock('../../services/storage/IndexedDBService', () => ({
   IndexedDBService: { get: vi.fn(async () => undefined), set: vi.fn(async () => {}) },
 }));

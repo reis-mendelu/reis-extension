@@ -17,25 +17,6 @@ vi.mock('../../../../hooks/data/useOutlookSync', () => ({
   }),
 }));
 
-vi.mock('../../../../hooks/data/useDriveBackup', () => ({
-  useDriveBackup: () => ({
-    connected: false,
-    rootLink: null,
-    folderLink: null,
-    lastSync: 0,
-    failingSince: null,
-    syncing: false,
-    fileCount: 0,
-    quarantined: 0,
-    accountEmail: null,
-    busy: false,
-    connect: driveConnect,
-    disconnect: driveDisconnect,
-    backupNow: vi.fn(),
-    refresh: vi.fn(),
-  }),
-}));
-
 describe('ProfileSheet', () => {
   beforeEach(() => {
     outlookToggle.mockClear();

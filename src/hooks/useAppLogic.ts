@@ -7,7 +7,6 @@ import { useOutlookSync } from '../hooks/data';
 
 import { useSpolkySettings } from './useSpolkySettings';
 import { useAppStore, initializeStore } from '../store/useAppStore';
-import { NOTES_ENABLED } from '../config/featureFlags';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
 import { loadRealDataSnapshot } from '../services/loadRealDataSnapshot';
 import { isAppView, type AppView, type SelectedSubject } from '../types/app';
@@ -96,7 +95,6 @@ export function useAppLogic() {
     initializeStore().then((unsubscribe) => {
       unsub = unsubscribe;
       // Back up any existing notes once on startup (one-way mirror to Drive).
-      if (NOTES_ENABLED) void useAppStore.getState().pushNotesSnapshot();
     });
     return () => {
       unsub?.();

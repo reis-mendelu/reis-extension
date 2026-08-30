@@ -44,25 +44,6 @@
     "logoutConfirmBody": "Z telefonu smažeme tvoje přihlášení i stažená data. Příště se budeš muset znovu přihlásit do IS.",
     "logoutFailed": "Odhlášení se nepovedlo. Zkus to prosím znovu."
   },
-  "drive": {
-    "title": "Záloha na Google Disk",
-    "openFolder": "Otevřít složku",
-    "connect": "Připojit",
-    "connected": "Připojeno",
-    "connectHint": "Zálohujte studijní soubory na Google Disk",
-    "backUp": "Zálohovat na Disk",
-    "disconnect": "Odpojit",
-    "lastBackup": "Synchronizováno z počítače {time}",
-    "lastBackupShort": "synch. {time}",
-    "failingSince": "Záloha selhává od {time}",
-    "retrying": "Záloha se zopakuje",
-    "upToDate": "Aktuální",
-    "reconnect": "Připojit znovu a opravit zálohu",
-    "pending": "Zatím nezálohováno",
-    "firstSync": "Probíhá první synchronizace…",
-    "cantSave": "{count} soubor(ů) nelze uložit",
-    "syncing": "Zálohuji…"
-  },
   "sidebar": {
     "profile": "Profil",
     "is": "Student",
