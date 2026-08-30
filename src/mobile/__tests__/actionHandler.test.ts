@@ -62,7 +62,7 @@ describe('runMobileAction', () => {
     expect(d.syncAllData).toHaveBeenCalledOnce();
   });
 
-  it.each(['trigger_drive_backup', 'push_notes', 'open_url', 'logout', 'download_file'])(
+  it.each(['open_url', 'logout', 'download_file'])(
     'rejects the unsupported action %s immediately, naming it',
     async (action) => {
       // The whole point of the default: today every one of these hangs for 30s

@@ -9,8 +9,6 @@ export type ActionType =
   | 'download_file'
   | 'download_document'
   | 'trigger_sync'
-  | 'trigger_drive_backup'
-  | 'push_notes'
   | 'refresh_exams'
   | 'open_url'
   | 'logout';

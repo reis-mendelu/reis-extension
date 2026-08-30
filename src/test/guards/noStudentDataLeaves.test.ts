@@ -72,16 +72,9 @@ const SUPABASE_CALLERS = new Set([
 
 /**
  * Files permitted to call crypto.subtle.digest. None of these hash a student
- * identifier: PKCE/OAuth verifiers, content hashes for Drive de-duplication,
- * and image fingerprints.
+ * identifier: PKCE verifiers and image fingerprints.
  */
-const DIGEST_CALLERS = new Set([
-  'src/utils/pkce.ts',
-  'src/api/googleAuth.ts',
-  'src/services/notes/imageNormalize.ts',
-  'src/services/drive/notesDoc.ts',
-  'src/services/drive/driveDiff.ts',
-]);
+const DIGEST_CALLERS = new Set(['src/utils/pkce.ts', 'src/services/notes/imageNormalize.ts']);
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
@@ -120,12 +113,11 @@ const ALLOWED_HOSTS = [
   'hei.api.uni-foundation.eu', // public Erasmus university directory (read-only)
 
   // --- fetched from, carrying student data. Each must stay disclosed. ---
-  'googleapis.com', // Drive backup of the student's own files (drive.file)
-  'google.com', // OAuth consent
   'bookings.cloud.microsoft', // library booking: name, email, student id
   'anthropic.com', // syllabus comparison: a student-chosen PDF
 
   // --- deep links the STUDENT opens; no background request is made ---
+  'google.com', // maps links, Play Store, Chrome Web Store, a society's Apps Script
   'teams.microsoft.com',
   'outlook.office.com',
   'www.geteduroam.app',

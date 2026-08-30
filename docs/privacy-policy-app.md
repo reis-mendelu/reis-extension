@@ -53,29 +53,11 @@ your record, and your university at the other end.
 
 Uninstalling reIS removes the local copy.
 
-### The exception: Google Drive backup (browser extension only)
-
-If — and only if — you connect it, reIS copies your current-semester IS files
-into **your own** Google Drive. That does send file contents off your device, to
-Google, so it does not belong in the list above.
-
-What bounds it:
-
-- It is **off unless you turn it on**, and you authorise it on Google's own
-  consent screen.
-- The scope is `drive.file`, the narrowest available: it grants reIS access only
-  to files reIS itself created, never to the rest of your Drive.
-- The destination is **your** Drive account. Once a file is there it is yours —
-  retention, sharing and deletion are governed by your Google account and
-  Google's privacy policy, not by us. Disconnecting reIS stops new copies; it
-  does not remove files already in your Drive, which you delete yourself.
-- **Drive backup does not exist in the mobile app at all.**
-
 ## Data reIS collects
 
 These four things are sent to servers **we** run or choose, rather than to the
 university on your behalf. Two of the three are optional. (For where your data
-goes when reIS acts on your behalf — IS Mendelu, your own Google Drive — see
+goes when reIS acts on your behalf — IS Mendelu — see
 *Third parties reIS talks to* below.)
 
 ### 1. Pseudonymous daily usage count
@@ -167,7 +149,6 @@ mobile app.*
 | **IS Mendelu** (`is.mendelu.cz`) | Fetch your academic data, authenticated as you | Both |
 | **Supabase** (`*.supabase.co`) | **reIS's own database and servers**, not an outside recipient — see the note below. Holds public notifications, student society events, the daily usage count, sanitised error reports, and any feedback you submit | Both |
 | **jsDelivr CDN** | Public, anonymous course-difficulty statistics. No request carries anything about you | Both |
-| **Google Drive** (`googleapis.com`) | Back up your own IS files into your own Drive, if you connect it | Extension only |
 | **Microsoft Bookings** (`outlook.office.com`) | Make a library study-room booking, if you make one. Carries your student/employee number, as that system requires | Extension only |
 
 **Supabase is not in the same category as the rest of that table.** The others

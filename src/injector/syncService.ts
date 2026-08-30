@@ -24,13 +24,7 @@ import { sendToIframe } from './iframeManager';
 import { TTL, ttlGated, isFresh, markFetched } from './syncTtl';
 import type { SyncedData } from '../types/messages';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
-import { syncDriveBackup, type DriveBackupSubject } from '../services/drive/driveBackup';
-import { syncDriveNotesBackup } from '../services/drive/driveNotesBackup';
-import { NOTES_ENABLED } from '../config/featureFlags';
-import type { SubjectNotes } from '../services/drive/notesDoc';
-import { singleFlight } from '../utils/singleFlight';
-import { logError } from '../utils/reportError';
-import type { ParsedFile, SubjectsData } from '../types/documents';
+import type { SubjectsData } from '../types/documents';
 
 const limit = pLimit(3);
 export let cachedData: SyncedData = { lastSync: 0 };
@@ -40,19 +34,6 @@ export let isSyncing = false;
 // here because they come straight from fetchDualLanguageExams.
 const cachedExams = (): ExamSubject[] => (cachedData.exams as ExamSubject[] | undefined) ?? [];
 
-/** Latest notes snapshot pushed from the iframe (it owns the notes IDB). */
-export function setNotesSnapshot(
-  notes: Record<string, Record<string, { note: string; fileName: string }>>
-) {
-  cachedData = { ...cachedData, notes };
-}
-
-/** Per-subject base64-inlined HTML pushed by the iframe for image-bearing notes.
- *  Used in place of the text-only render so card images reach the Drive Doc. */
-const notesHtmlOverrides: Record<string, string> = {};
-export function setNotesHtmlOverride(code: string, html: string): void {
-  notesHtmlOverrides[code] = html;
-}
 // null until a subjects fetch says otherwise: an empty array is a real answer
 // ("enrolled in nothing"), and subjectScope treats the two differently.
 let currentSemesterCodes: string[] | null = null;
@@ -104,8 +85,8 @@ export async function syncAllData() {
     ).then((result) => {
       if (result) {
         cachedData = { ...cachedData, subjects: result.subjects, attendance: result.attendance };
-        // Capture current-semester codes BEFORE mergePastSubjects adds past ones —
-        // the Drive backup is scoped to the current semester only.
+        // Capture current-semester codes BEFORE mergePastSubjects adds past ones,
+        // so consumers can tell this semester's subjects from fulfilled ones.
         currentSemesterCodes = result.subjects?.data ? Object.keys(result.subjects.data) : null;
       }
       return result;
@@ -364,10 +345,6 @@ export async function syncAllData() {
         () => {}
       );
     }
-
-    // Fire-and-forget: mirror current-semester files to Google Drive (only if linked).
-    // Reuses the listings already fetched into cachedData.files — no extra IS crawling.
-    runDriveBackupNow();
   } catch (e) {
     sendToIframe(
       Messages.syncUpdate({ isSyncing: false, error: String(e), lastSync: cachedData.lastSync })
@@ -376,69 +353,6 @@ export async function syncAllData() {
     isSyncing = false;
   }
 }
-
-/**
- * Mirror the current semester's already-fetched file listings to Google Drive.
- * Fire-and-forget from the periodic sync, and awaited directly when the user
- * connects (so the first backup starts immediately, without a full IS re-crawl).
- * No-op when nothing is cached yet — the next sync will pick it up.
- */
-export async function runDriveBackupNow(): Promise<void> {
-  try {
-    const subjectsData = (cachedData.subjects as SubjectsData | undefined)?.data;
-    const filesData = cachedData.files as Record<string, ParsedFile[]> | undefined;
-    const codes = currentSemesterCodes;
-    if (!codes?.length || !subjectsData || !filesData) return;
-    const backupSubjects = codes
-      .map((code): DriveBackupSubject | null => {
-        const info = subjectsData[code];
-        const files = filesData[code];
-        if (!info || !files?.length) return null;
-        const folderName = `${code} - ${info.displayName || info.fullName || ''}`.trim();
-        return { code, folderName, files };
-      })
-      .filter((s): s is DriveBackupSubject => s !== null);
-    if (backupSubjects.length) await syncDriveBackup(backupSubjects);
-    await runNotesBackupNow();
-  } catch (e) {
-    logError('Drive.backup', e);
-  }
-}
-
-/** One notes-backup pass over the latest snapshot. Passes an empty list through
- *  too, so a subject whose notes were all deleted gets reconciled (emptied). */
-async function notesBackupPass(): Promise<void> {
-  if (!NOTES_ENABLED) return; // notes feature dormant — never back up to Drive
-  try {
-    const notes = cachedData.notes;
-    if (!notes) return; // snapshot never pushed yet
-    const subjectsData = (cachedData.subjects as SubjectsData | undefined)?.data;
-    const subjectNotes: SubjectNotes[] = Object.entries(notes).map(
-      ([code, fileMap]): SubjectNotes => {
-        const files = Object.entries(fileMap).map(([fileLink, v]) => ({
-          fileLink,
-          fileName: v.fileName,
-          note: v.note,
-        }));
-        const info = subjectsData?.[code];
-        const folderName = info
-          ? `${code} - ${info.displayName || info.fullName || ''}`.trim()
-          : code;
-        return { code, folderName, title: `Poznámky – ${code}`, files };
-      }
-    );
-    await syncDriveNotesBackup(subjectNotes, notesHtmlOverrides); // [] still reconciles manifest orphans
-  } catch (e) {
-    logError('Drive.notesBackup', e);
-  }
-}
-
-/**
- * Mirror the iframe-pushed notes snapshot to per-subject Google Docs + sidecars.
- * Coalesced: never overlaps itself, and always runs once more for the latest
- * snapshot if a save arrived mid-pass.
- */
-export const runNotesBackupNow: () => Promise<void> = singleFlight(notesBackupPass);
 
 async function syncSubjectDetails(
   subjectsValue: {

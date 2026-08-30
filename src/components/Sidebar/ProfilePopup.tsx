@@ -6,7 +6,6 @@ import { useTheme } from '../../hooks/useTheme';
 import { useSpolkySettings } from '../../hooks/useSpolkySettings';
 import { SpolkySection } from './Profile/SpolkySection';
 import { OutlookSyncToggle } from './Profile/OutlookSyncToggle';
-import { GoogleDriveToggle } from './Profile/GoogleDriveToggle';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
@@ -134,7 +133,6 @@ export function ProfilePopup({
             onNavigate={onClose}
           />
           <OutlookSyncToggle enabled={isEnabled} loading={syncLoading} onToggle={tSync} />
-          <GoogleDriveToggle />
         </div>
 
         {/* Support Section */}

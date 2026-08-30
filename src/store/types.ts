@@ -115,7 +115,6 @@ export interface NotesSlice {
   setDocumentNote: (courseCode: string, fileLink: string, value: string, fileName: string) => void;
   flushDocumentNotes: () => void;
   /** Push a snapshot of all notes to the content script for Drive backup. */
-  pushNotesSnapshot: () => Promise<void>;
 }
 
 export interface ClassmatesSlice {
