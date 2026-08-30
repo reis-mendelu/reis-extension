@@ -214,12 +214,16 @@ export function StudentScreen() {
                 </span>
                 <button
                   type="button"
-                  // mouseDown, like every other action on this screen: the
-                  // input is focused and a click would blur it first, which on
-                  // iPad drops the keyboard and scrolls the list out from under
-                  // the finger mid-tap.
-                  onMouseDown={(e) => {
-                    e.preventDefault();
+                  // The preventDefault stays on mouseDown — the input is
+                  // focused and a click would blur it first, which on iPad
+                  // drops the keyboard and scrolls the list out from under the
+                  // finger mid-tap. The ACTION belongs on click: keyboard
+                  // activation of a button dispatches click and never
+                  // mousedown, so with both on mousedown, Enter and Space could
+                  // not change the scope at all — and an iPad with a keyboard
+                  // is the device this control was added for.
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
                     if (scope === 'faculty') widenToUniversity();
                     else narrowToFaculty();
                   }}

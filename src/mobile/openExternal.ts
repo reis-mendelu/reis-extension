@@ -141,8 +141,15 @@ export async function openExternal(url: string): Promise<void> {
     // the tap look dead. loadStoredToken rejects rather than returning empty
     // when the keychain has nothing or cannot be read, which is the same
     // "is there one?" question buildInAppLoginDeps asks it.
+    // https only, and checked here rather than trusted from the platform: the
+    // app's cleartext-HTTP blocking lives in the iOS and Android configs, which
+    // is the wrong place for this to depend on — a plugin default or an ATS
+    // exception changed later would silently turn this line into the student's
+    // session in cleartext. `validateExternalUrl` deliberately allows http for
+    // ordinary links; only the credential-bearing branch requires https.
+    const isSecure = new URL(target).protocol === 'https:';
     const { loadStoredToken } = await import('../platform/tokenStore');
-    const token = await loadStoredToken().catch(() => '');
+    const token = isSecure ? await loadStoredToken().catch(() => '') : '';
 
     await InAppBrowser.openWebView({
       url: target,

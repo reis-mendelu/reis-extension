@@ -97,12 +97,31 @@ describe('StudentScreen — searching the subject catalogue', () => {
     }
   });
 
+  // Keyboard activation of a button dispatches click, never mousedown. With the
+  // action on mousedown, Enter and Space did nothing — on the very device (an
+  // iPad with a keyboard) this control was added for.
+  it('changes scope from the keyboard, not only from a tap', async () => {
+    vi.useFakeTimers();
+    try {
+      useAppStore.setState({ userFaculty: 'PEF' });
+      await searchSubjects('Matem');
+      fireEvent.click(screen.getByRole('button', { name: /Celá univerzita/ }));
+      await act(async () => {
+        vi.advanceTimersByTime(400);
+      });
+
+      expect(screen.getByText('Hledám napříč univerzitou')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('switches to the whole university and offers the way back', async () => {
     vi.useFakeTimers();
     try {
       useAppStore.setState({ userFaculty: 'PEF' });
       await searchSubjects('Matem');
-      fireEvent.mouseDown(screen.getByRole('button', { name: /Celá univerzita/ }));
+      fireEvent.click(screen.getByRole('button', { name: /Celá univerzita/ }));
       await act(async () => {
         vi.advanceTimersByTime(400);
       });

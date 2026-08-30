@@ -317,6 +317,18 @@ describe('openExternal — the in-app browser needs the session on the request',
     expect(openWebView).not.toHaveBeenCalled();
   });
 
+  // The app's configs block cleartext HTTP today, but that is a platform
+  // setting in a different file: an ATS exception or a plugin default changed
+  // later must not turn this into the student's session sent in the clear.
+  it('never attaches the session over plain http', async () => {
+    const { openExternal } = await import('../openExternal');
+    await openExternal('http://is.mendelu.cz/auth/student/moje_studium.pl');
+
+    expect(openWebView).toHaveBeenCalledWith(
+      expect.not.objectContaining({ headers: expect.anything() })
+    );
+  });
+
   // Losing the session must not swallow the tap: with no token the WebView
   // shows IS's login page, which is the correct outcome, not a dead button.
   it('still opens IS when there is no token, with no Cookie header', async () => {
