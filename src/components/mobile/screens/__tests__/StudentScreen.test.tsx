@@ -117,6 +117,7 @@ describe('StudentScreen', () => {
   });
 
   it('filters IS pages as the user types', () => {
+    useAppStore.setState({ isNarrow: true });
     render(<StudentScreen />);
     const input = screen.getByRole('textbox', { name: 'Hledej stránku v IS…' });
     fireEvent.change(input, { target: { value: 'Portál studenta' } });
@@ -137,13 +138,38 @@ describe('StudentScreen — the IS page directory', () => {
   // documentation and personalisation sections. Listed outright they buried
   // the two shortcuts a student opens daily and made the tab read as a site
   // map. They are kept, behind one row.
-  it('keeps the page list collapsed until asked for', () => {
+  it('keeps the page list collapsed until asked for on a phone', () => {
+    useAppStore.setState({ isNarrow: true });
     render(<StudentScreen />);
     expect(screen.queryByText('E-index')).not.toBeInTheDocument();
     expect(screen.getByText('Všechny stránky IS')).toBeInTheDocument();
   });
 
+  // Where there is no room the row is the whole point; where there is, an
+  // empty half-screen under two shortcuts is not worth protecting. `isNarrow`
+  // is `max-width: 767px`, so this is false on every iPad — which runs the
+  // phone tree at full width (see resolvePhoneViewport).
+  it('starts expanded on a tablet, where the list fits without burying anything', () => {
+    useAppStore.setState({ isNarrow: false });
+    render(<StudentScreen />);
+    expect(screen.getByText('E-index')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Všechny stránky IS/ })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    );
+  });
+
+  it('collapses again when a tablet user taps the row', () => {
+    useAppStore.setState({ isNarrow: false });
+    render(<StudentScreen />);
+    const row = screen.getByRole('button', { name: /Všechny stránky IS/ });
+
+    fireEvent.click(row);
+    expect(screen.queryByText('E-index')).not.toBeInTheDocument();
+  });
+
   it('reveals the list when the row is tapped, and hides it again', () => {
+    useAppStore.setState({ isNarrow: true });
     render(<StudentScreen />);
     const row = screen.getByRole('button', { name: /Všechny stránky IS/ });
 
