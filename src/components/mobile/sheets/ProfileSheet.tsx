@@ -36,7 +36,7 @@ function initials(name: string): string {
 }
 
 /**
- * Full-size settings sheet: theme, language, Outlook sync, eduroam setup,
+ * Full-size settings sheet: theme, language, eduroam setup,
  * hidden items, society map filters, feedback and logout. Reuses desktop's
  * `SpolkySection` / `HiddenItemsSection` / `FeedbackModal` wholesale rather
  * than rebuilding them — only the row layout around them is phone-specific.
