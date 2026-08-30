@@ -85,6 +85,11 @@ export function StudentScreen() {
   // only `sections` made the screen answer "nothing found" before it had asked.
   const { sections, isLoading, saveToHistory } = useSearch(query);
   const peopleResults = sections.find((s) => s.key === 'people')?.results ?? [];
+  // The section useSearch has always produced and this screen used to discard,
+  // which is why a subject could be looked up on the desktop and nowhere on a
+  // phone. It carries the student's enrolled subjects plus whatever the
+  // catalogue search returned, already sorted by relevance.
+  const subjectResults = sections.find((s) => s.key === 'subjects')?.results ?? [];
   // Everyone the student looked up, not just staff. This read the mixed history
   // and kept only `personType === 'teacher'` — so a classmate searched
   // yesterday was dropped here, and three IS-page lookups had already evicted
@@ -117,6 +122,19 @@ export function StudentScreen() {
 
   const openSheet = (kind: ShortcutSheetKind) => {
     pushSheet(kind === 'eduroam' ? { kind: 'eduroam' } : { kind: 'docs' });
+  };
+
+  // The drawer the app already has for a subject — syllabus, difficulty,
+  // files — reached with the same three fields the desktop search passes it.
+  const openSubject = (result: SearchResult) => {
+    dismissKeyboard();
+    saveToHistory(result);
+    pushSheet({
+      kind: 'subjectDrawer',
+      courseCode: result.subjectCode ?? result.title,
+      courseName: result.title,
+      courseId: result.subjectId,
+    });
   };
 
   const openPerson = (result: SearchResult) => {
@@ -163,6 +181,42 @@ export function StudentScreen() {
             ) : hasQuery ? (
               <NoResults text={noResultsText} />
             ) : null}
+          </>
+        )}
+
+        {mode === 'subjects' && (
+          <>
+            {hasQuery && subjectResults.length > 0 && (
+              <>
+                <div className="px-4 pb-0.5 pt-1 text-xs font-bold uppercase tracking-wider text-base-content/60">
+                  {t('mobile.student.results')}
+                </div>
+                {subjectResults.map((result) => (
+                  <SearchResultItem
+                    key={result.id}
+                    result={result}
+                    isRecent={false}
+                    isSelected={false}
+                    onMouseEnter={() => {}}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      openSubject(result);
+                    }}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Same order as Lidé, and for the same reason: a query too short
+                to search has no answer, an in-flight one does not have it yet,
+                and only a finished search that came back empty has earned
+                "nothing found". */}
+            {canSearchPeople && subjectResults.length === 0 && searchingPeople && (
+              <Searching text={t('search.loading')} />
+            )}
+            {canSearchPeople && subjectResults.length === 0 && !searchingPeople && (
+              <NoResults text={noResultsText} />
+            )}
           </>
         )}
 
