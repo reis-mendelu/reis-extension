@@ -1,4 +1,5 @@
 import { getPlatform } from '../platform';
+import { UIS_AUTH_COOKIE } from '../platform/sessionToken';
 import { logError } from '../utils/reportError';
 import { DemoModeError, isDemoMode } from '../errors/demoMode';
 
@@ -118,6 +119,37 @@ export async function openExternal(url: string): Promise<void> {
     if (!needsAppSession(target)) {
       await InAppBrowser.open({ url: target });
       return;
+    }
+
+    // The in-app WebView makes its OWN requests and sees none of the transport's
+    // work. `buildCookieDelivery` seeds a cookie jar on ANDROID only; on iOS the
+    // session travels as a per-request `Cookie` header that only the native
+    // transport sends, so this WebView arrived at IS unauthenticated and the
+    // student was asked to sign in again to read their own document.
+    //
+    // Seeding the jar here does not disturb the native path: on iOS that path
+    // sends the explicit header regardless (the jar alone 403s, which is why
+    // the header exists), and on Android the transport already writes this same
+    // cookie with this same value. No token — a lapsed session — is left alone
+    // deliberately: IS's login page is then the correct destination, and a
+    // thrown error here would make the tap look dead.
+    // Its own try: seeding is an improvement to the page the student gets, not
+    // a precondition for getting one. If the keychain read or the cookie plugin
+    // fails, IS's login page is a worse answer than the document — a dead tap
+    // is worse than both.
+    try {
+      const { CapacitorCookies } = await import('@capacitor/core');
+      const { loadStoredToken } = await import('../platform/tokenStore');
+      const token = await loadStoredToken();
+      if (token) {
+        await CapacitorCookies.setCookie({
+          url: 'https://is.mendelu.cz',
+          key: UIS_AUTH_COOKIE,
+          value: token,
+        });
+      }
+    } catch (e) {
+      logError('Mobile.openExternal.seedCookie', e);
     }
 
     await InAppBrowser.openWebView({
