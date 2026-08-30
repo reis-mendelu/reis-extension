@@ -10,7 +10,7 @@ import { useAppStore, initializeStore } from '../store/useAppStore';
 import { NOTES_ENABLED } from '../config/featureFlags';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
 import { loadRealDataSnapshot } from '../services/loadRealDataSnapshot';
-import type { AppView, SelectedSubject } from '../types/app';
+import { isAppView, type AppView, type SelectedSubject } from '../types/app';
 import { isContentMessage } from '../types/messages';
 import { sendTelemetry } from '../services/errorReporter/telemetry';
 import { logError } from '../utils/reportError';
@@ -110,7 +110,9 @@ export function useAppLogic() {
       IndexedDBService.get('meta', 'reis_current_view'),
     ]).then(([w, v]) => {
       if (w) setCurrentDate(new Date(w as string));
-      if (v) setCurrentView(v as AppView);
+      // Validated, not cast: a view removed since this value was written
+      // would otherwise boot the app onto a screen nothing renders.
+      if (isAppView(v)) setCurrentView(v);
       setTimeout(() => {
         isInitialLoad.current = false;
       }, 50);
