@@ -1,11 +1,9 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { Moon, MessageSquarePlus, Languages, LogOut, Bug } from 'lucide-react';
 import { useState } from 'react';
-import { useOutlookSync } from '../../hooks/data';
 import { useTheme } from '../../hooks/useTheme';
 import { useSpolkySettings } from '../../hooks/useSpolkySettings';
 import { SpolkySection } from './Profile/SpolkySection';
-import { OutlookSyncToggle } from './Profile/OutlookSyncToggle';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
@@ -22,8 +20,7 @@ export function ProfilePopup({
   onOpenFeedback?: () => void;
   onClose?: () => void;
 }) {
-  const { isEnabled, isLoading: syncLoading, toggle: tSync } = useOutlookSync(),
-    { isDark, isLoading: tLoading, toggle: tTheme } = useTheme(),
+  const { isDark, isLoading: tLoading, toggle: tTheme } = useTheme(),
     { isSubscribed, toggleAssociation } = useSpolkySettings(),
     [spolkyOpen, setSpolkyOpen] = useState(false);
   const { t } = useTranslation();
@@ -132,7 +129,6 @@ export function ProfilePopup({
             onToggleAssoc={toggleAssociation}
             onNavigate={onClose}
           />
-          <OutlookSyncToggle enabled={isEnabled} loading={syncLoading} onToggle={tSync} />
         </div>
 
         {/* Support Section */}

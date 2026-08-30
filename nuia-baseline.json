@@ -2,7 +2,6 @@
   "src/api/__tests__/bulletin.test.ts",
   "src/api/__tests__/campusMap.test.ts",
   "src/api/__tests__/classmates.test.ts",
-  "src/api/__tests__/outlookSync.test.ts",
   "src/api/__tests__/parseAttendance.test.ts",
   "src/api/__tests__/proxyClient.downloadDocument.test.ts",
   "src/api/__tests__/terminyInfo.test.ts",

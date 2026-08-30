@@ -3,6 +3,5 @@ export { syncExams } from './syncExams';
 export { syncSchedule } from './syncSchedule';
 export { syncSubjects } from './syncSubjects';
 export { syncFiles } from './syncFiles';
-export { outlookSyncService } from './outlookSync';
 export { syncGradeHistory } from './syncGradeHistory';
 export { syncZaznamnik } from './syncZaznamnik';

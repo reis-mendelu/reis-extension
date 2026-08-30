@@ -15,8 +15,9 @@ const LIDE_INDEX_URL = `${BASE_URL}/auth/lide/index.pl`;
  * default on native — and passing a capitalised `Content-Type` into
  * fetchWithAuth does not overwrite DEFAULT_HEADERS' lowercase one. Both keys
  * survive the object spread and `Headers` APPENDS, so IS would receive the
- * value twice, parse no body, and still answer 200. That defect is live in
- * outlookSync.ts:73; do not reintroduce it here.
+ * value twice, parse no body, and still answer 200. That defect was live in
+ * the calendar-sync writer (outlookSync.ts, since deleted); do not reintroduce
+ * it here.
  */
 const FORM_POST = { method: 'POST' } as const;
 

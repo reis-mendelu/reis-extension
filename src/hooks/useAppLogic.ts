@@ -2,8 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
-import { syncService, outlookSyncService, syncGradeHistory } from '../services/sync';
-import { useOutlookSync } from '../hooks/data';
+import { syncService, syncGradeHistory } from '../services/sync';
 
 import { useSpolkySettings } from './useSpolkySettings';
 import { useAppStore, initializeStore } from '../store/useAppStore';
@@ -61,7 +60,6 @@ export function useAppLogic() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const openSettingsRef = useRef<(() => void) | null>(null);
   const searchPrefillRef = useRef<((query: string) => void) | null>(null);
-  const { isEnabled: outlookSyncEnabled } = useOutlookSync();
   useSpolkySettings();
 
   // Deep-link bridge: switch to the map view when something requests a room
@@ -75,7 +73,6 @@ export function useAppLogic() {
   }, []);
 
   useEffect(() => {
-    outlookSyncService.init();
     syncGradeHistory()
       .then(() => {
         useAppStore.getState().loadGradeHistory();
@@ -364,7 +361,6 @@ export function useAppLogic() {
     setIsFeedbackOpen,
     openSettingsRef,
     searchPrefillRef,
-    outlookSyncEnabled,
     handleOpenSubjectFromSearch,
   };
 }

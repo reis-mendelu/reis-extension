@@ -31,7 +31,6 @@ const dataRequestType = z.enum(['schedule', 'exams', 'subjects', 'files', 'all']
 const actionType = z.enum([
   'register_exam',
   'unregister_exam',
-  'toggle_outlook_sync',
   'download_file',
   'download_document',
   'trigger_sync',

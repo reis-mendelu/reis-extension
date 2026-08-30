@@ -436,8 +436,6 @@
     "empty": "No upcoming events"
   },
   "sync": {
-    "schedule": "Calendar sync",
-    "tooltip": "Sync schedule and exams to Outlook",
     "spolky": "Subscribed societies",
     "lastSync": "Last synced: {time}"
   },
@@ -1154,7 +1152,7 @@
     },
     "profile": {
       "appearance": "Appearance",
-      "sync": "Sync",
+      "settings": "Settings",
       "societies": "Societies on the map"
     },
     "loadFailed": {

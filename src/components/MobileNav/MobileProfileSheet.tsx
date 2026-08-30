@@ -2,11 +2,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Moon, MessageSquarePlus, Languages, User, Mail, Hash, LogOut, Bug } from 'lucide-react';
 import { useState } from 'react';
 
-import { useOutlookSync } from '../../hooks/data';
 import { useTheme } from '../../hooks/useTheme';
 import { useSpolkySettings } from '../../hooks/useSpolkySettings';
 import { SpolkySection } from '../Sidebar/Profile/SpolkySection';
-import { OutlookSyncToggle } from '../Sidebar/Profile/OutlookSyncToggle';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
@@ -19,7 +17,6 @@ interface MobileProfileSheetProps {
 }
 
 export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback }: MobileProfileSheetProps) {
-  const { isEnabled, isLoading: syncLoading, toggle: tSync } = useOutlookSync();
   const { isDark, isLoading: tLoading, toggle: tTheme } = useTheme();
   const { isSubscribed, toggleAssociation } = useSpolkySettings();
   const [spolkyOpen, setSpolkyOpen] = useState(false);
@@ -140,7 +137,6 @@ export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback }: MobilePr
                   onToggleAssoc={toggleAssociation}
                   onNavigate={onClose}
                 />
-                <OutlookSyncToggle enabled={isEnabled} loading={syncLoading} onToggle={tSync} />
               </div>
 
               <div className="py-1">

@@ -46,7 +46,8 @@ export async function fetchEduroamPassword(): Promise<string | null> {
 }
 
 async function generateCert(): Promise<void> {
-  // One of only two IS writes in reIS (outlookSync.ts has the other). It must
+  // The only IS write left in reIS, now that the calendar-sync writer is gone.
+  // It must
   // stay student-initiated: a certificate is valid for 366 days and generating
   // one silently would rotate a credential the student may already have
   // installed on other devices.
