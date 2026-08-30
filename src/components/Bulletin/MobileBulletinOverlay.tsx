@@ -63,7 +63,13 @@ export function MobileBulletinOverlay({
 
   const content = (
     <div
-      className="fixed inset-0 z-50 bg-base-100 flex flex-col md:hidden"
+      // No `md:hidden` here. Both callers have already decided this is the
+      // mobile surface in JS — BulletinBanner only renders it under `isNarrow`
+      // (max-width: 767px), and CalendarScreen sits in the phone tree, which
+      // the native app renders at ANY width. A width-based second gate did
+      // nothing in the extension and made this `display: none` on iPad, where
+      // tapping the pin mounted a 0x0 overlay and looked like a dead button.
+      className="fixed inset-0 z-50 bg-base-100 flex flex-col"
       // Full-screen and top-anchored: at targetSdk 36 the WebView draws under
       // the status bar and camera cutout, so this surface must inset itself.
       // --safe-top is 0 off-device, making this a no-op on desktop.

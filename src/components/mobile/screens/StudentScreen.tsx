@@ -57,7 +57,16 @@ export function StudentScreen() {
   const { t, language } = useTranslation();
   const [mode, setMode] = useState<StudentMode>('pages');
   const [query, setQuery] = useState('');
-  const [pagesOpen, setPagesOpen] = useState(false);
+  // Collapsed by default only where the screen is actually short of room. The
+  // disclosure exists so 95 links do not bury the two shortcuts a student opens
+  // daily (see PagesDisclosure) — on a phone. An iPad runs the same phone tree
+  // at 810–1080pt (resolvePhoneViewport), where that same collapse leaves half
+  // a screen empty under two shortcuts and hides the directory behind a tap
+  // nobody has a reason to make. `isNarrow` is `max-width: 767px`, so this is
+  // open on tablets and unchanged on phones. Initial state only: a student who
+  // collapses it keeps it collapsed.
+  const isNarrow = useAppStore((s) => s.isNarrow);
+  const [pagesOpen, setPagesOpen] = useState(!isNarrow);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // The iPad keyboard covers most of the list, and the field has no Done key of
