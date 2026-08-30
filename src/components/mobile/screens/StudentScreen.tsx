@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useSearch } from '../../SearchBar/useSearch';
@@ -13,6 +14,8 @@ import { PageGroupList, type PageGroup } from './student/PageGroupList';
 import { PagesDisclosure } from './student/PagesDisclosure';
 
 const RECENT_PEOPLE_LIMIT = 5;
+// useSearch's own floor (`query.trim().length < 2` bails before any fetch).
+const MIN_PEOPLE_QUERY = 2;
 
 function stripDiacritics(value: string): string {
   return value
@@ -41,17 +44,37 @@ function NoResults({ text }: { text: string }) {
   return <p className="px-4 py-8 text-center text-sm text-base-content/50">{text}</p>;
 }
 
+function Searching({ text }: { text: string }) {
+  return (
+    <p className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-base-content/50">
+      <Loader2 size={15} className="motion-safe:animate-spin" aria-hidden="true" />
+      {text}
+    </p>
+  );
+}
+
 export function StudentScreen() {
   const { t, language } = useTranslation();
   const [mode, setMode] = useState<StudentMode>('pages');
   const [query, setQuery] = useState('');
   const [pagesOpen, setPagesOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // The iPad keyboard covers most of the list, and the field has no Done key of
+  // its own. Blurring on every render once results arrive would fight anyone
+  // still typing, so it is bound to the gestures that mean "I'm done typing,
+  // let me look": Return (in StudentSearch), scrolling the list, and tapping a
+  // person.
+  const dismissKeyboard = () => inputRef.current?.blur();
 
   const pushSheet = useAppStore((s) => s.pushSheet);
   const studiumId = useAppStore((s) => s.studiumId);
   const recentPeople = useAppStore((s) => s.recentPeople);
 
-  const { sections, saveToHistory } = useSearch(query);
+  // isLoading is read, not ignored: useSearch debounces 250ms and then goes to
+  // the network, so `peopleResults` is empty for the whole round trip. Reading
+  // only `sections` made the screen answer "nothing found" before it had asked.
+  const { sections, isLoading, saveToHistory } = useSearch(query);
   const peopleResults = sections.find((s) => s.key === 'people')?.results ?? [];
   // Everyone the student looked up, not just staff. This read the mixed history
   // and kept only `personType === 'teacher'` — so a classmate searched
@@ -62,6 +85,10 @@ export function StudentScreen() {
 
   const trimmedQuery = query.trim();
   const hasQuery = trimmedQuery.length > 0;
+  // useSearch never queries below two characters, so a one-letter query has no
+  // answer to report — neither results nor their absence.
+  const canSearchPeople = trimmedQuery.length >= MIN_PEOPLE_QUERY;
+  const searchingPeople = canSearchPeople && isLoading;
   const pageGroups = useMemo(() => buildPageGroups(query, language), [query, language]);
   const pageCount = useMemo(
     () => pagesData.reduce((n, category) => n + category.children.length, 0),
@@ -84,6 +111,7 @@ export function StudentScreen() {
   };
 
   const openPerson = (result: SearchResult) => {
+    dismissKeyboard();
     saveToHistory(result);
     pushSheet({ kind: 'person', personId: result.id, personName: result.title });
   };
@@ -98,9 +126,14 @@ export function StudentScreen() {
         onModeChange={handleModeChange}
         query={query}
         onQueryChange={setQuery}
+        inputRef={inputRef}
       />
 
-      <div className="flex-1 overflow-y-auto pb-24 pt-2">
+      <div
+        data-testid="student-results"
+        onScroll={dismissKeyboard}
+        className="flex-1 overflow-y-auto pb-24 pt-2"
+      >
         {mode === 'pages' && (
           <>
             {!hasQuery && (
@@ -168,7 +201,15 @@ export function StudentScreen() {
               </>
             )}
 
-            {hasQuery && peopleResults.length === 0 && <NoResults text={noResultsText} />}
+            {/* Order matters: a query too short to search has no answer, an
+                in-flight one does not have it yet, and only a finished search
+                that came back empty has earned "nothing found". */}
+            {canSearchPeople && peopleResults.length === 0 && searchingPeople && (
+              <Searching text={t('search.loading')} />
+            )}
+            {canSearchPeople && peopleResults.length === 0 && !searchingPeople && (
+              <NoResults text={noResultsText} />
+            )}
           </>
         )}
       </div>

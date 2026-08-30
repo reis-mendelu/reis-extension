@@ -67,3 +67,35 @@ describe('MobileAdminConsole', () => {
     );
   });
 });
+
+/**
+ * Sprint 08: a society could not check where an event would land before
+ * publishing. On a phone the map is behind a tab, so "Ukázat na mapě" has to
+ * bring that tab forward as well as move the camera.
+ */
+describe('MobileAdminConsole — previewing the draft location', () => {
+  it('brings the map forward when the composer asks to show the draft', () => {
+    useAppStore.setState({ composerOpen: true, draftCoord: [16.61, 49.21] });
+    render(<MobileAdminConsole />);
+    expect(screen.queryByTestId('console-map')).toBeNull();
+
+    act(() => useAppStore.getState().previewDraftOnMap());
+
+    expect(screen.getByTestId('console-map')).toBeInTheDocument();
+  });
+
+  it('leaves the tab alone when nothing has asked for a preview', () => {
+    useAppStore.setState({ composerOpen: true, draftCoord: [16.61, 49.21] });
+    render(<MobileAdminConsole />);
+    expect(screen.queryByTestId('console-map')).toBeNull();
+  });
+});
+
+describe('MobileAdminConsole — the preview request is per-session', () => {
+  it('does not reopen onto the map because of a preview from an earlier visit', () => {
+    // The counter lives in the app store and outlives the console.
+    useAppStore.setState({ composerOpen: true, draftCoord: [16.61, 49.21], draftFocusRequest: 7 });
+    render(<MobileAdminConsole />);
+    expect(screen.queryByTestId('console-map')).toBeNull();
+  });
+});

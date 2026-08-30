@@ -203,12 +203,6 @@ export interface SuccessRateSlice {
   fetchSuccessRateBatch: (courseCodes: string[]) => Promise<void>;
 }
 
-export interface StudyJamSuggestion {
-  courseCode: string;
-  courseName: string;
-  role: 'tutor' | 'tutee';
-}
-
 export interface EduroamSlice {
   isEduroamOpen: boolean;
   setIsEduroamOpen: (open: boolean) => void;
@@ -217,46 +211,6 @@ export interface EduroamSlice {
 export interface DocumentsSlice {
   isDocumentsOpen: boolean;
   setIsDocumentsOpen: (open: boolean) => void;
-}
-
-export interface StudyJamsSlice {
-  isStudyJamOpen: boolean;
-  setIsStudyJamOpen: (isOpen: boolean) => void;
-  isSelectingTime: boolean;
-  setIsSelectingTime: (isSelecting: boolean) => void;
-  pendingTimeSelection: {
-    dayIndex: number;
-    startMins: number;
-    endMins: number;
-    formattedTime: string;
-  } | null;
-  setPendingTimeSelection: (
-    selection: {
-      dayIndex: number;
-      startMins: number;
-      endMins: number;
-      formattedTime: string;
-    } | null
-  ) => void;
-  studyJamSuggestions: StudyJamSuggestion[];
-  studyJamOptIns: Record<string, { role: 'tutor' | 'tutee' }>;
-  studyJamMatch: {
-    courseCode: string;
-    courseName: string;
-    otherPartyStudentId: string;
-    myRole: 'tutor' | 'tutee';
-    resolvedName?: string;
-    teamsHandle?: string;
-  } | null;
-  studyJamDismissals: Record<string, boolean>;
-  selectedStudyJamSuggestion: StudyJamSuggestion | null;
-  setSelectedStudyJamSuggestion: (suggestion: StudyJamSuggestion | null) => void;
-  loadStudyJamSuggestions: () => Promise<void>;
-  optInStudyJam: (courseCode: string, courseName: string, role: 'tutor' | 'tutee') => Promise<void>;
-  dismissStudyJamSuggestion: (courseCode: string) => Promise<void>;
-  cancelOptIn: (courseCode: string) => Promise<void>;
-  hideStudyJamMatch: () => void;
-  withdrawStudyJamMatch: () => Promise<void>;
 }
 
 export interface FeedbackSlice {
@@ -590,6 +544,19 @@ export interface MapSlice {
   /** Record a picked coordinate and leave placing mode. */
   placeDraftCoord: (coord: [number, number]) => void;
   clearDraftCoord: () => void;
+  /** Bumped alongside mapFocusRequest so the phone console can bring the map tab forward. */
+  draftFocusRequest: number;
+  /**
+   * WHERE the latest focus request pointed the camera. Stated rather than
+   * consumed: MapCanvas's draw effect runs more than once per request (React
+   * re-invokes it, and `roomsByBuilding` lands after mount), so a
+   * "have I flown yet" flag was spent on the first run and the second run
+   * re-fitted the campus on top of the move. Re-reading this gives the same
+   * answer every time, which is what makes the camera stay put.
+   */
+  mapFocusTarget: 'campus' | 'draft';
+  /** "Show me where this lands" — point the map at the draft before publishing. */
+  previewDraftOnMap: () => void;
   /** True while the event-composer overlay is open. */
   composerOpen: boolean;
   /** Id of the societyMapEvents entry being edited, or null when composing a new event. */
@@ -622,7 +589,6 @@ export type AppState = ScheduleSlice &
   I18nSlice &
   ErrorReportingSlice &
   SuccessRateSlice &
-  StudyJamsSlice &
   EduroamSlice &
   DocumentsSlice &
   FeedbackSlice &

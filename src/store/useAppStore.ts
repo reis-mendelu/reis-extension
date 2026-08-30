@@ -13,7 +13,6 @@ import { createThemeSlice } from './slices/createThemeSlice';
 import { createI18nSlice } from './slices/createI18nSlice';
 import { createErrorReportingSlice } from './slices/createErrorReportingSlice';
 import { createSuccessRateSlice } from './slices/createSuccessRateSlice';
-import { createStudyJamsSlice } from './slices/createStudyJamsSlice';
 import { createEduroamSlice } from './slices/createEduroamSlice';
 import { createDocumentsSlice } from './slices/createDocumentsSlice';
 import { createFeedbackSlice } from './slices/createFeedbackSlice';
@@ -60,7 +59,6 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createI18nSlice(...a),
   ...createErrorReportingSlice(...a),
   ...createSuccessRateSlice(...a),
-  ...createStudyJamsSlice(...a),
   ...createEduroamSlice(...a),
   ...createDocumentsSlice(...a),
   ...createFeedbackSlice(...a),
@@ -165,14 +163,10 @@ export const initializeStore = async () => {
     useAppStore.getState().prefetchTodaySubjects();
   });
 
-  // Fire-and-forget daily usage tracking
-  import('../api/feedback').then(({ trackDailyUsage }) =>
-    import('../utils/userParams').then(({ getUserParams }) =>
-      getUserParams().then((p) => {
-        if (p) trackDailyUsage(p.studentId);
-      })
-    )
-  );
+  // Fire-and-forget daily usage tracking. No longer reads user params: the row
+  // is keyed on a random install id, so the student's identity is not needed
+  // and is deliberately not fetched.
+  import('../api/feedback').then(({ trackDailyUsage }) => trackDailyUsage());
 
   // Subscribe to sync service — selective refresh based on type
   const unsubscribe = syncService.subscribe((type) => {

@@ -7,8 +7,6 @@ import { trackNotificationClick } from '../../services/spolky';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { SpolekNotification } from '../../services/spolky';
 import type { DeadlineAlert } from '../../hooks/useDeadlineAlerts';
-import { StudyJamSuggestions } from '../StudyJams/StudyJamSuggestions';
-import { useAppStore } from '../../store/useAppStore';
 import { useIsMobile } from '../../hooks/ui/useIsMobile';
 
 interface NotificationDropdownProps {
@@ -30,10 +28,7 @@ export function NotificationDropdown({
 }: NotificationDropdownProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const hasStudyJamContent = useAppStore(
-    (s) => s.studyJamSuggestions.length > 0 || s.studyJamMatch !== null
-  );
-  const hasContent = notifications.length > 0 || hasStudyJamContent || deadlineAlerts.length > 0;
+  const hasContent = notifications.length > 0 || deadlineAlerts.length > 0;
 
   const notificationList = (
     <>
@@ -44,7 +39,6 @@ export function NotificationDropdown({
           ))}
         </div>
       )}
-      <StudyJamSuggestions onClose={onClose} />
       {loading && !notifications.length ? (
         <div className="p-4 text-center text-base-content/60">{t('notifications.loading')}</div>
       ) : !hasContent ? (

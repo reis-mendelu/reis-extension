@@ -48,6 +48,8 @@ describe('EventComposer publish', () => {
     // choose date through MiniCalendar
     fireEvent.click(screen.getByText('Vyberte datum'));
     fireEvent.click(screen.getByRole('button', { name: '15' }));
+    // A start time is required now, so every publish path sets one.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
     fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
     await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
     const input = createPost.mock.calls[0][0];
@@ -83,6 +85,8 @@ describe('EventComposer publish', () => {
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'ESN párty' } });
     fireEvent.click(screen.getByText('Vyberte datum'));
     fireEvent.click(screen.getByRole('button', { name: '15' }));
+    // A start time is required now, so every publish path sets one.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
     fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
     await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
     expect(createPost.mock.calls[0][1]).toBe('esn');
@@ -98,6 +102,8 @@ describe('EventComposer publish', () => {
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
     fireEvent.click(screen.getByText('Vyberte datum'));
     fireEvent.click(screen.getByRole('button', { name: '15' }));
+    // A start time is required now, so every publish path sets one.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
     await waitFor(() => expect(publish).not.toBeDisabled());
   });
 
@@ -122,6 +128,8 @@ describe('EventComposer publish', () => {
     });
     fireEvent.click(screen.getByText('Vyberte datum'));
     fireEvent.click(screen.getByRole('button', { name: '15' }));
+    // A start time is required now, so every publish path sets one.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
     // Pick the "Kvíz" (quiz) category instead of leaving the default party.
     fireEvent.click(screen.getByRole('button', { name: 'Kvíz' }));
     fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
@@ -152,9 +160,14 @@ describe('EventComposer publish', () => {
       ],
     });
     render(<EventComposer onDone={() => {}} />);
+    // This fixture is a legacy row with time: null. Saving it now requires a
+    // start time — that is the point: editing an old event backfills the one
+    // field its reminder needs.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
     fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
     await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
     const patch = updatePost.mock.calls[0][1];
+    expect(patch.time).toBe('19:30');
     expect(patch.venue_kind).toBe('campus');
     expect(patch.room_code).toBe('BA39N6006');
     expect(patch.category).toBe('boardgames');
@@ -187,5 +200,193 @@ describe('EventComposer publish', () => {
     render(<EventComposer onDone={() => {}} />);
     expect(screen.getByText('Q01')).toBeTruthy();
     expect(screen.queryByText('BA39N1009')).toBeNull();
+  });
+});
+
+/**
+ * Sprint 08: "Spolky se nemůžou podívat, kde plánují akci na mapě před
+ * publikem." The draft pin was never the problem — EventLayer has always drawn
+ * one from `draftCoord`. A CAMPUS venue simply never wrote its coordinate
+ * there: the room lived in the composer's own useState and the map had nothing
+ * to draw, so the only venue kind you could check before publishing was the
+ * off-campus one.
+ */
+describe('EventComposer — seeing the planned location before publishing', () => {
+  const pickRoom = () => {
+    fireEvent.click(screen.getByRole('button', { name: /Kampus/ }));
+    fireEvent.change(screen.getByPlaceholderText('Hledat místnost nebo budovu…'), {
+      target: { value: 'Q01' },
+    });
+    const firstMatch = screen.getAllByRole('button').find((b) => /Q01/.test(b.textContent ?? ''));
+    fireEvent.click(firstMatch as HTMLElement);
+  };
+
+  it('puts a picked campus room on the map as the draft pin', () => {
+    render(<EventComposer onDone={() => {}} />);
+    expect(useAppStore.getState().draftCoord).toBeNull();
+
+    pickRoom();
+
+    const coord = useAppStore.getState().draftCoord;
+    expect(coord).not.toBeNull();
+    expect(coord?.[0]).toBeGreaterThan(16);
+    expect(coord?.[1]).toBeGreaterThan(49);
+  });
+
+  it('takes the pin off the map when the room is cleared', () => {
+    render(<EventComposer onDone={() => {}} />);
+    pickRoom();
+    expect(useAppStore.getState().draftCoord).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Změnit místo' }));
+    expect(useAppStore.getState().draftCoord).toBeNull();
+  });
+
+  it('offers a way to look at the pin once a campus room is chosen', () => {
+    render(<EventComposer onDone={() => {}} />);
+    pickRoom();
+    const before = useAppStore.getState().draftFocusRequest;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ukázat na mapě' }));
+    expect(useAppStore.getState().draftFocusRequest).toBe(before + 1);
+  });
+
+  it('offers the same look at an off-campus point', () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    const before = useAppStore.getState().draftFocusRequest;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ukázat na mapě' }));
+    expect(useAppStore.getState().draftFocusRequest).toBe(before + 1);
+  });
+
+  it('has nothing to show before a venue is chosen', () => {
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.queryByRole('button', { name: 'Ukázat na mapě' })).not.toBeInTheDocument();
+  });
+
+  // Publishing still has to carry the room's own coordinate, not whatever the
+  // store happens to hold — the draft pin is a view of it, not the source.
+  it('publishes the room coordinate for a campus event', async () => {
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Přednáška' } });
+    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    // A start time is required now, so every publish path sets one.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+    pickRoom();
+    // Read the mirrored coord before publishing: closing the composer clears it.
+    const pinned = useAppStore.getState().draftCoord;
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    const input = createPost.mock.calls[0][0];
+    expect(input.venueKind).toBe('campus');
+    expect(input.roomCode).toBeTruthy();
+    expect(input.coordLng).toBe(pinned?.[0]);
+    expect(input.coordLat).toBe(pinned?.[1]);
+  });
+});
+
+/**
+ * Regression, caught by driving the composer rather than by reading it.
+ *
+ * Mirroring a campus room into `draftCoord` (so the map can draw its pin) gave
+ * `switchVenue` a stale value it never used to have: it clears the draft when
+ * you switch TO campus, but not when you switch AWAY from it. So picking room
+ * Q01 and then changing your mind to "Ve městě" left the room's coordinate in
+ * the store — the composer showed a venue as already chosen instead of the
+ * place search, and Publish would have posted an OFF-CAMPUS event sitting on a
+ * lecture hall, with no location name.
+ */
+describe('EventComposer — changing your mind about the venue kind', () => {
+  const pickRoom = () => {
+    fireEvent.click(screen.getByRole('button', { name: /Kampus/ }));
+    fireEvent.change(screen.getByPlaceholderText('Hledat místnost nebo budovu…'), {
+      target: { value: 'Q01' },
+    });
+    const match = screen.getAllByRole('button').find((b) => /Q01/.test(b.textContent ?? ''));
+    fireEvent.click(match as HTMLElement);
+  };
+
+  it('drops the campus coordinate when switching to an off-campus venue', () => {
+    render(<EventComposer onDone={() => {}} />);
+    pickRoom();
+    expect(useAppStore.getState().draftCoord).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Ve městě/ }));
+
+    expect(useAppStore.getState().draftCoord).toBeNull();
+  });
+
+  it('offers the place search again rather than a venue already chosen', () => {
+    render(<EventComposer onDone={() => {}} />);
+    pickRoom();
+    fireEvent.click(screen.getByRole('button', { name: /Ve městě/ }));
+
+    expect(screen.getByPlaceholderText('Hledat místo (bar, klub, park…)')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Změnit místo' })).not.toBeInTheDocument();
+  });
+
+  it('drops an off-campus point when switching to campus, as it always did', () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /Kampus/ }));
+    expect(useAppStore.getState().draftCoord).toBeNull();
+  });
+
+  // With no venue of either kind, there is nothing to preview.
+  it('takes the show-on-map button away with the venue', () => {
+    render(<EventComposer onDone={() => {}} />);
+    pickRoom();
+    expect(screen.getByRole('button', { name: 'Ukázat na mapě' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Ve městě/ }));
+    expect(screen.queryByRole('button', { name: 'Ukázat na mapě' })).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Every event gets a start time.
+ *
+ * Time used to be optional, which left `time: null` rows in spolky_events —
+ * and an event with no start has no "two hours before", so it silently got no
+ * reminder at all. Rather than inventing a default hour to notify at, the
+ * composer now requires the time, which is the only source these rows have
+ * (mapEvents reads spolky_events exclusively).
+ */
+describe('EventComposer — a start time is required', () => {
+  const fillTitleAndDate = () => {
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Kvíz' } });
+    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+  };
+
+  it('keeps publish disabled until a time is given', () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fillTitleAndDate();
+
+    // Title, date and venue are all present — only the time is missing.
+    expect(screen.getByRole('button', { name: 'Zveřejnit akci' })).toBeDisabled();
+  });
+
+  it('enables publish once the time is set', () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fillTitleAndDate();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+
+    expect(screen.getByRole('button', { name: 'Zveřejnit akci' })).toBeEnabled();
+  });
+
+  it('publishes the time rather than a null', async () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fillTitleAndDate();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    expect(createPost.mock.calls[0][0].time).toBe('19:30');
   });
 });

@@ -1,33 +1,38 @@
 // @ts-ignore - Deno is not recognized by the main TS config
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 // @ts-ignore
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 // @ts-ignore
-const EXTENSION_SECRET = Deno.env.get("EXTENSION_SECRET");
-const GEMINI_MODEL = "gemini-2.5-flash-lite";
+const EXTENSION_SECRET = Deno.env.get('EXTENSION_SECRET');
+const GEMINI_MODEL = 'gemini-2.5-flash-lite';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-reis-extension-secret',
-}
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type, x-reis-extension-secret',
+};
 
 serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not set in the Edge Function environment");
+      throw new Error('GEMINI_API_KEY is not set in the Edge Function environment');
     }
 
     // Validate the custom extension secret
-    const secretHeader = req.headers.get("x-reis-extension-secret");
-    if (EXTENSION_SECRET && secretHeader !== EXTENSION_SECRET) {
-      return new Response(JSON.stringify({ error: "Unauthorized: Invalid extension secret" }), {
+    const secretHeader = req.headers.get('x-reis-extension-secret');
+    // Fail CLOSED. This used to be `if (EXTENSION_SECRET && ...)`, so an unset
+    // env var disabled authentication altogether and left an LLM relay billed
+    // to reIS's own API key open to the internet. A missing secret is a
+    // deployment fault, and the safe response to it is to refuse.
+    if (!EXTENSION_SECRET || secretHeader !== EXTENSION_SECRET) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Invalid extension secret' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       });
@@ -37,28 +42,28 @@ serve(async (req: Request) => {
     const { prompt, systemInstruction, pdfBase64 } = await req.json();
 
     const body: any = {
-      contents: [{
-        parts: [
-          { text: prompt }
-        ]
-      }],
+      contents: [
+        {
+          parts: [{ text: prompt }],
+        },
+      ],
       generationConfig: {
-        responseMimeType: "application/json"
-      }
+        responseMimeType: 'application/json',
+      },
     };
 
     if (pdfBase64) {
       body.contents[0].parts.push({
         inline_data: {
-          mime_type: "application/pdf",
-          data: pdfBase64
-        }
+          mime_type: 'application/pdf',
+          data: pdfBase64,
+        },
       });
     }
 
     if (systemInstruction) {
       body.system_instruction = {
-        parts: [{ text: systemInstruction }]
+        parts: [{ text: systemInstruction }],
       };
     }
 
@@ -72,7 +77,7 @@ serve(async (req: Request) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-      signal: controller.signal
+      signal: controller.signal,
     });
     clearTimeout(timeoutId);
 
@@ -91,11 +96,11 @@ serve(async (req: Request) => {
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
-    })
+    });
   } catch (error: any) {
     // Handle the AbortError separately
     if (error.name === 'AbortError') {
-      return new Response(JSON.stringify({ error: "Gemini API Timeout" }), {
+      return new Response(JSON.stringify({ error: 'Gemini API Timeout' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 504,
       });
@@ -104,6 +109,6 @@ serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
-    })
+    });
   }
-})
+});

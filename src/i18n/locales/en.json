@@ -165,8 +165,6 @@
       "all": "All occurrences",
       "recurring": "Hide all {course} lessons"
     },
-    "pickTutoringTime": "Pick a time for tutoring",
-    "selectedTime": "Selected: {time}",
     "clickFreeSlot": "Click a free slot in the calendar",
     "pickTime": "Pick a time:",
     "publicHoliday": "Public holiday"
@@ -358,7 +356,9 @@
       "other": "Other",
       "noFiles": "No files",
       "searchOnlyInSchedule": "Files are only available for subjects in your schedule.",
-      "noFilesAvailable": "No files available."
+      "noFilesAvailable": "No files available.",
+      "download": "Download",
+      "openInSidebar": "Open preview"
     },
     "pdf": {
       "loadFailed": "Couldn't open the PDF.",
@@ -884,7 +884,8 @@
     "pasteManualTitle": "Manual entry",
     "pastePlaceholder": "Paste the syllabus content from the foreign university here...",
     "pastedTextLabel": "Pasted text",
-    "pasteSaveContinue": "Save and continue"
+    "pasteSaveContinue": "Save and continue",
+    "verifyAiNotice": "The syllabus is sent to an AI service (Anthropic) for analysis. Upload the course syllabus only — never documents containing personal data, such as a transcript of records."
   },
   "transfer": {
     "title": "Check credit transfer",
@@ -953,33 +954,6 @@
     "collapse": "Collapse bulletin board",
     "loading": "Loading…",
     "error": "Failed to load"
-  },
-  "studyJam": {
-    "titlePrefix": "reIS tutoring",
-    "tutorIntro": "Want to save a first-year from certain doom?",
-    "tutorBenefitRetention": "Explaining material boosts your knowledge retention by",
-    "justNeed": "All it takes is",
-    "oneHour": "one hour",
-    "tutorOutro": "We'll pair you with someone who needs help. If you both click, you can arrange more sessions.",
-    "tuteeIntro": "We have students who aced {course} and want to help.",
-    "tuteeBenefitPair": "We'll pair you with a tutor",
-    "free": "for free",
-    "tuteeOutro": "Sign up and we'll connect you with someone who can help.",
-    "decline": "Not interested",
-    "optIn": "I'm in!",
-    "successTitle": "Awesome, thanks!",
-    "successTutor": "We'll let you know as soon as we find a tutee!",
-    "successTutee": "We'll let you know as soon as we pair you with a tutor!",
-    "close": "Close",
-    "matchTutorFound": "Tutor found",
-    "matchTuteeAssigned": "Tutee assigned",
-    "matchUnregister": "Unregister",
-    "matchConfirmUnregister": "Really unregister?",
-    "matchHide": "Hide",
-    "checklistTutorWrote": "I messaged the tutor on Teams",
-    "checklistTuteeWrote": "I replied to the tutee on Teams",
-    "checklistConfirmedTime": "We confirmed the meeting time",
-    "matchWriteTeams": "Message on Teams"
   },
   "customEvent": {
     "titlePlaceholder": "Add title",
@@ -1104,7 +1078,8 @@
     "libraryBookRateLimited": "You've booked several rooms recently — try again later.",
     "libraryBookOffline": "You're offline — booking failed.",
     "libraryBookInvalid": "Couldn't submit the booking.",
-    "libraryBookMissing": "Please fill the highlighted fields."
+    "libraryBookMissing": "Please fill the highlighted fields.",
+    "reminderLead": "In 2 hours"
   },
   "admin": {
     "email": "Email",

@@ -33,6 +33,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   const beginPlacing = useAppStore((s) => s.beginPlacing);
   const placeDraftCoord = useAppStore((s) => s.placeDraftCoord);
   const clearDraftCoord = useAppStore((s) => s.clearDraftCoord);
+  const previewDraftOnMap = useAppStore((s) => s.previewDraftOnMap);
   const loadSocietyPosts = useAppStore((s) => s.loadSocietyPosts);
   const reloadMapEvents = useAppStore((s) => s.reloadMapEvents);
   const editId = useAppStore((s) => s.editEventId);
@@ -68,8 +69,15 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
 
+  // The room stays the source of truth for a campus venue; draftCoord is the
+  // map's VIEW of it, kept in step by selectRoom/clearRoom below.
   const coord = venue === 'campus' ? (room?.coord ?? null) : draftCoord;
-  const ready = !!title.trim() && !!date && !!coord;
+  // Time is required, not optional. A `time: null` row has no start, so it has
+  // no "two hours before" and silently got no reminder at all — and the
+  // composer is the only place these rows come from (the map reads
+  // spolky_events exclusively). Requiring it here is what makes "every event
+  // gets a reminder" true, rather than inventing a default hour to notify at.
+  const ready = !!title.trim() && !!date && !!time && !!coord;
   const scheduled = date ? isScheduledEvent(date) : false;
 
   const close = () => {
@@ -82,7 +90,27 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     setVenue(v);
     setRoom(null);
     setPlaceName(null);
-    if (v === 'campus') clearDraftCoord();
+    // Both directions, not just the switch TO campus. Once a campus room began
+    // mirroring its coordinate into draftCoord (so the map can draw its pin),
+    // switching AWAY from campus left that coordinate behind: the composer read
+    // it as an off-campus venue already chosen, hid the place search, and would
+    // have published an off-campus event sitting on a lecture hall with no
+    // location name. Changing the venue KIND invalidates whatever point either
+    // kind had picked.
+    clearDraftCoord();
+  };
+
+  // A campus room used to keep its coordinate here and nowhere else, so the map
+  // had nothing to draw and a society could not check a campus venue before
+  // publishing. Mirroring it into the store is what puts the draft pin on the
+  // map for BOTH venue kinds.
+  const selectRoom = (sel: { code: string; name: string; coord: [number, number] }) => {
+    setRoom(sel);
+    placeDraftCoord(sel.coord);
+  };
+  const clearRoom = () => {
+    setRoom(null);
+    clearDraftCoord();
   };
 
   // A searched venue sets both the display name and the coordinate; clearing
@@ -239,8 +267,8 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       {venue === 'campus' ? (
         <ComposerRoomSearch
           selected={room ? { code: room.code, name: room.name } : null}
-          onSelect={setRoom}
-          onClear={() => setRoom(null)}
+          onSelect={selectRoom}
+          onClear={clearRoom}
           t={t}
         />
       ) : draftCoord ? (
@@ -264,6 +292,19 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
             <MapPin size={13} /> {t('map.orPickOnMap')}
           </button>
         </>
+      )}
+
+      {/* Confirming the location is the whole point of the pin: without a way
+          to get to it, a society publishes on trust. Shown for both venue kinds
+          the moment a coordinate exists. */}
+      {coord && (
+        <button
+          type="button"
+          className="btn btn-ghost btn-xs mt-1.5 w-full gap-1.5 text-base-content/70"
+          onClick={previewDraftOnMap}
+        >
+          <MapPin size={13} /> {t('map.showOnMap')}
+        </button>
       )}
 
       {error && <p className="mt-2 text-[11px] text-error">{t('admin.saveError')}</p>}

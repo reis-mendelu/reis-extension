@@ -414,3 +414,126 @@ describe('composer open/close', () => {
     expect(st.draftCoord).toBeNull(); // genuinely reset by closeComposer
   });
 });
+
+/**
+ * Sprint 08: the camera move for "Ukázat na mapě".
+ *
+ * It first lived in its own hook that called setView on the Leaflet instance
+ * directly, and lost a race nobody would guess from reading it: MapCanvas's
+ * draw effect ends by fitting the whole campus on mount, and that effect runs
+ * AFTER the setMapInstance subscriber that fired the setView. The pin appeared
+ * and the camera sat on the campus overview. So the request goes through
+ * `mapFocusRequest`, the counter MapCanvas's own camera already consumes —
+ * one owner of the camera instead of two racing.
+ */
+describe('previewDraftOnMap', () => {
+  beforeEach(() => {
+    useAppStore.setState({
+      draftFocusRequest: 0,
+      mapFocusRequest: 0,
+      draftCoord: [16.6142, 49.2096],
+      mapSelection: null,
+      activeBuildingId: null,
+      activeFloorId: null,
+    });
+  });
+
+  it('asks the map camera to move, through the counter MapCanvas consumes', () => {
+    useAppStore.getState().previewDraftOnMap();
+    const st = useAppStore.getState();
+    expect(st.mapFocusRequest).toBe(1);
+    expect(st.draftFocusRequest).toBe(1);
+  });
+
+  // Pins are only drawn in the campus overview, so flying to a draft from
+  // inside a building would land on a floor plan with no pin on it.
+  it('leaves floor view so the draft pin is actually visible', () => {
+    useAppStore.setState({ activeBuildingId: 3, activeFloorId: 1 });
+    useAppStore.getState().previewDraftOnMap();
+    const st = useAppStore.getState();
+    expect(st.activeBuildingId).toBeNull();
+    expect(st.activeFloorId).toBeNull();
+  });
+
+  // A live selection would send MapCanvas's camera chain down the poi/event
+  // branch instead of the draft one.
+  it('clears any selection that would claim the camera first', () => {
+    useAppStore.setState({
+      mapSelection: { kind: 'poi', poi: { id: 'x', name: 'X' }, coord: [16.6, 49.2] } as never,
+    });
+    useAppStore.getState().previewDraftOnMap();
+    expect(useAppStore.getState().mapSelection).toBeNull();
+  });
+
+  it('is repeatable, so a second press moves the camera again', () => {
+    useAppStore.getState().previewDraftOnMap();
+    useAppStore.getState().previewDraftOnMap();
+    expect(useAppStore.getState().mapFocusRequest).toBe(2);
+  });
+});
+
+/**
+ * The camera has to know WHICH target a focus request meant, not merely that
+ * one happened.
+ *
+ * The first attempt tracked "have I flown for this request yet" in a ref inside
+ * MapCanvas's draw effect. That effect runs more than once per request — React
+ * re-invokes it in dev, and `roomsByBuilding` legitimately lands after mount —
+ * so run 1 flew to the draft and consumed the flag and run 2 fell through and
+ * re-fitted the campus on top of it. Observed on a real map: the camera arrived
+ * at the draft and was thrown back to the overview within a frame.
+ *
+ * So the target is stated rather than consumed: every focus request says where
+ * it is pointing, and re-running the effect re-applies the same answer.
+ */
+describe('mapFocusTarget', () => {
+  beforeEach(() => {
+    useAppStore.setState({
+      mapFocusRequest: 0,
+      draftFocusRequest: 0,
+      mapFocusTarget: 'campus',
+      draftCoord: [16.6142, 49.2096],
+      mapSelection: null,
+      activeBuildingId: null,
+      activeFloorId: null,
+    });
+  });
+
+  it('starts pointing at the campus', () => {
+    expect(useAppStore.getState().mapFocusTarget).toBe('campus');
+  });
+
+  it('points at the draft when a preview is asked for', () => {
+    useAppStore.getState().previewDraftOnMap();
+    expect(useAppStore.getState().mapFocusTarget).toBe('draft');
+  });
+
+  // Re-reading it must give the same answer, however many times the draw effect
+  // runs — that is the whole point of stating it instead of consuming it.
+  it('keeps pointing at the draft until something else claims the camera', () => {
+    useAppStore.getState().previewDraftOnMap();
+    expect(useAppStore.getState().mapFocusTarget).toBe('draft');
+    expect(useAppStore.getState().mapFocusTarget).toBe('draft');
+  });
+
+  it('goes back to the campus when the whole campus is asked for', () => {
+    useAppStore.getState().previewDraftOnMap();
+    useAppStore.getState().focusCampus();
+    expect(useAppStore.getState().mapFocusTarget).toBe('campus');
+  });
+
+  it('goes back to the campus when a room is focused instead', () => {
+    useAppStore.getState().previewDraftOnMap();
+    useAppStore.getState().focusPoint('Menza', [16.61, 49.21]);
+    expect(useAppStore.getState().mapFocusTarget).toBe('campus');
+  });
+
+  // Closing the composer removes the draft entirely, so nothing is left to
+  // point at.
+  it('stops pointing at a draft that no longer exists', () => {
+    useAppStore.getState().previewDraftOnMap();
+    useAppStore.getState().closeComposer();
+    expect(useAppStore.getState().draftCoord).toBeNull();
+    expect(useAppStore.getState().mapFocusTarget).toBe('campus');
+  });
+});

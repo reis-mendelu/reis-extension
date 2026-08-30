@@ -84,6 +84,12 @@ export function MapCanvas() {
   const activeFloorId = useAppStore((s) => s.activeFloorId);
   const roomsByBuilding = useAppStore((s) => s.roomsByBuilding);
   const focusReq = useAppStore((s) => s.mapFocusRequest);
+  // The event being composed. Read here rather than moved by a separate hook:
+  // this effect is the app's only camera owner, and a second one racing it is
+  // exactly how "Ukázat na mapě" ended up drawing the pin while the camera sat
+  // on the campus overview.
+  const draftCoord = useAppStore((s) => s.draftCoord);
+  const focusTarget = useAppStore((s) => s.mapFocusTarget);
   const mapSelection = useAppStore((s) => s.mapSelection);
   const libraryAvailability = useAppStore((s) => s.libraryAvailability);
   // "Latest ref" for the heavy draw effect below: availability data can land
@@ -99,6 +105,14 @@ export function MapCanvas() {
   useEffect(() => {
     libraryAvailabilityRef.current = libraryAvailability;
   }, [libraryAvailability]);
+
+  // Same "latest ref" trick, same reason: moving the draft pin (picking a
+  // different room) must not re-fly the camera. Only an explicit request does,
+  // and that arrives as a change to draftFocusReq.
+  const draftCoordRef = useRef(draftCoord);
+  useEffect(() => {
+    draftCoordRef.current = draftCoord;
+  }, [draftCoord]);
 
   // init once
   useEffect(() => {
@@ -220,6 +234,17 @@ export function MapCanvas() {
         // Deliberately NOT wrapped in flyAndReveal: with no camera move there is
         // no re-projection to hide, and its 900ms safety reveal would blank the
         // vector panes for most of a second on a `moveend` that never comes.
+      } else if (focusTarget === 'draft' && draftCoordRef.current) {
+        // "Ukázat na mapě": the society is checking where an unpublished event
+        // will land. Deliberately NOT a consume-once flag — this effect runs
+        // more than once per request, and the version that spent the flag on
+        // its first run had the second run re-fit the campus on top of the
+        // move. Idempotent is the point: every re-run re-answers "the draft".
+        // Never zooms back OUT on someone already looking closer.
+        const [lon, lat] = draftCoordRef.current;
+        flyAndReveal(map, () =>
+          map.setView([lat, lon], Math.max(map.getZoom(), 18), { animate: false })
+        );
       } else {
         flyAndReveal(map, () =>
           map.fitBounds(META.campus.bounds as L.LatLngBoundsExpression, {
@@ -347,7 +372,7 @@ export function MapCanvas() {
     // libraryAvailability intentionally excluded — read via libraryAvailabilityRef
     // so its arrival doesn't trigger a redraw+fly; see comment at the ref
     // declaration and the dedicated re-tint effect below.
-  }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq]);
+  }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq, focusTarget]);
 
   // Highlight the selected room in place on a plain map click — restyle the live
   // polygons without a full redraw or camera move (the heavy effect above only

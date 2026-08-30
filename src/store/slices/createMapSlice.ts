@@ -63,6 +63,8 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   societyMapEvents: [],
   placingEvent: false,
   draftCoord: null,
+  draftFocusRequest: 0,
+  mapFocusTarget: 'campus',
   composerOpen: false,
   editEventId: null,
 
@@ -103,6 +105,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
       activeFloorId: entry.floorId,
       mapSelection: { kind: 'roomRef', entry } as MapSelection,
       mapFocusRequest: get().mapFocusRequest + 1,
+      mapFocusTarget: 'campus' as const,
     });
     if (b) void get().loadMapBuilding(entry.buildingId);
   },
@@ -118,6 +121,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
       activeFloorId: null,
       mapSelection: { kind: 'poi', poi: f.properties, coord: f.geometry.coordinates },
       mapFocusRequest: get().mapFocusRequest + 1,
+      mapFocusTarget: 'campus' as const,
     });
   },
 
@@ -137,6 +141,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
         coord,
       },
       mapFocusRequest: get().mapFocusRequest + 1,
+      mapFocusTarget: 'campus' as const,
     });
   },
 
@@ -166,6 +171,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
         coord,
       },
       mapFocusRequest: get().mapFocusRequest + 1,
+      mapFocusTarget: 'campus' as const,
     });
   },
 
@@ -175,6 +181,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
       activeFloorId: null,
       mapSelection: null,
       mapFocusRequest: get().mapFocusRequest + 1,
+      mapFocusTarget: 'campus' as const,
     }),
 
   focusPoint: (name, coord) =>
@@ -187,6 +194,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
         coord,
       },
       mapFocusRequest: get().mapFocusRequest + 1,
+      mapFocusTarget: 'campus' as const,
     }),
 
   loadMapBuilding: async (id) => {
@@ -219,17 +227,52 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
       activeBuildingId: null,
       activeFloorId: null,
       mapFocusRequest: get().mapFocusRequest + 1,
+      mapFocusTarget: 'campus' as const,
     }),
   cancelPlacing: () => set({ placingEvent: false }),
   placeDraftCoord: (coord) => set({ draftCoord: coord, placingEvent: false }),
   clearDraftCoord: () => set({ draftCoord: null }),
+
+  // Two counters, on purpose, because two different things have to happen.
+  //
+  // `mapFocusRequest` is the one MapCanvas's draw effect consumes, and moving
+  // the camera through it is what makes this work at all. The first version
+  // used a separate hook that called setView on the Leaflet instance itself,
+  // and lost a race that is invisible from the calling side: MapCanvas's draw
+  // effect ends by fitting the whole campus on mount, and it runs AFTER the
+  // setMapInstance subscriber that fired the setView. The pin appeared and the
+  // camera stayed on the campus overview. One owner of the camera, not two.
+  //
+  // `draftFocusRequest` is for the phone's console shell, which has to bring
+  // the map TAB forward — a camera move behind a hidden pane is invisible.
+  //
+  // Clearing the selection matters: MapCanvas's camera chain checks poi and
+  // event before anything else, so a live selection would claim the move.
+  // Leaving floor view matters for the same reason the pin does — pins are
+  // only drawn in the campus overview.
+  previewDraftOnMap: () =>
+    set({
+      draftFocusRequest: get().draftFocusRequest + 1,
+      mapFocusRequest: get().mapFocusRequest + 1,
+      mapFocusTarget: 'draft' as const,
+      mapSelection: null,
+      activeBuildingId: null,
+      activeFloorId: null,
+    }),
 
   openComposer: (editId) => {
     const ev = editId ? get().societyMapEvents.find((e) => e.id === editId) : null;
     set({ composerOpen: true, editEventId: editId ?? null, draftCoord: ev?.coord ?? null });
   },
   closeComposer: () =>
-    set({ composerOpen: false, editEventId: null, placingEvent: false, draftCoord: null }),
+    set({
+      composerOpen: false,
+      editEventId: null,
+      placingEvent: false,
+      draftCoord: null,
+      // The draft is gone, so the camera has nothing to point at any more.
+      mapFocusTarget: 'campus',
+    }),
 
   loadMapEvents: async () => {
     if (get().mapEventsLoaded) return; // boot-time load: once is enough
@@ -244,6 +287,11 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     try {
       const events = await fetchMapEvents();
       set({ mapEvents: events.map(locateEvent), mapEventsLoaded: true });
+      // Attendance is loaded here, with the events, rather than by the cards:
+      // one RPC covers every visible event, and components do not fetch.
+      // Detached on purpose — a card renders with 0/0 while this is in flight,
+      // and a failure must not take the events down with it.
+      void get().loadRsvps(events.map((e) => e.id));
     } catch (err) {
       logError('MapSlice.reloadMapEvents', err);
     }
@@ -296,7 +344,9 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
       activeBuildingId: null,
       activeFloorId: null,
       mapSelection: { kind: 'event', event },
-      ...(fly ? { mapFocusRequest: get().mapFocusRequest + 1 } : {}),
+      ...(fly
+        ? { mapFocusRequest: get().mapFocusRequest + 1, mapFocusTarget: 'campus' as const }
+        : {}),
     });
   },
 });

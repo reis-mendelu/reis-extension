@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { AdminConsoleHeader } from './AdminConsoleHeader';
@@ -38,6 +38,19 @@ export function MobileAdminConsole() {
   const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
   const unread = useAppStore((s) => s.suggestionsUnread);
   const [tab, setTab] = useState<Tab>('list');
+  const draftFocus = useAppStore((s) => s.draftFocusRequest);
+  // "Ukázat na mapě" has to bring the map forward as well as move the camera —
+  // on a phone the two panes are a tab apart, so a silent camera move would be
+  // invisible. Keyed on the counter so a second press works after the society
+  // taps back to the list, and baselined at mount because the counter outlives
+  // the console: a plain `> 0` would reopen straight onto the map for anyone
+  // who had previewed a draft at any point earlier.
+  const seenFocusRef = useRef(draftFocus);
+  useEffect(() => {
+    if (draftFocus <= seenFocusRef.current) return;
+    seenFocusRef.current = draftFocus;
+    setTab('map');
+  }, [draftFocus]);
   const showMap = placing || tab === 'map';
   const showSuggestions = !placing && isReisAdmin && tab === 'suggestions';
 

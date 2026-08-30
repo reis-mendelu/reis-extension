@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { StudentScreen } from '../StudentScreen';
 import { useAppStore } from '../../../../store/useAppStore';
 import type { SearchResult } from '../../../SearchBar/types';
@@ -169,5 +169,117 @@ describe('StudentScreen — the IS page directory', () => {
     const input = screen.getByRole('textbox', { name: 'Hledej stránku v IS…' });
     fireEvent.change(input, { target: { value: 'E-index' } });
     expect(screen.getByText('E-index')).toBeInTheDocument();
+  });
+});
+
+// Sprint 08, iPad. Two separate complaints about the Lidé search, both rooted
+// in the screen ignoring the search's in-flight state and its input's focus.
+describe('StudentScreen — Lidé search while the query is still in flight', () => {
+  beforeEach(() => {
+    useAppStore.setState({
+      language: 'cz',
+      mobileSheets: [],
+      recentSearches: [],
+      recentPeople: [],
+      subjects: null,
+      studyPlanDual: null,
+      studiumId: null,
+      userFaculty: null,
+      userSemester: null,
+      executeSearch: vi
+        .fn()
+        .mockResolvedValue({ people: [], subjects: [], subjectsTruncated: false }),
+    });
+  });
+
+  const openPeople = () => {
+    render(<StudentScreen />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
+    return screen.getByRole('textbox');
+  };
+
+  // The bug: useSearch debounces 250ms and then goes to the network, so
+  // `peopleResults` is [] for the whole round trip. The screen read only
+  // `sections` and rendered "Nic jsme nenašli" the instant a query existed —
+  // an answer it had not yet earned.
+  it('does not claim "nothing found" before the search has answered', async () => {
+    const input = openPeople();
+    fireEvent.change(input, { target: { value: 'Novák' } });
+
+    expect(screen.queryByText('Nic jsme nenašli. Zkus to jinak.')).not.toBeInTheDocument();
+    expect(screen.getByText('Načítání výsledků...')).toBeInTheDocument();
+  });
+
+  // A query under useSearch's 2-character floor never reaches the network at
+  // all, so "nothing found" was a claim about a search that never ran.
+  it('does not claim "nothing found" for a query too short to search', () => {
+    const input = openPeople();
+    fireEvent.change(input, { target: { value: 'N' } });
+
+    expect(screen.queryByText('Nic jsme nenašli. Zkus to jinak.')).not.toBeInTheDocument();
+  });
+
+  // Only once the search has actually answered empty is the message true.
+  it('says "nothing found" once the search has answered with nobody', async () => {
+    vi.useFakeTimers();
+    try {
+      const input = openPeople();
+      fireEvent.change(input, { target: { value: 'Novák' } });
+      await act(async () => {
+        vi.advanceTimersByTime(400);
+      });
+      expect(screen.getByText('Nic jsme nenašli. Zkus to jinak.')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('StudentScreen — dismissing the iPad keyboard', () => {
+  beforeEach(() => {
+    useAppStore.setState({
+      language: 'cz',
+      mobileSheets: [],
+      recentSearches: [],
+      recentPeople: [],
+      subjects: null,
+      studyPlanDual: null,
+      studiumId: null,
+      userFaculty: null,
+      userSemester: null,
+      executeSearch: vi
+        .fn()
+        .mockResolvedValue({ people: [], subjects: [], subjectsTruncated: false }),
+    });
+  });
+
+  // On iPad the software keyboard covers most of the results list. Auto-blurring
+  // the moment results arrive would fight anyone still typing, so the dismissal
+  // is bound to the three gestures that mean "I'm done typing, let me look":
+  // Enter, scrolling the results, and tapping a person.
+  it('blurs the input on Enter so the keyboard drops', () => {
+    render(<StudentScreen />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
+    const input = screen.getByRole('textbox');
+    input.focus();
+    expect(document.activeElement).toBe(input);
+
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(document.activeElement).not.toBe(input);
+  });
+
+  it('blurs the input when the results list is scrolled', () => {
+    render(<StudentScreen />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
+    const input = screen.getByRole('textbox');
+    input.focus();
+
+    fireEvent.scroll(screen.getByTestId('student-results'));
+    expect(document.activeElement).not.toBe(input);
+  });
+
+  it('marks the input as a search field so iOS shows a Search key', () => {
+    render(<StudentScreen />);
+    expect(screen.getByRole('textbox')).toHaveAttribute('enterkeyhint', 'search');
   });
 });

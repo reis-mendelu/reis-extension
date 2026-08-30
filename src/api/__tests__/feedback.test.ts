@@ -8,14 +8,14 @@ describe('feedback', () => {
     useAppStore.setState({ demoMode: false });
   });
 
-  // The demo student is fabricated, so a demo submission would put a hash of a
-  // fiction into the real feedback table — the same reasoning that already
-  // guards trackDailyUsage, applied to the other write it shares a file with.
+  // The demo student is fabricated, so a demo submission would pollute the real
+  // feedback table — the same reasoning that already guards trackDailyUsage,
+  // applied to the other write it shares a file with.
   it('does not submit feedback in demo mode', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     useAppStore.setState({ demoMode: true });
 
-    await expect(submitFeedback('900001', 'nps', '9', 'ZS2026')).resolves.toBe(false);
+    await expect(submitFeedback('nps', '9', 'ZS2026')).resolves.toBe(false);
 
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -24,8 +24,22 @@ describe('feedback', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     useAppStore.setState({ demoMode: true });
 
-    await trackDailyUsage('123456');
+    await trackDailyUsage();
 
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * These two writes are the last places student identity reached Supabase.
+ * They now identify the DEVICE, so neither call should be able to see, take,
+ * or transmit anything about the student.
+ */
+describe('feedback — no student identity leaves the device', () => {
+  it('takes no student identifier as an argument at all', () => {
+    // Arity is the guard: a caller cannot pass a student id even by mistake.
+    expect(trackDailyUsage.length).toBe(0);
+    // type, value, semester, reason — none of which identify the student.
+    expect(submitFeedback.length).toBe(4);
   });
 });

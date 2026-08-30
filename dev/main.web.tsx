@@ -15,6 +15,11 @@ import './phoneOverride';
 
 import '@/entrypoints/main/main';
 
+// After the app, so it publishes the very store instance the React root renders
+// from. See storeHandle.ts for why importing the module separately is not a
+// reliable substitute.
+import './storeHandle';
+
 // Last, and deliberately after the app: signs the harness in as a real society
 // / reIS-admin account when credentials are configured, so the admin console
 // can be tested against live Supabase instead of the in-memory dev store. Does
