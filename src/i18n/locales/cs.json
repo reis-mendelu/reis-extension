@@ -436,8 +436,6 @@
     "empty": "Žádné nadcházející akce"
   },
   "sync": {
-    "schedule": "Synchronizace kalendáře",
-    "tooltip": "Rozvrh a zkoušky do Outlooku",
     "spolky": "Odebírané spolky",
     "lastSync": "Naposledy synchronizováno: {time}"
   },
@@ -1154,7 +1152,7 @@
     },
     "profile": {
       "appearance": "Vzhled",
-      "sync": "Synchronizace",
+      "settings": "Nastavení",
       "societies": "Spolky na mapě"
     },
     "loadFailed": {

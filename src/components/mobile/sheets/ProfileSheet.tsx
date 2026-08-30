@@ -3,7 +3,6 @@ import {
   X,
   Moon,
   Languages,
-  Calendar,
   Wifi,
   MessageSquarePlus,
   LogOut,
@@ -13,7 +12,6 @@ import {
 import { Sheet } from '../primitives/Sheet';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTheme } from '../../../hooks/useTheme';
-import { useOutlookSync } from '../../../hooks/data/useOutlookSync';
 import { useSpolkySettings } from '../../../hooks/useSpolkySettings';
 import { useStudyPlan } from '../../../hooks/useStudyPlan';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -53,11 +51,6 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
   const language = useAppStore((s) => s.language);
   const setLanguage = useAppStore((s) => s.setLanguage);
   const { isDark, toggle: toggleTheme } = useTheme();
-  const {
-    isEnabled: outlookEnabled,
-    isLoading: outlookLoading,
-    toggle: toggleOutlook,
-  } = useOutlookSync();
   const { isSubscribed, toggleAssociation } = useSpolkySettings();
   const pushSheet = useAppStore((s) => s.pushSheet);
   const plan = useStudyPlan();
@@ -130,27 +123,8 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
         </div>
 
         <div className="px-4 pb-1 pt-3 text-xs font-bold uppercase tracking-wider text-base-content/60">
-          {t('mobile.profile.sync')}
+          {t('mobile.profile.settings')}
         </div>
-        <label className="flex items-center gap-3 px-4 py-2.5">
-          <Calendar size={16} className="flex-shrink-0 text-base-content/50" />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <span className="text-md font-medium">{t('sync.schedule')}</span>
-            <span className="truncate text-xs text-base-content/60">{t('sync.tooltip')}</span>
-          </div>
-          <input
-            type="checkbox"
-            className="toggle toggle-primary toggle-sm"
-            checked={outlookEnabled ?? false}
-            disabled={outlookLoading}
-            onChange={toggleOutlook}
-          />
-        </label>
-        {/* Google Drive backup is deliberately absent on mobile. It is
-            non-functional there on every axis (issue #168), so the toggle only
-            ever promised something the app could not deliver. The desktop
-            sidebar keeps it. */}
-
         {/* eduroam lives here rather than on the Student hub: it is a one-time
             device setup, which is what a settings screen is for, and it was
             competing for attention with everyday shortcuts. One tap, same

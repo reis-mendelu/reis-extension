@@ -5,7 +5,6 @@ export type DataRequestType = 'schedule' | 'exams' | 'subjects' | 'files' | 'all
 export type ActionType =
   | 'register_exam'
   | 'unregister_exam'
-  | 'toggle_outlook_sync'
   | 'download_file'
   | 'download_document'
   | 'trigger_sync'

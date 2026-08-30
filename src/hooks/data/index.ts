@@ -3,7 +3,6 @@ export * from './useSchedule';
 export * from './useFiles';
 export * from './useSyncStatus';
 export * from './useSuccessRate';
-export * from './useOutlookSync';
 export * from './useSyllabus';
 export * from './useExams';
 export * from './useClassmates';

@@ -32,7 +32,7 @@ export interface MobileActionDeps {
 /**
  * Only four of the eleven actions in `ActionType` are reachable from the app:
  * `register_exam`/`unregister_exam` are called in-process by `useExamActions`,
- * `open_url` has no callers, `toggle_outlook_sync`/`download_file` have no case
+ * `open_url` has no callers, `download_file` has no case
  * on any platform, and the Drive actions are broken on mobile (#168).
  *
  * Everything unhandled throws IMMEDIATELY and names itself. That default is

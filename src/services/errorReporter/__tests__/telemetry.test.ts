@@ -19,7 +19,7 @@ describe('sendTelemetry', () => {
     sendTelemetry('FilesSlice.fetchFiles', new Error('IDB closed'));
     await flush();
     expect(supabase.rpc).toHaveBeenCalledTimes(1);
-    const [name, args] = (supabase.rpc as ReturnType<typeof vi.fn>).mock.calls[0];
+    const [name, args] = (supabase.rpc as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(name).toBe('report_error_v2');
     expect(args.p_error_type).toBe('FilesSlice.fetchFiles');
     expect(args.p_error_message).toBe('IDB closed');
@@ -98,7 +98,7 @@ describe('sendTelemetry', () => {
   it('sanitizes the error message — strips 6-digit UIC', async () => {
     sendTelemetry('Parser.x', new Error('user 123456 failed'));
     await flush();
-    const [, args] = (supabase.rpc as ReturnType<typeof vi.fn>).mock.calls[0];
+    const [, args] = (supabase.rpc as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(args.p_error_message).toBe('user [redacted] failed');
   });
 
@@ -118,7 +118,7 @@ describe('sendTelemetry', () => {
     sendTelemetry('A.b', 'plain string error');
     await flush();
     expect(supabase.rpc).toHaveBeenCalledTimes(1);
-    const [, args] = (supabase.rpc as ReturnType<typeof vi.fn>).mock.calls[0];
+    const [, args] = (supabase.rpc as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(args.p_error_message).toBe('plain string error');
   });
 

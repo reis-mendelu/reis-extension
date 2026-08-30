@@ -44,7 +44,8 @@ describe('search transport', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  // The defect the plan recorded on outlookSync.ts:73, avoided here. Passing a
+  // The defect the plan recorded on the deleted outlookSync.ts, avoided here.
+  // Passing a
   // capitalised `Content-Type` into fetchWithAuth does NOT overwrite
   // DEFAULT_HEADERS' lowercase one — both keys survive the object spread and
   // `Headers` APPENDS, so IS receives the value twice, parses no body, and
