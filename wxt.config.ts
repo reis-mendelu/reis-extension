@@ -33,7 +33,6 @@ export default defineConfig({
     host_permissions: [
       'https://is.mendelu.cz/*',
       'https://www.googleapis.com/*',
-      'https://webiskam.mendelu.cz/*',
       'https://raw.githubusercontent.com/reis-mendelu/reis-data/*',
       'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main/*',
       'https://skm.mendelu.cz/*',
@@ -74,18 +73,6 @@ export default defineConfig({
           'fonts/*',
         ],
         matches: ['https://is.mendelu.cz/*'],
-      },
-      {
-        resources: [
-          'iskam.html',
-          'assets/*',
-          'reIS_logo_16.png',
-          'reIS_logo_48.png',
-          'reIS_logo_128.png',
-          'reIS_logo.svg',
-          'fonts/*',
-        ],
-        matches: ['https://webiskam.mendelu.cz/*'],
       },
     ],
   },

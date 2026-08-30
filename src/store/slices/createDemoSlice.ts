@@ -37,7 +37,6 @@ const IS_DERIVED_STORES = [
   'study_plan',
   'cvicne_tests',
   'odevzdavarny',
-  'iskam',
 ] as const;
 
 /**

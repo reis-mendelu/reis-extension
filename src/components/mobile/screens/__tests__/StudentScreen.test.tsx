@@ -44,7 +44,8 @@ describe('StudentScreen', () => {
     // not among the everyday shortcuts. It lives in ProfileSheet now.
     expect(screen.queryByText('Eduroam')).not.toBeInTheDocument();
     expect(screen.getByText('Dokumenty')).toBeInTheDocument();
-    expect(screen.getByText('ISKAM')).toBeInTheDocument();
+    // ISKAM went with the WebISKAM integration — the card was its last entry point.
+    expect(screen.queryByText('ISKAM')).not.toBeInTheDocument();
     // Erasmus is gone from the phone entirely: it hosted the desktop panel
     // wholesale, whose Learning Agreement tables and Europe map do not survive
     // a narrow screen, and it offered every student a shortcut to something
@@ -56,14 +57,6 @@ describe('StudentScreen', () => {
     render(<StudentScreen />);
     fireEvent.click(screen.getByText('Dokumenty'));
     expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'docs' }]);
-  });
-
-  it('renders the ISKAM shortcut as a real link, not a sheet trigger', () => {
-    render(<StudentScreen />);
-    const link = screen.getByRole('link', { name: /ISKAM/ });
-    expect(link).toHaveAttribute('href', 'https://webiskam.mendelu.cz/');
-    fireEvent.click(link);
-    expect(useAppStore.getState().mobileSheets).toEqual([]);
   });
 
   it('switching to Lidé shows recently searched people', () => {

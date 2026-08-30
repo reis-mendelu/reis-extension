@@ -8,7 +8,7 @@
  * one of these, or a hostile frame can drive the UI by posting our own
  * message shapes at us.
  */
-const TRUSTED_HOST_ORIGINS = ['https://is.mendelu.cz', 'https://webiskam.mendelu.cz'];
+const TRUSTED_HOST_ORIGINS = ['https://is.mendelu.cz'];
 
 /** Extension pages (the app posting to itself) — Chrome and Firefox schemes. */
 const EXTENSION_SCHEMES = ['chrome-extension://', 'moz-extension://'];

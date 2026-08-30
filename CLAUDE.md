@@ -72,14 +72,9 @@ Store uses the **slice pattern**: `src/store/slices/create*Slice.ts` composed in
 
 ## Host Integration Contract
 
-The extension uses a **push-based postMessage IPC** for each injected host. There are exactly two execution contexts: the **content script** (runs on the host page, has auth cookies) and the **iframe app** (chrome-extension:// origin, no auth cookies). Data always flows content script → iframe, never the reverse. Per-host file/role tables and ISKAM behaviors: `src/injector/CLAUDE.md`.
+The extension injects **one** host, `is.mendelu.cz`, over a **push-based postMessage IPC**. There are exactly two execution contexts: the **content script** (runs on the host page, has auth cookies) and the **iframe app** (chrome-extension:// origin, no auth cookies). Data always flows content script → iframe, never the reverse. File/role tables: `src/injector/CLAUDE.md`.
 
-### Isolation rules
-- `useIskamStore` is separate from `useAppStore`. They share only theme/language (via `loadTheme`/`loadLanguage`).
-- `IskamMessages` factory is separate from `Messages` factory. ISKAM message types begin with `ISKAM_`.
-- The ISKAM iframe never calls the WebISKAM API directly. Only the content script calls `fetchDualLanguageIskam()`.
-- IDB writes for ISKAM data happen in the iframe (`IskamApp.tsx`), not in the content script — mirrors IS Mendelu pattern.
-- Adding a new host: create `injector/<host>Injector.ts`, `injector/<host>SyncService.ts`, `injector/<host>MessageHandler.ts`, message types (`ISKAM_*` → `<HOST>_*`), and iframe bootstrap logic.
+A second host (WebISKAM, `webiskam.mendelu.cz`) existed until the integration was removed. If you add another host, `src/injector/CLAUDE.md` has the checklist and the isolation rules it has to satisfy — a separate store, a `<HOST>_*` message family, and its origin added to `utils/trustedOrigin.ts`.
 
 ## Error Reporting & Privacy
 
@@ -89,9 +84,9 @@ The extension uses a **push-based postMessage IPC** for each injected host. Ther
 **Three reporting paths — all funnel to `sendTelemetry`:**
 1. **Automatic** — `installErrorReporter()` catches `window.onerror` and `unhandledrejection` events in the iframe app.
 2. **Explicit** — `logError(...)` at structured `try/catch` sites throughout the codebase.
-3. **Content-script bridge** — content scripts have no Supabase access; they call `sendToIframe(Messages.telemetryError(context, err))` or `sendToIskamIframe(Messages.telemetryError(...))` to route the report through the iframe.
+3. **Content-script bridge** — content scripts have no Supabase access; they call `sendToIframe(Messages.telemetryError(context, err))` to route the report through the iframe.
 
-Context naming convention: `Slice.method`, `Api.fetchX`, `Sync.stepY`, `Iskam.fetchX`, `Parser.parseX`, `useHookName.action`.
+Context naming convention: `Slice.method`, `Api.fetchX`, `Sync.stepY`, `Parser.parseX`, `useHookName.action`.
 
 ### What is (and isn't) transmitted
 

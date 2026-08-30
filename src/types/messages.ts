@@ -71,15 +71,3 @@ export const Messages = {
     message: err instanceof Error ? err.message : String(err),
   }),
 };
-
-export const IskamMessages = {
-  iskamReady: (): T.IskamReadyMessage => ({ type: 'ISKAM_READY' }),
-  iskamSyncUpdate: (
-    iskamData: T.IskamSyncUpdateMessage['data']['iskamData'],
-    isSyncing: boolean,
-    error: T.IskamSyncUpdateMessage['data']['error']
-  ): T.IskamSyncUpdateMessage => ({
-    type: 'ISKAM_SYNC_UPDATE',
-    data: { iskamData, isSyncing, error },
-  }),
-};

@@ -3,28 +3,16 @@ import { logError } from '@/utils/reportError';
 import { getBrowserInfo } from '@/services/errorReporter/sanitize';
 import { getAppVersion } from '@/utils/appIdentity';
 import { IndexedDBService } from '@/services/storage';
-import type { AppView } from '@/types/app';
+import { isAppView, type AppView } from '@/types/app';
 import type { SuggestionDraft, SuggestionPayload, SubmitResult } from '@/types/suggestions';
 
 const ENDPOINT = `${SUPABASE_URL}/functions/v1/submit-suggestion`;
 
-// Exactly the AppView union. The host URL is deliberately NOT sent: on IS it
-// carries studium=/obdobi=/predmet=/termin=, which sanitize.ts redacts wholesale
-// for telemetry. The screen is the useful half with none of the risk.
-const SCREENS: readonly AppView[] = [
-  'calendar',
-  'exams',
-  'settings',
-  'timeline-demo',
-  'subjects',
-  'studyPlan',
-  'erasmus',
-  'iskam-dashboard',
-  'map',
-];
-
+// The host URL is deliberately NOT sent: on IS it carries
+// studium=/obdobi=/predmet=/termin=, which sanitize.ts redacts wholesale for
+// telemetry. The screen is the useful half with none of the risk.
 export function resolveScreen(raw: unknown): AppView {
-  return SCREENS.includes(raw as AppView) ? (raw as AppView) : 'calendar';
+  return isAppView(raw) ? raw : 'calendar';
 }
 
 export function buildSuggestionPayload(draft: SuggestionDraft, screen: AppView): SuggestionPayload {

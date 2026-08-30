@@ -8,12 +8,11 @@ reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enha
 ## Data Collection
 We collect the following information:
 
-### 1. Academic & Dining Data (Local Only)
+### 1. Academic Data (Local Only)
 We fetch and store the following information directly from MENDELU services to your device:
 - **Student Information**: Name, personal number (UIC), and study details.
 - **Academic Data**: Schedules, grades, exam dates, success rates, and course materials.
-- **Dining Data**: Your canteen profile and meal reservations from WebISKAM (`webiskam.mendelu.cz`).
-- **Authentication Data**: Session cookies required to make authenticated requests to IS Mendelu and WebISKAM on your behalf.
+- **Authentication Data**: Session cookies required to make authenticated requests to IS Mendelu on your behalf.
 
 This data is stored **locally on your device** using highly efficient storage (IndexedDB) and is **never** transmitted to our servers.
 
@@ -56,21 +55,20 @@ When an unhandled error or warning occurs in the extension, a sanitized diagnost
 
 ## Third-Party Access
 
-reIS contacts the following services. Only the first two ever receive your academic data, and only because they are the university's own systems.
+reIS contacts the following services. **IS Mendelu is the only one that receives your academic data as a matter of course**, and only because it is the university's own system. Three of the optional features below do send specific academic data when — and only when — you use them: Google Drive receives the course files you choose to back up, Anthropic receives the syllabus you upload plus the MENDELU course details, and Microsoft Bookings receives your name, university email and student ID. Each is described in full at its entry. jsDelivr receives no identifier, but the set of subjects requested does reveal which courses you are enrolled in.
 
 **Always:**
 1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you.
-2. **WebISKAM** (`webiskam.mendelu.cz`) — your canteen profile and meal reservations.
-3. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events and their attendance counts, anonymous usage events, sanitized error reports, and feedback you submit. Identified only by the random installation identifier described above.
-4. **jsDelivr** (`cdn.jsdelivr.net`) — static subject-difficulty data. No identifier is sent, but the set of subjects requested does reveal to the CDN which courses you are enrolled in.
-5. **OpenStreetMap** — campus map tiles.
+2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events and their attendance counts, anonymous usage events, sanitized error reports, and feedback you submit. Identified only by the random installation identifier described above.
+3. **jsDelivr** (`cdn.jsdelivr.net`) — static subject-difficulty data. No identifier is sent, but the set of subjects requested does reveal to the CDN which courses you are enrolled in.
+4. **OpenStreetMap** — campus map tiles.
 
 **Only when you use the relevant feature:**
-6. **Google** (`googleapis.com`, `google.com`) — if you enable Drive backup, your IS course files are copied to **your own** Google Drive. The permission requested is `drive.file`, which grants access only to files reIS itself creates.
-7. **Microsoft Bookings** (`bookings.cloud.microsoft`, via reIS's server) — only if you book a library study room. The **name, university email address and student ID** you confirm in the booking dialog are passed on, because the library's system requires all three to hold a reservation in your name; the student ID is a required field on the library's own form. reIS keeps none of it and sends nothing at any other time — browsing live room availability transmits nothing about you.
-8. **Anthropic** (`anthropic.com`, via reIS's server) — if you use Erasmus syllabus comparison, the **PDF you choose to upload** and the MENDELU course details are sent for analysis. The document this feature asks for is a foreign course **syllabus** — a public course description, not a personal record — and the app says so at the point you pick the file. Nothing is uploaded unless you choose a file.
-9. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
-10. **Photon** (`photon.komoot.io`) — venue search, used only by student-society administrators when creating an event.
+5. **Google** (`googleapis.com`, `google.com`) — if you enable Drive backup, your IS course files are copied to **your own** Google Drive. The permission requested is `drive.file`, which grants access only to files reIS itself creates.
+6. **Microsoft Bookings** (`bookings.cloud.microsoft`, via reIS's server) — only if you book a library study room. The **name, university email address and student ID** you confirm in the booking dialog are passed on, because the library's system requires all three to hold a reservation in your name; the student ID is a required field on the library's own form. reIS keeps none of it and sends nothing at any other time — browsing live room availability transmits nothing about you.
+7. **Anthropic** (`anthropic.com`, via reIS's server) — if you use Erasmus syllabus comparison, the **PDF you choose to upload** and the MENDELU course details are sent for analysis. The document this feature asks for is a foreign course **syllabus** — a public course description, not a personal record — and the app says so at the point you pick the file. Nothing is uploaded unless you choose a file.
+8. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
+9. **Photon** (`photon.komoot.io`) — venue search, used only by student-society administrators when creating an event.
 
 **Links you open yourself** (Teams, Outlook, geteduroam, society websites) are handed to your browser or the relevant app. reIS makes no background request to them.
 

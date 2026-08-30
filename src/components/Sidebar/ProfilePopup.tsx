@@ -10,7 +10,6 @@ import { GoogleDriveToggle } from './Profile/GoogleDriveToggle';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
-import { useIskamStore } from '../../store/iskamStore';
 import { User, Mail, Hash } from 'lucide-react';
 import { logout } from '../../api/proxyClient';
 import { HiddenItemsSection } from './Profile/HiddenItemsSection';
@@ -19,20 +18,15 @@ export function ProfilePopup({
   isOpen,
   onOpenFeedback,
   onClose,
-  isIskam,
 }: {
   isOpen: boolean;
   onOpenFeedback?: () => void;
   onClose?: () => void;
-  isIskam?: boolean;
 }) {
   const { isEnabled, isLoading: syncLoading, toggle: tSync } = useOutlookSync(),
     { isDark, isLoading: tLoading, toggle: tTheme } = useTheme(),
     { isSubscribed, toggleAssociation } = useSpolkySettings(),
     [spolkyOpen, setSpolkyOpen] = useState(false);
-  const data = useIskamStore((s) => s.data);
-  const iskamProfile = data?.profile;
-
   const { t } = useTranslation();
   const language = useAppStore((state) => state.language);
   const setLanguage = useAppStore((state) => state.setLanguage);
@@ -53,7 +47,7 @@ export function ProfilePopup({
           <h3 className="font-bold text-base mb-3 ">{t('sidebar.profile')}</h3>
 
           {/* IS MENDELU Profile Info */}
-          {params && !isIskam && (
+          {params && (
             <div className="flex flex-col gap-2.5 text-xs">
               <div className="flex items-center gap-3 text-base-content/90">
                 <User size={16} className="text-base-content/40" />
@@ -72,22 +66,6 @@ export function ProfilePopup({
                   {params.studentId}
                 </span>
               </div>
-            </div>
-          )}
-
-          {/* WebISKAM Profile Info */}
-          {isIskam && iskamProfile && (
-            <div className="flex flex-col gap-2.5 text-xs">
-              <div className="flex items-center gap-3 text-base-content/90">
-                <User size={16} className="text-base-content/40" />
-                <span className="font-semibold text-sm truncate">{iskamProfile.fullName}</span>
-              </div>
-              {iskamProfile.email && (
-                <div className="flex items-center gap-3 text-base-content/60">
-                  <Mail size={16} className="text-base-content/30" />
-                  <span className="truncate opacity-80">{iskamProfile.email}</span>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -143,27 +121,25 @@ export function ProfilePopup({
               onChange={(e) => setErrorReportingEnabled(e.target.checked)}
             />
           </label>
-          {!isIskam && <HiddenItemsSection />}
+          <HiddenItemsSection />
         </div>
 
-        {/* Services Section - Hidden in ISKAM */}
-        {!isIskam && (
-          <div className="py-1 border-b border-base-200">
-            <SpolkySection
-              expanded={spolkyOpen}
-              onToggle={() => setSpolkyOpen(!spolkyOpen)}
-              isSub={isSubscribed}
-              onToggleAssoc={toggleAssociation}
-              onNavigate={onClose}
-            />
-            <OutlookSyncToggle enabled={isEnabled} loading={syncLoading} onToggle={tSync} />
-            <GoogleDriveToggle />
-          </div>
-        )}
+        {/* Services Section */}
+        <div className="py-1 border-b border-base-200">
+          <SpolkySection
+            expanded={spolkyOpen}
+            onToggle={() => setSpolkyOpen(!spolkyOpen)}
+            isSub={isSubscribed}
+            onToggleAssoc={toggleAssociation}
+            onNavigate={onClose}
+          />
+          <OutlookSyncToggle enabled={isEnabled} loading={syncLoading} onToggle={tSync} />
+          <GoogleDriveToggle />
+        </div>
 
         {/* Support Section */}
         <div className="py-1">
-          {!isIskam && onOpenFeedback && (
+          {onOpenFeedback && (
             <button
               onClick={onOpenFeedback}
               className="w-full flex items-center gap-3 px-1 py-1.5 hover:bg-base-200 rounded-lg transition-colors"
