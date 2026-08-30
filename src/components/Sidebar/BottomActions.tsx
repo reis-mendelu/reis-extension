@@ -1,16 +1,10 @@
 import { useRef, useState, useEffect } from 'react';
 import { Settings } from 'lucide-react';
-import { OUTLOOK_ICON_PATH, TEAMS_ICON_PATH, ISKAM_ICON_PATH } from '../../constants/icons';
+import { OUTLOOK_ICON_PATH, TEAMS_ICON_PATH } from '../../constants/icons';
 import { ProfilePopup } from './ProfilePopup';
 import { useTranslation } from '../../hooks/useTranslation';
 
-export function BottomActions({
-  onOpenFeedback,
-  isIskam,
-}: {
-  onOpenFeedback?: () => void;
-  isIskam?: boolean;
-}) {
+export function BottomActions({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -34,21 +28,6 @@ export function BottomActions({
 
   return (
     <div className="flex flex-col gap-2 mb-2 w-full px-2 items-center relative" ref={ref}>
-      {!isIskam && (
-        <a
-          href="https://webiskam.mendelu.cz/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-12 h-auto py-2 rounded-xl flex flex-col items-center justify-center text-base-content/50 hover:bg-base-100 hover:text-info group"
-        >
-          <img
-            src={ISKAM_ICON_PATH}
-            alt="ISKAM"
-            className="w-8 h-8 group-hover:scale-110 transition-transform"
-          />
-          <span className="text-[10px] mt-1 font-medium">ISKAM</span>
-        </a>
-      )}
       <a
         href="https://teams.microsoft.com"
         target="_blank"
@@ -91,7 +70,6 @@ export function BottomActions({
               onOpenFeedback?.();
             }}
             onClose={() => setIsOpen(false)}
-            isIskam={isIskam}
           />
         </div>
       </div>

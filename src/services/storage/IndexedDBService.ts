@@ -15,7 +15,6 @@ import type { CvicnyTest } from '../../api/cvicneTests';
 import type { Odevzdavarna } from '../../api/odevzdavarny';
 import type { ErasmusCountryData } from '../../types/erasmus';
 import type { HiddenItems, CalendarCustomEvent } from '../../types/calendarTypes';
-import type { IskamData } from '../../types/iskam';
 import type { SubjectZaznamnik } from '../../types/zaznamnik';
 import { StoreSchemas, type StoreName } from '../../types/storage';
 
@@ -96,10 +95,6 @@ interface ReisDB extends DBSchema {
     key: string;
     value: CalendarCustomEvent;
   };
-  iskam: {
-    key: string;
-    value: IskamData;
-  };
   zaznamnik: {
     key: string;
     value: SubjectZaznamnik | null; // Key is courseCode
@@ -119,7 +114,7 @@ interface ReisDB extends DBSchema {
 // hydrate on the next real-data boot. The production extension never sets the
 // flag, so it always uses `reis_db`.
 const DB_NAME = import.meta.env.VITE_USE_MOCK_DATA === 'true' ? 'reis_db_mock' : 'reis_db';
-const DB_VERSION = 21;
+const DB_VERSION = 22;
 
 // True for the "database connection is closing" / InvalidStateError family that
 // a stale handle throws after the underlying connection was closed.
@@ -159,7 +154,6 @@ class IndexedDBServiceImpl {
             'note_images',
             'hidden_items',
             'custom_events',
-            'iskam',
             'zaznamnik',
             'map_rooms',
           ];
@@ -169,6 +163,21 @@ class IndexedDBServiceImpl {
             if (!db.objectStoreNames.contains(store as any)) {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               db.createObjectStore(store as any);
+            }
+          });
+
+          // Stores for features that were removed. Dropping the store is not
+          // housekeeping: an upgrade that only ever creates would leave the
+          // last WebISKAM snapshot — dorm contract, room number, meal
+          // transactions — sitting in IndexedDB forever on every existing
+          // install, with nothing left in the app that could ever show or
+          // clear it. v22 removed the ISKAM integration.
+          const droppedStores = ['iskam'];
+          droppedStores.forEach((store) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            if (db.objectStoreNames.contains(store as any)) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              db.deleteObjectStore(store as any);
             }
           });
         },

@@ -569,7 +569,7 @@ export interface DemoSlice {
   /**
    * True only in the Capacitor app, and only when someone chose the demo from
    * the sign-in gate. Defaults false everywhere, which is what keeps the
-   * extension and ISKAM builds untouched without a build flag.
+   * extension build untouched without a build flag.
    */
   demoMode: boolean;
   enterDemo(): Promise<void>;

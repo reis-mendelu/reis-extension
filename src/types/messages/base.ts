@@ -1,5 +1,4 @@
 import type { DualLanguageStudyPlan, StudyStats, StudyComparison } from '../studyPlan';
-import type { IskamData } from '../iskam';
 import type { SubjectZaznamnik } from '../zaznamnik';
 
 export type DataRequestType = 'schedule' | 'exams' | 'subjects' | 'files' | 'all';
@@ -125,30 +124,6 @@ export interface NavMenuMessage {
   }[];
 }
 
-export interface IskamReadyMessage {
-  type: 'ISKAM_READY';
-}
-export interface IskamSyncUpdateMessage {
-  type: 'ISKAM_SYNC_UPDATE';
-  data: {
-    iskamData: IskamData | null;
-    isSyncing: boolean;
-    error: 'auth' | 'network' | null;
-  };
-}
-export interface IskamFetchBlockMessage {
-  type: 'ISKAM_FETCH_BLOCK';
-  id: string;
-  blockId: string;
-  od: string;
-  doo: string;
-}
-export interface IskamBlockResultMessage {
-  type: 'ISKAM_BLOCK_RESULT';
-  id: string;
-  rooms: import('../iskam').VolneKapacityRoom[];
-}
-
 // Sent by content scripts to route explicit error telemetry through the iframe
 // (which has Supabase access). Context must contain no student data.
 export interface TelemetryErrorMessage {
@@ -158,12 +133,7 @@ export interface TelemetryErrorMessage {
 }
 
 export type IframeToContentMessage =
-  | ReadyMessage
-  | RequestDataMessage
-  | FetchRequestMessage
-  | ActionRequestMessage
-  | IskamReadyMessage
-  | IskamFetchBlockMessage;
+  ReadyMessage | RequestDataMessage | FetchRequestMessage | ActionRequestMessage;
 export type ContentToIframeMessage =
   | DataResponseMessage
   | FetchResultMessage
@@ -171,6 +141,4 @@ export type ContentToIframeMessage =
   | SyncUpdateMessage
   | PopupStateMessage
   | NavMenuMessage
-  | IskamSyncUpdateMessage
-  | IskamBlockResultMessage
   | TelemetryErrorMessage;

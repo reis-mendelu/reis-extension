@@ -15,7 +15,6 @@ import { DocumentNoteSchema } from './schemas/documentNotes.schema';
 import { SyllabusSchema } from './schemas/syllabus.schema';
 import { RoomsCollectionSchema } from './schemas/mapRooms.schema';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
-import type { IskamData } from './iskam';
 import type { SubjectZaznamnik } from './zaznamnik';
 
 // --- Base Types using Zod ---
@@ -75,67 +74,6 @@ export const NoteImageSchema = z.object({
   createdAt: z.number(),
 });
 
-// 'iskam' store - WebISKAM dashboard snapshot (konta + ubytovani + freshness)
-export const IskamDataSchema = z.object({
-  konta: z.array(
-    z.object({
-      name: z.string(),
-      nameCs: z.string().optional(),
-      nameEn: z.string().optional(),
-      balance: z.number(),
-      balanceText: z.string(),
-      topUpHref: z.string().nullable(),
-      transactionsHref: z.string().nullable(),
-    })
-  ),
-  ubytovani: z.array(
-    z.object({
-      dorm: z.string(),
-      block: z.string(),
-      room: z.string(),
-      startDate: z.string(),
-      endDate: z.string(),
-      status: z.string(),
-      contractHref: z.string().nullable(),
-    })
-  ),
-  profile: z
-    .object({
-      fullName: z.string(),
-      email: z.string(),
-    })
-    .optional(),
-  reservations: z.array(
-    z.object({
-      facility: z.string(),
-      room: z.string(),
-      startDate: z.string(),
-      endDate: z.string(),
-      price: z.string().optional(),
-    })
-  ),
-  pendingPayments: z.array(
-    z.object({
-      dueDate: z.string(),
-      description: z.string(),
-      amount: z.string(),
-    })
-  ),
-  foodTransactions: z.array(
-    z.object({
-      datetime: z.string(),
-      settledDate: z.string(),
-      type: z.string(),
-      description: z.string(),
-      topUp: z.number().nullable(),
-      payment: z.number().nullable(),
-      balance: z.number(),
-    })
-  ),
-  lastTopUp: z.number().nullable(),
-  syncedAt: z.number(),
-}) as z.ZodType<IskamData>;
-
 // 'zaznamnik' store - PH + VT assessment data per subject (nullable on parse failure)
 const PhArchSchema = z.object({
   name: z.string(),
@@ -191,7 +129,6 @@ export const StoreSchemas = {
   erasmus: ErasmusCountryDataSchema,
   document_notes: DocumentNoteSchema,
   note_images: NoteImageSchema,
-  iskam: IskamDataSchema,
   zaznamnik: ZaznamnikSchema,
   map_rooms: RoomsCollectionSchema,
 };

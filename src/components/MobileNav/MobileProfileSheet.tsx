@@ -9,7 +9,6 @@ import { SpolkySection } from '../Sidebar/Profile/SpolkySection';
 import { OutlookSyncToggle } from '../Sidebar/Profile/OutlookSyncToggle';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
-import { useIskamStore } from '../../store/iskamStore';
 import { useUserParams } from '../../hooks/useUserParams';
 import { logout } from '../../api/proxyClient';
 
@@ -17,15 +16,9 @@ interface MobileProfileSheetProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenFeedback?: () => void;
-  isIskam?: boolean;
 }
 
-export function MobileProfileSheet({
-  isOpen,
-  onClose,
-  onOpenFeedback,
-  isIskam,
-}: MobileProfileSheetProps) {
+export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback }: MobileProfileSheetProps) {
   const { isEnabled, isLoading: syncLoading, toggle: tSync } = useOutlookSync();
   const { isDark, isLoading: tLoading, toggle: tTheme } = useTheme();
   const { isSubscribed, toggleAssociation } = useSpolkySettings();
@@ -36,9 +29,6 @@ export function MobileProfileSheet({
   const errorReportingEnabled = useAppStore((state) => state.errorReportingEnabled);
   const setErrorReportingEnabled = useAppStore((state) => state.setErrorReportingEnabled);
   const { params } = useUserParams();
-
-  const data = useIskamStore((s) => s.data);
-  const iskamProfile = data?.profile;
 
   return (
     <AnimatePresence>
@@ -66,7 +56,7 @@ export function MobileProfileSheet({
                 <h3 className="font-bold text-base mb-3">{t('sidebar.profile')}</h3>
 
                 {/* IS MENDELU Profile Info */}
-                {params && !isIskam && (
+                {params && (
                   <div className="flex flex-col gap-2.5 text-xs">
                     <div className="flex items-center gap-3 text-base-content/90">
                       <User size={16} className="text-base-content/40" />
@@ -85,24 +75,6 @@ export function MobileProfileSheet({
                         {params.studentId}
                       </span>
                     </div>
-                  </div>
-                )}
-
-                {/* WebISKAM Profile Info */}
-                {isIskam && iskamProfile && (
-                  <div className="flex flex-col gap-2.5 text-xs">
-                    <div className="flex items-center gap-3 text-base-content/90">
-                      <User size={16} className="text-base-content/40" />
-                      <span className="font-semibold text-sm truncate">
-                        {iskamProfile.fullName}
-                      </span>
-                    </div>
-                    {iskamProfile.email && (
-                      <div className="flex items-center gap-3 text-base-content/60">
-                        <Mail size={16} className="text-base-content/30" />
-                        <span className="truncate opacity-80">{iskamProfile.email}</span>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -160,21 +132,19 @@ export function MobileProfileSheet({
                 </label>
               </div>
 
-              {!isIskam && (
-                <div className="py-1 border-b border-base-200">
-                  <SpolkySection
-                    expanded={spolkyOpen}
-                    onToggle={() => setSpolkyOpen(!spolkyOpen)}
-                    isSub={isSubscribed}
-                    onToggleAssoc={toggleAssociation}
-                    onNavigate={onClose}
-                  />
-                  <OutlookSyncToggle enabled={isEnabled} loading={syncLoading} onToggle={tSync} />
-                </div>
-              )}
+              <div className="py-1 border-b border-base-200">
+                <SpolkySection
+                  expanded={spolkyOpen}
+                  onToggle={() => setSpolkyOpen(!spolkyOpen)}
+                  isSub={isSubscribed}
+                  onToggleAssoc={toggleAssociation}
+                  onNavigate={onClose}
+                />
+                <OutlookSyncToggle enabled={isEnabled} loading={syncLoading} onToggle={tSync} />
+              </div>
 
               <div className="py-1">
-                {!isIskam && onOpenFeedback && (
+                {onOpenFeedback && (
                   <button
                     onClick={() => {
                       onClose();

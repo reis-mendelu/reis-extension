@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { IskamDataSchema } from '../storage';
 
 /**
  * Runtime schemas for the cross-context postMessage boundary (content script ↔
@@ -68,22 +67,12 @@ const ActionRequestMsg = z.object({
   action: actionType,
   payload: z.unknown(),
 });
-const IskamReadyMsg = z.object({ type: z.literal('ISKAM_READY') });
-const IskamFetchBlockMsg = z.object({
-  type: z.literal('ISKAM_FETCH_BLOCK'),
-  id: z.string(),
-  blockId: z.string(),
-  od: z.string(),
-  doo: z.string(),
-});
 
 export const IframeToContentSchema = z.discriminatedUnion('type', [
   ReadyMsg,
   RequestDataMsg,
   FetchRequestMsg,
   ActionRequestMsg,
-  IskamReadyMsg,
-  IskamFetchBlockMsg,
 ]);
 
 // ── Content → Iframe ────────────────────────────────────────────────────────
@@ -127,23 +116,6 @@ const NavCategory = z.object({
   children: z.array(NavChild),
 });
 const NavMenuMsg = z.object({ type: z.literal('REIS_NAV_MENU'), categories: z.array(NavCategory) });
-const IskamSyncUpdateMsg = z.object({
-  type: z.literal('ISKAM_SYNC_UPDATE'),
-  data: z.object({
-    // Reuses the store's IskamDataSchema — safe because it's a single
-    // coherent object gated identically at the IDB 'iskam' boundary, so no
-    // data that currently reaches IDB is newly dropped here. Nullable: the
-    // payload carries null before the first successful ISKAM sync.
-    iskamData: IskamDataSchema.nullable(),
-    isSyncing: z.boolean(),
-    error: z.enum(['auth', 'network']).nullable(),
-  }),
-});
-const IskamBlockResultMsg = z.object({
-  type: z.literal('ISKAM_BLOCK_RESULT'),
-  id: z.string(),
-  rooms: z.array(z.unknown()),
-});
 const TelemetryErrorMsg = z.object({
   type: z.literal('REIS_TELEMETRY_ERROR'),
   context: z.string(),
@@ -157,7 +129,5 @@ export const ContentToIframeSchema = z.discriminatedUnion('type', [
   SyncUpdateMsg,
   PopupStateMsg,
   NavMenuMsg,
-  IskamSyncUpdateMsg,
-  IskamBlockResultMsg,
   TelemetryErrorMsg,
 ]);

@@ -19,10 +19,9 @@ const OPENABLE_PROTOCOL = /^https?:$/;
  * The one host whose pages need the session the app holds.
  *
  * `capacitorTransport` replays the student's UISAuth into the app's own WebView
- * jar, and only the in-app view can see it. Everything else — WebISKAM, which
- * is a separate Shibboleth sign-in, and any third-party link — gains nothing
- * from staying inside the app and is better off in the browser the student
- * actually uses.
+ * jar, and only the in-app view can see it. Any third-party link gains
+ * nothing from staying inside the app and is better off in the browser the
+ * student actually uses.
  */
 const NEEDS_APP_SESSION = /^is\.mendelu\.cz$/i;
 

@@ -19,7 +19,6 @@ const SCREENS: readonly AppView[] = [
   'subjects',
   'studyPlan',
   'erasmus',
-  'iskam-dashboard',
   'map',
 ];
 

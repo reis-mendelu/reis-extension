@@ -15,7 +15,6 @@ interface MobileBottomNavProps {
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string) => void;
   items?: MenuItem[];
   tabs?: { id: string; label: string; icon: React.ReactNode }[];
-  isIskam?: boolean;
 }
 
 const TAB_ICONS: Record<string, React.ReactNode> = {
@@ -25,7 +24,14 @@ const TAB_ICONS: Record<string, React.ReactNode> = {
   is: <User className="w-5 h-5" />,
 };
 
-export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onOpenSubject, items, tabs: customTabs, isIskam }: MobileBottomNavProps) {
+export function MobileBottomNav({
+  currentView,
+  onViewChange,
+  onOpenFeedback,
+  onOpenSubject,
+  items,
+  tabs: customTabs,
+}: MobileBottomNavProps) {
   const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const hookItems = useMenuItems();
@@ -34,37 +40,31 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
   const keyboardOpen = useAppStore((s) => s.keyboardOpen);
 
   const viceMenuItem: MenuItem = {
-      id: 'vice',
-      label: t('sidebar.more'),
-      icon: <Settings className="w-5 h-5" />,
-      children: [
-          {
-              id: 'iskam-link',
-              label: 'ISKAM',
-              href: 'https://webiskam.mendelu.cz/',
-          },
-          {
-              id: 'teams-link',
-              label: 'Teams',
-              href: 'https://teams.microsoft.com',
-          },
-          {
-              id: 'outlook-link',
-              label: 'Outlook',
-              href: 'https://outlook.office.com',
-          },
-          {
-              id: 'profile-action',
-              label: t('sidebar.profile'),
-              isFeature: true,
-          }
-      ]
+    id: 'vice',
+    label: t('sidebar.more'),
+    icon: <Settings className="w-5 h-5" />,
+    children: [
+      {
+        id: 'teams-link',
+        label: 'Teams',
+        href: 'https://teams.microsoft.com',
+      },
+      {
+        id: 'outlook-link',
+        label: 'Outlook',
+        href: 'https://outlook.office.com',
+      },
+      {
+        id: 'profile-action',
+        label: t('sidebar.profile'),
+        isFeature: true,
+      },
+    ],
   };
 
   // Derive current sheet item from activeSheetId
-  const sheetItem = activeSheetId === 'vice' 
-    ? viceMenuItem 
-    : menuItems.find(m => m.id === activeSheetId) || null;
+  const sheetItem =
+    activeSheetId === 'vice' ? viceMenuItem : menuItems.find((m) => m.id === activeSheetId) || null;
 
   const tabs = customTabs || [
     { id: 'dashboard', label: t('sidebar.dashboard'), icon: TAB_ICONS.dashboard },
@@ -77,20 +77,18 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
   const handleTabClick = (tabId: string) => {
     if (tabId === 'dashboard') {
       onViewChange('calendar');
-    } else if (tabId === 'iskam-dashboard') {
-      onViewChange('iskam-dashboard');
     } else if (tabId === 'exams') {
       onViewChange('exams');
     } else if (tabId === 'subjects') {
       onViewChange('subjects');
     } else if (tabId === 'is') {
-       setActiveSheetId('is');
+      setActiveSheetId('is');
     } else if (tabId === 'profile') {
       setProfileOpen(true);
     } else if (tabId === 'vice') {
-       setActiveSheetId('vice');
+      setActiveSheetId('vice');
     } else {
-      const item = menuItems.find(m => m.id === tabId);
+      const item = menuItems.find((m) => m.id === tabId);
       if (item?.expandable) {
         setActiveSheetId(item.id);
       }
@@ -99,7 +97,6 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
 
   const isActive = (tabId: string) => {
     if (tabId === 'dashboard') return currentView === 'calendar';
-    if (tabId === 'iskam-dashboard') return currentView === 'iskam-dashboard';
     if (tabId === 'exams') return currentView === 'exams';
     if (tabId === 'subjects') return currentView === 'subjects' || currentView === 'studyPlan';
     if (tabId === 'is') return activeSheetId === 'is';
@@ -108,7 +105,7 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
   };
 
   const getBadge = (tabId: string) => {
-    return menuItems.find(m => m.id === tabId)?.badge;
+    return menuItems.find((m) => m.id === tabId)?.badge;
   };
 
   return (
@@ -118,24 +115,25 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
         style={{ paddingBottom: 'var(--safe-bottom, 0px)' }}
       >
         <div className="flex items-center justify-around h-16 px-1 w-full">
-          {tabs.map(tab => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => handleTabClick(tab.id)}
               className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
-                isActive(tab.id)
-                  ? 'text-primary'
-                  : 'text-base-content/50 active:text-base-content'
+                isActive(tab.id) ? 'text-primary' : 'text-base-content/50 active:text-base-content'
               }`}
             >
               <div className="relative flex items-center justify-center z-10">
                 {tab.icon}
                 {getBadge(tab.id) !== undefined && (
-                  <span className={`absolute -top-2 -right-3 font-medium px-1 rounded text-[9px] leading-[14px] transition-all
-                    ${(getBadge(tab.id) ?? 0) > 0 
-                      ? 'bg-neutral text-neutral-content' 
-                      : 'bg-base-content/10 text-base-content/50'
-                    }`}>
+                  <span
+                    className={`absolute -top-2 -right-3 font-medium px-1 rounded text-[9px] leading-[14px] transition-all
+                    ${
+                      (getBadge(tab.id) ?? 0) > 0
+                        ? 'bg-neutral text-neutral-content'
+                        : 'bg-base-content/10 text-base-content/50'
+                    }`}
+                  >
                     {getBadge(tab.id)}
                   </span>
                 )}
@@ -158,7 +156,6 @@ export function MobileBottomNav({ currentView, onViewChange, onOpenFeedback, onO
         isOpen={profileOpen}
         onClose={() => setProfileOpen(false)}
         onOpenFeedback={onOpenFeedback}
-        isIskam={isIskam}
       />
     </>
   );

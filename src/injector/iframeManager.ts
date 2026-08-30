@@ -58,8 +58,7 @@ export function injectIframe() {
  * The extension's own origin. Every message on this channel carries the
  * student's IS dataset — grades, schedule, exams, classmates, documents — so it
  * is pinned rather than broadcast. With `'*'`, any script on the host page that
- * could retarget the iframe's `src` would receive all of it. The ISKAM channel
- * has always pinned its origin this way; this path simply had not.
+ * could retarget the iframe's `src` would receive all of it.
  */
 const IFRAME_ORIGIN = chrome.runtime.getURL('').replace(/\/$/, '');
 

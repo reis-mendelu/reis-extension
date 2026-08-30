@@ -103,11 +103,11 @@ const files = walk(SRC).map((f) => ({ path: relative(ROOT, f), text: readFileSyn
  * Anthropic, Google, Microsoft, Komoot and a personal HuggingFace Space while
  * PRIVACY.md claimed it spoke "exclusively" to IS Mendelu, WebISKAM and
  * Supabase. Adding a destination now means adding it here AND to PRIVACY.md.
+ * WebISKAM left the list when the integration was removed.
  */
 const ALLOWED_HOSTS = [
   // --- reIS's own / the university's ---
   'is.mendelu.cz',
-  'webiskam.mendelu.cz',
   'mendelu.cz',
   'supabase.co',
 

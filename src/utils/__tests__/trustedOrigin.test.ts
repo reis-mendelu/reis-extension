@@ -2,12 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { isTrustedHostOrigin } from '../trustedOrigin';
 
 describe('isTrustedHostOrigin', () => {
-  it.each(['https://is.mendelu.cz', 'https://webiskam.mendelu.cz'])(
-    'accepts the injected host %s',
-    (origin) => {
-      expect(isTrustedHostOrigin(origin, false)).toBe(true);
-    }
-  );
+  it('accepts the injected host', () => {
+    expect(isTrustedHostOrigin('https://is.mendelu.cz', false)).toBe(true);
+  });
 
   it('accepts the extension itself', () => {
     expect(isTrustedHostOrigin('chrome-extension://abcdef', false)).toBe(true);
@@ -16,6 +13,10 @@ describe('isTrustedHostOrigin', () => {
 
   it.each([
     'https://evil.example',
+    // Was trusted while reIS injected an iframe there. The WebISKAM
+    // integration is gone, so the origin must no longer be able to post
+    // messages into the app.
+    'https://webiskam.mendelu.cz',
     'https://is.mendelu.cz.evil.example',
     'http://is.mendelu.cz',
     'https://sub.is.mendelu.cz',

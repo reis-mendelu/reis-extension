@@ -1,11 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { ContentToIframeSchema } from '../schema';
 
-// Exercises the two payloads deepened in Tier 1 #2a: REIS_SYNC_UPDATE.data
-// (SyncedData, coarse shape guards) and ISKAM_SYNC_UPDATE.data.iskamData
-// (reuses the strict store IskamDataSchema). The load-bearing property is
-// fail-closed safety: these must NEVER reject a real payload (whole-payload
-// blast radius = empty app), while still catching gross corruption.
+// Exercises REIS_SYNC_UPDATE.data (SyncedData, coarse shape guards), deepened
+// in Tier 1 #2a. The load-bearing property is fail-closed safety: it must
+// NEVER reject a real payload (whole-payload blast radius = empty app), while
+// still catching gross corruption.
 
 const parse = (m: unknown) => ContentToIframeSchema.safeParse(m).success;
 
@@ -23,16 +22,6 @@ const realSync = {
     subjects: { anyShape: true },
     studyPlan: { cz: {}, en: {} },
   },
-};
-
-const validIskamData = {
-  konta: [],
-  ubytovani: [],
-  reservations: [],
-  pendingPayments: [],
-  foodTransactions: [],
-  lastTopUp: null,
-  syncedAt: 0,
 };
 
 describe('REIS_SYNC_UPDATE (SyncedData) schema', () => {
@@ -63,24 +52,5 @@ describe('REIS_SYNC_UPDATE (SyncedData) schema', () => {
 
   it('rejects gross corruption: lastSync is not a number', () => {
     expect(parse({ type: 'REIS_SYNC_UPDATE', data: { lastSync: 'soon' } })).toBe(false);
-  });
-});
-
-describe('ISKAM_SYNC_UPDATE (iskamData) schema', () => {
-  const msg = (iskamData: unknown) => ({
-    type: 'ISKAM_SYNC_UPDATE',
-    data: { iskamData, isSyncing: false, error: null },
-  });
-
-  it('accepts valid IskamData', () => {
-    expect(parse(msg(validIskamData))).toBe(true);
-  });
-
-  it('accepts null iskamData (pre-first-sync state)', () => {
-    expect(parse(msg(null))).toBe(true);
-  });
-
-  it('rejects gross corruption: iskamData is a string', () => {
-    expect(parse(msg('nope'))).toBe(false);
   });
 });

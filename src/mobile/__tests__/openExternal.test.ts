@@ -54,8 +54,8 @@ describe('externalHrefFromClick', () => {
     expect(externalHrefFromClick(ev)).toBe('https://is.mendelu.cz/auth/dok_server/');
   });
 
-  // ShortcutGrid's ISKAM card wraps an icon and two spans — the click always
-  // lands on a descendant, never the anchor itself.
+  // Shortcut cards wrap an icon and two spans — the click always lands on a
+  // descendant, never the anchor itself.
   it('resolves from a click on a nested child', () => {
     const child = anchor(
       { href: 'https://webiskam.mendelu.cz/', target: '_blank' },
@@ -237,7 +237,9 @@ describe('openExternal — which browser', () => {
   });
 
   it.each([
-    ['https://webiskam.mendelu.cz/', 'a separate Shibboleth sign-in'],
+    // A mendelu host that is NOT the session host: guards NEEDS_APP_SESSION
+    // staying an exact match rather than a mendelu.cz suffix match.
+    ['https://webiskam.mendelu.cz/', 'another mendelu host'],
     ['https://esn.mendelu.cz/event', 'a society page'],
     ['https://example.org/whatever', 'a third party'],
   ])('sends %s to the real browser (%s)', async (url) => {
