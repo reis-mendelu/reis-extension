@@ -254,6 +254,98 @@ describe('openExternal — which browser', () => {
   });
 });
 
+describe('openExternal — the in-app browser needs the session on the request', () => {
+  const openWebView = vi.fn();
+  const open = vi.fn();
+  const setCookie = vi.fn();
+
+  beforeEach(() => {
+    setAppOrigin();
+    vi.clearAllMocks();
+    vi.resetModules();
+    vi.mocked(getPlatform).mockReturnValue({
+      kind: 'capacitor',
+    } as unknown as ReturnType<typeof getPlatform>);
+    vi.doMock('@capgo/capacitor-inappbrowser', () => ({
+      InAppBrowser: { openWebView, open },
+    }));
+    vi.doMock('@capacitor/core', () => ({ CapacitorCookies: { setCookie } }));
+    vi.doMock('../../platform/tokenStore', () => ({
+      loadStoredToken: vi.fn(async () => 'TOKEN123'),
+    }));
+  });
+
+  afterEach(() => {
+    vi.doUnmock('@capacitor/core');
+    vi.doUnmock('../../platform/tokenStore');
+  });
+
+  // The defect this exists for: `buildCookieDelivery` seeds a cookie jar on
+  // ANDROID only — on iOS the session travels as a per-request `Cookie` HEADER,
+  // which only the native transport sends. The in-app WebView makes its own
+  // requests, so it reached IS with no session and the student was asked to
+  // sign in again to read their own document.
+  it('sends the session as a request header when opening IS', async () => {
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
+
+    expect(openWebView).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'https://is.mendelu.cz/auth/student/moje_studium.pl',
+        headers: { Cookie: 'UISAuth=TOKEN123' },
+      })
+    );
+  });
+
+  // Writing the cookie into a jar was the obvious fix and the wrong one: capgo
+  // gives its WebView a separate persistent store on iOS 17+, while
+  // CapacitorCookies writes to the host app's — a jar this WebView never reads.
+  it('does not write to the host app cookie jar, which this WebView cannot see', async () => {
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
+
+    expect(setCookie).not.toHaveBeenCalled();
+  });
+
+  // A third party has no business receiving the student's IS session, and it
+  // goes to the system browser, which takes no headers from us at all.
+  it('sends no session to a third-party link', async () => {
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://example.org/whatever');
+
+    expect(open).toHaveBeenCalledWith({ url: 'https://example.org/whatever' });
+    expect(openWebView).not.toHaveBeenCalled();
+  });
+
+  // The app's configs block cleartext HTTP today, but that is a platform
+  // setting in a different file: an ATS exception or a plugin default changed
+  // later must not turn this into the student's session sent in the clear.
+  it('never attaches the session over plain http', async () => {
+    const { openExternal } = await import('../openExternal');
+    await openExternal('http://is.mendelu.cz/auth/student/moje_studium.pl');
+
+    expect(openWebView).toHaveBeenCalledWith(
+      expect.not.objectContaining({ headers: expect.anything() })
+    );
+  });
+
+  // Losing the session must not swallow the tap: with no token the WebView
+  // shows IS's login page, which is the correct outcome, not a dead button.
+  it('still opens IS when there is no token, with no Cookie header', async () => {
+    vi.doMock('../../platform/tokenStore', () => ({
+      loadStoredToken: vi.fn(async () => {
+        throw new Error('no token');
+      }),
+    }));
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
+
+    expect(openWebView).toHaveBeenCalledWith(
+      expect.not.objectContaining({ headers: expect.anything() })
+    );
+  });
+});
+
 describe('installExternalLinkHandler in demo mode', () => {
   // The click handler used to fire-and-forget with `void`. openExternal
   // rejects with DemoModeError in demo mode, and installErrorReporter's

@@ -19,6 +19,7 @@ import { SpolkySection } from '../../Sidebar/Profile/SpolkySection';
 import { HiddenItemsSection } from '../../Sidebar/Profile/HiddenItemsSection';
 import { FeedbackModal } from '../../Feedback/FeedbackModal';
 import { SignOutConfirm } from './SignOutConfirm';
+import { PersonPhoto } from '../../ui/PersonPhoto';
 
 export interface ProfileSheetProps {
   onClose: () => void;
@@ -35,7 +36,7 @@ function initials(name: string): string {
 }
 
 /**
- * Full-size settings sheet: theme, language, Outlook sync, eduroam setup,
+ * Full-size settings sheet: theme, language, eduroam setup,
  * hidden items, society map filters, feedback and logout. Reuses desktop's
  * `SpolkySection` / `HiddenItemsSection` / `FeedbackModal` wholesale rather
  * than rebuilding them — only the row layout around them is phone-specific.
@@ -58,6 +59,8 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
 
+  const studentId = useAppStore((s) => s.studentId);
+
   const name = fullName ?? '';
 
   return (
@@ -65,8 +68,20 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
       <div className="flex-shrink-0">
         <div className="mx-auto mt-2 mb-1 h-1 w-9 rounded-full bg-base-300" />
         <div className="flex items-center gap-3 px-4 pb-3 pt-2">
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-base-200 font-display text-base font-bold text-primary">
-            {name ? initials(name) : <User size={18} />}
+          {/* The student's own face, the one photo the app never showed: this
+              sheet rendered initials, and a generic glyph whenever `fullName`
+              had not resolved. `studentId` is IS's "Identifikační číslo
+              uživatele", the same id space `foto.pl` takes for everyone else,
+              so the existing authenticated fetch covers this with no new
+              endpoint. Initials stay as the fallback while it loads or when
+              there is no picture. */}
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-primary">
+            <PersonPhoto
+              personId={studentId}
+              alt={name}
+              className="h-full w-full object-cover"
+              fallback={name ? initials(name) : <User size={18} />}
+            />
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="truncate font-display text-lg font-bold tracking-tight">{name}</span>

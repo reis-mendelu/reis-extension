@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Globe, Loader2 } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useSearch } from '../../SearchBar/useSearch';
@@ -57,7 +57,16 @@ export function StudentScreen() {
   const { t, language } = useTranslation();
   const [mode, setMode] = useState<StudentMode>('pages');
   const [query, setQuery] = useState('');
-  const [pagesOpen, setPagesOpen] = useState(false);
+  // Collapsed by default only where the screen is actually short of room. The
+  // disclosure exists so 95 links do not bury the two shortcuts a student opens
+  // daily (see PagesDisclosure) — on a phone. An iPad runs the same phone tree
+  // at 810–1080pt (resolvePhoneViewport), where that same collapse leaves half
+  // a screen empty under two shortcuts and hides the directory behind a tap
+  // nobody has a reason to make. `isNarrow` is `max-width: 767px`, so this is
+  // open on tablets and unchanged on phones. Initial state only: a student who
+  // collapses it keeps it collapsed.
+  const isNarrow = useAppStore((s) => s.isNarrow);
+  const [pagesOpen, setPagesOpen] = useState(!isNarrow);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // The iPad keyboard covers most of the list, and the field has no Done key of
@@ -74,8 +83,21 @@ export function StudentScreen() {
   // isLoading is read, not ignored: useSearch debounces 250ms and then goes to
   // the network, so `peopleResults` is empty for the whole round trip. Reading
   // only `sections` made the screen answer "nothing found" before it had asked.
-  const { sections, isLoading, saveToHistory } = useSearch(query);
+  const {
+    sections,
+    isLoading,
+    saveToHistory,
+    scope,
+    canScopeToFaculty,
+    widenToUniversity,
+    narrowToFaculty,
+  } = useSearch(query);
   const peopleResults = sections.find((s) => s.key === 'people')?.results ?? [];
+  // The section useSearch has always produced and this screen used to discard,
+  // which is why a subject could be looked up on the desktop and nowhere on a
+  // phone. It carries the student's enrolled subjects plus whatever the
+  // catalogue search returned, already sorted by relevance.
+  const subjectResults = sections.find((s) => s.key === 'subjects')?.results ?? [];
   // Everyone the student looked up, not just staff. This read the mixed history
   // and kept only `personType === 'teacher'` — so a classmate searched
   // yesterday was dropped here, and three IS-page lookups had already evicted
@@ -108,6 +130,19 @@ export function StudentScreen() {
 
   const openSheet = (kind: ShortcutSheetKind) => {
     pushSheet(kind === 'eduroam' ? { kind: 'eduroam' } : { kind: 'docs' });
+  };
+
+  // The drawer the app already has for a subject — syllabus, difficulty,
+  // files — reached with the same three fields the desktop search passes it.
+  const openSubject = (result: SearchResult) => {
+    dismissKeyboard();
+    saveToHistory(result);
+    pushSheet({
+      kind: 'subjectDrawer',
+      courseCode: result.subjectCode ?? result.title,
+      courseName: result.title,
+      courseId: result.subjectId,
+    });
   };
 
   const openPerson = (result: SearchResult) => {
@@ -154,6 +189,85 @@ export function StudentScreen() {
             ) : hasQuery ? (
               <NoResults text={noResultsText} />
             ) : null}
+          </>
+        )}
+
+        {mode === 'subjects' && (
+          <>
+            {/* The catalogue search is scoped to the student's own faculty by
+                default, and a subject from another one is simply absent until
+                the scope widens — which is exactly what "it does not work for
+                subjects outside my faculty" meant on the iPad. The desktop and
+                the old MobileSearchOverlay both render this; the Student tab
+                did not, so the way out was unreachable on a phone.
+
+                Above the results, not below them as on the desktop: this list
+                runs to dozens of rows on a phone, and a control the student has
+                to scroll past every result to reach is the same dead end in a
+                politer form. */}
+            {hasQuery && canScopeToFaculty && (
+              <div className="flex items-center justify-between gap-2 border-t border-base-300 px-4 py-2.5">
+                <span className="truncate text-[11px] text-base-content/50">
+                  {scope === 'faculty'
+                    ? t('search.facultyScopeNote')
+                    : t('search.universityScopeNote')}
+                </span>
+                <button
+                  type="button"
+                  // The preventDefault stays on mouseDown — the input is
+                  // focused and a click would blur it first, which on iPad
+                  // drops the keyboard and scrolls the list out from under the
+                  // finger mid-tap. The ACTION belongs on click: keyboard
+                  // activation of a button dispatches click and never
+                  // mousedown, so with both on mousedown, Enter and Space could
+                  // not change the scope at all — and an iPad with a keyboard
+                  // is the device this control was added for.
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    if (scope === 'faculty') widenToUniversity();
+                    else narrowToFaculty();
+                  }}
+                  className="flex shrink-0 items-center gap-1.5 text-xs text-primary"
+                >
+                  <Globe size={14} />
+                  {scope === 'faculty'
+                    ? t('search.widenToUniversity')
+                    : t('search.narrowToFaculty')}
+                </button>
+              </div>
+            )}
+
+            {hasQuery && subjectResults.length > 0 && (
+              <>
+                <div className="px-4 pb-0.5 pt-1 text-xs font-bold uppercase tracking-wider text-base-content/60">
+                  {t('mobile.student.results')}
+                </div>
+                {subjectResults.map((result) => (
+                  <SearchResultItem
+                    key={result.id}
+                    result={result}
+                    isRecent={false}
+                    isSelected={false}
+                    onMouseEnter={() => {}}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      openSubject(result);
+                    }}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Same order as Lidé, and for the same reason: a query too short
+                to search has no answer, an in-flight one does not have it yet,
+                and only a finished search that came back empty has earned
+                "nothing found". */}
+            {canSearchPeople && subjectResults.length === 0 && searchingPeople && (
+              <Searching text={t('search.loading')} />
+            )}
+            {canSearchPeople && subjectResults.length === 0 && !searchingPeople && (
+              <NoResults text={noResultsText} />
+            )}
           </>
         )}
 
