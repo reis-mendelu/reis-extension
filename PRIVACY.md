@@ -55,7 +55,7 @@ When an unhandled error or warning occurs in the extension, a sanitized diagnost
 
 ## Third-Party Access
 
-reIS contacts the following services. Only the first ever receives your academic data, and only because it is the university's own system.
+reIS contacts the following services. **IS Mendelu is the only one that receives your academic data as a matter of course**, and only because it is the university's own system. Three of the optional features below do send specific academic data when — and only when — you use them: Google Drive receives the course files you choose to back up, Anthropic receives the syllabus you upload plus the MENDELU course details, and Microsoft Bookings receives your name, university email and student ID. Each is described in full at its entry. jsDelivr receives no identifier, but the set of subjects requested does reveal which courses you are enrolled in.
 
 **Always:**
 1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you.
@@ -70,7 +70,7 @@ reIS contacts the following services. Only the first ever receives your academic
 8. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
 9. **Photon** (`photon.komoot.io`) — venue search, used only by student-society administrators when creating an event.
 
-**Links you open yourself** (Teams, Outlook, WebISKAM, geteduroam, society websites) are handed to your browser or the relevant app. reIS makes no background request to them.
+**Links you open yourself** (Teams, Outlook, geteduroam, society websites) are handed to your browser or the relevant app. reIS makes no background request to them.
 
 ## User Control
 You have full control over your data:
