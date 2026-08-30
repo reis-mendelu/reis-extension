@@ -26,6 +26,7 @@ import type {
 } from '../types/documents';
 import type { ClassmatesData } from '../types/classmates';
 import type { SubjectZaznamnik } from '../types/zaznamnik';
+import { PARENT_ORIGIN } from '../api/proxy/trustedOrigin';
 import { getPlatform } from '../platform';
 import type { SyncDomain } from '../types/messages/base';
 
@@ -94,7 +95,6 @@ export function useAppLogic() {
     let unsub: (() => void) | undefined;
     initializeStore().then((unsubscribe) => {
       unsub = unsubscribe;
-      // Back up any existing notes once on startup (one-way mirror to Drive).
     });
     return () => {
       unsub?.();
@@ -139,6 +139,22 @@ export function useAppLogic() {
     if (!isInIframe() && !realDataMode && !isCapacitor) return;
     const handle = async (e: MessageEvent) => {
       if (e.source !== window.parent) return;
+      // Origin check, not just source. This handler writes REIS_SYNC_UPDATE
+      // straight into the store and IDB and forwards REIS_TELEMETRY_ERROR to
+      // Supabase, and it was the only listener checking `source` without
+      // `origin` — SearchBar, AppHeader and the proxy listener all check both.
+      //
+      // Two shapes are legitimate: the extension iframe, whose parent is the IS
+      // page, and the top-level hosts (Capacitor, the dev webapp) where the app
+      // posts to itself and `parent === window`. An opaque 'null' origin is
+      // never trusted — a sandboxed frame can present one.
+      if (
+        !e.origin ||
+        e.origin === 'null' ||
+        (e.origin !== PARENT_ORIGIN && e.origin !== window.location.origin)
+      ) {
+        return;
+      }
       const d = e.data;
       if (!isContentMessage(d)) return;
       if (d.type === 'REIS_POPUP_STATE') return;

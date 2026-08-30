@@ -33,14 +33,20 @@ To understand how actively reIS is used, we record:
 
 **Previously**: until August 2026 these events were keyed on a SHA-256 hash of your student ID. We described that as irreversible. That was wrong — MENDELU student IDs are six or seven digits, so the hash can be reversed by brute force in seconds, which made it a recoverable identifier. We have replaced it in the app, and we have irreversibly re-keyed every historical row: each old hash was passed through HMAC-SHA256 under a random key that was generated for that one operation and immediately discarded. The original hashes cannot be recovered by anyone, including us. We verified this by brute-forcing the entire six- and seven-digit student-ID space against the stored values: zero matches.
 
-### 4. User Feedback (Voluntary)
+### 4. Teacher Grading Feedback (Voluntary)
+If you tap the grading tag on a subject's teacher, we store the tag you chose (e.g. how the subject is graded) against that **teacher's** IS id.
+- **Identity**: the vote carries a **random identifier generated on your device for that one teacher** — not your student ID, and not the same identifier you send for any other teacher. Two votes by the same person cannot be linked to each other.
+- **Why per-teacher**: a single device-wide id would have let the set of teachers you voted on reconstruct your course load, which is academic data. Scoping it to one teacher removes that.
+- **What it is for**: showing other students how a subject is graded. Nothing about you is displayed.
+
+### 5. User Feedback (Voluntary)
 If you use the built-in "Report Bug / Feedback" feature, the following data is sent to our support channel:
 - **Content**: The subject/title, the category you select (bug, idea, or other), the message, and contact details you explicitly provide.
 - **Technical Context**: Extension version, browser name and version, viewport size, and the current in-app screen (e.g. `calendar`, `exams`, `settings` — an app view name, not a URL or page address) to help debug issues.
 - **Storage**: Suggestions are stored in reIS's own Supabase project. Read access is restricted by a database policy to signed-in accounts holding the `reis_admin` role — in practice the small maintainer team. No other account, and no anonymous visitor, can read them.
 - **Abuse Prevention**: To limit abuse of the suggestion form, a salted SHA-256 hash of the sending IP address is kept only to rate-limit further submissions. It is used for at most one hour, and is deleted as soon as the next suggestion is submitted (submissions are infrequent, so in practice a hash can persist longer than an hour before that cleanup runs — it is simply never *used* past the one-hour window). The raw IP is never stored.
 
-### 5. Automatic Error Reporting
+### 6. Automatic Error Reporting
 When an unhandled error or warning occurs in the extension, a sanitized diagnostic report is automatically sent to our Supabase backend so we can detect and fix bugs.
 - **What is sent**: Error type, error message string, file path and line number, extension version, browser name and version, a sanitized excerpt of the JavaScript stack trace (top frames, run through the same redaction regex as the message), a client-side timestamp of when the error fired, and an anonymous per-session identifier.
 - **About the session identifier**: A random UUID generated when the extension iframe loads and held only in memory for that browser tab. It is **not persisted** to disk, **not synced** across devices, and **regenerated every page load**. Its sole purpose is to let us tell apart "one user retrying the same broken request 30 times" from "30 different users each hit a real bug once." It cannot be linked back to your account or browser across sessions.
