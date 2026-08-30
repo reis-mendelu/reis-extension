@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Globe, Loader2 } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useSearch } from '../../SearchBar/useSearch';
@@ -83,7 +83,15 @@ export function StudentScreen() {
   // isLoading is read, not ignored: useSearch debounces 250ms and then goes to
   // the network, so `peopleResults` is empty for the whole round trip. Reading
   // only `sections` made the screen answer "nothing found" before it had asked.
-  const { sections, isLoading, saveToHistory } = useSearch(query);
+  const {
+    sections,
+    isLoading,
+    saveToHistory,
+    scope,
+    canScopeToFaculty,
+    widenToUniversity,
+    narrowToFaculty,
+  } = useSearch(query);
   const peopleResults = sections.find((s) => s.key === 'people')?.results ?? [];
   // The section useSearch has always produced and this screen used to discard,
   // which is why a subject could be looked up on the desktop and nowhere on a
@@ -186,6 +194,45 @@ export function StudentScreen() {
 
         {mode === 'subjects' && (
           <>
+            {/* The catalogue search is scoped to the student's own faculty by
+                default, and a subject from another one is simply absent until
+                the scope widens — which is exactly what "it does not work for
+                subjects outside my faculty" meant on the iPad. The desktop and
+                the old MobileSearchOverlay both render this; the Student tab
+                did not, so the way out was unreachable on a phone.
+
+                Above the results, not below them as on the desktop: this list
+                runs to dozens of rows on a phone, and a control the student has
+                to scroll past every result to reach is the same dead end in a
+                politer form. */}
+            {hasQuery && canScopeToFaculty && (
+              <div className="flex items-center justify-between gap-2 border-t border-base-300 px-4 py-2.5">
+                <span className="truncate text-[11px] text-base-content/50">
+                  {scope === 'faculty'
+                    ? t('search.facultyScopeNote')
+                    : t('search.universityScopeNote')}
+                </span>
+                <button
+                  type="button"
+                  // mouseDown, like every other action on this screen: the
+                  // input is focused and a click would blur it first, which on
+                  // iPad drops the keyboard and scrolls the list out from under
+                  // the finger mid-tap.
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    if (scope === 'faculty') widenToUniversity();
+                    else narrowToFaculty();
+                  }}
+                  className="flex shrink-0 items-center gap-1.5 text-xs text-primary"
+                >
+                  <Globe size={14} />
+                  {scope === 'faculty'
+                    ? t('search.widenToUniversity')
+                    : t('search.narrowToFaculty')}
+                </button>
+              </div>
+            )}
+
             {hasQuery && subjectResults.length > 0 && (
               <>
                 <div className="px-4 pb-0.5 pt-1 text-xs font-bold uppercase tracking-wider text-base-content/60">

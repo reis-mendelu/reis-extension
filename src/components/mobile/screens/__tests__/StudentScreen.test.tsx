@@ -330,6 +330,55 @@ describe('StudentScreen — searching the subject catalogue', () => {
 
   // Same discipline the Lidé tab needed: useSearch debounces and then goes to
   // the network, so an empty list mid-flight is not an answer.
+  // Reported from the iPad: the desktop search can widen past the student's own
+  // faculty, and the app could not — so a subject from another faculty was
+  // unfindable on a phone no matter what you typed. `useSearch` has always
+  // exposed the scope and the widen/narrow actions; only the desktop and the
+  // old MobileSearchOverlay rendered them.
+  it("offers to widen the search past the student's own faculty", async () => {
+    vi.useFakeTimers();
+    try {
+      useAppStore.setState({ userFaculty: 'PEF' });
+      await searchSubjects('Matem');
+
+      expect(screen.getByText('Hledám v rámci tvé fakulty')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Celá univerzita/ })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('switches to the whole university and offers the way back', async () => {
+    vi.useFakeTimers();
+    try {
+      useAppStore.setState({ userFaculty: 'PEF' });
+      await searchSubjects('Matem');
+      fireEvent.mouseDown(screen.getByRole('button', { name: /Celá univerzita/ }));
+      await act(async () => {
+        vi.advanceTimersByTime(400);
+      });
+
+      expect(screen.getByText('Hledám napříč univerzitou')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Jen moje fakulta/ })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Without a known faculty there is nothing to scope to, so the control would
+  // be a switch between two identical searches.
+  it('offers no scope control when the faculty is unknown', async () => {
+    vi.useFakeTimers();
+    try {
+      useAppStore.setState({ userFaculty: null });
+      await searchSubjects('Matem');
+
+      expect(screen.queryByText('Hledám v rámci tvé fakulty')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('does not claim "nothing found" before the search has answered', () => {
     render(<StudentScreen />);
     fireEvent.click(screen.getByRole('tab', { name: 'Předměty' }));
