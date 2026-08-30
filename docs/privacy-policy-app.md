@@ -45,8 +45,6 @@ any server we run:
 - **Your identity as IS holds it**: name, personal number (UIC), study details.
 - **Academic data**: timetable, grades, continuous assessment, exam dates,
   courses, study materials, submission folders, study-progress checks.
-- **Dining data** (browser extension only): your canteen profile and meal
-  reservations from WebISKAM. *WebISKAM is not part of the mobile app.*
 
 This data does move between your device and MENDELU in both directions —
 signing up for an exam or uploading to a submission folder sends it back to
@@ -77,8 +75,8 @@ What bounds it:
 
 These four things are sent to servers **we** run or choose, rather than to the
 university on your behalf. Two of the three are optional. (For where your data
-goes when reIS acts on your behalf — IS Mendelu, WebISKAM, your own Google
-Drive — see *Third parties reIS talks to* below.)
+goes when reIS acts on your behalf — IS Mendelu, your own Google Drive — see
+*Third parties reIS talks to* below.)
 
 ### 1. Pseudonymous daily usage count
 
@@ -169,7 +167,6 @@ mobile app.*
 | **IS Mendelu** (`is.mendelu.cz`) | Fetch your academic data, authenticated as you | Both |
 | **Supabase** (`*.supabase.co`) | **reIS's own database and servers**, not an outside recipient — see the note below. Holds public notifications, student society events, the daily usage count, sanitised error reports, and any feedback you submit | Both |
 | **jsDelivr CDN** | Public, anonymous course-difficulty statistics. No request carries anything about you | Both |
-| **WebISKAM** (`webiskam.mendelu.cz`) | Canteen profile and meal reservations | Extension only |
 | **Google Drive** (`googleapis.com`) | Back up your own IS files into your own Drive, if you connect it | Extension only |
 | **Microsoft Bookings** (`outlook.office.com`) | Make a library study-room booking, if you make one. Carries your student/employee number, as that system requires | Extension only |
 
