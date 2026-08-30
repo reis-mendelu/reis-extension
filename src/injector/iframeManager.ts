@@ -59,14 +59,24 @@ export function injectIframe() {
  * student's IS dataset — grades, schedule, exams, classmates, documents — so it
  * is pinned rather than broadcast. With `'*'`, any script on the host page that
  * could retarget the iframe's `src` would receive all of it.
+ *
+ * Resolved on first use, never at module scope. `sendToIframe` below is
+ * imported by the Capacitor entry (through mobile/actionHandler and
+ * injector/syncGate), and the app has no `chrome` global at all — evaluating
+ * this on import threw `ReferenceError: Can't find variable: chrome` before
+ * main.capacitor.tsx's boot() could run, leaving the app on its splash screen
+ * forever. Both readers below are extension-only paths, where `chrome` exists.
  */
-const IFRAME_ORIGIN = chrome.runtime.getURL('').replace(/\/$/, '');
+let iframeOriginCache: string | null = null;
+function iframeOrigin(): string {
+  return (iframeOriginCache ??= chrome.runtime.getURL('').replace(/\/$/, ''));
+}
 
 export function markIframeReady() {
   iframeReady = true;
   if (messageQueue.length > 0 && iframeElement?.contentWindow) {
     for (const msg of messageQueue) {
-      iframeElement.contentWindow.postMessage(msg, IFRAME_ORIGIN);
+      iframeElement.contentWindow.postMessage(msg, iframeOrigin());
     }
   }
   messageQueue = [];
@@ -94,5 +104,5 @@ export function sendToIframe(message: unknown) {
     messageQueue.push(message);
     return;
   }
-  iframeElement.contentWindow.postMessage(message, IFRAME_ORIGIN);
+  iframeElement.contentWindow.postMessage(message, iframeOrigin());
 }
