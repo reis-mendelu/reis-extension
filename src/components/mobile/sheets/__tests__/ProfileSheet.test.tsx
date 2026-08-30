@@ -36,6 +36,48 @@ vi.mock('../../../../hooks/data/useDriveBackup', () => ({
   }),
 }));
 
+const photoFor = vi.fn<(id: unknown) => string | null>(() => null);
+vi.mock('../../../../hooks/data/usePersonPhoto', () => ({
+  usePersonPhoto: (id: unknown) => photoFor(id),
+}));
+
+/**
+ * The student's own face was the one photo the app never showed: `PersonPhoto`
+ * was wired up for classmates and teachers, and this sheet rendered initials —
+ * or, when `fullName` has not resolved, a generic person glyph. On the iPad
+ * that is what a student sees of themselves.
+ */
+describe("ProfileSheet — the student's own photo", () => {
+  beforeEach(() => {
+    photoFor.mockReset();
+    photoFor.mockReturnValue(null);
+    useAppStore.setState({ language: 'cz', fullName: 'Jan Novák', studentId: '120344' });
+  });
+
+  it('renders the photo for the signed-in student', () => {
+    photoFor.mockImplementation((id) => (id === '120344' ? 'data:image/jpeg;base64,AAA' : null));
+    render(<ProfileSheet onClose={() => {}} />);
+
+    const img = screen.getByAltText('Jan Novák') as HTMLImageElement;
+    expect(img.src).toBe('data:image/jpeg;base64,AAA');
+  });
+
+  it('falls back to initials while the photo is unresolved', () => {
+    render(<ProfileSheet onClose={() => {}} />);
+
+    expect(screen.getByText('JN')).toBeInTheDocument();
+  });
+
+  // A photo has no id to fetch until loadContext has answered, and asking for
+  // `foto.pl?id=` would 200 with an empty body.
+  it('asks for no photo before the student id resolves', () => {
+    useAppStore.setState({ studentId: null });
+    render(<ProfileSheet onClose={() => {}} />);
+
+    expect(photoFor).toHaveBeenCalledWith(null);
+  });
+});
+
 describe('ProfileSheet', () => {
   beforeEach(() => {
     outlookToggle.mockClear();
