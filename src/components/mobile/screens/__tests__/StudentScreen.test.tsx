@@ -254,6 +254,92 @@ describe('StudentScreen — Lidé search while the query is still in flight', ()
   });
 });
 
+// The Student tab could search IS's pages and IS's people, but not its
+// subjects — so "what is this subject like before I register for it" had no
+// answer on a phone or an iPad. `useSearch` was already returning a `subjects`
+// section on every query; this screen read only `people` and dropped it.
+describe('StudentScreen — searching the subject catalogue', () => {
+  // The API shape `executeSearch` answers with — useSearch maps this into a
+  // SearchResult itself (id `subject-<id>`, title from `name`).
+  const subject = {
+    id: '4242',
+    name: 'Matematika I',
+    code: 'MT1',
+    faculty: 'PEF',
+    semester: 'ZS',
+    link: 'https://is.mendelu.cz/auth/katalog/syllabus.pl?predmet=4242',
+  };
+
+  beforeEach(() => {
+    useAppStore.setState({
+      language: 'cz',
+      mobileSheets: [],
+      recentSearches: [],
+      recentPeople: [],
+      subjects: null,
+      studyPlanDual: null,
+      studiumId: null,
+      userFaculty: null,
+      userSemester: null,
+      isNarrow: true,
+      executeSearch: vi
+        .fn()
+        .mockResolvedValue({ people: [], subjects: [subject], subjectsTruncated: false }),
+    });
+  });
+
+  const searchSubjects = async (query: string) => {
+    render(<StudentScreen />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Předměty' }));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: query } });
+    await act(async () => {
+      vi.advanceTimersByTime(400);
+    });
+  };
+
+  it('lists subjects the catalogue search came back with', async () => {
+    vi.useFakeTimers();
+    try {
+      await searchSubjects('Matem');
+      expect(screen.getByText('Matematika I')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // A subject result is only useful if it opens the drawer the app already has
+  // for one — syllabus, difficulty, files.
+  it('opens the subject drawer for a tapped result', async () => {
+    vi.useFakeTimers();
+    try {
+      await searchSubjects('Matem');
+      fireEvent.mouseDown(screen.getByText('Matematika I'));
+
+      expect(useAppStore.getState().mobileSheets).toContainEqual(
+        expect.objectContaining({
+          kind: 'subjectDrawer',
+          courseCode: 'MT1',
+          courseName: 'Matematika I',
+          courseId: '4242',
+        })
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Same discipline the Lidé tab needed: useSearch debounces and then goes to
+  // the network, so an empty list mid-flight is not an answer.
+  it('does not claim "nothing found" before the search has answered', () => {
+    render(<StudentScreen />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Předměty' }));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Matem' } });
+
+    expect(screen.queryByText('Nic jsme nenašli. Zkus to jinak.')).not.toBeInTheDocument();
+    expect(screen.getByText('Načítání výsledků...')).toBeInTheDocument();
+  });
+});
+
 describe('StudentScreen — dismissing the iPad keyboard', () => {
   beforeEach(() => {
     useAppStore.setState({
