@@ -5,10 +5,22 @@
 -- extension, the admin console (reis-admin) and reis-page were all checked, and
 -- the feature they belonged to was never shipped.
 --
--- Each one takes a caller-supplied `p_student_id text` and writes it straight
--- into a table, which is the shape reIS specifically moved away from when the
--- SHA-256(studentId) keying was replaced by a random install UUID. Leaving them
--- reachable means an open write path keyed on an arbitrary identifier.
+-- The shared risk is that all ten run as SECURITY DEFINER with no caller
+-- identity of their own, so `anon` reaches the tables through them regardless
+-- of RLS. What that buys an attacker differs by function:
+--
+--   * The four write paths (submit_course_rating, submit_course_tip,
+--     vote_tip_helpful, delete_course_tip) each take a caller-supplied
+--     `p_student_id text` and store or delete rows under it. That is the shape
+--     reIS moved away from when SHA-256(studentId) keying was replaced by a
+--     random install UUID: an open write keyed on an arbitrary identifier,
+--     with nothing tying the identifier to the caller.
+--   * Two reads (get_my_course_tip, get_my_course_rating) also take
+--     `p_student_id`, so anyone can read back the rows of any identifier they
+--     can guess or replay.
+--   * The remaining four (get_course_tips, get_course_tips_with_votes,
+--     get_course_rating_aggregate, get_course_ratings_batch) expose per-course
+--     content and aggregates with no caller scoping at all.
 --
 -- REVOKE rather than DROP: the four backing tables still hold rows (course_ratings
 -- 4, course_tips 1, tip_votes 0), and dropping the functions would strand them
