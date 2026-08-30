@@ -122,35 +122,27 @@ export async function openExternal(url: string): Promise<void> {
     }
 
     // The in-app WebView makes its OWN requests and sees none of the transport's
-    // work. `buildCookieDelivery` seeds a cookie jar on ANDROID only; on iOS the
-    // session travels as a per-request `Cookie` header that only the native
-    // transport sends, so this WebView arrived at IS unauthenticated and the
-    // student was asked to sign in again to read their own document.
+    // work, so it arrived at IS unauthenticated and the student was asked to
+    // sign in again to read their own document.
     //
-    // Seeding the jar here does not disturb the native path: on iOS that path
-    // sends the explicit header regardless (the jar alone 403s, which is why
-    // the header exists), and on Android the transport already writes this same
-    // cookie with this same value. No token — a lapsed session — is left alone
-    // deliberately: IS's login page is then the correct destination, and a
-    // thrown error here would make the tap look dead.
-    // Its own try: seeding is an improvement to the page the student gets, not
-    // a precondition for getting one. If the keychain read or the cookie plugin
-    // fails, IS's login page is a worse answer than the document — a dead tap
-    // is worse than both.
-    try {
-      const { CapacitorCookies } = await import('@capacitor/core');
-      const { loadStoredToken } = await import('../platform/tokenStore');
-      const token = await loadStoredToken();
-      if (token) {
-        await CapacitorCookies.setCookie({
-          url: 'https://is.mendelu.cz',
-          key: UIS_AUTH_COOKIE,
-          value: token,
-        });
-      }
-    } catch (e) {
-      logError('Mobile.openExternal.seedCookie', e);
-    }
+    // The cookie travels as a REQUEST HEADER on the open, not through a cookie
+    // jar. Writing one was the obvious move and it is the wrong one: capgo
+    // gives its WebView a deliberately separate persistent store on iOS 17+
+    // (`WKWebsiteDataStore(forIdentifier:)`, see BrowsingDataStoreSupport),
+    // while `CapacitorCookies` writes to the HOST app's store — so the seeded
+    // cookie would land in a jar this WebView never reads. The plugin applies
+    // `headers` to the request it builds (WKWebViewController.createRequest),
+    // and an explicit `Cookie` header is the same mechanism the native
+    // transport already relies on for iOS (see buildCookieDelivery: on iOS the
+    // header works and seeding the jar alone 403s).
+    //
+    // No token — a lapsed session — sends no header at all, deliberately: IS's
+    // login page is then the honest destination, and throwing here would make
+    // the tap look dead. loadStoredToken rejects rather than returning empty
+    // when the keychain has nothing or cannot be read, which is the same
+    // "is there one?" question buildInAppLoginDeps asks it.
+    const { loadStoredToken } = await import('../platform/tokenStore');
+    const token = await loadStoredToken().catch(() => '');
 
     await InAppBrowser.openWebView({
       url: target,
@@ -162,6 +154,7 @@ export async function openExternal(url: string): Promise<void> {
       // to zoom and half of them cannot be read on a phone. Android only —
       // iOS's WKWebView zooms by default.
       enableZoom: true,
+      ...(token ? { headers: { Cookie: `${UIS_AUTH_COOKIE}=${token}` } } : {}),
     });
   } catch (e) {
     // No toast: this runs from a document listener with no React context, so

@@ -254,7 +254,7 @@ describe('openExternal — which browser', () => {
   });
 });
 
-describe('openExternal — the in-app browser needs its own cookie', () => {
+describe('openExternal — the in-app browser needs the session on the request', () => {
   const openWebView = vi.fn();
   const open = vi.fn();
   const setCookie = vi.fn();
@@ -269,9 +269,7 @@ describe('openExternal — the in-app browser needs its own cookie', () => {
     vi.doMock('@capgo/capacitor-inappbrowser', () => ({
       InAppBrowser: { openWebView, open },
     }));
-    vi.doMock('@capacitor/core', () => ({
-      CapacitorCookies: { setCookie },
-    }));
+    vi.doMock('@capacitor/core', () => ({ CapacitorCookies: { setCookie } }));
     vi.doMock('../../platform/tokenStore', () => ({
       loadStoredToken: vi.fn(async () => 'TOKEN123'),
     }));
@@ -283,42 +281,56 @@ describe('openExternal — the in-app browser needs its own cookie', () => {
   });
 
   // The defect this exists for: `buildCookieDelivery` seeds a cookie jar on
-  // ANDROID only — on iOS the session travels as a per-request `Cookie`
-  // HEADER, which only the native transport sends. The in-app WebView makes
-  // its own requests, sees no cookie, and IS answers with the login page. The
-  // student taps "Portál studenta" and is asked to sign in again.
-  it('seeds the session cookie before opening IS in the in-app WebView', async () => {
+  // ANDROID only — on iOS the session travels as a per-request `Cookie` HEADER,
+  // which only the native transport sends. The in-app WebView makes its own
+  // requests, so it reached IS with no session and the student was asked to
+  // sign in again to read their own document.
+  it('sends the session as a request header when opening IS', async () => {
     const { openExternal } = await import('../openExternal');
     await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
 
-    expect(setCookie).toHaveBeenCalledWith({
-      url: 'https://is.mendelu.cz',
-      key: 'UISAuth',
-      value: 'TOKEN123',
-    });
-    expect(setCookie.mock.invocationCallOrder[0]).toBeLessThan(
-      openWebView.mock.invocationCallOrder[0]!
+    expect(openWebView).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'https://is.mendelu.cz/auth/student/moje_studium.pl',
+        headers: { Cookie: 'UISAuth=TOKEN123' },
+      })
     );
   });
 
-  // A third party has no business receiving the student's IS session, and it
-  // goes to the system browser anyway, which cannot see this jar.
-  it('does not seed anything for a third-party link', async () => {
-    const { openExternal } = await import('../openExternal');
-    await openExternal('https://example.org/whatever');
-
-    expect(setCookie).not.toHaveBeenCalled();
-  });
-
-  // Losing the session must not swallow the tap: without a token the WebView
-  // shows IS's login page, which is the correct outcome, not a dead button.
-  it('still opens IS when there is no token to seed', async () => {
-    vi.doMock('../../platform/tokenStore', () => ({ loadStoredToken: vi.fn(async () => '') }));
+  // Writing the cookie into a jar was the obvious fix and the wrong one: capgo
+  // gives its WebView a separate persistent store on iOS 17+, while
+  // CapacitorCookies writes to the host app's — a jar this WebView never reads.
+  it('does not write to the host app cookie jar, which this WebView cannot see', async () => {
     const { openExternal } = await import('../openExternal');
     await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
 
     expect(setCookie).not.toHaveBeenCalled();
-    expect(openWebView).toHaveBeenCalled();
+  });
+
+  // A third party has no business receiving the student's IS session, and it
+  // goes to the system browser, which takes no headers from us at all.
+  it('sends no session to a third-party link', async () => {
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://example.org/whatever');
+
+    expect(open).toHaveBeenCalledWith({ url: 'https://example.org/whatever' });
+    expect(openWebView).not.toHaveBeenCalled();
+  });
+
+  // Losing the session must not swallow the tap: with no token the WebView
+  // shows IS's login page, which is the correct outcome, not a dead button.
+  it('still opens IS when there is no token, with no Cookie header', async () => {
+    vi.doMock('../../platform/tokenStore', () => ({
+      loadStoredToken: vi.fn(async () => {
+        throw new Error('no token');
+      }),
+    }));
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
+
+    expect(openWebView).toHaveBeenCalledWith(
+      expect.not.objectContaining({ headers: expect.anything() })
+    );
   });
 });
 
