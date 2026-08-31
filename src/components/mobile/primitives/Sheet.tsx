@@ -107,8 +107,24 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
         // A screen enters from the RIGHT and squares off its corners: a rounded
         // top edge sliding up is the vocabulary of something temporary sitting
         // over the page, which is exactly the impression to avoid here.
+        // The hairline goes with that rounded edge, and only there. Sheets stack
+        // — a classmate tapped inside the subject drawer opens a PersonSheet over
+        // a sheet that is already up — and both panels are bg-base-100 while
+        // `--shadow-drawer` casts DOWNWARD (`0 20px 25px -5px`), contributing
+        // nothing at a bottom sheet's TOP edge. The two surfaces met with no seam
+        // and read as one continuous background. A screen needs no line: it is
+        // full-bleed against the viewport, where that is not a seam between two
+        // surfaces but a stripe under the status bar.
+        // base-content/15 rather than base-300, MEASURED on the device theme:
+        // base-300 (#0f172a) against a base-100 (#1f2937) panel sitting on a
+        // base-100 sheet is 1.22:1 — a line technically present and practically
+        // not there. The same 15% tint the composer's ghost buttons use reads
+        // 1.57:1 on dark, and is a dark line on light, so one token separates
+        // the surfaces in both themes.
         className={`absolute ${isScreen ? '' : 'inset-x-0'} ${panelPosition} ${panelZ} flex flex-col overflow-hidden bg-base-100 shadow-drawer ${
-          isScreen ? 'animate-[screenIn_0.25s_ease-out]' : 'rounded-t-[20px]'
+          isScreen
+            ? 'animate-[screenIn_0.25s_ease-out]'
+            : 'rounded-t-[20px] border-t border-base-content/15'
         } ${dragging || isScreen ? '' : 'animate-[sheetUp_0.3s_ease-out]'}`}
         style={
           dragging

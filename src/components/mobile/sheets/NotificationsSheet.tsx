@@ -8,6 +8,7 @@ import { DeadlineAlertItem } from '../../Notifications/DeadlineAlertItem';
 import { trackNotificationClick } from '../../../services/spolky';
 import { openExternal } from '../../../mobile/openExternal';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useAppStore } from '../../../store/useAppStore';
 
 export interface NotificationsSheetProps {
   onClose: () => void;
@@ -25,6 +26,51 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
   const { notifications, loading, markVisible } = useNotificationFeed();
   const { alerts } = useDeadlineAlerts();
   const hasContent = notifications.length > 0 || alerts.length > 0;
+  const mapEvents = useAppStore((s) => s.mapEvents);
+  const focusEventById = useAppStore((s) => s.focusEventById);
+  const setMobileTab = useAppStore((s) => s.setMobileTab);
+
+  /**
+   * A notification IS a `spolky_events` row — `fetchNotifications` reads that
+   * table and maps its optional `url` column to `link`. Gating the whole tap on
+   * that link meant every society event without one, which is most of them, was
+   * announced here and could not be opened: the tap did nothing at all.
+   *
+   * The row's id is the map event's id (one `spolky_events` id space, mapped by
+   * `toMapEvent`), so the event the student tapped is one the map already knows
+   * how to show — `focusEventById` opens the same EventDetailCard a pin does,
+   * with the venue, the RSVP and the event's own URL on it.
+   *
+   * The link keeps priority where it exists: an author who set a URL chose a
+   * destination, and the academic feed's rows are deadlines rather than places.
+   * A notification with neither a link nor a matching event (a far-future one
+   * the public map filters out) does nothing rather than switching to a map with
+   * nothing selected — and is not counted as a click, which is reserved for taps
+   * that actually went somewhere.
+   */
+  // The same question the tap asks, asked for the affordance: a row that opens
+  // something has to look like it does.
+  const opensSomewhere = (n: (typeof notifications)[number]) =>
+    !!n.link || mapEvents.some((e) => e.id === n.id);
+
+  const openNotification = (n: (typeof notifications)[number]) => {
+    const track = () => {
+      if (!n.associationId?.startsWith('academic_')) trackNotificationClick(n.id);
+    };
+    if (n.link) {
+      track();
+      // openExternal, not window.open: on Capacitor that hands
+      // the URL to the system browser, which has no IS session.
+      void openExternal(n.link);
+      onClose();
+      return;
+    }
+    if (!opensSomewhere(n)) return;
+    track();
+    focusEventById(n.id, { fly: true });
+    setMobileTab('map');
+    onClose();
+  };
 
   return (
     <Sheet size="full" onClose={onClose}>
@@ -53,15 +99,8 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
                 key={n.id}
                 notification={n}
                 onVisible={() => markVisible(n.id)}
-                onClick={() => {
-                  if (n.link) {
-                    if (!n.associationId?.startsWith('academic_')) trackNotificationClick(n.id);
-                    // openExternal, not window.open: on Capacitor that hands
-                    // the URL to the system browser, which has no IS session.
-                    void openExternal(n.link);
-                    onClose();
-                  }
-                }}
+                onClick={() => openNotification(n)}
+                clickable={opensSomewhere(n)}
               />
             ))}
           </div>
