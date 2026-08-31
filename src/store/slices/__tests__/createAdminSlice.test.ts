@@ -213,6 +213,31 @@ describe('createAdminSlice', () => {
     expect(state.adminSession).toBeNull();
     expect(signOut).toHaveBeenCalledTimes(1);
   });
+
+  it('signs in with the synthetic address built from a username', async () => {
+    signIn.mockResolvedValueOnce({
+      data: { session: { user: { id: 'u1', email: 'supef@societies.invalid' } } },
+      error: null,
+    });
+    maybeSingle.mockResolvedValueOnce({
+      data: { role: 'association', association_id: 'supef' },
+      error: null,
+    });
+
+    await state.adminLogin('supef', 'pw');
+
+    expect(signIn).toHaveBeenCalledWith({
+      email: 'supef@societies.invalid',
+      password: 'pw',
+    });
+  });
+
+  it('returns invalid_credentials for a malformed username without calling Supabase', async () => {
+    const res = await state.adminLogin('su pef', 'pw');
+
+    expect(res.error).toBe('invalid_credentials');
+    expect(signIn).not.toHaveBeenCalled();
+  });
 });
 
 describe('createAdminSlice boot', () => {

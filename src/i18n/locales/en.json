@@ -1008,9 +1008,10 @@
   },
   "admin": {
     "email": "Email",
+    "username": "Society name",
     "password": "Password",
     "login": "Log in",
-    "loginError": "Invalid email or password",
+    "loginError": "Invalid name or password",
     "title": "Title",
     "body": "Description",
     "roomCode": "Room code",

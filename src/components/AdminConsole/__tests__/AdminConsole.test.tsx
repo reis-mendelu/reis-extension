@@ -45,7 +45,7 @@ describe('AdminConsole', () => {
 
   it('shows the login screen when there is no admin session', () => {
     render(<AdminConsole />);
-    expect(screen.getByLabelText('E-mail')).toBeInTheDocument();
+    expect(screen.getByLabelText('Název spolku')).toBeInTheDocument();
     expect(screen.queryByTestId('admin-console')).toBeNull();
   });
 
@@ -63,7 +63,7 @@ describe('AdminConsole', () => {
     loggedIn();
     render(<AdminConsole />);
     expect(screen.getByTestId('admin-console')).toBeInTheDocument();
-    expect(screen.queryByLabelText('E-mail')).toBeNull();
+    expect(screen.queryByLabelText('Název spolku')).toBeNull();
   });
 
   it('shows a fixed society chip for an association, with no picker', () => {

@@ -26,8 +26,3 @@ export function toAuthEmail(input: string): string {
   }
   return `${trimmed}@${SOCIETY_EMAIL_DOMAIN}`;
 }
-
-/** @deprecated Removed in Task 2 once createAdminSlice stops importing it. */
-export function normalizeEmail(input: string): string {
-  return input.trim().toLowerCase();
-}

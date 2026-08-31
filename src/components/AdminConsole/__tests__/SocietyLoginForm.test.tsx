@@ -14,8 +14,8 @@ describe('SocietyLoginForm', () => {
     });
   });
 
-  const fill = (email = 'admin@supef.cz', password = 'x') => {
-    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: email } });
+  const fill = (username = 'supef', password = 'x') => {
+    fireEvent.change(screen.getByLabelText('Název spolku'), { target: { value: username } });
     fireEvent.change(screen.getByLabelText('Heslo'), { target: { value: password } });
   };
 
@@ -25,7 +25,7 @@ describe('SocietyLoginForm', () => {
     render(<SocietyLoginForm />);
     fill();
     fireEvent.click(screen.getByRole('button', { name: 'Přihlásit' }));
-    await waitFor(() => expect(adminLogin).toHaveBeenCalledWith('admin@supef.cz', 'x'));
+    await waitFor(() => expect(adminLogin).toHaveBeenCalledWith('supef', 'x'));
   });
 
   // There is nothing to navigate on success: AdminConsole renders this form only
@@ -34,9 +34,9 @@ describe('SocietyLoginForm', () => {
   it('shows the error message when login is rejected', async () => {
     useAppStore.setState({ adminLogin: vi.fn(async () => ({ error: 'invalid_credentials' })) });
     render(<SocietyLoginForm />);
-    fill('admin@supef.cz', 'wrong');
+    fill('supef', 'wrong');
     fireEvent.click(screen.getByRole('button', { name: 'Přihlásit' }));
-    expect(await screen.findByText('Neplatný e-mail nebo heslo')).toBeInTheDocument();
+    expect(await screen.findByText('Neplatné jméno nebo heslo')).toBeInTheDocument();
   });
 
   it('surfaces the same error when adminLogin throws', async () => {
@@ -48,7 +48,7 @@ describe('SocietyLoginForm', () => {
     render(<SocietyLoginForm />);
     fill();
     fireEvent.click(screen.getByRole('button', { name: 'Přihlásit' }));
-    expect(await screen.findByText('Neplatný e-mail nebo heslo')).toBeInTheDocument();
+    expect(await screen.findByText('Neplatné jméno nebo heslo')).toBeInTheDocument();
   });
 
   it('keeps submit disabled until both fields have content', () => {
@@ -56,7 +56,7 @@ describe('SocietyLoginForm', () => {
     render(<SocietyLoginForm />);
     const submit = screen.getByRole('button', { name: 'Přihlásit' });
     expect(submit).toBeDisabled();
-    fill('admin@supef.cz', '');
+    fill('supef', '');
     expect(submit).toBeDisabled();
     fill();
     expect(submit).toBeEnabled();

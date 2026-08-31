@@ -1,7 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import type { AppSlice } from '../types';
 import { adminAuthClient } from '../../services/admin/authClient';
-import { normalizeEmail } from '../../services/admin/societyLogin';
+import { toAuthEmail } from '../../services/admin/societyLogin';
 import { listMyPosts, type SpolkyEventRow } from '../../api/societyPosts';
 import { logError } from '../../utils/reportError';
 
@@ -26,7 +26,8 @@ export interface AdminSlice {
   resetAuthoringState: () => void;
   /** reIS admin only: author as a different society. */
   setActiveAssociation: (id: string) => void;
-  adminLogin: (email: string, password: string) => Promise<{ error?: string }>;
+  /** `username` is a society name ("supef") or, for the break-glass admin, a full address. */
+  adminLogin: (username: string, password: string) => Promise<{ error?: string }>;
   adminLogout: () => Promise<void>;
   loadAdminSession: () => Promise<void>;
   loadSocietyPosts: () => Promise<void>;
@@ -81,8 +82,16 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     set({ adminActiveAssociationId: id });
     void get().loadSocietyPosts();
   },
-  adminLogin: async (emailInput, password) => {
-    const email = normalizeEmail(emailInput);
+  adminLogin: async (usernameInput, password) => {
+    let email: string;
+    try {
+      email = toAuthEmail(usernameInput);
+    } catch {
+      // A malformed username can never match an account. Fail like a wrong
+      // password rather than surfacing a distinct error, which would let someone
+      // probe which names are well-formed.
+      return { error: 'invalid_credentials' };
+    }
     const { data, error } = await adminAuthClient.auth.signInWithPassword({ email, password });
     if (error || !data.session) return { error: 'invalid_credentials' };
     const { role, associationId } = await resolveAccount(email);

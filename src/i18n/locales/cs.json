@@ -1008,9 +1008,10 @@
   },
   "admin": {
     "email": "E-mail",
+    "username": "Název spolku",
     "password": "Heslo",
     "login": "Přihlásit",
-    "loginError": "Neplatný e-mail nebo heslo",
+    "loginError": "Neplatné jméno nebo heslo",
     "title": "Název",
     "body": "Popis",
     "roomCode": "Místnost",
