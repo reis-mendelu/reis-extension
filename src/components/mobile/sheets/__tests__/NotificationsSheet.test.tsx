@@ -131,11 +131,14 @@ describe('NotificationsSheet event notifications', () => {
     expect(row?.className).toContain('cursor-pointer');
   });
 
+  // Inert has to mean inert to a KEYBOARD too: an enabled button that ignores
+  // its own activation is still a focus stop that announces itself as a control.
   it('leaves the row inert when nothing would open', () => {
     useAppStore.setState({ mapEvents: [], mapEventsLoaded: true } as never);
     render(<NotificationsSheet onClose={vi.fn()} />);
     const row = screen.getByText('ESN party tonight').closest('button');
     expect(row?.className).toContain('cursor-default');
+    expect(row).toBeDisabled();
   });
 
   /**

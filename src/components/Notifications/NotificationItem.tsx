@@ -60,6 +60,11 @@ export function NotificationItem({
     <button
       ref={ref}
       onClick={onClick}
+      // `cursor-default` only tells a MOUSE the row is inert. Left enabled, it
+      // stays a focus stop that announces itself as an actionable control and
+      // then swallows its own activation — so the row is disabled outright, and
+      // the cursor rule is what a pointer sees of the same decision.
+      disabled={!isClickable}
       className={`w-full p-4 transition-colors text-left flex items-center gap-3 ${isClickable ? 'hover:bg-base-200 cursor-pointer' : 'cursor-default'}`}
     >
       <div className="flex-shrink-0">

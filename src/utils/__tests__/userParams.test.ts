@@ -86,6 +86,20 @@ describe('getUserParams', () => {
     expect(params?.obdobi).toBe('812');
   });
 
+  // The later stages reject into the same catch, and the guarantee has to hold
+  // for the whole chain rather than just its first link.
+  it('keeps the stored record when a later refresh stage throws', async () => {
+    idbGet.mockResolvedValue({ studium: '149707', obdobi: '812', studentId: '', fullName: '' });
+    fetchUserBaseIds.mockResolvedValue(COMPLETE);
+    fetchUserStudyDetails.mockRejectedValue(new Error('offline'));
+    expect((await getUserParams())?.studium).toBe('149707');
+
+    clearUserParamsCache();
+    fetchUserStudyDetails.mockResolvedValue({});
+    fetchUserNetId.mockRejectedValue(new Error('offline'));
+    expect((await getUserParams())?.studium).toBe('149707');
+  });
+
   // Nothing stored and nothing fetchable is still null, not a half-object.
   it('returns null when there is neither a stored record nor a fetch', async () => {
     idbGet.mockResolvedValue(undefined);
