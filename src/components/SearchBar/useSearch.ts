@@ -49,12 +49,21 @@ function dedupeByCode(results: SearchResult[]): SearchResult[] {
   const passthrough: SearchResult[] = [];
   for (const r of results) {
     const code = r.subjectCode;
-    if (!code) { passthrough.push(r); continue; }
+    if (!code) {
+      passthrough.push(r);
+      continue;
+    }
     const cur = best.get(code);
-    if (!cur) { best.set(code, r); continue; }
+    if (!cur) {
+      best.set(code, r);
+      continue;
+    }
     const curEnrolled = cur.id.startsWith('enrolled-');
     const rEnrolled = r.id.startsWith('enrolled-');
-    if (curEnrolled !== rEnrolled) { best.set(code, curEnrolled ? cur : r); continue; }
+    if (curEnrolled !== rEnrolled) {
+      best.set(code, curEnrolled ? cur : r);
+      continue;
+    }
     best.set(code, semesterRank(r.semester) > semesterRank(cur.semester) ? r : cur);
   }
   return [...best.values(), ...passthrough];
@@ -64,12 +73,12 @@ export type SearchScope = 'faculty' | 'all';
 
 export function useSearch(query: string, subjectsOnly = false) {
   const { t, language } = useTranslation();
-  const subjects = useAppStore(s => s.subjects);
-  const recentSearches = useAppStore(s => s.recentSearches);
-  const saveRecentSearch = useAppStore(s => s.saveRecentSearch);
-  const executeSearch = useAppStore(s => s.executeSearch);
+  const subjects = useAppStore((s) => s.subjects);
+  const recentSearches = useAppStore((s) => s.recentSearches);
+  const saveRecentSearch = useAppStore((s) => s.saveRecentSearch);
+  const executeSearch = useAppStore((s) => s.executeSearch);
 
-  const studyPlan = useAppStore(s => s.studyPlanDual);
+  const studyPlan = useAppStore((s) => s.studyPlanDual);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [sections, setSections] = useState<SearchSection[]>([]);
@@ -100,17 +109,26 @@ export function useSearch(query: string, subjectsOnly = false) {
     return codes;
   }, [studyPlan]);
 
-  const filteredResults = useMemo(() => sections.flatMap(s => s.results), [sections]);
+  const filteredResults = useMemo(() => sections.flatMap((s) => s.results), [sections]);
 
   const saveToHistory = (result: SearchResult) =>
     saveRecentSearch(result, t('search.recentlySearched'));
 
   // A fresh query starts from the default (faculty) scope.
-  useEffect(() => { setScope('faculty'); }, [query]);
+  //
+  // The three set-state-in-effect suppressions in this hook are pre-existing:
+  // the rule postdates the code, and here resetting the scope IS the effect.
+  // Restructuring a debounced search hook to satisfy a lint rule is a refactor,
+  // not a lint fix — flagged rather than contorted.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- see above
+    setScope('faculty');
+  }, [query]);
 
   // Instant local results (enrolled subjects)
   useEffect(() => {
     if (query.trim().length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing, see above
       setSections([]);
       setSelectedIndex(-1);
       setIsLoading(false);
@@ -122,9 +140,12 @@ export function useSearch(query: string, subjectsOnly = false) {
     const enrolledResults: SearchResult[] = [];
     if (subjects?.data) {
       for (const [code, info] of Object.entries(subjects.data)) {
-        const name = language === 'en' ? (info.nameEn || info.displayName) : (info.nameCs || info.displayName);
-        const targets = [name, info.displayName, code, info.nameCs, info.nameEn].filter(Boolean) as string[];
-        if (targets.some(target => fuzzyIncludes(target, searchQuery))) {
+        const name =
+          language === 'en' ? info.nameEn || info.displayName : info.nameCs || info.displayName;
+        const targets = [name, info.displayName, code, info.nameCs, info.nameEn].filter(
+          Boolean
+        ) as string[];
+        if (targets.some((target) => fuzzyIncludes(target, searchQuery))) {
           enrolledResults.push({
             id: `enrolled-${code}`,
             title: name,
@@ -140,77 +161,164 @@ export function useSearch(query: string, subjectsOnly = false) {
 
     const ctx = { searchQuery, studyPlanCodes, userFaculty, userSemester, isLang };
     const newSections: SearchSection[] = [
-      { key: 'subjects', label: t('search.subjects'), results: sortByRelevance(enrolledResults, ctx) },
-    ].filter(s => s.results.length > 0);
+      {
+        key: 'subjects',
+        label: t('search.subjects'),
+        results: sortByRelevance(enrolledResults, ctx),
+      },
+    ].filter((s) => s.results.length > 0);
 
     setSections(newSections);
     setSelectedIndex(0);
     setIsLoading(true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, language]);
 
   // Debounced network results (subjects + people) — merge into sections.
   // Re-runs when language or scope change so EN names / faculty filter apply immediately.
   useEffect(() => {
     let isMounted = true;
-    if (query.trim().length < 2) return () => { isMounted = false; };
+    if (query.trim().length < 2)
+      return () => {
+        isMounted = false;
+      };
 
     // Show loading on every (re)fetch — including widening to the whole university,
     // where the query is unchanged so the instant-results effect doesn't re-run.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing, see above
     setIsLoading(true);
     if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
     debounceTimeout.current = setTimeout(async () => {
       try {
         const searchQuery = query.toLowerCase();
-        const { people, subjects: searchSubjects } = await executeSearch(query, isLang, effectiveSubjekt);
+        const { people, subjects: searchSubjects } = await executeSearch(
+          query,
+          isLang,
+          effectiveSubjekt
+        );
 
         if (!isMounted) return;
 
         const personResults: SearchResult[] = people.map((p, i) => ({
-          id: p.id || `unknown-${i}`, title: p.name, type: 'person',
-          detail: p.type === 'student' ? t('search.student') : p.type === 'teacher' ? t('search.teacher') : t('search.employee'),
-          link: p.link, personType: p.type
+          id: p.id || `unknown-${i}`,
+          title: p.name,
+          type: 'person',
+          detail:
+            p.type === 'student'
+              ? t('search.student')
+              : p.type === 'teacher'
+                ? t('search.teacher')
+                : t('search.employee'),
+          link: p.link,
+          personType: p.type,
         }));
 
-        const subjectResults: SearchResult[] = searchSubjects.map(s => ({
-          id: `subject-${s.id}`, title: s.name, type: 'subject',
-          detail: [s.code, s.semester, s.faculty].filter(p => p && p !== 'N/A').join(' · '),
-          link: s.link, subjectCode: s.code, subjectId: s.id, faculty: s.faculty, semester: s.semester,
+        const subjectResults: SearchResult[] = searchSubjects.map((s) => ({
+          id: `subject-${s.id}`,
+          title: s.name,
+          type: 'subject',
+          detail: [s.code, s.semester, s.faculty].filter((p) => p && p !== 'N/A').join(' · '),
+          link: s.link,
+          subjectCode: s.code,
+          subjectId: s.id,
+          faculty: s.faculty,
+          semester: s.semester,
           isEnglishVariant: isEnglishVariantCode(s.code),
         }));
 
         const ctx = { searchQuery, studyPlanCodes, userFaculty, userSemester, isLang };
-        setSections(prev => {
+        setSections((prev) => {
           const enrolledCodes = new Set(
-            prev.find(s => s.key === 'subjects')?.results.filter(r => r.id.startsWith('enrolled-')).map(r => r.subjectCode) ?? []
+            prev
+              .find((s) => s.key === 'subjects')
+              ?.results.filter((r) => r.id.startsWith('enrolled-'))
+              .map((r) => r.subjectCode) ?? []
           );
-          const networkSubjects = subjectResults.filter(s => !enrolledCodes.has(s.subjectCode));
-          const existingSubjects = prev.find(s => s.key === 'subjects')?.results ?? [];
+          const networkSubjects = subjectResults.filter((s) => !enrolledCodes.has(s.subjectCode));
+          // ONLY the enrolled rows survive a refetch — never subjects a previous
+          // response carried. Merging the whole previous section meant narrowing
+          // did not narrow: a student who widened to the university and then
+          // chose "just my faculty" kept every other faculty's subject on
+          // screen, under a label promising their own. Enrolled rows are not a
+          // search result — they are derived locally from the student's own
+          // subjects and re-added instantly by the effect above — so they are
+          // the one thing that must not blink out between fetches.
+          const enrolledExisting = (prev.find((s) => s.key === 'subjects')?.results ?? []).filter(
+            (r) => r.id.startsWith('enrolled-')
+          );
           // Collapse same-code rows (e.g. winter + summer of EBC-ST) to one, then rank.
-          const mergedSubjects = sortByRelevance(dedupeByCode([...existingSubjects, ...networkSubjects]), ctx);
+          const mergedSubjects = sortByRelevance(
+            dedupeByCode([...enrolledExisting, ...networkSubjects]),
+            ctx
+          );
 
           const newSections: SearchSection[] = [
             { key: 'subjects', label: t('search.subjects'), results: mergedSubjects },
-            ...(subjectsOnly ? [] : [{ key: 'people', label: t('search.people'), results: personResults }]),
+            ...(subjectsOnly
+              ? []
+              : [{ key: 'people', label: t('search.people'), results: personResults }]),
           ].filter((s): s is SearchSection => !!s && s.results.length > 0);
 
           return newSections;
         });
-      } catch { /* keep local results */ } finally { if (isMounted) setIsLoading(false); }
+      } catch {
+        /* keep local results */
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
     }, 250);
     return () => {
       isMounted = false;
       if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, isLang, effectiveSubjekt]);
 
   const widenToUniversity = () => setScope('all');
-  const narrowToFaculty = () => setScope('faculty');
+
+  // Narrowing has to bite on the tap, not when the answer lands. The refetch is
+  // debounced by 250 ms and then still has to reach IS; leaving the previous
+  // rows up for that interval keeps every other faculty's subject on screen
+  // under a control that has already flipped to "widen to the whole
+  // university" — the same broken promise this fix is about, just narrower.
+  //
+  // Only the network subject rows go. Enrolled rows are derived locally from
+  // the student's own subjects, and people are not faculty-scoped at all
+  // (`searchGlobal` passes `subjekt` to the subject query alone), so neither
+  // has anything to do with the scope that just changed.
+  const narrowToFaculty = () => {
+    if (scope === 'faculty') return;
+    setSections((prev) =>
+      prev
+        .map((s) =>
+          s.key === 'subjects'
+            ? { ...s, results: s.results.filter((r) => r.id.startsWith('enrolled-')) }
+            : s
+        )
+        .filter((s) => s.results.length > 0)
+    );
+    // The list just shrank; a stale index would point past its end, and Enter
+    // reads that slot directly.
+    setSelectedIndex(0);
+    setScope('faculty');
+  };
 
   return {
-    isOpen, setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading,
-    recentSearches, studiumId, saveToHistory,
-    scope, canWiden, canScopeToFaculty, widenToUniversity, narrowToFaculty, userFaculty,
+    isOpen,
+    setIsOpen,
+    selectedIndex,
+    setSelectedIndex,
+    sections,
+    filteredResults,
+    isLoading,
+    recentSearches,
+    studiumId,
+    saveToHistory,
+    scope,
+    canWiden,
+    canScopeToFaculty,
+    widenToUniversity,
+    narrowToFaculty,
+    userFaculty,
   };
 }
