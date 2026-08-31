@@ -1045,7 +1045,9 @@
     "confirmPassword": "Potvrzení hesla",
     "passwordTooShort": "Heslo musí mít alespoň 12 znaků",
     "passwordChanged": "Heslo změněno",
-    "passwordChangeFailed": "Nepodařilo se změnit heslo"
+    "passwordChangeFailed": "Nepodařilo se změnit heslo",
+    "createAccount": "Vytvořit účet",
+    "displayName": "Zobrazovaný název"
   },
   "mobile": {
     "nav": {

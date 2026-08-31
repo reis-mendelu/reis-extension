@@ -38,3 +38,24 @@ export async function resetSocietyPassword(
   if (!data?.password) return { error: 'reset_failed' };
   return { password: data.password };
 }
+
+/**
+ * Creates the auth user and the account row in one server-side call, so the two
+ * cannot diverge. Returns the generated password ONCE, under the same rules as
+ * resetSocietyPassword.
+ */
+export async function createSocietyAccount(
+  username: string,
+  associationName: string
+): Promise<{ password?: string; error?: string }> {
+  const { data, error } = await adminAuthClient.functions.invoke('society-accounts', {
+    body: { action: 'create', username, associationName },
+  });
+  if (error) {
+    logError('Api.createSocietyAccount', error);
+    return { error: 'create_failed' };
+  }
+  if (data?.error) return { error: String(data.error) };
+  if (!data?.password) return { error: 'create_failed' };
+  return { password: data.password };
+}

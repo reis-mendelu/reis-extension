@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import {
+  createSocietyAccount,
   listSocietyAccounts,
   resetSocietyPassword,
   type SocietyAccountRow,
@@ -19,6 +20,8 @@ export function SocietyAccountsPanel() {
   const [password, setPassword] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newLabel, setNewLabel] = useState('');
 
   useEffect(() => {
     void listSocietyAccounts().then(setAccounts);
@@ -31,6 +34,22 @@ export function SocietyAccountsPanel() {
     const res = await resetSocietyPassword(selected);
     if (res.password) setPassword(res.password);
     else setFailed(true);
+    setBusy(false);
+  };
+
+  const create = async () => {
+    if (busy || !newName.trim() || !newLabel.trim()) return;
+    setBusy(true);
+    setFailed(false);
+    const res = await createSocietyAccount(newName.trim(), newLabel.trim());
+    if (res.password) {
+      setPassword(res.password);
+      setNewName('');
+      setNewLabel('');
+      setAccounts(await listSocietyAccounts());
+    } else {
+      setFailed(true);
+    }
     setBusy(false);
   };
 
@@ -63,6 +82,41 @@ export function SocietyAccountsPanel() {
           {t('admin.resetFailed')}
         </p>
       )}
+
+      <div className="divider" />
+
+      <h3 className="font-bold">{t('admin.createAccount')}</h3>
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="opacity-70">{t('admin.username')}</span>
+        <input
+          aria-label={t('admin.username')}
+          type="text"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          className="input input-bordered"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="opacity-70">{t('admin.displayName')}</span>
+        <input
+          aria-label={t('admin.displayName')}
+          type="text"
+          className="input input-bordered"
+          value={newLabel}
+          onChange={(e) => setNewLabel(e.target.value)}
+        />
+      </label>
+      <button
+        type="button"
+        className="btn btn-primary"
+        disabled={busy || !newName.trim() || !newLabel.trim()}
+        onClick={create}
+      >
+        {t('admin.createAccount')}
+      </button>
 
       {password && (
         <GeneratedPasswordDialog password={password} onClose={() => setPassword(null)} />

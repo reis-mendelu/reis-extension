@@ -4,9 +4,11 @@ import { SocietyAccountsPanel } from '../SocietyAccountsPanel';
 
 const resetSocietyPassword = vi.fn();
 const listSocietyAccounts = vi.fn();
+const createSocietyAccount = vi.fn();
 vi.mock('../../../api/societyAccounts', () => ({
   resetSocietyPassword: (...a: unknown[]) => resetSocietyPassword(...a),
   listSocietyAccounts: (...a: unknown[]) => listSocietyAccounts(...a),
+  createSocietyAccount: (...a: unknown[]) => createSocietyAccount(...a),
 }));
 
 beforeEach(() => {
@@ -41,5 +43,35 @@ describe('SocietyAccountsPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Obnovit heslo' }));
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
+  });
+
+  it('creates a society and shows its password once', async () => {
+    createSocietyAccount.mockResolvedValueOnce({ password: 'Fresh2345Pass6789Xyz' });
+    render(<SocietyAccountsPanel />);
+
+    fireEvent.change(await screen.findByLabelText('Název spolku'), {
+      target: { value: 'esn' },
+    });
+    fireEvent.change(screen.getByLabelText('Zobrazovaný název'), {
+      target: { value: 'ESN Mendelu' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Vytvořit účet' }));
+
+    expect(await screen.findByText('Fresh2345Pass6789Xyz')).toBeInTheDocument();
+    expect(createSocietyAccount).toHaveBeenCalledWith('esn', 'ESN Mendelu');
+  });
+
+  it('keeps create disabled until both fields are filled', async () => {
+    render(<SocietyAccountsPanel />);
+    const button = await screen.findByRole('button', { name: 'Vytvořit účet' });
+    expect(button).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText('Název spolku'), { target: { value: 'esn' } });
+    expect(button).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText('Zobrazovaný název'), {
+      target: { value: 'ESN Mendelu' },
+    });
+    expect(button).toBeEnabled();
   });
 });

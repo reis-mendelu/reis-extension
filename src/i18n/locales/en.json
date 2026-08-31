@@ -1045,7 +1045,9 @@
     "confirmPassword": "Confirm password",
     "passwordTooShort": "Password must be at least 12 characters",
     "passwordChanged": "Password changed",
-    "passwordChangeFailed": "Could not change the password"
+    "passwordChangeFailed": "Could not change the password",
+    "createAccount": "Create account",
+    "displayName": "Display name"
   },
   "mobile": {
     "nav": {
