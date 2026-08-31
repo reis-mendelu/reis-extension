@@ -3,9 +3,18 @@ import { fetchWithAuth, BASE_URL } from '../../api/client';
 export async function fetchUserBaseIds() {
   const res = await fetchWithAuth(`${BASE_URL}/auth/student/studium.pl`),
     h = await res.text();
+  // IS serves this page in whichever language the SESSION is in — there is no
+  // `lang=` on the request, and the page carries no lang attribute either. Both
+  // labels below were read off a real English `studium.pl` from a device whose
+  // stored params had sat with an empty `studentId` and `fullName` for weeks:
+  // the identity regexes only spoke Czech, while `studium`/`obdobi` carry no
+  // words at all and kept parsing, so nothing ever looked broken. The Erasmus
+  // test right below has always matched both languages; these two now do too.
   const m = h.match(/studium=(\d+);obdobi=(\d+)/),
-    idm = h.match(/Identifikační\s+číslo\s+uživatele:\s*<\/td>\s*<td[^>]*>\s*(\d+)/i);
-  const nm = h.match(/id="prihlasen"[^>]*>\s*Přihlášen:&nbsp;([^&]+)/i);
+    idm = h.match(
+      /(?:Identifikační\s+číslo\s+uživatele|User's\s+identification\s+number):\s*<\/td>\s*<td[^>]*>\s*(\d+)/i
+    );
+  const nm = h.match(/id="prihlasen"[^>]*>\s*(?:Přihlášen|Logged\s+in):&nbsp;([^&]+)/i);
 
   // Stricter Erasmus detection:
   // Usually, Erasmus students have 'Erasmus+' in their study program name or a specific active study row.
