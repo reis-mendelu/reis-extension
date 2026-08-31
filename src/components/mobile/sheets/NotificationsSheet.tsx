@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
@@ -58,6 +59,14 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
   const opensSomewhere = (n: (typeof notifications)[number]) =>
     !!n.link || !mapEventsLoaded || mapEvents.some((e) => e.id === n.id);
 
+  // One activation at a time. Awaiting the load opens a window the synchronous
+  // version never had, and a second tap inside it ran a second handler: two
+  // fetches (loadMapEvents guards on "already loaded", not on "already
+  // loading") and two increment_post_click RPCs for one intent. A slow row is
+  // exactly the row a student taps twice, so this is the common case, not the
+  // exotic one. The guard spans the in-flight load and nothing more.
+  const openingRef = useRef(false);
+
   const openNotification = async (n: (typeof notifications)[number]) => {
     const track = () => {
       if (!n.associationId?.startsWith('academic_')) trackNotificationClick(n.id);
@@ -76,12 +85,18 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
     // keeps this from being the very dead tap the fix removes, reachable
     // through a race. loadMapEvents is a no-op once loaded, and retries when
     // the previous attempt failed.
-    if (!mapEventsLoaded) await loadMapEvents();
-    if (!useAppStore.getState().mapEvents.some((e) => e.id === n.id)) return;
-    track();
-    focusEventById(n.id, { fly: true });
-    setMobileTab('map');
-    onClose();
+    if (openingRef.current) return;
+    openingRef.current = true;
+    try {
+      if (!mapEventsLoaded) await loadMapEvents();
+      if (!useAppStore.getState().mapEvents.some((e) => e.id === n.id)) return;
+      track();
+      focusEventById(n.id, { fly: true });
+      setMobileTab('map');
+      onClose();
+    } finally {
+      openingRef.current = false;
+    }
   };
 
   return (
