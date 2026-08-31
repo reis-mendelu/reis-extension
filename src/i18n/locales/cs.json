@@ -1039,7 +1039,13 @@
     "copy": "Kopírovat",
     "copied": "Zkopírováno",
     "resetFailed": "Nepodařilo se obnovit heslo",
-    "close": "Zavřít"
+    "close": "Zavřít",
+    "changeMyPassword": "Změnit heslo",
+    "newPassword": "Nové heslo",
+    "confirmPassword": "Potvrzení hesla",
+    "passwordTooShort": "Heslo musí mít alespoň 12 znaků",
+    "passwordChanged": "Heslo změněno",
+    "passwordChangeFailed": "Nepodařilo se změnit heslo"
   },
   "mobile": {
     "nav": {

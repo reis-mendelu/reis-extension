@@ -1039,7 +1039,13 @@
     "copy": "Copy",
     "copied": "Copied",
     "resetFailed": "Could not reset the password",
-    "close": "Close"
+    "close": "Close",
+    "changeMyPassword": "Change password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "passwordTooShort": "Password must be at least 12 characters",
+    "passwordChanged": "Password changed",
+    "passwordChangeFailed": "Could not change the password"
   },
   "mobile": {
     "nav": {

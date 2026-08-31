@@ -29,6 +29,8 @@ export interface AdminSlice {
   /** `username` is a society name ("supef") or, for the break-glass admin, a full address. */
   adminLogin: (username: string, password: string) => Promise<{ error?: string }>;
   adminLogout: () => Promise<void>;
+  /** Change the signed-in account's own password. Needs no admin rights. */
+  changeMyPassword: (newPassword: string) => Promise<{ error?: string }>;
   loadAdminSession: () => Promise<void>;
   loadSocietyPosts: () => Promise<void>;
 }
@@ -114,6 +116,20 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     // every open and announced by SuggestionsToast.
     if (role === 'reis_admin') await get().loadSuggestions();
     await get().loadSocietyPosts();
+    return {};
+  },
+  changeMyPassword: async (newPassword) => {
+    // 12 is above the project's Auth minimum on purpose: these are shared
+    // society credentials passed between committee members, so they live longer
+    // and get handled more than a personal password would.
+    if (newPassword.length < 12) return { error: 'too_short' };
+    const { error } = await adminAuthClient.auth.updateUser({ password: newPassword });
+    if (error) {
+      // The password itself is never passed to logError — that payload leaves
+      // the device.
+      logError('Admin.changeMyPassword', error);
+      return { error: 'change_failed' };
+    }
     return {};
   },
   adminLogout: async () => {

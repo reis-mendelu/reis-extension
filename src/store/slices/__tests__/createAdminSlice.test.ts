@@ -5,6 +5,7 @@ const getSession = vi.fn();
 const signOut = vi.fn(async () => ({ error: null }));
 const maybeSingle = vi.fn();
 const eqSpy = vi.fn();
+const updateUser = vi.fn();
 const order = vi.fn(async () => ({ data: [] as unknown[], error: null }));
 vi.mock('../../../services/admin/authClient', () => ({
   adminAuthClient: {
@@ -12,6 +13,7 @@ vi.mock('../../../services/admin/authClient', () => ({
       signInWithPassword: (...a: unknown[]) => signIn(...a),
       getSession: () => getSession(),
       signOut: () => signOut(),
+      updateUser: (...a: unknown[]) => updateUser(...a),
     },
     from: () => ({
       select: () => ({
@@ -67,6 +69,7 @@ describe('createAdminSlice', () => {
     signOut.mockClear();
     maybeSingle.mockReset();
     eqSpy.mockReset();
+    updateUser.mockReset();
     order.mockClear();
     vi.mocked(listMyPosts).mockClear();
     set = vi.fn((u) => {
@@ -257,6 +260,22 @@ describe('createAdminSlice', () => {
     await state.adminLogin('supef', 'pw');
 
     expect(eqSpy).toHaveBeenCalledWith('user_id', 'uid-123');
+  });
+
+  it('changes the signed-in account password', async () => {
+    updateUser.mockResolvedValueOnce({ data: {}, error: null });
+
+    const res = await state.changeMyPassword('NewPassword2345');
+
+    expect(updateUser).toHaveBeenCalledWith({ password: 'NewPassword2345' });
+    expect(res.error).toBeUndefined();
+  });
+
+  it('rejects a password shorter than 12 characters without calling Supabase', async () => {
+    const res = await state.changeMyPassword('short');
+
+    expect(res.error).toBe('too_short');
+    expect(updateUser).not.toHaveBeenCalled();
   });
 
   it('restores a persisted session by user id too', async () => {
