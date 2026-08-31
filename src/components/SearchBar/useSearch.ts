@@ -275,7 +275,33 @@ export function useSearch(query: string, subjectsOnly = false) {
   }, [query, isLang, effectiveSubjekt]);
 
   const widenToUniversity = () => setScope('all');
-  const narrowToFaculty = () => setScope('faculty');
+
+  // Narrowing has to bite on the tap, not when the answer lands. The refetch is
+  // debounced by 250 ms and then still has to reach IS; leaving the previous
+  // rows up for that interval keeps every other faculty's subject on screen
+  // under a control that has already flipped to "widen to the whole
+  // university" — the same broken promise this fix is about, just narrower.
+  //
+  // Only the network subject rows go. Enrolled rows are derived locally from
+  // the student's own subjects, and people are not faculty-scoped at all
+  // (`searchGlobal` passes `subjekt` to the subject query alone), so neither
+  // has anything to do with the scope that just changed.
+  const narrowToFaculty = () => {
+    if (scope === 'faculty') return;
+    setSections((prev) =>
+      prev
+        .map((s) =>
+          s.key === 'subjects'
+            ? { ...s, results: s.results.filter((r) => r.id.startsWith('enrolled-')) }
+            : s
+        )
+        .filter((s) => s.results.length > 0)
+    );
+    // The list just shrank; a stale index would point past its end, and Enter
+    // reads that slot directly.
+    setSelectedIndex(0);
+    setScope('faculty');
+  };
 
   return {
     isOpen,

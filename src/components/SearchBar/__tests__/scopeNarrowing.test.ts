@@ -10,9 +10,13 @@ vi.mock('../../../hooks/useTranslation', () => ({ useTranslation: vi.fn() }));
 
 const mockExecuteSearch = vi.fn();
 
-function setup({ language = 'cz', userFaculty = 'PEF' as string | null } = {}) {
+function setup({
+  language = 'cz',
+  userFaculty = 'PEF' as string | null,
+  subjectsData = {} as Record<string, any>,
+} = {}) {
   const state: any = {
-    subjects: { data: {} },
+    subjects: { data: subjectsData },
     recentSearches: [],
     saveRecentSearch: vi.fn(),
     executeSearch: mockExecuteSearch,
@@ -86,5 +90,60 @@ describe('useSearch — narrowing back to the faculty drops the wider results', 
         ?.results.map((r) => r.subjectCode);
       expect(codes).toEqual(['EBC-ST']);
     });
+  });
+  /**
+   * Narrowing has to bite on the tap, not when the answer lands.
+   *
+   * The refetch is debounced by 250 ms and then still has to reach IS. Dropping
+   * the wider rows only in the response handler left every other faculty's
+   * subject on screen for that whole interval — under a scope control that had
+   * already flipped to "widen to the whole university", i.e. already claiming
+   * the narrow scope the list was not yet showing. The enrolled rows are the
+   * exception, as everywhere else in this hook: they are derived locally from
+   * the student's own subjects, not from the answer being replaced.
+   */
+  it('drops the university-wide rows on the tap, before the refetch resolves', async () => {
+    setup({
+      subjectsData: {
+        'EBC-ST': {
+          displayName: 'Statistika',
+          nameCs: 'Statistika',
+          nameEn: 'Statistics',
+          subjectId: '1',
+        },
+      },
+    });
+    mockExecuteSearch.mockResolvedValueOnce({
+      people: [],
+      subjects: [],
+      subjectsTruncated: false,
+    });
+
+    const { result } = renderHook(() => useSearch('statistika'));
+    await waitFor(() => expect(mockExecuteSearch).toHaveBeenCalledTimes(1));
+
+    mockExecuteSearch.mockResolvedValueOnce({
+      people: [],
+      subjects: [subj('9', 'XYZ-ST', 'Statistika II', 'AF')],
+      subjectsTruncated: false,
+    });
+    act(() => result.current.widenToUniversity());
+    await waitFor(() =>
+      expect(
+        result.current.sections.find((s) => s.key === 'subjects')?.results.map((r) => r.subjectCode)
+      ).toEqual(['EBC-ST', 'XYZ-ST'])
+    );
+
+    // The tap itself. No timers advanced, no response delivered.
+    mockExecuteSearch.mockResolvedValueOnce({
+      people: [],
+      subjects: [],
+      subjectsTruncated: false,
+    });
+    act(() => result.current.narrowToFaculty());
+
+    expect(
+      result.current.sections.find((s) => s.key === 'subjects')?.results.map((r) => r.subjectCode)
+    ).toEqual(['EBC-ST']);
   });
 });
