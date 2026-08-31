@@ -67,11 +67,23 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
   // exotic one. The guard spans the in-flight load and nothing more.
   const openingRef = useRef(false);
 
+  // ...and one activation TOTAL, not one per branch. A linked row returns
+  // before it ever reads `openingRef`, so tapping one while a linkless
+  // activation was still awaiting the map feed used to leave that first
+  // handler alive: the load lands, and it focuses the earlier event and
+  // switches to the map behind the browser the student was just handed. They
+  // come back to somebody else's event instead of the tab they left. The later
+  // tap is the later intent, so it cancels the earlier one outright rather
+  // than queueing behind it.
+  const activationRef = useRef(0);
+
   const openNotification = async (n: (typeof notifications)[number]) => {
     const track = () => {
       if (!n.associationId?.startsWith('academic_')) trackNotificationClick(n.id);
     };
     if (n.link) {
+      activationRef.current += 1;
+      openingRef.current = false;
       track();
       // openExternal, not window.open: on Capacitor that hands
       // the URL to the system browser, which has no IS session.
@@ -87,15 +99,19 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
     // the previous attempt failed.
     if (openingRef.current) return;
     openingRef.current = true;
+    const activation = (activationRef.current += 1);
     try {
       if (!mapEventsLoaded) await loadMapEvents();
+      if (activationRef.current !== activation) return;
       if (!useAppStore.getState().mapEvents.some((e) => e.id === n.id)) return;
       track();
       focusEventById(n.id, { fly: true });
       setMobileTab('map');
       onClose();
     } finally {
-      openingRef.current = false;
+      // Only if nothing superseded us — whoever did has already reopened the
+      // gate for itself, and closing it again here would wedge the row shut.
+      if (activationRef.current === activation) openingRef.current = false;
     }
   };
 

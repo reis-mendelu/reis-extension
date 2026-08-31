@@ -12,6 +12,9 @@ vi.mock('../../../../services/spolky', async (importOriginal) => ({
   trackNotificationClick: vi.fn(),
 }));
 
+// The linked branch hands the URL to the system browser; a unit test has none.
+vi.mock('../../../../mobile/openExternal', () => ({ openExternal: vi.fn() }));
+
 // 'admin' bypasses the spolky-subscription filter (always shown), keeping these
 // independent of useSpolkySettings' async IDB-backed state.
 const notification: SpolekNotification = {
@@ -183,6 +186,54 @@ describe('NotificationsSheet event notifications', () => {
     render(<NotificationsSheet onClose={vi.fn()} />);
     fireEvent.click(screen.getAllByText('ESN party tonight')[0]!);
     await waitFor(() => expect(useAppStore.getState().mobileTab).toBe('map'));
+  });
+
+  /**
+   * The guard covered a second tap on the SAME kind of row and nothing else.
+   * A linked notification returns before ever reading `openingRef`, so tapping
+   * one while a linkless activation was still awaiting the map feed left that
+   * first handler alive: the load lands, and it focuses the earlier event and
+   * switches to the map behind the browser the student was just sent to. They
+   * come back to somebody else's event instead of the tab they left.
+   *
+   * The later tap is the later intent, so it wins — the earlier activation is
+   * cancelled rather than merely queued behind it.
+   */
+  it('cancels an in-flight activation when a linked notification supersedes it', async () => {
+    let release!: () => void;
+    const pending = new Promise<void>((r) => {
+      release = r;
+    });
+    const loadMapEvents = vi.fn(async () => {
+      await pending;
+      useAppStore.setState({ mapEvents: [event], mapEventsLoaded: true } as never);
+    });
+    useAppStore.setState({
+      notifications: {
+        data: [linklessNotification, { ...notification, id: 'n2', title: 'ESN trip signup' }],
+        status: 'success',
+        readIds: new Set(),
+        viewedIds: new Set(),
+        seenDeadlineAlertIds: new Set(),
+      },
+      mapEvents: [],
+      mapEventsLoaded: false,
+      loadMapEvents,
+    } as never);
+
+    render(<NotificationsSheet onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('ESN party tonight'));
+    fireEvent.click(screen.getByText('ESN trip signup'));
+    release();
+    await waitFor(() => expect(loadMapEvents).toHaveBeenCalledTimes(1));
+    await Promise.resolve();
+
+    const state = useAppStore.getState();
+    expect(state.mobileTab).toBe('calendar');
+    expect(state.mapSelection).toBeNull();
+    // The link's own click is the only one that went anywhere.
+    expect(trackNotificationClick).toHaveBeenCalledTimes(1);
+    expect(trackNotificationClick).toHaveBeenCalledWith('n2');
   });
 
   // A notification the map has no row for (a far-future event the public feed
