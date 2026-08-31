@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { NotificationsSheet } from '../NotificationsSheet';
 import { useAppStore } from '../../../../store/useAppStore';
 import type { SpolekNotification } from '../../../../services/spolky';
@@ -100,6 +100,7 @@ describe('NotificationsSheet event notifications', () => {
         seenDeadlineAlertIds: new Set(),
       },
       mapEvents: [event],
+      mapEventsLoaded: true,
       mapSelection: null,
       mobileTab: 'calendar',
       adminConsoleOpen: false,
@@ -131,16 +132,46 @@ describe('NotificationsSheet event notifications', () => {
   });
 
   it('leaves the row inert when nothing would open', () => {
-    useAppStore.setState({ mapEvents: [] } as never);
+    useAppStore.setState({ mapEvents: [], mapEventsLoaded: true } as never);
     render(<NotificationsSheet onClose={vi.fn()} />);
     const row = screen.getByText('ESN party tonight').closest('button');
     expect(row?.className).toContain('cursor-default');
   });
 
+  /**
+   * The map feed loads on its own schedule and sets `mapEventsLoaded` only on
+   * SUCCESS, so before it lands — or forever, if it failed — every linkless
+   * notification looked inert and the tap returned without acting. That is the
+   * exact dead tap this fix exists to remove, reachable through a race.
+   */
+  it('loads the map feed on tap rather than treating the row as dead', async () => {
+    const loadMapEvents = vi.fn(async () => {
+      useAppStore.setState({ mapEvents: [event], mapEventsLoaded: true } as never);
+    });
+    useAppStore.setState({ mapEvents: [], mapEventsLoaded: false, loadMapEvents } as never);
+    render(<NotificationsSheet onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('ESN party tonight'));
+    await waitFor(() => expect(useAppStore.getState().mobileTab).toBe('map'));
+    expect(loadMapEvents).toHaveBeenCalled();
+    expect(useAppStore.getState().mapSelection).toMatchObject({
+      kind: 'event',
+      event: { id: 'n1' },
+    });
+  });
+
+  // And it must not LOOK dead while that load is still outstanding.
+  it('renders the row as interactive while the map feed is still loading', () => {
+    useAppStore.setState({ mapEvents: [], mapEventsLoaded: false } as never);
+    render(<NotificationsSheet onClose={vi.fn()} />);
+    expect(screen.getByText('ESN party tonight').closest('button')?.className).toContain(
+      'cursor-pointer'
+    );
+  });
+
   // A notification the map has no row for (a far-future event the public feed
   // filters out) must not leave the student on a map with nothing selected.
   it('leaves the map alone when no event matches', () => {
-    useAppStore.setState({ mapEvents: [] } as never);
+    useAppStore.setState({ mapEvents: [], mapEventsLoaded: true } as never);
     render(<NotificationsSheet onClose={vi.fn()} />);
     fireEvent.click(screen.getByText('ESN party tonight'));
     const state = useAppStore.getState();

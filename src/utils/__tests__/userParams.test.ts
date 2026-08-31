@@ -69,4 +69,27 @@ describe('getUserParams', () => {
     const params = await getUserParams();
     expect(params?.studium).toBe('149707');
   });
+
+  /**
+   * And the same when it THROWS, which is the common case offline — a rejection
+   * used to fall through to the outer catch and return null, so adding the
+   * refetch would have cost every offline launch the `studium` that the
+   * schedule, study plan, teaching weeks and grade history all read. Before the
+   * refetch existed this path never touched the network at all, so this is a
+   * regression the refetch introduced rather than a pre-existing gap.
+   */
+  it('keeps the stored record when the refetch throws', async () => {
+    idbGet.mockResolvedValue({ studium: '149707', obdobi: '812', studentId: '', fullName: '' });
+    fetchUserBaseIds.mockRejectedValue(new Error('offline'));
+    const params = await getUserParams();
+    expect(params?.studium).toBe('149707');
+    expect(params?.obdobi).toBe('812');
+  });
+
+  // Nothing stored and nothing fetchable is still null, not a half-object.
+  it('returns null when there is neither a stored record nor a fetch', async () => {
+    idbGet.mockResolvedValue(undefined);
+    fetchUserBaseIds.mockRejectedValue(new Error('offline'));
+    expect(await getUserParams()).toBeNull();
+  });
 });

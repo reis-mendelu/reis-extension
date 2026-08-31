@@ -27,6 +27,8 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
   const { alerts } = useDeadlineAlerts();
   const hasContent = notifications.length > 0 || alerts.length > 0;
   const mapEvents = useAppStore((s) => s.mapEvents);
+  const mapEventsLoaded = useAppStore((s) => s.mapEventsLoaded);
+  const loadMapEvents = useAppStore((s) => s.loadMapEvents);
   const focusEventById = useAppStore((s) => s.focusEventById);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
 
@@ -49,11 +51,14 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
    * that actually went somewhere.
    */
   // The same question the tap asks, asked for the affordance: a row that opens
-  // something has to look like it does.
+  // something has to look like it does. While the map feed is still outstanding
+  // the answer is "assume it does" — every notification IS an event row, so a
+  // match is the overwhelmingly common case, and guessing the other way paints
+  // the row as dead for as long as the fetch takes.
   const opensSomewhere = (n: (typeof notifications)[number]) =>
-    !!n.link || mapEvents.some((e) => e.id === n.id);
+    !!n.link || !mapEventsLoaded || mapEvents.some((e) => e.id === n.id);
 
-  const openNotification = (n: (typeof notifications)[number]) => {
+  const openNotification = async (n: (typeof notifications)[number]) => {
     const track = () => {
       if (!n.associationId?.startsWith('academic_')) trackNotificationClick(n.id);
     };
@@ -65,7 +70,14 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
       onClose();
       return;
     }
-    if (!opensSomewhere(n)) return;
+    // `mapEventsLoaded` flips only on SUCCESS, so it is false both before the
+    // feed lands and forever after a failed load. Waiting for it here — rather
+    // than reading whatever happens to be in the store at tap time — is what
+    // keeps this from being the very dead tap the fix removes, reachable
+    // through a race. loadMapEvents is a no-op once loaded, and retries when
+    // the previous attempt failed.
+    if (!mapEventsLoaded) await loadMapEvents();
+    if (!useAppStore.getState().mapEvents.some((e) => e.id === n.id)) return;
     track();
     focusEventById(n.id, { fly: true });
     setMobileTab('map');
@@ -99,7 +111,7 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
                 key={n.id}
                 notification={n}
                 onVisible={() => markVisible(n.id)}
-                onClick={() => openNotification(n)}
+                onClick={() => void openNotification(n)}
                 clickable={opensSomewhere(n)}
               />
             ))}

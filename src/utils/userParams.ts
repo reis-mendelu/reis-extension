@@ -31,8 +31,16 @@ export async function getUserParams(): Promise<UserParams | null> {
   if (_inflight) return _inflight;
 
   _inflight = (async () => {
+    // Hoisted so the catch below can still fall back to it: the refetch this
+    // function now performs can REJECT (offline, an auth bounce, a truncated
+    // body), and a rejection reaching the outer catch returned null and threw
+    // away a perfectly usable record. Before the refetch existed this path never
+    // touched the network, so that is a regression the refetch brought with it
+    // rather than a pre-existing gap.
+    let stored: Partial<UserParams> | undefined;
     try {
-      const stored = await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS);
+      stored = (await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS)) as
+        Partial<UserParams> | undefined;
       // `studium`/`obdobi` alone are not a complete record. They are the
       // two fields that carry no words, so they survived an English
       // `studium.pl` that left `studentId` and `fullName` empty — and
@@ -67,7 +75,10 @@ export async function getUserParams(): Promise<UserParams | null> {
       return params;
     } catch (e) {
       logError('getUserParams', e);
-      return null;
+      // Stale identity beats none: `studium` is what the schedule, the study
+      // plan, the teaching weeks and the grade history all read, and the next
+      // launch tries the repair again.
+      return (stored as UserParams | undefined) ?? null;
     }
   })();
 
