@@ -9,6 +9,7 @@ import { AdminConsoleMap } from './AdminConsoleMap';
 import { AdminLoginScreen } from './AdminLoginScreen';
 import { MobileAdminConsole } from './MobileAdminConsole';
 import { SuggestionsInbox } from './SuggestionsInbox';
+import { SocietyAccountsPanel } from './SocietyAccountsPanel';
 
 /**
  * The admin surface, reached only through "Spravovat spolky" in the profile
@@ -29,7 +30,7 @@ export function AdminConsole() {
   // nothing else — it has no business reading another society's students.
   const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
   const unread = useAppStore((s) => s.suggestionsUnread);
-  const [pane, setPane] = useState<'events' | 'suggestions'>('events');
+  const [pane, setPane] = useState<'events' | 'suggestions' | 'accounts'>('events');
   const { t } = useTranslation();
 
   if (!session) {
@@ -84,10 +85,21 @@ export function AdminConsole() {
                   </span>
                 )}
               </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={pane === 'accounts'}
+                onClick={() => setPane('accounts')}
+                className={`tab flex-1 ${pane === 'accounts' ? 'tab-active font-semibold' : ''}`}
+              >
+                {t('admin.accountsTab')}
+              </button>
             </div>
           )}
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            {isReisAdmin && pane === 'suggestions' ? <SuggestionsInbox /> : <AdminEventList />}
+          <div className="min-h-0 flex-1 overflow-y-auto p-2">
+            {isReisAdmin && pane === 'suggestions' && <SuggestionsInbox />}
+            {isReisAdmin && pane === 'accounts' && <SocietyAccountsPanel />}
+            {(!isReisAdmin || pane === 'events') && <AdminEventList />}
           </div>
         </aside>
         <div className="min-w-0 flex-1">

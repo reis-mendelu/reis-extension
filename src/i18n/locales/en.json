@@ -1032,7 +1032,14 @@
     "markTriaged": "Triaged",
     "markDone": "Done",
     "suggestionsTab": "Suggestions",
-    "suggestionsTitle": "Student suggestions"
+    "suggestionsTitle": "Student suggestions",
+    "accountsTab": "Accounts",
+    "resetPassword": "Reset password",
+    "passwordShownOnce": "This password is shown once — copy it now.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "resetFailed": "Could not reset the password",
+    "close": "Close"
   },
   "mobile": {
     "nav": {
