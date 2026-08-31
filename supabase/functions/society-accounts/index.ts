@@ -8,10 +8,6 @@ import { generatePassword, toAuthEmail } from './password.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 // @ts-ignore
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-// Set explicitly with `supabase secrets set`: this project's legacy anon key is
-// DISABLED, so the caller-scoped client below cannot fall back to it.
-// @ts-ignore
-const PUBLISHABLE = Deno.env.get('SUPABASE_PUBLISHABLE_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,20 +25,31 @@ function json(body: unknown, status = 200) {
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
-  if (!SUPABASE_URL || !SERVICE_ROLE || !PUBLISHABLE) return json({ error: 'misconfigured' }, 500);
+  if (!SUPABASE_URL || !SERVICE_ROLE) return json({ error: 'misconfigured' }, 500);
 
   const authHeader = req.headers.get('Authorization');
-  if (!authHeader) return json({ error: 'unauthorized' }, 401);
+  if (!authHeader?.startsWith('Bearer ')) return json({ error: 'unauthorized' }, 401);
+  const token = authHeader.slice('Bearer '.length);
 
-  // The caller's own JWT, so get_my_role() resolves via auth.uid(). The database
-  // is the source of truth for who is an admin — this function never trusts a
-  // role claim from the request body.
-  const asCaller = createClient(SUPABASE_URL, PUBLISHABLE, {
-    global: { headers: { Authorization: authHeader } },
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: role, error: roleErr } = await asCaller.rpc('get_my_role');
-  if (roleErr || role !== 'reis_admin') return json({ error: 'forbidden' }, 403);
+
+  // getUser(token) VERIFIES the caller's JWT against the Auth server — an
+  // unsigned or expired token fails here. Only the verified uid is then used to
+  // look the role up in the database. The role is never read from the request
+  // body, and no anon/publishable key is needed, so the function runs on the
+  // env vars the platform injects by itself.
+  const { data: userData, error: userErr } = await admin.auth.getUser(token);
+  if (userErr || !userData?.user) return json({ error: 'unauthorized' }, 401);
+
+  const { data: caller } = await admin
+    .from('spolky_accounts')
+    .select('role')
+    .eq('user_id', userData.user.id)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (caller?.role !== 'reis_admin') return json({ error: 'forbidden' }, 403);
 
   let body: { action?: string; username?: string; associationName?: string; role?: string };
   try {
@@ -61,10 +68,6 @@ serve(async (req: Request) => {
     return json({ error: 'invalid_username' }, 400);
   }
   const associationId = username.trim().toLowerCase();
-
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 
   if (action === 'create') {
     const password = generatePassword();
