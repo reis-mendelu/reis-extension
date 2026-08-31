@@ -805,19 +805,16 @@ serve(async (req: Request) => {
 });
 ```
 
-- [ ] **Step 6: Set the publishable-key secret**
+- [x] **Step 6: No function secret needed** *(revised during implementation)*
 
-`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected into every Edge
-Function automatically. `SUPABASE_PUBLISHABLE_KEY` is **not**, and the project's
-legacy `SUPABASE_ANON_KEY` is **disabled**, so the caller-scoped client cannot fall
-back to it — set it explicitly:
-
-```bash
-supabase secrets set SUPABASE_PUBLISHABLE_KEY=sb_publishable_QqCe7QTJ6yhYSpRTdBJFSg_Qnt8nBf0 --project-ref zvbpgkmnrqyprtkyxkwn
-```
-
-This key is public by design (it ships in the client bundle and is gated by RLS).
-The `service_role` key is NOT set here — the platform injects it.
+The original plan set `SUPABASE_PUBLISHABLE_KEY` as a function secret so a
+caller-scoped client could call `get_my_role()`. That needed the Supabase CLI,
+which is not installed here, and the project's legacy anon key is disabled so
+there is no fallback. The function was refactored instead to verify the caller
+with `admin.auth.getUser(token)` — which validates the JWT against the Auth
+server — and then read the role from the database by the *verified* uid. It now
+runs on `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` alone, both injected by
+the platform. No secret to set, and one less thing to misconfigure.
 
 - [ ] **Step 7: Deploy and verify the authorization gate**
 
