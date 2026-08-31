@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
@@ -75,7 +75,17 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
   // come back to somebody else's event instead of the tab they left. The later
   // tap is the later intent, so it cancels the earlier one outright rather
   // than queueing behind it.
+  //
+  // Dismissing the sheet is a supersession too — the student who closes it
+  // mid-load has left, and a handler with no surface left must not drag the
+  // map tab up over whatever they went to instead.
   const activationRef = useRef(0);
+  useEffect(
+    () => () => {
+      activationRef.current += 1;
+    },
+    []
+  );
 
   const openNotification = async (n: (typeof notifications)[number]) => {
     const track = () => {

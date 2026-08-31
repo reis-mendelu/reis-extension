@@ -236,6 +236,37 @@ describe('NotificationsSheet event notifications', () => {
     expect(trackNotificationClick).toHaveBeenCalledWith('n2');
   });
 
+  /**
+   * Closing the sheet is a supersession too. The activation lives in a ref on
+   * a component the student has just dismissed, so nothing used to invalidate
+   * it: the load lands, and a handler with no surface left records the click,
+   * selects the abandoned event and drags the map tab up over whatever the
+   * student went to instead.
+   */
+  it('cancels an in-flight activation when the sheet is dismissed under it', async () => {
+    let release!: () => void;
+    const pending = new Promise<void>((r) => {
+      release = r;
+    });
+    const loadMapEvents = vi.fn(async () => {
+      await pending;
+      useAppStore.setState({ mapEvents: [event], mapEventsLoaded: true } as never);
+    });
+    useAppStore.setState({ mapEvents: [], mapEventsLoaded: false, loadMapEvents } as never);
+
+    const { unmount } = render(<NotificationsSheet onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('ESN party tonight'));
+    unmount();
+    release();
+    await waitFor(() => expect(loadMapEvents).toHaveBeenCalledTimes(1));
+    await Promise.resolve();
+
+    const state = useAppStore.getState();
+    expect(state.mobileTab).toBe('calendar');
+    expect(state.mapSelection).toBeNull();
+    expect(trackNotificationClick).not.toHaveBeenCalled();
+  });
+
   // A notification the map has no row for (a far-future event the public feed
   // filters out) must not leave the student on a map with nothing selected.
   it('leaves the map alone when no event matches', () => {
