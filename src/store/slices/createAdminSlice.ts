@@ -34,12 +34,12 @@ export interface AdminSlice {
 }
 
 async function resolveAccount(
-  email: string
+  userId: string
 ): Promise<{ role: AdminRole | null; associationId: string | null }> {
   const { data, error } = await adminAuthClient
     .from('spolky_accounts')
     .select('role, association_id')
-    .eq('email', email)
+    .eq('user_id', userId)
     .maybeSingle();
   if (error) logError('Admin.resolveAccount', error);
   return { role: (data?.role as AdminRole) ?? null, associationId: data?.association_id ?? null };
@@ -94,7 +94,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     }
     const { data, error } = await adminAuthClient.auth.signInWithPassword({ email, password });
     if (error || !data.session) return { error: 'invalid_credentials' };
-    const { role, associationId } = await resolveAccount(email);
+    const { role, associationId } = await resolveAccount(data.session.user.id);
     if (role === null) {
       try {
         await adminAuthClient.auth.signOut();
@@ -138,8 +138,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   loadAdminSession: async () => {
     const { data } = await adminAuthClient.auth.getSession();
     if (!data.session) return;
-    const email = data.session.user.email ?? '';
-    const { role, associationId } = await resolveAccount(email);
+    const { role, associationId } = await resolveAccount(data.session.user.id);
     if (role === null) {
       try {
         await adminAuthClient.auth.signOut();

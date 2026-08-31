@@ -4,6 +4,7 @@ const signIn = vi.fn();
 const getSession = vi.fn();
 const signOut = vi.fn(async () => ({ error: null }));
 const maybeSingle = vi.fn();
+const eqSpy = vi.fn();
 const order = vi.fn(async () => ({ data: [] as unknown[], error: null }));
 vi.mock('../../../services/admin/authClient', () => ({
   adminAuthClient: {
@@ -14,7 +15,10 @@ vi.mock('../../../services/admin/authClient', () => ({
     },
     from: () => ({
       select: () => ({
-        eq: () => ({ maybeSingle: () => maybeSingle(), order: () => order() }),
+        eq: (...a: unknown[]) => {
+          eqSpy(...a);
+          return { maybeSingle: () => maybeSingle(), order: () => order() };
+        },
       }),
     }),
   },
@@ -62,6 +66,7 @@ describe('createAdminSlice', () => {
     getSession.mockReset();
     signOut.mockClear();
     maybeSingle.mockReset();
+    eqSpy.mockReset();
     order.mockClear();
     vi.mocked(listMyPosts).mockClear();
     set = vi.fn((u) => {
@@ -237,6 +242,32 @@ describe('createAdminSlice', () => {
 
     expect(res.error).toBe('invalid_credentials');
     expect(signIn).not.toHaveBeenCalled();
+  });
+
+  it('resolves the account by user id, not by email', async () => {
+    signIn.mockResolvedValueOnce({
+      data: { session: { user: { id: 'uid-123', email: 'supef@societies.invalid' } } },
+      error: null,
+    });
+    maybeSingle.mockResolvedValueOnce({
+      data: { role: 'association', association_id: 'supef' },
+      error: null,
+    });
+
+    await state.adminLogin('supef', 'pw');
+
+    expect(eqSpy).toHaveBeenCalledWith('user_id', 'uid-123');
+  });
+
+  it('restores a persisted session by user id too', async () => {
+    getSession.mockResolvedValue({
+      data: { session: { user: { id: 'uid-456', email: 'reis.mendelu@gmail.com' } } },
+    });
+    maybeSingle.mockResolvedValue({ data: { role: 'reis_admin', association_id: 'reis' } });
+
+    await state.loadAdminSession();
+
+    expect(eqSpy).toHaveBeenCalledWith('user_id', 'uid-456');
   });
 });
 
