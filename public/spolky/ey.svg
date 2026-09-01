@@ -1,0 +1,12 @@
+<!-- EY corporate mark. Source: Wikimedia Commons, File:EY_logo_2019.svg,
+     tagged PD-textlogo (simple geometric shapes / text, below the threshold of
+     originality). Trademark rights still apply to USE of the mark.
+     Modified from the original: a white ground and padding were added so it
+     matches the other /spolky/*.jpg logos, which ship with white backgrounds —
+     the raw file is transparent with #161d23 letters and would disappear
+     against the app's dark theme. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-9 -9 86.67 87.32" width="256" height="258">
+  <rect x="-9" y="-9" width="86.67" height="87.32" fill="#ffffff"/>
+  <path d="M11.09 61.4h17.37v7.92H.67V34.9h19.7l4.61 7.92H11.1v5.68h12.56v7.22H11.1zm35.86-26.5l-5.9 11.23-5.88-11.23H23.65l12.13 20.82v13.6h10.4v-13.6L58.31 34.9z" fill="#161d23" fill-rule="evenodd"/>
+  <path fill="#ffe600" fill-rule="evenodd" d="M68.67 12.81V0L0 24.83z"/>
+</svg>

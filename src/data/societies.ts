@@ -63,15 +63,16 @@ export const SOCIETIES: Record<string, Society> = {
   },
   // EY: a partner company, not a faculty union, so campus-wide like ESN. Pin
   // colour is EY's navy rather than its yellow — the campus basemap is always
-  // light, and #FFE600 on it is unreadable. No `logo` yet: the components fall
-  // back to the glyph on `color`, which beats a 404 on a missing file. Drop the
-  // official mark at public/spolky/ey.jpg and add `logo: '/spolky/ey.jpg'`.
+  // light, and #FFE600 on it is unreadable. Logo is SVG rather than JPG (see
+  // public/spolky/ey.svg for provenance); `logo` is just a path, so the mix is
+  // fine — reIS's own entry already points at an SVG.
   ey: {
     id: 'ey',
     name: 'EY',
     shortName: 'EY',
     color: '#2E2E38',
     glyph: 'EY',
+    logo: '/spolky/ey.svg',
     facultyKey: 'mendelu',
   },
   // The reIS team itself (reis_admin role). Campus-wide like ESN. Uses the app's
