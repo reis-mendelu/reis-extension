@@ -61,6 +61,19 @@ export const SOCIETIES: Record<string, Society> = {
     logo: '/spolky/zf.jpg',
     facultyKey: 'zf',
   },
+  // EY: a partner company, not a faculty union, so campus-wide like ESN. Pin
+  // colour is EY's navy rather than its yellow — the campus basemap is always
+  // light, and #FFE600 on it is unreadable. No `logo` yet: the components fall
+  // back to the glyph on `color`, which beats a 404 on a missing file. Drop the
+  // official mark at public/spolky/ey.jpg and add `logo: '/spolky/ey.jpg'`.
+  ey: {
+    id: 'ey',
+    name: 'EY',
+    shortName: 'EY',
+    color: '#2E2E38',
+    glyph: 'EY',
+    facultyKey: 'mendelu',
+  },
   // The reIS team itself (reis_admin role). Campus-wide like ESN. Uses the app's
   // own logo (served at the extension root, like /spolky/*).
   reis: {

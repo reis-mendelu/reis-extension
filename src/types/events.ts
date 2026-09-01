@@ -47,7 +47,10 @@ export interface Society {
   shortName: string;
   color: string;
   glyph: string;       // short text fallback when the logo image is unavailable
-  logo: string;        // runtime path to the shipped society logo (/spolky/<id>.jpg)
+  /** Runtime path to the shipped logo (/spolky/<id>.jpg). Optional: every call
+   *  site already branches on it and falls back to `glyph` on `color`, so a
+   *  society may ship without an asset rather than 404 on a missing file. */
+  logo?: string;
   facultyKey: FacultyKey;
 }
 
