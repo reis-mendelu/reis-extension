@@ -84,14 +84,20 @@ reserved by RFC 2606 and can never route mail, so the address is honest about
 being unreachable rather than impersonating a real domain. Societies never see
 it.
 
-**Break-glass exception.** `toAuthEmail` passes through any input already
-containing `@` unchanged. The `reis_admin` account deliberately keeps its real
-mailbox (`reis.mendelu@gmail.com`) and can sign in with either `reis` or the full
-address. Every other account is unreachable by mail on purpose, but the most
-privileged one must retain a recovery path that does not depend on the feature
-being built here — otherwise a lockout of `reis_admin` is unrecoverable, since it
-is the only role permitted to reset anyone. This is the one account where email
-recovery stays a deliberate capability rather than an oversight.
+**Break-glass.** `toAuthEmail` passes through any input already containing `@`,
+so an account may be keyed to a real address. But email recovery is **not** the
+break-glass, and cannot be: reis-admin is being retired, the extension's
+`adminAuthClient` sets `detectSessionInUrl: false`, and the extension has no
+public web URL — so a recovery link has nowhere to land. The Supabase dashboard
+confirms it offers only *Send password recovery* and *Send magic link* for an
+existing user, both email-based, and no way to set a password directly.
+
+The break-glass is therefore **Supabase dashboard access**: Authentication →
+Users → Add user → *Create new user* takes an email and a password directly,
+auto-confirmed, sending no mail. Recovering a locked-out `reis_admin` means
+creating a user there and repointing that account's `user_id`. This needs no
+mailbox at all, which is the right shape given the addresses are synthetic by
+design.
 
 ### Authorization re-key
 
@@ -152,16 +158,21 @@ In `src/components/AdminConsole/`, one password surface:
 ## Bootstrap sequence
 
 The ordering trap: the new UI cannot be used until someone is inside, and `reis`
-is the locked-out account.
+is the locked-out account. Email cannot solve it — see Break-glass above.
 
-1. Point Auth **Site URL** at a working origin. The retiring reis-admin console
-   at `http://localhost:8080` is sufficient and proven — its Supabase client uses
-   the default `detectSessionInUrl`, so a recovery fragment establishes a session
-   on arrival. `reismendelu.app` has an empty DNS zone and resolves to nothing,
-   which is why the current links die.
-2. Recover `reis.mendelu@gmail.com` by email — it is the one real mailbox.
-3. Ship this work.
-4. Delete and re-create the six societies through the new UI.
+1. Supabase → Authentication → Users → **Add user → Create new user**. Email
+   `reis@societies.invalid`, a password typed by a human, *Auto confirm user*
+   checked. No mail is sent.
+2. Repoint the `reis` row: `update public.spolky_accounts set user_id = <new
+   uid>, email = 'reis@societies.invalid' where association_id = 'reis'`.
+3. Delete the now-unreferenced `reis.mendelu@gmail.com` auth user.
+4. Log into the extension as `reis` and create the six societies through the
+   Accounts tab, each returning a generated password shown once.
+
+**Open risk:** if Supabase's validator rejects the `.invalid` TLD at step 1, the
+same rejection will hit every society the Edge Function creates. Changing it is
+one constant in `src/services/admin/societyLogin.ts` and its copy in
+`supabase/functions/society-accounts/password.ts`, plus a redeploy.
 
 ## Recommended project-setting changes
 
