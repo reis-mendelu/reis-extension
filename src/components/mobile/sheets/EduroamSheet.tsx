@@ -5,16 +5,19 @@ import { PasswordChip } from '../../Eduroam/PasswordChip';
 import { useEduroamSetup, type EduroamTarget } from '../../../hooks/data/useEduroamSetup';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { isMac, isMobile } from '../../../utils/platform';
-import { canConfigureEduroamNatively } from '../../../mobile/eduroamNative';
+import { canConfigureEduroamNatively, nativeEduroamTarget } from '../../../mobile/eduroamNative';
 
 export interface EduroamSheetProps {
   onClose: () => void;
 }
 
-/** Which eduroam profile to hand the student, guessed from this browser —
- *  there's no device picker here (unlike the desktop drawer): the phone
- *  running this sheet *is* the device being set up. */
+/** Which eduroam profile to hand the student — there's no device picker here
+ *  (unlike the desktop drawer): the device running this sheet *is* the device
+ *  being set up. Inside the app Capacitor says which OS that is; the user-agent
+ *  guess is only for a browser, where a WKWebView could otherwise read as a Mac. */
 function detectTarget(): EduroamTarget {
+  const native = nativeEduroamTarget();
+  if (native) return native;
   if (isMobile()) return isMac() ? 'ios' : 'android';
   return isMac() ? 'mac' : 'windows';
 }
@@ -34,9 +37,9 @@ function NumberBadge({ n }: { n: number }) {
  * `useEduroamSetup` (shared with the desktop `EduroamDrawer`) — this sheet only
  * auto-picks the target and lays out the result.
  *
- * Inside the Android app the first row disappears: Android saves the network
- * itself, so nothing is downloaded and no password is ever typed by a human.
- * Two steps instead of three.
+ * Inside the app (Android or iOS) the first row disappears: the OS saves the
+ * network itself, so nothing is downloaded and no password is ever typed by a
+ * human. Two steps instead of three.
  */
 export function EduroamSheet({ onClose }: EduroamSheetProps) {
   const { t } = useTranslation();
@@ -145,6 +148,12 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
 
         {native && (
           <p className="ml-9 text-sm text-base-content/60">{t('eduroam.native.privacyNote')}</p>
+        )}
+        {/* iOS only: a network added through NEHotspotConfiguration is removed
+            with the app. Android's saved network is the student's own and
+            survives, so the sentence would be false there. */}
+        {native && target === 'ios' && (
+          <p className="ml-9 text-sm text-base-content/60">{t('eduroam.native.iosLifetime')}</p>
         )}
       </div>
     </Sheet>

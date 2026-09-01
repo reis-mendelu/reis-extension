@@ -563,13 +563,14 @@
     "privacyNoteTransfer": "Everything is generated on your device and your private key is protected by a password only you enter at install time. The transfer link is one-time and expires within a few minutes.",
     "native": {
       "button": "Set up eduroam",
-      "working": "Opening Android setup…",
+      "working": "Opening Wi-Fi setup…",
       "saved": "Done — eduroam is saved. You'll connect automatically on campus.",
       "already": "eduroam is already set up on this phone.",
       "cancelled": "Setup wasn't finished. Tap again to retry.",
-      "failed": "Android didn't save the eduroam network. Please try again.",
+      "failed": "Your device didn't save the eduroam network. Please try again.",
       "error": "eduroam setup didn't go through",
-      "privacyNote": "The certificate never leaves your phone — reIS hands it straight to Android."
+      "privacyNote": "The certificate never leaves your device — reIS hands it straight to the system.",
+      "iosLifetime": "eduroam stays set up as long as reIS is installed."
     },
     "manual": {
       "ios": {

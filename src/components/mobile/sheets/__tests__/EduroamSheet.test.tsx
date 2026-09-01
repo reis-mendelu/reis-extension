@@ -4,7 +4,7 @@ import { EduroamSheet } from '../EduroamSheet';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useEduroamSetup } from '../../../../hooks/data/useEduroamSetup';
 import { isMac, isMobile } from '../../../../utils/platform';
-import { canConfigureEduroamNatively } from '../../../../mobile/eduroamNative';
+import { canConfigureEduroamNatively, nativeEduroamTarget } from '../../../../mobile/eduroamNative';
 
 vi.mock('../../../../hooks/data/useEduroamSetup', () => ({
   useEduroamSetup: vi.fn(),
@@ -17,12 +17,14 @@ vi.mock('../../../../utils/platform', () => ({
 
 vi.mock('../../../../mobile/eduroamNative', () => ({
   canConfigureEduroamNatively: vi.fn().mockReturnValue(false),
+  nativeEduroamTarget: vi.fn().mockReturnValue(null),
 }));
 
 const mockedUseEduroamSetup = vi.mocked(useEduroamSetup);
 const mockedIsMac = vi.mocked(isMac);
 const mockedIsMobile = vi.mocked(isMobile);
 const mockedCanConfigureNatively = vi.mocked(canConfigureEduroamNatively);
+const mockedNativeTarget = vi.mocked(nativeEduroamTarget);
 
 type HookState = ReturnType<typeof useEduroamSetup>;
 
@@ -41,12 +43,13 @@ function baseHookState(): HookState {
   };
 }
 
-/** An Android phone running the Capacitor app, where the OS does the setup. */
-function onPhone(over: Partial<HookState> = {}) {
+/** A phone running the Capacitor app, where the OS does the setup. */
+function onPhone(over: Partial<HookState> = {}, os: 'android' | 'ios' = 'android') {
   mockedIsMobile.mockReturnValue(true);
-  mockedIsMac.mockReturnValue(false);
+  mockedIsMac.mockReturnValue(os === 'ios');
+  mockedNativeTarget.mockReturnValue(os);
   mockedCanConfigureNatively.mockReturnValue(true);
-  mockedUseEduroamSetup.mockReturnValue({ ...baseHookState(), target: 'android', ...over });
+  mockedUseEduroamSetup.mockReturnValue({ ...baseHookState(), target: os, ...over });
   useAppStore.setState({ language: 'cz' } as never);
 }
 
@@ -207,14 +210,42 @@ describe('EduroamSheet', () => {
     expect(screen.getByText(/Nastavení eduroamu se nepodařilo/)).toBeInTheDocument();
   });
 
-  it('names the real failure when Android refuses the network', () => {
+  it('names the real failure when the OS refuses the network', () => {
     // "Couldn't prepare the profile" is the wrong sentence here: no profile is
     // involved, and nothing was downloaded.
     onPhone({ status: 'error', outcome: 'failed' });
 
     render(<EduroamSheet onClose={vi.fn()} />);
 
-    expect(screen.getByText(/Android síť eduroam neuložil/)).toBeInTheDocument();
+    expect(screen.getByText(/Zařízení síť eduroam neuložilo/)).toBeInTheDocument();
+  });
+
+  it('takes the target from Capacitor, not the user agent — a WKWebView calling itself Macintosh is still iOS', () => {
+    // The UA guess would read this device as a desktop Mac and hand it a blob
+    // download the WebView does nothing useful with (#212).
+    mockedIsMobile.mockReturnValue(false);
+    mockedIsMac.mockReturnValue(true);
+    mockedNativeTarget.mockReturnValue('ios');
+    mockedCanConfigureNatively.mockReturnValue(true);
+    mockedUseEduroamSetup.mockReturnValue({ ...baseHookState(), target: 'ios' });
+    useAppStore.setState({ language: 'cz' } as never);
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(mockedUseEduroamSetup).toHaveBeenCalledWith('ios');
+  });
+
+  it('tells iOS students that eduroam lives as long as reIS does, and Android students nothing of the sort', () => {
+    // NEHotspotConfiguration networks are removed with the app; Android's
+    // saved network is the student's own and survives. Say so only where true.
+    onPhone({}, 'ios');
+    render(<EduroamSheet onClose={vi.fn()} />);
+    expect(screen.getByText(/dokud máte reIS nainstalovaný/)).toBeInTheDocument();
+    cleanup();
+
+    onPhone({}, 'android');
+    render(<EduroamSheet onClose={vi.fn()} />);
+    expect(screen.queryByText(/dokud máte reIS nainstalovaný/)).not.toBeInTheDocument();
   });
 
   it('never renders a QR on the phone being configured', () => {

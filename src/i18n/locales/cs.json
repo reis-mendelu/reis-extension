@@ -563,13 +563,14 @@
     "privacyNoteTransfer": "Vše se generuje ve vašem zařízení a váš soukromý klíč je chráněn heslem, které zadáte jen vy při instalaci. Přenosový odkaz je jednorázový a vyprší během několika minut.",
     "native": {
       "button": "Nastavit eduroam",
-      "working": "Otevírám nastavení Androidu…",
+      "working": "Otevírám nastavení Wi-Fi…",
       "saved": "Hotovo — eduroam je uložený. Na fakultě se připojíš automaticky.",
       "already": "eduroam už na tomto telefonu nastavený je.",
       "cancelled": "Nastavení nebylo dokončeno. Klepni znovu.",
-      "failed": "Android síť eduroam neuložil. Zkus to prosím znovu.",
+      "failed": "Zařízení síť eduroam neuložilo. Zkus to prosím znovu.",
       "error": "Nastavení eduroamu se nepodařilo",
-      "privacyNote": "Certifikát nikam neodchází — reIS ho předá přímo Androidu."
+      "privacyNote": "Certifikát nikam neodchází — reIS ho předá rovnou systému.",
+      "iosLifetime": "eduroam zůstane nastavený, dokud máte reIS nainstalovaný."
     },
     "manual": {
       "ios": {

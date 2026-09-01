@@ -4,30 +4,80 @@ import cs from '../locales/cs.json';
 
 // Flat (non-manual) keys that must exist as non-empty strings.
 const FLAT_KEYS = [
-  'heroTitle', 'heroSub', 's1', 's2', 'doOnce', 'pwdLabel', 'copy', 'copied',
-  'restart', 'footer', 'footerSub', 'download', 'createQr', 'preparing', 'error', 'regenerate',
-  'openSettings', 'privacyNoteLocal', 'privacyNoteTransfer',
-  'targetIos', 'targetAndroid', 'targetMac', 'targetWindows',
+  'heroTitle',
+  'heroSub',
+  's1',
+  's2',
+  'doOnce',
+  'pwdLabel',
+  'copy',
+  'copied',
+  'restart',
+  'footer',
+  'footerSub',
+  'download',
+  'createQr',
+  'preparing',
+  'error',
+  'regenerate',
+  'openSettings',
+  'privacyNoteLocal',
+  'privacyNoteTransfer',
+  'targetIos',
+  'targetAndroid',
+  'targetMac',
+  'targetWindows',
 ] as const;
 
 // device -> number of steps in the manual
 const DEVICE_STEPS: Record<string, number> = { ios: 4, android: 3, mac: 4, windows: 3 };
 const DO_ONCE_DEVICES = ['android', 'windows'] as const;
 
+// Native-path keys used by the mobile sheet on Android and iOS.
+const NATIVE_KEYS = [
+  'button',
+  'working',
+  'saved',
+  'already',
+  'cancelled',
+  'failed',
+  'error',
+  'privacyNote',
+  'iosLifetime',
+] as const;
+
 function leaf(obj: unknown, path: string): unknown {
-  return path.split('.').reduce<unknown>(
-    (acc, k) => (acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[k] : undefined),
-    obj,
-  );
+  return path
+    .split('.')
+    .reduce<unknown>(
+      (acc, k) =>
+        acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[k] : undefined,
+      obj
+    );
 }
 
 describe('eduroam i18n keys', () => {
-  for (const [label, dict] of [['en', en], ['cs', cs]] as const) {
+  for (const [label, dict] of [
+    ['en', en],
+    ['cs', cs],
+  ] as const) {
     describe(label, () => {
       it.each(FLAT_KEYS)('eduroam.%s is a non-empty string', (key) => {
         const v = leaf(dict, `eduroam.${key}`);
         expect(typeof v).toBe('string');
         expect((v as string).length).toBeGreaterThan(0);
+      });
+
+      it.each(NATIVE_KEYS)('eduroam.native.%s is a non-empty string', (key) => {
+        const v = leaf(dict, `eduroam.native.${key}`);
+        expect(typeof v).toBe('string');
+        expect((v as string).length).toBeGreaterThan(0);
+      });
+
+      it('native copy names no single OS — it is shared by Android and iOS', () => {
+        for (const key of ['working', 'failed', 'privacyNote'] as const) {
+          expect(leaf(dict, `eduroam.native.${key}`)).not.toMatch(/Android/);
+        }
       });
 
       it.each(Object.entries(DEVICE_STEPS))('manual.%s steps have text + shot', (device, count) => {
