@@ -61,11 +61,12 @@ export const SOCIETIES: Record<string, Society> = {
     logo: '/spolky/zf.jpg',
     facultyKey: 'zf',
   },
-  // EY: a partner company, not a faculty union, so campus-wide like ESN. Pin
-  // colour is EY's navy rather than its yellow — the campus basemap is always
-  // light, and #FFE600 on it is unreadable. Logo is SVG rather than JPG (see
-  // public/spolky/ey.svg for provenance); `logo` is just a path, so the mix is
-  // fine — reIS's own entry already points at an SVG.
+  // EY: a partner company rather than a faculty union, but its reach is PEF —
+  // it recruits business students, so its events belong to that faculty's
+  // filter, not campus-wide. Pin colour is EY's navy rather than its yellow —
+  // the campus basemap is always light, and #FFE600 on it is unreadable. Logo
+  // is SVG rather than JPG (see public/spolky/ey.svg for provenance); `logo` is
+  // just a path, so the mix is fine — reIS's own entry already points at an SVG.
   ey: {
     id: 'ey',
     name: 'EY',
@@ -73,7 +74,7 @@ export const SOCIETIES: Record<string, Society> = {
     color: '#2E2E38',
     glyph: 'EY',
     logo: '/spolky/ey.svg',
-    facultyKey: 'mendelu',
+    facultyKey: 'pef',
   },
   // The reIS team itself (reis_admin role). Campus-wide like ESN. Uses the app's
   // own logo (served at the extension root, like /spolky/*).
