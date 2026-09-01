@@ -2,7 +2,7 @@ import { Search } from 'lucide-react';
 import type { RefObject } from 'react';
 import { useTranslation } from '../../../../hooks/useTranslation';
 
-export type StudentMode = 'pages' | 'people' | 'subjects';
+export type StudentMode = 'people' | 'subjects';
 
 interface StudentSearchProps {
   mode: StudentMode;
@@ -14,7 +14,7 @@ interface StudentSearchProps {
 }
 
 /**
- * The Student screen's top chrome: the Stránky IS / Lidé / Předměty segmented control
+ * The Student screen's top chrome: the Lidé / Předměty segmented control
  * plus the search input whose placeholder (and accessible name) follows the
  * active segment.
  */
@@ -27,7 +27,6 @@ export function StudentSearch({
 }: StudentSearchProps) {
   const { t } = useTranslation();
   const PLACEHOLDER_KEY: Record<StudentMode, string> = {
-    pages: 'mobile.student.searchPages',
     people: 'mobile.student.searchPeople',
     subjects: 'mobile.student.searchSubjects',
   };
@@ -35,12 +34,11 @@ export function StudentSearch({
 
   return (
     <div className="flex flex-shrink-0 flex-col gap-2.5 px-4 pt-3.5">
-      {/* Mapped, not three copies of the same button: the segment styling and
+      {/* Mapped, not two copies of the same button: the segment styling and
           the aria wiring drifted the moment there was more than one of them. */}
       <div role="tablist" className="flex gap-1 rounded-lg bg-base-200 p-1">
         {(
           [
-            ['pages', 'mobile.student.tabPages'],
             ['people', 'mobile.student.tabPeople'],
             ['subjects', 'mobile.student.tabSubjects'],
           ] as const
