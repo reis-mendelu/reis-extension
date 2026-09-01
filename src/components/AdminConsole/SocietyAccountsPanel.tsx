@@ -7,6 +7,7 @@ import {
   type SocietyAccountRow,
 } from '../../api/societyAccounts';
 import { GeneratedPasswordDialog } from './GeneratedPasswordDialog';
+import { ALL_SOCIETIES } from '../../data/societies';
 
 /**
  * reIS-admin-only. Resetting runs in the society-accounts edge function, which
@@ -21,7 +22,6 @@ export function SocietyAccountsPanel() {
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newLabel, setNewLabel] = useState('');
 
   useEffect(() => {
     void listSocietyAccounts().then(setAccounts);
@@ -37,15 +37,22 @@ export function SocietyAccountsPanel() {
     setBusy(false);
   };
 
+  // Only ids present in the static catalog may be created. An id outside it has
+  // no colour, logo or facultyKey, and societyById() falls back to ESN — so a
+  // typo would render the new society AS ESN on the map. Constraining the field
+  // makes that unreachable rather than merely logged.
+  const taken = new Set(accounts.map((a) => a.association_id));
+  const available = ALL_SOCIETIES.filter((s) => !taken.has(s.id));
+
   const create = async () => {
-    if (busy || !newName.trim() || !newLabel.trim()) return;
+    const chosen = ALL_SOCIETIES.find((s) => s.id === newName);
+    if (busy || !chosen) return;
     setBusy(true);
     setFailed(false);
-    const res = await createSocietyAccount(newName.trim(), newLabel.trim());
+    const res = await createSocietyAccount(chosen.id, chosen.name);
     if (res.password) {
       setPassword(res.password);
       setNewName('');
-      setNewLabel('');
       setAccounts(await listSocietyAccounts());
     } else {
       setFailed(true);
@@ -88,31 +95,24 @@ export function SocietyAccountsPanel() {
       <h3 className="font-bold">{t('admin.createAccount')}</h3>
       <label className="flex flex-col gap-1 text-sm">
         <span className="opacity-70">{t('admin.username')}</span>
-        <input
+        <select
           aria-label={t('admin.username')}
-          type="text"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          className="input input-bordered"
+          className="select select-bordered"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="opacity-70">{t('admin.displayName')}</span>
-        <input
-          aria-label={t('admin.displayName')}
-          type="text"
-          className="input input-bordered"
-          value={newLabel}
-          onChange={(e) => setNewLabel(e.target.value)}
-        />
+        >
+          <option value="">{t('admin.pickSociety')}</option>
+          {available.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name} ({s.id})
+            </option>
+          ))}
+        </select>
       </label>
       <button
         type="button"
         className="btn btn-primary"
-        disabled={busy || !newName.trim() || !newLabel.trim()}
+        disabled={busy || !newName}
         onClick={create}
       >
         {t('admin.createAccount')}
