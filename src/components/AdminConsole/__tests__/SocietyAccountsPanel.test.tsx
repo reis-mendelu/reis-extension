@@ -12,15 +12,23 @@ vi.mock('../../../api/societyAccounts', () => ({
   createSocietyAccount: (...a: unknown[]) => createSocietyAccount(...a),
 }));
 
+const supef = { association_id: 'supef', association_name: 'SUPEF', is_active: true };
+
 beforeEach(() => {
   vi.clearAllMocks();
-  useAppStore.setState({ language: 'cz', adminAssociationId: 'reis' });
-  listSocietyAccounts.mockResolvedValue([
-    { association_id: 'supef', association_name: 'SUPEF', is_active: true },
-  ]);
+  // The panel reads the accounts from the store; the slice is what fetches them
+  // (on login / session restore and after a create). Seed the store directly.
+  useAppStore.setState({ language: 'cz', adminAssociationId: 'reis', societyAccounts: [supef] });
+  listSocietyAccounts.mockResolvedValue([supef]);
 });
 
 describe('SocietyAccountsPanel', () => {
+  it('reads the accounts from the store and never fetches on mount', async () => {
+    render(<SocietyAccountsPanel />);
+    expect(await screen.findByRole('button', { name: 'SUPEF' })).toBeInTheDocument();
+    expect(listSocietyAccounts).not.toHaveBeenCalled();
+  });
+
   it('shows the generated password once and drops it on close', async () => {
     resetSocietyPassword.mockResolvedValueOnce({ password: 'Abcd2345Efgh6789Jkmn' });
     render(<SocietyAccountsPanel />);
@@ -57,6 +65,8 @@ describe('SocietyAccountsPanel', () => {
     expect(await screen.findByText('Fresh2345Pass6789Xyz')).toBeInTheDocument();
     // The display name comes from the static catalog, never from free text.
     expect(createSocietyAccount).toHaveBeenCalledWith('esn', 'ESN MENDELU');
+    // The refresh after a create goes through the store, not a component fetch.
+    await waitFor(() => expect(listSocietyAccounts).toHaveBeenCalledTimes(1));
   });
 
   it('only offers catalog societies that have no account yet', async () => {
@@ -78,10 +88,12 @@ describe('SocietyAccountsPanel', () => {
     expect(button).toBeEnabled();
   });
   it('never offers to reset the account you are signed in as', async () => {
-    listSocietyAccounts.mockResolvedValue([
-      { association_id: 'reis', association_name: 'REIS team', is_active: true },
-      { association_id: 'supef', association_name: 'SU PEF', is_active: true },
-    ]);
+    useAppStore.setState({
+      societyAccounts: [
+        { association_id: 'reis', association_name: 'REIS team', is_active: true },
+        { association_id: 'supef', association_name: 'SU PEF', is_active: true },
+      ],
+    });
     render(<SocietyAccountsPanel />);
 
     // Resetting yourself here would issue a password you must copy from a
@@ -91,10 +103,12 @@ describe('SocietyAccountsPanel', () => {
   });
 
   it('still lets one admin reset a different admin', async () => {
-    listSocietyAccounts.mockResolvedValue([
-      { association_id: 'reis', association_name: 'REIS team', is_active: true },
-      { association_id: 'reis2', association_name: 'REIS team 2', is_active: true },
-    ]);
+    useAppStore.setState({
+      societyAccounts: [
+        { association_id: 'reis', association_name: 'REIS team', is_active: true },
+        { association_id: 'reis2', association_name: 'REIS team 2', is_active: true },
+      ],
+    });
     render(<SocietyAccountsPanel />);
 
     expect(await screen.findByRole('button', { name: 'REIS team 2' })).toBeInTheDocument();

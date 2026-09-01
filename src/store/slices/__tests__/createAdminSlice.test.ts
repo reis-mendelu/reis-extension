@@ -56,8 +56,17 @@ vi.mock('../../../api/societyPosts', async (orig) => ({
   ]),
 }));
 
+// The account list is reIS-admin-only and lives in the store so the accounts
+// panel never fetches in a component.
+vi.mock('../../../api/societyAccounts', () => ({
+  listSocietyAccounts: vi
+    .fn()
+    .mockResolvedValue([{ association_id: 'supef', association_name: 'SU PEF', is_active: true }]),
+}));
+
 import { createAdminSlice, type AdminSlice } from '../createAdminSlice';
 import { listMyPosts } from '../../../api/societyPosts';
+import { listSocietyAccounts } from '../../../api/societyAccounts';
 
 describe('createAdminSlice', () => {
   let state: AdminSlice;
@@ -72,6 +81,7 @@ describe('createAdminSlice', () => {
     updateUser.mockReset();
     order.mockClear();
     vi.mocked(listMyPosts).mockClear();
+    vi.mocked(listSocietyAccounts).mockClear();
     set = vi.fn((u) => {
       state = { ...state, ...(typeof u === 'function' ? u(state) : u) };
     });
@@ -187,6 +197,33 @@ describe('createAdminSlice', () => {
     expect(res.error).toBeDefined();
     expect(state.adminSession).toBeNull();
     expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('a reis_admin login loads the society accounts into the store', async () => {
+    signIn.mockResolvedValue({ data: { session: { user: { id: 'u-reis' } } }, error: null });
+    maybeSingle.mockResolvedValue({ data: { role: 'reis_admin', association_id: 'reis' } });
+    await state.adminLogin('reis', 'pw');
+    expect(listSocietyAccounts).toHaveBeenCalledTimes(1);
+    expect(state.societyAccounts).toEqual([
+      { association_id: 'supef', association_name: 'SU PEF', is_active: true },
+    ]);
+  });
+
+  it('an association login does not load the society accounts', async () => {
+    signIn.mockResolvedValue({ data: { session: { user: { id: 'u-supef' } } }, error: null });
+    maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'supef' } });
+    await state.adminLogin('supef', 'pw');
+    expect(listSocietyAccounts).not.toHaveBeenCalled();
+    expect(state.societyAccounts).toEqual([]);
+  });
+
+  it('logout drops the society accounts too', async () => {
+    signIn.mockResolvedValue({ data: { session: { user: { id: 'u-reis' } } }, error: null });
+    maybeSingle.mockResolvedValue({ data: { role: 'reis_admin', association_id: 'reis' } });
+    await state.adminLogin('reis', 'pw');
+    expect(state.societyAccounts).toHaveLength(1);
+    await state.adminLogout();
+    expect(state.societyAccounts).toEqual([]);
   });
 
   it('logout clears everything and closes the console', async () => {
@@ -330,6 +367,15 @@ describe('createAdminSlice boot', () => {
     });
     await (state.loadAdminSession as () => Promise<void>)();
     expect(loadSuggestions).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads the society accounts for a restored reis_admin session', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u-reis' } } } });
+    maybeSingle.mockResolvedValue({ data: { role: 'reis_admin', association_id: 'reis' } });
+    vi.mocked(listSocietyAccounts).mockClear();
+    await (state.loadAdminSession as () => Promise<void>)();
+    expect(listSocietyAccounts).toHaveBeenCalledTimes(1);
+    expect(state.societyAccounts).toHaveLength(1);
   });
 
   it('does not load suggestions for an association session', async () => {

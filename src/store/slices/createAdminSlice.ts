@@ -3,6 +3,7 @@ import type { AppSlice } from '../types';
 import { adminAuthClient } from '../../services/admin/authClient';
 import { toAuthEmail } from '../../services/admin/societyLogin';
 import { listMyPosts, type SpolkyEventRow } from '../../api/societyPosts';
+import { listSocietyAccounts, type SocietyAccountRow } from '../../api/societyAccounts';
 import { logError } from '../../utils/reportError';
 
 export type AdminRole = 'association' | 'reis_admin';
@@ -18,6 +19,9 @@ export interface AdminSlice {
   /** True while the admin console has taken the whole app over. */
   adminConsoleOpen: boolean;
   societyPosts: SpolkyEventRow[];
+  /** reIS admin only: every society account, for the reset/create panel. Empty
+   *  for an association login, which has no business listing the others. */
+  societyAccounts: SocietyAccountRow[];
   /** Open the console. Unconditional — it renders its own login screen when logged out. */
   openSocietyAdmin: () => void;
   /** Leave the console for the student app. Keeps the session; only logout drops it. */
@@ -33,6 +37,9 @@ export interface AdminSlice {
   changeMyPassword: (newPassword: string) => Promise<{ error?: string }>;
   loadAdminSession: () => Promise<void>;
   loadSocietyPosts: () => Promise<void>;
+  /** Pull the account list. Called when a reis_admin session is established and
+   *  again after a create — never from a component effect. */
+  loadSocietyAccounts: () => Promise<void>;
 }
 
 async function resolveAccount(
@@ -59,6 +66,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   adminActiveAssociationId: null,
   adminConsoleOpen: false,
   societyPosts: [],
+  societyAccounts: [],
   openSocietyAdmin: () => set({ adminConsoleOpen: true }),
   /**
    * Drop every trace of in-progress authoring. Called at each boundary where
@@ -114,7 +122,10 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     // Pull the inbox as soon as the role is known. This is a pull, not a push:
     // nothing arrives while the iframe is closed, so the count is refreshed at
     // every open and announced by SuggestionsToast.
-    if (role === 'reis_admin') await get().loadSuggestions();
+    if (role === 'reis_admin') {
+      await get().loadSuggestions();
+      await get().loadSocietyAccounts();
+    }
     await get().loadSocietyPosts();
     return {};
   },
@@ -146,6 +157,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       adminActiveAssociationId: null,
       adminConsoleOpen: false,
       societyPosts: [],
+      societyAccounts: [],
       societyMapEvents: [],
       suggestions: [],
       suggestionsUnread: 0,
@@ -174,8 +186,14 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     // Pull the inbox as soon as the role is known. This is a pull, not a push:
     // nothing arrives while the iframe is closed, so the count is refreshed at
     // every open and announced by SuggestionsToast.
-    if (role === 'reis_admin') await get().loadSuggestions();
+    if (role === 'reis_admin') {
+      await get().loadSuggestions();
+      await get().loadSocietyAccounts();
+    }
     await get().loadSocietyPosts();
+  },
+  loadSocietyAccounts: async () => {
+    set({ societyAccounts: await listSocietyAccounts() });
   },
   loadSocietyPosts: async () => {
     const associationId = get().adminActiveAssociationId;

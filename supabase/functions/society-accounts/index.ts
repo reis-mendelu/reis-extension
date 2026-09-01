@@ -51,7 +51,7 @@ serve(async (req: Request) => {
     .maybeSingle();
   if (caller?.role !== 'reis_admin') return json({ error: 'forbidden' }, 403);
 
-  let body: { action?: string; username?: string; associationName?: string; role?: string };
+  let body: { action?: string; username?: string; associationName?: string };
   try {
     body = await req.json();
   } catch {
@@ -86,7 +86,10 @@ serve(async (req: Request) => {
       email,
       association_id: associationId,
       association_name: body.associationName ?? username,
-      role: body.role === 'reis_admin' ? 'reis_admin' : 'association',
+      // Fixed server-side. The client never sends a role, and honouring one from the
+      // body would let any admin token — including a stolen one — mint a second
+      // persistent administrator. Promotion stays a deliberate database action.
+      role: 'association',
       is_active: true,
     });
     if (rowErr) {

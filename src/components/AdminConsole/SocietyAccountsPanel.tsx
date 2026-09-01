@@ -1,12 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import {
-  createSocietyAccount,
-  listSocietyAccounts,
-  resetSocietyPassword,
-  type SocietyAccountRow,
-} from '../../api/societyAccounts';
+import { createSocietyAccount, resetSocietyPassword } from '../../api/societyAccounts';
 import { GeneratedPasswordDialog } from './GeneratedPasswordDialog';
 import { ALL_SOCIETIES } from '../../data/societies';
 
@@ -23,16 +18,15 @@ export function SocietyAccountsPanel() {
   // where you choose the value. Keyed on the signed-in account rather than on
   // the reis_admin role, so a second admin can still reset the first.
   const ownAssociationId = useAppStore((s) => s.adminAssociationId);
-  const [accounts, setAccounts] = useState<SocietyAccountRow[]>([]);
+  // Loaded by the admin slice when the reis_admin session is established and
+  // refreshed after a create; the panel only reads it.
+  const accounts = useAppStore((s) => s.societyAccounts);
+  const loadSocietyAccounts = useAppStore((s) => s.loadSocietyAccounts);
   const [selected, setSelected] = useState<string | null>(null);
   const [password, setPassword] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [newName, setNewName] = useState('');
-
-  useEffect(() => {
-    void listSocietyAccounts().then(setAccounts);
-  }, []);
 
   const resettable = accounts.filter((a) => a.association_id !== ownAssociationId);
 
@@ -62,7 +56,7 @@ export function SocietyAccountsPanel() {
     if (res.password) {
       setPassword(res.password);
       setNewName('');
-      setAccounts(await listSocietyAccounts());
+      await loadSocietyAccounts();
     } else {
       setFailed(true);
     }
