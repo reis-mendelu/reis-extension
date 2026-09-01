@@ -80,12 +80,7 @@ export function ChangeMyPasswordForm() {
         </p>
       )}
 
-      <button
-        type="button"
-        className="btn btn-primary"
-        disabled={busy || !ready}
-        onClick={submit}
-      >
+      <button type="button" className="btn btn-primary" disabled={busy || !ready} onClick={submit}>
         {t('admin.changeMyPassword')}
       </button>
     </div>

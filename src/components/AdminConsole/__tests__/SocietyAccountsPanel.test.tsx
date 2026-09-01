@@ -30,9 +30,7 @@ describe('SocietyAccountsPanel', () => {
     expect(resetSocietyPassword).toHaveBeenCalledWith('supef');
 
     fireEvent.click(screen.getByRole('button', { name: 'Zavřít' }));
-    await waitFor(() =>
-      expect(screen.queryByText('Abcd2345Efgh6789Jkmn')).not.toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.queryByText('Abcd2345Efgh6789Jkmn')).not.toBeInTheDocument());
   });
 
   it('surfaces an error without showing a password', async () => {
