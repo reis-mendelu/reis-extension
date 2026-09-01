@@ -538,7 +538,7 @@ before submission; Apple's estimate is up to 48 hours.
 
 | Item | State |
 |---|---|
-| App ID `cz.reis.app` | Registered, team **RG38V3SV8X**, no capabilities (the app declares no entitlements). |
+| App ID `cz.reis.app` | Registered, team **RG38V3SV8X**. Capabilities: **Hotspot Configuration** and **Keychain Sharing** (group `com.apple.networkextensionsharing`), both for native eduroam setup — `ios/App/App/App.entitlements`, added 2026-09-01. |
 | App record | **6804832714** — "reIS — IS MENDELU jednoduše", Czech, SKU `reis-ios-5`. |
 | Build | **50006 / 5.0.6** uploaded, processed, attached. Signed *Apple Distribution: Dominik Holek (RG38V3SV8X)*. |
 | Export compliance | Answered "None of the algorithms mentioned above" — verified, the app implements no encryption of its own. Now also declared in `Info.plist` so it stops being asked. |
