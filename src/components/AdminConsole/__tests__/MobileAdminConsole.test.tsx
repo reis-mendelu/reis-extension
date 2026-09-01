@@ -9,6 +9,14 @@ vi.mock('../AdminConsoleMap', () => ({
   AdminConsoleMap: () => <div data-testid="console-map" />,
 }));
 
+// The accounts panel talks to Supabase and the society-accounts edge function;
+// these assertions are about which surface the MOBILE console mounts.
+vi.mock('../../../api/societyAccounts', () => ({
+  listSocietyAccounts: vi.fn().mockResolvedValue([]),
+  resetSocietyPassword: vi.fn(),
+  createSocietyAccount: vi.fn(),
+}));
+
 beforeEach(() => {
   useAppStore.setState({
     language: 'cz',
@@ -97,5 +105,30 @@ describe('MobileAdminConsole — the preview request is per-session', () => {
     useAppStore.setState({ composerOpen: true, draftCoord: [16.61, 49.21], draftFocusRequest: 7 });
     render(<MobileAdminConsole />);
     expect(screen.queryByTestId('console-map')).toBeNull();
+  });
+});
+
+// The desktop console had the accounts tab while the mobile one did not, so the
+// password UI was invisible in the app the phone tree actually renders — and
+// every test still passed. These pin the tab to the surface users see.
+describe('MobileAdminConsole — accounts tab', () => {
+  it('offers the accounts tab to a plain society, for its own password', () => {
+    render(<MobileAdminConsole />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Účty' }));
+
+    expect(screen.getByRole('button', { name: 'Změnit heslo' })).toBeInTheDocument();
+    // No reset panel: resetting other societies is reis_admin only.
+    expect(screen.queryByRole('button', { name: 'Vytvořit účet' })).not.toBeInTheDocument();
+  });
+
+  it('additionally offers create and reset to a reIS admin', () => {
+    act(() => {
+      useAppStore.setState({ adminRole: 'reis_admin' });
+    });
+    render(<MobileAdminConsole />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Účty' }));
+
+    expect(screen.getByRole('button', { name: 'Vytvořit účet' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Změnit heslo' })).toBeInTheDocument();
   });
 });

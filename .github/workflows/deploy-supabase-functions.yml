@@ -36,3 +36,10 @@ jobs:
       # it: an apikey header plus the shared secret, no Authorization bearer.
       - name: Deploy submit-suggestion function
         run: supabase functions deploy submit-suggestion --project-ref $PROJECT_ID --no-verify-jwt
+
+      # society-accounts verifies the caller itself (admin.auth.getUser on the
+      # bearer, role looked up by verified uid), and the client calls it with a
+      # real session token, so the gateway's own JWT check stays on. v1 was
+      # deployed by hand; this keeps the deployed copy equal to the repo.
+      - name: Deploy society-accounts function
+        run: supabase functions deploy society-accounts --project-ref $PROJECT_ID

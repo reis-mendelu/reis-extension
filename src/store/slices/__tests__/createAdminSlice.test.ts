@@ -4,6 +4,8 @@ const signIn = vi.fn();
 const getSession = vi.fn();
 const signOut = vi.fn(async () => ({ error: null }));
 const maybeSingle = vi.fn();
+const eqSpy = vi.fn();
+const updateUser = vi.fn();
 const order = vi.fn(async () => ({ data: [] as unknown[], error: null }));
 vi.mock('../../../services/admin/authClient', () => ({
   adminAuthClient: {
@@ -11,10 +13,14 @@ vi.mock('../../../services/admin/authClient', () => ({
       signInWithPassword: (...a: unknown[]) => signIn(...a),
       getSession: () => getSession(),
       signOut: () => signOut(),
+      updateUser: (...a: unknown[]) => updateUser(...a),
     },
     from: () => ({
       select: () => ({
-        eq: () => ({ maybeSingle: () => maybeSingle(), order: () => order() }),
+        eq: (...a: unknown[]) => {
+          eqSpy(...a);
+          return { maybeSingle: () => maybeSingle(), order: () => order() };
+        },
       }),
     }),
   },
@@ -50,8 +56,17 @@ vi.mock('../../../api/societyPosts', async (orig) => ({
   ]),
 }));
 
+// The account list is reIS-admin-only and lives in the store so the accounts
+// panel never fetches in a component.
+vi.mock('../../../api/societyAccounts', () => ({
+  listSocietyAccounts: vi
+    .fn()
+    .mockResolvedValue([{ association_id: 'supef', association_name: 'SU PEF', is_active: true }]),
+}));
+
 import { createAdminSlice, type AdminSlice } from '../createAdminSlice';
 import { listMyPosts } from '../../../api/societyPosts';
+import { listSocietyAccounts } from '../../../api/societyAccounts';
 
 describe('createAdminSlice', () => {
   let state: AdminSlice;
@@ -62,8 +77,11 @@ describe('createAdminSlice', () => {
     getSession.mockReset();
     signOut.mockClear();
     maybeSingle.mockReset();
+    eqSpy.mockReset();
+    updateUser.mockReset();
     order.mockClear();
     vi.mocked(listMyPosts).mockClear();
+    vi.mocked(listSocietyAccounts).mockClear();
     set = vi.fn((u) => {
       state = { ...state, ...(typeof u === 'function' ? u(state) : u) };
     });
@@ -181,6 +199,33 @@ describe('createAdminSlice', () => {
     expect(signOut).toHaveBeenCalledTimes(1);
   });
 
+  it('a reis_admin login loads the society accounts into the store', async () => {
+    signIn.mockResolvedValue({ data: { session: { user: { id: 'u-reis' } } }, error: null });
+    maybeSingle.mockResolvedValue({ data: { role: 'reis_admin', association_id: 'reis' } });
+    await state.adminLogin('reis', 'pw');
+    expect(listSocietyAccounts).toHaveBeenCalledTimes(1);
+    expect(state.societyAccounts).toEqual([
+      { association_id: 'supef', association_name: 'SU PEF', is_active: true },
+    ]);
+  });
+
+  it('an association login does not load the society accounts', async () => {
+    signIn.mockResolvedValue({ data: { session: { user: { id: 'u-supef' } } }, error: null });
+    maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'supef' } });
+    await state.adminLogin('supef', 'pw');
+    expect(listSocietyAccounts).not.toHaveBeenCalled();
+    expect(state.societyAccounts).toEqual([]);
+  });
+
+  it('logout drops the society accounts too', async () => {
+    signIn.mockResolvedValue({ data: { session: { user: { id: 'u-reis' } } }, error: null });
+    maybeSingle.mockResolvedValue({ data: { role: 'reis_admin', association_id: 'reis' } });
+    await state.adminLogin('reis', 'pw');
+    expect(state.societyAccounts).toHaveLength(1);
+    await state.adminLogout();
+    expect(state.societyAccounts).toEqual([]);
+  });
+
   it('logout clears everything and closes the console', async () => {
     signIn.mockResolvedValue({
       data: { session: { user: { email: 'admin@esn.cz' } } },
@@ -212,6 +257,73 @@ describe('createAdminSlice', () => {
     await state.loadAdminSession();
     expect(state.adminSession).toBeNull();
     expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('signs in with the synthetic address built from a username', async () => {
+    signIn.mockResolvedValueOnce({
+      data: { session: { user: { id: 'u1', email: 'supef@societies.invalid' } } },
+      error: null,
+    });
+    maybeSingle.mockResolvedValueOnce({
+      data: { role: 'association', association_id: 'supef' },
+      error: null,
+    });
+
+    await state.adminLogin('supef', 'pw');
+
+    expect(signIn).toHaveBeenCalledWith({
+      email: 'supef@societies.invalid',
+      password: 'pw',
+    });
+  });
+
+  it('returns invalid_credentials for a malformed username without calling Supabase', async () => {
+    const res = await state.adminLogin('su pef', 'pw');
+
+    expect(res.error).toBe('invalid_credentials');
+    expect(signIn).not.toHaveBeenCalled();
+  });
+
+  it('resolves the account by user id, not by email', async () => {
+    signIn.mockResolvedValueOnce({
+      data: { session: { user: { id: 'uid-123', email: 'supef@societies.invalid' } } },
+      error: null,
+    });
+    maybeSingle.mockResolvedValueOnce({
+      data: { role: 'association', association_id: 'supef' },
+      error: null,
+    });
+
+    await state.adminLogin('supef', 'pw');
+
+    expect(eqSpy).toHaveBeenCalledWith('user_id', 'uid-123');
+  });
+
+  it('changes the signed-in account password', async () => {
+    updateUser.mockResolvedValueOnce({ data: {}, error: null });
+
+    const res = await state.changeMyPassword('NewPassword2345');
+
+    expect(updateUser).toHaveBeenCalledWith({ password: 'NewPassword2345' });
+    expect(res.error).toBeUndefined();
+  });
+
+  it('rejects a password shorter than 12 characters without calling Supabase', async () => {
+    const res = await state.changeMyPassword('short');
+
+    expect(res.error).toBe('too_short');
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  it('restores a persisted session by user id too', async () => {
+    getSession.mockResolvedValue({
+      data: { session: { user: { id: 'uid-456', email: 'reis.mendelu@gmail.com' } } },
+    });
+    maybeSingle.mockResolvedValue({ data: { role: 'reis_admin', association_id: 'reis' } });
+
+    await state.loadAdminSession();
+
+    expect(eqSpy).toHaveBeenCalledWith('user_id', 'uid-456');
   });
 });
 
@@ -255,6 +367,15 @@ describe('createAdminSlice boot', () => {
     });
     await (state.loadAdminSession as () => Promise<void>)();
     expect(loadSuggestions).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads the society accounts for a restored reis_admin session', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u-reis' } } } });
+    maybeSingle.mockResolvedValue({ data: { role: 'reis_admin', association_id: 'reis' } });
+    vi.mocked(listSocietyAccounts).mockClear();
+    await (state.loadAdminSession as () => Promise<void>)();
+    expect(listSocietyAccounts).toHaveBeenCalledTimes(1);
+    expect(state.societyAccounts).toHaveLength(1);
   });
 
   it('does not load suggestions for an association session', async () => {

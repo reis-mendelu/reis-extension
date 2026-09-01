@@ -4,6 +4,8 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { AdminConsoleHeader } from './AdminConsoleHeader';
 import { AdminEventList } from './AdminEventList';
 import { SuggestionsInbox } from './SuggestionsInbox';
+import { SocietyAccountsPanel } from './SocietyAccountsPanel';
+import { ChangeMyPasswordForm } from './ChangeMyPasswordForm';
 import { AdminConsoleMap } from './AdminConsoleMap';
 
 /**
@@ -28,7 +30,7 @@ import { AdminConsoleMap } from './AdminConsoleMap';
  * `placingEvent` forces the map and hides the toggle: that flow has its own
  * instruction banner and Cancel, so a second way out would just be ambiguous.
  */
-type Tab = 'list' | 'map' | 'suggestions';
+type Tab = 'list' | 'map' | 'suggestions' | 'accounts';
 
 export function MobileAdminConsole() {
   const placing = useAppStore((s) => s.placingEvent);
@@ -53,6 +55,9 @@ export function MobileAdminConsole() {
   }, [draftFocus]);
   const showMap = placing || tab === 'map';
   const showSuggestions = !placing && isReisAdmin && tab === 'suggestions';
+  // Every account gets the accounts tab — a society needs it to change its own
+  // password; only a reIS admin additionally sees the reset panel inside it.
+  const showAccounts = !placing && tab === 'accounts';
 
   const tabBtn = (key: Tab, label: string, badge = 0) => (
     <button
@@ -78,15 +83,26 @@ export function MobileAdminConsole() {
           {tabBtn('list', t('admin.listTab') as string)}
           {tabBtn('map', t('admin.mapTab') as string)}
           {isReisAdmin && tabBtn('suggestions', t('admin.suggestionsTab') as string, unread)}
+          {tabBtn('accounts', t('admin.accountsTab') as string)}
         </div>
       )}
       <div className="relative min-h-0 flex-1">
         {/* Hidden, not unmounted — see rule 1 above. `bg-base-100` matches the
             desktop aside: EventComposer's bg-base-200/60 header is a tint meant
             for base-100 and measures 1.005:1 (invisible) on base-200. */}
-        <div className={showMap || showSuggestions ? 'hidden' : 'h-full bg-base-100'}>
+        <div
+          className={showMap || showSuggestions || showAccounts ? 'hidden' : 'h-full bg-base-100'}
+        >
           <AdminEventList />
         </div>
+        {showAccounts && (
+          <div className="h-full overflow-y-auto bg-base-100 p-3">
+            <div className="flex flex-col gap-6">
+              {isReisAdmin && <SocietyAccountsPanel />}
+              <ChangeMyPasswordForm />
+            </div>
+          </div>
+        )}
         {showSuggestions && (
           <div className="h-full overflow-y-auto bg-base-100 p-2">
             <SuggestionsInbox />

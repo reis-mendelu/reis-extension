@@ -1008,9 +1008,10 @@
   },
   "admin": {
     "email": "E-mail",
+    "username": "Název spolku",
     "password": "Heslo",
     "login": "Přihlásit",
-    "loginError": "Neplatný e-mail nebo heslo",
+    "loginError": "Neplatné jméno nebo heslo",
     "title": "Název",
     "body": "Popis",
     "roomCode": "Místnost",
@@ -1031,7 +1032,22 @@
     "markTriaged": "Zpracováno",
     "markDone": "Hotovo",
     "suggestionsTab": "Návrhy",
-    "suggestionsTitle": "Návrhy studentů"
+    "suggestionsTitle": "Návrhy studentů",
+    "accountsTab": "Účty",
+    "resetPassword": "Obnovit heslo",
+    "passwordShownOnce": "Heslo se zobrazí jen jednou — zkopírujte ho hned.",
+    "copy": "Kopírovat",
+    "copied": "Zkopírováno",
+    "resetFailed": "Nepodařilo se obnovit heslo",
+    "close": "Zavřít",
+    "changeMyPassword": "Změnit heslo",
+    "newPassword": "Nové heslo",
+    "confirmPassword": "Potvrzení hesla",
+    "passwordTooShort": "Heslo musí mít alespoň 12 znaků",
+    "passwordChanged": "Heslo změněno",
+    "passwordChangeFailed": "Nepodařilo se změnit heslo",
+    "createAccount": "Vytvořit účet",
+    "displayName": "Zobrazovaný název"
   },
   "mobile": {
     "nav": {
