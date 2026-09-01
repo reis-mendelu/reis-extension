@@ -32,12 +32,10 @@
 
 | File | Responsibility | Task |
 |---|---|---|
-| `android/app/src/main/java/cz/reis/app/EduroamOutcome.java` (new) | Pure mapping of Android intent result codes → neutral outcome string. No Android imports, so it runs under plain JUnit. | 1 |
-| `android/app/src/test/java/cz/reis/app/EduroamOutcomeTest.java` (new) | JUnit table test of the mapping. | 1 |
-| `android/app/src/main/java/cz/reis/app/EduroamPlugin.java` | `onAddResult` resolves `{outcome, detail, identity, caSubject}` instead of raw codes. | 1 |
-| `src/mobile/configureEduroam.ts` | Neutral `NativeConfigureResult`, `normalizeOutcome`, `configureEduroam`. Android constants removed. | 2 |
+| `android/app/src/main/java/cz/reis/app/EduroamPlugin.java` | **Unchanged** (Task 1 dropped). | — |
+| `src/mobile/configureEduroam.ts` | `NativeConfigureResult` union, `normalizeOutcome` for both shapes; `interpretAddResult` stays. | 2 |
 | `src/mobile/__tests__/configureEduroam.test.ts` | Tests for the neutral contract and fail-closed rule. | 2 |
-| `src/hooks/data/__tests__/useEduroamSetup.test.ts` | Native-path tests re-pointed at `{ outcome }`. | 2 |
+| `src/hooks/data/__tests__/useEduroamSetup.test.ts` | One new iOS-shape test; Android tests unchanged. | 2 |
 | `src/mobile/eduroamNative.ts` | `canConfigureEduroamNatively` admits `'ios'`; new `nativeEduroamTarget()`. | 3 |
 | `src/mobile/__tests__/eduroamNative.test.ts` (new) | Host × target matrix; Capacitor platform resolution. | 3 |
 | `src/components/mobile/sheets/EduroamSheet.tsx` | `detectTarget()` prefers Capacitor; iOS-only lifetime line. | 4 |
@@ -53,492 +51,144 @@
 
 ---
 
-### Task 1: Android plugin resolves the neutral outcome
+### Task 1: (dropped 2026-09-01) Android plugin unchanged
 
-**Files:**
-- Create: `android/app/src/main/java/cz/reis/app/EduroamOutcome.java`
-- Create: `android/app/src/test/java/cz/reis/app/EduroamOutcomeTest.java`
-- Modify: `android/app/src/main/java/cz/reis/app/EduroamPlugin.java` (the `onAddResult` method at the end of the file, and the imports)
-
-**Interfaces:**
-- Consumes: nothing new.
-- Produces: the resolved JS object `{ outcome: string, detail: string, identity: string, caSubject: string }` where `outcome` ∈ `saved | already-configured | cancelled | failed`. Task 2's TypeScript reads `outcome` and `detail`.
-
-- [ ] **Step 1: Write the failing JUnit test**
-
-`android/app/src/test/java/cz/reis/app/EduroamOutcomeTest.java`:
-
-```java
-package cz.reis.app;
-
-import static org.junit.Assert.assertEquals;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import org.junit.Test;
-
-/**
- * The intent result → outcome mapping the JS side shares with iOS. Pure Java
- * on purpose: no Android classes, so it runs under plain JUnit on the host.
- */
-public class EduroamOutcomeTest {
-
-    private static List<Integer> codes(Integer... c) {
-        return Arrays.asList(c);
-    }
-
-    @Test
-    public void success_is_saved() {
-        assertEquals("saved", EduroamOutcome.outcome(EduroamOutcome.RESULT_OK, codes(0)));
-    }
-
-    @Test
-    public void already_exists_is_success_not_an_error() {
-        // A student re-running setup has the network they wanted.
-        assertEquals("already-configured", EduroamOutcome.outcome(EduroamOutcome.RESULT_OK, codes(2)));
-    }
-
-    @Test
-    public void add_or_update_failed_is_failed() {
-        assertEquals("failed", EduroamOutcome.outcome(EduroamOutcome.RESULT_OK, codes(1)));
-    }
-
-    @Test
-    public void canceled_dialog_is_cancelled_not_failed() {
-        assertEquals("cancelled", EduroamOutcome.outcome(EduroamOutcome.RESULT_CANCELED, null));
-    }
-
-    @Test
-    public void ok_with_no_codes_fails_closed() {
-        // Guessing "saved" sends a student to campus with wi-fi that never connects.
-        assertEquals("failed", EduroamOutcome.outcome(EduroamOutcome.RESULT_OK, null));
-        assertEquals("failed", EduroamOutcome.outcome(EduroamOutcome.RESULT_OK, Collections.<Integer>emptyList()));
-    }
-
-    @Test
-    public void unknown_code_fails_closed() {
-        assertEquals("failed", EduroamOutcome.outcome(EduroamOutcome.RESULT_OK, codes(99)));
-    }
-
-    @Test
-    public void only_the_first_code_counts() {
-        // One network is requested; extra codes are noise.
-        assertEquals("saved", EduroamOutcome.outcome(EduroamOutcome.RESULT_OK, codes(0, 1)));
-    }
-
-    @Test
-    public void detail_names_both_levels_for_diagnostics() {
-        assertEquals("resultCode=-1 perNetwork=[1]", EduroamOutcome.detail(EduroamOutcome.RESULT_OK, codes(1)));
-        assertEquals("resultCode=0 perNetwork=(none)", EduroamOutcome.detail(EduroamOutcome.RESULT_CANCELED, null));
-    }
-}
-```
-
-- [ ] **Step 2: Run the test to verify it fails to compile**
-
-Run:
-```bash
-cd android && ./gradlew testDebugUnitTest --tests 'cz.reis.app.EduroamOutcomeTest' -q 2>&1 | tail -15; cd ..
-```
-Expected: compilation error mentioning `EduroamOutcome` cannot be found. (First Gradle run in a fresh worktree may take a few minutes to resolve dependencies.)
-
-- [ ] **Step 3: Write the mapper**
-
-`android/app/src/main/java/cz/reis/app/EduroamOutcome.java`:
-
-```java
-package cz.reis.app;
-
-import java.util.List;
-
-/**
- * Maps the two-level ACTION_WIFI_ADD_NETWORKS result onto the outcome vocabulary
- * the JS side shares with the iOS plugin: saved | already-configured |
- * cancelled | failed.
- *
- * Pure Java with no Android imports so it runs under plain JUnit. The constants
- * duplicate Activity.RESULT_* and Settings.ADD_WIFI_RESULT_* by value for the
- * same reason; both are stable public API values (API 30).
- *
- * Unknown and missing codes deliberately fail CLOSED. Claiming success when the
- * network was not saved sends a student to campus with wi-fi that never
- * connects and no reason to suspect setup; the opposite mistake self-corrects,
- * because a retry over a network that did save returns ALREADY_EXISTS.
- */
-final class EduroamOutcome {
-
-    /** Activity.RESULT_OK */
-    static final int RESULT_OK = -1;
-    /** Activity.RESULT_CANCELED — the student dismissed the system dialog. */
-    static final int RESULT_CANCELED = 0;
-
-    /** Settings.ADD_WIFI_RESULT_SUCCESS */
-    static final int ADD_WIFI_RESULT_SUCCESS = 0;
-    /** Settings.ADD_WIFI_RESULT_ADD_OR_UPDATE_FAILED */
-    static final int ADD_WIFI_RESULT_ADD_OR_UPDATE_FAILED = 1;
-    /** Settings.ADD_WIFI_RESULT_ALREADY_EXISTS */
-    static final int ADD_WIFI_RESULT_ALREADY_EXISTS = 2;
-
-    private EduroamOutcome() {
-    }
-
-    static String outcome(int resultCode, List<Integer> perNetwork) {
-        if (resultCode != RESULT_OK) {
-            return "cancelled";
-        }
-        // Exactly one network is ever requested, so only the first code is meaningful.
-        if (perNetwork == null || perNetwork.isEmpty() || perNetwork.get(0) == null) {
-            return "failed";
-        }
-        switch (perNetwork.get(0)) {
-            case ADD_WIFI_RESULT_SUCCESS:
-                return "saved";
-            case ADD_WIFI_RESULT_ALREADY_EXISTS:
-                return "already-configured";
-            case ADD_WIFI_RESULT_ADD_OR_UPDATE_FAILED:
-            default:
-                return "failed";
-        }
-    }
-
-    /** Diagnostic string carried in `detail`; never shown raw to students. */
-    static String detail(int resultCode, List<Integer> perNetwork) {
-        return "resultCode=" + resultCode + " perNetwork="
-                + (perNetwork == null ? "(none)" : perNetwork.toString());
-    }
-}
-```
-
-- [ ] **Step 4: Run the test to verify it passes**
-
-Run:
-```bash
-cd android && ./gradlew testDebugUnitTest --tests 'cz.reis.app.EduroamOutcomeTest' -q 2>&1 | tail -15; cd ..
-```
-Expected: no failures printed (Gradle is quiet on success). To see the count: `cat android/app/build/test-results/testDebugUnitTest/TEST-cz.reis.app.EduroamOutcomeTest.xml | head -3` shows `tests="8" failures="0"`.
-
-- [ ] **Step 5: Make the plugin resolve the neutral shape**
-
-In `android/app/src/main/java/cz/reis/app/EduroamPlugin.java`, replace the whole `onAddResult` method (the last method in the class) with:
-
-```java
-    @ActivityCallback
-    private void onAddResult(PluginCall call, ActivityResult result) {
-        if (call == null) {
-            return;
-        }
-        List<Integer> codes = null;
-        if (result.getData() != null) {
-            codes = result.getData().getIntegerArrayListExtra(Settings.EXTRA_WIFI_NETWORK_RESULT_LIST);
-        }
-        JSObject ret = new JSObject();
-        // The neutral contract shared with the iOS plugin; see
-        // src/mobile/configureEduroam.ts. The raw codes stay available in
-        // `detail` for diagnostics.
-        ret.put("outcome", EduroamOutcome.outcome(result.getResultCode(), codes));
-        ret.put("detail", EduroamOutcome.detail(result.getResultCode(), codes));
-        ret.put("identity", call.getData().optString("_identity"));
-        ret.put("caSubject", call.getData().optString("_caSubject"));
-        call.resolve(ret);
-    }
-```
-
-The `List` import already exists in the file. No other change to the plugin.
-
-- [ ] **Step 6: Compile the Android app to prove the plugin still builds**
-
-Run:
-```bash
-cd android && ./gradlew assembleDebug -q 2>&1 | tail -10; cd ..
-```
-Expected: no errors. (`android/app/build/outputs/apk/debug/app-debug.apk` exists afterwards.)
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add android/app/src/main/java/cz/reis/app/EduroamOutcome.java android/app/src/test/java/cz/reis/app/EduroamOutcomeTest.java android/app/src/main/java/cz/reis/app/EduroamPlugin.java
-git commit -m "feat(eduroam/android): resolve a platform-neutral outcome instead of raw intent codes
-
-The iOS plugin has no Android result codes, so the contract the JS side
-sees becomes { outcome, detail }. The mapping is a pure Java class under
-JUnit; the fail-closed rule for unknown codes is preserved.
-
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
-```
+Originally this task moved Android's intent-code mapping into Java. It was dropped
+during execution: the Android plugin is device- and campus-verified, this Mac has no
+Android SDK and CI never builds Android, so a Java edit would have shipped unbuilt.
+TypeScript accepts both result shapes instead (Task 2). `EduroamPlugin.java` is not
+modified by this plan.
 
 ---
 
-### Task 2: TypeScript adopts the neutral contract
+### Task 2: TypeScript accepts both native result shapes
 
 **Files:**
-- Modify: `src/mobile/configureEduroam.ts` (whole file rewritten below)
-- Modify: `src/mobile/__tests__/configureEduroam.test.ts` (whole file rewritten below)
-- Modify: `src/hooks/data/__tests__/useEduroamSetup.test.ts` (the `onPhone` helper at lines 44–49 and the four native-path tests that call it)
-- No change to `src/hooks/data/useEduroamSetup.ts` — it imports `configureEduroam` and `EduroamConfigOutcome`, both of which keep their names.
+- Modify: `src/mobile/configureEduroam.ts` (types, new `normalizeOutcome`, `configureEduroam` return)
+- Modify: `src/mobile/__tests__/configureEduroam.test.ts` (new `normalizeOutcome` block; existing tests untouched)
+- Modify: `src/hooks/data/__tests__/useEduroamSetup.test.ts` (one new iOS-shape test)
+- Modify: `src/mobile/eduroamNative.ts` (plugin interface return type only)
+- No change to `src/hooks/data/useEduroamSetup.ts`.
 
 **Interfaces:**
-- Consumes: the Android plugin's `{ outcome, detail }` from Task 1.
+- Consumes: Android's existing `{ resultCode, perNetwork }`; iOS's `{ outcome, detail? }` from Task 5.
 - Produces:
   ```ts
-  export type EduroamConfigOutcome = 'saved' | 'already-configured' | 'failed' | 'cancelled';
-  export interface NativeConfigureResult { outcome: string; detail?: string }
-  export interface ConfigureEduroamDeps {
-    configure(o: { p12Base64: string; caDerBase64: string; passphrase: string }): Promise<NativeConfigureResult>;
-  }
+  export interface NativeAddResult { resultCode: number; perNetwork: string }      // unchanged
+  export interface NativeOutcomeResult { outcome: string; detail?: string }
+  export type NativeConfigureResult = NativeAddResult | NativeOutcomeResult;
+  export interface ConfigureEduroamDeps { configure(o): Promise<NativeConfigureResult> }
   export function normalizeOutcome(result: NativeConfigureResult | null | undefined): EduroamConfigOutcome;
-  export async function configureEduroam(material: EduroamNativeInput, deps: ConfigureEduroamDeps): Promise<EduroamConfigOutcome>;
   ```
-  Task 3's `nativeEduroamDeps` implements `ConfigureEduroamDeps`.
 
-- [ ] **Step 1: Rewrite the unit test for the neutral contract**
+- [ ] **Step 1: Add the failing `normalizeOutcome` tests**
 
-Replace the entire content of `src/mobile/__tests__/configureEduroam.test.ts` with:
+Append to `src/mobile/__tests__/configureEduroam.test.ts` (and add `normalizeOutcome` to the import):
 
 ```ts
-import { describe, it, expect, vi } from 'vitest';
-import {
-  configureEduroam,
-  normalizeOutcome,
-  type ConfigureEduroamDeps,
-} from '../configureEduroam';
-
-function material(over: Partial<Parameters<typeof configureEduroam>[0]> = {}) {
-  return {
-    // 0x30 0x82 — the DER SEQUENCE header every real cert and .p12 starts with.
-    clientP12: new Uint8Array([0x30, 0x82, 0x01, 0x02]),
-    rootCaDer: new Uint8Array([0x30, 0x82, 0x03, 0x04]),
-    password: 'hunter2',
-    ...over,
-  };
-}
-
-function deps(over: Partial<ConfigureEduroamDeps> = {}): ConfigureEduroamDeps {
-  return {
-    configure: vi.fn(async () => ({ outcome: 'saved' })),
-    ...over,
-  };
-}
-
 describe('normalizeOutcome', () => {
   it.each(['saved', 'already-configured', 'cancelled', 'failed'] as const)(
-    'passes %s through',
+    'passes the iOS outcome %s through',
     (outcome) => {
       expect(normalizeOutcome({ outcome })).toBe(outcome);
     }
   );
 
+  it('decodes the Android shape through interpretAddResult', () => {
+    expect(normalizeOutcome({ resultCode: RESULT_OK, perNetwork: '2' })).toBe('already-configured');
+    expect(normalizeOutcome({ resultCode: RESULT_CANCELED, perNetwork: '(none)' })).toBe('cancelled');
+  });
+
   it('fails closed on an outcome string neither platform defines', () => {
-    // Guessing "saved" would send the student to campus believing eduroam
-    // works. The opposite mistake is self-correcting: a retry that actually
-    // saved comes back already-configured, which reads as success.
     expect(normalizeOutcome({ outcome: 'ok' })).toBe('failed');
     expect(normalizeOutcome({ outcome: '' })).toBe('failed');
   });
 
-  it('fails closed when the plugin resolved with no outcome at all', () => {
+  it('fails closed when the plugin resolved with neither shape', () => {
     expect(normalizeOutcome({} as never)).toBe('failed');
     expect(normalizeOutcome(null)).toBe('failed');
     expect(normalizeOutcome(undefined)).toBe('failed');
   });
 
   it('ignores detail — it is a diagnostic, not a signal', () => {
-    expect(normalizeOutcome({ outcome: 'cancelled', detail: 'resultCode=0' })).toBe('cancelled');
-  });
-});
-
-describe('configureEduroam', () => {
-  it('hands the cert material across the bridge as base64', async () => {
-    const d = deps();
-    await configureEduroam(material(), d);
-    expect(d.configure).toHaveBeenCalledWith({
-      p12Base64: 'MIIBAg==',
-      caDerBase64: 'MIIDBA==',
-      passphrase: 'hunter2',
-    });
-  });
-
-  it('returns the normalized outcome', async () => {
-    const d = deps({ configure: vi.fn(async () => ({ outcome: 'already-configured' })) });
-    await expect(configureEduroam(material(), d)).resolves.toBe('already-configured');
-  });
-
-  it('refuses to call native code when IS gave us no extraction password', async () => {
-    // The passphrase is what opens the PKCS#12. Without it the keystore load
-    // fails inside the plugin, which surfaces as an opaque native stage error —
-    // so catch it here, where the cause is still legible.
-    const d = deps();
-    await expect(configureEduroam(material({ password: null }), d)).rejects.toThrow(
-      /extraction password/i
-    );
-    expect(d.configure).not.toHaveBeenCalled();
-  });
-
-  it('propagates a native rejection instead of reporting a phantom success', async () => {
-    const d = deps({
-      configure: vi.fn(async () => {
-        throw new Error('FAILED at stage=keystore: wrong password');
-      }),
-    });
-    await expect(configureEduroam(material(), d)).rejects.toThrow(/stage=keystore/);
+    expect(normalizeOutcome({ outcome: 'cancelled', detail: 'NEHotspotConfigurationError 7' })).toBe('cancelled');
   });
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+And in the `configureEduroam` block add:
+```ts
+  it('returns the iOS outcome as-is when the plugin resolved the neutral shape', async () => {
+    const d = deps({ configure: vi.fn(async () => ({ outcome: 'saved' })) });
+    await expect(configureEduroam(material(), d)).resolves.toBe('saved');
+  });
+```
 
-Run: `npx vitest run src/mobile/__tests__/configureEduroam.test.ts`
-Expected: FAIL — `normalizeOutcome` is not exported (and TypeScript complains about `outcome`).
+- [ ] **Step 2: Run to verify it fails** — `npx vitest run src/mobile/__tests__/configureEduroam.test.ts` → FAIL, `normalizeOutcome` not exported.
 
-- [ ] **Step 3: Rewrite `configureEduroam.ts`**
-
-Replace the entire content of `src/mobile/configureEduroam.ts` with:
+- [ ] **Step 3: Implement** — in `src/mobile/configureEduroam.ts`, add after `NativeAddResult`:
 
 ```ts
-// JS side of the native eduroam Wi-Fi setup (Android and iOS).
-//
-// The student's cert material is fetched in the WebView, which holds the IS
-// session (src/api/eduroam.ts), and crosses the bridge as base64. A .p12 is a
-// few KB, so bridge size is a non-issue.
-//
-// Both native halves — android/.../EduroamPlugin.java and
-// native/capacitor-eduroam/.../EduroamPlugin.swift — resolve the same neutral
-// shape, so nothing here knows about Android intent codes or
-// NEHotspotConfigurationError values. Each platform maps its own.
-
-import { bytesToBase64 } from '../services/eduroam/base64';
-
-export type EduroamConfigOutcome = 'saved' | 'already-configured' | 'failed' | 'cancelled';
-
-const OUTCOMES: readonly string[] = ['saved', 'already-configured', 'failed', 'cancelled'];
-
-/** What either native plugin resolves with. `detail` is a diagnostic, never shown raw. */
-export interface NativeConfigureResult {
+/** iOS: the Swift plugin already mapped NEHotspotConfigurationError. `detail` is a diagnostic, never shown raw. */
+export interface NativeOutcomeResult {
   outcome: string;
   detail?: string;
 }
 
-export interface ConfigureEduroamDeps {
-  configure(o: {
-    p12Base64: string;
-    caDerBase64: string;
-    passphrase: string;
-  }): Promise<NativeConfigureResult>;
-}
+export type NativeConfigureResult = NativeAddResult | NativeOutcomeResult;
 
-/** What the caller passes in — the subset of `EduroamCertMaterial` this needs. */
-export interface EduroamNativeInput {
-  clientP12: Uint8Array;
-  rootCaDer: Uint8Array;
-  password: string | null;
-}
+const OUTCOMES: readonly string[] = ['saved', 'already-configured', 'failed', 'cancelled'];
 
 /**
- * Unknown and missing outcomes deliberately fail CLOSED. Claiming success when
- * the network was not saved sends a student to campus with wi-fi that never
- * connects and no reason to suspect setup; the opposite mistake self-corrects,
- * because a retry over a network that did save reads as already-configured.
+ * One normalizer for both native halves. Android resolves raw intent codes
+ * (decoded here, see interpretAddResult); iOS resolves an outcome string.
+ * Anything that is neither, or an outcome neither platform defines, fails CLOSED.
  */
 export function normalizeOutcome(
   result: NativeConfigureResult | null | undefined
 ): EduroamConfigOutcome {
-  const outcome = result?.outcome;
-  return typeof outcome === 'string' && OUTCOMES.includes(outcome)
-    ? (outcome as EduroamConfigOutcome)
-    : 'failed';
-}
-
-/**
- * Hand the cert material to the native plugin and report what the OS did.
- *
- * The EAP identity is NOT passed from here: Android reads the subject CN off
- * the client certificate it is already holding (`<login>@mendelu.cz`), and iOS
- * takes the identity from the certificate itself under EAP-TLS.
- */
-export async function configureEduroam(
-  material: EduroamNativeInput,
-  deps: ConfigureEduroamDeps
-): Promise<EduroamConfigOutcome> {
-  if (!material.password) {
-    // Checked here, where the cause is still legible. Inside the plugin this
-    // surfaces as `FAILED at stage=keystore`, which says nothing about IS not
-    // having shown a password on the certificate page.
-    throw new Error('eduroam: IS did not provide the certificate extraction password');
+  if (!result || typeof result !== 'object') return 'failed';
+  if ('outcome' in result) {
+    return typeof result.outcome === 'string' && OUTCOMES.includes(result.outcome)
+      ? (result.outcome as EduroamConfigOutcome)
+      : 'failed';
   }
+  if ('resultCode' in result) return interpretAddResult(result);
+  return 'failed';
+}
+```
+Change `ConfigureEduroamDeps.configure` to return `Promise<NativeConfigureResult>`, and the last line of `configureEduroam` to `return normalizeOutcome(result);`. In `src/mobile/eduroamNative.ts` import `NativeConfigureResult` instead of `NativeAddResult` for the plugin interface's return type.
 
-  const result = await deps.configure({
-    p12Base64: bytesToBase64(material.clientP12),
-    caDerBase64: bytesToBase64(material.rootCaDer),
-    passphrase: material.password,
+- [ ] **Step 4: Run** — `npx vitest run src/mobile/__tests__/configureEduroam.test.ts` → PASS.
+
+- [ ] **Step 5: Hook test for the iOS shape** — in `src/hooks/data/__tests__/useEduroamSetup.test.ts` add:
+
+```ts
+  it('configures natively on iOS too, reading the outcome the Swift plugin resolved', async () => {
+    const { putTransfer } = await import('../../../api/eduroamTransfer');
+    const native = await import('../../../mobile/eduroamNative');
+    vi.mocked(native.canConfigureEduroamNatively).mockReturnValue(true);
+    vi.mocked(native.nativeEduroamDeps.configure).mockResolvedValue({ outcome: 'saved' });
+    const { result } = renderHook(() => useEduroamSetup());
+
+    await act(async () => {
+      await result.current.run('ios');
+    });
+
+    expect(result.current.status).toBe('done');
+    expect(result.current.outcome).toBe('saved');
+    expect(result.current.qrDataUrl).toBeNull();
+    expect(putTransfer).not.toHaveBeenCalled();
   });
-  return normalizeOutcome(result);
-}
 ```
+This passes only once Task 3 admits `'ios'` in the real `canConfigureEduroamNatively`; here it is mocked, so it passes now and pins the hook's behaviour.
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [ ] **Step 6: Suite, typecheck, lint, commit**
 
-Run: `npx vitest run src/mobile/__tests__/configureEduroam.test.ts`
-Expected: PASS, 11 tests.
-
-- [ ] **Step 5: Re-point the hook tests at the neutral shape**
-
-In `src/hooks/data/__tests__/useEduroamSetup.test.ts`, replace the `onPhone` helper:
-
-```ts
-/** Put the hook on the phone, with the plugin answering `outcome`. */
-async function onPhone(outcome: string) {
-  const native = await import('../../../mobile/eduroamNative');
-  vi.mocked(native.canConfigureEduroamNatively).mockReturnValue(true);
-  vi.mocked(native.nativeEduroamDeps.configure).mockResolvedValue({ outcome });
-  return native;
-}
-```
-
-Then change the four call sites:
-
-| Test | Old call | New call |
-|---|---|---|
-| configures the network natively on the phone… | `await onPhone('0');` | `await onPhone('saved');` |
-| treats an eduroam network that already exists as success | `await onPhone('2');` | `await onPhone('already-configured');` |
-| returns to idle when the student dismisses the system dialog | `await onPhone('(none)', 0);` | `await onPhone('cancelled');` |
-| surfaces a genuine add failure as an error | `await onPhone('1');` | `await onPhone('failed');` |
-
-In the "returns to idle" test, replace the comment line `// RESULT_CANCELED revokes nothing, so the honest state is "not done yet" —` with `// A dismissed system dialog is a choice, so the honest state is "not done yet" —`.
-
-- [ ] **Step 6: Run the hook tests and the interface type check**
-
-Run: `npx vitest run src/hooks/data/__tests__/useEduroamSetup.test.ts && npm run typecheck`
-Expected: 8 tests PASS; `tsc -b` exits 0. If `typecheck` reports `eduroamNative.ts` (the plugin interface still declares `Promise<NativeAddResult>`), that is expected — fix it there now with the minimal edit below, since the type no longer exists:
-
-In `src/mobile/eduroamNative.ts` change the import and the interface to:
-```ts
-import type { ConfigureEduroamDeps, NativeConfigureResult } from './configureEduroam';
-
-interface EduroamNativePlugin {
-  configure(o: {
-    p12Base64: string;
-    caDerBase64: string;
-    passphrase: string;
-  }): Promise<NativeConfigureResult>;
-}
-```
-
-Re-run `npm run typecheck`. Expected: exit 0.
-
-- [ ] **Step 7: Run the full unit suite and lint**
-
-Run: `npm run test:run 2>&1 | tail -6 && npm run lint`
-Expected: all tests pass; eslint exits 0.
-
-- [ ] **Step 8: Commit**
-
+`npm run test:run 2>&1 | tail -6 && npm run typecheck && npm run lint`, then:
 ```bash
 git add src/mobile/configureEduroam.ts src/mobile/__tests__/configureEduroam.test.ts src/hooks/data/__tests__/useEduroamSetup.test.ts src/mobile/eduroamNative.ts
-git commit -m "refactor(eduroam): platform-neutral native result contract
-
-The JS bridge reads { outcome, detail } from either native plugin and
-keeps only the fail-closed rule; Android's intent codes now live in Java.
+git commit -m "feat(eduroam): normalize both native result shapes (Android codes, iOS outcome)
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```

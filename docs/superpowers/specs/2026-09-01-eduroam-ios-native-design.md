@@ -64,8 +64,8 @@ longer true, both measured on 2026-09-01:
 | Piece | Location | Change |
 |---|---|---|
 | iOS plugin | `native/capacitor-eduroam/` (new) | `package.json` with `capacitor.ios.src = "ios"`, `Package.swift`, `ios/Sources/EduroamPlugin/EduroamPlugin.swift`. `@objc(EduroamPlugin)`, `jsName = "Eduroam"`, one method `configure`. |
-| Android plugin | `android/app/src/main/java/cz/reis/app/EduroamPlugin.java` | Maps its intent result codes to the neutral outcome (§4.2) before resolving. Otherwise untouched. |
-| JS bridge | `src/mobile/configureEduroam.ts` | Result type becomes the neutral shape; Android constants and `interpretAddResult` leave TypeScript. Keeps the password precondition and the fail-closed rule. |
+| Android plugin | `android/app/src/main/java/cz/reis/app/EduroamPlugin.java` | **Untouched.** Keeps resolving its raw `{ resultCode, perNetwork }`; it is device- and campus-verified and this Mac cannot build Android, so the design does not reopen it (decided 2026-09-01). |
+| JS bridge | `src/mobile/configureEduroam.ts` | Accepts both result shapes (§4.2): Android's raw codes through the existing `interpretAddResult`, iOS's `{ outcome }` through a normalizer. Keeps the password precondition and the fail-closed rule. |
 | Host gate | `src/mobile/eduroamNative.ts` | `canConfigureEduroamNatively` admits `'ios'` alongside `'android'` when `getPlatform().kind === 'capacitor'`. |
 | Sheet | `src/components/mobile/sheets/EduroamSheet.tsx` | `detectTarget()` asks `Capacitor.getPlatform()` on the Capacitor host, UA guess only in a browser. |
 | Hook | `src/hooks/data/useEduroamSetup.ts` | Type change only. Its native branch already handles every outcome. |
@@ -82,30 +82,33 @@ records the measurement. Capacitor 8 builds `packageClassList` only from install
 plugin packages; an app-target file compiles and then every call rejects with
 "not implemented on ios". Same layout as that package, same `cap sync` registration.
 
-### 4.2 The neutral result contract
+### 4.2 The result contract: two shapes, one normalizer
 
-Today the plugin resolves Android's raw `{ resultCode: number; perNetwork: string }`
-and TypeScript decodes Android constants. iOS has no such codes, so the shared
-contract becomes:
+The Android plugin resolves raw `{ resultCode: number; perNetwork: string }` and
+TypeScript decodes Android's constants in `interpretAddResult`. That stays. iOS has no
+such codes, so its plugin resolves a neutral shape, and TypeScript accepts either:
 
 ```ts
 export type EduroamConfigOutcome = 'saved' | 'already-configured' | 'cancelled' | 'failed';
 
-export interface NativeConfigureResult {
-  outcome: EduroamConfigOutcome;
-  /** Platform-specific diagnostic, e.g. "NEHotspotConfigurationError 4". Never shown raw to students. */
-  detail?: string;
-}
+/** Android: what ACTION_WIFI_ADD_NETWORKS returned. Decoded by interpretAddResult (unchanged). */
+export interface NativeAddResult { resultCode: number; perNetwork: string }
+/** iOS: the plugin already mapped NEHotspotConfigurationError (§5). `detail` is never shown raw. */
+export interface NativeOutcomeResult { outcome: string; detail?: string }
+export type NativeConfigureResult = NativeAddResult | NativeOutcomeResult;
+
+export function normalizeOutcome(result: NativeConfigureResult | null | undefined): EduroamConfigOutcome;
 ```
 
-- **Android** maps inside Java: `RESULT_CANCELED` → `cancelled`; `RESULT_OK` +
-  `ADD_WIFI_RESULT_SUCCESS` → `saved`; `ALREADY_EXISTS` → `already-configured`;
-  `ADD_OR_UPDATE_FAILED` or anything unrecognised → `failed` with the code in `detail`.
-  The mapping is a pure static method, unit-tested like `subjectCommonName`.
-- **iOS** maps per §5.
-- **TypeScript** keeps one rule: an outcome that is not one of the four strings is
-  `'failed'`. Claiming success when the network was not saved sends a student to
-  campus with Wi-Fi that never connects; the opposite mistake self-corrects on retry.
+- A result with `outcome` is iOS: one of the four strings passes through, anything
+  else is `'failed'`.
+- A result with `resultCode` is Android: `interpretAddResult` as today.
+- Anything else (null, an empty object) is `'failed'`.
+
+Fail-closed throughout: claiming success when the network was not saved sends a
+student to campus with Wi-Fi that never connects; the opposite mistake self-corrects
+on retry. An earlier draft moved the Android mapping into Java; it was dropped on
+2026-09-01 so the verified Android plugin is not reopened.
 
 Rejections (thrown errors) stay rejections on both platforms and reach the sheet
 through `useEduroamSetup`'s `catch`, prefixed by `eduroam.native.error`.
@@ -256,11 +259,12 @@ redo eduroam through MENDELU's own guide; nothing is left broken, it is simply g
 
 **Unit tests, written before the implementation.**
 
-- `src/mobile/__tests__/configureEduroam.test.ts` — neutral shape: the four outcomes
-  pass through; an unknown outcome string and a missing `outcome` both become
-  `'failed'`; a null password throws before the bridge is called.
-- `src/hooks/data/__tests__/useEduroamSetup.test.ts` — the four native-path tests
-  re-pointed at the neutral shape; no new hook behaviour.
+- `src/mobile/__tests__/configureEduroam.test.ts` — the existing Android-shape tests
+  stay; new: the four iOS outcomes pass through; an unknown outcome string, a missing
+  `outcome`, null and an empty object all become `'failed'`; a null password still
+  throws before the bridge is called.
+- `src/hooks/data/__tests__/useEduroamSetup.test.ts` — the four Android native-path
+  tests unchanged; one new test drives `run('ios')` with the iOS shape.
 - `src/mobile/__tests__/eduroamNative.test.ts` (new) — `canConfigureEduroamNatively`
   is true for `'ios'` and `'android'` on the Capacitor host, false for both on the
   extension and web hosts, false for `'mac'`/`'windows'` everywhere.
@@ -268,10 +272,7 @@ redo eduroam through MENDELU's own guide; nothing is left broken, it is simply g
   prefers `Capacitor.getPlatform()` on the Capacitor host, so a WKWebView reporting
   Macintosh still resolves to `ios`; the `iosLifetime` line renders on iOS and not on
   Android.
-- Android: the code → outcome mapping is a pure static method on `EduroamPlugin`,
-  covered by a JUnit test under `android/app/src/test/java` (the existing test tree;
-  `subjectCommonName` itself has no test today, and gets one in the same file while
-  we are there).
+- Android: no change, so no new test.
 
 **Swift has no unit-test target in the Capacitor project.** The plugin is proven the
 way the Android one was: a device checklist, committed as
