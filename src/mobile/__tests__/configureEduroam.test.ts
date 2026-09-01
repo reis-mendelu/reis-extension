@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   configureEduroam,
   interpretAddResult,
+  normalizeOutcome,
   RESULT_CANCELED,
   RESULT_OK,
   type ConfigureEduroamDeps,
@@ -65,7 +66,48 @@ describe('interpretAddResult', () => {
   });
 });
 
+describe('normalizeOutcome', () => {
+  it.each(['saved', 'already-configured', 'cancelled', 'failed'] as const)(
+    'passes the iOS outcome %s through',
+    (outcome) => {
+      expect(normalizeOutcome({ outcome })).toBe(outcome);
+    }
+  );
+
+  it('decodes the Android shape through interpretAddResult', () => {
+    expect(normalizeOutcome({ resultCode: RESULT_OK, perNetwork: '2' })).toBe('already-configured');
+    expect(normalizeOutcome({ resultCode: RESULT_CANCELED, perNetwork: '(none)' })).toBe(
+      'cancelled'
+    );
+  });
+
+  it('fails closed on an outcome string neither platform defines', () => {
+    // Guessing "saved" would send the student to campus believing eduroam
+    // works. The opposite mistake is self-correcting: a retry that actually
+    // saved comes back already-configured, which reads as success.
+    expect(normalizeOutcome({ outcome: 'ok' })).toBe('failed');
+    expect(normalizeOutcome({ outcome: '' })).toBe('failed');
+  });
+
+  it('fails closed when the plugin resolved with neither shape', () => {
+    expect(normalizeOutcome({} as never)).toBe('failed');
+    expect(normalizeOutcome(null)).toBe('failed');
+    expect(normalizeOutcome(undefined)).toBe('failed');
+  });
+
+  it('ignores detail — it is a diagnostic, not a signal', () => {
+    expect(
+      normalizeOutcome({ outcome: 'cancelled', detail: 'NEHotspotConfigurationError 7' })
+    ).toBe('cancelled');
+  });
+});
+
 describe('configureEduroam', () => {
+  it('returns the iOS outcome as-is when the plugin resolved the neutral shape', async () => {
+    const d = deps({ configure: vi.fn(async () => ({ outcome: 'saved' })) });
+    await expect(configureEduroam(material(), d)).resolves.toBe('saved');
+  });
+
   it('hands the cert material across the bridge as base64', async () => {
     const d = deps();
     await configureEduroam(material(), d);

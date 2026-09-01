@@ -1,13 +1,13 @@
 import { registerPlugin } from '@capacitor/core';
 import { getPlatform } from '../platform';
-import type { ConfigureEduroamDeps, NativeAddResult } from './configureEduroam';
+import type { ConfigureEduroamDeps, NativeConfigureResult } from './configureEduroam';
 
 interface EduroamNativePlugin {
   configure(o: {
     p12Base64: string;
     caDerBase64: string;
     passphrase: string;
-  }): Promise<NativeAddResult>;
+  }): Promise<NativeConfigureResult>;
 }
 
 /** Android-only native plugin: saves eduroam via ACTION_WIFI_ADD_NETWORKS. */
