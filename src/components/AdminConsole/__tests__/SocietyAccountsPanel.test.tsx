@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import { useAppStore } from '../../../store/useAppStore';
 import { SocietyAccountsPanel } from '../SocietyAccountsPanel';
 
 const resetSocietyPassword = vi.fn();
@@ -13,6 +14,7 @@ vi.mock('../../../api/societyAccounts', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  useAppStore.setState({ language: 'cz', adminAssociationId: 'reis' });
   listSocietyAccounts.mockResolvedValue([
     { association_id: 'supef', association_name: 'SUPEF', is_active: true },
   ]);
@@ -74,5 +76,28 @@ describe('SocietyAccountsPanel', () => {
 
     fireEvent.change(screen.getByLabelText('Název spolku'), { target: { value: 'esn' } });
     expect(button).toBeEnabled();
+  });
+  it('never offers to reset the account you are signed in as', async () => {
+    listSocietyAccounts.mockResolvedValue([
+      { association_id: 'reis', association_name: 'REIS team', is_active: true },
+      { association_id: 'supef', association_name: 'SU PEF', is_active: true },
+    ]);
+    render(<SocietyAccountsPanel />);
+
+    // Resetting yourself here would issue a password you must copy from a
+    // dialog or lose the account you are signed in as.
+    expect(await screen.findByRole('button', { name: 'SU PEF' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'REIS team' })).not.toBeInTheDocument();
+  });
+
+  it('still lets one admin reset a different admin', async () => {
+    listSocietyAccounts.mockResolvedValue([
+      { association_id: 'reis', association_name: 'REIS team', is_active: true },
+      { association_id: 'reis2', association_name: 'REIS team 2', is_active: true },
+    ]);
+    render(<SocietyAccountsPanel />);
+
+    expect(await screen.findByRole('button', { name: 'REIS team 2' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'REIS team' })).not.toBeInTheDocument();
   });
 });

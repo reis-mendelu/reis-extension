@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import {
   createSocietyAccount,
@@ -16,6 +17,12 @@ import { ALL_SOCIETIES } from '../../data/societies';
  */
 export function SocietyAccountsPanel() {
   const { t } = useTranslation();
+  // Your own account never appears in the reset list. Resetting yourself here
+  // would issue a password you must copy from a dialog or lose access to the
+  // account you are signed in as — and "Změnit heslo" below already covers it,
+  // where you choose the value. Keyed on the signed-in account rather than on
+  // the reis_admin role, so a second admin can still reset the first.
+  const ownAssociationId = useAppStore((s) => s.adminAssociationId);
   const [accounts, setAccounts] = useState<SocietyAccountRow[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [password, setPassword] = useState<string | null>(null);
@@ -26,6 +33,8 @@ export function SocietyAccountsPanel() {
   useEffect(() => {
     void listSocietyAccounts().then(setAccounts);
   }, []);
+
+  const resettable = accounts.filter((a) => a.association_id !== ownAssociationId);
 
   const reset = async () => {
     if (!selected || busy) return;
@@ -62,7 +71,7 @@ export function SocietyAccountsPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      {accounts.map((a) => (
+      {resettable.map((a) => (
         <button
           key={a.association_id}
           type="button"
