@@ -1139,10 +1139,8 @@
     },
     "student": {
       "title": "Student",
-      "tabPages": "IS pages",
       "tabPeople": "People",
       "tabSubjects": "Subjects",
-      "searchPages": "Search IS pages…",
       "searchPeople": "Search people…",
       "searchSubjects": "Search the subject catalogue…",
       "results": "Results",
@@ -1151,8 +1149,7 @@
       "eduroam": "Eduroam",
       "eduroamSub": "university Wi-Fi",
       "documents": "Documents",
-      "documentsSub": "proof of study",
-      "allPages": "All IS pages"
+      "documentsSub": "proof of study"
     },
     "sheet": {
       "close": "Close",

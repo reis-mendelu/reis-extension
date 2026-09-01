@@ -33,30 +33,18 @@ describe('StudentScreen', () => {
     });
   });
 
-  it('shows the Stránky IS segment active by default with the shortcut grid', () => {
+  it('opens on Lidé and offers only Lidé and Předměty', () => {
     render(<StudentScreen />);
-    expect(screen.getByRole('tab', { name: 'Stránky IS' })).toHaveAttribute(
-      'aria-selected',
-      'true'
-    );
-    expect(screen.getByRole('tab', { name: 'Lidé' })).toHaveAttribute('aria-selected', 'false');
-    // Eduroam is deliberately absent: one-time device setup belongs in settings,
-    // not among the everyday shortcuts. It lives in ProfileSheet now.
-    expect(screen.queryByText('Eduroam')).not.toBeInTheDocument();
-    expect(screen.getByText('Dokumenty')).toBeInTheDocument();
-    // ISKAM went with the WebISKAM integration — the card was its last entry point.
-    expect(screen.queryByText('ISKAM')).not.toBeInTheDocument();
-    // Erasmus is gone from the phone entirely: it hosted the desktop panel
-    // wholesale, whose Learning Agreement tables and Europe map do not survive
-    // a narrow screen, and it offered every student a shortcut to something
-    // only exchange students use. It stays on desktop.
-    expect(screen.queryByText('Erasmus')).not.toBeInTheDocument();
-  });
-
-  it('pushes a docs sheet when the Dokumenty shortcut is tapped', () => {
-    render(<StudentScreen />);
-    fireEvent.click(screen.getByText('Dokumenty'));
-    expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'docs' }]);
+    expect(screen.getByRole('tab', { name: 'Lidé' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Předměty' })).toHaveAttribute('aria-selected', 'false');
+    // The IS page directory is gone from the phone tree: every one of its 95
+    // links opened the system browser, which has no IS session. It stays in the
+    // browser extension, which sits on IS and keeps the session.
+    expect(screen.queryByRole('tab', { name: 'Stránky IS' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Všechny stránky IS')).not.toBeInTheDocument();
+    // Dokumenty moved to the Profile sheet with eduroam; no shortcut card here.
+    expect(screen.queryByText('Dokumenty')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('tab')).toHaveLength(2);
   });
 
   it('switching to Lidé shows recently searched people', () => {
@@ -109,90 +97,8 @@ describe('StudentScreen', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
     expect(screen.queryByText('Naposledy hledaní')).not.toBeInTheDocument();
   });
-
-  it('does not show the shortcut grid once switched to Lidé', () => {
-    render(<StudentScreen />);
-    fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
-    expect(screen.queryByText('Eduroam')).not.toBeInTheDocument();
-  });
-
-  it('filters IS pages as the user types', () => {
-    useAppStore.setState({ isNarrow: true });
-    render(<StudentScreen />);
-    const input = screen.getByRole('textbox', { name: 'Hledej stránku v IS…' });
-    fireEvent.change(input, { target: { value: 'Portál studenta' } });
-    expect(screen.getByText('Portál studenta')).toBeInTheDocument();
-    expect(screen.queryByText('E-index')).not.toBeInTheDocument();
-  });
-
-  it('shows the no-results message for a query with no matches', () => {
-    render(<StudentScreen />);
-    const input = screen.getByRole('textbox', { name: 'Hledej stránku v IS…' });
-    fireEvent.change(input, { target: { value: 'zzzznonexistentpage' } });
-    expect(screen.getByText('Nic jsme nenašli. Zkus to jinak.')).toBeInTheDocument();
-  });
 });
 
-describe('StudentScreen — the IS page directory', () => {
-  // 95 links across 13 categories, including IS's own administration,
-  // documentation and personalisation sections. Listed outright they buried
-  // the two shortcuts a student opens daily and made the tab read as a site
-  // map. They are kept, behind one row.
-  it('keeps the page list collapsed until asked for on a phone', () => {
-    useAppStore.setState({ isNarrow: true });
-    render(<StudentScreen />);
-    expect(screen.queryByText('E-index')).not.toBeInTheDocument();
-    expect(screen.getByText('Všechny stránky IS')).toBeInTheDocument();
-  });
-
-  // Where there is no room the row is the whole point; where there is, an
-  // empty half-screen under two shortcuts is not worth protecting. `isNarrow`
-  // is `max-width: 767px`, so this is false on every iPad — which runs the
-  // phone tree at full width (see resolvePhoneViewport).
-  it('starts expanded on a tablet, where the list fits without burying anything', () => {
-    useAppStore.setState({ isNarrow: false });
-    render(<StudentScreen />);
-    expect(screen.getByText('E-index')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Všechny stránky IS/ })).toHaveAttribute(
-      'aria-expanded',
-      'true'
-    );
-  });
-
-  it('collapses again when a tablet user taps the row', () => {
-    useAppStore.setState({ isNarrow: false });
-    render(<StudentScreen />);
-    const row = screen.getByRole('button', { name: /Všechny stránky IS/ });
-
-    fireEvent.click(row);
-    expect(screen.queryByText('E-index')).not.toBeInTheDocument();
-  });
-
-  it('reveals the list when the row is tapped, and hides it again', () => {
-    useAppStore.setState({ isNarrow: true });
-    render(<StudentScreen />);
-    const row = screen.getByRole('button', { name: /Všechny stránky IS/ });
-
-    fireEvent.click(row);
-    expect(screen.getByText('E-index')).toBeInTheDocument();
-    expect(row).toHaveAttribute('aria-expanded', 'true');
-
-    fireEvent.click(row);
-    expect(screen.queryByText('E-index')).not.toBeInTheDocument();
-  });
-
-  it('searching reaches every page without expanding anything', () => {
-    // This is what makes hiding the long tail safe: the box above is a
-    // complete index of it, collapsed or not.
-    render(<StudentScreen />);
-    const input = screen.getByRole('textbox', { name: 'Hledej stránku v IS…' });
-    fireEvent.change(input, { target: { value: 'E-index' } });
-    expect(screen.getByText('E-index')).toBeInTheDocument();
-  });
-});
-
-// Sprint 08, iPad. Two separate complaints about the Lidé search, both rooted
-// in the screen ignoring the search's in-flight state and its input's focus.
 describe('StudentScreen — Lidé search while the query is still in flight', () => {
   beforeEach(() => {
     useAppStore.setState({

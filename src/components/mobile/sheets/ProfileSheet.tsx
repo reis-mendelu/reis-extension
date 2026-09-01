@@ -4,6 +4,7 @@ import {
   Moon,
   Languages,
   Wifi,
+  FileText,
   MessageSquarePlus,
   LogOut,
   ChevronRight,
@@ -154,6 +155,24 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
             <span className="text-md font-medium">{t('mobile.student.eduroam')}</span>
             <span className="truncate text-xs text-base-content/60">
               {t('mobile.student.eduroamSub')}
+            </span>
+          </div>
+          <ChevronRight size={16} className="flex-shrink-0 text-base-content/40" />
+        </button>
+        {/* Dokumenty was the last card on the Student hub. The hub's IS page
+            directory is gone from the phone tree (every link opened the system
+            browser, which has no IS session), so the card follows eduroam here
+            rather than keeping a whole segment alive for one button. */}
+        <button
+          type="button"
+          onClick={() => pushSheet({ kind: 'docs' })}
+          className="flex w-full items-center gap-3 px-4 py-2.5 text-left"
+        >
+          <FileText size={16} className="flex-shrink-0 text-base-content/50" />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span className="text-md font-medium">{t('mobile.student.documents')}</span>
+            <span className="truncate text-xs text-base-content/60">
+              {t('mobile.student.documentsSub')}
             </span>
           </div>
           <ChevronRight size={16} className="flex-shrink-0 text-base-content/40" />

@@ -49,6 +49,7 @@ describe('ProfileSheet', () => {
   beforeEach(() => {
     useAppStore.setState({
       language: 'cz',
+      mobileSheets: [],
       theme: 'mendelu-dark',
       isThemeLoading: false,
       fullName: 'Kryštof Janda',
@@ -83,6 +84,14 @@ describe('ProfileSheet', () => {
     // the control is ever re-rendered from any source.
     expect(screen.queryByText(/Synchronizace kalendáře/i)).toBeNull();
     expect(screen.queryByText(/Rozvrh a zkoušky do Outlooku/i)).toBeNull();
+  });
+
+  // Dokumenty used to be the one card left on the Student hub. The hub's IS
+  // directory is gone from the phone tree, so the card follows eduroam here.
+  it('opens the documents sheet from settings in one tap', () => {
+    render(<ProfileSheet onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('Dokumenty'));
+    expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'docs' }]);
   });
 
   it('opens the eduroam sheet from settings in one tap', () => {
