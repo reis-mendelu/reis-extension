@@ -66,8 +66,14 @@ describe('WelcomeScreen', () => {
   it('on the phone shows the card and runs the native setup on tap', () => {
     const { h } = setup({ os: 'android' });
     expect(screen.getByText('Školní Wi-Fi jedním klepnutím')).toBeInTheDocument();
+    expect(screen.getByText(/nastaví eduroam z tvého certifikátu/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Nastavit eduroam' }));
     expect(h.run).toHaveBeenCalledWith('android');
+  });
+
+  it('says who built reIS under the title', () => {
+    setup();
+    expect(screen.getByText(/Vytvořeno studenty pro studenty/)).toBeInTheDocument();
   });
 
   it('hands the phone OS to the hook so the password prefetch runs on the phone only', () => {
@@ -90,6 +96,7 @@ describe('WelcomeScreen', () => {
     expect(screen.getByText('Hotovo, na fakultě se připojíš sám')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Nastavit eduroam' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Jdeme na to' })).toBeInTheDocument();
+    expect(screen.queryByText(/nastaví eduroam z tvého certifikátu/)).not.toBeInTheDocument();
     // Android's saved network is the student's own; the lifetime caveat is iOS-only.
     expect(screen.queryByText(/dokud máte reIS/)).not.toBeInTheDocument();
   });

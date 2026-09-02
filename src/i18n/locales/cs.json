@@ -1125,6 +1125,7 @@
     "welcome": {
       "title": "Vítej v reISu",
       "wifiLine": "Školní Wi-Fi jedním klepnutím",
+      "wifiBody": "reIS nastaví eduroam z tvého certifikátu v IS. Nic nevyplňuješ, nic neodchází ze zařízení.",
       "wifiDone": "Hotovo, na fakultě se připojíš sám",
       "wifiFailed": "Nepovedlo se, nastavíš to později v profilu",
       "notNow": "Teď ne",

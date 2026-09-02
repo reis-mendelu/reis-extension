@@ -72,9 +72,17 @@ export function WelcomeScreen() {
           </div>
         </div>
 
-        <h1 className="font-display text-3xl font-bold tracking-tight">
-          {t('mobile.welcome.title')}
-        </h1>
+        <div className="flex flex-col gap-2">
+          <h1 className="font-display text-3xl font-bold tracking-tight">
+            {t('mobile.welcome.title')}
+          </h1>
+          {/* The desktop modal's one-liner, reused: it is the same product
+              and already says who built it and why. `\n` in the string
+              becomes the line break it was written for. */}
+          <p className="whitespace-pre-line text-base text-base-content/70">
+            {t('onboarding.description')}
+          </p>
+        </div>
 
         <div className="flex flex-1 items-center">
           {native && target && (

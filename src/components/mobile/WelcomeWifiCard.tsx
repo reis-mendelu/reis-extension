@@ -58,6 +58,12 @@ export function WelcomeWifiCard({ status, outcome, target, onSetup }: WelcomeWif
         {line}
       </p>
 
+      {/* What the tap does, while it is still on offer. Gone once done: the
+          done line already says everything that is left to say. */}
+      {!done && !failed && (
+        <p className="text-sm text-base-content/70">{t('mobile.welcome.wifiBody')}</p>
+      )}
+
       {!done && (
         <button
           type="button"

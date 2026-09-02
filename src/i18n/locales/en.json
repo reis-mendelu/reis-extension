@@ -1125,6 +1125,7 @@
     "welcome": {
       "title": "Welcome to reIS",
       "wifiLine": "Campus Wi-Fi in one tap",
+      "wifiBody": "reIS sets up eduroam from your IS certificate. Nothing to fill in, nothing leaves your device.",
       "wifiDone": "Done, you'll connect on campus automatically",
       "wifiFailed": "Didn't work, you can set it up later in your profile",
       "notNow": "Not now",
