@@ -1,9 +1,28 @@
 /**
- * Society accounts log in with the real email on their Supabase Auth account
- * (e.g. "admin@supef.cz") — the same credentials they use for the ops dashboard.
- * We only normalize casing/whitespace before sign-in: Supabase treats emails
- * case-insensitively, but copy-paste can introduce stray spaces or capitals.
+ * Societies sign in with a plain name ("supef"), not an address. Supabase Auth
+ * has no username credential — email, phone, OAuth, SSO, anonymous and Web3 are
+ * the only ones — so a username is mapped to a synthetic address here, and ONLY
+ * here. Nothing else in the codebase may construct a login address.
+ *
+ * `.invalid` is reserved by RFC 2606 and can never route mail. That is the
+ * point: these accounts are recovered by a reIS admin, not by email, and an
+ * unroutable domain says so honestly instead of impersonating a real one the way
+ * the old `admin@esn.cz` addresses did.
+ *
+ * Break-glass exception: an input that already contains "@" passes through. The
+ * reis_admin account keeps a real mailbox, because it is the only role allowed
+ * to reset anyone — if it locks itself out, nothing in this feature can recover
+ * it.
  */
-export function normalizeEmail(input: string): string {
-  return input.trim().toLowerCase();
+export const SOCIETY_EMAIL_DOMAIN = 'societies.invalid';
+
+const USERNAME_RE = /^[a-z0-9][a-z0-9_-]*$/;
+
+export function toAuthEmail(input: string): string {
+  const trimmed = input.trim().toLowerCase();
+  if (trimmed.includes('@')) return trimmed;
+  if (!USERNAME_RE.test(trimmed)) {
+    throw new Error(`invalid username: ${JSON.stringify(input)}`);
+  }
+  return `${trimmed}@${SOCIETY_EMAIL_DOMAIN}`;
 }

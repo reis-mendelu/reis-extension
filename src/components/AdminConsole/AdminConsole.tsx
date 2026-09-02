@@ -9,6 +9,8 @@ import { AdminConsoleMap } from './AdminConsoleMap';
 import { AdminLoginScreen } from './AdminLoginScreen';
 import { MobileAdminConsole } from './MobileAdminConsole';
 import { SuggestionsInbox } from './SuggestionsInbox';
+import { SocietyAccountsPanel } from './SocietyAccountsPanel';
+import { ChangeMyPasswordForm } from './ChangeMyPasswordForm';
 
 /**
  * The admin surface, reached only through "Spravovat spolky" in the profile
@@ -29,7 +31,7 @@ export function AdminConsole() {
   // nothing else — it has no business reading another society's students.
   const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
   const unread = useAppStore((s) => s.suggestionsUnread);
-  const [pane, setPane] = useState<'events' | 'suggestions'>('events');
+  const [pane, setPane] = useState<'events' | 'suggestions' | 'accounts'>('events');
   const { t } = useTranslation();
 
   if (!session) {
@@ -59,17 +61,17 @@ export function AdminConsole() {
       <AdminConsoleHeader />
       <div className="flex min-h-0 flex-1">
         <aside className="flex w-96 shrink-0 flex-col border-r border-base-300 bg-base-100">
-          {isReisAdmin && (
-            <div role="tablist" className="tabs tabs-box tabs-sm m-1 mb-0 shrink-0 flex-nowrap">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={pane === 'events'}
-                onClick={() => setPane('events')}
-                className={`tab flex-1 ${pane === 'events' ? 'tab-active font-semibold' : ''}`}
-              >
-                {t('admin.listTab')}
-              </button>
+          <div role="tablist" className="tabs tabs-box tabs-sm m-1 mb-0 shrink-0 flex-nowrap">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={pane === 'events'}
+              onClick={() => setPane('events')}
+              className={`tab flex-1 ${pane === 'events' ? 'tab-active font-semibold' : ''}`}
+            >
+              {t('admin.listTab')}
+            </button>
+            {isReisAdmin && (
               <button
                 type="button"
                 role="tab"
@@ -84,10 +86,26 @@ export function AdminConsole() {
                   </span>
                 )}
               </button>
-            </div>
-          )}
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            {isReisAdmin && pane === 'suggestions' ? <SuggestionsInbox /> : <AdminEventList />}
+            )}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={pane === 'accounts'}
+              onClick={() => setPane('accounts')}
+              className={`tab flex-1 ${pane === 'accounts' ? 'tab-active font-semibold' : ''}`}
+            >
+              {t('admin.accountsTab')}
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-2">
+            {isReisAdmin && pane === 'suggestions' && <SuggestionsInbox />}
+            {pane === 'accounts' && (
+              <div className="flex flex-col gap-6">
+                {isReisAdmin && <SocietyAccountsPanel />}
+                <ChangeMyPasswordForm />
+              </div>
+            )}
+            {pane === 'events' && <AdminEventList />}
           </div>
         </aside>
         <div className="min-w-0 flex-1">

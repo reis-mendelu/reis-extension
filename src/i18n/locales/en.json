@@ -1009,9 +1009,10 @@
   },
   "admin": {
     "email": "Email",
+    "username": "Society name",
     "password": "Password",
     "login": "Log in",
-    "loginError": "Invalid email or password",
+    "loginError": "Invalid name or password",
     "title": "Title",
     "body": "Description",
     "roomCode": "Room code",
@@ -1032,7 +1033,22 @@
     "markTriaged": "Triaged",
     "markDone": "Done",
     "suggestionsTab": "Suggestions",
-    "suggestionsTitle": "Student suggestions"
+    "suggestionsTitle": "Student suggestions",
+    "accountsTab": "Accounts",
+    "resetPassword": "Reset password",
+    "passwordShownOnce": "This password is shown once — copy it now.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "resetFailed": "Could not reset the password",
+    "close": "Close",
+    "changeMyPassword": "Change password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "passwordTooShort": "Password must be at least 12 characters",
+    "passwordChanged": "Password changed",
+    "passwordChangeFailed": "Could not change the password",
+    "createAccount": "Create account",
+    "displayName": "Display name"
   },
   "mobile": {
     "nav": {
@@ -1133,10 +1149,8 @@
     },
     "student": {
       "title": "Student",
-      "tabPages": "IS pages",
       "tabPeople": "People",
       "tabSubjects": "Subjects",
-      "searchPages": "Search IS pages…",
       "searchPeople": "Search people…",
       "searchSubjects": "Search the subject catalogue…",
       "results": "Results",
@@ -1145,8 +1159,7 @@
       "eduroam": "Eduroam",
       "eduroamSub": "university Wi-Fi",
       "documents": "Documents",
-      "documentsSub": "proof of study",
-      "allPages": "All IS pages"
+      "documentsSub": "proof of study"
     },
     "sheet": {
       "close": "Close",

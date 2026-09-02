@@ -1009,9 +1009,10 @@
   },
   "admin": {
     "email": "E-mail",
+    "username": "Název spolku",
     "password": "Heslo",
     "login": "Přihlásit",
-    "loginError": "Neplatný e-mail nebo heslo",
+    "loginError": "Neplatné jméno nebo heslo",
     "title": "Název",
     "body": "Popis",
     "roomCode": "Místnost",
@@ -1032,7 +1033,22 @@
     "markTriaged": "Zpracováno",
     "markDone": "Hotovo",
     "suggestionsTab": "Návrhy",
-    "suggestionsTitle": "Návrhy studentů"
+    "suggestionsTitle": "Návrhy studentů",
+    "accountsTab": "Účty",
+    "resetPassword": "Obnovit heslo",
+    "passwordShownOnce": "Heslo se zobrazí jen jednou — zkopírujte ho hned.",
+    "copy": "Kopírovat",
+    "copied": "Zkopírováno",
+    "resetFailed": "Nepodařilo se obnovit heslo",
+    "close": "Zavřít",
+    "changeMyPassword": "Změnit heslo",
+    "newPassword": "Nové heslo",
+    "confirmPassword": "Potvrzení hesla",
+    "passwordTooShort": "Heslo musí mít alespoň 12 znaků",
+    "passwordChanged": "Heslo změněno",
+    "passwordChangeFailed": "Nepodařilo se změnit heslo",
+    "createAccount": "Vytvořit účet",
+    "displayName": "Zobrazovaný název"
   },
   "mobile": {
     "nav": {
@@ -1133,10 +1149,8 @@
     },
     "student": {
       "title": "Student",
-      "tabPages": "Stránky IS",
       "tabPeople": "Lidé",
       "tabSubjects": "Předměty",
-      "searchPages": "Hledej stránku v IS…",
       "searchPeople": "Hledej člověka…",
       "searchSubjects": "Hledej předmět v katalogu…",
       "results": "Výsledky",
@@ -1145,8 +1159,7 @@
       "eduroam": "Eduroam",
       "eduroamSub": "univerzitní Wi-Fi",
       "documents": "Dokumenty",
-      "documentsSub": "potvrzení o studiu",
-      "allPages": "Všechny stránky IS"
+      "documentsSub": "potvrzení o studiu"
     },
     "sheet": {
       "close": "Zavřít",

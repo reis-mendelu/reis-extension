@@ -1,8 +1,9 @@
 import type { Session } from '@supabase/supabase-js';
 import type { AppSlice } from '../types';
 import { adminAuthClient } from '../../services/admin/authClient';
-import { normalizeEmail } from '../../services/admin/societyLogin';
+import { toAuthEmail } from '../../services/admin/societyLogin';
 import { listMyPosts, type SpolkyEventRow } from '../../api/societyPosts';
+import { listSocietyAccounts, type SocietyAccountRow } from '../../api/societyAccounts';
 import { logError } from '../../utils/reportError';
 
 export type AdminRole = 'association' | 'reis_admin';
@@ -18,6 +19,9 @@ export interface AdminSlice {
   /** True while the admin console has taken the whole app over. */
   adminConsoleOpen: boolean;
   societyPosts: SpolkyEventRow[];
+  /** reIS admin only: every society account, for the reset/create panel. Empty
+   *  for an association login, which has no business listing the others. */
+  societyAccounts: SocietyAccountRow[];
   /** Open the console. Unconditional — it renders its own login screen when logged out. */
   openSocietyAdmin: () => void;
   /** Leave the console for the student app. Keeps the session; only logout drops it. */
@@ -26,19 +30,25 @@ export interface AdminSlice {
   resetAuthoringState: () => void;
   /** reIS admin only: author as a different society. */
   setActiveAssociation: (id: string) => void;
-  adminLogin: (email: string, password: string) => Promise<{ error?: string }>;
+  /** `username` is a society name ("supef") or, for the break-glass admin, a full address. */
+  adminLogin: (username: string, password: string) => Promise<{ error?: string }>;
   adminLogout: () => Promise<void>;
+  /** Change the signed-in account's own password. Needs no admin rights. */
+  changeMyPassword: (newPassword: string) => Promise<{ error?: string }>;
   loadAdminSession: () => Promise<void>;
   loadSocietyPosts: () => Promise<void>;
+  /** Pull the account list. Called when a reis_admin session is established and
+   *  again after a create — never from a component effect. */
+  loadSocietyAccounts: () => Promise<void>;
 }
 
 async function resolveAccount(
-  email: string
+  userId: string
 ): Promise<{ role: AdminRole | null; associationId: string | null }> {
   const { data, error } = await adminAuthClient
     .from('spolky_accounts')
     .select('role, association_id')
-    .eq('email', email)
+    .eq('user_id', userId)
     .maybeSingle();
   if (error) logError('Admin.resolveAccount', error);
   return { role: (data?.role as AdminRole) ?? null, associationId: data?.association_id ?? null };
@@ -56,6 +66,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   adminActiveAssociationId: null,
   adminConsoleOpen: false,
   societyPosts: [],
+  societyAccounts: [],
   openSocietyAdmin: () => set({ adminConsoleOpen: true }),
   /**
    * Drop every trace of in-progress authoring. Called at each boundary where
@@ -81,11 +92,19 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     set({ adminActiveAssociationId: id });
     void get().loadSocietyPosts();
   },
-  adminLogin: async (emailInput, password) => {
-    const email = normalizeEmail(emailInput);
+  adminLogin: async (usernameInput, password) => {
+    let email: string;
+    try {
+      email = toAuthEmail(usernameInput);
+    } catch {
+      // A malformed username can never match an account. Fail like a wrong
+      // password rather than surfacing a distinct error, which would let someone
+      // probe which names are well-formed.
+      return { error: 'invalid_credentials' };
+    }
     const { data, error } = await adminAuthClient.auth.signInWithPassword({ email, password });
     if (error || !data.session) return { error: 'invalid_credentials' };
-    const { role, associationId } = await resolveAccount(email);
+    const { role, associationId } = await resolveAccount(data.session.user.id);
     if (role === null) {
       try {
         await adminAuthClient.auth.signOut();
@@ -103,8 +122,25 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     // Pull the inbox as soon as the role is known. This is a pull, not a push:
     // nothing arrives while the iframe is closed, so the count is refreshed at
     // every open and announced by SuggestionsToast.
-    if (role === 'reis_admin') await get().loadSuggestions();
+    if (role === 'reis_admin') {
+      await get().loadSuggestions();
+      await get().loadSocietyAccounts();
+    }
     await get().loadSocietyPosts();
+    return {};
+  },
+  changeMyPassword: async (newPassword) => {
+    // 12 is above the project's Auth minimum on purpose: these are shared
+    // society credentials passed between committee members, so they live longer
+    // and get handled more than a personal password would.
+    if (newPassword.length < 12) return { error: 'too_short' };
+    const { error } = await adminAuthClient.auth.updateUser({ password: newPassword });
+    if (error) {
+      // The password itself is never passed to logError — that payload leaves
+      // the device.
+      logError('Admin.changeMyPassword', error);
+      return { error: 'change_failed' };
+    }
     return {};
   },
   adminLogout: async () => {
@@ -121,6 +157,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       adminActiveAssociationId: null,
       adminConsoleOpen: false,
       societyPosts: [],
+      societyAccounts: [],
       societyMapEvents: [],
       suggestions: [],
       suggestionsUnread: 0,
@@ -129,8 +166,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   loadAdminSession: async () => {
     const { data } = await adminAuthClient.auth.getSession();
     if (!data.session) return;
-    const email = data.session.user.email ?? '';
-    const { role, associationId } = await resolveAccount(email);
+    const { role, associationId } = await resolveAccount(data.session.user.id);
     if (role === null) {
       try {
         await adminAuthClient.auth.signOut();
@@ -150,8 +186,14 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     // Pull the inbox as soon as the role is known. This is a pull, not a push:
     // nothing arrives while the iframe is closed, so the count is refreshed at
     // every open and announced by SuggestionsToast.
-    if (role === 'reis_admin') await get().loadSuggestions();
+    if (role === 'reis_admin') {
+      await get().loadSuggestions();
+      await get().loadSocietyAccounts();
+    }
     await get().loadSocietyPosts();
+  },
+  loadSocietyAccounts: async () => {
+    set({ societyAccounts: await listSocietyAccounts() });
   },
   loadSocietyPosts: async () => {
     const associationId = get().adminActiveAssociationId;
