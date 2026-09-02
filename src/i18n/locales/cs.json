@@ -566,6 +566,7 @@
       "working": "Otevírám nastavení Wi-Fi…",
       "saved": "Hotovo — eduroam je uložený. Na fakultě se připojíš automaticky.",
       "already": "eduroam už na tomto zařízení nastavený je.",
+      "staleAssociation": "Jsi připojený k eduroamu, takže ho teď nastavit nejde. Kdyby se později nepřipojil, zapomeň síť v Nastavení → Wi‑Fi a klepni znovu.",
       "cancelled": "Nastavení nebylo dokončeno. Klepni znovu.",
       "failed": "Zařízení síť eduroam neuložilo. Zkus to prosím znovu.",
       "error": "Nastavení eduroamu se nepodařilo",
