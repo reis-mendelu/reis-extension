@@ -1,6 +1,8 @@
 # eduroam iOS native path — iPad verification checklist
 
-**Status: ✅ PASSED on device, 2026-09-01, on campus (dorms), steps 1–4.** Steps 5
+**Status: ✅ PASSED on device, 2026-09-01, on campus (dorms), steps 1, 3 and 4; step 2
+partial.** Step 2's Cancel branch was never exercised — the developer tapped Join on every
+attempt, so `userDenied` is covered by unit tests only (see step 2 below). Steps 5
 (delete-app behaviour) and 6 (telemetry query) were **not run** — the developer called the
 result a pass after step 4 and asked for the PR; both stay open below. Evidence for every
 plugin answer is the app's own console, streamed over USB with
@@ -43,7 +45,7 @@ Bundle id used: `cz.reis.app`.
 1. [x] Sign in, open Settings (profile sheet) → **eduroam**. The sheet shows two numbered
        rows, no password chip, no QR, the privacy note, and the iOS-only line "eduroam
        zůstane nastavený, dokud máte reIS nainstalovaný." Observed: sheet opened; the
-       console shows the cert page, `root.der` (773 B) and `user-xholek1.p12` (2341 B)
+       console shows the cert page, `root.der` (773 B) and the client `.p12` (2341 B)
        fetched over CapacitorHttp with HTTP 200 before every plugin call. Copy not read back
        word for word by the developer; the tap-through was driven by the banners.
 2. [~] Tap **Nastavit eduroam**. iOS shows *"reIS" chce se připojit k síti Wi-Fi "eduroam"*
@@ -60,7 +62,7 @@ Bundle id used: `cz.reis.app`.
          `.mobileconfig` profile. iOS showed its own *Unable to join the network "eduroam"*
          alert; the sheet showed the red `failed` banner. The app console
          (`devicectl … launch --console`) recorded the whole chain — cert page, `root.der`,
-         `user-xholek1.p12`, `To Native -> Eduroam configure` — and the plugin's answer:
+         the client `.p12`, `To Native -> Eduroam configure` — and the plugin's answer:
          `{"outcome":"failed","detail":"NEHotspotConfigurationError 10"}` =
          `systemConfiguration`: an app may not modify a network owned by a configuration
          profile. Correct fail-closed behaviour; not a plugin defect. Removing the profile and

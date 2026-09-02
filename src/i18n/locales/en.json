@@ -565,7 +565,7 @@
       "button": "Set up eduroam",
       "working": "Opening Wi-Fi setup…",
       "saved": "Done — eduroam is saved. You'll connect automatically on campus.",
-      "already": "eduroam is already set up on this phone.",
+      "already": "eduroam is already set up on this device.",
       "cancelled": "Setup wasn't finished. Tap again to retry.",
       "failed": "Your device didn't save the eduroam network. Please try again.",
       "error": "eduroam setup didn't go through",

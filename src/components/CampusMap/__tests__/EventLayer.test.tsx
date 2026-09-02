@@ -11,6 +11,21 @@ import { EventLayer } from '../EventLayer';
 import { setMapInstance } from '../mapInstance';
 import { useAppStore } from '../../../store/useAppStore';
 import { MOCK_MAP_EVENTS } from './fixtures/mockMapEvents';
+import { PUBLIC_WINDOW_DAYS } from '../eventWindow';
+
+/**
+ * An ISO date `days` from today, so a test that needs an event on one side of
+ * the public window says so instead of hard-coding a date that rots. The
+ * mixed-venue test below used literal dates chosen in July 2026; by September
+ * the "30+ days out" one had drifted inside the 14-day window and the test
+ * failed on every PR regardless of its contents.
+ */
+function isoInDays(days: number): string {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let handlers: Record<string, (...a: any[]) => void>;
@@ -233,9 +248,10 @@ describe('EventLayer', () => {
   });
 
   it('marks a mixed venue group scheduled if ANY event is scheduled (admin console)', () => {
-    // Two events sharing the same coord (same venue group): one this-week (live),
-    // one 30+ days out (scheduled). sortByDate puts the live one first, so the old
-    // `events[0]` code would miss the scheduled flag entirely.
+    // Two events sharing the same coord (same venue group): one inside the public
+    // window (live), one past it (scheduled). sortByDate puts the live one first,
+    // so the old `events[0]` code would miss the scheduled flag entirely. Both
+    // dates are relative to today — the window is, too.
     useAppStore.setState({
       adminConsoleOpen: true,
       societyMapEvents: [
@@ -243,7 +259,7 @@ describe('EventLayer', () => {
           id: 's-live',
           title: 'Live Now',
           url: '',
-          date: '2026-07-10',
+          date: isoInDays(1),
           endDate: null,
           time: null,
           location: null,
@@ -259,7 +275,7 @@ describe('EventLayer', () => {
           id: 's-future',
           title: 'Far Future',
           url: '',
-          date: '2026-09-15',
+          date: isoInDays(PUBLIC_WINDOW_DAYS + 30),
           endDate: null,
           time: null,
           location: null,
