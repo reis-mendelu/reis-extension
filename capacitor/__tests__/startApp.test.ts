@@ -35,6 +35,9 @@ describe('startApp', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
     });
     expect(startSyncService).not.toHaveBeenCalled();
+    // The first-run welcome is resolved before the root renders, and demo mode
+    // counts as seen: the reviewer's path must not open with a Wi-Fi alert.
+    expect(useAppStore.getState().welcomeSeen).toBe(true);
     // 30s, not the 5s default: this test boots the real entrypoint (~9s on its
     // own, measured) and then waits for React's scheduler to drain. 15s was
     // enough alone and not enough inside the full suite, where it timed out on
