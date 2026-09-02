@@ -1,5 +1,4 @@
 import { ReisLogo } from '../ReisLogo';
-import { WelcomeSignal } from './WelcomeSignal';
 import { WelcomeWifiCard } from './WelcomeWifiCard';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -20,11 +19,17 @@ import { logError } from '../../utils/reportError';
  * language toggle is `CZ | EN`, not translated words — a control you may need
  * before you can read the screen has to be legible in either language.
  *
- * Two compositions, one DOM tree. Below `md` it is the phone screen verified on
- * device: a centred `max-w-sm` column. At `md` and up it is a full-bleed split —
- * identity on the left under the signal rings, the action on a raised pane on
- * the right. The app ships the phone tree on iPad (see `resolvePhoneViewport`),
- * where the centred column left two thirds of a 1024pt screen empty.
+ * **On a tablet the screen does not grow — the frame does.** The app ships the
+ * phone tree on iPad (`resolvePhoneViewport`), and at 1024pt the phone's
+ * full-bleed column read as six strings adrift in an empty screen. The first
+ * attempt at a fix was a full-bleed two-pane split, which turned one void into
+ * two: no arrangement of six strings fills 1024×1366, and the ambient graphic
+ * covering the difference was decoration standing in for content. So at `md`
+ * and up the same column becomes a centred dialog sized to what it holds, and
+ * the space around it is margin rather than a gap to be filled.
+ *
+ * One DOM tree, `md:` utilities only: below 768px this is the screen verified
+ * on the iPad and on the handset, unchanged.
  */
 export function WelcomeScreen() {
   const { t, language } = useTranslation();
@@ -33,19 +38,13 @@ export function WelcomeScreen() {
 
   // Inside the app Capacitor names the OS; off it (the web dev host) there is
   // no native path, so the card is not offered and the hook stays idle.
+  // `?eduroam=ios` forces the gate on the dev webapp — see `eduroamNative`.
   const target = nativeEduroamTarget();
   const native = target !== null && canConfigureEduroamNatively(target);
   const { status, outcome, run } = useEduroamSetup(target ?? undefined);
 
   const done = status === 'done' && (outcome === 'saved' || outcome === 'already-configured');
   const failed = status === 'error';
-
-  // The split is gated on the card, not on width: with no card the right pane
-  // would be a full-height empty surface holding one button, which is worse at
-  // 1024pt than the centred column. In production the two conditions coincide —
-  // the phone tree only reaches `md` widths inside the Capacitor app, which is
-  // exactly where the native card exists.
-  const split = native && target !== null;
 
   const dismiss = () => {
     void dismissWelcome().catch((e) => logError('WelcomeScreen.dismiss', e));
@@ -63,26 +62,19 @@ export function WelcomeScreen() {
 
   return (
     // Safe-area padding on both ends: this is a full screen, drawn under the
-    // status bar on top and the home indicator at the bottom. The panes carry
-    // it rather than the page, so each half can run edge to edge.
-    <div
-      className={`flex min-h-dvh flex-col bg-base-200 text-base-content ${
-        split ? 'md:grid md:grid-cols-[1fr_minmax(22rem,0.8fr)]' : ''
-      }`}
-    >
-      <section
-        className={`relative flex flex-col gap-6 overflow-hidden px-6 pt-[calc(1.5rem_+_var(--safe-top,0px))] ${
-          split ? 'md:px-12 md:pb-14 md:pt-[calc(3rem_+_var(--safe-top,0px))]' : ''
-        }`}
-      >
-        <div className="mx-auto flex w-full max-w-sm items-center justify-between md:mx-0 md:max-w-none">
-          {/* `relative` is the signal's anchor: the rings are centred on the
-              green dot in the mark, so they scale with the logo. */}
-          <div className="relative">
-            <ReisLogo className="h-10 w-10 md:h-12 md:w-12" />
-            {split && <WelcomeSignal />}
-          </div>
-          <div className="join relative">
+    // status bar on top and the home indicator at the bottom. Centring at `md`
+    // is `justify-center` on the same flex column, so the phone's top-anchored
+    // flow is untouched.
+    <div className="flex min-h-dvh flex-col bg-base-200 px-6 pb-[calc(1.5rem_+_env(safe-area-inset-bottom,0px))] pt-[calc(1.5rem_+_var(--safe-top,0px))] text-base-content md:items-center md:justify-center md:px-8">
+      {/* The column below `md`, the dialog above it. `md:flex-none` hands the
+          height back so the box wraps its content instead of the viewport,
+          which is what makes the space around it read as margin. The hairline
+          is not trim: `base-100` on `base-200` is 1.03:1 in the light theme,
+          so without it the dialog has no edge there at all. */}
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col gap-6 md:max-w-2xl md:flex-none md:gap-8 md:rounded-box md:border md:border-base-content/10 md:bg-base-100 md:p-10 md:shadow-popup">
+        <div className="flex items-center justify-between">
+          <ReisLogo className="h-10 w-10 md:h-11 md:w-11" />
+          <div className="join">
             <button
               type="button"
               onClick={() => setLanguage('cz')}
@@ -100,73 +92,41 @@ export function WelcomeScreen() {
           </div>
         </div>
 
-        {/* `mt-auto` only bites once the pane is a full-height grid cell: on the
-            phone this block stays directly under the logo row, on a tablet it
-            drops to the foot of the pane and reads as a poster. */}
-        <div
-          className={`mx-auto flex w-full max-w-sm flex-col gap-2 ${
-            split ? 'md:mx-0 md:mt-auto md:max-w-lg md:gap-4' : ''
-          }`}
-        >
-          <h1
-            className={`font-display text-3xl font-bold tracking-tight ${
-              split ? 'md:text-6xl md:leading-[1.05]' : ''
-            }`}
-          >
+        <div className="flex flex-col gap-2">
+          <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
             {t('mobile.welcome.title')}
           </h1>
           {/* The desktop modal's one-liner, reused: it is the same product
               and already says who built it and why. `\n` in the string
               becomes the line break it was written for. */}
-          <p
-            className={`whitespace-pre-line text-base text-base-content/70 ${
-              split ? 'md:text-lg' : ''
-            }`}
-          >
+          <p className="whitespace-pre-line text-base text-base-content/70 md:text-lg">
             {t('onboarding.description')}
           </p>
         </div>
-      </section>
 
-      {/* The action pane. Raised in the dark theme, where base-100 lifts off
-          base-200; in the light theme those two are 1.03:1, so the hairline is
-          what actually draws the seam. */}
-      <section
-        className={`flex flex-1 flex-col px-6 pb-[calc(1.5rem_+_env(safe-area-inset-bottom,0px))] ${
-          split
-            ? 'md:justify-center md:border-l md:border-base-content/10 md:bg-base-100 md:px-12 md:pt-[calc(3rem_+_var(--safe-top,0px))]'
-            : ''
-        }`}
-      >
-        <div
-          className={`mx-auto flex w-full max-w-sm flex-1 flex-col gap-6 ${
-            split ? 'md:max-w-md md:flex-none md:gap-8' : ''
-          }`}
-        >
-          <div className={`flex flex-1 items-center ${split ? 'md:flex-none' : ''}`}>
-            {split && target && (
-              <div className="w-full">
-                <WelcomeWifiCard
-                  status={status}
-                  outcome={outcome}
-                  target={target}
-                  onSetup={() => void run(target)}
-                />
-              </div>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={dismiss}
-            className={`btn w-full ${footer.primary ? 'btn-primary' : 'btn-ghost'} ${
-              split ? 'md:btn-lg' : ''
-            }`}
-          >
-            {footer.label}
-          </button>
+        {/* `flex-1` centres the card in whatever height a phone screen has
+            left over. A dialog has no leftover height, so it goes away. */}
+        <div className="flex flex-1 items-center md:flex-none">
+          {native && target && (
+            <div className="w-full">
+              <WelcomeWifiCard
+                status={status}
+                outcome={outcome}
+                target={target}
+                onSetup={() => void run(target)}
+              />
+            </div>
+          )}
         </div>
-      </section>
+
+        <button
+          type="button"
+          onClick={dismiss}
+          className={`btn w-full md:w-auto md:self-end md:px-10 ${footer.primary ? 'btn-primary' : 'btn-ghost'}`}
+        >
+          {footer.label}
+        </button>
+      </div>
     </div>
   );
 }

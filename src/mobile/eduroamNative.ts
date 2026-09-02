@@ -33,9 +33,29 @@ export type NativeEduroamTarget = 'ios' | 'android';
  * answers with a blob download the WebView does nothing useful with.
  */
 export function nativeEduroamTarget(): NativeEduroamTarget | null {
+  const forced = devForcedTarget();
+  if (forced) return forced;
   if (getPlatform().kind !== 'capacitor') return null;
   const os = Capacitor.getPlatform();
   return os === 'ios' || os === 'android' ? os : null;
+}
+
+/**
+ * `?eduroam=ios` / `?eduroam=android` on the dev webapp, and nothing anywhere
+ * else — `import.meta.env.DEV` dead-code-strips the whole function out of every
+ * shipped build, the way `devSociety` and `loadRealDataSnapshot` do.
+ *
+ * The welcome screen's eduroam card is the one part of the first-run flow a
+ * browser can never reach: the gate below asks Capacitor, and Capacitor is not
+ * there. Without this the card was only visible by patching this file by hand,
+ * which is how the tablet layout came to be reviewed on a screen that did not
+ * include it (#259). Only the *gate* is forced; tapping the button still runs
+ * the real hook and fails at the plugin, which is the honest outcome here.
+ */
+function devForcedTarget(): NativeEduroamTarget | null {
+  if (!import.meta.env.DEV || typeof window === 'undefined') return null;
+  const v = new URLSearchParams(window.location.search).get('eduroam');
+  return v === 'ios' || v === 'android' ? v : null;
 }
 
 /**
@@ -53,5 +73,6 @@ export function nativeEduroamTarget(): NativeEduroamTarget | null {
  * same way inside the Swift plugin.
  */
 export function canConfigureEduroamNatively(target: string): boolean {
-  return (target === 'android' || target === 'ios') && getPlatform().kind === 'capacitor';
+  if (target !== 'android' && target !== 'ios') return false;
+  return getPlatform().kind === 'capacitor' || devForcedTarget() !== null;
 }

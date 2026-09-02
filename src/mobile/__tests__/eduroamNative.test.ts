@@ -67,3 +67,49 @@ describe('nativeEduroamTarget', () => {
     expect(nativeEduroamTarget()).toBeNull();
   });
 });
+
+describe('the dev-webapp gate override', () => {
+  /**
+   * The card is the one part of the first-run flow a browser cannot reach, so
+   * the dev host forces the gate with `?eduroam=ios`. These tests run with
+   * `import.meta.env.DEV` true, which is the only condition under which the
+   * override exists at all — a production bundle strips it.
+   */
+  function search(query: string) {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, search: query },
+    });
+  }
+
+  it('names the forced OS in a browser, where there would otherwise be none', () => {
+    host('web');
+    search('?welcome=1&eduroam=ios');
+    expect(nativeEduroamTarget()).toBe('ios');
+    expect(canConfigureEduroamNatively('ios')).toBe(true);
+  });
+
+  it('accepts android too, and nothing else', () => {
+    host('web');
+    search('?eduroam=android');
+    expect(nativeEduroamTarget()).toBe('android');
+    search('?eduroam=mac');
+    expect(nativeEduroamTarget()).toBeNull();
+    search('?eduroam=1');
+    expect(nativeEduroamTarget()).toBeNull();
+  });
+
+  it('leaves a plain browser alone when the param is absent', () => {
+    host('web');
+    search('');
+    expect(nativeEduroamTarget()).toBeNull();
+    expect(canConfigureEduroamNatively('ios')).toBe(false);
+  });
+
+  it('still refuses a desktop target — the override forces the host, not the OS', () => {
+    host('web');
+    search('?eduroam=ios');
+    expect(canConfigureEduroamNatively('mac')).toBe(false);
+    expect(canConfigureEduroamNatively('windows')).toBe(false);
+  });
+});

@@ -159,61 +159,74 @@ Debug build on the iPad (8th gen, iPadOS 26.6), screenshots via `pymobiledevice3
   or contrast findings at 320/390/430 in dark; the light run seeded a theme value the store
   ignores and was dropped at the user's request.
 
-## 5.2 The tablet composition (2026-09-02, after the #259 review)
+## 5.2 The tablet frame (2026-09-02, after the #259 review)
 
 The screen above was drawn for a phone and the app ships the phone tree on iPad, so at
 834–1194pt it rendered as a 384pt column of text with two thirds of the screen empty. The
-review verdict was blunt: "doesn't expand across the entire width and doesn't look modern."
+review verdict: "doesn't expand across the entire width and doesn't look modern."
 
-At `md` and up the same DOM becomes a full-bleed split. One tree, `md:` utilities only —
-no `isTablet` branch — so the phone screen that was verified on device is untouched below
-768px.
+**The first fix was wrong and is recorded here so it is not tried again.** It was a
+full-bleed two-pane split — identity left under a field of concentric rings spreading from
+the mark, action right on a raised pane. It measured clean and it still read as empty,
+because the problem was never the container. Six strings do not fill 1024×1366 in any
+arrangement, and the rings were decoration standing in for content. When a layout needs an
+ambient graphic in order not to look bare, the graphic is the tell.
+
+The direction taken instead: **the screen does not grow, the frame does.** At `md` and up
+the same column becomes a centred dialog sized to what it holds, and the space around it
+is margin rather than a gap to be filled.
 
 ```
- ┌───────────────────────────────┬─────────────────────────────┐
- │  ((( logo )))  rings   [CZ|EN]│                             │
- │      (((                      │         ((•))               │
- │        (((                    │   Školní Wi-Fi jedním       │
- │                               │   klepnutím                 │
- │                               │   reIS nastaví eduroam…     │
- │  Vítej                        │   [   Nastavit eduroam   ]  │
- │  v reISu                      │                             │
- │  Vylepšená verze IS MENDELU.  │   [        Teď ne        ]  │
- └───────────────────────────────┴─────────────────────────────┘
-   bg-base-200, overflow-hidden      bg-base-100 + hairline seam
+ ┌──────────────────────────────────────────────────────┐
+ │                                                      │
+ │      ┌────────────────────────────────────────┐      │
+ │      │ [logo]                       [ CZ|EN ] │      │
+ │      │                                        │      │
+ │      │ Vítej v reISu                          │      │
+ │      │ Vylepšená verze IS MENDELU.            │      │
+ │      │ Vytvořeno studenty pro studenty.       │      │
+ │      │ ────────────────────────────────────── │      │
+ │      │ ((•))  Školní Wi-Fi jedním klepnutím   │      │
+ │      │        reIS nastaví eduroam…  [Nastavit]│     │
+ │      │                              [ Teď ne ] │     │
+ │      └────────────────────────────────────────┘      │
+ └──────────────────────────────────────────────────────┘
 ```
 
-- **The split is gated on the card, not on width** (`native && target`). With no card the
-  right pane would be a full-height empty surface holding one button — worse at 1024pt
-  than the centred column. The two conditions coincide in production: the phone tree only
-  reaches `md` widths inside the Capacitor app, which is where the native card exists.
-- **The seam is a hairline, not a tone.** `base-100` on `base-200` is 1.03:1 in the light
-  theme — the same invisible-surface bug `verify-ui` warns about, mirrored — so
-  `border-base-content/10` is what actually draws the divide. The raised pane still reads
-  as raised in dark, where the pairing is the verified one.
-- **`WelcomeSignal`** — rings spreading from the green dot in the mark, `primary` hairlines
-  at 6–28%, `md` and up only. The one ornament: it fills the width with the thing the
-  screen is about (reaching the network) instead of with nothing. Radius and opacity are
-  attributes and only `scale` animates, so a tab that boots with its frame loop paused
-  gets rings at 82% rather than an empty pane. Entrance only — the card owns every state
-  after it.
-- **The glyph disc** moved from `bg-base-200` to `bg-primary/10`: on the light theme a
-  base-200 disc on a base-100 surface is 1.03:1 and simply is not there. The solid fill on
-  success is still the state change.
-- **On failure the card's button drops to `btn-outline`.** The footer's "Pokračovat" is the
-  way forward; two tinted primaries stacked in the pane read as one decision asked twice.
+- **One DOM tree, `md:` utilities only.** No `isTablet` branch. Below 768px this is the
+  screen verified on the handset and the iPad, unchanged. `md:flex-none` on the column is
+  what makes the dialog wrap its content instead of the viewport.
+- **`max-w-2xl` (672pt), `p-10`.** The eduroam block turns on its side inside it — glyph,
+  message, action across one row — which is what actually spends the width. Stacking the
+  phone card in a 672pt box would leave the width unspent and the box taller.
+- **The dialog's edge is a hairline.** `base-100` on `base-200` is 1.03:1 in the light
+  theme, the mirror of the `base-300`-on-`base-200` bug `verify-ui` warns about, so
+  `border-base-content/10` is what draws it there.
+- **The glyph disc** moved from `bg-base-200` to a tint, for the same reason: a base-200
+  disc on a base-100 surface is invisible in light.
+- **Failure is coloured on the glyph, not the sentence.** `text-error` on the line measured
+  3.90:1 against `base-100` — under AA, and unfixable by weight at that size. A 56pt glyph
+  owes only the 3:1 that non-text graphics owe. The copy says "Nepovedlo se" regardless.
+- **On failure the card's button drops to `btn-outline`**; the footer's "Pokračovat" is the
+  way forward, and two tinted buttons of equal weight read as one decision asked twice.
   (`btn-outline btn-primary` would not do it — the project's soft-button rule fills
   `.btn-primary` regardless of the outline modifier.)
-- Type scale at `md`: title `text-6xl`, card line `text-2xl`, body `text-lg`/`text-base`,
-  language toggle `btn-sm` (the `btn-xs` pills are under the 44pt target on a tablet).
 
-**Verified:** `verify-ui` at 834/1024/1194 with the split forced on (the web host has no
-Capacitor, so `nativeEduroamTarget` was patched locally for the run and reverted) — no
-layout or contrast findings; and at 320/390/430 in the shipping web-host state — no
-findings, phone unchanged. Idle, working, done and failed were each read at 1024×768, the
-shortest iPad geometry, because `#root` is `overflow: hidden` and a tall card would be
-clipped rather than scrolled. **A pass on the iPad is still the shipping gate** — the web
-host cannot run the plugin, so no browser screenshot proves the real card.
+### 5.2.1 Reaching the card in a browser
+
+`?eduroam=ios` / `?eduroam=android` on the dev webapp forces the native gate
+(`src/mobile/eduroamNative.ts`, `import.meta.env.DEV`, stripped from every shipped build).
+Only the gate is forced — tapping the button still runs the real hook and fails at the
+plugin, which is the honest outcome on a web host. This exists because the tablet layout
+was first reviewed on a screen that did not include the card, the gate being Capacitor-only
+and the card therefore invisible without hand-patching this file.
+
+**Verified:** no layout or contrast findings at 834/1024/1194 (`?mobile=1`, card forced on)
+nor at 320/390/430. The failed state was driven by a real click-through, which is what
+caught the 3.90:1 line. Every state read at 1024×768, the shortest iPad geometry, because
+`#root` is `overflow: hidden` and a tall dialog would clip rather than scroll. **A pass on
+the iPad is still the shipping gate** — a browser cannot run the plugin, so no screenshot
+here proves the real card.
 
 ## 6. Out of scope
 
