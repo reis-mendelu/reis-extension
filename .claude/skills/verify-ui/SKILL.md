@@ -43,7 +43,7 @@ npm run verify:ui -- <label> --view exams --url http://localhost:<port>
 |------|---------|-------|
 | `--widths` | `320,390,430` | The phone set. Add the tablet set for anything the iPad renders — see below. |
 | `--view` | current | Seeded into IndexedDB (`meta.reis_current_view`), then reloaded. |
-| `--theme` | dark | `dark` \| `light`. Seeds `meta.reis_theme`, **which the store ignores** — see Known gaps. |
+| `--theme` | dark | `dark` \| `light`. Seeds `meta.reis_theme`, mapped to the theme names the store accepts. |
 | `--click` | — | Text to click after load, e.g. opening a drawer or driving a flow into its error state. |
 | `--onboarding` | off | Keep the desktop welcome modal. Off by default: it blocks the whole page. |
 | `--wait` | 600 | ms to settle after navigation. |
@@ -104,9 +104,16 @@ Occluded elements are skipped, so findings describe what is actually on screen.
   DEV-only, in `src/mobile/eduroamNative.ts`) so the real screen is reachable.
   Where no such override exists, **say the screen was not measured** rather than
   reporting the run clean, and treat the device build as the gate.
-- **`--theme light` seeds a key the store ignores.** For a light-theme reading,
-  drive it from the page instead: `window.__reisStore.getState().setTheme('mendelu')`
-  via `javascript_tool`, then screenshot through the Browser pane.
+- **`--theme light` used to be a silent no-op** — it seeded the literal string
+  `light`, and `createThemeSlice` accepts only `mendelu` / `mendelu-dark` and
+  falls back to dark for anything else, so the "light" run measured the dark
+  theme. Fixed in `scripts/shot.ts`; a light run is now real. Sanity-check the
+  first one by eye anyway.
+- **The first run after an edit can capture the pre-edit module.** Three
+  consecutive runs once photographed a button style that had already been
+  replaced, and the finding was chased as a real one. Confirm the change is
+  live — read the element's `className` through `javascript_tool` in the
+  Browser pane — before believing a frame that contradicts the source.
 - **A hidden Browser pane pauses `requestAnimationFrame`**, so `motion` elements
   stay at their `initial` values and screenshots show a half-built page. Front
   the tab (`tabs_select`) before judging anything animated — and treat that as a

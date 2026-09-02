@@ -106,11 +106,15 @@ export function WelcomeWifiCard({ status, outcome, target, onSetup }: WelcomeWif
           onClick={onSetup}
           disabled={working}
           // After a failure the way forward is the footer's "Continue" and
-          // this is only a retry, so it drops to an outline: two tinted
-          // buttons of equal weight read as one decision asked twice.
-          // (`btn-outline btn-primary` would not do it — the project's
-          // soft-button rule fills `.btn-primary` regardless.)
-          className={`btn w-full gap-2 md:w-auto md:shrink-0 md:px-8 ${failed ? 'btn-outline' : 'btn-primary'}`}
+          // this is only a retry, so it drops to the ghost + hairline pattern
+          // `EventComposer` uses: two buttons of equal weight read as one
+          // decision asked twice. Not `btn-outline` (it fills near-black on
+          // the dark theme and outshouts the primary it was meant to yield
+          // to), and not `btn-outline btn-primary` (the project's soft-button
+          // rule fills `.btn-primary` regardless of the modifier).
+          className={`btn w-full gap-2 md:w-auto md:shrink-0 md:px-8 ${
+            failed ? 'btn-ghost border border-base-content/20' : 'btn-primary'
+          }`}
         >
           {working && <span className="loading loading-spinner loading-xs" />}
           {working ? t('eduroam.native.working') : t('eduroam.native.button')}

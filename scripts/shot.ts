@@ -266,7 +266,10 @@ async function run(): Promise<number> {
       // welcome modal and measures the blurred page behind it.
       const seed: Record<string, unknown> = opts.onboarding ? {} : { welcome_dismissed: true };
       if (opts.view) seed['reis_current_view'] = opts.view;
-      if (opts.theme) seed['reis_theme'] = opts.theme;
+      // `createThemeSlice` accepts exactly two values and silently falls back
+      // to the dark default for anything else, so seeding the raw flag made
+      // `--theme light` a no-op that looked like it had worked.
+      if (opts.theme) seed['reis_theme'] = opts.theme === 'light' ? 'mendelu' : 'mendelu-dark';
       await seedMeta(page, seed);
 
       for (const click of opts.clicks) {
