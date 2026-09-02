@@ -36,9 +36,10 @@ the `packageClassList` entry, and a fresh clone works with no manual step.
 
 **Two consequences worth carrying forward:**
 
-- The `Downloads` and `Eduroam` plugins are app-local Java today. That is fine on Android —
-  `MainActivity.registerPlugin()` runs before the bridge initialises — but their iOS halves
-  will need this same packaging. Do not start them as files in the app target.
+- The `Downloads` plugin is app-local Java today. That is fine on Android —
+  `MainActivity.registerPlugin()` runs before the bridge initialises — but its iOS half
+  will need this same packaging. Do not start it as a file in the app target. The `Eduroam`
+  iOS half already follows this rule: `native/capacitor-eduroam`.
 - The failure mode is an unbreakable **login loop**, not an error: `saveStoredToken` rejects,
   no token persists, and `loadStoredToken` throws `sessionExpired` on the next launch. If iOS
   ever starts asking for a sign-in every cold start, check plugin registration before

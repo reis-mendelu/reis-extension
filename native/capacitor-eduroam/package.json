@@ -1,0 +1,16 @@
+{
+  "name": "@reis/capacitor-eduroam",
+  "version": "1.0.0",
+  "private": true,
+  "description": "iOS half of the native eduroam Wi-Fi setup (NEHotspotConfigurationManager). A local Capacitor plugin package, not published; the Android half is android/app/src/main/java/cz/reis/app/EduroamPlugin.java.",
+  "license": "Apache-2.0",
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    }
+  },
+  "files": [
+    "ios/Sources",
+    "Package.swift"
+  ]
+}

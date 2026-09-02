@@ -156,6 +156,23 @@ describe('useEduroamSetup', () => {
     expect(result.current.outcome).toBe('failed');
   });
 
+  it('configures natively on iOS too, reading the outcome the Swift plugin resolved', async () => {
+    const { putTransfer } = await import('../../../api/eduroamTransfer');
+    const native = await import('../../../mobile/eduroamNative');
+    vi.mocked(native.canConfigureEduroamNatively).mockReturnValue(true);
+    vi.mocked(native.nativeEduroamDeps.configure).mockResolvedValue({ outcome: 'saved' });
+    const { result } = renderHook(() => useEduroamSetup());
+
+    await act(async () => {
+      await result.current.run('ios');
+    });
+
+    expect(result.current.status).toBe('done');
+    expect(result.current.outcome).toBe('saved');
+    expect(result.current.qrDataUrl).toBeNull();
+    expect(putTransfer).not.toHaveBeenCalled();
+  });
+
   it('keeps the QR transfer for Android chosen in a desktop browser', async () => {
     const { putTransfer } = await import('../../../api/eduroamTransfer');
     // Stated rather than inherited: clearAllMocks resets calls, not

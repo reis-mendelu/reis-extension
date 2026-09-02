@@ -1,8 +1,13 @@
-// JS side of the native eduroam Wi-Fi setup (Android).
+// JS side of the native eduroam Wi-Fi setup (Android and iOS).
 //
 // The student's cert material is fetched in the WebView, which holds the IS
 // session (src/api/eduroam.ts), and crosses the bridge as base64. A .p12 is a
 // few KB, so bridge size is a non-issue.
+//
+// Two native halves share the JS name `Eduroam`: android/.../EduroamPlugin.java
+// resolves raw ACTION_WIFI_ADD_NETWORKS codes (decoded below), and
+// native/capacitor-eduroam (Swift) resolves an already-mapped outcome. Both
+// go through normalizeOutcome.
 //
 // This replaces the geteduroam route on Android, which is structurally broken
 // for MENDELU: geteduroam re-resolves the signing institution against eduroam
@@ -23,18 +28,30 @@ const ADD_WIFI_RESULT_ALREADY_EXISTS = 2;
 
 export type EduroamConfigOutcome = 'saved' | 'already-configured' | 'failed' | 'cancelled';
 
-/** Raw shape the native plugin resolves with. `perNetwork` is comma-joined ints. */
+/** Android: raw shape the Java plugin resolves with. `perNetwork` is comma-joined ints. */
 export interface NativeAddResult {
   resultCode: number;
   perNetwork: string;
 }
+
+/**
+ * iOS: the Swift plugin (native/capacitor-eduroam) has already mapped
+ * NEHotspotConfigurationError onto an outcome. `detail` is a diagnostic, never
+ * shown raw to a student.
+ */
+export interface NativeOutcomeResult {
+  outcome: string;
+  detail?: string;
+}
+
+export type NativeConfigureResult = NativeAddResult | NativeOutcomeResult;
 
 export interface ConfigureEduroamDeps {
   configure(o: {
     p12Base64: string;
     caDerBase64: string;
     passphrase: string;
-  }): Promise<NativeAddResult>;
+  }): Promise<NativeConfigureResult>;
 }
 
 /** What the caller passes in — the subset of `EduroamCertMaterial` this needs. */
@@ -64,6 +81,27 @@ export function interpretAddResult(result: NativeAddResult): EduroamConfigOutcom
   return 'failed';
 }
 
+const OUTCOMES: readonly string[] = ['saved', 'already-configured', 'failed', 'cancelled'];
+
+/**
+ * One normalizer for both native halves. Android resolves raw intent codes,
+ * decoded by interpretAddResult above; iOS resolves an outcome string. A result
+ * that is neither, or an outcome neither platform defines, fails CLOSED for the
+ * same reason interpretAddResult does.
+ */
+export function normalizeOutcome(
+  result: NativeConfigureResult | null | undefined
+): EduroamConfigOutcome {
+  if (!result || typeof result !== 'object') return 'failed';
+  if ('outcome' in result) {
+    return typeof result.outcome === 'string' && OUTCOMES.includes(result.outcome)
+      ? (result.outcome as EduroamConfigOutcome)
+      : 'failed';
+  }
+  if ('resultCode' in result) return interpretAddResult(result);
+  return 'failed';
+}
+
 /**
  * Hand the cert material to the native plugin and report what Android did.
  *
@@ -89,5 +127,5 @@ export async function configureEduroam(
     caDerBase64: bytesToBase64(material.rootCaDer),
     passphrase: material.password,
   });
-  return interpretAddResult(result);
+  return normalizeOutcome(result);
 }
