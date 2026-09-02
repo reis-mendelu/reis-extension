@@ -138,6 +138,27 @@ Reused: `eduroam.native.button`, `eduroam.native.working`, `eduroam.native.iosLi
   plugin. A pass on the iPad after the build is the final gate: fresh install → welcome →
   tap → Join → done state → Let's go → calendar; relaunch → no welcome.
 
+## 5.1 Verified on the iPad (2026-09-02)
+
+Debug build on the iPad (8th gen, iPadOS 26.6), screenshots via `pymobiledevice3`:
+
+- **Upgrade in place** (5.0.6 with data → this build): the welcome appeared once on the next
+  launch; the developer tapped Nastavit eduroam → Join; the app console recorded the cert
+  fetch, `To Native -> Eduroam configure`, `{"outcome":"already-configured"}` (the iPad was
+  already on eduroam). Then Jdeme na to → calendar. A later launch went straight to the
+  calendar.
+- **Copy revision**: the trimmed screen read as too sparse at 1024pt; a subtitle
+  (`onboarding.description`, reused) and one sentence in the card (`wifiBody`) were added.
+- **Fresh install** (app deleted, reinstalled): iOS's "Unable to Verify App" trust gate came
+  first (a dev-signed build, not a reIS issue); after trusting, the welcome rendered as
+  designed — logo, CZ | EN, title, subtitle, card line + sentence, green button, "Teď ne".
+  Tap → Join → done state: green glyph with check, "Hotovo, na fakultě se připojíš sám", the
+  iOS lifetime note, footer "Jdeme na to" as primary.
+- Not exercised on device: the Cancel path (`cancelled`) and the failure line; both are
+  unit-tested. The dev-webapp `verify-ui` run (no card on the web host) reported no layout
+  or contrast findings at 320/390/430 in dark; the light run seeded a theme value the store
+  ignores and was dropped at the user's request.
+
 ## 6. Out of scope
 
 Re-offering eduroam near certificate expiry; the desktop modal; any change to
