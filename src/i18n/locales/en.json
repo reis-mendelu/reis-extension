@@ -1122,6 +1122,14 @@
       "sheetCollapse": "Collapse map sheet",
       "noRoomsOnFloor": "No rooms on this floor."
     },
+    "welcome": {
+      "title": "Welcome to reIS",
+      "wifiLine": "Campus Wi-Fi in one tap",
+      "wifiDone": "Done, you'll connect on campus automatically",
+      "wifiFailed": "Didn't work, you can set it up later in your profile",
+      "notNow": "Not now",
+      "continue": "Continue"
+    },
     "student": {
       "title": "Student",
       "tabPages": "IS pages",

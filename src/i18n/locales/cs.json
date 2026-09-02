@@ -1122,6 +1122,14 @@
       "sheetCollapse": "Sbalit panel mapy",
       "noRoomsOnFloor": "Na tomto patře nejsou žádné místnosti."
     },
+    "welcome": {
+      "title": "Vítej v reISu",
+      "wifiLine": "Školní Wi-Fi jedním klepnutím",
+      "wifiDone": "Hotovo, na fakultě se připojíš sám",
+      "wifiFailed": "Nepovedlo se, nastavíš to později v profilu",
+      "notNow": "Teď ne",
+      "continue": "Pokračovat"
+    },
     "student": {
       "title": "Student",
       "tabPages": "Stránky IS",
