@@ -34,11 +34,19 @@ export function WelcomeWifiCard({ status, outcome, target, onSetup }: WelcomeWif
   // the OS was reached (lapsed session, cert fetch). One line either way.
   const failed = status === 'error';
 
+  // iOS says `alreadyAssociated` whenever the device is on the SSID, whether or
+  // not a configuration backs it (#261). That is not done — nothing was
+  // installed — and the student cannot get past it without forgetting the
+  // network, so this line names that step instead of blaming the setup.
+  const stale = outcome === 'stale-association';
+
   const line = done
     ? t('mobile.welcome.wifiDone')
-    : failed
-      ? t('mobile.welcome.wifiFailed')
-      : t('mobile.welcome.wifiLine');
+    : stale
+      ? t('eduroam.native.staleAssociation')
+      : failed
+        ? t('mobile.welcome.wifiFailed')
+        : t('mobile.welcome.wifiLine');
 
   return (
     // A centred card on the phone. Inside the tablet dialog it is already on a
@@ -59,11 +67,13 @@ export function WelcomeWifiCard({ status, outcome, target, onSetup }: WelcomeWif
           // fixable by weight at this size — whereas a 56pt glyph only owes
           // the 3:1 that non-text graphics owe, and clears it. The words say
           // "Nepovedlo se" regardless; the red is not carrying the meaning.
-          failed
-            ? 'bg-error/15 text-error'
-            : done
-              ? 'bg-primary text-primary-content'
-              : 'bg-primary/10 text-primary'
+          stale
+            ? 'bg-warning/15 text-warning'
+            : failed
+              ? 'bg-error/15 text-error'
+              : done
+                ? 'bg-primary text-primary-content'
+                : 'bg-primary/10 text-primary'
         }`}
         animate={working && !reduced ? { scale: [1, 1.08, 1], opacity: [1, 0.55, 1] } : {}}
         transition={working && !reduced ? { duration: 1.2, repeat: Infinity } : { duration: 0.25 }}
