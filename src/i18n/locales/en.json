@@ -566,7 +566,7 @@
       "working": "Opening Wi-Fi setup…",
       "saved": "Done — eduroam is saved. You'll connect automatically on campus.",
       "already": "eduroam is already set up on this device.",
-      "staleAssociation": "You are on eduroam, but the setup is missing. In Settings → Wi‑Fi tap ⓘ next to eduroam, choose Forget This Network, then try again.",
+      "staleAssociation": "You're connected to eduroam, so it can't be set up right now. If it stops connecting later, forget the network in Settings → Wi‑Fi and tap again.",
       "cancelled": "Setup wasn't finished. Tap again to retry.",
       "failed": "Your device didn't save the eduroam network. Please try again.",
       "error": "eduroam setup didn't go through",

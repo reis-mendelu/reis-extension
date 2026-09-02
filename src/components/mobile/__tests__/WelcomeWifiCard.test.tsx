@@ -8,13 +8,7 @@ type Props = Parameters<typeof WelcomeWifiCard>[0];
 
 function renderCard(over: Partial<Props> = {}) {
   return render(
-    <WelcomeWifiCard
-      status="idle"
-      outcome={null}
-      target="ios"
-      onSetup={vi.fn()}
-      {...over}
-    />
+    <WelcomeWifiCard status="idle" outcome={null} target="ios" onSetup={vi.fn()} {...over} />
   );
 }
 
@@ -45,10 +39,26 @@ describe('WelcomeWifiCard', () => {
       expect(screen.queryByText(/nastavený je/)).not.toBeInTheDocument();
     });
 
-    it('names the one action that unblocks it', () => {
+    it('does not claim reIS set anything up, because code 13 cannot tell', () => {
       renderCard({ status: 'error', outcome: 'stale-association' });
 
-      expect(screen.getByText(/Zapomenout tuto síť/)).toBeInTheDocument();
+      // The association may be an orphan (our configuration was deleted) or
+      // someone else's working profile — a university-managed one, a manual
+      // join. `getConfiguredSSIDs` only reports what THIS app installed, so it
+      // cannot separate them. The line must be true either way: state that we
+      // cannot act now, and give the recovery step conditionally.
+      expect(screen.getByText(/nastavit nejde/)).toBeInTheDocument();
+      expect(screen.getByText(/Kdyby se později nepřipojil/)).toBeInTheDocument();
+    });
+
+    it('does not tell a student to tear down a network that may be working', () => {
+      renderCard({ status: 'error', outcome: 'stale-association' });
+      const line = screen.getByText(/nastavit nejde/).textContent ?? '';
+
+      // "forget the network" is conditional on it failing later, never an
+      // instruction to do now — for the student whose eduroam came from the
+      // university's own profile, doing it now breaks a working network.
+      expect(line).toMatch(/Kdyby.*zapomeň/s);
     });
 
     it('keeps the setup button so the retry is one tap away', () => {
