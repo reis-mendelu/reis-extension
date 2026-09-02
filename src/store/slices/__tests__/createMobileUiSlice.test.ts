@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createMobileUiSlice } from '../createMobileUiSlice';
 import type { MobileUiSlice } from '../../types';
+import { IndexedDBService } from '../../../services/storage';
+
+vi.mock('../../../services/storage', () => ({
+  IndexedDBService: { get: vi.fn(), set: vi.fn().mockResolvedValue(undefined) },
+}));
 
 describe('createMobileUiSlice', () => {
   let state: MobileUiSlice;
@@ -108,5 +113,37 @@ describe('createMobileUiSlice', () => {
     expect(state.devPhoneOverride).toBe(true);
     state.setDevPhoneOverride(null);
     expect(state.devPhoneOverride).toBeNull();
+  });
+
+  describe('welcome', () => {
+    it('starts unknown, so a returning student never sees a flash of the welcome', () => {
+      expect(state.welcomeSeen).toBeNull();
+    });
+
+    it('hydrates to false when the key was never written (first run, or an install from before the screen existed)', async () => {
+      vi.mocked(IndexedDBService.get).mockResolvedValue(undefined);
+      await state.hydrateWelcome({ demo: false });
+      expect(IndexedDBService.get).toHaveBeenCalledWith('meta', 'welcome_dismissed');
+      expect(state.welcomeSeen).toBe(false);
+    });
+
+    it('hydrates to true once dismissed', async () => {
+      vi.mocked(IndexedDBService.get).mockResolvedValue(true);
+      await state.hydrateWelcome({ demo: false });
+      expect(state.welcomeSeen).toBe(true);
+    });
+
+    it('treats demo mode as seen without touching storage', async () => {
+      vi.mocked(IndexedDBService.get).mockClear();
+      await state.hydrateWelcome({ demo: true });
+      expect(state.welcomeSeen).toBe(true);
+      expect(IndexedDBService.get).not.toHaveBeenCalled();
+    });
+
+    it('dismissWelcome hides the screen immediately and persists the flag', async () => {
+      await state.dismissWelcome();
+      expect(state.welcomeSeen).toBe(true);
+      expect(IndexedDBService.set).toHaveBeenCalledWith('meta', 'welcome_dismissed', true);
+    });
   });
 });

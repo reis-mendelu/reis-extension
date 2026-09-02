@@ -464,6 +464,13 @@ export interface MobileUiSlice {
   mapTab: MapSheetTab;
   /** Dev-only forced phone/desktop branch. null = defer to viewport. */
   devPhoneOverride: boolean | null;
+  /**
+   * First-run welcome gate for the phone UI. null = not hydrated yet (render the
+   * app, never flash the welcome at a returning student); false = show it.
+   */
+  welcomeSeen: boolean | null;
+  hydrateWelcome: (o: { demo: boolean }) => Promise<void>;
+  dismissWelcome: () => Promise<void>;
 
   setMobileTab: (tab: MobileTab) => void;
   setMobileSelectedDay: (iso: string | null) => void;
