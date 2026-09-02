@@ -909,3 +909,110 @@ step is self-hosting or a keyed provider behind the Supabase proxy.
 CARTO). Worth stating as a rule: every external service named in that reply is
 a claim about the binary, and any swap has to be reflected there before the
 reply is sent.
+
+---
+
+## 12. Version 5.1.0 — submission (2026-09-02)
+
+Build **50100 / 5.1.0**, `cz.reis.app`, archive `reIS 5.1.0 2026-09-02 10.20.xcarchive`.
+Uploaded from Xcode Organizer. Version bumped on `main` in `373edd2b`; **no `v*` tag was
+pushed**, deliberately — a tag triggers `publish.yml` and would ship the browser extension
+to three review queues for a release with no extension-facing changes.
+
+### 12.1 The trap: the store profile predates the entitlement
+
+`xcodebuild -exportArchive` failed, twice, with:
+
+```
+Provisioning profile "iOS Team Store Provisioning Profile: cz.reis.app"
+doesn't include the com.apple.developer.networking.HotspotConfiguration entitlement
+error: exportArchive No Accounts
+```
+
+The **archive** was signed correctly — `codesign -d --entitlements` on the archived
+`App.app` showed `com.apple.developer.networking.HotspotConfiguration => true`. The
+problem was only the cached App Store profile. Both cached profiles in
+`~/Library/Developer/Xcode/UserData/Provisioning Profiles` were generated on 2026-09-01,
+23 minutes apart, and straddled the moment Hotspot Configuration was added to the App ID:
+
+| profile | Hotspot | devices | type |
+|---|---|---|---|
+| `iOS Team Provisioning Profile: cz.reis.app` | yes | 1 | development |
+| `iOS Team Store Provisioning Profile: cz.reis.app` | **no** | 0 | App Store |
+
+So the App ID was fine; the store profile was stale. Deleting the stale one from that
+directory forces Xcode to fetch a fresh copy on the next Distribute. `xcodebuild` cannot
+do the fetch — `No Accounts` — and that is not fixable by flags: **the export/upload needs
+either the Xcode GUI's signed-in account or an App Store Connect API key.** No key exists
+on this Mac (`~/.appstoreconnect/private_keys/` does not exist); creating one under Users
+and Access → Integrations with the App Manager role is what would make the whole chain
+headless.
+
+**Next time any entitlement changes, regenerate the store profile before archiving.**
+
+### 12.2 What is new for a user since 5.0.6
+
+- **Native one-tap eduroam** (#258, #189) — the headline. Verified on the iPad on
+  2026-09-02: fresh install → welcome → Nastavit eduroam → iOS's own Join alert → done.
+- **First-run welcome** (#259) — language plus that eduroam tap, before the calendar. On a
+  tablet it is a centred dialog rather than a stretched phone screen; see
+  `docs/superpowers/specs/2026-09-02-mobile-welcome-eduroam-design.md` §5.2.
+- Exam duration read from the term detail instead of hard-coded, plus subject evaluations
+  (#188).
+- iPad fixes across two sprints (#244, #252, #254) — sheet seam, notifications, own
+  profile photo, subject search, PDF preview, keyboard dismissal, real RSVP counts, 2h
+  reminders.
+- Sync only when there is a reason to, and fetch only what is due (#233).
+- Library study rooms and society events on the campus map (#146, #150, #218).
+- **Removed:** Outlook calendar sync (#250) and the WebISKAM integration (#247).
+- Privacy: no crash report is transmitted before the opt-out has loaded (#237).
+
+### 12.3 "What's New" — filed copy
+
+**Czech (primary):**
+
+```
+Školní Wi-Fi jedním klepnutím
+eduroam nastavíš přímo v reISu. Certifikát si vezmeme z tvého IS, nic nevyplňuješ a nic
+neodchází ze zařízení — na fakultě se pak připojíš sám.
+
+Nový úvod při prvním spuštění
+Vyber si jazyk a hned nastav eduroam, ještě než se dostaneš do rozvrhu.
+
+Opravili a vylepšili jsme
+• Zkoušky ukazují skutečnou délku termínu a přidali jsme evaluace předmětů
+• Vývěska, hledání předmětů, náhledy PDF a klávesnice na iPadu
+• Synchronizace běží jen když je proč — méně dat, delší baterie
+• Studovny a akce spolků na mapě kampusu
+• Připomínky na zkoušku 2 hodiny předem
+
+Odebrali jsme synchronizaci kalendáře s Outlookem.
+```
+
+**English:**
+
+```
+Campus Wi-Fi in one tap
+Set up eduroam inside reIS. We take the certificate from your IS account — you fill in
+nothing, and nothing leaves your device. On campus you connect automatically from then on.
+
+A first-run screen
+Pick your language and set eduroam up before you reach your timetable.
+
+Fixed and improved
+• Exams show the real length from the term detail, plus subject evaluations
+• Noticeboard, subject search, PDF previews and the keyboard on iPad
+• Sync runs only when there is a reason to — less data, better battery
+• Library study rooms and society events on the campus map
+• Exam reminders two hours ahead
+
+Outlook calendar sync has been removed.
+```
+
+### 12.4 Still open at submission
+
+- Issue #260 — two CodeRabbit findings on the iOS keychain path (stage replacements under
+  new labels; clean up staged items on every unsuccessful apply). Deferred rather than
+  fixed blind: the Swift plugin is campus-verified and the change needs a device run.
+- Guideline 5.2.2 is unchanged from §4 and §10 — still no MENDELU permission, still the
+  same three mitigations in the binary.
