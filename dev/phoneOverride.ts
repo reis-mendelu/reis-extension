@@ -13,8 +13,14 @@ import { resolveDevPhoneOverride } from '../src/utils/resolveDevPhoneOverride';
 //
 // Guarded by import.meta.env.DEV so it cannot ship.
 if (import.meta.env.DEV) {
-  const param = new URLSearchParams(window.location.search).get('mobile');
+  const search = new URLSearchParams(window.location.search);
+  const param = search.get('mobile');
   const pinned = param === '1' || param === '0';
+
+  // `?welcome=1` forces the first-run welcome. Nothing hydrates `welcomeSeen`
+  // on the web host (only the Capacitor boot does), so without this the screen
+  // is unreachable here and `verify-ui` could never measure it.
+  if (search.get('welcome') === '1') useAppStore.setState({ welcomeSeen: false });
 
   const apply = (isNarrow: boolean) => {
     useAppStore.getState().setDevPhoneOverride(resolveDevPhoneOverride({ param, isNarrow }));

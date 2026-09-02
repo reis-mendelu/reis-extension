@@ -9,6 +9,7 @@ import { SubjectsScreen } from './screens/SubjectsScreen';
 import { MapScreen } from './screens/MapScreen';
 import { StudentScreen } from './screens/StudentScreen';
 import { SheetHost } from './sheets/SheetHost';
+import { WelcomeScreen } from './WelcomeScreen';
 
 /**
  * Root of the phone UI. Takes no props: `useAppLogic()` returns desktop-local
@@ -27,7 +28,14 @@ import { SheetHost } from './sheets/SheetHost';
 export function MobileApp() {
   const tab = useAppStore((s) => s.mobileTab);
   const demoMode = useAppStore((s) => s.demoMode);
+  const welcomeSeen = useAppStore((s) => s.welcomeSeen);
   const offset = toastOffset(demoMode);
+
+  // First run owns the whole screen, the way LoginGate does before login.
+  // Strictly `false`: `null` means nobody hydrated the flag (the extension's
+  // phone layout and the dev webapp never do), and a returning student must
+  // never see the welcome flash over the app.
+  if (welcomeSeen === false) return <WelcomeScreen />;
 
   return (
     <div

@@ -1,4 +1,5 @@
 import type { AppSlice, MobileUiSlice } from '../types';
+import { IndexedDBService } from '../../services/storage';
 
 /**
  * Navigational state for the phone UI: which tab, which day, and the sheet
@@ -16,6 +17,26 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set) => ({
   mapSheetState: 'peek',
   mapTab: 'akce',
   devPhoneOverride: null,
+  welcomeSeen: null,
+
+  // Read once at boot, before the root renders (capacitor/main.capacitor.tsx).
+  // Same key as the desktop WelcomeModal: a device that dismissed it there has
+  // dismissed it here. Demo mode is "seen" — there is no IS certificate to set
+  // eduroam up from, and the reviewer's path should not open with a Wi-Fi alert.
+  hydrateWelcome: async ({ demo }) => {
+    if (demo) {
+      set({ welcomeSeen: true });
+      return;
+    }
+    const dismissed = await IndexedDBService.get('meta', 'welcome_dismissed');
+    set({ welcomeSeen: dismissed === true });
+  },
+  // State first, storage second: the screen must go away on the tap, and a
+  // failed write is logged by the caller through the returned promise.
+  dismissWelcome: async () => {
+    set({ welcomeSeen: true });
+    await IndexedDBService.set('meta', 'welcome_dismissed', true);
+  },
 
   // Switching tabs closes sheets: a sheet belongs to the screen that opened it.
   setMobileTab: (tab) => set({ mobileTab: tab, mobileSheets: [] }),

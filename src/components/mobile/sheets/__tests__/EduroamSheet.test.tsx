@@ -185,7 +185,7 @@ describe('EduroamSheet', () => {
 
     render(<EduroamSheet onClose={vi.fn()} />);
 
-    expect(screen.getByText(/už na tomto telefonu nastavený je/)).toBeInTheDocument();
+    expect(screen.getByText(/už na tomto zařízení nastavený je/)).toBeInTheDocument();
   });
 
   it('does not scold a student who dismissed the system dialog', () => {

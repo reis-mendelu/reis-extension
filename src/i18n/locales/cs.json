@@ -565,7 +565,7 @@
       "button": "Nastavit eduroam",
       "working": "Otevírám nastavení Wi-Fi…",
       "saved": "Hotovo — eduroam je uložený. Na fakultě se připojíš automaticky.",
-      "already": "eduroam už na tomto telefonu nastavený je.",
+      "already": "eduroam už na tomto zařízení nastavený je.",
       "cancelled": "Nastavení nebylo dokončeno. Klepni znovu.",
       "failed": "Zařízení síť eduroam neuložilo. Zkus to prosím znovu.",
       "error": "Nastavení eduroamu se nepodařilo",
@@ -1137,6 +1137,15 @@
       "sheetExpand": "Rozbalit panel mapy",
       "sheetCollapse": "Sbalit panel mapy",
       "noRoomsOnFloor": "Na tomto patře nejsou žádné místnosti."
+    },
+    "welcome": {
+      "title": "Vítej v reISu",
+      "wifiLine": "Školní Wi-Fi jedním klepnutím",
+      "wifiBody": "reIS nastaví eduroam z tvého certifikátu v IS. Nic nevyplňuješ, nic neodchází ze zařízení.",
+      "wifiDone": "Hotovo, na fakultě se připojíš sám",
+      "wifiFailed": "Nepovedlo se, nastavíš to později v profilu",
+      "notNow": "Teď ne",
+      "continue": "Pokračovat"
     },
     "student": {
       "title": "Student",

@@ -94,6 +94,10 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // registers a handler there, so nothing happens there.
   setSessionExpiredHandler(promptSessionRecovery);
 
+  // Before the root renders, so the first frame is already either the welcome
+  // or the app — never the app with the welcome flashing over it a tick later.
+  await useAppStore.getState().hydrateWelcome({ demo });
+
   // Dynamic import on purpose: this module renders the React root on
   // evaluation, so a static import would boot the app BEFORE a session exists
   // and every sync request would fail its auth check.
