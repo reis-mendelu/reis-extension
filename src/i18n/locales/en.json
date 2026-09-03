@@ -1059,8 +1059,7 @@
       "calendar": "Calendar",
       "exams": "Exams",
       "subjects": "Courses",
-      "map": "Map",
-      "student": "Student"
+      "map": "Map"
     },
     "calendar": {
       "nowRunning": "On now",

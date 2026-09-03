@@ -8,11 +8,13 @@ describe('BottomNav', () => {
     useAppStore.setState({ mobileTab: 'calendar', language: 'cz', keyboardOpen: false });
   });
 
-  // Four, not five: "Student" was a whole slot spent on a search field, and
-  // search is a header action now. See persistentHeader.test.tsx.
-  it('renders four nav buttons', () => {
+  // Five again, but the fifth is the PROFILE, not "Student": that slot was a
+  // search field, search became a header action, and the freed slot went to the
+  // profile — which had been a sheet behind the header avatar. See
+  // ProfileScreen.test.tsx and persistentHeader.test.tsx.
+  it('renders five nav buttons', () => {
     render(<BottomNav />);
-    expect(screen.getAllByRole('button')).toHaveLength(4);
+    expect(screen.getAllByRole('button')).toHaveLength(5);
   });
 
   it('labels only the active tab', () => {

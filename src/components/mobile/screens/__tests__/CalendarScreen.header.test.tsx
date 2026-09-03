@@ -41,11 +41,11 @@ describe('CalendarScreen header', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it('keeps all three header actions reachable while the schedule is loading', () => {
+  it('keeps every header action reachable while the schedule is loading', () => {
     render(<CalendarScreen />);
     // Still loading — the skeleton is the point, not a side effect.
     expect(screen.getByTestId('calendar-skeleton')).toBeInTheDocument();
-    expect(screen.getByLabelText('Profil')).toBeInTheDocument();
+    expect(screen.getByLabelText('Hledat')).toBeInTheDocument();
     expect(screen.getByLabelText('Oznámení')).toBeInTheDocument();
     expect(screen.getByLabelText('Rozbalit vývěsku')).toBeInTheDocument();
   });
@@ -55,10 +55,12 @@ describe('CalendarScreen header', () => {
     expect(screen.getByText('Pondělí 20. dubna')).toBeInTheDocument();
   });
 
-  it('opens the settings sheet from the loading screen', () => {
+  it('opens search from the loading screen', () => {
+    // Settings is a bottom-nav tab now, so the header's own destinations are
+    // the vývěska, search and notifications.
     render(<CalendarScreen />);
-    fireEvent.click(screen.getByLabelText('Profil'));
-    expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'profile' }]);
+    fireEvent.click(screen.getByLabelText('Hledat'));
+    expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'search' }]);
   });
 
   it('opens the notifications sheet from the loading screen', () => {
@@ -85,7 +87,7 @@ describe('CalendarScreen header', () => {
     } as never);
     render(<CalendarScreen />);
     expect(screen.getByTestId('calendar-error')).toBeInTheDocument();
-    expect(screen.getByLabelText('Profil')).toBeInTheDocument();
+    expect(screen.getByLabelText('Hledat')).toBeInTheDocument();
     expect(screen.getByLabelText('Oznámení')).toBeInTheDocument();
     expect(screen.getByLabelText('Rozbalit vývěsku')).toBeInTheDocument();
   });
@@ -104,7 +106,7 @@ describe('CalendarScreen header', () => {
     } as never);
     render(<CalendarScreen />);
     expect(screen.getByTestId('calendar-skeleton')).toBeInTheDocument();
-    expect(screen.getByLabelText('Profil')).toBeInTheDocument();
+    expect(screen.getByLabelText('Hledat')).toBeInTheDocument();
   });
 
   /**

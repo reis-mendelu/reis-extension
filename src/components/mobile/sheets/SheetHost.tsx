@@ -3,7 +3,6 @@ import { SubjectDrawerSheet } from './SubjectDrawerSheet';
 import { EventDetailSheet } from './EventDetailSheet';
 import { StudyPlanSheet } from './StudyPlanSheet';
 import { NotificationsSheet } from './NotificationsSheet';
-import { ProfileSheet } from './ProfileSheet';
 import { PersonSheet } from './PersonSheet';
 import { PersonPhotoSheet } from './PersonPhotoSheet';
 import { EduroamSheet } from './EduroamSheet';
@@ -35,8 +34,6 @@ export function SheetHost() {
             return <StudyPlanSheet key={index} onClose={popSheet} />;
           case 'notifications':
             return <NotificationsSheet key={index} onClose={popSheet} />;
-          case 'profile':
-            return <ProfileSheet key={index} onClose={popSheet} />;
           case 'person':
             return <PersonSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'personPhoto':

@@ -7,6 +7,7 @@ import { CalendarScreen } from './screens/CalendarScreen';
 import { ExamsScreen } from './screens/ExamsScreen';
 import { SubjectsScreen } from './screens/SubjectsScreen';
 import { MapScreen } from './screens/MapScreen';
+import { ProfileScreen } from './screens/ProfileScreen';
 import { SheetHost } from './sheets/SheetHost';
 import { WelcomeScreen } from './WelcomeScreen';
 
@@ -21,7 +22,7 @@ import { WelcomeScreen } from './WelcomeScreen';
  * so the phone branch would otherwise have no toast host and every
  * confirmation would silently do nothing.
  *
- * Routes on `mobileTab` (Task 3's mobile UI slice) between the four screens,
+ * Routes on `mobileTab` (Task 3's mobile UI slice) between the five screens,
  * with `BottomNav` driving the switch. Search is not among them — it is a
  * sheet opened from the header, so it overlays whichever tab is active.
  */
@@ -85,6 +86,7 @@ export function MobileApp() {
         {tab === 'exams' && <ExamsScreen />}
         {tab === 'subjects' && <SubjectsScreen />}
         {tab === 'map' && <MapScreen />}
+        {tab === 'profile' && <ProfileScreen />}
       </div>
       <BottomNav />
       <SheetHost />

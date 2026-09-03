@@ -1,20 +1,10 @@
-import { Bell, Pin, Search, User } from 'lucide-react';
+import { Bell, Pin, Search } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useNotificationFeed } from '../../../hooks/useNotificationFeed';
 import { useTranslation } from '../../../hooks/useTranslation';
 
-function initials(name: string): string {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
-
 /**
- * The header's four buttons: vývěska, search, notifications, settings.
+ * The header's three buttons: vývěska, search, notifications.
  *
  * Rendered by `ScreenHeader` itself rather than passed in, so a screen cannot
  * render a header without them. That is deliberate: these are the only way
@@ -22,15 +12,15 @@ function initials(name: string): string {
  * once from the calendar's loading and error states, and once from every tab
  * that was not the calendar.
  *
- * Search sits beside the pin rather than after the avatar: it replaced a whole
- * bottom-nav tab, so it is a primary destination, not an afterthought.
+ * No avatar: the profile is a bottom-nav TAB now, and a tab plus an icon that
+ * open the same screen is two doors to one room. It also gives the title back
+ * the 40px that had squeezed "Zkoušky" to "Zkou…" at 320px.
  *
  * It owns its own data (the unread count) rather than being handed it, so a
  * caller cannot render it half-configured.
  */
 export function HeaderActions() {
   const { t } = useTranslation();
-  const fullName = useAppStore((s) => s.fullName);
   const pushSheet = useAppStore((s) => s.pushSheet);
   const bulletinHydrated = useAppStore((s) => s.bulletinHydrated);
   const setBulletinExpanded = useAppStore((s) => s.setBulletinExpanded);
@@ -85,14 +75,6 @@ export function HeaderActions() {
             {unreadCount}
           </span>
         )}
-      </button>
-      <button
-        type="button"
-        onClick={() => pushSheet({ kind: 'profile' })}
-        aria-label={t('sidebar.profile')}
-        className="flex h-10 w-10 items-center justify-center rounded-full border border-base-300 bg-base-100 font-display text-base font-bold text-primary max-[359px]:h-9 max-[359px]:w-9"
-      >
-        {fullName ? initials(fullName) : <User size={18} />}
       </button>
     </div>
   );

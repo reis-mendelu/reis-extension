@@ -25,7 +25,9 @@ import { useAppStore } from '../../../../store/useAppStore';
  * targets for the same row — at 320px that overflows.
  */
 
-const ACTIONS = ['Rozbalit vývěsku', 'Hledat', 'Oznámení', 'Profil'];
+// Three, not four: the profile became a bottom-nav tab, so the avatar left the
+// header — see ProfileScreen.test.tsx.
+const ACTIONS = ['Rozbalit vývěsku', 'Hledat', 'Oznámení'];
 
 const SYNC_DONE = {
   isSyncing: false,
@@ -55,17 +57,17 @@ describe('the persistent header', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it('renders all four actions on the calendar', () => {
+  it('renders all three actions on the calendar', () => {
     render(<CalendarScreen />);
     for (const label of ACTIONS) expect(screen.getByLabelText(label)).toBeInTheDocument();
   });
 
-  it('renders all four actions on exams', () => {
+  it('renders all three actions on exams', () => {
     render(<ExamsScreen />);
     for (const label of ACTIONS) expect(screen.getByLabelText(label)).toBeInTheDocument();
   });
 
-  it('renders all four actions on subjects', () => {
+  it('renders all three actions on subjects', () => {
     render(<SubjectsScreen />);
     for (const label of ACTIONS) expect(screen.getByLabelText(label)).toBeInTheDocument();
   });
@@ -98,14 +100,14 @@ describe('the persistent header', () => {
   });
 });
 
-describe('the bottom nav after the Student tab is gone', () => {
+describe('the bottom nav after the Student tab became the profile', () => {
   beforeEach(() => {
     useAppStore.setState({ mobileTab: 'calendar', language: 'cz', keyboardOpen: false });
   });
 
-  it('renders four nav buttons', () => {
+  it('renders five nav buttons', () => {
     render(<BottomNav />);
-    expect(screen.getAllByRole('button')).toHaveLength(4);
+    expect(screen.getAllByRole('button')).toHaveLength(5);
   });
 
   it('no longer offers a Student tab', () => {
@@ -113,9 +115,9 @@ describe('the bottom nav after the Student tab is gone', () => {
     expect(screen.queryByRole('button', { name: 'Student' })).not.toBeInTheDocument();
   });
 
-  it('still offers the other four', () => {
+  it('offers the four destinations plus the profile', () => {
     render(<BottomNav />);
-    for (const name of ['Kalendář', 'Zkoušky', 'Předměty', 'Mapa'])
+    for (const name of ['Kalendář', 'Zkoušky', 'Předměty', 'Mapa', 'Profil'])
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
   });
 });

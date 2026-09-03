@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ProfileSheet } from '../ProfileSheet';
+import { ProfileScreen } from '../ProfileScreen';
 import { useAppStore } from '../../../../store/useAppStore';
 
 const photoFor = vi.fn<(id: unknown) => string | null>(() => null);
@@ -14,7 +14,7 @@ vi.mock('../../../../hooks/data/usePersonPhoto', () => ({
  * or, when `fullName` has not resolved, a generic person glyph. On the iPad
  * that is what a student sees of themselves.
  */
-describe("ProfileSheet — the student's own photo", () => {
+describe("ProfileScreen — the student's own photo", () => {
   beforeEach(() => {
     photoFor.mockReset();
     photoFor.mockReturnValue(null);
@@ -23,14 +23,14 @@ describe("ProfileSheet — the student's own photo", () => {
 
   it('renders the photo for the signed-in student', () => {
     photoFor.mockImplementation((id) => (id === '120344' ? 'data:image/jpeg;base64,AAA' : null));
-    render(<ProfileSheet onClose={() => {}} />);
+    render(<ProfileScreen />);
 
     const img = screen.getByAltText('Jan Novák') as HTMLImageElement;
     expect(img.src).toBe('data:image/jpeg;base64,AAA');
   });
 
   it('falls back to initials while the photo is unresolved', () => {
-    render(<ProfileSheet onClose={() => {}} />);
+    render(<ProfileScreen />);
 
     expect(screen.getByText('JN')).toBeInTheDocument();
   });
@@ -39,13 +39,13 @@ describe("ProfileSheet — the student's own photo", () => {
   // `foto.pl?id=` would 200 with an empty body.
   it('asks for no photo before the student id resolves', () => {
     useAppStore.setState({ studentId: null });
-    render(<ProfileSheet onClose={() => {}} />);
+    render(<ProfileScreen />);
 
     expect(photoFor).toHaveBeenCalledWith(null);
   });
 });
 
-describe('ProfileSheet', () => {
+describe('ProfileScreen', () => {
   beforeEach(() => {
     useAppStore.setState({
       language: 'cz',
@@ -62,7 +62,7 @@ describe('ProfileSheet', () => {
   });
 
   it('flips the theme between mendelu-dark and mendelu', async () => {
-    render(<ProfileSheet onClose={vi.fn()} />);
+    render(<ProfileScreen />);
     const themeToggle = screen.getByRole('checkbox', { name: /Tmavý režim/i });
     expect(themeToggle).toBeChecked();
 
@@ -72,13 +72,13 @@ describe('ProfileSheet', () => {
   });
 
   it('switches the language', async () => {
-    render(<ProfileSheet onClose={vi.fn()} />);
+    render(<ProfileScreen />);
     fireEvent.click(screen.getByText('English'));
     await waitFor(() => expect(useAppStore.getState().language).toBe('en'));
   });
 
   it('offers no calendar-sync toggle', () => {
-    render(<ProfileSheet onClose={vi.fn()} />);
+    render(<ProfileScreen />);
     // The Outlook calendar mirror was removed once the phone app covered it.
     // Asserted on the visible label rather than the hook, so the test fails if
     // the control is ever re-rendered from any source.
@@ -89,19 +89,19 @@ describe('ProfileSheet', () => {
   // Dokumenty used to be the one card left on the Student hub. The hub's IS
   // directory is gone from the phone tree, so the card follows eduroam here.
   it('opens the documents sheet from settings in one tap', () => {
-    render(<ProfileSheet onClose={vi.fn()} />);
+    render(<ProfileScreen />);
     fireEvent.click(screen.getByText('Dokumenty'));
     expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'docs' }]);
   });
 
   it('opens the eduroam sheet from settings in one tap', () => {
-    render(<ProfileSheet onClose={vi.fn()} />);
+    render(<ProfileScreen />);
     fireEvent.click(screen.getByText('Eduroam'));
     expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'eduroam' }]);
   });
 
   it('shows a hidden event and restores it, removing it from the hidden list', () => {
-    render(<ProfileSheet onClose={vi.fn()} />);
+    render(<ProfileScreen />);
     // HiddenItemsSection starts collapsed - expand it first.
     fireEvent.click(screen.getByText('Skryté položky'));
     fireEvent.click(screen.getByTitle('Obnovit'));

@@ -1,4 +1,4 @@
-import { Calendar, CalendarCheck, Book, MapPin } from 'lucide-react';
+import { Calendar, CalendarCheck, Book, MapPin, User } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import type { MobileTab } from '../../../store/types';
@@ -8,14 +8,16 @@ const TABS: { id: MobileTab; icon: typeof Calendar; labelKey: string }[] = [
   { id: 'exams', icon: CalendarCheck, labelKey: 'mobile.nav.exams' },
   { id: 'subjects', icon: Book, labelKey: 'mobile.nav.subjects' },
   { id: 'map', icon: MapPin, labelKey: 'mobile.nav.map' },
+  { id: 'profile', icon: User, labelKey: 'sidebar.profile' },
 ];
 
 /**
  * Floating pill bar. Only the active tab shows its label, which is what keeps
  * the entries comfortable down to 375px.
  *
- * Four entries, not five: "Student" was a whole slot spent on a search field,
- * and search is a header action now, reachable from every tab at once.
+ * "Student" was a whole slot spent on a search field; search is a header action
+ * now, and the slot went to the profile, which used to be a sheet behind the
+ * header avatar.
  *
  * Below 360px the horizontal padding tightens: the widest active label
  * ("Předměty") pushes the pill to 325px, which overflows a 320px viewport

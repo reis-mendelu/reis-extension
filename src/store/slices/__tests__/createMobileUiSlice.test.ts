@@ -38,9 +38,9 @@ describe('createMobileUiSlice', () => {
   });
 
   it('pushSheet stacks sheets in order', () => {
-    state.pushSheet({ kind: 'profile' });
+    state.pushSheet({ kind: 'docs' });
     state.pushSheet({ kind: 'person', personId: 'p1' });
-    expect(state.mobileSheets.map((s) => s.kind)).toEqual(['profile', 'person']);
+    expect(state.mobileSheets.map((s) => s.kind)).toEqual(['docs', 'person']);
   });
 
   /**
@@ -67,16 +67,16 @@ describe('createMobileUiSlice', () => {
   });
 
   it('still stacks when the kinds differ', () => {
-    state.pushSheet({ kind: 'profile' });
+    state.pushSheet({ kind: 'docs' });
     state.pushSheet({ kind: 'eduroam' });
-    expect(state.mobileSheets.map((s) => s.kind)).toEqual(['profile', 'eduroam']);
+    expect(state.mobileSheets.map((s) => s.kind)).toEqual(['docs', 'eduroam']);
   });
 
   it('popSheet removes only the topmost sheet', () => {
-    state.pushSheet({ kind: 'profile' });
+    state.pushSheet({ kind: 'docs' });
     state.pushSheet({ kind: 'person', personId: 'p1' });
     state.popSheet();
-    expect(state.mobileSheets.map((s) => s.kind)).toEqual(['profile']);
+    expect(state.mobileSheets.map((s) => s.kind)).toEqual(['docs']);
   });
 
   it('popSheet on an empty stack is a no-op', () => {
@@ -85,20 +85,20 @@ describe('createMobileUiSlice', () => {
   });
 
   it('replaceSheet swaps the topmost sheet without growing the stack', () => {
-    state.pushSheet({ kind: 'profile' });
+    state.pushSheet({ kind: 'docs' });
     state.replaceSheet({ kind: 'eduroam' });
     expect(state.mobileSheets.map((s) => s.kind)).toEqual(['eduroam']);
   });
 
   it('closeAllSheets empties the stack', () => {
-    state.pushSheet({ kind: 'profile' });
+    state.pushSheet({ kind: 'docs' });
     state.pushSheet({ kind: 'docs' });
     state.closeAllSheets();
     expect(state.mobileSheets).toEqual([]);
   });
 
   it('switching tabs closes any open sheets', () => {
-    state.pushSheet({ kind: 'profile' });
+    state.pushSheet({ kind: 'docs' });
     state.setMobileTab('map');
     expect(state.mobileSheets).toEqual([]);
   });

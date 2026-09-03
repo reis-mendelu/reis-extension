@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  X,
   Moon,
   Languages,
   Wifi,
@@ -10,7 +9,6 @@ import {
   ChevronRight,
   User,
 } from 'lucide-react';
-import { Sheet } from '../primitives/Sheet';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTheme } from '../../../hooks/useTheme';
 import { useSpolkySettings } from '../../../hooks/useSpolkySettings';
@@ -19,12 +17,9 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { SpolkySection } from '../../Sidebar/Profile/SpolkySection';
 import { HiddenItemsSection } from '../../Sidebar/Profile/HiddenItemsSection';
 import { FeedbackModal } from '../../Feedback/FeedbackModal';
-import { SignOutConfirm } from './SignOutConfirm';
+import { SignOutConfirm } from '../sheets/SignOutConfirm';
 import { PersonPhoto } from '../../ui/PersonPhoto';
-
-export interface ProfileSheetProps {
-  onClose: () => void;
-}
+import { ScreenHeader } from './calendar/ScreenHeader';
 
 function initials(name: string): string {
   return name
@@ -37,7 +32,7 @@ function initials(name: string): string {
 }
 
 /**
- * Full-size settings sheet: theme, language, eduroam setup,
+ * The profile TAB: theme, language, eduroam setup,
  * hidden items, society map filters, feedback and logout. Reuses desktop's
  * `SpolkySection` / `HiddenItemsSection` / `FeedbackModal` wholesale rather
  * than rebuilding them — only the row layout around them is phone-specific.
@@ -47,7 +42,7 @@ function initials(name: string): string {
  * restoring it calls the same `unhideEvent` action that removes it from the
  * store's `hiddenItems`.
  */
-export function ProfileSheet({ onClose }: ProfileSheetProps) {
+export function ProfileScreen() {
   const { t } = useTranslation();
   const fullName = useAppStore((s) => s.fullName);
   const language = useAppStore((s) => s.language);
@@ -55,6 +50,7 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
   const { isDark, toggle: toggleTheme } = useTheme();
   const { isSubscribed, toggleAssociation } = useSpolkySettings();
   const pushSheet = useAppStore((s) => s.pushSheet);
+  const setMobileTab = useAppStore((s) => s.setMobileTab);
   const plan = useStudyPlan();
   const [spolkyOpen, setSpolkyOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -65,10 +61,10 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
   const name = fullName ?? '';
 
   return (
-    <Sheet size="full" onClose={onClose}>
+    <div data-testid="profile-screen" className="flex flex-1 flex-col overflow-hidden">
+      <ScreenHeader eyebrow={plan?.title} title={t('sidebar.profile')} />
       <div className="flex-shrink-0">
-        <div className="mx-auto mt-2 mb-1 h-1 w-9 rounded-full bg-base-300" />
-        <div className="flex items-center gap-3 px-4 pb-3 pt-2">
+        <div className="flex items-center gap-3 px-4 pb-3 pt-1">
           {/* The student's own face, the one photo the app never showed: this
               sheet rendered initials, and a generic glyph whenever `fullName`
               had not resolved. `studentId` is IS's "Identifikační číslo
@@ -84,23 +80,16 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
               fallback={name ? initials(name) : <User size={18} />}
             />
           </div>
+          {/* No close button: this is a tab, not a sheet — the nav is how you
+              leave. The programme line is the header's eyebrow now rather than
+              a second line under the name. */}
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="truncate font-display text-lg font-bold tracking-tight">{name}</span>
-            {plan?.title && (
-              <span className="truncate text-sm text-base-content/60">{plan.title}</span>
-            )}
           </div>
-          <button
-            onClick={onClose}
-            aria-label={t('mobile.sheet.close')}
-            className="btn btn-circle btn-ghost btn-sm flex-shrink-0"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-6">
+      <div className="flex-1 overflow-y-auto pb-24">
         <div className="px-4 pb-1 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
           {t('mobile.profile.appearance')}
         </div>
@@ -189,7 +178,7 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
             onToggle={() => setSpolkyOpen((v) => !v)}
             isSub={isSubscribed}
             onToggleAssoc={toggleAssociation}
-            onNavigate={onClose}
+            onNavigate={() => setMobileTab('map')}
           />
         </div>
 
@@ -216,6 +205,6 @@ export function ProfileSheet({ onClose }: ProfileSheetProps) {
 
       <SignOutConfirm open={signOutOpen} onCancel={() => setSignOutOpen(false)} />
       <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
-    </Sheet>
+    </div>
   );
 }

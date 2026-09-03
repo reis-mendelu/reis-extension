@@ -432,8 +432,11 @@ export interface ViewportSlice {
 
 // No 'student': that tab was a fifth of the primary navigation spent on a
 // search field, and search is a header action on every tab now — see the
-// `search` sheet below.
-export type MobileTab = 'calendar' | 'exams' | 'subjects' | 'map';
+// `search` sheet below. The slot it freed went to `profile`, which was a sheet
+// behind the header avatar and carries far too much a student goes looking for
+// (eduroam, documents, societies, hidden items, sign-out) to be one tap deep on
+// one screen.
+export type MobileTab = 'calendar' | 'exams' | 'subjects' | 'map' | 'profile';
 // Three stops: `half` shows the campus events while the map is still in view,
 // and is where the sheet opens. See primitives/sheetDrag.ts.
 export type MapSheetState = 'peek' | 'half' | 'expanded';
@@ -447,7 +450,6 @@ export type MobileSheet =
   | { kind: 'eventDetail'; eventId: string; dayIso?: string }
   | { kind: 'subjectDrawer'; courseCode: string; courseName?: string; courseId?: string }
   | { kind: 'studyPlan' }
-  | { kind: 'profile' }
   | { kind: 'person'; personId: string; personName?: string }
   // Pushed ON TOP of a person sheet, so back closes the photo and leaves the
   // person open. `name` rides along for the alt text — the photo sheet has no
