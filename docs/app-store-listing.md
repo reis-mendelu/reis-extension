@@ -1016,3 +1016,117 @@ Outlook calendar sync has been removed.
   fixed blind: the Swift plugin is campus-verified and the change needs a device run.
 - Guideline 5.2.2 is unchanged from §4 and §10 — still no MENDELU permission, still the
   same three mitigations in the binary.
+
+## 13. Version 5.1.0 — build 50100.1 (2026-09-04)
+
+Build **50100.1 / 5.1.0**, `cz.reis.app`, archive `reIS 5.1.0 build 50100.1.xcarchive`,
+cut from `987e43a5` on `main`. Marketing version stays **5.1.0**: build 50100 was uploaded
+on 2026-09-02 but never submitted and no version record was created for it, so 5.1.0 has
+never reached a user. Only `CFBundleVersion` moves, via `REIS_IOS_BUILD=1`.
+
+Verified on the exported IPA before staging:
+
+| check | value |
+|---|---|
+| `CFBundleShortVersionString` | 5.1.0 |
+| `CFBundleVersion` | 50100.1 |
+| signer | `Apple Distribution: Dominik Holek (RG38V3SV8X)` |
+| profile | `iOS Team Store Provisioning Profile: cz.reis.app` |
+| `com.apple.developer.networking.HotspotConfiguration` | true |
+| `get-task-allow` | false |
+
+`-exportArchive` succeeded this time — the store profile refreshed for the 2026-09-02
+upload is still current, and no entitlement changed since. **`destination upload` still
+fails** (`error: exportArchive Failed to Use Accounts`), confirming §12.1: export needs
+only the cached profile, upload needs a signed-in account. Archive staged in
+`~/Library/Developer/Xcode/Archives/2026-09-04/` for Organizer.
+
+### 13.1 What changed since build 50100
+
+50100 was cut on 2026-09-02 and predates all of this:
+
+- **The extension was dead on every IS Mendelu page** (#266) — `sonner` injects its styles
+  at module scope, and the content script runs at `document_start`, before `<head>` exists.
+  Now inverted through a one-slot registry.
+- **Feedback could never be sent from the app** (#273) — Vite's `envDir` defaults to
+  `root`, which pointed at `capacitor/`, so the build got no env and shipped `void 0` as an
+  auth header.
+- **Feedback no longer carries a shared secret** (#276) — writes go through a
+  `SECURITY DEFINER` RPC under deny-all RLS instead of an edge function holding
+  `EXTENSION_SECRET`.
+- **The Návrhy inbox never refetched** (#278) — an extension assumption (the iframe dies on
+  every page load) that stopped holding in a long-lived Capacitor process.
+- **Removed:** library study-room booking (#275) and the AI syllabus comparison (#274).
+
+### 13.2 Metadata correction — the filed copy advertised two removed features
+
+The §12.3 copy was written on 2026-09-02 and is **not safe to reuse**. It contains
+"Studovny a akce spolků na mapě kampusu" / "Library study rooms and society events on the
+campus map", and library study rooms were removed in #275.
+
+Both removed features **shipped in 5.0.6**, which is what users have today:
+
+| feature | landed | in 5.0.6 | removed |
+|---|---|---|---|
+| Library study rooms (#146) | 2026-07-19 | yes | #275 |
+| AI syllabus comparison (`src/api/claude.ts`) | 2026-05-15 | yes | #274 |
+
+So both are user-visible losses and both belong in the release notes. The old copy
+announced one removal (Outlook); the corrected copy announces three.
+
+### 13.3 "What's New" — corrected copy for 50100.1
+
+**Czech (primary):**
+
+```
+Školní Wi-Fi jedním klepnutím
+eduroam nastavíš přímo v reISu. Certifikát si vezmeme z tvého IS, nic nevyplňuješ a nic
+neodchází ze zařízení — na fakultě se pak připojíš sám.
+
+Nový úvod při prvním spuštění
+Vyber si jazyk a hned nastav eduroam, ještě než se dostaneš do rozvrhu.
+
+Opravili a vylepšili jsme
+• Zkoušky ukazují skutečnou délku termínu a přidali jsme evaluace předmětů
+• Vývěska, hledání předmětů, náhledy PDF a klávesnice na iPadu
+• Synchronizace běží jen když je proč — méně dat, delší baterie
+• Akce spolků na mapě kampusu
+• Připomínky na zkoušku 2 hodiny předem
+• Zpětná vazba z aplikace se konečně opravdu odešle
+
+Co jsme odebrali
+• Rezervaci studoven — slibovala dostupnost, za kterou neumíme ručit
+• Porovnání sylabů přes AI
+• Synchronizaci kalendáře s Outlookem
+```
+
+**English:**
+
+```
+Campus Wi-Fi in one tap
+Set up eduroam inside reIS. We take the certificate from your IS account — you fill in
+nothing, and nothing leaves your device. On campus you connect automatically from then on.
+
+A first-run screen
+Pick your language and set eduroam up before you reach your timetable.
+
+Fixed and improved
+• Exams show the real length from the term detail, plus subject evaluations
+• Noticeboard, subject search, PDF previews and the keyboard on iPad
+• Sync runs only when there is a reason to — less data, better battery
+• Society events on the campus map
+• Exam reminders two hours ahead
+• Sending feedback from the app finally works
+
+What we removed
+• Library study-room booking — it promised availability we cannot vouch for
+• AI syllabus comparison
+• Outlook calendar sync
+```
+
+### 13.4 Still open at submission
+
+- Guideline 5.2.2 unchanged from §4, §10 and §12.4 — still no written MENDELU permission,
+  still the same three mitigations in the binary. This, not the copy, is the likeliest
+  cause of another round.
+- Issue #260 (iOS keychain findings) still deferred, unchanged from §12.4.
