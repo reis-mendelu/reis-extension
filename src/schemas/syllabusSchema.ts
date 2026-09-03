@@ -22,7 +22,13 @@ export const CourseMetadataSchema = z.object({
   status: z.string().nullable(),
 });
 
-export const SyllabusRequirementsSchema = z.object({
+/**
+ * The strict, PARSE-side syllabus schema: exactly what `parseSyllabusOffline`
+ * produces and validates its own output against. Distinct from the store
+ * validator in `src/types/schemas/syllabus.schema.ts`, which is deliberately
+ * fail-open because it gates reads of records written by older builds.
+ */
+export const ParsedSyllabusSchema = z.object({
   // Every version the parser has ever stamped, so a record cached by an older
   // build still validates on read. 1 doubles as the "section not found"
   // sentinel. Add the new literal here whenever SYLLABUS_VERSION is raised —
@@ -37,5 +43,5 @@ export const SyllabusRequirementsSchema = z.object({
   contentText: z.string().nullable().optional(),
 });
 
-export type SyllabusRequirements = z.infer<typeof SyllabusRequirementsSchema>;
+export type ParsedSyllabus = z.infer<typeof ParsedSyllabusSchema>;
 export type CourseMetadata = z.infer<typeof CourseMetadataSchema>;

@@ -1,11 +1,11 @@
-import { SyllabusRequirementsSchema } from '../../schemas/syllabusSchema';
+import { ParsedSyllabusSchema } from '../../schemas/syllabusSchema';
 import { parseRequirementsText } from './syllabus/requirementParser';
 import { parseRequirementsTable } from './syllabus/gradingParser';
 import { parseCourseMetadata } from './syllabus/metadataParser';
 import { parseCourseObjectives } from './syllabus/objectivesParser';
 import { parseCourseContent } from './syllabus/contentParser';
 
-import type { SyllabusRequirements } from '../../schemas/syllabusSchema';
+import type { ParsedSyllabus } from '../../schemas/syllabusSchema';
 
 /**
  * Schema version of a parsed syllabus, and the value the store's cache check
@@ -24,7 +24,7 @@ import type { SyllabusRequirements } from '../../schemas/syllabusSchema';
 // which the schema's version union will not accept.
 export const SYLLABUS_VERSION = 4 as const;
 
-export function parseSyllabusOffline(html: string, lang: string = 'cz'): SyllabusRequirements {
+export function parseSyllabusOffline(html: string, lang: string = 'cz'): ParsedSyllabus {
   if (!html || typeof html !== 'string')
     return {
       version: 1 as const,
@@ -40,6 +40,6 @@ export function parseSyllabusOffline(html: string, lang: string = 'cz'): Syllabu
     objectivesText: parseCourseObjectives(doc),
     contentText: parseCourseContent(doc),
   };
-  const v = SyllabusRequirementsSchema.safeParse(res);
+  const v = ParsedSyllabusSchema.safeParse(res);
   return v.success ? v.data : res;
 }
