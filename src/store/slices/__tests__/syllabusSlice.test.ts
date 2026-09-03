@@ -14,10 +14,15 @@ vi.mock('../../../services/storage', () => ({
   },
 }));
 
-vi.mock('../../../api/syllabus', () => ({
-  fetchSyllabus: vi.fn(),
-  findSubjectId: vi.fn(),
-}));
+// importOriginal, not a bare factory: `syncSyllabus` reads the real
+// SYLLABUS_FETCH_FAILED sentinel, and vitest THROWS on access to an export a
+// mock does not define. A bare factory therefore made the guard throw, the
+// slice's catch swallow it, and the cache silently stay empty — the same idiom
+// note already on syncTiers.test.ts.
+vi.mock('../../../api/syllabus', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../api/syllabus')>();
+  return { ...actual, fetchSyllabus: vi.fn(), findSubjectId: vi.fn() };
+});
 
 describe('SyllabusSlice', () => {
   let set: Mock;
