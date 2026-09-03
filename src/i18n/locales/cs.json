@@ -1005,7 +1005,8 @@
     "libraryBookOffline": "Bez připojení — rezervace se nezdařila.",
     "libraryBookInvalid": "Rezervaci se nepodařilo odeslat.",
     "libraryBookMissing": "Doplňte prosím zvýrazněná pole.",
-    "reminderLead": "Za 2 hodiny"
+    "reminderLead": "Za 2 hodiny",
+    "finished": "proběhlo"
   },
   "admin": {
     "email": "E-mail",
