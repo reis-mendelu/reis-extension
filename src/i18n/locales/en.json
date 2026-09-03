@@ -282,7 +282,6 @@
     "footer": {
       "other": "Other",
       "noFiles": "No files",
-      "searchOnlyInSchedule": "Files are only available for subjects in your schedule.",
       "noFilesAvailable": "No files available.",
       "download": "Download",
       "openInSidebar": "Open preview"

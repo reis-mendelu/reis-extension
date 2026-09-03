@@ -29,6 +29,8 @@ import { installExternalLinkHandler } from '@/mobile/openExternal';
 import { promptSessionRecovery } from '@/mobile/sessionRecovery';
 import { purgePlaintextToken } from '@/platform/tokenStore';
 import { setSessionExpiredHandler } from '@/services/sessionExpiry';
+import { setDemoErrorHandler } from '@/utils/reportError';
+import { handleDemoError } from '@/mobile/demoToast';
 import { useAppStore } from '@/store/useAppStore';
 import { LoginGate } from '@/components/mobile/LoginGate';
 
@@ -93,6 +95,12 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // without dragging this prompt into the extension's content script. Nothing
   // registers a handler there, so nothing happens there.
   setSessionExpiredHandler(promptSessionRecovery);
+
+  // Same inversion, same reason: logError is called from everywhere including
+  // the content script, so demoToast — and through it sonner — must not be
+  // reachable from it by a static import. Demo mode is Capacitor-only, so the
+  // extension registering nothing costs it nothing.
+  setDemoErrorHandler(handleDemoError);
 
   // Before the root renders, so the first frame is already either the welcome
   // or the app — never the app with the welcome flashing over it a tick later.

@@ -107,13 +107,17 @@ describe('SubjectFileDrawerContent — files tab', () => {
     expect(screen.queryByTestId('file-list')).toBeNull();
   });
 
-  it('shows the search-only message instead of the generic empty message when the lesson came from search', () => {
+  // A subject reached from search used to claim "files are only available for
+  // subjects in your schedule". That is not true — a searched subject can have
+  // files — so an empty result says the same neutral thing everywhere: there
+  // are none.
+  it('shows the same generic empty message when the lesson came from search', () => {
     render(
       <SubjectFileDrawerContent
         {...baseProps({ lesson: { ...lesson, isFromSearch: true }, files: null })}
       />
     );
-    expect(screen.getByText(cs.course.footer.searchOnlyInSchedule)).toBeInTheDocument();
+    expect(screen.getByText(cs.course.footer.noFilesAvailable)).toBeInTheDocument();
   });
 
   it('renders FileList (not the empty state) once syncing starts, even while files are still empty', () => {
