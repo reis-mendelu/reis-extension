@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { buildSuggestionPayload, resolveScreen, submitSuggestion } from '../suggestions';
+import { supabase } from '@/services/spolky/supabaseClient';
 
 describe('buildSuggestionPayload', () => {
   it('sends the reIS screen and never the host URL', () => {
@@ -30,61 +31,56 @@ describe('resolveScreen', () => {
   });
 });
 
+vi.mock('@/services/spolky/supabaseClient', () => ({
+  supabase: { rpc: vi.fn() },
+}));
+
 describe('submitSuggestion', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
-    // Real builds inject this. There is deliberately no in-code fallback, so
-    // without it every call short-circuits before fetch — see the last test.
-    vi.stubEnv('VITE_EXTENSION_SECRET', 'test-secret');
+    vi.clearAllMocks();
   });
 
-  afterEach(() => {
-    vi.unstubAllEnvs();
+  // No credential is stubbed and none is needed. The old edge function gated on
+  // a `x-reis-extension-secret` header whose value shipped inside the bundle —
+  // readable by anyone who unzipped the extension, so it was an identifier, not
+  // a credential. Authorization is server-side now and unchanged: `suggestions`
+  // is deny-all RLS with no insert grant to anon, so the SECURITY DEFINER RPC is
+  // the only path to a row.
+  it('writes through the RPC with no client credential', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: true, error: null } as never);
+
+    const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
+
+    expect(r).toEqual({ ok: true });
+    const [fn, args] = vi.mocked(supabase.rpc).mock.calls[0]!;
+    expect(fn).toBe('submit_suggestion');
+    expect(args).toMatchObject({ p_type: 'bug', p_title: 'T', p_body: 'B' });
+    // Nothing secret-shaped may travel with the payload.
+    expect(JSON.stringify(args)).not.toMatch(/secret/i);
   });
 
-  it('maps 429 to rate_limited', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: false, status: 429, json: async () => ({}) })
-    );
+  // The RPC returns false for BOTH a validation failure and the flood guard, so
+  // the old 400-vs-429 split is not recoverable here. The client enforces the
+  // same limits with maxLength, so an invalid payload from the real UI is
+  // unreachable; 'rate_limited' is the honest reading and matches the copy.
+  it('maps a false result to rate_limited', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: false, error: null } as never);
     const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
     expect(r).toEqual({ ok: false, error: 'rate_limited' });
   });
 
-  it('maps 400 to invalid', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: false, status: 400, json: async () => ({}) })
-    );
+  it('maps an RPC error to upstream', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: null,
+      error: { message: 'boom' },
+    } as never);
     const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
-    expect(r).toEqual({ ok: false, error: 'invalid' });
+    expect(r).toEqual({ ok: false, error: 'upstream' });
   });
 
-  it('maps a network throw to offline', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('down')));
+  it('maps a thrown network failure to offline', async () => {
+    vi.mocked(supabase.rpc).mockRejectedValue(new Error('down') as never);
     const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
     expect(r).toEqual({ ok: false, error: 'offline' });
-  });
-
-  it('returns ok on success', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true }) })
-    );
-    const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
-    expect(r).toEqual({ ok: true });
-  });
-
-  // The header used to fall back to a literal 'reis-secret'. That shipped a
-  // secret-shaped string in the public bundle that was not the secret: the
-  // function 401s it, and the only signal was the generic failure toast.
-  // A misconfigured build must not reach the network at all.
-  it('never sends a fallback secret when the env var is missing', async () => {
-    vi.stubEnv('VITE_EXTENSION_SECRET', '');
-    const fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
-    const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(r).toEqual({ ok: false, error: 'upstream' });
   });
 });

@@ -1,12 +1,10 @@
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/services/supabase/config';
+import { supabase } from '@/services/spolky/supabaseClient';
 import { logError } from '@/utils/reportError';
 import { getBrowserInfo } from '@/services/errorReporter/sanitize';
 import { getAppVersion } from '@/utils/appIdentity';
 import { IndexedDBService } from '@/services/storage';
 import { isAppView, type AppView } from '@/types/app';
 import type { SuggestionDraft, SuggestionPayload, SubmitResult } from '@/types/suggestions';
-
-const ENDPOINT = `${SUPABASE_URL}/functions/v1/submit-suggestion`;
 
 // The host URL is deliberately NOT sent: on IS it carries
 // studium=/obdobi=/predmet=/termin=, which sanitize.ts redacts wholesale for
@@ -41,32 +39,44 @@ async function currentScreen(): Promise<AppView> {
   }
 }
 
+/**
+ * Writes a suggestion through the `submit_suggestion` RPC — the same shape
+ * telemetry uses (`report_error_v2`), and for the same reason: an anonymous
+ * write needs no shared secret.
+ *
+ * There is deliberately no client credential here. The old edge function gated
+ * on `x-reis-extension-secret`, a value that shipped inside the bundle — so
+ * anyone could unzip the extension and read it. A string every client carries
+ * is an identifier, not a credential, and on a write-only insert it protected
+ * nothing. Authorization is still enforced server-side and is unchanged:
+ * `suggestions` is deny-all RLS with no insert grant to `anon`, so the RPC is
+ * the only way a row can be written.
+ *
+ * The RPC returns false for both a validation failure and the flood guard, so
+ * the two are no longer distinguishable from here — the old function's 400 vs
+ * 429 split is gone. The client enforces the same limits with `maxLength`, so
+ * an invalid payload from the real UI is not reachable; 'rate_limited' is the
+ * honest guess for a false, and it is what the copy already tells the student.
+ */
 export async function submitSuggestion(draft: SuggestionDraft): Promise<SubmitResult> {
   try {
-    // No fallback value. A literal like 'reis-secret' would ship in the public
-    // bundle as a secret-shaped string that is not the secret: the function
-    // would 401 every submission and the only signal would be the generic
-    // failure toast. Missing config is a build error, so say so and stop —
-    // the same reasoning that made a hardcoded webhook URL wrong.
-    const secret = import.meta.env.VITE_EXTENSION_SECRET;
-    if (!secret) {
-      logError('Api.submitSuggestion', new Error('VITE_EXTENSION_SECRET is not set'));
+    const payload = buildSuggestionPayload(draft, await currentScreen());
+    const { data, error } = await supabase.rpc('submit_suggestion', {
+      p_type: payload.type,
+      p_title: payload.title,
+      p_body: payload.body,
+      p_screen: payload.screen,
+      p_contact: payload.contact ?? null,
+      p_ext_version: payload.ext_version,
+      p_browser_name: payload.browser_name,
+      p_browser_version: payload.browser_version,
+      p_viewport: payload.viewport,
+    });
+    if (error) {
+      logError('Api.submitSuggestion', error);
       return { ok: false, error: 'upstream' };
     }
-    const payload = buildSuggestionPayload(draft, await currentScreen());
-    const res = await fetch(ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: SUPABASE_PUBLISHABLE_KEY,
-        'x-reis-extension-secret': secret,
-      },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) return { ok: true };
-    if (res.status === 429) return { ok: false, error: 'rate_limited' };
-    if (res.status === 400) return { ok: false, error: 'invalid' };
-    return { ok: false, error: 'upstream' };
+    return data === true ? { ok: true } : { ok: false, error: 'rate_limited' };
   } catch (err) {
     logError('Api.submitSuggestion', err);
     return { ok: false, error: 'offline' };
