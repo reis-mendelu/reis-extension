@@ -1,34 +1,45 @@
 -- Feedback moves from the `submit-suggestion` edge function to a SECURITY
 -- DEFINER RPC callable with the publishable key — the same shape telemetry
--- already uses (report_error_v2). This lets us delete the edge function and
--- EXTENSION_SECRET outright.
+-- already uses (report_error_v2). This is what lets us stop shipping
+-- EXTENSION_SECRET in the bundle.
 --
--- Why the secret was never security: it shipped inside the extension bundle,
--- so anyone could unzip it and read the value. A string that every client
--- carries is an identifier, not a credential. It existed to gate the AI
--- proxies (where it was wrongly the only thing guarding spend) and
--- submit-suggestion inherited it by copy. On a write-only insert it protected
--- nothing.
+-- Why the secret was never security: it shipped inside the extension, so
+-- anyone could unzip it and read the value. A string every client carries is an
+-- identifier, not a credential. It existed to gate the AI proxies (where it was
+-- wrongly the only thing guarding spend) and submit-suggestion inherited it by
+-- copy. On a write-only insert it protected nothing.
 --
 -- Authorization is unchanged and still server-side: `suggestions` stays at
--- deny-all RLS with no insert grant to anon, so the ONLY way to write a row is
--- through this function. Reads and status updates remain reis_admin-only.
-
--- 1. The rate bucket is no longer an IP hash --------------------------------
+-- deny-all RLS with no insert grant to anon, so the function below is the ONLY
+-- way a row can be written. Reads and status writes remain reis_admin-only.
 --
--- Postgres cannot see the caller's IP; only an edge function could. So the
--- per-IP cap is genuinely lost, and pretending otherwise by keeping the column
--- name would be a lie. Renamed to `bucket`, and the cap becomes a coarse
--- FLOOD GUARD (protecting the table from a looping client), NOT per-user
--- security. This is the deliberate tradeoff for removing the secret: spam is
--- acceptable for now and Turnstile is the escalation if it ever appears.
+-- STRICTLY ADDITIVE, and that is the point.
+-- The edge function stays deployed until users have moved to a build that
+-- calls this RPC — app-store rollout is not instant, and an extension that has
+-- not updated still POSTs to it. So this migration must not touch anything the
+-- old function uses:
+--   * `suggestions_rate_log.ip_hash` keeps its name (the old function inserts
+--     into it by that name via PostgREST)
+--   * `check_and_log_suggestion(text, int)` is left exactly as-is — the old
+--     function calls it with `p_ip_hash`, so dropping and recreating it with a
+--     renamed parameter would break every released client the moment this
+--     migration is applied.
+-- The rename and the cleanup belong in a FOLLOW-UP migration, applied only
+-- after the edge function is deleted. See the checklist at the bottom.
 
-alter table public.suggestions_rate_log rename column ip_hash to bucket;
-alter index if exists suggestions_rate_log_hash_time rename to suggestions_rate_log_bucket_time;
+-- 1. Rate bucket for the RPC path -------------------------------------------
+--
+-- Postgres cannot see the caller's IP; only an edge function can. So the
+-- per-IP cap is genuinely lost on this path and the bucket is browser|version:
+-- a coarse FLOOD GUARD protecting the table from a looping client, NOT
+-- per-user security. Deliberate tradeoff for removing the secret — spam is
+-- acceptable for now, and Turnstile is the escalation if it appears.
+--
+-- A separate function rather than a new signature on the old name: two
+-- overloads differing only in parameter name would make PostgREST's named-
+-- argument dispatch ambiguous.
 
-drop function if exists public.check_and_log_suggestion(text, int);
-
-create or replace function public.check_and_log_suggestion(
+create or replace function public.check_and_log_suggestion_bucket(
   p_bucket text,
   p_max int default 100
 ) returns boolean
@@ -48,21 +59,24 @@ begin
 
   select count(*) into recent
     from public.suggestions_rate_log
-   where bucket = p_bucket
+   where ip_hash = p_bucket
      and created_at > now() - interval '1 hour';
 
   if recent >= p_max then
     return false;
   end if;
 
-  insert into public.suggestions_rate_log (bucket) values (p_bucket);
+  -- Shares the column with the old function's IP hashes during the overlap.
+  -- Harmless: the two keyspaces are different string shapes and cannot
+  -- collide, and rows are pruned hourly.
+  insert into public.suggestions_rate_log (ip_hash) values (p_bucket);
   return true;
 end;
 $$;
 
-revoke all on function public.check_and_log_suggestion(text, int) from public;
--- Not granted to anon: only the SECURITY DEFINER submit_suggestion below calls it.
-grant execute on function public.check_and_log_suggestion(text, int) to service_role;
+revoke all on function public.check_and_log_suggestion_bucket(text, int) from public;
+-- Not granted to anon: only the SECURITY DEFINER function below calls it.
+grant execute on function public.check_and_log_suggestion_bucket(text, int) to service_role;
 
 -- 2. The write path ---------------------------------------------------------
 --
@@ -109,8 +123,7 @@ begin
     return false;
   end if;
 
-  -- Coarse flood guard; see the note above on why this is not per-user.
-  if not public.check_and_log_suggestion(
+  if not public.check_and_log_suggestion_bucket(
     coalesce(nullif(btrim(p_browser_name), ''), 'unknown') || '|' ||
     coalesce(nullif(btrim(p_browser_version), ''), 'unknown')
   ) then
@@ -134,3 +147,12 @@ $$;
 
 revoke all on function public.submit_suggestion(text, text, text, text, text, text, text, text, text) from public;
 grant execute on function public.submit_suggestion(text, text, text, text, text, text, text, text, text) to anon, authenticated;
+
+-- Follow-up, AFTER the submit-suggestion edge function is deleted and users
+-- have moved to a build that calls submit_suggestion:
+--   drop function if exists public.check_and_log_suggestion(text, int);
+--   alter table public.suggestions_rate_log rename column ip_hash to bucket;
+--   alter index suggestions_rate_log_hash_time
+--     rename to suggestions_rate_log_bucket_time;
+--   -- and update check_and_log_suggestion_bucket to read/write `bucket`.
+-- Doing any of that now would break every extension that has not updated yet.
