@@ -4,7 +4,6 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAppStore } from '@/store/useAppStore';
 import { LATableB, type ManualCourse } from './LATableB';
 import { UnfulfilledCoursesSection } from './UnfulfilledCoursesSection';
-import { ErasmusVerifyDot } from './ErasmusVerifyDot';
 import { CountryPicker } from './CountryPicker';
 import { UniversityPicker } from './UniversityPicker';
 import { ERASMUS_COUNTRIES } from '@/constants/erasmusCountries';
@@ -28,13 +27,28 @@ interface OptionProps {
   onReorderManual: (from: number, to: number) => void;
 }
 
-function LATableAOption({ option, index, total, selectedCodes, onToggle, onReorder, plan, onOpenSubject, onSearchSubject, onViewReports, manualCourses, onAddManual, onRemoveManual, onReorderManual }: OptionProps) {
+function LATableAOption({
+  option,
+  index,
+  total,
+  selectedCodes,
+  onToggle,
+  onReorder,
+  plan,
+  onOpenSubject,
+  onSearchSubject,
+  onViewReports,
+  manualCourses,
+  onAddManual,
+  onRemoveManual,
+  onReorderManual,
+}: OptionProps) {
   const { t } = useTranslation();
-  const updateHeader = useAppStore(s => s.updateErasmusTableAOptionHeader);
-  const removeOption = useAppStore(s => s.removeErasmusTableAOption);
-  const addCourse = useAppStore(s => s.addErasmusTableACourse);
-  const removeCourse = useAppStore(s => s.removeErasmusTableACourse);
-  const reorderCourseA = useAppStore(s => s.reorderErasmusTableACourse);
+  const updateHeader = useAppStore((s) => s.updateErasmusTableAOptionHeader);
+  const removeOption = useAppStore((s) => s.removeErasmusTableAOption);
+  const addCourse = useAppStore((s) => s.addErasmusTableACourse);
+  const removeCourse = useAppStore((s) => s.removeErasmusTableACourse);
+  const reorderCourseA = useAppStore((s) => s.reorderErasmusTableACourse);
 
   const [adding, setAdding] = useState(false);
   const [code, setCode] = useState('');
@@ -94,7 +108,7 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
               <div className="relative">
                 <CountryPicker
                   value={option.country}
-                  onChange={val => updateHeader(option.id, { country: val })}
+                  onChange={(val) => updateHeader(option.id, { country: val })}
                   onViewReports={onViewReports}
                   placeholder="Slovenia"
                   className="pl-8"
@@ -111,9 +125,12 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
                   className="input input-sm input-bordered w-full pl-8 text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
                   placeholder="SI MARIBOR01"
                   value={option.erasmusCode}
-                  onChange={e => updateHeader(option.id, { erasmusCode: e.target.value })}
+                  onChange={(e) => updateHeader(option.id, { erasmusCode: e.target.value })}
                 />
-                <Hash size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/40 z-10" />
+                <Hash
+                  size={14}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/40 z-10"
+                />
               </div>
             </div>
           </div>
@@ -124,10 +141,15 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
                 {t('erasmus.institution')}
               </label>
               <UniversityPicker
-                alpha2={ERASMUS_COUNTRIES.find(c => c.en === option.country || c.cs === option.country)?.alpha2 || null}
+                alpha2={
+                  ERASMUS_COUNTRIES.find((c) => c.en === option.country || c.cs === option.country)
+                    ?.alpha2 || null
+                }
                 value={option.institutionName}
-                onChange={val => updateHeader(option.id, { institutionName: val })}
-                onSelect={(u) => updateHeader(option.id, { institutionName: u.name, erasmusCode: u.erasmusCode })}
+                onChange={(val) => updateHeader(option.id, { institutionName: val })}
+                onSelect={(u) =>
+                  updateHeader(option.id, { institutionName: u.name, erasmusCode: u.erasmusCode })
+                }
                 placeholder="University of Maribor"
               />
             </div>
@@ -136,9 +158,11 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
                 {t('erasmus.courseCatalogue')}
                 {!option.link && option.institutionName && (
                   <span className="animate-in fade-in slide-in-from-left-1 duration-300">
-                    <button 
+                    <button
                       onClick={() => {
-                        const query = encodeURIComponent(`${option.institutionName} erasmus students course catalog`);
+                        const query = encodeURIComponent(
+                          `${option.institutionName} erasmus students course catalog`
+                        );
                         window.open(`https://www.google.com/search?q=${query}`, '_blank');
                       }}
                       className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-base-200 text-base-content/60 hover:bg-base-300 hover:text-base-content transition-colors text-[9px] font-black uppercase tracking-tighter"
@@ -155,9 +179,12 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
                   className="input input-sm input-bordered w-full pl-8 text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
                   placeholder="https://..."
                   value={option.link}
-                  onChange={e => updateHeader(option.id, { link: e.target.value })}
+                  onChange={(e) => updateHeader(option.id, { link: e.target.value })}
                 />
-                <Link size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/40 z-10" />
+                <Link
+                  size={14}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/40 z-10"
+                />
               </div>
             </div>
           </div>
@@ -165,7 +192,9 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
 
         {/* Table A label */}
         <div className="flex items-center gap-2 px-3 py-2 border-b border-base-300/60">
-          <div className="badge badge-sm font-black tracking-wider bg-primary/10 text-primary border-primary/20">A</div>
+          <div className="badge badge-sm font-black tracking-wider bg-primary/10 text-primary border-primary/20">
+            A
+          </div>
           <span className="text-[10px] uppercase tracking-widest font-bold text-base-content/50">
             {t('erasmus.tableATitle')}
           </span>
@@ -207,12 +236,9 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
             </div>
             <span className="font-mono text-base-content/50 w-20 truncate">{course.code}</span>
             <span className="truncate font-medium">{course.name}</span>
-            <span className="tabular-nums font-bold text-base-content/70 w-12 text-right">{course.credits}</span>
-            <ErasmusVerifyDot
-              courseCode={course.code}
-              optionId={option.id}
-              rowIndex={i}
-            />
+            <span className="tabular-nums font-bold text-base-content/70 w-12 text-right">
+              {course.credits}
+            </span>
             <button
               onClick={() => removeCourse(option.id, i)}
               className="btn btn-ghost btn-xs w-5 h-5 min-h-0 p-0 text-base-content/15 hover:text-error hover:bg-error/10 rounded-full"
@@ -231,22 +257,22 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
               className="input input-xs input-bordered w-20 font-mono text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
               placeholder={t('erasmus.colCode')}
               value={code}
-              onChange={e => setCode(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAddCourse()}
+              onChange={(e) => setCode(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddCourse()}
             />
             <input
               className="input input-xs input-bordered w-full text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
               placeholder={t('erasmus.colCourse')}
               value={name}
-              onChange={e => setName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAddCourse()}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddCourse()}
             />
             <input
               className="input input-xs input-bordered w-12 text-xs text-right tabular-nums focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
               placeholder="0"
               value={credits}
-              onChange={e => setCredits(e.target.value.replace(/\D/g, ''))}
-              onKeyDown={e => e.key === 'Enter' && handleAddCourse()}
+              onChange={(e) => setCredits(e.target.value.replace(/\D/g, ''))}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddCourse()}
             />
             <button
               onClick={() => setAdding(false)}
@@ -280,7 +306,18 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
       </div>
 
       {/* Table B */}
-      <LATableB plan={plan} selectedCodes={selectedCodes} onToggle={onToggle} tableACourses={option.courses} onReorder={onReorder} hoveredRowIndex={hoveredRowIndex} manualCourses={manualCourses} onAddManual={onAddManual} onRemoveManual={onRemoveManual} onReorderManual={onReorderManual} />
+      <LATableB
+        plan={plan}
+        selectedCodes={selectedCodes}
+        onToggle={onToggle}
+        tableACourses={option.courses}
+        onReorder={onReorder}
+        hoveredRowIndex={hoveredRowIndex}
+        manualCourses={manualCourses}
+        onAddManual={onAddManual}
+        onRemoveManual={onRemoveManual}
+        onReorderManual={onReorderManual}
+      />
 
       {/* Add courses picker */}
       <div className="flex flex-col gap-0">
@@ -288,13 +325,16 @@ function LATableAOption({ option, index, total, selectedCodes, onToggle, onReord
           onClick={() => setBuilderOpen(!builderOpen)}
           className="flex items-center gap-2 px-2 py-2 text-xs font-bold text-primary/70 hover:text-primary transition-colors group w-full"
         >
-          {builderOpen
-            ? <ChevronDown size={14} className="transition-transform rotate-180" />
-            : <Plus size={14} />
-          }
+          {builderOpen ? (
+            <ChevronDown size={14} className="transition-transform rotate-180" />
+          ) : (
+            <Plus size={14} />
+          )}
           <span>{t('erasmus.addCourses')}</span>
           {!builderOpen && (
-            <span className="text-[10px] font-normal text-base-content/30 ml-1">{t('erasmus.addCoursesHint')}</span>
+            <span className="text-[10px] font-normal text-base-content/30 ml-1">
+              {t('erasmus.addCoursesHint')}
+            </span>
           )}
         </button>
 
@@ -319,14 +359,14 @@ interface LATableAProps {
 }
 
 export function LATableA({ plan, onOpenSubject, onSearchSubject, onViewReports }: LATableAProps) {
-  const options = useAppStore(s => s.erasmusTableAOptions);
-  const tableBCourses = useAppStore(s => s.erasmusTableBCourses);
-  const tableBManual = useAppStore(s => s.erasmusTableBManualCourses);
-  const toggleCourse = useAppStore(s => s.toggleErasmusTableBCourse);
-  const reorderCourse = useAppStore(s => s.reorderErasmusTableBCourse);
-  const addManual = useAppStore(s => s.addErasmusTableBManualCourse);
-  const removeManual = useAppStore(s => s.removeErasmusTableBManualCourse);
-  const reorderManual = useAppStore(s => s.reorderErasmusTableBManualCourse);
+  const options = useAppStore((s) => s.erasmusTableAOptions);
+  const tableBCourses = useAppStore((s) => s.erasmusTableBCourses);
+  const tableBManual = useAppStore((s) => s.erasmusTableBManualCourses);
+  const toggleCourse = useAppStore((s) => s.toggleErasmusTableBCourse);
+  const reorderCourse = useAppStore((s) => s.reorderErasmusTableBCourse);
+  const addManual = useAppStore((s) => s.addErasmusTableBManualCourse);
+  const removeManual = useAppStore((s) => s.removeErasmusTableBManualCourse);
+  const reorderManual = useAppStore((s) => s.reorderErasmusTableBManualCourse);
 
   return (
     <div className="flex flex-col gap-8 pb-4">

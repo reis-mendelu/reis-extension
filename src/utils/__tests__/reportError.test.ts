@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { toast } from 'sonner';
-import { logError } from '../reportError';
+import { logError, setDemoErrorHandler } from '../reportError';
+import { handleDemoError } from '../../mobile/demoToast';
 import { DemoModeError } from '../../errors/demoMode';
 import { sendTelemetry } from '../../services/errorReporter/telemetry';
 
@@ -12,6 +13,15 @@ vi.mock('../../services/errorReporter/telemetry', () => ({ sendTelemetry: vi.fn(
 describe('logError', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // What the Capacitor bootstrap does. reportError does NOT import demoToast
+    // itself — that static edge dragged sonner into the content script, where
+    // its import-time stylesheet injection threw at document_start and stopped
+    // the extension injecting at all.
+    setDemoErrorHandler(handleDemoError);
+  });
+
+  afterEach(() => {
+    setDemoErrorHandler(null);
   });
 
   // The whole point of wiring handleDemoError into this single funnel: every
@@ -23,6 +33,18 @@ describe('logError', () => {
 
     expect(toast).toHaveBeenCalledWith('Toto je jen ukázka.');
     expect(sendTelemetry).not.toHaveBeenCalled();
+  });
+
+  // The extension registers no handler, and demo mode is Capacitor-only, so a
+  // DemoModeError cannot arise there — but logError must not depend on a
+  // handler existing.
+  it('falls through to telemetry when no demo handler is registered', () => {
+    setDemoErrorHandler(null);
+    const err = new DemoModeError();
+
+    expect(() => logError('Api.fetchWithAuth', err)).not.toThrow();
+    expect(toast).not.toHaveBeenCalled();
+    expect(sendTelemetry).toHaveBeenCalledWith('Api.fetchWithAuth', err);
   });
 
   it('still reports normally for an ordinary error', () => {

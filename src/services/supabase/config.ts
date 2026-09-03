@@ -8,9 +8,9 @@
  *
  * Edge Function note: publishable keys cannot be sent as `Authorization:
  * Bearer` and only work against functions with `verify_jwt = false`. Our
- * proxies (claude-proxy, google-oauth, gemini-proxy) disable JWT verification
- * and gate on `x-reis-extension-secret`, so callers send this key in the
- * `apikey` header instead.
+ * `submit-suggestion` disables JWT verification and gates on
+ * `x-reis-extension-secret`, so callers send this key in the `apikey` header
+ * instead.
  */
 export const SUPABASE_URL = 'https://zvbpgkmnrqyprtkyxkwn.supabase.co';
 export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_QqCe7QTJ6yhYSpRTdBJFSg_Qnt8nBf0';

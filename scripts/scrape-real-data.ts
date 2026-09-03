@@ -55,6 +55,22 @@ async function main() {
     files: Object.keys((data.files as object) ?? {}).length,
   };
   const secs = ((Date.now() - startedAt) / 1000).toFixed(0);
+
+  // Every section is collected under allSettled, so a fault that hits all of
+  // them (a lapsed session, a missing platform, an IS redesign) still reaches
+  // here with an empty payload. Reporting that as ✅ is how a broken scrape gets
+  // mistaken for "IS had nothing" — and the snapshot it overwrites was the only
+  // real data on the machine. Refuse instead.
+  if (Object.values(counts).every((n) => n === 0)) {
+    process.stderr.write(
+      `\n❌ scrape:real collected NOTHING in ${secs}s — ${JSON.stringify(counts)}\n` +
+        '   The snapshot was written but is empty, so the UI will show empty states.\n' +
+        '   Check the [reIS:error] lines above: a lapsed session and an uninstalled\n' +
+        '   platform both fail this way, per-section and silently.\n'
+    );
+    process.exit(1);
+  }
+
   process.stdout.write(`\n✅ Wrote ${OUT} in ${secs}s\n   ${JSON.stringify(counts)}\n`);
   process.stdout.write(
     '   Next: npm run dev:web  →  open http://localhost:3000 (real data renders)\n'

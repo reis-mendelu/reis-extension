@@ -143,3 +143,32 @@ describe('configureEduroam', () => {
     await expect(configureEduroam(material(), d)).rejects.toThrow(/stage=keystore/);
   });
 });
+
+describe('stale-association (#261)', () => {
+  /**
+   * iOS answers `alreadyAssociated` (13) whenever the device is *currently on*
+   * the SSID, whether or not a configuration backs it. Deleting the app removes
+   * the configuration but leaves the association up, so a reinstall-and-retap on
+   * campus lands there — and the old mapping reported it as success.
+   */
+  it('accepts the outcome instead of failing it closed', () => {
+    expect(normalizeOutcome({ outcome: 'stale-association' })).toBe('stale-association');
+  });
+
+  it('is not a success: it must not read as already-configured', () => {
+    expect(normalizeOutcome({ outcome: 'stale-association' })).not.toBe('already-configured');
+    expect(normalizeOutcome({ outcome: 'stale-association' })).not.toBe('saved');
+  });
+
+  /**
+   * The asymmetry is deliberate and worth pinning. Android's
+   * ADD_WIFI_RESULT_ALREADY_EXISTS means a *saved network configuration* exists,
+   * which is a real credential; iOS's alreadyAssociated only means "connected
+   * right now". Android keeps reading as success.
+   */
+  it('leaves Android ALREADY_EXISTS reading as already-configured', () => {
+    expect(interpretAddResult({ resultCode: RESULT_OK, perNetwork: '2' })).toBe(
+      'already-configured'
+    );
+  });
+});

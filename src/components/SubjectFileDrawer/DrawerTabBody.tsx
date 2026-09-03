@@ -104,11 +104,11 @@ export function DrawerTabBody({
         ) : isEmpty && !showProgress ? (
           <div className="flex flex-col items-center justify-center h-full p-6 text-center">
             <FileText className="w-12 h-12 text-base-content/20 mb-3" />
-            <p className="text-sm text-base-content/60">
-              {lesson?.isFromSearch
-                ? t('course.footer.searchOnlyInSchedule')
-                : t('course.footer.noFilesAvailable')}
-            </p>
+            {/* One message regardless of how the subject was reached. The
+                search case used to claim files exist only for subjects in the
+                schedule, which is simply not true — a searched subject can have
+                files, and saying otherwise sent students to IS for nothing. */}
+            <p className="text-sm text-base-content/60">{t('course.footer.noFilesAvailable')}</p>
             {folderUrl && showIsBacklink && (
               <ISBacklink
                 href={

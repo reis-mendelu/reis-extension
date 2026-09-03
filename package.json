@@ -35,7 +35,7 @@
     "verify:ui": "tsx --tsconfig tsconfig.app.json scripts/shot.ts",
     "dev:web:exams": "REIS_FIXTURE=examSeason vite --config vite.web.config.ts",
     "dev:web:week": "REIS_FIXTURE=teachingWeek vite --config vite.web.config.ts",
-    "build:capacitor": "vite build --config vite.capacitor.config.ts",
+    "build:capacitor": "node scripts/with-secrets.mjs vite build --config vite.capacitor.config.ts",
     "cap:sync": "npm run check:native && npm run build:capacitor && npx cap sync && npm run ios:version",
     "cap:android": "npm run cap:sync && npx cap run android",
     "cap:ios": "npm run cap:sync && npx cap run ios",

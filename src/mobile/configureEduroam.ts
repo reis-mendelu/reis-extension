@@ -26,7 +26,22 @@ const ADD_WIFI_RESULT_SUCCESS = 0;
 const ADD_WIFI_RESULT_ADD_OR_UPDATE_FAILED = 1;
 const ADD_WIFI_RESULT_ALREADY_EXISTS = 2;
 
-export type EduroamConfigOutcome = 'saved' | 'already-configured' | 'failed' | 'cancelled';
+export type EduroamConfigOutcome =
+  | 'saved'
+  | 'already-configured'
+  | 'failed'
+  | 'cancelled'
+  /**
+   * iOS only (#261). The device is sitting on the eduroam SSID but nothing this
+   * app installed backs it — `alreadyAssociated` reports the association, not a
+   * configuration, and deleting the app removes the configuration while leaving
+   * the association up. Not a success: iOS installs nothing on this path, so
+   * the student must forget the network before setup can take.
+   *
+   * Android has no equivalent. Its ADD_WIFI_RESULT_ALREADY_EXISTS means a saved
+   * network configuration exists, which is a real credential.
+   */
+  | 'stale-association';
 
 /** Android: raw shape the Java plugin resolves with. `perNetwork` is comma-joined ints. */
 export interface NativeAddResult {
@@ -81,7 +96,13 @@ export function interpretAddResult(result: NativeAddResult): EduroamConfigOutcom
   return 'failed';
 }
 
-const OUTCOMES: readonly string[] = ['saved', 'already-configured', 'failed', 'cancelled'];
+const OUTCOMES: readonly string[] = [
+  'saved',
+  'already-configured',
+  'failed',
+  'cancelled',
+  'stale-association',
+];
 
 /**
  * One normalizer for both native halves. Android resolves raw intent codes,

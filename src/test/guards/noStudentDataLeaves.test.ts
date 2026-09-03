@@ -93,7 +93,7 @@ const files = walk(SRC).map((f) => ({ path: relative(ROOT, f), text: readFileSyn
 
 /**
  * Every non-MENDELU host the app may contact. An audit found reIS talking to
- * Anthropic, Google, Microsoft, Komoot and a personal HuggingFace Space while
+ * Google, Microsoft, Komoot and a personal HuggingFace Space while
  * PRIVACY.md claimed it spoke "exclusively" to IS Mendelu, WebISKAM and
  * Supabase. Adding a destination now means adding it here AND to PRIVACY.md.
  * WebISKAM left the list when the integration was removed.
@@ -114,7 +114,6 @@ const ALLOWED_HOSTS = [
 
   // --- fetched from, carrying student data. Each must stay disclosed. ---
   'bookings.cloud.microsoft', // library booking: name, email, student id
-  'anthropic.com', // syllabus comparison: a student-chosen PDF
 
   // --- deep links the STUDENT opens; no background request is made ---
   'google.com', // maps links, Play Store, Chrome Web Store, a society's Apps Script

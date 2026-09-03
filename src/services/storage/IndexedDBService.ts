@@ -113,7 +113,13 @@ interface ReisDB extends DBSchema {
 // up, so leftover mock (e.g. the ESN "Czech Language for Foreigners" exam) would
 // hydrate on the next real-data boot. The production extension never sets the
 // flag, so it always uses `reis_db`.
-const DB_NAME = import.meta.env.VITE_USE_MOCK_DATA === 'true' ? 'reis_db_mock' : 'reis_db';
+// `import.meta.env?.` — not `.env.` — because this module is also loaded in
+// plain Node by `scripts/scrape-real-data.ts`, where `import.meta.env` is
+// undefined (it is a Vite construct). The unguarded read threw
+// "Cannot read properties of undefined" AFTER the IS login had succeeded, so
+// `npm run scrape:real` failed on every machine and the real-data snapshot
+// could never be built. Same guard as `errorReporter/reporter.ts:19`.
+const DB_NAME = import.meta.env?.VITE_USE_MOCK_DATA === 'true' ? 'reis_db_mock' : 'reis_db';
 const DB_VERSION = 22;
 
 // True for the "database connection is closing" / InvalidStateError family that

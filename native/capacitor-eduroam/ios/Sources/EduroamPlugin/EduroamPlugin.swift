@@ -207,8 +207,22 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
             // The student tapped Cancel. A choice, not a fault.
             call.resolve(["outcome": "cancelled"])
         case NEHotspotConfigurationError.alreadyAssociated.rawValue:
-            // The device is on eduroam right now.
-            call.resolve(["outcome": "already-configured"])
+            // The device is on eduroam right now — and that is ALL this code
+            // means. It does not say a configuration exists (#261). Deleting the
+            // app removes the configuration but leaves the association up, so a
+            // reinstall-and-retap on campus lands here with nothing installed.
+            // Reporting it as success sent students to campus believing eduroam
+            // was set up. Ask what is actually configured instead of inferring.
+            NEHotspotConfigurationManager.shared.getConfiguredSSIDs { ssids in
+                if ssids.contains(Self.ssid) {
+                    call.resolve(["outcome": "already-configured"])
+                } else {
+                    // Associated, but nothing of ours backs it. iOS will keep
+                    // short-circuiting every apply until the student forgets
+                    // the network, which is the one step the JS side names.
+                    call.resolve(["outcome": "stale-association"])
+                }
+            }
         case NEHotspotConfigurationError.pending.rawValue:
             call.reject("FAILED at stage=apply: a previous eduroam request is still open")
         default:

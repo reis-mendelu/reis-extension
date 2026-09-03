@@ -61,7 +61,13 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
       />
       <div className="flex flex-col gap-3.5 px-4 pb-6">
         {status === 'error' && (
-          <div className="alert alert-error text-base">
+          // A stale association is a warning, not an error: nothing broke, the
+          // student has one thing to do (#261). Everything else here failed.
+          <div
+            className={`alert text-base ${
+              outcome === 'stale-association' ? 'alert-warning' : 'alert-error'
+            }`}
+          >
             <AlertTriangle className="h-4 w-4 flex-shrink-0" />
             <span>
               {/* On the native path nothing is prepared or downloaded, so the
@@ -70,9 +76,11 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
                   (a lapsed IS session, a blip fetching the certificate) and
                   outcome is therefore still null. */}
               {native
-                ? outcome === 'failed'
-                  ? t('eduroam.native.failed')
-                  : `${t('eduroam.native.error')}${error ? `: ${error}` : ''}`
+                ? outcome === 'stale-association'
+                  ? t('eduroam.native.staleAssociation')
+                  : outcome === 'failed'
+                    ? t('eduroam.native.failed')
+                    : `${t('eduroam.native.error')}${error ? `: ${error}` : ''}`
                 : `${t('eduroam.error')}${error ? `: ${error}` : ''}`}
             </span>
           </div>

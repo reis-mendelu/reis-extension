@@ -3,8 +3,10 @@ import { IndexedDBService } from '../../services/storage';
 import { fetchAndCacheSingleSyllabus } from '../../services/sync/syncSyllabus';
 import type { SyllabusRequirements } from '../../types/documents';
 import { logError } from '../../utils/reportError';
-
-const SYLLABUS_VERSION = 4; // v4: force fetch to ensure we get newest predmetId
+// Imported, not redeclared: this number is compared against the one the parser
+// stamps, and a local copy is how the two drifted into a permanent cache miss.
+// See the note on SYLLABUS_VERSION in syllabusParser.ts.
+import { SYLLABUS_VERSION } from '../../utils/parsers/syllabusParser';
 
 export const createSyllabusSlice: AppSlice<SyllabusSlice> = (set, get) => ({
   syllabuses: {
@@ -15,9 +17,22 @@ export const createSyllabusSlice: AppSlice<SyllabusSlice> = (set, get) => ({
     const { cache, loading } = get().syllabuses;
     const currentLang = get().language;
 
-    // Return if already in cache (and language matches) or currently loading
+    // Return if already in cache (right language AND right version) or loading.
+    //
+    // The version half is load-bearing. When a legacy record needs refreshing
+    // but `fetchAndCacheSingleSyllabus` cannot resolve an id it returns
+    // undefined (syncSyllabus.ts:52), and the branch below deliberately keeps
+    // the old record so the tab shows real text rather than blanking. That
+    // record lands in this cache — so without the version check the stale copy
+    // would be served for the rest of the session and the refresh this version
+    // bump exists to force would never be retried.
     const cachedData = cache[courseCode];
-    if (loading[courseCode] || (cachedData && cachedData.language === currentLang)) return;
+    if (
+      loading[courseCode] ||
+      (cachedData && cachedData.language === currentLang && cachedData.version === SYLLABUS_VERSION)
+    ) {
+      return;
+    }
 
     set((state) => ({
       syllabuses: {
@@ -33,22 +48,30 @@ export const createSyllabusSlice: AppSlice<SyllabusSlice> = (set, get) => ({
       let needsFetch = false;
 
       if (data && 'cz' in data && 'en' in data) {
-          activeSyllabus = currentLang === 'en' ? data.en : data.cz;
-          if (!activeSyllabus || activeSyllabus.version !== SYLLABUS_VERSION) needsFetch = true;
+        activeSyllabus = currentLang === 'en' ? data.en : data.cz;
+        if (!activeSyllabus || activeSyllabus.version !== SYLLABUS_VERSION) needsFetch = true;
       } else if (data) {
-          activeSyllabus = data as SyllabusRequirements;
-          if (activeSyllabus.language !== currentLang || activeSyllabus.version !== SYLLABUS_VERSION) {
-              needsFetch = true;
-          }
-      } else {
+        activeSyllabus = data as SyllabusRequirements;
+        if (
+          activeSyllabus.language !== currentLang ||
+          activeSyllabus.version !== SYLLABUS_VERSION
+        ) {
           needsFetch = true;
+        }
+      } else {
+        needsFetch = true;
       }
 
       // 2. If IDB miss or stale, delegate network fetch to sync service
       if (needsFetch) {
-        const fetched = await fetchAndCacheSingleSyllabus(courseCode, currentLang, courseId, subjectName);
+        const fetched = await fetchAndCacheSingleSyllabus(
+          courseCode,
+          currentLang,
+          courseId,
+          subjectName
+        );
         if (fetched) {
-            activeSyllabus = fetched;
+          activeSyllabus = fetched;
         }
       }
 
@@ -56,7 +79,7 @@ export const createSyllabusSlice: AppSlice<SyllabusSlice> = (set, get) => ({
         syllabuses: {
           cache: {
             ...state.syllabuses.cache,
-            ...(activeSyllabus ? { [courseCode]: activeSyllabus } : {})
+            ...(activeSyllabus ? { [courseCode]: activeSyllabus } : {}),
           },
           loading: { ...state.syllabuses.loading, [courseCode]: false },
         },
