@@ -5,14 +5,15 @@
 //   the one place that sees a blocked demo tap regardless of which guard threw
 //   it. Showing the toast and returning here means demo mode's "no network"
 //   behaviour reads as an explained limitation, not a silently swallowed
-//   failure or a telemetry report about an intentional block. The toast itself
-//   arrives through `setDemoErrorHandler` rather than a static import — see
-//   that function for why the difference is load-bearing.
-// - Otherwise, always console.error with stack + extras (local debugging).
-// - Forwards (context, err) to sendTelemetry — only the sanitized message is
-//   transmitted; `extra` stays local. Safe to call before initTelemetry().
-
-import { sendTelemetry } from '../services/errorReporter/telemetry';
+//   failure or a silently swallowed one. The toast itself arrives through
+//   `setDemoErrorHandler` rather than a static import — see that function for
+//   why the difference is load-bearing.
+// - Otherwise, console.error with stack + extras.
+//
+// Nothing here leaves the device. This used to forward every error to a
+// Supabase RPC; that path is gone, along with the tables behind it. If you are
+// adding transmission back, `src/test/guards/noStudentDataLeaves.test.ts` is
+// where the decision is enforced, and it will fail first.
 
 /**
  * Returns true when it has handled the error and logError should stop.
@@ -57,9 +58,4 @@ export function logError(context: string, err: unknown, extra?: Record<string, u
   if (stack) payload.stack = stack;
   if (extra) Object.assign(payload, extra);
   console.error(`[reIS:error] ${context}: ${msg}`, payload);
-  try {
-    sendTelemetry(context, err);
-  } catch (telemetryErr) {
-    console.warn('[reIS:error] telemetry dispatch failed', telemetryErr);
-  }
 }

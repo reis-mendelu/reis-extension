@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Moon, MessageSquarePlus, Languages, User, Mail, Hash, LogOut, Bug } from 'lucide-react';
+import { Moon, MessageSquarePlus, Languages, User, Mail, Hash, LogOut } from 'lucide-react';
 import { useState } from 'react';
 
 import { useTheme } from '../../hooks/useTheme';
@@ -23,8 +23,6 @@ export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback }: MobilePr
   const { t } = useTranslation();
   const language = useAppStore((state) => state.language);
   const setLanguage = useAppStore((state) => state.setLanguage);
-  const errorReportingEnabled = useAppStore((state) => state.errorReportingEnabled);
-  const setErrorReportingEnabled = useAppStore((state) => state.setErrorReportingEnabled);
   const { params } = useUserParams();
 
   return (
@@ -108,23 +106,6 @@ export function MobileProfileSheet({ isOpen, onClose, onOpenFeedback }: MobilePr
                     checked={isDark}
                     disabled={tLoading}
                     onChange={tTheme}
-                  />
-                </label>
-                <label className="flex items-center justify-between gap-3 px-1 py-2 cursor-pointer hover:bg-base-200 rounded-lg">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <Bug size={16} className="text-base-content/50 shrink-0" />
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs opacity-70">{t('settings.errorReporting')}</span>
-                      <span className="text-[10px] opacity-50 truncate">
-                        {t('settings.errorReportingDesc')}
-                      </span>
-                    </div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    className="toggle toggle-primary toggle-sm"
-                    checked={errorReportingEnabled}
-                    onChange={(e) => setErrorReportingEnabled(e.target.checked)}
                   />
                 </label>
               </div>

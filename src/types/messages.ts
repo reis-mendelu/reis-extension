@@ -65,9 +65,4 @@ export const Messages = {
     type: 'REIS_NAV_MENU',
     categories,
   }),
-  telemetryError: (context: string, err: unknown): T.TelemetryErrorMessage => ({
-    type: 'REIS_TELEMETRY_ERROR',
-    context,
-    message: err instanceof Error ? err.message : String(err),
-  }),
 };

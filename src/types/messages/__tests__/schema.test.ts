@@ -17,7 +17,6 @@ describe('message schemas accept every real factory message', () => {
       Messages.syncUpdate({ lastSync: 123, schedule: {}, isSyncing: false }),
       Messages.popupState(true),
       Messages.navMenu([{ id: 'a', label: 'A', children: [{ id: 'c', label: 'C', href: '/x' }] }]),
-      Messages.telemetryError('Ctx.fn', new Error('boom')),
     ];
     for (const m of msgs) {
       const r = ContentToIframeSchema.safeParse(m);
