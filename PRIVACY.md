@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: August 9, 2026**
+**Last Updated: September 4, 2026**
 
 ## Introduction
 reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enhance the user experience of the Mendel University Information System (IS Mendelu). We are committed to protecting your privacy and ensuring the security of your data.
@@ -16,7 +16,7 @@ We fetch and store the following information directly from MENDELU services to y
 
 This data is stored **locally on your device** using highly efficient storage (IndexedDB) and is **never** transmitted to our servers.
 
-The one exception is the library study-room booking, and only if you use it: the booking dialog pre-fills your name, university email and student ID from this local data, and when you confirm, those three fields are relayed through reIS's server to the library's booking system. They are passed through, never stored, and nothing is sent unless you press the button. See *Third-Party Access* below.
+There is no longer any exception to that. Library study-room booking — the one feature that ever relayed your name, university email and student ID onwards — was removed in September 2026, together with the server route that carried it.
 
 ### 2. Anonymous Usage Analytics
 We collect anonymous usage data to improve the extension:
@@ -61,7 +61,7 @@ When an unhandled error or warning occurs in the extension, a sanitized diagnost
 
 ## Third-Party Access
 
-reIS contacts the following services. **IS Mendelu is the only one that receives your academic data as a matter of course**, and only because it is the university's own system. Two of the optional features below do send specific academic data when — and only when — you use them: Anthropic receives the syllabus you upload plus the MENDELU course details, and Microsoft Bookings receives your name, university email and student ID. Each is described in full at its entry. jsDelivr receives no identifier, but the set of subjects requested does reveal which courses you are enrolled in.
+reIS contacts the following services. **IS Mendelu is the only one that receives your academic data**, and only because it is the university's own system. No other service on this list receives it, under any feature. The two that once did — Anthropic, for the Erasmus syllabus comparison, and Microsoft Bookings, for library study-room booking — were removed in September 2026 along with both features. jsDelivr receives no identifier, but the set of subjects requested does reveal which courses you are enrolled in.
 
 **Always:**
 1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you.
@@ -70,10 +70,8 @@ reIS contacts the following services. **IS Mendelu is the only one that receives
 4. **OpenStreetMap** — campus map tiles.
 
 **Only when you use the relevant feature:**
-5. **Microsoft Bookings** (`bookings.cloud.microsoft`, via reIS's server) — only if you book a library study room. The **name, university email address and student ID** you confirm in the booking dialog are passed on, because the library's system requires all three to hold a reservation in your name; the student ID is a required field on the library's own form. reIS keeps none of it and sends nothing at any other time — browsing live room availability transmits nothing about you.
-6. **Anthropic** (`anthropic.com`, via reIS's server) — if you use Erasmus syllabus comparison, the **PDF you choose to upload** and the MENDELU course details are sent for analysis. The document this feature asks for is a foreign course **syllabus** — a public course description, not a personal record — and the app says so at the point you pick the file. Nothing is uploaded unless you choose a file.
-7. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
-8. **Photon** (`photon.komoot.io`) — venue search, used only by student-society administrators when creating an event.
+5. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
+6. **Photon** (`photon.komoot.io`) — venue search, used only by student-society administrators when creating an event.
 
 **Links you open yourself** (Teams, Outlook, geteduroam, society websites) are handed to your browser or the relevant app. reIS makes no background request to them.
 
