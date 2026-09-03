@@ -35,22 +35,30 @@ export const createSyllabusSlice: AppSlice<SyllabusSlice> = (set, get) => ({
       let needsFetch = false;
 
       if (data && 'cz' in data && 'en' in data) {
-          activeSyllabus = currentLang === 'en' ? data.en : data.cz;
-          if (!activeSyllabus || activeSyllabus.version !== SYLLABUS_VERSION) needsFetch = true;
+        activeSyllabus = currentLang === 'en' ? data.en : data.cz;
+        if (!activeSyllabus || activeSyllabus.version !== SYLLABUS_VERSION) needsFetch = true;
       } else if (data) {
-          activeSyllabus = data as SyllabusRequirements;
-          if (activeSyllabus.language !== currentLang || activeSyllabus.version !== SYLLABUS_VERSION) {
-              needsFetch = true;
-          }
-      } else {
+        activeSyllabus = data as SyllabusRequirements;
+        if (
+          activeSyllabus.language !== currentLang ||
+          activeSyllabus.version !== SYLLABUS_VERSION
+        ) {
           needsFetch = true;
+        }
+      } else {
+        needsFetch = true;
       }
 
       // 2. If IDB miss or stale, delegate network fetch to sync service
       if (needsFetch) {
-        const fetched = await fetchAndCacheSingleSyllabus(courseCode, currentLang, courseId, subjectName);
+        const fetched = await fetchAndCacheSingleSyllabus(
+          courseCode,
+          currentLang,
+          courseId,
+          subjectName
+        );
         if (fetched) {
-            activeSyllabus = fetched;
+          activeSyllabus = fetched;
         }
       }
 
@@ -58,7 +66,7 @@ export const createSyllabusSlice: AppSlice<SyllabusSlice> = (set, get) => ({
         syllabuses: {
           cache: {
             ...state.syllabuses.cache,
-            ...(activeSyllabus ? { [courseCode]: activeSyllabus } : {})
+            ...(activeSyllabus ? { [courseCode]: activeSyllabus } : {}),
           },
           loading: { ...state.syllabuses.loading, [courseCode]: false },
         },

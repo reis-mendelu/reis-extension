@@ -25,16 +25,21 @@ import type { SyllabusRequirements } from '../../schemas/syllabusSchema';
 export const SYLLABUS_VERSION = 4 as const;
 
 export function parseSyllabusOffline(html: string, lang: string = 'cz'): SyllabusRequirements {
-    if (!html || typeof html !== 'string') return { version: 1 as const, requirementsText: 'Error: Section not found', requirementsTable: [] };
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const res = {
-        version: SYLLABUS_VERSION,
-        requirementsText: parseRequirementsText(doc),
-        requirementsTable: parseRequirementsTable(doc),
-        courseInfo: parseCourseMetadata(doc, lang),
-        objectivesText: parseCourseObjectives(doc),
-        contentText: parseCourseContent(doc),
+  if (!html || typeof html !== 'string')
+    return {
+      version: 1 as const,
+      requirementsText: 'Error: Section not found',
+      requirementsTable: [],
     };
-    const v = SyllabusRequirementsSchema.safeParse(res);
-    return v.success ? v.data : res;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const res = {
+    version: SYLLABUS_VERSION,
+    requirementsText: parseRequirementsText(doc),
+    requirementsTable: parseRequirementsTable(doc),
+    courseInfo: parseCourseMetadata(doc, lang),
+    objectivesText: parseCourseObjectives(doc),
+    contentText: parseCourseContent(doc),
+  };
+  const v = SyllabusRequirementsSchema.safeParse(res);
+  return v.success ? v.data : res;
 }
