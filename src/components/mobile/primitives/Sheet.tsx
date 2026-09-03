@@ -1,5 +1,6 @@
-import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
-import { dragOwnsGesture, shouldDismiss } from './sheetDrag';
+import { useRef, useState, type ReactNode } from 'react';
+import { shouldDismiss } from './sheetDrag';
+import { useSheetDrag } from './useSheetDrag';
 
 export interface SheetProps {
   /** `full` pins below the status area and scrolls; `content` hugs the bottom. */
@@ -53,49 +54,33 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
       : 'bottom-0 max-h-[85dvh]';
 
   const panelRef = useRef<HTMLDivElement>(null);
-  const start = useRef<{ y: number; t: number } | null>(null);
   const [dragY, setDragY] = useState(0);
 
-  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+  /**
+   * The gesture itself lives in `useSheetDrag`, shared with the map sheet.
+   * There used to be two copies of this plumbing and each was missing a
+   * different piece — this one had neither the non-passive touch claim nor
+   * pointer capture, which is why "the slidedown bugs all the time, it's not
+   * fluent" was true of every sheet except the map's. What is left here is the
+   * only part that is this sheet's own business: a bottom sheet travels DOWN
+   * and far enough means dismiss.
+   */
+  const { handlers } = useSheetDrag({
+    panelRef,
     // A screen is left via back, not by being thrown downward — and with no
     // backdrop there is nothing to tap outside of, so an accidental dismissal
     // would have no undo.
-    if (isScreen) return;
-    // Only a gesture the content does not want. dragOwnsGesture returns false
-    // while any scroller under the finger is scrolled past its top, so reading
-    // a long list never costs the student their place.
-    if (!dragOwnsGesture(e.target as Element, panelRef.current)) return;
-    start.current = { y: e.clientY, t: e.timeStamp };
-  };
-
-  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!start.current) return;
-    const dy = e.clientY - start.current.y;
-    // Clamped at 0: the sheet is bottom-anchored, so upward drag has nowhere to
-    // travel and rubber-banding it would only suggest it does.
-    setDragY(dy > 0 ? dy : 0);
-  };
-
-  const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const from = start.current;
-    start.current = null;
-    if (!from) return;
-    if (shouldDismiss(e.clientY - from.y, e.timeStamp - from.t)) {
-      onClose();
-      return;
-    }
-    setDragY(0);
-  };
-
-  // Not onPointerUp: a cancel is the BROWSER taking the gesture over (a pan it
-  // decided to own, a system edge swipe), not the student letting go. Running
-  // the dismiss decision on it closes the sheet mid-drag — a 30px cancel inside
-  // 50ms reads as a dismissing flick by velocity alone. A cancelled drag has no
-  // outcome but "put it back".
-  const onPointerCancel = () => {
-    start.current = null;
-    setDragY(0);
-  };
+    disabled: isScreen,
+    // Downward only: the sheet is bottom-anchored, so upward drag has nowhere
+    // to travel and rubber-banding it would only suggest it does.
+    absorbs: (dy) => dy > 0,
+    onMove: (dy) => setDragY(dy > 0 ? dy : 0),
+    onEnd: (dy, dtMs) => {
+      if (shouldDismiss(dy, dtMs)) onClose();
+      else setDragY(0);
+    },
+    onCancel: () => setDragY(0),
+  });
 
   const dragging = dragY > 0;
 
@@ -111,10 +96,7 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
       <div
         ref={panelRef}
         data-testid="sheet-panel"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerCancel}
+        {...handlers}
         // The entry animation is dropped the moment a drag starts: it animates
         // the same transform this does, and leaving both on makes the sheet
         // fight the finger.

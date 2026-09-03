@@ -1,0 +1,173 @@
+import {
+  useEffect,
+  useRef,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
+} from 'react';
+import { dragOwnsGesture, DRAG_SLOP_PX } from './sheetDrag';
+
+export interface SheetDragConfig {
+  /** The panel being dragged. Ownership and pointer capture are scoped to it. */
+  panelRef: RefObject<HTMLElement | null>;
+  /** Skip dragging entirely — `Sheet variant="screen"` is left via back. */
+  disabled?: boolean;
+  /**
+   * Whether travel in this direction can be absorbed at all. A bottom sheet
+   * absorbs downward only; the map sheet asks its detent ladder. Travel that is
+   * not absorbed belongs to whatever is under the finger, so it is neither
+   * reported nor claimed from the browser.
+   */
+  absorbs?: (dy: number) => boolean;
+  /** Live travel, with the panel's height when the gesture started. */
+  onMove: (dy: number, startHeight: number) => void;
+  /**
+   * The gesture finished: decide the outcome.
+   *
+   * Return `true` when it MOVED the sheet, to swallow the click it ends in. The
+   * slop and the outcome measure different things and disagree on a fast flick
+   * shorter than the slop: too small to count as a drag, fast enough to change
+   * a detent. The sheet would move AND the trailing click would land on
+   * whatever was under the finger — on the map sheet that advanced a second
+   * stop, so one flick jumped two. Whether the gesture moved the sheet is the
+   * question that matters, so the caller gets the final say.
+   */
+  onEnd: (dy: number, dtMs: number, startHeight: number) => boolean | void;
+  /** The browser took the gesture, or it was abandoned. Put things back. */
+  onCancel: () => void;
+}
+
+/**
+ * The one drag gesture behind every mobile sheet.
+ *
+ * There were two implementations of this and both were wrong in different
+ * ways — `Sheet`'s inline handlers and `useMapSheetDrag` — which is how "the
+ * slidedown bugs all the time, it's not fluent; when I try to pull it down it
+ * just disappears, then appears again weirdly" came to be true of most of the
+ * app while the map sheet felt fine.
+ *
+ * Four mechanisms, and a sheet needs all four:
+ *
+ * 1. **Ownership.** `dragOwnsGesture` refuses the gesture while any scroller
+ *    under the finger is scrolled past its top, so reading a long list never
+ *    costs the student their place.
+ * 2. **The touch claim.** React attaches touch listeners PASSIVELY, so
+ *    `preventDefault` from a React handler is a no-op and the browser is free
+ *    to decide partway through that the gesture is a pan of its own and fire
+ *    `pointercancel`. Measured on device: a 350px swipe cut off after ~20px.
+ *    That is the reported bug — the steal lands before the dismiss threshold
+ *    and the sheet snaps back, or after it and the sheet closes, from one
+ *    gesture. Only a manual non-passive listener can hold the gesture.
+ * 3. **Pointer capture.** Without it the events stop arriving the moment the
+ *    finger leaves the panel: a long drag stalls, no `pointerup` ever lands,
+ *    and `start` stays set so the NEXT touch continues the old drag.
+ * 4. **Click suppression.** A drag ends in a click on whatever was under the
+ *    finger, which could cast an RSVP or follow a link as a side effect of
+ *    closing. Swallowed once in the capture phase.
+ *
+ * What each sheet does with the travel is its own business — this reports it.
+ */
+export function useSheetDrag({
+  panelRef,
+  disabled = false,
+  absorbs,
+  onMove,
+  onEnd,
+  onCancel,
+}: SheetDragConfig) {
+  const start = useRef<{ y: number; t: number; height: number } | null>(null);
+  /** Whether this gesture moved the sheet, so its trailing click must be eaten. */
+  const dragged = useRef(false);
+
+  const releaseCapture = (pointerId: number) => {
+    const panel = panelRef.current;
+    if (panel?.hasPointerCapture?.(pointerId)) panel.releasePointerCapture?.(pointerId);
+  };
+
+  const onPointerDown = (e: ReactPointerEvent<HTMLElement>) => {
+    // Cleared before the ownership check, not after: a new gesture always
+    // starts undragged. Leaving it to the owned path lets a flag set by a
+    // previous drag survive into a gesture the sheet does not own, and the
+    // click swallow below then eats that tap.
+    dragged.current = false;
+    if (disabled) return;
+    if (!dragOwnsGesture(e.target as Element, panelRef.current)) return;
+    const height = panelRef.current?.getBoundingClientRect().height ?? 0;
+    start.current = { y: e.clientY, t: e.timeStamp, height };
+    // Guarded: happy-dom implements neither of these.
+    panelRef.current?.setPointerCapture?.(e.pointerId);
+  };
+
+  const onPointerMove = (e: ReactPointerEvent<HTMLElement>) => {
+    const from = start.current;
+    if (!from) return;
+    const dy = e.clientY - from.y;
+    if (absorbs && !absorbs(dy)) return;
+    // The sheet follows the finger from the first pixel, but only past the slop
+    // does the gesture count as a drag for click suppression — otherwise the
+    // jitter in an ordinary tap swallows it.
+    if (Math.abs(dy) >= DRAG_SLOP_PX) dragged.current = true;
+    onMove(dy, from.height);
+  };
+
+  const onPointerUp = (e: ReactPointerEvent<HTMLElement>) => {
+    const from = start.current;
+    start.current = null;
+    releaseCapture(e.pointerId);
+    if (!from) return;
+    if (onEnd(e.clientY - from.y, e.timeStamp - from.t, from.height) === true)
+      dragged.current = true;
+  };
+
+  /**
+   * A cancel is the BROWSER taking the gesture over, not the student letting
+   * go — the only outcome is "put it back". A cancelled drag produces no click,
+   * so the flag has nothing to suppress; left set it would eat the NEXT tap.
+   */
+  const onPointerCancel = (e: ReactPointerEvent<HTMLElement>) => {
+    start.current = null;
+    releaseCapture(e.pointerId);
+    dragged.current = false;
+    onCancel();
+  };
+
+  const onClickCapture = (e: ReactMouseEvent<HTMLElement>) => {
+    if (!dragged.current) return;
+    dragged.current = false;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel || disabled) return;
+    const onTouchMove = (e: TouchEvent) => {
+      const from = start.current;
+      const touch = e.touches[0];
+      if (!from || !touch) return;
+      if (absorbs && !absorbs(touch.clientY - from.y)) return;
+      e.preventDefault();
+    };
+    panel.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => panel.removeEventListener('touchmove', onTouchMove);
+    // `absorbs` is read through the closure on every event, so a new identity
+    // each render must not re-bind the listener.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panelRef, disabled]);
+
+  /**
+   * For controls that must not fire when the gesture was a drag. The capture
+   * handler already swallows those clicks; this is the belt to its braces, and
+   * the map sheet's handle and tabs have always guarded themselves with it.
+   */
+  const consumeDragClick = () => {
+    if (!dragged.current) return false;
+    dragged.current = false;
+    return true;
+  };
+
+  return {
+    consumeDragClick,
+    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onClickCapture },
+  };
+}

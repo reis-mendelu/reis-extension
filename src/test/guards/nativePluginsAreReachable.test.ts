@@ -54,22 +54,33 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
+/**
+ * Memoised: this walks every source file, and five tests asking separately made
+ * the suite slow enough to trip the default 5s timeout under a parallel run —
+ * which failed as a bug in the guard rather than in what it guards.
+ */
+let namesCache: string[] | null = null;
+let packagedCache: { pkg: string; dir: string; classes: string[] }[] | null = null;
+
 /** Plugin names the app asks Capacitor for, e.g. registerPlugin<T>('Eduroam'). */
 function registeredNames(): string[] {
+  if (namesCache) return namesCache;
   const names = new Set<string>();
   for (const file of walk(join(root, 'src'))) {
     const src = readFileSync(file, 'utf8');
     for (const m of src.matchAll(/registerPlugin\s*(?:<[^>]*>)?\s*\(\s*['"]([A-Za-z0-9_]+)['"]/g))
       names.add(m[1] as string);
   }
-  return [...names].sort();
+  namesCache = [...names].sort();
+  return namesCache;
 }
 
 /** `file:native/*` dependencies, and the `@objc(...)` classes each one ships. */
 function packagedIosPlugins(): { pkg: string; dir: string; classes: string[] }[] {
+  if (packagedCache) return packagedCache;
   const pkgJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
   const deps: Record<string, string> = { ...pkgJson.dependencies, ...pkgJson.devDependencies };
-  return Object.entries(deps)
+  packagedCache = Object.entries(deps)
     .filter(([, spec]) => String(spec).startsWith('file:native/'))
     .map(([pkg, spec]) => {
       const dir = join(root, String(spec).replace('file:', ''));
@@ -90,9 +101,12 @@ function packagedIosPlugins(): { pkg: string; dir: string; classes: string[] }[]
           classes.push(m[1] as string);
       return { pkg, dir, classes };
     });
+  return packagedCache;
 }
 
-describe('native plugins are reachable from JS', () => {
+// Filesystem I/O, not a unit test: the default 5s is not a meaningful budget
+// for walking the source tree while the rest of the suite runs in parallel.
+describe('native plugins are reachable from JS', { timeout: 30_000 }, () => {
   it('registers at least the plugins we know about', () => {
     // A canary: if this drops to nothing the parser broke and every assertion
     // below would pass vacuously.

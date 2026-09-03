@@ -26,6 +26,7 @@ import {
   REMOTE_IDS,
 } from './mapLayers';
 import { setMapInstance } from './mapInstance';
+import { roomFocusView } from './focusBounds';
 import {
   LIBRARY_PLACE_IDS,
   libraryRoomsByPlaceId,
@@ -355,19 +356,16 @@ export function MapCanvas() {
         targetBounds = poly.getBounds();
       }
     }
-    if (targetBounds) {
-      const tb = targetBounds;
-      flyAndReveal(map, () =>
-        map.fitBounds(tb, { maxZoom: 21, padding: [120, 120], animate: false })
-      );
-    } else if (b) {
-      flyAndReveal(map, () =>
-        map.fitBounds(b.bounds as L.LatLngBoundsExpression, {
-          maxZoom: 21,
-          padding: [50, 50],
-          animate: false,
-        })
-      );
+    // Which box to frame is a decision, so it lives in a tested pure module:
+    // a selected room frames its BUILDING, not its own few metres of floor.
+    // See focusBounds.roomFocusView.
+    const view = roomFocusView<L.LatLngBoundsExpression>(
+      targetBounds ?? null,
+      (b?.bounds as L.LatLngBoundsExpression | undefined) ?? null
+    );
+    if (view) {
+      const { bounds, maxZoom, padding } = view;
+      flyAndReveal(map, () => map.fitBounds(bounds, { maxZoom, padding, animate: false }));
     }
     // libraryAvailability intentionally excluded — read via libraryAvailabilityRef
     // so its arrival doesn't trigger a redraw+fly; see comment at the ref

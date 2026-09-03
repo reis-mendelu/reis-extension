@@ -1180,7 +1180,8 @@
       "enlargePhoto": "Zvětšit fotku",
       "copied": "Zkopírováno!",
       "teamsChat": "Napsat na Teams",
-      "navigateToRoom": "Ukázat {room} na mapě"
+      "navigateToRoom": "Ukázat {room} na mapě",
+      "showSubject": "Ukázat předmět"
     },
     "profile": {
       "appearance": "Vzhled",
