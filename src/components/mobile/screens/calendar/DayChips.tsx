@@ -91,6 +91,13 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
           // Marked in the row, not only once the day is opened: a student
           // scanning the week should see the day off without tapping into it.
           const holiday = getCzechHoliday(date, language === 'en' ? 'en' : 'cz');
+          // Whether the day holds anything, said in the row instead of only in
+          // the agenda: "people click on days, just to find out they might be
+          // empty". `lessonDates` was already here for the weekend branch — it
+          // just was not shown. Dimmed rather than dotted, because a dot would
+          // land in the same spot as the holiday dot, and "nothing here" reads
+          // better as absence than as another mark.
+          const hasLessons = lessonDates.has(iso.replace(/-/g, ''));
           return (
             <button
               key={iso}
@@ -107,7 +114,11 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
               className={`flex-1 whitespace-nowrap rounded-full py-2 text-center text-sm transition-colors max-[359px]:text-[11px] ${
                 isSelected
                   ? 'bg-primary/15 font-semibold text-primary'
-                  : 'font-medium text-base-content/70'
+                  : hasLessons
+                    ? 'font-medium text-base-content/70'
+                    : // Never the selected chip: that is the day the agenda is
+                      // already answering for, so it keeps its own treatment.
+                      'font-medium text-base-content/40'
               }`}
             >
               {label} {date.getDate()}

@@ -62,7 +62,11 @@ export function ProfileScreen() {
 
   return (
     <div data-testid="profile-screen" className="flex flex-1 flex-col overflow-hidden">
-      <ScreenHeader eyebrow={plan?.title} title={t('sidebar.profile')} />
+      {/* No eyebrow: the header's title block shares its row with the three
+          action buttons, so at 320px it has ~152px — a programme name needs
+          206px and was truncated there. The identity gets its own full-width
+          block below instead, which is where it lived as a sheet. */}
+      <ScreenHeader title={t('sidebar.profile')} />
       <div className="flex-shrink-0">
         <div className="flex items-center gap-3 px-4 pb-3 pt-1">
           {/* The student's own face, the one photo the app never showed: this
@@ -81,10 +85,20 @@ export function ProfileScreen() {
             />
           </div>
           {/* No close button: this is a tab, not a sheet — the nav is how you
-              leave. The programme line is the header's eyebrow now rather than
-              a second line under the name. */}
+              leave.
+
+              The name WRAPS rather than truncating. At 320px "Marie Anna
+              Nováková-Svobodová" needs 287px in a 232px slot, and losing
+              "-Svobodová" is worse than a second line — it is the half that
+              tells two siblings apart. The programme under it still truncates:
+              it is context, and it has the full row to do it in now. */}
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="truncate font-display text-lg font-bold tracking-tight">{name}</span>
+            <span className="font-display text-lg font-bold leading-tight tracking-tight">
+              {name}
+            </span>
+            {plan?.title && (
+              <span className="truncate text-sm text-base-content/60">{plan.title}</span>
+            )}
           </div>
         </div>
       </div>

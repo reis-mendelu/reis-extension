@@ -220,7 +220,7 @@ export function MapSheet() {
               </div>
             ) : (
               <>
-                {activeTab === 'akce' && <MapEventsSection />}
+                {activeTab === 'akce' && <MapEventsSection showFilter={false} />}
                 {activeTab === 'budova' && activeBuildingId !== null && (
                   <BuildingRoomList buildingId={activeBuildingId} />
                 )}
