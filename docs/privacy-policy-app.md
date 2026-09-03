@@ -2,191 +2,145 @@
 
 **Last Updated: 4 September 2026**
 
-## Introduction
-
-reIS ("we", "our", or "us") is a student-built project that simplifies the
-Mendel University in Brno Information System (IS Mendelu). reIS is available as
-a **browser extension** (Chrome, Edge, Firefox) and as a **mobile app for
-Android and iOS (iPhone and iPad)**. This policy covers all of them, and calls
-out anything that applies to only one.
+reIS is a student-built project that simplifies the Mendel University in Brno
+Information System (IS Mendelu). It is a **browser extension** (Chrome, Edge,
+Firefox) and a **mobile app** (Android, iPhone, iPad). This policy covers all of
+them and flags anything that applies to only one.
 
 reIS is not an official application of Mendel University.
 
-## How you sign in
+## The short version
 
-You sign in on **IS Mendelu's own login page**, shown inside reIS. Your username
-and password are submitted directly to `is.mendelu.cz`. **reIS never sees, reads
-or stores your password.**
+Your academic data stays on your device. reIS fetches it from MENDELU using your
+own session, the way your browser would, and keeps it in on-device storage. We
+run no server that holds it.
 
-What reIS keeps afterwards is the session token IS issues, so you do not have to
-log in on every launch:
+Three small things do reach us, and only those: a **daily count**, an **error
+report** (which you can switch off), and **feedback you type and send**. Each is
+described below.
 
-- **Android app** — the token is encrypted with AES-256-GCM using a key
-  generated inside the Android Keystore. The key cannot be exported from the
-  device, and only the ciphertext is written to storage.
-- **iOS app (iPhone and iPad)** — the token is stored in the iOS Keychain,
-  which encrypts it at rest under a key held by the device's Secure Enclave.
-  The item is written with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`:
-  it is readable only after the device has been unlocked once since boot, and
-  it is **never synchronised to iCloud or restored onto another device**.
-- **Browser extension** — the session cookie is held by your browser, as it
-  would be for any website you log into.
+## Signing in
 
-Signing out deletes the stored token and clears the app's cookie store.
+You sign in on **IS Mendelu's own login page**, shown inside reIS. Your password
+goes straight to `is.mendelu.cz`. **reIS never sees, reads or stores it.**
 
-## Data reIS reads but does not collect
+reIS keeps the session token IS issues so you need not log in every launch:
 
-reIS fetches the following from MENDELU services and stores it **locally**, in
-on-device storage (IndexedDB). Fetching it means your device asks the university
-for it, authenticated as you, exactly as your browser would — that request goes
-to MENDELU, not to us. **None of it is sent to reIS**, and none of it is held on
-any server we run:
+- **Android** — encrypted (AES-256-GCM) with a key generated inside the Android
+  Keystore, which cannot be exported from the device.
+- **iOS** — in the iOS Keychain, encrypted under a Secure Enclave key, marked
+  `…AfterFirstUnlockThisDeviceOnly`: **never synced to iCloud, never restored
+  onto another device**.
+- **Extension** — the session cookie stays in your browser, as for any website.
 
-- **Your identity as IS holds it**: name, personal number (UIC), study details.
-- **Academic data**: timetable, grades, continuous assessment, exam dates,
-  courses, study materials, submission folders, study-progress checks.
+Signing out deletes the token and clears the cookie store.
 
-This data does move between your device and MENDELU in both directions —
-signing up for an exam or uploading to a submission folder sends it back to
-`is.mendelu.cz`, because that is what you asked reIS to do. It is your session,
-your record, and your university at the other end.
+## What stays on your device
 
-Uninstalling reIS removes the local copy.
+Your name, personal number (UIC) and study details; your timetable, grades,
+continuous assessment, exam dates, courses, study materials, submission folders
+and progress checks.
 
-## Data reIS collects
+**None of it is sent to reIS or held on any server we run.** It moves only
+between your device and MENDELU — in both directions, since signing up for an
+exam or uploading to a folder sends it back to `is.mendelu.cz`. That is your
+session, your record, your university. Uninstalling removes the local copy.
 
-These four things are sent to servers **we** run or choose, rather than to the
-university on your behalf. Two of the three are optional. (For where your data
-goes when reIS acts on your behalf — IS Mendelu — see
-*Third parties reIS talks to* below.)
+## What we collect
 
-### 1. Pseudonymous daily usage count
+### 1. Daily usage count
 
-Once per day, when you open reIS, a **SHA-256 hash** of your student ID is sent
-to our Supabase backend so we can count how many people use reIS. Your raw
-student ID is never transmitted, and the hash carries no academic data, no
-browsing history and no page content.
+Once a day, a **random identifier created when you installed reIS** is sent to
+our database so we can count how many installations are active. It is a 128-bit
+UUID with no relationship to you: not your student ID, not a hash of it, not
+derived from anything about you.
 
-**This hash is pseudonymous, not anonymous.** It is the same value every day for
-the same person, which is what makes counting possible — and because student
-IDs are only 6–7 digits, anyone holding the hash could hash every possible ID
-and find which one it came from. We therefore treat these records as personal
-data under GDPR: they are covered by the deletion request described under *Your
-control*.
+Earlier versions sent `SHA-256(student ID)`. That was not anonymisation —
+student IDs are 6–7 digits, so the whole range can be hashed in seconds and the
+digest reversed — and it was replaced with the random identifier.
 
-*Lawful basis: legitimate interest under GDPR Art. 6(1)(f) — understanding
-whether the project is worth maintaining.*
+The honest consequence: this counts **installs, not people**. One student with a
+phone and a laptop is two; a reinstall is a third. We would rather undercount
+people than hold something that points back at one.
 
-### 2. Automatic error reporting
+*Lawful basis: legitimate interest, GDPR Art. 6(1)(f) — knowing whether the
+project is worth maintaining.*
 
-When an unexpected error occurs, a sanitised diagnostic report is sent to our
-Supabase backend so we can find and fix bugs. **You can turn this off** in
-reIS's settings.
+### 2. Error reports — **you can turn this off**
 
-**What is sent**: error type, error message, file path and line number, a
-sanitised excerpt of the JavaScript stack, app or extension version, browser
-name and version, a client-side timestamp, and an anonymous per-session
-identifier.
+**Sent:** error type and message, file path and line, a sanitised stack excerpt,
+app version, browser name and version, a timestamp, and a per-session ID — a
+random UUID held in memory only, regenerated every launch, so we can tell one
+person hitting a bug thirty times from thirty people hitting it once. It cannot
+be linked to you or followed across sessions.
 
-**About that identifier**: a random UUID created when reIS starts and held only
-in memory. It is never written to disk, never synced, and regenerated every
-launch. It exists only so we can tell "one person hitting the same bug thirty
-times" apart from "thirty people each hitting it once". It cannot be linked back
-to you or followed across sessions.
+**Never sent:** your name, your student ID or any hash of it, session tokens or
+cookies, anything fetched from IS Mendelu, anything in on-device storage.
+Messages and paths are automatically redacted of e-mail addresses, tokens,
+`*.mendelu.cz` URLs and 6–7-digit student numbers before they leave.
 
-**What is never sent**: your name, your student ID or any hash of it, session
-tokens or cookies, any data fetched from IS Mendelu (grades, timetable, exams,
-course materials), and anything stored in on-device storage. Before
-transmission, error messages and file paths are automatically redacted of e-mail
-addresses, authentication tokens, `*.mendelu.cz` URLs, and 6–7-digit
-student/staff numbers.
+*Lawful basis: legitimate interest, GDPR Art. 6(1)(f) — stability.*
 
-*Lawful basis: legitimate interest under GDPR Art. 6(1)(f) — stability.*
+### 3. Feedback you send
 
-### 3. Feedback you choose to send
+Your message and any contact details **you type**, plus which reIS screen you
+were on (a name from a fixed list, never the page address), the app version,
+browser name and version, and the window size. Stored in reIS's own database and
+read by the developers. Passed to nobody.
 
-If you open the feedback form and submit it, the message and any contact details
-**you type** are stored in reIS's own database, where the developers read and
-triage them. They are not passed to any third party.
-
-Alongside your message we store which reIS screen you were on, the app version,
-the browser name and version, and the window size. The screen is recorded as a
-name from a fixed list — never the page address, which on IS Mendelu would
-identify your specific studies, subject or exam.
-
-So that nobody can flood the form, we count recent submissions per app version
-and browser — the same two values already listed above, and nothing further.
-**Your network address is not recorded, hashed or otherwise.** Earlier versions
-of reIS did store a salted hash of it; that was removed in September 2026, along
-with the server component that produced it. The form now writes straight to
-reIS's database, so there is no intermediate server to see your connection at
-all.
-
-That counter is a rough guard against accidental repeats, not a strong one, and
-we would rather say so than overstate it.
+To stop the form being flooded we count recent submissions per app and browser
+version — the values already listed above, nothing more. **Your network address
+is not recorded, hashed or otherwise**; the server component that once hashed it
+was removed in September 2026, and the form now writes straight to the database.
+That counter is a rough guard, not a strong one, and we would rather say so.
 
 Nothing is sent unless you press send.
 
-## Third parties reIS talks to
+## Who else reIS talks to
 
-| Service | Why | Applies to |
-|---|---|---|
-| **IS Mendelu** (`is.mendelu.cz`) | Fetch your academic data, authenticated as you | Both |
-| **Supabase** (`*.supabase.co`) | **reIS's own database and servers**, not an outside recipient — see the note below. Holds public notifications, student society events, the daily usage count, sanitised error reports, and any feedback you submit | Both |
-| **jsDelivr CDN** | Public, anonymous course-difficulty statistics. No request carries anything about you | Both |
+| Service | Why |
+|---|---|
+| **IS Mendelu** (`is.mendelu.cz`) | Fetches your academic data, authenticated as you |
+| **jsDelivr CDN** | Public course-difficulty statistics. No request carries anything about you |
+| **Supabase** (`*.supabase.co`) | Hosts reIS's own database — see below |
 
-**Supabase is not in the same category as the rest of that table.** The others
-are organisations that receive your data and do something of their own with it.
-Supabase is the company that hosts reIS's database and servers: the data there is
-reIS's, held on reIS's behalf and used for nothing else. Where this policy says
-something "reaches no third party", that is what it means — it stays on reIS's
-own systems, which happen to run on Supabase's infrastructure. Feedback you
-submit is in that category.
+**Supabase is not a recipient of your data in the way the others are.** It is the
+company whose infrastructure reIS's database runs on. Data there is reIS's, held
+on reIS's behalf, used for nothing else. Where this policy says something reaches
+no third party, that is what it means.
 
-We do **not** sell or trade your personal information, and we transfer it to no
-one beyond the services in the table above — each of which is there because
-reIS cannot do what you asked of it otherwise.
+We do **not** sell or trade your personal information, and transfer it to no one
+beyond this table.
 
-## Permissions the mobile app requests
+## Permissions
 
-**Android:**
+**Android:** internet; notifications (so a download can say it finished — it
+saves either way); Wi-Fi state, only for optional one-tap eduroam setup, where
+Android's own dialog saves the network, not reIS.
 
-- **Internet** — to reach IS Mendelu.
-- **Notifications** — so a file download can tell you it finished. The file
-  saves either way if you decline.
-- **Wi-Fi state / change Wi-Fi state** — only for the optional one-tap eduroam
-  setup. The network itself is saved by Android's own confirmation dialog, not
-  silently by reIS.
+**iOS: none.** The app declares no usage-description keys, so iOS never shows a
+prompt on its behalf.
 
-**iOS (iPhone and iPad): none.** The app declares no usage-description keys at
-all, so iOS never shows you a permission prompt on its behalf. One-tap eduroam
-setup is an Android-only feature; on iOS the Wi-Fi profile is installed by
-iOS's own Settings flow, which you confirm yourself.
-
-Neither app requests **any location permission**. The campus map shows the
-campus, not you.
+**Neither app requests location.** The campus map shows the campus, not you.
 
 ## Your control
 
-- **See your data**: everything reIS holds about you is what it displays.
-- **Turn off error reporting**: any time, in reIS's settings.
-- **Sign out**: deletes the stored session token and clears cookies.
-- **Delete everything**: uninstall the app or extension.
-- **Ask us**: for anything held server-side — the hashed daily-usage record, and
-  any feedback you submitted — write to the address below and we will delete it.
-  For the usage record we will ask you to confirm your identity first (a message
-  from your MENDELU address is enough), because it is keyed by a hash of your
-  student number and we have no other way to tell whose it is.
+- **Turn off error reporting** — any time, in settings.
+- **Sign out** — deletes the token, clears cookies.
+- **Delete everything** — uninstall.
+- **Ask us** — for feedback you sent, write to the address below and we will
+  delete it. The daily-usage rows are keyed by the random install identifier and
+  hold nothing about you, so there is nothing there to identify, return or
+  erase; uninstalling ends them.
 
 ## Children
 
 reIS is intended for university students and staff. It is not directed at
 children.
 
-## Changes to this policy
+## Changes
 
-We may update this policy. Changes will be posted on this page with a new "last
-updated" date.
+We may update this policy. Changes appear here with a new "last updated" date.
 
 ## Contact
 
