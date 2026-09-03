@@ -55,6 +55,17 @@ function seedRate(code: string, pass: number, fail: number) {
 }
 
 describe('SemesterCard fail rate', () => {
+  // Inline on the row, not a second line: the chip qualifies the subject beside
+  // it, and one extra line per subject turned an eight-row card into sixteen.
+  it('sits on the subject row rather than under it', () => {
+    seedRate('EBC-PSI', 72, 28);
+    render(<SemesterCard enrolled={[enrolledOf(subj())]} semester={3} onOpenSubject={() => {}} />);
+    const chip = screen.getByTestId('subject-fail-rate');
+    const name = screen.getByText('Počítačové sítě');
+    // Same row means the same flex parent, side by side.
+    expect(chip.parentElement).toBe(name.parentElement);
+  });
+
   beforeEach(() => {
     useAppStore.setState({
       language: 'cz',
@@ -63,12 +74,12 @@ describe('SemesterCard fail rate', () => {
     } as never);
   });
 
-  it('shows the failure rate with the word that says what it is', () => {
+  it('reads "Neúspěšnost: 28 %", so the number needs no legend', () => {
     // 28 of 100 fail.
     seedRate('EBC-PSI', 72, 28);
     render(<SemesterCard enrolled={[enrolledOf(subj())]} semester={3} onOpenSubject={() => {}} />);
-    expect(screen.getByTestId('subject-fail-rate')).toHaveTextContent(/28\s*%/);
-    expect(screen.getByTestId('subject-fail-rate')).toHaveTextContent(/neúspěšnost/i);
+    // The whole label, not a bare number: "Neúspěšnost: 28 %".
+    expect(screen.getByTestId('subject-fail-rate')).toHaveTextContent(/Neúspěšnost:\s*28\s*%/i);
   });
 
   it('shows nothing where there is no data for the subject', () => {

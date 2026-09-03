@@ -19,7 +19,6 @@ let package = Package(
         .package(name: "CapacitorShare", path: "../../../node_modules/@capacitor/share"),
         .package(name: "CapacitorSplashScreen", path: "../../../node_modules/@capacitor/splash-screen"),
         .package(name: "CapgoCapacitorInappbrowser", path: "../../../node_modules/@capgo/capacitor-inappbrowser"),
-        .package(name: "ReisCapacitorEduroam", path: "../../../native/capacitor-eduroam"),
         .package(name: "ReisCapacitorSecureStore", path: "../../../native/capacitor-secure-store")
     ],
     targets: [
@@ -35,7 +34,6 @@ let package = Package(
                 .product(name: "CapacitorShare", package: "CapacitorShare"),
                 .product(name: "CapacitorSplashScreen", package: "CapacitorSplashScreen"),
                 .product(name: "CapgoCapacitorInappbrowser", package: "CapgoCapacitorInappbrowser"),
-                .product(name: "ReisCapacitorEduroam", package: "ReisCapacitorEduroam"),
                 .product(name: "ReisCapacitorSecureStore", package: "ReisCapacitorSecureStore")
             ]
         )

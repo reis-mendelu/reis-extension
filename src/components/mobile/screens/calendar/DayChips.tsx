@@ -94,9 +94,14 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
           // Whether the day holds anything, said in the row instead of only in
           // the agenda: "people click on days, just to find out they might be
           // empty". `lessonDates` was already here for the weekend branch — it
-          // just was not shown. Dimmed rather than dotted, because a dot would
-          // land in the same spot as the holiday dot, and "nothing here" reads
-          // better as absence than as another mark.
+          // just was not shown.
+          //
+          // A DOT on the days that have something, rather than dimming the ones
+          // that do not. Dimming was the first attempt and it failed the
+          // contrast gate: `text-base-content/40` measures 2.51:1 in the light
+          // theme, under the 4.5 floor, so the empty days became the hardest
+          // labels on the screen to read. Every label stays at /70, which
+          // passes, and presence is carried by the mark instead.
           const hasLessons = lessonDates.has(iso.replace(/-/g, ''));
           return (
             <button
@@ -114,21 +119,33 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
               className={`flex-1 whitespace-nowrap rounded-full py-2 text-center text-sm transition-colors max-[359px]:text-[11px] ${
                 isSelected
                   ? 'bg-primary/15 font-semibold text-primary'
-                  : hasLessons
-                    ? 'font-medium text-base-content/70'
-                    : // Never the selected chip: that is the day the agenda is
-                      // already answering for, so it keeps its own treatment.
-                      'font-medium text-base-content/40'
+                  : 'font-medium text-base-content/70'
               }`}
             >
               {label} {date.getDate()}
-              {/* A dot rather than a colour on the label: the chip already
-                  spends colour on selection, and a holiday can be selected. */}
-              {holiday && (
+              {/* One dot, three states: a holiday is red, a day with something
+                  on it is primary, and an empty day carries nothing — absence
+                  is the clearest way to say "nothing here", and it is the only
+                  one that costs no contrast.
+                  A holiday wins over lessons in the rare case of both: the
+                  closure is the more surprising fact, and the banner above the
+                  agenda still names it either way. */}
+              {holiday ? (
                 <span
                   data-testid="day-chip-holiday"
                   className="mx-auto mt-0.5 block h-1 w-1 rounded-full bg-error"
                 />
+              ) : hasLessons ? (
+                <span
+                  data-testid="day-chip-lessons"
+                  className={`mx-auto mt-0.5 block h-1 w-1 rounded-full ${
+                    isSelected ? 'bg-primary' : 'bg-base-content/40'
+                  }`}
+                />
+              ) : (
+                // Keeps every chip the same height, so the row does not jitter
+                // as the week changes.
+                <span className="mx-auto mt-0.5 block h-1 w-1" />
               )}
             </button>
           );

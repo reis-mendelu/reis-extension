@@ -51,7 +51,8 @@ function GradeChip({ subject }: { subject: SubjectStatus }) {
  *
  * The label is not hover-revealed, the way the desktop's was until this same
  * change: a bare colour-coded percentage does not say what it measures, and a
- * touch screen has no hover to reveal it with.
+ * touch screen has no hover to reveal it with. It reads "Neúspěšnost: 28 %" in
+ * full — the word and the number together, so the row needs no legend.
  */
 function FailRate({ subject }: { subject: SubjectStatus }) {
   const { t } = useTranslation();
@@ -66,7 +67,7 @@ function FailRate({ subject }: { subject: SubjectStatus }) {
   return (
     <span
       data-testid="subject-fail-rate"
-      className={`w-fit rounded px-1.5 py-0.5 text-xs font-medium ${
+      className={`w-fit flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${
         failRate >= 25
           ? 'bg-error/10 text-error'
           : failRate >= 20
@@ -74,7 +75,7 @@ function FailRate({ subject }: { subject: SubjectStatus }) {
             : 'bg-base-content/5 text-base-content/50'
       }`}
     >
-      {t('subjects.failRateLabel')} {failRate} %
+      {t('subjects.failRateChip', { rate: failRate })}
     </span>
   );
 }
@@ -95,17 +96,28 @@ function SemesterRow({
     <button
       type="button"
       onClick={() => onOpenSubject(subject)}
-      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2.5 text-left active:bg-base-200"
+      // items-start, not items-center: a long name wraps to three lines at
+      // 320px, and centring put the chip and the credits in the MIDDLE of it —
+      // "Počítačové [Neúspěšnost: 28 %] sítě". Top-aligned they sit beside the
+      // first line, and on the common single-line row this renders identically.
+      className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2.5 text-left active:bg-base-200"
     >
-      {/* Wraps rather than truncating — the prototype ellipsizes exam card
-                titles but deliberately not these, and at 390px a cut landed
-                mid-word ("Databázové systémy a návrh d…"), losing the half of
-                the name that distinguishes one subject from another. */}
-      <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-md font-medium text-base-content">{subject.name}</span>
-        {/* Under the name, not beside it: with the label spelled out, the badge
-            and the credits together leave a 320px row no usable width for the
-            subject's own name. */}
+      {/* Inline with the name from `md:` up, stacked under it below that.
+          Measured, not taste: the labelled chip is ~130px and the credits ~65px,
+          so on a phone an inline name is left with forty pixels — `break-words`
+          then breaks it mid-word and it still spills over the chip. The iPad
+          (834pt portrait, and it runs this same phone tree) and the desktop sit
+          above the breakpoint and keep the chip on the row, where there is
+          room for it.
+
+          The name wraps rather than truncating either way — the prototype
+          ellipsizes exam card titles but deliberately not these, and at 390px a
+          cut landed mid-word ("Databázové systémy a návrh d…"), losing the half
+          that distinguishes one subject from another. */}
+      <span className="flex min-w-0 flex-1 flex-col gap-1 md:flex-row md:items-start md:gap-2.5">
+        <span className="min-w-0 break-words text-md font-medium text-base-content">
+          {subject.name}
+        </span>
         <FailRate subject={subject} />
       </span>
       <GradeChip subject={subject} />

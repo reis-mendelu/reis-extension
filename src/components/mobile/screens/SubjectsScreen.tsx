@@ -6,6 +6,7 @@ import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { ScreenError } from '../primitives/ScreenError';
 import { useStudyPlan } from '../../../hooks/useStudyPlan';
 import { selectEnrolledNow, enrolledSemester } from '../../../utils/mobile/enrolledSubjects';
+import { usePlanSuccessRates } from '../../../hooks/data/usePlanSuccessRates';
 import type { SubjectStatus } from '../../../types/studyPlan';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { CreditRing } from './subjects/CreditRing';
@@ -62,6 +63,10 @@ export function SubjectsScreen() {
   // Erasmus/exchange students in particular never have a parseable plan.
   // Treat that shape as absent so we render the empty state instead of a
   // broken "0 %" ring. Mirrors desktop's planUsable check (SubjectsPanel/index.tsx).
+  // Every subject's pass/fail statistics, not only the ones whose drawer has
+  // been opened — that is what left the chip on one row out of eight.
+  usePlanSuccessRates(plan);
+
   const planUsable = !!plan && plan.blocks.some((b) => b.groups.some((g) => g.subjects.length > 0));
 
   // No per-domain shortcut here, unlike the calendar and exams screens. The
