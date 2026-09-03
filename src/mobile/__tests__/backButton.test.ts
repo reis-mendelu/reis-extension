@@ -38,7 +38,9 @@ describe('handleBackPress', () => {
    * nav to behave: back from any other tab returns there instead of quitting.
    * Before this, pressing back on Zkoušky/Předměty/Mapa closed the app.
    */
-  it.each(['exams', 'subjects', 'map'] as const)(
+  // 'profile' included: it became a bottom-nav tab in this PR, and the table
+  // it was added to never grew to cover it. Raised in review.
+  it.each(['exams', 'subjects', 'map', 'profile'] as const)(
     'returns to the calendar from the %s tab instead of exiting',
     (tab) => {
       const popSheet = vi.fn();

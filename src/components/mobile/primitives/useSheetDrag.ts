@@ -76,7 +76,19 @@ export function useSheetDrag({
   onEnd,
   onCancel,
 }: SheetDragConfig) {
-  const start = useRef<{ y: number; t: number; height: number } | null>(null);
+  /**
+   * The gesture in progress, including WHICH pointer owns it.
+   *
+   * The id is load-bearing. Without it every `pointerdown` overwrote this, and
+   * the move/up/cancel handlers took any pointer — so a second finger landing
+   * mid-drag re-anchored the gesture to itself, and lifting the FIRST finger
+   * decided the outcome from travel measured against the second finger's start.
+   * Measured in a test: a 40px drag reported 260px, and a 30px release reported
+   * 230px — past every dismiss threshold in the app. A pinch begun on the panel
+   * or a thumb resting on the screen produces exactly that. Raised in review on
+   * this PR.
+   */
+  const start = useRef<{ id: number; y: number; t: number; height: number } | null>(null);
   /**
    * The tail of the gesture, for the release velocity.
    *
@@ -101,9 +113,12 @@ export function useSheetDrag({
     // click swallow below then eats that tap.
     dragged.current = false;
     if (disabled) return;
+    // A gesture already in flight keeps the panel: a second finger is not a
+    // new drag, and must not clear the flag above either.
+    if (start.current) return;
     if (!dragOwnsGesture(e.target as Element, panelRef.current)) return;
     const height = panelRef.current?.getBoundingClientRect().height ?? 0;
-    start.current = { y: e.clientY, t: e.timeStamp, height };
+    start.current = { id: e.pointerId, y: e.clientY, t: e.timeStamp, height };
     samples.current = [{ pos: e.clientY, t: e.timeStamp }];
     // Guarded: happy-dom implements neither of these.
     panelRef.current?.setPointerCapture?.(e.pointerId);
@@ -111,7 +126,7 @@ export function useSheetDrag({
 
   const onPointerMove = (e: ReactPointerEvent<HTMLElement>) => {
     const from = start.current;
-    if (!from) return;
+    if (!from || from.id !== e.pointerId) return;
     const dy = e.clientY - from.y;
     if (absorbs && !absorbs(dy)) return;
     // The sheet follows the finger from the first pixel, but only past the slop
@@ -125,6 +140,7 @@ export function useSheetDrag({
 
   const onPointerUp = (e: ReactPointerEvent<HTMLElement>) => {
     const from = start.current;
+    if (from && from.id !== e.pointerId) return;
     start.current = null;
     releaseCapture(e.pointerId);
     if (!from) return;
@@ -140,6 +156,9 @@ export function useSheetDrag({
    * so the flag has nothing to suppress; left set it would eat the NEXT tap.
    */
   const onPointerCancel = (e: ReactPointerEvent<HTMLElement>) => {
+    // A cancel for a finger we do not own says nothing about our drag, and
+    // acting on it snapped the sheet back under a finger still holding it.
+    if (start.current && start.current.id !== e.pointerId) return;
     start.current = null;
     samples.current = [];
     releaseCapture(e.pointerId);
@@ -182,7 +201,10 @@ export function useSheetDrag({
     if (!panel || disabled) return;
     const onTouchMove = (e: TouchEvent) => {
       const from = start.current;
-      const touch = e.touches[0];
+      // The owning finger among however many are down, so a second touch
+      // cannot redirect the claim.
+      const touch =
+        [...e.touches].find((t) => t.identifier === from?.id) ?? (from ? e.touches[0] : undefined);
       if (!from || !touch) return;
       const absorbsNow = absorbsRef.current;
       if (absorbsNow && !absorbsNow(touch.clientY - from.y)) return;

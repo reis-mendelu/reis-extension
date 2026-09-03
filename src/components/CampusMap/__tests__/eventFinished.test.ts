@@ -48,6 +48,42 @@ describe('hasFinished', () => {
     expect(hasFinished({ date: today(), time: null }, at(23))).toBe(false);
   });
 
+  /**
+   * A half-parsed clock must not become a start time.
+   *
+   * `'19:bad'` used to give h=19 and m=NaN, and `NaN || 0` turned that into
+   * 19:00 — so a malformed time silently marked the event finished from seven
+   * in the evening. IS is the source of these strings and the console lets a
+   * society type one, so "unreadable" has to mean "claim nothing" rather than
+   * "round down". Raised in review on this PR.
+   */
+  it.each(['19:bad', 'bad:30', '19', '', '19:30:45', ':', '1a:30'])(
+    'claims nothing for the unparseable time %o',
+    (time) => {
+      expect(hasFinished({ date: today(), time }, at(23))).toBe(false);
+    }
+  );
+
+  it.each(['24:00', '-1:00', '19:60', '19:-5'])(
+    'claims nothing for the out-of-range time %o',
+    (time) => {
+      expect(hasFinished({ date: today(), time }, at(23))).toBe(false);
+    }
+  );
+
+  it('still reads a real minute rather than flooring to the hour', () => {
+    // The `|| 0` also discarded a legitimate :30 — at 19:15 an event starting
+    // 19:30 was reported as already finished.
+    expect(hasFinished({ date: today(), time: '19:30' }, at(19))).toBe(false);
+    const at1945 = new Date();
+    at1945.setHours(19, 45, 0, 0);
+    expect(hasFinished({ date: today(), time: '19:30' }, at1945)).toBe(true);
+  });
+
+  it('accepts midnight, which is a valid start and a falsy hour', () => {
+    expect(hasFinished({ date: today(), time: '00:00' }, at(1))).toBe(true);
+  });
+
   it('is false for a past day, where the bucket already says so', () => {
     const d = new Date();
     d.setDate(d.getDate() - 1);

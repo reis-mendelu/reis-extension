@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import type { StudyPlan, Zamerani } from '@/types/studyPlan';
 import { computeFailRate } from './computeFailRate';
-import { usePlanSuccessRates } from '@/hooks/data/usePlanSuccessRates';
 import type { ZameraniProgress } from './SubjectsPanelHeader';
 import {
   isRealCredits,
@@ -22,7 +21,10 @@ export function useSubjectsData(plan: StudyPlan | null) {
   // Success rates for every subject in the plan. Moved to a shared hook so the
   // PHONE gets them as well — its SubjectsScreen does not use this file, which
   // is why the failure-rate chip appeared on one row out of eight there.
-  usePlanSuccessRates(plan);
+  // The success-rate batch is no longer started from here. It runs in
+  // createStudyPlanSlice, at the one point the plan is written to the store —
+  // a component effect starting a fetch is what the project's rules forbid,
+  // and doing it there covers the phone's SubjectsScreen with the same code.
 
   const zameraniLookup = useMemo(() => {
     const map = new Map<string, Zamerani>();

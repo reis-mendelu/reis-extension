@@ -45,10 +45,26 @@ export function hasFinished(
 ): boolean {
   if (!event.time) return false;
   if (daysUntilEvent(event.date, now) !== 0) return false;
-  const [h, m] = event.time.split(':').map(Number);
-  if (!Number.isFinite(h)) return false;
+  // Both halves, in range, or nothing. `Number.isFinite(h)` alone let a
+  // half-parsed clock through and `(m) || 0` finished the job: '19:bad' became
+  // 19:00 and marked the event over from seven in the evening, ':' became
+  // midnight, and '-1:00' rolled back into the previous day so anything today
+  // was already finished. It also discarded a legitimate minute, reporting a
+  // 19:30 event as over at 19:15. IS supplies these strings and the console
+  // lets a society type one, so "unreadable" has to claim nothing rather than
+  // round down. Raised in review on this PR.
+  // Matched whole, because splitting on ':' and calling Number leaves holes:
+  // Number('') is 0, so ':' parsed as midnight, and a leading '-' survives
+  // isInteger, so '-1:00' rolled into the previous day. The pattern rejects
+  // both, along with '19', '19:30:45' and '1a:30'; the range check then covers
+  // '24:00' and '19:60'.
+  const clock = /^(\d{1,2}):(\d{1,2})$/.exec(event.time);
+  if (!clock) return false;
+  const h = Number(clock[1]);
+  const m = Number(clock[2]);
+  if (h > 23 || m > 59) return false;
   const start = startOfDay(now);
-  start.setHours(h as number, (m as number) || 0, 0, 0);
+  start.setHours(h, m, 0, 0);
   return now.getTime() > start.getTime();
 }
 

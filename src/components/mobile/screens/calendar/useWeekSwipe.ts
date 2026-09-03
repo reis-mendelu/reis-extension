@@ -39,7 +39,15 @@ export interface WeekSwipeConfig {
  * end handed the tail of itself back to the page.
  */
 export function useWeekSwipe({ stripRef, onMove, onEnd, onCancel }: WeekSwipeConfig) {
-  const start = useRef<{ x: number; y: number } | null>(null);
+  /**
+   * The gesture in progress, including WHICH pointer owns it.
+   *
+   * The same defect `useSheetDrag` was reviewed for lives here by construction:
+   * without the id, a second finger landing mid-swipe re-anchors the gesture to
+   * itself and lifting the first finger changes week from travel nobody made.
+   * Fixed in both rather than only where it was spotted.
+   */
+  const start = useRef<{ id: number; x: number; y: number } | null>(null);
   const samples = useRef<DragSample[]>([]);
   /** null until the slop is passed, then true for "ours" and false for "the page's". */
   const owned = useRef<boolean | null>(null);
@@ -53,15 +61,18 @@ export function useWeekSwipe({ stripRef, onMove, onEnd, onCancel }: WeekSwipeCon
   };
 
   const onPointerDown = (e: ReactPointerEvent<HTMLElement>) => {
+    // A swipe already in flight keeps the strip; a second finger is not a new
+    // gesture and must not clear the click-suppression flag either.
+    if (start.current) return;
     dragged.current = false;
     reset();
-    start.current = { x: e.clientX, y: e.clientY };
+    start.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
     samples.current = [{ pos: e.clientX, t: e.timeStamp }];
   };
 
   const onPointerMove = (e: ReactPointerEvent<HTMLElement>) => {
     const from = start.current;
-    if (!from) return;
+    if (!from || from.id !== e.pointerId) return;
     const dx = e.clientX - from.x;
     const dy = e.clientY - from.y;
 
@@ -89,6 +100,7 @@ export function useWeekSwipe({ stripRef, onMove, onEnd, onCancel }: WeekSwipeCon
 
   const onPointerUp = (e: ReactPointerEvent<HTMLElement>) => {
     const from = start.current;
+    if (from && from.id !== e.pointerId) return;
     const wasOurs = owned.current === true;
     // MEASURED BEFORE THE STATE IS CLEARED. `reset()` used to run first, which
     // emptied this buffer, so the `releaseVelocity` below saw the single
@@ -106,6 +118,7 @@ export function useWeekSwipe({ stripRef, onMove, onEnd, onCancel }: WeekSwipeCon
   };
 
   const onPointerCancel = (e: ReactPointerEvent<HTMLElement>) => {
+    if (start.current && start.current.id !== e.pointerId) return;
     reset();
     if (stripRef.current?.hasPointerCapture?.(e.pointerId))
       stripRef.current?.releasePointerCapture?.(e.pointerId);

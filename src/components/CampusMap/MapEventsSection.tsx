@@ -4,7 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useEventsFacultySettings } from '../../hooks/useEventsFacultySettings';
 import { ALL_SOCIETIES } from '../../data/societies';
 import { readableTextColor } from '../../utils/readableTextColor';
-import { filterEvents, weekSections } from './eventHelpers';
+import { effectiveFilter, filterEvents, weekSections } from './eventHelpers';
 import { EventRow } from './EventRow';
 
 // The events tab body shared by the desktop MapSidePanel and the mobile map
@@ -37,7 +37,7 @@ export function MapEventsSection({ showFilter = true }: MapEventsSectionProps) {
   // shared store state, so a filter set on the desktop would go on narrowing the
   // phone's list with no control left to clear it — events would just be
   // missing. Hiding the filter has to mean showing everything.
-  const visible = filterEvents(events, showFilter ? filter : 'all');
+  const visible = filterEvents(events, effectiveFilter(filter, showFilter));
   const sections = weekSections(visible);
   const selectedId = selection?.kind === 'event' ? selection.event.id : null;
 
