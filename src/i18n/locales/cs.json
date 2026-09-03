@@ -282,7 +282,6 @@
     "footer": {
       "other": "Ostatní",
       "noFiles": "Žádné soubory",
-      "searchOnlyInSchedule": "Soubory jsou dostupné jen pro předměty v rozvrhu.",
       "noFilesAvailable": "Žádné soubory nejsou k dispozici.",
       "download": "Stáhnout",
       "openInSidebar": "Otevřít náhled"
