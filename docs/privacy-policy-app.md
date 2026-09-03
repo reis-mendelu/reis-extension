@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: 24 August 2026**
+**Last Updated: 4 September 2026**
 
 ## Introduction
 
@@ -114,33 +114,18 @@ the browser name and version, and the window size. The screen is recorded as a
 name from a fixed list — never the page address, which on IS Mendelu would
 identify your specific studies, subject or exam.
 
-So that nobody can flood the form, we also store a **salted** hash of the IP
-address the submission came from, used only to count how many submissions have
-arrived from that connection in the past hour. The salt stays on the server and
-is never shipped to your device, so that record cannot be linked back to you by
-anyone who does not already hold it.
+So that nobody can flood the form, we count recent submissions per app version
+and browser — the same two values already listed above, and nothing further.
+**Your network address is not recorded, hashed or otherwise.** Earlier versions
+of reIS did store a salted hash of it; that was removed in September 2026, along
+with the server component that produced it. The form now writes straight to
+reIS's database, so there is no intermediate server to see your connection at
+all.
 
-An entry stops counting once it is an hour old, and is deleted the next time
-anyone submits feedback. In normal use that is within the hour — but we would
-rather be exact than flattering: if nobody uses the form for a while, an expired
-entry can sit there until someone does. It is a salted hash, not an address, and
-it is ignored from the hour onwards.
+That counter is a rough guard against accidental repeats, not a strong one, and
+we would rather say so than overstate it.
 
 Nothing is sent unless you press send.
-
-### 4. A library study-room booking you make (browser extension only)
-
-If you book a study room from the campus map, the booking is made in MENDELU's
-own Microsoft Bookings system, and your **student or employee number** goes with
-it — that system requires it, exactly as it does when you book on the library's
-own page. The request passes through a reIS server so we can rate-limit it, and
-that server stores a **salted** hash of your number with a timestamp, purely to
-count how many bookings you have attempted in the last hour. The salt stays on
-the server and is never shipped to your device, so that record cannot be linked
-back to you by anyone who does not already hold it.
-
-Nothing is sent unless you make a booking. *This feature does not exist in the
-mobile app.*
 
 ## Third parties reIS talks to
 
@@ -149,7 +134,6 @@ mobile app.*
 | **IS Mendelu** (`is.mendelu.cz`) | Fetch your academic data, authenticated as you | Both |
 | **Supabase** (`*.supabase.co`) | **reIS's own database and servers**, not an outside recipient — see the note below. Holds public notifications, student society events, the daily usage count, sanitised error reports, and any feedback you submit | Both |
 | **jsDelivr CDN** | Public, anonymous course-difficulty statistics. No request carries anything about you | Both |
-| **Microsoft Bookings** (`outlook.office.com`) | Make a library study-room booking, if you make one. Carries your student/employee number, as that system requires | Extension only |
 
 **Supabase is not in the same category as the rest of that table.** The others
 are organisations that receive your data and do something of their own with it.
@@ -188,12 +172,11 @@ campus, not you.
 - **Turn off error reporting**: any time, in reIS's settings.
 - **Sign out**: deletes the stored session token and clears cookies.
 - **Delete everything**: uninstall the app or extension.
-- **Ask us**: for anything held server-side — the hashed daily-usage record, the
-  hashed library-booking rate-limit rows, and
+- **Ask us**: for anything held server-side — the hashed daily-usage record, and
   any feedback you submitted — write to the address below and we will delete it.
-  We will ask you to confirm your identity first (a message from your MENDELU
-  address is enough), because those rows are keyed by a hash of your student
-  number and we have no other way to tell whose they are.
+  For the usage record we will ask you to confirm your identity first (a message
+  from your MENDELU address is enough), because it is keyed by a hash of your
+  student number and we have no other way to tell whose it is.
 
 ## Children
 
