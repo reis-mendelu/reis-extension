@@ -17,9 +17,22 @@ export const createSyllabusSlice: AppSlice<SyllabusSlice> = (set, get) => ({
     const { cache, loading } = get().syllabuses;
     const currentLang = get().language;
 
-    // Return if already in cache (and language matches) or currently loading
+    // Return if already in cache (right language AND right version) or loading.
+    //
+    // The version half is load-bearing. When a legacy record needs refreshing
+    // but `fetchAndCacheSingleSyllabus` cannot resolve an id it returns
+    // undefined (syncSyllabus.ts:52), and the branch below deliberately keeps
+    // the old record so the tab shows real text rather than blanking. That
+    // record lands in this cache — so without the version check the stale copy
+    // would be served for the rest of the session and the refresh this version
+    // bump exists to force would never be retried.
     const cachedData = cache[courseCode];
-    if (loading[courseCode] || (cachedData && cachedData.language === currentLang)) return;
+    if (
+      loading[courseCode] ||
+      (cachedData && cachedData.language === currentLang && cachedData.version === SYLLABUS_VERSION)
+    ) {
+      return;
+    }
 
     set((state) => ({
       syllabuses: {
