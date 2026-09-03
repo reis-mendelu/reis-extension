@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   releaseVelocity,
   shouldDismiss,
-  rubberBand,
   DISMISS_DISTANCE_PX,
   VELOCITY_WINDOW_MS,
 } from '../sheetDrag';
@@ -114,31 +113,5 @@ describe('shouldDismiss', () => {
 
   it('snaps back on a slow short drag', () => {
     expect(shouldDismiss(30, 0.05)).toBe(false);
-  });
-});
-
-describe('rubberBand', () => {
-  it('is zero with no overshoot', () => {
-    expect(rubberBand(0, 800)).toBe(0);
-  });
-
-  it('follows the finger, but always less than one-to-one', () => {
-    const out = rubberBand(100, 800);
-    expect(out).toBeGreaterThan(0);
-    expect(out).toBeLessThan(100);
-  });
-
-  it('resists more the further it is pushed', () => {
-    const near = rubberBand(50, 800) / 50;
-    const far = rubberBand(400, 800) / 400;
-    expect(far).toBeLessThan(near);
-  });
-
-  it('keeps the direction it was given', () => {
-    expect(rubberBand(-100, 800)).toBeLessThan(0);
-  });
-
-  it('is zero when there is no dimension to resist against', () => {
-    expect(rubberBand(100, 0)).toBe(0);
   });
 });

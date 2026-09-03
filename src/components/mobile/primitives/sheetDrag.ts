@@ -75,21 +75,6 @@ export function shouldDismiss(dy: number, velocity: number): boolean {
   return dy >= DISMISS_DISTANCE_PX && velocity > REVERSAL_VELOCITY_PX_PER_MS;
 }
 
-/**
- * Progressive resistance for travel the sheet cannot absorb.
- *
- * A bottom sheet dragged UP has nowhere to go, and tracking the finger 1:1 into
- * nothing suggests it does. Following it with damping says "held" instead of
- * "stuck" — the same curve iOS uses at a scroll boundary, where `constant`
- * controls how quickly the resistance builds.
- */
-export function rubberBand(overshoot: number, dimension: number, constant = 0.55): number {
-  if (overshoot === 0 || dimension <= 0) return 0;
-  const sign = overshoot < 0 ? -1 : 1;
-  const abs = Math.abs(overshoot);
-  return (sign * (abs * dimension * constant)) / (dimension + constant * abs);
-}
-
 /** Past this much travel the map sheet changes detent regardless of speed. */
 export const DETENT_DISTANCE_PX = 64;
 

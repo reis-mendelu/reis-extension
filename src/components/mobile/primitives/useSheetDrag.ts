@@ -154,6 +154,29 @@ export function useSheetDrag({
     e.stopPropagation();
   };
 
+  /**
+   * `absorbs` through a ref, because the listener below must not re-bind.
+   *
+   * Reading it from the effect's own scope looked equivalent and is not: the
+   * closure captures the `absorbs` of the render the effect RAN in, and the
+   * deps are `[panelRef, disabled]`, so the effect never runs again. For this
+   * sheet that is invisible — downward-only never changes — but the map sheet
+   * asks its detent (`consumesTravel(sheetState, dy)`), so the listener kept
+   * answering as whatever stop the sheet was at when it mounted. At `peek`,
+   * where downward travel belongs to the Akce list, a listener still answering
+   * for `half` claims it with preventDefault and the list cannot be scrolled.
+   *
+   * Found by removing `absorbs` from `Sheet` on a running dev server and
+   * watching the touch claim not change.
+   */
+  const absorbsRef = useRef(absorbs);
+  // In an effect, not during render: a ref written while rendering is a lint
+  // error here, and an effect is early enough regardless — it commits before
+  // any touch can reach the listener.
+  useEffect(() => {
+    absorbsRef.current = absorbs;
+  });
+
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel || disabled) return;
@@ -161,14 +184,12 @@ export function useSheetDrag({
       const from = start.current;
       const touch = e.touches[0];
       if (!from || !touch) return;
-      if (absorbs && !absorbs(touch.clientY - from.y)) return;
+      const absorbsNow = absorbsRef.current;
+      if (absorbsNow && !absorbsNow(touch.clientY - from.y)) return;
       e.preventDefault();
     };
     panel.addEventListener('touchmove', onTouchMove, { passive: false });
     return () => panel.removeEventListener('touchmove', onTouchMove);
-    // `absorbs` is read through the closure on every event, so a new identity
-    // each render must not re-bind the listener.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [panelRef, disabled]);
 
   /**

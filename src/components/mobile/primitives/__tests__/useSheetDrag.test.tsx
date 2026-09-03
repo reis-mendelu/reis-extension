@@ -279,3 +279,58 @@ describe('useSheetDrag', () => {
     expect(rec.ends).toEqual([]);
   });
 });
+
+/**
+ * The touch claim has to answer for the sheet's CURRENT state.
+ *
+ * The listener is bound once and deliberately never re-bound — re-binding a
+ * non-passive listener on every render is its own problem. What was wrong is
+ * where it read `absorbs` from: the effect's own scope, which freezes the
+ * predicate of the render the effect happened to run in. `Sheet` never noticed,
+ * because downward-only is the same answer forever. The map sheet asks its
+ * detent, so its listener went on answering as whatever stop the sheet was at
+ * when it mounted — and at `peek`, where a downward drag belongs to the Akce
+ * list, a listener still answering for `half` claims it and the list stops
+ * scrolling.
+ *
+ * Found on a running dev server: `absorbs` was removed from `Sheet` and the
+ * touch claim did not change.
+ */
+describe('useSheetDrag — the touch claim follows the current absorbs', () => {
+  function Host({ absorbs }: { absorbs: (dy: number) => boolean }) {
+    const panelRef = useRef<HTMLDivElement>(null);
+    const { handlers } = useSheetDrag({
+      panelRef,
+      absorbs,
+      onMove: () => {},
+      onEnd: () => {},
+      onCancel: () => {},
+    });
+    return <div ref={panelRef} data-testid="panel" {...handlers} />;
+  }
+
+  /** A touchmove the listener can read, without happy-dom's Touch plumbing. */
+  const touchMove = (panel: HTMLElement, clientY: number) => {
+    const ev = new Event('touchmove', { bubbles: true, cancelable: true });
+    Object.defineProperty(ev, 'touches', { value: [{ clientY }] });
+    panel.dispatchEvent(ev);
+    return ev.defaultPrevented;
+  };
+
+  it('honours an absorbs replaced after the listener was bound', () => {
+    // Mounted absorbing DOWNWARD travel only.
+    const { rerender } = render(<Host absorbs={(dy) => dy > 0} />);
+    const panel = screen.getByTestId('panel');
+
+    fireEvent.pointerDown(panel, { clientY: 300, pointerId: 1 });
+    expect(touchMove(panel, 360)).toBe(true); // down: claimed
+    fireEvent.pointerUp(panel, { clientY: 360, pointerId: 1 });
+
+    // Now it absorbs UPWARD only — the map sheet's answer changes exactly like
+    // this when its detent changes.
+    rerender(<Host absorbs={(dy) => dy < 0} />);
+    fireEvent.pointerDown(panel, { clientY: 300, pointerId: 2 });
+    expect(touchMove(panel, 360)).toBe(false); // down: no longer ours
+    expect(touchMove(panel, 240)).toBe(true); // up: now ours
+  });
+});

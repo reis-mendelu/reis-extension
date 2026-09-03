@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { shouldDismiss, rubberBand } from './sheetDrag';
+import { shouldDismiss } from './sheetDrag';
 import { useSheetDrag } from './useSheetDrag';
 
 export interface SheetProps {
@@ -55,14 +55,22 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
 
   const panelRef = useRef<HTMLDivElement>(null);
   /**
-   * Whether a drag is in flight — NOT the offset.
+   * Whether this sheet has EVER been dragged. A latch, deliberately, and it is
+   * never cleared.
    *
-   * The offset is written straight to the node below. Putting it in state meant
-   * a React render for every pointermove, sixty times a second on an iPad 8,
-   * for a transform the compositor could have taken directly. Two renders per
-   * gesture instead of sixty is the difference between "fluent" and "bugging".
+   * It only exists to take the entry animation off the panel, and a flag that
+   * went false again on release re-added `animate-[sheetUp]` to an element that
+   * was already on screen — so letting go of a drag that did not dismiss made
+   * the sheet replay its 0.3s slide up from the bottom edge. A small pull and a
+   * release is precisely "when I put my finger on it and then away, it starts
+   * bugging", and it was there before this change too.
+   *
+   * The offset itself is NOT state: it is written straight to the node below.
+   * In state it cost a React render for every pointermove, sixty times a second
+   * on an iPad 8, for a transform the compositor could have taken on its own.
+   * One render per sheet, measured, where there were twenty per gesture.
    */
-  const [dragging, setDragging] = useState(false);
+  const [hasDragged, setHasDragged] = useState(false);
 
   /**
    * The gesture itself lives in `useSheetDrag`, shared with the map sheet.
@@ -105,22 +113,23 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
     // backdrop there is nothing to tap outside of, so an accidental dismissal
     // would have no undo.
     disabled: isScreen,
+    // Downward only, and this is load-bearing twice over. It stops the panel
+    // following a finger where it has nowhere to travel — and inside the hook
+    // it also gates the `preventDefault` that claims the touch. Without it
+    // every upward swipe in a sheet is claimed by the panel, so the file list
+    // in DocsSheet and the results in SearchSheet cannot be scrolled at all
+    // from where they start. `dragOwnsGesture` does not cover that case: it
+    // yields only once a scroller is already past its top.
+    absorbs: (dy) => dy > 0,
     onMove: (dy) => {
-      if (!dragging) setDragging(true);
-      // Upward has nowhere to go, so it is RESISTED rather than ignored:
-      // following the finger with damping reads as "held", where a dead stop
-      // reads as "stuck" and is the thing that feels broken.
-      setOffset(dy > 0 ? dy : rubberBand(dy, window.innerHeight));
+      if (!hasDragged) setHasDragged(true);
+      setOffset(dy);
     },
     onEnd: (dy, velocity) => {
-      setDragging(false);
       if (shouldDismiss(dy, velocity)) onClose();
       else setOffset(null);
     },
-    onCancel: () => {
-      setDragging(false);
-      setOffset(null);
-    },
+    onCancel: () => setOffset(null),
   });
 
   return (
@@ -160,7 +169,7 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
           isScreen
             ? 'animate-[screenIn_0.25s_ease-out]'
             : 'rounded-t-[20px] border-t border-base-content/15'
-        } ${dragging || isScreen ? '' : 'animate-[sheetUp_0.3s_ease-out]'} ${
+        } ${hasDragged || isScreen ? '' : 'animate-[sheetUp_0.3s_ease-out]'} ${
           isScreen ? '' : 'transition-transform duration-200 ease-out'
         }`}
       >

@@ -64,15 +64,31 @@ describe('Sheet drag tracking', () => {
     expect(panel.className).toContain('transition-transform');
   });
 
-  it('resists an upward drag instead of ignoring it', () => {
+  it('leaves an upward drag alone, so the content underneath can scroll', () => {
     const panel = drag();
     fireEvent.pointerDown(panel, { clientY: 200, pointerId: 1 });
     fireEvent.pointerMove(panel, { clientY: 100, pointerId: 1 });
-    const y = Number(/translateY\((-?[\d.]+)px\)/.exec(panel.style.transform)?.[1]);
-    // A bottom sheet dragged up has nowhere to go. Pinning it at 0 reads as
-    // "stuck"; following the finger 1:1 promises travel that does not exist.
-    expect(y).toBeLessThan(0);
-    expect(y).toBeGreaterThan(-100);
+    // A bottom sheet has nowhere to travel upward, and the `absorbs` predicate
+    // that says so is load-bearing twice: it keeps the panel still, and inside
+    // the hook it gates the `preventDefault` that claims the touch. Absorbing
+    // upward travel here would take every upward swipe away from the file list
+    // in DocsSheet and the results in SearchSheet — `dragOwnsGesture` does not
+    // catch that, because it yields only once a scroller is past its top.
+    expect(panel.style.transform).toBe('');
+  });
+
+  it('does not replay the entry animation when a drag is released', () => {
+    const panel = drag();
+    expect(panel.className).toContain('animate-[sheetUp');
+    fireEvent.pointerDown(panel, { clientY: 200, pointerId: 1 });
+    fireEvent.pointerMove(panel, { clientY: 230, pointerId: 1 });
+    expect(panel.className).not.toContain('animate-[sheetUp');
+    fireEvent.pointerUp(panel, { clientY: 230, pointerId: 1 });
+    // The flag is a latch. Cleared on release it re-added the class to an
+    // element already on screen, restarting the 0.3s slide up from the bottom
+    // edge — a small pull, a release, and the sheet visibly re-enters. That is
+    // "put my finger on it and then away, it starts bugging".
+    expect(panel.className).not.toContain('animate-[sheetUp');
   });
 
   it('does not re-render the sheet on every move', () => {
@@ -93,7 +109,7 @@ describe('Sheet drag tracking', () => {
     fireEvent.pointerDown(panel, { clientY: 200, pointerId: 1 });
     for (let i = 1; i <= 20; i++)
       fireEvent.pointerMove(panel, { clientY: 200 + i * 5, pointerId: 1 });
-    // One, for the flag that drops the entry animation — not twenty.
+    // One, for the latch that drops the entry animation — not twenty.
     expect(commit.mock.calls.length).toBeLessThanOrEqual(2);
   });
 
