@@ -4,14 +4,24 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useEventsFacultySettings } from '../../hooks/useEventsFacultySettings';
 import { ALL_SOCIETIES } from '../../data/societies';
 import { readableTextColor } from '../../utils/readableTextColor';
-import { filterEvents, weekSections } from './eventHelpers';
+import { effectiveFilter, filterEvents, weekSections } from './eventHelpers';
 import { EventRow } from './EventRow';
 
 // The events tab body shared by the desktop MapSidePanel and the mobile map
 // sheet's Akce tab: an All / My-faculty filter and the upcoming events grouped
 // into "This week" / "Next week", soonest first. Rows open the bottom-left
 // detail card on desktop (off-campus rows open it too but don't move the map).
-export function MapEventsSection() {
+export interface MapEventsSectionProps {
+  /**
+   * The phone hides the society chips: nine of them scroll horizontally above a
+   * list that is usually two or three events long, so the filter cost more room
+   * than the thing it filtered. The desktop side panel keeps them, where the
+   * row has space and the list is longer.
+   */
+  showFilter?: boolean;
+}
+
+export function MapEventsSection({ showFilter = true }: MapEventsSectionProps) {
   // This panel only ever renders on the student map — the admin console has its
   // own list — so the public feed is the only source.
   const events = useAppStore((s) => s.mapEvents);
@@ -23,7 +33,11 @@ export function MapEventsSection() {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
-  const visible = filterEvents(events, filter);
+  // 'all' when the chips are hidden, and not merely defaulted: `eventFilter` is
+  // shared store state, so a filter set on the desktop would go on narrowing the
+  // phone's list with no control left to clear it — events would just be
+  // missing. Hiding the filter has to mean showing everything.
+  const visible = filterEvents(events, effectiveFilter(filter, showFilter));
   const sections = weekSections(visible);
   const selectedId = selection?.kind === 'event' ? selection.event.id : null;
 
@@ -49,31 +63,35 @@ export function MapEventsSection() {
 
   return (
     <div className="flex max-h-[60vh] flex-col">
-      <div className="flex gap-1.5 overflow-x-auto px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {/* "Vše" keeps the brand primary; each society chip fills with its own
-            brand colour when active, so the colour legend pays off here */}
-        <button
-          onClick={() => setFilter('all')}
-          className={`${chipBase} ${filter === 'all' ? 'bg-primary text-primary-content' : chipIdle}`}
-        >
-          {t('map.allSocieties')}
-        </button>
-        {societies.map((s) => {
-          const active = filter === s.id;
-          return (
-            <button
-              key={s.id}
-              onClick={() => setFilter(s.id)}
-              className={`${chipBase} ${active ? '' : chipIdle}`}
-              style={
-                active ? { backgroundColor: s.color, color: readableTextColor(s.color) } : undefined
-              }
-            >
-              {s.shortName}
-            </button>
-          );
-        })}
-      </div>
+      {showFilter && (
+        <div className="flex gap-1.5 overflow-x-auto px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {/* "Vše" keeps the brand primary; each society chip fills with its own
+              brand colour when active, so the colour legend pays off here */}
+          <button
+            onClick={() => setFilter('all')}
+            className={`${chipBase} ${filter === 'all' ? 'bg-primary text-primary-content' : chipIdle}`}
+          >
+            {t('map.allSocieties')}
+          </button>
+          {societies.map((s) => {
+            const active = filter === s.id;
+            return (
+              <button
+                key={s.id}
+                onClick={() => setFilter(s.id)}
+                className={`${chipBase} ${active ? '' : chipIdle}`}
+                style={
+                  active
+                    ? { backgroundColor: s.color, color: readableTextColor(s.color) }
+                    : undefined
+                }
+              >
+                {s.shortName}
+              </button>
+            );
+          })}
+        </div>
+      )}
       <div className="overflow-y-auto">
         {sections.length === 0 ? (
           <div className="flex flex-col items-center gap-1 px-4 py-8 text-center text-base-content/60">

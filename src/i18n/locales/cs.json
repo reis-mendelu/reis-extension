@@ -10,7 +10,8 @@
       "overviewEn": "Study overview",
       "regArch": "Tisk registračního archu",
       "zadost": "Žádost na studijní oddělení"
-    }
+    },
+    "downloadFailed": "Stažení se nepovedlo. Zkus to prosím znovu."
   },
   "menu": {
     "title": "Jídelníček",
@@ -514,7 +515,8 @@
       "rank": "Pořadí v ročníku",
       "top": "Patříš mezi {pct} % nejlepších studentů!",
       "beat": "Překonáváš {pct} % studentů ve svém ročníku."
-    }
+    },
+    "failRateChip": "Prům. neúspěšnost: {rate} %"
   },
   "commands": {
     "quickActions": "Rychlé akce",
@@ -954,7 +956,8 @@
       "other": "Akce"
     },
     "studyRooms": "Studovny",
-    "reminderLead": "Za 2 hodiny"
+    "reminderLead": "Za 2 hodiny",
+    "finished": "proběhlo"
   },
   "admin": {
     "email": "E-mail",
@@ -1000,13 +1003,15 @@
     "displayName": "Zobrazovaný název"
   },
   "mobile": {
+    "header": {
+      "search": "Hledat"
+    },
     "nav": {
       "label": "Hlavní navigace",
       "calendar": "Kalendář",
       "exams": "Zkoušky",
       "subjects": "Předměty",
-      "map": "Mapa",
-      "student": "Student"
+      "map": "Mapa"
     },
     "calendar": {
       "nowRunning": "Teď běží",
@@ -1020,11 +1025,12 @@
       "notifications": "Oznámení",
       "prevWeek": "Předchozí týden",
       "nextWeek": "Další týden",
-      "loading": "Načítám rozvrh…"
+      "loading": "Načítám rozvrh…",
+      "holiday": "Státní svátek",
+      "teachingStarts": "Výuka začíná {date}"
     },
     "exams": {
       "title": "Zkoušky",
-      "eyebrow": "Zkouškové",
       "registeredCount": "{count} přihlášeno",
       "groupUpcoming": "Nadcházející",
       "groupOther": "Ostatní",
@@ -1073,7 +1079,10 @@
       "creditOne": "kredit",
       "creditFew": "kredity",
       "creditOther": "kreditů",
-      "loading": "Načítám předměty…"
+      "loading": "Načítám předměty…",
+      "noneEnrolled": "Zatím nemáš zapsané žádné předměty na tento semestr.",
+      "startsOn": "začíná {date} · {credits} kr.",
+      "creditsOnly": "{credits} kr."
     },
     "map": {
       "searchPlaceholder": "Najdi místnost, budovu, akci…",
@@ -1122,7 +1131,8 @@
       "enlargePhoto": "Zvětšit fotku",
       "copied": "Zkopírováno!",
       "teamsChat": "Napsat na Teams",
-      "navigateToRoom": "Ukázat {room} na mapě"
+      "navigateToRoom": "Ukázat {room} na mapě",
+      "showSubject": "Ukázat předmět"
     },
     "profile": {
       "appearance": "Vzhled",

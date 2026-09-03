@@ -26,51 +26,21 @@ describe('handleBackPress', () => {
     expect(popSheet).not.toHaveBeenCalled();
   });
 
-  /**
-   * The vývěska overlay is NOT a sheet — it lives in its own `bulletinExpanded`
-   * store flag and portals to document.body. So with it open the stack was
-   * still empty, back returned 'exit', and reading the noticeboard and pressing
-   * back quit the app.
+  /*
+   * Three cases about the vývěska used to sit here, because it was a portal
+   * outside the stack and needed a branch of its own. It is a sheet now — see
+   * sheets/BulletinSheet — so the ordinary sheet cases above cover it, and the
+   * branch and its special-case tests are both gone.
    */
-  it('closes the bulletin overlay rather than exiting', () => {
-    const popSheet = vi.fn();
-    const closeBulletin = vi.fn();
-    expect(handleBackPress({ sheetCount: 0, popSheet, bulletinOpen: true, closeBulletin })).toBe(
-      'popped'
-    );
-    expect(closeBulletin).toHaveBeenCalledOnce();
-    expect(popSheet).not.toHaveBeenCalled();
-  });
-
-  /**
-   * A sheet opened on top of the bulletin must unwind first — it is drawn above
-   * it, so closing what is underneath would be invisible to the student.
-   */
-  it('pops a sheet before the bulletin when both are open', () => {
-    const popSheet = vi.fn();
-    const closeBulletin = vi.fn();
-    expect(handleBackPress({ sheetCount: 1, popSheet, bulletinOpen: true, closeBulletin })).toBe(
-      'popped'
-    );
-    expect(popSheet).toHaveBeenCalledOnce();
-    expect(closeBulletin).not.toHaveBeenCalled();
-  });
-
-  it('still exits when the bulletin is closed', () => {
-    const popSheet = vi.fn();
-    const closeBulletin = vi.fn();
-    expect(handleBackPress({ sheetCount: 0, popSheet, bulletinOpen: false, closeBulletin })).toBe(
-      'exit'
-    );
-    expect(closeBulletin).not.toHaveBeenCalled();
-  });
 
   /**
    * Calendar is the app's start destination, the way Android expects a bottom
    * nav to behave: back from any other tab returns there instead of quitting.
-   * Before this, pressing back on Zkoušky/Předměty/Mapa/Student closed the app.
+   * Before this, pressing back on Zkoušky/Předměty/Mapa closed the app.
    */
-  it.each(['exams', 'subjects', 'map', 'student'] as const)(
+  // 'profile' included: it became a bottom-nav tab in this PR, and the table
+  // it was added to never grew to cover it. Raised in review.
+  it.each(['exams', 'subjects', 'map', 'profile'] as const)(
     'returns to the calendar from the %s tab instead of exiting',
     (tab) => {
       const popSheet = vi.fn();
@@ -101,28 +71,6 @@ describe('handleBackPress', () => {
       'popped'
     );
     expect(popSheet).toHaveBeenCalledOnce();
-    expect(goToCalendar).not.toHaveBeenCalled();
-  });
-
-  /**
-   * The bulletin is a calendar-tab overlay, but ordering it ahead of the tab
-   * step costs nothing and keeps the rule "innermost surface first" intact.
-   */
-  it('closes the bulletin before switching tabs', () => {
-    const popSheet = vi.fn();
-    const closeBulletin = vi.fn();
-    const goToCalendar = vi.fn();
-    expect(
-      handleBackPress({
-        sheetCount: 0,
-        popSheet,
-        bulletinOpen: true,
-        closeBulletin,
-        tab: 'exams',
-        goToCalendar,
-      })
-    ).toBe('popped');
-    expect(closeBulletin).toHaveBeenCalledOnce();
     expect(goToCalendar).not.toHaveBeenCalled();
   });
 

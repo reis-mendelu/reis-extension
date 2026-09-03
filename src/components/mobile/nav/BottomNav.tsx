@@ -8,12 +8,16 @@ const TABS: { id: MobileTab; icon: typeof Calendar; labelKey: string }[] = [
   { id: 'exams', icon: CalendarCheck, labelKey: 'mobile.nav.exams' },
   { id: 'subjects', icon: Book, labelKey: 'mobile.nav.subjects' },
   { id: 'map', icon: MapPin, labelKey: 'mobile.nav.map' },
-  { id: 'student', icon: User, labelKey: 'mobile.nav.student' },
+  { id: 'profile', icon: User, labelKey: 'sidebar.profile' },
 ];
 
 /**
  * Floating pill bar. Only the active tab shows its label, which is what keeps
- * five entries comfortable down to 375px.
+ * the entries comfortable down to 375px.
+ *
+ * "Student" was a whole slot spent on a search field; search is a header action
+ * now, and the slot went to the profile, which used to be a sheet behind the
+ * header avatar.
  *
  * Below 360px the horizontal padding tightens: the widest active label
  * ("Předměty") pushes the pill to 325px, which overflows a 320px viewport

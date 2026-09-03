@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import type L from 'leaflet';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { filterEvents, groupEventsByVenue, type VenueGroup } from './eventHelpers';
+import { effectiveFilter, filterEvents, groupEventsByVenue, type VenueGroup } from './eventHelpers';
 import { subscribeMapInstance } from './mapInstance';
 import { EventPin } from './EventPin';
 import { DraftPin } from './DraftPin';
@@ -37,7 +37,20 @@ const PANE_NAME = 'reisEvents';
 // each pin to its post-zoom layer point and the `leaflet-zoom-animated` class
 // transitions the transform in sync with the basemap. zoomend/viewreset settle
 // the exact positions. Pins only show in campus overview, not floor-view.
-export function EventLayer() {
+export interface EventLayerProps {
+  /**
+   * Whether the society chips that drive `eventFilter` are on screen.
+   *
+   * False on the phone map, which has no chips: `eventFilter` persists in the
+   * shared store, so without this the layer drew pins for whatever society a
+   * student last picked on the desktop while the sheet beside it listed every
+   * one of them. Raised in review on this PR — and it is the same shape as the
+   * admin-console case the `groups` comment below already describes.
+   */
+  chipsShown?: boolean;
+}
+
+export function EventLayer({ chipsShown = true }: EventLayerProps = {}) {
   // One layer, two hosts: the student map draws the public feed, the admin
   // console's map draws the active society's own events (including the ones
   // still scheduled and hidden from students).
@@ -69,9 +82,11 @@ export function EventLayer() {
     // events behind whatever a student last picked: filter to ESN, then open
     // the console as SU PEF, and filterEvents matches nothing — every pin
     // disappears while the list beside it still shows the events.
-    const visible = authoring ? events : filterEvents(events, eventFilter);
+    const visible = authoring
+      ? events
+      : filterEvents(events, effectiveFilter(eventFilter, chipsShown));
     return groupEventsByVenue(visible);
-  }, [events, eventFilter, authoring]);
+  }, [events, eventFilter, authoring, chipsShown]);
 
   // Re-place pins when the visible groups change (filter toggle, data load).
   const groupsRef = useRef(groups);

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { Calendar, Users } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
@@ -29,7 +30,10 @@ function ExamsSkeleton() {
     <ScreenSkeleton
       testId="exams-skeleton"
       label={t('mobile.exams.loading')}
-      rows={['h-6 w-40', 'h-20', 'h-20', 'h-20']}
+      // One row shorter and no inset of its own: the header above it is real
+      // now rather than a placeholder bar.
+      rows={['h-20', 'h-20', 'h-20']}
+      underHeader
     />
   );
 }
@@ -97,8 +101,12 @@ export function ExamsScreen() {
     [registered, now]
   );
 
-  const eyebrowLabel = t('mobile.exams.eyebrow');
-  const eyebrow = userSemester ? `${eyebrowLabel} · ${userSemester}` : eyebrowLabel;
+  // No "Zkouškové" label: it sat directly above a title reading "Zkoušky" and
+  // told the student nothing the title had not already said. The semester it
+  // used to be prefixed to is real information, so that survives on its own —
+  // and where there is none, the row goes away and gives the title its width
+  // back, which matters at 320px.
+  const eyebrow = userSemester || undefined;
   const toggle = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
 
   const registeredCard = (row: RegisteredExam) => (
@@ -175,35 +183,43 @@ export function ExamsScreen() {
   // Same rule as the calendar: not gated on the latched `firstSyncSettled`, so
   // a retry shows the skeleton instead of parking on ScreenError. A student
   // with genuinely no exams is protected by `syncLoaded.exams` instead.
+  // Its own row under the title rather than beside the header actions:
+  // "Přihlášen na 3 zkoušky" next to the actions overflows 320px.
+  const registeredPill =
+    registered.length > 0 ? (
+      <span className="w-fit whitespace-nowrap rounded-full bg-info/15 px-3 py-1.5 text-sm font-semibold text-info">
+        {t(`mobile.exams.registeredCount${pluralSuffix(language, registered.length)}`, {
+          count: registered.length,
+        })}
+      </span>
+    ) : undefined;
+
+  // The header renders in every state below, not only the loaded one. Returning
+  // a bare skeleton or error in its place left two of the four tabs with no
+  // route to the vývěska, search or notifications for as long as a crawl took —
+  // the same hole CalendarScreen had, caught in review on this PR.
+  const shell = (body: ReactNode) => (
+    <div data-testid="exams-screen" className="flex flex-1 flex-col overflow-hidden">
+      <ScreenHeader eyebrow={eyebrow} title={t('mobile.exams.title')} below={registeredPill} />
+      {body}
+    </div>
+  );
+
   if (
     (!handshakeDone && !handshakeTimedOut) ||
     (isSyncing && !syncLoaded.exams && exams.length === 0)
   ) {
-    return <ExamsSkeleton />;
+    return shell(<ExamsSkeleton />);
   }
 
   // Same rule as the calendar: a settled sync that never delivered exams, with
   // nothing cached, is a failure and not an answer.
   if (firstSyncSettled && !syncLoaded.exams && exams.length === 0) {
-    return <ScreenError testId="exams-error" />;
+    return shell(<ScreenError testId="exams-error" />);
   }
 
-  return (
-    <div data-testid="exams-screen" className="flex flex-1 flex-col overflow-hidden">
-      <ScreenHeader
-        eyebrow={eyebrow}
-        title={t('mobile.exams.title')}
-        action={
-          registered.length > 0 ? (
-            <span className="flex-shrink-0 whitespace-nowrap rounded-full bg-info/15 px-3 py-1.5 text-sm font-semibold text-info">
-              {t(`mobile.exams.registeredCount${pluralSuffix(language, registered.length)}`, {
-                count: registered.length,
-              })}
-            </span>
-          ) : undefined
-        }
-      />
-
+  return shell(
+    <>
       {exams.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -249,6 +265,6 @@ export function ExamsScreen() {
         onConfirm={handleConfirmAction}
         onCancel={() => setPendingAction(null)}
       />
-    </div>
+    </>
   );
 }

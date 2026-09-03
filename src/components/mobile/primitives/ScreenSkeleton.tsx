@@ -42,16 +42,27 @@ export function ScreenSkeleton({
   testId,
   label,
   rows,
+  underHeader,
 }: {
   testId: string;
   label: string;
   /** Tailwind height classes, one per placeholder bar, top to bottom. */
   rows: string[];
+  /**
+   * Set where a `ScreenHeader` renders ABOVE this skeleton rather than being
+   * replaced by it. The header already carries `--safe-top`, and adding a
+   * second inset under it pushes the spinner a status bar's height down the
+   * screen. Both spellings are literal classes because Tailwind scans source
+   * text.
+   */
+  underHeader?: boolean;
 }) {
   return (
     <div
       data-testid={testId}
-      className="flex flex-1 flex-col gap-3 overflow-hidden px-5 pb-5 pt-[calc(1.25rem_+_var(--safe-top,0px))]"
+      className={`flex flex-1 flex-col gap-3 overflow-hidden px-5 pb-5 ${
+        underHeader ? 'pt-3' : 'pt-[calc(1.25rem_+_var(--safe-top,0px))]'
+      }`}
     >
       <div className="flex items-center gap-2.5 pb-1 text-sm font-medium text-base-content/70">
         <span className="loading loading-spinner loading-md text-primary" />

@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { StudentScreen } from '../StudentScreen';
+import { SearchSheet } from '../SearchSheet';
 import { useAppStore } from '../../../../store/useAppStore';
 
 // The Student tab could search IS's pages and IS's people, but not its
 // subjects — so "what is this subject like before I register for it" had no
 // answer on a phone or an iPad. `useSearch` was already returning a `subjects`
 // section on every query; this screen read only `people` and dropped it.
-describe('StudentScreen — searching the subject catalogue', () => {
+describe('SearchSheet — searching the subject catalogue', () => {
   // The API shape `executeSearch` answers with — useSearch maps this into a
   // SearchResult itself (id `subject-<id>`, title from `name`).
   const subject = {
@@ -38,7 +38,7 @@ describe('StudentScreen — searching the subject catalogue', () => {
   });
 
   const searchSubjects = async (query: string) => {
-    render(<StudentScreen />);
+    render(<SearchSheet onClose={() => {}} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Předměty' }));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: query } });
     await act(async () => {
@@ -148,7 +148,7 @@ describe('StudentScreen — searching the subject catalogue', () => {
   });
 
   it('does not claim "nothing found" before the search has answered', () => {
-    render(<StudentScreen />);
+    render(<SearchSheet onClose={() => {}} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Předměty' }));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Matem' } });
 

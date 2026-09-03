@@ -13,6 +13,7 @@ import '@/utils/devFeatures'; // Register window.toggleDevFeatures
 import App from '@/App.tsx';
 import { AppShell } from '@/components/AppShell';
 import { installErrorReporter } from '@/services/errorReporter/reporter';
+import { installExternalLinkHandler } from '@/mobile/openExternal';
 import { initTelemetry } from '@/services/errorReporter/telemetry';
 import { useAppStore } from '@/store/useAppStore';
 
@@ -28,6 +29,18 @@ const reportingAllowed = () => {
 
 installErrorReporter(reportingAllowed);
 initTelemetry(reportingAllowed);
+
+// At module load, before the first render, because a `target="_blank"` anchor
+// does NOTHING on its own inside the Capacitor WebView: there is no tab to open
+// and no default window.open to fall back on. The handler had been written and
+// tested from six angles and never once installed, which is why "clicking on an
+// item in vyveska doesn't open it (also the external click there does nothing)"
+// was true of every external link in the app — the vývěska posts, its
+// show-all button, and the notification links alike.
+//
+// Not in an effect: MobileBulletinOverlay portals to document.body, outside the
+// React tree, and its links are among the first things a student can tap.
+installExternalLinkHandler();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

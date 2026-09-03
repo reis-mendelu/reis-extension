@@ -14,7 +14,10 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set) => ({
   mobileTab: 'calendar',
   mobileSelectedDayIso: null,
   mobileSheets: [],
-  mapSheetState: 'peek',
+  // Opens at the middle stop so the campus events are visible without a drag:
+  // the peek band showed a title and blank space, and reaching the events meant
+  // pulling the sheet up over the map every time.
+  mapSheetState: 'half',
   mapTab: 'akce',
   devPhoneOverride: null,
   welcomeSeen: null,

@@ -4,7 +4,8 @@ import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { sortByDate } from '../CampusMap/eventHelpers';
-import { isPastEvent, isScheduledEvent, goLiveDate } from '../CampusMap/eventWindow';
+import { isPastEvent, isScheduledEvent, goLiveDate, hasFinished } from '../CampusMap/eventWindow';
+import { relativeDayLabel } from '../CampusMap/eventHelpers';
 import { deletePost } from '../../api/societyPosts';
 import { EventRow } from '../CampusMap/EventRow';
 import { EventComposer } from '../CampusMap/EventComposer';
@@ -108,10 +109,21 @@ export function AdminEventList() {
   const past = sortByDate(events.filter((e) => isPastEvent(e.date))).reverse();
   const scheduled = sortByDate(events.filter((e) => isScheduledEvent(e.date)));
   const live = sortByDate(events.filter((e) => !isPastEvent(e.date) && !isScheduledEvent(e.date)));
+  // A Live event dated today whose time has passed: it happened, but it stays
+  // publicly visible for the rest of the day, so the bucket cannot say it and
+  // the row does instead. See eventWindow.hasFinished for why not the bucket.
+  const finishedNote = (e: MapEvent) =>
+    hasFinished(e)
+      ? `${relativeDayLabel(e.date, locale, t)}${e.time ? ` · ${e.time}` : ''} · ${t('map.finished')}`
+      : undefined;
   const goLive = (e: MapEvent) =>
     `${t('map.goesLive')} ${goLiveDate(e.date).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}`;
 
-  const section = (label: string, rows: MapEvent[], subline?: (e: MapEvent) => string) =>
+  const section = (
+    label: string,
+    rows: MapEvent[],
+    subline?: (e: MapEvent) => string | undefined
+  ) =>
     rows.length > 0 && (
       <div>
         <div className="px-3 pb-1 pt-3 text-[11px] font-bold uppercase tracking-wide text-base-content/60">
@@ -166,7 +178,7 @@ export function AdminEventList() {
           <EventComposer key={editEventId ?? 'new'} onDone={closeComposer} />
         ) : (
           <>
-            {section(t('map.liveNow'), live)}
+            {section(t('map.liveNow'), live, finishedNote)}
             {section(t('map.scheduled'), scheduled, goLive)}
             {section(t('map.past'), past)}
             {events.length === 0 && (

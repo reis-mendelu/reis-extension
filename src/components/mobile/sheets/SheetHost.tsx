@@ -3,11 +3,12 @@ import { SubjectDrawerSheet } from './SubjectDrawerSheet';
 import { EventDetailSheet } from './EventDetailSheet';
 import { StudyPlanSheet } from './StudyPlanSheet';
 import { NotificationsSheet } from './NotificationsSheet';
-import { ProfileSheet } from './ProfileSheet';
 import { PersonSheet } from './PersonSheet';
 import { PersonPhotoSheet } from './PersonPhotoSheet';
 import { EduroamSheet } from './EduroamSheet';
 import { DocsSheet } from './DocsSheet';
+import { SearchSheet } from './SearchSheet';
+import { BulletinSheet } from './BulletinSheet';
 
 /**
  * Renders the phone UI's sheet stack, in order, each in its own `Sheet`.
@@ -34,8 +35,6 @@ export function SheetHost() {
             return <StudyPlanSheet key={index} onClose={popSheet} />;
           case 'notifications':
             return <NotificationsSheet key={index} onClose={popSheet} />;
-          case 'profile':
-            return <ProfileSheet key={index} onClose={popSheet} />;
           case 'person':
             return <PersonSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'personPhoto':
@@ -44,6 +43,10 @@ export function SheetHost() {
             return <EduroamSheet key={index} onClose={popSheet} />;
           case 'docs':
             return <DocsSheet key={index} onClose={popSheet} />;
+          case 'bulletin':
+            return <BulletinSheet key={index} onClose={popSheet} />;
+          case 'search':
+            return <SearchSheet key={index} sheet={sheet} onClose={popSheet} />;
           default:
             return null;
         }

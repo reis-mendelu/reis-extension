@@ -47,7 +47,12 @@ export function MapSheet() {
   const { t } = useTranslation();
   const selectedEvent = selection?.kind === 'event' ? selection.event : null;
 
-  const expanded = sheetState === 'expanded';
+  // `peek` is the only stop that hides the list. Both taller stops show it —
+  // the middle one is the whole point of the third detent: the campus events
+  // used to be readable only by dragging the sheet up over the map, and its
+  // peek band was blank under its own title.
+  const expanded = sheetState !== 'peek';
+  const fullyExpanded = sheetState === 'expanded';
   const showBudova = activeBuildingId !== null;
   // A previously-picked Budova tab goes stale the moment the building is
   // deselected (exitToCampus) — fall back to Akce instead of rendering
@@ -69,9 +74,12 @@ export function MapSheet() {
 
   // A drag ends in a click too, and letting that click through would toggle the
   // sheet straight back out of the detent the drag just chose.
+  // Walks the ladder rather than flipping: tapping up from peek lands on the
+  // middle stop, the same place a drag would, so tap and drag agree. From the
+  // top it returns all the way down, which is what a collapse chevron means.
   const toggle = () => {
     if (consumeDragClick()) return;
-    setSheetState(expanded ? 'peek' : 'expanded');
+    setSheetState(sheetState === 'peek' ? 'half' : sheetState === 'half' ? 'expanded' : 'peek');
   };
 
   /**
@@ -119,7 +127,7 @@ export function MapSheet() {
       // the finger is setting, and leaving both on makes the sheet lag behind.
       className={`absolute inset-x-0 bottom-0 z-[1000] flex flex-col overflow-hidden rounded-t-[20px] bg-base-100 shadow-drawer ${
         dragHeight === null ? 'transition-[height] duration-300 ease-out' : ''
-      } ${expanded ? 'h-[70vh]' : 'h-[166px]'}`}
+      } ${fullyExpanded ? 'h-[70vh]' : sheetState === 'half' ? 'h-[45vh]' : 'h-[166px]'}`}
       style={dragHeight === null ? undefined : { height: `${dragHeight}px` }}
     >
       <button
@@ -212,7 +220,7 @@ export function MapSheet() {
               </div>
             ) : (
               <>
-                {activeTab === 'akce' && <MapEventsSection />}
+                {activeTab === 'akce' && <MapEventsSection showFilter={false} />}
                 {activeTab === 'budova' && activeBuildingId !== null && (
                   <BuildingRoomList buildingId={activeBuildingId} />
                 )}

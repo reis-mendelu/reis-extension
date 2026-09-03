@@ -16,12 +16,31 @@ export function parseEventDate(iso: string): Date {
 // Soonest first, by ISO date then time.
 export function sortByDate(events: MapEvent[]): MapEvent[] {
   return [...events].sort((a, b) =>
-    a.date === b.date ? (a.time ?? '').localeCompare(b.time ?? '') : a.date.localeCompare(b.date),
+    a.date === b.date ? (a.time ?? '').localeCompare(b.time ?? '') : a.date.localeCompare(b.date)
   );
 }
 
 // 'all' → every event. Otherwise `filter` is a societyId and only that society's
 // events are kept.
+/**
+ * The filter that actually applies, given whether the chips are on screen.
+ *
+ * `eventFilter` is the student map's society chips and it PERSISTS in the
+ * shared store, so a surface without those chips inherits whatever was last
+ * picked elsewhere and offers no way to clear it. That has now bitten twice:
+ * the admin console hid a society's own pins behind a student's stored choice,
+ * and the phone map listed every society in its sheet while showing only one
+ * society's pins — `MapEventsSection` was passed `showFilter={false}` and
+ * defaulted itself to 'all', while `EventLayer` read the stored filter
+ * directly. Raised in review on this PR.
+ *
+ * One function both consumers call, so the list and the pins cannot disagree
+ * again.
+ */
+export function effectiveFilter(filter: string, chipsShown: boolean): string {
+  return chipsShown ? filter : 'all';
+}
+
 export function filterEvents(events: MapEvent[], filter: string): MapEvent[] {
   if (filter === 'all') return events;
   return events.filter((e) => e.societyId === filter);
@@ -75,7 +94,8 @@ export function weekSections(events: MapEvent[], now: Date = new Date()): WeekSe
   for (const e of sortByDate(events)) {
     const k = bucketOf(e);
     const arr = buckets.get(k);
-    if (arr) arr.push(e); else buckets.set(k, [e]);
+    if (arr) arr.push(e);
+    else buckets.set(k, [e]);
   }
   const order: WeekSectionKey[] = ['thisWeek', 'nextWeek'];
   return order.filter((k) => buckets.has(k)).map((k) => ({ key: k, events: buckets.get(k)! }));
@@ -87,7 +107,10 @@ export function weekSections(events: MapEvent[], now: Date = new Date()): WeekSe
 // bucket — a bare weekday WOULD be ambiguous, so it gets an explicit date too:
 // "13. 1. (Tuesday)". Boundary matches weekSections exactly (day 7).
 export function relativeDayLabel(
-  iso: string, locale: string, t: (key: string) => string, now: Date = new Date(),
+  iso: string,
+  locale: string,
+  t: (key: string) => string,
+  now: Date = new Date()
 ): string {
   const date = parseEventDate(iso);
   const days = Math.round((date.getTime() - startOfDay(now).getTime()) / 86400_000);

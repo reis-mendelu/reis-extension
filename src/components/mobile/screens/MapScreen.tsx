@@ -52,6 +52,11 @@ export function MapScreen() {
   };
 
   return (
+    // No ScreenHeader here, unlike every other tab. The map is full-bleed with
+    // its own chrome floating over the canvas, and a solid title band above it
+    // both cost a strip of map and read as a lid on it. The map's own search bar
+    // covers finding things; the vývěska, search and notifications stay one tab
+    // away.
     <div data-testid="map-screen" className="relative isolate flex flex-1 flex-col overflow-hidden">
       <MapCanvas />
       {/* The society event pins. The sheet's Akce tab has always listed these
@@ -60,7 +65,11 @@ export function MapScreen() {
           on a student's phone. Same component the desktop map and the admin
           console use — it portals into a Leaflet pane, so it renders nothing
           here and does not affect this element's layout. */}
-      <EventLayer />
+      {/* chipsShown={false}: the phone map has no society chips, and
+          `eventFilter` persists in the shared store — so without this the pins
+          were filtered by a choice made on the desktop while the Akce sheet
+          beside them listed every society. */}
+      <EventLayer chipsShown={false} />
       <FloorSwitcher />
       {/* marginTop carries --safe-top because this floating bar is the topmost
           element on the map screen and targetSdk 36 forces edge-to-edge: without
@@ -80,7 +89,7 @@ export function MapScreen() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('mobile.map.searchPlaceholder')}
             aria-label={t('mobile.map.searchPlaceholder')}
-            className="w-full flex-1 bg-transparent text-[13.5px] outline-none"
+            className="w-full flex-1 select-text bg-transparent text-[13.5px] outline-none"
             style={{ color: '#f3f4f6' }}
           />
         </label>

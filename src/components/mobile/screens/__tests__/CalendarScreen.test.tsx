@@ -63,7 +63,7 @@ describe('CalendarScreen', () => {
 
   // The greeting was dropped as redundant — it told the student their own name.
   // The date, previously the small eyebrow above it, is the title now.
-  it('shows no greeting, and a User icon avatar when fullName is absent', () => {
+  it('shows no greeting, and no avatar — the profile is a tab now', () => {
     useAppStore.setState({
       schedule: { data: [], status: 'success' } as never,
       fullName: null,
@@ -73,25 +73,31 @@ describe('CalendarScreen', () => {
     // Asserted, not merely absent: "no greeting" also passes on a blank title.
     // The selected day is 2026-04-20 and the header is capitalised.
     expect(screen.getByText('Pondělí 20. dubna')).toBeInTheDocument();
-    expect(screen.getByLabelText('Profil').querySelector('svg')).toBeInTheDocument();
+    // The avatar went with the profile when it became a bottom-nav tab: a tab
+    // and an icon opening the same screen is two doors to one room.
+    expect(screen.queryByLabelText('Profil')).not.toBeInTheDocument();
   });
 
-  it('still derives avatar initials from fullName', () => {
+  // The avatar-initials behaviour moved off this screen with the profile: the
+  // name is shown in full on the profile TAB now, which
+  // ProfileScreenSettings.test.tsx covers. What matters here is that the
+  // header does not carry a second way in.
+  it('carries no avatar even when fullName is known', () => {
     useAppStore.setState({
       schedule: { data: [], status: 'success' } as never,
       fullName: 'Jana Nováková',
     });
     render(<CalendarScreen />);
-    expect(screen.queryByText(/^Ahoj/)).not.toBeInTheDocument();
-    expect(screen.getByText('Pondělí 20. dubna')).toBeInTheDocument();
-    expect(screen.getByLabelText('Profil')).toHaveTextContent('JN');
+    expect(screen.queryByText('JN')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Profil')).not.toBeInTheDocument();
   });
 
-  it('gives the avatar and bulletin buttons accessible names', () => {
+  it('gives the three header buttons accessible names', () => {
     useAppStore.setState({ schedule: { data: [], status: 'success' } as never });
     render(<CalendarScreen />);
-    expect(screen.getByLabelText('Profil')).toBeInTheDocument();
     expect(screen.getByLabelText('Rozbalit vývěsku')).toBeInTheDocument();
+    expect(screen.getByLabelText('Hledat')).toBeInTheDocument();
+    expect(screen.getByLabelText('Oznámení')).toBeInTheDocument();
   });
 
   it('offers the selected day’s own week', () => {

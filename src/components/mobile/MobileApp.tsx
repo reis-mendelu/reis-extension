@@ -7,7 +7,7 @@ import { CalendarScreen } from './screens/CalendarScreen';
 import { ExamsScreen } from './screens/ExamsScreen';
 import { SubjectsScreen } from './screens/SubjectsScreen';
 import { MapScreen } from './screens/MapScreen';
-import { StudentScreen } from './screens/StudentScreen';
+import { ProfileScreen } from './screens/ProfileScreen';
 import { SheetHost } from './sheets/SheetHost';
 import { WelcomeScreen } from './WelcomeScreen';
 
@@ -22,8 +22,9 @@ import { WelcomeScreen } from './WelcomeScreen';
  * so the phone branch would otherwise have no toast host and every
  * confirmation would silently do nothing.
  *
- * Routes on `mobileTab` (Task 3's mobile UI slice) between the five
- * placeholder screens Tasks 8–16 fill in, with `BottomNav` driving the switch.
+ * Routes on `mobileTab` (Task 3's mobile UI slice) between the five screens,
+ * with `BottomNav` driving the switch. Search is not among them — it is a
+ * sheet opened from the header, so it overlays whichever tab is active.
  */
 export function MobileApp() {
   const tab = useAppStore((s) => s.mobileTab);
@@ -40,7 +41,15 @@ export function MobileApp() {
   return (
     <div
       data-testid="mobile-app"
-      className="relative flex h-screen w-full flex-col overflow-hidden bg-base-200 text-base-content"
+      // Not a web page you can drag-select. On iOS a long press inside a
+      // WKWebView raises the selection handles and the Copy/Look Up callout
+      // over whatever was pressed — and on a tap-driven UI a slow tap on a
+      // subject row IS a long press, so the student hits it by accident rather
+      // than on purpose. `select-none` alone does not stop the callout, hence
+      // the arbitrary property beside it; both stay utilities rather than a
+      // stylesheet rule. Fields opt back in with `select-text`, since
+      // inherited user-select takes caret placement with it.
+      className="relative flex h-screen w-full flex-col overflow-hidden bg-base-200 text-base-content select-none [-webkit-touch-callout:none]"
     >
       {/* First child, above every screen's own ScreenHeader: each screen is a
           flex-1 sibling below this one, so DemoBanner occupies its own row
@@ -77,7 +86,7 @@ export function MobileApp() {
         {tab === 'exams' && <ExamsScreen />}
         {tab === 'subjects' && <SubjectsScreen />}
         {tab === 'map' && <MapScreen />}
-        {tab === 'student' && <StudentScreen />}
+        {tab === 'profile' && <ProfileScreen />}
       </div>
       <BottomNav />
       <SheetHost />

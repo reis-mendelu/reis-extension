@@ -10,7 +10,8 @@
       "overviewEn": "Study overview (English)",
       "regArch": "Print the registration sheet",
       "zadost": "Request to the study department"
-    }
+    },
+    "downloadFailed": "The download didn't go through. Please try again."
   },
   "menu": {
     "title": "Today's Menu",
@@ -514,7 +515,8 @@
       "rank": "Year-group rank",
       "top": "You're in the top {pct}% of students!",
       "beat": "You're ahead of {pct}% of students in your year."
-    }
+    },
+    "failRateChip": "Avg. failure rate: {rate}%"
   },
   "commands": {
     "quickActions": "Quick Actions",
@@ -954,7 +956,8 @@
       "other": "Event"
     },
     "studyRooms": "Study rooms",
-    "reminderLead": "In 2 hours"
+    "reminderLead": "In 2 hours",
+    "finished": "finished"
   },
   "admin": {
     "email": "Email",
@@ -1000,13 +1003,15 @@
     "displayName": "Display name"
   },
   "mobile": {
+    "header": {
+      "search": "Search"
+    },
     "nav": {
       "label": "Main navigation",
       "calendar": "Calendar",
       "exams": "Exams",
       "subjects": "Courses",
-      "map": "Map",
-      "student": "Student"
+      "map": "Map"
     },
     "calendar": {
       "nowRunning": "On now",
@@ -1020,11 +1025,12 @@
       "notifications": "Notifications",
       "prevWeek": "Previous week",
       "nextWeek": "Next week",
-      "loading": "Loading your timetable…"
+      "loading": "Loading your timetable…",
+      "holiday": "Public holiday",
+      "teachingStarts": "Teaching starts {date}"
     },
     "exams": {
       "title": "Exams",
-      "eyebrow": "Exam period",
       "registeredCount": "{count} registered",
       "groupUpcoming": "Upcoming",
       "groupOther": "Other",
@@ -1073,7 +1079,10 @@
       "creditOne": "credit",
       "creditFew": "credits",
       "creditOther": "credits",
-      "loading": "Loading your courses…"
+      "loading": "Loading your courses…",
+      "noneEnrolled": "You have no subjects enrolled for this semester yet.",
+      "startsOn": "starts {date} · {credits} cr.",
+      "creditsOnly": "{credits} cr."
     },
     "map": {
       "searchPlaceholder": "Find a room, building, event…",
@@ -1122,7 +1131,8 @@
       "enlargePhoto": "Enlarge photo",
       "copied": "Copied!",
       "teamsChat": "Message on Teams",
-      "navigateToRoom": "Show {room} on the map"
+      "navigateToRoom": "Show {room} on the map",
+      "showSubject": "Open subject"
     },
     "profile": {
       "appearance": "Appearance",

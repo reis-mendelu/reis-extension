@@ -1,9 +1,14 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import type { StudyPlan, Zamerani } from '@/types/studyPlan';
 import { computeFailRate } from './computeFailRate';
 import type { ZameraniProgress } from './SubjectsPanelHeader';
-import { isRealCredits, normalizeZameraniName, buildSubjectSemesters, buildSubjectToZameranis } from './utils';
+import {
+  isRealCredits,
+  normalizeZameraniName,
+  buildSubjectSemesters,
+  buildSubjectToZameranis,
+} from './utils';
 
 /**
  * Plan-derived lookups shared by the current-semester view (SubjectsPanel) and
@@ -11,17 +16,15 @@ import { isRealCredits, normalizeZameraniName, buildSubjectSemesters, buildSubje
  * StudyPlan, so the derivation lives here once rather than being duplicated.
  */
 export function useSubjectsData(plan: StudyPlan | null) {
-  const successRates = useAppStore(s => s.successRates);
+  const successRates = useAppStore((s) => s.successRates);
 
-  // Ensure success rates are fetched for every subject in the plan. Lives here
-  // (the shared derivation point) so both the current-semester panel and the
-  // full study-plan page load their own data regardless of mount order. The
-  // batch fetch is idempotent, so calling it from both surfaces is safe.
-  useEffect(() => {
-    if (!plan) return;
-    const codes = plan.blocks.flatMap(b => b.groups.flatMap(g => g.subjects.map(s => s.code)));
-    if (codes.length > 0) useAppStore.getState().fetchSuccessRateBatch(codes);
-  }, [plan]);
+  // Success rates for every subject in the plan. Moved to a shared hook so the
+  // PHONE gets them as well — its SubjectsScreen does not use this file, which
+  // is why the failure-rate chip appeared on one row out of eight there.
+  // The success-rate batch is no longer started from here. It runs in
+  // createStudyPlanSlice, at the one point the plan is written to the store —
+  // a component effect starting a fetch is what the project's rules forbid,
+  // and doing it there covers the phone's SubjectsScreen with the same code.
 
   const zameraniLookup = useMemo(() => {
     const map = new Map<string, Zamerani>();
@@ -37,11 +40,14 @@ export function useSubjectsData(plan: StudyPlan | null) {
     const out = new Map<string, ZameraniProgress>();
     if (!plan?.zameranis) return out;
     const subjectByCode = new Map<string, { isEnrolled: boolean; isFulfilled: boolean }>();
-    for (const b of plan.blocks) for (const g of b.groups) for (const s of g.subjects) {
-      subjectByCode.set(s.code, { isEnrolled: s.isEnrolled, isFulfilled: s.isFulfilled });
-    }
+    for (const b of plan.blocks)
+      for (const g of b.groups)
+        for (const s of g.subjects) {
+          subjectByCode.set(s.code, { isEnrolled: s.isEnrolled, isFulfilled: s.isFulfilled });
+        }
     for (const z of plan.zameranis) {
-      let enrolled = 0, fulfilled = 0;
+      let enrolled = 0,
+        fulfilled = 0;
       for (const m of z.subjects) {
         const hit = subjectByCode.get(m.code);
         if (!hit) continue;
@@ -49,7 +55,12 @@ export function useSubjectsData(plan: StudyPlan | null) {
         else if (hit.isEnrolled) enrolled++;
       }
       const touched = enrolled + fulfilled > 0;
-      out.set(normalizeZameraniName(z.name), { enrolled, fulfilled, total: z.subjects.length, touched });
+      out.set(normalizeZameraniName(z.name), {
+        enrolled,
+        fulfilled,
+        total: z.subjects.length,
+        touched,
+      });
     }
     return out;
   }, [plan]);
@@ -57,20 +68,31 @@ export function useSubjectsData(plan: StudyPlan | null) {
   const failRates = useMemo(() => {
     const map: Record<string, number | null> = {};
     if (!plan) return map;
-    for (const block of plan.blocks) for (const group of block.groups) for (const s of group.subjects) {
-      map[s.code] = computeFailRate(successRates[s.code]);
-    }
+    for (const block of plan.blocks)
+      for (const group of block.groups)
+        for (const s of group.subjects) {
+          map[s.code] = computeFailRate(successRates[s.code]);
+        }
     return map;
   }, [plan, successRates]);
 
   const enrolledCredits = useMemo(() => {
     if (!plan) return 0;
     let total = 0;
-    for (const block of plan.blocks) for (const group of block.groups) for (const s of group.subjects) {
-      if (s.isEnrolled && isRealCredits(s.credits)) total += s.credits;
-    }
+    for (const block of plan.blocks)
+      for (const group of block.groups)
+        for (const s of group.subjects) {
+          if (s.isEnrolled && isRealCredits(s.credits)) total += s.credits;
+        }
     return total;
   }, [plan]);
 
-  return { zameraniLookup, subjectSemesters, subjectToZameranis, zameraniProgress, failRates, enrolledCredits };
+  return {
+    zameraniLookup,
+    subjectSemesters,
+    subjectToZameranis,
+    zameraniProgress,
+    failRates,
+    enrolledCredits,
+  };
 }

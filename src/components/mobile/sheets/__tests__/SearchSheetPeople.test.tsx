@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { StudentScreen } from '../StudentScreen';
+import { SearchSheet } from '../SearchSheet';
 import { useAppStore } from '../../../../store/useAppStore';
 import type { SearchResult } from '../../../SearchBar/types';
 
@@ -15,7 +15,7 @@ function teacher(overrides: Partial<SearchResult> = {}): SearchResult {
   };
 }
 
-describe('StudentScreen', () => {
+describe('SearchSheet', () => {
   beforeEach(() => {
     useAppStore.setState({
       language: 'cz',
@@ -34,7 +34,7 @@ describe('StudentScreen', () => {
   });
 
   it('opens on Lidé and offers only Lidé and Předměty', () => {
-    render(<StudentScreen />);
+    render(<SearchSheet onClose={() => {}} />);
     expect(screen.getByRole('tab', { name: 'Lidé' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tab', { name: 'Předměty' })).toHaveAttribute('aria-selected', 'false');
     // The IS page directory is gone from the phone tree: every one of its 95
@@ -49,7 +49,7 @@ describe('StudentScreen', () => {
 
   it('switching to Lidé shows recently searched people', () => {
     useAppStore.setState({ recentPeople: [teacher()] });
-    render(<StudentScreen />);
+    render(<SearchSheet onClose={() => {}} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
     expect(screen.getByRole('tab', { name: 'Lidé' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('Naposledy hledaní')).toBeInTheDocument();
@@ -66,7 +66,7 @@ describe('StudentScreen', () => {
         teacher(),
       ],
     });
-    render(<StudentScreen />);
+    render(<SearchSheet onClose={() => {}} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
 
     expect(screen.getByText('Dominik Holek')).toBeInTheDocument();
@@ -84,7 +84,7 @@ describe('StudentScreen', () => {
         personType: 'student' as const,
       })),
     });
-    render(<StudentScreen />);
+    render(<SearchSheet onClose={() => {}} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
 
     expect(screen.getByText('Osoba 0')).toBeInTheDocument();
@@ -93,13 +93,13 @@ describe('StudentScreen', () => {
   });
 
   it('shows nothing at all rather than an empty heading before the first search', () => {
-    render(<StudentScreen />);
+    render(<SearchSheet onClose={() => {}} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
     expect(screen.queryByText('Naposledy hledaní')).not.toBeInTheDocument();
   });
 });
 
-describe('StudentScreen — Lidé search while the query is still in flight', () => {
+describe('SearchSheet — Lidé search while the query is still in flight', () => {
   beforeEach(() => {
     useAppStore.setState({
       language: 'cz',
@@ -118,7 +118,7 @@ describe('StudentScreen — Lidé search while the query is still in flight', ()
   });
 
   const openPeople = () => {
-    render(<StudentScreen />);
+    render(<SearchSheet onClose={() => {}} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
     return screen.getByRole('textbox');
   };
@@ -160,7 +160,7 @@ describe('StudentScreen — Lidé search while the query is still in flight', ()
   });
 });
 
-describe('StudentScreen — dismissing the iPad keyboard', () => {
+describe('SearchSheet — dismissing the iPad keyboard', () => {
   beforeEach(() => {
     useAppStore.setState({
       language: 'cz',
@@ -183,7 +183,7 @@ describe('StudentScreen — dismissing the iPad keyboard', () => {
   // is bound to the three gestures that mean "I'm done typing, let me look":
   // Enter, scrolling the results, and tapping a person.
   it('blurs the input on Enter so the keyboard drops', () => {
-    render(<StudentScreen />);
+    render(<SearchSheet onClose={() => {}} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
     const input = screen.getByRole('textbox');
     input.focus();
@@ -194,7 +194,7 @@ describe('StudentScreen — dismissing the iPad keyboard', () => {
   });
 
   it('blurs the input when the results list is scrolled', () => {
-    render(<StudentScreen />);
+    render(<SearchSheet onClose={() => {}} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Lidé' }));
     const input = screen.getByRole('textbox');
     input.focus();
@@ -204,7 +204,7 @@ describe('StudentScreen — dismissing the iPad keyboard', () => {
   });
 
   it('marks the input as a search field so iOS shows a Search key', () => {
-    render(<StudentScreen />);
+    render(<SearchSheet onClose={() => {}} />);
     expect(screen.getByRole('textbox')).toHaveAttribute('enterkeyhint', 'search');
   });
 });

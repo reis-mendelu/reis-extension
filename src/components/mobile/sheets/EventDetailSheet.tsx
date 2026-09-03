@@ -37,8 +37,8 @@ function kindLabelKey(lesson: BlockLesson): string {
 export function EventDetailSheet({ sheet, onClose }: EventDetailSheetProps) {
   const { t, language } = useTranslation();
   const { schedule } = useSchedule();
-  const hideEvent = useAppStore((s) => s.hideEvent);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
+  const pushSheet = useAppStore((s) => s.pushSheet);
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
 
   // Matched on the day as well as the id. The store holds the WHOLE semester
@@ -73,9 +73,19 @@ export function EventDetailSheet({ sheet, onClose }: EventDetailSheetProps) {
     focusRoomByCode(roomCode);
   };
 
-  const onHide = () => {
-    void hideEvent(lesson.id, lesson.courseCode, lesson.courseName, lesson.date);
-    onClose();
+  /**
+   * The subject behind the lesson — syllabus, files, difficulty, classmates.
+   *
+   * This slot used to hold "Skrýt tuto hodinu", which is the one thing almost
+   * nobody wants from a lesson they just tapped. Pushed rather than replacing
+   * the sheet, so closing the drawer comes back here.
+   */
+  const onShowSubject = () => {
+    pushSheet({
+      kind: 'subjectDrawer',
+      courseCode: lesson.courseCode,
+      courseName: lesson.courseName,
+    });
   };
 
   return (
@@ -96,10 +106,10 @@ export function EventDetailSheet({ sheet, onClose }: EventDetailSheetProps) {
         </button>
         <button
           type="button"
-          onClick={onHide}
-          className="flex min-h-9 items-center justify-center text-sm font-semibold text-base-content/60"
+          onClick={onShowSubject}
+          className="flex min-h-11 items-center justify-center rounded-xl bg-primary/15 text-base font-semibold text-primary"
         >
-          {t('calendar.hide.occurrence')}
+          {t('mobile.sheet.showSubject')}
         </button>
       </div>
     </Sheet>

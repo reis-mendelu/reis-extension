@@ -25,6 +25,17 @@ const lesson: BlockLesson = {
   isExam: false,
 };
 
+/**
+ * "Skrýt tuto hodinu" is gone from this sheet — the slot holds "Ukázat
+ * předmět" now, per the sprint list — so the two tests that clicked it went
+ * with it. What they were really protecting, that the sheet resolves the
+ * occurrence the student is looking at rather than the first copy of a weekly
+ * lesson, is still pinned below by the test that a non-matching day renders
+ * NOTHING rather than falling through to week one.
+ *
+ * `hideEvent` itself is untouched in the store, and the restore list on the
+ * profile tab still reads it; nothing in the phone UI calls it any more.
+ */
 describe('EventDetailSheet', () => {
   const setMobileTab = vi.fn();
   const focusRoomByCode = vi.fn();
@@ -48,18 +59,6 @@ describe('EventDetailSheet', () => {
     expect(screen.getByText(/Q01 \(Poříčí\)/)).toBeInTheDocument();
     expect(screen.getByText(/10:00.*11:50/)).toBeInTheDocument();
     expect(screen.getByText(/Jan Novák/)).toBeInTheDocument();
-  });
-
-  it('hides the event and closes the sheet', () => {
-    const onClose = vi.fn();
-    render(<EventDetailSheet sheet={{ kind: 'eventDetail', eventId: 'ev1' }} onClose={onClose} />);
-
-    fireEvent.click(screen.getByText('Skrýt tuto hodinu'));
-
-    expect(useAppStore.getState().hiddenItems.events).toEqual([
-      { id: 'ev1', courseCode: 'ALG', courseName: 'Algoritmizace', date: '20260401' },
-    ]);
-    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('switches to the map tab and focuses the room, stripping the campus suffix', () => {
@@ -110,17 +109,6 @@ describe('EventDetailSheet across a repeating lesson', () => {
       />
     );
     expect(screen.getByText(/Z18/)).toBeInTheDocument();
-  });
-
-  it('hides the occurrence the student is looking at, not the first one', () => {
-    render(
-      <EventDetailSheet
-        sheet={{ kind: 'eventDetail', eventId: 'ev1', dayIso: '2026-04-08' }}
-        onClose={vi.fn()}
-      />
-    );
-    fireEvent.click(screen.getByText('Skrýt tuto hodinu'));
-    expect(hideEvent).toHaveBeenCalledWith('ev1', 'ALG', 'Algoritmizace', '20260408');
   });
 
   it('falls back to the id alone when no day came with the sheet', () => {
