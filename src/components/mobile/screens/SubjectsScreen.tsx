@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { BookOpen } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
@@ -17,7 +18,10 @@ function SubjectsSkeleton() {
     <ScreenSkeleton
       testId="subjects-skeleton"
       label={t('mobile.subjects.loading')}
-      rows={['h-6 w-40', 'h-20', 'h-40', 'h-14']}
+      // One row shorter and no inset of its own: the header above it is real
+      // now rather than a placeholder bar.
+      rows={['h-20', 'h-40', 'h-14']}
+      underHeader
     />
   );
 }
@@ -66,10 +70,6 @@ export function SubjectsScreen() {
   // předměty" to a student who has plenty, which everyone reads as a statement
   // of fact. The skeleton stays until there is a usable plan to draw, or until
   // a whole sync has finished and the emptiness is the real answer.
-  if ((!handshakeDone && !handshakeTimedOut) || (isSyncing && !firstSyncSettled && !planUsable)) {
-    return <SubjectsSkeleton />;
-  }
-
   const openPlan = () => pushSheet({ kind: 'studyPlan' });
   // Its own row under the title rather than beside the header actions: four
   // 40px targets plus this label overflows a 320px viewport.
@@ -83,6 +83,22 @@ export function SubjectsScreen() {
     </button>
   );
 
+  // The header renders in every state below, not only the loaded one. A bare
+  // skeleton or error in its place left this tab with no route to the vývěska,
+  // search or notifications while a crawl ran — the same hole CalendarScreen
+  // had, caught in review on this PR. The plan's title is only known once the
+  // plan is, so the eyebrow is empty until then.
+  const shell = (body: ReactNode, eyebrow = '') => (
+    <div data-testid="subjects-screen" className="flex flex-1 flex-col overflow-hidden">
+      <ScreenHeader eyebrow={eyebrow} title={t('mobile.subjects.title')} below={planButton} />
+      {body}
+    </div>
+  );
+
+  if ((!handshakeDone && !handshakeTimedOut) || (isSyncing && !firstSyncSettled && !planUsable)) {
+    return shell(<SubjectsSkeleton />);
+  }
+
   // Narrower than the other two screens on purpose: the study plan carries no
   // arrival signal (its fetch is TTL-gated, so a null is ambiguous — see
   // SyncDomain), leaving the whole-sync error as the only failure this screen
@@ -90,16 +106,11 @@ export function SubjectsScreen() {
   // run still reads as "no subjects"; narrowing that needs a fetched/skipped
   // distinction inside ttlGated, which is a separate change.
   if (!planUsable && syncError) {
-    return <ScreenError testId="subjects-error" />;
+    return shell(<ScreenError testId="subjects-error" />);
   }
 
   if (!planUsable) {
-    return (
-      <div data-testid="subjects-screen" className="flex flex-1 flex-col overflow-hidden">
-        <ScreenHeader eyebrow="" title={t('mobile.subjects.title')} below={planButton} />
-        <EmptyState />
-      </div>
-    );
+    return shell(<EmptyState />);
   }
 
   // What the student enrolled in, not what the plan offers. Picking a "current"
@@ -116,9 +127,8 @@ export function SubjectsScreen() {
     });
   };
 
-  return (
-    <div data-testid="subjects-screen" className="flex flex-1 flex-col overflow-hidden">
-      <ScreenHeader eyebrow={plan.title} title={t('mobile.subjects.title')} below={planButton} />
+  return shell(
+    <>
       <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-24 pt-3.5">
         <CreditRing earned={plan.creditsAcquired} total={plan.creditsRequired} />
         {enrolled.length > 0 ? (
@@ -136,6 +146,7 @@ export function SubjectsScreen() {
         )}
         <AverageAccordion studyStats={studyStats} comparison={studyComparison} />
       </div>
-    </div>
+    </>,
+    plan.title
   );
 }

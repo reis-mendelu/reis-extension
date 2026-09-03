@@ -23,10 +23,20 @@ export function fromCompact(date: string): Date | null {
   const match = /^(\d{4})(\d{2})(\d{2})$/.exec(date);
   if (!match) return null;
   const [, y, m, d] = match;
-  const parsed = new Date(Number(y), Number(m) - 1, Number(d));
+  const year = Number(y);
+  const month = Number(m) - 1;
+  const day = Number(d);
+  // setFullYear rather than the constructor: `new Date(99, 0, 1)` is 1999, not
+  // year 99 — the two-digit-year legacy — and the round-trip below cannot catch
+  // it, since the month and date survive that shift untouched while only the
+  // year moves.
+  const parsed = new Date(2000, month, day);
+  parsed.setFullYear(year);
   // Rejects 20261332 and friends: the Date constructor rolls those over
   // silently, and a rolled-over date would move the term start.
-  return parsed.getMonth() === Number(m) - 1 && parsed.getDate() === Number(d) ? parsed : null;
+  return parsed.getFullYear() === year && parsed.getMonth() === month && parsed.getDate() === day
+    ? parsed
+    : null;
 }
 
 /** The first teaching day in the stored semester, or null when nothing is stored. */

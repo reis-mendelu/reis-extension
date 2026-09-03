@@ -15,6 +15,15 @@ describe('fromCompact', () => {
     expect(fromCompact('20260231')).toBeNull();
   });
 
+  /**
+   * `new Date(99, 0, 1)` is 1999, not year 99 — the two-digit-year legacy of
+   * the Date constructor. The month/date round-trip below cannot catch it,
+   * since both survive the shift; only the year moves. Caught in review.
+   */
+  it('parses a year below 100 as itself, not 19xx', () => {
+    expect(fromCompact('00990101')?.getFullYear()).toBe(99);
+  });
+
   it('rejects anything that is not eight digits', () => {
     expect(fromCompact('2026-09-15')).toBeNull();
     expect(fromCompact('')).toBeNull();
