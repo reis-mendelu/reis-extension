@@ -6,6 +6,16 @@ export interface ScreenHeaderProps {
    *  v kapse" was a tagline rather than context, unlike the other screens'
    *  eyebrows, which carry the semester or exam period. */
   eyebrow?: string;
+  /**
+   * A control sitting beside the eyebrow, on its line.
+   *
+   * The calendar puts "Dnes" here. It belongs next to the week label because
+   * that is what it acts on — the label says which week you are looking at, and
+   * this is how you get back — and it cannot be part of the label itself: a
+   * string that doubles as a button is the "nothing quietly does double duty"
+   * mistake, and it would have no accessible name of its own.
+   */
+  eyebrowAction?: ReactNode;
   title: string;
   /**
    * The screen's OWN control, on its own row under the title — Subjects' study
@@ -24,7 +34,7 @@ export interface ScreenHeaderProps {
  * three destinations were reachable from one of five tabs; making the actions
  * part of the header means a screen cannot render one without them.
  */
-export function ScreenHeader({ eyebrow, title, below }: ScreenHeaderProps) {
+export function ScreenHeader({ eyebrow, eyebrowAction, title, below }: ScreenHeaderProps) {
   return (
     // The top padding carries --safe-top because this is the topmost element on
     // every mobile screen and targetSdk 36 forces edge-to-edge: without it the
@@ -42,8 +52,16 @@ export function ScreenHeader({ eyebrow, title, below }: ScreenHeaderProps) {
                   ("B-OI prez - ZS 2025/2026") wrapped at 320px and pushed the
                   title out of line with the actions beside it. */}
         <div className="flex min-w-0 flex-col gap-0.5">
-          {eyebrow && (
-            <span className="truncate text-sm font-medium text-base-content/60">{eyebrow}</span>
+          {(eyebrow || eyebrowAction) && (
+            // A row, so the action keeps its width while the label truncates
+            // around it. A long eyebrow ("B-OI prez - ZS 2025/2026") must not
+            // be able to push a button off the screen.
+            <div className="flex min-w-0 items-center gap-2">
+              {eyebrow && (
+                <span className="truncate text-sm font-medium text-base-content/60">{eyebrow}</span>
+              )}
+              {eyebrowAction}
+            </div>
           )}
           <span className="truncate font-display text-2xl font-extrabold tracking-tight max-[359px]:text-xl">
             {title}

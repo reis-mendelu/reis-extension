@@ -26,14 +26,14 @@ import {
 describe('releaseVelocity', () => {
   it('is zero without enough samples to measure between', () => {
     expect(releaseVelocity([])).toBe(0);
-    expect(releaseVelocity([{ y: 10, t: 0 }])).toBe(0);
+    expect(releaseVelocity([{ pos: 10, t: 0 }])).toBe(0);
   });
 
   it('measures downward movement as positive', () => {
     expect(
       releaseVelocity([
-        { y: 0, t: 0 },
-        { y: 50, t: 50 },
+        { pos: 0, t: 0 },
+        { pos: 50, t: 50 },
       ])
     ).toBeCloseTo(1);
   });
@@ -41,8 +41,8 @@ describe('releaseVelocity', () => {
   it('measures upward movement as negative', () => {
     expect(
       releaseVelocity([
-        { y: 50, t: 0 },
-        { y: 0, t: 50 },
+        { pos: 50, t: 0 },
+        { pos: 0, t: 50 },
       ])
     ).toBeCloseTo(-1);
   });
@@ -50,10 +50,10 @@ describe('releaseVelocity', () => {
   it('ignores the early part of a long gesture', () => {
     // Dragged slowly for a second, then flicked: the flick is what matters.
     const samples = [
-      { y: 0, t: 0 },
-      { y: 40, t: 900 },
-      { y: 60, t: 960 },
-      { y: 120, t: 1000 },
+      { pos: 0, t: 0 },
+      { pos: 40, t: 900 },
+      { pos: 60, t: 960 },
+      { pos: 120, t: 1000 },
     ];
     // Whole-gesture average would be 120/1000 = 0.12 px/ms — slow.
     expect(120 / 1000).toBeCloseTo(0.12);
@@ -63,10 +63,10 @@ describe('releaseVelocity', () => {
 
   it('reports nearly nothing for a sheet held still before release', () => {
     const samples = [
-      { y: 0, t: 0 },
-      { y: 100, t: 200 },
-      { y: 100, t: 800 },
-      { y: 100, t: 900 },
+      { pos: 0, t: 0 },
+      { pos: 100, t: 200 },
+      { pos: 100, t: 800 },
+      { pos: 100, t: 900 },
     ];
     expect(Math.abs(releaseVelocity(samples))).toBeLessThan(0.01);
   });
@@ -75,8 +75,8 @@ describe('releaseVelocity', () => {
     // Both samples are older than the window; falling back to zero here would
     // report a deliberate flick as motionless.
     const samples = [
-      { y: 0, t: 0 },
-      { y: 80, t: 400 },
+      { pos: 0, t: 0 },
+      { pos: 80, t: 400 },
     ];
     expect(releaseVelocity(samples)).toBeCloseTo(0.2);
   });

@@ -1,6 +1,9 @@
+import { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { getCzechHoliday } from '../../../../utils/holidays';
+import { toIso, toCompact, shiftIso, weekDays } from '../../../../utils/mobile/weekDays';
+import { useWeekSwipe } from './useWeekSwipe';
 
 export interface DayChipsProps {
   selectedIso: string;
@@ -9,63 +12,76 @@ export interface DayChipsProps {
   lessonDates: ReadonlySet<string>;
 }
 
-function toIso(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function fromIso(iso: string): Date {
-  const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y as number, (m as number) - 1, d as number);
-}
-
-function mondayOf(iso: string): Date {
-  const date = fromIso(iso);
-  const day = date.getDay();
-  // Sunday is 0, so `1 - day` would jump FORWARD into the next week —
-  // walk back six days instead.
-  date.setDate(date.getDate() + (day === 0 ? -6 : 1 - day));
-  return date;
-}
-
-function shiftIso(iso: string, days: number): string {
-  const date = fromIso(iso);
-  date.setDate(date.getDate() + days);
-  return toIso(date);
-}
-
 /**
  * Five weekday chips (Mon–Fri) plus the arrows that move a week at a time —
  * the phone's whole day/week switcher.
  *
- * The week is derived from the SELECTED day, not from a stored anchor. It used
- * to take `schedule.weekStart`, whose name promises "Monday of the fetched
- * week" but which `syncSchedule` writes as the semester start (Feb 1 / Sep 1):
- * on a device in April the row offered five days in February and there was no
- * way to reach the current week at all. Deriving it here means the row and the
- * screen header can never disagree.
+ * The week is derived from the SELECTED day, not from a stored anchor — see
+ * `utils/mobile/weekDays`, which now owns that arithmetic because the screen
+ * header labels the same week and the two must not compute it separately.
  *
  * Moving a week needs no fetch: `syncSchedule` already stores the whole
  * semester in one go, so every week the arrows can reach is already local.
+ *
+ * Two routes to a different week, because the old single route was a 28px
+ * chevron — "switching to the next week in the calendar has a small '>' button.
+ * It feels a bit unintuitive". The strip now SWIPES, which is the gesture a
+ * horizontal row of days invites and the one both native calendars use, and
+ * the chevrons stay as the visible affordance that teaches it.
+ *
+ * They stay at the two ends, flanking the strip, and only grew: collecting them
+ * into one pill on the right — the desktop header's arrangement — was tried and
+ * rejected outright. On a phone the arrow on the side you are heading towards
+ * is the arrow you reach for, and a pill breaks that mapping for the sake of a
+ * tidier row. 44px tall now, the touch minimum the old 36px missed.
  */
 export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
-  const monday = mondayOf(selectedIso);
+  const days = weekDays(selectedIso, lessonDates);
 
-  // Mon–Fri is the row. A weekend day appears only when it actually holds a
-  // lesson — MENDELU teaches combined-study cohorts on Saturdays and the
-  // desktop grid carries all seven days, so a fixed five made those lessons
-  // unreachable: the agenda follows the selected day and no chip could select a
-  // Saturday. An empty weekend never pads the row, so the common week stays
-  // five even-width chips.
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(monday);
-    date.setDate(monday.getDate() + i);
-    return date;
-  }).filter((date, i) => i < 5 || lessonDates.has(toIso(date).replace(/-/g, '')));
+  const stripRef = useRef<HTMLDivElement>(null);
+  /**
+   * Written straight to the node, never through state.
+   *
+   * The sheet drag was reported as "not fluent, when I put my finger on it and
+   * then away, it starts bugging", and the cause was an offset held in React
+   * state: a render per pointermove, and a transition that a late re-render
+   * left easing the very offset the finger was setting. Same rule here.
+   */
+  const setOffset = (px: number | null) => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    if (px === null) {
+      // removeProperty, not `= ''`: `transition` is a shorthand, and blanking a
+      // shorthand leaves the old value in place in some implementations, which
+      // would pin `transition: none` on the strip for good.
+      strip.style.removeProperty('transition');
+      strip.style.removeProperty('transform');
+      return;
+    }
+    strip.style.transition = 'none';
+    // Damped rather than 1:1. The strip is not a carousel — the next week does
+    // not exist beside it to be dragged into view — so following the finger
+    // exactly would promise a filmstrip that is not there. A third of the
+    // travel reads as "this is about to turn over".
+    strip.style.transform = `translateX(${px / 3}px)`;
+  };
 
+  const { handlers } = useWeekSwipe({
+    stripRef,
+    onMove: setOffset,
+    onEnd: (steps) => {
+      setOffset(null);
+      if (steps !== 0) onSelect(shiftIso(selectedIso, steps * 7));
+    },
+    onCancel: () => setOffset(null),
+  });
+
+  // Was h-9 w-7 — 36x28, under the 44pt touch minimum on both axes. Same
+  // place, same look, bigger target and a slightly bigger glyph.
   const arrowClass =
-    'flex h-9 w-7 flex-shrink-0 items-center justify-center rounded-full text-base-content/50';
+    'flex h-11 w-8 flex-shrink-0 items-center justify-center rounded-full text-base-content/60 active:bg-base-200 active:text-primary';
 
   return (
     <div className="flex flex-shrink-0 items-center gap-1 px-2 pb-2.5 pt-4">
@@ -75,14 +91,25 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
         aria-label={t('mobile.calendar.prevWeek')}
         className={arrowClass}
       >
-        <ChevronLeft size={18} />
+        <ChevronLeft size={22} />
       </button>
       {/* Below 360px a seven-chip week wrapped onto a second line — "Po 3" and
           "Ne 9" broke between the weekday and the date, doubling the row's
           height and leaving it ragged. The same `max-[359px]` tightening
           BottomNav and SubjectDrawerTabs already use keeps all seven on one
-          line; wider phones are untouched. Measured at 320/390/430. */}
-      <div className="flex flex-1 gap-1.5 max-[359px]:gap-0.5">
+          line; wider phones are untouched. Measured at 320/390/430.
+
+          touch-none on the strip, for the reason MapSheet's handle carries it:
+          with the default touch-action the browser claims the gesture as a pan
+          partway through and fires pointercancel, and no `preventDefault` after
+          that point can get it back. The strip has no scroller inside it, so
+          there is nothing here for the declaration to take away. */}
+      <div
+        ref={stripRef}
+        data-testid="day-strip"
+        {...handlers}
+        className="flex flex-1 touch-none gap-1.5 transition-transform duration-200 ease-out max-[359px]:gap-0.5"
+      >
         {days.map((date) => {
           const iso = toIso(date);
           const isSelected = iso === selectedIso;
@@ -102,7 +129,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
           // theme, under the 4.5 floor, so the empty days became the hardest
           // labels on the screen to read. Every label stays at /70, which
           // passes, and presence is carried by the mark instead.
-          const hasLessons = lessonDates.has(iso.replace(/-/g, ''));
+          const hasLessons = lessonDates.has(toCompact(iso));
           return (
             <button
               key={iso}
@@ -157,7 +184,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
         aria-label={t('mobile.calendar.nextWeek')}
         className={arrowClass}
       >
-        <ChevronRight size={18} />
+        <ChevronRight size={22} />
       </button>
     </div>
   );

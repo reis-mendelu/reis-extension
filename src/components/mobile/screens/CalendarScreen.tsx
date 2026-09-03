@@ -11,6 +11,9 @@ import { isLessonHidden } from '../../../utils/hiddenLessons';
 import { getCzechHoliday } from '../../../utils/holidays';
 import { isOutsideTeaching } from '../../../utils/mobile/teachingPeriod';
 import { semesterStart } from '../../../utils/mobile/semesterStart';
+import { toIso, fromIso, weekDays } from '../../../utils/mobile/weekDays';
+import { weekRangeLabel, weekEyebrow } from '../../../utils/mobile/weekRange';
+import { getWeekForDate } from '../../../api/teachingWeek';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
@@ -18,10 +21,6 @@ import { DayAgenda } from './calendar/DayAgenda';
 import { CalendarEmptyDay } from './calendar/CalendarEmptyDay';
 import { CalendarAlerts } from './calendar/CalendarAlerts';
 import { MobileBulletinOverlay } from '../../Bulletin/MobileBulletinOverlay';
-
-function toIso(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 function formatHeaderDate(date: Date, locale: string): string {
   const formatted = new Intl.DateTimeFormat(locale, {
@@ -47,7 +46,7 @@ function CalendarSkeleton() {
 }
 
 export function CalendarScreen() {
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const { schedule } = useSchedule();
   const mobileSelectedDayIso = useAppStore((s) => s.mobileSelectedDayIso);
@@ -78,11 +77,54 @@ export function CalendarScreen() {
   // student with no route to any of them for as long as a crawl took, which on
   // a first sign-in is minutes.
   const selectedIso = mobileSelectedDayIso ?? toIso(new Date());
+
+  // Lifted above `chrome`, because the header now labels the week the strip is
+  // showing and `chrome` is what the skeleton and error paths render too. With
+  // no schedule yet the set is empty, which is the right answer rather than a
+  // missing one: the strip falls back to Mon–Fri and the label describes
+  // exactly those days.
+  const visibleSchedule = schedule.filter((l) => !isLessonHidden(l, hiddenItems));
+  const lessonDates = new Set(visibleSchedule.map((l) => l.date));
+  const shownDays = weekDays(selectedIso, lessonDates);
+  // The teaching week NUMBER, which is the unit MENDELU students actually use —
+  // assignments are set "in week 9", and IS publishes a table of them. The
+  // desktop header has shown it beside the calendar all along; the phone had
+  // no week label of any kind, so a tap on the old chevron changed five chips
+  // and said nothing about what had changed.
+  const viewedWeek = teachingWeekData
+    ? getWeekForDate(teachingWeekData, fromIso(selectedIso))
+    : null;
+  const weekLabel = weekEyebrow(
+    viewedWeek ? t('teachingWeek.label', { current: viewedWeek }) : null,
+    weekRangeLabel(shownDays, locale)
+  );
+  const todayIso = toIso(new Date());
   const chrome = (
     <>
       {/* The date IS the title. It was the eyebrow under a "Ahoj, {name}"
-          greeting that told the student nothing they did not already know. */}
-      <ScreenHeader title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)} />
+          greeting that told the student nothing they did not already know —
+          and the eyebrow has been empty ever since, which is where the week
+          label goes: it costs no height, and Zkoušky and Předměty already use
+          this slot for exactly this kind of context. */}
+      <ScreenHeader
+        eyebrow={weekLabel}
+        eyebrowAction={
+          // Only once it has something to do. A week away from today there is
+          // no way back short of counting swipes; sitting on today it would be
+          // a permanently disabled-looking control next to the date it points
+          // at.
+          selectedIso === todayIso ? undefined : (
+            <button
+              type="button"
+              onClick={() => setMobileSelectedDay(todayIso)}
+              className="flex-shrink-0 rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-semibold text-primary active:bg-primary/25"
+            >
+              {t('common.today')}
+            </button>
+          )
+        }
+        title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
+      />
       {/* Mounted with the header rather than with the agenda: the vývěska
           button is live while the schedule loads, so what it opens has to be
           too. */}
@@ -133,12 +175,7 @@ export function CalendarScreen() {
 
   const now = new Date();
   const nowNext = resolveNowNext(schedule, now);
-  const visibleSchedule = schedule.filter((l) => !isLessonHidden(l, hiddenItems));
   const agenda = buildDayAgenda(visibleSchedule, selectedIso);
-  // Which days the chip row may need to offer beyond Mon–Fri. Built from the
-  // lessons the student can actually see, so a hidden Saturday lesson does not
-  // conjure a chip for an empty day.
-  const lessonDates = new Set(visibleSchedule.map((l) => l.date));
   // The util has existed since the desktop calendar shipped; the phone simply
   // never asked. Without it a public holiday reads as an ordinary free day —
   // "Nic nemáš, pohodička" over 28 September.

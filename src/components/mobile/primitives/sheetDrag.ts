@@ -27,13 +27,22 @@ export const REVERSAL_VELOCITY_PX_PER_MS = -0.05;
 /** How much of the end of a gesture counts towards its release velocity. */
 export const VELOCITY_WINDOW_MS = 100;
 
+/**
+ * One point along a gesture: how far along the axis, and when.
+ *
+ * `pos` rather than `y` because the measurement below is the same on either
+ * axis — the day strip's horizontal week swipe wants exactly this, and a field
+ * called `y` would have meant either a second copy of the function or storing
+ * an x in a field named y.
+ */
 export interface DragSample {
-  y: number;
+  pos: number;
   t: number;
 }
 
 /**
- * Release velocity in px/ms, downward positive, from the END of the gesture.
+ * Release velocity in px/ms along the sample axis, from the END of the gesture.
+ * Positive is increasing `pos` — downward for a sheet, rightward for a strip.
  *
  * Averaging over the WHOLE gesture — which is what `dy / dtMs` did — answers a
  * different question than the one that matters. A long slow pull that finishes
@@ -55,7 +64,7 @@ export function releaseVelocity(samples: readonly DragSample[]): number {
   }
   const dt = last.t - first.t;
   if (dt <= 0) return 0;
-  return (last.y - first.y) / dt;
+  return (last.pos - first.pos) / dt;
 }
 
 /**

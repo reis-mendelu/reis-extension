@@ -104,7 +104,7 @@ export function useSheetDrag({
     if (!dragOwnsGesture(e.target as Element, panelRef.current)) return;
     const height = panelRef.current?.getBoundingClientRect().height ?? 0;
     start.current = { y: e.clientY, t: e.timeStamp, height };
-    samples.current = [{ y: e.clientY, t: e.timeStamp }];
+    samples.current = [{ pos: e.clientY, t: e.timeStamp }];
     // Guarded: happy-dom implements neither of these.
     panelRef.current?.setPointerCapture?.(e.pointerId);
   };
@@ -118,7 +118,7 @@ export function useSheetDrag({
     // does the gesture count as a drag for click suppression — otherwise the
     // jitter in an ordinary tap swallows it.
     if (Math.abs(dy) >= DRAG_SLOP_PX) dragged.current = true;
-    samples.current.push({ y: e.clientY, t: e.timeStamp });
+    samples.current.push({ pos: e.clientY, t: e.timeStamp });
     if (samples.current.length > 24) samples.current.shift();
     onMove(dy, from.height);
   };
@@ -128,7 +128,7 @@ export function useSheetDrag({
     start.current = null;
     releaseCapture(e.pointerId);
     if (!from) return;
-    samples.current.push({ y: e.clientY, t: e.timeStamp });
+    samples.current.push({ pos: e.clientY, t: e.timeStamp });
     const velocity = releaseVelocity(samples.current);
     samples.current = [];
     if (onEnd(e.clientY - from.y, velocity, from.height) === true) dragged.current = true;
