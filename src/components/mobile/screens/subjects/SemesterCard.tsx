@@ -114,7 +114,12 @@ function SemesterRow({
           ellipsizes exam card titles but deliberately not these, and at 390px a
           cut landed mid-word ("Databázové systémy a návrh d…"), losing the half
           that distinguishes one subject from another. */}
-      <span className="flex min-w-0 flex-1 flex-col gap-1 md:flex-row md:items-start md:gap-2.5">
+      {/* md:justify-between is what puts the chip on the RIGHT from `md:` up,
+          against the credits, rather than trailing the name in the middle of
+          the row. The wrapper is flex-1, so its right edge is the credits' left
+          edge — the two read as one metadata column. On a phone the wrapper is
+          a column and this has no effect. */}
+      <span className="flex min-w-0 flex-1 flex-col gap-1 md:flex-row md:items-start md:justify-between md:gap-2.5">
         <span className="min-w-0 break-words text-md font-medium text-base-content">
           {subject.name}
         </span>
