@@ -1167,4 +1167,16 @@ under an "Ukázka" banner. All three strings are present in the shipped
 `ios/App/App/public/assets` bundle of 50100.1, so the documented path still exists after
 #265's mobile rework and #266's error-reporter inversion.
 
-Left deliberately undone: **Add for Review / Submit**. That is the owner's call.
+### 13.7 Submitted (2026-09-04, 00:31)
+
+Submitted for review at the owner's explicit instruction. App Store Connect confirmed
+**"1 Item Submitted"**, the version moved to **`5.1.0 Waiting for Review`**, and the
+submission item read `iOS App 5.1.0 - 5.1.0 (50100.1)`. Apple quotes up to 48 hours.
+
+No export-compliance question was asked, because `ITSAppUsesNonExemptEncryption` is
+`false` in the binary's Info.plist - verified in the shipped IPA before submitting, so no
+legal declaration had to be answered in the web form.
+
+One scare worth recording: at 0.6-scale the Version field renders as `6.1.0` in a JPEG
+screenshot. It is a compression artifact. The DOM value and a zoomed capture both read
+`5.1.0`. Check the value, not the screenshot.
