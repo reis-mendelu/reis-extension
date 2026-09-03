@@ -67,7 +67,22 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   adminConsoleOpen: false,
   societyPosts: [],
   societyAccounts: [],
-  openSocietyAdmin: () => set({ adminConsoleOpen: true }),
+  // Re-pull the inbox on open, not just when the session is established.
+  //
+  // adminLogin/loadAdminSession used to be the only fetch, on the reasoning
+  // that "nothing arrives while the iframe is closed, so the count is refreshed
+  // at every open". That holds for the extension, where the iframe is destroyed
+  // and rebuilt on every IS Mendelu page load — app start and console open are
+  // the same moment there. The Capacitor app is a long-lived process, so they
+  // are not: a suggestion filed from the iPad after launch stayed invisible in
+  // Návrhy until the app was force-quit, however often the console was reopened.
+  //
+  // Fire-and-forget: opening must not wait on the network, and loadSuggestions
+  // already leaves the existing rows alone when the read fails.
+  openSocietyAdmin: () => {
+    set({ adminConsoleOpen: true });
+    if (get().adminRole === 'reis_admin') void get().loadSuggestions();
+  },
   /**
    * Drop every trace of in-progress authoring. Called at each boundary where
    * the thing being authored stops being the thing on screen — leaving the
@@ -119,9 +134,10 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       adminAssociationId: associationId,
       adminActiveAssociationId: associationId,
     });
-    // Pull the inbox as soon as the role is known. This is a pull, not a push:
-    // nothing arrives while the iframe is closed, so the count is refreshed at
-    // every open and announced by SuggestionsToast.
+    // Pull the inbox as soon as the role is known, so SuggestionsToast can
+    // announce the count without waiting for the console to be opened. This is
+    // a pull, not a push — openSocietyAdmin re-pulls on every open, which is
+    // what keeps a long-lived Capacitor process from showing a stale inbox.
     if (role === 'reis_admin') {
       await get().loadSuggestions();
       await get().loadSocietyAccounts();
@@ -183,9 +199,10 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       adminAssociationId: associationId,
       adminActiveAssociationId: associationId,
     });
-    // Pull the inbox as soon as the role is known. This is a pull, not a push:
-    // nothing arrives while the iframe is closed, so the count is refreshed at
-    // every open and announced by SuggestionsToast.
+    // Pull the inbox as soon as the role is known, so SuggestionsToast can
+    // announce the count without waiting for the console to be opened. This is
+    // a pull, not a push — openSocietyAdmin re-pulls on every open, which is
+    // what keeps a long-lived Capacitor process from showing a stale inbox.
     if (role === 'reis_admin') {
       await get().loadSuggestions();
       await get().loadSocietyAccounts();
