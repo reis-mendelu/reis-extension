@@ -4,9 +4,6 @@ import { landmarkGroupLabels, roomLabel } from './mapHelpers';
 import { EventDetailCard } from './EventDetailCard';
 import landmarksJson from '../../data/map/landmarks.json';
 import type { Landmark } from '../../types/campusMap';
-import { LIBRARY_PLACE_IDS } from '@/data/map/libraryRooms';
-import { LibraryRoomSection } from './LibraryRoomSection';
-import { MapLibrarySection } from './MapLibrarySection';
 
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
 const GROUP_LABELS = landmarkGroupLabels(LANDMARKS);
@@ -29,8 +26,6 @@ export function DetailPanel() {
   if (!sel) return null;
 
   if (sel.kind === 'event') return <EventDetailCard event={sel.event} />;
-
-  if (sel.kind === 'libraryOverview') return <MapLibrarySection />;
 
   if (sel.kind === 'poi') {
     const p = sel.poi;
@@ -67,18 +62,6 @@ export function DetailPanel() {
     : sel.kind === 'roomRef'
       ? roomLabel(sel.entry.name, sel.entry.code, sel.entry.nickname)
       : '';
-  const placeId =
-    sel.kind === 'room' ? r?.id : sel.kind === 'roomRef' ? sel.entry.placeId : undefined;
-  const isLibrary = placeId != null && LIBRARY_PLACE_IDS.has(placeId);
-  // A library study room is defined by its booking info, not the generic IS room
-  // passport — show the study-room card alone, no duplicated name/seats/code.
-  if (isLibrary && placeId != null) {
-    return (
-      <div className="p-4 bg-base-100 border border-base-300 rounded-lg">
-        <LibraryRoomSection placeId={placeId} />
-      </div>
-    );
-  }
   return (
     <div className="p-4 bg-base-100 border border-base-300 rounded-lg space-y-1">
       <h3 className="font-bold text-base-content">{name}</h3>

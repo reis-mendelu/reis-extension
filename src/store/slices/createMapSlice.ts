@@ -21,10 +21,6 @@ import {
 } from '../../components/CampusMap/mapHelpers';
 import { fetchBuildingRooms } from '../../api/campusMap';
 import { fetchMapEvents, toMapEvent } from '../../api/mapEvents';
-import { fetchLibraryAvailability } from '@/api/libraryAvailability';
-import { indexAvailabilityByRoom } from '@/data/map/libraryRooms';
-import { createLibraryBooking } from '@/api/libraryBooking';
-import { buildBookingRequest } from '@/services/library/bookingRequest';
 import { logError } from '../../utils/reportError';
 
 const META = buildingsJson as BuildingsMeta;
@@ -54,10 +50,6 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   mapFocusRequest: 0,
   mapEvents: [],
   mapEventsLoaded: false,
-  libraryAvailability: {},
-  libraryAvailabilityLoaded: false,
-  bookingStatus: {},
-  bookingError: {},
   mapPanelTab: 'events',
   eventFilter: 'all',
   societyMapEvents: [],
@@ -82,8 +74,6 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   exitToCampus: () => set({ activeBuildingId: null, activeFloorId: null, mapSelection: null }),
 
   clearMapSelection: () => set({ mapSelection: null }),
-
-  openLibraryOverview: () => set({ mapSelection: { kind: 'libraryOverview' } }),
 
   setMapFloor: (floorId) => set({ activeFloorId: floorId, mapSelection: null }),
 
@@ -294,34 +284,6 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
       void get().loadRsvps(events.map((e) => e.id));
     } catch (err) {
       logError('MapSlice.reloadMapEvents', err);
-    }
-  },
-
-  loadLibraryAvailability: async () => {
-    if (get().libraryAvailabilityLoaded) return;
-    // fetchLibraryAvailability never throws — it logs and returns [] on failure.
-    const rooms = await fetchLibraryAvailability();
-    // The API returns all rooms under one shared staff GUID; index by each room's
-    // own per-room staffGuid (matched on serviceId) so every reader's
-    // `availability[room.staffGuid]` lookup resolves. See indexAvailabilityByRoom.
-    set({ libraryAvailability: indexAvailabilityByRoom(rooms), libraryAvailabilityLoaded: true });
-  },
-
-  bookRoom: async (room, slotIso, identity) => {
-    const key = `${room.staffGuid}|${slotIso}`;
-    set((s) => ({ bookingStatus: { ...s.bookingStatus, [key]: 'submitting' } }));
-    const req = buildBookingRequest(room, slotIso, identity);
-    const result = await createLibraryBooking(req);
-    if (result.ok) {
-      set((s) => ({ bookingStatus: { ...s.bookingStatus, [key]: 'success' } }));
-      // Reset the load-once guard so the panel reflects the new booking.
-      set({ libraryAvailabilityLoaded: false });
-      await get().loadLibraryAvailability();
-    } else {
-      set((s) => ({
-        bookingStatus: { ...s.bookingStatus, [key]: 'error' },
-        bookingError: { ...s.bookingError, [key]: result.error },
-      }));
     }
   },
 
