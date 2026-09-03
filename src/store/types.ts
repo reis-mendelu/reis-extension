@@ -467,6 +467,10 @@ export type MobileSheet =
   // tables and the Europe map, which do not survive a phone, and it offered a
   // shortcut to every student for something only exchange students use.
   | { kind: 'notifications' }
+  // The noticeboard. A sheet rather than the portal it used to be, mounted
+  // inside CalendarScreen while its button shipped on every screen's header —
+  // so it opened from one tab out of five.
+  | { kind: 'bulletin' }
   | { kind: 'confirm'; confirmId: string };
 
 export interface MobileUiSlice {

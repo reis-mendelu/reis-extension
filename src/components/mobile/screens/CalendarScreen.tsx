@@ -11,16 +11,13 @@ import { isLessonHidden } from '../../../utils/hiddenLessons';
 import { getCzechHoliday } from '../../../utils/holidays';
 import { isOutsideTeaching } from '../../../utils/mobile/teachingPeriod';
 import { semesterStart } from '../../../utils/mobile/semesterStart';
-import { toIso, fromIso, weekDays } from '../../../utils/mobile/weekDays';
-import { weekRangeLabel, weekEyebrow } from '../../../utils/mobile/weekRange';
-import { getWeekForDate } from '../../../api/teachingWeek';
+import { toIso } from '../../../utils/mobile/weekDays';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
 import { DayAgenda } from './calendar/DayAgenda';
 import { CalendarEmptyDay } from './calendar/CalendarEmptyDay';
 import { CalendarAlerts } from './calendar/CalendarAlerts';
-import { MobileBulletinOverlay } from '../../Bulletin/MobileBulletinOverlay';
 
 function formatHeaderDate(date: Date, locale: string): string {
   const formatted = new Intl.DateTimeFormat(locale, {
@@ -46,7 +43,7 @@ function CalendarSkeleton() {
 }
 
 export function CalendarScreen() {
-  const { t, language } = useTranslation();
+  const { language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const { schedule } = useSchedule();
   const mobileSelectedDayIso = useAppStore((s) => s.mobileSelectedDayIso);
@@ -64,12 +61,11 @@ export function CalendarScreen() {
 
   const { alerts } = useDeadlineAlerts();
 
-  const bulletinPosts = useAppStore((s) => s.bulletinPosts);
-  const bulletinLoading = useAppStore((s) => s.bulletinLoading);
-  const bulletinError = useAppStore((s) => s.bulletinError);
-  const bulletinExpanded = useAppStore((s) => s.bulletinExpanded);
-  const setBulletinExpanded = useAppStore((s) => s.setBulletinExpanded);
-
+  // The vývěska is no longer mounted here. It was a portal owned by this one
+  // screen while the button that opens it ships with every screen's header, so
+  // it opened from the calendar tab and nowhere else; it is a sheet in the
+  // shared stack now — see sheets/BulletinSheet.
+  //
   // The date and the header's four actions come from the selected day and the
   // store, never from the fetch, so they are knowable in every state below —
   // and the header is the ONLY way into search, settings, notifications and
@@ -78,65 +74,19 @@ export function CalendarScreen() {
   // a first sign-in is minutes.
   const selectedIso = mobileSelectedDayIso ?? toIso(new Date());
 
-  // Lifted above `chrome`, because the header now labels the week the strip is
-  // showing and `chrome` is what the skeleton and error paths render too. With
-  // no schedule yet the set is empty, which is the right answer rather than a
-  // missing one: the strip falls back to Mon–Fri and the label describes
-  // exactly those days.
+  // Lifted above `chrome` so it is computed once for the strip below, in every
+  // state including the skeleton — with no schedule the set is simply empty,
+  // and the strip falls back to Mon–Fri.
   const visibleSchedule = schedule.filter((l) => !isLessonHidden(l, hiddenItems));
   const lessonDates = new Set(visibleSchedule.map((l) => l.date));
-  const shownDays = weekDays(selectedIso, lessonDates);
-  // The teaching week NUMBER, which is the unit MENDELU students actually use —
-  // assignments are set "in week 9", and IS publishes a table of them. The
-  // desktop header has shown it beside the calendar all along; the phone had
-  // no week label of any kind, so a tap on the old chevron changed five chips
-  // and said nothing about what had changed.
-  const viewedWeek = teachingWeekData
-    ? getWeekForDate(teachingWeekData, fromIso(selectedIso))
-    : null;
-  const weekLabel = weekEyebrow(
-    viewedWeek ? t('teachingWeek.label', { current: viewedWeek }) : null,
-    weekRangeLabel(shownDays, locale)
-  );
-  const todayIso = toIso(new Date());
   const chrome = (
     <>
-      {/* The date IS the title. It was the eyebrow under a "Ahoj, {name}"
-          greeting that told the student nothing they did not already know —
-          and the eyebrow has been empty ever since, which is where the week
-          label goes: it costs no height, and Zkoušky and Předměty already use
-          this slot for exactly this kind of context. */}
-      <ScreenHeader
-        eyebrow={weekLabel}
-        eyebrowAction={
-          // Only once it has something to do. A week away from today there is
-          // no way back short of counting swipes; sitting on today it would be
-          // a permanently disabled-looking control next to the date it points
-          // at.
-          selectedIso === todayIso ? undefined : (
-            <button
-              type="button"
-              onClick={() => setMobileSelectedDay(todayIso)}
-              className="flex-shrink-0 rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-semibold text-primary active:bg-primary/25"
-            >
-              {t('common.today')}
-            </button>
-          )
-        }
-        title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
-      />
-      {/* Mounted with the header rather than with the agenda: the vývěska
-          button is live while the schedule loads, so what it opens has to be
-          too. */}
-      <MobileBulletinOverlay
-        isOpen={bulletinExpanded}
-        onClose={() => {
-          void setBulletinExpanded(false);
-        }}
-        posts={bulletinPosts}
-        loading={bulletinLoading}
-        error={bulletinError}
-      />
+      {/* The date IS the title, and the eyebrow stays empty. It was the
+          eyebrow under a "Ahoj, {name}" greeting that told the student nothing
+          they did not already know, and a week label was tried there and
+          rejected the same way — the strip and the title already say which
+          week and which day this is. */}
+      <ScreenHeader title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)} />
     </>
   );
   const shell = (body: ReactNode) => (

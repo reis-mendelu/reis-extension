@@ -23,14 +23,17 @@ export function HeaderActions() {
   const { t } = useTranslation();
   const pushSheet = useAppStore((s) => s.pushSheet);
   const bulletinHydrated = useAppStore((s) => s.bulletinHydrated);
-  const setBulletinExpanded = useAppStore((s) => s.setBulletinExpanded);
   const loadBulletinIfStale = useAppStore((s) => s.loadBulletinIfStale);
   const { notifications, readIds } = useNotificationFeed();
 
   const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
 
   const openBulletin = () => {
-    void setBulletinExpanded(true);
+    // pushSheet, not the old `bulletinExpanded` flag: that flag was only read
+    // by a portal mounted inside CalendarScreen, so on the other four tabs this
+    // button set it and nothing appeared. The stack is rendered once for the
+    // whole app by SheetHost.
+    pushSheet({ kind: 'bulletin' });
     if (bulletinHydrated) void loadBulletinIfStale();
   };
 
