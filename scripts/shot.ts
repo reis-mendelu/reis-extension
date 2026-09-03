@@ -86,23 +86,54 @@ function parseArgs(argv: string[]): Options {
 
 /** Write a value into the app's `meta` IndexedDB store, then reload so the app
  *  boots with it. Deterministic where a nav click is not. */
+/**
+ * Seeds `meta` in whichever reIS database the page actually opened.
+ *
+ * The name is not fixed: `IndexedDBService` uses `reis_db_mock` when
+ * VITE_USE_MOCK_DATA is set and `reis_db` otherwise, so a hard-coded name
+ * silently seeds nothing against `npm run dev:web:mock` — `--view`, `--theme`
+ * and the default `welcome_dismissed` all become no-ops and the run screenshots
+ * the welcome modal over a blurred page while reporting "no findings". A clean
+ * report from an unseeded page is worse than a failure, so this throws.
+ *
+ * `indexedDB.databases()` rather than opening both names: `open()` CREATES a
+ * database that does not exist, which would leave an empty `reis_db` behind on
+ * every mock run and confuse the next one.
+ */
 async function seedMeta(page: Page, entries: Record<string, unknown>): Promise<void> {
   if (Object.keys(entries).length === 0) return;
-  await page.evaluate(async (kv) => {
-    await new Promise<void>((done) => {
-      const req = indexedDB.open('reis_db');
-      req.onsuccess = () => {
-        const db = req.result;
-        if (!db.objectStoreNames.contains('meta')) return done();
-        const tx = db.transaction('meta', 'readwrite');
-        const store = tx.objectStore('meta');
-        for (const [k, v] of Object.entries(kv)) store.put(v, k);
-        tx.oncomplete = () => done();
-        tx.onerror = () => done();
-      };
-      req.onerror = () => done();
-    });
+  const seeded = await page.evaluate(async (kv) => {
+    const names = (await indexedDB.databases())
+      .map((d) => d.name)
+      .filter((n): n is string => n === 'reis_db' || n === 'reis_db_mock');
+
+    for (const name of names) {
+      const ok = await new Promise<boolean>((done) => {
+        const req = indexedDB.open(name);
+        req.onsuccess = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains('meta')) return done(false);
+          const tx = db.transaction('meta', 'readwrite');
+          const store = tx.objectStore('meta');
+          for (const [k, v] of Object.entries(kv)) store.put(v, k);
+          tx.oncomplete = () => done(true);
+          tx.onerror = () => done(false);
+        };
+        req.onerror = () => done(false);
+      });
+      if (ok) return name;
+    }
+    return null;
   }, entries);
+
+  if (seeded === null) {
+    throw new Error(
+      'verify:ui: found no reIS IndexedDB with a `meta` store to seed. The page ' +
+        'may not have booted, or it opened a database this script does not know ' +
+        'about (see DB_NAME in src/services/storage/IndexedDBService.ts). ' +
+        'Refusing to continue — an unseeded run reports a clean page it never set up.'
+    );
+  }
   await page.reload({ waitUntil: 'networkidle' });
 }
 
