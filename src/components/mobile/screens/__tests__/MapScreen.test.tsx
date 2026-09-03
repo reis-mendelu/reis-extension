@@ -48,8 +48,6 @@ beforeEach(() => {
     mapSelection: null,
     adminConsoleOpen: false,
     adminRole: null,
-    libraryAvailability: {},
-    libraryAvailabilityLoaded: true,
   } as never);
 });
 

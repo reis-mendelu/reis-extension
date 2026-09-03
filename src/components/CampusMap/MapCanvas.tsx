@@ -14,8 +14,6 @@ import {
   STRUCTURE_STYLE,
   BUILDING_STYLE,
   SIBLING_STYLE,
-  LIBRARY_FREE_STYLE,
-  LIBRARY_BUSY_STYLE,
 } from './mapHelpers';
 import {
   initLeafletMap,
@@ -27,32 +25,6 @@ import {
 } from './mapLayers';
 import { setMapInstance } from './mapInstance';
 import { roomFocusView } from './focusBounds';
-import {
-  LIBRARY_PLACE_IDS,
-  libraryRoomsByPlaceId,
-  libraryHoverLabel,
-} from '@/data/map/libraryRooms';
-import { isBookableToday } from '@/services/library/nextSlot';
-import type { RoomAvailability } from '@/types/library';
-
-// Fill for a library room polygon: free-today → green, known-but-not-free →
-// muted, unknown (no availability data, e.g. an upstream failure) → the room's
-// neutral base style, so a failed fetch never reads as a false "busy".
-function libraryTintStyle(
-  placeId: number,
-  availability: Record<string, RoomAvailability>,
-  now: Date,
-  neutral: L.PathOptions
-): L.PathOptions {
-  const rooms = libraryRoomsByPlaceId(placeId);
-  const known = rooms.some((room) => availability[room.staffGuid]);
-  if (!known) return neutral;
-  const free = rooms.some((room) => {
-    const a = availability[room.staffGuid];
-    return a ? isBookableToday(a.blocks, room.leadMinutes, now) : false;
-  });
-  return free ? LIBRARY_FREE_STYLE : LIBRARY_BUSY_STYLE;
-}
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
@@ -92,21 +64,6 @@ export function MapCanvas() {
   const draftCoord = useAppStore((s) => s.draftCoord);
   const focusTarget = useAppStore((s) => s.mapFocusTarget);
   const mapSelection = useAppStore((s) => s.mapSelection);
-  const libraryAvailability = useAppStore((s) => s.libraryAvailability);
-  // "Latest ref" for the heavy draw effect below: availability data can land
-  // seconds after mount (async proxy fetch), and re-running that effect on
-  // every such update would re-fly the camera (fitBounds again) even though
-  // the user hasn't navigated. The heavy effect reads `libraryAvailability`
-  // through this ref (always current, updated every render) instead of
-  // depending on it directly, so navigation state (building/floor/focus) is
-  // the only thing that triggers a redraw+fly. A separate light effect below
-  // reacts to `libraryAvailability` changes to re-tint already-drawn library
-  // polygons in place, without touching the camera.
-  const libraryAvailabilityRef = useRef(libraryAvailability);
-  useEffect(() => {
-    libraryAvailabilityRef.current = libraryAvailability;
-  }, [libraryAvailability]);
-
   // Same "latest ref" trick, same reason: moving the draft pin (picking a
   // different room) must not re-fly the camera. Only an explicit request does,
   // and that arrives as a change to draftFocusReq.
@@ -324,10 +281,7 @@ export function MapCanvas() {
             interactive: true,
             bubblingMouseEvents: false,
           };
-      let effectiveBase = base;
-      if (LIBRARY_PLACE_IDS.has(p.id)) {
-        effectiveBase = libraryTintStyle(p.id, libraryAvailabilityRef.current, new Date(), base);
-      }
+      const effectiveBase = base;
       const poly = L.polygon(
         ringToLatLng(f.geometry.coordinates[0]),
         isSel ? SELECTED_STYLE : effectiveBase
@@ -340,9 +294,7 @@ export function MapCanvas() {
           // hover, to avoid a wall of overlapping numbers.
           const pb = poly.getBounds();
           const big = pb.getNorthEast().distanceTo(pb.getSouthWest()) > 12;
-          const label = LIBRARY_PLACE_IDS.has(p.id)
-            ? (libraryHoverLabel(p.id) ?? roomLabel(p.name, p.passportNumber, p.nickname))
-            : roomLabel(p.name, p.passportNumber, p.nickname);
+          const label = roomLabel(p.name, p.passportNumber, p.nickname);
           poly.bindTooltip(label, {
             permanent: big,
             direction: 'center',
@@ -367,9 +319,6 @@ export function MapCanvas() {
       const { bounds, maxZoom, padding } = view;
       flyAndReveal(map, () => map.fitBounds(bounds, { maxZoom, padding, animate: false }));
     }
-    // libraryAvailability intentionally excluded — read via libraryAvailabilityRef
-    // so its arrival doesn't trigger a redraw+fly; see comment at the ref
-    // declaration and the dedicated re-tint effect below.
   }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq, focusTarget]);
 
   // Highlight the selected room in place on a plain map click — restyle the live
@@ -389,30 +338,6 @@ export function MapCanvas() {
       } else poly.setStyle(base);
     }
   }, [mapSelection]);
-
-  // Re-tint already-drawn library polygons in place when fresh availability
-  // data lands (e.g. a few seconds after mount) — mirrors the selection
-  // effect above: restyle the live polygons via roomPolysRef, no redraw and
-  // no camera move. The currently-selected room (if any) is left alone; its
-  // SELECTED_STYLE is owned by the effect above and re-asserted whenever
-  // mapSelection changes.
-  useEffect(() => {
-    const selId =
-      mapSelection?.kind === 'room'
-        ? mapSelection.room.id
-        : mapSelection?.kind === 'roomRef'
-          ? mapSelection.entry.placeId
-          : null;
-    const now = new Date();
-    for (const [placeId, entry] of roomPolysRef.current) {
-      if (!LIBRARY_PLACE_IDS.has(placeId)) continue;
-      const style = libraryTintStyle(placeId, libraryAvailability, now, entry.base);
-      // Always refresh the stored base so a later deselect restores the current
-      // tint; only skip the visible restyle while this room is selected.
-      roomPolysRef.current.set(placeId, { poly: entry.poly, base: style });
-      if (placeId !== selId) entry.poly.setStyle(style);
-    }
-  }, [libraryAvailability, mapSelection]);
 
   return <div ref={ref} className="absolute inset-0" />;
 }
