@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { SyllabusRequirementsSchema } from '../syllabusSchema';
+import { ParsedSyllabusSchema } from '../syllabusSchema';
 
-describe('SyllabusSchema', () => {
+describe('ParsedSyllabusSchema', () => {
   const goldStandardSyllabus = {
     version: 1,
     courseId: '12345',
@@ -22,7 +22,7 @@ describe('SyllabusSchema', () => {
   };
 
   it('validates the "Gold Standard" syllabus data', () => {
-    const result = SyllabusRequirementsSchema.safeParse(goldStandardSyllabus);
+    const result = ParsedSyllabusSchema.safeParse(goldStandardSyllabus);
     expect(result.success).toBe(true);
   });
 
@@ -30,7 +30,7 @@ describe('SyllabusSchema', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const badData = { ...goldStandardSyllabus } as any;
     delete badData.version;
-    const result = SyllabusRequirementsSchema.safeParse(badData);
+    const result = ParsedSyllabusSchema.safeParse(badData);
     expect(result.success).toBe(false);
   });
 
@@ -42,7 +42,7 @@ describe('SyllabusSchema', () => {
         teachers: [{ name: '  Messy Name  ', roles: ' Assistant ' }],
       },
     };
-    const result = SyllabusRequirementsSchema.safeParse(messySyllabus);
+    const result = ParsedSyllabusSchema.safeParse(messySyllabus);
     if (result.success) {
       // safe: fixed-shape fixture, teachers is a non-empty literal
       expect(result.data.courseInfo!.teachers[0]!.name).toBe('Messy Name');

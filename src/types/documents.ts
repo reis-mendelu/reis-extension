@@ -1,3 +1,5 @@
+import type { ParsedSyllabus } from '../schemas/syllabusSchema';
+
 export interface SubjectInfo {
     displayName: string;
     fullName: string;
@@ -144,13 +146,26 @@ export interface NoteImage {
     createdAt: number;  // epoch ms — drives the GC grace-period exemption
 }
 
-export interface SyllabusRequirements {
+/**
+ * A syllabus as it is STORED: in IndexedDB and in the Zustand cache. Derived
+ * from `ParsedSyllabus` so a field added to the parse schema cannot go missing
+ * here — the two shapes were hand-maintained copies and drifted (see
+ * SYLLABUS_VERSION in utils/parsers/syllabusParser.ts for the same failure one
+ * level up).
+ *
+ * The two fields it adds are exactly the two `src/types/schemas/syllabus.schema.ts`
+ * declares on top of the parse schema, and for the same reasons:
+ *  - `language` is stamped by api/syllabus.ts AFTER parsing (the parse schema
+ *    omits it, and Zod strips it), and is what `createSyllabusSlice` branches
+ *    on for a legacy single-language record.
+ *  - `version` is widened back to optional `number` — NOT the parser's literal
+ *    union — because records written before versioning still sit on disk, and
+ *    that store validator is fail-open by design ("must never reject genuine
+ *    data"). Narrowing it here would be a claim about disk contents nothing
+ *    validates. Anything produced now comes through `ParsedSyllabus`, where
+ *    `version` is required.
+ */
+export interface SyllabusRequirements extends Omit<ParsedSyllabus, 'version'> {
     version?: number;
     language?: string;
-    courseId?: string;
-    requirementsText: string;
-    requirementsTable: string[][];
-    courseInfo?: CourseMetadata;
-    objectivesText?: string | null;
-    contentText?: string | null;
 }

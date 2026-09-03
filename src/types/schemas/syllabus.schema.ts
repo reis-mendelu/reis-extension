@@ -3,6 +3,11 @@ import type { SyllabusRequirements } from '../documents';
 
 // Runtime schema for the 'syllabuses' IndexedDB store (was a `z.custom` union no-op).
 //
+// Named apart from `ParsedSyllabusSchema` (src/schemas/syllabusSchema.ts) on
+// purpose: that one is the strict parse-side schema, this one gates reads. They
+// shared the name `SyllabusRequirementsSchema` and disagreed about `version`
+// and `language`.
+//
 // Design: validate STRUCTURE, not domain. IndexedDBService.validate() is
 // fail-closed (a parse failure drops the value on write / hides it on read),
 // so the schema must never reject genuine data. Therefore:
@@ -35,7 +40,7 @@ const CourseMetadataSchema = z
   })
   .passthrough();
 
-export const SyllabusRequirementsSchema = z
+export const StoredSyllabusSchema = z
   .object({
     version: z.number().optional(),
     language: z.string().optional(),
@@ -50,9 +55,9 @@ export const SyllabusRequirementsSchema = z
 
 // 'syllabuses' store - can be legacy single-language or dual-language object
 export const SyllabusSchema = z.union([
-  SyllabusRequirementsSchema,
+  StoredSyllabusSchema,
   z.object({
-    cz: SyllabusRequirementsSchema,
-    en: SyllabusRequirementsSchema,
+    cz: StoredSyllabusSchema,
+    en: StoredSyllabusSchema,
   }),
 ]);
