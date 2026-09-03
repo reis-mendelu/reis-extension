@@ -43,6 +43,18 @@ const IDENTIFYING = [
  * send no student identity.
  */
 const SUPABASE_CALLERS = new Set([
+  // Student suggestions, via the submit_suggestion RPC. The payload is the
+  // student's own words plus `screen` (an AppView name) and browser/version —
+  // no IS id, no name, and deliberately NOT the host URL, which on IS carries
+  // studium=/obdobi=/predmet=/termin=. `contact` is personal data but is opt-in
+  // and hand-typed: it exists so we can reply, and is empty unless the student
+  // fills it in. Nothing here is collected automatically.
+  //
+  // This file already sent exactly this payload to Supabase before — through
+  // the submit-suggestion edge function. Only the transport changed (fetch ->
+  // supabase.rpc), which is why the guard newly matches it; the privacy posture
+  // is unchanged.
+  'src/api/suggestions.ts',
   // Random install id only. Reads take no identity argument at all.
   'src/api/eventRsvp.ts',
   // Random install id only, since the privacy refactor.

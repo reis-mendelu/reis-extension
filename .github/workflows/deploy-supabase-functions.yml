@@ -28,12 +28,6 @@ jobs:
         with:
           version: latest
 
-      # submit-suggestion was deployed by hand, so the deployed copy and the
-      # repo could drift silently. --no-verify-jwt matches how the client calls
-      # it: an apikey header plus the shared secret, no Authorization bearer.
-      - name: Deploy submit-suggestion function
-        run: supabase functions deploy submit-suggestion --project-ref $PROJECT_ID --no-verify-jwt
-
       # society-accounts verifies the caller itself (admin.auth.getUser on the
       # bearer, role looked up by verified uid), and the client calls it with a
       # real session token, so the gateway's own JWT check stays on. v1 was
