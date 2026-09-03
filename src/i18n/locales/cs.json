@@ -516,7 +516,7 @@
       "top": "Patříš mezi {pct} % nejlepších studentů!",
       "beat": "Překonáváš {pct} % studentů ve svém ročníku."
     },
-    "failRateChip": "Neúspěšnost: {rate} %"
+    "failRateChip": "Prům. neúspěšnost: {rate} %"
   },
   "commands": {
     "quickActions": "Rychlé akce",

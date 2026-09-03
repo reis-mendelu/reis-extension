@@ -51,8 +51,13 @@ function GradeChip({ subject }: { subject: SubjectStatus }) {
  *
  * The label is not hover-revealed, the way the desktop's was until this same
  * change: a bare colour-coded percentage does not say what it measures, and a
- * touch screen has no hover to reveal it with. It reads "Neúspěšnost: 28 %" in
- * full — the word and the number together, so the row needs no legend.
+ * touch screen has no hover to reveal it with.
+ *
+ * And it says PRŮM. — an average — because `computeFailRate` pools the last
+ * three semesters. Without that word the chip contradicted the drawer it opens:
+ * "people are confused by seeing 28 % neúspěšnost on a subject but when
+ * clicking on it seeing that the last semester had e.g. 35 %". Both numbers
+ * were right; only one of them said what it was.
  */
 function FailRate({ subject }: { subject: SubjectStatus }) {
   const { t } = useTranslation();

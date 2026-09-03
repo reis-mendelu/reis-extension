@@ -516,7 +516,7 @@
       "top": "You're in the top {pct}% of students!",
       "beat": "You're ahead of {pct}% of students in your year."
     },
-    "failRateChip": "Failure rate: {rate}%"
+    "failRateChip": "Avg. failure rate: {rate}%"
   },
   "commands": {
     "quickActions": "Quick Actions",
