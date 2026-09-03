@@ -9,11 +9,19 @@ import type { SaveDeps } from './saveDocument';
  *
  * That is a claim about this file only. It previously read "the extension
  * bundle never pulls in @capacitor/*", which is not true and misled a later
- * reader into thinking any lazy import is free. The extension's main chunk does
- * ship Capacitor runtime, because three modules import it as a VALUE at module
- * scope: `platform/secureStore.ts`, `mobile/openIsFile.ts` and
- * `mobile/eduroamNative.ts` (grep the build for `registerPlugin`). Being lazy
- * here keeps this file off that list; it does not empty the list.
+ * reader into thinking any lazy import is free.
+ *
+ * Lazy means NOT EXECUTED, not NOT SHIPPED. WXT bundles the content script as a
+ * single file and the extension's main chunk comes out as one 2.7 MB module too,
+ * so Rollup inlines these `import()`s instead of splitting them out. Both
+ * `.output/chrome-mv3/chunks/main-*.js` and `content-scripts/content.js`
+ * therefore contain Capacitor runtime — grep either for `registerPlugin`. The
+ * modules carrying it are `platform/secureStore.ts`, `mobile/openIsFile.ts` and
+ * `mobile/eduroamNative.ts`; none is statically reachable from the entry, which
+ * is exactly why the weight is easy to miss.
+ *
+ * So being lazy here buys deferred evaluation, which is real and worth keeping.
+ * It does not buy a smaller download.
  */
 export function buildSaveDeps(): SaveDeps {
   return {

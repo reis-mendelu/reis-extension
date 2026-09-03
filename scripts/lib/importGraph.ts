@@ -33,8 +33,19 @@ export interface GraphHost {
   resolve(specifier: string, fromFile: string): string | null;
 }
 
-/** Matches `import ... from '<spec>'` and `export ... from '<spec>'`. */
-const FROM_RE = /(?:^|[\n;])\s*(?:import|export)\s[^;\n]*?from\s*['"]([^'"]+)['"]/g;
+/**
+ * Matches `import ... from '<spec>'` and `export ... from '<spec>'`.
+ *
+ * `(?!type\s)` excludes `import type` / `export type`, which TypeScript erases
+ * at compile time: they ship no code and cannot run a module-scope side effect,
+ * so counting them as edges fails the content-script guard on a module that is
+ * provably harmless. `src/services/eventReminders/sync.ts` is the live example —
+ * it takes a `PermissionState` type from `@capacitor/core` and is right to.
+ *
+ * A per-specifier `import { type A, b }` is deliberately still an edge: `b` is a
+ * value, so the module is emitted and its side effects run.
+ */
+const FROM_RE = /(?:^|[\n;])\s*(?:import|export)\s+(?!type\s)[^;\n]*?from\s*['"]([^'"]+)['"]/g;
 /** Matches a side-effect-only `import '<spec>'`. */
 const BARE_IMPORT_RE = /(?:^|[\n;])\s*import\s+['"]([^'"]+)['"]/g;
 
