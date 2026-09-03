@@ -19,6 +19,10 @@ const NODE_MODULES_ROOT = resolve(
 export default defineConfig({
   root: resolve(__dirname, 'dev'),
   publicDir: resolve(__dirname, 'public'),
+  // Same trap as the Capacitor config: Vite defaults envDir to `root` (`dev/`),
+  // so the project-root .env went unread and VITE_EXTENSION_SECRET was
+  // undefined — feedback failed in the dev harness too.
+  envDir: __dirname,
   plugins: [react(), tailwindcss(), reisSnapshotPlugin(), reisAdminSessionPlugin()],
   resolve: {
     alias: {
