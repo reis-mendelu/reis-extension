@@ -1130,3 +1130,41 @@ What we removed
   still the same three mitigations in the binary. This, not the copy, is the likeliest
   cause of another round.
 - Issue #260 (iOS keychain findings) still deferred, unchanged from §12.4.
+
+### 13.5 The listing is Czech-only — the English copy is not filed anywhere
+
+Filing the notes revealed that **English is not a localization on this app**. The version
+page's language menu lists exactly one entry under "Localized" — Czech (Primary) — and
+English sits under "Not Localized" with Arabic, Bangla, Catalan and the rest.
+
+So the English block in §12.3, and the corrected one in §13.3, have never appeared on the
+App Store. They are a reference translation, nothing more. Adding English would mean
+creating a whole localization — description, keywords, screenshots — which is a listing
+decision, not part of shipping a build, and was deliberately not done here.
+
+**Only the Czech copy in §13.3 was filed.**
+
+### 13.6 What was configured for 5.1.0 (2026-09-04, 00:2x)
+
+| field | value |
+|---|---|
+| version record | created, `5.1.0 Prepare for Submission` |
+| build | **50100.1** — selected explicitly over the stale `50100`, which App Store Connect offered first |
+| What's New (Czech) | corrected copy from §13.3, 779 chars |
+| release | Automatically release after App Review |
+| phased release | off — all users immediately |
+| summary rating | keep existing |
+| Sign-in required | unchecked, as in 5.0.6 — the reviewer uses demo mode |
+| contact | Dominik Holek, reis.mendelu@gmail.com |
+| review notes | inherited, 2082 chars |
+
+Inherited from 5.0.6 and untouched: screenshots (4 of 10, iPhone 6.5"), description,
+keywords, support URL, copyright.
+
+**The reviewer path in the notes was re-verified against this binary, not assumed.** The
+notes tell App Review to tap "Prohlédnout ukázku" / "Try the demo" and browse sample data
+under an "Ukázka" banner. All three strings are present in the shipped
+`ios/App/App/public/assets` bundle of 50100.1, so the documented path still exists after
+#265's mobile rework and #266's error-reporter inversion.
+
+Left deliberately undone: **Add for Review / Submit**. That is the owner's call.
