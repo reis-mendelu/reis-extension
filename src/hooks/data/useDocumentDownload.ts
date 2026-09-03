@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { downloadDocument } from '../../api/proxyClient';
 import { logError } from '../../utils/reportError';
 import { DemoModeError } from '../../errors/demoMode';
+import { isShareCancellation } from '../../errors/shareCanceled';
 import { useTranslation } from '../useTranslation';
 
 export type DownloadStatus = 'idle' | 'loading' | 'done' | 'error';
@@ -48,12 +49,27 @@ export function useDocumentDownload() {
         })
         .catch((e) => {
           inFlight.current.delete(id);
-          // logError shows the demo toast for a DemoModeError and reports
-          // nothing. The row goes back to idle rather than 'error' to match:
-          // the download was refused on purpose, and a warning triangle next
-          // to it would say the app is broken instead.
-          logError('Documents.download', e);
-          setStatus((s) => ({ ...s, [id]: e instanceof DemoModeError ? 'idle' : 'error' }));
+          // Two kinds of "not an error" reach here, and both go back to idle
+          // rather than 'error' for the same reason: nothing is broken, so a
+          // warning triangle would say the app is.
+          //
+          //  - DemoModeError: the download was refused on purpose.
+          //  - A dismissed iOS share sheet: on iOS the file is written to
+          //    Documents BEFORE the sheet opens, so the download had already
+          //    succeeded and the student only declined a destination —
+          //    "I cancel the dialog (where to save it), it just shows a
+          //    warning icon. That makes little sense."
+          const declined = e instanceof DemoModeError || isShareCancellation(e);
+          if (!declined) {
+            // Said out loud, once, at the moment it happens. The row's icon
+            // alone could not be read or tapped: "I can't click the warning or
+            // anything to see what it's about."
+            toast.error(tr('documents.downloadFailed'), { duration: 6000 });
+          }
+          // Not reported when declined either: neither is a fault, and
+          // telemetry for "the student pressed Cancel" is noise.
+          if (!declined) logError('Documents.download', e);
+          setStatus((s) => ({ ...s, [id]: declined ? 'idle' : 'error' }));
         });
     },
     [tr]

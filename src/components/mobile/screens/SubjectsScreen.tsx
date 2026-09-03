@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, ListTree } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
@@ -12,6 +12,7 @@ import { ScreenHeader } from './calendar/ScreenHeader';
 import { CreditRing } from './subjects/CreditRing';
 import { SemesterCard } from './subjects/SemesterCard';
 import { AverageAccordion } from './subjects/AverageAccordion';
+import { NavRow } from '../primitives/NavRow';
 
 function SubjectsSkeleton() {
   const { t } = useTranslation();
@@ -75,18 +76,13 @@ export function SubjectsScreen() {
   // předměty" to a student who has plenty, which everyone reads as a statement
   // of fact. The skeleton stays until there is a usable plan to draw, or until
   // a whole sync has finished and the emptiness is the real answer.
+  // A navigation row at the BOTTOM of the screen, under Studijní průměr, rather
+  // than a filled button in the header: "let's put studijni plan under studijni
+  // prumer but rather that being a dropdown, it just opens a new page (same as
+  // on desktop)". A primary-tinted button in the header read as the screen's
+  // main action, which the plan is not — the enrolled subjects are. The
+  // chevron is what says it opens a page, next to an accordion that does not.
   const openPlan = () => pushSheet({ kind: 'studyPlan' });
-  // Its own row under the title rather than beside the header actions: four
-  // 40px targets plus this label overflows a 320px viewport.
-  const planButton = (
-    <button
-      type="button"
-      onClick={openPlan}
-      className="flex h-11 w-fit items-center rounded-lg bg-primary/15 px-3.5 text-sm font-semibold text-primary"
-    >
-      {t('mobile.subjects.studyPlan')}
-    </button>
-  );
 
   // The header renders in every state below, not only the loaded one. A bare
   // skeleton or error in its place left this tab with no route to the vývěska,
@@ -95,7 +91,7 @@ export function SubjectsScreen() {
   // plan is, so the eyebrow is empty until then.
   const shell = (body: ReactNode, eyebrow = '') => (
     <div data-testid="subjects-screen" className="flex flex-1 flex-col overflow-hidden">
-      <ScreenHeader eyebrow={eyebrow} title={t('mobile.subjects.title')} below={planButton} />
+      <ScreenHeader eyebrow={eyebrow} title={t('mobile.subjects.title')} />
       {body}
     </div>
   );
@@ -150,6 +146,16 @@ export function SubjectsScreen() {
           </div>
         )}
         <AverageAccordion studyStats={studyStats} comparison={studyComparison} />
+        {/* Under the average, and only where the plan is real: in the skeleton
+            and error shells above there is nothing to open. */}
+        <div className="flex-shrink-0 overflow-hidden rounded-2xl border border-base-300 bg-base-100">
+          <NavRow
+            icon={ListTree}
+            label={t('mobile.subjects.studyPlan')}
+            sublabel={plan.title}
+            onClick={openPlan}
+          />
+        </div>
       </div>
     </>,
     plan.title

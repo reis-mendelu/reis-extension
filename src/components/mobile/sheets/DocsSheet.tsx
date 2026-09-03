@@ -32,10 +32,28 @@ const ICONS: Record<string, typeof FileText> = {
 };
 
 function StatusIcon({ status }: { status: DownloadStatus }) {
+  const { t } = useTranslation();
   if (status === 'loading')
     return <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-base-content/50" />;
   if (status === 'done') return <Check className="h-4 w-4 flex-shrink-0 text-success" />;
-  if (status === 'error') return <AlertTriangle className="h-4 w-4 flex-shrink-0 text-error" />;
+  if (status === 'error')
+    // Named, not mute. A bare triangle said only "something", and there was no
+    // way to find out what — "I can't click the warning or anything to see what
+    // it's about". The toast raised at the moment of failure carries the
+    // sentence; this carries it for anyone arriving at the row afterwards, and
+    // for a screen reader, which had nothing at all.
+    // The title sits on a wrapper: lucide's props do not include `title`, and
+    // an svg <title> child is not what a long-press tooltip reads.
+    return (
+      <span
+        role="img"
+        aria-label={t('documents.downloadFailed')}
+        title={t('documents.downloadFailed')}
+        className="flex-shrink-0"
+      >
+        <AlertTriangle className="h-4 w-4 text-error" />
+      </span>
+    );
   return null;
 }
 

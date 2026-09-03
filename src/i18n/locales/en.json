@@ -10,7 +10,8 @@
       "overviewEn": "Study overview (English)",
       "regArch": "Print the registration sheet",
       "zadost": "Request to the study department"
-    }
+    },
+    "downloadFailed": "The download didn't go through. Please try again."
   },
   "menu": {
     "title": "Today's Menu",

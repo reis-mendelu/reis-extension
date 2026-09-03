@@ -94,9 +94,22 @@ describe('the persistent header', () => {
     expect(pin.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('keeps the study plan button reachable on subjects', () => {
+  /**
+   * The study plan is NOT a header action any more, deliberately.
+   *
+   * It was a primary-tinted button under the title, which read as the screen's
+   * main action — and the screen's subject is the enrolled subjects, not the
+   * curriculum. "Let's put studijni plan under studijni prumer but rather that
+   * being a dropdown, it just opens a new page (same as on desktop)". It is a
+   * NavRow at the bottom of the loaded body now, so it is reachable only once
+   * there is a plan to open, which is the trade the move makes: during a first
+   * sync the header still carries the vývěska, search and notifications, and
+   * nothing else claims to.
+   */
+  it('does not keep a study plan button in the header', () => {
     render(<SubjectsScreen />);
-    expect(screen.getByRole('button', { name: 'Studijní plán' })).toBeInTheDocument();
+    const header = screen.getByText('Předměty').closest('div')?.parentElement?.parentElement;
+    expect(header?.textContent).not.toContain('Studijní plán');
   });
 });
 

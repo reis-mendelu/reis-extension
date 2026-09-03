@@ -7,12 +7,23 @@ export interface StudyPlanSheetProps {
 }
 
 /**
- * Hosts the existing desktop `StudyPlanPage` full-screen inside the phone's
- * `full` sheet. `StudyPlanPage` renders its own header (back arrow + title) so
- * this sheet adds only the shared drag handle —
- * a second title row would just duplicate it. The back arrow closes the
- * sheet directly; opening a subject pushes the same `subjectDrawer` sheet
- * `SubjectsScreen` already uses.
+ * Hosts the existing desktop `StudyPlanPage` as a pushed SCREEN.
+ *
+ * It was a `full` bottom sheet: it slid up over the tab under a drag pill,
+ * dimmed the screen behind it, and could be thrown away downward. Wrong
+ * vocabulary — "studijni plan shouldn't be a slidedown but rather it's own page
+ * when I click on it". A bottom sheet says "temporary, and what is underneath
+ * still matters", which is right for a subject's detail and wrong for a whole
+ * curriculum you navigate into and then walk back out of.
+ *
+ * `variant="screen"` is the shape the app already had for this, and
+ * `SubjectDrawerSheet` — pushed FROM this page — has used it all along, so
+ * going one level deeper used to mean going sheet → page → sheet.
+ *
+ * Still in the sheet STACK, which is what keeps back working and lets it push
+ * the subject drawer on top; only the presentation changed. `StudyPlanPage`
+ * renders its own header (back arrow + title), so this adds no chrome — and no
+ * drag pill, which would advertise a gesture a screen deliberately lacks.
  */
 export function StudyPlanSheet({ onClose }: StudyPlanSheetProps) {
   const pushSheet = useAppStore((s) => s.pushSheet);
@@ -28,8 +39,7 @@ export function StudyPlanSheet({ onClose }: StudyPlanSheetProps) {
   const searchSubject = (name: string) => pushSheet({ kind: 'search', query: name });
 
   return (
-    <Sheet size="full" onClose={onClose}>
-      <div className="mx-auto mt-2 mb-1 h-1 w-9 flex-shrink-0 rounded-full bg-base-300" />
+    <Sheet size="full" variant="screen" onClose={onClose}>
       <div className="flex flex-1 flex-col overflow-hidden">
         <StudyPlanPage
           onBack={onClose}

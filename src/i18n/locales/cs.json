@@ -10,7 +10,8 @@
       "overviewEn": "Study overview",
       "regArch": "Tisk registračního archu",
       "zadost": "Žádost na studijní oddělení"
-    }
+    },
+    "downloadFailed": "Stažení se nepovedlo. Zkus to prosím znovu."
   },
   "menu": {
     "title": "Jídelníček",

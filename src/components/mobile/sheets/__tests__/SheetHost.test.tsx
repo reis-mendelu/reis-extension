@@ -51,14 +51,16 @@ describe('SheetHost', () => {
   });
 
   /**
-   * `studyPlan` rather than `subjectDrawer`: the drawer presents as a SCREEN
-   * now (Sheet variant="screen") and deliberately renders no backdrop, so it
-   * can no longer stand in for "a sheet with a backdrop". The behaviour under
-   * test — one backdrop click pops exactly one level — is unchanged.
+   * `bulletin` rather than `studyPlan`, which in turn replaced
+   * `subjectDrawer`: both of those present as SCREENS now (Sheet
+   * variant="screen") and deliberately render no backdrop, so neither can
+   * stand in for "a sheet with a backdrop" any more. The behaviour under test —
+   * one backdrop click pops exactly one level — is unchanged, and the stand-in
+   * has to be an actual bottom sheet for it to be exercised at all.
    */
   it('pops exactly one sheet when a backdrop is clicked', () => {
     useAppStore.setState({
-      mobileSheets: [{ kind: 'studyPlan' }, { kind: 'studyPlan' }],
+      mobileSheets: [{ kind: 'bulletin' }, { kind: 'bulletin' }],
     } as never);
     render(<SheetHost />);
 

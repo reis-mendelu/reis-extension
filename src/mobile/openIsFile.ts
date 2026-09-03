@@ -4,6 +4,7 @@ import { loadStoredToken } from '../platform/tokenStore';
 import { fetchIsBinary, blobToBase64 } from '../api/capacitorBinary';
 import { toDirectDownloadUrl } from '../api/isDocumentUrl';
 import { deliverFile, type DeliveryKind } from './deliverFile';
+import { ShareCanceledError, isShareCancellation } from '../errors/shareCanceled';
 
 interface DownloadsPlugin {
   save(o: {
@@ -120,7 +121,17 @@ export async function openIsFileNatively(
           path: o.filename,
         });
         const { Share } = await import('@capacitor/share');
-        await Share.share({ title: o.filename, url: uri });
+        // The file is ALREADY saved by this point — the share sheet only picks
+        // a destination. So a dismissal is normalised into a typed
+        // cancellation rather than left as a bare rejection: as a bare one it
+        // reached the documents row's generic catch and drew a warning
+        // triangle beside a download that had succeeded.
+        try {
+          await Share.share({ title: o.filename, url: uri });
+        } catch (e) {
+          if (isShareCancellation(e)) throw new ShareCanceledError();
+          throw e;
+        }
       },
     }
   );

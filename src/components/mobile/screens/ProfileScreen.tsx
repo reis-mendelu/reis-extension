@@ -1,14 +1,5 @@
 import { useState } from 'react';
-import {
-  Moon,
-  Languages,
-  Wifi,
-  FileText,
-  MessageSquarePlus,
-  LogOut,
-  ChevronRight,
-  User,
-} from 'lucide-react';
+import { Moon, Languages, Wifi, FileText, MessageSquarePlus, LogOut, User } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTheme } from '../../../hooks/useTheme';
 import { useSpolkySettings } from '../../../hooks/useSpolkySettings';
@@ -19,6 +10,7 @@ import { HiddenItemsSection } from '../../Sidebar/Profile/HiddenItemsSection';
 import { FeedbackModal } from '../../Feedback/FeedbackModal';
 import { SignOutConfirm } from '../sheets/SignOutConfirm';
 import { PersonPhoto } from '../../ui/PersonPhoto';
+import { NavRow } from '../primitives/NavRow';
 import { ScreenHeader } from './calendar/ScreenHeader';
 
 function initials(name: string): string {
@@ -148,38 +140,22 @@ export function ProfileScreen() {
             device setup, which is what a settings screen is for, and it was
             competing for attention with everyday shortcuts. One tap, same
             sheet — SheetHost stacks it above this one. */}
-        <button
-          type="button"
+        <NavRow
+          icon={Wifi}
+          label={t('mobile.student.eduroam')}
+          sublabel={t('mobile.student.eduroamSub')}
           onClick={() => pushSheet({ kind: 'eduroam' })}
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-left"
-        >
-          <Wifi size={16} className="flex-shrink-0 text-base-content/50" />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <span className="text-md font-medium">{t('mobile.student.eduroam')}</span>
-            <span className="truncate text-xs text-base-content/60">
-              {t('mobile.student.eduroamSub')}
-            </span>
-          </div>
-          <ChevronRight size={16} className="flex-shrink-0 text-base-content/40" />
-        </button>
+        />
         {/* Dokumenty was the last card on the Student hub. The hub's IS page
             directory is gone from the phone tree (every link opened the system
             browser, which has no IS session), so the card follows eduroam here
             rather than keeping a whole segment alive for one button. */}
-        <button
-          type="button"
+        <NavRow
+          icon={FileText}
+          label={t('mobile.student.documents')}
+          sublabel={t('mobile.student.documentsSub')}
           onClick={() => pushSheet({ kind: 'docs' })}
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-left"
-        >
-          <FileText size={16} className="flex-shrink-0 text-base-content/50" />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <span className="text-md font-medium">{t('mobile.student.documents')}</span>
-            <span className="truncate text-xs text-base-content/60">
-              {t('mobile.student.documentsSub')}
-            </span>
-          </div>
-          <ChevronRight size={16} className="flex-shrink-0 text-base-content/40" />
-        </button>
+        />
 
         <HiddenItemsSection />
 
@@ -199,15 +175,11 @@ export function ProfileScreen() {
 
         <div className="mx-4 my-3 h-px bg-base-300" />
 
-        <button
-          type="button"
+        <NavRow
+          icon={MessageSquarePlus}
+          label={t('settings.reportBug')}
           onClick={() => setFeedbackOpen(true)}
-          className="flex w-full items-center gap-3 px-4 py-3"
-        >
-          <MessageSquarePlus size={17} className="flex-shrink-0 text-base-content/50" />
-          <span className="flex-1 text-left text-md font-medium">{t('settings.reportBug')}</span>
-          <ChevronRight size={15} className="text-base-content/40" />
-        </button>
+        />
         <button
           type="button"
           onClick={() => setSignOutOpen(true)}

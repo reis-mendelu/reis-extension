@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useDocumentDownload } from '../useDocumentDownload';
 import * as proxy from '../../../api/proxyClient';
 import { DemoModeError } from '../../../errors/demoMode';
+import { ShareCanceledError } from '../../../errors/shareCanceled';
 
 describe('useDocumentDownload', () => {
   beforeEach(() => vi.useRealTimers());
@@ -44,6 +45,62 @@ describe('useDocumentDownload', () => {
       result.current.run('potvrzeni-cz', 'https://x', 'f.pdf');
     });
     await waitFor(() => expect(result.current.status['potvrzeni-cz']).toBe('idle'));
+  });
+
+  /**
+   * Cancelling the iOS save dialog is not a failed download.
+   *
+   * On iOS the file is written to Documents BEFORE the share sheet opens, so by
+   * the time the student sees "where do you want this?" the download has
+   * already succeeded. `@capacitor/share` reports a dismissal by rejecting, and
+   * that rejection reached the generic catch: "when a file is downloaded
+   * successfully from 'Studijni dokumenty' and I cancel the dialog (where to
+   * save it), it just shows a warning icon. That makes little sense."
+   */
+  it('returns a cancelled save dialog to idle rather than flagging an error', async () => {
+    vi.spyOn(proxy, 'downloadDocument').mockRejectedValue(new ShareCanceledError());
+    const { result } = renderHook(() => useDocumentDownload());
+    act(() => {
+      result.current.run('potvrzeni-cz', 'https://x', 'f.pdf');
+    });
+    await waitFor(() => expect(result.current.status['potvrzeni-cz']).toBe('idle'));
+  });
+
+  it("recognises the iOS plugin's own cancellation, not just the typed one", async () => {
+    // What actually arrives from @capacitor/share when the sheet is dismissed.
+    vi.spyOn(proxy, 'downloadDocument').mockRejectedValue(new Error('Share canceled'));
+    const { result } = renderHook(() => useDocumentDownload());
+    act(() => {
+      result.current.run('potvrzeni-cz', 'https://x', 'f.pdf');
+    });
+    await waitFor(() => expect(result.current.status['potvrzeni-cz']).toBe('idle'));
+  });
+
+  it('says nothing when the student simply cancelled', async () => {
+    const err = vi.spyOn(toast, 'error').mockImplementation(() => '' as never);
+    vi.spyOn(proxy, 'downloadDocument').mockRejectedValue(new ShareCanceledError());
+    const { result } = renderHook(() => useDocumentDownload());
+    act(() => {
+      result.current.run('potvrzeni-cz', 'https://x', 'f.pdf');
+    });
+    await waitFor(() => expect(result.current.status['potvrzeni-cz']).toBe('idle'));
+    expect(err).not.toHaveBeenCalled();
+  });
+
+  /**
+   * A real failure has to be READABLE. The row's triangle could not be tapped
+   * and carried no text — "I can't click the warning or anything to see what
+   * it's about" — so the sentence is said at the moment it happens.
+   */
+  it('tells the student out loud when the download really failed', async () => {
+    const err = vi.spyOn(toast, 'error').mockImplementation(() => '' as never);
+    vi.spyOn(proxy, 'downloadDocument').mockRejectedValue(new Error('Filesystem write failed'));
+    const { result } = renderHook(() => useDocumentDownload());
+    act(() => {
+      result.current.run('potvrzeni-cz', 'https://x', 'f.pdf');
+    });
+    await waitFor(() => expect(result.current.status['potvrzeni-cz']).toBe('error'));
+    expect(err).toHaveBeenCalledTimes(1);
   });
 
   it('ignores a ghost re-click on a row already in flight', async () => {
