@@ -18,7 +18,6 @@ const PEEK_PX = 166;
 /** The expanded height as a fraction of the viewport, matching `h-[70vh]`. */
 const EXPANDED_VH = 0.7;
 
-
 /**
  * The map screen's bottom sheet: a drag handle that's always visible, then
  * either a one-line peek summary or the Akce/Knihovna/Budova tabs, driven by

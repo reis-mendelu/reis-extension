@@ -372,47 +372,35 @@ describe('MapScreen safe-area inset', () => {
   // expresses one-off values (h-[70vh], z-[1000]).
   const barClass = () =>
     screen.getByPlaceholderText('Najdi místnost, budovu, akci…').closest('div')?.className ?? '';
-  // The ScreenHeader row: the title's own wrapper is the flex row inside it, so
-  // this walks out to the padded container that carries the inset.
-  const headerClass = () => screen.getByText('Mapa').closest('[class*="pt-["]')?.className ?? '';
 
   /**
-   * The invariant, unchanged: whatever is topmost on the map screen carries the
-   * inset, or under targetSdk 36's forced edge-to-edge it renders beneath the
-   * status bar's clock. What changed is WHICH element that is — the map used to
-   * float its own chrome over the canvas and now wears the same ScreenHeader as
-   * every other tab, so the header carries it and the bar must not.
-   *
-   * A flat margin is exactly the original bug: it looks right in a desktop
-   * browser, where --safe-top resolves to 0, and fails only on the device. That
-   * is why this is asserted on the header rather than deleted with the old shape.
+   * The map is the one tab with NO ScreenHeader — it is full-bleed, and a solid
+   * title band above the canvas both costs a strip of map and reads as a lid on
+   * it. That makes this floating bar the topmost element again, so it is the one
+   * that has to carry the inset, or under targetSdk 36's forced edge-to-edge it
+   * renders beneath the status bar's clock.
    */
-  it('insets the topmost element below the status bar', () => {
+  it('insets the floating search bar below the status bar', () => {
     render(<MapScreen />);
-    expect(headerClass()).toContain('var(--safe-top');
+    expect(barClass()).toContain('var(--safe-top');
   });
 
+  /**
+   * A flat margin is exactly the bug: it looks right in a desktop browser, where
+   * --safe-top resolves to 0, and fails only on the device.
+   */
   it('keeps the base spacing on top of the inset', () => {
     render(<MapScreen />);
-    expect(headerClass()).toMatch(/calc\(.*rem/);
+    expect(barClass()).toMatch(/calc\(.*rem/);
   });
 
-  /**
-   * And the bar below it must NOT inset again: two insets stacked push the
-   * search a status bar's height down the screen, which is how the previous fix
-   * for this would have failed if it had simply been left in place.
-   */
-  it('does not inset the search bar a second time', () => {
+  it('renders no screen header, unlike every other tab', () => {
     render(<MapScreen />);
-    expect(barClass()).not.toContain('var(--safe-top');
+    expect(screen.queryByLabelText('Rozbalit vývěsku')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Hledat')).not.toBeInTheDocument();
   });
 });
 
-/**
- * The handle was drawn as a drag pill but wired to nothing but onClick, so the
- * sheet could only be tapped open — swiping it did nothing at all, which reads
- * as a frozen app rather than an unimplemented gesture.
- */
 /**
  * One stop per gesture. The sheet has three now — peek / half / expanded — so a
  * drag or a tap moves to the NEIGHBOURING stop rather than the far end; `half`
