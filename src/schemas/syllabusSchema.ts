@@ -18,7 +18,12 @@ export const CourseMetadataSchema = z.object({
 });
 
 export const SyllabusRequirementsSchema = z.object({
-    version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+    // Every version the parser has ever stamped, so a record cached by an older
+    // build still validates on read. 1 doubles as the "section not found"
+    // sentinel. Add the new literal here whenever SYLLABUS_VERSION is raised —
+    // omitting it makes `safeParse` fail and the parser hand back an
+    // unvalidated object instead.
+    version: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
     courseId: z.string().optional(),
     requirementsText: z.string(),
     requirementsTable: z.array(z.array(z.string())),

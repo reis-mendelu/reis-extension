@@ -3,8 +3,10 @@ import { IndexedDBService } from '../../services/storage';
 import { fetchAndCacheSingleSyllabus } from '../../services/sync/syncSyllabus';
 import type { SyllabusRequirements } from '../../types/documents';
 import { logError } from '../../utils/reportError';
-
-const SYLLABUS_VERSION = 4; // v4: force fetch to ensure we get newest predmetId
+// Imported, not redeclared: this number is compared against the one the parser
+// stamps, and a local copy is how the two drifted into a permanent cache miss.
+// See the note on SYLLABUS_VERSION in syllabusParser.ts.
+import { SYLLABUS_VERSION } from '../../utils/parsers/syllabusParser';
 
 export const createSyllabusSlice: AppSlice<SyllabusSlice> = (set, get) => ({
   syllabuses: {
