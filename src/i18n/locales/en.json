@@ -1076,7 +1076,8 @@
       "prevWeek": "Previous week",
       "nextWeek": "Next week",
       "loading": "Loading your timetable…",
-      "holiday": "Public holiday"
+      "holiday": "Public holiday",
+      "teachingStarts": "Teaching starts {date}"
     },
     "exams": {
       "title": "Exams",

@@ -1076,7 +1076,8 @@
       "prevWeek": "Předchozí týden",
       "nextWeek": "Další týden",
       "loading": "Načítám rozvrh…",
-      "holiday": "Státní svátek"
+      "holiday": "Státní svátek",
+      "teachingStarts": "Výuka začíná {date}"
     },
     "exams": {
       "title": "Zkoušky",

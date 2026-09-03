@@ -9,6 +9,8 @@ import { resolveNowNext } from '../../../utils/mobile/nowNext';
 import { buildDayAgenda } from '../../../utils/mobile/dayAgenda';
 import { isLessonHidden } from '../../../utils/hiddenLessons';
 import { getCzechHoliday } from '../../../utils/holidays';
+import { isOutsideTeaching } from '../../../utils/mobile/teachingPeriod';
+import { semesterStart } from '../../../utils/mobile/semesterStart';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
@@ -59,6 +61,7 @@ export function CalendarScreen() {
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const syncLoaded = useAppStore((s) => s.syncLoaded);
   const hiddenItems = useAppStore((s) => s.hiddenItems);
+  const teachingWeekData = useAppStore((s) => s.teachingWeekData);
 
   const { alerts } = useDeadlineAlerts();
 
@@ -143,6 +146,19 @@ export function CalendarScreen() {
     new Date(`${selectedIso}T00:00:00`),
     language === 'en' ? 'en' : 'cz'
   );
+  // The same question the desktop calendar asks, from the same store field:
+  // before term, "Nic nemáš, pohodička" reads as "you happen to be free" when
+  // the truth is "there is no schedule to see yet".
+  const outsideTeaching = isOutsideTeaching(teachingWeekData, new Date(`${selectedIso}T00:00:00`));
+  // And when it starts, which is what a student wants from that answer. Only
+  // when it is still ahead — after term this would be last September's date.
+  // The DATE, not the sentence: the copy and its formatting belong to the
+  // component that shows it.
+  const firstTeachingDay = semesterStart(schedule);
+  const teachingStartsOn =
+    firstTeachingDay && firstTeachingDay > new Date(`${selectedIso}T00:00:00`)
+      ? firstTeachingDay
+      : null;
 
   const openRoute = () => {
     if (!nowNext?.next) return;
@@ -178,7 +194,11 @@ export function CalendarScreen() {
 
       <div className="flex-1 overflow-y-auto pb-24">
         {agenda.length === 0 ? (
-          <CalendarEmptyDay holiday={holiday} />
+          <CalendarEmptyDay
+            holiday={holiday}
+            outsideTeaching={outsideTeaching}
+            teachingStartsOn={teachingStartsOn}
+          />
         ) : (
           <DayAgenda
             rows={agenda}
