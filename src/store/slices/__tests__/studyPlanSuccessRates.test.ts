@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useAppStore } from '../../useAppStore';
-import { IndexedDBService } from '../../../services/storage';
+import { IndexedDBService } from '../../../services/storage/IndexedDBService';
 
 /**
  * The failure rates are fetched when the PLAN lands, not when a screen mounts.
