@@ -34,9 +34,9 @@ export function useMapSheetDrag(
       const max = window.innerHeight * expandedVh;
       setDragHeight(Math.min(Math.max(startHeight - dy, peekPx), max));
     },
-    onEnd: (dy, dtMs) => {
+    onEnd: (dy, velocity) => {
       setDragHeight(null);
-      const next = snapDetent(sheetState, dy, dtMs);
+      const next = snapDetent(sheetState, dy, velocity);
       setSheetState(next);
       // Changing stop counts as having moved the sheet even when the travel was
       // under the slop, so the trailing click cannot advance a second stop.

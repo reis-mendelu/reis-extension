@@ -14,11 +14,80 @@ export const DISMISS_DISTANCE_PX = 96;
 /** A short, fast flick should close too — this is the px/ms that counts as one. */
 export const DISMISS_VELOCITY_PX_PER_MS = 0.5;
 
-export function shouldDismiss(dy: number, dtMs: number): boolean {
+/**
+ * Past this much UPWARD speed at release, the student is pulling the sheet
+ * back and it must stay however far down it had travelled.
+ *
+ * Not zero: a finger lifting off a touchscreen drifts a pixel or two, and
+ * treating any upward twitch as "they changed their mind" would make a
+ * deliberate long drag fail at random.
+ */
+export const REVERSAL_VELOCITY_PX_PER_MS = -0.05;
+
+/** How much of the end of a gesture counts towards its release velocity. */
+export const VELOCITY_WINDOW_MS = 100;
+
+export interface DragSample {
+  y: number;
+  t: number;
+}
+
+/**
+ * Release velocity in px/ms, downward positive, from the END of the gesture.
+ *
+ * Averaging over the WHOLE gesture — which is what `dy / dtMs` did — answers a
+ * different question than the one that matters. A long slow pull that finishes
+ * with a flick averages out to slow and would snap back; a sheet held still for
+ * a second and then nudged averages to nearly nothing. What decides where a
+ * sheet should land is how fast it was moving when it was let go, so only the
+ * last `VELOCITY_WINDOW_MS` counts.
+ */
+export function releaseVelocity(samples: readonly DragSample[]): number {
+  if (samples.length < 2) return 0;
+  const last = samples[samples.length - 1] as DragSample;
+  // The oldest sample still inside the window, so a slow gesture with sparse
+  // samples still has two points to measure between.
+  let first = samples[samples.length - 2] as DragSample;
+  for (let i = samples.length - 2; i >= 0; i--) {
+    const s = samples[i] as DragSample;
+    if (last.t - s.t > VELOCITY_WINDOW_MS) break;
+    first = s;
+  }
+  const dt = last.t - first.t;
+  if (dt <= 0) return 0;
+  return (last.y - first.y) / dt;
+}
+
+/**
+ * Whether a released bottom sheet should close.
+ *
+ * Two ways in, and the second needs the guard: a fast downward flick closes
+ * from anywhere, and a long drag closes UNLESS it was being pulled back at the
+ * moment of release. Without that second clause, dragging down 120px, thinking
+ * better of it, and flicking back up still dismissed — the distance had already
+ * been travelled, so the sheet closed under a finger that was moving the other
+ * way.
+ */
+export function shouldDismiss(dy: number, velocity: number): boolean {
   // Upward and sideways drags never dismiss; the sheet is anchored at the bottom.
   if (dy <= 0) return false;
-  if (dy >= DISMISS_DISTANCE_PX) return true;
-  return dtMs > 0 && dy / dtMs >= DISMISS_VELOCITY_PX_PER_MS;
+  if (velocity >= DISMISS_VELOCITY_PX_PER_MS) return true;
+  return dy >= DISMISS_DISTANCE_PX && velocity > REVERSAL_VELOCITY_PX_PER_MS;
+}
+
+/**
+ * Progressive resistance for travel the sheet cannot absorb.
+ *
+ * A bottom sheet dragged UP has nowhere to go, and tracking the finger 1:1 into
+ * nothing suggests it does. Following it with damping says "held" instead of
+ * "stuck" — the same curve iOS uses at a scroll boundary, where `constant`
+ * controls how quickly the resistance builds.
+ */
+export function rubberBand(overshoot: number, dimension: number, constant = 0.55): number {
+  if (overshoot === 0 || dimension <= 0) return 0;
+  const sign = overshoot < 0 ? -1 : 1;
+  const abs = Math.abs(overshoot);
+  return (sign * (abs * dimension * constant)) / (dimension + constant * abs);
 }
 
 /** Past this much travel the map sheet changes detent regardless of speed. */
@@ -83,13 +152,24 @@ export function consumesTravel(from: Detent, dy: number): boolean {
  * Travel deeper into the stop already held is ignored rather than clamped
  * later: peek is the floor, and dragging down from it must not collapse the
  * sheet out of existence, since the sheet is the only way to reach Akce.
+ *
+ * `velocity` is the RELEASE velocity in px/ms, downward positive — the same
+ * measure `shouldDismiss` takes, from the same `releaseVelocity`. It used to be
+ * the gesture's duration, and the two clauses below are `shouldDismiss`'s
+ * mirrored onto a ladder that travels both ways, reversal guard included: a
+ * long pull that is being pushed back at the moment of release stays where it
+ * was, rather than landing on a stop the finger had already changed its mind
+ * about.
  */
-export function snapDetent(from: Detent, dy: number, dtMs: number): Detent {
+export function snapDetent(from: Detent, dy: number, velocity: number): Detent {
   const target = neighbour(from, dy);
   if (!target) return from;
-  const travel = Math.abs(dy);
-  if (travel >= DETENT_DISTANCE_PX) return target;
-  return dtMs > 0 && travel / dtMs >= DISMISS_VELOCITY_PX_PER_MS ? target : from;
+  // Speed in the direction of TRAVEL, so one threshold serves both rungs.
+  const towards = dy < 0 ? -velocity : velocity;
+  if (towards >= DISMISS_VELOCITY_PX_PER_MS) return target;
+  return Math.abs(dy) >= DETENT_DISTANCE_PX && towards > REVERSAL_VELOCITY_PX_PER_MS
+    ? target
+    : from;
 }
 
 /**

@@ -5,7 +5,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from 'react';
-import { dragOwnsGesture, DRAG_SLOP_PX } from './sheetDrag';
+import { dragOwnsGesture, releaseVelocity, DRAG_SLOP_PX, type DragSample } from './sheetDrag';
 
 export interface SheetDragConfig {
   /** The panel being dragged. Ownership and pointer capture are scoped to it. */
@@ -22,7 +22,8 @@ export interface SheetDragConfig {
   /** Live travel, with the panel's height when the gesture started. */
   onMove: (dy: number, startHeight: number) => void;
   /**
-   * The gesture finished: decide the outcome.
+   * The gesture finished: decide the outcome, given the RELEASE velocity in
+   * px/ms (downward positive) rather than the gesture's average.
    *
    * Return `true` when it MOVED the sheet, to swallow the click it ends in. The
    * slop and the outcome measure different things and disagree on a fast flick
@@ -32,7 +33,7 @@ export interface SheetDragConfig {
    * stop, so one flick jumped two. Whether the gesture moved the sheet is the
    * question that matters, so the caller gets the final say.
    */
-  onEnd: (dy: number, dtMs: number, startHeight: number) => boolean | void;
+  onEnd: (dy: number, velocity: number, startHeight: number) => boolean | void;
   /** The browser took the gesture, or it was abandoned. Put things back. */
   onCancel: () => void;
 }
@@ -76,6 +77,15 @@ export function useSheetDrag({
   onCancel,
 }: SheetDragConfig) {
   const start = useRef<{ y: number; t: number; height: number } | null>(null);
+  /**
+   * The tail of the gesture, for the release velocity.
+   *
+   * Kept because "how fast was it moving when it was let go" is a different
+   * question from "how far did it travel over how long", and only the first one
+   * decides where a sheet should land. Trimmed to a couple of windows' worth so
+   * a finger resting on the sheet for a minute does not grow an array.
+   */
+  const samples = useRef<DragSample[]>([]);
   /** Whether this gesture moved the sheet, so its trailing click must be eaten. */
   const dragged = useRef(false);
 
@@ -94,6 +104,7 @@ export function useSheetDrag({
     if (!dragOwnsGesture(e.target as Element, panelRef.current)) return;
     const height = panelRef.current?.getBoundingClientRect().height ?? 0;
     start.current = { y: e.clientY, t: e.timeStamp, height };
+    samples.current = [{ y: e.clientY, t: e.timeStamp }];
     // Guarded: happy-dom implements neither of these.
     panelRef.current?.setPointerCapture?.(e.pointerId);
   };
@@ -107,6 +118,8 @@ export function useSheetDrag({
     // does the gesture count as a drag for click suppression — otherwise the
     // jitter in an ordinary tap swallows it.
     if (Math.abs(dy) >= DRAG_SLOP_PX) dragged.current = true;
+    samples.current.push({ y: e.clientY, t: e.timeStamp });
+    if (samples.current.length > 24) samples.current.shift();
     onMove(dy, from.height);
   };
 
@@ -115,8 +128,10 @@ export function useSheetDrag({
     start.current = null;
     releaseCapture(e.pointerId);
     if (!from) return;
-    if (onEnd(e.clientY - from.y, e.timeStamp - from.t, from.height) === true)
-      dragged.current = true;
+    samples.current.push({ y: e.clientY, t: e.timeStamp });
+    const velocity = releaseVelocity(samples.current);
+    samples.current = [];
+    if (onEnd(e.clientY - from.y, velocity, from.height) === true) dragged.current = true;
   };
 
   /**
@@ -126,6 +141,7 @@ export function useSheetDrag({
    */
   const onPointerCancel = (e: ReactPointerEvent<HTMLElement>) => {
     start.current = null;
+    samples.current = [];
     releaseCapture(e.pointerId);
     dragged.current = false;
     onCancel();

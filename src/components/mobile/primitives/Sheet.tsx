@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { shouldDismiss } from './sheetDrag';
+import { shouldDismiss, rubberBand } from './sheetDrag';
 import { useSheetDrag } from './useSheetDrag';
 
 export interface SheetProps {
@@ -54,7 +54,15 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
       : 'bottom-0 max-h-[85dvh]';
 
   const panelRef = useRef<HTMLDivElement>(null);
-  const [dragY, setDragY] = useState(0);
+  /**
+   * Whether a drag is in flight — NOT the offset.
+   *
+   * The offset is written straight to the node below. Putting it in state meant
+   * a React render for every pointermove, sixty times a second on an iPad 8,
+   * for a transform the compositor could have taken directly. Two renders per
+   * gesture instead of sixty is the difference between "fluent" and "bugging".
+   */
+  const [dragging, setDragging] = useState(false);
 
   /**
    * The gesture itself lives in `useSheetDrag`, shared with the map sheet.
@@ -65,24 +73,55 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
    * only part that is this sheet's own business: a bottom sheet travels DOWN
    * and far enough means dismiss.
    */
+  /**
+   * Written imperatively; `null` restores the resting position.
+   *
+   * The transition is killed here rather than through a re-render, because a
+   * re-render lands a frame late — for that frame the 200ms snap-back easing is
+   * still on the element and animates the offset the finger just set, so the
+   * sheet starts every drag lagging behind the touch. Clearing it back to `''`
+   * on release hands the animation back to the class, which is what makes the
+   * spring back to rest smooth.
+   */
+  const setOffset = (px: number | null) => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    if (px === null) {
+      // removeProperty, not `= ''`: `transition` is a shorthand, and assigning
+      // the empty string to a shorthand leaves the old value in place in some
+      // implementations — which would pin `transition: none` on the panel for
+      // the rest of its life and make every later snap-back instant.
+      panel.style.removeProperty('transition');
+      panel.style.removeProperty('transform');
+      return;
+    }
+    panel.style.transition = 'none';
+    panel.style.transform = `translateY(${px}px)`;
+  };
+
   const { handlers } = useSheetDrag({
     panelRef,
     // A screen is left via back, not by being thrown downward — and with no
     // backdrop there is nothing to tap outside of, so an accidental dismissal
     // would have no undo.
     disabled: isScreen,
-    // Downward only: the sheet is bottom-anchored, so upward drag has nowhere
-    // to travel and rubber-banding it would only suggest it does.
-    absorbs: (dy) => dy > 0,
-    onMove: (dy) => setDragY(dy > 0 ? dy : 0),
-    onEnd: (dy, dtMs) => {
-      if (shouldDismiss(dy, dtMs)) onClose();
-      else setDragY(0);
+    onMove: (dy) => {
+      if (!dragging) setDragging(true);
+      // Upward has nowhere to go, so it is RESISTED rather than ignored:
+      // following the finger with damping reads as "held", where a dead stop
+      // reads as "stuck" and is the thing that feels broken.
+      setOffset(dy > 0 ? dy : rubberBand(dy, window.innerHeight));
     },
-    onCancel: () => setDragY(0),
+    onEnd: (dy, velocity) => {
+      setDragging(false);
+      if (shouldDismiss(dy, velocity)) onClose();
+      else setOffset(null);
+    },
+    onCancel: () => {
+      setDragging(false);
+      setOffset(null);
+    },
   });
-
-  const dragging = dragY > 0;
 
   return (
     <>
@@ -121,14 +160,9 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
           isScreen
             ? 'animate-[screenIn_0.25s_ease-out]'
             : 'rounded-t-[20px] border-t border-base-content/15'
-        } ${dragging || isScreen ? '' : 'animate-[sheetUp_0.3s_ease-out]'}`}
-        style={
-          dragging
-            ? { transform: `translateY(${dragY}px)` }
-            : // No transition while idle, so releasing below the threshold snaps
-              // back under this rule rather than lingering mid-screen.
-              { transition: 'transform 0.2s ease-out' }
-        }
+        } ${dragging || isScreen ? '' : 'animate-[sheetUp_0.3s_ease-out]'} ${
+          isScreen ? '' : 'transition-transform duration-200 ease-out'
+        }`}
       >
         {children}
       </div>
