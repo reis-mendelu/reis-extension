@@ -430,8 +430,13 @@ export interface ViewportSlice {
   ) => void;
 }
 
-export type MobileTab = 'calendar' | 'exams' | 'subjects' | 'map' | 'student';
-export type MapSheetState = 'peek' | 'expanded';
+// No 'student': that tab was a fifth of the primary navigation spent on a
+// search field, and search is a header action on every tab now — see the
+// `search` sheet below.
+export type MobileTab = 'calendar' | 'exams' | 'subjects' | 'map';
+// Three stops: `half` shows the campus events while the map is still in view,
+// and is where the sheet opens. See primitives/sheetDrag.ts.
+export type MapSheetState = 'peek' | 'half' | 'expanded';
 export type MapSheetTab = 'akce' | 'knihovna' | 'budova';
 
 /** Discriminated union of every sheet the phone UI can open. */
@@ -450,6 +455,12 @@ export type MobileSheet =
   | { kind: 'personPhoto'; personId: string; name: string }
   | { kind: 'eduroam' }
   | { kind: 'docs' }
+  // People and the subject catalogue, opened from the header's search icon.
+  // Was the 'student' TAB; it is a sheet so it opens over whichever tab the
+  // student is on and returns them there. `query` prefills it and starts in
+  // subject mode — that is how "look this subject up" from inside the study
+  // plan reaches a search box, now that the plan has none of its own.
+  | { kind: 'search'; query?: string }
   // No 'erasmus': the panel is desktop-only. It hosted the Learning Agreement
   // tables and the Europe map, which do not survive a phone, and it offered a
   // shortcut to every student for something only exchange students use.

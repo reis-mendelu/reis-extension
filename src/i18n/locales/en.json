@@ -1051,6 +1051,9 @@
     "displayName": "Display name"
   },
   "mobile": {
+    "header": {
+      "search": "Search"
+    },
     "nav": {
       "label": "Main navigation",
       "calendar": "Calendar",
@@ -1071,11 +1074,11 @@
       "notifications": "Notifications",
       "prevWeek": "Previous week",
       "nextWeek": "Next week",
-      "loading": "Loading your timetable…"
+      "loading": "Loading your timetable…",
+      "holiday": "Public holiday"
     },
     "exams": {
       "title": "Exams",
-      "eyebrow": "Exam period",
       "registeredCount": "{count} registered",
       "groupUpcoming": "Upcoming",
       "groupOther": "Other",
@@ -1124,7 +1127,10 @@
       "creditOne": "credit",
       "creditFew": "credits",
       "creditOther": "credits",
-      "loading": "Loading your courses…"
+      "loading": "Loading your courses…",
+      "noneEnrolled": "You have no subjects enrolled for this semester yet.",
+      "startsOn": "starts {date} · {credits} cr.",
+      "creditsOnly": "{credits} cr."
     },
     "map": {
       "searchPlaceholder": "Find a room, building, event…",

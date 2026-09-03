@@ -76,7 +76,7 @@ export function StudentSearch({
           }}
           placeholder={placeholder}
           aria-label={placeholder}
-          className="w-full bg-transparent text-base text-base-content outline-none placeholder:text-base-content/40"
+          className="select-text w-full bg-transparent text-base text-base-content outline-none placeholder:text-base-content/40"
         />
       </div>
     </div>

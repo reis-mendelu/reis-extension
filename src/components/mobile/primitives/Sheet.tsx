@@ -24,12 +24,26 @@ export interface SheetProps {
  */
 export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: SheetProps) {
   const isScreen = variant === 'screen';
-  // Tailwind's default z-index scale stops at 50 — z-60/z-61 are not real
-  // classes and would silently drop the sheet's stacking order. z-50 is
-  // on-scale and stays as-is; anything above it (51, 60, 61) needs an
-  // arbitrary value.
-  const backdropZ = elevated ? 'z-[60]' : 'z-50';
-  const panelZ = elevated ? 'z-[61]' : 'z-[51]';
+  // ONE z-index for the whole sheet, backdrop and panel alike. Within a sheet
+  // the panel is the later sibling, so it still paints over its own backdrop —
+  // and across sheets, `SheetHost` renders the stack as siblings in stack
+  // order, so DOM order alone lays them correctly however deep the stack goes.
+  //
+  // Numbering the two layers separately (backdrop z-50, panel z-[51]) is the
+  // right relationship inside one sheet and the wrong one across two: a sheet
+  // pushed on top got a z-50 backdrop that painted UNDER the z-[51] panel of
+  // the sheet below, because z-index beats DOM order. That left the lower sheet
+  // undimmed and still tappable — with documents open over settings, tapping
+  // the eduroam row it should have covered pushed a third sheet and slid
+  // eduroam up over documents instead of replacing it. Under the subject
+  // drawer (variant="screen", which covers `inset-0`) the backdrop was hidden
+  // outright, so a person card opened from the classmates strip read as one
+  // continuous surface with the drawer behind it.
+  //
+  // Tailwind's default z-index scale stops at 50 — z-60 is not a real class
+  // and would silently drop the stacking order, so `elevated` needs an
+  // arbitrary value. z-50 is on-scale and stays as-is.
+  const layerZ = elevated ? 'z-[60]' : 'z-50';
   // A screen covers everything and carries its own status-bar inset; the sheet
   // sizes leave the strip above them visible on purpose.
   const panelPosition = isScreen
@@ -91,7 +105,7 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
         <div
           data-testid="sheet-backdrop"
           onClick={onClose}
-          className={`absolute inset-0 bg-black/50 animate-[fadeIn_0.2s_ease-out] ${backdropZ}`}
+          className={`absolute inset-0 bg-black/50 animate-[fadeIn_0.2s_ease-out] ${layerZ}`}
         />
       )}
       <div
@@ -121,7 +135,7 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
         // not there. The same 15% tint the composer's ghost buttons use reads
         // 1.57:1 on dark, and is a dark line on light, so one token separates
         // the surfaces in both themes.
-        className={`absolute ${isScreen ? '' : 'inset-x-0'} ${panelPosition} ${panelZ} flex flex-col overflow-hidden bg-base-100 shadow-drawer ${
+        className={`absolute ${isScreen ? '' : 'inset-x-0'} ${panelPosition} ${layerZ} flex flex-col overflow-hidden bg-base-100 shadow-drawer ${
           isScreen
             ? 'animate-[screenIn_0.25s_ease-out]'
             : 'rounded-t-[20px] border-t border-base-content/15'

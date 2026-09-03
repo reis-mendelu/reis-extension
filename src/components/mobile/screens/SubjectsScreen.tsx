@@ -4,7 +4,7 @@ import { useAppStore } from '../../../store/useAppStore';
 import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { ScreenError } from '../primitives/ScreenError';
 import { useStudyPlan } from '../../../hooks/useStudyPlan';
-import { getSemesterState } from '../../SubjectsPanel/utils';
+import { selectEnrolledNow, enrolledSemester } from '../../../utils/mobile/enrolledSubjects';
 import type { SubjectStatus } from '../../../types/studyPlan';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { CreditRing } from './subjects/CreditRing';
@@ -71,11 +71,13 @@ export function SubjectsScreen() {
   }
 
   const openPlan = () => pushSheet({ kind: 'studyPlan' });
-  const headerAction = (
+  // Its own row under the title rather than beside the header actions: four
+  // 40px targets plus this label overflows a 320px viewport.
+  const planButton = (
     <button
       type="button"
       onClick={openPlan}
-      className="flex h-11 flex-shrink-0 items-center rounded-lg bg-primary/15 px-3.5 text-sm font-semibold text-primary"
+      className="flex h-11 w-fit items-center rounded-lg bg-primary/15 px-3.5 text-sm font-semibold text-primary"
     >
       {t('mobile.subjects.studyPlan')}
     </button>
@@ -94,13 +96,17 @@ export function SubjectsScreen() {
   if (!planUsable) {
     return (
       <div data-testid="subjects-screen" className="flex flex-1 flex-col overflow-hidden">
-        <ScreenHeader eyebrow="" title={t('mobile.subjects.title')} action={headerAction} />
+        <ScreenHeader eyebrow="" title={t('mobile.subjects.title')} below={planButton} />
         <EmptyState />
       </div>
     );
   }
 
-  const currentBlock = plan.blocks.find((b) => getSemesterState(b) === 'current') ?? null;
+  // What the student enrolled in, not what the plan offers. Picking a "current"
+  // block by inference showed a semester they had not registered for, and
+  // showed every alternative in it — see utils/mobile/enrolledSubjects.
+  const enrolled = selectEnrolledNow(plan);
+  const semester = enrolledSemester(enrolled);
   const openSubject = (subject: SubjectStatus) => {
     pushSheet({
       kind: 'subjectDrawer',
@@ -112,10 +118,22 @@ export function SubjectsScreen() {
 
   return (
     <div data-testid="subjects-screen" className="flex flex-1 flex-col overflow-hidden">
-      <ScreenHeader eyebrow={plan.title} title={t('mobile.subjects.title')} action={headerAction} />
+      <ScreenHeader eyebrow={plan.title} title={t('mobile.subjects.title')} below={planButton} />
       <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-24 pt-3.5">
         <CreditRing earned={plan.creditsAcquired} total={plan.creditsRequired} />
-        {currentBlock && <SemesterCard block={currentBlock} onOpenSubject={openSubject} />}
+        {enrolled.length > 0 ? (
+          <SemesterCard enrolled={enrolled} semester={semester} onOpenSubject={openSubject} />
+        ) : (
+          // Said plainly rather than left blank: a student who has not
+          // registered yet used to be shown a semester the heuristics picked,
+          // with no sign it was a guess.
+          <div
+            data-testid="subjects-none-enrolled"
+            className="flex-shrink-0 rounded-2xl border border-base-300 bg-base-100 px-4 py-5 text-center text-sm text-base-content/60"
+          >
+            {t('mobile.subjects.noneEnrolled')}
+          </div>
+        )}
         <AverageAccordion studyStats={studyStats} comparison={studyComparison} />
       </div>
     </div>

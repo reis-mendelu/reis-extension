@@ -8,6 +8,7 @@ import { PersonSheet } from './PersonSheet';
 import { PersonPhotoSheet } from './PersonPhotoSheet';
 import { EduroamSheet } from './EduroamSheet';
 import { DocsSheet } from './DocsSheet';
+import { SearchSheet } from './SearchSheet';
 
 /**
  * Renders the phone UI's sheet stack, in order, each in its own `Sheet`.
@@ -44,6 +45,8 @@ export function SheetHost() {
             return <EduroamSheet key={index} onClose={popSheet} />;
           case 'docs':
             return <DocsSheet key={index} onClose={popSheet} />;
+          case 'search':
+            return <SearchSheet key={index} sheet={sheet} onClose={popSheet} />;
           default:
             return null;
         }

@@ -1,12 +1,20 @@
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useCourseGrade } from '../../../../hooks/data/useCourseGrade';
 import { gradeBadge } from '../../../../utils/gradeLookup';
-import { isZameraniCode, isRealCredits } from '../../../SubjectsPanel/utils';
+import { isRealCredits } from '../../../SubjectsPanel/utils';
+import { computeFailRate } from '../../../SubjectsPanel/computeFailRate';
+import { useAppStore } from '../../../../store/useAppStore';
+import { useSchedule } from '../../../../hooks/data/useSchedule';
+import { semesterProgress } from '../../../../utils/mobile/semesterStart';
 import { pluralSuffix } from '../../../../utils/plural';
-import type { SemesterBlock, SubjectStatus } from '../../../../types/studyPlan';
+import type { SubjectStatus } from '../../../../types/studyPlan';
+import type { EnrolledSubject } from '../../../../utils/mobile/enrolledSubjects';
 
 interface SemesterCardProps {
-  block: SemesterBlock;
+  /** What the student actually enrolled in — see utils/mobile/enrolledSubjects. */
+  enrolled: EnrolledSubject[];
+  /** The semester those enrolments are in, or null if the plan says nothing. */
+  semester: number | null;
   onOpenSubject: (subject: SubjectStatus) => void;
 }
 
@@ -33,6 +41,44 @@ function GradeChip({ subject }: { subject: SubjectStatus }) {
   );
 }
 
+/**
+ * How often this subject is failed, and the word saying so.
+ *
+ * The phone never showed this; the browser extension has carried it on every
+ * row for years, from the same `computeFailRate` over the same store data —
+ * another case of the phone screen being written fresh instead of reusing what
+ * the desktop already had.
+ *
+ * The label is not hover-revealed, the way the desktop's was until this same
+ * change: a bare colour-coded percentage does not say what it measures, and a
+ * touch screen has no hover to reveal it with.
+ */
+function FailRate({ subject }: { subject: SubjectStatus }) {
+  const { t } = useTranslation();
+  const rate = useAppStore((s) => s.successRates[subject.code]);
+  // A rate is a forecast. Once the subject is passed it is history, and
+  // computeFailRate already returns null below ten results, where the number
+  // would be noise dressed as a warning.
+  if (subject.isFulfilled) return null;
+  const failRate = computeFailRate(rate);
+  if (failRate == null) return null;
+
+  return (
+    <span
+      data-testid="subject-fail-rate"
+      className={`w-fit rounded px-1.5 py-0.5 text-xs font-medium ${
+        failRate >= 25
+          ? 'bg-error/10 text-error'
+          : failRate >= 20
+            ? 'bg-warning/15 text-warning-content'
+            : 'bg-base-content/5 text-base-content/50'
+      }`}
+    >
+      {t('subjects.failRateLabel')} {failRate} %
+    </span>
+  );
+}
+
 function SemesterRow({
   subject,
   onOpenSubject,
@@ -55,7 +101,13 @@ function SemesterRow({
                 titles but deliberately not these, and at 390px a cut landed
                 mid-word ("Databázové systémy a návrh d…"), losing the half of
                 the name that distinguishes one subject from another. */}
-      <span className="flex-1 text-md font-medium text-base-content">{subject.name}</span>
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="text-md font-medium text-base-content">{subject.name}</span>
+        {/* Under the name, not beside it: with the label spelled out, the badge
+            and the credits together leave a 320px row no usable width for the
+            subject's own name. */}
+        <FailRate subject={subject} />
+      </span>
       <GradeChip subject={subject} />
       {isRealCredits(subject.credits) && (
         <span className="flex-shrink-0 text-sm text-base-content/50">
@@ -66,17 +118,44 @@ function SemesterRow({
   );
 }
 
-/** The current semester's subject list: header (semester number, total credits,
- * done/total badge) plus one row per subject with a grade chip. */
-export function SemesterCard({ block, onOpenSubject }: SemesterCardProps) {
-  const { t } = useTranslation();
-  const subjects = block.groups.flatMap((g) => g.subjects).filter((s) => !isZameraniCode(s.code));
+/**
+ * This semester's subject list: header (semester number, total credits,
+ * done/total badge) plus one row per subject with a grade chip.
+ *
+ * Fed the ENROLLED subjects rather than a study-plan block. A block is the
+ * curriculum, so one offering a choice listed every option — a student taking
+ * Java saw C++ beside it — and the block itself had to be guessed at. Both the
+ * filtering and the guess are gone; this component only lays out what it is
+ * given.
+ */
+export function SemesterCard({ enrolled, semester, onOpenSubject }: SemesterCardProps) {
+  const { t, language } = useTranslation();
+  const subjects = enrolled.map((e) => e.subject);
   const totalCredits = subjects.reduce(
     (sum, s) => sum + (isRealCredits(s.credits) ? s.credits : 0),
     0
   );
-  const doneCount = subjects.filter((s) => s.isFulfilled).length;
-  const semNum = block.title.match(/^(\d+)/)?.[1] ?? '';
+  const doneCount = enrolled.filter((e) => e.done).length;
+  const semNum = semester === null ? '' : String(semester);
+
+  // "Právě běží" used to be asserted whatever the date, so the week before term
+  // announced these subjects as already running. The schedule answers it: the
+  // earliest stored lesson is the first teaching day.
+  const { schedule } = useSchedule();
+  const progress = semesterProgress(schedule);
+  const subtitle =
+    progress.state === 'running'
+      ? t('mobile.subjects.running', { credits: totalCredits })
+      : progress.state === 'upcoming'
+        ? t('mobile.subjects.startsOn', {
+            date: progress.start.toLocaleDateString(language === 'en' ? 'en-US' : 'cs-CZ', {
+              day: 'numeric',
+              month: 'numeric',
+            }),
+            credits: totalCredits,
+          })
+        : // No schedule to reason from: the credits are a fact, "running" is not.
+          t('mobile.subjects.creditsOnly', { credits: totalCredits });
 
   return (
     <div className="flex-shrink-0 overflow-hidden rounded-2xl border border-primary/30 bg-base-100 shadow-card">
@@ -86,9 +165,7 @@ export function SemesterCard({ block, onOpenSubject }: SemesterCardProps) {
           <span className="font-display text-base font-semibold text-base-content">
             {t('mobile.subjects.currentSemester', { n: semNum })}
           </span>
-          <span className="text-xs text-base-content/60">
-            {t('mobile.subjects.running', { credits: totalCredits })}
-          </span>
+          <span className="text-xs text-base-content/60">{subtitle}</span>
         </div>
         <span className="flex-shrink-0 rounded-md bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
           {t('mobile.subjects.doneOf', { done: doneCount, total: subjects.length })}

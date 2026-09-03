@@ -1051,6 +1051,9 @@
     "displayName": "Zobrazovaný název"
   },
   "mobile": {
+    "header": {
+      "search": "Hledat"
+    },
     "nav": {
       "label": "Hlavní navigace",
       "calendar": "Kalendář",
@@ -1071,11 +1074,11 @@
       "notifications": "Oznámení",
       "prevWeek": "Předchozí týden",
       "nextWeek": "Další týden",
-      "loading": "Načítám rozvrh…"
+      "loading": "Načítám rozvrh…",
+      "holiday": "Státní svátek"
     },
     "exams": {
       "title": "Zkoušky",
-      "eyebrow": "Zkouškové",
       "registeredCount": "{count} přihlášeno",
       "groupUpcoming": "Nadcházející",
       "groupOther": "Ostatní",
@@ -1124,7 +1127,10 @@
       "creditOne": "kredit",
       "creditFew": "kredity",
       "creditOther": "kreditů",
-      "loading": "Načítám předměty…"
+      "loading": "Načítám předměty…",
+      "noneEnrolled": "Zatím nemáš zapsané žádné předměty na tento semestr.",
+      "startsOn": "začíná {date} · {credits} kr.",
+      "creditsOnly": "{credits} kr."
     },
     "map": {
       "searchPlaceholder": "Najdi místnost, budovu, akci…",

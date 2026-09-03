@@ -200,7 +200,11 @@ export function SubjectRow({ subject, compact, failRate, failRates, hideStatus, 
           }`}
           onClick={(e) => { e.stopPropagation(); if (hasId) onOpenSubject(subject.code, subject.name, resolvedId, undefined, 'stats'); else onSearchSubject(displayName); }}
         >
-          <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover/fail:max-w-[140px] group-hover/fail:opacity-100 group-hover/fail:mr-1">{t('subjects.failRateLabel')}</span>
+          {/* Always shown, never hover-revealed. The label used to be
+              max-w-0/opacity-0 until :hover, which on a touch screen means
+              never — the iPad showed a bare colour-coded number with nothing
+              to say it was a failure rate. */}
+          <span className="mr-1 whitespace-nowrap">{t('subjects.failRateLabel')}</span>
           {failRate}%
         </span>
       )}

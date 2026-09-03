@@ -38,20 +38,22 @@ describe('shouldDismiss', () => {
  * upward travel, which is why it could not be reused as-is.
  */
 describe('snapDetent', () => {
-  it('expands on a long upward drag from peek', () => {
-    expect(snapDetent('peek', -DETENT_DISTANCE_PX, 5000)).toBe('expanded');
+  // One stop per gesture now: peek goes to `half`, not straight to expanded.
+  // The three-stop ladder has its own describe block below.
+  it('moves up a stop on a long upward drag from peek', () => {
+    expect(snapDetent('peek', -DETENT_DISTANCE_PX, 5000)).toBe('half');
   });
 
-  it('expands on a short fast upward flick from peek', () => {
-    expect(snapDetent('peek', -40, 50)).toBe('expanded');
+  it('moves up a stop on a short fast upward flick from peek', () => {
+    expect(snapDetent('peek', -40, 50)).toBe('half');
   });
 
-  it('collapses on a long downward drag from expanded', () => {
-    expect(snapDetent('expanded', DETENT_DISTANCE_PX, 5000)).toBe('peek');
+  it('moves down a stop on a long downward drag from expanded', () => {
+    expect(snapDetent('expanded', DETENT_DISTANCE_PX, 5000)).toBe('half');
   });
 
-  it('collapses on a short fast downward flick from expanded', () => {
-    expect(snapDetent('expanded', 40, 50)).toBe('peek');
+  it('moves down a stop on a short fast downward flick from expanded', () => {
+    expect(snapDetent('expanded', 40, 50)).toBe('half');
   });
 
   it('stays put on a short slow drag in either direction', () => {
@@ -133,5 +135,68 @@ describe('dragOwnsGesture', () => {
     const child = document.createElement('span');
     panel.appendChild(child);
     expect(dragOwnsGesture(child, panel)).toBe(true);
+  });
+});
+
+/**
+ * Three stops, not two.
+ *
+ * The campus events lived in a 166px peek that showed one summary line, so
+ * seeing what was on meant dragging the sheet up over the map every time —
+ * "the campus events need to be pulled up while looking at the map, they could
+ * appear beside the map to be directly visible". A middle stop shows a couple
+ * of events AND keeps the map in view, and the sheet opens at it.
+ *
+ * The ladder moves ONE stop per gesture, which is what makes a middle stop
+ * reachable at all: a peek→expanded jump would skip straight over it.
+ */
+describe('snapDetent — the three-stop ladder', () => {
+  it('goes up one stop from peek, to half rather than all the way', () => {
+    expect(snapDetent('peek', -DETENT_DISTANCE_PX, 5000)).toBe('half');
+  });
+
+  it('goes up one stop from half', () => {
+    expect(snapDetent('half', -DETENT_DISTANCE_PX, 5000)).toBe('expanded');
+  });
+
+  it('comes down one stop from expanded, to half', () => {
+    expect(snapDetent('expanded', DETENT_DISTANCE_PX, 5000)).toBe('half');
+  });
+
+  it('comes down one stop from half, to peek', () => {
+    expect(snapDetent('half', DETENT_DISTANCE_PX, 5000)).toBe('peek');
+  });
+
+  it('stays put at the ends, whichever way it is pushed', () => {
+    // peek is the floor — the sheet is the only way to reach Akce — and
+    // expanded is the ceiling.
+    expect(snapDetent('peek', 200, 50)).toBe('peek');
+    expect(snapDetent('expanded', -200, 50)).toBe('expanded');
+  });
+
+  it('takes a fast flick as a stop change from the middle too', () => {
+    expect(snapDetent('half', -40, 50)).toBe('expanded');
+    expect(snapDetent('half', 40, 50)).toBe('peek');
+  });
+
+  it('ignores a slow, short drag from the middle', () => {
+    expect(snapDetent('half', -40, 2000)).toBe('half');
+    expect(snapDetent('half', 40, 2000)).toBe('half');
+  });
+});
+
+describe('consumesTravel — the middle stop absorbs both ways', () => {
+  it('absorbs up and down from half', () => {
+    expect(consumesTravel('half', -20)).toBe(true);
+    expect(consumesTravel('half', 20)).toBe(true);
+  });
+
+  it('still refuses the direction each end cannot travel', () => {
+    expect(consumesTravel('peek', 20)).toBe(false);
+    expect(consumesTravel('expanded', -20)).toBe(false);
+  });
+
+  it('absorbs nothing at zero', () => {
+    expect(consumesTravel('half', 0)).toBe(false);
   });
 });

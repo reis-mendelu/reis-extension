@@ -8,9 +8,11 @@ describe('BottomNav', () => {
     useAppStore.setState({ mobileTab: 'calendar', language: 'cz', keyboardOpen: false });
   });
 
-  it('renders five nav buttons', () => {
+  // Four, not five: "Student" was a whole slot spent on a search field, and
+  // search is a header action now. See persistentHeader.test.tsx.
+  it('renders four nav buttons', () => {
     render(<BottomNav />);
-    expect(screen.getAllByRole('button')).toHaveLength(5);
+    expect(screen.getAllByRole('button')).toHaveLength(4);
   });
 
   it('labels only the active tab', () => {

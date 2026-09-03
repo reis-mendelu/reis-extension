@@ -1,5 +1,6 @@
 import { Search } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { ScreenHeader } from './calendar/ScreenHeader';
 import { useAppStore } from '../../../store/useAppStore';
 import { MapCanvas } from '../../CampusMap/MapCanvas';
 import { EventLayer } from '../../CampusMap/EventLayer';
@@ -52,59 +53,64 @@ export function MapScreen() {
   };
 
   return (
-    <div data-testid="map-screen" className="relative isolate flex flex-1 flex-col overflow-hidden">
-      <MapCanvas />
-      {/* The society event pins. The sheet's Akce tab has always listed these
+    // The header is a solid row ABOVE the canvas rather than floating over it:
+    // ScreenHeader carries no background of its own, and four icons plus a
+    // title over live map tiles is unreadable. The map gives up that strip.
+    <div data-testid="map-screen" className="flex flex-1 flex-col overflow-hidden">
+      <ScreenHeader title={t('mobile.nav.map')} />
+      <div className="relative isolate flex flex-1 flex-col overflow-hidden">
+        <MapCanvas />
+        {/* The society event pins. The sheet's Akce tab has always listed these
           events; without this layer they were listed but never shown on the map
           they name, so a society could publish an event and find no pin for it
           on a student's phone. Same component the desktop map and the admin
           console use — it portals into a Leaflet pane, so it renders nothing
           here and does not affect this element's layout. */}
-      <EventLayer />
-      <FloorSwitcher />
-      {/* marginTop carries --safe-top because this floating bar is the topmost
-          element on the map screen and targetSdk 36 forces edge-to-edge: without
-          it the search sits UNDER the status bar's clock and signal icons. Every
-          other screen inherits this from ScreenHeader, which the map does not
-          use — it floats its own chrome over the canvas instead. A flat mt-4 was
-          the bug, and it looks correct in any desktop browser, where --safe-top
-          resolves to 0. */}
-      <div className="relative z-[1000] mx-4 mt-[calc(1rem_+_var(--safe-top,0px))]">
-        <label
-          className="flex items-center gap-2.5 rounded-full px-4 py-3 backdrop-blur-md"
-          style={{ background: 'rgba(31,41,55,.94)', border: '1px solid rgba(243,244,246,.1)' }}
-        >
-          <Search size={17} style={{ color: '#9ca3af' }} aria-hidden="true" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('mobile.map.searchPlaceholder')}
-            aria-label={t('mobile.map.searchPlaceholder')}
-            className="w-full flex-1 bg-transparent text-[13.5px] outline-none"
-            style={{ color: '#f3f4f6' }}
-          />
-        </label>
-        {results.length > 0 && (
-          <ul
-            className="absolute mt-1.5 max-h-64 w-full overflow-auto rounded-2xl backdrop-blur-md"
-            style={{ background: 'rgba(31,41,55,.96)', border: '1px solid rgba(243,244,246,.1)' }}
+        <EventLayer />
+        <FloorSwitcher />
+        {/* No --safe-top here any more: ScreenHeader sits above this bar now and
+          carries the inset for the screen, the way it does on every other tab.
+          It used to be the topmost element on the map, and a flat mt-4 was the
+          bug — under targetSdk 36's forced edge-to-edge the bar sat beneath the
+          status bar's clock. Adding it twice would push the bar a status bar's
+          height down the screen instead. */}
+        <div className="relative z-[1000] mx-4 mt-3">
+          <label
+            className="flex items-center gap-2.5 rounded-full px-4 py-3 backdrop-blur-md"
+            style={{ background: 'rgba(31,41,55,.94)', border: '1px solid rgba(243,244,246,.1)' }}
           >
-            {results.map((m, i) => (
-              <li key={i}>
-                <button
-                  type="button"
-                  onClick={() => selectResult(m)}
-                  className="w-full px-4 py-2.5 text-left text-[13.5px]"
-                  style={{ color: '#f3f4f6' }}
-                >
-                  {resultLabel(m)}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+            <Search size={17} style={{ color: '#9ca3af' }} aria-hidden="true" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('mobile.map.searchPlaceholder')}
+              aria-label={t('mobile.map.searchPlaceholder')}
+              className="w-full flex-1 select-text bg-transparent text-[13.5px] outline-none"
+              style={{ color: '#f3f4f6' }}
+            />
+          </label>
+          {results.length > 0 && (
+            <ul
+              className="absolute mt-1.5 max-h-64 w-full overflow-auto rounded-2xl backdrop-blur-md"
+              style={{ background: 'rgba(31,41,55,.96)', border: '1px solid rgba(243,244,246,.1)' }}
+            >
+              {results.map((m, i) => (
+                <li key={i}>
+                  <button
+                    type="button"
+                    onClick={() => selectResult(m)}
+                    className="w-full px-4 py-2.5 text-left text-[13.5px]"
+                    style={{ color: '#f3f4f6' }}
+                  >
+                    {resultLabel(m)}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <MapSheet />
       </div>
-      <MapSheet />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from '../../../../hooks/useTranslation';
+import { getCzechHoliday } from '../../../../utils/holidays';
 
 export interface DayChipsProps {
   selectedIso: string;
@@ -87,10 +88,14 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
           const isSelected = iso === selectedIso;
           const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date);
           const label = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+          // Marked in the row, not only once the day is opened: a student
+          // scanning the week should see the day off without tapping into it.
+          const holiday = getCzechHoliday(date, language === 'en' ? 'en' : 'cz');
           return (
             <button
               key={iso}
               type="button"
+              title={holiday ?? undefined}
               onClick={() => onSelect(iso)}
               // Tonal, not a solid primary fill. `--color-primary` is a lime
               // #79be15 and `--color-primary-content` is white, which is
@@ -106,6 +111,14 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
               }`}
             >
               {label} {date.getDate()}
+              {/* A dot rather than a colour on the label: the chip already
+                  spends colour on selection, and a holiday can be selected. */}
+              {holiday && (
+                <span
+                  data-testid="day-chip-holiday"
+                  className="mx-auto mt-0.5 block h-1 w-1 rounded-full bg-error"
+                />
+              )}
             </button>
           );
         })}

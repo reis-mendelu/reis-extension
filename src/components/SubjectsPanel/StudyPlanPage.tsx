@@ -16,15 +16,29 @@ import { getSemesterState, isZameraniCode } from './utils';
 
 interface StudyPlanPageProps {
   onBack: () => void;
+  /**
+   * The phone hides it: search is a header action on every tab there, so the
+   * page's own SearchBar is a second, narrower search for the same job — and on
+   * an iPad it raises a keyboard over the plan the student opened it to read.
+   * The desktop, whose only subject search this IS, keeps it. Defaults to shown
+   * so no existing caller changes behaviour.
+   */
+  showSearch?: boolean;
+  /**
+   * Where "look this subject up" goes when there is no SearchBar to prefill.
+   * Without it a fail-rate badge on a subject with no id would be a dead tap.
+   */
+  onSearchSubject?: (name: string) => void;
   onOpenSubject: (courseCode: string, courseName: string, courseId: string, facultyCode?: string, initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates', isFulfilled?: boolean) => void;
 }
 
-export function StudyPlanPage({ onBack, onOpenSubject }: StudyPlanPageProps) {
+export function StudyPlanPage({ onBack, onOpenSubject, showSearch = true, onSearchSubject: onSearchSubjectProp }: StudyPlanPageProps) {
   const { t } = useTranslation();
   const searchPrefillRef = useRef<((query: string) => void) | null>(null);
-  const onSearchSubject = useCallback((name: string) => {
+  const prefillSearch = useCallback((name: string) => {
     searchPrefillRef.current?.(name);
   }, []);
+  const onSearchSubject = onSearchSubjectProp ?? prefillSearch;
   const plan = useStudyPlan();
   const successRates = useAppStore(s => s.successRates);
   const { zameraniLookup, subjectSemesters, subjectToZameranis, zameraniProgress, failRates } = useSubjectsData(plan);
@@ -48,14 +62,16 @@ export function StudyPlanPage({ onBack, onOpenSubject }: StudyPlanPageProps) {
         </button>
         <h2 className="text-base font-semibold truncate" title={plan?.title}>{t('subjects.studyPlan')}</h2>
       </div>
-      <div className="w-full md:ml-auto md:w-[30rem] shrink-0">
-        <SearchBar
-          minimal
-          subjectsOnly
-          onOpenSubject={(code, name, id, faculty) => onOpenSubject(code, name ?? code, id ?? '', faculty)}
-          prefillRef={searchPrefillRef}
-        />
-      </div>
+      {showSearch && (
+        <div className="w-full md:ml-auto md:w-[30rem] shrink-0">
+          <SearchBar
+            minimal
+            subjectsOnly
+            onOpenSubject={(code, name, id, faculty) => onOpenSubject(code, name ?? code, id ?? '', faculty)}
+            prefillRef={searchPrefillRef}
+          />
+        </div>
+      )}
     </div>
   );
 

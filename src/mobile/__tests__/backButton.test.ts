@@ -68,9 +68,9 @@ describe('handleBackPress', () => {
   /**
    * Calendar is the app's start destination, the way Android expects a bottom
    * nav to behave: back from any other tab returns there instead of quitting.
-   * Before this, pressing back on Zkoušky/Předměty/Mapa/Student closed the app.
+   * Before this, pressing back on Zkoušky/Předměty/Mapa closed the app.
    */
-  it.each(['exams', 'subjects', 'map', 'student'] as const)(
+  it.each(['exams', 'subjects', 'map'] as const)(
     'returns to the calendar from the %s tab instead of exiting',
     (tab) => {
       const popSheet = vi.fn();

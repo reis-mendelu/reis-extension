@@ -241,7 +241,7 @@ describe('MapScreen', () => {
   it('expands to a plain heading, not a one-tab segmented control', () => {
     render(<MapScreen />);
     fireEvent.click(screen.getByLabelText('Rozbalit panel mapy'));
-    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+    expect(useAppStore.getState().mapSheetState).toBe('half');
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Akce' })).toBeInTheDocument();
     expect(screen.getByText('Žádné akce')).toBeInTheDocument();
@@ -372,19 +372,39 @@ describe('MapScreen safe-area inset', () => {
   // expresses one-off values (h-[70vh], z-[1000]).
   const barClass = () =>
     screen.getByPlaceholderText('Najdi místnost, budovu, akci…').closest('div')?.className ?? '';
+  // The ScreenHeader row: the title's own wrapper is the flex row inside it, so
+  // this walks out to the padded container that carries the inset.
+  const headerClass = () => screen.getByText('Mapa').closest('[class*="pt-["]')?.className ?? '';
 
-  it('insets the floating search bar below the status bar', () => {
+  /**
+   * The invariant, unchanged: whatever is topmost on the map screen carries the
+   * inset, or under targetSdk 36's forced edge-to-edge it renders beneath the
+   * status bar's clock. What changed is WHICH element that is — the map used to
+   * float its own chrome over the canvas and now wears the same ScreenHeader as
+   * every other tab, so the header carries it and the bar must not.
+   *
+   * A flat margin is exactly the original bug: it looks right in a desktop
+   * browser, where --safe-top resolves to 0, and fails only on the device. That
+   * is why this is asserted on the header rather than deleted with the old shape.
+   */
+  it('insets the topmost element below the status bar', () => {
     render(<MapScreen />);
-    expect(barClass()).toContain('var(--safe-top');
+    expect(headerClass()).toContain('var(--safe-top');
+  });
+
+  it('keeps the base spacing on top of the inset', () => {
+    render(<MapScreen />);
+    expect(headerClass()).toMatch(/calc\(.*rem/);
   });
 
   /**
-   * A flat margin is exactly the bug: it looks right in a desktop browser, where
-   * --safe-top resolves to 0, and fails only on the device.
+   * And the bar below it must NOT inset again: two insets stacked push the
+   * search a status bar's height down the screen, which is how the previous fix
+   * for this would have failed if it had simply been left in place.
    */
-  it('keeps the base spacing on top of the inset', () => {
+  it('does not inset the search bar a second time', () => {
     render(<MapScreen />);
-    expect(barClass()).toMatch(/calc\(.*rem/);
+    expect(barClass()).not.toContain('var(--safe-top');
   });
 });
 
@@ -392,6 +412,12 @@ describe('MapScreen safe-area inset', () => {
  * The handle was drawn as a drag pill but wired to nothing but onClick, so the
  * sheet could only be tapped open — swiping it did nothing at all, which reads
  * as a frozen app rather than an unimplemented gesture.
+ */
+/**
+ * One stop per gesture. The sheet has three now — peek / half / expanded — so a
+ * drag or a tap moves to the NEIGHBOURING stop rather than the far end; `half`
+ * is what makes the campus events visible without covering the map. The pure
+ * rules and their own cases live in primitives/__tests__/sheetDrag.test.ts.
  */
 describe('MapSheet drag', () => {
   // The distance-vs-velocity rules live in sheetDrag.test.ts, not here: jsdom
@@ -408,14 +434,14 @@ describe('MapSheet drag', () => {
   it('expands when the handle is dragged up', () => {
     render(<MapScreen />);
     drag(600, 400);
-    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+    expect(useAppStore.getState().mapSheetState).toBe('half');
   });
 
   it('collapses when the handle is dragged down', () => {
     useAppStore.setState({ mapSheetState: 'expanded' } as never);
     render(<MapScreen />);
     drag(300, 500);
-    expect(useAppStore.getState().mapSheetState).toBe('peek');
+    expect(useAppStore.getState().mapSheetState).toBe('half');
   });
 
   /**
@@ -440,7 +466,7 @@ describe('MapSheet drag', () => {
     fireEvent.pointerMove(handle, { clientY: 400, timeStamp: 100 });
     fireEvent.pointerUp(handle, { clientY: 400, timeStamp: 100 });
     fireEvent.click(handle);
-    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+    expect(useAppStore.getState().mapSheetState).toBe('half');
   });
 
   /**
@@ -455,7 +481,7 @@ describe('MapSheet drag', () => {
     fireEvent.pointerDown(row, { clientY: 300 });
     fireEvent.pointerMove(row, { clientY: 500 });
     fireEvent.pointerUp(row, { clientY: 500 });
-    expect(useAppStore.getState().mapSheetState).toBe('peek');
+    expect(useAppStore.getState().mapSheetState).toBe('half');
   });
 
   it('drags from the tab row too, once a building makes it a real tablist', () => {
@@ -469,7 +495,7 @@ describe('MapSheet drag', () => {
     fireEvent.pointerDown(tabRow, { clientY: 300 });
     fireEvent.pointerMove(tabRow, { clientY: 500 });
     fireEvent.pointerUp(tabRow, { clientY: 500 });
-    expect(useAppStore.getState().mapSheetState).toBe('peek');
+    expect(useAppStore.getState().mapSheetState).toBe('half');
   });
 
   /**
@@ -484,7 +510,7 @@ describe('MapSheet drag', () => {
     fireEvent.pointerMove(row, { clientY: 500 });
     fireEvent.pointerUp(row, { clientY: 500 });
     fireEvent.click(row);
-    expect(useAppStore.getState().mapSheetState).toBe('peek');
+    expect(useAppStore.getState().mapSheetState).toBe('half');
   });
 
   it('collapses on a plain tap of the heading row', () => {
@@ -515,7 +541,7 @@ describe('MapSheet drag', () => {
     fireEvent.pointerMove(akce, { clientY: 500 });
     fireEvent.pointerUp(akce, { clientY: 500 });
     fireEvent.click(akce);
-    expect(useAppStore.getState().mapSheetState).toBe('peek');
+    expect(useAppStore.getState().mapSheetState).toBe('half');
     expect(useAppStore.getState().mapTab).toBe('budova');
   });
 
@@ -547,7 +573,7 @@ describe('MapSheet drag', () => {
     fireEvent.pointerDown(body, { clientY: 300 });
     fireEvent.pointerMove(body, { clientY: 500 });
     fireEvent.pointerUp(body, { clientY: 500 });
-    expect(useAppStore.getState().mapSheetState).toBe('peek');
+    expect(useAppStore.getState().mapSheetState).toBe('half');
   });
 
   /**
@@ -593,6 +619,6 @@ describe('MapSheet drag', () => {
     fireEvent.pointerDown(handle, { clientY: 600, timeStamp: 0 });
     fireEvent.pointerUp(handle, { clientY: 600, timeStamp: 40 });
     fireEvent.click(handle);
-    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+    expect(useAppStore.getState().mapSheetState).toBe('half');
   });
 });

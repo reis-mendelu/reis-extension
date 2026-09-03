@@ -25,7 +25,9 @@ describe('createMobileUiSlice', () => {
   it('defaults to the calendar tab with no sheets open', () => {
     expect(state.mobileTab).toBe('calendar');
     expect(state.mobileSheets).toEqual([]);
-    expect(state.mapSheetState).toBe('peek');
+    // The middle stop: the map sheet opens with the campus events already
+    // visible, instead of a blank peek band the student had to drag up.
+    expect(state.mapSheetState).toBe('half');
     expect(state.mapTab).toBe('akce');
     expect(state.devPhoneOverride).toBeNull();
   });

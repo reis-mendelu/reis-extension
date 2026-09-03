@@ -97,8 +97,12 @@ export function ExamsScreen() {
     [registered, now]
   );
 
-  const eyebrowLabel = t('mobile.exams.eyebrow');
-  const eyebrow = userSemester ? `${eyebrowLabel} · ${userSemester}` : eyebrowLabel;
+  // No "Zkouškové" label: it sat directly above a title reading "Zkoušky" and
+  // told the student nothing the title had not already said. The semester it
+  // used to be prefixed to is real information, so that survives on its own —
+  // and where there is none, the row goes away and gives the title its width
+  // back, which matters at 320px.
+  const eyebrow = userSemester || undefined;
   const toggle = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
 
   const registeredCard = (row: RegisteredExam) => (
@@ -193,9 +197,11 @@ export function ExamsScreen() {
       <ScreenHeader
         eyebrow={eyebrow}
         title={t('mobile.exams.title')}
-        action={
+        // Its own row under the title rather than beside the header actions:
+        // "Přihlášen na 3 zkoušky" next to four 40px targets overflows 320px.
+        below={
           registered.length > 0 ? (
-            <span className="flex-shrink-0 whitespace-nowrap rounded-full bg-info/15 px-3 py-1.5 text-sm font-semibold text-info">
+            <span className="w-fit whitespace-nowrap rounded-full bg-info/15 px-3 py-1.5 text-sm font-semibold text-info">
               {t(`mobile.exams.registeredCount${pluralSuffix(language, registered.length)}`, {
                 count: registered.length,
               })}

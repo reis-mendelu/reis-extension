@@ -35,36 +35,59 @@ export const DETENT_DISTANCE_PX = 64;
  */
 export const DRAG_SLOP_PX = 8;
 
-export type Detent = 'peek' | 'expanded';
+/**
+ * The map sheet's stops, shortest first.
+ *
+ * Three, not two. The campus events used to sit in a 166px peek that showed a
+ * summary line and nothing else, so seeing what was on meant dragging the sheet
+ * up over the map every single time — reported as "the campus events need to be
+ * pulled up while looking at the map ... to be directly visible", with a
+ * screenshot of a peek band that was simply blank under its title. `half` shows
+ * events AND keeps the map in view, and it is where the sheet opens.
+ */
+export const DETENTS = ['peek', 'half', 'expanded'] as const;
+
+export type Detent = (typeof DETENTS)[number];
 
 /**
- * Where a two-detent sheet lands when the finger lifts.
+ * The next stop in the direction the finger is travelling, or null at the ends.
  *
- * The map sheet never closes — it moves between peek and expanded — so it needs
- * the dismissal rules mirrored to work upward as well. `shouldDismiss` cannot
- * serve here: it ignores upward travel by design, which is exactly the "I
- * cannot pull it up" half.
+ * Negative `dy` is upward, which means taller. One step per gesture is what
+ * makes a middle stop reachable at all: jumping peek→expanded would skip it.
+ */
+function neighbour(from: Detent, dy: number): Detent | null {
+  if (dy === 0) return null;
+  const index = DETENTS.indexOf(from) + (dy < 0 ? 1 : -1);
+  return DETENTS[index] ?? null;
+}
+
+/**
+ * Whether the sheet can absorb travel in this direction from this stop.
  *
- * Travel deeper into the detent already held is ignored rather than clamped
+ * At either end one direction is against the stop, and the gesture belongs to
+ * whatever is under the finger (usually the Akce list scrolling). The middle
+ * stop absorbs both ways.
+ */
+export function consumesTravel(from: Detent, dy: number): boolean {
+  return neighbour(from, dy) !== null;
+}
+
+/**
+ * Where the sheet lands when the finger lifts.
+ *
+ * The map sheet never closes — it moves between stops — so it needs the
+ * dismissal rules mirrored to work upward as well. `shouldDismiss` cannot serve
+ * here: it ignores upward travel by design, which is exactly the "I cannot pull
+ * it up" half.
+ *
+ * Travel deeper into the stop already held is ignored rather than clamped
  * later: peek is the floor, and dragging down from it must not collapse the
  * sheet out of existence, since the sheet is the only way to reach Akce.
  */
-/**
- * Whether the sheet can absorb travel in this direction from this detent.
- *
- * Expanded absorbs downward only, peek upward only — in the other direction it
- * is already against its stop, and the gesture belongs to whatever is under the
- * finger (usually the Akce list scrolling).
- */
-export function consumesTravel(from: Detent, dy: number): boolean {
-  return (from === 'peek' ? -dy : dy) > 0;
-}
-
 export function snapDetent(from: Detent, dy: number, dtMs: number): Detent {
-  // Negative dy is upward, so the direction that can still travel flips.
-  const travel = from === 'peek' ? -dy : dy;
-  if (travel <= 0) return from;
-  const target: Detent = from === 'peek' ? 'expanded' : 'peek';
+  const target = neighbour(from, dy);
+  if (!target) return from;
+  const travel = Math.abs(dy);
   if (travel >= DETENT_DISTANCE_PX) return target;
   return dtMs > 0 && travel / dtMs >= DISMISS_VELOCITY_PX_PER_MS ? target : from;
 }
