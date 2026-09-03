@@ -102,6 +102,22 @@ function parseArgs(argv: string[]): Options {
  */
 async function seedMeta(page: Page, entries: Record<string, unknown>): Promise<void> {
   if (Object.keys(entries).length === 0) return;
+  // 'load' fires well before IndexedDBService has opened its database, so wait
+  // for the precondition itself rather than for a navigation event that only
+  // correlates with it. This is what makes the strict check below safe: a
+  // failure now means the app never created a database, not that we looked too
+  // early. Swallow the timeout — the explicit error below reports it better.
+  await page
+    .waitForFunction(
+      async () => {
+        const dbs = await indexedDB.databases();
+        return dbs.some((d) => d.name === 'reis_db' || d.name === 'reis_db_mock');
+      },
+      undefined,
+      { timeout: 15000 }
+    )
+    .catch(() => undefined);
+
   const seeded = await page.evaluate(async (kv) => {
     const names = (await indexedDB.databases())
       .map((d) => d.name)
@@ -134,7 +150,12 @@ async function seedMeta(page: Page, entries: Record<string, unknown>): Promise<v
         'Refusing to continue — an unseeded run reports a clean page it never set up.'
     );
   }
-  await page.reload({ waitUntil: 'networkidle' });
+  // 'load', not 'networkidle': with a real snapshot the app keeps fetching
+  // (files, syllabuses, classmates), so the network never goes idle and the
+  // data-heaviest views — subjects, studyPlan — timed out at 30s while the
+  // empty ones passed. The explicit `--wait` settle below is what actually
+  // decides when the page is ready to measure.
+  await page.reload({ waitUntil: 'load' });
 }
 
 /** Click a step of a `--click` path. Visible text first, then accessible name:
@@ -292,7 +313,8 @@ async function run(): Promise<number> {
       const consoleErrors: string[] = [];
       page.on('console', (m) => m.type() === 'error' && consoleErrors.push(m.text()));
 
-      await page.goto(opts.url, { waitUntil: 'networkidle' });
+      // See the note in seedMeta: 'networkidle' cannot settle against real data.
+      await page.goto(opts.url, { waitUntil: 'load' });
       // Dismiss onboarding by default — otherwise every run screenshots the
       // welcome modal and measures the blurred page behind it.
       const seed: Record<string, unknown> = opts.onboarding ? {} : { welcome_dismissed: true };
