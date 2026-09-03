@@ -3,9 +3,17 @@ import { safeFilename } from './safeFilename';
 import type { SaveDeps } from './saveDocument';
 
 /**
- * Wires saveBlob to the real host. The Capacitor branch is imported lazily so
- * the extension bundle never pulls in @capacitor/* — it would bloat the build
- * and the plugins are meaningless outside the app.
+ * Wires saveBlob to the real host. The Capacitor branch is imported lazily, so
+ * THIS module adds no plugin weight to a non-Capacitor build — the plugins are
+ * meaningless outside the app.
+ *
+ * That is a claim about this file only. It previously read "the extension
+ * bundle never pulls in @capacitor/*", which is not true and misled a later
+ * reader into thinking any lazy import is free. The extension's main chunk does
+ * ship Capacitor runtime, because three modules import it as a VALUE at module
+ * scope: `platform/secureStore.ts`, `mobile/openIsFile.ts` and
+ * `mobile/eduroamNative.ts` (grep the build for `registerPlugin`). Being lazy
+ * here keeps this file off that list; it does not empty the list.
  */
 export function buildSaveDeps(): SaveDeps {
   return {

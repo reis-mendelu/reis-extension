@@ -84,8 +84,13 @@ export function externalHrefFromClick(event: MouseEvent): string | null {
  * Opens a URL outside the app's own view.
  *
  * Off Capacitor this is the `window.open` every call site used to do inline.
- * The plugin import is lazy so the extension bundle never pulls in
- * `@capgo/capacitor-inappbrowser`.
+ * The plugin import is lazy, so THIS module adds no plugin weight to a
+ * non-Capacitor build.
+ *
+ * Scoped to this file on purpose. The older wording — "the extension bundle
+ * never pulls in `@capgo/capacitor-inappbrowser`" — was false, and the same
+ * false generalisation appeared in `saveDeps.ts`; see the note there for the
+ * modules that do pull Capacitor runtime into the extension's main chunk.
  */
 export async function openExternal(url: string): Promise<void> {
   // Same guard as fetchWithAuth, first statement so no request can escape:
