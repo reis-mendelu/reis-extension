@@ -188,6 +188,7 @@ export function ProfileScreen() {
         </div>
         <div className="px-3">
           <SpolkySection
+            expandFully
             expanded={spolkyOpen}
             onToggle={() => setSpolkyOpen((v) => !v)}
             isSub={isSubscribed}

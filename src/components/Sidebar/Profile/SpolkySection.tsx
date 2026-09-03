@@ -11,6 +11,16 @@ interface SpolkySectionProps {
   onToggleAssoc: (id: string) => void;
   /** Close the surrounding profile popover before the admin console takes over. */
   onNavigate?: () => void;
+  /**
+   * Let the list grow to its full height instead of scrolling inside itself.
+   *
+   * Set on the phone's profile TAB. There are seven societies and the cap holds
+   * about four, so the list scrolled inside a screen that already scrolls — and
+   * on a touch device the outer page stops moving the moment a finger lands on
+   * the inner scroller. The desktop sidebar popup leaves it off: that is a small
+   * floating panel with nowhere to grow, which is what the cap was for.
+   */
+  expandFully?: boolean;
 }
 
 export function SpolkySection({
@@ -19,6 +29,7 @@ export function SpolkySection({
   isSub,
   onToggleAssoc,
   onNavigate,
+  expandFully = false,
 }: SpolkySectionProps) {
   const { t } = useTranslation();
   const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
@@ -51,7 +62,11 @@ export function SpolkySection({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="space-y-1 mb-2 px-1 max-h-40 overflow-y-auto custom-scrollbar">
+            <div
+              className={`space-y-1 mb-2 px-1 ${
+                expandFully ? '' : 'max-h-40 overflow-y-auto custom-scrollbar'
+              }`}
+            >
               {Object.values(ASSOCIATION_PROFILES).map((p) => (
                 <label
                   key={p.id}
