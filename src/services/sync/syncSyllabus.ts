@@ -3,7 +3,7 @@
  */
 
 import { IndexedDBService } from '../storage';
-import { fetchSyllabus, findSubjectId } from '../../api/syllabus';
+import { fetchSyllabus, findSubjectId, SYLLABUS_FETCH_FAILED } from '../../api/syllabus';
 import type { SyllabusRequirements } from '../../types/documents';
 import { logError } from '../../utils/reportError';
 
@@ -56,6 +56,29 @@ export async function fetchAndCacheSingleSyllabus(
         fetchSyllabus(activeId, 'cz'),
         fetchSyllabus(activeId, 'en')
     ]);
+
+    // `fetchSyllabus` degrades gracefully rather than throwing: it returns
+    // SYLLABUS_FETCH_FAILED as the requirementsText. Its own doc says callers
+    // that cache "can tell it apart from a real syllabus and avoid storing a
+    // failure" — the bulk sync does exactly that (injector/syncService.ts:408),
+    // this path did not. So a failed fetch was written to IDB and then rendered
+    // AS the syllabus: a raw English marker string in a Czech UI, and
+    // indistinguishable from real text for every later reader.
+    //
+    // Both-or-neither, deliberately. A partial `{ cz }` write would break the
+    // record's shape: the reader branches on `'cz' in data && 'en' in data`, so
+    // a half record falls through to the single-syllabus branch and the wrapper
+    // object itself gets treated as a syllabus.
+    const failed = (s: SyllabusRequirements) => s.requirementsText === SYLLABUS_FETCH_FAILED;
+    if (failed(czSyllabus) || failed(enSyllabus)) {
+        logError('Sync.fetchAndCacheSingleSyllabus', new Error('syllabus fetch failed'), {
+            courseCode,
+            activeId,
+            czFailed: failed(czSyllabus),
+            enFailed: failed(enSyllabus)
+        });
+        return undefined;
+    }
 
     await IndexedDBService.set('syllabuses', courseCode, {
         cz: czSyllabus,
