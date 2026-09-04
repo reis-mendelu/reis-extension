@@ -4,78 +4,57 @@
 
 reIS is a student-built project that simplifies the Mendel University in Brno
 Information System (IS Mendelu). It is a browser extension (Chrome, Edge,
-Firefox) and a mobile app (Android, iPhone, iPad). reIS is not an official
+Firefox) and a mobile app (Android, iPhone, iPad). It is not an official
 application of Mendel University.
 
-## In short
+## Your academic data stays on your device
 
-**Your academic data never reaches us.** reIS fetches it from MENDELU using your
-own session — the way your browser would — and keeps it on your device. We run
-no server that holds it.
+Your name, personal number, study details, timetable, grades, assessment, exam
+dates, courses, materials and submission folders are fetched from MENDELU using
+your own session — the way your browser would — and kept on your device.
+**None of it reaches us. We run no server that holds it.** It moves only between
+your device and MENDELU, both ways, since signing up for an exam sends it back.
+Uninstalling removes the local copy.
 
-Two things about *you* reach us: a **daily count**, and **feedback you type and
-send**. **No crash or error information is ever transmitted**, from any surface,
-on any platform.
+You sign in on IS Mendelu's own page; your password goes straight to
+`is.mendelu.cz` and **reIS never sees it**. The session token is kept encrypted
+(Android Keystore; iOS Keychain, **never synced to iCloud or another device**;
+a normal cookie in the extension). Signing out deletes it.
 
-A few actions you take also write a row, and each carries only what that action
-needs: an **event RSVP** and the **in-app survey** (both keyed by the random
-install identifier below), a **society post view or click** (a post id), a
-**teacher grading vote** (the teacher's id, not yours), and an **eduroam
-transfer code** (short-lived and random). Nothing else.
+**No crash or error information is ever transmitted**, from any surface, on any
+platform.
 
-## Signing in
+## What we do send
 
-You sign in on IS Mendelu's own login page. Your password goes straight to
-`is.mendelu.cz` — **reIS never sees, reads or stores it.**
+| what | when | what it carries |
+|---|---|---|
+| Daily count | once a day | a random install identifier — a UUID unrelated to you. Counts **installs, not people** |
+| Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size |
+| In-app survey, event RSVP | you answer / RSVP | the same random install identifier |
+| Society post view or click | you open one | a post id |
+| Teacher grading vote | you vote | the teacher's id, not yours |
+| eduroam transfer | you set up eduroam | a short-lived random code |
 
-reIS keeps the session token so you need not log in every launch: encrypted in
-the Android Keystore, in the iOS Keychain (**never synced to iCloud or restored
-onto another device**), or as a normal browser cookie in the extension. Signing
-out deletes it.
-
-## What stays on your device
-
-Your name, personal number (UIC) and study details; timetable, grades,
-continuous assessment, exam dates, courses, study materials, submission folders,
-progress checks.
-
-**None of it is sent to reIS or held on any server we run.** It moves only
-between your device and MENDELU — both ways, since signing up for an exam or
-uploading a file sends it back. Uninstalling removes the local copy.
-
-## What we collect
-
-**1. Daily count.** Once a day we send a random identifier created when you
-installed reIS — a 128-bit UUID, unrelated to you, not your student ID nor a
-hash of it — so we can count active installations. It counts **installs, not
-people**: a phone and a laptop are two.
-
-**2. Feedback you send.** Your message and any contact details you type, plus
-which reIS screen you were on (a name from a fixed list, never the page
-address), app version, browser name and version, and window size. Read by the
-developers, passed to nobody. Nothing is sent unless you press send.
+Nothing else. Feedback is read by the developers and passed to nobody.
 
 **Your network address is not recorded** — this version writes straight to the
 database, which cannot see your connection. Versions released before September
-2026 still submit through a small server component that stores a salted SHA-256
-of your IP address for up to an hour, to count recent submissions; never the
-address itself, and never alongside your message. That component is removed once
-those versions have aged out, and nothing replaces it.
+2026 store a salted hash of it for up to an hour to limit the form; never the
+address, never beside your message. That component goes when those versions do.
 
-*Lawful basis for both: legitimate interest, GDPR Art. 6(1)(f) — knowing the
-project is used, and fixing what you report.*
+*Lawful basis: legitimate interest, GDPR Art. 6(1)(f) — knowing the project is
+used, and fixing what you report.*
 
 ## Who else reIS talks to
 
-| Service | Why |
-|---|---|
-| **IS Mendelu** (`is.mendelu.cz`) | Fetches your academic data, authenticated as you |
-| **jsDelivr CDN** | Public course-difficulty statistics. No identifier is sent |
-| **Supabase** (`*.supabase.co`) | Hosts reIS's own database |
+**IS Mendelu** receives your academic data, authenticated as you — it is the
+university's own system and the only recipient of it. **jsDelivr** serves public
+course-difficulty statistics; no identifier is sent, though the set of subjects
+requested does reveal which courses you take. **Supabase** hosts reIS's own
+database — infrastructure, not a recipient doing anything of its own.
 
-Supabase is not a recipient in the way the others are — it is the infrastructure
-reIS's database runs on, used for nothing else. We do **not** sell or trade your
-personal information, and transfer it to no one beyond this table.
+We do **not** sell or trade your personal information, and transfer it to no one
+else.
 
 ## Permissions
 
@@ -86,14 +65,9 @@ the campus, not you.
 
 ## Your control
 
-Sign out to delete the token and cookies. Uninstall to delete everything local. For feedback you sent, write to the
-address below and we will delete it — the daily-count rows hold nothing that
-identifies you, so there is nothing there to erase.
-
-## Children
-
-reIS is intended for university students and staff. It is not directed at
-children.
+Sign out to delete the token and cookies. Uninstall to delete everything local.
+For feedback you sent, write to the address below and we will delete it; the
+daily-count rows hold nothing that identifies you.
 
 ## Changes
 
