@@ -63,6 +63,15 @@ there never reach Supabase, so never cite them as evidence a write works.
 - `main` accepts only the `test` → `main` release PR, and merging it submits to
   the stores. Use `/release`.
 - **Do not merge into `test` while a release PR is open.**
+- **Two previews, deliberately different.** `test` auto-deploys a **public**
+  build on the synthetic demo dataset — that link is shareable. `npm run
+  preview:real` scrapes your own IS data, strips other students' identities,
+  builds, and serves it from **your machine** with `--host`, so a phone or iPad
+  on the same Wi-Fi can open it. It is never hosted: Vercel Hobby cannot put a
+  login in front of a deployed page, and a build carrying real data was briefly
+  public before that was discovered. Your MENDELU credentials never leave the
+  laptop and are never in CI. The real-data build shows how old its snapshot is,
+  because you refresh it by hand.
 
 ## Architecture
 
