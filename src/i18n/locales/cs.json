@@ -407,7 +407,10 @@
     "loading": "Načítá se...",
     "empty": "Žádné nové novinky",
     "yesterday": "Včera",
-    "tomorrow": "Zítra"
+    "tomorrow": "Zítra",
+    "fromReis": "reIS",
+    "sectionDeadlines": "Blížící se termíny",
+    "sectionSocieties": "Od spolků"
   },
   "deadlines": {
     "title": "Blížící se termíny",
@@ -1055,7 +1058,8 @@
       "eduroam": "Eduroam",
       "eduroamSub": "univerzitní Wi-Fi",
       "documents": "Dokumenty",
-      "documentsSub": "potvrzení o studiu"
+      "documentsSub": "potvrzení o studiu",
+      "recentSubjects": "Naposledy otevřené"
     },
     "sheet": {
       "close": "Zavřít",

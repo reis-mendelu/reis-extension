@@ -30,6 +30,11 @@ import '@/entrypoints/main/main';
 // reliable substitute.
 import './storeHandle';
 
+// After the app too, and deliberately: it re-posts the snapshot once it has
+// written the user params the app's own first pass had to do without. See
+// snapshotUserParams.ts.
+import './snapshotUserParams';
+
 // Last, and deliberately after the app: signs the harness in as a real society
 // / reIS-admin account when credentials are configured, so the admin console
 // can be tested against live Supabase instead of the in-memory dev store. Does

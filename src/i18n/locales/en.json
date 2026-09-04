@@ -407,7 +407,10 @@
     "loading": "Loading...",
     "empty": "No new news",
     "yesterday": "Yesterday",
-    "tomorrow": "Tomorrow"
+    "tomorrow": "Tomorrow",
+    "fromReis": "reIS",
+    "sectionDeadlines": "Upcoming deadlines",
+    "sectionSocieties": "From societies"
   },
   "deadlines": {
     "title": "Upcoming deadlines",
@@ -1055,7 +1058,8 @@
       "eduroam": "Eduroam",
       "eduroamSub": "university Wi-Fi",
       "documents": "Documents",
-      "documentsSub": "proof of study"
+      "documentsSub": "proof of study",
+      "recentSubjects": "Recently opened"
     },
     "sheet": {
       "close": "Close",

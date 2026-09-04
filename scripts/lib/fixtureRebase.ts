@@ -100,6 +100,22 @@ export function rebaseFixture(fixture: unknown, now: Date): Json {
     });
   }
 
+  // Assignments carry ONE date, in the term format with a time — the deadline
+  // feed only surfaces one inside a 48-hour window, so an absolute date here
+  // would rot in two days rather than the usual few weeks.
+  if (Array.isArray(out['odevzdavarny'])) {
+    out['odevzdavarny'] = out['odevzdavarny'].map((a) => {
+      if (!isObj(a)) return a;
+      const raw = a['deadlineDayOffset'];
+      if (typeof raw !== 'number') return a;
+      const time = typeof a['deadlineTime'] === 'string' ? a['deadlineTime'] : '23:59';
+      const next: Json = { ...a, deadline: `${formatIsDate(shift(now, raw))} ${time}` };
+      delete next['deadlineDayOffset'];
+      delete next['deadlineTime'];
+      return next;
+    });
+  }
+
   out['lastSync'] = now.getTime();
   return out;
 }

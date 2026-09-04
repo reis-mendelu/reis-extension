@@ -6,6 +6,8 @@ import { NoResults, Searching } from './SearchStates';
 
 export interface SearchSubjectResultsProps {
   subjectResults: SearchResult[];
+  /** Recently opened subjects, shown while the field is empty. */
+  shownSubjects: SearchResult[];
   hasQuery: boolean;
   canSearchPeople: boolean;
   searchingPeople: boolean;
@@ -24,6 +26,7 @@ export interface SearchSubjectResultsProps {
  */
 export function SearchSubjectResults({
   subjectResults,
+  shownSubjects,
   hasQuery,
   canSearchPeople,
   searchingPeople,
@@ -74,6 +77,32 @@ export function SearchSubjectResults({
             {scope === 'faculty' ? t('search.widenToUniversity') : t('search.narrowToFaculty')}
           </button>
         </div>
+      )}
+
+      {/* Exactly what Lidé does with an empty field, and this side had
+          nothing: a student comes back to the same four or five subjects all
+          term, so the list they need is almost always one they have opened
+          before. The scope note above stays query-only — there is nothing to
+          widen the search of yet. */}
+      {!hasQuery && shownSubjects.length > 0 && (
+        <>
+          <div className="px-4 pb-0.5 pt-1 text-xs font-bold uppercase tracking-wider text-base-content/60">
+            {t('mobile.student.recentSubjects')}
+          </div>
+          {shownSubjects.map((result) => (
+            <SearchResultItem
+              key={result.id}
+              result={result}
+              isRecent={false}
+              isSelected={false}
+              onMouseEnter={() => {}}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                openSubject(result);
+              }}
+            />
+          ))}
+        </>
       )}
 
       {hasQuery && subjectResults.length > 0 && (

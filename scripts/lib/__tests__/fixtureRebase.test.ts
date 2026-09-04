@@ -188,3 +188,35 @@ describe('rebaseFixture — schedule', () => {
     expect(rows[1]!.date).toBe('20260101');
   });
 });
+
+describe('rebaseFixture: odevzdávárny', () => {
+  // The deadline feed — and so the Novinky sheet's whole first group — only
+  // shows an assignment inside a 48-hour window. Absolute dates in a fixture
+  // would put that group back in its empty state within two days of being
+  // written, which is the rot `dayOffset` exists to prevent.
+  it('materialises an assignment deadline from its offset', () => {
+    const out = rebaseFixture(
+      {
+        odevzdavarny: [
+          { odevzdavarnaId: 'a1', name: 'Projekt', deadlineDayOffset: 0, deadlineTime: '23:59' },
+          { odevzdavarnaId: 'a2', name: 'Protokol', deadlineDayOffset: 1, deadlineTime: '12:00' },
+        ],
+      },
+      NOW
+    ) as unknown as { odevzdavarny: Record<string, unknown>[] };
+
+    expect(out.odevzdavarny[0]!['deadline']).toBe('10.02.2026 23:59');
+    expect(out.odevzdavarny[1]!['deadline']).toBe('11.02.2026 12:00');
+    expect(out.odevzdavarny[0]).not.toHaveProperty('deadlineDayOffset');
+    expect(out.odevzdavarny[0]).not.toHaveProperty('deadlineTime');
+  });
+
+  it('leaves an assignment that already carries an absolute deadline alone', () => {
+    const out = rebaseFixture(
+      { odevzdavarny: [{ odevzdavarnaId: 'a1', deadline: '01.01.2026 09:00' }] },
+      NOW
+    ) as unknown as { odevzdavarny: Record<string, unknown>[] };
+    expect(out.odevzdavarny[0]!['deadline']).toBe('01.01.2026 09:00');
+  });
+});
+

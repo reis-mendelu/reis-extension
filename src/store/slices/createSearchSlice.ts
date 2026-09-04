@@ -16,6 +16,17 @@ const MAX_RECENT_SEARCHES = 3;
  */
 const MAX_RECENT_PEOPLE = 8;
 
+/**
+ * Subjects are remembered the same way, and for the same reason.
+ *
+ * Lidé kept its own history and Předměty kept none, so the subject side of the
+ * search sheet was blank until something was typed — on the half of it where a
+ * student returns to the SAME few subjects all term. The mixed
+ * `recentSearches` was no substitute: three entries deep, and a person or an
+ * IS page evicts a subject from it immediately.
+ */
+const MAX_RECENT_SUBJECTS = 8;
+
 /** Two people in IS genuinely share a name; their ids do not. */
 function isSameEntry(a: SearchResult, b: SearchResult): boolean {
   if (a.type !== b.type) return false;
@@ -30,6 +41,8 @@ export interface SearchSlice {
   recentSearches: SearchResult[];
   /** Recently searched PEOPLE only — see MAX_RECENT_PEOPLE. */
   recentPeople: SearchResult[];
+  /** Recently opened SUBJECTS only — see MAX_RECENT_SUBJECTS. */
+  recentSubjects: SearchResult[];
   loadRecentSearches: () => Promise<void>;
   saveRecentSearch: (result: SearchResult, label: string) => Promise<void>;
   executeSearch: (
@@ -42,12 +55,14 @@ export interface SearchSlice {
 export const createSearchSlice: AppSlice<SearchSlice> = (set, get) => ({
   recentSearches: [],
   recentPeople: [],
+  recentSubjects: [],
 
   loadRecentSearches: async () => {
     try {
-      const [stored, storedPeople] = await Promise.all([
+      const [stored, storedPeople, storedSubjects] = await Promise.all([
         IndexedDBService.get('meta', 'recent_searches'),
         IndexedDBService.get('meta', 'recent_people'),
+        IndexedDBService.get('meta', 'recent_subjects'),
       ]);
       // Only hydrate a list nothing has written yet. This runs at boot and
       // resolves whenever IndexedDB gets round to it; a search saved in the
@@ -58,6 +73,9 @@ export const createSearchSlice: AppSlice<SearchSlice> = (set, get) => ({
       }
       if (storedPeople && get().recentPeople.length === 0) {
         set({ recentPeople: storedPeople as SearchResult[] });
+      }
+      if (storedSubjects && get().recentSubjects.length === 0) {
+        set({ recentSubjects: storedSubjects as SearchResult[] });
       }
     } catch {
       /* non-critical */
@@ -75,15 +93,24 @@ export const createSearchSlice: AppSlice<SearchSlice> = (set, get) => ({
     const updatedPeople = isPerson
       ? pushRecent(get().recentPeople, result, MAX_RECENT_PEOPLE)
       : get().recentPeople;
+    // `result` here too, for the mirror-image reason: under "Naposledy
+    // otevřené" the label would repeat the heading, where `detail` carries the
+    // subject's own code and faculty — which is what tells two similarly named
+    // courses apart.
+    const isSubject = result.type === 'subject';
+    const updatedSubjects = isSubject
+      ? pushRecent(get().recentSubjects, result, MAX_RECENT_SUBJECTS)
+      : get().recentSubjects;
 
-    set(
-      isPerson
-        ? { recentSearches: updated, recentPeople: updatedPeople }
-        : { recentSearches: updated }
-    );
+    set({
+      recentSearches: updated,
+      ...(isPerson ? { recentPeople: updatedPeople } : {}),
+      ...(isSubject ? { recentSubjects: updatedSubjects } : {}),
+    });
     try {
       await IndexedDBService.set('meta', 'recent_searches', updated);
       if (isPerson) await IndexedDBService.set('meta', 'recent_people', updatedPeople);
+      if (isSubject) await IndexedDBService.set('meta', 'recent_subjects', updatedSubjects);
     } catch {
       /* non-critical */
     }

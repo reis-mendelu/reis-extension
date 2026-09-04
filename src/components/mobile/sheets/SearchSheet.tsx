@@ -48,6 +48,7 @@ export function SearchSheet({ sheet, onClose }: SearchSheetProps) {
 
   const pushSheet = useAppStore((s) => s.pushSheet);
   const recentPeople = useAppStore((s) => s.recentPeople);
+  const recentSubjects = useAppStore((s) => s.recentSubjects);
 
   // isLoading is read, not ignored: useSearch debounces 250ms and then goes to
   // the network, so `peopleResults` is empty for the whole round trip. Reading
@@ -73,6 +74,12 @@ export function SearchSheet({ sheet, onClose }: SearchSheetProps) {
   // them from the store anyway. Five is the cap: enough to be useful, few
   // enough that the search box stays in reach on a phone.
   const shownPeople = useMemo(() => recentPeople.slice(0, RECENT_PEOPLE_LIMIT), [recentPeople]);
+  // Same cap as people, for the same reason: enough to be useful, few enough
+  // that the search box stays in reach on a phone.
+  const shownSubjects = useMemo(
+    () => recentSubjects.slice(0, RECENT_PEOPLE_LIMIT),
+    [recentSubjects]
+  );
 
   const trimmedQuery = query.trim();
   const hasQuery = trimmedQuery.length > 0;
@@ -136,6 +143,7 @@ export function SearchSheet({ sheet, onClose }: SearchSheetProps) {
               canScopeToFaculty={canScopeToFaculty}
               widenToUniversity={widenToUniversity}
               narrowToFaculty={narrowToFaculty}
+              shownSubjects={shownSubjects}
               openSubject={openSubject}
               noResultsText={noResultsText}
             />
