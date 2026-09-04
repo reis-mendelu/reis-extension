@@ -1,0 +1,82 @@
+name: Release checklist
+
+# Injects the checklist into the test -> main release PR when it is opened, so
+# it can't be skipped or drift from its single source in
+# .github/release-checklist.md. GitHub's native PR templates cannot be selected
+# by target branch, hence a workflow.
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-checklist-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  inject-checklist:
+    name: Inject release checklist
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Needed only by `gh pr edit` to rewrite this PR's body.
+      pull-requests: write
+    # Only this repository's own test -> main PR, so a fork or a branch merely
+    # named `test` cannot trigger a write to a PR body.
+    if: >-
+      github.head_ref == 'test' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Inject the checklist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          begin='<!-- BEGIN release-checklist -->'
+          end='<!-- END release-checklist -->'
+
+          # Read the body live rather than from the event payload: the payload is
+          # a snapshot taken at open time and `gh pr edit` replaces the whole
+          # body, so an author edit made while this job queued would be silently
+          # reverted.
+          body="$(gh pr view "$PR_NUMBER" --json body --jq '.body // ""')"
+
+          # Substring match, not line equality: GitHub stores PR bodies with CRLF
+          # line endings once anyone edits in the web UI, so an exact comparison
+          # would miss a marker that is really there and append a second copy.
+          if printf '%s\n' "$body" | grep -qF "$begin"; then
+            echo "Checklist already present — nothing to do."
+            exit 0
+          fi
+
+          block="$(awk -v b="$begin" -v e="$end" '
+            index($0, b) { f = 1 }
+            f { print }
+            index($0, e) { f = 0 }
+          ' .github/release-checklist.md)"
+
+          if [ -z "$block" ]; then
+            echo "::error::.github/release-checklist.md has no BEGIN/END release-checklist block."
+            exit 1
+          fi
+
+          # Append below the author's summary, never overwrite it.
+          {
+            if [ -n "$body" ]; then printf '%s\n\n---\n\n' "$body"; fi
+            printf '## Release checklist\n\n%s\n' "$block"
+          } > new_body.md
+
+          gh pr edit "$PR_NUMBER" --body-file new_body.md
+          echo "Injected the release checklist into PR #$PR_NUMBER."
