@@ -66,7 +66,13 @@ describe('NotificationsSheet', () => {
   // the read, so the surface owns it.
   it('marks the feed read once it is open, so the header badge clears', async () => {
     render(<NotificationsSheet onClose={vi.fn()} />);
-    await waitFor(() => expect(useAppStore.getState().notifications.readIds.has('n1')).toBe(true));
+    // 8000, like the deadline-alert assertion below: marking the feed read is
+    // an IndexedDB write behind an effect, and on a loaded CI runner it lands
+    // just past waitFor's 1000ms default — this failed at 1046ms while passing
+    // locally every time.
+    await waitFor(() => expect(useAppStore.getState().notifications.readIds.has('n1')).toBe(true), {
+      timeout: 8000,
+    });
   });
 
   // Marking runs off the FILTERED feed, which is empty until useSpolkySettings
@@ -90,7 +96,13 @@ describe('NotificationsSheet', () => {
         data: [notification],
       },
     } as never);
-    await waitFor(() => expect(useAppStore.getState().notifications.readIds.has('n1')).toBe(true));
+    // 8000, like the deadline-alert assertion below: marking the feed read is
+    // an IndexedDB write behind an effect, and on a loaded CI runner it lands
+    // just past waitFor's 1000ms default — this failed at 1046ms while passing
+    // locally every time.
+    await waitFor(() => expect(useAppStore.getState().notifications.readIds.has('n1')).toBe(true), {
+      timeout: 8000,
+    });
   });
 });
 
