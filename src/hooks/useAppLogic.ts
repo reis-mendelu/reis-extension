@@ -26,6 +26,7 @@ import type { ClassmatesData } from '../types/classmates';
 import type { SubjectZaznamnik } from '../types/zaznamnik';
 import { PARENT_ORIGIN } from '../api/proxy/trustedOrigin';
 import { getPlatform } from '../platform';
+import { isHarnessEnabled } from '../utils/harnessEnabled';
 import type { SyncDomain } from '../types/messages/base';
 
 interface SyncedData {
@@ -125,9 +126,13 @@ export function useAppLogic() {
     // Skip iframe data sync when using mock data
     if (import.meta.env.VITE_USE_MOCK_DATA === 'true') return;
 
-    // Dev standalone (localhost): allow the real-data snapshot to flow through
-    // the same handler by not bailing on the missing iframe.
-    const realDataMode = import.meta.env.DEV && !isInIframe();
+    // Dev standalone (localhost) AND the deployed preview build: allow the
+    // real-data snapshot to flow through the same handler by not bailing on
+    // the missing iframe. Not bare `DEV` — a preview build is a PRODUCTION
+    // build (`DEV` is false there), and without `isHarnessEnabled` this
+    // listener never attaches, so loadRealDataSnapshot()'s postMessage has
+    // nowhere to land: the snapshot is fetched and then silently discarded.
+    const realDataMode = isHarnessEnabled(import.meta.env) && !isInIframe();
     // Capacitor: same shape as dev standalone, but in a PRODUCTION build — there
     // is no iframe because the app is the top-level window, and syncService
     // loops its updates back via window.postMessage (see sendToIframe).
@@ -331,6 +336,22 @@ export function useAppLogic() {
     };
     window.addEventListener('message', handle);
     if (realDataMode) {
+      // Widening `realDataMode` above makes this branch newly reachable in a
+      // deployed preview build, not just `dev:web`. It is a harmless no-op
+      // there: this call uses loadRealDataSnapshot()'s DEFAULT url,
+      // '/dev-real-data.json' — the RAW, gitignored scrape, never the
+      // sanitised '/preview-data.json' — and `stripDevRealDataPlugin`
+      // (vite.web.build.config.ts) unconditionally deletes that file from
+      // every web build's output, dev or preview alike. So the fetch here
+      // 404s (or, under a bare static server with SPA fallback, resolves to
+      // index.html and fails res.json()), the catch swallows it, and
+      // nothing is posted. The listener registered just above is already
+      // live by the time dev/bootDemoMode.ts makes its OWN
+      // loadRealDataSnapshot('/preview-data.json') call moments later — that
+      // is the real loader for a preview build, and it is what actually
+      // populates the store. Verified: `npm run build:web:real` renders real
+      // data and issues no request to a nonexistent dev-real-data.json in the
+      // deployed output.
       void loadRealDataSnapshot();
     } else {
       signalReady();
