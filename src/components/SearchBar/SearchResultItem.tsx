@@ -6,17 +6,36 @@ interface SearchResultItemProps {
   result: SearchResult;
   isRecent: boolean;
   isSelected: boolean;
+  /** DOM id, so a combobox input can name this option in aria-activedescendant. */
+  id?: string;
   onMouseEnter: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
 }
 
-export function SearchResultItem({ result, isRecent, isSelected, onMouseEnter, onMouseDown }: SearchResultItemProps) {
+export function SearchResultItem({
+  result,
+  isRecent,
+  isSelected,
+  id,
+  onMouseEnter,
+  onMouseDown,
+}: SearchResultItemProps) {
   const { t, language } = useTranslation();
   const getIcon = () => {
     if (isRecent) return <Clock className="w-4 h-4 text-base-content/40" />;
     if (result.type === 'person') {
-      const bg = result.personType === 'student' ? 'bg-info/20' : result.personType === 'teacher' ? 'bg-secondary/20' : 'bg-base-200';
-      const color = result.personType === 'student' ? 'text-info' : result.personType === 'teacher' ? 'text-secondary' : 'text-base-content/60';
+      const bg =
+        result.personType === 'student'
+          ? 'bg-info/20'
+          : result.personType === 'teacher'
+            ? 'bg-secondary/20'
+            : 'bg-base-200';
+      const color =
+        result.personType === 'student'
+          ? 'text-info'
+          : result.personType === 'teacher'
+            ? 'text-secondary'
+            : 'text-base-content/60';
       return (
         <div className={`w-6 h-6 rounded-full ${bg} flex items-center justify-center`}>
           <Briefcase className={`w-3.5 h-3.5 ${color}`} />
@@ -32,6 +51,7 @@ export function SearchResultItem({ result, isRecent, isSelected, onMouseEnter, o
 
   return (
     <div
+      id={id}
       role="option"
       aria-selected={isSelected}
       onMouseEnter={onMouseEnter}

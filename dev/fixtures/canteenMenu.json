@@ -1,0 +1,315 @@
+{
+  "_comment": "Real SKM canteen menu captured 2026-09-04 from the public jídelní lístek — no personal data. Days are authored as dayOffset from 'now' and materialised by dev/menuFixture.ts, so the jídelníček card and sheet stay verifiable at localhost forever. The extension gets the real page through the content-script proxy; the dev webapp has no content script, so fetchViaProxy hangs and this stands in.",
+  "outlets": [
+    {
+      "outlet": "X",
+      "days": [
+        {
+          "dayOffset": 0,
+          "soup": "Polévka hrachová",
+          "mainDishes": [
+            "Smažená vepřová játra 200g, bramborový salát",
+            "Vepřové žebírko mistra uzenáře 120g",
+            "Těstoviny tagliatelle s listovým špenátem a kuřecím masem",
+            "Robi nudličky po indicku"
+          ]
+        },
+        {
+          "dayOffset": 3,
+          "soup": "Polévka kmínová s vejci",
+          "mainDishes": [
+            "Kantonské hovězí maso",
+            "Kuřecí prsa v medové marinádě 120g",
+            "Vepřové žebírko 120g cikánské",
+            "Smažený květák",
+            "Brokolice smažená",
+            "Kuřecí prsa zapečená s broskví a sýrem 120g"
+          ]
+        },
+        {
+          "dayOffset": 4,
+          "soup": "Polévka čočková",
+          "mainDishes": [
+            "Moravský vepřový vrabec 100g, dušené zelí, bramborový knedlík",
+            "Kuřecí kapsa 120g se šunkou a sýrem na bylinkách",
+            "Vepřové Švej ču žou 120g",
+            "Milánské špagety s vepřovým masem 100g",
+            "Kořeněná černá čočka s mrkví, sázená vejce 2 ks, chléb"
+          ]
+        },
+        {
+          "dayOffset": 5,
+          "soup": "Polévka kulajda",
+          "mainDishes": [
+            "Smažená vepřová kapsa se šunkou a uzeným sýrem 120g",
+            "Kuřecí maso Hoi Sin 120g",
+            "Těstoviny tagliatelle s fenyklem a sušenými rajčaty",
+            "Vdolečky s tvarohem a povidly",
+            "Kuřecí prsa \"Caprese\" 120g"
+          ]
+        },
+        {
+          "dayOffset": 6,
+          "soup": "Polévka květáková",
+          "mainDishes": [
+            "Vepřová plec na paprice",
+            "Vepřové žebírko 120g s kapií a sýrem",
+            "Kuřecí maso po mexicku 120g",
+            "Francouzské brambory s uzeným masem",
+            "Zeleninové rizoto se žampiony",
+            "Cukeťáčky"
+          ]
+        },
+        {
+          "dayOffset": 7,
+          "soup": "Hovězí vývar s játrovou rýží a nudlemi",
+          "mainDishes": [
+            "Vepřový závitek Barcelona",
+            "Milánské koule z mletého masa 100g",
+            "Kuřecí karí 120g s těstovinami penne",
+            "Zeleninová musaka s robi masem"
+          ]
+        },
+        {
+          "dayOffset": 0,
+          "soup": "Polévka hrachová",
+          "mainDishes": [
+            "Smažená vepřová játra 200g, bramborový salát",
+            "Vepřové žebírko mistra uzenáře 120g, brambory",
+            "Těstoviny tagliatelle s listovým špenátem a kuřecím masem",
+            "Robi nudličky po indicku, rýže basmati"
+          ]
+        },
+        {
+          "dayOffset": 3,
+          "soup": "Polévka kmínová s vejci",
+          "mainDishes": [
+            "Kantonské hovězí maso 100g, jasmínová rýže",
+            "Kuřecí prsa v medové marinádě 120g",
+            "Vepřové žebírko 120g cikánské",
+            "Smažená zeleninová směs 250g (brokolice,květák),brambory,tatarka",
+            "Celerový salát s tuňákem a kuskusem"
+          ]
+        },
+        {
+          "dayOffset": 4,
+          "soup": "Polévka čočková",
+          "mainDishes": [
+            "Moravský vepřový vrabec 100g, dušené zelí, bramborový knedlík",
+            "Kuřecí kapsa 120g se šunkou a sýrem na bylinkách",
+            "Vepřové Švej ču žou 120g",
+            "Milánské špagety s vepřovým masem 100g",
+            "Kořeněná černá čočka s mrkví, sázená vejce 2 ks, chléb"
+          ]
+        },
+        {
+          "dayOffset": 5,
+          "soup": "Polévka kulajda",
+          "mainDishes": []
+        }
+      ]
+    },
+    {
+      "outlet": "KA",
+      "days": [
+        {
+          "dayOffset": 0,
+          "soup": "Polévka hrachová",
+          "mainDishes": [
+            "Smažená vepřová játra 200g, bramborový salát",
+            "Vepřové žebírko mistra uzenáře 120g, brambory",
+            "Těstoviny tagliatelle s listovým špenátem a kuřecím masem",
+            "Robi nudličky po indicku, rýže basmati"
+          ]
+        },
+        {
+          "dayOffset": 3,
+          "soup": "Polévka kmínová s vejci",
+          "mainDishes": [
+            "Kantonské hovězí maso 100g, jasmínová rýže",
+            "Kuřecí prsa v medové marinádě 120g",
+            "Vepřové žebírko 120g cikánské",
+            "Smažená zeleninová směs 250g (brokolice,květák),brambory,tatarka",
+            "Celerový salát s tuňákem a kuskusem"
+          ]
+        },
+        {
+          "dayOffset": 4,
+          "soup": "Polévka čočková",
+          "mainDishes": [
+            "Moravský vepřový vrabec 100g, dušené zelí, bramborový knedlík",
+            "Kuřecí kapsa 120g se šunkou a sýrem na bylinkách",
+            "Vepřové Švej ču žou 120g",
+            "Milánské špagety s vepřovým masem 100g",
+            "Kořeněná černá čočka s mrkví, sázená vejce 2 ks, chléb"
+          ]
+        },
+        {
+          "dayOffset": 5,
+          "soup": "Polévka kulajda",
+          "mainDishes": [
+            "Hovězí pečeně lužická 100g, špecle",
+            "Smažená vepřová kapsa se šunkou a uzeným sýrem 120g",
+            "Kuřecí maso Hoi Sin 120g",
+            "Těstoviny tagliatelle s fenyklem a sušenými rajčaty",
+            "Vdolečky s tvarohem a povidly"
+          ]
+        },
+        {
+          "dayOffset": 6,
+          "soup": "Polévka květáková",
+          "mainDishes": [
+            "Vepřová plec na paprice 100g, houskový knedlík",
+            "Vepřové žebírko 120g s kapií a sýrem",
+            "Kuřecí maso po mexicku 120g",
+            "Francouzské brambory s uzeným masem 100g, okurek",
+            "Zeleninové rizoto se žampiony, okurek"
+          ]
+        },
+        {
+          "dayOffset": 7,
+          "soup": "Polévka hovězí s játrovou rýží a nudlemi",
+          "mainDishes": [
+            "Španělský hovězí ptáček 100g, jasmínová rýže",
+            "Milánské koule z mletého masa 100g , opékané brambory",
+            "Kuřecí karí 120g s těstovinami penne",
+            "Zeleninová musaka s robi masem"
+          ]
+        }
+      ]
+    },
+    {
+      "outlet": "JAK",
+      "days": [
+        {
+          "dayOffset": 0,
+          "soup": "Polévka hrachová",
+          "mainDishes": [
+            "Smažená vepřová játra 200g, bramborový salát",
+            "Vepřové žebírko mistra uzenáře 120g, brambory",
+            "Těstoviny tagliatelle s listovým špenátem a kuřecím masem",
+            "Robi nudličky po indicku, rýže basmati"
+          ]
+        },
+        {
+          "dayOffset": 3,
+          "soup": "Polévka kmínová s vejci",
+          "mainDishes": [
+            "Kantonské hovězí maso 100g, jasmínová rýže",
+            "Kuřecí prsa v medové marinádě 120g",
+            "Vepřové žebírko 120g cikánské",
+            "Smažená zeleninová směs 250g (brokolice,květák),brambory,tatarka",
+            "Celerový salát s tuňákem a kuskusem"
+          ]
+        },
+        {
+          "dayOffset": 4,
+          "soup": "Polévka čočková",
+          "mainDishes": [
+            "Moravský vepřový vrabec 100g, dušené zelí, bramborový knedlík",
+            "Kuřecí kapsa 120g se šunkou a sýrem na bylinkách",
+            "Vepřové Švej ču žou 120g",
+            "Milánské špagety s vepřovým masem 100g",
+            "Kořeněná černá čočka s mrkví, sázená vejce 2 ks, chléb"
+          ]
+        },
+        {
+          "dayOffset": 5,
+          "soup": "Polévka kulajda",
+          "mainDishes": [
+            "Hovězí pečeně lužická 100g, špecle",
+            "Smažená vepřová kapsa se šunkou a uzeným sýrem 120g",
+            "Kuřecí maso Hoi Sin 120g",
+            "Těstoviny tagliatelle s fenyklem a sušenými rajčaty",
+            "Vdolečky s tvarohem a povidly"
+          ]
+        },
+        {
+          "dayOffset": 6,
+          "soup": "Polévka květáková",
+          "mainDishes": [
+            "Vepřová plec na paprice 100g, houskový knedlík",
+            "Vepřové žebírko 120g s kapií a sýrem",
+            "Kuřecí maso po mexicku 120g",
+            "Francouzské brambory s uzeným masem 100g, okurek",
+            "Zeleninové rizoto se žampiony, okurek"
+          ]
+        },
+        {
+          "dayOffset": 7,
+          "soup": "Polévka hovězí s játrovou rýží a nudlemi",
+          "mainDishes": [
+            "Španělský hovězí ptáček 100g, jasmínová rýže",
+            "Milánské koule z mletého masa 100g , opékané brambory",
+            "Kuřecí karí 120g s těstovinami penne",
+            "Zeleninová musaka s robi masem"
+          ]
+        },
+        {
+          "dayOffset": 0,
+          "soup": "Polévka hrachová",
+          "mainDishes": [
+            "Smažená vepřová játra 200g, bramborový salát",
+            "Vepřové žebírko mistra uzenáře 120g, brambory",
+            "Těstoviny tagliatelle s listovým špenátem a kuřecím masem",
+            "Robi nudličky po indicku, rýže basmati"
+          ]
+        },
+        {
+          "dayOffset": 3,
+          "soup": "Polévka kmínová s vejci",
+          "mainDishes": [
+            "Kantonské hovězí maso 100g, jasmínová rýže",
+            "Kuřecí prsa v medové marinádě 120g",
+            "Vepřové žebírko 120g cikánské",
+            "Smažená zeleninová směs 250g (brokolice,květák),brambory,tatarka",
+            "Celerový salát s tuňákem a kuskusem"
+          ]
+        },
+        {
+          "dayOffset": 4,
+          "soup": "Polévka čočková",
+          "mainDishes": [
+            "Moravský vepřový vrabec 100g, dušené zelí, bramborový knedlík",
+            "Kuřecí kapsa 120g se šunkou a sýrem na bylinkách",
+            "Vepřové Švej ču žou 120g",
+            "Milánské špagety s vepřovým masem 100g",
+            "Kořeněná černá čočka s mrkví, sázená vejce 2 ks, chléb"
+          ]
+        },
+        {
+          "dayOffset": 5,
+          "soup": "Polévka kulajda",
+          "mainDishes": [
+            "Hovězí pečeně lužická 100g, špecle",
+            "Smažená vepřová kapsa se šunkou a uzeným sýrem 120g",
+            "Kuřecí maso Hoi Sin 120g",
+            "Těstoviny tagliatelle s fenyklem a sušenými rajčaty",
+            "Vdolečky s tvarohem a povidly"
+          ]
+        },
+        {
+          "dayOffset": 6,
+          "soup": "Polévka květáková",
+          "mainDishes": [
+            "Vepřová plec na paprice 100g, houskový knedlík",
+            "Vepřové žebírko 120g s kapií a sýrem",
+            "Kuřecí maso po mexicku 120g",
+            "Francouzské brambory s uzeným masem 100g, okurek",
+            "Zeleninové rizoto se žampiony, okurek"
+          ]
+        },
+        {
+          "dayOffset": 7,
+          "soup": "Polévka hovězí s játrovou rýží a nudlemi",
+          "mainDishes": [
+            "Španělský hovězí ptáček 100g, jasmínová rýže",
+            "Milánské koule z mletého masa 100g , opékané brambory",
+            "Kuřecí karí 120g s těstovinami penne",
+            "Zeleninová musaka s robi masem"
+          ]
+        }
+      ]
+    }
+  ]
+}

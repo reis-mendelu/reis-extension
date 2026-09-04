@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { IndexedDBService } from '../services/storage';
 import { getUserParams } from '../utils/userParams';
 import { logError } from '../utils/reportError';
@@ -12,9 +12,23 @@ export function useEventsFacultySettings() {
   const [subscribedFaculties, setSubscribedFaculties] = useState<FacultyKey[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // `loadSettings` awaits IndexedDB and getUserParams, so its tail can land
+  // long after the component is gone — on unmount, or in a test once the DOM
+  // has been torn down, where touching React state throws and fails the run
+  // even though every assertion passed. The same guard, for the same reason,
+  // as `useSpolkySettings`; surfaced by the MapRail tests, which mount and
+  // unmount the events list several times in a row.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const loadSettings = useCallback(async () => {
     try {
-      let saved = await IndexedDBService.get('meta', STORAGE_KEY) as FacultyKey[] | undefined;
+      let saved = (await IndexedDBService.get('meta', STORAGE_KEY)) as FacultyKey[] | undefined;
 
       if (!saved) {
         const userParams = await getUserParams();
@@ -27,15 +41,25 @@ export function useEventsFacultySettings() {
         await IndexedDBService.set('meta', STORAGE_KEY, saved);
       }
 
+      if (!mountedRef.current) return;
       setSubscribedFaculties(saved);
     } catch (err) {
       logError('useEventsFacultySettings.load', err);
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
     }
   }, []);
 
-  useEffect(() => { loadSettings(); }, [loadSettings]);
+  // Pre-existing pattern, flagged only because this file entered the
+  // changed-files lint gate with the unmount guard above. `loadSettings` is an
+  // async IndexedDB read whose result has to land in state somehow; removing
+  // the effect means moving event-faculty settings into a store slice, which
+  // is the project's stated direction but not a change to smuggle in here.
+  // Same scoped disable, and the same reasoning, as `useSpolkySettings`.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadSettings();
+  }, [loadSettings]);
 
   useEffect(() => {
     const handler = () => loadSettings();
@@ -45,7 +69,7 @@ export function useEventsFacultySettings() {
 
   const toggleFaculty = async (key: FacultyKey) => {
     const next = subscribedFaculties.includes(key)
-      ? subscribedFaculties.filter(k => k !== key)
+      ? subscribedFaculties.filter((k) => k !== key)
       : [...subscribedFaculties, key];
     setSubscribedFaculties(next);
     try {

@@ -7,6 +7,8 @@ import { roomLabel } from '../../CampusMap/mapHelpers';
 import type { MapSelection } from '../../../types/campusMap';
 import { FloorSwitcher } from './map/FloorSwitcher';
 import { MapSheet } from './map/MapSheet';
+import { MapRail } from './map/MapRail';
+import { useWideViewport } from '../../../hooks/ui/useWideViewport';
 
 function resultLabel(m: MapSelection): string {
   if (m.kind === 'poi') return m.poi.name;
@@ -36,6 +38,7 @@ function resultLabel(m: MapSelection): string {
  * MobileApp level. See CampusMapView for the desktop equivalent of this note.
  */
 export function MapScreen() {
+  const isRail = useWideViewport();
   const { t } = useTranslation();
   const query = useAppStore((s) => s.mapSearchQuery);
   const results = useAppStore((s) => s.mapSearchResults);
@@ -113,7 +116,11 @@ export function MapScreen() {
           </ul>
         )}
       </div>
-      <MapSheet />
+      {/* Two shells, not one with breakpoints. A sheet's vocabulary is
+          vertical — grab pill, detents, a chevron pointing down — and none of
+          it survives being turned on its side; a rail is open or closed and
+          sets its own width. They share `MapPanelBody` and nothing else. */}
+      {isRail ? <MapRail /> : <MapSheet />}
     </div>
   );
 }

@@ -96,7 +96,12 @@ body,
 
   /* Brand colors */
   --color-primary: #79be15;
-  --color-primary-content: #ffffff;
+  /* Ink, not white. White on #79be15 is 2.29:1 — it fails WCAG AA by more than
+     half, and this pair is the fill for every primary surface in the app: the
+     notification count, the map's filter chips, a selected day in both date
+     pickers, the toast. The lime is the brand and does not move; what sits on
+     it does. 6.41:1. */
+  --color-primary-content: #1f2937;
   --color-secondary: #8dc843;
   --color-secondary-content: #ffffff;
   --color-accent: #00548f;
@@ -145,7 +150,12 @@ body,
 
   /* Brand colors - preserved */
   --color-primary: #79be15;
-  --color-primary-content: #ffffff;
+  /* Ink, not white. White on #79be15 is 2.29:1 — it fails WCAG AA by more than
+     half, and this pair is the fill for every primary surface in the app: the
+     notification count, the map's filter chips, a selected day in both date
+     pickers, the toast. The lime is the brand and does not move; what sits on
+     it does. 6.41:1. */
+  --color-primary-content: #1f2937;
   --color-secondary: #8dc843;
   --color-secondary-content: #ffffff;
   --color-accent: #3b82f6;

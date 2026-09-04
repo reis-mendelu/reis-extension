@@ -1,4 +1,4 @@
-import { MapPin, ExternalLink, Clock } from 'lucide-react';
+import { MapPin, Navigation, ExternalLink, Clock } from 'lucide-react';
 import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -10,6 +10,9 @@ import { parseEventDate } from './eventHelpers';
 import { EventRsvp } from './EventRsvp';
 import { openExternal } from '../../mobile/openExternal';
 import { getPlatform } from '../../platform';
+import { openVenue } from '../../mobile/openVenue';
+import { logError } from '../../utils/reportError';
+import { venueMapUrl } from '../../utils/venueMapUrl';
 import type { MapEvent } from '../../types/events';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
@@ -36,7 +39,16 @@ function openInApp(e: React.MouseEvent<HTMLAnchorElement>) {
 // facts (when / what / where), the social block (attendance + RSVP), and More
 // info. A society edits/deletes its own events from the "Moje akce" panel, so
 // this card carries no authoring controls (keeps management in one place).
-export function EventDetailCard({ event }: { event: MapEvent }) {
+/**
+ * `flush` drops the card's own frame.
+ *
+ * Inside the tablet rail the frame is a box drawn inside a box: the rail is
+ * already a bordered, rounded panel, and a second one 16px in is the classic
+ * nested-card look that stops a sidebar reading as native. The desktop's
+ * floating DetailPanel and the phone's sheet both still want it — there the
+ * card IS the surface.
+ */
+export function EventDetailCard({ event, flush = false }: { event: MapEvent; flush?: boolean }) {
   const focusRoom = useAppStore((s) => s.focusRoomByCode);
   const { t, language } = useTranslation();
   const soc = societyById(event.societyId);
@@ -48,7 +60,7 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
   });
 
   return (
-    <div className="overflow-hidden rounded-lg border border-base-300 bg-base-100">
+    <div className={flush ? '' : 'overflow-hidden rounded-lg border border-base-300 bg-base-100'}>
       <div className="space-y-3 p-3">
         {/* identity: avatar + title + host */}
         <div className="flex items-center gap-3">
@@ -97,14 +109,40 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
               // Off-campus venue: open it in Google Maps so the student can
               // navigate there. coord is [lng, lat]; Maps wants lat,lng.
               <a
-                href={`https://www.google.com/maps/search/?api=1&query=${event.coord[1]},${event.coord[0]}`}
+                // The href stays the WEB url so the desktop, a middle-click and
+                // "copy link address" all keep working. The tap is intercepted
+                // on Capacitor, where a native scheme is what actually reaches
+                // the Maps app — see mobile/openVenue.
+                href={venueMapUrl(event.coord, event.location ?? '', 'web')}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={openInApp}
+                // Tells the global external-link handler to keep its hands off:
+                // it runs in the capture phase, so preventing the default below
+                // is too late to stop it and the venue opened twice. See
+                // `externalHrefFromClick`.
+                data-native-open="true"
+                onClick={(e) => {
+                  if (getPlatform().kind !== 'capacitor') return;
+                  e.preventDefault();
+                  // The default is already suppressed, so a rejection here — a
+                  // failed lazy `@capacitor/core` import is the realistic one —
+                  // would leave the tap doing nothing at all. Fall back to the
+                  // web URL, which is what the anchor would have done.
+                  void openVenue(event.coord as [number, number], event.location ?? '').catch(
+                    (err) => {
+                      logError('EventDetailCard.openVenue', err);
+                      void openExternal(venueMapUrl(event.coord!, event.location ?? '', 'web'));
+                    }
+                  );
+                }}
                 className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
               >
                 <MapPin size={13} className="shrink-0" /> {event.location}
-                <ExternalLink size={11} className="shrink-0 opacity-60" />
+                {/* Navigation, not ExternalLink. The ↗ is the app's mark for
+                    "this leaves for a web page", and it was promising exactly
+                    the wrong thing on the one control whose job is to start a
+                    journey. */}
+                <Navigation size={11} className="shrink-0 opacity-60" />
               </a>
             ) : (
               <div className="flex items-center gap-1.5 text-sm text-base-content/70">

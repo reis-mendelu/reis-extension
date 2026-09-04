@@ -4,7 +4,6 @@ import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { ScreenError } from '../primitives/ScreenError';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useSchedule } from '../../../hooks/data/useSchedule';
-import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
 import { resolveNowNext } from '../../../utils/mobile/nowNext';
 import { buildDayAgenda } from '../../../utils/mobile/dayAgenda';
 import { isLessonHidden } from '../../../utils/hiddenLessons';
@@ -17,16 +16,8 @@ import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
 import { DayAgenda } from './calendar/DayAgenda';
 import { CalendarEmptyDay } from './calendar/CalendarEmptyDay';
-import { CalendarAlerts } from './calendar/CalendarAlerts';
-
-function formatHeaderDate(date: Date, locale: string): string {
-  const formatted = new Intl.DateTimeFormat(locale, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  }).format(date);
-  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
-}
+import { MenuCard } from './calendar/MenuCard';
+import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
 
 function CalendarSkeleton() {
   const { t } = useTranslation();
@@ -58,8 +49,6 @@ export function CalendarScreen() {
   const syncLoaded = useAppStore((s) => s.syncLoaded);
   const hiddenItems = useAppStore((s) => s.hiddenItems);
   const teachingWeekData = useAppStore((s) => s.teachingWeekData);
-
-  const { alerts } = useDeadlineAlerts();
 
   // The vývěska is no longer mounted here. It was a portal owned by this one
   // screen while the button that opens it ships with every screen's header, so
@@ -158,8 +147,6 @@ export function CalendarScreen() {
     <>
       {nowNext && <NowNextCard data={nowNext} onRoute={openRoute} />}
 
-      <CalendarAlerts alerts={alerts} />
-
       {/* Above the agenda rather than only inside the empty state: a holiday
           can still carry a lesson (a rescheduled block, a combined-study
           Saturday), and the student needs to know the day is a holiday either
@@ -196,6 +183,10 @@ export function CalendarScreen() {
             }
           />
         )}
+        {/* Under the day's agenda, inside the scroller: lunch is what you look
+            at after the timetable, not before it, and on a full teaching day
+            the card must not push the 8am lecture off the screen. */}
+        <MenuCard dayIso={selectedIso} />
       </div>
     </>
   );

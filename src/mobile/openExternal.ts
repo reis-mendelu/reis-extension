@@ -70,6 +70,14 @@ export function externalHrefFromClick(event: MouseEvent): string | null {
   const anchor = target?.closest?.('a[target="_blank"]') as HTMLAnchorElement | null;
   if (!anchor) return null;
   if (anchor.getAttribute('aria-disabled') === 'true') return null;
+  // An element that opens itself natively — the venue link hands its
+  // coordinates to Apple Maps / the Android map chooser rather than to a
+  // browser. This listener is installed in the CAPTURE phase, so it runs
+  // BEFORE React's onClick: the component calling `preventDefault` cannot stop
+  // it, because `defaultPrevented` is still false when we look. The venue
+  // therefore opened twice, in Maps and in a browser tab. The opt-out has to
+  // live on the element, which is the only thing both handlers can see.
+  if (anchor.getAttribute('data-native-open') === 'true') return null;
 
   // getAttribute, not .href: the property resolves a missing href to the
   // current page, which would open the app in a browser window. DocsSheet

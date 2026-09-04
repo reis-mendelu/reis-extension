@@ -6,9 +6,7 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import type { MapSheetTab } from '../../../../store/types';
 import buildingsJson from '../../../../data/map/buildings.json';
 import type { BuildingsMeta } from '../../../../types/campusMap';
-import { MapEventsSection } from '../../../CampusMap/MapEventsSection';
-import { EventDetailCard } from '../../../CampusMap/EventDetailCard';
-import { BuildingRoomList } from './BuildingRoomList';
+import { MapPanelBody } from './MapPanelBody';
 
 const META = buildingsJson as BuildingsMeta;
 
@@ -90,8 +88,24 @@ export function MapSheet() {
    * happen.
    */
   useEffect(() => {
-    if (selectedEvent) setSheetState('expanded');
+    // 'half', not 'expanded' — and the height below hugs the card anyway. Any
+    // state out of 'peek' will do; what this call is really for is getting the
+    // peek row out of the way so the card can render at all.
+    if (selectedEvent) setSheetState('half');
   }, [selectedEvent, setSheetState]);
+
+  /**
+   * A single event card is ~300px of content. Pinning the sheet to a detent
+   * for it meant 70vh of sheet holding 300px of card — on an 812px phone that
+   * is 260px of blank white between the buttons and the bottom, and the map it
+   * was describing was behind it.
+   *
+   * So while one event is showing, the sheet is sized by its content instead of
+   * by a detent, capped so a long description still cannot swallow the map. The
+   * tabbed list keeps the detents: that content is a scrollable list with no
+   * natural height, which is what detents are for.
+   */
+  const hugContent = !!selectedEvent;
 
   const buildingName =
     activeBuildingId !== null
@@ -125,9 +139,19 @@ export function MapSheet() {
       {...handlers}
       // The height transition is dropped mid-drag: it animates the same height
       // the finger is setting, and leaving both on makes the sheet lag behind.
+      // The height transition is dropped mid-drag: it animates the same height
+      // the finger is setting, and leaving both on makes the sheet lag behind.
       className={`absolute inset-x-0 bottom-0 z-[1000] flex flex-col overflow-hidden rounded-t-[20px] bg-base-100 shadow-drawer ${
         dragHeight === null ? 'transition-[height] duration-300 ease-out' : ''
-      } ${fullyExpanded ? 'h-[70vh]' : sheetState === 'half' ? 'h-[45vh]' : 'h-[166px]'}`}
+      } ${
+        hugContent
+          ? 'h-auto max-h-[70vh]'
+          : fullyExpanded
+            ? 'h-[70vh]'
+            : sheetState === 'half'
+              ? 'h-[45vh]'
+              : 'h-[166px]'
+      }`}
       style={dragHeight === null ? undefined : { height: `${dragHeight}px` }}
     >
       <button
@@ -178,6 +202,9 @@ export function MapSheet() {
             <button
               type="button"
               onClick={clearMapSelection}
+              // md:pt-5 — on a phone the drag handle above supplies the top
+              // padding; the rail hides that handle, and without this the title
+              // sat hard against the panel's rounded top edge.
               className="flex flex-shrink-0 touch-none items-center gap-1.5 px-5 pb-2 text-left"
             >
               <ChevronLeft size={18} className="flex-shrink-0 text-base-content/40" />
@@ -213,19 +240,10 @@ export function MapSheet() {
               />
             </button>
           )}
+          {/* pb-24 clears the floating BottomNav, which is positioned against
+              the SCREEN and draws over the sheet. */}
           <div className="flex-1 overflow-y-auto pb-24 pt-2">
-            {selectedEvent ? (
-              <div className="px-4">
-                <EventDetailCard event={selectedEvent} />
-              </div>
-            ) : (
-              <>
-                {activeTab === 'akce' && <MapEventsSection showFilter={false} />}
-                {activeTab === 'budova' && activeBuildingId !== null && (
-                  <BuildingRoomList buildingId={activeBuildingId} />
-                )}
-              </>
-            )}
+            <MapPanelBody selectedEvent={selectedEvent} activeTab={activeTab} />
           </div>
         </>
       )}
