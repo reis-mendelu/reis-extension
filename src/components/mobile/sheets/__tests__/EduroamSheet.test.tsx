@@ -191,12 +191,35 @@ describe('EduroamSheet', () => {
    * unable to join the network, Eduroam."
    */
   it('names the system alert it cannot suppress, so it does not read as failure', () => {
-    onPhone({ status: 'done', outcome: 'saved-not-joined' });
+    // `saved`, not `saved-not-joined`: the device that showed iOS's "Unable to
+    // join the network eduroam" alert reported a plain success with no error,
+    // so the note cannot be gated on the outcome.
+    onPhone({ status: 'done', outcome: 'saved' });
 
     render(<EduroamSheet onClose={vi.fn()} />);
 
     expect(screen.getByText(/eduroam je uložený/)).toBeInTheDocument();
     expect(screen.getByText(/není v dosahu/)).toBeInTheDocument();
+  });
+
+  it('shows it for the off-campus outcome too', () => {
+    onPhone({ status: 'done', outcome: 'saved-not-joined' });
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(screen.getByText(/není v dosahu/)).toBeInTheDocument();
+  });
+
+  // Nothing was applied on that path, so iOS raises no alert and there is
+  // nothing to pre-empt — the note would be describing a message that will
+  // never arrive.
+  it('leaves the note off when the network was already configured', () => {
+    onPhone({ status: 'done', outcome: 'already-configured' });
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(screen.getByText(/už na tomto zařízení nastavený je/)).toBeInTheDocument();
+    expect(screen.queryByText(/není v dosahu/)).not.toBeInTheDocument();
   });
 
   it('reads an already-configured network as success, not a problem', () => {

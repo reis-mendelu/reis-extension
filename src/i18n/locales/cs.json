@@ -562,8 +562,8 @@
     "native": {
       "button": "Nastavit eduroam",
       "working": "Otevírám nastavení Wi-Fi…",
-      "saved": "Hotovo — eduroam je uložený. Na fakultě se připojíš automaticky.",
-      "savedNotJoined": "Hotovo — eduroam je uložený. Zařízení může hlásit, že se připojit nešlo: síť tu teď není v dosahu. Na fakultě se připojíš automaticky.",
+      "saved": "Hotovo — eduroam je uložený.",
+      "savedNote": "Zařízení může hlásit, že se připojit nešlo: síť tu teď není v dosahu. Na fakultě se připojíš automaticky.",
       "already": "eduroam už na tomto zařízení nastavený je.",
       "staleAssociation": "Jsi připojený k eduroamu, takže ho teď nastavit nejde. Kdyby se později nepřipojil, zapomeň síť v Nastavení → Wi‑Fi a klepni znovu.",
       "cancelled": "Nastavení nebylo dokončeno. Klepni znovu.",

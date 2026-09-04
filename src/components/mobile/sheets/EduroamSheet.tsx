@@ -94,21 +94,33 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
         )}
 
         {status === 'done' && native && isEduroamConfigured(outcome) && (
-          <div className="alert alert-success text-base">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-            <span>
-              {/* Three success lines, because they are three different truths.
-                  `saved-not-joined` is the off-campus one: the configuration
-                  installed and iOS then put up its OWN "Unable to join the
-                  network" alert, which no API can suppress — there is no
-                  save-without-join. So this line names that alert before the
-                  student reads it as a failure. */}
-              {outcome === 'already-configured'
-                ? t('eduroam.native.already')
-                : outcome === 'saved-not-joined'
-                  ? t('eduroam.native.savedNotJoined')
+          /* items-start, not the alert's default centring: this block is two
+             lines of different weight now, and a centred icon floats against
+             the middle of the paragraph instead of sitting with the headline
+             it belongs to. */
+          <div className="alert alert-success items-start text-base">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0" />
+            <div className="flex min-w-0 flex-col gap-1">
+              <span className="font-semibold">
+                {outcome === 'already-configured'
+                  ? t('eduroam.native.already')
                   : t('eduroam.native.saved')}
-            </span>
+              </span>
+              {/* The note is why this block has a hierarchy at all.
+                  `apply` SAVES and ASSOCIATES in one call, and out of range iOS
+                  raises its OWN "Unable to join the network eduroam" alert —
+                  seen on the device over this very banner. No API suppresses
+                  it: there is no save-without-join. And it cannot be predicted
+                  from the outcome either, because the device that showed it
+                  reported plain `saved` with no error at all.
+                  So the note is shown for every fresh save, hedged with "může"
+                  so it stays true on campus, where the alert never appears. Not
+                  for `already-configured`: nothing was applied, so iOS says
+                  nothing. */}
+              {outcome !== 'already-configured' && (
+                <span className="text-sm opacity-90">{t('eduroam.native.savedNote')}</span>
+              )}
+            </div>
           </div>
         )}
 
