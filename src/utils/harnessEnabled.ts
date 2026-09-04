@@ -1,3 +1,6 @@
+// Lives in src/, not dev/, because src/services/loadRealDataSnapshot.ts needs
+// it and src/ must never import from dev/ — the extension and Capacitor builds
+// do not include dev/ at all. Same reason resolveDevPhoneOverride.ts sits here.
 /**
  * Whether harness-only behaviour is active.
  *

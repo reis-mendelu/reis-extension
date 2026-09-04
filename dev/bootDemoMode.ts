@@ -1,6 +1,6 @@
 import { useAppStore } from '../src/store/useAppStore';
 import { logError } from '../src/utils/reportError';
-import { isPreviewBuild, type HarnessEnv } from './harnessEnabled';
+import { isPreviewBuild, type HarnessEnv } from '../src/utils/harnessEnabled';
 
 /**
  * Whether to put the app into demo mode at boot.
