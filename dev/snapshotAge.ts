@@ -23,10 +23,7 @@ const MS_PER_DAY = 86_400_000;
  * "unknown" rather than rendered as a fabricated day count — the one answer
  * that would actively mislead.
  */
-export function formatSnapshotAge(
-  lastSync: string | number | null | undefined,
-  now: Date
-): string {
+export function formatSnapshotAge(lastSync: string | number | null | undefined, now: Date): string {
   if (lastSync === null || lastSync === undefined) return 'snapshot date unknown';
   if (typeof lastSync === 'number' && (!Number.isFinite(lastSync) || lastSync <= 0)) {
     return 'snapshot date unknown';

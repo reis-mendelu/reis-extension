@@ -116,7 +116,9 @@ describe('bootDemoMode', () => {
 describe('shouldLoadRealData', () => {
   it('is on for a preview build asking for real data', async () => {
     const { shouldLoadRealData } = await import('../bootDemoMode');
-    expect(shouldLoadRealData({ VITE_PREVIEW_BUILD: 'true', VITE_PREVIEW_DATA: 'real' })).toBe(true);
+    expect(shouldLoadRealData({ VITE_PREVIEW_BUILD: 'true', VITE_PREVIEW_DATA: 'real' })).toBe(
+      true
+    );
   });
 
   it('is off for the demo preview', async () => {

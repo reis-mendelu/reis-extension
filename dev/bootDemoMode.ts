@@ -33,9 +33,7 @@ export const PREVIEW_DATA_URL = '/preview-data.json';
  * VITE_PREVIEW_DATA in a local .env would otherwise make `dev:web` fetch a file
  * that is not there and render nothing.
  */
-export function shouldLoadRealData(
-  env: HarnessEnv & { VITE_PREVIEW_DATA?: string }
-): boolean {
+export function shouldLoadRealData(env: HarnessEnv & { VITE_PREVIEW_DATA?: string }): boolean {
   return isPreviewBuild(env) && env.VITE_PREVIEW_DATA === 'real';
 }
 

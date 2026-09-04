@@ -89,12 +89,7 @@ describe('mountSnapshotAge', () => {
   });
 
   it('shows nothing outside the real-data build', () => {
-    mountSnapshotAge(
-      { VITE_PREVIEW_BUILD: 'true' },
-      '2026-09-04T08:00:00.000Z',
-      true,
-      document
-    );
+    mountSnapshotAge({ VITE_PREVIEW_BUILD: 'true' }, '2026-09-04T08:00:00.000Z', true, document);
     expect(document.querySelector('[data-testid="snapshot-age"]')).toBeNull();
   });
 
@@ -156,8 +151,7 @@ describe('mountSnapshotAge', () => {
   // `Document` sidesteps that limitation while still proving mountSnapshotAge
   // threads `demoMode` through to `badgeTop` and assigns the result.
   it('positions the badge to clear the banner when demo mode is on', () => {
-    const created: Record<string, { style: { top: string }; dataset: Record<string, string> }> =
-      {};
+    const created: Record<string, { style: { top: string }; dataset: Record<string, string> }> = {};
     const fakeDoc = {
       getElementById: (id: string) => created[id] ?? null,
       createElement: () => ({ style: { top: '' }, dataset: {} }),
