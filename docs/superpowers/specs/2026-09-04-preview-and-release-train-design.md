@@ -1,5 +1,17 @@
 # Preview deployment and release train
 
+> **Superseded in part, 2026-09-04.** The hosted Vercel preview described below
+> was built, ran for a day, and was then removed. It only ever served synthetic
+> data and found no defect in that time, while six real defects were found by
+> running the app and checking effects. What replaced it is `npm run check:app`
+> — CI builds the app and loads it in a real browser, and the release gate now
+> requires **that** to have passed for the exact commit, rather than requiring
+> that something was deployed. "It booted and worked" is a stronger claim than
+> "it deployed".
+>
+> Still accurate and still in force: the `test` → `main` release train, the
+> version-bump guard, the branch protection, and the reasoning for all three.
+
 Adopt a `test` → `main` release train for reis-extension, deploy the app as a
 static preview site so screens can be reviewed on a URL before they ship, and
 make the release PR — not a hand-typed tag — the thing that submits to the

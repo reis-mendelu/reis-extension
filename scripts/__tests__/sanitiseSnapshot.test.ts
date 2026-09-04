@@ -93,7 +93,8 @@ describe('sanitiseSnapshot', () => {
   });
 
   it('does not throw when a known top-level key is simply absent', () => {
-    const { schedule: _schedule, ...withoutSchedule } = raw;
+    const withoutSchedule: Record<string, unknown> = { ...raw };
+    delete withoutSchedule.schedule;
     expect(() => sanitiseSnapshot(withoutSchedule)).not.toThrow();
   });
 });

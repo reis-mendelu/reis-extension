@@ -69,10 +69,15 @@ phone or iPad on the same Wi-Fi can open. That delivers what hosting was for —
 real data, real devices, a real production build — at zero cost and zero
 exposure.
 
-Rejected alternatives, both viable if this stops being enough: **Vercel Pro**
-(~$20/month, makes the original design work unchanged) and **Cloudflare Pages +
-Cloudflare Access** (free for up to 50 users and genuinely gated, but a second
-vendor to keep in step with the Vercel-hosted demo preview).
+**Postscript, same day.** The public demo preview was dropped too, and Vercel
+removed entirely. It served synthetic data, found no defect while it ran, and
+"it deployed" turned out to be a weaker release gate than "it built and booted
+and made no forbidden request" — which is what `npm run check:app` now proves in
+CI. Nothing about reIS is hosted any more.
+
+If hosting ever becomes necessary again: **Vercel Pro** (~$20/month, gates a
+production deployment) or **Cloudflare Pages + Cloudflare Access** (free for up
+to 50 users and genuinely gated).
 
 ### The raw scrape can never be uploaded — enforced by filename
 
