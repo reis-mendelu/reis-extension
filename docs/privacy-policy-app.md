@@ -47,8 +47,14 @@ people**: a phone and a laptop are two.
 **2. Feedback you send.** Your message and any contact details you type, plus
 which reIS screen you were on (a name from a fixed list, never the page
 address), app version, browser name and version, and window size. Read by the
-developers, passed to nobody. **Your network address is not recorded.** Nothing
-is sent unless you press send.
+developers, passed to nobody. Nothing is sent unless you press send.
+
+**Your network address is not recorded** — this version writes straight to the
+database, which cannot see your connection. Versions released before September
+2026 still submit through a small server component that stores a salted SHA-256
+of your IP address for up to an hour, to count recent submissions; never the
+address itself, and never alongside your message. That component is removed once
+those versions have aged out, and nothing replaces it.
 
 *Lawful basis for both: legitimate interest, GDPR Art. 6(1)(f) — knowing the
 project is used, and fixing what you report.*

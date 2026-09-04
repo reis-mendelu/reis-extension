@@ -11,17 +11,23 @@
 -- contexts, including the parser failures that were the only early warning that
 -- IS Mendelu changed its HTML. That trade was made deliberately.
 --
--- Applied IMMEDIATELY, not after the rollout window, and that is the point.
--- Every released client keeps transmitting until it updates, so waiting means
--- error reports keep arriving for weeks after the project has said they do not.
--- Dropping the RPC is what stops those senders — it is the only control that
--- reaches a build already on someone's phone.
+-- Applied immediately rather than after the rollout window, but be precise
+-- about what that does and does not achieve.
 --
--- The cost is log noise: old clients get a rejected RPC. Each call is inside a
--- try/catch that routes to `logError`, which is now console-only, so nothing
--- user-visible breaks. Expect failed `report_error_v2` calls in the Supabase
--- logs for as long as old builds are in the wild; that is the sound of the
--- promise being kept, not a fault.
+-- It does NOT stop a released client transmitting. A build already on someone's
+-- phone still POSTs the error — type, message, file path, stack excerpt — over
+-- the network; this migration only means the server rejects it instead of
+-- storing it. The data still leaves that device until the user updates. There
+-- is no server-side control that can prevent transmission by code we have
+-- already shipped; only the update does that.
+--
+-- What it does achieve is that nothing further is retained, and that the
+-- receiving surface is gone rather than dormant: a table that still exists is a
+-- table that can be filled again by the next well-meaning change.
+--
+-- Expect rejected `report_error_v2` calls in the Supabase logs for as long as
+-- old builds are in the wild. Each is inside a try/catch that routes to
+-- `logError`, which is now console-only, so nothing user-visible breaks.
 
 -- Entry points first, so nothing can insert while the tables are going away.
 drop function if exists public.report_error_v2(
