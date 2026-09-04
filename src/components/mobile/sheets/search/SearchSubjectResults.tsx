@@ -16,6 +16,10 @@ export interface SearchSubjectResultsProps {
   widenToUniversity: () => void;
   narrowToFaculty: () => void;
   openSubject: (result: SearchResult) => void;
+  /** Index of the keyboard cursor within the list currently rendered. */
+  selectedIndex: number;
+  /** DOM id for the option at `i`, so the input can name it. */
+  optionId: (i: number) => string;
   noResultsText: string;
 }
 
@@ -35,6 +39,8 @@ export function SearchSubjectResults({
   widenToUniversity,
   narrowToFaculty,
   openSubject,
+  selectedIndex,
+  optionId,
   noResultsText,
 }: SearchSubjectResultsProps) {
   const { t } = useTranslation();
@@ -89,12 +95,13 @@ export function SearchSubjectResults({
           <div className="px-4 pb-0.5 pt-1 text-xs font-bold uppercase tracking-wider text-base-content/60">
             {t('mobile.student.recentSubjects')}
           </div>
-          {shownSubjects.map((result) => (
+          {shownSubjects.map((result, i) => (
             <SearchResultItem
               key={result.id}
+              id={optionId(i)}
               result={result}
               isRecent={false}
-              isSelected={false}
+              isSelected={i === selectedIndex}
               onMouseEnter={() => {}}
               onMouseDown={(e) => {
                 e.preventDefault();
@@ -110,12 +117,13 @@ export function SearchSubjectResults({
           <div className="px-4 pb-0.5 pt-1 text-xs font-bold uppercase tracking-wider text-base-content/60">
             {t('mobile.student.results')}
           </div>
-          {subjectResults.map((result) => (
+          {subjectResults.map((result, i) => (
             <SearchResultItem
               key={result.id}
+              id={optionId(i)}
               result={result}
               isRecent={false}
-              isSelected={false}
+              isSelected={i === selectedIndex}
               onMouseEnter={() => {}}
               onMouseDown={(e) => {
                 e.preventDefault();

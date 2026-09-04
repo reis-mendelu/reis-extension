@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react';
-import type { RefObject } from 'react';
+import type { KeyboardEvent, RefObject } from 'react';
 import { useTranslation } from '../../../../hooks/useTranslation';
 
 export type StudentMode = 'people' | 'subjects';
@@ -11,6 +11,11 @@ interface StudentSearchProps {
   onQueryChange: (query: string) => void;
   /** Owned by StudentScreen, which also dismisses the keyboard on scroll. */
   inputRef?: RefObject<HTMLInputElement | null>;
+  /** The sheet's list navigation. Runs first; Return still drops the keyboard
+   *  when it did not consume the key. */
+  onNavigate?: (e: KeyboardEvent<HTMLInputElement>) => boolean;
+  /** The option the arrow keys have landed on, for the combobox contract. */
+  activeOptionId?: string;
 }
 
 /**
@@ -24,6 +29,8 @@ export function StudentSearch({
   query,
   onQueryChange,
   inputRef,
+  onNavigate,
+  activeOptionId,
 }: StudentSearchProps) {
   const { t } = useTranslation();
   const PLACEHOLDER_KEY: Record<StudentMode, string> = {
@@ -71,7 +78,20 @@ export function StudentSearch({
           // there is no on-screen Done. Return is the explicit "I'm finished
           // typing" gesture, so it drops the keyboard; the query is already
           // live, so there is nothing left to submit.
+          // NOT role="combobox", deliberately. It overrides the input's
+          // implicit `textbox` role — the very thing this field already avoids
+          // `type="search"` for — and thirteen existing tests query it by that
+          // role. `aria-activedescendant` on a textbox that owns a listbox is a
+          // long-standing, supported pattern and needs no role override.
+          aria-controls="mobile-search-results"
+          aria-autocomplete="list"
+          aria-activedescendant={activeOptionId}
           onKeyDown={(e) => {
+            // The list gets first refusal: arrows move the cursor and Return
+            // opens whatever it is on. Only when nothing was consumed does
+            // Return fall back to its old job of dropping the keyboard, which
+            // is what it should do when there is nothing selected to open.
+            if (onNavigate?.(e)) return;
             if (e.key === 'Enter') e.currentTarget.blur();
           }}
           placeholder={placeholder}

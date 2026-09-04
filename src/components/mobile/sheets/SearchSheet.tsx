@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
+import { nextSelectedIndex } from '../../../utils/mobile/listNavigation';
 import type { MobileSheet } from '../../../store/types';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useSearch } from '../../SearchBar/useSearch';
@@ -113,6 +114,67 @@ export function SearchSheet({ sheet, onClose }: SearchSheetProps) {
 
   const noResultsText = t('mobile.student.noResults');
 
+  /**
+   * Keyboard navigation for the list, which the mobile sheet never had: it
+   * rendered the same `role="option"` rows as the desktop dropdown and wired
+   * none of the combobox behaviour, so on an iPad with a keyboard you could
+   * type a search and then not pick a result.
+   *
+   * The cursor lives HERE rather than in the rows, and the rows stay
+   * unfocusable — that is the combobox contract the desktop already follows:
+   * focus never leaves the input, and `aria-activedescendant` names the row a
+   * screen reader should announce.
+   */
+  const activeList: SearchResult[] =
+    mode === 'subjects'
+      ? hasQuery
+        ? subjectResults
+        : shownSubjects
+      : hasQuery
+        ? peopleResults
+        : shownPeople;
+  /**
+   * The cursor is keyed to the list it belongs to, and reset by DERIVING rather
+   * than by an effect: any change of mode, query or length is a new set of
+   * rows, and an index held over from the old one points at whatever happens to
+   * occupy that position now. An effect would also have set state during render
+   * — which the repo lints against, correctly.
+   */
+  const listKey = `${mode}|${trimmedQuery}|${activeList.length}`;
+  const [cursor, setCursor] = useState({ key: listKey, index: -1 });
+  const selected = cursor.key === listKey ? cursor.index : -1;
+  const setSelected = (index: number) => setCursor({ key: listKey, index });
+
+  const openAt = (index: number) => {
+    const item = activeList[index];
+    if (!item) return;
+    if (mode === 'subjects') openSubject(item);
+    else openPerson(item);
+  };
+
+  const onNavigate = (e: React.KeyboardEvent<HTMLInputElement>): boolean => {
+    const moved = nextSelectedIndex(selected, activeList.length, e.key);
+    if (moved !== null) {
+      setSelected(moved);
+      // The browser would otherwise run the caret to the end of the query.
+      e.preventDefault();
+      return true;
+    }
+    if (e.key === 'Enter' && selected >= 0) {
+      openAt(selected);
+      e.preventDefault();
+      return true;
+    }
+    if (e.key === 'Escape' && selected >= 0) {
+      setSelected(-1);
+      e.preventDefault();
+      return true;
+    }
+    return false;
+  };
+
+  const optionId = (i: number) => `mobile-search-option-${i}`;
+
   return (
     <Sheet size="full" onClose={onClose}>
       <div data-testid="search-sheet" className="flex min-h-0 flex-1 flex-col">
@@ -126,9 +188,14 @@ export function SearchSheet({ sheet, onClose }: SearchSheetProps) {
           query={query}
           onQueryChange={setQuery}
           inputRef={inputRef}
+          onNavigate={onNavigate}
+          activeOptionId={selected >= 0 ? optionId(selected) : undefined}
         />
 
         <div
+          id="mobile-search-results"
+          role="listbox"
+          aria-label={t('mobile.header.search')}
           data-testid="student-results"
           onScroll={dismissKeyboard}
           className="flex-1 overflow-y-auto pb-6 pt-2"
@@ -144,6 +211,8 @@ export function SearchSheet({ sheet, onClose }: SearchSheetProps) {
               widenToUniversity={widenToUniversity}
               narrowToFaculty={narrowToFaculty}
               shownSubjects={shownSubjects}
+              selectedIndex={selected}
+              optionId={optionId}
               openSubject={openSubject}
               noResultsText={noResultsText}
             />
@@ -156,6 +225,8 @@ export function SearchSheet({ sheet, onClose }: SearchSheetProps) {
               hasQuery={hasQuery}
               canSearchPeople={canSearchPeople}
               searchingPeople={searchingPeople}
+              selectedIndex={selected}
+              optionId={optionId}
               openPerson={openPerson}
               noResultsText={noResultsText}
             />
