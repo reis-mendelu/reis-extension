@@ -51,7 +51,19 @@ export function useSpolkySettings() {
       // NOTHING permanently: every society event was filtered out of Novinky on
       // every later boot, however well the faculty parsed by then. Reported as
       // "the deskovky test notification didn't appear in the notification".
-      if (!saved || (saved.length === 0 && !chosenByHand)) {
+      // ONE re-resolution, then never again. Before CHOSEN_KEY existed,
+      // `toggleAssociation` also persisted `[]` when a student removed their
+      // last society — so a stored empty list is genuinely ambiguous on an
+      // install that predates this flag: it is either that deliberate choice or
+      // the failed lookup below. It cannot be told apart after the fact.
+      //
+      // Re-resolving once and then MARKING it chosen bounds the cost either
+      // way: a student who meant to be empty gets their faculty back a single
+      // time and can remove it again for good, and a student stuck on the bug
+      // is repaired. Leaving it unmarked would re-subscribe the first student
+      // on every launch, which is the version of this that would be resented.
+      const unresolvedEmpty = Array.isArray(saved) && saved.length === 0 && !chosenByHand;
+      if (!saved || unresolvedEmpty) {
         // Determine defaults
         const userParams = await getUserParams();
 
@@ -75,6 +87,12 @@ export function useSpolkySettings() {
           // boot try again.
           if (defaults.length > 0) {
             await IndexedDBService.set('meta', STORAGE_KEY, saved);
+          }
+          // The one-time part of the migration above: an install that already
+          // held `[]` has now had its single re-resolution, so record that
+          // whatever it ends up with is a settled answer.
+          if (unresolvedEmpty) {
+            await IndexedDBService.set('meta', CHOSEN_KEY, true);
           }
         }
       }
@@ -137,10 +155,14 @@ export function useSpolkySettings() {
     setSubscribedAssociations(newSettings);
 
     try {
-      await IndexedDBService.set('meta', STORAGE_KEY, newSettings);
-      // The student has now decided, so an empty list from here on means
-      // "none, thanks" and must survive every later boot.
+      // CHOSEN_KEY first, deliberately. There are two writes and no transaction
+      // across them, so one of the two orders has to be safe: marking "chosen"
+      // before the list means a crash between them leaves the OLD list marked
+      // as settled, which is merely stale. The other order leaves the new list
+      // unmarked — and if that list is empty, the next boot treats the
+      // student's deliberate choice as an unresolved lookup and undoes it.
       await IndexedDBService.set('meta', CHOSEN_KEY, true);
+      await IndexedDBService.set('meta', STORAGE_KEY, newSettings);
       // Dispatch event for other hooks in the same tab
       window.dispatchEvent(new Event('reis-spolky-settings-changed'));
     } catch (err) {

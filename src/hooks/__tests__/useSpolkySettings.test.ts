@@ -241,3 +241,43 @@ describe('unresolved faculty must not be persisted as "subscribed to nothing"', 
     expect(result.current.subscribedAssociations).toEqual([]);
   });
 });
+
+describe('the legacy empty list is re-resolved exactly once', () => {
+  // Before CHOSEN_KEY existed, `toggleAssociation` ALSO persisted `[]` when a
+  // student removed their last society. A stored empty list on such an install
+  // is therefore ambiguous, and cannot be told apart after the fact. Recovering
+  // it once and marking it settled bounds the cost both ways; leaving it
+  // unmarked would re-subscribe a deliberate opt-out on every single launch.
+  it('marks the recovered list as chosen, so it cannot happen twice', async () => {
+    mockIDBGet.mockImplementation((_store: string, key: string) =>
+      Promise.resolve(key === 'reis_subscribed_associations' ? [] : undefined)
+    );
+    mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
+
+    const { result } = renderHook(() => useSpolkySettings());
+    await waitFor(() => expect(result.current.subscribedAssociations).toEqual(['supef']));
+
+    expect(
+      mockIDBSet.mock.calls.some((c) => c[1] === 'reis_associations_chosen' && c[2] === true)
+    ).toBe(true);
+  });
+
+  // ...and once marked, a later empty list is left exactly as the student left
+  // it, however many times they relaunch.
+  it('never touches an empty list that has been marked chosen', async () => {
+    mockIDBGet.mockImplementation((_store: string, key: string) =>
+      Promise.resolve(
+        key === 'reis_subscribed_associations'
+          ? []
+          : key === 'reis_associations_chosen'
+            ? true
+            : undefined
+      )
+    );
+    mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
+
+    const { result } = renderHook(() => useSpolkySettings());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.subscribedAssociations).toEqual([]);
+  });
+});

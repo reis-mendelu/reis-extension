@@ -11,6 +11,7 @@ import { EventRsvp } from './EventRsvp';
 import { openExternal } from '../../mobile/openExternal';
 import { getPlatform } from '../../platform';
 import { openVenue } from '../../mobile/openVenue';
+import { logError } from '../../utils/reportError';
 import { venueMapUrl } from '../../utils/venueMapUrl';
 import type { MapEvent } from '../../types/events';
 
@@ -123,7 +124,16 @@ export function EventDetailCard({ event, flush = false }: { event: MapEvent; flu
                 onClick={(e) => {
                   if (getPlatform().kind !== 'capacitor') return;
                   e.preventDefault();
-                  void openVenue(event.coord as [number, number], event.location ?? '');
+                  // The default is already suppressed, so a rejection here — a
+                  // failed lazy `@capacitor/core` import is the realistic one —
+                  // would leave the tap doing nothing at all. Fall back to the
+                  // web URL, which is what the anchor would have done.
+                  void openVenue(event.coord as [number, number], event.location ?? '').catch(
+                    (err) => {
+                      logError('EventDetailCard.openVenue', err);
+                      void openExternal(venueMapUrl(event.coord!, event.location ?? '', 'web'));
+                    }
+                  );
                 }}
                 className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
               >

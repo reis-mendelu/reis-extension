@@ -21,6 +21,15 @@ describe('railOffsetPx', () => {
     expect(railOffsetPx(1194, true, 300)).toBe(150);
   });
 
+  // A closed rail covers nothing, so there is nothing to compensate for. Missed
+  // first time round: the offset read only the viewport and the tree, so an
+  // event focused after hiding the rail landed off-centre for a panel that was
+  // not there.
+  it('does not shift when the rail is closed', () => {
+    expect(railOffsetPx(1194, true, RAIL_PX, false)).toBe(0);
+    expect(railOffsetPx(1194, true, RAIL_PX, true)).toBe(RAIL_PX / 2);
+  });
+
   // A phone shows the card BELOW the map, so the camera is already centred on
   // what you can see.
   it('does not shift on a phone', () => {

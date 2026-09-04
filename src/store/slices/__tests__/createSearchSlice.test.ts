@@ -160,3 +160,21 @@ describe('createSearchSlice — recent subjects', () => {
     ]);
   });
 });
+
+describe('createSearchSlice — malformed stored history', () => {
+  // The `meta` store accepts any record, so a malformed or half-migrated value
+  // arrives here as an object rather than an array. Cast straight into state it
+  // reached `SearchSheet`, which calls `.slice()` on it and throws — taking out
+  // the search screen for a value nobody could see or clear.
+  it('ignores a stored value that is not an array', async () => {
+    const { IndexedDBService } = await import('../../../services/storage');
+    vi.mocked(IndexedDBService.get).mockImplementation(((_s: string, key: string) =>
+      Promise.resolve(
+        key === 'recent_subjects' ? ({ nope: true } as unknown) : undefined
+      )) as never);
+
+    useAppStore.setState({ recentSubjects: [] } as never);
+    await useAppStore.getState().loadRecentSearches();
+    expect(useAppStore.getState().recentSubjects).toEqual([]);
+  });
+});

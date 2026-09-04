@@ -50,9 +50,25 @@ const EVENT_ZOOM = 16;
 
 export function MapCanvas() {
   const isPhone = usePhoneViewport();
-  // The rail is resizable, so the camera compensation has to track its LIVE
-  // width — a fixed half-of-340 leaves the pin under a rail just dragged wider.
+  /**
+   * The rail's live geometry, held in a ref rather than read as a dependency.
+   *
+   * The camera compensation has to track the CURRENT width — a fixed half-of-340
+   * leaves the pin under a rail just dragged wider — but `railWidth` in the big
+   * effect's dependency array made every frame of a drag re-run an effect that
+   * clears layers and calls `setView`/`fitBounds`, throwing away the camera
+   * position the student had. A ref gives the value at the moment of focus
+   * without making the width a trigger.
+   */
   const railWidth = useAppStore((s) => s.mapRailWidth);
+  const railOpen = useAppStore((s) => s.mapRailOpen);
+  const railRef = useRef({ width: railWidth, open: railOpen });
+  // Synced in an effect, not written during render: a ref assigned mid-render
+  // can leave a stale value behind when React discards a render, and the lint
+  // rule that says so is right.
+  useEffect(() => {
+    railRef.current = { width: railWidth, open: railOpen };
+  }, [railWidth, railOpen]);
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup>(L.layerGroup());
@@ -210,7 +226,12 @@ export function MapCanvas() {
           // you get the doorway again.
           map.setView([lat, lon], EVENT_ZOOM, { animate: false });
           // The rail overlays the canvas, so Leaflet's centre is behind it.
-          const dx = railOffsetPx(map.getContainer().clientWidth, isPhone, railWidth);
+          const dx = railOffsetPx(
+            map.getContainer().clientWidth,
+            isPhone,
+            railRef.current.width,
+            railRef.current.open
+          );
           if (dx) map.panBy([dx, 0], { animate: false });
         });
       } else if (cameFromMapTap) {
@@ -353,7 +374,11 @@ export function MapCanvas() {
     // for the life of a device, but it flips on a browser resize, and this
     // effect is idempotent by design (see the 'draft' branch's note), so
     // re-running it on that flip re-answers the same question correctly.
-  }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq, focusTarget, isPhone, railWidth]);
+    //
+    // The rail's width and open state deliberately do NOT: they are read from
+    // `railRef` at the moment of focus. As dependencies they made a resize drag
+    // re-run this whole effect sixty times a second, and it resets the camera.
+  }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq, focusTarget, isPhone]);
 
   // Highlight the selected room in place on a plain map click — restyle the live
   // polygons without a full redraw or camera move (the heavy effect above only

@@ -20,12 +20,12 @@ export function EyMark({ className = 'h-5' }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 68.67 69.32"
-      className={className}
+      // w-auto as a class, not an inline style: the height comes from the
+      // caller and the width follows the aspect ratio, so the mark tracks the
+      // type it sits beside instead of being a fixed box.
+      className={`w-auto ${className}`}
       role="img"
       aria-label="EY"
-      // Height is set by the caller and the width follows the aspect ratio, so
-      // the mark tracks the type it sits next to instead of being a fixed box.
-      style={{ width: 'auto' }}
     >
       <path
         fill="currentColor"

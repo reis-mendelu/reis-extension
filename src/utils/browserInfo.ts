@@ -33,6 +33,12 @@ export function getBrowserInfo(userAgent: string = navigator.userAgent): Browser
     return { name: 'AndroidWebView', version: m[1]! };
   if ((m = userAgent.match(/Chrome\/(\d+)/))) return { name: 'Chrome', version: m[1]! };
   if ((m = userAgent.match(/Version\/(\d+).*Safari/))) return { name: 'Safari', version: m[1]! };
+  // Chrome and Firefox on iOS, BEFORE the generic iOS branch. Both are WebKit
+  // underneath and carry neither `Version/` nor `Chrome/`, so they fell through
+  // to `CPU OS` and were labelled `iOS` — sharing the app's own rate-limit
+  // bucket with two browsers that are not the app.
+  if ((m = userAgent.match(/CriOS\/(\d+)/))) return { name: 'ChromeiOS', version: m[1]! };
+  if ((m = userAgent.match(/FxiOS\/(\d+)/))) return { name: 'FirefoxiOS', version: m[1]! };
   // ...and only now the iOS WebView, so mobile Safari — which carries both
   // `Version/` and `Safari` — keeps reporting as the browser it is. The OS
   // version is the useful number here: WebKit's own build is the same across

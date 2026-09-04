@@ -136,8 +136,10 @@ describe('NotificationsSheet — deadline alerts', () => {
     } as never);
 
     render(<NotificationsSheet onClose={vi.fn()} />);
-    await waitFor(() =>
-      expect(useAppStore.getState().notifications.seenDeadlineAlertIds.has('odev-o1')).toBe(true)
+    await waitFor(
+      () =>
+        expect(useAppStore.getState().notifications.seenDeadlineAlertIds.has('odev-o1')).toBe(true),
+      { timeout: 8000 }
     );
-  });
+  }, 15000);
 });

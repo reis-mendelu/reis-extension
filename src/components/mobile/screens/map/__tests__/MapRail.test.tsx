@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MapRail } from '../MapRail';
 import { useAppStore } from '../../../../../store/useAppStore';
@@ -77,5 +77,56 @@ describe('MapRail', () => {
     render(<MapRail />);
     fireEvent.click(screen.getByRole('button', { name: /Akce/ }));
     expect(useAppStore.getState().mapSelection).toBeNull();
+  });
+});
+
+describe('MapRail resize is keyboard-operable', () => {
+  // A tablet window, because that is the only place the rail exists. The suite
+  // opens a phone (src/test/setup.ts), where `clampRailWidth` correctly floors
+  // every width to RAIL_MIN_PX — half of 390 is below the card's minimum — and
+  // the arrow keys would look broken while behaving exactly as designed.
+  beforeAll(() => {
+    (
+      window as unknown as {
+        happyDOM?: { setViewport(v: { width: number; height: number }): void };
+      }
+    ).happyDOM?.setViewport({ width: 1194, height: 834 });
+  });
+  afterAll(() => {
+    (
+      window as unknown as {
+        happyDOM?: { setViewport(v: { width: number; height: number }): void };
+      }
+    ).happyDOM?.setViewport({ width: 390, height: 844 });
+  });
+
+  beforeEach(() => {
+    useAppStore.setState({
+      language: 'cz',
+      mapRailOpen: true,
+      mapRailWidth: 340,
+      mapSelection: null,
+      mapEvents: [],
+      activeBuildingId: null,
+      mapTab: 'akce',
+    } as never);
+  });
+
+  // Pointer handlers alone left an unfocusable div: the width could only be
+  // changed by dragging, so a keyboard-only student could not change it at all.
+  it('grows on ArrowLeft and shrinks on ArrowRight', () => {
+    render(<MapRail />);
+    const sep = screen.getByRole('separator');
+    // Left grows it, because the rail is anchored right — the arrow follows the
+    // edge being pushed, not the number.
+    fireEvent.keyDown(sep, { key: 'ArrowLeft' });
+    expect(useAppStore.getState().mapRailWidth).toBe(356);
+    fireEvent.keyDown(sep, { key: 'ArrowRight' });
+    expect(useAppStore.getState().mapRailWidth).toBe(340);
+  });
+
+  it('reports its current width to a screen reader', () => {
+    render(<MapRail />);
+    expect(screen.getByRole('separator')).toHaveAttribute('aria-valuenow', '340');
   });
 });

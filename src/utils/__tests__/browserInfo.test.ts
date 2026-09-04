@@ -57,3 +57,28 @@ describe('getBrowserInfo: the reIS app itself', () => {
     expect(getBrowserInfo('')).toEqual({ name: 'Unknown', version: '0' });
   });
 });
+
+describe('getBrowserInfo: other browsers on iOS', () => {
+  // Both are WebKit underneath and carry neither `Version/` nor `Chrome/`, so
+  // they reached the generic `CPU OS` branch and were labelled `iOS` — sharing
+  // the reIS app's own `submit_suggestion` rate-limit bucket with two browsers
+  // that are not the app.
+  it('gives Chrome on iOS its own bucket', () => {
+    const ua =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/126.0.6478.54 Mobile/15E148 Safari/604.1';
+    expect(getBrowserInfo(ua)).toEqual({ name: 'ChromeiOS', version: '126' });
+  });
+
+  it('gives Firefox on iOS its own bucket', () => {
+    const ua =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/127.0 Mobile/15E148 Safari/605.1.15';
+    expect(getBrowserInfo(ua)).toEqual({ name: 'FirefoxiOS', version: '127' });
+  });
+
+  // ...and the app itself is still the app, not lumped in with them.
+  it('still calls the reIS WebView iOS', () => {
+    const ua =
+      'Mozilla/5.0 (iPad; CPU OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
+    expect(getBrowserInfo(ua)).toEqual({ name: 'iOS', version: '18' });
+  });
+});

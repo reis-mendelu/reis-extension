@@ -55,15 +55,18 @@ export function clampRailWidth(desired: number, viewportWidth: number): number {
  * what is left, and it takes the LIVE width because the student can drag it.
  *
  * Zero unless the rail is actually there: the desktop tree floats its own
- * DetailPanel and must not be nudged, and a phone's sheet is below the map,
- * not beside it.
+ * DetailPanel and must not be nudged, a phone's sheet is below the map rather
+ * than beside it, and a CLOSED rail covers nothing at all — shifting the camera
+ * for a panel that is not on screen puts the pin off-centre for no reason.
  */
 export function railOffsetPx(
   containerWidth: number,
   isPhoneTree: boolean,
-  railWidth: number = RAIL_PX
+  railWidth: number = RAIL_PX,
+  railOpen: boolean = true
 ): number {
   if (!isPhoneTree) return 0;
+  if (!railOpen) return 0;
   if (containerWidth < RAIL_MIN_WIDTH) return 0;
   return Math.round(railWidth / 2);
 }

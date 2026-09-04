@@ -68,13 +68,17 @@ export const createSearchSlice: AppSlice<SearchSlice> = (set, get) => ({
       // resolves whenever IndexedDB gets round to it; a search saved in the
       // meantime is NEWER than the stored copy, and overwriting it here would
       // then be persisted by the next save — losing the person entirely.
-      if (stored && get().recentSearches.length === 0) {
+      // Array.isArray, not a truthiness check and a cast. The `meta` store
+      // accepts any record, so a malformed or half-migrated value reaches here
+      // as an object — and `SearchSheet` then calls `.slice()` on it and throws
+      // on a screen the student only wanted to search from.
+      if (Array.isArray(stored) && get().recentSearches.length === 0) {
         set({ recentSearches: stored as SearchResult[] });
       }
-      if (storedPeople && get().recentPeople.length === 0) {
+      if (Array.isArray(storedPeople) && get().recentPeople.length === 0) {
         set({ recentPeople: storedPeople as SearchResult[] });
       }
-      if (storedSubjects && get().recentSubjects.length === 0) {
+      if (Array.isArray(storedSubjects) && get().recentSubjects.length === 0) {
         set({ recentSubjects: storedSubjects as SearchResult[] });
       }
     } catch {

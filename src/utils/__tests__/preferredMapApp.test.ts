@@ -29,8 +29,6 @@ describe('resolveVenueChoice', () => {
   // the tap: an unknown id falls back to asking rather than resolving to
   // nothing and doing nothing.
   it('asks again if the remembered app is not one we offer', () => {
-    expect(
-      resolveVenueChoice(MYSTICA, 'Mystica', 'ios', 'waze' as unknown as 'apple')
-    ).toBeNull();
+    expect(resolveVenueChoice(MYSTICA, 'Mystica', 'ios', 'waze' as unknown as 'apple')).toBeNull();
   });
 });

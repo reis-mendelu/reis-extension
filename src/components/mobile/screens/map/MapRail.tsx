@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useRailResize } from './useRailResize';
+import { RAIL_MIN_PX, RAIL_MAX_PX } from '../../../../utils/mapRail';
 import { MapPanelBody } from './MapPanelBody';
 import buildingsJson from '../../../../data/map/buildings.json';
 import type { BuildingsMeta } from '../../../../types/campusMap';
@@ -46,6 +47,7 @@ export function MapRail() {
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const selection = useAppStore((s) => s.mapSelection);
   const clearMapSelection = useAppStore((s) => s.clearMapSelection);
+  const setRailWidth = useAppStore((s) => s.setMapRailWidth);
   const { resizing, railHandlers } = useRailResize();
 
   const selectedEvent = selection?.kind === 'event' ? selection.event : null;
@@ -103,12 +105,31 @@ export function MapRail() {
     >
       {/* The left edge is the resize handle — the axis a tablet can afford to
           trade. Not a detent: it sets a width and keeps it. */}
+      {/* A separator with a value, and reachable from the keyboard: the pointer
+          handlers alone left an unfocusable div, so the width could only be
+          changed by dragging. Arrow keys step it; Home/End take it to the
+          bounds `clampRailWidth` enforces anyway. */}
       <div
         {...railHandlers}
         role="separator"
+        tabIndex={0}
         aria-orientation="vertical"
         aria-label={t('mobile.map.railResize')}
-        className="group absolute inset-y-0 left-0 z-10 flex w-3 cursor-col-resize touch-none items-center justify-center"
+        aria-valuenow={width}
+        aria-valuemin={RAIL_MIN_PX}
+        aria-valuemax={RAIL_MAX_PX}
+        onKeyDown={(e) => {
+          // The rail is anchored right, so LEFT grows it — the arrow follows
+          // the edge the student is pushing, not the number.
+          const step = e.shiftKey ? 48 : 16;
+          if (e.key === 'ArrowLeft') setRailWidth(width + step);
+          else if (e.key === 'ArrowRight') setRailWidth(width - step);
+          else if (e.key === 'Home') setRailWidth(RAIL_MIN_PX);
+          else if (e.key === 'End') setRailWidth(RAIL_MAX_PX);
+          else return;
+          e.preventDefault();
+        }}
+        className="group absolute inset-y-0 left-0 z-10 flex w-3 cursor-col-resize touch-none items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
       >
         <span
           className={`block h-10 w-[3px] rounded-full transition-colors ${
