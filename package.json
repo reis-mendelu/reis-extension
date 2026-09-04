@@ -26,6 +26,7 @@
     "typecheck:nuia": "tsc -p tsconfig.app.json --noUncheckedIndexedAccess --noEmit",
     "nuia:gate": "node scripts/nuia-gate.mjs",
     "scrape:real": "tsx --tsconfig tsconfig.app.json scripts/scrape-real-data.ts",
+    "sanitise:snapshot": "tsx --tsconfig tsconfig.app.json scripts/sanitise-snapshot.mjs",
     "dev:web": "vite --config vite.web.config.ts",
     "dev:web:admin": "VITE_DEV_SOCIETY= node scripts/with-secrets.mjs vite --config vite.web.config.ts",
     "dev:web:reis-admin": "VITE_DEV_SOCIETY=reis VITE_DEV_ADMIN_ROLE=reis_admin vite --config vite.web.config.ts",
