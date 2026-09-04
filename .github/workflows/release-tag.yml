@@ -1,12 +1,19 @@
 name: Release tag
 
-# On a merge into main, push the tag that publish.yml already listens for —
-# but ONLY when package.json's version actually changed in this push AND that
-# tag doesn't exist yet. The version itself is bumped in the release PR, so
-# what gets submitted is visible in a diff before the irreversible step; the
-# version-changed check is what stops an UNRELATED push to main (a doc fix, a
-# back-merge, this very branch merging with no version bump) from tagging and
-# submitting whatever version happens to be sitting in package.json at HEAD.
+# On a merge into main, push `v<version>` — but ONLY when package.json's
+# version actually changed in this push AND that tag doesn't exist yet. The
+# version itself is bumped in the release PR, so what ships is visible in a diff
+# beforehand; the version-changed check is what stops an UNRELATED push to main
+# (a doc fix, a back-merge) from tagging whatever version happens to be sitting
+# in package.json at HEAD.
+#
+# THE TAG IS THE iOS RELEASE. It no longer dispatches publish.yml: the release
+# train drives the App Store only, and the browser extension is published by
+# running publish.yml by hand. Cutting the build from the tag is
+# `npm run release:ios` on a Mac — it cannot run here, because uploading to App
+# Store Connect needs a signing identity this repo deliberately does not carry.
+# So this job pushes the tag and then tells you the one command left to run;
+# nothing is submitted to any store by any workflow.
 
 on:
   push:
@@ -28,10 +35,6 @@ jobs:
     permissions:
       # Pushing a tag is a write to the repository.
       contents: write
-      # Dispatching publish.yml after the tag is pushed. Required because
-      # GitHub does not start a run for a `push` event whose tag was pushed
-      # using GITHUB_TOKEN — see the dispatch step below.
-      actions: write
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -134,15 +137,23 @@ jobs:
           git push origin "$tag"
           echo "Pushed $tag."
 
-          # GitHub does not start a run for a `push` event whose tag was
-          # pushed with GITHUB_TOKEN (the token this job just used) — so
-          # publish.yml's `push: tags` trigger will NOT fire on its own here.
-          # workflow_dispatch is exempt from that restriction, so dispatch it
-          # explicitly against the tag we just pushed.
-          echo "Dispatching publish.yml for $tag..."
-          if gh workflow run publish.yml --ref "$tag" -f tag="$tag"; then
-            echo "Dispatched publish.yml for $tag. That run — not this one — is the actual source of truth for whether Chrome, Firefox and Edge received a submission; check it."
-          else
-            echo "::error::Pushed $tag, but dispatching publish.yml FAILED. The tag exists but NOTHING has been submitted to any store — do not assume a release happened. To recover, run by hand: gh workflow run publish.yml --ref $tag -f tag=$tag (needs a token with 'actions: write' on this repo), or from the Actions tab: Publish -> Run workflow, using tag '$tag' as both the ref and the 'tag' input."
-            exit 1
-          fi
+          # Deliberately the end of the automation. What used to follow was a
+          # dispatch of publish.yml, which submitted the extension to Chrome,
+          # Firefox and Edge. The train is iOS-only now, and the iOS cut needs
+          # a Mac with a signing identity, so it is a person running one
+          # command. Say so loudly rather than leaving a green tick that looks
+          # like something shipped.
+          {
+            echo "### $tag pushed"
+            echo ""
+            echo "Nothing has been submitted to any store. To cut the App Store build:"
+            echo ""
+            echo '```bash'
+            echo "git fetch --tags && git checkout $tag && npm ci"
+            echo "npm run release:ios -- --tag $tag"
+            echo '```'
+            echo ""
+            echo "That uploads the build; attaching it to the version and submitting for"
+            echo "review stays manual. To publish the browser extension for this tag:"
+            echo "\`gh workflow run publish.yml --ref $tag -f tag=$tag\`."
+          } >> "$GITHUB_STEP_SUMMARY"

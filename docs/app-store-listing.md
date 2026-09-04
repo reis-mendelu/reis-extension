@@ -916,8 +916,10 @@ reply is sent.
 
 Build **50100 / 5.1.0**, `cz.reis.app`, archive `reIS 5.1.0 2026-09-02 10.20.xcarchive`.
 Uploaded from Xcode Organizer. Version bumped on `main` in `373edd2b`; **no `v*` tag was
-pushed**, deliberately — a tag triggers `publish.yml` and would ship the browser extension
-to three review queues for a release with no extension-facing changes.
+pushed**, deliberately — at the time a tag fired `publish.yml` and would have shipped the
+browser extension to three review queues for a release with no extension-facing changes.
+That is no longer true: the tag now drives the iOS cut only (`docs/ios-release.md`), and
+publishing the extension is a separate, deliberate dispatch.
 
 ### 12.1 The trap: the store profile predates the entitlement
 

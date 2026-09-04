@@ -46,6 +46,7 @@
     "android:apk": "node scripts/android-release.mjs apk",
     "android:aab": "node scripts/android-release.mjs aab",
     "android:feature-graphic": "node scripts/gen-feature-graphic.mjs",
+    "release:ios": "node scripts/with-secrets.mjs tsx --tsconfig tsconfig.app.json scripts/release-ios.ts",
     "ios:version": "tsx --tsconfig tsconfig.app.json scripts/sync-ios-version.ts",
     "store:shots": "node scripts/store-shots.mjs",
     "check:native": "node scripts/check-native-plugins.mjs",

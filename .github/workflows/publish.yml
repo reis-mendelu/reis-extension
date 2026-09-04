@@ -1,18 +1,19 @@
 name: Publish
 
+# NOT part of the release train any more. The train (test -> main -> a v* tag)
+# drives iOS only; the browser extension is published by running this workflow
+# by hand against a tag. The `push: tags` trigger was REMOVED on purpose: with
+# it, every iOS release tag also submitted the extension to three review queues,
+# and a store submission cannot be recalled.
+#
+# To publish the extension: Actions -> Publish -> Run workflow, using the tag as
+# both the ref and the `tag` input. Or:
+#   gh workflow run publish.yml --ref v5.1.1 -f tag=v5.1.1
 on:
-  push:
-    tags:
-      - 'v*'
-  # release-tag.yml dispatches this after pushing a tag, since GitHub does not
-  # start a run from a `push` event whose tag was pushed with GITHUB_TOKEN
-  # (workflow_dispatch and repository_dispatch are the documented exceptions
-  # to that rule). A tag pushed by hand from a laptop still works via the
-  # `push` trigger above — that's how every v5.0.x shipped.
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to build and submit (e.g. v5.1.1)'
+        description: 'Tag to build and submit to Chrome, Firefox and Edge (e.g. v5.1.1)'
         required: true
         type: string
 
@@ -23,14 +24,27 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      # Runs BEFORE checkout, on purpose. `inputs.tag` is a free-text field, and
+      # `ref:` accepts a branch name just as happily as a tag — so without this,
+      # dispatching with a branch would run that branch's code (npm ci, wxt
+      # submit, and every postinstall on the way) with the store credentials in
+      # scope. Nothing from the repository is trusted until the ref is a release
+      # tag.
+      - name: Refuse a ref that is not a vX.Y.Z tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::'$TAG' is not a release tag (vX.Y.Z). Refusing to build and submit from an arbitrary ref."
+            exit 1
+          fi
+
       - uses: actions/checkout@v7
         with:
-          # For workflow_dispatch, check out the tag named by the input —
-          # the default (github.ref) is whatever ref the run was launched
-          # from, which is a separate UI field a human could get out of
-          # sync with the input. For the push:tags trigger, inputs.tag is
-          # unset and github.ref is already the pushed tag.
-          ref: ${{ github.event.inputs.tag || github.ref }}
+          # refs/tags/ explicitly, never the bare input: a branch and a tag can
+          # share a name, and the bare form resolves the branch first.
+          ref: refs/tags/${{ inputs.tag }}
 
       - uses: actions/setup-node@v7
         with:
