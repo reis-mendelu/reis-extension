@@ -25,3 +25,8 @@ import './storeHandle';
 // can be tested against live Supabase instead of the in-memory dev store. Does
 // nothing on a plain `npm run dev:web`. See devAdminSession.ts.
 import './devAdminSession';
+
+// Last: a bar naming what this deployment is. Only paints when
+// VITE_PREVIEW_BUILD is set, so a local dev:web run is untouched.
+import { mountPreviewBanner } from './previewBanner';
+mountPreviewBanner(import.meta.env);
