@@ -32,7 +32,6 @@ platform.
 | Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size |
 | In-app survey, event RSVP | you answer / RSVP | the same random install identifier |
 | Society post view or click | you open one | a post id |
-| Teacher grading vote | you vote | the teacher's id, not yours |
 
 Nothing else. Feedback is read by the developers and passed to nobody.
 
