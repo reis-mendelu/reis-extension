@@ -202,12 +202,9 @@ describe('stale-association (#261)', () => {
  * said nothing at all. One predicate now, and this is what pins its edges.
  */
 describe('isEduroamConfigured', () => {
-  it.each(['saved', 'already-configured'] as const)(
-    'counts %s as configured',
-    (outcome) => {
-      expect(isEduroamConfigured(outcome)).toBe(true);
-    }
-  );
+  it.each(['saved', 'already-configured'] as const)('counts %s as configured', (outcome) => {
+    expect(isEduroamConfigured(outcome)).toBe(true);
+  });
 
   // #261: iOS answers alreadyAssociated whenever the device is ON the SSID,
   // configuration or not — nothing is installed on that path, and calling it
