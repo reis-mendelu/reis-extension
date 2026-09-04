@@ -26,6 +26,11 @@ import './storeHandle';
 // nothing on a plain `npm run dev:web`. See devAdminSession.ts.
 import './devAdminSession';
 
+// Before the banner: put the deployed preview into the app's own demo mode, so
+// the screens have data and stop trying to reach IS Mendelu. No-op locally.
+import { bootDemoMode } from './bootDemoMode';
+void bootDemoMode(import.meta.env);
+
 // Last: a bar naming what this deployment is. Only paints when
 // VITE_PREVIEW_BUILD is set, so a local dev:web run is untouched.
 import { mountPreviewBanner } from './previewBanner';
