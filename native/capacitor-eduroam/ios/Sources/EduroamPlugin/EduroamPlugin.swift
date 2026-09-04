@@ -226,9 +226,35 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
         case NEHotspotConfigurationError.pending.rawValue:
             call.reject("FAILED at stage=apply: a previous eduroam request is still open")
         default:
-            // invalidEAPSettings (4), internal (8), systemConfiguration (10),
-            // unknown (11) and anything newer: a real failure, fail closed.
-            call.resolve(["outcome": "failed", "detail": "NEHotspotConfigurationError \(ns.code)"])
+            // `apply` SAVES the configuration and ASSOCIATES in one call, so an
+            // error here does not mean nothing was installed: off campus the
+            // association cannot happen and the configuration persists anyway.
+            // That is the common case, not an edge one — a student sets eduroam
+            // up at home, right after installing, and was told "unable to join"
+            // over a configuration that had worked.
+            //
+            // Which error code iOS uses for that is not documented and not
+            // worth guessing, so this asks the same authoritative question the
+            // alreadyAssociated branch above asks (#261: ask what is actually
+            // configured instead of inferring). Configured means saved,
+            // whatever the association did; not configured means a real
+            // failure, and it still fails closed with the code attached.
+            NEHotspotConfigurationManager.shared.getConfiguredSSIDs { ssids in
+                if ssids.contains(Self.ssid) {
+                    call.resolve([
+                        "outcome": "saved-not-joined",
+                        "detail": "NEHotspotConfigurationError \(ns.code)",
+                    ])
+                } else {
+                    // invalidEAPSettings (4), internal (8), systemConfiguration
+                    // (10), unknown (11) and anything newer, with nothing
+                    // installed to show for it.
+                    call.resolve([
+                        "outcome": "failed",
+                        "detail": "NEHotspotConfigurationError \(ns.code)",
+                    ])
+                }
+            }
         }
     }
 

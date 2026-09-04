@@ -6,6 +6,7 @@ import { useEduroamSetup, type EduroamTarget } from '../../../hooks/data/useEdur
 import { useTranslation } from '../../../hooks/useTranslation';
 import { isMac, isMobile } from '../../../utils/platform';
 import { canConfigureEduroamNatively, nativeEduroamTarget } from '../../../mobile/eduroamNative';
+import { isEduroamConfigured } from '../../../mobile/configureEduroam';
 
 export interface EduroamSheetProps {
   onClose: () => void;
@@ -92,16 +93,21 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
           </div>
         )}
 
-        {status === 'done' &&
-          native &&
-          (outcome === 'saved' || outcome === 'already-configured') && (
-            <div className="alert alert-success text-base">
-              <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-              <span>
-                {outcome === 'saved' ? t('eduroam.native.saved') : t('eduroam.native.already')}
-              </span>
-            </div>
-          )}
+        {status === 'done' && native && isEduroamConfigured(outcome) && (
+          <div className="alert alert-success text-base">
+            <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+            <span>
+              {/* `saved` and `saved-not-joined` share this line: it already
+                    says "uložený" and "na fakultě se připojíš automaticky",
+                    which is exactly what is true when the configuration
+                    installed and the SSID was out of range. A second string
+                    saying the same thing is a second place to keep correct. */}
+              {outcome === 'already-configured'
+                ? t('eduroam.native.already')
+                : t('eduroam.native.saved')}
+            </span>
+          </div>
+        )}
 
         {!native && (
           <div className="flex items-center gap-3">

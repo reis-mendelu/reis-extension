@@ -5,6 +5,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useEduroamSetup } from '../../hooks/data/useEduroamSetup';
 import { canConfigureEduroamNatively, nativeEduroamTarget } from '../../mobile/eduroamNative';
 import { logError } from '../../utils/reportError';
+import { isEduroamConfigured } from '../../mobile/configureEduroam';
 
 /**
  * First-run screen of the phone UI, owned by `MobileApp` while
@@ -43,7 +44,7 @@ export function WelcomeScreen() {
   const native = target !== null && canConfigureEduroamNatively(target);
   const { status, outcome, run } = useEduroamSetup(target ?? undefined);
 
-  const done = status === 'done' && (outcome === 'saved' || outcome === 'already-configured');
+  const done = status === 'done' && isEduroamConfigured(outcome);
   const failed = status === 'error';
 
   const dismiss = () => {

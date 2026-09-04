@@ -2,7 +2,7 @@ import { motion, useReducedMotion } from 'motion/react';
 import { Check, Wifi } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { EduroamStatus } from '../../hooks/data/useEduroamSetup';
-import type { EduroamConfigOutcome } from '../../mobile/configureEduroam';
+import { isEduroamConfigured, type EduroamConfigOutcome } from '../../mobile/configureEduroam';
 import type { NativeEduroamTarget } from '../../mobile/eduroamNative';
 
 export interface WelcomeWifiCardProps {
@@ -29,7 +29,7 @@ export function WelcomeWifiCard({ status, outcome, target, onSetup }: WelcomeWif
   const { t } = useTranslation();
   const reduced = useReducedMotion();
   const working = status === 'working';
-  const done = status === 'done' && (outcome === 'saved' || outcome === 'already-configured');
+  const done = status === 'done' && isEduroamConfigured(outcome);
   // Any error lands here — a genuine `failed` from the OS, or a throw before
   // the OS was reached (lapsed session, cert fetch). One line either way.
   const failed = status === 'error';

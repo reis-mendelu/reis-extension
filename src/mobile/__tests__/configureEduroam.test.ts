@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   configureEduroam,
   interpretAddResult,
+  isEduroamConfigured,
   normalizeOutcome,
   RESULT_CANCELED,
   RESULT_OK,
@@ -66,8 +67,30 @@ describe('interpretAddResult', () => {
   });
 });
 
+/**
+ * "when I'm off the campus ... the iPad tries to join the network, but because
+ * I'm not in the radius, it says unable to join. Even though we've configured
+ * the network, and that was the goal."
+ *
+ * `NEHotspotConfigurationManager.apply` does two things at once: it SAVES the
+ * configuration and it tries to ASSOCIATE. Out of range the association cannot
+ * happen, so `apply` completes with an error and the plugin's `default:` branch
+ * reported `failed` — while the configuration had in fact been installed. The
+ * proof is the on-campus retry, which answers `already-configured`, and that
+ * outcome is only returned after `getConfiguredSSIDs` confirms our SSID.
+ *
+ * So a student who sets eduroam up at home — the likeliest moment, right after
+ * installing — was told setup had failed when it had worked.
+ */
 describe('normalizeOutcome', () => {
-  it.each(['saved', 'already-configured', 'cancelled', 'failed'] as const)(
+  // Registration matters: OUTCOMES is an allowlist and anything missing from it
+  // fails closed, so a new native outcome would be silently downgraded to
+  // `failed` and the bug would survive the fix.
+  it('passes the off-campus outcome through rather than failing closed', () => {
+    expect(normalizeOutcome({ outcome: 'saved-not-joined' })).toBe('saved-not-joined');
+  });
+
+  it.each(['saved', 'already-configured', 'cancelled', 'failed', 'saved-not-joined'] as const)(
     'passes the iOS outcome %s through',
     (outcome) => {
       expect(normalizeOutcome({ outcome })).toBe(outcome);
@@ -171,4 +194,28 @@ describe('stale-association (#261)', () => {
       'already-configured'
     );
   });
+});
+
+/**
+ * The three surfaces that ask "is eduroam set up?" each spelled the list out,
+ * so a fourth success reached a `done` status no banner recognised and the card
+ * said nothing at all. One predicate now, and this is what pins its edges.
+ */
+describe('isEduroamConfigured', () => {
+  it.each(['saved', 'already-configured', 'saved-not-joined'] as const)(
+    'counts %s as configured',
+    (outcome) => {
+      expect(isEduroamConfigured(outcome)).toBe(true);
+    }
+  );
+
+  // #261: iOS answers alreadyAssociated whenever the device is ON the SSID,
+  // configuration or not — nothing is installed on that path, and calling it
+  // configured is the bug that sent students to campus believing it worked.
+  it.each(['failed', 'cancelled', 'stale-association', null] as const)(
+    'does not count %s',
+    (outcome) => {
+      expect(isEduroamConfigured(outcome)).toBe(false);
+    }
+  );
 });
