@@ -1,6 +1,6 @@
 import { getPlatform } from '../platform';
 import { openExternal } from './openExternal';
-import { venueMapUrl, venueMapChoices } from '../utils/venueMapUrl';
+import { venueMapUrl, resolveVenueChoice } from '../utils/venueMapUrl';
 import { useAppStore } from '../store/useAppStore';
 
 /**
@@ -29,12 +29,12 @@ export async function openVenue(coord: [number, number], label: string): Promise
   }
   const { Capacitor } = await import('@capacitor/core');
   const platform = Capacitor.getPlatform() === 'android' ? 'android' : 'ios';
-  const choices = venueMapChoices(coord, label, platform);
-  // One option means the SYSTEM is the chooser — Android's `geo:` already asks
-  // which map app to use, and putting our own sheet in front of it would be a
-  // menu that opens a menu. Only iOS, which never asks, gets one from us.
-  if (choices.length === 1) {
-    window.location.href = choices[0]!.url;
+  // Resolved, or null meaning "ask". Null happens only on iOS with nothing
+  // remembered: Android's `geo:` IS the chooser, so there is never anything to
+  // ask there, and a remembered choice skips the sheet outright.
+  const direct = resolveVenueChoice(coord, label, platform, useAppStore.getState().preferredMapApp);
+  if (direct) {
+    window.location.href = direct;
     return;
   }
   useAppStore.getState().pushSheet({ kind: 'venue', coord, label, platform });

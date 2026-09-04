@@ -906,7 +906,10 @@
     "finished": "proběhlo",
     "openInMaps": "Otevřít v mapách",
     "openInAppleMaps": "Apple Mapy",
-    "openInGoogleMaps": "Google Maps"
+    "openInGoogleMaps": "Google Maps",
+    "rememberChoice": "Příště se neptat",
+    "mapApp": "Mapy",
+    "mapAppAsk": "Vždy se zeptat"
   },
   "admin": {
     "email": "E-mail",

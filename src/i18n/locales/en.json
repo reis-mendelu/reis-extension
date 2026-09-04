@@ -906,7 +906,10 @@
     "finished": "finished",
     "openInMaps": "Open in Maps",
     "openInAppleMaps": "Apple Maps",
-    "openInGoogleMaps": "Google Maps"
+    "openInGoogleMaps": "Google Maps",
+    "rememberChoice": "Don't ask again",
+    "mapApp": "Maps",
+    "mapAppAsk": "Always ask"
   },
   "admin": {
     "email": "Email",

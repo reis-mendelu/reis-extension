@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { Moon, Languages, Wifi, FileText, MessageSquarePlus, LogOut, User } from 'lucide-react';
+import {
+  Moon,
+  Languages,
+  Wifi,
+  FileText,
+  MessageSquarePlus,
+  LogOut,
+  User,
+  // Aliased: bare `Map` shadows the global Map constructor and TS then reads
+  // the JSX tag as `MapConstructor`.
+  Map as MapIcon,
+} from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTheme } from '../../../hooks/useTheme';
 import { useSpolkySettings } from '../../../hooks/useSpolkySettings';
@@ -43,6 +54,8 @@ export function ProfileScreen() {
   const { isDark, toggle: toggleTheme } = useTheme();
   const { isSubscribed, toggleAssociation } = useSpolkySettings();
   const pushSheet = useAppStore((s) => s.pushSheet);
+  const preferredMapApp = useAppStore((s) => s.preferredMapApp);
+  const setPreferredMapApp = useAppStore((s) => s.setPreferredMapApp);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const plan = useStudyPlan();
   const [spolkyOpen, setSpolkyOpen] = useState(false);
@@ -157,6 +170,28 @@ export function ProfileScreen() {
           sublabel={t('mobile.student.documentsSub')}
           onClick={() => pushSheet({ kind: 'docs' })}
         />
+
+        {/* Only once a choice has been remembered — which is the ONLY moment
+            this row has anything to say, and the only moment Profil can afford
+            it. The venue sheet is where the preference is set, and it stops
+            opening the moment it is set, so without this there is no way back
+            to being asked. */}
+        {preferredMapApp && (
+          <button
+            type="button"
+            onClick={() => void setPreferredMapApp(null)}
+            className="flex w-full items-center gap-3 px-4 py-2 text-left"
+          >
+            <MapIcon size={16} className="flex-shrink-0 text-base-content/50" />
+            <span className="min-w-0 flex-1 text-md font-medium">{t('map.mapApp')}</span>
+            <span className="flex-shrink-0 text-2sm text-base-content/60">
+              {preferredMapApp === 'apple' ? t('map.openInAppleMaps') : t('map.openInGoogleMaps')}
+            </span>
+            <span className="flex-shrink-0 text-2sm font-medium text-primary">
+              {t('map.mapAppAsk')}
+            </span>
+          </button>
+        )}
 
         <HiddenItemsSection />
 

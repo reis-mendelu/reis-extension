@@ -23,9 +23,12 @@ import { useTranslation } from '../../../../hooks/useTranslation';
  * an eye is trained to skip — which is a poor way to present a sentence that
  * exists precisely to be read ("Nevidí žádná data z tvého ISu").
  *
- * The measure widens on a tablet rather than the block growing taller: Profil
- * must not scroll, and in landscape (1080×810 on an iPad 8) every line this
- * paragraph wraps to costs the list its last row. Wider lines, fewer of them.
+ * The measure widens on a tablet rather than the block growing taller, and the
+ * whole block is kept tight: Profil must not scroll, and in landscape
+ * (1080×810 on an iPad 8) every line this paragraph wraps to costs the list its
+ * last row. The map-app reset row above appears only once a choice has been
+ * remembered, and its ~40px is paid for here — out of the block that was added
+ * last — rather than out of the settings the student came for.
  *
  * Reach is not the point of the block. Stating the rule once, in public, while
  * the stakes are nil is: when company events and internship deadlines
@@ -36,11 +39,11 @@ export function AboutSection() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col items-center gap-2 px-4 pb-3 pt-4 text-center">
+    <div className="flex flex-col items-center gap-1 px-4 pb-1 pt-2 text-center">
       <span className="text-xs font-bold uppercase tracking-wider text-base-content/60">
         {t('about.partnersLabel')}
       </span>
-      <p className="max-w-[19rem] text-sm leading-relaxed text-base-content/60 md:max-w-[34rem]">
+      <p className="max-w-[21rem] text-sm leading-snug text-base-content/60 md:max-w-[34rem]">
         {t('about.partnersBody')}
       </p>
       {/* No card, no plate, no link. A container turns a mark into a placement,
@@ -50,7 +53,7 @@ export function AboutSection() {
           The mark is set to the cap height of the line beside it rather than
           shrunk into a footnote — it is a partner's name, and naming someone in
           type smaller than your own settings labels is its own statement. */}
-      <div className="flex items-center justify-center gap-3 pt-0.5">
+      <div className="flex items-center justify-center gap-3">
         <EyMark className="h-7 text-base-content" />
         <span className="text-sm text-base-content/60">{t('about.eyBody')}</span>
       </div>

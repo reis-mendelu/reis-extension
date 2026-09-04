@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { MapPin, Navigation } from 'lucide-react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
+import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import type { MobileSheet } from '../../../store/types';
 import { venueMapChoices } from '../../../utils/venueMapUrl';
@@ -27,7 +29,17 @@ export interface VenueSheetProps {
  */
 export function VenueSheet({ sheet, onClose }: VenueSheetProps) {
   const { t } = useTranslation();
+  const setPreferred = useAppStore((s) => s.setPreferredMapApp);
   const choices = venueMapChoices(sheet.coord, sheet.label, sheet.platform);
+  /**
+   * Opt-in, and unticked by default.
+   *
+   * Remembering silently would be the wrong trade: the sheet is the ONLY place
+   * this preference can be reached, so a choice made without meaning to could
+   * not be undone from anywhere in the app. Ticking it is the student saying
+   * they are done being asked.
+   */
+  const [remember, setRemember] = useState(false);
 
   return (
     <Sheet size="content" onClose={onClose} elevated>
@@ -38,6 +50,9 @@ export function VenueSheet({ sheet, onClose }: VenueSheetProps) {
             key={choice.id}
             type="button"
             onClick={() => {
+              // Persist BEFORE navigating: the navigation hands the WebView to
+              // the OS, and anything queued after it may never run.
+              if (remember && choice.id !== 'system') void setPreferred(choice.id);
               onClose();
               window.location.href = choice.url;
             }}
@@ -51,6 +66,19 @@ export function VenueSheet({ sheet, onClose }: VenueSheetProps) {
             <span className="text-md font-medium">{t(choice.labelKey)}</span>
           </button>
         ))}
+        {/* Only where there is a choice to remember. On Android the row below
+            would promise to stop a question the system, not reIS, is asking. */}
+        {choices.length > 1 && (
+          <label className="mt-1 flex min-h-11 cursor-pointer items-center gap-3 px-1">
+            <input
+              type="checkbox"
+              className="checkbox checkbox-sm checkbox-primary"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+            />
+            <span className="text-sm text-base-content/70">{t('map.rememberChoice')}</span>
+          </label>
+        )}
       </div>
     </Sheet>
   );
