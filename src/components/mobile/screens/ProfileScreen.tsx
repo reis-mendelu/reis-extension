@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { Moon, Languages, Wifi, FileText, MessageSquarePlus, LogOut, User } from 'lucide-react';
+import {
+  Moon,
+  Languages,
+  Wifi,
+  FileText,
+  MessageSquarePlus,
+  LogOut,
+  User,
+  Info,
+} from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTheme } from '../../../hooks/useTheme';
 import { useSpolkySettings } from '../../../hooks/useSpolkySettings';
@@ -180,6 +189,10 @@ export function ProfileScreen() {
           label={t('settings.reportBug')}
           onClick={() => setFeedbackOpen(true)}
         />
+        {/* Last row before signing out, which is where a version number and a
+            credit are looked for. It is also the app's only answer to "which
+            build am I on" — worth having next to Nahlásit chybu. */}
+        <NavRow icon={Info} label={t('about.title')} onClick={() => pushSheet({ kind: 'about' })} />
         <button
           type="button"
           onClick={() => setSignOutOpen(true)}

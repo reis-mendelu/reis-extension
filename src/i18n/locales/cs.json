@@ -1105,5 +1105,11 @@
     "bannerLabel": "Ukázka",
     "bannerExit": "Přihlásit se",
     "toast": "Toto je jen ukázka."
+  },
+  "about": {
+    "title": "O aplikaci",
+    "partnersLabel": "Spolupracujeme s firmami",
+    "partnersBody": "Vybíráme si je sami, podle oborů, které se tu studují. Jde nám o stáže a akce. Nevidí žádná data z tvého ISu.",
+    "eyBody": "Díky nim reIS běží."
   }
 }

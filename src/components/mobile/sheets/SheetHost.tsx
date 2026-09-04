@@ -10,6 +10,7 @@ import { DocsSheet } from './DocsSheet';
 import { SearchSheet } from './SearchSheet';
 import { BulletinSheet } from './BulletinSheet';
 import { MenuSheet } from './MenuSheet';
+import { AboutSheet } from './AboutSheet';
 
 /**
  * Renders the phone UI's sheet stack, in order, each in its own `Sheet`.
@@ -46,6 +47,8 @@ export function SheetHost() {
             return <DocsSheet key={index} onClose={popSheet} />;
           case 'bulletin':
             return <BulletinSheet key={index} onClose={popSheet} />;
+          case 'about':
+            return <AboutSheet key={index} onClose={popSheet} />;
           case 'menu':
             return <MenuSheet key={index} dayIso={sheet.dayIso} onClose={popSheet} />;
           case 'search':

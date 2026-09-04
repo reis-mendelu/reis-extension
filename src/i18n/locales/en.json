@@ -1105,5 +1105,11 @@
     "bannerLabel": "Demo",
     "bannerExit": "Sign in",
     "toast": "This is only a demo."
+  },
+  "about": {
+    "title": "About",
+    "partnersLabel": "Companies we work with",
+    "partnersBody": "We pick them ourselves, for the subjects people study here. It is about internships and events. They see nothing from your IS.",
+    "eyBody": "They keep reIS running."
   }
 }
