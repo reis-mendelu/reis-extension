@@ -205,7 +205,9 @@
       "confusing": "Confusing",
       "slow": "Too slow",
       "other": "Other"
-    }
+    },
+    "toastOffline": "You're offline. Try again once you're connected.",
+    "toastRateLimited": "We've had a lot of messages just now. Please try again in a bit."
   },
   "common": {
     "loading": "Loading...",

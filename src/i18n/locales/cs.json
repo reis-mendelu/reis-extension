@@ -250,7 +250,9 @@
       "confusing": "Nepřehledné",
       "slow": "Pomalé",
       "other": "Jiné"
-    }
+    },
+    "toastOffline": "Nejsi online. Zkus to znovu, až budeš připojený.",
+    "toastRateLimited": "Teď jsme přijali hodně zpráv. Zkus to prosím za chvíli."
   },
   "course": {
     "setNickname": "Nastavit přezdívku",
