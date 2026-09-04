@@ -1,8 +1,8 @@
 # Real-data preview, behind a login
 
-Add a second Vercel project that serves the reIS app against Dominik's own
-scraped IS Mendelu data, readable only by him, deployed by one command from his
-laptop so his university password never enters the repository. The existing
+Run the reIS app against Dominik's own scraped IS Mendelu data as a real built
+app, served from his own machine — reachable from his phone and iPad over the
+LAN, with other students' identities removed first. **Not hosted.** The existing
 public demo preview is untouched.
 
 Amends [`2026-09-04-preview-and-release-train-design.md`](2026-09-04-preview-and-release-train-design.md).
@@ -39,22 +39,40 @@ Treat this as "the UI half becomes properly testable", not "90% of everything".
 
 ## Decisions
 
-### Two Vercel projects, not one
+### Not hosted at all — Vercel Hobby cannot gate a page
 
-| | `reis-extension-preview` (exists) | `reis-extension-real` (new) |
-|---|---|---|
-| Data | synthetic `demo` dataset | Dominik's sanitised snapshot |
-| Audience | anyone with the link | Dominik only (Vercel Authentication) |
-| Deployed by | Vercel git integration, every branch | one command, from Dominik's laptop |
-| Secrets | none | none in the repo — credentials stay on the laptop |
+The original design put this on a second, login-gated Vercel project. **That is
+not possible on this account's plan, and it was proven by shipping it.**
 
-One project cannot serve both: production would have to be simultaneously
-public (to share a branch) and gated (to hold real data), and Vercel's git
-build would race the Action's deploy for the same production slot, last write
-winning — sometimes with the mock build.
+Setting protection to cover production returns:
 
-Splitting also means **the existing project is not modified at all**, so this
-work cannot break what already ships.
+> `Vercel Authentication is not available on your plan for production deployments`
+
+With the only setting Hobby allows (`all_except_custom_domains`), the
+per-deployment URL *is* gated (302) but the project's own alias
+`<project>.vercel.app` serves the app **publicly** (200), including the data
+file. Deploying as a *preview* rather than production does not help — the alias
+still serves it. There is no Hobby configuration where the app is hosted and the
+URL is gated.
+
+**This was found the expensive way.** A real-data build was deployed and was
+publicly reachable on that alias for roughly 90 seconds, serving
+`preview-data.json`, before the project was deleted. The URL was never linked
+anywhere and the sanitiser had run, so no classmate was exposed — Dominik's own
+schedule, subjects and files were. The check that caught it is the one the plan
+mandated: fetch the URL logged out, before trusting anything else. It should
+have been run against a data-free build first, and now is.
+
+So the app is served locally instead: `npm run preview:real` scrapes,
+sanitises, builds, and runs `vite preview --host`, which prints a LAN address a
+phone or iPad on the same Wi-Fi can open. That delivers what hosting was for —
+real data, real devices, a real production build — at zero cost and zero
+exposure.
+
+Rejected alternatives, both viable if this stops being enough: **Vercel Pro**
+(~$20/month, makes the original design work unchanged) and **Cloudflare Pages +
+Cloudflare Access** (free for up to 50 users and genuinely gated, but a second
+vendor to keep in step with the Vercel-hosted demo preview).
 
 ### The raw scrape can never be uploaded — enforced by filename
 
@@ -156,17 +174,19 @@ accepted direct pushes, which bypassed the Release gate entirely.
 
 ```
 GitHub, automatic
-  any push / PR ──▶ Vercel git build ──▶ reis-extension-preview
-                                          demo data · public · shareable
+  any push / PR ──▶ Vercel ──▶ reis-extension-preview
+                               demo data · public · shareable
 
 Dominik's laptop, on demand
-  npm run preview:real ──┬─ scrape:real      (.env credentials, Playwright)
-                         ├─ sanitise         → public/preview-data.json
+  npm run preview:real ──┬─ scrape:real   (.env credentials, Playwright)
+                         ├─ sanitise      → public/preview-data.json
                          ├─ build:web:real
-                         └─ vercel deploy --prebuilt --prod
-                                  └──▶ reis-extension-real
-                                        real data · login-gated · Dominik only
+                         └─ vite preview --host
+                                  └──▶ http://<lan-ip>:4173
+                                        real data · never leaves the LAN
 ```
+
+Nothing derived from the scrape reaches GitHub or any host.
 
 The two halves share only the repository. No credential, no scraped byte and no
 sanitiser output ever reaches GitHub.
@@ -247,42 +267,26 @@ unchanged.
 sanitiser:
 
 ```
-scrape:real  →  sanitise:snapshot  →  build:web:real  →  vercel deploy --prebuilt --prod
+scrape:real  →  sanitise:snapshot  →  build:web:real  →  vite preview --host
 ```
 
 - Reads `MENDELU_USER` / `MENDELU_PASS` from `.env`, exactly as `scrape:real`
-  does today. Nothing new is stored anywhere.
-- Deploys with the already-authenticated `vercel` CLI, naming the project
-  explicitly rather than relying on `.vercel/project.json` (gitignored, and
-  already pointing at the public project). Fails with a readable message if the
-  CLI is not logged in.
-- **Fails loudly and deploys nothing** if the scrape fails, if the sanitiser
-  rejects an unknown field, or if `public/preview-data.json` is missing. There
-  is no demo fallback: serving demo data from the URL that is supposed to hold
+  already does. Nothing new is stored anywhere.
+- `vite preview` serves the **built** output with the SPA fallback, so this is
+  the production bundle rather than the dev server — which is the point; the
+  dev harness already showed real data, and the gap was that the built app had
+  never been exercised against it.
+- `--host` prints a LAN address, so the same build can be opened on a phone or
+  iPad on the same Wi-Fi. That was the only thing hosting actually bought.
+- **Fails loudly and serves nothing** if the scrape fails, if the sanitiser
+  rejects an unknown field, or if `public/preview-data.json` is missing. No
+  demo fallback: serving demo data from the command that is supposed to show
   real data is how someone draws a confident conclusion from the wrong dataset.
-- Never runs in CI. No workflow references it, and the repository holds no
-  MENDELU credential — see the decision above.
+- Never runs in CI, and the repository holds no MENDELU credential.
 
-**Staleness must be visible.** Because refreshing is manual, the deployed page
-has to say how old its data is, or a screen that looks wrong for the wrong
-reason will cost an afternoon. The snapshot already carries `lastSync`; the
-real-data build surfaces that date on the page. This is the one piece of
-preview-only chrome the design admits, and it earns its place: without it the
-build is indistinguishable from a fresh one.
-
-## Component 4 — the Vercel project
-
-`reis-extension-real`, created via the API like the first one:
-
-- **No git integration** — it is deployed only by the Action, so a push cannot
-  race it.
-- `ssoProtection: { deploymentType: "all_except_custom_domains" }` — Vercel
-  Authentication, so only the account owner can open any of its URLs. Verified
-  working on this account earlier today.
-- Environment: `VITE_DEV_SOCIETY=reis`, `VITE_PREVIEW_BUILD=true`,
-  `VITE_PREVIEW_DATA=real`. The `VITE_VERCEL_` prefix stays allowlisted; the
-  platform injects it regardless.
-- `autoExposeSystemEnvs: false`, matching the first project.
+**Staleness is visible.** Refreshing is manual, so the page shows the
+snapshot's `lastSync` age. An unreadable, zero, null or future timestamp reads
+"snapshot date unknown" rather than a fabricated day count.
 
 ## Testing
 
@@ -300,8 +304,8 @@ build is indistinguishable from a fresh one.
 - CI keeps its existing decoy-file assertion that `dev-real-data.json` is
   stripped; a second assertion covers the real-data build.
 - The deployed page shows the snapshot's `lastSync` date.
-- **Manual, once, and the acceptance test for the whole thing:** open the gated
-  URL logged out and confirm it refuses; open it logged in and confirm real
+- **Manual, once, and the acceptance test for the whole thing:** run
+  `preview:real` and confirm real
   subjects, the 19 files and the study plan render; confirm no classmate is
   named; confirm `performance.getEntriesByType('resource')` shows no
   `track_daily_usage`, no `report_error_v2` and no `is.mendelu.cz`.
@@ -312,15 +316,10 @@ build is indistinguishable from a fresh one.
    parameterise `SNAPSHOT_URL`, with tests. Nothing else works until this does.
 2. Sanitiser + tests. Runs locally against the real snapshot; nothing deployed.
 3. Real-data build mode + tests. Verified by serving `dist-web/` locally.
-4. Create the Vercel project, SSO on, deploy once by hand from a laptop to
-   prove the gate and the data.
-5. Wire `preview:real` and run it once end to end. That first run is the
-   acceptance test: gate refuses when logged out, real data renders when logged
-   in, no classmate is named, no Supabase write fires.
-
-Steps 1–3 are useful alone: they give a local real-data build with other
-people's identities removed, which is worth having whether or not it is ever
-deployed.
+4. Wire `preview:real` and run it once end to end. Confirm real data renders in
+   the built app, the age badge reads today, no classmate is named, and no
+   Supabase write or `is.mendelu.cz` request fires.
+5. Open the LAN address on a phone and confirm the same.
 
 ## Out of scope
 

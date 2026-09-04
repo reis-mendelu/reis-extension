@@ -47,7 +47,8 @@
     "android:feature-graphic": "node scripts/gen-feature-graphic.mjs",
     "ios:version": "tsx --tsconfig tsconfig.app.json scripts/sync-ios-version.ts",
     "store:shots": "node scripts/store-shots.mjs",
-    "check:native": "node scripts/check-native-plugins.mjs"
+    "check:native": "node scripts/check-native-plugins.mjs",
+    "preview:real": "npm run scrape:real && npm run sanitise:snapshot && npm run build:web:real && vite preview --config vite.web.build.config.ts --host"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
