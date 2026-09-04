@@ -74,20 +74,18 @@ This decision replaces an earlier one — `VITE_USE_MOCK_DATA=true` — which wa
 stops the fetch loop. It is also already shipped — it exists in the App Store
 binary for the same "reviewer with no account" purpose.
 
-**Two banners, on purpose.** `DemoBanner` already exists and is
-non-dismissible, but `App.tsx:49` mounts `MobileApp` only when `isPhone`, so it
-appears at phone widths only — a desktop viewer would get no warning at all.
-The preview's own banner is kept because it is the only one at desktop widths
-and the only place that says writes are not saved, which `DemoBanner` never
-claims.
+**No components the real app does not have.** The preview ships the reIS app
+and nothing else — no preview-only banner, no deployment chrome. A build that
+carries extra components is no longer the thing being reviewed, and every such
+component is one more thing to keep in step with the real UI.
 
-**Real data never leaves the client.** `public/dev-real-data.json` is a real
-student record, is gitignored, and `wxt.config.ts`'s `build:publicAssets` hook
-strips it from production builds. reIS's published claim is that all processing
-is client-side and no student data is stored externally. Hosting a real snapshot
-would contradict that claim even behind a login, because the data would have
-left the client and be resident on a third-party host. Real-data verification
-stays local, via the `dev-real-data` skill. This is permanent, not a v1 limit.
+The app's own `DemoBanner` therefore carries the whole message, and it says
+"Ukázka" with a way out. Two consequences are accepted deliberately:
+`App.tsx:49` mounts `MobileApp` only when `isPhone`, so **at desktop widths the
+preview carries no banner at all**; and nothing anywhere states that writes are
+not saved. Anyone reading the preview as evidence that a publish works is
+reading it wrong — that limit lives in this document and in `CLAUDE.md`, not on
+the page.
 
 ### Rejected
 
@@ -154,7 +152,7 @@ dev-server plugins. Entry stays `dev/index.html`.
 | Variable | Value | Why |
 |---|---|---|
 | `VITE_DEV_SOCIETY` | `reis` | fakes the society session; blocks the Supabase sign-in |
-| `VITE_PREVIEW_BUILD` | `true` | boots demo mode, paints the banner, enables the harness overrides |
+| `VITE_PREVIEW_BUILD` | `true` | boots demo mode and enables the harness overrides |
 
 Nothing else. `VITE_USE_MOCK_DATA` is deliberately **not** set — see the demo
 mode decision above for why it does not work. Vite inlines `VITE_*` into the bundle, so anything added here is
@@ -176,12 +174,19 @@ first-run welcome screen, the `apply()` resize wiring and an HMR dispose. All of
 it is wanted on the preview — `?welcome=1` is how the welcome screen becomes
 reachable there at all — and none of it exposes anything.
 
-**A banner.** The deployed page carries a persistent, non-dismissible banner
-stating that the data is synthetic and that writes are not saved. Two things are
-easy to forget and expensive to forget: this is not real data, and a publish
-that appears to succeed here is not evidence a publish works
-(`VITE_DEV_SOCIETY=reis` routes writes to an in-memory store). The banner is
-rendered only when `VITE_PREVIEW_BUILD === 'true'`.
+**No preview-only chrome.** Earlier drafts added a banner here saying the data
+was synthetic and writes were not saved. It was built, then removed: the preview
+must be the app, not the app plus deployment furniture. See the decision above
+for what is accepted in exchange.
+
+**Stripping the real snapshot.** `vite.web.config.ts` sets `publicDir` to the
+repo's `public/`, which holds `public/dev-real-data.json` — a real scraped
+record of a real student. The build copied it into `dist-web/` (verified: 306KB
+of real data in the output), and the rollout tells you to run `vercel --prod`
+from a laptop, so a local build plus that command would have published one
+person's grades to a public URL. The build now deletes it after the copy step
+and **exits non-zero if it survives**, matching the guarantee `wxt.config.ts`'s
+`build:publicAssets` hook already gives extension builds.
 
 ### What the preview proves, and what it does not
 
@@ -306,7 +311,11 @@ Three things to confirm at setup:
 - `vitest` — the widened `phoneOverride` guard: override active when
   `VITE_PREVIEW_BUILD` is `true` and `DEV` is false; inactive when both are
   false.
-- `vitest` — the preview banner renders only under `VITE_PREVIEW_BUILD`.
+- `vitest` — `bootDemoMode` enters demo mode only under `VITE_PREVIEW_BUILD`,
+  never on a local dev server (where `enterDemo`'s wipe would destroy a
+  developer's real snapshot).
+- `vitest` — the build strips `dev-real-data.json`, and fails loudly if it
+  survives.
 - `npm run build:web` in CI on every PR, so the build target cannot rot
   unnoticed the way an unbuilt config would.
 - `build:web` fails closed if `VITE_EXTENSION_SECRET` or any `VITE_SUPABASE_*`
