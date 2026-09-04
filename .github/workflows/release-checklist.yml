@@ -7,7 +7,13 @@ name: Release checklist
 
 on:
   pull_request:
-    types: [opened, reopened]
+    # `edited` fires when a PR's base branch changes. Without it, a PR
+    # retargeted from some other branch to `main` (picking up the `test` head
+    # ref along the way) never runs this workflow and merges with no
+    # checklist. Safe to add: the job below is idempotent (it checks the
+    # BEGIN marker and exits early), so a second run on the same PR — e.g. an
+    # unrelated title edit — cannot append a duplicate block.
+    types: [opened, edited, reopened]
     branches:
       - main
 
