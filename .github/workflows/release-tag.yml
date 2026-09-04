@@ -1,0 +1,62 @@
+name: Release tag
+
+# On a merge into main, push the tag that publish.yml already listens for. The
+# version itself is bumped in the release PR, so what gets submitted is visible
+# in a diff before the irreversible step.
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+# Serialize: two merges in quick succession must not race two taggings.
+concurrency:
+  group: release-tag
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag the release
+    runs-on: ubuntu-latest
+    permissions:
+      # Pushing a tag is a write to the repository.
+      contents: write
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Tags are needed to tell an already-released version from a new one.
+          fetch-depth: 0
+
+      - name: Push v<version> if it does not exist yet
+        run: |
+          set -euo pipefail
+
+          version="$(node -p "require('./package.json').version")"
+          if [ -z "$version" ]; then
+            echo "::error::package.json has no version field."
+            exit 1
+          fi
+          tag="v$version"
+
+          # The load-bearing check. Without it, ANY later push to main — a
+          # README fix, a back-merge — re-pushes an existing tag or re-submits a
+          # version the stores have already reviewed and will reject.
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag already exists — nothing to release. (Bump the version in the release PR to ship a new one.)"
+            exit 0
+          fi
+
+          # Also check the remote: a tag pushed from a laptop may not be in this
+          # checkout's refs if it was created after the clone.
+          if [ -n "$(git ls-remote --tags origin "refs/tags/$tag")" ]; then
+            echo "$tag already exists on the remote — nothing to release."
+            exit 0
+          fi
+
+          git tag "$tag"
+          git push origin "$tag"
+          echo "Pushed $tag. publish.yml will submit to Chrome, Firefox and Edge."
