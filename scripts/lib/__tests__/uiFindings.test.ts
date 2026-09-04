@@ -45,6 +45,27 @@ describe('analyzeProbe — horizontal overflow', () => {
   // and there is no scrollbar to hint that anything is missing.
   // Leaflet lays tiles beyond the map pane and clips them. Reporting those
   // produced 26 failures on the map screen alone — enough to fail every PR.
+  // The exclusion must stay narrow: app content living inside the map — a
+  // control, a popup, one of reIS's own overlays — can genuinely overflow, and
+  // marking the whole .leaflet-container subtree would have hidden all of it.
+  it('still reports an app-owned element inside the map that is NOT in a geometry pane', () => {
+    const f = analyzeProbe(
+      probe(
+        [
+          el({
+            sel: 'div.leaflet-control',
+            rect: { x: 0, y: 100, w: 900, h: 40 },
+            insideInnerClip: false,
+          }),
+        ],
+        { width: 320, docScrollWidth: 320, docClientWidth: 320 }
+      )
+    );
+    expect(f.some((x) => x.kind === 'overflow-element' && x.sel === 'div.leaflet-control')).toBe(
+      true
+    );
+  });
+
   it('ignores an element inside a third-party clipper', () => {
     const f = analyzeProbe(
       probe(

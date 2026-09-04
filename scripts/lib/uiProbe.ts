@@ -73,7 +73,14 @@ export function probeSource(): ProbeResult {
   // scrolling screen container, which is most of the app, and silently killed
   // the check for the second time. Verified by re-injecting a 1400px row and
   // watching it go unreported.
-  const THIRD_PARTY_CLIPPERS = '.leaflet-container';
+  // Leaflet's own geometry panes, NOT the whole `.leaflet-container`. The
+  // container's subtree also holds map controls, popups and reIS's own
+  // overlays — all app-owned content that CAN genuinely overflow and must
+  // still be reported. Only the two panes Leaflet transform-positions beyond
+  // the viewport are excused: the tile pane, and the overlay pane that carries
+  // the zoom-animated SVG and its paths. Those were the exact selectors that
+  // produced 26 false failures.
+  const THIRD_PARTY_CLIPPERS = '.leaflet-tile-pane, .leaflet-overlay-pane';
   const insideThirdPartyClipper = (node: HTMLElement): boolean =>
     node.closest(THIRD_PARTY_CLIPPERS) !== null;
 
