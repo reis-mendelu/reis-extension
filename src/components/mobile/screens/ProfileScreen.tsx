@@ -23,6 +23,8 @@ import { SignOutConfirm } from '../sheets/SignOutConfirm';
 import { PersonPhoto } from '../../ui/PersonPhoto';
 import { AboutSection } from './profile/AboutSection';
 import { NavRow } from '../primitives/NavRow';
+import { mapAppOptions } from '../../../utils/mapAppOptions';
+import { nativeMapPlatform } from '../../../mobile/nativeMapPlatform';
 import { ScreenHeader } from './calendar/ScreenHeader';
 
 function initials(name: string): string {
@@ -56,6 +58,10 @@ export function ProfileScreen() {
   const pushSheet = useAppStore((s) => s.pushSheet);
   const preferredMapApp = useAppStore((s) => s.preferredMapApp);
   const setPreferredMapApp = useAppStore((s) => s.setPreferredMapApp);
+  // Platform read on every render rather than memoised: it is a synchronous
+  // property of the device, and the options depend on the stored preference,
+  // which changes under the student's thumb.
+  const mapAppChoices = mapAppOptions(nativeMapPlatform(), preferredMapApp);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const plan = useStudyPlan();
   const [spolkyOpen, setSpolkyOpen] = useState(false);
@@ -175,26 +181,39 @@ export function ProfileScreen() {
           onClick={() => pushSheet({ kind: 'docs' })}
         />
 
-        {/* Only once a choice has been remembered — which is the ONLY moment
-            this row has anything to say, and the only moment Profil can afford
-            it. The venue sheet is where the preference is set, and it stops
-            opening the moment it is set, so without this there is no way back
-            to being asked. */}
-        {preferredMapApp && (
-          <button
-            type="button"
-            onClick={() => void setPreferredMapApp(null)}
-            className="flex w-full items-center gap-3 px-4 py-2 text-left"
-          >
+        {/* A segmented control, shaped like the language row above it — NOT a
+            row that is itself a button.
+
+            It was one `<button>` spanning the width whose `onClick` cleared the
+            preference, rendered only `{preferredMapApp && …}`. Those two facts
+            together made it a control that deleted the reason it was on screen:
+            a tap anywhere, including on the word "Mapy", unmounted the row.
+            Reported as "clicking anywhere on mapy row in the settings makes it
+            disappear".
+
+            It also read as two controls and was one — the current value and
+            "Vždy se zeptat" sat side by side as separate spans, and neither was
+            the thing you pressed. Now each option is its own button, "ask" is
+            one of them rather than the absence of the row, and the row stays
+            put whichever is on. */}
+        {mapAppChoices.length > 0 && (
+          <div data-testid="map-app-row" className="flex items-center gap-3 px-4 py-2.5">
             <MapIcon size={16} className="flex-shrink-0 text-base-content/50" />
             <span className="min-w-0 flex-1 text-md font-medium">{t('map.mapApp')}</span>
-            <span className="flex-shrink-0 text-2sm text-base-content/60">
-              {preferredMapApp === 'apple' ? t('map.openInAppleMaps') : t('map.openInGoogleMaps')}
-            </span>
-            <span className="flex-shrink-0 text-2sm font-medium text-primary">
-              {t('map.mapAppAsk')}
-            </span>
-          </button>
+            <div className="join flex-shrink-0">
+              {mapAppChoices.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  aria-pressed={o.selected}
+                  onClick={() => void setPreferredMapApp(o.id === 'ask' ? null : o.id)}
+                  className={`join-item btn btn-xs ${o.selected ? 'btn-primary' : 'btn-ghost opacity-60'}`}
+                >
+                  {t(o.labelKey)}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
 
         <HiddenItemsSection />
