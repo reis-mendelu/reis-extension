@@ -59,11 +59,7 @@ export function EventDetailCard({ event, flush = false }: { event: MapEvent; flu
   });
 
   return (
-    <div
-      className={
-        flush ? '' : 'overflow-hidden rounded-lg border border-base-300 bg-base-100'
-      }
-    >
+    <div className={flush ? '' : 'overflow-hidden rounded-lg border border-base-300 bg-base-100'}>
       <div className="space-y-3 p-3">
         {/* identity: avatar + title + host */}
         <div className="flex items-center gap-3">

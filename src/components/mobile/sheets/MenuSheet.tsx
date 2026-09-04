@@ -39,7 +39,10 @@ export function MenuSheet({ dayIso, onClose }: MenuSheetProps) {
     <Sheet size="content" onClose={onClose}>
       <SheetHeader
         title={t('menu.title')}
-        subtitle={formatHeaderDate(new Date(`${dayIso}T00:00:00`), language === 'cz' ? 'cs' : language)}
+        subtitle={formatHeaderDate(
+          new Date(`${dayIso}T00:00:00`),
+          language === 'cz' ? 'cs' : language
+        )}
         onClose={onClose}
       />
       {!current ? (

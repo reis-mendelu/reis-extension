@@ -12,7 +12,8 @@ const storageMock = {
     remove: vi.fn(),
     clear: vi.fn(),
   },
-  sync: { // Keep sync mocked even if we don't use it, to prevent crashes
+  sync: {
+    // Keep sync mocked even if we don't use it, to prevent crashes
     get: vi.fn(),
     set: vi.fn(),
     remove: vi.fn(),
@@ -21,7 +22,7 @@ const storageMock = {
   onChanged: {
     addListener: vi.fn(),
     removeListener: vi.fn(),
-  }
+  },
 };
 
 // Partial mock of chrome.runtime
@@ -55,5 +56,6 @@ vi.stubGlobal('chrome', {
  * phone tests. A test that wants the tablet says so, by widening the viewport
  * itself.
  */
-(window as unknown as { happyDOM?: { setViewport(v: { width: number; height: number }): void } })
-  .happyDOM?.setViewport({ width: 390, height: 844 });
+(
+  window as unknown as { happyDOM?: { setViewport(v: { width: number; height: number }): void } }
+).happyDOM?.setViewport({ width: 390, height: 844 });

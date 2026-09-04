@@ -20,18 +20,36 @@ vi.mock('../../services/storage', () => ({
 // FACULTY_TO_ASSOCIATION: '1'->af, '2'->supef, '3'->au_frrms, '4'->zf, '5'->ldf
 vi.mock('../../services/spolky/config', () => ({
   FACULTY_TO_ASSOCIATION: {
-    'AF': 'af',
-    'PEF': 'supef',
-    'FRRMS': 'au_frrms',
-    'ZF': 'zf',
-    'LDF': 'ldf',
+    AF: 'af',
+    PEF: 'supef',
+    FRRMS: 'au_frrms',
+    ZF: 'zf',
+    LDF: 'ldf',
   },
 }));
 
 function makeUser(facultyLabel: string | null, isErasmus: boolean) {
   return facultyLabel
-    ? { studium: 's', obdobi: 'o', facultyId: '', facultyLabel, username: 'u', studentId: 'id', fullName: 'Test', isErasmus }
-    : { studium: 's', obdobi: 'o', facultyId: '', facultyLabel: '', username: 'u', studentId: 'id', fullName: 'Test', isErasmus };
+    ? {
+        studium: 's',
+        obdobi: 'o',
+        facultyId: '',
+        facultyLabel,
+        username: 'u',
+        studentId: 'id',
+        fullName: 'Test',
+        isErasmus,
+      }
+    : {
+        studium: 's',
+        obdobi: 'o',
+        facultyId: '',
+        facultyLabel: '',
+        username: 'u',
+        studentId: 'id',
+        fullName: 'Test',
+        isErasmus,
+      };
 }
 
 beforeEach(() => {
@@ -49,11 +67,11 @@ describe('fresh user — faculty auto-subscription', () => {
   });
 
   it.each([
-    ['AF',     'AF',    'af'],
-    ['PEF',    'PEF',   'supef'],
+    ['AF', 'AF', 'af'],
+    ['PEF', 'PEF', 'supef'],
     ['AU/FRRMS', 'FRRMS', 'au_frrms'],
-    ['ZF',     'ZF',    'zf'],
-    ['LDF',    'LDF',   'ldf'],
+    ['ZF', 'ZF', 'zf'],
+    ['LDF', 'LDF', 'ldf'],
   ])('%s faculty → subscribes to %s', async (_label, facultyLabel, expected) => {
     mockGetUserParams.mockResolvedValue(makeUser(facultyLabel, false));
 
@@ -106,7 +124,8 @@ describe('fresh user — faculty auto-subscription', () => {
 describe('returning user — respects saved list', () => {
   it('returns saved associations without modification', async () => {
     mockIDBGet.mockImplementation((store: string, key: string) => {
-      if (store === 'meta' && key === 'reis_subscribed_associations') return Promise.resolve(['ldf', 'esn']);
+      if (store === 'meta' && key === 'reis_subscribed_associations')
+        return Promise.resolve(['ldf', 'esn']);
       return Promise.resolve(undefined);
     });
     mockGetUserParams.mockResolvedValue(makeUser('5', false));
@@ -121,8 +140,10 @@ describe('returning user — respects saved list', () => {
 describe('returning Erasmus user — legacy ESN back-fill', () => {
   it('back-fills ESN when flag not set and ESN missing', async () => {
     mockIDBGet.mockImplementation((store: string, key: string) => {
-      if (store === 'meta' && key === 'reis_subscribed_associations') return Promise.resolve(['af']);
-      if (store === 'meta' && key === 'reis_erasmus_auto_subscribed') return Promise.resolve(undefined);
+      if (store === 'meta' && key === 'reis_subscribed_associations')
+        return Promise.resolve(['af']);
+      if (store === 'meta' && key === 'reis_erasmus_auto_subscribed')
+        return Promise.resolve(undefined);
       return Promise.resolve(undefined);
     });
     mockGetUserParams.mockResolvedValue(makeUser('1', true));
@@ -135,7 +156,8 @@ describe('returning Erasmus user — legacy ESN back-fill', () => {
 
   it('does NOT back-fill ESN when flag already set', async () => {
     mockIDBGet.mockImplementation((store: string, key: string) => {
-      if (store === 'meta' && key === 'reis_subscribed_associations') return Promise.resolve(['af']);
+      if (store === 'meta' && key === 'reis_subscribed_associations')
+        return Promise.resolve(['af']);
       if (store === 'meta' && key === 'reis_erasmus_auto_subscribed') return Promise.resolve(true);
       return Promise.resolve(undefined);
     });
@@ -149,7 +171,8 @@ describe('returning Erasmus user — legacy ESN back-fill', () => {
 
   it('does NOT back-fill ESN when ESN already present', async () => {
     mockIDBGet.mockImplementation((store: string, key: string) => {
-      if (store === 'meta' && key === 'reis_subscribed_associations') return Promise.resolve(['af', 'esn']);
+      if (store === 'meta' && key === 'reis_subscribed_associations')
+        return Promise.resolve(['af', 'esn']);
       return Promise.resolve(undefined);
     });
     mockGetUserParams.mockResolvedValue(makeUser('1', true));

@@ -5,7 +5,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 const TYPE_KEY: Record<DeadlineAlert['type'], string> = {
   'exam-reg-opens': 'deadlines.examRegOpens',
   'exam-reg': 'deadlines.examReg',
-  'assignment': 'deadlines.assignment',
+  assignment: 'deadlines.assignment',
   'cvicny-test': 'deadlines.cvicnyTest',
 };
 
@@ -14,7 +14,7 @@ const TYPE_KEY: Record<DeadlineAlert['type'], string> = {
 const TINT: Record<DeadlineAlert['type'], string> = {
   'exam-reg-opens': 'bg-warning/10 text-warning',
   'exam-reg': 'bg-warning/10 text-warning',
-  'assignment': 'bg-warning/10 text-warning',
+  assignment: 'bg-warning/10 text-warning',
   'cvicny-test': 'bg-success/10 text-success',
 };
 

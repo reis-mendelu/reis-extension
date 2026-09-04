@@ -50,7 +50,6 @@ export function CalendarScreen() {
   const hiddenItems = useAppStore((s) => s.hiddenItems);
   const teachingWeekData = useAppStore((s) => s.teachingWeekData);
 
-
   // The vývěska is no longer mounted here. It was a portal owned by this one
   // screen while the button that opens it ships with every screen's header, so
   // it opened from the calendar tab and nowhere else; it is a sheet in the

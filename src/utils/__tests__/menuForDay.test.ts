@@ -45,7 +45,11 @@ describe('menuForDay', () => {
   it('returns every outlet serving that day, in menu order', () => {
     const out = menuForDay(MENU, new Date(2026, 8, 8));
     expect(out.map((o) => o.outlet)).toEqual(['X', 'KA']);
-    expect(out[0]).toEqual({ outlet: 'X', soup: 'Kuřecí vývar', mainDishes: ['Svíčková', 'Rizoto'] });
+    expect(out[0]).toEqual({
+      outlet: 'X',
+      soup: 'Kuřecí vývar',
+      mainDishes: ['Svíčková', 'Rizoto'],
+    });
     expect(out[1]).toEqual({ outlet: 'KA', soup: null, mainDishes: ['Guláš'] });
   });
 

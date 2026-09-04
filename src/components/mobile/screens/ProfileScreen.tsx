@@ -1,13 +1,5 @@
 import { useState } from 'react';
-import {
-  Moon,
-  Languages,
-  Wifi,
-  FileText,
-  MessageSquarePlus,
-  LogOut,
-  User,
-} from 'lucide-react';
+import { Moon, Languages, Wifi, FileText, MessageSquarePlus, LogOut, User } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTheme } from '../../../hooks/useTheme';
 import { useSpolkySettings } from '../../../hooks/useSpolkySettings';

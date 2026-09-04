@@ -219,4 +219,3 @@ describe('rebaseFixture: odevzdávárny', () => {
     expect(out.odevzdavarny[0]!['deadline']).toBe('01.01.2026 09:00');
   });
 });
-

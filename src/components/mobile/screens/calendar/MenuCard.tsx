@@ -52,9 +52,10 @@ export function MenuCard({ dayIso }: { dayIso: string }) {
   // The first main dish, not the soup. Almost nobody at MENDELU eats the soup,
   // so leading with it summarised the day by the one line most students skip.
   // Soup is the fallback only for an outlet serving nothing else.
-  const lead = outlets.find((o) => o.mainDishes.length)?.mainDishes[0]
-    ?? outlets.find((o) => o.soup)?.soup
-    ?? null;
+  const lead =
+    outlets.find((o) => o.mainDishes.length)?.mainDishes[0] ??
+    outlets.find((o) => o.soup)?.soup ??
+    null;
 
   return (
     // The padding is the wrapper's and the width is the button's. `mx-4` alone

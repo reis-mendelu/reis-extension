@@ -28,7 +28,7 @@ export function useEventsFacultySettings() {
 
   const loadSettings = useCallback(async () => {
     try {
-      let saved = await IndexedDBService.get('meta', STORAGE_KEY) as FacultyKey[] | undefined;
+      let saved = (await IndexedDBService.get('meta', STORAGE_KEY)) as FacultyKey[] | undefined;
 
       if (!saved) {
         const userParams = await getUserParams();
@@ -69,7 +69,7 @@ export function useEventsFacultySettings() {
 
   const toggleFaculty = async (key: FacultyKey) => {
     const next = subscribedFaculties.includes(key)
-      ? subscribedFaculties.filter(k => k !== key)
+      ? subscribedFaculties.filter((k) => k !== key)
       : [...subscribedFaculties, key];
     setSubscribedFaculties(next);
     try {

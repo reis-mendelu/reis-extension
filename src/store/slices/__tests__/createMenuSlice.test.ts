@@ -8,7 +8,12 @@ describe('createMenuSlice', () => {
   beforeEach(() => {
     vi.mocked(apiFetchMenu).mockReset();
     vi.mocked(apiFetchMenu).mockResolvedValue([]);
-    useAppStore.setState({ menu: null, menuLoading: false, menuError: false, demoMode: false } as never);
+    useAppStore.setState({
+      menu: null,
+      menuLoading: false,
+      menuError: false,
+      demoMode: false,
+    } as never);
   });
 
   it('fetches the menu normally', async () => {

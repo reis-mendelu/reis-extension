@@ -66,9 +66,7 @@ describe('NotificationsSheet', () => {
   // the read, so the surface owns it.
   it('marks the feed read once it is open, so the header badge clears', async () => {
     render(<NotificationsSheet onClose={vi.fn()} />);
-    await waitFor(() =>
-      expect(useAppStore.getState().notifications.readIds.has('n1')).toBe(true)
-    );
+    await waitFor(() => expect(useAppStore.getState().notifications.readIds.has('n1')).toBe(true));
   });
 
   // Marking runs off the FILTERED feed, which is empty until useSpolkySettings
@@ -92,9 +90,7 @@ describe('NotificationsSheet', () => {
         data: [notification],
       },
     } as never);
-    await waitFor(() =>
-      expect(useAppStore.getState().notifications.readIds.has('n1')).toBe(true)
-    );
+    await waitFor(() => expect(useAppStore.getState().notifications.readIds.has('n1')).toBe(true));
   });
 });
 
@@ -145,4 +141,3 @@ describe('NotificationsSheet — deadline alerts', () => {
     );
   });
 });
-

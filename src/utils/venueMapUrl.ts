@@ -33,11 +33,7 @@ function encodeVenue(name: string): string {
   return encodeURIComponent(name).replace(/\(/g, '%28').replace(/\)/g, '%29');
 }
 
-export function venueMapUrl(
-  coord: [number, number],
-  label: string,
-  platform: MapPlatform
-): string {
+export function venueMapUrl(coord: [number, number], label: string, platform: MapPlatform): string {
   const [lng, lat] = coord;
   const at = `${lat},${lng}`;
   // A society types its own venue names, so they carry spaces, diacritics and

@@ -149,7 +149,10 @@ export function MapRail() {
       </div>
 
       {showBudova && !selectedEvent && (
-        <div role="tablist" className="mx-5 mb-2 flex flex-shrink-0 gap-1 rounded-lg bg-base-content/5 p-1">
+        <div
+          role="tablist"
+          className="mx-5 mb-2 flex flex-shrink-0 gap-1 rounded-lg bg-base-content/5 p-1"
+        >
           {(['akce', 'budova'] as const).map((key) => (
             <button
               key={key}
@@ -163,7 +166,9 @@ export function MapRail() {
                   : 'text-base-content/60'
               }`}
             >
-              {key === 'akce' ? t('mobile.map.tabEvents') : t('mobile.map.tabBuilding', { name: buildingName })}
+              {key === 'akce'
+                ? t('mobile.map.tabEvents')
+                : t('mobile.map.tabBuilding', { name: buildingName })}
             </button>
           ))}
         </div>

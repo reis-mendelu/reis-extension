@@ -2,12 +2,15 @@ import type { DayMenu, OutletMenu } from '../types/menuTypes';
 import type { Language } from '../store/types';
 import { fetchPublic } from './publicPage';
 
-const LANG_CONFIG: Record<Language, {
-  url: string;
-  outlets: Record<string, string>;
-  soupCategory: string;
-  mainCategory: string;
-}> = {
+const LANG_CONFIG: Record<
+  Language,
+  {
+    url: string;
+    outlets: Record<string, string>;
+    soupCategory: string;
+    mainCategory: string;
+  }
+> = {
   cz: {
     url: 'https://skm.mendelu.cz/stravovani/28603-jidelni-listek',
     outlets: { 'vydejna-x': 'X', 'vydejna-ka': 'KA', 'menza-jak': 'JAK' },
@@ -24,13 +27,13 @@ const LANG_CONFIG: Record<Language, {
 
 function parseDishName(row: Element): string {
   return (
-    row.querySelector('.j-nazev .j-slozeni')?.textContent?.trim()
-    ?? row.querySelector('.j-nazev span')?.textContent?.trim()
-    ?? ''
+    row.querySelector('.j-nazev .j-slozeni')?.textContent?.trim() ??
+    row.querySelector('.j-nazev span')?.textContent?.trim() ??
+    ''
   );
 }
 
-function parseOutlet(container: Element, config: typeof LANG_CONFIG[Language]): DayMenu[] {
+function parseOutlet(container: Element, config: (typeof LANG_CONFIG)[Language]): DayMenu[] {
   const days: DayMenu[] = [];
   const targetCategories = new Set([config.soupCategory, config.mainCategory]);
   const h3s = container.querySelectorAll('h3');
