@@ -7,7 +7,7 @@
 // ~/.appstoreconnect/private_keys/, so that file IS the credential store and
 // this reads from the same place rather than inventing a second one.
 import { createSign } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { ascJwtClaims } from './iosRelease';
@@ -36,13 +36,19 @@ const SETUP_HINT =
  * indistinguishable from a successful one in a scrollback.
  */
 export function resolveAscCredentials(env: NodeJS.ProcessEnv = process.env): AscCredentials {
-  const keyId = env.ASC_KEY_ID?.trim();
+  // The key id is already written on the filename Apple hands out, so an
+  // unset ASC_KEY_ID is inferred rather than demanded — one less thing to keep
+  // in sync between a machine and a secret store. Two keys in the folder is
+  // ambiguous, and guessing which one to release with is not a decision a
+  // script should make.
+  const keyId = env.ASC_KEY_ID?.trim() || soleInstalledKeyId(env);
   const issuerId = env.ASC_ISSUER_ID?.trim();
   if (!keyId || !issuerId) {
     throw new Error(`ASC_KEY_ID and ASC_ISSUER_ID must both be set.\n\n${SETUP_HINT}`);
   }
   const candidates = [
     env.ASC_KEY_PATH,
+    env.ASC_KEY_DIR ? resolve(env.ASC_KEY_DIR, `AuthKey_${keyId}.p8`) : undefined,
     resolve(homedir(), '.appstoreconnect/private_keys', `AuthKey_${keyId}.p8`),
     resolve(homedir(), 'private_keys', `AuthKey_${keyId}.p8`),
   ].filter((p): p is string => Boolean(p));
@@ -53,6 +59,16 @@ export function resolveAscCredentials(env: NodeJS.ProcessEnv = process.env): Asc
     );
   }
   return { keyId, issuerId, keyPath };
+}
+
+/** The key id of the only AuthKey_*.p8 installed, if there is exactly one. */
+function soleInstalledKeyId(env: NodeJS.ProcessEnv): string | undefined {
+  const dir = env.ASC_KEY_DIR ?? resolve(homedir(), '.appstoreconnect/private_keys');
+  if (!existsSync(dir)) return undefined;
+  const ids = readdirSync(dir)
+    .map((name) => /^AuthKey_(.+)\.p8$/.exec(name)?.[1])
+    .filter((id): id is string => Boolean(id));
+  return ids.length === 1 ? ids[0] : undefined;
 }
 
 function base64url(input: Buffer | string): string {

@@ -12,10 +12,8 @@
 //   npm run release:ios -- --tag v5.1.1 # ...and assert HEAD is that tag
 //   npm run release:ios -- --skip-upload
 //
-// Credentials: see resolveAscCredentials() in scripts/lib/ascApi.ts. Without an
-// App Store Connect API key the upload has to be done by hand in Xcode's
-// Organizer, which is why this fails at the start rather than after a
-// ten-minute archive.
+// Credentials and the traps: docs/ios-release.md.
+import { config as loadDotenv } from 'dotenv';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -26,6 +24,11 @@ import { deriveIosVersion, readBundleVersion } from './lib/iosVersion';
 import { assertUploadable, inspectIpa } from './lib/verifyIpa';
 
 const ROOT = process.cwd();
+// ASC_ISSUER_ID lives in the gitignored root .env (the private key itself stays
+// a file in ~/.appstoreconnect/private_keys and never becomes a variable).
+// dotenv does not overwrite what is already in the environment, so an explicit
+// export still wins.
+loadDotenv({ path: resolve(ROOT, '.env'), quiet: true });
 const PBXPROJ = resolve(ROOT, 'ios/App/App.xcodeproj/project.pbxproj');
 // Personal team; deliberately absent from the committed pbxproj so other
 // people's signing is not broken by it. App record 6804832714 / cz.reis.app.
@@ -78,6 +81,22 @@ function preflight(): string {
     if (tagged !== head) fail(`HEAD is not ${wantedTag}. Run: git checkout ${wantedTag}`);
   }
   return version;
+}
+
+/**
+ * Put project.pbxproj back the way the commit has it.
+ *
+ * The stamp is a build artifact, not a source change: leaving it modified
+ * blocks the NEXT release's preflight. ASC is the record of which numbers are
+ * taken, so nothing is lost — and after a failure, reverting is what makes the
+ * retry reuse the number rather than skip one.
+ */
+function restoreVersionStamp() {
+  try {
+    execFileSync('git', ['checkout', '--', 'ios/App/App.xcodeproj/project.pbxproj'], { cwd: ROOT });
+  } catch {
+    console.warn('Could not revert the version stamp in project.pbxproj — check `git status`.');
+  }
 }
 
 async function main() {
@@ -176,4 +195,9 @@ async function main() {
   );
 }
 
-main().catch((err: unknown) => fail(err instanceof Error ? err.message : String(err)));
+main()
+  .then(restoreVersionStamp)
+  .catch((err: unknown) => {
+    restoreVersionStamp();
+    fail(err instanceof Error ? err.message : String(err));
+  });

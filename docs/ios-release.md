@@ -18,36 +18,40 @@ feature PR → test → (bump version) → release PR → main
 The browser extension is not on this train. `publish.yml` is dispatch-only:
 `gh workflow run publish.yml --ref vX.Y.Z -f tag=vX.Y.Z`.
 
-## One-time setup: an App Store Connect API key
+## The App Store Connect API key — already set up
 
-Without it the upload cannot run headless — `xcodebuild -exportArchive` with
-`destination upload` fails with *"Failed to find an account with App Store
-Connect access for team RG38V3SV8X"*, because it needs a signed-in Apple
-account that `xcodebuild` cannot reach. The API key is what replaces that
-account.
+**Done on 2026-09-05.** Team key `reis-release`, role App Manager, key id
+`2LV44GFJUP`. The private key is `~/.appstoreconnect/private_keys/AuthKey_2LV44GFJUP.p8`
+(mode 600), which is where `xcrun altool` looks for it too, and the identifiers
+are in the gitignored root `.env` that `release-ios.ts` loads. The `.p8` is
+never copied into a variable, a secret store or the repo.
 
-1. App Store Connect → **Users and Access** → **Integrations** → **App Store
-   Connect API** → **+**. Name it (e.g. `reis-release`), role **App Manager**.
-2. Download the `.p8`. **Apple allows this exactly once.**
-3. Put it where both this script and `xcrun altool` look for it:
-   ```bash
-   mkdir -p ~/.appstoreconnect/private_keys
-   mv ~/Downloads/AuthKey_<KEYID>.p8 ~/.appstoreconnect/private_keys/
-   ```
-4. Export the identifiers — the key id is in the row, the issuer id is above the
-   table:
-   ```bash
-   export ASC_KEY_ID=<KEYID>
-   export ASC_ISSUER_ID=<ISSUER-UUID>
-   ```
-   Or put both in Infisical: `npm run release:ios` goes through
-   `scripts/with-secrets.mjs`, so they arrive from there without a shell export.
-   The `.p8` itself stays a file on disk and is never put in a secret store or
-   an environment variable.
+**This is what removed the Organizer step.** Before the key, uploading was
+GUI-only: `xcodebuild -exportArchive` with `destination upload` fails with
+*"Failed to find an account with App Store Connect access for team
+RG38V3SV8X"*, because it wants a signed-in Apple account it cannot reach.
+Verified headless with the key on 2026-09-05:
 
-The key is a credential for the whole team account. It is not in the repo, not
-in GitHub Actions, and there is no CI path that needs it — CI cannot sign iOS
-builds here, which is the reason the cut is local.
+```
+$ xcrun altool --list-apps --apiKey 2LV44GFJUP --apiIssuer cc9d1e09-…
+=  Name: reIS — IS MENDELU jednoduše   ID: 6804832714   Bundle ID: cz.reis.app
+```
+
+To replace the key (a lost `.p8` cannot be re-downloaded — Apple allows the
+download exactly once): App Store Connect → Users and Access → Integrations →
+App Store Connect API → **+**, role App Manager, then
+
+```bash
+mkdir -p ~/.appstoreconnect/private_keys
+mv ~/Downloads/AuthKey_<KEYID>.p8 ~/.appstoreconnect/private_keys/
+chmod 600 ~/.appstoreconnect/private_keys/AuthKey_<KEYID>.p8
+```
+
+and update `ASC_KEY_ID` / `ASC_ISSUER_ID` in `.env` — or delete them, since a
+single installed `.p8` has its key id inferred from the filename.
+
+The key authorises the whole team account. It is deliberately **not** in GitHub
+Actions: CI still cannot sign an iOS build here, which is why the cut is local.
 
 ## What the script guarantees
 
@@ -68,6 +72,9 @@ builds here, which is the reason the cut is local.
 - **It stops at upload.** `test` is not a protected branch, so no push should be
   able to reach App Review. Adding the build to a version and submitting is
   done by a person.
+- **It leaves the tree clean.** The version stamp it writes into
+  `project.pbxproj` is reverted afterwards, success or failure — the stamp is a
+  build artifact, and a dirty tree would block the next release's preflight.
 
 ## Traps that have actually bitten
 
