@@ -16,6 +16,7 @@
 import { chromium, type Browser, type Page } from 'playwright';
 import { analyzeProbe, type Finding, type ProbeResult } from './lib/uiFindings';
 import { probeSource } from './lib/uiProbe';
+import { MOBILE_TABS } from '../src/store/types';
 import { createServer, type ViteDevServer } from 'vite';
 import { readdirSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -34,8 +35,20 @@ const PORT = Number(process.env.CHECK_APP_PORT) || 4271;
 /** How long the app gets to settle before the page is judged. */
 const SETTLE_MS = 4000;
 
+/** Minimal shape of the store handle `dev/storeHandle.ts` publishes. */
+type AppStoreHandle = {
+  getState: () => { setMobileTab: (t: string) => void; setTheme: (t: string) => Promise<void> };
+};
+
 /** The widths the app claims to support. Same three `scripts/shot.ts` uses. */
 const WIDTHS = [320, 390, 430];
+
+/**
+ * Both themes, by the value `createThemeSlice` accepts. The slice takes exactly
+ * these two and silently falls back to the dark default for anything else, so
+ * the raw word "light" measures the dark page and looks like it worked.
+ */
+const THEMES = { dark: 'mendelu-dark', light: 'mendelu' } as const;
 
 function parseMode(argv: string[]): 'demo' | 'real' {
   return argv.includes('--real') ? 'real' : 'demo';
@@ -78,16 +91,36 @@ async function collect(page: Page, mode: 'demo' | 'real'): Promise<HealthObserva
     };
   });
 
-  // Layout at every supported width, on the page that is already loaded and
-  // settled — re-navigating would restart the boot and re-run the data load.
-  const visual: Record<number, Finding[]> = {};
-  for (const width of WIDTHS) {
-    await page.setViewportSize({ width, height: 844 });
-    // Let the reflow finish before measuring; a rect read mid-transition
-    // reports a position nothing was ever rendered at.
-    await page.waitForTimeout(400);
-    const probe = (await page.evaluate(probeSource)) as ProbeResult;
-    visual[width] = analyzeProbe(probe);
+  // Every phone tab, both themes, every width.
+  //
+  // Driven through the store rather than by seeding `meta.reis_current_view`:
+  // that key drives the DESKTOP sidebar, and the phone shell reads `mobileTab`
+  // from createMobileUiSlice. Seeding it left all eight "views" rendering the
+  // calendar — a sweep that measured one screen 24 times and reported success.
+  // Clicking the nav instead would key the whole gate on Czech labels.
+  const visual: Record<string, Finding[]> = {};
+  for (const [themeName, themeValue] of Object.entries(THEMES)) {
+    await page.evaluate(async (t) => {
+      await (window as unknown as { __reisStore: AppStoreHandle }).__reisStore
+        .getState()
+        .setTheme(t as never);
+    }, themeValue);
+    for (const tab of MOBILE_TABS) {
+      await page.evaluate((t) => {
+        (window as unknown as { __reisStore: AppStoreHandle }).__reisStore
+          .getState()
+          .setMobileTab(t as never);
+      }, tab);
+      // Let the screen mount and any entrance animation land; a rect read
+      // mid-transition reports a position nothing was ever rendered at.
+      await page.waitForTimeout(600);
+      for (const width of WIDTHS) {
+        await page.setViewportSize({ width, height: 844 });
+        await page.waitForTimeout(300);
+        const probe = (await page.evaluate(probeSource)) as ProbeResult;
+        visual[`${tab} ${width}px ${themeName}`] = analyzeProbe(probe);
+      }
+    }
   }
 
   return {
@@ -145,25 +178,28 @@ async function run(): Promise<number> {
 
     console.log(formatHealthReport(result, mode));
 
-    // Contrast findings are `warn` and never fail a PR, but they are the whole
-    // reason someone would look, so they are printed either way.
-    const warns = Object.entries(observations.visual).flatMap(([w, fs]) =>
-      fs.filter((f) => f.severity === 'warn').map((f) => `  [warn ${f.kind} @${w}px] ${f.detail}`)
+    // Contrast findings are `warn`, never fatal — and deliberately summarised
+    // rather than listed. A full sweep produces ~240 of them, essentially all
+    // in the light theme and essentially all false: the analyzer flags reIS's
+    // green-on-green pills and its deliberately subtle card surfaces, which
+    // look correct on screen (verified by screenshot, not assumed). Printing
+    // that wall on every run is how a gate teaches everyone to ignore it.
+    // Run `npm run verify:ui` when you actually want to look at contrast.
+    const warns = Object.entries(observations.visual).flatMap(([where, fs]) =>
+      fs.filter((f) => f.severity === 'warn').map((f) => ({ where, f }))
     );
     if (warns.length > 0) {
-      console.log(`\n${warns.length} non-blocking layout warning(s):`);
-      for (const line of warns.slice(0, 10)) console.log(line);
-      if (warns.length > 10) console.log(`  … and ${warns.length - 10} more`);
+      const byTheme: Record<string, number> = {};
+      for (const { where } of warns) {
+        const theme = where.endsWith('light') ? 'light' : 'dark';
+        byTheme[theme] = (byTheme[theme] ?? 0) + 1;
+      }
+      const summary = Object.entries(byTheme)
+        .map(([t, n]) => `${n} ${t}`)
+        .join(', ');
+      console.log(`\n${warns.length} contrast warning(s) — not blocking (${summary} theme).`);
     }
-    if (!result.ok) {
-      // The facts behind the verdict, so a CI log needs no second run.
-      console.log(
-        `\n  observed: ${Object.entries(observations.storeCounts)
-          .filter(([, n]) => n > 0)
-          .map(([k, n]) => `${k}=${n}`)
-          .join(' ')} | skeletons=${observations.skeletonCount} | text=${observations.textLength}`
-      );
-    }
+
     return result.ok ? 0 : 1;
   } finally {
     await browser?.close();

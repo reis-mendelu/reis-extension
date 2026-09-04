@@ -62,8 +62,8 @@ export interface HealthObservations {
   outputFiles: string[];
   /** Which data the build was meant to be showing. */
   mode: 'demo' | 'real';
-  /** Layout and contrast findings from `analyzeProbe`, keyed by viewport width. */
-  visual: Record<number, Finding[]>;
+  /** Findings from `analyzeProbe`, keyed by "<view> <width>px <theme>". */
+  visual: Record<string, Finding[]>;
 }
 
 export interface HealthFailure {
@@ -162,11 +162,11 @@ export function evaluateHealth(o: HealthObservations): {
   // it is not — while contrast is `warn`, because its thresholds carry judgement
   // and the repo has pre-existing theme-token findings that must not block an
   // unrelated PR. Warnings are printed, never fatal.
-  for (const [width, findings] of Object.entries(o.visual)) {
+  for (const [where, findings] of Object.entries(o.visual)) {
     for (const f of findings.filter((x) => x.severity === 'error')) {
       failures.push({
-        check: `layout ${f.kind} @${width}px`,
-        detail: f.detail,
+        check: `layout ${f.kind} · ${where}`,
+        detail: `${f.sel} — ${f.detail}`,
       });
     }
   }

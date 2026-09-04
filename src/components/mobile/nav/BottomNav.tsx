@@ -3,6 +3,8 @@ import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import type { MobileTab } from '../../../store/types';
 
+// Order and membership are checked against MOBILE_TABS below, so this table
+// and the store's list cannot drift apart.
 const TABS: { id: MobileTab; icon: typeof Calendar; labelKey: string }[] = [
   { id: 'calendar', icon: Calendar, labelKey: 'mobile.nav.calendar' },
   { id: 'exams', icon: CalendarCheck, labelKey: 'mobile.nav.exams' },

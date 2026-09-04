@@ -418,7 +418,16 @@ export interface ViewportSlice {
 // behind the header avatar and carries far too much a student goes looking for
 // (eduroam, documents, societies, hidden items, sign-out) to be one tap deep on
 // one screen.
-export type MobileTab = 'calendar' | 'exams' | 'subjects' | 'map' | 'profile';
+/**
+ * Every tab the phone shell can be on, in nav order. The single source of
+ * truth: `MobileTab` is derived from it, so a tab cannot be added to one and
+ * forgotten in the other — the same reason `APP_VIEWS` exists for the desktop
+ * views. `scripts/check-app.ts` sweeps this list, so a new tab is measured at
+ * every width and in both themes without anyone remembering to add it.
+ */
+export const MOBILE_TABS = ['calendar', 'exams', 'subjects', 'map', 'profile'] as const;
+
+export type MobileTab = (typeof MOBILE_TABS)[number];
 // Three stops: `half` shows the campus events while the map is still in view,
 // and is where the sheet opens. See primitives/sheetDrag.ts.
 export type MapSheetState = 'peek' | 'half' | 'expanded';

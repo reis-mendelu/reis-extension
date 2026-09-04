@@ -13,7 +13,7 @@ const healthy: HealthObservations = {
   textLength: 900,
   outputFiles: ['index.html', 'preview-data.json', 'assets'],
   mode: 'real',
-  visual: { 320: [], 390: [], 430: [] },
+  visual: { 'calendar 320px dark': [], 'calendar 390px dark': [] },
 };
 
 describe('evaluateHealth', () => {
@@ -174,29 +174,50 @@ describe('layout findings', () => {
   };
 
   it('fails on horizontal overflow, naming the width', () => {
-    const r = evaluateHealth({ ...healthy, visual: { ...healthy.visual, 320: [overflow] } });
+    const r = evaluateHealth({
+      ...healthy,
+      visual: { ...healthy.visual, 'subjects 320px light': [overflow] },
+    });
     expect(r.ok).toBe(false);
-    expect(r.failures.map((f) => f.check)).toContain('layout overflow @320px');
+    expect(r.failures.map((f) => f.check)).toContain('layout overflow · subjects 320px light');
   });
 
   it('fails on a collision', () => {
     const collision = { ...overflow, kind: 'collision' as const, detail: 'a covers b' };
-    const r = evaluateHealth({ ...healthy, visual: { ...healthy.visual, 430: [collision] } });
-    expect(r.failures.map((f) => f.check)).toContain('layout collision @430px');
+    const r = evaluateHealth({
+      ...healthy,
+      visual: { ...healthy.visual, 'map 430px dark': [collision] },
+    });
+    expect(r.failures.map((f) => f.check)).toContain('layout collision · map 430px dark');
   });
 
   // Contrast carries judgement and this repo has pre-existing theme-token
   // findings. Failing on them would block unrelated PRs until someone muted the
   // gate, which is how a useful gate dies.
   it('does NOT fail on a contrast warning', () => {
-    const r = evaluateHealth({ ...healthy, visual: { ...healthy.visual, 390: [lowContrast] } });
+    const r = evaluateHealth({
+      ...healthy,
+      visual: { ...healthy.visual, 'exams 390px light': [lowContrast] },
+    });
     expect(r.ok).toBe(true);
   });
 
-  it('reports a failure at each width independently', () => {
+  it('names the element in the failure, so the log is actionable alone', () => {
     const r = evaluateHealth({
       ...healthy,
-      visual: { 320: [overflow], 390: [], 430: [overflow] },
+      visual: { ...healthy.visual, 'subjects 320px dark': [overflow] },
+    });
+    expect(r.failures[0]!.detail).toContain('div.some-panel');
+  });
+
+  it('reports a failure at each view/width/theme independently', () => {
+    const r = evaluateHealth({
+      ...healthy,
+      visual: {
+        'calendar 320px dark': [overflow],
+        'calendar 390px dark': [],
+        'settings 430px light': [overflow],
+      },
     });
     expect(r.failures.filter((f) => f.check.startsWith('layout'))).toHaveLength(2);
   });

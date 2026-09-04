@@ -66,7 +66,16 @@ describe('NotificationsSheet', () => {
   // the read, so the surface owns it.
   it('marks the feed read once it is open, so the header badge clears', async () => {
     render(<NotificationsSheet onClose={vi.fn()} />);
-    await waitFor(() => expect(useAppStore.getState().notifications.readIds.has('n1')).toBe(true));
+    // Explicit timeout, above waitFor's 1000ms default. The sheet's mark-read
+    // effect is gated on `settingsLoading` from useSpolkySettings, which
+    // resolves off an IndexedDB read — fast locally, not always inside a second
+    // on a loaded CI runner. This test failed intermittently on three separate
+    // PRs for that reason alone, which costs a re-run and, worse, teaches
+    // everyone that a red check might mean nothing. It asserts that the feed
+    // gets marked read, not how quickly.
+    await waitFor(() => expect(useAppStore.getState().notifications.readIds.has('n1')).toBe(true), {
+      timeout: 5000,
+    });
   });
 
   // Marking runs off the FILTERED feed, which is empty until useSpolkySettings
