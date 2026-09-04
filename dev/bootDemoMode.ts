@@ -1,7 +1,7 @@
 import { useAppStore } from '../src/store/useAppStore';
 import { logError } from '../src/utils/reportError';
 import { isPreviewBuild, type HarnessEnv } from '../src/utils/harnessEnabled';
-import { loadRealDataSnapshot } from '../src/services/loadRealDataSnapshot';
+import { loadRealDataSnapshot, resetRealDataStores } from '../src/services/loadRealDataSnapshot';
 
 /**
  * Whether to put the app into demo mode at boot.
@@ -37,6 +37,14 @@ export function shouldLoadRealData(
 /**
  * Re-reads the IndexedDB stores `enterDemo()` just seeded back into the
  * Zustand store.
+ *
+ * Demo-branch only. On the real-data branch the snapshot's own
+ * `REIS_SYNC_UPDATE` handler is what populates the store — this function is
+ * never called there, and must not be: `loadRealDataSnapshot()` resolves as
+ * soon as `window.postMessage` returns, before that handler has necessarily
+ * run, so calling this immediately afterward would read whatever is
+ * *currently* in IndexedDB (possibly nothing yet) and publish it as
+ * `status: 'success'`.
  *
  * `MockManager.loadDataset` (called by `enterDemo`) writes ONLY to IndexedDB —
  * `exams`, `schedule`, `study_plan`, and the `study_stats` / `study_comparison`
@@ -77,8 +85,9 @@ async function refreshDemoData(): Promise<void> {
  * has no study plan or stats. `enterDemo()` loads `MOCK_REGISTRY.demo`, sets
  * those flags and a fabricated identity, and puts the store into the state that
  * makes `createContextSlice` skip the IS Mendelu fetch that a browser can only
- * answer with a CORS error anyway. `refreshDemoData()` (see above) is what
- * actually gets the seeded data from IndexedDB onto the screen.
+ * answer with a CORS error anyway. On THIS branch, `refreshDemoData()` (see
+ * above) is what actually gets the seeded data from IndexedDB onto the screen
+ * — the real-data branch below gets there a different way.
  *
  * `deps` exists so the decision and the calls can be tested without a store.
  */
@@ -88,10 +97,12 @@ export async function bootDemoMode(
     enterDemo: () => Promise<void>;
     refresh: () => Promise<void>;
     loadSnapshot: (url: string) => Promise<boolean>;
+    resetRealDataStores: (url: string) => Promise<boolean>;
   } = {
     enterDemo: () => useAppStore.getState().enterDemo(),
     refresh: refreshDemoData,
     loadSnapshot: (url: string) => loadRealDataSnapshot(url),
+    resetRealDataStores: (url: string) => resetRealDataStores(url),
   }
 ): Promise<void> {
   if (!shouldBootDemoMode(env)) return;
@@ -101,11 +112,23 @@ export async function bootDemoMode(
       // app booted) and stays on — here it means "offline", not "fake". That is
       // what keeps createContextSlice from calling IS Mendelu and feedback.ts
       // from writing track_daily_usage. Only the data source differs.
+      //
+      // Clear stale IndexedDB stores BEFORE requesting the snapshot: a store
+      // the snapshot omits must end up empty, not carrying over content from
+      // an earlier demo/mock session on the same origin.
+      await deps.resetRealDataStores(PREVIEW_DATA_URL);
       await deps.loadSnapshot(PREVIEW_DATA_URL);
+      // No deps.refresh() here. loadSnapshot() (loadRealDataSnapshot) resolves
+      // as soon as window.postMessage RETURNS — delivery of REIS_SYNC_UPDATE
+      // is a queued task, not a microtask — so the snapshot's own message
+      // handler has not necessarily written anything yet. Calling refresh()
+      // here would read IndexedDB before that handler runs and briefly
+      // publish an empty-but-"success" state; only the handler running
+      // afterward is what actually populates the store on this path.
     } else {
       await deps.enterDemo();
+      await deps.refresh();
     }
-    await deps.refresh();
     return;
   } catch (err) {
     // A failed demo boot must not take the page down with it — the shell and
