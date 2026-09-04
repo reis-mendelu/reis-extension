@@ -334,12 +334,6 @@
       "addImage": "Add image",
       "removeImage": "Remove image",
       "imageQuotaFull": "Storage is full — the image could not be saved."
-    },
-    "teacherRating": {
-      "strict": "strict",
-      "fair": "fair",
-      "generous": "generous",
-      "rate": "rate?"
     }
   },
   "zaznamnik": {

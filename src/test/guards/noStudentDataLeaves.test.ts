@@ -65,14 +65,6 @@ const SUPABASE_CALLERS = new Set([
   'src/services/spolky/spolkyService.ts',
   // Reads the public society events feed. No student data in either direction.
   'src/api/mapEvents.ts',
-  // Teacher grading votes. p_teacher_id is STAFF, not a student. The vote id is
-  // now scoped per teacher (crypto.randomUUID() under reis_grading_vote_<id>),
-  // so two votes by the same student are unlinkable — a single persistent
-  // session id previously let the server reconstruct a course load from the set
-  // of teachers voted on. Note `get_subject_rating_counts` still takes a raw
-  // person id as an unauthenticated read argument, so any named teacher's
-  // ratings remain enumerable; that is a staff-data concern, not student data.
-  'src/components/SubjectFileDrawer/Header/TeacherGradingPill.tsx',
 ]);
 
 /**
