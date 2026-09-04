@@ -1,8 +1,8 @@
 name: Release gate
 
 # Gates every PR into `main`. Only the release train may reach production:
-# `main` is what publish.yml turns into a store submission, and a store
-# submission cannot be taken back.
+# a merge into `main` pushes the `v*` tag the App Store build is cut from, and
+# a build uploaded under a version number can never be reused.
 #
 #   head == test   -> this repo's own `test`, and CI's `Build web preview` job
 #                     must have PASSED for this exact SHA. That job builds the
