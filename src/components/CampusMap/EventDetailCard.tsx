@@ -119,6 +119,11 @@ export function EventDetailCard({ event, flush = false }: { event: MapEvent; flu
                 href={venueMapUrl(event.coord, event.location ?? '', 'web')}
                 target="_blank"
                 rel="noopener noreferrer"
+                // Tells the global external-link handler to keep its hands off:
+                // it runs in the capture phase, so preventing the default below
+                // is too late to stop it and the venue opened twice. See
+                // `externalHrefFromClick`.
+                data-native-open="true"
                 onClick={(e) => {
                   if (getPlatform().kind !== 'capacitor') return;
                   e.preventDefault();

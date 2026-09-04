@@ -903,7 +903,10 @@
     },
     "studyRooms": "Studovny",
     "reminderLead": "Za 2 hodiny",
-    "finished": "proběhlo"
+    "finished": "proběhlo",
+    "openInMaps": "Otevřít v mapách",
+    "openInAppleMaps": "Apple Mapy",
+    "openInGoogleMaps": "Google Maps"
   },
   "admin": {
     "email": "E-mail",

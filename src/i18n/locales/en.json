@@ -903,7 +903,10 @@
     },
     "studyRooms": "Study rooms",
     "reminderLead": "In 2 hours",
-    "finished": "finished"
+    "finished": "finished",
+    "openInMaps": "Open in Maps",
+    "openInAppleMaps": "Apple Maps",
+    "openInGoogleMaps": "Google Maps"
   },
   "admin": {
     "email": "Email",

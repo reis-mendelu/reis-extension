@@ -59,3 +59,46 @@ export function venueMapUrl(
   }
   return `https://www.google.com/maps/search/?api=1&query=${at}`;
 }
+
+export interface VenueMapChoice {
+  id: 'apple' | 'google' | 'system';
+  /** i18n key for the row's label. */
+  labelKey: string;
+  url: string;
+}
+
+/**
+ * The map apps worth offering, per platform.
+ *
+ * Android needs no list: `geo:` IS the chooser, so the system already asks and
+ * a sheet of our own would be a menu that opens a menu.
+ *
+ * iOS has no chooser at all — `maps:` goes straight to Apple Maps and nothing
+ * asks — so the choice has to be offered in the app.
+ *
+ * Google's entry is an https URL rather than `comgooglemaps://`, deliberately.
+ * Querying that scheme needs `LSApplicationQueriesSchemes` in Info.plist, and
+ * opening one that is not installed does nothing whatsoever: a dead tap, which
+ * is the worst outcome for a row the student deliberately chose. iOS hands the
+ * universal link to the Google Maps app when it is installed and to Safari when
+ * it is not, so the row always does something.
+ */
+export function venueMapChoices(
+  coord: [number, number],
+  label: string,
+  platform: MapPlatform
+): VenueMapChoice[] {
+  if (platform === 'ios') {
+    return [
+      { id: 'apple', labelKey: 'map.openInAppleMaps', url: venueMapUrl(coord, label, 'ios') },
+      { id: 'google', labelKey: 'map.openInGoogleMaps', url: venueMapUrl(coord, label, 'web') },
+    ];
+  }
+  return [
+    {
+      id: 'system',
+      labelKey: 'map.openInMaps',
+      url: venueMapUrl(coord, label, platform),
+    },
+  ];
+}

@@ -1,6 +1,7 @@
 import { getPlatform } from '../platform';
 import { openExternal } from './openExternal';
-import { venueMapUrl } from '../utils/venueMapUrl';
+import { venueMapUrl, venueMapChoices } from '../utils/venueMapUrl';
+import { useAppStore } from '../store/useAppStore';
 
 /**
  * Send a student to a venue in a real map app.
@@ -28,5 +29,13 @@ export async function openVenue(coord: [number, number], label: string): Promise
   }
   const { Capacitor } = await import('@capacitor/core');
   const platform = Capacitor.getPlatform() === 'android' ? 'android' : 'ios';
-  window.location.href = venueMapUrl(coord, label, platform);
+  const choices = venueMapChoices(coord, label, platform);
+  // One option means the SYSTEM is the chooser — Android's `geo:` already asks
+  // which map app to use, and putting our own sheet in front of it would be a
+  // menu that opens a menu. Only iOS, which never asks, gets one from us.
+  if (choices.length === 1) {
+    window.location.href = choices[0]!.url;
+    return;
+  }
+  useAppStore.getState().pushSheet({ kind: 'venue', coord, label, platform });
 }
