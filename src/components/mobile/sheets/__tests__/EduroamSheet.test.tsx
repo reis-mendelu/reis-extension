@@ -202,14 +202,6 @@ describe('EduroamSheet', () => {
     expect(screen.getByText(/není v dosahu/)).toBeInTheDocument();
   });
 
-  it('shows it for the off-campus outcome too', () => {
-    onPhone({ status: 'done', outcome: 'saved-not-joined' });
-
-    render(<EduroamSheet onClose={vi.fn()} />);
-
-    expect(screen.getByText(/není v dosahu/)).toBeInTheDocument();
-  });
-
   // Nothing was applied on that path, so iOS raises no alert and there is
   // nothing to pre-empt — the note would be describing a message that will
   // never arrive.

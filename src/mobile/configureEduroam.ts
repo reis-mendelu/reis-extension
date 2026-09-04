@@ -41,41 +41,22 @@ export type EduroamConfigOutcome =
    * Android has no equivalent. Its ADD_WIFI_RESULT_ALREADY_EXISTS means a saved
    * network configuration exists, which is a real credential.
    */
-  | 'stale-association'
-  /**
-   * iOS only. The configuration IS installed, but the device did not join —
-   * almost always because eduroam is not in range, which is the normal case for
-   * a student setting this up at home right after installing.
-   *
-   * `NEHotspotConfigurationManager.apply` saves AND associates in one call, so
-   * an association it cannot perform comes back as an error over a
-   * configuration that persisted. Reported as "when I'm off the campus ... it
-   * says unable to join. Even though we've configured the network, and that was
-   * the goal."
-   *
-   * A success, and it must read as one: the goal was to configure the network,
-   * and iOS will join it by itself once the SSID appears. Distinct from `saved`
-   * only so the copy can say why the wi-fi did not change.
-   *
-   * Android has no equivalent: `addNetworkSuggestions` only ever saves, it does
-   * not attempt to join, so being out of range cannot colour its result.
-   */
-  | 'saved-not-joined';
+  | 'stale-association';
 
 /**
  * Did setup actually install the network?
  *
  * One predicate for every surface that asks, because they had to agree and
  * were each spelling the list out: `WelcomeScreen`, `WelcomeWifiCard` and
- * `EduroamSheet` all compared against `'saved' || 'already-configured'`, so a
- * fourth success — `saved-not-joined`, the off-campus one — reached a `done`
- * status that no banner recognised and said nothing at all.
+ * `EduroamSheet` all compared against `'saved' || 'already-configured'`
+ * separately, which is two places too many for one question and how a new
+ * success once reached a `done` status that no banner recognised.
  *
  * `stale-association` is deliberately NOT here (#261): iOS installs nothing on
  * that path.
  */
 export function isEduroamConfigured(outcome: EduroamConfigOutcome | null): boolean {
-  return outcome === 'saved' || outcome === 'already-configured' || outcome === 'saved-not-joined';
+  return outcome === 'saved' || outcome === 'already-configured';
 }
 
 /** Android: raw shape the Java plugin resolves with. `perNetwork` is comma-joined ints. */
@@ -137,7 +118,6 @@ const OUTCOMES: readonly string[] = [
   'failed',
   'cancelled',
   'stale-association',
-  'saved-not-joined',
 ];
 
 /**

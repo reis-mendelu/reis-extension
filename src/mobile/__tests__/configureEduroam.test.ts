@@ -83,14 +83,14 @@ describe('interpretAddResult', () => {
  * installing — was told setup had failed when it had worked.
  */
 describe('normalizeOutcome', () => {
-  // Registration matters: OUTCOMES is an allowlist and anything missing from it
-  // fails closed, so a new native outcome would be silently downgraded to
-  // `failed` and the bug would survive the fix.
-  it('passes the off-campus outcome through rather than failing closed', () => {
-    expect(normalizeOutcome({ outcome: 'saved-not-joined' })).toBe('saved-not-joined');
+  // OUTCOMES is an allowlist and anything missing from it fails closed, so a
+  // native outcome that is not registered here is silently downgraded to
+  // `failed`. Worth remembering before adding one on the Swift side.
+  it('fails closed on an outcome the plugin no longer sends', () => {
+    expect(normalizeOutcome({ outcome: 'saved-not-joined' })).toBe('failed');
   });
 
-  it.each(['saved', 'already-configured', 'cancelled', 'failed', 'saved-not-joined'] as const)(
+  it.each(['saved', 'already-configured', 'cancelled', 'failed'] as const)(
     'passes the iOS outcome %s through',
     (outcome) => {
       expect(normalizeOutcome({ outcome })).toBe(outcome);
@@ -202,7 +202,7 @@ describe('stale-association (#261)', () => {
  * said nothing at all. One predicate now, and this is what pins its edges.
  */
 describe('isEduroamConfigured', () => {
-  it.each(['saved', 'already-configured', 'saved-not-joined'] as const)(
+  it.each(['saved', 'already-configured'] as const)(
     'counts %s as configured',
     (outcome) => {
       expect(isEduroamConfigured(outcome)).toBe(true);

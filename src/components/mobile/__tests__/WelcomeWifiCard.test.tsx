@@ -25,31 +25,6 @@ describe('WelcomeWifiCard', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  /**
-   * Off campus, `apply` saves the configuration and then cannot associate,
-   * because the SSID is not in range. That is the LIKELIEST moment for a
-   * student to do this — at home, right after installing — and they were told
-   * "unable to join" over a setup that had worked.
-   *
-   * The hook already routes this to `done` (only `failed` and
-   * `stale-association` are errors), so the risk here is the opposite one: a
-   * done card that recognises neither outcome and says nothing at all.
-   */
-  describe('saved but not joined — set up away from campus', () => {
-    it('reads as done, not as a failure', () => {
-      renderCard({ status: 'done', outcome: 'saved-not-joined' });
-
-      expect(screen.queryByText(/Nepovedlo se|nepodařilo/i)).not.toBeInTheDocument();
-      expect(screen.queryByRole('button')).not.toBeInTheDocument();
-    });
-
-    it('says the network is set up and will connect on campus', () => {
-      renderCard({ status: 'done', outcome: 'saved-not-joined' });
-
-      expect(screen.getByText(/připojíš|připojí/i)).toBeInTheDocument();
-    });
-  });
-
   describe('stale association (#261)', () => {
     /**
      * The regression this pins: iOS answers `alreadyAssociated` whenever the

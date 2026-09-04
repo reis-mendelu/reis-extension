@@ -1,18 +1,6 @@
 import { useState } from 'react';
-import {
-  Moon,
-  Languages,
-  Wifi,
-  FileText,
-  MessageSquarePlus,
-  LogOut,
-  User,
-  // Aliased: bare `Map` shadows the global Map constructor and TS then reads
-  // the JSX tag as `MapConstructor`.
-  Map as MapIcon,
-} from 'lucide-react';
+import { Wifi, FileText, MessageSquarePlus, LogOut, User } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
-import { useTheme } from '../../../hooks/useTheme';
 import { useSpolkySettings } from '../../../hooks/useSpolkySettings';
 import { useStudyPlan } from '../../../hooks/useStudyPlan';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -23,8 +11,8 @@ import { SignOutConfirm } from '../sheets/SignOutConfirm';
 import { PersonPhoto } from '../../ui/PersonPhoto';
 import { AboutSection } from './profile/AboutSection';
 import { NavRow } from '../primitives/NavRow';
-import { mapAppOptions } from '../../../utils/mapAppOptions';
-import { nativeMapPlatform } from '../../../mobile/nativeMapPlatform';
+import { MapAppRow } from './profile/MapAppRow';
+import { AppearanceRows } from './profile/AppearanceRows';
 import { ScreenHeader } from './calendar/ScreenHeader';
 
 function initials(name: string): string {
@@ -51,17 +39,8 @@ function initials(name: string): string {
 export function ProfileScreen() {
   const { t } = useTranslation();
   const fullName = useAppStore((s) => s.fullName);
-  const language = useAppStore((s) => s.language);
-  const setLanguage = useAppStore((s) => s.setLanguage);
-  const { isDark, toggle: toggleTheme } = useTheme();
   const { isSubscribed, toggleAssociation } = useSpolkySettings();
   const pushSheet = useAppStore((s) => s.pushSheet);
-  const preferredMapApp = useAppStore((s) => s.preferredMapApp);
-  const setPreferredMapApp = useAppStore((s) => s.setPreferredMapApp);
-  // Platform read on every render rather than memoised: it is a synchronous
-  // property of the device, and the options depend on the stored preference,
-  // which changes under the student's thumb.
-  const mapAppChoices = mapAppOptions(nativeMapPlatform(), preferredMapApp);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const plan = useStudyPlan();
   const [spolkyOpen, setSpolkyOpen] = useState(false);
@@ -123,39 +102,7 @@ export function ProfileScreen() {
         <div className="px-4 pb-0.5 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
           {t('mobile.profile.appearance')}
         </div>
-        {/* No caption under the label. A dark-mode switch does not need one,
-            and "šetří oči i baterku" was a second line of type for a control
-            whose entire meaning is its own name. */}
-        <label className="flex items-center gap-3 px-4 py-2.5">
-          <Moon size={16} className="flex-shrink-0 text-base-content/50" />
-          <span className="min-w-0 flex-1 text-md font-medium">{t('settings.darkMode')}</span>
-          <input
-            type="checkbox"
-            className="toggle toggle-primary toggle-sm"
-            checked={isDark}
-            onChange={toggleTheme}
-          />
-        </label>
-        <div className="flex items-center gap-3 px-4 py-2.5">
-          <Languages size={16} className="flex-shrink-0 text-base-content/50" />
-          <span className="flex-1 text-md font-medium">{t('settings.language')}</span>
-          <div className="join">
-            <button
-              type="button"
-              onClick={() => setLanguage('cz')}
-              className={`join-item btn btn-xs ${language === 'cz' ? 'btn-primary' : 'btn-ghost opacity-60'}`}
-            >
-              {t('settings.czech')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setLanguage('en')}
-              className={`join-item btn btn-xs ${language === 'en' ? 'btn-primary' : 'btn-ghost opacity-60'}`}
-            >
-              {t('settings.english')}
-            </button>
-          </div>
-        </div>
+        <AppearanceRows />
 
         <div className="px-4 pb-0.5 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
           {t('mobile.profile.settings')}
@@ -181,40 +128,7 @@ export function ProfileScreen() {
           onClick={() => pushSheet({ kind: 'docs' })}
         />
 
-        {/* A segmented control, shaped like the language row above it — NOT a
-            row that is itself a button.
-
-            It was one `<button>` spanning the width whose `onClick` cleared the
-            preference, rendered only `{preferredMapApp && …}`. Those two facts
-            together made it a control that deleted the reason it was on screen:
-            a tap anywhere, including on the word "Mapy", unmounted the row.
-            Reported as "clicking anywhere on mapy row in the settings makes it
-            disappear".
-
-            It also read as two controls and was one — the current value and
-            "Vždy se zeptat" sat side by side as separate spans, and neither was
-            the thing you pressed. Now each option is its own button, "ask" is
-            one of them rather than the absence of the row, and the row stays
-            put whichever is on. */}
-        {mapAppChoices.length > 0 && (
-          <div data-testid="map-app-row" className="flex items-center gap-3 px-4 py-2.5">
-            <MapIcon size={16} className="flex-shrink-0 text-base-content/50" />
-            <span className="min-w-0 flex-1 text-md font-medium">{t('map.mapApp')}</span>
-            <div className="join flex-shrink-0">
-              {mapAppChoices.map((o) => (
-                <button
-                  key={o.id}
-                  type="button"
-                  aria-pressed={o.selected}
-                  onClick={() => void setPreferredMapApp(o.id === 'ask' ? null : o.id)}
-                  className={`join-item btn btn-xs ${o.selected ? 'btn-primary' : 'btn-ghost opacity-60'}`}
-                >
-                  {t(o.labelKey)}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        <MapAppRow />
 
         <HiddenItemsSection />
 

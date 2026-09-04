@@ -17,7 +17,14 @@ export function nativeMapPlatform(): MapPlatform {
   const forced = devForcedPlatform();
   if (forced) return forced;
   if (getPlatform().kind !== 'capacitor') return 'web';
-  return Capacitor.getPlatform() === 'android' ? 'android' : 'ios';
+  // Both native values named, and anything else — including Capacitor's own
+  // `web` — falling to `web`. The ternary this replaces read
+  // `=== 'android' ? 'android' : 'ios'`, so a `web` result claimed to be an
+  // iPhone and Profil offered a map-app choice that `openVenue` would never
+  // consult. `nativeEduroamTarget` handles its own platform the same explicit
+  // way, for the same reason.
+  const os = Capacitor.getPlatform();
+  return os === 'ios' || os === 'android' ? os : 'web';
 }
 
 /**
