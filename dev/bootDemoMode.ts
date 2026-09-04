@@ -1,6 +1,7 @@
 import { useAppStore } from '../src/store/useAppStore';
 import { logError } from '../src/utils/reportError';
 import { isPreviewBuild, type HarnessEnv } from '../src/utils/harnessEnabled';
+import { loadRealDataSnapshot } from '../src/services/loadRealDataSnapshot';
 
 /**
  * Whether to put the app into demo mode at boot.
@@ -15,6 +16,22 @@ import { isPreviewBuild, type HarnessEnv } from '../src/utils/harnessEnabled';
  */
 export function shouldBootDemoMode(env: HarnessEnv): boolean {
   return isPreviewBuild(env);
+}
+
+/** The sanitised snapshot — never the raw `dev-real-data.json`. */
+const PREVIEW_DATA_URL = '/preview-data.json';
+
+/**
+ * Whether this build loads Dominik's real snapshot instead of the demo dataset.
+ *
+ * Requires BOTH flags. The preview-build flag alone must not be enough: a stray
+ * VITE_PREVIEW_DATA in a local .env would otherwise make `dev:web` fetch a file
+ * that is not there and render nothing.
+ */
+export function shouldLoadRealData(
+  env: HarnessEnv & { VITE_PREVIEW_DATA?: string }
+): boolean {
+  return isPreviewBuild(env) && env.VITE_PREVIEW_DATA === 'real';
 }
 
 /**
@@ -66,16 +83,30 @@ async function refreshDemoData(): Promise<void> {
  * `deps` exists so the decision and the calls can be tested without a store.
  */
 export async function bootDemoMode(
-  env: HarnessEnv,
-  deps: { enterDemo: () => Promise<void>; refresh: () => Promise<void> } = {
+  env: HarnessEnv & { VITE_PREVIEW_DATA?: string },
+  deps: {
+    enterDemo: () => Promise<void>;
+    refresh: () => Promise<void>;
+    loadSnapshot: (url: string) => Promise<boolean>;
+  } = {
     enterDemo: () => useAppStore.getState().enterDemo(),
     refresh: refreshDemoData,
+    loadSnapshot: (url: string) => loadRealDataSnapshot(url),
   }
 ): Promise<void> {
   if (!shouldBootDemoMode(env)) return;
   try {
-    await deps.enterDemo();
+    if (shouldLoadRealData(env)) {
+      // Demo mode is already ON (dev/earlyDemoMode.ts set the flag before the
+      // app booted) and stays on — here it means "offline", not "fake". That is
+      // what keeps createContextSlice from calling IS Mendelu and feedback.ts
+      // from writing track_daily_usage. Only the data source differs.
+      await deps.loadSnapshot(PREVIEW_DATA_URL);
+    } else {
+      await deps.enterDemo();
+    }
     await deps.refresh();
+    return;
   } catch (err) {
     // A failed demo boot must not take the page down with it — the shell and
     // the preview banner should still render so the failure is visible.

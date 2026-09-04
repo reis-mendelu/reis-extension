@@ -77,3 +77,40 @@ describe('bootDemoMode', () => {
     expect(refresh).not.toHaveBeenCalled();
   });
 });
+
+describe('shouldLoadRealData', () => {
+  it('is on for a preview build asking for real data', async () => {
+    const { shouldLoadRealData } = await import('../bootDemoMode');
+    expect(shouldLoadRealData({ VITE_PREVIEW_BUILD: 'true', VITE_PREVIEW_DATA: 'real' })).toBe(true);
+  });
+
+  it('is off for the demo preview', async () => {
+    const { shouldLoadRealData } = await import('../bootDemoMode');
+    expect(shouldLoadRealData({ VITE_PREVIEW_BUILD: 'true' })).toBe(false);
+  });
+
+  // Belt and braces: the flag alone must not be enough, so a stray
+  // VITE_PREVIEW_DATA in someone's .env cannot make a local dev server try to
+  // fetch a file that is not there.
+  it('needs the preview build too, not just the data flag', async () => {
+    const { shouldLoadRealData } = await import('../bootDemoMode');
+    expect(shouldLoadRealData({ DEV: true, VITE_PREVIEW_DATA: 'real' })).toBe(false);
+  });
+});
+
+describe('bootDemoMode in real-data mode', () => {
+  it('loads the sanitised snapshot instead of the demo dataset', async () => {
+    const enterDemo = vi.fn().mockResolvedValue(undefined);
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    const loadSnapshot = vi.fn().mockResolvedValue(true);
+    const { bootDemoMode } = await import('../bootDemoMode');
+
+    await bootDemoMode(
+      { VITE_PREVIEW_BUILD: 'true', VITE_PREVIEW_DATA: 'real' },
+      { enterDemo, refresh, loadSnapshot }
+    );
+
+    expect(loadSnapshot).toHaveBeenCalledWith('/preview-data.json');
+    expect(enterDemo).not.toHaveBeenCalled();
+  });
+});

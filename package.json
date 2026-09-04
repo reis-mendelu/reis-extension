@@ -37,6 +37,7 @@
     "dev:web:exams": "REIS_FIXTURE=examSeason vite --config vite.web.config.ts",
     "dev:web:week": "REIS_FIXTURE=teachingWeek vite --config vite.web.config.ts",
     "build:web": "node scripts/assert-web-build-env.mjs && VITE_DEV_SOCIETY=reis VITE_PREVIEW_BUILD=true vite build --config vite.web.build.config.ts",
+    "build:web:real": "test -f public/preview-data.json || (echo 'Missing public/preview-data.json — run npm run sanitise:snapshot first' && exit 1) && VITE_PREVIEW_DATA=real npm run build:web",
     "build:capacitor": "node scripts/with-secrets.mjs vite build --config vite.capacitor.config.ts",
     "cap:sync": "npm run check:native && npm run build:capacitor && npx cap sync && npm run ios:version",
     "cap:android": "npm run cap:sync && npx cap run android",

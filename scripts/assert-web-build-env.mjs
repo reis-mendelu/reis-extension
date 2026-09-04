@@ -13,7 +13,7 @@
 // (PATH, HOME, CI, ...) is left alone, since only VITE_* is what Vite inlines
 // and rejecting anything broader would break the build on every machine.
 
-const ALLOWED_VITE_VARS = ['VITE_DEV_SOCIETY', 'VITE_PREVIEW_BUILD'];
+const ALLOWED_VITE_VARS = ['VITE_DEV_SOCIETY', 'VITE_PREVIEW_BUILD', 'VITE_PREVIEW_DATA'];
 
 // Vercel injects its own build metadata under this prefix and there is no
 // setting that fully stops it: turning off "Automatically expose System
