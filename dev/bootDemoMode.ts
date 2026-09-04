@@ -18,8 +18,13 @@ export function shouldBootDemoMode(env: HarnessEnv): boolean {
   return isPreviewBuild(env);
 }
 
-/** The sanitised snapshot — never the raw `dev-real-data.json`. */
-const PREVIEW_DATA_URL = '/preview-data.json';
+/**
+ * The sanitised snapshot — never the raw `dev-real-data.json`.
+ *
+ * Exported so `main.web.tsx` can re-fetch the same file for `mountSnapshotAge`
+ * without a second literal to drift out of sync with this one.
+ */
+export const PREVIEW_DATA_URL = '/preview-data.json';
 
 /**
  * Whether this build loads Dominik's real snapshot instead of the demo dataset.

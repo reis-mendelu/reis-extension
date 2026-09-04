@@ -41,5 +41,30 @@ import './devAdminSession';
 // The flag itself is already set by now — see earlyDemoMode.ts at the top of
 // this file — this only does the data loading, which needs the store and so
 // cannot happen that early.
-import { bootDemoMode } from './bootDemoMode';
-void bootDemoMode(import.meta.env);
+import { bootDemoMode, shouldLoadRealData, PREVIEW_DATA_URL } from './bootDemoMode';
+
+// Then the snapshot's age, once the data is in — the real-data preview is
+// refreshed by hand, so a stale snapshot has to be visible as stale.
+//
+// `lastSync` is re-read from the snapshot FILE, not the store: bootDemoMode's
+// real-data branch resolves as soon as `window.postMessage` returns, before
+// the app's own REIS_SYNC_UPDATE handler (useAppLogic.ts) has necessarily run
+// — that handler is what would persist `lastSync` to IndexedDB
+// (`meta`/`last_sync`), and it never reaches `syncStatus.lastSync` in the
+// Zustand store at all (setSyncStatus there is called with `{ isSyncing }`
+// only). Reading IndexedDB here would also risk a stale value on a repeat
+// visit: `resetRealDataStores` deliberately excludes the `meta` store. The
+// snapshot response is already cached from `loadSnapshot`'s own fetch, so this
+// costs nothing extra.
+void bootDemoMode(import.meta.env).then(async () => {
+  if (!shouldLoadRealData(import.meta.env)) return;
+  const { mountSnapshotAge } = await import('./snapshotAge');
+  let lastSync: number | undefined;
+  try {
+    const snapshot = await (await fetch(PREVIEW_DATA_URL)).json();
+    lastSync = snapshot?.lastSync;
+  } catch {
+    // mountSnapshotAge renders "snapshot date unknown" for undefined.
+  }
+  mountSnapshotAge(import.meta.env, lastSync);
+});
