@@ -43,6 +43,24 @@ describe('analyzeProbe — horizontal overflow', () => {
   // fire in this app at all — proven by injecting a 2000px element and getting
   // nothing back. Clipped is worse than scrolled: the content is unreachable
   // and there is no scrollbar to hint that anything is missing.
+  // Leaflet lays tiles beyond the map pane and clips them. Reporting those
+  // produced 26 failures on the map screen alone — enough to fail every PR.
+  it('ignores an element inside a third-party clipper', () => {
+    const f = analyzeProbe(
+      probe(
+        [
+          el({
+            sel: 'img.leaflet-tile',
+            rect: { x: -129, y: 100, w: 256, h: 256 },
+            insideInnerClip: true,
+          }),
+        ],
+        { width: 320, docScrollWidth: 320, docClientWidth: 320 }
+      )
+    );
+    expect(kinds(f)).not.toContain('overflow-element');
+  });
+
   it('reports an element hanging off the LEFT edge', () => {
     const f = analyzeProbe(
       probe([el({ sel: 'div.pinned', rect: { x: -20, y: 100, w: 100, h: 40 } })], {

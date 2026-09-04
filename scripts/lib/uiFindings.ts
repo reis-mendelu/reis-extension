@@ -18,6 +18,13 @@ export interface Rect {
 }
 
 export interface ProbeElement {
+  /**
+   * Inside a third-party widget that positions its own internals outside its
+   * box and clips them — Leaflet's tile pane. Such an element sitting past the
+   * viewport is by design. Scoped to named widgets on purpose: excusing
+   * everything with a clipping ancestor excuses most of the app.
+   */
+  insideInnerClip?: boolean;
   /** Stable index within the probe, used to express ancestry. */
   idx: number;
   /** Indices of this element's ancestors, nearest-first. */
@@ -153,6 +160,9 @@ function overflowFindings(p: ProbeResult): Finding[] {
   // do not reach here — the probe's own elementFromPoint occlusion test drops
   // anything whose centre is not the topmost element at that point.
   for (const e of p.elements) {
+    // Leaflet lays its tiles beyond the map pane on purpose and clips them;
+    // measuring those produced 26 failures, enough to fail every PR.
+    if (e.insideInnerClip) continue;
     // BOTH edges. Measuring only the right one let an element at x:-20 sit
     // half off the left of the screen and report nothing — clipped by #root
     // and just as unreachable as one running off the right.

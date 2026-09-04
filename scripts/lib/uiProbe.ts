@@ -64,9 +64,23 @@ export function probeSource(): ProbeResult {
     return (node.tagName.toLowerCase() + (cls ? `.${cls}` : '')).slice(0, 60);
   };
 
+  // Third-party widgets that position their own internals outside their box
+  // and clip them. Leaflet lays tiles beyond the map pane on purpose — 26 of
+  // them were reported as layout failures, enough to fail every PR.
+  //
+  // Deliberately a named-widget exclusion rather than "skip anything with a
+  // clipping ancestor": that broader rule excused every element inside a
+  // scrolling screen container, which is most of the app, and silently killed
+  // the check for the second time. Verified by re-injecting a 1400px row and
+  // watching it go unreported.
+  const THIRD_PARTY_CLIPPERS = '.leaflet-container';
+  const insideThirdPartyClipper = (node: HTMLElement): boolean =>
+    node.closest(THIRD_PARTY_CLIPPERS) !== null;
+
   const elements = nodes.map((node, idx) => {
     const style = getComputedStyle(node);
     const r = node.getBoundingClientRect();
+    const insideInnerClip = insideThirdPartyClipper(node);
 
     const bgChain: { r: number; g: number; b: number; a: number }[] = [];
     const ancestors: number[] = [];
@@ -88,6 +102,7 @@ export function probeSource(): ProbeResult {
       sel: describe(node),
       text: hasDirectText ? (node.textContent ?? '').trim().slice(0, 40) : '',
       rect: { x: r.x, y: r.y, w: r.width, h: r.height },
+      insideInnerClip,
       bg: resolveColor(style.backgroundColor),
       bgChain,
       color: resolveColor(style.color),
