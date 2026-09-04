@@ -144,6 +144,12 @@ browser. Widen the guard to
 is set only on the preview project, so extension and Capacitor builds are
 unaffected.
 
+A single flag is enough because the whole guarded block was read, not just its
+head: it contains the `?mobile=` pin, the `?welcome=1` override that forces the
+first-run welcome screen, the `apply()` resize wiring and an HMR dispose. All of
+it is wanted on the preview — `?welcome=1` is how the welcome screen becomes
+reachable there at all — and none of it exposes anything.
+
 **A banner.** The deployed page carries a persistent, non-dismissible banner
 stating that the data is synthetic and that writes are not saved. Two things are
 easy to forget and expensive to forget: this is not real data, and a publish
@@ -153,24 +159,51 @@ rendered only when `VITE_PREVIEW_BUILD === 'true'`.
 
 ### What the preview proves, and what it does not
 
-Proves: every screen renders, at any viewport, in both themes, against
-synthetic data.
+Proves: the screens the demo dataset covers render, at any viewport, in both
+themes.
+
+`SocietyDataset` carries `exams`, `schedule`, `syllabuses`, `success_rates`,
+`studyPlan`, `studyStats` and `studyComparison`, and `demo.ts` fills all seven.
+It carries **no documents, holidays, campus events or profile**, so those
+screens render their empty states on the preview. That is a known limit, not a
+bug to chase — but it must be written down, or the first person to open the
+documents tab will file it as one. Extending the dataset later is additive and
+needs no plumbing.
 
 Does not prove: the content script, the postMessage IPC, `chrome.storage`,
 manifest permissions, or any real IS Mendelu parse — none of which exist outside
 a loaded extension. Nor that any write works.
 
+Also unverified until step 1 is built: `VITE_USE_MOCK_DATA=true` has only ever
+been exercised through the dev server, never through a production build. If mock
+mode turns out to depend on something dev-only, that surfaces at step 1 — before
+any host is involved, which is why step 1 comes first.
+
 ## Component 2 — the branch model
 
-- `test` is created from `main` and becomes the repository's default branch, so
-  new PRs target it without anyone remembering to retarget.
-- Feature PRs base on `test`. A branch cut from `main` must merge `origin/test`
-  in and retarget before continuing, or it goes stale and conflicts at the next
-  release.
+- `test` is created from `main`.
+- **`main` stays the repository's default branch.** GitHub has no setting for a
+  default PR base independent of the default branch, so "PRs target `test`
+  automatically" would mean flipping the default — and this repository is
+  **public**. The default branch is what a visitor's Code tab, a fresh clone and
+  every "load unpacked from source" instruction resolve to, and pointing that at
+  unreleased code is a regression a private repo like MySoft never has to weigh.
+  The cost of keeping `main` default is that PRs open with the wrong base and a
+  branch cut from the default is cut from `main`. Both are caught rather than
+  prevented: the release gate rejects any PR into `main` whose head is not
+  `test`, with a message saying to retarget.
+- Feature PRs base on `test` — `gh pr create --base test`. A branch cut from
+  `main` must merge `origin/test` in and retarget before continuing, or it goes
+  stale and conflicts at the next release. Document this in `CLAUDE.md`.
 - `main` accepts PRs only from `test` (enforced by the release gate below).
 - Branch protection on `main`: require the release gate check; no force pushes.
 - `test` merges are squash merges; the `test` → `main` release PR is a merge
   commit, so `main`'s history is one commit per release.
+- **`test` is frozen while a release PR is open.** The release PR's head SHA is
+  the tip of `test`, and the gate requires a successful deployment of *that*
+  SHA. Merging into `test` mid-release moves the tip, so the gate either waits
+  on a deployment still building or, worse, reads as flaky. Merge the release
+  first, then resume merging into `test`.
 
 ## Component 3 — the release train
 
@@ -229,11 +262,18 @@ is reviewable before the irreversible step. `publish.yml` itself does not change
 - The three environment variables above, on Production and Preview scopes.
 - Preview deployments left enabled, so every PR gets a URL and a PR comment.
 
-Two things to confirm at setup: Vercel's Hobby tier is non-commercial-only, so
-the `reis-mendelu` org's plan should be checked against this project
-(`reis-page` sets the precedent); and Hobby preview URLs are public but
-unguessable, which is acceptable only because the data is synthetic — another
-reason it must stay synthetic.
+Three things to confirm at setup:
+
+1. **GitHub Deployments are enabled** for the project's Git integration. The
+   release gate queries the GitHub Deployments API; if Vercel is not creating
+   deployment records, the gate has nothing to read and blocks every release.
+   Check this before writing the gate, not after.
+2. **The plan.** Vercel's Hobby tier is non-commercial-only, so the
+   `reis-mendelu` org's plan should be checked against this project
+   (`reis-page` sets the precedent).
+3. **Preview URL visibility.** Hobby preview URLs are public but unguessable,
+   which is acceptable only because the data is synthetic — another reason it
+   must stay synthetic.
 
 ## Testing
 
@@ -257,8 +297,11 @@ it.
 
 1. `vite.web.build.config.ts`, `build:web`, the `phoneOverride` guard, the
    banner, and their tests. Merged to `main` the current way.
-2. Create `test` from `main`; make it the default branch.
-3. Create the Vercel project, production branch `test`. Verify the deployed URL.
+2. Create `test` from `main`. `main` stays the default branch.
+3. Create the Vercel project, production branch `test`. Verify the deployed URL
+   renders subjects, schedule and exams, and that documents, holidays, campus
+   events and profile show their empty states — the expected result, recorded
+   here so it is not mistaken for a broken deploy.
 4. Add the three workflows and the branch protection on `main`.
 5. Rewrite `/release`.
 6. First release PR.
