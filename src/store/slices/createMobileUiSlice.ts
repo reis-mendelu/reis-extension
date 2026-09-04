@@ -20,6 +20,7 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set) => ({
   // pulling the sheet up over the map every time.
   mapSheetState: 'half',
   mapRailWidth: RAIL_PX,
+  mapRailOpen: true,
   mapTab: 'akce',
   devPhoneOverride: null,
   welcomeSeen: null,
@@ -69,6 +70,7 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set) => ({
   // Clamped on the way IN, so nothing downstream — the rail's own width, the
   // camera offset that halves it — ever has to re-check.
   setMapRailWidth: (px) => set({ mapRailWidth: clampRailWidth(px, window.innerWidth) }),
+  setMapRailOpen: (open) => set({ mapRailOpen: open }),
   setMapTab: (tab) => set({ mapTab: tab }),
   setDevPhoneOverride: (value) => set({ devPhoneOverride: value }),
 });

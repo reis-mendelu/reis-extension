@@ -20,9 +20,20 @@ export function useRailResize() {
   const activeRef = useRef(false);
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
+    // Capture is an optimisation, not a precondition — it keeps the moves
+    // coming once the pointer leaves this 12px strip, which it does on the
+    // first frame of any real drag. It THROWS when the pointer id is not
+    // currently active, and having it first meant that throw aborted the
+    // handler before the drag was even armed: the strip highlighted and then
+    // did nothing. Arm first, capture second.
     activeRef.current = true;
     setResizing(true);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Without capture the drag still works while the pointer stays over the
+      // strip, and pointerup/cancel still end it.
+    }
   }, []);
 
   const onPointerMove = useCallback(
@@ -42,8 +53,12 @@ export function useRailResize() {
     if (!activeRef.current) return;
     activeRef.current = false;
     setResizing(false);
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Nothing to release.
     }
   }, []);
 

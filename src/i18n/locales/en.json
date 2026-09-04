@@ -1041,7 +1041,9 @@
       "sheetExpand": "Expand map sheet",
       "sheetCollapse": "Collapse map sheet",
       "noRoomsOnFloor": "No rooms on this floor.",
-      "railResize": "Resize the panel"
+      "railResize": "Resize the panel",
+      "railClose": "Hide panel",
+      "railOpen": "Show panel"
     },
     "welcome": {
       "title": "Welcome to reIS",

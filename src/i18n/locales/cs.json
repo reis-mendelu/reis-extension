@@ -1041,7 +1041,9 @@
       "sheetExpand": "Rozbalit panel mapy",
       "sheetCollapse": "Sbalit panel mapy",
       "noRoomsOnFloor": "Na tomto patře nejsou žádné místnosti.",
-      "railResize": "Změnit šířku panelu"
+      "railResize": "Změnit šířku panelu",
+      "railClose": "Skrýt panel",
+      "railOpen": "Zobrazit panel"
     },
     "welcome": {
       "title": "Vítej v reISu",

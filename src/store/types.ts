@@ -463,6 +463,9 @@ export interface MobileUiSlice {
   /** The tablet rail's width in px. Dragged from its left edge; clamped by
    *  `clampRailWidth`. Ignored on a phone, where the panel is a bottom sheet. */
   mapRailWidth: number;
+  /** Whether the tablet rail is showing. A rail has exactly two states — the
+   *  sheet's three detents are a phone answer to a phone problem. */
+  mapRailOpen: boolean;
   mapTab: MapSheetTab;
   /** Dev-only forced phone/desktop branch. null = defer to viewport. */
   devPhoneOverride: boolean | null;
@@ -482,6 +485,7 @@ export interface MobileUiSlice {
   closeAllSheets: () => void;
   setMapSheetState: (state: MapSheetState) => void;
   setMapRailWidth: (px: number) => void;
+  setMapRailOpen: (open: boolean) => void;
   setMapTab: (tab: MapSheetTab) => void;
   setDevPhoneOverride: (value: boolean | null) => void;
 }
