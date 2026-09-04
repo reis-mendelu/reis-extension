@@ -19,18 +19,19 @@ describe('EduroamDrawer', () => {
     expect(container.querySelector('[role="dialog"]')).toBeNull();
   });
 
-  it('renders the title and four device cards when open', () => {
+  it('renders the title and the desktop device cards when open', () => {
     open();
     render(<EduroamDrawer />);
     expect(screen.getByText('eduroam Wi-Fi')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /iPhone/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Mac/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Windows/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /iPhone/i })).toBeNull();
   });
 
   it('expands a device tutorial on select and returns via "pick another device"', () => {
     open();
     render(<EduroamDrawer />);
-    fireEvent.click(screen.getByRole('button', { name: /Android/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Windows/i }));
     expect(screen.getByText('Set up eduroam')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Pick another device/i }));
     expect(screen.queryByText('Set up eduroam')).toBeNull();

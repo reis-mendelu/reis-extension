@@ -59,8 +59,6 @@ const SUPABASE_CALLERS = new Set([
   'src/api/eventRsvp.ts',
   // Random install id only, since the privacy refactor.
   'src/api/feedback.ts',
-  // eduroam certificate transfer: a short-lived random transfer code.
-  'src/api/eduroamTransfer.ts',
   // Society post view/click counters; sends a post row id and nothing else.
   'src/services/spolky/spolkyService.ts',
   // Reads the public society events feed. No student data in either direction.

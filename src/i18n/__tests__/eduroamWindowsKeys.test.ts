@@ -16,22 +16,18 @@ const FLAT_KEYS = [
   'footer',
   'footerSub',
   'download',
-  'createQr',
   'preparing',
   'error',
   'regenerate',
   'openSettings',
   'privacyNoteLocal',
-  'privacyNoteTransfer',
-  'targetIos',
-  'targetAndroid',
   'targetMac',
   'targetWindows',
 ] as const;
 
 // device -> number of steps in the manual
-const DEVICE_STEPS: Record<string, number> = { ios: 4, android: 3, mac: 4, windows: 3 };
-const DO_ONCE_DEVICES = ['android', 'windows'] as const;
+const DEVICE_STEPS: Record<string, number> = { mac: 4, windows: 3 };
+const DO_ONCE_DEVICES = ['windows'] as const;
 
 // Native-path keys used by the mobile sheet on Android and iOS.
 const NATIVE_KEYS = [
