@@ -1,5 +1,8 @@
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { assertUploadable, type IpaFacts } from '../verifyIpa';
+import { assertUploadable, grepFiles, runCombined, type IpaFacts } from '../verifyIpa';
 
 const good: IpaFacts = {
   authority: 'Apple Distribution: Dominik Holek (RG38V3SV8X)',
@@ -43,5 +46,39 @@ describe('assertUploadable', () => {
     } catch (err) {
       expect(String(err).split('\n  - ')).toHaveLength(4);
     }
+  });
+});
+
+describe('runCombined', () => {
+  it('returns stderr as well as stdout', () => {
+    // The whole point: `codesign -dvvv` prints the Authority lines to stderr
+    // and nothing to stdout, so a stdout-only read made every signed .ipa look
+    // unsigned. This is that bug's regression test.
+    const out = runCombined('sh', ['-c', 'echo on-stdout; echo on-stderr >&2']);
+    expect(out).toContain('on-stdout');
+    expect(out).toContain('on-stderr');
+  });
+});
+
+describe('grepFiles', () => {
+  it('finds the files that contain a needle', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'grep-'));
+    writeFileSync(join(dir, 'bundle.js'), 'await supabase.rpc("report_error", {})');
+    writeFileSync(join(dir, 'clean.js'), 'export const x = 1;');
+    expect(grepFiles(dir, ['report_error', 'sendTelemetry'])).toEqual([join(dir, 'bundle.js')]);
+  });
+
+  it('returns nothing for a clean directory', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'grep-'));
+    writeFileSync(join(dir, 'clean.js'), 'export const x = 1;');
+    expect(grepFiles(dir, ['report_error'])).toEqual([]);
+  });
+
+  it('throws when the scan itself fails rather than reporting a clean bundle', () => {
+    // grep exits 2 here. Read as "no matches", it would let an unscanned
+    // binary upload while the log said the bundle was clean.
+    expect(() => grepFiles(join(tmpdir(), 'no-such-dir-9f3a'), ['report_error'])).toThrow(
+      /NOT scanned/
+    );
   });
 });

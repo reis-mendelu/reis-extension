@@ -24,12 +24,27 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      # Runs BEFORE checkout, on purpose. `inputs.tag` is a free-text field, and
+      # `ref:` accepts a branch name just as happily as a tag — so without this,
+      # dispatching with a branch would run that branch's code (npm ci, wxt
+      # submit, and every postinstall on the way) with the store credentials in
+      # scope. Nothing from the repository is trusted until the ref is a release
+      # tag.
+      - name: Refuse a ref that is not a vX.Y.Z tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::'$TAG' is not a release tag (vX.Y.Z). Refusing to build and submit from an arbitrary ref."
+            exit 1
+          fi
+
       - uses: actions/checkout@v7
         with:
-          # Check out the tag named by the input — the ref the run was
-          # launched from is a separate UI field a human could get out of sync
-          # with it.
-          ref: ${{ inputs.tag }}
+          # refs/tags/ explicitly, never the bare input: a branch and a tag can
+          # share a name, and the bare form resolves the branch first.
+          ref: refs/tags/${{ inputs.tag }}
 
       - uses: actions/setup-node@v7
         with:

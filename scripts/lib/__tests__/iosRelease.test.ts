@@ -3,6 +3,7 @@ import {
   ascJwtClaims,
   exportOptionsPlist,
   nextBundleVersion,
+  parseReleaseArgs,
   parseSigningAuthority,
 } from '../iosRelease';
 
@@ -70,5 +71,26 @@ describe('ascJwtClaims', () => {
     expect(claims.iat).toBe(1_770_000_000);
     expect(claims.exp - claims.iat).toBeLessThanOrEqual(20 * 60);
     expect(claims.exp - claims.iat).toBeGreaterThan(0);
+  });
+});
+
+describe('parseReleaseArgs', () => {
+  it('reads a tag and the skip-upload flag in any order', () => {
+    expect(parseReleaseArgs(['--skip-upload', '--tag', 'v5.1.1'])).toEqual({
+      tag: 'v5.1.1',
+      skipUpload: true,
+    });
+    expect(parseReleaseArgs([])).toEqual({ tag: undefined, skipUpload: false });
+  });
+
+  it('refuses --tag with no value instead of silently releasing HEAD', () => {
+    // `npm run release:ios -- --tag` (a typo, or a shell that ate the value)
+    // must not become the untagged mode and upload an unintended commit.
+    expect(() => parseReleaseArgs(['--tag'])).toThrow(/--tag needs a value/);
+    expect(() => parseReleaseArgs(['--tag', '--skip-upload'])).toThrow(/--tag needs a value/);
+  });
+
+  it('refuses an argument it does not understand', () => {
+    expect(() => parseReleaseArgs(['--upload-now'])).toThrow(/Unknown argument/);
   });
 });

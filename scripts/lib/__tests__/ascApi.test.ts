@@ -2,8 +2,8 @@ import { generateKeyPairSync, createVerify } from 'node:crypto';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { resolveAscCredentials, signAscToken } from '../ascApi';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { listBuildVersions, resolveAscCredentials, signAscToken } from '../ascApi';
 
 function keyFixture() {
   const { privateKey, publicKey } = generateKeyPairSync('ec', {
@@ -88,5 +88,52 @@ describe('signAscToken', () => {
       .update(`${rawHeader}.${rawClaims}`)
       .verify({ key: publicKey, dsaEncoding: 'ieee-p1363' }, signature);
     expect(verified).toBe(true);
+  });
+});
+
+describe('listBuildVersions', () => {
+  const creds = () => {
+    const { keyPath } = keyFixture();
+    return { keyId: 'TESTKEY123', issuerId: 'issuer-uuid', keyPath };
+  };
+  const page = (versions: string[], next?: string) =>
+    new Response(
+      JSON.stringify({
+        data: versions.map((version) => ({ attributes: { version } })),
+        links: next ? { next } : {},
+      }),
+      { status: 200 }
+    );
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('follows links.next instead of stopping at the first page', async () => {
+    // A build number missed here reads as free, and the duplicate only
+    // surfaces when the upload is already finished.
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(page(['50006', '50006.1'], 'https://api.example/next-page'))
+      .mockResolvedValueOnce(page(['50100', '50100.1']));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(listBuildVersions('6804832714', creds())).resolves.toEqual([
+      '50006',
+      '50006.1',
+      '50100',
+      '50100.1',
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[1][0])).toBe('https://api.example/next-page');
+  });
+
+  it('throws rather than returning a short list when a page fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(page(['50100'], 'https://api.example/next-page'))
+        .mockResolvedValueOnce(new Response('nope', { status: 401, statusText: 'Unauthorized' }))
+    );
+    await expect(listBuildVersions('6804832714', creds())).rejects.toThrow(/401/);
   });
 });

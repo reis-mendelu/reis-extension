@@ -110,3 +110,38 @@ export function ascJwtClaims(issuerId: string, nowMs: number = Date.now()): AscJ
   const iat = Math.floor(nowMs / 1000);
   return { iss: issuerId, iat, exp: iat + 15 * 60, aud: 'appstoreconnect-v1' };
 }
+
+export interface ReleaseArgs {
+  /** Assert HEAD is this tag before doing anything irreversible. */
+  tag?: string;
+  skipUpload: boolean;
+}
+
+/**
+ * Parse the release script's arguments.
+ *
+ * `--tag` with no value is a hard error, never "no tag": a trailing `--tag`
+ * (or `--tag --skip-upload`) would otherwise silently become the untagged
+ * HEAD mode and upload a build from whatever commit is checked out.
+ */
+export function parseReleaseArgs(argv: string[]): ReleaseArgs {
+  const args = { tag: undefined as string | undefined, skipUpload: false };
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === '--skip-upload') {
+      args.skipUpload = true;
+    } else if (arg === '--tag') {
+      const next = argv[i + 1];
+      if (next === undefined || next.startsWith('-')) {
+        throw new Error('--tag needs a value, e.g. --tag v5.1.1');
+      }
+      args.tag = next;
+      i++;
+    } else {
+      throw new Error(
+        `Unknown argument '${arg}'. Usage: release:ios [--tag vX.Y.Z] [--skip-upload]`
+      );
+    }
+  }
+  return args;
+}

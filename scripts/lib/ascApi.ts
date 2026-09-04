@@ -102,21 +102,35 @@ export function signAscToken(creds: AscCredentials, nowMs?: number): string {
  * Store Connect deduplicates against all of them.
  */
 export async function listBuildVersions(appId: string, creds: AscCredentials): Promise<string[]> {
-  const url = new URL('https://api.appstoreconnect.apple.com/v1/builds');
-  url.searchParams.set('filter[app]', appId);
-  url.searchParams.set('fields[builds]', 'version');
-  url.searchParams.set('sort', '-version');
-  url.searchParams.set('limit', '200');
+  const first = new URL('https://api.appstoreconnect.apple.com/v1/builds');
+  first.searchParams.set('filter[app]', appId);
+  first.searchParams.set('fields[builds]', 'version');
+  first.searchParams.set('limit', '200');
 
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${signAscToken(creds)}` } });
-  if (!res.ok) {
-    throw new Error(
-      `App Store Connect returned ${res.status} ${res.statusText} for the build list. ` +
-        `Body: ${(await res.text()).slice(0, 500)}`
-    );
+  const versions: string[] = [];
+  // Every page, not just the first: a build number missed here reads as free,
+  // and the duplicate is only rejected at the end of the upload. `sort` is
+  // deliberately not used — ASC orders `version` as a string, so "9" would sort
+  // after "10" and the highest could sit on a page we stopped before.
+  let next: string | undefined = first.toString();
+  while (next) {
+    const res: Response = await fetch(next, {
+      headers: { Authorization: `Bearer ${signAscToken(creds)}` },
+    });
+    if (!res.ok) {
+      throw new Error(
+        `App Store Connect returned ${res.status} ${res.statusText} for the build list. ` +
+          `Body: ${(await res.text()).slice(0, 500)}`
+      );
+    }
+    const body = (await res.json()) as {
+      data?: Array<{ attributes?: { version?: string } }>;
+      links?: { next?: string };
+    };
+    for (const build of body.data ?? []) {
+      if (typeof build.attributes?.version === 'string') versions.push(build.attributes.version);
+    }
+    next = body.links?.next;
   }
-  const body = (await res.json()) as { data?: Array<{ attributes?: { version?: string } }> };
-  return (body.data ?? [])
-    .map((b) => b.attributes?.version)
-    .filter((v): v is string => typeof v === 'string');
+  return versions;
 }

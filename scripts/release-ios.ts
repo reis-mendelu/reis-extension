@@ -19,7 +19,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { listBuildVersions, resolveAscCredentials } from './lib/ascApi';
-import { exportOptionsPlist, nextBundleVersion } from './lib/iosRelease';
+import { exportOptionsPlist, nextBundleVersion, parseReleaseArgs } from './lib/iosRelease';
 import { deriveIosVersion, readBundleVersion } from './lib/iosVersion';
 import { assertUploadable, inspectIpa } from './lib/verifyIpa';
 
@@ -35,14 +35,7 @@ const PBXPROJ = resolve(ROOT, 'ios/App/App.xcodeproj/project.pbxproj');
 const TEAM_ID = process.env.REIS_IOS_TEAM ?? 'RG38V3SV8X';
 const APP_ID = process.env.REIS_ASC_APP_ID ?? '6804832714';
 
-const args = process.argv.slice(2);
-const flag = (name: string) => args.includes(name);
-const value = (name: string) => {
-  const i = args.indexOf(name);
-  return i === -1 ? undefined : args[i + 1];
-};
-const wantedTag = value('--tag');
-const skipUpload = flag('--skip-upload');
+const { tag: wantedTag, skipUpload } = parseReleaseArgs(process.argv.slice(2));
 
 const step = (msg: string) => console.log(`\n\x1b[1m> ${msg}\x1b[0m`);
 const sh = (cmd: string, cmdArgs: string[], env?: NodeJS.ProcessEnv) =>

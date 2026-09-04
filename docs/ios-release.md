@@ -4,7 +4,7 @@ The release train drives **iOS only**. `test` → `main` with a version bump
 pushes `vX.Y.Z`; `npm run release:ios` turns that tag into a build in App Store
 Connect. Nothing submits anything for review automatically.
 
-```
+```text
 feature PR → test → (bump version) → release PR → main
                                                    │
                                     release-tag.yml│ pushes vX.Y.Z, then stops

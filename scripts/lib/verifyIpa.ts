@@ -29,10 +29,31 @@ const run = (cmd: string, args: string[]): string =>
  * unsigned. That is not hypothetical: the first real run of this script
  * refused a correctly signed .ipa for exactly that reason.
  */
-const runCombined = (cmd: string, args: string[]): string => {
+export const runCombined = (cmd: string, args: string[]): string => {
   const res = spawnSync(cmd, args, { encoding: 'utf8' });
   return `${res.stdout ?? ''}${res.stderr ?? ''}`;
 };
+
+/**
+ * Files under `dir` containing any of `needles`.
+ *
+ * grep exits 1 for "no matches" and 2 for a real failure (an unreadable path,
+ * a bad option). Only 1 may be read as clean: swallowing 2 turns "the scan
+ * never ran" into "the scan found nothing", and that difference is a binary
+ * uploaded without ever being checked.
+ */
+export function grepFiles(dir: string, needles: string[]): string[] {
+  const args = ['-rl', ...needles.flatMap((n) => ['-e', n]), dir];
+  const res = spawnSync('grep', args, { encoding: 'utf8' });
+  if (res.error) throw res.error;
+  if (res.status === 1) return [];
+  if (res.status !== 0) {
+    throw new Error(
+      `grep exited ${res.status} while scanning ${dir} — the bundle was NOT scanned: ${res.stderr?.trim()}`
+    );
+  }
+  return res.stdout.split('\n').filter(Boolean);
+}
 
 /** Unzip the ipa to a temp dir and read the facts worth failing on. */
 export function inspectIpa(ipaPath: string): IpaFacts {
@@ -49,21 +70,11 @@ export function inspectIpa(ipaPath: string): IpaFacts {
   const plistValue = (key: string) =>
     run('/usr/libexec/PlistBuddy', ['-c', `Print :${key}`, plist]).trim();
 
-  let telemetryHits: string[] = [];
-  try {
-    telemetryHits = run('grep', ['-rl', '-e', 'report_error', '-e', 'sendTelemetry', app])
-      .split('\n')
-      .filter(Boolean);
-  } catch {
-    // grep exits 1 with no matches, which is the outcome we want.
-    telemetryHits = [];
-  }
-
   return {
     authority: parseSigningAuthority(signing),
     bundleVersion: plistValue('CFBundleVersion'),
     marketingVersion: plistValue('CFBundleShortVersionString'),
-    telemetryHits,
+    telemetryHits: grepFiles(app, ['report_error', 'sendTelemetry']),
   };
 }
 
