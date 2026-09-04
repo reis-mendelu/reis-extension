@@ -9,8 +9,9 @@ import { DemoModeError, isDemoMode } from '../errors/demoMode';
  * On Capacitor a `target="_blank"` link — or a `window.open` — hands the URL to
  * the SYSTEM BROWSER, which has none of the app's IS session. The student taps
  * "Žádost na studijní oddělení" and lands on a login page instead of their
- * document. The in-app browser shares the native cookie jar the transport
- * already seeds, so the same link opens authenticated.
+ * document. An IS link therefore stays in an in-app WebView that is given the
+ * session two ways: a `Cookie` header on the first request, and the host app's
+ * cookie store for every navigation after it.
  */
 
 /** Only these reach a browser; mailto: and tel: belong to the platform. */
@@ -19,12 +20,21 @@ const OPENABLE_PROTOCOL = /^https?:$/;
 /**
  * The one host whose pages need the session the app holds.
  *
- * `capacitorTransport` replays the student's UISAuth into the app's own WebView
- * jar, and only the in-app view can see it. Any third-party link gains
- * nothing from staying inside the app and is better off in the browser the
- * student actually uses.
+ * Only this host is given the session, and only this host gets a WebView that
+ * shares the app's own cookie store. Any third-party link gains nothing from
+ * staying inside the app, is better off in the browser the student actually
+ * uses, and must never be handed a view that can read an IS session.
  */
 const NEEDS_APP_SESSION = /^is\.mendelu\.cz$/i;
+
+/**
+ * The origin the session cookie belongs to.
+ *
+ * The cookie is written against the ORIGIN, not the page URL: a cookie set for
+ * `/auth/student/moje_studium.pl` would not be sent to the rest of IS, and the
+ * whole point is that it survives wherever the student navigates next.
+ */
+const IS_COOKIE_ORIGIN = 'https://is.mendelu.cz';
 
 export function needsAppSession(url: string): boolean {
   try {
@@ -138,16 +148,26 @@ export async function openExternal(url: string): Promise<void> {
     // work, so it arrived at IS unauthenticated and the student was asked to
     // sign in again to read their own document.
     //
-    // The cookie travels as a REQUEST HEADER on the open, not through a cookie
-    // jar. Writing one was the obvious move and it is the wrong one: capgo
-    // gives its WebView a deliberately separate persistent store on iOS 17+
-    // (`WKWebsiteDataStore(forIdentifier:)`, see BrowsingDataStoreSupport),
-    // while `CapacitorCookies` writes to the HOST app's store — so the seeded
-    // cookie would land in a jar this WebView never reads. The plugin applies
-    // `headers` to the request it builds (WKWebViewController.createRequest),
-    // and an explicit `Cookie` header is the same mechanism the native
+    // The cookie travels BOTH ways, and it has to.
+    //
+    // `headers` covers the one request the plugin builds
+    // (WKWebViewController.createRequest) — that is the mechanism the native
     // transport already relies on for iOS (see buildCookieDelivery: on iOS the
-    // header works and seeding the jar alone 403s).
+    // header works and seeding the jar alone 403s). But it is only that one
+    // request. Every link the student taps inside the page is a navigation the
+    // plugin did not build, so it carries no header, and the first version of
+    // this shipped exactly that: "IS cookies don't stay when I click on
+    // external link (they show content but clicking on something shows
+    // required login into IS - strange)". Authenticated page, login screen on
+    // the next tap.
+    //
+    // So the cookie also goes into the jar, which is where a WebView looks on
+    // every navigation. That needs `useSharedDataStore` below: on iOS 17+ capgo
+    // gives its WebView an isolated `WKWebsiteDataStore(forIdentifier:)` (see
+    // BrowsingDataStoreSupport) while `CapacitorCookies` writes to the HOST
+    // app's store, so without the flag a seeded cookie lands in a jar this
+    // WebView never reads — which is why an earlier attempt at this was
+    // abandoned. The flag makes the store the same one.
     //
     // No token — a lapsed session — sends no header at all, deliberately: IS's
     // login page is then the honest destination, and throwing here would make
@@ -164,6 +184,18 @@ export async function openExternal(url: string): Promise<void> {
     const { loadStoredToken } = await import('../platform/tokenStore');
     const token = isSecure ? await loadStoredToken().catch(() => '') : '';
 
+    // Seeded only with a token in hand, and only for the IS branch — this line
+    // is not reached for a third-party link, which goes to the system browser
+    // above and must never be handed a view that can read this session.
+    if (token) {
+      const { CapacitorCookies } = await import('@capacitor/core');
+      await CapacitorCookies.setCookie({
+        url: IS_COOKIE_ORIGIN,
+        key: UIS_AUTH_COOKIE,
+        value: token,
+      });
+    }
+
     await InAppBrowser.openWebView({
       url: target,
       // The host, not a fixed string: the student should be able to see where
@@ -174,6 +206,15 @@ export async function openExternal(url: string): Promise<void> {
       // to zoom and half of them cannot be read on a phone. Android only —
       // iOS's WKWebView zooms by default.
       enableZoom: true,
+      // Use the host app's store rather than the plugin's isolated one, so the
+      // cookie seeded just above is visible to this WebView on EVERY
+      // navigation, not just the request the plugin builds. A no-op on Android,
+      // where cookies are already process-global via `CookieManager` — which is
+      // why Android never showed this and an iPad did.
+      //
+      // Scoped to IS by where this sits: only the needsAppSession branch
+      // reaches it.
+      useSharedDataStore: true,
       ...(token ? { headers: { Cookie: `${UIS_AUTH_COOKIE}=${token}` } } : {}),
     });
   } catch (e) {

@@ -297,10 +297,64 @@ describe('openExternal — the in-app browser needs the session on the request',
     );
   });
 
-  // Writing the cookie into a jar was the obvious fix and the wrong one: capgo
-  // gives its WebView a separate persistent store on iOS 17+, while
-  // CapacitorCookies writes to the host app's — a jar this WebView never reads.
-  it('does not write to the host app cookie jar, which this WebView cannot see', async () => {
+  /**
+   * The header alone was not enough, and this is the half that was missing.
+   *
+   * `headers` is applied to the ONE request the plugin builds
+   * (WKWebViewController.createRequest). Every link the student then taps
+   * inside that page is a navigation the plugin did not build, so it carries
+   * no header — and on iOS 17+ capgo gives its WebView an isolated
+   * `WKWebsiteDataStore`, so there was no jar to fall back on either.
+   *
+   * Reported exactly that way: "IS cookies don't stay when I click on external
+   * link (they show content but clicking on something shows required login
+   * into IS - strange)". First page authenticated, second tap a login screen.
+   *
+   * `useSharedDataStore` (capgo 8.13.6; we run 8.15.3) points the WebView at
+   * `WKWebsiteDataStore.default()` — the host app's store, which is what
+   * `CapacitorCookies` writes to. So the cookie goes in the jar as well, where
+   * it applies to every navigation rather than to one request. This is why the
+   * older assertion here — that the jar must NOT be written, because the
+   * WebView could not see it — no longer holds: the flag is what makes it
+   * visible.
+   */
+  it('seeds the cookie jar the shared store makes readable', async () => {
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
+
+    expect(setCookie).toHaveBeenCalledWith({
+      url: 'https://is.mendelu.cz',
+      key: 'UISAuth',
+      value: 'TOKEN123',
+    });
+  });
+
+  it('opens IS against the host store, so a second tap is still signed in', async () => {
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
+
+    expect(openWebView).toHaveBeenCalledWith(expect.objectContaining({ useSharedDataStore: true }));
+  });
+
+  // The store is shared for IS and nothing else. A third-party page must never
+  // be handed a WebView that can read the student's IS session, and it is not:
+  // it goes to `open()`, the system browser, which never sees these options.
+  it('shares the store with IS only, never with a third-party page', async () => {
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://example.org/whatever');
+
+    expect(setCookie).not.toHaveBeenCalled();
+    expect(openWebView).not.toHaveBeenCalled();
+  });
+
+  // No token means a lapsed session: IS's own login page is the honest
+  // destination, and nothing should be written to the jar on the way there.
+  it('writes nothing when there is no session to write', async () => {
+    vi.doMock('../../platform/tokenStore', () => ({
+      loadStoredToken: vi.fn(async () => {
+        throw new Error('nothing stored');
+      }),
+    }));
     const { openExternal } = await import('../openExternal');
     await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
 
@@ -327,6 +381,9 @@ describe('openExternal — the in-app browser needs the session on the request',
     expect(openWebView).toHaveBeenCalledWith(
       expect.not.objectContaining({ headers: expect.anything() })
     );
+    // And nothing in the jar either: seeding it over plain http would put the
+    // session on the wire the moment the page made any request.
+    expect(setCookie).not.toHaveBeenCalled();
   });
 
   // Losing the session must not swallow the tap: with no token the WebView
@@ -343,6 +400,9 @@ describe('openExternal — the in-app browser needs the session on the request',
     expect(openWebView).toHaveBeenCalledWith(
       expect.not.objectContaining({ headers: expect.anything() })
     );
+    // And nothing in the jar either: seeding it over plain http would put the
+    // session on the wire the moment the page made any request.
+    expect(setCookie).not.toHaveBeenCalled();
   });
 });
 
