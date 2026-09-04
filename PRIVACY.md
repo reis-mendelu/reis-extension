@@ -33,13 +33,7 @@ To understand how actively reIS is used, we record:
 
 **Previously**: until August 2026 these events were keyed on a SHA-256 hash of your student ID. We described that as irreversible. That was wrong — MENDELU student IDs are six or seven digits, so the hash can be reversed by brute force in seconds, which made it a recoverable identifier. We have replaced it in the app, and we have irreversibly re-keyed every historical row: each old hash was passed through HMAC-SHA256 under a random key that was generated for that one operation and immediately discarded. The original hashes cannot be recovered by anyone, including us. We verified this by brute-forcing the entire six- and seven-digit student-ID space against the stored values: zero matches.
 
-### 4. Teacher Grading Feedback (Voluntary)
-If you tap the grading tag on a subject's teacher, we store the tag you chose (e.g. how the subject is graded) against that **teacher's** IS id.
-- **Identity**: the vote carries a **random identifier generated on your device for that one teacher** — not your student ID, and not the same identifier you send for any other teacher. Two votes by the same person cannot be linked to each other.
-- **Why per-teacher**: a single device-wide id would have let the set of teachers you voted on reconstruct your course load, which is academic data. Scoping it to one teacher removes that.
-- **What it is for**: showing other students how a subject is graded. Nothing about you is displayed.
-
-### 5. User Feedback (Voluntary)
+### 4. User Feedback (Voluntary)
 If you use the built-in "Report Bug / Feedback" feature, the following data is sent to our support channel:
 - **Content**: The subject/title, the category you select (bug, idea, or other), the message, and contact details you explicitly provide.
 - **Technical Context**: Extension version, browser name and version, viewport size, and the current in-app screen (e.g. `calendar`, `exams`, `settings` — an app view name, not a URL or page address) to help debug issues.
