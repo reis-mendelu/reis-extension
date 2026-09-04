@@ -109,8 +109,12 @@ export function ProfileScreen() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-24">
-        <div className="px-4 pb-1 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
+      {/* pb-[84px], not pb-24. The floating BottomNav needs 76px of clearance —
+          measured, `innerHeight - nav.top` at 375×780 — and 96 reserved 20px of
+          nothing at the bottom of a screen that must not scroll. 8px of margin
+          over the measurement, so a taller nav does not silently tuck under. */}
+      <div className="flex-1 overflow-y-auto pb-[84px]">
+        <div className="px-4 pb-0.5 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
           {t('mobile.profile.appearance')}
         </div>
         {/* No caption under the label. A dark-mode switch does not need one,
@@ -147,7 +151,7 @@ export function ProfileScreen() {
           </div>
         </div>
 
-        <div className="px-4 pb-1 pt-3 text-xs font-bold uppercase tracking-wider text-base-content/60">
+        <div className="px-4 pb-0.5 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
           {t('mobile.profile.settings')}
         </div>
         {/* eduroam lives here rather than on the Student hub: it is a one-time
@@ -195,7 +199,7 @@ export function ProfileScreen() {
 
         <HiddenItemsSection />
 
-        <div className="px-4 pb-1 pt-3 text-xs font-bold uppercase tracking-wider text-base-content/60">
+        <div className="px-4 pb-0.5 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
           {t('mobile.profile.societies')}
         </div>
         <div className="px-3">
@@ -209,7 +213,7 @@ export function ProfileScreen() {
           />
         </div>
 
-        <div className="mx-4 my-3 h-px bg-base-content/10" />
+        <div className="mx-4 my-2 h-px bg-base-content/10" />
 
         <NavRow
           icon={MessageSquarePlus}

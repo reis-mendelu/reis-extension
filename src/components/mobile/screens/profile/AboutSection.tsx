@@ -39,7 +39,15 @@ export function AboutSection() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col items-center gap-1 px-4 pb-1 pt-2 text-center">
+    <div // Hidden on a short screen, and this is the rule Profil is held to rather
+      // than a nicety: it must not scroll. Measured at 375×667 (iPhone SE, still
+      // shipping) the settings fit EXACTLY — 0px over — and this block is what
+      // pushes them 70px past the fold, or 106px once the map-app row is there.
+      // A colophon is the one thing on this screen that can stand down; the
+      // settings are what the student came for. Everything from 780px up keeps
+      // it, which is every iPhone since the SE and both iPad orientations.
+      className="[@media(max-height:779px)]:hidden flex flex-col items-center gap-1 px-4 pb-1 pt-2 text-center"
+    >
       <span className="text-xs font-bold uppercase tracking-wider text-base-content/60">
         {t('about.partnersLabel')}
       </span>
