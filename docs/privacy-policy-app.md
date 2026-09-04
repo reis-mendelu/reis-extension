@@ -69,10 +69,6 @@ Sign out to delete the token and cookies. Uninstall to delete everything local.
 For feedback you sent, write to the address below and we will delete it; the
 daily-count rows hold nothing that identifies you.
 
-## Children
-
-Intended for university students and staff. Not directed at children.
-
 ## Changes
 
 We may update this policy; changes appear here with a new date. Google Drive
