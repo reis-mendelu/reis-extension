@@ -13,7 +13,16 @@ export const createMenuSlice: AppSlice<MenuSlice> = (set, get) => ({
     // one did not, and now that the calendar carries a jídelníček card the demo
     // boot sat on a pending request for half a minute.
     if (get().demoMode) return;
-    if (!get().menu) set({ menuLoading: true });
+    // The REQUEST guard, and it belongs here rather than in the callers.
+    // `!get().menu` used to gate only the loading flag, so every caller reached
+    // the network — and the desktop has two of them. The component effects are
+    // triggers; the store decides whether a trigger becomes a request.
+    //
+    // Safe against a language switch because that clears `menu`
+    // (useAppStore.ts), which is what reopens this guard. `menuError` is
+    // deliberately not part of it: a failed attempt should be retryable.
+    if (get().menu || get().menuLoading) return;
+    set({ menuLoading: true });
     set({ menuError: false });
     try {
       const data = await fetchMenu(get().language);

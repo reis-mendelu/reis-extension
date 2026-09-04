@@ -35,3 +35,54 @@ describe('createMenuSlice', () => {
     expect(useAppStore.getState().menuError).toBe(false);
   });
 });
+
+describe('createMenuSlice — the store owns the request guard', () => {
+  beforeEach(() => {
+    vi.mocked(apiFetchMenu).mockReset();
+    vi.mocked(apiFetchMenu).mockResolvedValue([]);
+    useAppStore.setState({
+      menu: null,
+      menuLoading: false,
+      menuError: false,
+      demoMode: false,
+    } as never);
+  });
+
+  // CodeRabbit was right and I was wrong in the thread: `!get().menu` gated the
+  // LOADING FLAG, not the request, so every caller hit the network. The desktop
+  // has two components calling this — WeeklyCalendarHeader mounts the popover
+  // content and the header itself — so duplicate in-flight requests were real,
+  // not theoretical.
+  it('does not fire a second request while one is in flight', async () => {
+    let release!: () => void;
+    vi.mocked(apiFetchMenu).mockReturnValue(
+      new Promise((resolve) => {
+        release = () => resolve([]);
+      })
+    );
+    const first = useAppStore.getState().fetchMenu();
+    await useAppStore.getState().fetchMenu();
+    expect(apiFetchMenu).toHaveBeenCalledTimes(1);
+    release();
+    await first;
+  });
+
+  it('does not refetch a menu it already has', async () => {
+    await useAppStore.getState().fetchMenu();
+    expect(apiFetchMenu).toHaveBeenCalledTimes(1);
+    useAppStore.setState({ menu: [{ outlet: 'X', days: [] }] } as never);
+    await useAppStore.getState().fetchMenu();
+    expect(apiFetchMenu).toHaveBeenCalledTimes(1);
+  });
+
+  // The language switch clears `menu` (useAppStore.ts), which is exactly what
+  // reopens the guard — so the guard must not outlive the data it protects.
+  it('fetches again once the language change has cleared the menu', async () => {
+    useAppStore.setState({ menu: [{ outlet: 'X', days: [] }] } as never);
+    await useAppStore.getState().fetchMenu();
+    expect(apiFetchMenu).not.toHaveBeenCalled();
+    useAppStore.setState({ menu: null } as never);
+    await useAppStore.getState().fetchMenu();
+    expect(apiFetchMenu).toHaveBeenCalledTimes(1);
+  });
+});
