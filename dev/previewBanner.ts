@@ -28,8 +28,13 @@ export function mountPreviewBanner(env: HarnessEnv, doc: Document = document): v
   const banner = doc.createElement('div');
   banner.id = BANNER_ID;
   banner.dataset.testid = 'preview-banner';
+  // bottom-24 (96px) rather than bottom-0: the mobile BottomNav pill floats at
+  // bottom-[18px] and is ~56px tall (top edge ~74px from the viewport bottom),
+  // so a flush bottom-0 strip painted over its lower edge. bottom-24 clears it
+  // with room to spare and doesn't collide with anything else pinned to the
+  // top (ScreenHeader/DemoBanner) or bottom (desktop has nothing there).
   banner.className =
-    'fixed bottom-0 inset-x-0 z-50 bg-warning text-warning-content text-xs text-center px-3 py-1';
+    'fixed bottom-24 inset-x-0 z-50 bg-warning text-warning-content text-xs text-center px-3 py-1';
   banner.textContent =
     'Preview build — Sample data, not a real student. Changes here are not saved.';
   doc.body.appendChild(banner);
