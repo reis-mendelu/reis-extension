@@ -7,7 +7,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { isAbsolute, join, resolve } from 'node:path';
 import { parseSigningAuthority } from './iosRelease';
 
 export interface IpaFacts {
@@ -35,6 +35,25 @@ export const runCombined = (cmd: string, args: string[]): string => {
 };
 
 /**
+ * Refuse a path that a command-line tool could read as an option.
+ *
+ * Everything here is spawned WITHOUT a shell (spawnSync/execFileSync with an
+ * argv array), so a hostile file name cannot become a command. What it can
+ * still do is start with `-` and be parsed as a flag by grep, unzip or
+ * codesign — which would make the verification inspect something other than
+ * the build about to be uploaded. Paths reaching these helpers are built with
+ * join() from an absolute temp dir, so this asserts an invariant that already
+ * holds rather than repairing a broken one; it fails loudly if that ever
+ * changes.
+ */
+export function assertSafePath(path: string): string {
+  if (!isAbsolute(path)) {
+    throw new Error(`Refusing to run a tool against the relative path '${path}'.`);
+  }
+  return path;
+}
+
+/**
  * Files under `dir` containing any of `needles`.
  *
  * grep exits 1 for "no matches" and 2 for a real failure (an unreadable path,
@@ -43,7 +62,12 @@ export const runCombined = (cmd: string, args: string[]): string => {
  * uploaded without ever being checked.
  */
 export function grepFiles(dir: string, needles: string[]): string[] {
-  const args = ['-rl', ...needles.flatMap((n) => ['-e', n]), dir];
+  // `--` before the path operand, and an absolute path from assertSafePath():
+  // a directory whose name begins with `-` would otherwise be read as options
+  // rather than as the thing to scan, and the scan would silently cover
+  // something else. No shell is involved anywhere here — spawnSync gets an argv
+  // array — so the names can never become commands.
+  const args = ['-rl', ...needles.flatMap((n) => ['-e', n]), '--', assertSafePath(dir)];
   const res = spawnSync('grep', args, { encoding: 'utf8' });
   if (res.error) throw res.error;
   if (res.status === 1) return [];
@@ -58,11 +82,14 @@ export function grepFiles(dir: string, needles: string[]): string[] {
 /** Unzip the ipa to a temp dir and read the facts worth failing on. */
 export function inspectIpa(ipaPath: string): IpaFacts {
   const dir = mkdtempSync(join(tmpdir(), 'reis-ipa-'));
-  run('unzip', ['-q', ipaPath, '-d', dir]);
+  run('unzip', ['-q', assertSafePath(resolve(ipaPath)), '-d', dir]);
   const payload = join(dir, 'Payload');
-  const appName = readdirSync(payload).find((e) => e.endsWith('.app'));
+  // The bundle name comes out of the archive, so it is the one value here this
+  // process did not choose. A name with a slash in it would put the tools
+  // somewhere else entirely.
+  const appName = readdirSync(payload).find((e) => e.endsWith('.app') && !e.includes('/'));
   if (!appName) throw new Error(`No .app inside ${ipaPath} — the export produced something else.`);
-  const app = join(payload, appName);
+  const app = assertSafePath(join(payload, appName));
   const plist = join(app, 'Info.plist');
 
   const signing = runCombined('codesign', ['-dvvv', app]);

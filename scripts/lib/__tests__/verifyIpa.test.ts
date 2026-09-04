@@ -2,7 +2,13 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { assertUploadable, grepFiles, runCombined, type IpaFacts } from '../verifyIpa';
+import {
+  assertSafePath,
+  assertUploadable,
+  grepFiles,
+  runCombined,
+  type IpaFacts,
+} from '../verifyIpa';
 
 const good: IpaFacts = {
   authority: 'Apple Distribution: Dominik Holek (RG38V3SV8X)',
@@ -80,5 +86,16 @@ describe('grepFiles', () => {
     expect(() => grepFiles(join(tmpdir(), 'no-such-dir-9f3a'), ['report_error'])).toThrow(
       /NOT scanned/
     );
+  });
+});
+
+describe('assertSafePath', () => {
+  it('passes an absolute path through unchanged', () => {
+    expect(assertSafePath('/var/folders/x/Payload/App.app')).toBe('/var/folders/x/Payload/App.app');
+  });
+
+  it('refuses a relative path, which a tool could read as an option', () => {
+    expect(() => assertSafePath('-rf')).toThrow(/relative path/);
+    expect(() => assertSafePath('Payload/App.app')).toThrow(/relative path/);
   });
 });
