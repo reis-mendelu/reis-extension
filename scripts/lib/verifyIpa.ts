@@ -4,7 +4,7 @@
 // nearly shipped wrong: a development-signed build, a stale CFBundleVersion
 // that ASC rejects after the upload finishes, and a binary carrying error
 // telemetry the privacy policy says is not there.
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -21,6 +21,19 @@ export interface IpaFacts {
 const run = (cmd: string, args: string[]): string =>
   execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 
+/**
+ * stdout AND stderr, ignoring the exit status.
+ *
+ * `codesign -dvvv` prints everything it knows to STDERR and nothing to stdout,
+ * so reading only stdout returns an empty string and every build looks
+ * unsigned. That is not hypothetical: the first real run of this script
+ * refused a correctly signed .ipa for exactly that reason.
+ */
+const runCombined = (cmd: string, args: string[]): string => {
+  const res = spawnSync(cmd, args, { encoding: 'utf8' });
+  return `${res.stdout ?? ''}${res.stderr ?? ''}`;
+};
+
 /** Unzip the ipa to a temp dir and read the facts worth failing on. */
 export function inspectIpa(ipaPath: string): IpaFacts {
   const dir = mkdtempSync(join(tmpdir(), 'reis-ipa-'));
@@ -31,13 +44,7 @@ export function inspectIpa(ipaPath: string): IpaFacts {
   const app = join(payload, appName);
   const plist = join(app, 'Info.plist');
 
-  // codesign writes to stderr; 2>&1 is why stdio pipes both.
-  let signing = '';
-  try {
-    signing = run('codesign', ['-dvvv', app]);
-  } catch (err) {
-    signing = (err as { stderr?: string }).stderr ?? '';
-  }
+  const signing = runCombined('codesign', ['-dvvv', app]);
 
   const plistValue = (key: string) =>
     run('/usr/libexec/PlistBuddy', ['-c', `Print :${key}`, plist]).trim();
