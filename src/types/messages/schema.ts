@@ -113,12 +113,6 @@ const NavCategory = z.object({
   children: z.array(NavChild),
 });
 const NavMenuMsg = z.object({ type: z.literal('REIS_NAV_MENU'), categories: z.array(NavCategory) });
-const TelemetryErrorMsg = z.object({
-  type: z.literal('REIS_TELEMETRY_ERROR'),
-  context: z.string(),
-  message: z.string(),
-});
-
 export const ContentToIframeSchema = z.discriminatedUnion('type', [
   DataResponseMsg,
   FetchResultMsg,
@@ -126,5 +120,4 @@ export const ContentToIframeSchema = z.discriminatedUnion('type', [
   SyncUpdateMsg,
   PopupStateMsg,
   NavMenuMsg,
-  TelemetryErrorMsg,
 ]);

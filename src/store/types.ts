@@ -172,19 +172,6 @@ export interface ThemeSlice {
   loadTheme: () => Promise<void>;
 }
 
-export interface ErrorReportingSlice {
-  errorReportingEnabled: boolean;
-  /**
-   * False until the persisted choice has actually been read. Reporting must
-   * check this as well as `errorReportingEnabled`: the flag above holds an
-   * optimistic default, so acting on it alone transmits for a student who
-   * opted out, during the startup window where errors are most likely.
-   */
-  errorReportingHydrated: boolean;
-  loadErrorReportingEnabled: () => Promise<void>;
-  setErrorReportingEnabled: (enabled: boolean) => Promise<void>;
-}
-
 export interface I18nSlice {
   language: Language;
   isLanguageLoading: boolean;
@@ -595,7 +582,6 @@ export type AppState = ScheduleSlice &
   SyncSlice &
   ThemeSlice &
   I18nSlice &
-  ErrorReportingSlice &
   SuccessRateSlice &
   EduroamSlice &
   DocumentsSlice &

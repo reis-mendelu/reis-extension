@@ -11,7 +11,6 @@ import { createSubjectsSlice } from './slices/createSubjectsSlice';
 import { createSyncSlice } from './slices/createSyncSlice';
 import { createThemeSlice } from './slices/createThemeSlice';
 import { createI18nSlice } from './slices/createI18nSlice';
-import { createErrorReportingSlice } from './slices/createErrorReportingSlice';
 import { createSuccessRateSlice } from './slices/createSuccessRateSlice';
 import { createEduroamSlice } from './slices/createEduroamSlice';
 import { createDocumentsSlice } from './slices/createDocumentsSlice';
@@ -57,7 +56,6 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createSyncSlice(...a),
   ...createThemeSlice(...a),
   ...createI18nSlice(...a),
-  ...createErrorReportingSlice(...a),
   ...createSuccessRateSlice(...a),
   ...createEduroamSlice(...a),
   ...createDocumentsSlice(...a),
@@ -113,7 +111,6 @@ export const initializeStore = async () => {
   s.fetchSubjects();
   s.loadTheme();
   s.loadLanguage();
-  s.loadErrorReportingEnabled();
   s.loadContext();
   const devSeed = devAdminSeed();
   if (devSeed) {

@@ -10,7 +10,6 @@ import { signalReady, requestData, isInIframe } from '../api/proxyClient';
 import { loadRealDataSnapshot } from '../services/loadRealDataSnapshot';
 import { isAppView, type AppView, type SelectedSubject } from '../types/app';
 import { isContentMessage } from '../types/messages';
-import { sendTelemetry } from '../services/errorReporter/telemetry';
 import { logError } from '../utils/reportError';
 
 import { isDualLanguageStudyPlan } from '../types/studyPlan';
@@ -137,9 +136,9 @@ export function useAppLogic() {
     const handle = async (e: MessageEvent) => {
       if (e.source !== window.parent) return;
       // Origin check, not just source. This handler writes REIS_SYNC_UPDATE
-      // straight into the store and IDB and forwards REIS_TELEMETRY_ERROR to
-      // Supabase, and it was the only listener checking `source` without
-      // `origin` — SearchBar, AppHeader and the proxy listener all check both.
+      // straight into the store and IDB, and it was the only listener checking
+      // `source` without `origin` — SearchBar, AppHeader and the proxy listener
+      // all check both.
       //
       // Two shapes are legitimate: the extension iframe, whose parent is the IS
       // page, and the top-level hosts (Capacitor, the dev webapp) where the app
@@ -155,10 +154,6 @@ export function useAppLogic() {
       const d = e.data;
       if (!isContentMessage(d)) return;
       if (d.type === 'REIS_POPUP_STATE') return;
-      if (d.type === 'REIS_TELEMETRY_ERROR') {
-        sendTelemetry(d.context, new Error(d.message));
-        return;
-      }
       if (d.type === 'REIS_NAV_MENU') {
         useAppStore.getState().setNavPages(d.categories);
         return;

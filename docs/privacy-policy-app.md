@@ -13,8 +13,9 @@ application of Mendel University.
 own session — the way your browser would — and keeps it on your device. We run
 no server that holds it.
 
-Three small things do reach us: a **daily count**, an **error report** (you can
-switch it off), and **feedback you type and send**. Nothing else.
+Two small things reach us: a **daily count**, and **feedback you type and
+send**. Nothing else — **no crash or error information is ever transmitted**,
+from any surface, on any platform.
 
 ## Signing in
 
@@ -43,22 +44,20 @@ installed reIS — a 128-bit UUID, unrelated to you, not your student ID nor a
 hash of it — so we can count active installations. It counts **installs, not
 people**: a phone and a laptop are two.
 
-**2. Error reports — you can turn these off.** Sent: error type and message,
-file path and line, a sanitised stack excerpt, app version, browser name and
-version, a timestamp, and a random per-session ID held in memory only and
-regenerated every launch. Never sent: your name, your student ID or any hash of
-it, session tokens, anything fetched from IS Mendelu, anything in on-device
-storage. E-mail addresses, tokens, `*.mendelu.cz` URLs and 6–7-digit student
-numbers are stripped before sending.
-
-**3. Feedback you send.** Your message and any contact details you type, plus
+**2. Feedback you send.** Your message and any contact details you type, plus
 which reIS screen you were on (a name from a fixed list, never the page
 address), app version, browser name and version, and window size. Read by the
-developers, passed to nobody. **Your network address is not recorded.** Nothing
-is sent unless you press send.
+developers, passed to nobody. Nothing is sent unless you press send.
 
-*Lawful basis for all three: legitimate interest, GDPR Art. 6(1)(f) — knowing
-the project is used, keeping it stable, and fixing what you report.*
+**Your network address is not recorded** — this version writes straight to the
+database, which cannot see your connection. Versions released before September
+2026 still submit through a small server component that stores a salted SHA-256
+of your IP address for up to an hour, to count recent submissions; never the
+address itself, and never alongside your message. That component is removed once
+those versions have aged out, and nothing replaces it.
+
+*Lawful basis for both: legitimate interest, GDPR Art. 6(1)(f) — knowing the
+project is used, and fixing what you report.*
 
 ## Who else reIS talks to
 
@@ -81,8 +80,7 @@ the campus, not you.
 
 ## Your control
 
-Turn off error reporting in settings. Sign out to delete the token and cookies.
-Uninstall to delete everything local. For feedback you sent, write to the
+Sign out to delete the token and cookies. Uninstall to delete everything local. For feedback you sent, write to the
 address below and we will delete it — the daily-count rows hold nothing that
 identifies you, so there is nothing there to erase.
 
@@ -94,9 +92,9 @@ children.
 ## Changes
 
 We may update this policy; changes appear here with a new date. Google Drive
-backup, Outlook calendar sync, WebISKAM, library study-room booking and AI
-syllabus comparison have all been removed from reIS, along with everything they
-sent.
+backup, Outlook calendar sync, WebISKAM, library study-room booking, AI syllabus
+comparison and automatic error reporting have all been removed from reIS, along
+with everything they sent.
 
 ## Contact
 

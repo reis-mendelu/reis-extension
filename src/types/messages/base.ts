@@ -123,12 +123,6 @@ export interface NavMenuMessage {
 
 // Sent by content scripts to route explicit error telemetry through the iframe
 // (which has Supabase access). Context must contain no student data.
-export interface TelemetryErrorMessage {
-  type: 'REIS_TELEMETRY_ERROR';
-  context: string;
-  message: string;
-}
-
 export type IframeToContentMessage =
   ReadyMessage | RequestDataMessage | FetchRequestMessage | ActionRequestMessage;
 export type ContentToIframeMessage =
@@ -137,5 +131,4 @@ export type ContentToIframeMessage =
   | ActionResultMessage
   | SyncUpdateMessage
   | PopupStateMessage
-  | NavMenuMessage
-  | TelemetryErrorMessage;
+  | NavMenuMessage;
