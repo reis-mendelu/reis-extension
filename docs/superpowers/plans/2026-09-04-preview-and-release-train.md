@@ -182,7 +182,16 @@ EOF
 
 ---
 
-### Task 2: The preview banner
+### Task 2: The preview banner — BUILT, THEN REVERTED
+
+> **This task no longer applies.** The banner was implemented and then removed
+> on the owner's instruction: the preview must contain no components the real
+> app does not have. The app's own `DemoBanner` is the only banner, and
+> `App.tsx:49` mounts `MobileApp` only when `isPhone`, so at desktop widths the
+> preview carries no banner at all. The steps below are kept for the record of
+> what was tried; do not execute them. See the spec's "No components the real
+> app does not have" decision.
+
 
 Two facts about the deployed site are easy and expensive to forget: the data is synthetic, and a publish that appears to succeed there wrote nothing (`VITE_DEV_SOCIETY=reis` routes writes to an in-memory store, and `CLAUDE.md` says never to cite those as evidence). A banner states both on the page.
 
