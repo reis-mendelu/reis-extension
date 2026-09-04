@@ -1,8 +1,12 @@
 name: Release tag
 
-# On a merge into main, push the tag that publish.yml already listens for. The
-# version itself is bumped in the release PR, so what gets submitted is visible
-# in a diff before the irreversible step.
+# On a merge into main, push the tag that publish.yml already listens for —
+# but ONLY when package.json's version actually changed in this push AND that
+# tag doesn't exist yet. The version itself is bumped in the release PR, so
+# what gets submitted is visible in a diff before the irreversible step; the
+# version-changed check is what stops an UNRELATED push to main (a doc fix, a
+# back-merge, this very branch merging with no version bump) from tagging and
+# submitting whatever version happens to be sitting in package.json at HEAD.
 
 on:
   push:
@@ -28,10 +32,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # Tags are needed to tell an already-released version from a new one.
+          # Tags — and the pre-push version of package.json — are needed to
+          # tell an already-released version from a new one.
           fetch-depth: 0
 
-      - name: Push v<version> if it does not exist yet
+      - name: Push v<version> if it does not exist yet AND the version changed
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
         run: |
           set -euo pipefail
 
@@ -56,6 +63,60 @@ jobs:
             echo "$tag already exists on the remote — nothing to release."
             exit 0
           fi
+
+          # The other load-bearing check: the tag not existing yet is NOT
+          # enough on its own. main's package.json can sit at an already-tagged
+          # version for a long time (e.g. bumped by an unrelated release flow)
+          # with no v<version> tag ever pushed for it — the very state this
+          # branch found main in. The first push to main after this job lands
+          # would otherwise tag and submit that version, with zero relation to
+          # what the push actually changed. So: only tag when package.json's
+          # version differs from what it was immediately before this push.
+          #
+          # Base commit is the previous tip of main. `before` is normally
+          # exactly that — including for an ordinary merge commit, since
+          # GitHub always makes the pre-merge main state parent 1, which is
+          # also what `HEAD^` resolves to. Two situations need the `HEAD^`
+          # fallback instead: the very first push to a branch (`before` is
+          # all-zero) and a force-push whose `before` SHA this checkout —
+          # even with fetch-depth 0 — does not contain.
+          before="$BEFORE_SHA"
+          base=""
+          if [ -n "$before" ] \
+            && [ "$before" != "0000000000000000000000000000000000000000" ] \
+            && git cat-file -e "${before}^{commit}" 2>/dev/null; then
+            base="$before"
+            echo "Base commit: $base (push 'before' SHA)"
+          elif git rev-parse -q --verify "HEAD^" >/dev/null 2>&1; then
+            base="$(git rev-parse HEAD^)"
+            echo "Base commit: $base ('before' SHA unusable — fell back to HEAD^)"
+          else
+            echo "::error::Cannot determine the previous commit on main (no usable 'before' SHA and no HEAD^). Refusing to tag without knowing whether the version actually changed — an unrecallable action must not proceed on an unknown."
+            exit 1
+          fi
+
+          if git rev-parse -q --verify "HEAD^2" >/dev/null 2>&1; then
+            echo "HEAD is a merge commit — using its first parent ($base) as the pre-merge state of main, never the second parent or a merge-base."
+          fi
+
+          old_package_json="$(git show "$base:package.json" 2>/dev/null || true)"
+          if [ -z "$old_package_json" ]; then
+            echo "::error::Could not read package.json at $base (main before this push). Refusing to tag without knowing whether the version actually changed."
+            exit 1
+          fi
+
+          old_version="$(printf '%s' "$old_package_json" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version" 2>/dev/null || true)"
+          if [ -z "$old_version" ]; then
+            echo "::error::package.json at $base has no readable version field. Refusing to tag without knowing whether the version actually changed."
+            exit 1
+          fi
+
+          if [ "$old_version" = "$version" ]; then
+            echo "package.json version is unchanged ($version) — nothing to release. (This push didn't bump the version.)"
+            exit 0
+          fi
+
+          echo "Version changed: $old_version -> $version"
 
           git tag "$tag"
           git push origin "$tag"
