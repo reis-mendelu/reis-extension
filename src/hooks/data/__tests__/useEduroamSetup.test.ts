@@ -104,6 +104,26 @@ describe('useEduroamSetup', () => {
     expect(result.current.outcome).toBe('saved');
   });
 
+  // Regression: with the desktop→phone transfer gone, a phone target that
+  // cannot configure natively used to fall through to the file branch and
+  // download a profile built for a laptop — an Apple .mobileconfig, even on
+  // Android. It must fail instead.
+  it.each(['ios', 'android'] as const)(
+    'refuses to hand %s a desktop profile when the native path is unavailable',
+    async (phone) => {
+      const native = await import('../../../mobile/eduroamNative');
+      vi.mocked(native.canConfigureEduroamNatively).mockReturnValue(false);
+      const { result } = renderHook(() => useEduroamSetup());
+
+      await act(async () => {
+        await result.current.run(phone);
+      });
+
+      expect(result.current.status).toBe('error');
+      expect(saveAs).not.toHaveBeenCalled();
+    }
+  );
+
   it('treats an eduroam network that already exists as success', async () => {
     await onPhone('2');
     const { result } = renderHook(() => useEduroamSetup());

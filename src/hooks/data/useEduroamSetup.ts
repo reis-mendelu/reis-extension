@@ -43,9 +43,9 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
       const material = await fetchEduroamCertMaterial();
       const { rootCaDer, clientP12, password: extractionPw } = material;
 
-      // On the phone itself, Android configures eduroam directly: no profile
-      // file, no transfer, and no QR — a QR here would be pointing the device
-      // at itself. Everything below this branch is desktop→phone delivery.
+      // On the phone itself the OS configures eduroam directly — no profile
+      // file and nothing to hand over. Everything below this branch runs on the
+      // machine reIS is open on.
       if (canConfigureEduroamNatively(t)) {
         const result = await configureEduroam(material, nativeEduroamDeps);
         setOutcome(result);
@@ -63,6 +63,14 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
               : 'done'
         );
         return;
+      }
+
+      // A phone that reached here has no native path, and there is no longer a
+      // desktop→phone transfer to fall back to. Fail loudly rather than hand it
+      // a file meant for a laptop: before this guard, an Android phone whose
+      // plugin was unavailable silently downloaded an Apple .mobileconfig.
+      if (t === 'ios' || t === 'android') {
+        throw new Error('eduroam on a phone is set up by the reIS app, not from a browser');
       }
 
       const xml = generateEduroamMobileconfig({ rootCaDer, clientP12 });
