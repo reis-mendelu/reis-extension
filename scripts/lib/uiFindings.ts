@@ -153,12 +153,23 @@ function overflowFindings(p: ProbeResult): Finding[] {
   // do not reach here — the probe's own elementFromPoint occlusion test drops
   // anything whose centre is not the topmost element at that point.
   for (const e of p.elements) {
-    const past = e.rect.x + e.rect.w - p.width;
+    // BOTH edges. Measuring only the right one let an element at x:-20 sit
+    // half off the left of the screen and report nothing — clipped by #root
+    // and just as unreachable as one running off the right.
+    const pastRight = e.rect.x + e.rect.w - p.width;
+    const pastLeft = -e.rect.x;
+    const past = Math.max(pastLeft, pastRight);
     if (past > PX_SLACK && area(e.rect) > 0) {
       out.push({
         kind: 'overflow-element',
         sel: e.sel,
-        detail: `extends ${Math.round(past)}px past the ${p.width}px viewport`,
+        // Named per edge rather than as one number: "extends 20px past the
+        // viewport" would be actively misleading for something hanging off
+        // the left, and the fix differs by side.
+        detail:
+          pastLeft > pastRight
+            ? `starts ${Math.round(pastLeft)}px left of the ${p.width}px viewport`
+            : `extends ${Math.round(pastRight)}px past the ${p.width}px viewport`,
         severity: 'error',
       });
     }
