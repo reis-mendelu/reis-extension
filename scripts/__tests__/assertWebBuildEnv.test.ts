@@ -71,6 +71,16 @@ describe('findForbiddenWebBuildVars', () => {
   // never inlines them — rejecting them would make the deploy permanently
   // unbuildable. Observed live: the allowlist failed a real Vercel build on 19
   // of them, then on VITE_VERCEL_OBSERVABILITY_CLIENT_CONFIG alone.
+  it('allows the real-data flag', () => {
+    expect(
+      findForbiddenWebBuildVars({
+        VITE_DEV_SOCIETY: 'reis',
+        VITE_PREVIEW_BUILD: 'true',
+        VITE_PREVIEW_DATA: 'real',
+      })
+    ).toEqual([]);
+  });
+
   it("allows Vercel's platform-injected VITE_VERCEL_* metadata", () => {
     expect(
       findForbiddenWebBuildVars({

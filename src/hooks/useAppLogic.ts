@@ -26,6 +26,7 @@ import type { ClassmatesData } from '../types/classmates';
 import type { SubjectZaznamnik } from '../types/zaznamnik';
 import { PARENT_ORIGIN } from '../api/proxy/trustedOrigin';
 import { getPlatform } from '../platform';
+import { isHarnessEnabled } from '../utils/harnessEnabled';
 import type { SyncDomain } from '../types/messages/base';
 
 interface SyncedData {
@@ -125,9 +126,13 @@ export function useAppLogic() {
     // Skip iframe data sync when using mock data
     if (import.meta.env.VITE_USE_MOCK_DATA === 'true') return;
 
-    // Dev standalone (localhost): allow the real-data snapshot to flow through
-    // the same handler by not bailing on the missing iframe.
-    const realDataMode = import.meta.env.DEV && !isInIframe();
+    // Dev standalone (localhost) AND the deployed preview build: allow the
+    // real-data snapshot to flow through the same handler by not bailing on
+    // the missing iframe. Not bare `DEV` — a preview build is a PRODUCTION
+    // build (`DEV` is false there), and without `isHarnessEnabled` this
+    // listener never attaches, so loadRealDataSnapshot()'s postMessage has
+    // nowhere to land: the snapshot is fetched and then silently discarded.
+    const realDataMode = isHarnessEnabled(import.meta.env) && !isInIframe();
     // Capacitor: same shape as dev standalone, but in a PRODUCTION build — there
     // is no iframe because the app is the top-level window, and syncService
     // loops its updates back via window.postMessage (see sendToIframe).
@@ -331,7 +336,20 @@ export function useAppLogic() {
     };
     window.addEventListener('message', handle);
     if (realDataMode) {
-      void loadRealDataSnapshot();
+      // Only the real dev server loads through this path. It reads
+      // loadRealDataSnapshot()'s DEFAULT url — '/dev-real-data.json', the RAW
+      // gitignored scrape — which is exactly right for `npm run dev:web` and
+      // exactly wrong for a built preview, where that file is deleted from the
+      // output by stripDevRealDataPlugin and the SANITISED '/preview-data.json'
+      // is what may be read instead.
+      //
+      // An earlier version fired this in preview builds too, on the reasoning
+      // that the request would harmlessly 404. `npm run check:app` measured two
+      // real requests for the raw scrape by name on every load — harmless in
+      // effect, wrong in intent, and on a host with an SPA rewrite a 404 comes
+      // back as 200 + HTML. dev/bootDemoMode.ts owns loading for a preview
+      // build and passes the sanitised url explicitly.
+      if (import.meta.env.DEV) void loadRealDataSnapshot();
     } else {
       signalReady();
       requestData('all');

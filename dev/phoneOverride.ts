@@ -1,6 +1,6 @@
 import { useAppStore } from '../src/store/useAppStore';
 import { resolveDevPhoneOverride } from '../src/utils/resolveDevPhoneOverride';
-import { isHarnessEnabled } from './harnessEnabled';
+import { isHarnessEnabled } from '../src/utils/harnessEnabled';
 
 // Dev-only phone override. The viewport half of the real rule (`isNarrow`)
 // flips when you resize, but the touch half (`pointer: coarse`) never does in a

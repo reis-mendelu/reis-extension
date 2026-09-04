@@ -4,6 +4,7 @@ import { loadRealDataSnapshot, resetRealDataStores } from '../loadRealDataSnapsh
 vi.mock('../storage', () => ({
   IndexedDBService: { clear: vi.fn(async () => {}) },
 }));
+vi.mock('../../api/proxyClient', () => ({ isInIframe: () => false }));
 
 describe('loadRealDataSnapshot', () => {
   beforeEach(() => vi.restoreAllMocks());
@@ -80,5 +81,67 @@ describe('resetRealDataStores', () => {
     const didClear = await resetRealDataStores();
     expect(didClear).toBe(false);
     expect(IndexedDBService.clear).not.toHaveBeenCalled();
+  });
+
+  it('fetches the URL it is given, not the default', async () => {
+    const fetchMock = vi.fn(
+      async () => new Response(JSON.stringify({ subjects: {}, lastSync: 1 }), { status: 200 })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    await resetRealDataStores('/preview-data.json');
+    expect(fetchMock).toHaveBeenCalledWith('/preview-data.json');
+  });
+});
+
+// The widened DEV/preview-build guard, tested against a real production build
+// (DEV: false) rather than vitest's default DEV: true — the two suites above
+// never actually exercise the guard, since vitest runs with DEV true.
+describe('loadRealDataSnapshot in a deployed (non-DEV) build', () => {
+  const realFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubEnv('DEV', false);
+    vi.stubEnv('VITE_PREVIEW_BUILD', 'true');
+    vi.stubEnv('VITE_USE_MOCK_DATA', '');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    globalThis.fetch = realFetch;
+  });
+
+  // The bug this test exists for: the loader was gated on import.meta.env.DEV,
+  // which is FALSE in a production build, so on the deployed preview it
+  // returned false without ever fetching anything.
+  it('runs in a preview build even though DEV is false', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ schedule: [], lastSync: '2026-09-04T00:00:00.000Z' }),
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const { loadRealDataSnapshot: freshLoad } = await import('../loadRealDataSnapshot');
+    await expect(freshLoad()).resolves.toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('fetches the URL it is given, not the default', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const { loadRealDataSnapshot: freshLoad } = await import('../loadRealDataSnapshot');
+    await freshLoad('/preview-data.json');
+    expect(fetchMock).toHaveBeenCalledWith('/preview-data.json');
+  });
+
+  it('stays inert in an extension or Capacitor build', async () => {
+    vi.stubEnv('VITE_PREVIEW_BUILD', '');
+    const fetchMock = vi.fn();
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const { loadRealDataSnapshot: freshLoad } = await import('../loadRealDataSnapshot');
+    await expect(freshLoad()).resolves.toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

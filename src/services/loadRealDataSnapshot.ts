@@ -3,10 +3,14 @@ import type { SyncedData } from '../types/messages';
 import { isInIframe } from '../api/proxyClient';
 import { IndexedDBService } from '../services/storage';
 import type { StoreName } from '../types/storage';
+import { isHarnessEnabled } from '../utils/harnessEnabled';
 
 // Non-dotfile so WXT packs it into the dev build; the extension page fetches it
-// from its own origin (chrome-extension://<id>/dev-real-data.json). Gitignored,
-// and DEV-gated below so it is inert in production.
+// from its own origin (chrome-extension://<id>/dev-real-data.json). Gitignored.
+// The default for the local `dev:web` harness only — the deployed preview
+// passes `/preview-data.json` instead, which is the SANITISED file. The raw
+// scrape is deleted from every web build by scripts/stripDevRealData.mjs and
+// must never be fetched from a deployed page.
 const SNAPSHOT_URL = '/dev-real-data.json';
 
 // The IDB stores the real-data snapshot is the authoritative source for. In dev
@@ -36,15 +40,15 @@ const SNAPSHOT_STORES: StoreName[] = [
  *  inside the extension iframe, AND — critically — when no snapshot is available
  *  to repopulate from, so a missing snapshot never wipes persisted data with
  *  nothing to restore it. Returns whether it cleared. */
-export async function resetRealDataStores(): Promise<boolean> {
-  if (!import.meta.env.DEV) return false;
+export async function resetRealDataStores(url: string = SNAPSHOT_URL): Promise<boolean> {
+  if (!isHarnessEnabled(import.meta.env)) return false;
   if (isInIframe()) return false;
   if (import.meta.env.VITE_USE_MOCK_DATA === 'true') return false;
   // Guard: only wipe when a real snapshot actually exists. A missing file makes
   // the dev server serve the SPA index.html, so res.json() throws — treat that
   // as "no snapshot" and leave IDB untouched.
   try {
-    const res = await fetch(SNAPSHOT_URL);
+    const res = await fetch(url);
     if (!res.ok) return false;
     await res.json();
   } catch {
@@ -56,12 +60,12 @@ export async function resetRealDataStores(): Promise<boolean> {
 
 /** Dev-only, standalone-only: load the scraped real-data snapshot and feed it
  *  through the production REIS_SYNC_UPDATE handler. No-op if unavailable. */
-export async function loadRealDataSnapshot(): Promise<boolean> {
-  if (!import.meta.env.DEV) return false;
+export async function loadRealDataSnapshot(url: string = SNAPSHOT_URL): Promise<boolean> {
+  if (!isHarnessEnabled(import.meta.env)) return false;
   if (isInIframe()) return false;
   if (import.meta.env.VITE_USE_MOCK_DATA === 'true') return false;
   try {
-    const res = await fetch(SNAPSHOT_URL);
+    const res = await fetch(url);
     if (!res.ok) return false;
     const snapshot = (await res.json()) as SyncedData;
     window.postMessage(Messages.syncUpdate({ ...snapshot, isSyncing: false }), '*');

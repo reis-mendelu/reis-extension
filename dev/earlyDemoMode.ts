@@ -1,7 +1,7 @@
 import { setDemoModeFlag } from '../src/errors/demoMode';
 import { setDemoErrorHandler } from '../src/utils/reportError';
 import { handleDemoError } from '../src/mobile/demoToast';
-import { isPreviewBuild } from './harnessEnabled';
+import { isPreviewBuild } from '../src/utils/harnessEnabled';
 
 // Side-effect import, and deliberately the FIRST one in main.web.tsx after
 // chromeShim — see the comment there and the ordering note in main.web.tsx.

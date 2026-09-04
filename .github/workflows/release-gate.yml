@@ -4,10 +4,17 @@ name: Release gate
 # `main` is what publish.yml turns into a store submission, and a store
 # submission cannot be taken back.
 #
-#   head == test   -> this repo's own `test`, and a successful Vercel deployment
-#                     must exist for this exact SHA. `test` can hold a commit
-#                     whose deploy is still building or has failed, so the
-#                     branch name alone proves nothing.
+#   head == test   -> this repo's own `test`, and CI's `Build web preview` job
+#                     must have PASSED for this exact SHA. That job builds the
+#                     app and runs `check:app`, which loads the built bundle in a
+#                     real browser. `test` can hold a commit whose CI is still
+#                     running or has failed, so the branch name alone proves
+#                     nothing.
+#
+#                     This used to require a green Vercel deployment. Vercel was
+#                     dropped: it only ever served synthetic data, found no
+#                     defect in the period it ran, and "it deployed" is a weaker
+#                     claim than "it booted and worked".
 #   otherwise      -> rejected. `main` is not the default PR base, so a
 #                     mis-targeted PR is normal and this is the thing that
 #                     catches it.
@@ -40,9 +47,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # `permissions:` sets every unlisted scope to none, and the deployments
-      # API needs its own — `contents: read` does not cover it.
-      deployments: read
+      # `permissions:` sets every unlisted scope to none, and reading another
+      # workflow's check runs needs its own scope.
+      checks: read
+      actions: read
     timeout-minutes: 10
     steps:
       - name: Check this PR's path into main
@@ -52,7 +60,6 @@ jobs:
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          DEPLOY_ENV: Production
         run: |
           set -euo pipefail
 
@@ -63,18 +70,26 @@ jobs:
             exit 1
           fi
 
-          # -f on a GET becomes a query parameter, so a space or slash in the
-          # environment name is encoded correctly.
-          ids="$(gh api -X GET "repos/$GH_REPO/deployments" \
-            -f environment="$DEPLOY_ENV" -f sha="$HEAD_SHA" --jq '.[].id')"
+          # The gate is "CI proved this commit works", not "something was
+          # deployed". `Build web preview` builds the app AND runs check:app,
+          # which loads the built bundle in a browser and fails on a page stuck
+          # on skeletons, a call to IS Mendelu, a Supabase write, or the raw
+          # scrape reaching the output.
+          CHECK_NAME='Build web preview'
 
-          for id in $ids; do
-            if gh api "repos/$GH_REPO/deployments/$id/statuses" --jq '.[].state' \
-               | grep -qx success; then
-              echo "✓ Green '$DEPLOY_ENV' deployment found for $HEAD_SHA"
-              exit 0
-            fi
-          done
+          conclusion="$(gh api "repos/$GH_REPO/commits/$HEAD_SHA/check-runs" \
+            --jq ".check_runs[] | select(.name == \"$CHECK_NAME\") | .conclusion" \
+            | head -1)"
 
-          echo "::error::No successful '$DEPLOY_ENV' deployment for $HEAD_SHA. A release needs a green preview deploy of exactly this commit. If the deploy is still running, wait and re-run this check. If someone merged into 'test' after this PR was opened, the tip moved — 'test' is meant to be frozen while a release PR is open."
+          if [ "$conclusion" = "success" ]; then
+            echo "✓ '$CHECK_NAME' passed for $HEAD_SHA"
+            exit 0
+          fi
+
+          if [ -z "$conclusion" ]; then
+            echo "::error::'$CHECK_NAME' has not reported for $HEAD_SHA. A release needs CI to have built and browser-checked exactly this commit. If it is still running, wait and re-run this check. If someone merged into 'test' after this PR was opened, the tip moved — 'test' is meant to be frozen while a release PR is open."
+            exit 1
+          fi
+
+          echo "::error::'$CHECK_NAME' concluded '$conclusion' for $HEAD_SHA, not success. The app did not build or did not pass the browser health check, so this commit must not be released."
           exit 1

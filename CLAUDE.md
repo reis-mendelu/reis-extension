@@ -55,14 +55,19 @@ there never reach Supabase, so never cite them as evidence a write works.
   wrong base; the release gate catches it.
 - A branch cut from `main` must merge `origin/test` in and retarget before
   going further, or it goes stale and conflicts at the next release.
-- `test` auto-deploys to the Vercel preview. It enters the app's own demo mode
-  (`enterDemo()`), which is the synthetic `demo` dataset, so **documents,
-  holidays, campus events and profile render empty there** — expected, not a
-  bug — and writes go to an in-memory store, so a publish that appears to work
-  on the preview is not evidence a publish works.
+- Every PR runs `check:app`: CI builds the app and loads it in a real browser,
+  failing if it boots onto skeletons, calls IS Mendelu, writes to Supabase, or
+  carries a real snapshot in the output. That check passing for the exact commit
+  is what the release gate requires.
 - `main` accepts only the `test` → `main` release PR, and merging it submits to
   the stores. Use `/release`.
 - **Do not merge into `test` while a release PR is open.**
+- **Testing against your own data is local.** `npm run preview:real` scrapes
+  your IS data, strips other students' identities, builds the production bundle
+  and serves it on localhost. `npm run preview:real:lan` adds `--host` for a
+  phone or iPad — that exposes your academic record to **everyone on the
+  network**, so use it only on a network you trust. Your MENDELU credentials
+  never leave the laptop and are never in CI. Nothing is ever hosted.
 
 ## Architecture
 
