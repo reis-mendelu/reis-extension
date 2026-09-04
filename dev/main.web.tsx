@@ -35,6 +35,11 @@ import './storeHandle';
 // snapshotUserParams.ts.
 import './snapshotUserParams';
 
+// Also after the app, so it seeds the store the React root renders from. The
+// canteen menu is fetched through the content-script proxy, which does not
+// exist here. See menuSeed.ts.
+import './menuSeed';
+
 // Last, and deliberately after the app: signs the harness in as a real society
 // / reIS-admin account when credentials are configured, so the admin console
 // can be tested against live Supabase instead of the in-memory dev store. Does

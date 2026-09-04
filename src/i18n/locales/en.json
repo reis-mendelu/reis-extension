@@ -14,8 +14,11 @@
     "downloadFailed": "The download didn't go through. Please try again."
   },
   "menu": {
-    "title": "Today's Menu",
-    "unavailable": "Menu not available"
+    "title": "Canteen menu",
+    "unavailable": "Menu not available",
+    "outletOne": "1 outlet",
+    "outletFew": "{count} outlets",
+    "outletOther": "{count} outlets"
   },
   "settings": {
     "title": "Settings",

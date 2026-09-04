@@ -16,15 +16,8 @@ import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
 import { DayAgenda } from './calendar/DayAgenda';
 import { CalendarEmptyDay } from './calendar/CalendarEmptyDay';
-
-function formatHeaderDate(date: Date, locale: string): string {
-  const formatted = new Intl.DateTimeFormat(locale, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  }).format(date);
-  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
-}
+import { MenuCard } from './calendar/MenuCard';
+import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
 
 function CalendarSkeleton() {
   const { t } = useTranslation();
@@ -191,6 +184,10 @@ export function CalendarScreen() {
             }
           />
         )}
+        {/* Under the day's agenda, inside the scroller: lunch is what you look
+            at after the timetable, not before it, and on a full teaching day
+            the card must not push the 8am lecture off the screen. */}
+        <MenuCard dayIso={selectedIso} />
       </div>
     </>
   );

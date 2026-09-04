@@ -15,7 +15,10 @@
   },
   "menu": {
     "title": "Jídelníček",
-    "unavailable": "Menu není k dispozici"
+    "unavailable": "Menu není k dispozici",
+    "outletOne": "1 výdejna",
+    "outletFew": "{count} výdejny",
+    "outletOther": "{count} výdejen"
   },
   "settings": {
     "title": "Nastavení",

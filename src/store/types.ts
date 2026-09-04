@@ -438,6 +438,7 @@ export type MobileSheet =
   | { kind: 'personPhoto'; personId: string; name: string }
   | { kind: 'eduroam' }
   | { kind: 'docs' }
+  | { kind: 'menu'; dayIso: string }
   // People and the subject catalogue, opened from the header's search icon.
   // Was the 'student' TAB; it is a sheet so it opens over whichever tab the
   // student is on and returns them there. `query` prefills it and starts in
