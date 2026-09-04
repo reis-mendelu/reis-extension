@@ -1,9 +1,9 @@
 # Real-data preview, behind a login
 
 Add a second Vercel project that serves the reIS app against Dominik's own
-scraped IS Mendelu data, readable only by him, deployed by a GitHub Action that
-scrapes on every merge into `test`. The existing public demo preview is
-untouched.
+scraped IS Mendelu data, readable only by him, deployed by one command from his
+laptop so his university password never enters the repository. The existing
+public demo preview is untouched.
 
 Amends [`2026-09-04-preview-and-release-train-design.md`](2026-09-04-preview-and-release-train-design.md).
 
@@ -45,8 +45,8 @@ Treat this as "the UI half becomes properly testable", not "90% of everything".
 |---|---|---|
 | Data | synthetic `demo` dataset | Dominik's sanitised snapshot |
 | Audience | anyone with the link | Dominik only (Vercel Authentication) |
-| Deployed by | Vercel git integration, every branch | GitHub Action, `test` only |
-| Secrets | none | `MENDELU_USER`, `MENDELU_PASS`, `VERCEL_TOKEN` |
+| Deployed by | Vercel git integration, every branch | one command, from Dominik's laptop |
+| Secrets | none | none in the repo — credentials stay on the laptop |
 
 One project cannot serve both: production would have to be simultaneously
 public (to share a branch) and gated (to hold real data), and Vercel's git
@@ -85,6 +85,35 @@ not recognise inside a classmate entry aborts the deploy. If IS starts
 returning an email address next semester, the build stops rather than silently
 uploading it. Same posture as `scripts/assert-web-build-env.mjs`, for the same
 reason.
+
+### The MENDELU password never goes near GitHub
+
+The first draft ran the scrape in a GitHub Action with `MENDELU_USER` /
+`MENDELU_PASS` as repository secrets. Rejected after looking at who that
+actually exposes them to.
+
+`reis-mendelu/reis-extension` has two people with access: `ElijaahInverted`
+(admin) and `tde-biit` (write). **Write access is enough to read a secret** —
+push a branch with a workflow that base64s the value into a log or an outbound
+request; GitHub's log masking is a convenience, not a control. Add every
+third-party action in the job, each of which runs with the job's environment,
+and a compromised release of any unpinned one reads it too.
+
+The decisive point is not the headcount but the kind of credential. Every
+secret already in that repository — Chrome, Firefox, Edge, Supabase, Anthropic
+— is a **scoped token**: leak it, revoke it, lose one store listing.
+`MENDELU_PASS` is a university SSO login. It cannot be scoped, it opens far more
+than IS, and revoking it means changing the password Dominik uses daily.
+
+So the scrape runs where the credentials already live: `.env` on his laptop.
+Nothing else in this design changes — the sanitiser, the second project, the
+login gate and the public/private split are all unaffected. The only property
+given up is *automatic on merge*, and since he is the only person who can open
+that deployment, nobody is waiting on it being fresh without him.
+
+If refreshing by hand turns out to be what stops the preview being used, the
+next move is to ask MENDELU whether a scoped or read-only credential exists —
+not to put the SSO password in a repository.
 
 ### `test` and `main` both require pull requests
 
@@ -126,19 +155,21 @@ accepted direct pushes, which bypassed the Release gate entirely.
 ## Architecture
 
 ```
-push to `test`
-      │
-      ├──▶ Vercel git build ──▶ reis-extension-preview   (demo data, public)
-      │
-      └──▶ GitHub Action ──┬─ scrape:real   (MENDELU_* secrets, Playwright)
-                           ├─ sanitise      → preview-data.json
-                           ├─ build:web:real
-                           └─ vercel deploy --prebuilt --prod
-                                    └──▶ reis-extension-real  (login-gated)
+GitHub, automatic
+  any push / PR ──▶ Vercel git build ──▶ reis-extension-preview
+                                          demo data · public · shareable
 
-pull request  ──▶ Vercel git build ──▶ reis-extension-preview  (demo, public)
-                  (Action does NOT run — secrets stay off PRs)
+Dominik's laptop, on demand
+  npm run preview:real ──┬─ scrape:real      (.env credentials, Playwright)
+                         ├─ sanitise         → public/preview-data.json
+                         ├─ build:web:real
+                         └─ vercel deploy --prebuilt --prod
+                                  └──▶ reis-extension-real
+                                        real data · login-gated · Dominik only
 ```
+
+The two halves share only the repository. No credential, no scraped byte and no
+sanitiser output ever reaches GitHub.
 
 ## Component 1 — the sanitiser
 
@@ -210,25 +241,34 @@ IS session, and nothing on the page should suggest a publish would work.
 if `public/preview-data.json` is absent. The `dev-real-data.json` strip runs
 unchanged.
 
-## Component 3 — the Action
+## Component 3 — the local command
 
-**New: `.github/workflows/deploy-real-preview.yml`**
+**New npm script: `preview:real`**, chaining what already exists plus the
+sanitiser:
 
-- **Triggers:** `push` to `test`, and `workflow_dispatch`. **Never
-  `pull_request` or `pull_request_target`** — that pairing is how a public
-  repository's secrets reach a fork.
-- **Permissions:** `contents: read` only.
-- **Concurrency:** one at a time, `cancel-in-progress: true` — a superseded
-  scrape has no value.
-- **Steps:** checkout → `npm ci` → `npx playwright install --with-deps chromium`
-  → `npm run scrape:real` → `npm run sanitise:snapshot` →
-  `npm run build:web:real` → `npx vercel deploy --prebuilt --prod`.
-- **Secrets:** `MENDELU_USER`, `MENDELU_PASS`, `VERCEL_TOKEN`,
-  `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID_REAL`.
-- **Never uploads an artifact and never commits.** The snapshot exists only in
-  the runner's filesystem, for the length of the job.
-- **Fails loudly.** A failed scrape or a failed sanitise fails the job; the
-  previous real-data deployment keeps serving. There is no demo fallback.
+```
+scrape:real  →  sanitise:snapshot  →  build:web:real  →  vercel deploy --prebuilt --prod
+```
+
+- Reads `MENDELU_USER` / `MENDELU_PASS` from `.env`, exactly as `scrape:real`
+  does today. Nothing new is stored anywhere.
+- Deploys with the already-authenticated `vercel` CLI, naming the project
+  explicitly rather than relying on `.vercel/project.json` (gitignored, and
+  already pointing at the public project). Fails with a readable message if the
+  CLI is not logged in.
+- **Fails loudly and deploys nothing** if the scrape fails, if the sanitiser
+  rejects an unknown field, or if `public/preview-data.json` is missing. There
+  is no demo fallback: serving demo data from the URL that is supposed to hold
+  real data is how someone draws a confident conclusion from the wrong dataset.
+- Never runs in CI. No workflow references it, and the repository holds no
+  MENDELU credential — see the decision above.
+
+**Staleness must be visible.** Because refreshing is manual, the deployed page
+has to say how old its data is, or a screen that looks wrong for the wrong
+reason will cost an afternoon. The snapshot already carries `lastSync`; the
+real-data build surfaces that date on the page. This is the one piece of
+preview-only chrome the design admits, and it earns its place: without it the
+build is indistinguishable from a fresh one.
 
 ## Component 4 — the Vercel project
 
@@ -259,6 +299,7 @@ unchanged.
 - `build:web:real` fails when `public/preview-data.json` is missing.
 - CI keeps its existing decoy-file assertion that `dev-real-data.json` is
   stripped; a second assertion covers the real-data build.
+- The deployed page shows the snapshot's `lastSync` date.
 - **Manual, once, and the acceptance test for the whole thing:** open the gated
   URL logged out and confirm it refuses; open it logged in and confirm real
   subjects, the 19 files and the study plan render; confirm no classmate is
@@ -273,7 +314,9 @@ unchanged.
 3. Real-data build mode + tests. Verified by serving `dist-web/` locally.
 4. Create the Vercel project, SSO on, deploy once by hand from a laptop to
    prove the gate and the data.
-5. Add the Action and the secrets; merge to `test`; watch the first real run.
+5. Wire `preview:real` and run it once end to end. That first run is the
+   acceptance test: gate refuses when logged out, real data renders when logged
+   in, no classmate is named, no Supabase write fires.
 
 Steps 1–3 are useful alone: they give a local real-data build with other
 people's identities removed, which is worth having whether or not it is ever
