@@ -7,3 +7,11 @@ reviews:
   auto_review:
     enabled: true
     drafts: false
+    # Feature PRs target `test`, not `main` — see "Branches and releasing" in
+    # CLAUDE.md. CodeRabbit only auto-reviews PRs into the DEFAULT branch unless
+    # the bases are listed here, so without `test` it silently reviewed nothing
+    # (observed on PR #288: "reviews are disabled for this base branch").
+    # `main` stays listed for the test -> main release PR.
+    base_branches:
+      - "main"
+      - "test"
