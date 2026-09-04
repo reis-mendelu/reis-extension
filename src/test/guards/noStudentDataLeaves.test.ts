@@ -59,27 +59,10 @@ const SUPABASE_CALLERS = new Set([
   'src/api/eventRsvp.ts',
   // Random install id only, since the privacy refactor.
   'src/api/feedback.ts',
-  // eduroam certificate transfer: a short-lived random transfer code.
-  'src/api/eduroamTransfer.ts',
-  // Sanitised crash telemetry — see errorReporter/sanitize.ts. Its session id
-  // is a per-load random value held in module memory.
-  'src/services/errorReporter/reporter.ts',
   // Society post view/click counters; sends a post row id and nothing else.
   'src/services/spolky/spolkyService.ts',
   // Reads the public society events feed. No student data in either direction.
   'src/api/mapEvents.ts',
-  // report_error_v2. Message, path and stack are sanitised before this point
-  // (errorReporter/sanitize.ts strips emails, *.mendelu.cz URLs and 6-7 digit
-  // ids); the session id is a per-load random value.
-  'src/services/errorReporter/telemetry.ts',
-  // Teacher grading votes. p_teacher_id is STAFF, not a student. The vote id is
-  // now scoped per teacher (crypto.randomUUID() under reis_grading_vote_<id>),
-  // so two votes by the same student are unlinkable — a single persistent
-  // session id previously let the server reconstruct a course load from the set
-  // of teachers voted on. Note `get_subject_rating_counts` still takes a raw
-  // person id as an unauthenticated read argument, so any named teacher's
-  // ratings remain enumerable; that is a staff-data concern, not student data.
-  'src/components/SubjectFileDrawer/Header/TeacherGradingPill.tsx',
 ]);
 
 /**
@@ -224,5 +207,38 @@ describe('no student data leaves the device', () => {
     for (const name of IDENTIFYING) {
       expect(src.includes(name), `installId.ts must not reference ${name}`).toBe(false);
     }
+  });
+
+  // reIS transmits nothing about a failure. This is the enforcement for that
+  // decision, not a description of it: deleting `services/errorReporter/` is a
+  // one-time act that any later PR could undo by adding an innocuous-looking
+  // `sendTelemetry` back into `logError`, which ~195 sites already call.
+  //
+  // The bar is deliberately the whole vocabulary rather than one symbol. An
+  // error reporter reintroduced under a different name still trips this if it
+  // reaches for the old RPCs, and the RPCs are gone from the database anyway,
+  // so a reintroduction has to be a conscious, visible act.
+  it('sends no error, stack or file path anywhere', () => {
+    const offenders: string[] = [];
+    for (const file of walk(SRC)) {
+      const rel = relative(ROOT, file);
+      if (rel.includes('__tests__') || rel.includes('/test/')) continue;
+      const src = readFileSync(file, 'utf-8');
+      for (const banned of ['report_error', 'report_error_v2', 'sendTelemetry', 'initTelemetry']) {
+        if (src.includes(banned)) offenders.push(`${rel} → ${banned}`);
+      }
+    }
+
+    expect(
+      offenders,
+      `Error telemetry is back. reIS's stated position is that no failure ` +
+        `information leaves the device — no error type, message, stack, file ` +
+        `path or session id, on any platform. The Supabase tables and RPCs ` +
+        `behind these names were dropped, so this cannot work anyway.\n` +
+        `If the project has genuinely changed its mind, update PRIVACY.md, ` +
+        `docs/privacy-policy-app.md and the published policy gist FIRST, then ` +
+        `this test:\n` +
+        offenders.join('\n')
+    ).toEqual([]);
   });
 });

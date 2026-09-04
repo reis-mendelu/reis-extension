@@ -98,31 +98,42 @@ A second host (WebISKAM, `webiskam.mendelu.cz`) existed until the integration wa
 
 ## Error Reporting & Privacy
 
-### Pipeline
-`logError(context, err, extra?)` (`src/utils/reportError.ts`) is the single call site for all non-fatal errors. It logs to `console.error` locally and calls `sendTelemetry(context, err)` (`src/services/errorReporter/telemetry.ts`). The `extra` object is **never** transmitted.
+**reIS transmits nothing about a failure.** No error type, message, stack, file
+path or session id leaves a device, on any platform. There is no error-reporting
+service, no opt-out toggle (nothing to opt out of), and no Supabase table or RPC
+behind it — `error_reports`, `error_groups`, `report_error` and
+`report_error_v2` were all dropped in `supabase/migrations/20260904120000_drop_error_telemetry.sql`.
 
-**Three reporting paths — all funnel to `sendTelemetry`:**
-1. **Automatic** — `installErrorReporter()` catches `window.onerror` and `unhandledrejection` events in the iframe app.
-2. **Explicit** — `logError(...)` at structured `try/catch` sites throughout the codebase.
-3. **Content-script bridge** — content scripts have no Supabase access; they call `sendToIframe(Messages.telemetryError(context, err))` to route the report through the iframe.
+`logError(context, err, extra?)` (`src/utils/reportError.ts`) is still the single
+funnel for non-fatal errors, and is still worth calling — it is now purely a
+local `console.error` with the stack and any `extra`. Context naming convention
+is unchanged: `Slice.method`, `Api.fetchX`, `Sync.stepY`, `Parser.parseX`,
+`useHookName.action`.
 
-Context naming convention: `Slice.method`, `Api.fetchX`, `Sync.stepY`, `Parser.parseX`, `useHookName.action`.
+**Do not reintroduce transmission.** `src/test/guards/noStudentDataLeaves.test.ts`
+fails on `sendTelemetry`, `initTelemetry`, `report_error` or `report_error_v2`
+appearing anywhere under `src/`. If the project genuinely changes its mind, the
+order is: update `PRIVACY.md`, `docs/privacy-policy-app.md` and the published
+policy gist first, then the guard.
 
-### What is (and isn't) transmitted
+**What this costs, recorded so it is not rediscovered as a surprise:** the only
+early warning that IS Mendelu changed its HTML and a parser broke. That failure
+is silent and hits everyone at once. Given the Parser Rules below, the
+compensating control is a human opening reIS against live IS — particularly at
+the start of a semester.
 
-Telemetry is sent via the `report_error_v2` Supabase RPC (`src/services/errorReporter/telemetry.ts`), which additionally aggregates reports into an `error_groups` table by fingerprint for triage. Fields transmitted: `p_session_id`, `p_error_type`, `p_error_message`, `p_file_path`, `p_line_number`, `p_stack_excerpt`, `p_client_ts`, `p_extension_version`, `p_browser_name`, `p_browser_version`. The legacy `report_error` RPC (7 fields, no session/stack/timestamp) still exists for back-compat but is no longer the primary path.
+### What reIS still sends
 
-**Sanitization** (`src/services/errorReporter/sanitize.ts`) runs on message and file path before transmission:
-- Redacts bearer/cookie tokens, all email addresses, all `*.mendelu.cz` URLs, and 6–7-digit student/staff IDs.
-- Strips query strings and fragments from file paths; strips extension ID prefix from `chrome-extension://` paths.
-- `normalizeFromRejection` in `reporter.ts` emits `<non-error rejection: typeof X>` instead of `JSON.stringify(reason)` to prevent object payloads (parsed API responses with grades, names) from leaking.
+Only three things, all disclosed in `docs/privacy-policy-app.md`:
 
-**Never sent:** student name, UIC/student ID (raw or hashed), session cookies, IS Mendelu data (grades, schedules, exams), IndexedDB contents.
+1. **Daily install count** — a random per-install UUID (`services/identity/installId.ts`),
+   never anything derived from the student. Deliberately counts installs, not people.
+2. **Feedback the student typed** — via the `submit_suggestion` RPC (`src/api/suggestions.ts`),
+   with screen name, app version, browser and viewport.
+3. **Society event view/click counters** — a post row id and nothing else.
 
-### Supabase schema
-- Table: `error_reports` — RLS enabled, zero policies (deny-all for direct row access).
-- Table: `error_groups` — fingerprint-based aggregation of reports for triage (added with v2 pipeline).
-- RPC: `report_error_v2(...)` — `SECURITY DEFINER`, grants `EXECUTE` to `anon` role, enforces 500 reports/hour server-side rate limit per `(browser, version)` window. Migration: `supabase/migrations/20260520120000_error_reports_v2.sql`. Legacy `report_error(...)` RPC (migration `supabase/migrations/20260506120000_error_reports_rate_limit.sql`) still exists for back-compat.
+`SUPABASE_CALLERS` in the guard test is the authoritative list of files allowed
+to talk to Supabase at all; adding one requires a written justification there.
 
 ## Parser Rules
 

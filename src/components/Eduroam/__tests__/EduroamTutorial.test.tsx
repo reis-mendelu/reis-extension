@@ -10,37 +10,26 @@ afterEach(() => {
 
 const base = {
   status: 'idle' as const,
-  qrDataUrl: null,
   password: null,
   onRun: () => {},
   onOpenSettings: () => {},
 };
 
 describe('EduroamTutorial', () => {
-  it('renders the do-once block only for android/windows', () => {
+  it('renders the do-once block only for windows', () => {
     useAppStore.setState({ language: 'en' });
-    const { rerender } = render(<EduroamTutorial target="android" {...base} />);
-    expect(screen.getByText('Install the geteduroam app')).toBeTruthy();
-    rerender(<EduroamTutorial target="ios" {...base} />);
-    expect(screen.queryByText(/geteduroam app$/)).toBeNull();
+    const { rerender } = render(<EduroamTutorial target="windows" {...base} />);
+    expect(screen.getByText('Install geteduroam for Windows')).toBeTruthy();
+    rerender(<EduroamTutorial target="mac" {...base} />);
+    expect(screen.queryByText(/^Install geteduroam/)).toBeNull();
   });
 
   it('calls onRun when the action button is clicked', () => {
     useAppStore.setState({ language: 'en' });
     const onRun = vi.fn();
-    render(<EduroamTutorial target="ios" {...base} onRun={onRun} />);
-    fireEvent.click(
-      screen.getByRole('button', { name: /Create QR code|Download eduroam profile/i })
-    );
+    render(<EduroamTutorial target="mac" {...base} onRun={onRun} />);
+    fireEvent.click(screen.getByRole('button', { name: /Download eduroam profile/i }));
     expect(onRun).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows the QR image once qrDataUrl is set', () => {
-    useAppStore.setState({ language: 'en' });
-    render(
-      <EduroamTutorial target="ios" {...base} status="done" qrDataUrl="data:image/png;base64,AAA" />
-    );
-    expect(screen.getByAltText(/eduroam QR/i)).toBeTruthy();
   });
 
   it('renders the password chip only when a password is present', () => {

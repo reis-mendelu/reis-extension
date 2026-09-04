@@ -487,16 +487,16 @@ async function syncSubjectDetails(
             // safe: courseCode came from Object.entries(subjectsValue.data) above
             subjectsValue.data[courseCode]!.skupinaId = skupinaId;
           } catch (e) {
-            sendToIframe(Messages.telemetryError('SyncService.syncClassmates', e));
+            console.error('[reIS:error] SyncService.syncClassmates:', e);
           }
         })
       );
 
     await Promise.all(classmateTasks);
   } catch (e) {
-    // Group-map fetch failed twice — single report for the root cause.
-    // Per-subject classmate fetches are skipped (no map), so no cascade.
-    sendToIframe(Messages.telemetryError('Sync.fetchSeminarGroupIds.retry', e));
+    // Group-map fetch failed twice. Per-subject classmate fetches are skipped
+    // (no map), so there is no cascade to log.
+    console.error('[reIS:error] Sync.fetchSeminarGroupIds.retry:', e);
   }
 }
 

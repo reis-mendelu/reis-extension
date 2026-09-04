@@ -16,11 +16,6 @@ vi.mock('../../../services/eduroam/mobileconfig', () => ({
   generateEduroamMobileconfig: vi.fn().mockReturnValue('<xml/>'),
 }));
 
-vi.mock('../../../api/eduroamTransfer', () => ({
-  putTransfer: vi.fn().mockResolvedValue('tid'),
-  buildTransferUrl: vi.fn().mockReturnValue('https://x/tid'),
-}));
-
 vi.mock('qrcode', () => ({
   default: {
     toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,zz'),
@@ -53,15 +48,14 @@ afterEach(() => {
 });
 
 describe('useEduroamSetup', () => {
-  it('reset() clears generated state (status, qrDataUrl, password) after a successful run', async () => {
+  it('reset() clears generated state (status, password) after a successful run', async () => {
     const { result } = renderHook(() => useEduroamSetup());
 
     await act(async () => {
-      await result.current.run('ios');
+      await result.current.run('mac');
     });
 
     expect(result.current.status).toBe('done');
-    expect(result.current.qrDataUrl).toBe('data:image/png;base64,zz');
     expect(result.current.password).toBe('pw123');
 
     act(() => {
@@ -69,7 +63,6 @@ describe('useEduroamSetup', () => {
     });
 
     expect(result.current.status).toBe('idle');
-    expect(result.current.qrDataUrl).toBeNull();
     expect(result.current.password).toBeNull();
   });
 
@@ -87,7 +80,7 @@ describe('useEduroamSetup', () => {
     expect(result.current.password).toBe('pw123');
   });
 
-  it("run('windows') saves a .eap-config file directly (no QR, no transfer)", async () => {
+  it("run('windows') saves a .eap-config file directly", async () => {
     const { result } = renderHook(() => useEduroamSetup());
 
     await act(async () => {
@@ -96,12 +89,10 @@ describe('useEduroamSetup', () => {
 
     expect(result.current.status).toBe('done');
     expect(result.current.password).toBe('pw123');
-    expect(result.current.qrDataUrl).toBeNull();
     expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), 'eduroam-reis.eap-config');
   });
 
-  it('configures the network natively on the phone, with no QR and no transfer', async () => {
-    const { putTransfer } = await import('../../../api/eduroamTransfer');
+  it('configures the network natively on the phone', async () => {
     await onPhone('0');
     const { result } = renderHook(() => useEduroamSetup());
 
@@ -111,11 +102,27 @@ describe('useEduroamSetup', () => {
 
     expect(result.current.status).toBe('done');
     expect(result.current.outcome).toBe('saved');
-    // A QR on the very device being configured is unscannable — it is a
-    // desktop→phone artifact and has no meaning here.
-    expect(result.current.qrDataUrl).toBeNull();
-    expect(putTransfer).not.toHaveBeenCalled();
   });
+
+  // Regression: with the desktop→phone transfer gone, a phone target that
+  // cannot configure natively used to fall through to the file branch and
+  // download a profile built for a laptop — an Apple .mobileconfig, even on
+  // Android. It must fail instead.
+  it.each(['ios', 'android'] as const)(
+    'refuses to hand %s a desktop profile when the native path is unavailable',
+    async (phone) => {
+      const native = await import('../../../mobile/eduroamNative');
+      vi.mocked(native.canConfigureEduroamNatively).mockReturnValue(false);
+      const { result } = renderHook(() => useEduroamSetup());
+
+      await act(async () => {
+        await result.current.run(phone);
+      });
+
+      expect(result.current.status).toBe('error');
+      expect(saveAs).not.toHaveBeenCalled();
+    }
+  );
 
   it('treats an eduroam network that already exists as success', async () => {
     await onPhone('2');
@@ -157,36 +164,16 @@ describe('useEduroamSetup', () => {
   });
 
   it('configures natively on iOS too, reading the outcome the Swift plugin resolved', async () => {
-    const { putTransfer } = await import('../../../api/eduroamTransfer');
     const native = await import('../../../mobile/eduroamNative');
     vi.mocked(native.canConfigureEduroamNatively).mockReturnValue(true);
     vi.mocked(native.nativeEduroamDeps.configure).mockResolvedValue({ outcome: 'saved' });
     const { result } = renderHook(() => useEduroamSetup());
 
     await act(async () => {
-      await result.current.run('ios');
+      await result.current.run('mac');
     });
 
     expect(result.current.status).toBe('done');
     expect(result.current.outcome).toBe('saved');
-    expect(result.current.qrDataUrl).toBeNull();
-    expect(putTransfer).not.toHaveBeenCalled();
-  });
-
-  it('keeps the QR transfer for Android chosen in a desktop browser', async () => {
-    const { putTransfer } = await import('../../../api/eduroamTransfer');
-    // Stated rather than inherited: clearAllMocks resets calls, not
-    // implementations, so a preceding onPhone() would otherwise leak in here.
-    const native = await import('../../../mobile/eduroamNative');
-    vi.mocked(native.canConfigureEduroamNatively).mockReturnValue(false);
-    const { result } = renderHook(() => useEduroamSetup());
-
-    await act(async () => {
-      await result.current.run('android');
-    });
-
-    expect(putTransfer).toHaveBeenCalled();
-    expect(result.current.qrDataUrl).toBe('data:image/png;base64,zz');
-    expect(result.current.outcome).toBeNull();
   });
 });

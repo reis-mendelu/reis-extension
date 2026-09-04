@@ -34,7 +34,6 @@ function baseHookState(): HookState {
     target: 'windows' as const,
     selectTarget: vi.fn(),
     password: null,
-    qrDataUrl: null,
     error: null,
     outcome: null,
     run: vi.fn(),
@@ -250,7 +249,7 @@ describe('EduroamSheet', () => {
 
   it('never renders a QR on the phone being configured', () => {
     // A desktop→phone artifact; on this device it points at itself.
-    onPhone({ status: 'done', outcome: 'saved', qrDataUrl: 'data:image/png;base64,zz' });
+    onPhone({ status: 'done', outcome: 'saved' });
 
     render(<EduroamSheet onClose={vi.fn()} />);
 

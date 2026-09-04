@@ -1,6 +1,6 @@
 import { supabase } from '@/services/spolky/supabaseClient';
 import { logError } from '@/utils/reportError';
-import { getBrowserInfo } from '@/services/errorReporter/sanitize';
+import { getBrowserInfo } from '@/utils/browserInfo';
 import { getAppVersion } from '@/utils/appIdentity';
 import { IndexedDBService } from '@/services/storage';
 import { isAppView, type AppView } from '@/types/app';
@@ -40,9 +40,11 @@ async function currentScreen(): Promise<AppView> {
 }
 
 /**
- * Writes a suggestion through the `submit_suggestion` RPC — the same shape
- * telemetry uses (`report_error_v2`), and for the same reason: an anonymous
- * write needs no shared secret.
+ * Writes a suggestion through the `submit_suggestion` RPC: a SECURITY DEFINER
+ * function granted to `anon`, because an anonymous write needs no shared
+ * secret. This is now the ONLY thing reIS sends that a student composed — the
+ * error-telemetry path that once used the same shape has been removed
+ * entirely, along with its tables.
  *
  * There is deliberately no client credential here. The old edge function gated
  * on `x-reis-extension-secret`, a value that shipped inside the bundle — so
