@@ -816,8 +816,8 @@ Append to the `jobs:` block in `.github/workflows/ci.yml`, matching the indentat
 
 - [ ] **Step 2: Verify the workflow parses**
 
-Run: `npx --yes yaml-lint .github/workflows/ci.yml 2>/dev/null || python3 -c "import yaml,sys; yaml.safe_load(open('.github/workflows/ci.yml'))"`
-Expected: no output, exit 0.
+Run: `npx --yes js-yaml .github/workflows/ci.yml > /dev/null`
+Expected: no output, exit 0. (`pyyaml` is NOT installed on this machine — `python3 -c "import yaml"` fails, so use the npx command above.)
 
 - [ ] **Step 3: Commit**
 
@@ -993,7 +993,7 @@ jobs:
 
 - [ ] **Step 2: Verify the workflow parses**
 
-Run: `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release-gate.yml'))"`
+Run: npx --yes js-yaml .github/workflows/release-gate.yml > /dev/null
 Expected: no output, exit 0.
 
 - [ ] **Step 3: Confirm the environment name is not a placeholder**
@@ -1143,7 +1143,7 @@ jobs:
 - [ ] **Step 3: Verify both parse and the markers are balanced**
 
 ```bash
-python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release-checklist.yml'))"
+npx --yes js-yaml .github/workflows/release-checklist.yml > /dev/null
 test "$(grep -c 'BEGIN release-checklist' .github/release-checklist.md)" = 1
 test "$(grep -c 'END release-checklist' .github/release-checklist.md)" = 1
 echo OK
@@ -1249,7 +1249,7 @@ jobs:
 
 - [ ] **Step 2: Verify it parses**
 
-Run: `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release-tag.yml'))"`
+Run: npx --yes js-yaml .github/workflows/release-tag.yml > /dev/null
 Expected: no output, exit 0.
 
 - [ ] **Step 3: Sanity-check the version read**
