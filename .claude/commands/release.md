@@ -39,8 +39,14 @@ CI does the rest.
 
 ## Reference
 
-Merge → `release-tag.yml` pushes `vX.Y.Z` → `publish.yml` builds and submits via
-`wxt submit`.
+Merge → `release-tag.yml` pushes `vX.Y.Z`, then dispatches `publish.yml` (a tag
+pushed with `GITHUB_TOKEN` does not trigger `publish.yml`'s own `push: tags`
+listener — GitHub exempts `workflow_dispatch`/`repository_dispatch` from that
+restriction, not `push`) → `publish.yml` builds and submits via `wxt submit`.
+If the dispatch itself fails, `release-tag.yml` fails the job and prints the
+exact `gh workflow run publish.yml --ref vX.Y.Z -f tag=vX.Y.Z` command to run
+by hand — the tag will already exist at that point, so that dispatch is the
+only remaining way to ship it.
 
 **Store review SLAs:** Chrome 1–3 days · Firefox AMO days–weeks (manual review) ·
 Edge 1–7 days.
