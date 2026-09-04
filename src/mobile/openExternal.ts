@@ -1,5 +1,5 @@
 import { getPlatform } from '../platform';
-import { UIS_AUTH_COOKIE } from '../platform/sessionToken';
+import { UIS_AUTH_COOKIE, buildRestoreScript, isPlausibleToken } from '../platform/sessionToken';
 import { logError } from '../utils/reportError';
 import { DemoModeError, isDemoMode } from '../errors/demoMode';
 
@@ -26,15 +26,6 @@ const OPENABLE_PROTOCOL = /^https?:$/;
  * uses, and must never be handed a view that can read an IS session.
  */
 const NEEDS_APP_SESSION = /^is\.mendelu\.cz$/i;
-
-/**
- * The origin the session cookie belongs to.
- *
- * The cookie is written against the ORIGIN, not the page URL: a cookie set for
- * `/auth/student/moje_studium.pl` would not be sent to the rest of IS, and the
- * whole point is that it survives wherever the student navigates next.
- */
-const IS_COOKIE_ORIGIN = 'https://is.mendelu.cz';
 
 export function needsAppSession(url: string): boolean {
   try {
@@ -184,18 +175,6 @@ export async function openExternal(url: string): Promise<void> {
     const { loadStoredToken } = await import('../platform/tokenStore');
     const token = isSecure ? await loadStoredToken().catch(() => '') : '';
 
-    // Seeded only with a token in hand, and only for the IS branch — this line
-    // is not reached for a third-party link, which goes to the system browser
-    // above and must never be handed a view that can read this session.
-    if (token) {
-      const { CapacitorCookies } = await import('@capacitor/core');
-      await CapacitorCookies.setCookie({
-        url: IS_COOKIE_ORIGIN,
-        key: UIS_AUTH_COOKIE,
-        value: token,
-      });
-    }
-
     await InAppBrowser.openWebView({
       url: target,
       // The host, not a fixed string: the student should be able to see where
@@ -206,16 +185,33 @@ export async function openExternal(url: string): Promise<void> {
       // to zoom and half of them cannot be read on a phone. Android only —
       // iOS's WKWebView zooms by default.
       enableZoom: true,
-      // Use the host app's store rather than the plugin's isolated one, so the
-      // cookie seeded just above is visible to this WebView on EVERY
-      // navigation, not just the request the plugin builds. A no-op on Android,
-      // where cookies are already process-global via `CookieManager` — which is
-      // why Android never showed this and an iPad did.
-      //
-      // Scoped to IS by where this sits: only the needsAppSession branch
-      // reaches it.
-      useSharedDataStore: true,
       ...(token ? { headers: { Cookie: `${UIS_AUTH_COOKIE}=${token}` } } : {}),
+      // The cookie is set by the PAGE, so it is there for every navigation
+      // after the first — `headers` only covers the request the plugin builds.
+      //
+      // `document.cookie`, not `CapacitorCookies.setCookie`. That API was the
+      // first attempt at this and it corrupted the token: it encodes the value
+      // with `.urlPathAllowed`, which does not include `%`, and a real UISAuth
+      // is URL-encoded base64 (`sessionToken.ts`, measured: "e.g. …%2F…"). So
+      // `%2F` became `%252F`, IS saw a token that was not the student's, and
+      // the second tap landed on the login page exactly as before.
+      //
+      // documentStart so the cookie exists before the page's own scripts run.
+      // `buildRestoreScript` validates the token against an allowlist that
+      // excludes `;` and `"` and throws otherwise, which is what makes putting
+      // it in generated code safe.
+      //
+      // Guarded on `isPlausibleToken` rather than on `token` being truthy:
+      // `buildRestoreScript` THROWS for a malformed one, and inside this try
+      // that would abandon the open altogether — a dead tap instead of a page
+      // with a login prompt on it. A token that fails the allowlist is treated
+      // as no token, which is what the rest of this branch already does.
+      ...(isPlausibleToken(token)
+        ? {
+            preShowScript: buildRestoreScript(token),
+            preShowScriptInjectionTime: 'documentStart' as const,
+          }
+        : {}),
     });
   } catch (e) {
     // No toast: this runs from a document listener with no React context, so

@@ -97,14 +97,17 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
           <div className="alert alert-success text-base">
             <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
             <span>
-              {/* `saved` and `saved-not-joined` share this line: it already
-                    says "uložený" and "na fakultě se připojíš automaticky",
-                    which is exactly what is true when the configuration
-                    installed and the SSID was out of range. A second string
-                    saying the same thing is a second place to keep correct. */}
+              {/* Three success lines, because they are three different truths.
+                  `saved-not-joined` is the off-campus one: the configuration
+                  installed and iOS then put up its OWN "Unable to join the
+                  network" alert, which no API can suppress — there is no
+                  save-without-join. So this line names that alert before the
+                  student reads it as a failure. */}
               {outcome === 'already-configured'
                 ? t('eduroam.native.already')
-                : t('eduroam.native.saved')}
+                : outcome === 'saved-not-joined'
+                  ? t('eduroam.native.savedNotJoined')
+                  : t('eduroam.native.saved')}
             </span>
           </div>
         )}

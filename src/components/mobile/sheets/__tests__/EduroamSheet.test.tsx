@@ -179,6 +179,26 @@ describe('EduroamSheet', () => {
     expect(screen.getByText(/eduroam je uložený/)).toBeInTheDocument();
   });
 
+  /**
+   * Off campus, `apply` installs the configuration and then iOS puts up its OWN
+   * alert — "Unable to join the network eduroam" — because the SSID is not in
+   * range. There is no API to save without attempting to join, so that alert
+   * cannot be suppressed; it can only be explained before the student decides
+   * what it means.
+   *
+   * Confirmed on the device: "I actually did get the green message ... but what
+   * I'm seeing is the green message, but then a system prompt from iPad saying,
+   * unable to join the network, Eduroam."
+   */
+  it('names the system alert it cannot suppress, so it does not read as failure', () => {
+    onPhone({ status: 'done', outcome: 'saved-not-joined' });
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(screen.getByText(/eduroam je uložený/)).toBeInTheDocument();
+    expect(screen.getByText(/není v dosahu/)).toBeInTheDocument();
+  });
+
   it('reads an already-configured network as success, not a problem', () => {
     onPhone({ status: 'done', outcome: 'already-configured' });
 
