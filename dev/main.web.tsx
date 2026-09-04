@@ -43,6 +43,11 @@ import './devAdminSession';
 // cannot happen that early.
 import { bootDemoMode, shouldLoadRealData, PREVIEW_DATA_URL } from './bootDemoMode';
 
+// Zero-dependency read of the same flag `DemoBanner` renders off of — see
+// `mountSnapshotAge`'s own comment for why the badge takes this as an
+// argument instead of reading the store directly.
+import { isDemoMode } from '../src/errors/demoMode';
+
 // Then the snapshot's age, once the data is in — the real-data preview is
 // refreshed by hand, so a stale snapshot has to be visible as stale.
 //
@@ -59,12 +64,17 @@ import { bootDemoMode, shouldLoadRealData, PREVIEW_DATA_URL } from './bootDemoMo
 void bootDemoMode(import.meta.env).then(async () => {
   if (!shouldLoadRealData(import.meta.env)) return;
   const { mountSnapshotAge } = await import('./snapshotAge');
-  let lastSync: number | undefined;
+  // `snapshot` is `any` (JSON.parse), so this annotation is the actual type —
+  // not `number | undefined` — because a malformed or truncated snapshot can
+  // hand back `null` (or any other JSON primitive) here. `formatSnapshotAge`
+  // is what actually polices this at runtime; the annotation just has to stop
+  // lying about what can arrive.
+  let lastSync: string | number | null | undefined;
   try {
     const snapshot = await (await fetch(PREVIEW_DATA_URL)).json();
     lastSync = snapshot?.lastSync;
   } catch {
     // mountSnapshotAge renders "snapshot date unknown" for undefined.
   }
-  mountSnapshotAge(import.meta.env, lastSync);
+  mountSnapshotAge(import.meta.env, lastSync, isDemoMode());
 });
