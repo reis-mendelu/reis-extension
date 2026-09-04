@@ -1,45 +1,51 @@
 # /release
 
-Automates the full release flow: version bump → commit → tag → push → CI publishes to Chrome, Firefox, and Edge.
+Opens the release PR that ships `test` to the stores. Merging it pushes the tag;
+CI does the rest.
 
 ## Steps
 
-1. **Preflight** — run these and abort if anything is wrong:
-   - `git status` — must be clean (no uncommitted changes)
-   - `git log --oneline -3` — confirm on main
-   - Read current version from `package.json`
+1. **Preflight** — abort if anything is wrong:
+   - `git status` — must be clean
+   - Confirm you are on `test` and it is up to date with `origin/test`
+   - `gh pr list --base main --state open` — must be empty. Two open release PRs
+     race the same tag.
+   - Read the current version from `package.json`
 
 2. **Ask the user** (AskUserQuestion, both in one message):
-   - New version number (suggest next patch increment, e.g. if current is 5.0.0 suggest 5.0.1)
-   - One-line description for the commit (e.g. "improve exam card UI")
+   - New version number (suggest the next patch increment)
+   - One-line summary of what this release contains
 
-3. **Apply changes**:
-   - Edit `package.json`: update `"version"` field
-   - Edit `wxt.config.ts`: update `version:` field inside `manifest:` block
-   - Commit: `chore: bump to X.Y.Z - <description>` — no Co-Authored-By
-   - `git tag vX.Y.Z`
-   - `git push origin main vX.Y.Z`
+3. **Bump on `test`**:
+   - Edit `package.json`: `"version"`
+   - Edit `wxt.config.ts`: `version:` inside the `manifest:` block — the same value
+   - Commit: `chore: bump to X.Y.Z - <summary>`
+   - Push to `test`
 
-4. **Report** the triggered Actions run:
-   - Run `gh run list --repo reis-mendelu/reis-extension --limit 1` to get the run ID
-   - Tell the user to watch with: `gh run watch <id> --repo reis-mendelu/reis-extension`
+4. **Wait for the preview deploy** of that exact commit to go green. The release
+   gate requires it, and it is the last chance to look at what is shipping.
+
+5. **Open the release PR**: `gh pr create --base main --head test --title "release: X.Y.Z - <summary>"`.
+   The checklist is injected automatically. Work through it.
+
+6. **Stop.** Merging is the user's call — it is an irreversible store submission.
 
 ## Rules
-- Never skip the preflight — a dirty working tree means uncommitted work gets left out of the release
-- Both `package.json` and `wxt.config.ts` must be updated together — mismatch causes the extension manifest to show the wrong version
-- Commit message format is load-bearing for the git log pattern used by the team
+- Never bump on `main`. The version must be in the release PR's diff.
+- `package.json` and `wxt.config.ts` move together or the manifest shows the wrong version.
+- **Do not merge into `test` while the release PR is open.** The gate requires a
+  green deploy of the PR's head SHA, and a merge moves the tip out from under it.
+- Never push a `v*` tag by hand. `release-tag.yml` owns that.
 
 ## Reference
 
-Pushing a `v*` tag triggers `.github/workflows/publish.yml` → builds Chrome + Firefox zips → submits to all three stores via `wxt submit`.
+Merge → `release-tag.yml` pushes `vX.Y.Z` → `publish.yml` builds and submits via
+`wxt submit`.
 
-**Store review SLAs** (version goes live after review):
+**Store review SLAs:** Chrome 1–3 days · Firefox AMO days–weeks (manual review) ·
+Edge 1–7 days.
 
-| Store | Typical review time |
-|-------|-------------------|
-| Chrome Web Store | 1–3 days |
-| Firefox AMO | days–weeks (manual review) |
-| Edge Add-ons | 1–7 days |
+iOS is **not** part of this flow and is still released by hand.
 
 **GitHub Secrets** (repo → Settings → Secrets → Actions):
 
@@ -49,4 +55,6 @@ Pushing a `v*` tag triggers `.github/workflows/publish.yml` → builds Chrome + 
 | Firefox | `FIREFOX_EXTENSION_ID`, `FIREFOX_API_KEY`, `FIREFOX_API_SECRET` |
 | Edge | `EDGE_PRODUCT_ID`, `EDGE_CLIENT_ID`, `EDGE_API_KEY` |
 
-> `CHROME_REFRESH_TOKEN` is permanent only while the Google OAuth consent screen is set to **"In production"** (currently set). If it ever reverts to "Testing", tokens expire after 7 days.
+> `CHROME_REFRESH_TOKEN` is permanent only while the Google OAuth consent screen
+> is set to **"In production"** (currently set). If it reverts to "Testing",
+> tokens expire after 7 days.

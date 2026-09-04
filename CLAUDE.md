@@ -44,6 +44,26 @@ fakes a session **and routes every write to an in-memory store** — publishes
 there never reach Supabase, so never cite them as evidence a write works.
 `dev:web:admin` clears that flag.
 
+## Branches and releasing
+
+`feature branch → test → main`. Never commit directly on `test` or `main`.
+
+- **Base every PR on `test`**: `gh pr create --base test`. `main` is still the
+  repository default branch — this is a public repo, and the default branch is
+  what a visitor's Code tab, a fresh clone and every load-unpacked instruction
+  resolve to, so it points at released code. The cost is that PRs open with the
+  wrong base; the release gate catches it.
+- A branch cut from `main` must merge `origin/test` in and retarget before
+  going further, or it goes stale and conflicts at the next release.
+- `test` auto-deploys to the Vercel preview. It enters the app's own demo mode
+  (`enterDemo()`), which is the synthetic `demo` dataset, so **documents,
+  holidays, campus events and profile render empty there** — expected, not a
+  bug — and writes go to an in-memory store, so a publish that appears to work
+  on the preview is not evidence a publish works.
+- `main` accepts only the `test` → `main` release PR, and merging it submits to
+  the stores. Use `/release`.
+- **Do not merge into `test` while a release PR is open.**
+
 ## Architecture
 
 The manifest is generated from `wxt.config.ts` — never hand-edited.
