@@ -19,7 +19,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { listBuildVersions, resolveAscCredentials } from './lib/ascApi';
-import { exportOptionsPlist, nextBundleVersion, parseReleaseArgs } from './lib/iosRelease';
+import { exportOptionsPlist, parseReleaseArgs, reserveBundleVersion } from './lib/iosRelease';
 import { deriveIosVersion, readBundleVersion } from './lib/iosVersion';
 import { assertUploadable, inspectIpa } from './lib/verifyIpa';
 
@@ -76,15 +76,29 @@ function preflight(): string {
   return version;
 }
 
+// Set the moment altool is invoked. From then on the build number may already
+// be at Apple even if this process dies, and a build takes minutes to appear in
+// /v1/builds — so the stamp becomes the only local record that the number is
+// spent, and reverting it would let a retry re-send it.
+let uploadAttempted = false;
+
 /**
- * Put project.pbxproj back the way the commit has it.
+ * Put project.pbxproj back the way the commit has it — unless the upload has
+ * already started.
  *
- * The stamp is a build artifact, not a source change: leaving it modified
- * blocks the NEXT release's preflight. ASC is the record of which numbers are
- * taken, so nothing is lost — and after a failure, reverting is what makes the
- * retry reuse the number rather than skip one.
+ * The stamp is a build artifact, not a source change, and leaving it modified
+ * blocks the next release's preflight. Reverting after a failure is also what
+ * makes a retry reuse the number rather than skip one. Neither applies once
+ * bytes have gone to Apple.
  */
 function restoreVersionStamp() {
+  if (uploadAttempted) {
+    console.log(
+      '\nproject.pbxproj is left stamped so a retry cannot re-send this build number.\n' +
+        'Once the build shows in App Store Connect: git checkout -- ios/App/App.xcodeproj/project.pbxproj'
+    );
+    return;
+  }
   try {
     execFileSync('git', ['checkout', '--', 'ios/App/App.xcodeproj/project.pbxproj'], { cwd: ROOT });
   } catch {
@@ -100,12 +114,8 @@ async function main() {
   step('Asking App Store Connect which build numbers are taken');
   const creds = resolveAscCredentials();
   const taken = await listBuildVersions(APP_ID, creds);
-  // A stamped rebuild counter from an earlier local run counts as taken too:
-  // sync-ios-version.ts refuses to lower it, so a lower pick would be silently
-  // overwritten and the upload rejected as a duplicate at the very last step.
   const stamped = readBundleVersion(readFileSync(PBXPROJ, 'utf8'));
-  const stampedCounts = stamped && /^\d+\.[1-9]/.test(stamped) ? [stamped] : [];
-  const bundleVersion = nextBundleVersion(base, [...taken, ...stampedCounts]);
+  const bundleVersion = reserveBundleVersion(base, taken, stamped);
   const counter = bundleVersion.includes('.') ? bundleVersion.split('.')[1] : undefined;
   console.log(
     `  ${taken.length} build(s) known to ASC; local stamp ${stamped ?? 'none'} -> using ${bundleVersion}`
@@ -167,6 +177,7 @@ async function main() {
   }
 
   step('Uploading to App Store Connect');
+  uploadAttempted = true;
   sh('xcrun', [
     'altool',
     '--upload-app',

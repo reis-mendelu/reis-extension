@@ -5,6 +5,7 @@ import {
   nextBundleVersion,
   parseReleaseArgs,
   parseSigningAuthority,
+  reserveBundleVersion,
 } from '../iosRelease';
 
 describe('nextBundleVersion', () => {
@@ -92,5 +93,38 @@ describe('parseReleaseArgs', () => {
 
   it('refuses an argument it does not understand', () => {
     expect(() => parseReleaseArgs(['--upload-now'])).toThrow(/Unknown argument/);
+  });
+});
+
+describe('reserveBundleVersion', () => {
+  it('ignores a bare stamp so the first release of a version is not pushed to .1', () => {
+    // `cap:sync` writes the bare base for the current version on any ordinary
+    // build; counting it as used would burn a number every release.
+    expect(reserveBundleVersion('50101', [], '50101')).toBe('50101');
+  });
+
+  it('treats a stamped rebuild counter as spent', () => {
+    // 50100.2 was archived here and never uploaded, so ASC has never heard of
+    // it — but sync-ios-version.ts refuses to lower the stamp, so reusing it
+    // would be silently overwritten and rejected at the end of the upload.
+    expect(reserveBundleVersion('50100', ['50100', '50100.1'], '50100.2')).toBe('50100.3');
+  });
+
+  it('takes the higher of what ASC holds and what is stamped', () => {
+    expect(reserveBundleVersion('50100', ['50100', '50100.1', '50100.2'], '50100.1')).toBe(
+      '50100.3'
+    );
+  });
+
+  it('counts a two-digit counter, which a lazier regex would drop', () => {
+    expect(reserveBundleVersion('50100', ['50100'], '50100.10')).toBe('50100.11');
+  });
+
+  it('ignores a stamp belonging to another marketing version', () => {
+    expect(reserveBundleVersion('50101', [], '50100.4')).toBe('50101');
+  });
+
+  it('copes with an unstamped project', () => {
+    expect(reserveBundleVersion('50101', ['50101'], null)).toBe('50101.1');
   });
 });

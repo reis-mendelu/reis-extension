@@ -72,9 +72,15 @@ Actions: CI still cannot sign an iOS build here, which is why the cut is local.
 - **It stops at upload.** `test` is not a protected branch, so no push should be
   able to reach App Review. Adding the build to a version and submitting is
   done by a person.
-- **It leaves the tree clean.** The version stamp it writes into
-  `project.pbxproj` is reverted afterwards, success or failure — the stamp is a
-  build artifact, and a dirty tree would block the next release's preflight.
+- **It leaves the tree clean, until the upload starts.** The version stamp it
+  writes into `project.pbxproj` is a build artifact, and a dirty tree blocks the
+  next release's preflight, so it is reverted — reverting after a failed archive
+  is also what makes the retry reuse the number rather than skip one. Once
+  `altool` has been invoked the stamp **stays**: the bytes may already be at
+  Apple, a build takes minutes to appear in `/v1/builds`, and the stamp is then
+  the only local record that the number is spent. Clear it by hand
+  (`git checkout -- ios/App/App.xcodeproj/project.pbxproj`) once the build shows
+  up in App Store Connect.
 
 ## Traps that have actually bitten
 

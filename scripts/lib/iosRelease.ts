@@ -56,6 +56,27 @@ export function nextBundleVersion(base: string, existing: string[]): string {
 }
 
 /**
+ * The CFBundleVersion to release, from what App Store Connect holds AND what
+ * this checkout last stamped.
+ *
+ * The stamp is counted as taken only when it carries a rebuild counter: a bare
+ * base is what an ordinary `cap:sync` writes for the current version, so
+ * treating it as used would burn `.1` on every first release of a version. A
+ * counter, on the other hand, only ever comes from a previous release attempt
+ * — and after an upload the stamp is deliberately left in place, so this is
+ * what stops a retry from re-sending a number ASC has received but not yet
+ * listed (a build takes minutes to appear).
+ */
+export function reserveBundleVersion(
+  base: string,
+  ascVersions: string[],
+  stamped: string | null
+): string {
+  const stampedCounts = stamped !== null && /^\d+\.[1-9]\d*$/.test(stamped) ? [stamped] : [];
+  return nextBundleVersion(base, [...ascVersions, ...stampedCounts]);
+}
+
+/**
  * exportOptions.plist for `xcodebuild -exportArchive`.
  *
  * `destination` is `export`, not `upload`, on purpose: upload needs a
