@@ -138,16 +138,29 @@ function overflowFindings(p: ProbeResult): Finding[] {
       detail: `page scrolls ${Math.round(over)}px horizontally at ${p.width}px wide`,
       severity: 'error',
     });
-    for (const e of p.elements) {
-      const past = e.rect.x + e.rect.w - p.width;
-      if (past > PX_SLACK && area(e.rect) > 0) {
-        out.push({
-          kind: 'overflow-element',
-          sel: e.sel,
-          detail: `extends ${Math.round(past)}px past the ${p.width}px viewport`,
-          severity: 'error',
-        });
-      }
+  }
+
+  // Per-element, and deliberately NOT nested inside the document-scroll check
+  // above. reIS clips at #root, so the document never scrolls horizontally —
+  // which meant this whole rule could never fire in this app, in shot.ts or in
+  // the CI gate. Verified by injecting a 2000px-wide element: docScrollWidth
+  // stayed equal to clientWidth and nothing was reported.
+  //
+  // Clipped is not better than scrolled. It is worse: the content is simply
+  // unreachable, with no scrollbar to hint that anything is missing.
+  //
+  // Elements parked entirely off-canvas (a closed drawer at translateX(100%))
+  // do not reach here — the probe's own elementFromPoint occlusion test drops
+  // anything whose centre is not the topmost element at that point.
+  for (const e of p.elements) {
+    const past = e.rect.x + e.rect.w - p.width;
+    if (past > PX_SLACK && area(e.rect) > 0) {
+      out.push({
+        kind: 'overflow-element',
+        sel: e.sel,
+        detail: `extends ${Math.round(past)}px past the ${p.width}px viewport`,
+        severity: 'error',
+      });
     }
   }
   return out;

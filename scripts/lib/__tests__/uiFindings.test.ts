@@ -38,6 +38,23 @@ function probe(elements: ProbeElement[], over: Partial<ProbeResult> = {}): Probe
 const kinds = (f: { kind: string }[]) => f.map((x) => x.kind);
 
 describe('analyzeProbe — horizontal overflow', () => {
+  // reIS clips at #root, so the document never scrolls horizontally. Nesting
+  // the per-element rule inside the document-scroll check made it unable to
+  // fire in this app at all — proven by injecting a 2000px element and getting
+  // nothing back. Clipped is worse than scrolled: the content is unreachable
+  // and there is no scrollbar to hint that anything is missing.
+  it('reports an element past the viewport even when the document does not scroll', () => {
+    const f = analyzeProbe(
+      probe([el({ sel: 'div.wide-rail', rect: { x: 0, y: 100, w: 2000, h: 40 } })], {
+        width: 320,
+        docScrollWidth: 320,
+        docClientWidth: 320,
+      })
+    );
+    expect(f.some((x) => x.kind === 'overflow-element' && x.sel === 'div.wide-rail')).toBe(true);
+    expect(kinds(f)).not.toContain('overflow');
+  });
+
   it('reports nothing when the document fits', () => {
     expect(analyzeProbe(probe([]))).toEqual([]);
   });
