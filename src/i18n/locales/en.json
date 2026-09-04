@@ -563,7 +563,7 @@
       "button": "Set up eduroam",
       "working": "Opening Wi-Fi setup…",
       "saved": "Done — eduroam is saved.",
-      "savedNote": "Your device may say it couldn't join: the network isn't in range here. On campus you'll connect automatically.",
+      "savedNote": "Ignore any “couldn't join” message — eduroam isn't in range here. On campus you'll connect by yourself.",
       "already": "eduroam is already set up on this device.",
       "staleAssociation": "You're connected to eduroam, so it can't be set up right now. If it stops connecting later, forget the network in Settings → Wi‑Fi and tap again.",
       "cancelled": "Setup wasn't finished. Tap again to retry.",
