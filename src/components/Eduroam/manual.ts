@@ -18,18 +18,12 @@ export interface DeviceManual {
 }
 
 /** Step structure per device. Copy lives in i18n under eduroam.manual.<target>.* */
-export const EDUROAM_MANUAL: Record<EduroamTarget, DeviceManual> = {
-  ios: {
-    steps: [{ action: 'qr' }, {}, {}, { password: true }],
-  },
-  android: {
-    doOnceUrl: 'https://play.google.com/store/apps/details?id=app.eduroam.geteduroam',
-    steps: [
-      { action: 'qr' },
-      { img: '/eduroam/android/2.webp' },
-      { password: true, img: '/eduroam/android/3.webp' },
-    ],
-  },
+/** The devices the desktop drawer sets up: the machine reIS is running on.
+ *  Phones are configured by the reIS app itself, natively, so the browser no
+ *  longer offers them — that path was a desktop→phone QR transfer. */
+export type DesktopEduroamTarget = Extract<EduroamTarget, 'mac' | 'windows'>;
+
+export const EDUROAM_MANUAL: Record<DesktopEduroamTarget, DeviceManual> = {
   mac: {
     steps: [
       { action: 'download', img: '/eduroam/mac/1.webp' },

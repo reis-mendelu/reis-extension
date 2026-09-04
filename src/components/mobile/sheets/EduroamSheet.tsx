@@ -44,7 +44,7 @@ function NumberBadge({ n }: { n: number }) {
 export function EduroamSheet({ onClose }: EduroamSheetProps) {
   const { t } = useTranslation();
   const target = detectTarget();
-  const { status, password, qrDataUrl, error, outcome, run } = useEduroamSetup(target);
+  const { status, password, error, outcome, run } = useEduroamSetup(target);
   const working = status === 'working';
 
   // On the phone itself Android saves the network directly, so there is no
@@ -140,14 +140,6 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
                 : t('eduroam.download')}
           </button>
         </div>
-
-        {/* Never on the native path: the QR is a desktop→phone artifact and
-            would be pointing this device at itself. */}
-        {status === 'done' && qrDataUrl && !native && (
-          <div className="ml-9 self-start rounded-box bg-white p-3">
-            <img src={qrDataUrl} alt="eduroam QR" width={160} height={160} />
-          </div>
-        )}
 
         <div className="flex items-center gap-3">
           <NumberBadge n={native ? 2 : 3} />

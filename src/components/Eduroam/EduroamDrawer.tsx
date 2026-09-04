@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Wifi, AlertTriangle, X } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
-import { useEduroamSetup, type EduroamTarget } from '../../hooks/data/useEduroamSetup';
+import { useEduroamSetup } from '../../hooks/data/useEduroamSetup';
 import { AdaptiveDrawer } from '../ui/AdaptiveDrawer';
+import type { DesktopEduroamTarget } from './manual';
 import { DeviceAccordion } from './DeviceAccordion';
 
 /** Side-drawer host for the eduroam setup flow. Self-connects to the store. */
@@ -11,12 +12,23 @@ export function EduroamDrawer() {
   const { t } = useTranslation();
   const isOpen = useAppStore((s) => s.isEduroamOpen);
   const setOpen = useAppStore((s) => s.setIsEduroamOpen);
-  const { status, password, qrDataUrl, error, run, reset, selectTarget, openProfilesSettings } = useEduroamSetup();
-  const [selected, setSelected] = useState<EduroamTarget | null>(null);
+  const { status, password, error, run, reset, selectTarget, openProfilesSettings } =
+    useEduroamSetup();
+  const [selected, setSelected] = useState<DesktopEduroamTarget | null>(null);
 
-  const close = () => { setOpen(false); setSelected(null); reset(); };
-  const onSelect = (tg: EduroamTarget) => { setSelected(tg); selectTarget(tg); };
-  const onRestart = () => { setSelected(null); reset(); };
+  const close = () => {
+    setOpen(false);
+    setSelected(null);
+    reset();
+  };
+  const onSelect = (tg: DesktopEduroamTarget) => {
+    setSelected(tg);
+    selectTarget(tg);
+  };
+  const onRestart = () => {
+    setSelected(null);
+    reset();
+  };
 
   return (
     <AdaptiveDrawer open={isOpen} onClose={close} width="sm:w-[560px]" title={t('eduroam.title')}>
@@ -39,7 +51,10 @@ export function EduroamDrawer() {
         {status === 'error' && (
           <div className="alert alert-error text-sm mb-5">
             <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span>{t('eduroam.error')}{error ? `: ${error}` : ''}</span>
+            <span>
+              {t('eduroam.error')}
+              {error ? `: ${error}` : ''}
+            </span>
           </div>
         )}
 
@@ -48,7 +63,6 @@ export function EduroamDrawer() {
           onSelect={onSelect}
           onRestart={onRestart}
           status={status}
-          qrDataUrl={qrDataUrl}
           password={password}
           onRun={() => selected && run(selected)}
           onOpenSettings={openProfilesSettings}

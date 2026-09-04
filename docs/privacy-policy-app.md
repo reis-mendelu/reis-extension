@@ -33,7 +33,6 @@ platform.
 | In-app survey, event RSVP | you answer / RSVP | the same random install identifier |
 | Society post view or click | you open one | a post id |
 | Teacher grading vote | you vote | the teacher's id, not yours |
-| eduroam transfer | you set up eduroam | a short-lived random code |
 
 Nothing else. Feedback is read by the developers and passed to nobody.
 

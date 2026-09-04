@@ -19,7 +19,6 @@ function hook(over: Partial<HookState> = {}): HookState {
     target: 'ios',
     selectTarget: vi.fn(),
     password: null,
-    qrDataUrl: null,
     error: null,
     outcome: null,
     run: vi.fn(),

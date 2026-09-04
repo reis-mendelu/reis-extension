@@ -1,23 +1,21 @@
-import { Smartphone, Tablet, Laptop, Monitor, ChevronRight, Check, RotateCcw, type LucideIcon } from 'lucide-react';
+import { Laptop, Monitor, ChevronRight, Check, RotateCcw, type LucideIcon } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { EduroamTutorial } from './EduroamTutorial';
+import type { DesktopEduroamTarget } from './manual';
 import { StepHeading } from './StepHeading';
-import type { EduroamTarget, EduroamStatus } from '../../hooks/data/useEduroamSetup';
+import type { EduroamStatus } from '../../hooks/data/useEduroamSetup';
 
 interface DeviceAccordionProps {
-  selected: EduroamTarget | null;
-  onSelect: (t: EduroamTarget) => void;
+  selected: DesktopEduroamTarget | null;
+  onSelect: (t: DesktopEduroamTarget) => void;
   onRestart: () => void;
   status: EduroamStatus;
-  qrDataUrl: string | null;
   password: string | null;
   onRun: () => void;
   onOpenSettings: () => void;
 }
 
-const DEVICES: { id: EduroamTarget; labelKey: string; icon: LucideIcon }[] = [
-  { id: 'ios', labelKey: 'eduroam.targetIos', icon: Smartphone },
-  { id: 'android', labelKey: 'eduroam.targetAndroid', icon: Tablet },
+const DEVICES: { id: DesktopEduroamTarget; labelKey: string; icon: LucideIcon }[] = [
   { id: 'mac', labelKey: 'eduroam.targetMac', icon: Laptop },
   { id: 'windows', labelKey: 'eduroam.targetWindows', icon: Monitor },
 ];
@@ -44,14 +42,20 @@ export function DeviceAccordion(props: DeviceAccordionProps) {
               onClick={() => (isSel ? onRestart() : onSelect(id))}
               className={`flex items-center gap-3.5 w-full p-4 bg-base-100 border rounded-box text-left cursor-pointer ${isSel ? 'border-primary' : 'border-base-content/10'}`}
             >
-              <span className={`flex items-center justify-center w-11 h-11 shrink-0 rounded-box ${isSel ? 'bg-primary/15 text-primary' : 'bg-base-300 text-base-content/70'}`}>
+              <span
+                className={`flex items-center justify-center w-11 h-11 shrink-0 rounded-box ${isSel ? 'bg-primary/15 text-primary' : 'bg-base-300 text-base-content/70'}`}
+              >
                 <Icon className="w-6 h-6" />
               </span>
               <span className="flex-1">
                 <span className="block font-bold text-lg">{t(labelKey)}</span>
-                <span className="block text-sm text-base-content/50 mt-0.5">{t(`eduroam.manual.${id}.hint`)}</span>
+                <span className="block text-sm text-base-content/50 mt-0.5">
+                  {t(`eduroam.manual.${id}.hint`)}
+                </span>
               </span>
-              <span className={`flex items-center justify-center w-6 h-6 shrink-0 ${isSel ? 'text-primary' : 'text-base-content/40'}`}>
+              <span
+                className={`flex items-center justify-center w-6 h-6 shrink-0 ${isSel ? 'text-primary' : 'text-base-content/40'}`}
+              >
                 {isSel ? <Check className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
               </span>
             </button>
