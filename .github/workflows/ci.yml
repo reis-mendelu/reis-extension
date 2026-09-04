@@ -90,3 +90,25 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx vitest run
+
+  # The preview build target is exercised by nothing else — no test imports it
+  # and no developer runs it by hand — so without this job it would break
+  # silently and only surface as a failed Vercel deploy on `test`.
+  build-web:
+    name: Build web preview
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build:web
+      # An empty or near-empty bundle still "succeeds". Assert the entry HTML
+      # and at least one hashed asset actually landed.
+      - name: Assert the bundle is real
+        run: |
+          set -euo pipefail
+          test -f dist-web/index.html
+          test -n "$(find dist-web/assets -name '*.js' -print -quit)"
