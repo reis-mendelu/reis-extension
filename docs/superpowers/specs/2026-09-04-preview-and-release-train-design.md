@@ -48,12 +48,38 @@ checklist) carries over unchanged. Only the substrate differs, and it differs
 because Railway earns its place in MySoft through Postgres migrations and a
 `/api/health` route that stays 503 until they succeed. reIS has neither.
 
-**Mock mode, not a snapshot.** `src/utils/mock/data/demo.ts` is a synthetic
-dataset built, in its own words, so the subjects tab renders for a reviewer with
-no account. `demoDates.ts` computes every exam term and lesson relative to *now*
-rather than committing absolute dates, so the preview never goes out of season
-and needs no maintenance. The `REIS_FIXTURE` overlay machinery is therefore not
-needed on the deployed site.
+**Demo mode, not mock mode and not a snapshot.** The preview boots by calling
+the app's existing `enterDemo()`. `demoDates.ts` computes every exam term and
+lesson relative to *now* rather than committing absolute dates, so the preview
+never goes out of season and needs no maintenance, and the `REIS_FIXTURE`
+overlay machinery is not needed on the deployed site.
+
+This decision replaces an earlier one — `VITE_USE_MOCK_DATA=true` — which was
+**wrong, and verified wrong in a browser** rather than by reading:
+
+- `initMockData()` only loads a dataset into IndexedDB. It never sets
+  `handshakeDone`, `firstSyncSettled` or an identity, so **every tab sits on a
+  skeleton forever**. `createDemoSlice` sets all three and says exactly why:
+  *"without this every tab sits in its loading state forever."*
+- It defaults to `DEFAULT_MOCK_SOCIETY = 'esn'`, not `demo`. The `esn` dataset
+  carries no study plan, stats or comparison — those are optional fields that
+  only `demo` fills.
+- Nothing suppressed the app's IS Mendelu fetches, so the page retried
+  `is.mendelu.cz/auth/student/studium.pl` in a CORS-blocked loop. On a public
+  URL that is a deployed page hammering the university's server indefinitely.
+
+`enterDemo()` fixes all three: it loads `MOCK_REGISTRY.demo`, sets
+`demoMode`/`handshakeDone`/`firstSyncSettled` plus a fabricated identity, and
+`createContextSlice.ts:20` returns early while `demoMode` is on, which is what
+stops the fetch loop. It is also already shipped — it exists in the App Store
+binary for the same "reviewer with no account" purpose.
+
+**Two banners, on purpose.** `DemoBanner` already exists and is
+non-dismissible, but `App.tsx:49` mounts `MobileApp` only when `isPhone`, so it
+appears at phone widths only — a desktop viewer would get no warning at all.
+The preview's own banner is kept because it is the only one at desktop widths
+and the only place that says writes are not saved, which `DemoBanner` never
+claims.
 
 **Real data never leaves the client.** `public/dev-real-data.json` is a real
 student record, is gitignored, and `wxt.config.ts`'s `build:publicAssets` hook
@@ -106,13 +132,13 @@ path is dev-server middleware: `reisSnapshotPlugin` serves the snapshot, spawns
 `scrape:real` and does the fixture overlay; `reisAdminSessionPlugin` fakes the
 admin session. Dev-server middleware does not exist in a production build.
 
-Mock mode removes the need for both:
+Demo mode removes the need for both:
 
-- `initializeStore` calls `initMockData()` when `VITE_USE_MOCK_DATA === 'true'`
-  (`src/store/useAppStore.ts:92`), filling IndexedDB from the `demo` dataset.
-- `loadRealDataSnapshot` returns early in mock mode
-  (`src/services/loadRealDataSnapshot.ts:42,62`), so no snapshot is ever fetched
-  and `reisSnapshotPlugin` has nothing to do.
+- The harness boots demo mode when `VITE_PREVIEW_BUILD === 'true'`, by awaiting
+  `enterDemo()` after the app has mounted. That fills IndexedDB from
+  `MOCK_REGISTRY.demo` and sets the flags the screens gate on.
+- With no snapshot fetch to serve, `reisSnapshotPlugin` has nothing to do. The
+  preview must not ship `dev-real-data.json` in any case.
 - `devAdminSession` bails when `VITE_DEV_SOCIETY` is set
   (`dev/devAdminSession.ts:23`), and `vite.web.config.ts` defaults it to `reis`,
   so nothing signs into Supabase.
@@ -127,11 +153,11 @@ dev-server plugins. Entry stays `dev/index.html`.
 
 | Variable | Value | Why |
 |---|---|---|
-| `VITE_USE_MOCK_DATA` | `true` | demo dataset into IndexedDB; snapshot path off |
 | `VITE_DEV_SOCIETY` | `reis` | fakes the society session; blocks the Supabase sign-in |
-| `VITE_PREVIEW_BUILD` | `true` | new flag, see below |
+| `VITE_PREVIEW_BUILD` | `true` | boots demo mode, paints the banner, enables the harness overrides |
 
-Nothing else. Vite inlines `VITE_*` into the bundle, so anything added here is
+Nothing else. `VITE_USE_MOCK_DATA` is deliberately **not** set — see the demo
+mode decision above for why it does not work. Vite inlines `VITE_*` into the bundle, so anything added here is
 public by construction. In particular `VITE_EXTENSION_SECRET` and any Supabase
 credentials must not be set on this project.
 
