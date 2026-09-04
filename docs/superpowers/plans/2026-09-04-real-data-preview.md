@@ -943,13 +943,35 @@ Expected: `sso: {"deploymentType":"all_except_custom_domains"} autoExpose: false
 
 - [ ] **Step 3: Add the command**
 
+`vercel deploy --prebuilt` reads `.vercel/output`, which only `vercel build`
+produces — verified with `vercel deploy --help`: *"Use in combination with
+`vc build`"*. So the chain runs `vercel build`, which itself invokes the
+project's configured `buildCommand` (`npm run build:web:real`); do **not** also
+run `build:web:real` directly, or it builds twice.
+
+The CLI needs to know which project this is, and `.vercel/project.json` is
+gitignored and already points at the *public* project. Pass the ids by
+environment instead. They are identifiers, not secrets, but they belong in
+`.env` (already gitignored) rather than in `package.json`:
+
+```
+VERCEL_ORG_ID=<from the create-project response's accountId>
+VERCEL_PROJECT_ID=<the id recorded in Step 1>
+```
+
 In `package.json`:
 
 ```json
-"preview:real": "npm run scrape:real && npm run sanitise:snapshot && npm run build:web:real && npx vercel deploy --prebuilt --prod --project reis-extension-real",
+"preview:real": "npm run scrape:real && npm run sanitise:snapshot && npx vercel build --prod && npx vercel deploy --prebuilt --prod",
 ```
 
-`&&` throughout is load-bearing: a failed scrape or a rejected field must stop the chain, not deploy the previous build's output as if it were fresh.
+`&&` throughout is load-bearing: a failed scrape or a rejected field must stop
+the chain, not deploy the previous build's output as if it were fresh.
+
+**Verify the chain actually picks the gated project** before trusting it — a
+mis-set id would deploy your real data to the PUBLIC project. After the first
+run, confirm the deployment URL belongs to `reis-extension-real`, and re-run
+Step 4's logged-out `curl` against that exact URL.
 
 - [ ] **Step 4: Run it, and verify the gate before anything else**
 
