@@ -25,25 +25,55 @@ describe('shouldBootDemoMode', () => {
 describe('bootDemoMode', () => {
   it('does nothing when the flag is absent', async () => {
     const enterDemo = vi.fn();
+    const refresh = vi.fn();
     const { bootDemoMode } = await import('../bootDemoMode');
-    await bootDemoMode({ DEV: true }, { enterDemo });
+    await bootDemoMode({ DEV: true }, { enterDemo, refresh });
     expect(enterDemo).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it('enters demo mode when the flag is set', async () => {
     const enterDemo = vi.fn().mockResolvedValue(undefined);
+    const refresh = vi.fn().mockResolvedValue(undefined);
     const { bootDemoMode } = await import('../bootDemoMode');
-    await bootDemoMode({ DEV: false, VITE_PREVIEW_BUILD: 'true' }, { enterDemo });
+    await bootDemoMode({ DEV: false, VITE_PREVIEW_BUILD: 'true' }, { enterDemo, refresh });
     expect(enterDemo).toHaveBeenCalledOnce();
+  });
+
+  // MockManager (called by enterDemo) writes the demo dataset to IndexedDB
+  // only — it never touches the store. Without this second call, the app's
+  // own boot has already read the (then-empty) schedule/exams/study-plan
+  // stores into the store before enterDemo ran, and nothing re-reads them
+  // afterward: a first-time visitor's screens stay on their empty state
+  // forever, seeded data sitting unread in IndexedDB. Verified in a browser
+  // against a never-before-visited origin.
+  it('refreshes the store from IndexedDB after entering demo mode', async () => {
+    const enterDemo = vi.fn().mockResolvedValue(undefined);
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    const { bootDemoMode } = await import('../bootDemoMode');
+    await bootDemoMode({ DEV: false, VITE_PREVIEW_BUILD: 'true' }, { enterDemo, refresh });
+    expect(refresh).toHaveBeenCalledOnce();
   });
 
   // A failed boot must leave the page usable rather than throwing into the
   // module graph — the banner and the shell should still render.
   it('does not throw when entering demo mode fails', async () => {
     const enterDemo = vi.fn().mockRejectedValue(new Error('nope'));
+    const refresh = vi.fn().mockResolvedValue(undefined);
     const { bootDemoMode } = await import('../bootDemoMode');
     await expect(
-      bootDemoMode({ DEV: false, VITE_PREVIEW_BUILD: 'true' }, { enterDemo })
+      bootDemoMode({ DEV: false, VITE_PREVIEW_BUILD: 'true' }, { enterDemo, refresh })
     ).resolves.toBeUndefined();
+  });
+
+  // There is nothing seeded to refresh if enterDemo itself never finished —
+  // calling refresh anyway would read whatever was there before (nothing, on
+  // a fresh visitor) and prove nothing.
+  it('does not refresh when entering demo mode fails', async () => {
+    const enterDemo = vi.fn().mockRejectedValue(new Error('nope'));
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    const { bootDemoMode } = await import('../bootDemoMode');
+    await bootDemoMode({ DEV: false, VITE_PREVIEW_BUILD: 'true' }, { enterDemo, refresh });
+    expect(refresh).not.toHaveBeenCalled();
   });
 });
