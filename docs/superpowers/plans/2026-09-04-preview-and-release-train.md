@@ -4,7 +4,7 @@
 
 **Goal:** Build the reIS app as a static site, deploy it to Vercel from a new `test` branch so screens can be reviewed on a URL before they ship, and make the `test` → `main` release PR the thing that submits to the browser stores.
 
-**Architecture:** A new Vite build config compiles the existing `dev/` harness entry to `dist-web/` with `VITE_USE_MOCK_DATA=true`, so the synthetic `demo` dataset fills IndexedDB client-side and no server, database or secret is involved. Vercel builds that from the `test` branch. Three GitHub workflows turn `test` → `main` into a release: a gate that requires a green deployment of the exact SHA, an injected checklist, and a tagger that fires the existing `publish.yml`.
+**Architecture:** A new Vite build config compiles the existing `dev/` harness entry to `dist-web/`, and the page boots the app's own demo mode so the synthetic `demo` dataset fills IndexedDB client-side. No server, database or secret is involved. Vercel builds that from the `test` branch. Three GitHub workflows turn `test` → `main` into a release: a gate that requires a green deployment of the exact SHA, an injected checklist, and a tagger that fires the existing `publish.yml`.
 
 **Tech Stack:** Vite 7, React, Vitest (happy-dom), GitHub Actions, Vercel CLI 54.
 
@@ -12,7 +12,7 @@ Spec: [`docs/superpowers/specs/2026-09-04-preview-and-release-train-design.md`](
 
 ## Global Constraints
 
-- **Only three `VITE_*` variables may be set on the Vercel project:** `VITE_USE_MOCK_DATA=true`, `VITE_DEV_SOCIETY=reis`, `VITE_PREVIEW_BUILD=true`. Vite inlines `VITE_*` into the bundle, so any other one is published.
+- **Only two `VITE_*` variables may be set on the Vercel project:** `VITE_DEV_SOCIETY=reis` and `VITE_PREVIEW_BUILD=true`. Vite inlines `VITE_*` into the bundle, so any other one is published. `VITE_USE_MOCK_DATA` must NOT be set — it leaves every tab on a skeleton (see Task 3).
 - **`VITE_EXTENSION_SECRET` and any `VITE_SUPABASE_*` must never be present** when `build:web` runs. Task 3 enforces this in code.
 - **Never modify a parser** to satisfy a lint or test failure (`CLAUDE.md`). No task here touches one.
 - **No `localStorage` / `sessionStorage`**, no custom CSS (DaisyUI/Tailwind classes only), no `useEffect` for data fetching, max 200 lines per file.
@@ -30,7 +30,9 @@ Spec: [`docs/superpowers/specs/2026-09-04-preview-and-release-train-design.md`](
 | `dev/phoneOverride.ts` (modify) | Guard widened from `import.meta.env.DEV` to the predicate. |
 | `dev/previewBanner.ts` (new) | Renders the "synthetic data, writes not saved" banner. Lives in `dev/`, not `src/`, so it cannot reach the extension or App Store binary. |
 | `dev/__tests__/previewBanner.test.ts` (new) | Its tests. |
-| `dev/main.web.tsx` (modify) | Imports the banner. |
+| `dev/main.web.tsx` (modify) | Boots demo mode, then mounts the banner. |
+| `dev/bootDemoMode.ts` (new) | Puts the deployed preview into the app's own demo mode. Replaces the `VITE_USE_MOCK_DATA` path, which leaves every tab on a skeleton. |
+| `dev/__tests__/bootDemoMode.test.ts` (new) | Its tests. |
 | `scripts/assert-web-build-env.mjs` (new) | Fails `build:web` if a forbidden variable is present. |
 | `scripts/__tests__/assertWebBuildEnv.test.ts` (new) | Its tests. |
 | `vite.web.build.config.ts` (new) | Build-only config: no dev-server plugins, `outDir: dist-web`. |
@@ -333,11 +335,31 @@ EOF
 
 ---
 
-### Task 3: The web build target
+### Task 3: Demo-mode boot and the web build target
 
-The standalone app exists only as a Vite dev server today. This adds the build.
+The standalone app exists only as a Vite dev server today. This adds the build —
+and, first, the thing that makes the build worth deploying at all.
+
+**Read this before starting.** The plan originally had the preview run on
+`VITE_USE_MOCK_DATA=true`. That was verified wrong in a browser:
+
+- `initMockData()` (`src/utils/initMockData.ts`) only loads a dataset into
+  IndexedDB. It never sets `handshakeDone`, `firstSyncSettled` or an identity,
+  so **every tab sits on a skeleton forever** — observed, not theorised.
+  `createDemoSlice` sets all three and its own comment says why.
+- It defaults to `DEFAULT_MOCK_SOCIETY = 'esn'`, not `demo`. Only the `demo`
+  dataset fills `studyPlan`, `studyStats` and `studyComparison`.
+- Nothing suppressed the app's IS Mendelu fetches, so the page retried
+  `is.mendelu.cz/auth/student/studium.pl` in a CORS-blocked loop.
+
+The app's own `enterDemo()` fixes all three, and `createContextSlice.ts:20`
+returns early while `demoMode` is on, which is what stops the fetch loop. So the
+preview boots demo mode, and **`VITE_USE_MOCK_DATA` is never set**.
 
 **Files:**
+- Create: `dev/bootDemoMode.ts`
+- Create: `dev/__tests__/bootDemoMode.test.ts`
+- Modify: `dev/main.web.tsx`
 - Create: `scripts/assert-web-build-env.mjs`
 - Create: `scripts/__tests__/assertWebBuildEnv.test.ts`
 - Create: `vite.web.build.config.ts`
@@ -346,8 +368,175 @@ The standalone app exists only as a Vite dev server today. This adds the build.
 - Modify: `.gitignore`
 
 **Interfaces:**
-- Consumes: nothing from earlier tasks.
-- Produces: the npm script `build:web`, output directory `dist-web/`, and `findForbiddenWebBuildVars(env: Record<string, string | undefined>): string[]` exported from `scripts/assert-web-build-env.mjs`.
+- Consumes: `HarnessEnv` from `dev/harnessEnabled.ts` (Task 1).
+- Produces: `shouldBootDemoMode(env: HarnessEnv): boolean` and
+  `bootDemoMode(env: HarnessEnv): Promise<void>` from `dev/bootDemoMode.ts`; the
+  npm script `build:web`; output directory `dist-web/`; and
+  `findForbiddenWebBuildVars(env: Record<string, string | undefined>): string[]`
+  from `scripts/assert-web-build-env.mjs`.
+
+- [ ] **Step A1: Write the failing demo-boot test**
+
+Create `dev/__tests__/bootDemoMode.test.ts`:
+
+```ts
+import { describe, it, expect, vi } from 'vitest';
+import { shouldBootDemoMode } from '../bootDemoMode';
+
+describe('shouldBootDemoMode', () => {
+  it('boots on the deployed preview', () => {
+    expect(shouldBootDemoMode({ DEV: false, VITE_PREVIEW_BUILD: 'true' })).toBe(true);
+  });
+
+  // A local dev:web run reads the real scraped snapshot. Entering demo mode
+  // there would wipe it (enterDemo calls wipeSeeded) and replace a developer's
+  // real data with fabricated data they did not ask for.
+  it('never boots on a local dev server', () => {
+    expect(shouldBootDemoMode({ DEV: true })).toBe(false);
+  });
+
+  it('never boots in an extension or Capacitor build', () => {
+    expect(shouldBootDemoMode({ DEV: false })).toBe(false);
+  });
+
+  it('treats any value other than the string "true" as off', () => {
+    expect(shouldBootDemoMode({ DEV: false, VITE_PREVIEW_BUILD: 'false' })).toBe(false);
+  });
+});
+
+describe('bootDemoMode', () => {
+  it('does nothing when the flag is absent', async () => {
+    const enterDemo = vi.fn();
+    const { bootDemoMode } = await import('../bootDemoMode');
+    await bootDemoMode({ DEV: true }, { enterDemo });
+    expect(enterDemo).not.toHaveBeenCalled();
+  });
+
+  it('enters demo mode when the flag is set', async () => {
+    const enterDemo = vi.fn().mockResolvedValue(undefined);
+    const { bootDemoMode } = await import('../bootDemoMode');
+    await bootDemoMode({ DEV: false, VITE_PREVIEW_BUILD: 'true' }, { enterDemo });
+    expect(enterDemo).toHaveBeenCalledOnce();
+  });
+
+  // A failed boot must leave the page usable rather than throwing into the
+  // module graph — the banner and the shell should still render.
+  it('does not throw when entering demo mode fails', async () => {
+    const enterDemo = vi.fn().mockRejectedValue(new Error('nope'));
+    const { bootDemoMode } = await import('../bootDemoMode');
+    await expect(
+      bootDemoMode({ DEV: false, VITE_PREVIEW_BUILD: 'true' }, { enterDemo })
+    ).resolves.toBeUndefined();
+  });
+});
+```
+
+- [ ] **Step A2: Run it to verify it fails**
+
+Run: `npx vitest run dev/__tests__/bootDemoMode.test.ts`
+Expected: FAIL — cannot resolve `../bootDemoMode`.
+
+- [ ] **Step A3: Implement it**
+
+Create `dev/bootDemoMode.ts`:
+
+```ts
+import { useAppStore } from '../src/store/useAppStore';
+import { logError } from '../src/utils/reportError';
+import type { HarnessEnv } from './harnessEnabled';
+
+/**
+ * Whether to put the app into demo mode at boot.
+ *
+ * Preview builds only. A local `dev:web` run must never do this: it reads the
+ * real scraped snapshot, and `enterDemo()` calls `wipeSeeded()` on the way IN,
+ * so booting demo locally would delete a developer's real data.
+ */
+export function shouldBootDemoMode(env: HarnessEnv): boolean {
+  return env.VITE_PREVIEW_BUILD === 'true';
+}
+
+/**
+ * Puts the deployed preview into the app's own demo mode.
+ *
+ * Not `VITE_USE_MOCK_DATA`: `initMockData()` only loads a dataset into
+ * IndexedDB, leaving `handshakeDone` and `firstSyncSettled` false — every tab
+ * then sits on a skeleton forever — and it defaults to the `esn` dataset, which
+ * has no study plan or stats. `enterDemo()` loads `MOCK_REGISTRY.demo`, sets
+ * those flags and a fabricated identity, and puts the store into the state that
+ * makes `createContextSlice` skip the IS Mendelu fetch that a browser can only
+ * answer with a CORS error anyway.
+ *
+ * `deps` exists so the decision and the call can be tested without a store.
+ */
+export async function bootDemoMode(
+  env: HarnessEnv,
+  deps: { enterDemo: () => Promise<void> } = {
+    enterDemo: () => useAppStore.getState().enterDemo(),
+  }
+): Promise<void> {
+  if (!shouldBootDemoMode(env)) return;
+  try {
+    await deps.enterDemo();
+  } catch (err) {
+    // A failed demo boot must not take the page down with it — the shell and
+    // the preview banner should still render so the failure is visible.
+    logError('bootDemoMode.enterDemo', err);
+  }
+}
+```
+
+- [ ] **Step A4: Run it to verify it passes**
+
+Run: `npx vitest run dev/__tests__/bootDemoMode.test.ts`
+Expected: PASS, 7 tests.
+
+- [ ] **Step A5: Call it from the harness entry**
+
+In `dev/main.web.tsx`, insert **before** the existing `mountPreviewBanner` block
+at the end of the file:
+
+```ts
+// Before the banner: put the deployed preview into the app's own demo mode, so
+// the screens have data and stop trying to reach IS Mendelu. No-op locally.
+import { bootDemoMode } from './bootDemoMode';
+void bootDemoMode(import.meta.env);
+```
+
+- [ ] **Step A6: Verify it renders, in a browser**
+
+```bash
+VITE_PREVIEW_BUILD=true PORT=3100 npx vite --config vite.web.config.ts
+```
+
+Open `http://localhost:3100/?mobile=1`. Confirm, and report what you actually
+saw:
+- Screens show content or genuine empty states — **no grey skeleton bars and no
+  "Načítám…" that never resolves**. Skeletons mean the boot did not take.
+- The browser console shows **no repeating** `getUserParams: Failed to fetch` /
+  CORS errors against `is.mendelu.cz`.
+- Both banners are present at phone width: the app's own `Ukázka` DemoBanner at
+  the top, and the preview banner at the bottom.
+
+- [ ] **Step A7: Commit the demo boot**
+
+```bash
+git add dev/bootDemoMode.ts dev/__tests__/bootDemoMode.test.ts dev/main.web.tsx
+git commit -m "$(cat <<'EOF'
+feat(dev): boot the preview into the app's own demo mode
+
+VITE_USE_MOCK_DATA does not work for this: initMockData only loads a dataset
+into IndexedDB and never sets handshakeDone, firstSyncSettled or an identity, so
+every tab sat on a skeleton forever. It also defaults to the esn dataset rather
+than demo, and nothing stopped the app retrying is.mendelu.cz in a CORS-blocked
+loop.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+EOF
+)"
+```
+
+Now the build itself.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -361,7 +550,6 @@ describe('findForbiddenWebBuildVars', () => {
   it('allows the three variables the preview build needs', () => {
     expect(
       findForbiddenWebBuildVars({
-        VITE_USE_MOCK_DATA: 'true',
         VITE_DEV_SOCIETY: 'reis',
         VITE_PREVIEW_BUILD: 'true',
         PATH: '/usr/bin',
@@ -440,7 +628,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.error(
       `\nRefusing to build the public web bundle: ${found.join(', ')} present in the environment.\n` +
         `Vite inlines VITE_* into the bundle, so these would be published.\n` +
-        `The web build takes exactly VITE_USE_MOCK_DATA, VITE_DEV_SOCIETY and VITE_PREVIEW_BUILD.\n`
+        `The web build takes exactly VITE_DEV_SOCIETY and VITE_PREVIEW_BUILD.\n`
     );
     process.exit(1);
   }
@@ -477,8 +665,7 @@ const DEV_SERVER_PLUGINS = ['reis-snapshot-refresh', 'reis-dev-admin-session'];
 //  2. An explicit outDir — `dist-web/`, so it cannot collide with the WXT
 //     extension output or dist-capacitor/.
 //
-// The env this expects (VITE_USE_MOCK_DATA, VITE_DEV_SOCIETY,
-// VITE_PREVIEW_BUILD) comes from the `build:web` script, which refuses to run
+// The env this expects (VITE_DEV_SOCIETY, VITE_PREVIEW_BUILD) comes from the `build:web` script, which refuses to run
 // if anything carrying a credential is also present.
 export default defineConfig(async (env) => {
   const base = (await (typeof webDevConfig === 'function'
@@ -518,7 +705,7 @@ export default defineConfig(async (env) => {
 In `package.json`, add next to the other `dev:web*` scripts:
 
 ```json
-"build:web": "node scripts/assert-web-build-env.mjs && VITE_USE_MOCK_DATA=true VITE_DEV_SOCIETY=reis VITE_PREVIEW_BUILD=true vite build --config vite.web.build.config.ts",
+"build:web": "node scripts/assert-web-build-env.mjs && VITE_DEV_SOCIETY=reis VITE_PREVIEW_BUILD=true vite build --config vite.web.build.config.ts",
 ```
 
 In `.gitignore`, next to the existing `dist-capacitor/` entry on line 148:
@@ -544,7 +731,7 @@ Create `vercel.json`:
 
 - [ ] **Step 8: Run the build and prove mock mode survives it**
 
-This is the step the whole plan is sequenced around — `VITE_USE_MOCK_DATA=true` has only ever run through the dev server, never a build.
+This is the step the whole plan is sequenced around — the demo boot from Step A6 has only ever run through the dev server, never a build.
 
 ```bash
 npm run build:web
@@ -679,7 +866,7 @@ vercel git connect
 Then in the Vercel dashboard, on the project's Settings:
 - **Git → Production Branch:** `test`
 - **Git → ensure "GitHub Deployments" / deployment statuses are enabled.** Task 6 queries the GitHub Deployments API; if Vercel is not creating deployment records the gate has nothing to read and blocks every release.
-- **Environment Variables**, on Production *and* Preview: `VITE_USE_MOCK_DATA=true`, `VITE_DEV_SOCIETY=reis`, `VITE_PREVIEW_BUILD=true`. Nothing else.
+- **Environment Variables**, on Production *and* Preview: `VITE_DEV_SOCIETY=reis` and `VITE_PREVIEW_BUILD=true`. Nothing else, and specifically NOT `VITE_USE_MOCK_DATA`.
 - Build settings come from `vercel.json` and should need no dashboard entry.
 
 - [ ] **Step 4: Deploy and verify**
