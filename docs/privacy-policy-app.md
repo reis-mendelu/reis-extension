@@ -13,9 +13,15 @@ application of Mendel University.
 own session — the way your browser would — and keeps it on your device. We run
 no server that holds it.
 
-Two small things reach us: a **daily count**, and **feedback you type and
-send**. Nothing else — **no crash or error information is ever transmitted**,
-from any surface, on any platform.
+Two things about *you* reach us: a **daily count**, and **feedback you type and
+send**. **No crash or error information is ever transmitted**, from any surface,
+on any platform.
+
+A few actions you take also write a row, and each carries only what that action
+needs: an **event RSVP** and the **in-app survey** (both keyed by the random
+install identifier below), a **society post view or click** (a post id), a
+**teacher grading vote** (the teacher's id, not yours), and an **eduroam
+transfer code** (short-lived and random). Nothing else.
 
 ## Signing in
 
