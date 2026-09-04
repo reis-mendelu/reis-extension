@@ -1,9 +1,9 @@
 reviews:
   path_filters:
-    - "!src/api/documents/parser.ts"
-    - "!src/api/ukoly.ts"
-    - "!src/api/osnovy.ts"
-    - "!src/utils/parsers/**/*.ts"
+    - '!src/api/documents/parser.ts'
+    - '!src/api/ukoly.ts'
+    - '!src/api/osnovy.ts'
+    - '!src/utils/parsers/**/*.ts'
   auto_review:
     enabled: true
     drafts: false
@@ -13,5 +13,5 @@ reviews:
     # (observed on PR #288: "reviews are disabled for this base branch").
     # `main` stays listed for the test -> main release PR.
     base_branches:
-      - "main"
-      - "test"
+      - 'main'
+      - 'test'

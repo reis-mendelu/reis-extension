@@ -31,11 +31,7 @@ describe('vite.web.build.config.ts', () => {
 
     // Check that the strip plugin is present by name.
     const stripPluginFound = flatPlugins.some(
-      (p) =>
-        p &&
-        typeof p === 'object' &&
-        'name' in p &&
-        p.name === 'reis-strip-dev-real-data'
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'reis-strip-dev-real-data'
     );
 
     expect(

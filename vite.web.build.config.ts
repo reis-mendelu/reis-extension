@@ -33,12 +33,7 @@ export default defineConfig(async (env) => {
   // put the dev-server plugins straight back.
   const plugins = (base.plugins ?? []).filter(
     (p) =>
-      !(
-        p &&
-        typeof p === 'object' &&
-        'name' in p &&
-        DEV_SERVER_PLUGINS.includes(p.name as string)
-      )
+      !(p && typeof p === 'object' && 'name' in p && DEV_SERVER_PLUGINS.includes(p.name as string))
   );
   // publicDir is inherited unchanged from the dev config (below), which is
   // deliberate — it also carries fonts/icons/emoji/society images this build

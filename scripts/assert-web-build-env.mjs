@@ -16,8 +16,7 @@ export function findForbiddenWebBuildVars(env) {
   return Object.keys(env)
     .filter(
       (key) =>
-        FORBIDDEN_EXACT.includes(key) ||
-        FORBIDDEN_PREFIXES.some((prefix) => key.startsWith(prefix))
+        FORBIDDEN_EXACT.includes(key) || FORBIDDEN_PREFIXES.some((prefix) => key.startsWith(prefix))
     )
     .sort();
 }
