@@ -1,7 +1,8 @@
 import { useRef, useEffect } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { Bell, ChevronRight } from 'lucide-react';
 import type { SpolekNotification } from '../../services/spolky';
 import { ASSOCIATION_PROFILES } from '../../services/spolky/config';
+import { SOCIETIES } from '../../data/societies';
 import { useTranslation } from '../../hooks/useTranslation';
 
 /**
@@ -16,10 +17,17 @@ import { useTranslation } from '../../hooks/useTranslation';
  * line, which put its text 48px right of the deadline rows it was stacked
  * against — the misalignment students reported.
  *
- * The avatar is gone rather than resized. It was the same bell glyph on every
- * admin row, so it told a student nothing they could read, and it cost the 48px
- * that broke the column. The sender is on the subtitle line now as its name —
- * "ESN Mendelu" beats an unlabelled 40px logo at 375px wide.
+ * The society's logo leads the row, because on this surface the sender IS the
+ * message: "SU PEF sent you something" is mostly a question of WHO, not what.
+ * It was briefly removed on the grounds that the glyph carried nothing — true
+ * of the generic admin bell, wrong about a society mark, which is the fastest
+ * thing on the row to recognise.
+ *
+ * What it does NOT go back to is the 40px circle. That indented this row's text
+ * 48px further than the deadline rows stacked against it, which is the
+ * misalignment students reported. The mark now sits in the same 32px slot a
+ * deadline's icon occupies, so both kinds of row share one left edge and the
+ * slot means the same thing in both: what kind of thing is this, at a glance.
  */
 export function NotificationItem({
   notification,
@@ -55,6 +63,10 @@ export function NotificationItem({
   // there is no profile to name. `t` gives them the app's name instead of a
   // blank line, which would collapse the row to a different height.
   const source = ASSOCIATION_PROFILES[assocId]?.name ?? t('notifications.fromReis');
+  // SOCIETIES, not societyById: that helper falls back to ESN for an unknown
+  // id, which would badge every reIS announcement with somebody else's logo.
+  // A row with no society keeps the tinted bell.
+  const logo = SOCIETIES[assocId]?.logo ?? null;
 
   const d = new Date(notification.expiresAt);
   const now = new Date();
@@ -88,7 +100,26 @@ export function NotificationItem({
       disabled={!isClickable}
       className={`flex w-full items-center gap-2.5 rounded-2xl border border-base-300 bg-base-100 px-3.5 py-2.5 text-left transition-colors ${isClickable ? 'cursor-pointer hover:bg-base-200' : 'cursor-default'}`}
     >
-      <span className="h-8 w-1 flex-shrink-0 rounded-full bg-primary" />
+      {logo ? (
+        <img
+          src={logo}
+          alt=""
+          className="h-8 w-8 flex-shrink-0 rounded-lg object-cover"
+          // The logos ship beside the app, but the extension serves them from
+          // its own origin and a bare path can miss. Falling back to the tinted
+          // bell keeps the slot filled at the same size, so a missing image
+          // cannot shift the row's text out of line with its neighbours.
+          onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+            e.currentTarget.style.display = 'none';
+            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+          }}
+        />
+      ) : null}
+      <span
+        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ${logo ? 'hidden' : ''}`}
+      >
+        <Bell size={16} />
+      </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate text-md font-bold text-base-content">{notification.title}</span>
         <span className="truncate text-2sm text-base-content/60">{source}</span>

@@ -7,7 +7,6 @@ import {
   MessageSquarePlus,
   LogOut,
   User,
-  Info,
 } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTheme } from '../../../hooks/useTheme';
@@ -19,6 +18,7 @@ import { HiddenItemsSection } from '../../Sidebar/Profile/HiddenItemsSection';
 import { FeedbackModal } from '../../Feedback/FeedbackModal';
 import { SignOutConfirm } from '../sheets/SignOutConfirm';
 import { PersonPhoto } from '../../ui/PersonPhoto';
+import { AboutSection } from './profile/AboutSection';
 import { NavRow } from '../primitives/NavRow';
 import { ScreenHeader } from './calendar/ScreenHeader';
 
@@ -182,17 +182,14 @@ export function ProfileScreen() {
           />
         </div>
 
-        <div className="mx-4 my-3 h-px bg-base-300" />
+        <div className="mx-4 my-3 h-px bg-base-content/10" />
 
         <NavRow
           icon={MessageSquarePlus}
           label={t('settings.reportBug')}
           onClick={() => setFeedbackOpen(true)}
         />
-        {/* Last row before signing out, which is where a version number and a
-            credit are looked for. It is also the app's only answer to "which
-            build am I on" — worth having next to Nahlásit chybu. */}
-        <NavRow icon={Info} label={t('about.title')} onClick={() => pushSheet({ kind: 'about' })} />
+
         <button
           type="button"
           onClick={() => setSignOutOpen(true)}
@@ -201,6 +198,11 @@ export function ProfileScreen() {
           <LogOut size={17} className="flex-shrink-0" />
           <span className="flex-1 text-left text-md font-medium">{t('settings.logout')}</span>
         </button>
+
+        {/* Open, not behind a row: a credit that has to be opened is a credit
+            nobody reads, and a student writing a bug report should find the
+            version without hunting for it. */}
+        <AboutSection />
       </div>
 
       <SignOutConfirm open={signOutOpen} onCancel={() => setSignOutOpen(false)} />

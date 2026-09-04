@@ -1,4 +1,4 @@
-import { ExternalLink } from 'lucide-react';
+import { BookOpen, Clock, ExternalLink } from 'lucide-react';
 import type { DeadlineAlert } from '../../hooks/useDeadlineAlerts';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -9,13 +9,13 @@ const TYPE_KEY: Record<DeadlineAlert['type'], string> = {
   'cvicny-test': 'deadlines.cvicnyTest',
 };
 
-/** The rail's colour IS the urgency — green for a test that can be taken
+/** The slot's tint IS the urgency — green for a test that can be taken
  *  whenever, amber for a clock that is running out. */
-const RAIL: Record<DeadlineAlert['type'], string> = {
-  'exam-reg-opens': 'bg-warning',
-  'exam-reg': 'bg-warning',
-  'assignment': 'bg-warning',
-  'cvicny-test': 'bg-success',
+const TINT: Record<DeadlineAlert['type'], string> = {
+  'exam-reg-opens': 'bg-warning/10 text-warning',
+  'exam-reg': 'bg-warning/10 text-warning',
+  'assignment': 'bg-warning/10 text-warning',
+  'cvicny-test': 'bg-success/10 text-success',
 };
 
 /**
@@ -46,10 +46,19 @@ export function DeadlineAlertItem({ alert }: { alert: DeadlineAlert }) {
   const timeLabel =
     h !== null ? (h < 1 ? t('deadlines.lessThanHour') : t('deadlines.hoursLeft', { h })) : null;
   const kind = t(TYPE_KEY[alert.type]);
+  const isCvicny = alert.type === 'cvicny-test';
 
   const body = (
     <>
-      <span className={`h-8 w-1 flex-shrink-0 rounded-full ${RAIL[alert.type]}`} />
+      {/* Same 32px slot the notification rows give the society's logo, so the
+          two kinds share one left edge — that alignment was the whole
+          complaint. A rail would have been quieter, but it cannot hold a logo,
+          and the row beside this one has to. */}
+      <span
+        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${TINT[alert.type]}`}
+      >
+        {isCvicny ? <BookOpen size={16} /> : <Clock size={16} />}
+      </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate text-md font-bold text-base-content">{alert.title}</span>
         <span className="truncate text-2sm text-base-content/60">
