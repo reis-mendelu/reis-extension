@@ -2,8 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { evaluateHealth, formatHealthReport, type HealthObservations } from '../appHealth';
 
 /** A build that is working, in real-data mode. */
+const SUPA = 'https://zvbpgkmnrqyprtkyxkwn.supabase.co';
+const get = (url: string) => ({ url, method: 'GET' });
+const post = (url: string) => ({ url, method: 'POST' });
+
 const healthy: HealthObservations = {
-  requests: ['https://x.supabase.co/rest/v1/spolky_events?select=*', '/preview-data.json'],
+  requests: [get(`${SUPA}/rest/v1/spolky_events?select=*`), get('/preview-data.json')],
   storeCounts: { schedule: 1, subjects: 1, study_plan: 1, files: 19, syllabuses: 19 },
   skeletonCount: 0,
   textLength: 900,
@@ -39,8 +43,19 @@ describe('evaluateHealth', () => {
     expect(r.failures.map((f) => f.detail).join()).toMatch(/`files` is empty/);
   });
 
+  // The driver reports a failed count as -1. Before this, -1 sailed past the
+  // `=== 0` test and an unreadable store read as healthy.
+  it('fails when a store cannot be counted', () => {
+    const r = evaluateHealth({
+      ...healthy,
+      storeCounts: { ...healthy.storeCounts, files: -1 },
+    });
+    expect(r.failures.map((f) => f.check)).toContain('store unreadable');
+  });
+
   it('fails when a required store is missing entirely', () => {
-    const { subjects: _omitted, ...without } = healthy.storeCounts;
+    const without = { ...healthy.storeCounts };
+    delete without.subjects;
     const r = evaluateHealth({ ...healthy, storeCounts: without });
     expect(r.failures.map((f) => f.detail).join()).toMatch(/no `subjects` store/);
   });
@@ -48,19 +63,45 @@ describe('evaluateHealth', () => {
   it('fails on a request to IS Mendelu', () => {
     const r = evaluateHealth({
       ...healthy,
-      requests: [...healthy.requests, 'https://is.mendelu.cz/auth/student/studium.pl'],
+      requests: [...healthy.requests, get('https://is.mendelu.cz/auth/student/studium.pl')],
     });
     expect(r.failures.map((f) => f.check)).toContain('forbidden request');
   });
 
+  // Named writes, and the two the first version's denylist missed entirely.
   it.each([
-    'https://x.supabase.co/rest/v1/rpc/track_daily_usage',
-    'https://x.supabase.co/rest/v1/rpc/submit_suggestion',
-    'https://x.supabase.co/rest/v1/rpc/submit_feedback',
-    'https://x.supabase.co/rest/v1/rpc/set_event_rsvp',
-  ])('fails on the write RPC %s', (url) => {
-    const r = evaluateHealth({ ...healthy, requests: [...healthy.requests, url] });
+    'track_daily_usage',
+    'submit_suggestion',
+    'submit_feedback',
+    'set_event_rsvp',
+    'increment_post_view',
+    'increment_post_click',
+    'some_rpc_added_next_semester',
+  ])('fails on the write RPC %s', (rpc) => {
+    const r = evaluateHealth({
+      ...healthy,
+      requests: [...healthy.requests, post(`${SUPA}/rest/v1/rpc/${rpc}`)],
+    });
     expect(r.ok).toBe(false);
+    expect(r.failures.map((f) => f.check)).toContain('supabase write');
+  });
+
+  // Every supabase.rpc() is a POST, read-only ones included, so the rule cannot
+  // simply be "no POST to Supabase".
+  it('allows the read-only RPC even though it is a POST', () => {
+    const r = evaluateHealth({
+      ...healthy,
+      requests: [...healthy.requests, post(`${SUPA}/rest/v1/rpc/get_event_rsvps`)],
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it('fails a bare table write', () => {
+    const r = evaluateHealth({
+      ...healthy,
+      requests: [...healthy.requests, { url: `${SUPA}/rest/v1/spolky_events`, method: 'PATCH' }],
+    });
+    expect(r.failures.map((f) => f.check)).toContain('supabase write');
   });
 
   // Read-only society content is expected and must not trip the check, or the
@@ -70,8 +111,8 @@ describe('evaluateHealth', () => {
       ...healthy,
       requests: [
         ...healthy.requests,
-        'https://x.supabase.co/rest/v1/rpc/get_event_rsvps',
-        'https://x.supabase.co/rest/v1/spolky_events?select=id',
+        post(`${SUPA}/rest/v1/rpc/get_event_rsvps`),
+        get(`${SUPA}/rest/v1/spolky_events?select=id`),
       ],
     });
     expect(r.ok).toBe(true);
@@ -80,7 +121,7 @@ describe('evaluateHealth', () => {
   it('fails if the page fetched the raw scrape rather than the sanitised file', () => {
     const r = evaluateHealth({
       ...healthy,
-      requests: [...healthy.requests, '/dev-real-data.json'],
+      requests: [...healthy.requests, get('/dev-real-data.json')],
     });
     expect(r.failures.map((f) => f.check)).toContain('forbidden request');
   });
@@ -111,7 +152,7 @@ describe('evaluateHealth', () => {
       ...healthy,
       skeletonCount: 3,
       textLength: 4,
-      requests: ['https://is.mendelu.cz/x'],
+      requests: [get('https://is.mendelu.cz/x')],
     });
     expect(r.failures.length).toBeGreaterThanOrEqual(3);
   });

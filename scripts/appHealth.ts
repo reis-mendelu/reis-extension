@@ -13,37 +13,44 @@
  * that were dead in a production build.
  */
 
-/** Hosts and paths the built preview must never touch. */
-const FORBIDDEN_REQUEST_PATTERNS: { pattern: RegExp; why: string }[] = [
+import { SUPABASE_URL } from '../src/services/supabase/config';
+
+/** URLs the built preview must never request, whatever the method. */
+const FORBIDDEN_URL_PATTERNS: { pattern: RegExp; why: string }[] = [
   {
     pattern: /is\.mendelu\.cz/,
     why: 'the preview has no IS session, so this can only ever be a CORS failure — and on a hosted page it means the university is being called on every visit',
   },
   {
-    pattern: /\/rpc\/track_daily_usage/,
-    why: 'inflates the real install metric with preview traffic, bots included',
-  },
-  {
-    pattern: /\/rpc\/submit_suggestion/,
-    why: 'files preview noise as genuine student feedback',
-  },
-  {
-    pattern: /\/rpc\/submit_feedback/,
-    why: 'files preview noise as genuine student feedback',
-  },
-  {
-    pattern: /\/rpc\/set_event_rsvp/,
-    why: 'writes a society RSVP from a build nobody is really attending from',
-  },
-  {
     pattern: /dev-real-data\.json/,
-    why: 'that is the RAW scrape — the deployed build must only ever read the sanitised preview-data.json',
+    why: 'that is the RAW scrape — the build must only ever read the sanitised preview-data.json',
   },
 ];
 
+/**
+ * Supabase RPCs known to be read-only.
+ *
+ * An allowlist, not a denylist of the writes we happened to think of. Naming
+ * the writes was the first version and it missed `increment_post_view` and
+ * `increment_post_click` — the same mistake the build-env guard made before it
+ * was inverted. Anything not listed here is treated as a write.
+ *
+ * The reason this cannot simply key off the HTTP method: PostgREST sends EVERY
+ * `supabase.rpc()` as a POST, read-only ones included, so `get_event_rsvps` is
+ * a POST that is perfectly fine.
+ */
+const READ_ONLY_SUPABASE_RPCS = ['get_event_rsvps'];
+
+const READ_ONLY_METHODS = ['GET', 'HEAD', 'OPTIONS'];
+
+export interface ObservedRequest {
+  url: string;
+  method: string;
+}
+
 export interface HealthObservations {
-  /** Every network request URL the page made, in order. */
-  requests: string[];
+  /** Every network request the page made, in order. */
+  requests: ObservedRequest[];
   /** Row counts per IndexedDB store, after the app settled. */
   storeCounts: Record<string, number>;
   /** Elements still carrying DaisyUI's `skeleton` class after settling. */
@@ -79,14 +86,30 @@ export function evaluateHealth(o: HealthObservations): {
 } {
   const failures: HealthFailure[] = [];
 
-  for (const { pattern, why } of FORBIDDEN_REQUEST_PATTERNS) {
-    const hits = o.requests.filter((u) => pattern.test(u));
+  for (const { pattern, why } of FORBIDDEN_URL_PATTERNS) {
+    const hits = o.requests.filter((r) => pattern.test(r.url));
     if (hits.length > 0) {
       failures.push({
         check: 'forbidden request',
         detail: `${hits.length} request(s) matching ${pattern} — ${why}`,
       });
     }
+  }
+
+  // Anything to Supabase that is not a plain read, and not one of the RPCs
+  // known to be read-only, is treated as a write. The preview must not write.
+  const writes = o.requests.filter((r) => {
+    if (!r.url.startsWith(SUPABASE_URL)) return false;
+    if (READ_ONLY_METHODS.includes(r.method.toUpperCase())) return false;
+    const rpc = r.url.match(/\/rest\/v1\/rpc\/([a-z0-9_]+)/i)?.[1];
+    return !(rpc && READ_ONLY_SUPABASE_RPCS.includes(rpc));
+  });
+  if (writes.length > 0) {
+    const named = [...new Set(writes.map((r) => `${r.method} ${r.url.replace(SUPABASE_URL, '')}`))];
+    failures.push({
+      check: 'supabase write',
+      detail: `the preview wrote to Supabase: ${named.join(', ')}. Preview traffic must never reach production rows — add it to READ_ONLY_SUPABASE_RPCS only if it genuinely writes nothing.`,
+    });
   }
 
   if (o.outputFiles.includes('dev-real-data.json')) {
@@ -113,6 +136,13 @@ export function evaluateHealth(o: HealthObservations): {
       failures.push({
         check: 'store missing',
         detail: `IndexedDB has no \`${store}\` store at all.`,
+      });
+    } else if (count < 0) {
+      // The driver reports a failed count as -1. Failing closed matters: a
+      // negative slipping through the `=== 0` test would have read as healthy.
+      failures.push({
+        check: 'store unreadable',
+        detail: `Counting \`${store}\` failed. An unreadable store is not a populated one.`,
       });
     } else if (count === 0) {
       failures.push({

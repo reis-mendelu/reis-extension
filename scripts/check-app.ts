@@ -18,7 +18,12 @@ import { createServer, type ViteDevServer } from 'vite';
 import { readdirSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { evaluateHealth, formatHealthReport, type HealthObservations } from './appHealth';
+import {
+  evaluateHealth,
+  formatHealthReport,
+  type HealthObservations,
+  type ObservedRequest,
+} from './appHealth';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = resolve(ROOT, 'dist-web');
@@ -32,8 +37,10 @@ function parseMode(argv: string[]): 'demo' | 'real' {
 }
 
 async function collect(page: Page, mode: 'demo' | 'real'): Promise<HealthObservations> {
-  const requests: string[] = [];
-  page.on('request', (r) => requests.push(r.url()));
+  // Method as well as URL: every supabase.rpc() is a POST, so the write rule
+  // needs both to tell a read-only RPC from a write.
+  const requests: ObservedRequest[] = [];
+  page.on('request', (r) => requests.push({ url: r.url(), method: r.method() }));
 
   await page.goto(`http://localhost:${PORT}/?mobile=1`, { waitUntil: 'load' });
   await page.waitForTimeout(SETTLE_MS);
@@ -50,6 +57,8 @@ async function collect(page: Page, mode: 'demo' | 'real'): Promise<HealthObserva
         counts[store] = await new Promise<number>((res) => {
           const c = db.transaction(store).objectStore(store).count();
           c.onsuccess = () => res(c.result);
+          // -1, not 0: evaluateHealth reports an unreadable store distinctly
+          // from an empty one, and neither is allowed to read as healthy.
           c.onerror = () => res(-1);
         });
       }
