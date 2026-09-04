@@ -123,6 +123,13 @@ jobs:
 
           echo "Version changed: $old_version -> $version"
 
+          # The tag above is derived from package.json, but `npm run zip`
+          # packages the manifest version from wxt.config.ts — the two are
+          # bumped by hand in the release PR and can drift. Fail here, before
+          # tagging, rather than submit a package whose manifest shows a
+          # stale version; a store submission cannot be taken back.
+          node scripts/assert-manifest-version-matches.mjs
+
           git tag "$tag"
           git push origin "$tag"
           echo "Pushed $tag."
