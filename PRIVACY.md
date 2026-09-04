@@ -57,7 +57,7 @@ reIS contacts the following services. **IS Mendelu is the only one that receives
 
 **Always:**
 1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you.
-2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events and their attendance counts, anonymous usage events, and feedback you submit. Different records carry different keys, and none carries you: the daily usage count and the in-app survey use the random installation identifier described above; a submitted suggestion carries no identifier at all, only the screen name, app version, browser and window size; society view/click counters carry a post row id.
+2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events and their attendance counts, anonymous usage events, and feedback you submit. Different records carry different keys. The daily usage count, the in-app survey and event RSVPs use the random installation identifier described above; society view/click counters carry only a post row id. A submitted suggestion carries no identifier we generate — but if you fill in the optional contact field, it carries whatever you typed there, because asking us to reply is what that field is for.
 3. **jsDelivr** (`cdn.jsdelivr.net`) — static subject-difficulty data. No identifier is sent, but the set of subjects requested does reveal to the CDN which courses you are enrolled in.
 4. **OpenStreetMap** — campus map tiles.
 
