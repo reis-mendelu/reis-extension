@@ -36,7 +36,16 @@ function openInApp(e: React.MouseEvent<HTMLAnchorElement>) {
 // facts (when / what / where), the social block (attendance + RSVP), and More
 // info. A society edits/deletes its own events from the "Moje akce" panel, so
 // this card carries no authoring controls (keeps management in one place).
-export function EventDetailCard({ event }: { event: MapEvent }) {
+/**
+ * `flush` drops the card's own frame.
+ *
+ * Inside the tablet rail the frame is a box drawn inside a box: the rail is
+ * already a bordered, rounded panel, and a second one 16px in is the classic
+ * nested-card look that stops a sidebar reading as native. The desktop's
+ * floating DetailPanel and the phone's sheet both still want it — there the
+ * card IS the surface.
+ */
+export function EventDetailCard({ event, flush = false }: { event: MapEvent; flush?: boolean }) {
   const focusRoom = useAppStore((s) => s.focusRoomByCode);
   const { t, language } = useTranslation();
   const soc = societyById(event.societyId);
@@ -48,7 +57,11 @@ export function EventDetailCard({ event }: { event: MapEvent }) {
   });
 
   return (
-    <div className="overflow-hidden rounded-lg border border-base-300 bg-base-100">
+    <div
+      className={
+        flush ? '' : 'overflow-hidden rounded-lg border border-base-300 bg-base-100'
+      }
+    >
       <div className="space-y-3 p-3">
         {/* identity: avatar + title + host */}
         <div className="flex items-center gap-3">

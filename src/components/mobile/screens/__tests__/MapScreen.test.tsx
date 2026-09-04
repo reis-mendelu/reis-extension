@@ -210,7 +210,13 @@ describe('MapScreen', () => {
     } as never);
     render(<MapScreen />);
 
-    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+    // Out of peek — otherwise the peek row renders instead of the card — but
+    // NOT pinned to a detent. A single event card is ~300px, and holding it in
+    // a 70vh sheet left a quarter of the phone blank between the buttons and
+    // the bottom, with the map it described hidden behind it. The height hugs
+    // the content instead; the state only has to be somewhere that shows it.
+    expect(useAppStore.getState().mapSheetState).not.toBe('peek');
+    expect(screen.getByTestId('map-sheet').className).toContain('h-auto');
     // By role, not text: the boardgames category label is also "Deskovky",
     // so a bare text query matches the card's category row as well.
     expect(screen.getByRole('heading', { name: 'Deskovky' })).toBeInTheDocument();
@@ -545,7 +551,13 @@ describe('MapSheet drag', () => {
     fireEvent.click(akce);
     // A tap selects the tab and must not collapse the sheet.
     expect(useAppStore.getState().mapTab).toBe('akce');
-    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+    // Out of peek — otherwise the peek row renders instead of the card — but
+    // NOT pinned to a detent. A single event card is ~300px, and holding it in
+    // a 70vh sheet left a quarter of the phone blank between the buttons and
+    // the bottom, with the map it described hidden behind it. The height hugs
+    // the content instead; the state only has to be somewhere that shows it.
+    expect(useAppStore.getState().mapSheetState).not.toBe('peek');
+    expect(screen.getByTestId('map-sheet').className).toContain('h-auto');
   });
 
   /**
@@ -574,7 +586,13 @@ describe('MapSheet drag', () => {
     fireEvent.pointerDown(body, { clientY: 500 });
     fireEvent.pointerMove(body, { clientY: 300 });
     fireEvent.pointerUp(body, { clientY: 300 });
-    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+    // Out of peek — otherwise the peek row renders instead of the card — but
+    // NOT pinned to a detent. A single event card is ~300px, and holding it in
+    // a 70vh sheet left a quarter of the phone blank between the buttons and
+    // the bottom, with the map it described hidden behind it. The height hugs
+    // the content instead; the state only has to be somewhere that shows it.
+    expect(useAppStore.getState().mapSheetState).not.toBe('peek');
+    expect(screen.getByTestId('map-sheet').className).toContain('h-auto');
   });
 
   /**

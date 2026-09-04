@@ -460,6 +460,9 @@ export interface MobileUiSlice {
   mobileSelectedDayIso: string | null;
   mobileSheets: MobileSheet[];
   mapSheetState: MapSheetState;
+  /** The tablet rail's width in px. Dragged from its left edge; clamped by
+   *  `clampRailWidth`. Ignored on a phone, where the panel is a bottom sheet. */
+  mapRailWidth: number;
   mapTab: MapSheetTab;
   /** Dev-only forced phone/desktop branch. null = defer to viewport. */
   devPhoneOverride: boolean | null;
@@ -478,6 +481,7 @@ export interface MobileUiSlice {
   replaceSheet: (sheet: MobileSheet) => void;
   closeAllSheets: () => void;
   setMapSheetState: (state: MapSheetState) => void;
+  setMapRailWidth: (px: number) => void;
   setMapTab: (tab: MapSheetTab) => void;
   setDevPhoneOverride: (value: boolean | null) => void;
 }

@@ -1,5 +1,6 @@
 import type { AppSlice, MobileUiSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
+import { clampRailWidth, RAIL_PX } from '../../utils/mapRail';
 
 /**
  * Navigational state for the phone UI: which tab, which day, and the sheet
@@ -18,6 +19,7 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set) => ({
   // the peek band showed a title and blank space, and reaching the events meant
   // pulling the sheet up over the map every time.
   mapSheetState: 'half',
+  mapRailWidth: RAIL_PX,
   mapTab: 'akce',
   devPhoneOverride: null,
   welcomeSeen: null,
@@ -64,6 +66,9 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set) => ({
   closeAllSheets: () => set({ mobileSheets: [] }),
 
   setMapSheetState: (state) => set({ mapSheetState: state }),
+  // Clamped on the way IN, so nothing downstream — the rail's own width, the
+  // camera offset that halves it — ever has to re-check.
+  setMapRailWidth: (px) => set({ mapRailWidth: clampRailWidth(px, window.innerWidth) }),
   setMapTab: (tab) => set({ mapTab: tab }),
   setDevPhoneOverride: (value) => set({ devPhoneOverride: value }),
 });

@@ -1040,7 +1040,8 @@
       "emptyBody": "Zkus to prosím znovu.",
       "sheetExpand": "Rozbalit panel mapy",
       "sheetCollapse": "Sbalit panel mapy",
-      "noRoomsOnFloor": "Na tomto patře nejsou žádné místnosti."
+      "noRoomsOnFloor": "Na tomto patře nejsou žádné místnosti.",
+      "railResize": "Změnit šířku panelu"
     },
     "welcome": {
       "title": "Vítej v reISu",

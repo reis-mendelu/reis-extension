@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
 import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
+import { railOffsetPx } from '../../utils/mapRail';
 import buildingsJson from '../../data/map/buildings.json';
 import {
   ringToLatLng,
@@ -29,6 +30,15 @@ import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
 
+/**
+ * How close a focused event gets.
+ *
+ * Deliberately well short of the 18 a landmark uses: an event answers "where in
+ * Brno is this", and a building-level frame answers "what does this doorway
+ * look like". See the note at the call site.
+ */
+const EVENT_ZOOM = 16;
+
 // On DESKTOP, at the campus-overview resting zoom the lettered building names
 // (X, Q, A…) just clutter the basemap and collide with event pins, so they're
 // hidden via the `reis-hide-building-labels` class (src/index.css) and reappear
@@ -40,6 +50,9 @@ const META = buildingsJson as BuildingsMeta;
 
 export function MapCanvas() {
   const isPhone = usePhoneViewport();
+  // The rail is resizable, so the camera compensation has to track its LIVE
+  // width — a fixed half-of-340 leaves the pin under a rail just dragged wider.
+  const railWidth = useAppStore((s) => s.mapRailWidth);
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup>(L.layerGroup());
@@ -180,9 +193,26 @@ export function MapCanvas() {
         }
       } else if (sel?.kind === 'event' && sel.event.coord) {
         const [lon, lat] = sel.event.coord;
-        flyAndReveal(map, () =>
-          map.setView([lat, lon], Math.max(map.getZoom(), 18), { animate: false })
-        );
+        flyAndReveal(map, () => {
+          // EVENT_ZOOM, and NOT `Math.max(getZoom(), …)`.
+          //
+          // This branch only runs for a LIST or NOTIFICATION tap — a pin click
+          // never bumps focusReq — so the student has just been told an event
+          // exists and has not yet been told WHERE. Zoom 18 answered a question
+          // nobody asked: it framed the doorway, and a doorway looks the same
+          // everywhere in Brno. At 16 the surrounding streets are in frame, and
+          // someone who knows the city places it instantly and already knows
+          // whether they want to go.
+          //
+          // The max() had to go with it: it exists to avoid yanking someone
+          // OUT of a close view they chose, but arriving from a notification is
+          // not a view anyone chose, and keeping their old zoom is exactly how
+          // you get the doorway again.
+          map.setView([lat, lon], EVENT_ZOOM, { animate: false });
+          // The rail overlays the canvas, so Leaflet's centre is behind it.
+          const dx = railOffsetPx(map.getContainer().clientWidth, isPhone, railWidth);
+          if (dx) map.panBy([dx, 0], { animate: false });
+        });
       } else if (cameFromMapTap) {
         // Left floor-view by tapping the basemap: drop the floor plan but leave
         // the camera alone. Re-fitting the campus here threw the user all the
@@ -319,7 +349,11 @@ export function MapCanvas() {
       const { bounds, maxZoom, padding } = view;
       flyAndReveal(map, () => map.fitBounds(bounds, { maxZoom, padding, animate: false }));
     }
-  }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq, focusTarget]);
+    // isPhone joins the deps because the rail offset reads it. It is stable
+    // for the life of a device, but it flips on a browser resize, and this
+    // effect is idempotent by design (see the 'draft' branch's note), so
+    // re-running it on that flip re-answers the same question correctly.
+  }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq, focusTarget, isPhone, railWidth]);
 
   // Highlight the selected room in place on a plain map click — restyle the live
   // polygons without a full redraw or camera move (the heavy effect above only

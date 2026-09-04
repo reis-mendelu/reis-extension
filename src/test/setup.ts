@@ -41,3 +41,19 @@ vi.stubGlobal('chrome', {
 // beforeEach(() => {
 //   vi.clearAllMocks();
 // });
+
+/**
+ * happy-dom opens a 1024×768 window, which in this app's terms is a TABLET.
+ *
+ * That is the wrong default for the mobile tree. `useWideViewport` flips the
+ * map's event panel from a bottom sheet to a right-hand rail at 768px, so
+ * every phone-shell test silently began exercising the rail — no drag handle,
+ * no peek row, no detents — and seventeen of them failed on markup that was
+ * working exactly as designed at the width they were unknowingly asking for.
+ *
+ * A phone is the honest default here: the tests that mount `MobileApp` are
+ * phone tests. A test that wants the tablet says so, by widening the viewport
+ * itself.
+ */
+(window as unknown as { happyDOM?: { setViewport(v: { width: number; height: number }): void } })
+  .happyDOM?.setViewport({ width: 390, height: 844 });
