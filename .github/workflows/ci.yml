@@ -104,6 +104,19 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # public/dev-real-data.json is gitignored (it's the real scraped IS
+      # Mendelu student snapshot dev/snapshotPlugin.ts writes locally), so it
+      # never exists on CI or Vercel — meaning stripDevRealDataPlugin
+      # (vite.web.build.config.ts) never actually strips anything here, and a
+      # regression where the plugin stops being reached would pass silently.
+      # A decoy file — obviously synthetic, never real IS Mendelu data — makes
+      # the strip step do real work in this job, and the assertion below
+      # checks it actually ran.
+      - name: Write a decoy dev-real-data.json to exercise the strip step
+        run: |
+          set -euo pipefail
+          echo '{"__decoy":"CI decoy, not real IS Mendelu data — see .github/workflows/ci.yml"}' > public/dev-real-data.json
+          test -f public/dev-real-data.json
       - run: npm run build:web
       # An empty or near-empty bundle still "succeeds". Assert the entry HTML
       # and at least one hashed asset actually landed.
@@ -112,3 +125,10 @@ jobs:
           set -euo pipefail
           test -f dist-web/index.html
           test -n "$(find dist-web/assets -name '*.js' -print -quit)"
+      # The regression this job exists to catch: the strip plugin silently
+      # stops being reached and the (decoy, here) student snapshot ships in a
+      # bundle that gets deployed to a public URL.
+      - name: Assert dev-real-data.json did not reach the build output
+        run: |
+          set -euo pipefail
+          test ! -f dist-web/dev-real-data.json
