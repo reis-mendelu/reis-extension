@@ -33,7 +33,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.error(
       `\nRefusing to build the public web bundle: ${found.join(', ')} present in the environment.\n` +
         `Vite inlines VITE_* into the bundle, so these would be published.\n` +
-        `The web build takes exactly ${ALLOWED_VITE_VARS.join(' and ')}.\n`
+        `The web build takes exactly ${ALLOWED_VITE_VARS.join(' and ')}.\n` +
+        // The one non-obvious cause, and it has already bitten once: Vercel's
+        // "Automatically expose System Environment Variables" project setting
+        // injects a VITE_VERCEL_* variable for every piece of build metadata it
+        // knows (commit SHA, branch, author, commit message, project id, ...).
+        // None are secret, but none are wanted in the bundle either, and the
+        // failure otherwise reads as if something leaked.
+        (found.some((k) => k.startsWith('VITE_VERCEL_'))
+          ? `\nThe VITE_VERCEL_* names above are injected by Vercel's "Automatically expose System Environment Variables" project setting, not by this repo. Turn that setting off for this project — the web build does not use them.\n`
+          : '')
     );
     process.exit(1);
   }
