@@ -336,23 +336,20 @@ export function useAppLogic() {
     };
     window.addEventListener('message', handle);
     if (realDataMode) {
-      // Widening `realDataMode` above makes this branch newly reachable in a
-      // deployed preview build, not just `dev:web`. It is a harmless no-op
-      // there: this call uses loadRealDataSnapshot()'s DEFAULT url,
-      // '/dev-real-data.json' — the RAW, gitignored scrape, never the
-      // sanitised '/preview-data.json' — and `stripDevRealDataPlugin`
-      // (vite.web.build.config.ts) unconditionally deletes that file from
-      // every web build's output, dev or preview alike. So the fetch here
-      // 404s (or, under a bare static server with SPA fallback, resolves to
-      // index.html and fails res.json()), the catch swallows it, and
-      // nothing is posted. The listener registered just above is already
-      // live by the time dev/bootDemoMode.ts makes its OWN
-      // loadRealDataSnapshot('/preview-data.json') call moments later — that
-      // is the real loader for a preview build, and it is what actually
-      // populates the store. Verified: `npm run build:web:real` renders real
-      // data and issues no request to a nonexistent dev-real-data.json in the
-      // deployed output.
-      void loadRealDataSnapshot();
+      // Only the real dev server loads through this path. It reads
+      // loadRealDataSnapshot()'s DEFAULT url — '/dev-real-data.json', the RAW
+      // gitignored scrape — which is exactly right for `npm run dev:web` and
+      // exactly wrong for a built preview, where that file is deleted from the
+      // output by stripDevRealDataPlugin and the SANITISED '/preview-data.json'
+      // is what may be read instead.
+      //
+      // An earlier version fired this in preview builds too, on the reasoning
+      // that the request would harmlessly 404. `npm run check:app` measured two
+      // real requests for the raw scrape by name on every load — harmless in
+      // effect, wrong in intent, and on a host with an SPA rewrite a 404 comes
+      // back as 200 + HTML. dev/bootDemoMode.ts owns loading for a preview
+      // build and passes the sanitised url explicitly.
+      if (import.meta.env.DEV) void loadRealDataSnapshot();
     } else {
       signalReady();
       requestData('all');

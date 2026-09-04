@@ -125,6 +125,17 @@ jobs:
           set -euo pipefail
           test -f dist-web/index.html
           test -n "$(find dist-web/assets -name '*.js' -print -quit)"
+
+      # A bundle that builds and contains files can still be broken: it can boot
+      # onto skeletons that never resolve, call IS Mendelu on every load, or
+      # write to production Supabase. Every one of those shipped at least once on
+      # 2026-09-04 and was found by hand. This runs the built app in a real
+      # browser and fails on any of them. Demo data only — no credentials.
+      - name: Install Chromium for the app health check
+        run: npx playwright install --with-deps chromium
+
+      - name: App health check
+        run: npm run check:app
       # The regression this job exists to catch: the strip plugin silently
       # stops being reached and the (decoy, here) student snapshot ships in a
       # bundle that gets deployed to a public URL.
