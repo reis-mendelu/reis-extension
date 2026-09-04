@@ -15,6 +15,20 @@
 
 const ALLOWED_VITE_VARS = ['VITE_DEV_SOCIETY', 'VITE_PREVIEW_BUILD'];
 
+// Vercel injects its own build metadata under this prefix and there is no
+// setting that fully stops it: turning off "Automatically expose System
+// Environment Variables" removed 18 of 19, but
+// VITE_VERCEL_OBSERVABILITY_CLIENT_CONFIG is still injected by the platform.
+//
+// Allowed rather than rejected because the premise above is narrower than it
+// reads: Vite only inlines a VITE_ variable that the code STATICALLY
+// REFERENCES as `import.meta.env.VITE_X`. Nothing in this app references a
+// VITE_VERCEL_* name, so none of them reach the bundle — and none carry a
+// credential in any case (commit SHA, branch, author, project id). Failing the
+// build on a platform-injected, non-secret, never-inlined variable would mean
+// the deploy can never succeed.
+const ALLOWED_VITE_PREFIXES = ['VITE_VERCEL_'];
+
 /**
  * @param {Record<string, string | undefined>} env
  * @returns {string[]} VITE_-prefixed variable names present in `env` that are
@@ -22,7 +36,12 @@ const ALLOWED_VITE_VARS = ['VITE_DEV_SOCIETY', 'VITE_PREVIEW_BUILD'];
  */
 export function findForbiddenWebBuildVars(env) {
   return Object.keys(env)
-    .filter((key) => key.startsWith('VITE_') && !ALLOWED_VITE_VARS.includes(key))
+    .filter(
+      (key) =>
+        key.startsWith('VITE_') &&
+        !ALLOWED_VITE_VARS.includes(key) &&
+        !ALLOWED_VITE_PREFIXES.some((prefix) => key.startsWith(prefix))
+    )
     .sort();
 }
 

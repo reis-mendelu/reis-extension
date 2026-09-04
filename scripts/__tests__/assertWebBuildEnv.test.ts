@@ -65,4 +65,30 @@ describe('findForbiddenWebBuildVars', () => {
       })
     ).toEqual([]);
   });
+
+  // Vercel injects these and no project setting fully stops it. They carry no
+  // credential, and nothing in the app references a VITE_VERCEL_* name, so Vite
+  // never inlines them — rejecting them would make the deploy permanently
+  // unbuildable. Observed live: the allowlist failed a real Vercel build on 19
+  // of them, then on VITE_VERCEL_OBSERVABILITY_CLIENT_CONFIG alone.
+  it("allows Vercel's platform-injected VITE_VERCEL_* metadata", () => {
+    expect(
+      findForbiddenWebBuildVars({
+        VITE_DEV_SOCIETY: 'reis',
+        VITE_PREVIEW_BUILD: 'true',
+        VITE_VERCEL_OBSERVABILITY_CLIENT_CONFIG: 'x',
+        VITE_VERCEL_GIT_COMMIT_SHA: 'abc',
+        VITE_VERCEL_ENV: 'preview',
+      })
+    ).toEqual([]);
+  });
+
+  it('still rejects a non-Vercel VITE_ variable alongside them', () => {
+    expect(
+      findForbiddenWebBuildVars({
+        VITE_VERCEL_ENV: 'preview',
+        VITE_GEMINI_API_KEY: 'secret',
+      })
+    ).toEqual(['VITE_GEMINI_API_KEY']);
+  });
 });
