@@ -13,6 +13,7 @@ const healthy: HealthObservations = {
   textLength: 900,
   outputFiles: ['index.html', 'preview-data.json', 'assets'],
   mode: 'real',
+  visual: { 'calendar 320px dark': [], 'calendar 390px dark': [] },
 };
 
 describe('evaluateHealth', () => {
@@ -155,6 +156,70 @@ describe('evaluateHealth', () => {
       requests: [get('https://is.mendelu.cz/x')],
     });
     expect(r.failures.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('layout findings', () => {
+  const overflow = {
+    kind: 'overflow' as const,
+    sel: 'div.some-panel',
+    detail: 'document scrolls 34px wider than the viewport',
+    severity: 'error' as const,
+  };
+  const lowContrast = {
+    kind: 'contrast-text' as const,
+    sel: 'span.hint',
+    detail: 'text contrast 2.15:1 against its surface',
+    severity: 'warn' as const,
+  };
+
+  it('fails on horizontal overflow, naming the width', () => {
+    const r = evaluateHealth({
+      ...healthy,
+      visual: { ...healthy.visual, 'subjects 320px light': [overflow] },
+    });
+    expect(r.ok).toBe(false);
+    expect(r.failures.map((f) => f.check)).toContain('layout overflow · subjects 320px light');
+  });
+
+  it('fails on a collision', () => {
+    const collision = { ...overflow, kind: 'collision' as const, detail: 'a covers b' };
+    const r = evaluateHealth({
+      ...healthy,
+      visual: { ...healthy.visual, 'map 430px dark': [collision] },
+    });
+    expect(r.failures.map((f) => f.check)).toContain('layout collision · map 430px dark');
+  });
+
+  // Contrast carries judgement and this repo has pre-existing theme-token
+  // findings. Failing on them would block unrelated PRs until someone muted the
+  // gate, which is how a useful gate dies.
+  it('does NOT fail on a contrast warning', () => {
+    const r = evaluateHealth({
+      ...healthy,
+      visual: { ...healthy.visual, 'exams 390px light': [lowContrast] },
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it('names the element in the failure, so the log is actionable alone', () => {
+    const r = evaluateHealth({
+      ...healthy,
+      visual: { ...healthy.visual, 'subjects 320px dark': [overflow] },
+    });
+    expect(r.failures[0]!.detail).toContain('div.some-panel');
+  });
+
+  it('reports a failure at each view/width/theme independently', () => {
+    const r = evaluateHealth({
+      ...healthy,
+      visual: {
+        'calendar 320px dark': [overflow],
+        'calendar 390px dark': [],
+        'settings 430px light': [overflow],
+      },
+    });
+    expect(r.failures.filter((f) => f.check.startsWith('layout'))).toHaveLength(2);
   });
 });
 

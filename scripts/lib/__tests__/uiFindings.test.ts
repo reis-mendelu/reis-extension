@@ -38,6 +38,86 @@ function probe(elements: ProbeElement[], over: Partial<ProbeResult> = {}): Probe
 const kinds = (f: { kind: string }[]) => f.map((x) => x.kind);
 
 describe('analyzeProbe — horizontal overflow', () => {
+  // reIS clips at #root, so the document never scrolls horizontally. Nesting
+  // the per-element rule inside the document-scroll check made it unable to
+  // fire in this app at all — proven by injecting a 2000px element and getting
+  // nothing back. Clipped is worse than scrolled: the content is unreachable
+  // and there is no scrollbar to hint that anything is missing.
+  // Leaflet lays tiles beyond the map pane and clips them. Reporting those
+  // produced 26 failures on the map screen alone — enough to fail every PR.
+  // The exclusion must stay narrow: app content living inside the map — a
+  // control, a popup, one of reIS's own overlays — can genuinely overflow, and
+  // marking the whole .leaflet-container subtree would have hidden all of it.
+  it('still reports an app-owned element inside the map that is NOT in a geometry pane', () => {
+    const f = analyzeProbe(
+      probe(
+        [
+          el({
+            sel: 'div.leaflet-control',
+            rect: { x: 0, y: 100, w: 900, h: 40 },
+            insideInnerClip: false,
+          }),
+        ],
+        { width: 320, docScrollWidth: 320, docClientWidth: 320 }
+      )
+    );
+    expect(f.some((x) => x.kind === 'overflow-element' && x.sel === 'div.leaflet-control')).toBe(
+      true
+    );
+  });
+
+  it('ignores an element inside a third-party clipper', () => {
+    const f = analyzeProbe(
+      probe(
+        [
+          el({
+            sel: 'img.leaflet-tile',
+            rect: { x: -129, y: 100, w: 256, h: 256 },
+            insideInnerClip: true,
+          }),
+        ],
+        { width: 320, docScrollWidth: 320, docClientWidth: 320 }
+      )
+    );
+    expect(kinds(f)).not.toContain('overflow-element');
+  });
+
+  it('reports an element hanging off the LEFT edge', () => {
+    const f = analyzeProbe(
+      probe([el({ sel: 'div.pinned', rect: { x: -20, y: 100, w: 100, h: 40 } })], {
+        width: 320,
+        docScrollWidth: 320,
+        docClientWidth: 320,
+      })
+    );
+    const hit = f.find((x) => x.kind === 'overflow-element' && x.sel === 'div.pinned');
+    expect(hit).toBeDefined();
+    expect(hit!.detail).toMatch(/starts 20px left of/);
+  });
+
+  it('does not flag an element that fits', () => {
+    const f = analyzeProbe(
+      probe([el({ sel: 'div.fits', rect: { x: 0, y: 100, w: 320, h: 40 } })], {
+        width: 320,
+        docScrollWidth: 320,
+        docClientWidth: 320,
+      })
+    );
+    expect(kinds(f)).not.toContain('overflow-element');
+  });
+
+  it('reports an element past the viewport even when the document does not scroll', () => {
+    const f = analyzeProbe(
+      probe([el({ sel: 'div.wide-rail', rect: { x: 0, y: 100, w: 2000, h: 40 } })], {
+        width: 320,
+        docScrollWidth: 320,
+        docClientWidth: 320,
+      })
+    );
+    expect(f.some((x) => x.kind === 'overflow-element' && x.sel === 'div.wide-rail')).toBe(true);
+    expect(kinds(f)).not.toContain('overflow');
+  });
+
   it('reports nothing when the document fits', () => {
     expect(analyzeProbe(probe([]))).toEqual([]);
   });

@@ -14,6 +14,7 @@
  */
 
 import { SUPABASE_URL } from '../src/services/supabase/config';
+import type { Finding } from './lib/uiFindings';
 
 /** URLs the built preview must never request, whatever the method. */
 const FORBIDDEN_URL_PATTERNS: { pattern: RegExp; why: string }[] = [
@@ -61,6 +62,8 @@ export interface HealthObservations {
   outputFiles: string[];
   /** Which data the build was meant to be showing. */
   mode: 'demo' | 'real';
+  /** Findings from `analyzeProbe`, keyed by "<view> <width>px <theme>". */
+  visual: Record<string, Finding[]>;
 }
 
 export interface HealthFailure {
@@ -148,6 +151,22 @@ export function evaluateHealth(o: HealthObservations): {
       failures.push({
         check: 'store empty',
         detail: `\`${store}\` is empty; in ${o.mode} mode it should hold at least one row.`,
+      });
+    }
+  }
+
+  // Layout geometry, at every width the app claims to support.
+  //
+  // Only `error` severity fails. `uiFindings` already draws that line where it
+  // belongs: overflow and collision are objective — an element is off-screen or
+  // it is not — while contrast is `warn`, because its thresholds carry judgement
+  // and the repo has pre-existing theme-token findings that must not block an
+  // unrelated PR. Warnings are printed, never fatal.
+  for (const [where, findings] of Object.entries(o.visual)) {
+    for (const f of findings.filter((x) => x.severity === 'error')) {
+      failures.push({
+        check: `layout ${f.kind} · ${where}`,
+        detail: `${f.sel} — ${f.detail}`,
       });
     }
   }
