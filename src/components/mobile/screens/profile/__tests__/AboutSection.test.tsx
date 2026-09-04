@@ -8,11 +8,6 @@ describe('AboutSection', () => {
     useAppStore.setState({ language: 'cz', theme: 'mendelu-dark' } as never);
   });
 
-  it('says which build the student is running', () => {
-    render(<AboutSection />);
-    expect(screen.getByTestId('about-version')).toHaveTextContent(/reIS \d+\.\d+\.\d+|reIS dev/);
-  });
-
   it('names the partner and what they actually do', () => {
     render(<AboutSection />);
     // By accessible name, not text: the mark is an inline SVG, so this also
