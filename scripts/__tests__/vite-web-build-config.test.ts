@@ -39,4 +39,15 @@ describe('vite.web.build.config.ts', () => {
       'reis-strip-dev-real-data plugin must be registered to prevent dev-real-data.json from shipping'
     ).toBe(true);
   });
+
+  it('does not inherit the repo-root envDir, so root .env* files cannot be inlined', async () => {
+    const configPath = resolve(__dirname, '../../vite.web.build.config.ts');
+    const { default: webBuildConfig } = await import(configPath);
+    const env = { command: 'build', mode: 'production' };
+    const config = await webBuildConfig(env);
+
+    const repoRoot = resolve(__dirname, '../..');
+    expect(config.envDir).toBeDefined();
+    expect(resolve(String(config.envDir))).not.toBe(repoRoot);
+  });
 });

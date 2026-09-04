@@ -3,6 +3,28 @@ import { resolve } from 'path';
 import webDevConfig from './vite.web.config';
 import { stripDevRealDataPlugin } from './scripts/stripDevRealData.mjs';
 
+// vite.web.config.ts points envDir at the repository root so the localhost
+// dev harness can load VITE_EXTENSION_SECRET out of the root .env. This
+// build is served from a public URL, so it must NOT inherit that: Vite
+// inlines every VITE_* variable it finds under envDir into the bundle, and a
+// secret sitting in root .env (or any future root .env* file) must not be
+// eligible for that even if some later code starts referencing it.
+//
+// Pointed at a directory that is never expected to hold a .env* file (unlike
+// the repo root, where .gitignore's env patterns live) and is committed empty
+// via .gitkeep so the path always exists. Vite tolerates a missing envDir
+// too — loadEnv just finds no files — but an existing directory keeps this
+// from silently depending on that behavior.
+//
+// The two variables this build actually needs (VITE_DEV_SOCIETY,
+// VITE_PREVIEW_BUILD, set by the `build:web` npm script) still reach the
+// bundle: Vite's loadEnv merges matching process.env vars regardless of
+// envDir, and vite.web.config.ts's VITE_DEV_SOCIETY `define` reads
+// process.env directly rather than going through envDir at all. Verified by
+// building and checking the app renders (see scripts/assert-web-build-env.mjs
+// and its test).
+const WEB_BUILD_ENV_DIR = resolve(__dirname, 'scripts/web-build-envdir');
+
 // The two dev-server plugins, by the `name` each one actually returns —
 // verified against dev/snapshotPlugin.ts:33 and dev/adminSessionPlugin.ts:65.
 // A name that matches nothing filters nothing, and the build then fails inside
@@ -45,6 +67,9 @@ export default defineConfig(async (env) => {
   return mergeConfig(
     { ...base, plugins },
     {
+      // Overrides the repo-root envDir inherited from `base` — see
+      // WEB_BUILD_ENV_DIR above for why.
+      envDir: WEB_BUILD_ENV_DIR,
       build: {
         outDir: resolve(__dirname, 'dist-web'),
         emptyOutDir: true,
