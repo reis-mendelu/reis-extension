@@ -38,15 +38,20 @@ describe('handleDemoError', () => {
 
     expect(toast).toHaveBeenCalledTimes(2);
 
-    // Both calls should have the same id in the options
-    const firstCall = vi.mocked(toast).mock.calls[0];
-    const secondCall = vi.mocked(toast).mock.calls[1];
+    // Both calls carry the same id, which is what makes sonner replace the
+    // toast instead of stacking a second identical one.
+    //
+    // Indexed reads are narrowed rather than asserted non-null: the repo's
+    // `nuia:gate` runs tsc with noUncheckedIndexedAccess over this file, and a
+    // bare `calls[0][1]` fails it. The length check above does not narrow the
+    // index type, so the narrowing has to be explicit here.
+    const [firstCall, secondCall] = vi.mocked(toast).mock.calls;
+    if (!firstCall || !secondCall) throw new Error('expected two toast calls');
 
-    const firstOptions = firstCall[1] as { id?: string };
-    const secondOptions = secondCall[1] as { id?: string };
+    const firstOptions = firstCall[1] as { id?: string } | undefined;
+    const secondOptions = secondCall[1] as { id?: string } | undefined;
 
-    expect(firstOptions.id).toBeDefined();
-    expect(secondOptions.id).toBeDefined();
-    expect(firstOptions.id).toBe(secondOptions.id);
+    expect(firstOptions?.id).toBeDefined();
+    expect(firstOptions?.id).toBe(secondOptions?.id);
   });
 });
