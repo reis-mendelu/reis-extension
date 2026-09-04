@@ -4,7 +4,6 @@ import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { ScreenError } from '../primitives/ScreenError';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useSchedule } from '../../../hooks/data/useSchedule';
-import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
 import { resolveNowNext } from '../../../utils/mobile/nowNext';
 import { buildDayAgenda } from '../../../utils/mobile/dayAgenda';
 import { isLessonHidden } from '../../../utils/hiddenLessons';
@@ -17,7 +16,6 @@ import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
 import { DayAgenda } from './calendar/DayAgenda';
 import { CalendarEmptyDay } from './calendar/CalendarEmptyDay';
-import { CalendarAlerts } from './calendar/CalendarAlerts';
 
 function formatHeaderDate(date: Date, locale: string): string {
   const formatted = new Intl.DateTimeFormat(locale, {
@@ -59,7 +57,6 @@ export function CalendarScreen() {
   const hiddenItems = useAppStore((s) => s.hiddenItems);
   const teachingWeekData = useAppStore((s) => s.teachingWeekData);
 
-  const { alerts } = useDeadlineAlerts();
 
   // The vývěska is no longer mounted here. It was a portal owned by this one
   // screen while the button that opens it ships with every screen's header, so
@@ -157,8 +154,6 @@ export function CalendarScreen() {
   return shell(
     <>
       {nowNext && <NowNextCard data={nowNext} onRoute={openRoute} />}
-
-      <CalendarAlerts alerts={alerts} />
 
       {/* Above the agenda rather than only inside the empty state: a holiday
           can still carry a lesson (a rescheduled block, a combined-study

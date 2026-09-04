@@ -39,7 +39,7 @@ function SectionLabel({ children }: { children: ReactNode }) {
 export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
   const { t } = useTranslation();
   const { notifications, loading, markVisible, settingsLoading, readIds } = useNotificationFeed();
-  const { alerts } = useDeadlineAlerts();
+  const { alerts, markAllSeen } = useDeadlineAlerts();
   const hasContent = notifications.length > 0 || alerts.length > 0;
   const mapEvents = useAppStore((s) => s.mapEvents);
   const mapEventsLoaded = useAppStore((s) => s.mapEventsLoaded);
@@ -68,6 +68,20 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
     const unread = notifications.filter((n) => !readIds.has(n.id)).map((n) => n.id);
     if (unread.length) void markNotificationsRead(unread);
   }, [notifications, readIds, settingsLoading, markNotificationsRead]);
+
+  /**
+   * The other half of the same badge. The bell counts unseen deadline alerts
+   * too now that the calendar's strip is gone and this sheet is the only place
+   * a deadline appears — so a count that opening the sheet could not clear
+   * would be the very bug above, moved one field across.
+   *
+   * `markAllSeen` is already idempotent against `seenDeadlineAlertIds`, and
+   * unlike the feed these are derived synchronously from data the store
+   * already holds, so there is no settings gate to wait on.
+   */
+  useEffect(() => {
+    if (alerts.length) markAllSeen(alerts.map((a) => a.id));
+  }, [alerts, markAllSeen]);
 
   /**
    * A notification IS a `spolky_events` row — `fetchNotifications` reads that

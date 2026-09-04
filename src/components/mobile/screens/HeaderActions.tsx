@@ -1,6 +1,7 @@
 import { Bell, Pin, Search } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useNotificationFeed } from '../../../hooks/useNotificationFeed';
+import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 /**
@@ -25,8 +26,14 @@ export function HeaderActions() {
   const bulletinHydrated = useAppStore((s) => s.bulletinHydrated);
   const loadBulletinIfStale = useAppStore((s) => s.loadBulletinIfStale);
   const { notifications, readIds } = useNotificationFeed();
+  const { unseenCount } = useDeadlineAlerts();
 
-  const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
+  // Deadlines count too, exactly as they do on desktop's NotificationFeed. The
+  // calendar used to carry them in a strip above the day chips; that strip is
+  // gone — Novinky is the one place for a deadline now — so without this a
+  // closing registration or an assignment due in four hours would arrive with
+  // no signal anywhere in the app.
+  const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length + unseenCount;
 
   const openBulletin = () => {
     // pushSheet, not the old `bulletinExpanded` flag: that flag was only read

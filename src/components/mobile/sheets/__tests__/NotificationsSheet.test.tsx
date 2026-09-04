@@ -97,3 +97,52 @@ describe('NotificationsSheet', () => {
     );
   });
 });
+
+describe('NotificationsSheet — deadline alerts', () => {
+  function pad(n: number) {
+    return String(n).padStart(2, '0');
+  }
+  const inHours = (h: number) => {
+    const d = new Date(Date.now() + h * 3_600_000);
+    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  // The bell now counts deadlines as well as society news, because the
+  // calendar's strip is gone and this sheet is the only place they appear. A
+  // badge that cannot be cleared by opening the thing it points at is the same
+  // bug as the one that started this: it just moved to the other half.
+  it('marks deadline alerts seen while it is open', async () => {
+    useAppStore.setState({
+      language: 'cz',
+      notifications: {
+        data: [],
+        status: 'success',
+        readIds: new Set(),
+        viewedIds: new Set(),
+        seenDeadlineAlertIds: new Set(),
+      },
+      exams: { data: [] },
+      cvicneTests: [],
+      now: new Date(),
+      odevzdavarny: [
+        {
+          odevzdavarnaId: 'o1',
+          courseId: 'ALG',
+          courseNameCs: 'Algoritmizace',
+          courseNameEn: 'Algorithms',
+          name: 'Semestrální projekt',
+          type: 'Odevzdávárna',
+          deadline: inHours(5),
+          fileCount: 0,
+          uploadUrl: 'https://is.mendelu.cz/x',
+        },
+      ],
+    } as never);
+
+    render(<NotificationsSheet onClose={vi.fn()} />);
+    await waitFor(() =>
+      expect(useAppStore.getState().notifications.seenDeadlineAlertIds.has('odev-o1')).toBe(true)
+    );
+  });
+});
+

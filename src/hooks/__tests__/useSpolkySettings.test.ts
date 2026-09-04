@@ -160,3 +160,61 @@ describe('returning Erasmus user — legacy ESN back-fill', () => {
     expect(result.current.subscribedAssociations).toEqual(['af', 'esn']);
   });
 });
+
+// ---------------------------------------------------------------------------
+// The empty-set trap
+// ---------------------------------------------------------------------------
+describe('unresolved faculty must not be persisted as "subscribed to nothing"', () => {
+  // Reported as "the deskovky test notification didn't appear in the
+  // notification". A society event is filtered out of the feed unless the
+  // student is subscribed to that society, and the faculty default is computed
+  // ONCE — the first time IDB has no saved list.
+  //
+  // `#titulek` does not always parse: a doctoral or combined-study header, or a
+  // session not yet restored at boot on the long-lived Capacitor app, leaves
+  // `facultyLabel` undefined. The defaults then came out `[]` — and `[]` was
+  // written to IDB. `[]` is truthy, so `if (!saved)` never ran again, and the
+  // student was subscribed to nothing PERMANENTLY, on every later boot where
+  // the faculty parsed perfectly well.
+  it('does not save an empty default set, so the next boot can resolve it', async () => {
+    mockIDBGet.mockResolvedValue(undefined);
+    mockGetUserParams.mockResolvedValue(makeUser(null, false));
+
+    const { result } = renderHook(() => useSpolkySettings());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(
+      mockIDBSet.mock.calls.filter((c) => c[1] === 'reis_subscribed_associations')
+    ).toHaveLength(0);
+  });
+
+  it('recovers a student already stuck on a stored empty list', async () => {
+    mockIDBGet.mockImplementation((_store: string, key: string) =>
+      Promise.resolve(key === 'reis_subscribed_associations' ? [] : undefined)
+    );
+    mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
+
+    const { result } = renderHook(() => useSpolkySettings());
+    await waitFor(() => expect(result.current.subscribedAssociations).toEqual(['supef']));
+  });
+
+  // The opposite must still hold: a student who deliberately unsubscribed from
+  // everything stays unsubscribed. `toggleAssociation` writes that choice, and
+  // an explicit empty choice is not the same as an unresolved one.
+  it('leaves a deliberate empty choice alone', async () => {
+    mockIDBGet.mockImplementation((_store: string, key: string) =>
+      Promise.resolve(
+        key === 'reis_subscribed_associations'
+          ? []
+          : key === 'reis_associations_chosen'
+            ? true
+            : undefined
+      )
+    );
+    mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
+
+    const { result } = renderHook(() => useSpolkySettings());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.subscribedAssociations).toEqual([]);
+  });
+});
