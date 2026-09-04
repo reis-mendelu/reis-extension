@@ -1,6 +1,6 @@
 import type { DayMenu, OutletMenu } from '../types/menuTypes';
 import type { Language } from '../store/types';
-import { fetchViaProxy } from './proxyClient';
+import { fetchPublic } from './publicPage';
 
 const LANG_CONFIG: Record<Language, {
   url: string;
@@ -70,7 +70,10 @@ function parseOutlet(container: Element, config: typeof LANG_CONFIG[Language]): 
 
 export async function fetchMenu(lang: Language): Promise<OutletMenu[]> {
   const config = LANG_CONFIG[lang];
-  const html = await fetchViaProxy(config.url);
+  // fetchPublic, not fetchViaProxy: on Capacitor there is no content script to
+  // answer REIS_FETCH, so the proxy call hung for the full 30s timeout and the
+  // jídelníček simply never appeared on the iPad. See api/publicPage.ts.
+  const html = await fetchPublic(config.url);
   const doc = new DOMParser().parseFromString(html, 'text/html');
 
   const result: OutletMenu[] = [];
