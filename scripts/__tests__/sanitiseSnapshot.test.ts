@@ -83,4 +83,17 @@ describe('sanitiseSnapshot', () => {
     const { report } = sanitiseSnapshot(raw);
     expect(report.join('\n')).toMatch(/2 classmate/);
   });
+
+  // The outer guard. A future scraper change could add a top-level key
+  // (forum posts, group project members) carrying someone else's data, and
+  // that must stop the upload rather than pass through unexamined.
+  it('throws on an unrecognised top-level key, naming it', () => {
+    const withExtra = { ...raw, forumPosts: [{ author: 'Jana Novakova' }] };
+    expect(() => sanitiseSnapshot(withExtra)).toThrow(/forumPosts/);
+  });
+
+  it('does not throw when a known top-level key is simply absent', () => {
+    const { schedule: _schedule, ...withoutSchedule } = raw;
+    expect(() => sanitiseSnapshot(withoutSchedule)).not.toThrow();
+  });
 });

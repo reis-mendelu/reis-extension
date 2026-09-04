@@ -11,6 +11,28 @@
  * wrapping, row counts, an empty group.
  */
 
+/**
+ * Every top-level key the real snapshot is allowed to carry. A key missing
+ * from a given snapshot is fine — scrapes legitimately omit sections (no
+ * exam terms, no zaznamnik entries). An key present but *not* on this list
+ * throws, because nobody has reviewed it for other people's data yet.
+ */
+const KNOWN_TOP_LEVEL_KEYS = [
+  'schedule',
+  'subjects',
+  'attendance',
+  'studyPlan',
+  'studyStats',
+  'studyComparison',
+  'cvicneTests',
+  'odevzdavarny',
+  'files',
+  'syllabuses',
+  'lastSync',
+  'zaznamnik',
+  'classmates',
+] as const;
+
 /** Every field a classmate entry is allowed to have. Anything else throws. */
 const KNOWN_CLASSMATE_FIELDS = ['name', 'personId', 'photoUrl', 'messageUrl', 'studyInfo'] as const;
 
@@ -42,6 +64,17 @@ export function sanitiseSnapshot(raw: unknown): {
 
   const data = { ...(raw as Record<string, unknown>) };
   const report: string[] = [];
+
+  for (const key of Object.keys(data)) {
+    if (!KNOWN_TOP_LEVEL_KEYS.includes(key as (typeof KNOWN_TOP_LEVEL_KEYS)[number])) {
+      throw new Error(
+        `Unrecognised top-level snapshot key "${key}". ` +
+          `Refusing to upload a section nobody has reviewed — decide whether "${key}" carries ` +
+          `another person's data, then add it to KNOWN_TOP_LEVEL_KEYS in scripts/sanitiseSnapshot.ts.`
+      );
+    }
+  }
+
   const classmates = data.classmates;
 
   if (classmates === undefined || classmates === null) {
