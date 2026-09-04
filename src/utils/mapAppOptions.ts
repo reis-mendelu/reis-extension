@@ -26,12 +26,10 @@ export interface MapAppOption {
  * which also treats it as "ask" rather than resolving to nothing. The row must
  * not claim a choice the tap will ignore.
  */
-export function mapAppOptions(
-  platform: MapPlatform,
-  preferred: PreferredMapApp
-): MapAppOption[] {
+export function mapAppOptions(platform: MapPlatform, preferred: PreferredMapApp): MapAppOption[] {
   if (venueMapChoices([0, 0], '', platform).length < 2) return [];
-  const on: MapAppOption['id'] = preferred === 'apple' || preferred === 'google' ? preferred : 'ask';
+  const on: MapAppOption['id'] =
+    preferred === 'apple' || preferred === 'google' ? preferred : 'ask';
   return [
     { id: 'apple', labelKey: 'map.openInAppleMaps', selected: on === 'apple' },
     { id: 'google', labelKey: 'map.openInGoogleMaps', selected: on === 'google' },
