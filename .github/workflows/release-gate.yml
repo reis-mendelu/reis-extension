@@ -1,0 +1,80 @@
+name: Release gate
+
+# Gates every PR into `main`. Only the release train may reach production:
+# `main` is what publish.yml turns into a store submission, and a store
+# submission cannot be taken back.
+#
+#   head == test   -> this repo's own `test`, and a successful Vercel deployment
+#                     must exist for this exact SHA. `test` can hold a commit
+#                     whose deploy is still building or has failed, so the
+#                     branch name alone proves nothing.
+#   otherwise      -> rejected. `main` is not the default PR base, so a
+#                     mis-targeted PR is normal and this is the thing that
+#                     catches it.
+
+on:
+  pull_request:
+    # `edited` fires when a PR's base branch changes. Without it, a PR
+    # retargeted from `test` to `main` never runs this workflow, and a required
+    # check that has never reported blocks the merge with "Expected — waiting
+    # for status" that re-running cannot clear.
+    types: [opened, edited, synchronize, reopened]
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+# Never cancel in progress: branch protection reads this check's conclusion, and
+# a cancelled run leaves no conclusion at all.
+concurrency:
+  group: release-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  # The job NAME is the required-check context in branch protection. Renaming it
+  # without updating the protection rule in the same change silently
+  # un-enforces the gate.
+  gate:
+    name: Release gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # `permissions:` sets every unlisted scope to none, and the deployments
+      # API needs its own — `contents: read` does not cover it.
+      deployments: read
+    timeout-minutes: 10
+    steps:
+      - name: Check this PR's path into main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          DEPLOY_ENV: Production
+        run: |
+          set -euo pipefail
+
+          # The same-repo guard matters: a fork branch merely named `test` must
+          # not claim the release lane.
+          if [ "$HEAD_REF" != "test" ] || [ "$HEAD_REPO" != "$GH_REPO" ]; then
+            echo "::error::Head branch '$HEAD_REF' may not target main. Only this repository's 'test' branch may — that is what the release train is. Retarget this PR at 'test'."
+            exit 1
+          fi
+
+          # -f on a GET becomes a query parameter, so a space or slash in the
+          # environment name is encoded correctly.
+          ids="$(gh api -X GET "repos/$GH_REPO/deployments" \
+            -f environment="$DEPLOY_ENV" -f sha="$HEAD_SHA" --jq '.[].id')"
+
+          for id in $ids; do
+            if gh api "repos/$GH_REPO/deployments/$id/statuses" --jq '.[].state' \
+               | grep -qx success; then
+              echo "✓ Green '$DEPLOY_ENV' deployment found for $HEAD_SHA"
+              exit 0
+            fi
+          done
+
+          echo "::error::No successful '$DEPLOY_ENV' deployment for $HEAD_SHA. A release needs a green preview deploy of exactly this commit. If the deploy is still running, wait and re-run this check. If someone merged into 'test' after this PR was opened, the tip moved — 'test' is meant to be frozen while a release PR is open."
+          exit 1

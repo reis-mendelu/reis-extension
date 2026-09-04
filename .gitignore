@@ -146,6 +146,9 @@ public/.dev-real-data.lock
 
 # Capacitor
 dist-capacitor/
+
+# Static web preview build output (vite.web.build.config.ts)
+dist-web/
 # The native projects ARE committed: they hold custom native source
 # (android/app/src/main/java/cz/reis/app/DownloadsPlugin.java) that `cap add`
 # cannot regenerate. Only the build output is ignored.

@@ -3,6 +3,16 @@
 // boot the real reIS app exactly as the extension does.
 import './chromeShim';
 
+// Side-effect import, and deliberately first after chromeShim — before
+// installWebPlatform, phoneOverride, and (most importantly) the app itself.
+// Puts the app into demo mode on the deployed preview before anything in the
+// module graph can reach the store and fire a real network call gated on
+// that flag (trackDailyUsage() inside @/entrypoints/main/main's
+// initializeStore()). Also see the ordering comment on
+// `@/entrypoints/main/main` below, and earlyDemoMode.ts itself for why
+// `bootDemoMode` at the bottom of this file is a separate, later step.
+import './earlyDemoMode';
+
 // Side-effect import: installs the web host. Must be an import, not a
 // statement, for the same hoisting reason as phoneOverride below.
 import './installWebPlatform';
@@ -25,3 +35,11 @@ import './storeHandle';
 // can be tested against live Supabase instead of the in-memory dev store. Does
 // nothing on a plain `npm run dev:web`. See devAdminSession.ts.
 import './devAdminSession';
+
+// Loads the deployed preview's demo data (enterDemo() + a store refresh), so
+// the screens have data and stop trying to reach IS Mendelu. No-op locally.
+// The flag itself is already set by now — see earlyDemoMode.ts at the top of
+// this file — this only does the data loading, which needs the store and so
+// cannot happen that early.
+import { bootDemoMode } from './bootDemoMode';
+void bootDemoMode(import.meta.env);
