@@ -1,4 +1,5 @@
 import type { AppSlice, DemoSlice } from '../types';
+import { isDemoMode } from '../../errors/demoMode';
 import { IndexedDBService } from '../../services/storage';
 import { MockManager } from '../../utils/mock/MockManager';
 import { MOCK_REGISTRY } from '../../utils/mock/registry';
@@ -58,7 +59,18 @@ async function wipeSeeded(): Promise<void> {
 }
 
 export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
-  demoMode: false,
+  // Reads the module-level flag rather than hardcoding false: on the
+  // deployed preview, dev/earlyDemoMode.ts calls setDemoModeFlag(true)
+  // before this slice (and the store that owns it) ever evaluates. Several
+  // guards — loadContext's `if (get().demoMode) return`, most notably — read
+  // this store field directly rather than importing errors/demoMode, so
+  // seeding it from the same source of truth at creation time is what keeps
+  // them from firing a real IS Mendelu / Supabase call before enterDemo()
+  // gets a chance to run. See useAppStore.ts's subscribe just below the
+  // store definition for the other half of this: it keeps the flag in sync
+  // with every later `set({ demoMode })`, this line only handles the very
+  // first read.
+  demoMode: isDemoMode(),
 
   enterDemo: async () => {
     // Wiping on the way IN as well as out: a student who signs out and then

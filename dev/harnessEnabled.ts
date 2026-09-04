@@ -17,3 +17,17 @@ export interface HarnessEnv {
 export function isHarnessEnabled(env: HarnessEnv): boolean {
   return env.DEV === true || env.VITE_PREVIEW_BUILD === 'true';
 }
+
+/**
+ * Whether this build is the deployed Vercel preview specifically — narrower
+ * than `isHarnessEnabled`, which is also true for a local `dev:web` run.
+ *
+ * Zero-dependency (this module imports nothing) so it can be read from
+ * `earlyDemoMode.ts` before the app's module graph — and the store it
+ * boots — has evaluated. `bootDemoMode.ts`'s `shouldBootDemoMode` delegates
+ * to this so the two call sites can never disagree about what "preview
+ * build" means.
+ */
+export function isPreviewBuild(env: HarnessEnv): boolean {
+  return env.VITE_PREVIEW_BUILD === 'true';
+}

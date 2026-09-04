@@ -35,9 +35,11 @@ describe('logError', () => {
     expect(sendTelemetry).not.toHaveBeenCalled();
   });
 
-  // The extension registers no handler, and demo mode is Capacitor-only, so a
-  // DemoModeError cannot arise there — but logError must not depend on a
-  // handler existing.
+  // The extension registers no handler, and the extension itself never
+  // enters demo mode, so a DemoModeError cannot arise there — but logError
+  // must not depend on a handler existing (Capacitor and the deployed web
+  // preview both register one; see capacitor/main.capacitor.tsx and
+  // dev/earlyDemoMode.ts).
   it('falls through to telemetry when no demo handler is registered', () => {
     setDemoErrorHandler(null);
     const err = new DemoModeError();

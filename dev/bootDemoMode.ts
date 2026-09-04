@@ -1,6 +1,6 @@
 import { useAppStore } from '../src/store/useAppStore';
 import { logError } from '../src/utils/reportError';
-import type { HarnessEnv } from './harnessEnabled';
+import { isPreviewBuild, type HarnessEnv } from './harnessEnabled';
 
 /**
  * Whether to put the app into demo mode at boot.
@@ -8,9 +8,13 @@ import type { HarnessEnv } from './harnessEnabled';
  * Preview builds only. A local `dev:web` run must never do this: it reads the
  * real scraped snapshot, and `enterDemo()` calls `wipeSeeded()` on the way IN,
  * so booting demo locally would delete a developer's real data.
+ *
+ * Delegates to `isPreviewBuild` (zero-dependency, in `harnessEnabled.ts`) so
+ * this predicate and `earlyDemoMode.ts`'s can never disagree about what
+ * "preview build" means.
  */
 export function shouldBootDemoMode(env: HarnessEnv): boolean {
-  return env.VITE_PREVIEW_BUILD === 'true';
+  return isPreviewBuild(env);
 }
 
 /**

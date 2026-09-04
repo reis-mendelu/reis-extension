@@ -98,8 +98,10 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
 
   // Same inversion, same reason: logError is called from everywhere including
   // the content script, so demoToast — and through it sonner — must not be
-  // reachable from it by a static import. Demo mode is Capacitor-only, so the
-  // extension registering nothing costs it nothing.
+  // reachable from it by a static import. The extension itself never enters
+  // demo mode, so it registering nothing costs it nothing. (Demo mode is no
+  // longer Capacitor-only, though: the deployed web preview registers the
+  // same handler early, in dev/earlyDemoMode.ts, for the same reason.)
   setDemoErrorHandler(handleDemoError);
 
   // Before the root renders, so the first frame is already either the welcome
