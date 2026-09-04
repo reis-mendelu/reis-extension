@@ -562,7 +562,8 @@
     "native": {
       "button": "Set up eduroam",
       "working": "Opening Wi-Fi setup…",
-      "saved": "Done — eduroam is saved. You'll connect automatically on campus.",
+      "saved": "Done — eduroam is saved.",
+      "savedNote": "Ignore any “couldn't join” message — eduroam isn't in range here. On campus you'll connect by yourself.",
       "already": "eduroam is already set up on this device.",
       "staleAssociation": "You're connected to eduroam, so it can't be set up right now. If it stops connecting later, forget the network in Settings → Wi‑Fi and tap again.",
       "cancelled": "Setup wasn't finished. Tap again to retry.",
@@ -1039,14 +1040,12 @@
     "map": {
       "searchPlaceholder": "Find a room, building, event…",
       "tabEvents": "Events",
-      "tabBuilding": "Building {name}",
       "peekHint": "Campus events",
       "thisWeek": "This week",
       "emptyTitle": "Map didn't load",
       "emptyBody": "Please try again.",
       "sheetExpand": "Expand map sheet",
       "sheetCollapse": "Collapse map sheet",
-      "noRoomsOnFloor": "No rooms on this floor.",
       "railResize": "Resize the panel",
       "railClose": "Hide panel",
       "railOpen": "Show panel"

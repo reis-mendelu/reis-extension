@@ -3,12 +3,7 @@ import { ChevronDown, ChevronLeft, ChevronUp } from 'lucide-react';
 import { useMapSheetDrag } from './useMapSheetDrag';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
-import type { MapSheetTab } from '../../../../store/types';
-import buildingsJson from '../../../../data/map/buildings.json';
-import type { BuildingsMeta } from '../../../../types/campusMap';
 import { MapPanelBody } from './MapPanelBody';
-
-const META = buildingsJson as BuildingsMeta;
 
 /** The collapsed height, in px — kept in sync with the `h-[166px]` class below. */
 const PEEK_PX = 166;
@@ -19,7 +14,7 @@ const EXPANDED_VH = 0.7;
 /**
  * The map screen's bottom sheet: a drag handle that's always visible, then
  * either a one-line peek summary or the Akce/Knihovna/Budova tabs, driven by
- * `mapSheetState` / `mapTab` (Task 3's mobile UI slice — no local state here).
+ * `mapSheetState` (Task 3's mobile UI slice — no local state here).
  *
  * The collapsed height reserves the bottom ~96px for the floating `BottomNav`,
  * which is positioned against the SCREEN (bottom-[18px]), not this sheet, and
@@ -37,9 +32,6 @@ const EXPANDED_VH = 0.7;
 export function MapSheet() {
   const sheetState = useAppStore((s) => s.mapSheetState);
   const setSheetState = useAppStore((s) => s.setMapSheetState);
-  const tab = useAppStore((s) => s.mapTab);
-  const setTab = useAppStore((s) => s.setMapTab);
-  const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const selection = useAppStore((s) => s.mapSelection);
   const clearMapSelection = useAppStore((s) => s.clearMapSelection);
   const { t } = useTranslation();
@@ -51,16 +43,6 @@ export function MapSheet() {
   // peek band was blank under its own title.
   const expanded = sheetState !== 'peek';
   const fullyExpanded = sheetState === 'expanded';
-  const showBudova = activeBuildingId !== null;
-  // A previously-picked Budova tab goes stale the moment the building is
-  // deselected (exitToCampus) — fall back to Akce instead of rendering
-  // nothing, mirroring how MapSidePanel's `active` override handles its own
-  // mode/tab mismatch.
-  // 'knihovna' joins that fallback: the library study-room tab is hidden on
-  // mobile, and a persisted selection of it would otherwise leave the sheet
-  // rendering nothing with no tab to click back to.
-  const activeTab: MapSheetTab =
-    (tab === 'budova' && !showBudova) || tab === 'knihovna' ? 'akce' : tab;
   const panelRef = useRef<HTMLDivElement>(null);
   const { dragHeight, consumeDragClick, handlers } = useMapSheetDrag(
     sheetState,
@@ -106,31 +88,6 @@ export function MapSheet() {
    * natural height, which is what detents are for.
    */
   const hugContent = !!selectedEvent;
-
-  const buildingName =
-    activeBuildingId !== null
-      ? (META.buildings.find((b) => b.id === activeBuildingId)?.name ?? '')
-      : '';
-
-  const tabBtn = (key: MapSheetTab, label: string) => (
-    <button
-      key={key}
-      type="button"
-      role="tab"
-      aria-selected={activeTab === key}
-      // Same suppression as the handle: a drag that starts on a tab ends in a
-      // click on it, which would switch tab as a side effect of collapsing.
-      onClick={() => {
-        if (consumeDragClick()) return;
-        setTab(key);
-      }}
-      className={`flex-1 whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-semibold ${
-        activeTab === key ? 'bg-base-100 text-base-content shadow-sm' : 'text-base-content/60'
-      }`}
-    >
-      {label}
-    </button>
-  );
 
   return (
     <div
@@ -212,14 +169,6 @@ export function MapSheet() {
                 {t('mobile.map.tabEvents')}
               </span>
             </button>
-          ) : showBudova ? (
-            <div
-              role="tablist"
-              className="mx-4 flex flex-shrink-0 touch-none gap-1 rounded-lg bg-base-content/5 p-1"
-            >
-              {tabBtn('akce', t('mobile.map.tabEvents'))}
-              {tabBtn('budova', t('mobile.map.tabBuilding', { name: buildingName }))}
-            </div>
           ) : (
             <button
               type="button"
@@ -243,7 +192,7 @@ export function MapSheet() {
           {/* pb-24 clears the floating BottomNav, which is positioned against
               the SCREEN and draws over the sheet. */}
           <div className="flex-1 overflow-y-auto pb-24 pt-2">
-            <MapPanelBody selectedEvent={selectedEvent} activeTab={activeTab} />
+            <MapPanelBody selectedEvent={selectedEvent} />
           </div>
         </>
       )}

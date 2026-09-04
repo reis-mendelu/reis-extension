@@ -1,13 +1,9 @@
 import { EventDetailCard } from '../../../CampusMap/EventDetailCard';
 import { MapEventsSection } from '../../../CampusMap/MapEventsSection';
-import { BuildingRoomList } from './BuildingRoomList';
-import { useAppStore } from '../../../../store/useAppStore';
-import type { MapSheetTab } from '../../../../store/types';
 import type { MapEvent } from '../../../../types/events';
 
 export interface MapPanelBodyProps {
   selectedEvent: MapEvent | null;
-  activeTab: MapSheetTab;
   /** The rail frames its own content, so the card inside it renders flush. */
   flush?: boolean;
 }
@@ -21,10 +17,14 @@ export interface MapPanelBodyProps {
  * versus open/closed and a horizontal one) and nothing in common but this, so
  * a single component doing both had grown a `isRail` ternary in every other
  * line.
+ *
+ * One event or the events list — there is no third thing and no tab to pick
+ * between them any more. The Budova tab that used to live here listed the
+ * building's room register (untranslated estate data: 88 rows of toilets,
+ * kitchens and offices on Q's ground floor), and the map's own polygons and the
+ * search bar are the two ways a student actually finds a room.
  */
-export function MapPanelBody({ selectedEvent, activeTab, flush = false }: MapPanelBodyProps) {
-  const activeBuildingId = useAppStore((s) => s.activeBuildingId);
-
+export function MapPanelBody({ selectedEvent, flush = false }: MapPanelBodyProps) {
   if (selectedEvent) {
     return (
       <div className={flush ? 'px-5' : 'px-4'}>
@@ -32,12 +32,5 @@ export function MapPanelBody({ selectedEvent, activeTab, flush = false }: MapPan
       </div>
     );
   }
-  return (
-    <>
-      {activeTab === 'akce' && <MapEventsSection showFilter={false} />}
-      {activeTab === 'budova' && activeBuildingId !== null && (
-        <BuildingRoomList buildingId={activeBuildingId} />
-      )}
-    </>
-  );
+  return <MapEventsSection showFilter={false} />;
 }

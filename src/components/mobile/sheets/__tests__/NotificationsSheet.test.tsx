@@ -70,9 +70,9 @@ describe('NotificationsSheet', () => {
     // effect is gated on `settingsLoading` from useSpolkySettings, which
     // resolves off an IndexedDB read — fast locally, not always inside a second
     // on a loaded CI runner. This test failed intermittently on three separate
-    // PRs for that reason alone, which costs a re-run and, worse, teaches
-    // everyone that a red check might mean nothing. It asserts that the feed
-    // gets marked read, not how quickly.
+    // PRs for that reason alone (measured once at 1046ms), which costs a re-run
+    // and, worse, teaches everyone that a red check might mean nothing. It
+    // asserts that the feed gets marked read, not how quickly.
     await waitFor(() => expect(useAppStore.getState().notifications.readIds.has('n1')).toBe(true), {
       timeout: 5000,
     });
@@ -99,7 +99,13 @@ describe('NotificationsSheet', () => {
         data: [notification],
       },
     } as never);
-    await waitFor(() => expect(useAppStore.getState().notifications.readIds.has('n1')).toBe(true));
+    // 8000, like the deadline-alert assertion below: marking the feed read is
+    // an IndexedDB write behind an effect, and on a loaded CI runner it lands
+    // just past waitFor's 1000ms default — this failed at 1046ms while passing
+    // locally every time.
+    await waitFor(() => expect(useAppStore.getState().notifications.readIds.has('n1')).toBe(true), {
+      timeout: 8000,
+    });
   });
 });
 

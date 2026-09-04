@@ -51,7 +51,8 @@
     "check:native": "node scripts/check-native-plugins.mjs",
     "preview:real": "npm run scrape:real && npm run sanitise:snapshot && npm run build:web:real && vite preview --config vite.web.build.config.ts",
     "check:app": "tsx --tsconfig tsconfig.app.json scripts/check-app.ts",
-    "preview:real:lan": "echo \"\n⚠  Serving YOUR real academic record to every device on this network.\n   On eduroam or any shared Wi-Fi that is everyone.\n   Use this only on a network you trust, and stop it when you are done.\n\" && npm run scrape:real && npm run sanitise:snapshot && npm run build:web:real && vite preview --config vite.web.build.config.ts --host"
+    "preview:real:lan": "echo \"\n⚠  Serving YOUR real academic record to every device on this network.\n   On eduroam or any shared Wi-Fi that is everyone.\n   Use this only on a network you trust, and stop it when you are done.\n\" && npm run scrape:real && npm run sanitise:snapshot && npm run build:web:real && vite preview --config vite.web.build.config.ts --host",
+    "gen:splash": "tsx scripts/gen-splash.mts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

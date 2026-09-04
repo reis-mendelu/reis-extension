@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   configureEduroam,
   interpretAddResult,
+  isEduroamConfigured,
   normalizeOutcome,
   RESULT_CANCELED,
   RESULT_OK,
@@ -66,7 +67,29 @@ describe('interpretAddResult', () => {
   });
 });
 
+/**
+ * "when I'm off the campus ... the iPad tries to join the network, but because
+ * I'm not in the radius, it says unable to join. Even though we've configured
+ * the network, and that was the goal."
+ *
+ * `NEHotspotConfigurationManager.apply` does two things at once: it SAVES the
+ * configuration and it tries to ASSOCIATE. Out of range the association cannot
+ * happen, so `apply` completes with an error and the plugin's `default:` branch
+ * reported `failed` — while the configuration had in fact been installed. The
+ * proof is the on-campus retry, which answers `already-configured`, and that
+ * outcome is only returned after `getConfiguredSSIDs` confirms our SSID.
+ *
+ * So a student who sets eduroam up at home — the likeliest moment, right after
+ * installing — was told setup had failed when it had worked.
+ */
 describe('normalizeOutcome', () => {
+  // OUTCOMES is an allowlist and anything missing from it fails closed, so a
+  // native outcome that is not registered here is silently downgraded to
+  // `failed`. Worth remembering before adding one on the Swift side.
+  it('fails closed on an outcome the plugin no longer sends', () => {
+    expect(normalizeOutcome({ outcome: 'saved-not-joined' })).toBe('failed');
+  });
+
   it.each(['saved', 'already-configured', 'cancelled', 'failed'] as const)(
     'passes the iOS outcome %s through',
     (outcome) => {
@@ -171,4 +194,25 @@ describe('stale-association (#261)', () => {
       'already-configured'
     );
   });
+});
+
+/**
+ * The three surfaces that ask "is eduroam set up?" each spelled the list out,
+ * so a fourth success reached a `done` status no banner recognised and the card
+ * said nothing at all. One predicate now, and this is what pins its edges.
+ */
+describe('isEduroamConfigured', () => {
+  it.each(['saved', 'already-configured'] as const)('counts %s as configured', (outcome) => {
+    expect(isEduroamConfigured(outcome)).toBe(true);
+  });
+
+  // #261: iOS answers alreadyAssociated whenever the device is ON the SSID,
+  // configuration or not — nothing is installed on that path, and calling it
+  // configured is the bug that sent students to campus believing it worked.
+  it.each(['failed', 'cancelled', 'stale-association', null] as const)(
+    'does not count %s',
+    (outcome) => {
+      expect(isEduroamConfigured(outcome)).toBe(false);
+    }
+  );
 });

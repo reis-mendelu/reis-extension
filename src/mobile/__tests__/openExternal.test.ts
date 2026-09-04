@@ -271,7 +271,7 @@ describe('openExternal — the in-app browser needs the session on the request',
     }));
     vi.doMock('@capacitor/core', () => ({ CapacitorCookies: { setCookie } }));
     vi.doMock('../../platform/tokenStore', () => ({
-      loadStoredToken: vi.fn(async () => 'TOKEN123'),
+      loadStoredToken: vi.fn(async () => 'AbCd12%2Fef34GH%2Bij56=='),
     }));
   });
 
@@ -292,15 +292,82 @@ describe('openExternal — the in-app browser needs the session on the request',
     expect(openWebView).toHaveBeenCalledWith(
       expect.objectContaining({
         url: 'https://is.mendelu.cz/auth/student/moje_studium.pl',
-        headers: { Cookie: 'UISAuth=TOKEN123' },
+        headers: { Cookie: 'UISAuth=AbCd12%2Fef34GH%2Bij56==' },
       })
     );
   });
 
-  // Writing the cookie into a jar was the obvious fix and the wrong one: capgo
-  // gives its WebView a separate persistent store on iOS 17+, while
-  // CapacitorCookies writes to the host app's — a jar this WebView never reads.
-  it('does not write to the host app cookie jar, which this WebView cannot see', async () => {
+  /**
+   * The cookie is written by the PAGE, not by Capacitor. Second attempt.
+   *
+   * `headers` covers only the ONE request the plugin builds
+   * (WKWebViewController.createRequest), so every link tapped inside the page
+   * is a navigation with nothing attached — reported first as "IS cookies
+   * don't stay when I click on external link".
+   *
+   * The first fix for that seeded the jar via `CapacitorCookies.setCookie` and
+   * shipped broken. That API runs the value through
+   * `addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)`, and `%` is
+   * NOT in that set — while a real UISAuth is URL-encoded base64, which
+   * `sessionToken.ts` records as measured: "e.g. …%2F…". So every `%2F` was
+   * re-encoded to `%252F` and IS got a corrupted token. Same symptom, second
+   * time: "I tried to open a thing on vyveska, it opened but then another click
+   * still redirected me to login".
+   *
+   * `buildRestoreScript` sets `document.cookie` from inside the IS page, so the
+   * value lands verbatim in that WebView's own store — and it is the mechanism
+   * this repo already had for putting a session into a WebView, token
+   * allowlist and all.
+   */
+  it('sets the cookie from inside the page, with the token untouched', async () => {
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
+
+    const opts = openWebView.mock.calls[0]![0] as {
+      preShowScript?: string;
+      preShowScriptInjectionTime?: string;
+    };
+    expect(opts.preShowScript).toContain('UISAuth');
+    expect(opts.preShowScript).toContain('AbCd12%2Fef34GH%2Bij56==');
+    // The encoder that broke attempt one would show up here.
+    expect(opts.preShowScript).not.toContain('%25');
+    // Before the page's own scripts, so the cookie exists for whatever it does.
+    expect(opts.preShowScriptInjectionTime).toBe('documentStart');
+  });
+
+  /**
+   * capgo injects `preShowScript` only when `isPresentAfterPageLoad` is true
+   * (see its definitions). So the two are coupled: dropping the presentation
+   * flag would silently stop the cookie being set and bring the login screen
+   * back, with nothing failing anywhere.
+   */
+  it('keeps the flag preShowScript depends on', async () => {
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
+
+    expect(openWebView).toHaveBeenCalledWith(
+      expect.objectContaining({ isPresentAfterPageLoad: true })
+    );
+  });
+
+  // Capacitor's cookie API is what corrupted the token. Nothing may route it
+  // through that again.
+  it('never writes the token through the Capacitor cookie API', async () => {
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://example.org/whatever');
+
+    expect(setCookie).not.toHaveBeenCalled();
+    expect(openWebView).not.toHaveBeenCalled();
+  });
+
+  // No token means a lapsed session: IS's own login page is the honest
+  // destination, and nothing should be written to the jar on the way there.
+  it('writes nothing when there is no session to write', async () => {
+    vi.doMock('../../platform/tokenStore', () => ({
+      loadStoredToken: vi.fn(async () => {
+        throw new Error('nothing stored');
+      }),
+    }));
     const { openExternal } = await import('../openExternal');
     await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
 
@@ -327,6 +394,9 @@ describe('openExternal — the in-app browser needs the session on the request',
     expect(openWebView).toHaveBeenCalledWith(
       expect.not.objectContaining({ headers: expect.anything() })
     );
+    // And nothing in the jar either: seeding it over plain http would put the
+    // session on the wire the moment the page made any request.
+    expect(setCookie).not.toHaveBeenCalled();
   });
 
   // Losing the session must not swallow the tap: with no token the WebView
@@ -343,6 +413,9 @@ describe('openExternal — the in-app browser needs the session on the request',
     expect(openWebView).toHaveBeenCalledWith(
       expect.not.objectContaining({ headers: expect.anything() })
     );
+    // And nothing in the jar either: seeding it over plain http would put the
+    // session on the wire the moment the page made any request.
+    expect(setCookie).not.toHaveBeenCalled();
   });
 });
 

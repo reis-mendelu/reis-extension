@@ -28,7 +28,6 @@ describe('createMobileUiSlice', () => {
     // The middle stop: the map sheet opens with the campus events already
     // visible, instead of a blank peek band the student had to drag up.
     expect(state.mapSheetState).toBe('half');
-    expect(state.mapTab).toBe('akce');
     expect(state.devPhoneOverride).toBeNull();
   });
 
@@ -103,11 +102,9 @@ describe('createMobileUiSlice', () => {
     expect(state.mobileSheets).toEqual([]);
   });
 
-  it('tracks map sheet state and tab', () => {
+  it('tracks map sheet state', () => {
     state.setMapSheetState('expanded');
-    state.setMapTab('knihovna');
     expect(state.mapSheetState).toBe('expanded');
-    expect(state.mapTab).toBe('knihovna');
   });
 
   it('stores the dev phone override', () => {
