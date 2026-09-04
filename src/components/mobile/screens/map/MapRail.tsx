@@ -5,11 +5,6 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { useRailResize } from './useRailResize';
 import { RAIL_MIN_PX, RAIL_MAX_PX } from '../../../../utils/mapRail';
 import { MapPanelBody } from './MapPanelBody';
-import buildingsJson from '../../../../data/map/buildings.json';
-import type { BuildingsMeta } from '../../../../types/campusMap';
-import type { MapSheetTab } from '../../../../store/types';
-
-const META = buildingsJson as BuildingsMeta;
 
 /**
  * The map panel on a tablet: a sidebar, not a sheet.
@@ -42,18 +37,12 @@ export function MapRail() {
   const open = useAppStore((s) => s.mapRailOpen);
   const setOpen = useAppStore((s) => s.setMapRailOpen);
   const width = useAppStore((s) => s.mapRailWidth);
-  const tab = useAppStore((s) => s.mapTab);
-  const setTab = useAppStore((s) => s.setMapTab);
-  const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const selection = useAppStore((s) => s.mapSelection);
   const clearMapSelection = useAppStore((s) => s.clearMapSelection);
   const setRailWidth = useAppStore((s) => s.setMapRailWidth);
   const { resizing, railHandlers } = useRailResize();
 
   const selectedEvent = selection?.kind === 'event' ? selection.event : null;
-  const showBudova = activeBuildingId !== null;
-  const activeTab: MapSheetTab =
-    (tab === 'budova' && !showBudova) || tab === 'knihovna' ? 'akce' : tab;
 
   // Picking a pin while the rail is closed has to bring it back — otherwise the
   // pin highlights and the answer to the tap is somewhere the student cannot
@@ -61,11 +50,6 @@ export function MapRail() {
   useEffect(() => {
     if (selectedEvent) setOpen(true);
   }, [selectedEvent, setOpen]);
-
-  const buildingName =
-    activeBuildingId !== null
-      ? (META.buildings.find((b) => b.id === activeBuildingId)?.name ?? '')
-      : '';
 
   if (!open) {
     return (
@@ -151,8 +135,14 @@ export function MapRail() {
             </span>
           </button>
         ) : (
+          /* Always "Akce". It used to become the building's name whenever one
+             was selected, because a tab underneath said which of the two things
+             you were looking at; with the room register gone this panel only
+             ever holds events, and a title reading "Q" over a list of campus
+             events names the wrong thing. Which building you are in is on the
+             map itself, which is where you selected it. */
           <span className="min-w-0 flex-1 truncate font-display text-lg font-bold tracking-tight">
-            {showBudova ? buildingName : t('mobile.map.tabEvents')}
+            {t('mobile.map.tabEvents')}
           </span>
         )}
         {/* Closes the rail. Points RIGHT, at the edge it collapses into — the
@@ -169,34 +159,8 @@ export function MapRail() {
         </button>
       </div>
 
-      {showBudova && !selectedEvent && (
-        <div
-          role="tablist"
-          className="mx-5 mb-2 flex flex-shrink-0 gap-1 rounded-lg bg-base-content/5 p-1"
-        >
-          {(['akce', 'budova'] as const).map((key) => (
-            <button
-              key={key}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === key}
-              onClick={() => setTab(key)}
-              className={`flex-1 whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-semibold ${
-                activeTab === key
-                  ? 'bg-base-100 text-base-content shadow-sm'
-                  : 'text-base-content/60'
-              }`}
-            >
-              {key === 'akce'
-                ? t('mobile.map.tabEvents')
-                : t('mobile.map.tabBuilding', { name: buildingName })}
-            </button>
-          ))}
-        </div>
-      )}
-
       <div className="flex-1 overflow-y-auto pb-4 pl-1">
-        <MapPanelBody selectedEvent={selectedEvent} activeTab={activeTab} flush />
+        <MapPanelBody selectedEvent={selectedEvent} flush />
       </div>
     </aside>
   );

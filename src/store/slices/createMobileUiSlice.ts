@@ -22,7 +22,6 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set) => ({
   mapRailWidth: RAIL_PX,
   mapRailOpen: true,
   preferredMapApp: null,
-  mapTab: 'akce',
   devPhoneOverride: null,
   welcomeSeen: null,
 
@@ -86,6 +85,5 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set) => ({
     set({ preferredMapApp: app });
     await IndexedDBService.set('meta', 'preferred_map_app', app);
   },
-  setMapTab: (tab) => set({ mapTab: tab }),
   setDevPhoneOverride: (value) => set({ devPhoneOverride: value }),
 });

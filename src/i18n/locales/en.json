@@ -1039,14 +1039,12 @@
     "map": {
       "searchPlaceholder": "Find a room, building, event…",
       "tabEvents": "Events",
-      "tabBuilding": "Building {name}",
       "peekHint": "Campus events",
       "thisWeek": "This week",
       "emptyTitle": "Map didn't load",
       "emptyBody": "Please try again.",
       "sheetExpand": "Expand map sheet",
       "sheetCollapse": "Collapse map sheet",
-      "noRoomsOnFloor": "No rooms on this floor.",
       "railResize": "Resize the panel",
       "railClose": "Hide panel",
       "railOpen": "Show panel"

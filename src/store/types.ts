@@ -422,7 +422,6 @@ export type MobileTab = 'calendar' | 'exams' | 'subjects' | 'map' | 'profile';
 // Three stops: `half` shows the campus events while the map is still in view,
 // and is where the sheet opens. See primitives/sheetDrag.ts.
 export type MapSheetState = 'peek' | 'half' | 'expanded';
-export type MapSheetTab = 'akce' | 'knihovna' | 'budova';
 
 /** Discriminated union of every sheet the phone UI can open. */
 export type MobileSheet =
@@ -475,7 +474,6 @@ export interface MobileUiSlice {
   mapRailOpen: boolean;
   /** Which map app a venue opens in, remembered across launches. `null` asks. */
   preferredMapApp: PreferredMapApp;
-  mapTab: MapSheetTab;
   /** Dev-only forced phone/desktop branch. null = defer to viewport. */
   devPhoneOverride: boolean | null;
   /**
@@ -497,7 +495,6 @@ export interface MobileUiSlice {
   setMapRailOpen: (open: boolean) => void;
   loadPreferredMapApp: () => Promise<void>;
   setPreferredMapApp: (app: PreferredMapApp) => Promise<void>;
-  setMapTab: (tab: MapSheetTab) => void;
   setDevPhoneOverride: (value: boolean | null) => void;
 }
 

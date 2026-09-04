@@ -38,7 +38,6 @@ beforeEach(() => {
   useAppStore.setState({
     language: 'cz',
     mapSheetState: 'peek',
-    mapTab: 'akce',
     activeBuildingId: null,
     activeFloorId: null,
     roomsByBuilding: {},
@@ -237,10 +236,9 @@ describe('MapScreen', () => {
   });
 
   /**
-   * Knihovna is hidden on mobile and Budova needs a selected building, so the
-   * default expanded sheet has exactly one thing to show. A segmented control
-   * around a single choice is chrome — a track and a white selected pill
-   * framing the only option — so the row renders as a plain heading instead.
+   * The sheet has exactly one thing to show, always: the campus events. A
+   * segmented control around a single choice is chrome — a track and a white
+   * selected pill framing the only option — so the row is a plain heading.
    */
   it('expands to a plain heading, not a one-tab segmented control', () => {
     render(<MapScreen />);
@@ -258,20 +256,6 @@ describe('MapScreen', () => {
     // Same mounted node, not a fresh one — proves MapCanvas wasn't torn down
     // and rebuilt when the sheet expanded.
     expect(screen.getByTestId('mock-map-canvas')).toBeInTheDocument();
-  });
-
-  /**
-   * mapTab persists, so a student who last used Knihovna on desktop would come
-   * back to a tab this sheet no longer renders — and, before the fallback, to an
-   * empty body with no tab to click. Akce is what they get instead.
-   */
-  it('falls back to Akce when a persisted Knihovna tab is no longer offered', () => {
-    useAppStore.setState({ mapSheetState: 'expanded', mapTab: 'knihovna' });
-    render(<MapScreen />);
-    expect(screen.queryByText('Studovny knihovny')).not.toBeInTheDocument();
-    // The Akce BODY, not the heading: the heading renders whatever `mapTab`
-    // says, so only the body proves the fallback actually resolved.
-    expect(screen.getByText('Žádné akce')).toBeInTheDocument();
   });
 
   it('typing in the search bar updates mapSearchQuery', () => {
@@ -304,27 +288,21 @@ describe('MapScreen', () => {
     expect(setMapSearchQuery).toHaveBeenCalledWith('');
   });
 
-  it('does not show a Budova tab when no building is selected', () => {
-    useAppStore.setState({ mapSheetState: 'expanded' });
-    render(<MapScreen />);
-    expect(screen.queryByRole('tab', { name: /Budova/ })).not.toBeInTheDocument();
-  });
-
-  it('shows the Budova tab only once a building is selected', () => {
+  /**
+   * There used to be a Budova tab here, listing the active building's room
+   * register. Reported as "completely useless, list of rooms" — and it was
+   * IS's estate data, untranslated: on Q's ground floor, 88 rows of "Toilet
+   * (M)", "Utility", "Kitchen" and "Office". The rooms a student wants are
+   * reachable the two ways that work — tapping a polygon on the floor plan, and
+   * the search bar that finds a room by code from anywhere.
+   *
+   * The rooms stay in the store either way (the map's own polygons need them),
+   * so this asserts against a populated store: nothing may put the register
+   * back on screen.
+   */
+  it('shows no tab, and no room register, even with a building drilled into', () => {
     useAppStore.setState({
       mapSheetState: 'expanded',
-      activeBuildingId: BUILDING_ID,
-      activeFloorId: FLOOR_ID,
-      roomsByBuilding: { [BUILDING_ID]: { type: 'FeatureCollection', features: [] } },
-    });
-    render(<MapScreen />);
-    expect(screen.getByRole('tab', { name: 'Budova A' })).toBeInTheDocument();
-  });
-
-  it('clicking Budova switches to the room list for the active building/floor', () => {
-    useAppStore.setState({
-      mapSheetState: 'expanded',
-      mapTab: 'budova',
       activeBuildingId: BUILDING_ID,
       activeFloorId: FLOOR_ID,
       roomsByBuilding: {
@@ -356,8 +334,11 @@ describe('MapScreen', () => {
       },
     });
     render(<MapScreen />);
-    expect(screen.getByText('A01')).toBeInTheDocument();
-    expect(screen.getByText('Posluchárna')).toBeInTheDocument();
+
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    expect(screen.queryByText('A01')).not.toBeInTheDocument();
+    expect(screen.queryByText('Posluchárna')).not.toBeInTheDocument();
   });
 });
 
@@ -476,24 +457,6 @@ describe('MapSheet drag', () => {
     expect(useAppStore.getState().mapSheetState).toBe('half');
   });
 
-  it('drags from the tab row too, once a building makes it a real tablist', () => {
-    useAppStore.setState({
-      mapSheetState: 'expanded',
-      activeBuildingId: BUILDING_ID,
-      activeFloorId: FLOOR_ID,
-    } as never);
-    render(<MapScreen />);
-    const tabRow = screen.getByRole('tablist');
-    fireEvent.pointerDown(tabRow, { clientY: 300 });
-    fireEvent.pointerMove(tabRow, { clientY: 500 });
-    fireEvent.pointerUp(tabRow, { clientY: 500 });
-    expect(useAppStore.getState().mapSheetState).toBe('half');
-  });
-
-  /**
-   * The heading is a button, so a drag that ends on it fires a click — and that
-   * click collapses the sheet straight back out of the detent the drag chose.
-   */
   it('does not re-toggle when a drag starts on the heading row', () => {
     useAppStore.setState({ mapSheetState: 'expanded' } as never);
     render(<MapScreen />);
@@ -512,52 +475,6 @@ describe('MapSheet drag', () => {
     expect(useAppStore.getState().mapSheetState).toBe('peek');
   });
 
-  /**
-   * The tabs are buttons, so a drag that starts on one ends in a click on it.
-   * Without suppression that click switches tab as a side effect of collapsing.
-   */
-  /**
-   * Needs TWO tabs and a starting tab that is not the one being dragged from,
-   * otherwise the assertion passes whether or not the click is suppressed.
-   */
-  it('does not switch tab when a drag starts on a tab button', () => {
-    useAppStore.setState({
-      mapSheetState: 'expanded',
-      mapTab: 'budova',
-      activeBuildingId: BUILDING_ID,
-      activeFloorId: FLOOR_ID,
-    } as never);
-    render(<MapScreen />);
-    const akce = screen.getByRole('tab', { name: 'Akce' });
-    fireEvent.pointerDown(akce, { clientY: 300 });
-    fireEvent.pointerMove(akce, { clientY: 500 });
-    fireEvent.pointerUp(akce, { clientY: 500 });
-    fireEvent.click(akce);
-    expect(useAppStore.getState().mapSheetState).toBe('half');
-    expect(useAppStore.getState().mapTab).toBe('budova');
-  });
-
-  it('still switches tab on a plain tap', () => {
-    useAppStore.setState({
-      mapSheetState: 'expanded',
-      mapTab: 'budova',
-      activeBuildingId: BUILDING_ID,
-      activeFloorId: FLOOR_ID,
-    } as never);
-    render(<MapScreen />);
-    const akce = screen.getByRole('tab', { name: 'Akce' });
-    fireEvent.pointerDown(akce, { clientY: 300 });
-    fireEvent.pointerUp(akce, { clientY: 300 });
-    fireEvent.click(akce);
-    // A tap selects the tab and must not collapse the sheet.
-    expect(useAppStore.getState().mapTab).toBe('akce');
-    expect(useAppStore.getState().mapSheetState).toBe('expanded');
-  });
-
-  /**
-   * Dragging a sheet down anywhere on it is what every native sheet does — the
-   * handle is an affordance, not the only grab point.
-   */
   it('collapses when dragged down from the content area', () => {
     useAppStore.setState({ mapSheetState: 'expanded' } as never);
     render(<MapScreen />);
@@ -593,16 +510,6 @@ describe('MapSheet drag', () => {
     useAppStore.setState({ mapSheetState: 'expanded' } as never);
     render(<MapScreen />);
     expect(screen.getByRole('button', { name: 'Akce' }).className).toContain('touch-none');
-  });
-
-  it('marks the tab row as a drag surface for the browser', () => {
-    useAppStore.setState({
-      mapSheetState: 'expanded',
-      activeBuildingId: BUILDING_ID,
-      activeFloorId: FLOOR_ID,
-    } as never);
-    render(<MapScreen />);
-    expect(screen.getByRole('tablist').className).toContain('touch-none');
   });
 
   it('still toggles on a plain tap, with no drag in between', () => {

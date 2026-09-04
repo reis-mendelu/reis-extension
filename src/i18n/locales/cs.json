@@ -1039,14 +1039,12 @@
     "map": {
       "searchPlaceholder": "Najdi místnost, budovu, akci…",
       "tabEvents": "Akce",
-      "tabBuilding": "Budova {name}",
       "peekHint": "Akce na kampusu",
       "thisWeek": "Tenhle týden",
       "emptyTitle": "Mapa se nenačetla",
       "emptyBody": "Zkus to prosím znovu.",
       "sheetExpand": "Rozbalit panel mapy",
       "sheetCollapse": "Sbalit panel mapy",
-      "noRoomsOnFloor": "Na tomto patře nejsou žádné místnosti.",
       "railResize": "Změnit šířku panelu",
       "railClose": "Skrýt panel",
       "railOpen": "Zobrazit panel"
