@@ -1,0 +1,39 @@
+{
+  "_comment": "Synthetic deadline feed for the Novinky sheet and the calendar's alert strip. NO real student data — invented courses and assignment ids. Deadlines are authored as deadlineDayOffset from 'now' and materialised by scripts/lib/fixtureRebase.ts, so this never rots. Serve with: REIS_FIXTURE=notificationFeed npm run dev:web",
+  "odevzdavarny": [
+    {
+      "courseId": "fx-alg",
+      "courseNameCs": "Algoritmizace a programování",
+      "courseNameEn": "Algorithms and programming",
+      "name": "Semestrální projekt – 2. odevzdání",
+      "type": "Odevzdávárna",
+      "odevzdavarnaId": "fx-1",
+      "deadlineDayOffset": 0,
+      "deadlineTime": "23:59",
+      "fileCount": 0,
+      "uploadUrl": "https://is.mendelu.cz/auth/student/odevzdavarny.pl"
+    },
+    {
+      "courseId": "fx-stat",
+      "courseNameCs": "Statistika pro ekonomy",
+      "courseNameEn": "Statistics for economists",
+      "name": "Protokol z cvičení č. 4",
+      "type": "Odevzdávárna",
+      "odevzdavarnaId": "fx-2",
+      "deadlineDayOffset": 1,
+      "deadlineTime": "12:00",
+      "fileCount": 0,
+      "uploadUrl": "https://is.mendelu.cz/auth/student/odevzdavarny.pl"
+    }
+  ],
+  "cvicneTests": [
+    {
+      "courseId": "fx-mat",
+      "courseNameCs": "Matematika",
+      "courseNameEn": "Mathematics",
+      "name": "Cvičný test 3 – derivace a integrály",
+      "url": "https://is.mendelu.cz/auth/student/cvicny_test.pl",
+      "status": "accessible"
+    }
+  ]
+}

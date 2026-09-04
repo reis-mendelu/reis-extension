@@ -34,6 +34,7 @@
     "format:check": "prettier --check .",
     "verify:ui": "tsx --tsconfig tsconfig.app.json scripts/shot.ts",
     "dev:web:exams": "REIS_FIXTURE=examSeason vite --config vite.web.config.ts",
+    "dev:web:deadlines": "REIS_FIXTURE=notificationFeed vite --config vite.web.config.ts",
     "dev:web:week": "REIS_FIXTURE=teachingWeek vite --config vite.web.config.ts",
     "build:web": "node scripts/assert-web-build-env.mjs && VITE_DEV_SOCIETY=reis VITE_PREVIEW_BUILD=true vite build --config vite.web.build.config.ts",
     "build:capacitor": "node scripts/with-secrets.mjs vite build --config vite.capacitor.config.ts",

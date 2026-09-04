@@ -377,3 +377,44 @@ describe('installExternalLinkHandler in demo mode', () => {
     spy.mockRestore();
   });
 });
+
+describe('externalHrefFromClick: elements that open themselves', () => {
+  // THE bug: tapping a venue opened it twice — once in Apple Maps and once as
+  // a Google Maps web page. This listener is installed in the CAPTURE phase, so
+  // it runs before React's own onClick; `defaultPrevented` is still false at
+  // that point, so preventing the default in the component cannot stop it. The
+  // component has to say so on the element itself.
+  it('leaves an anchor that handles its own opening alone', () => {
+    const a = document.createElement('a');
+    a.setAttribute('target', '_blank');
+    a.setAttribute('href', 'https://www.google.com/maps/search/?api=1&query=49.2,16.6');
+    a.setAttribute('data-native-open', 'true');
+    document.body.appendChild(a);
+
+    const event = new MouseEvent('click', { bubbles: true, button: 0 });
+    Object.defineProperty(event, 'target', { value: a });
+    expect(externalHrefFromClick(event)).toBeNull();
+
+    a.removeAttribute('data-native-open');
+    expect(externalHrefFromClick(event)).not.toBeNull();
+    a.remove();
+  });
+
+  // The opt-out has to survive the click landing on an icon inside the anchor,
+  // which is where it always lands — every one of these links wraps an icon
+  // and a label.
+  it('honours it when the click lands on a child', () => {
+    const a = document.createElement('a');
+    a.setAttribute('target', '_blank');
+    a.setAttribute('href', 'https://example.com/x');
+    a.setAttribute('data-native-open', 'true');
+    const icon = document.createElement('span');
+    a.appendChild(icon);
+    document.body.appendChild(a);
+
+    const event = new MouseEvent('click', { bubbles: true, button: 0 });
+    Object.defineProperty(event, 'target', { value: icon });
+    expect(externalHrefFromClick(event)).toBeNull();
+    a.remove();
+  });
+});

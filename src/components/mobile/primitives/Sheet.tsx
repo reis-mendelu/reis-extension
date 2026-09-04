@@ -148,9 +148,25 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
         // The entry animation is dropped the moment a drag starts: it animates
         // the same transform this does, and leaving both on makes the sheet
         // fight the finger.
-        // A screen enters from the RIGHT and squares off its corners: a rounded
-        // top edge sliding up is the vocabulary of something temporary sitting
-        // over the page, which is exactly the impression to avoid here.
+        // A screen arrives WITHOUT an entrance animation, and squares off its
+        // corners: a rounded top edge sliding up is the vocabulary of something
+        // temporary sitting over the page, which is exactly the impression to
+        // avoid here.
+        //
+        // It used to slide in from the right. On the iPad that played, reversed
+        // part-way and played again — "it slides in but then a bit back and
+        // then again in weirdly". It was never reproducible anywhere it could
+        // be instrumented: traced in a real browser the panel showed one node,
+        // one `screenIn` and a monotonic 834→0px over 260ms, and localhost is
+        // reliable on Dominik's machine too. The fault is in the WebView, which
+        // can be photographed but not driven.
+        //
+        // The animation was decoration — it existed to make the push read as
+        // forward navigation and did nothing else. When the only purpose of a
+        // piece of code is polish and that polish misfires on the device it was
+        // built for, deleting it is not hiding the bug; it removes the thing
+        // that IS the bug. `screenIn` stays in index.css, unused, so the
+        // vocabulary is one line away if the WebView cause is ever found.
         // The hairline goes with that rounded edge, and only there. Sheets stack
         // — a classmate tapped inside the subject drawer opens a PersonSheet over
         // a sheet that is already up — and both panels are bg-base-100 while
@@ -166,9 +182,7 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
         // 1.57:1 on dark, and is a dark line on light, so one token separates
         // the surfaces in both themes.
         className={`absolute ${isScreen ? '' : 'inset-x-0'} ${panelPosition} ${layerZ} flex flex-col overflow-hidden bg-base-100 shadow-drawer ${
-          isScreen
-            ? 'animate-[screenIn_0.25s_ease-out]'
-            : 'rounded-t-[20px] border-t border-base-content/15'
+          isScreen ? '' : 'rounded-t-[20px] border-t border-base-content/15'
         } ${hasDragged || isScreen ? '' : 'animate-[sheetUp_0.3s_ease-out]'} ${
           isScreen ? '' : 'transition-transform duration-200 ease-out'
         }`}

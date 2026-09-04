@@ -10,6 +10,10 @@ export interface SearchPeopleResultsProps {
   canSearchPeople: boolean;
   searchingPeople: boolean;
   openPerson: (result: SearchResult) => void;
+  /** Index of the keyboard cursor within the list currently rendered. */
+  selectedIndex: number;
+  /** DOM id for the option at `i`, so the input can name it. */
+  optionId: (i: number) => string;
   noResultsText: string;
 }
 
@@ -25,6 +29,8 @@ export function SearchPeopleResults({
   canSearchPeople,
   searchingPeople,
   openPerson,
+  selectedIndex,
+  optionId,
   noResultsText,
 }: SearchPeopleResultsProps) {
   const { t } = useTranslation();
@@ -35,12 +41,13 @@ export function SearchPeopleResults({
           <div className="px-4 pb-0.5 pt-1 text-xs font-bold uppercase tracking-wider text-base-content/60">
             {t('mobile.student.recentPeople')}
           </div>
-          {shownPeople.map((result) => (
+          {shownPeople.map((result, i) => (
             <SearchResultItem
               key={result.id}
+              id={optionId(i)}
               result={result}
               isRecent={false}
-              isSelected={false}
+              isSelected={i === selectedIndex}
               onMouseEnter={() => {}}
               onMouseDown={(e) => {
                 e.preventDefault();
@@ -56,12 +63,13 @@ export function SearchPeopleResults({
           <div className="px-4 pb-0.5 pt-1 text-xs font-bold uppercase tracking-wider text-base-content/60">
             {t('mobile.student.results')}
           </div>
-          {peopleResults.map((result) => (
+          {peopleResults.map((result, i) => (
             <SearchResultItem
               key={result.id}
+              id={optionId(i)}
               result={result}
               isRecent={false}
-              isSelected={false}
+              isSelected={i === selectedIndex}
               onMouseEnter={() => {}}
               onMouseDown={(e) => {
                 e.preventDefault();

@@ -105,6 +105,7 @@ export const initializeStore = async () => {
 
   // Tier 1: User-visible data — load immediately
   s.loadNotificationState();
+  s.loadPreferredMapApp();
   s.fetchNotifications();
   s.fetchSchedule();
   s.fetchExams();

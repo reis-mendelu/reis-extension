@@ -115,3 +115,66 @@ describe('createSearchSlice — recent searches', () => {
     expect(useAppStore.getState().recentPeople.length).toBe(2);
   });
 });
+
+describe('createSearchSlice — recent subjects', () => {
+  beforeEach(() => {
+    useAppStore.setState({ recentSearches: [], recentPeople: [], recentSubjects: [] } as never);
+  });
+
+  // Lidé keeps its own history; Předměty had none, so opening the search sheet
+  // on the subject side showed an empty screen until something was typed —
+  // even though the same subjects get looked up over and over.
+  it('remembers subjects in their own list, deeper than the mixed history', async () => {
+    const { saveRecentSearch } = useAppStore.getState();
+    for (let i = 0; i < 5; i++)
+      await saveRecentSearch(subject(String(i), `Subject ${i}`), 'Předmět');
+
+    const recent = useAppStore.getState().recentSubjects;
+    expect(recent.map((r) => r.title)).toEqual([
+      'Subject 4',
+      'Subject 3',
+      'Subject 2',
+      'Subject 1',
+      'Subject 0',
+    ]);
+  });
+
+  it('does not let people into the subject list, or subjects into the people list', async () => {
+    const { saveRecentSearch } = useAppStore.getState();
+    await saveRecentSearch(person('77', 'Dominik Holek'), 'Student');
+    await saveRecentSearch(subject('ALG', 'Algoritmizace'), 'Předmět');
+
+    expect(useAppStore.getState().recentSubjects.map((r) => r.title)).toEqual(['Algoritmizace']);
+    expect(useAppStore.getState().recentPeople.map((r) => r.title)).toEqual(['Dominik Holek']);
+  });
+
+  it('moves a subject looked up again back to the front instead of duplicating it', async () => {
+    const { saveRecentSearch } = useAppStore.getState();
+    await saveRecentSearch(subject('ALG', 'Algoritmizace'), 'Předmět');
+    await saveRecentSearch(subject('MAT', 'Matematika'), 'Předmět');
+    await saveRecentSearch(subject('ALG', 'Algoritmizace'), 'Předmět');
+
+    expect(useAppStore.getState().recentSubjects.map((r) => r.title)).toEqual([
+      'Algoritmizace',
+      'Matematika',
+    ]);
+  });
+});
+
+describe('createSearchSlice — malformed stored history', () => {
+  // The `meta` store accepts any record, so a malformed or half-migrated value
+  // arrives here as an object rather than an array. Cast straight into state it
+  // reached `SearchSheet`, which calls `.slice()` on it and throws — taking out
+  // the search screen for a value nobody could see or clear.
+  it('ignores a stored value that is not an array', async () => {
+    const { IndexedDBService } = await import('../../../services/storage');
+    vi.mocked(IndexedDBService.get).mockImplementation(((_s: string, key: string) =>
+      Promise.resolve(
+        key === 'recent_subjects' ? ({ nope: true } as unknown) : undefined
+      )) as never);
+
+    useAppStore.setState({ recentSubjects: [] } as never);
+    await useAppStore.getState().loadRecentSearches();
+    expect(useAppStore.getState().recentSubjects).toEqual([]);
+  });
+});

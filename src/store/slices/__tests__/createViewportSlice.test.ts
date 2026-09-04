@@ -17,9 +17,16 @@ describe('createViewportSlice', () => {
     state = createViewportSlice(set, get, {} as any);
   });
 
-  it('initializes with default values', () => {
+  // `isNarrow` is SEEDED from matchMedia, not defaulted — that is the whole
+  // point of the slice, so the first frame does not render the desktop tree and
+  // throw it away. This asserted `false`, which was never a statement about the
+  // slice: it was a statement about happy-dom opening a 1024px window. The
+  // suite now runs at 390 (see src/test/setup.ts), so the honest assertion is
+  // that the seed followed the viewport it was given.
+  it('seeds itself from the viewport rather than defaulting', () => {
     expect(state.isTouch).toBe(false);
-    expect(state.isNarrow).toBe(false);
+    expect(state.isNarrow).toBe(window.matchMedia('(max-width: 767px)').matches);
+    expect(state.isNarrow).toBe(true);
     expect(state.isPortrait).toBe(true);
     expect(state.keyboardOpen).toBe(false);
     expect(typeof state.viewportHeight).toBe('number');

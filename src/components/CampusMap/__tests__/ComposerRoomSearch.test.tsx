@@ -42,3 +42,16 @@ describe('ComposerRoomSearch', () => {
     expect(onClear).toHaveBeenCalledOnce();
   });
 });
+
+// DaisyUI's `.input` is 20rem wide by default, so this field measured 320px
+// inside a 375px composer where every sibling — the title input, both
+// ComposerTimeFields, MiniCalendar — measured 351px. It was the one control
+// in the form that did not reach the edge.
+describe('ComposerRoomSearch width', () => {
+  it('fills the composer like every other field', () => {
+    const { container } = render(
+      <ComposerRoomSearch selected={null} onSelect={() => {}} onClear={() => {}} t={t} />
+    );
+    expect(container.querySelector('label.input')?.className).toContain('w-full');
+  });
+});
