@@ -1,6 +1,7 @@
 import { defineConfig, mergeConfig, type UserConfig } from 'vite';
 import { resolve } from 'path';
 import webDevConfig from './vite.web.config';
+import { stripDevRealDataPlugin } from './scripts/stripDevRealData.mjs';
 
 // The two dev-server plugins, by the `name` each one actually returns —
 // verified against dev/snapshotPlugin.ts:33 and dev/adminSessionPlugin.ts:65.
@@ -39,6 +40,12 @@ export default defineConfig(async (env) => {
         DEV_SERVER_PLUGINS.includes(p.name as string)
       )
   );
+  // publicDir is inherited unchanged from the dev config (below), which is
+  // deliberate — it also carries fonts/icons/emoji/society images this build
+  // needs. That means it also copies the gitignored real-data snapshot; this
+  // plugin is what strips it back out, the equivalent of wxt.config.ts's
+  // `build:publicAssets` hook for the extension build.
+  plugins.push(stripDevRealDataPlugin());
 
   return mergeConfig(
     { ...base, plugins },
