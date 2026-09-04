@@ -25,6 +25,42 @@ describe('WelcomeWifiCard', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
+  /**
+   * First run is the likeliest moment for this: a student installs reIS at
+   * home, taps Nastavit eduroam, and iOS puts up its own "Unable to join the
+   * network eduroam" alert over this very card. The sheet in Profil explains
+   * it; this screen is where most students meet it first.
+   */
+  describe('the iOS join alert, on the screen that gets it first', () => {
+    it('explains the alert once the network is saved', () => {
+      renderCard({ status: 'done', outcome: 'saved', target: 'ios' });
+
+      expect(screen.getByText(/není v dosahu/)).toBeInTheDocument();
+    });
+
+    // Android's `addNetworkSuggestions` only saves — it never attempts a join,
+    // so no alert appears and the note would describe something that cannot
+    // happen. Same gate as the iOS-lifetime note beside it.
+    it('says nothing about it on Android', () => {
+      renderCard({ status: 'done', outcome: 'saved', target: 'android' });
+
+      expect(screen.queryByText(/není v dosahu/)).not.toBeInTheDocument();
+    });
+
+    // Nothing was applied, so iOS raises no alert.
+    it('says nothing when the network was already configured', () => {
+      renderCard({ status: 'done', outcome: 'already-configured', target: 'ios' });
+
+      expect(screen.queryByText(/není v dosahu/)).not.toBeInTheDocument();
+    });
+
+    it('says nothing while the setup is still on offer', () => {
+      renderCard({ status: 'idle', outcome: null, target: 'ios' });
+
+      expect(screen.queryByText(/není v dosahu/)).not.toBeInTheDocument();
+    });
+  });
+
   describe('stale association (#261)', () => {
     /**
      * The regression this pins: iOS answers `alreadyAssociated` whenever the
