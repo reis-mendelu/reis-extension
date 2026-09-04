@@ -77,7 +77,7 @@ describe('checkManifestVersionMatches', () => {
       packageJson: JSON.stringify({ version: '5.2.0' }),
       wxtConfig: WXT_CONFIG_FIXTURE,
     });
-    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected checkManifestVersionMatches to fail');
     expect(result.reason).toMatch(/5\.2\.0/);
     expect(result.reason).toMatch(/5\.1\.0/);
   });
@@ -87,7 +87,7 @@ describe('checkManifestVersionMatches', () => {
       packageJson: JSON.stringify({ version: '5.1.0' }),
       wxtConfig: 'export default defineConfig({});',
     });
-    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected checkManifestVersionMatches to fail');
     expect(result.reason).toMatch(/Could not find manifest.version/);
   });
 
@@ -96,7 +96,7 @@ describe('checkManifestVersionMatches', () => {
       packageJson: JSON.stringify({ name: 'x' }),
       wxtConfig: WXT_CONFIG_FIXTURE,
     });
-    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected checkManifestVersionMatches to fail');
     expect(result.reason).toMatch(/no version field/);
   });
 
@@ -105,7 +105,7 @@ describe('checkManifestVersionMatches', () => {
       packageJson: '{not json',
       wxtConfig: WXT_CONFIG_FIXTURE,
     });
-    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected checkManifestVersionMatches to fail');
     expect(result.reason).toMatch(/not valid JSON/);
   });
 });
