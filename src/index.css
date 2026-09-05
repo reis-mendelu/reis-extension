@@ -88,10 +88,16 @@ body,
   default: false;
   color-scheme: light;
 
-  /* Base colors */
+  /* Base colors.
+     Was #ffffff / #f9fafb / #f3f4f6 — three shades of almost-white, with
+     base-100 on base-200 at 1.045:1, under the 1.05 below which a surface is
+     simply not visible. On the desktop that erased every card edge, the
+     calendar's time gutter and the shell boundary at once: seven "invisible
+     surface" findings on the calendar screen alone, all of them this. 1.083
+     and 1.126 now — still a quiet, near-white page, but the surfaces exist. */
   --color-base-100: #ffffff;
-  --color-base-200: #f9fafb;
-  --color-base-300: #f3f4f6;
+  --color-base-200: #f4f6f8;
+  --color-base-300: #e5e9ed;
   --color-base-content: #111827;
 
   /* Brand colors */
@@ -142,10 +148,16 @@ body,
   default: true;
   color-scheme: dark;
 
-  /* Base colors - dark */
+  /* Base colors - dark.
+     base-300 was #0f172a — DARKER than base-200 and 1.006:1 against it. That
+     token carries 187 borders and every h-px divider in the app, so in the dark
+     theme none of them were visible: the sidebar's separators, card outlines and
+     chip borders were all drawing nothing. Lifting it above base-200 (1.456:1)
+     makes a divider a divider, and the fills that use it read as gently raised,
+     which is what a chip on a base-200 page is meant to look like. */
   --color-base-100: #1f2937;
   --color-base-200: #111827;
-  --color-base-300: #0f172a;
+  --color-base-300: #2b3648;
   --color-base-content: #f3f4f6;
 
   /* Brand colors - preserved */
