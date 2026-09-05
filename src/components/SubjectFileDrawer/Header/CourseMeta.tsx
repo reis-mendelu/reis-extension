@@ -60,11 +60,16 @@ export function CourseMeta({
             </MapHoverCard>
           )}
           {lesson?.room && !lesson.room.startsWith('Q') && (
+            // Same shape as the Q-room branch above: the room code is the
+            // control. A room outside Q has no thumbnail to hover, but it
+            // should not therefore get a differently-shaped button labelled
+            // with a whole sentence.
             <button
               onClick={() => useAppStore.getState().focusRoomByCode(lesson.room)}
-              className="btn btn-ghost btn-xs gap-1"
+              className="flex items-center gap-1 hover:text-success transition-colors"
             >
-              {t('map.showOnMap')}
+              <MapIcon size={14} />
+              <span>{lesson.room}</span>
             </button>
           )}
           {lesson?.startTime && (

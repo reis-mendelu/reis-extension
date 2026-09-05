@@ -19,13 +19,23 @@
 import { chromium, type Page } from '@playwright/test';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { analyzeProbe, type Finding, type ProbeResult } from './lib/uiFindings';
+import {
+  analyzeProbe,
+  assertShell,
+  describeShell,
+  type Finding,
+  type ProbeResult,
+} from './lib/uiFindings';
 import { probeSource } from './lib/uiProbe';
 
 const DEFAULT_WIDTHS = [320, 390, 430];
 const DEFAULT_URL = 'http://localhost:3000';
 const OUT_DIR = resolve(process.cwd(), '.verify');
-const VIEWPORT_HEIGHT = 844;
+// A phone's height. The desktop tree ships inside a full-window iframe, where
+// the usable height is the browser window's — ~800px on a 1440x900 laptop, less
+// with a bookmarks bar. `h-screen overflow-hidden` clips rather than scrolls, so
+// height is a real variable there and --height exists to vary it.
+const DEFAULT_VIEWPORT_HEIGHT = 844;
 
 interface Options {
   label: string;
@@ -38,6 +48,16 @@ interface Options {
   clicks: string[];
   wait: number;
   onboarding: boolean;
+  height: number;
+  /** Fail the run if the other shell rendered. See assertShell(). */
+  expectShell?: 'desktop' | 'phone';
+}
+
+function parseExpectShell(raw: string | undefined): 'desktop' | 'phone' | undefined {
+  if (!raw) return undefined;
+  if (raw === 'desktop' || raw === 'phone') return raw;
+  console.error(`--expect-shell takes "desktop" or "phone", not "${raw}"`);
+  process.exit(2);
 }
 
 function parseArgs(argv: string[]): Options {
@@ -82,6 +102,8 @@ function parseArgs(argv: string[]): Options {
     clicks,
     wait: Number(flags.get('wait') ?? 600),
     onboarding: flags.has('onboarding'),
+    height: Number(flags.get('height') || DEFAULT_VIEWPORT_HEIGHT),
+    expectShell: parseExpectShell(flags.get('expect-shell')),
   };
 }
 
@@ -184,13 +206,16 @@ async function run(): Promise<number> {
   mkdirSync(OUT_DIR, { recursive: true });
 
   const browser = await chromium.launch();
-  const report: Record<string, { shot: string; findings: Finding[] }> = {};
+  const report: Record<
+    string,
+    { shot: string; findings: Finding[]; shell: string; height: number }
+  > = {};
   let errorCount = 0;
 
   try {
     for (const width of opts.widths) {
       const context = await browser.newContext({
-        viewport: { width, height: VIEWPORT_HEIGHT },
+        viewport: { width, height: opts.height },
         deviceScaleFactor: 2,
         colorScheme: opts.theme === 'light' ? 'light' : 'dark',
       });
@@ -225,15 +250,22 @@ async function run(): Promise<number> {
       }
       await page.waitForTimeout(opts.wait);
 
+      // Which shell actually mounted, before anything is measured or believed.
+      const shell = describeShell(
+        (await page.locator('[data-testid="desktop-app"]').count()) > 0,
+        (await page.locator('[data-testid="mobile-app"]').count()) > 0
+      );
+      if (opts.expectShell) assertShell(opts.expectShell, shell, width);
+
       const shot = resolve(OUT_DIR, `${opts.label}-${width}.png`);
       await page.screenshot({ path: shot, fullPage: false });
 
       const probe = (await page.evaluate(probeSource)) as ProbeResult;
       const findings = analyzeProbe(probe);
       errorCount += findings.filter((f) => f.severity === 'error').length;
-      report[String(width)] = { shot, findings };
+      report[String(width)] = { shot, findings, shell, height: opts.height };
 
-      console.log(`\n\x1b[1m${width}px\x1b[0m  ${shot}`);
+      console.log(`\n\x1b[1m${width}x${opts.height}\x1b[0m  [${shell}]  ${shot}`);
       if (consoleErrors.length) {
         console.log(`  \x1b[31mconsole:\x1b[0m ${consoleErrors.length} error(s)`);
         for (const e of consoleErrors.slice(0, 3)) console.log(`    ${e.slice(0, 160)}`);
