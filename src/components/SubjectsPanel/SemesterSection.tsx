@@ -65,14 +65,16 @@ const stateConfig: Record<
     border: 'border-success/20',
     accent: 'text-success',
     indicator: 'bg-success',
-    badgeCls: 'bg-success/15 text-base-content font-medium px-2 py-0.5 rounded text-[11px]',
+    badgeCls:
+      'bg-success/35 text-base-content border border-success/50 font-medium px-2 py-0.5 rounded text-[11px]',
   },
   current: {
     icon: BookOpen,
     border: 'border-primary/30',
     accent: 'text-primary',
     indicator: 'bg-primary',
-    badgeCls: 'bg-primary/15 text-base-content font-medium px-2 py-0.5 rounded text-[11px]',
+    badgeCls:
+      'bg-primary/35 text-base-content border border-primary/50 font-medium px-2 py-0.5 rounded text-[11px]',
   },
   future: {
     icon: Clock,

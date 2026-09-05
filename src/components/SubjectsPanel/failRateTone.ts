@@ -13,8 +13,8 @@
  * step rescues it at this size.
  */
 export function failRateTone(rate: number): string {
-  if (rate >= 25) return 'bg-error/15 text-base-content';
-  if (rate >= 20) return 'bg-warning/20 text-base-content';
+  if (rate >= 25) return 'bg-error/35 text-base-content';
+  if (rate >= 20) return 'bg-warning/40 text-base-content';
   return 'bg-base-content/5 text-base-content/70';
 }
 

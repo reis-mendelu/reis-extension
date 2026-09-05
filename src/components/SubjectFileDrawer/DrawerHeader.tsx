@@ -44,12 +44,18 @@ function getBadge(
       (l.sectionName || '').toLowerCase().includes('test');
     return {
       label: test ? t('course.badge.test') : t('course.badge.exam'),
-      cls: 'bg-error/15 text-base-content',
+      cls: 'bg-error/35 text-base-content border border-error/50',
     };
   }
   return l.isSeminar === 'true'
-    ? { label: t('course.badge.seminar'), cls: 'bg-info/15 text-base-content' }
-    : { label: t('course.badge.lecture'), cls: 'bg-primary/15 text-base-content' };
+    ? {
+        label: t('course.badge.seminar'),
+        cls: 'bg-info/35 text-base-content border border-info/50',
+      }
+    : {
+        label: t('course.badge.lecture'),
+        cls: 'bg-primary/35 text-base-content border border-primary/50',
+      };
 }
 
 export function DrawerHeader({
