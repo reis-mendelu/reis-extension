@@ -172,4 +172,5 @@ dist-web/
 .store-shots-ios-13/
 
 # Raw IS pages saved by `scrape:real --dump-html` — one student's real record.
-public/.is-html/
+# Outside public/ on purpose: publicDir is copied into the build output.
+.is-html/

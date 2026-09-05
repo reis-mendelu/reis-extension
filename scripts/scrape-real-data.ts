@@ -12,8 +12,13 @@ const verbose = process.argv.includes('--verbose');
 // that as evidence, and until now there was no way to get it without hand-
 // saving pages from a browser. Output is gitignored: it is one student's real
 // record, not a fixture — trim by hand before committing anything from it.
+//
+// Deliberately NOT under public/. Vite copies publicDir into the build output
+// verbatim, and stripDevRealDataPlugin only removes `dev-real-data.json` by
+// name — so a folder of real study plans parked there would ride into
+// dist-web/, which is the directory that gets deployed from a laptop.
 const dumpHtml = process.argv.includes('--dump-html');
-const HTML_OUT = resolve(process.cwd(), 'public/.is-html');
+const HTML_OUT = resolve(process.cwd(), '.is-html');
 
 async function login(): Promise<string> {
   const user = process.env.MENDELU_USER;
