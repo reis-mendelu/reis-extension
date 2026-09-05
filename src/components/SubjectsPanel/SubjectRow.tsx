@@ -85,7 +85,7 @@ export function SubjectRow({
   const badgeEl = badge ? (
     <span className="flex items-baseline gap-1 shrink-0">
       <span
-        className={`text-sm font-mono font-medium ${badge.kind === 'letter' && !badge.passed ? 'text-error/60' : 'text-success/60'}`}
+        className={`text-sm font-mono font-medium ${badge.kind === 'letter' && !badge.passed ? 'text-error' : 'text-success/60'}`}
         title={grade?.gradeText}
       >
         {badge.kind === 'letter'
@@ -134,11 +134,11 @@ export function SubjectRow({
           onClick={handleClick}
           onMouseEnter={hover.onMouseEnter}
           onMouseLeave={hover.onMouseLeave}
-          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-base-200/50 transition-colors text-left ${isUnfulfilled ? 'text-error/60' : 'text-base-content/70'}`}
+          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-base-300 transition-colors text-left ${isUnfulfilled ? 'text-error' : 'text-base-content/70'}`}
         >
           <span className="flex-1 text-sm font-medium truncate">{displayName}</span>
           {timeline && (
-            <span className="text-[9px] font-bold text-primary/60 shrink-0">
+            <span className="text-[9px] font-bold text-[var(--btn-tonal-primary)] shrink-0">
               {timeline.formatted}
             </span>
           )}
@@ -245,12 +245,12 @@ export function SubjectRow({
         onClick={handleClick}
         onMouseEnter={hover.onMouseEnter}
         onMouseLeave={hover.onMouseLeave}
-        className="w-full flex items-center gap-1.5 md:gap-3 px-2 md:px-3 py-2 md:py-2.5 rounded-lg hover:bg-base-200 transition-colors text-left group"
+        className="w-full flex items-center gap-1.5 md:gap-3 px-2 md:px-3 py-2 md:py-2.5 rounded-lg hover:bg-base-300 transition-colors text-left group"
       >
         <div className="flex-1 min-w-0 flex flex-col">
           <span className="text-sm truncate font-medium">{displayName}</span>
           {timeline && (
-            <div className="flex items-center gap-1 text-[10px] font-bold text-primary/60 mt-0.5">
+            <div className="flex items-center gap-1 text-[10px] font-bold text-[var(--btn-tonal-primary)] mt-0.5">
               <Timer size={10} />
               <span>{timeline.formatted}</span>
             </div>
@@ -278,7 +278,7 @@ export function SubjectRow({
           </span>
         )}
         {zameraniTag && (
-          <span className="text-[9px] font-mono tracking-widest text-primary/50 bg-primary/8 px-1.5 py-0.5 rounded shrink-0">
+          <span className="text-[9px] font-mono tracking-widest text-[var(--btn-tonal-primary)] bg-primary/8 px-1.5 py-0.5 rounded shrink-0">
             {zameraniTag}
           </span>
         )}

@@ -44,12 +44,12 @@ function getBadge(
       (l.sectionName || '').toLowerCase().includes('test');
     return {
       label: test ? t('course.badge.test') : t('course.badge.exam'),
-      cls: 'bg-error/10 text-error',
+      cls: 'bg-error/15 text-base-content',
     };
   }
   return l.isSeminar === 'true'
-    ? { label: t('course.badge.seminar'), cls: 'bg-info/10 text-info' }
-    : { label: t('course.badge.lecture'), cls: 'bg-primary/10 text-primary' };
+    ? { label: t('course.badge.seminar'), cls: 'bg-info/15 text-base-content' }
+    : { label: t('course.badge.lecture'), cls: 'bg-primary/15 text-base-content' };
 }
 
 export function DrawerHeader({
@@ -103,7 +103,7 @@ export function DrawerHeader({
                 </span>
               )}
               {courseInfo?.credits && (
-                <span className="px-2 py-0.5 rounded text-xs font-bold bg-primary/10 text-primary capitalize">
+                <span className="px-2 py-0.5 rounded text-xs font-bold bg-primary/15 text-base-content capitalize">
                   {courseInfo.credits
                     .toLowerCase()
                     .replace('kreditů', language === 'cz' ? 'kreditů' : 'credits')
@@ -114,7 +114,7 @@ export function DrawerHeader({
             </div>
           )}
           {timeline && (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-primary/10 text-primary animate-in fade-in zoom-in duration-300">
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-primary/15 text-base-content animate-in fade-in zoom-in duration-300">
               <Timer size={12} />
               <span>{timeline.formatted}</span>
             </span>

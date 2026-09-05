@@ -141,7 +141,7 @@ export function SemesterSection({
     >
       <button
         onClick={onToggle}
-        className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${open ? 'bg-base-200/30' : 'hover:bg-base-200/50'}`}
+        className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${open ? 'bg-base-200' : 'hover:bg-base-200'}`}
       >
         <div className={`w-1 h-8 rounded-full ${cfg.indicator} shrink-0`} />
         <span className="text-sm font-semibold flex-1 text-left">{cleanTitle}</span>
