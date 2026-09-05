@@ -138,7 +138,7 @@ export function SubjectRow({
         >
           <span className="flex-1 text-sm font-medium truncate">{displayName}</span>
           {timeline && (
-            <span className="text-[9px] font-bold text-[var(--btn-tonal-primary)] shrink-0">
+            <span className="text-[9px] font-bold text-[var(--tone-primary)] shrink-0">
               {timeline.formatted}
             </span>
           )}
@@ -250,7 +250,7 @@ export function SubjectRow({
         <div className="flex-1 min-w-0 flex flex-col">
           <span className="text-sm truncate font-medium">{displayName}</span>
           {timeline && (
-            <div className="flex items-center gap-1 text-[10px] font-bold text-[var(--btn-tonal-primary)] mt-0.5">
+            <div className="flex items-center gap-1 text-[10px] font-bold text-[var(--tone-primary)] mt-0.5">
               <Timer size={10} />
               <span>{timeline.formatted}</span>
             </div>
@@ -278,7 +278,7 @@ export function SubjectRow({
           </span>
         )}
         {zameraniTag && (
-          <span className="text-[9px] font-mono tracking-widest text-[var(--btn-tonal-primary)] bg-primary/8 px-1.5 py-0.5 rounded shrink-0">
+          <span className="text-[9px] font-mono tracking-widest text-[var(--tone-primary)] bg-primary/8 px-1.5 py-0.5 rounded shrink-0">
             {zameraniTag}
           </span>
         )}

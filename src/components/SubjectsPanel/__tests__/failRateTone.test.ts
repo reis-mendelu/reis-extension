@@ -9,16 +9,25 @@ describe('failRateTone', () => {
     expect(failRateTone(25)).toContain('bg-error');
   });
 
-  it('never sets the digits in a semantic colour', () => {
-    // text-error on bg-error/10 measured 3.18:1 and text-warning-content
-    // (white) on bg-warning/15 measured 1.15:1 — the pill warning you about a
-    // hard subject was the least readable thing on the screen.
+  it('sets the digits in a readable TONE of the band colour, never the raw hue', () => {
+    // Two failure modes, one test. Raw `text-error` on `bg-error/12` measures
+    // 3.22:1 and `text-warning-content` (white) measured 1.15:1 — that is what
+    // shipped. Flattening everything to ink passes contrast but throws the
+    // traffic-light signal away, which is the pill's entire job. The tone
+    // tokens in index.css are the third option: the hue, dark enough to read.
+    expect(failRateTone(30)).toContain('text-[var(--tone-error)]');
+    expect(failRateTone(22)).toContain('text-[var(--tone-warning)]');
     for (const rate of [0, 19, 20, 24, 25, 80]) {
       const tone = failRateTone(rate);
       expect(tone).not.toContain('text-error');
-      expect(tone).not.toContain('text-warning');
-      expect(tone).toContain('text-base-content');
+      expect(tone).not.toContain('text-warning-content');
     }
+  });
+
+  it('keeps the tint a whisper, so the pill stays a pill and not a slab', () => {
+    // /35 and /40 passed every contrast check and looked like blocks of paint.
+    expect(failRateTone(30)).toContain('bg-error/12');
+    expect(failRateTone(22)).toContain('bg-warning/15');
   });
 
   it('pairs each band with a hover of the same hue', () => {

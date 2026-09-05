@@ -13,14 +13,14 @@
  * step rescues it at this size.
  */
 export function failRateTone(rate: number): string {
-  if (rate >= 25) return 'bg-error/35 text-base-content';
-  if (rate >= 20) return 'bg-warning/40 text-base-content';
+  if (rate >= 25) return 'bg-error/12 text-[var(--tone-error)]';
+  if (rate >= 20) return 'bg-warning/15 text-[var(--tone-warning)]';
   return 'bg-base-content/5 text-base-content/70';
 }
 
 /** Hover variant of the same band, for the pills that are clickable. */
 export function failRateToneHover(rate: number): string {
-  if (rate >= 25) return 'hover:bg-error/25';
-  if (rate >= 20) return 'hover:bg-warning/30';
+  if (rate >= 25) return 'hover:bg-error/20';
+  if (rate >= 20) return 'hover:bg-warning/25';
   return 'hover:bg-base-content/10';
 }

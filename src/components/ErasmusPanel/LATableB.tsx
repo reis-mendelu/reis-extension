@@ -32,7 +32,7 @@ interface Props {
 const ROW_CLS =
   'grid grid-cols-[auto_auto_1fr_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 last:border-b-0 text-xs transition-colors';
 const BTN_CHEVRON =
-  'btn btn-ghost w-4 h-3.5 min-h-0 p-0 text-base-content/20 hover:text-[var(--btn-tonal-primary)] disabled:opacity-0 disabled:pointer-events-none rounded-none';
+  'btn btn-ghost w-4 h-3.5 min-h-0 p-0 text-base-content/20 hover:text-[var(--tone-primary)] disabled:opacity-0 disabled:pointer-events-none rounded-none';
 const BTN_REMOVE =
   'btn btn-ghost btn-xs w-5 h-5 min-h-0 p-0 text-base-content/15 hover:text-error hover:bg-error/10 rounded-full';
 
@@ -305,7 +305,7 @@ export function LATableB({
       {!adding && (
         <button
           onClick={openForm}
-          className="self-end text-xs text-base-content/70 hover:text-base-content/65 transition-colors duration-150 leading-none pt-0.5 cursor-pointer"
+          className="self-end text-xs text-base-content/70 hover:text-base-content transition-colors duration-150 leading-none pt-0.5 cursor-pointer"
         >
           {t('erasmus.addManuallyFallback')}
         </button>

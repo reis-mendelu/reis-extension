@@ -44,17 +44,17 @@ function getBadge(
       (l.sectionName || '').toLowerCase().includes('test');
     return {
       label: test ? t('course.badge.test') : t('course.badge.exam'),
-      cls: 'bg-error/35 text-base-content border border-error/50',
+      cls: 'bg-error/12 text-[var(--tone-error)]',
     };
   }
   return l.isSeminar === 'true'
     ? {
         label: t('course.badge.seminar'),
-        cls: 'bg-info/35 text-base-content border border-info/50',
+        cls: 'bg-info/12 text-[var(--tone-info)]',
       }
     : {
         label: t('course.badge.lecture'),
-        cls: 'bg-primary/35 text-base-content border border-primary/50',
+        cls: 'bg-primary/12 text-[var(--tone-primary)]',
       };
 }
 
@@ -109,7 +109,7 @@ export function DrawerHeader({
                 </span>
               )}
               {courseInfo?.credits && (
-                <span className="px-2 py-0.5 rounded text-xs font-bold bg-primary/15 text-base-content capitalize">
+                <span className="px-2 py-0.5 rounded text-xs font-bold bg-primary/12 text-[var(--tone-primary)] capitalize">
                   {courseInfo.credits
                     .toLowerCase()
                     .replace('kreditů', language === 'cz' ? 'kreditů' : 'credits')
@@ -120,7 +120,7 @@ export function DrawerHeader({
             </div>
           )}
           {timeline && (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-primary/15 text-base-content animate-in fade-in zoom-in duration-300">
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-primary/12 text-[var(--tone-primary)] animate-in fade-in zoom-in duration-300">
               <Timer size={12} />
               <span>{timeline.formatted}</span>
             </span>

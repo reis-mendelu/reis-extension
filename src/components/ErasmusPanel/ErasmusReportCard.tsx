@@ -118,7 +118,7 @@ export function ErasmusReportCard({ report }: Props) {
             href={`https://is.mendelu.cz/auth/int/zavzpr.pl?akce=1;zobrazit=${report.reportId};lang=${lang === 'en' ? 'en' : 'cz'}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-[var(--btn-tonal-primary)] hover:text-primary-focus transition-colors"
+            className="inline-flex items-center gap-1 text-xs text-[var(--tone-primary)] hover:text-primary-focus transition-colors"
           >
             {t('erasmus.openInIS')}
             <ExternalLink size={14} />

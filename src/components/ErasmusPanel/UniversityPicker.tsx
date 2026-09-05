@@ -88,7 +88,7 @@ export function UniversityPicker({
           size={14}
           className={cn(
             'absolute left-2.5 top-1/2 -translate-y-1/2 transition-colors z-10',
-            loading ? 'text-[var(--btn-tonal-primary)] animate-pulse' : 'text-base-content/70'
+            loading ? 'text-[var(--tone-primary)] animate-pulse' : 'text-base-content/70'
           )}
         />
 
@@ -113,7 +113,7 @@ export function UniversityPicker({
         <div className="absolute z-[100] mt-1 w-full max-h-[220px] overflow-y-auto bg-base-100 rounded-lg shadow-2xl border border-base-300 animate-in fade-in slide-in-from-top-2 duration-200 scrollbar-thin">
           {loading && universities.length === 0 ? (
             <div className="flex items-center justify-center py-8">
-              <span className="loading loading-spinner loading-sm text-[var(--btn-tonal-primary)]" />
+              <span className="loading loading-spinner loading-sm text-[var(--tone-primary)]" />
             </div>
           ) : results.length > 0 ? (
             <div className="p-1">
@@ -132,7 +132,7 @@ export function UniversityPicker({
                       {u.name}
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-[var(--btn-tonal-primary)] font-mono font-bold">
+                      <span className="text-[10px] text-[var(--tone-primary)] font-mono font-bold">
                         {u.erasmusCode}
                       </span>
                       {u.city && (

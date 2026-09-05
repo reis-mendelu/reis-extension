@@ -222,14 +222,14 @@ function LATableAOption({
               <button
                 onClick={() => reorderCourseA(option.id, i, i - 1)}
                 disabled={i === 0}
-                className="btn btn-ghost w-4 h-3.5 min-h-0 p-0 text-base-content/20 hover:text-[var(--btn-tonal-primary)] disabled:opacity-0 disabled:pointer-events-none rounded-none"
+                className="btn btn-ghost w-4 h-3.5 min-h-0 p-0 text-base-content/20 hover:text-[var(--tone-primary)] disabled:opacity-0 disabled:pointer-events-none rounded-none"
               >
                 <ChevronUp size={11} />
               </button>
               <button
                 onClick={() => reorderCourseA(option.id, i, i + 1)}
                 disabled={i === option.courses.length - 1}
-                className="btn btn-ghost w-4 h-3.5 min-h-0 p-0 text-base-content/20 hover:text-[var(--btn-tonal-primary)] disabled:opacity-0 disabled:pointer-events-none rounded-none"
+                className="btn btn-ghost w-4 h-3.5 min-h-0 p-0 text-base-content/20 hover:text-[var(--tone-primary)] disabled:opacity-0 disabled:pointer-events-none rounded-none"
               >
                 <ChevronDown size={11} />
               </button>
@@ -286,7 +286,7 @@ function LATableAOption({
         {/* Add course button */}
         <button
           onClick={() => (adding ? handleAddCourse() : setAdding(true))}
-          className="flex items-center gap-1.5 px-3 py-2 text-[10px] text-[var(--btn-tonal-primary)] hover:bg-primary/10 transition-colors w-full border-b border-base-300/50 font-bold"
+          className="flex items-center gap-1.5 px-3 py-2 text-[10px] text-[var(--tone-primary)] hover:bg-primary/10 transition-colors w-full border-b border-base-300/50 font-bold"
         >
           <Plus size={12} />
           <span>{t('erasmus.addCourse')}</span>
@@ -323,7 +323,7 @@ function LATableAOption({
       <div className="flex flex-col gap-0">
         <button
           onClick={() => setBuilderOpen(!builderOpen)}
-          className="flex items-center gap-2 px-2 py-2 text-xs font-bold text-[var(--btn-tonal-primary)] hover:text-[var(--btn-tonal-primary)] transition-colors group w-full"
+          className="flex items-center gap-2 px-2 py-2 text-xs font-bold text-[var(--tone-primary)] hover:text-[var(--tone-primary)] transition-colors group w-full"
         >
           {builderOpen ? (
             <ChevronDown size={14} className="transition-transform rotate-180" />

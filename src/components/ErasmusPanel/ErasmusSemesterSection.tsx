@@ -79,7 +79,7 @@ function SelectableRow({
             e.stopPropagation();
             onOpen();
           }}
-          className="btn btn-ghost btn-xs w-8 h-8 p-0 text-base-content/70 hover:text-[var(--btn-tonal-primary)] hover:bg-primary/5 rounded-full"
+          className="btn btn-ghost btn-xs w-8 h-8 p-0 text-base-content/70 hover:text-[var(--tone-primary)] hover:bg-primary/5 rounded-full"
           title="Details"
         >
           <Info size={16} />
@@ -152,7 +152,7 @@ export function ErasmusSemesterSection({
                   {group.name}
                 </div>
                 {isCompulsory && (
-                  <span className="text-[9px] uppercase font-black text-[var(--btn-tonal-primary)] tracking-widest shrink-0">
+                  <span className="text-[9px] uppercase font-black text-[var(--tone-primary)] tracking-widest shrink-0">
                     {t('erasmus.coreSubject')}
                   </span>
                 )}

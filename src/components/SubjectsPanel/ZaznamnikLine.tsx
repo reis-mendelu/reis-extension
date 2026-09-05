@@ -92,9 +92,9 @@ export function ZaznamnikLine({ courseCode, subjectId, className }: ZaznamnikLin
   const deadlineUrgency = (ts: number) => {
     const days = dayDiff(ts);
     return days === 0
-      ? 'bg-error/15 text-error hover:bg-error/25 border border-error/30'
+      ? 'bg-error/12 text-[var(--tone-error)] hover:bg-error/20 border border-error/30'
       : days <= 2
-        ? 'bg-warning/15 text-warning-content hover:bg-warning/25 border border-warning/30'
+        ? 'bg-warning/15 text-[var(--tone-warning)] hover:bg-warning/25 border border-warning/30'
         : 'bg-base-content/8 text-base-content/70 hover:bg-base-content/12 border border-base-content/15';
   };
 

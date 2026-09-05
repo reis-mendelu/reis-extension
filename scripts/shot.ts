@@ -53,6 +53,22 @@ interface Options {
   expectShell?: 'desktop' | 'phone';
 }
 
+/**
+ * `Number()` waves through NaN, Infinity and negatives, and `||` would treat
+ * `--height 0` as "unset" and silently use the default. A viewport is not
+ * something to guess at: a bad value should stop the run, the way an unknown
+ * --expect-shell does.
+ */
+function parseHeight(raw: string | undefined): number {
+  if (raw === undefined || raw === '') return DEFAULT_VIEWPORT_HEIGHT;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0) {
+    console.error(`--height must be a positive finite number, not "${raw}"`);
+    process.exit(2);
+  }
+  return value;
+}
+
 function parseExpectShell(raw: string | undefined): 'desktop' | 'phone' | undefined {
   if (!raw) return undefined;
   if (raw === 'desktop' || raw === 'phone') return raw;
@@ -102,7 +118,7 @@ function parseArgs(argv: string[]): Options {
     clicks,
     wait: Number(flags.get('wait') ?? 600),
     onboarding: flags.has('onboarding'),
-    height: Number(flags.get('height') || DEFAULT_VIEWPORT_HEIGHT),
+    height: parseHeight(flags.get('height')),
     expectShell: parseExpectShell(flags.get('expect-shell')),
   };
 }

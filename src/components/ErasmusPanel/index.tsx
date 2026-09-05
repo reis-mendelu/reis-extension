@@ -175,7 +175,7 @@ export function ErasmusPanel({
             onClick={() => handleTabChange(tab)}
             className={`px-3 py-1.5 rounded-t-lg text-xs font-bold transition-all border-b-2 ${
               currentTab === tab
-                ? 'border-primary text-[var(--btn-tonal-primary)] bg-primary/12'
+                ? 'border-primary text-[var(--tone-primary)] bg-primary/12'
                 : 'border-transparent text-base-content/70 hover:text-base-content'
             }`}
           >

@@ -3,6 +3,7 @@ import { ChevronDown, Layers, CheckSquare, Square } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { ZameraniInsight } from './insights';
 import { normalizeZameraniName } from './utils';
+import { failRateTone } from './failRateTone';
 
 interface Props {
   insights: ZameraniInsight[];
@@ -21,11 +22,11 @@ interface Props {
   onSearchSubject: (name: string) => void;
 }
 
+const NO_RATE = 'bg-base-content/5 text-base-content/70';
+
+/** The shared bands, with the null case this card additionally has. */
 function rateClass(rate: number | null): string {
-  if (rate == null) return 'bg-base-content/5 text-base-content/70';
-  if (rate >= 25) return 'bg-error/10 text-error';
-  if (rate >= 20) return 'bg-warning/15 text-warning-content';
-  return 'bg-base-content/5 text-base-content/70';
+  return rate == null ? NO_RATE : failRateTone(rate);
 }
 
 interface RowProps {

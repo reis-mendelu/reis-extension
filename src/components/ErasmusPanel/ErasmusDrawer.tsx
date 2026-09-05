@@ -93,7 +93,7 @@ export function ErasmusDrawer({
                       toast.success(t('common.copiedToClipboard'));
                     });
                 }}
-                className="btn btn-ghost btn-xs w-6 h-6 p-0 min-h-0 text-[var(--btn-tonal-primary)] hover:bg-primary/10 transition-colors shrink-0"
+                className="btn btn-ghost btn-xs w-6 h-6 p-0 min-h-0 text-[var(--tone-primary)] hover:bg-primary/10 transition-colors shrink-0"
                 title={config.faculties[userParams.facultyLabel].email}
               >
                 <Mail size={12} />
@@ -183,7 +183,7 @@ export function ErasmusDrawer({
             {!showAll && filteredReports.length > 10 && (
               <button
                 onClick={() => setShowAll(true)}
-                className="btn btn-ghost btn-sm text-[var(--btn-tonal-primary)]"
+                className="btn btn-ghost btn-sm text-[var(--tone-primary)]"
               >
                 {t('erasmus.showMore')} ({filteredReports.length - 10})
               </button>

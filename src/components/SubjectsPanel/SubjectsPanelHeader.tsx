@@ -64,25 +64,25 @@ function getProgressionInfo(stats: StudyStats): {
 // card (1.039:1), so each is /15 now.
 const levelConfig = {
   safe: {
-    bg: 'bg-success/15',
+    bg: 'bg-success/12',
     border: 'border-success/20',
-    text: 'text-base-content',
+    text: 'text-[var(--tone-success)]',
     icon: 'text-success',
     bar: 'bg-success',
     Icon: CheckCircle2,
   },
   warning: {
-    bg: 'bg-warning/15',
+    bg: 'bg-warning/12',
     border: 'border-warning/20',
-    text: 'text-base-content',
+    text: 'text-[var(--tone-warning)]',
     icon: 'text-warning',
     bar: 'bg-warning',
     Icon: AlertTriangle,
   },
   danger: {
-    bg: 'bg-error/15',
+    bg: 'bg-error/12',
     border: 'border-error/20',
-    text: 'text-base-content',
+    text: 'text-[var(--tone-error)]',
     icon: 'text-error',
     bar: 'bg-error',
     Icon: ShieldAlert,
