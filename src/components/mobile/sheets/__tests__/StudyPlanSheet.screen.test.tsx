@@ -36,12 +36,26 @@ describe('StudyPlanSheet is presented as a screen', () => {
     expect(screen.queryByTestId('sheet-backdrop')).not.toBeInTheDocument();
   });
 
-  it('covers the viewport and enters from the side', () => {
+  // The slide-in is GONE, and its absence is asserted so it cannot creep back.
+  //
+  // On the iPad it played, reversed part-way, and played again — reported as
+  // "it slides in but then a bit back and then again in weirdly". It could not
+  // be reproduced anywhere instrumentable: traced in a real browser, the panel
+  // showed one node, one `screenIn`, and a monotonic 834→0px over 260ms, and
+  // Dominik confirmed localhost is reliable. So the fault lives in the WebView,
+  // where the screen can be photographed but not driven.
+  //
+  // The animation was decoration — it existed to make the push read as forward
+  // navigation, nothing more. When the only purpose of a piece of code is
+  // polish and the polish misfires on the device it was built for, removing it
+  // is not hiding the bug: it removes the thing that IS the bug. The page still
+  // covers the viewport and back still returns; only the ceremony is gone.
+  it('covers the viewport, and arrives without an entrance animation', () => {
     render(<StudyPlanSheet onClose={() => {}} />);
     const panel = screen.getByTestId('sheet-panel');
     expect(panel.className).toContain('inset-0');
+    expect(panel.className).not.toContain('animate-[screenIn');
     // Sliding UP is the bottom-sheet vocabulary this is deliberately leaving.
-    expect(panel.className).toContain('animate-[screenIn');
     expect(panel.className).not.toContain('animate-[sheetUp');
   });
 

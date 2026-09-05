@@ -33,13 +33,16 @@ describe('logError', () => {
   it('shows the demo toast and logs nothing for a DemoModeError', () => {
     logError('Api.fetchWithAuth', new DemoModeError());
 
-    expect(toast).toHaveBeenCalledWith('Toto je jen ukázka.');
+    // The stable id is load-bearing, not incidental: two DemoModeErrors at boot
+    // stacked two identical toasts on the deployed preview until it was added.
+    expect(toast).toHaveBeenCalledWith('Toto je jen ukázka.', { id: 'demo-mode-notice' });
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  // The extension registers no handler, and demo mode is Capacitor-only, so a
-  // DemoModeError cannot arise there — but logError must not depend on a
-  // handler existing.
+  // The extension registers no handler, and the extension itself never enters
+  // demo mode, so a DemoModeError cannot arise there — but logError must not
+  // depend on a handler existing. Capacitor and the deployed web preview both
+  // register one; see capacitor/main.capacitor.tsx and dev/earlyDemoMode.ts.
   it('falls through to the console when no demo handler is registered', () => {
     setDemoErrorHandler(null);
 

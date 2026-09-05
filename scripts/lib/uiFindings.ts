@@ -18,6 +18,13 @@ export interface Rect {
 }
 
 export interface ProbeElement {
+  /**
+   * Inside a third-party widget that positions its own internals outside its
+   * box and clips them — Leaflet's tile pane. Such an element sitting past the
+   * viewport is by design. Scoped to named widgets on purpose: excusing
+   * everything with a clipping ancestor excuses most of the app.
+   */
+  insideInnerClip?: boolean;
   /** Stable index within the probe, used to express ancestry. */
   idx: number;
   /** Indices of this element's ancestors, nearest-first. */
@@ -138,16 +145,43 @@ function overflowFindings(p: ProbeResult): Finding[] {
       detail: `page scrolls ${Math.round(over)}px horizontally at ${p.width}px wide`,
       severity: 'error',
     });
-    for (const e of p.elements) {
-      const past = e.rect.x + e.rect.w - p.width;
-      if (past > PX_SLACK && area(e.rect) > 0) {
-        out.push({
-          kind: 'overflow-element',
-          sel: e.sel,
-          detail: `extends ${Math.round(past)}px past the ${p.width}px viewport`,
-          severity: 'error',
-        });
-      }
+  }
+
+  // Per-element, and deliberately NOT nested inside the document-scroll check
+  // above. reIS clips at #root, so the document never scrolls horizontally —
+  // which meant this whole rule could never fire in this app, in shot.ts or in
+  // the CI gate. Verified by injecting a 2000px-wide element: docScrollWidth
+  // stayed equal to clientWidth and nothing was reported.
+  //
+  // Clipped is not better than scrolled. It is worse: the content is simply
+  // unreachable, with no scrollbar to hint that anything is missing.
+  //
+  // Elements parked entirely off-canvas (a closed drawer at translateX(100%))
+  // do not reach here — the probe's own elementFromPoint occlusion test drops
+  // anything whose centre is not the topmost element at that point.
+  for (const e of p.elements) {
+    // Leaflet lays its tiles beyond the map pane on purpose and clips them;
+    // measuring those produced 26 failures, enough to fail every PR.
+    if (e.insideInnerClip) continue;
+    // BOTH edges. Measuring only the right one let an element at x:-20 sit
+    // half off the left of the screen and report nothing — clipped by #root
+    // and just as unreachable as one running off the right.
+    const pastRight = e.rect.x + e.rect.w - p.width;
+    const pastLeft = -e.rect.x;
+    const past = Math.max(pastLeft, pastRight);
+    if (past > PX_SLACK && area(e.rect) > 0) {
+      out.push({
+        kind: 'overflow-element',
+        sel: e.sel,
+        // Named per edge rather than as one number: "extends 20px past the
+        // viewport" would be actively misleading for something hanging off
+        // the left, and the fix differs by side.
+        detail:
+          pastLeft > pastRight
+            ? `starts ${Math.round(pastLeft)}px left of the ${p.width}px viewport`
+            : `extends ${Math.round(pastRight)}px past the ${p.width}px viewport`,
+        severity: 'error',
+      });
     }
   }
   return out;

@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Moon, Languages, Wifi, FileText, MessageSquarePlus, LogOut, User } from 'lucide-react';
+import { Wifi, FileText, MessageSquarePlus, LogOut, User } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
-import { useTheme } from '../../../hooks/useTheme';
 import { useSpolkySettings } from '../../../hooks/useSpolkySettings';
 import { useStudyPlan } from '../../../hooks/useStudyPlan';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -10,7 +9,10 @@ import { HiddenItemsSection } from '../../Sidebar/Profile/HiddenItemsSection';
 import { FeedbackModal } from '../../Feedback/FeedbackModal';
 import { SignOutConfirm } from '../sheets/SignOutConfirm';
 import { PersonPhoto } from '../../ui/PersonPhoto';
+import { AboutSection } from './profile/AboutSection';
 import { NavRow } from '../primitives/NavRow';
+import { MapAppRow } from './profile/MapAppRow';
+import { AppearanceRows } from './profile/AppearanceRows';
 import { ScreenHeader } from './calendar/ScreenHeader';
 
 function initials(name: string): string {
@@ -37,9 +39,6 @@ function initials(name: string): string {
 export function ProfileScreen() {
   const { t } = useTranslation();
   const fullName = useAppStore((s) => s.fullName);
-  const language = useAppStore((s) => s.language);
-  const setLanguage = useAppStore((s) => s.setLanguage);
-  const { isDark, toggle: toggleTheme } = useTheme();
   const { isSubscribed, toggleAssociation } = useSpolkySettings();
   const pushSheet = useAppStore((s) => s.pushSheet);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
@@ -95,45 +94,17 @@ export function ProfileScreen() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-24">
-        <div className="px-4 pb-1 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
+      {/* pb-[84px], not pb-24. The floating BottomNav needs 76px of clearance —
+          measured, `innerHeight - nav.top` at 375×780 — and 96 reserved 20px of
+          nothing at the bottom of a screen that must not scroll. 8px of margin
+          over the measurement, so a taller nav does not silently tuck under. */}
+      <div className="flex-1 overflow-y-auto pb-[84px]">
+        <div className="px-4 pb-0.5 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
           {t('mobile.profile.appearance')}
         </div>
-        {/* No caption under the label. A dark-mode switch does not need one,
-            and "šetří oči i baterku" was a second line of type for a control
-            whose entire meaning is its own name. */}
-        <label className="flex items-center gap-3 px-4 py-2.5">
-          <Moon size={16} className="flex-shrink-0 text-base-content/50" />
-          <span className="min-w-0 flex-1 text-md font-medium">{t('settings.darkMode')}</span>
-          <input
-            type="checkbox"
-            className="toggle toggle-primary toggle-sm"
-            checked={isDark}
-            onChange={toggleTheme}
-          />
-        </label>
-        <div className="flex items-center gap-3 px-4 py-2.5">
-          <Languages size={16} className="flex-shrink-0 text-base-content/50" />
-          <span className="flex-1 text-md font-medium">{t('settings.language')}</span>
-          <div className="join">
-            <button
-              type="button"
-              onClick={() => setLanguage('cz')}
-              className={`join-item btn btn-xs ${language === 'cz' ? 'btn-primary' : 'btn-ghost opacity-60'}`}
-            >
-              {t('settings.czech')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setLanguage('en')}
-              className={`join-item btn btn-xs ${language === 'en' ? 'btn-primary' : 'btn-ghost opacity-60'}`}
-            >
-              {t('settings.english')}
-            </button>
-          </div>
-        </div>
+        <AppearanceRows />
 
-        <div className="px-4 pb-1 pt-3 text-xs font-bold uppercase tracking-wider text-base-content/60">
+        <div className="px-4 pb-0.5 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
           {t('mobile.profile.settings')}
         </div>
         {/* eduroam lives here rather than on the Student hub: it is a one-time
@@ -157,9 +128,11 @@ export function ProfileScreen() {
           onClick={() => pushSheet({ kind: 'docs' })}
         />
 
+        <MapAppRow />
+
         <HiddenItemsSection />
 
-        <div className="px-4 pb-1 pt-3 text-xs font-bold uppercase tracking-wider text-base-content/60">
+        <div className="px-4 pb-0.5 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
           {t('mobile.profile.societies')}
         </div>
         <div className="px-3">
@@ -173,13 +146,14 @@ export function ProfileScreen() {
           />
         </div>
 
-        <div className="mx-4 my-3 h-px bg-base-300" />
+        <div className="mx-4 my-2 h-px bg-base-content/10" />
 
         <NavRow
           icon={MessageSquarePlus}
           label={t('settings.reportBug')}
           onClick={() => setFeedbackOpen(true)}
         />
+
         <button
           type="button"
           onClick={() => setSignOutOpen(true)}
@@ -188,6 +162,11 @@ export function ProfileScreen() {
           <LogOut size={17} className="flex-shrink-0" />
           <span className="flex-1 text-left text-md font-medium">{t('settings.logout')}</span>
         </button>
+
+        {/* Open, not behind a row: a credit that has to be opened is a credit
+            nobody reads, and a student writing a bug report should find the
+            version without hunting for it. */}
+        <AboutSection />
       </div>
 
       <SignOutConfirm open={signOutOpen} onCancel={() => setSignOutOpen(false)} />

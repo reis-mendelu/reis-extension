@@ -1,5 +1,6 @@
 import { useAppStore } from '../src/store/useAppStore';
 import { resolveDevPhoneOverride } from '../src/utils/resolveDevPhoneOverride';
+import { isHarnessEnabled } from '../src/utils/harnessEnabled';
 
 // Dev-only phone override. The viewport half of the real rule (`isNarrow`)
 // flips when you resize, but the touch half (`pointer: coarse`) never does in a
@@ -11,8 +12,12 @@ import { resolveDevPhoneOverride } from '../src/utils/resolveDevPhoneOverride';
 // manual escape hatch and because e2e/serenity/specs/mobile-shell.spec.ts drives
 // the phone branch that way.
 //
-// Guarded by import.meta.env.DEV so it cannot ship.
-if (import.meta.env.DEV) {
+// Guarded by isHarnessEnabled so it cannot ship in the extension or Capacitor
+// build. It IS on in the deployed preview, which is a production build: without
+// that, `pointer: coarse` never flips in a desktop browser and the preview
+// would stay desktop at every width. `?welcome=1` rides the same guard, which
+// is what makes the first-run welcome screen reachable there at all.
+if (isHarnessEnabled(import.meta.env)) {
   const search = new URLSearchParams(window.location.search);
   const param = search.get('mobile');
   const pinned = param === '1' || param === '0';

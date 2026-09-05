@@ -2,7 +2,7 @@ import { motion, useReducedMotion } from 'motion/react';
 import { Check, Wifi } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { EduroamStatus } from '../../hooks/data/useEduroamSetup';
-import type { EduroamConfigOutcome } from '../../mobile/configureEduroam';
+import { isEduroamConfigured, type EduroamConfigOutcome } from '../../mobile/configureEduroam';
 import type { NativeEduroamTarget } from '../../mobile/eduroamNative';
 
 export interface WelcomeWifiCardProps {
@@ -29,7 +29,7 @@ export function WelcomeWifiCard({ status, outcome, target, onSetup }: WelcomeWif
   const { t } = useTranslation();
   const reduced = useReducedMotion();
   const working = status === 'working';
-  const done = status === 'done' && (outcome === 'saved' || outcome === 'already-configured');
+  const done = status === 'done' && isEduroamConfigured(outcome);
   // Any error lands here — a genuine `failed` from the OS, or a throw before
   // the OS was reached (lapsed session, cert fetch). One line either way.
   const failed = status === 'error';
@@ -100,6 +100,21 @@ export function WelcomeWifiCard({ status, outcome, target, onSetup }: WelcomeWif
             done line already says everything that is left to say. */}
         {!done && !failed && (
           <p className="text-sm text-base-content/70">{t('mobile.welcome.wifiBody')}</p>
+        )}
+
+        {/* The alert iOS raises over this card, named before it is read as a
+            failure. First run is where most students meet it: they install
+            reIS at home, tap through, and eduroam is nowhere near.
+            `apply` saves and associates in one call and there is no
+            save-without-join, so the alert cannot be suppressed — and it
+            cannot be predicted either, since the device that showed it
+            reported a plain success.
+
+            iOS only: Android's `addNetworkSuggestions` saves without ever
+            attempting a join, so nothing there can fail to connect. Not for
+            `already-configured`, where nothing was applied. */}
+        {done && target === 'ios' && outcome !== 'already-configured' && (
+          <p className="text-sm text-base-content/70">{t('eduroam.native.savedNote')}</p>
         )}
 
         {/* iOS only, and only once it matters: a network added through

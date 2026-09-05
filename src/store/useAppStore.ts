@@ -93,7 +93,14 @@ export const initializeStore = async () => {
     // Dev standalone real-data mode: wipe crawl data left in IDB by a previous
     // mock session BEFORE the tier-1 hydration below reads it, so the snapshot
     // is the sole source of truth. No-op in production / inside the iframe.
-    await resetRealDataStores();
+    //
+    // `import.meta.env.DEV` and not the wider harness predicate: this uses the
+    // DEFAULT url, the raw `/dev-real-data.json`, which is right for
+    // `npm run dev:web` and wrong for a built preview — there the raw scrape is
+    // deleted from the output, and dev/bootDemoMode.ts already calls
+    // resetRealDataStores('/preview-data.json') with the sanitised file.
+    // `npm run check:app` fails the build if this asks for the raw scrape.
+    if (import.meta.env.DEV) await resetRealDataStores();
   }
 
   const s = useAppStore.getState();
@@ -105,6 +112,7 @@ export const initializeStore = async () => {
 
   // Tier 1: User-visible data — load immediately
   s.loadNotificationState();
+  s.loadPreferredMapApp();
   s.fetchNotifications();
   s.fetchSchedule();
   s.fetchExams();

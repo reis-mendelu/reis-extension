@@ -9,6 +9,8 @@ import { EduroamSheet } from './EduroamSheet';
 import { DocsSheet } from './DocsSheet';
 import { SearchSheet } from './SearchSheet';
 import { BulletinSheet } from './BulletinSheet';
+import { MenuSheet } from './MenuSheet';
+import { VenueSheet } from './VenueSheet';
 
 /**
  * Renders the phone UI's sheet stack, in order, each in its own `Sheet`.
@@ -45,6 +47,10 @@ export function SheetHost() {
             return <DocsSheet key={index} onClose={popSheet} />;
           case 'bulletin':
             return <BulletinSheet key={index} onClose={popSheet} />;
+          case 'venue':
+            return <VenueSheet key={index} sheet={sheet} onClose={popSheet} />;
+          case 'menu':
+            return <MenuSheet key={index} dayIso={sheet.dayIso} onClose={popSheet} />;
           case 'search':
             return <SearchSheet key={index} sheet={sheet} onClose={popSheet} />;
           default:

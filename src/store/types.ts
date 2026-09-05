@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand';
+import type { PreferredMapApp } from '../utils/venueMapUrl';
 import type { BlockLesson, HiddenItems, CalendarCustomEvent } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
 import type { SyncDomain } from '../types/messages/base';
@@ -417,11 +418,19 @@ export interface ViewportSlice {
 // behind the header avatar and carries far too much a student goes looking for
 // (eduroam, documents, societies, hidden items, sign-out) to be one tap deep on
 // one screen.
-export type MobileTab = 'calendar' | 'exams' | 'subjects' | 'map' | 'profile';
+/**
+ * Every tab the phone shell can be on, in nav order. The single source of
+ * truth: `MobileTab` is derived from it, so a tab cannot be added to one and
+ * forgotten in the other — the same reason `APP_VIEWS` exists for the desktop
+ * views. `scripts/check-app.ts` sweeps this list, so a new tab is measured at
+ * every width and in both themes without anyone remembering to add it.
+ */
+export const MOBILE_TABS = ['calendar', 'exams', 'subjects', 'map', 'profile'] as const;
+
+export type MobileTab = (typeof MOBILE_TABS)[number];
 // Three stops: `half` shows the campus events while the map is still in view,
 // and is where the sheet opens. See primitives/sheetDrag.ts.
 export type MapSheetState = 'peek' | 'half' | 'expanded';
-export type MapSheetTab = 'akce' | 'knihovna' | 'budova';
 
 /** Discriminated union of every sheet the phone UI can open. */
 export type MobileSheet =
@@ -438,6 +447,13 @@ export type MobileSheet =
   | { kind: 'personPhoto'; personId: string; name: string }
   | { kind: 'eduroam' }
   | { kind: 'docs' }
+  | { kind: 'menu'; dayIso: string }
+  | {
+      kind: 'venue';
+      coord: [number, number];
+      label: string;
+      platform: 'ios' | 'android' | 'web';
+    }
   // People and the subject catalogue, opened from the header's search icon.
   // Was the 'student' TAB; it is a sheet so it opens over whichever tab the
   // student is on and returns them there. `query` prefills it and starts in
@@ -459,7 +475,14 @@ export interface MobileUiSlice {
   mobileSelectedDayIso: string | null;
   mobileSheets: MobileSheet[];
   mapSheetState: MapSheetState;
-  mapTab: MapSheetTab;
+  /** The tablet rail's width in px. Dragged from its left edge; clamped by
+   *  `clampRailWidth`. Ignored on a phone, where the panel is a bottom sheet. */
+  mapRailWidth: number;
+  /** Whether the tablet rail is showing. A rail has exactly two states — the
+   *  sheet's three detents are a phone answer to a phone problem. */
+  mapRailOpen: boolean;
+  /** Which map app a venue opens in, remembered across launches. `null` asks. */
+  preferredMapApp: PreferredMapApp;
   /** Dev-only forced phone/desktop branch. null = defer to viewport. */
   devPhoneOverride: boolean | null;
   /**
@@ -477,7 +500,10 @@ export interface MobileUiSlice {
   replaceSheet: (sheet: MobileSheet) => void;
   closeAllSheets: () => void;
   setMapSheetState: (state: MapSheetState) => void;
-  setMapTab: (tab: MapSheetTab) => void;
+  setMapRailWidth: (px: number) => void;
+  setMapRailOpen: (open: boolean) => void;
+  loadPreferredMapApp: () => Promise<void>;
+  setPreferredMapApp: (app: PreferredMapApp) => Promise<void>;
   setDevPhoneOverride: (value: boolean | null) => void;
 }
 

@@ -14,8 +14,11 @@
     "downloadFailed": "The download didn't go through. Please try again."
   },
   "menu": {
-    "title": "Today's Menu",
-    "unavailable": "Menu not available"
+    "title": "Canteen menu",
+    "unavailable": "Menu not available",
+    "outletOne": "1 outlet",
+    "outletFew": "{count} outlets",
+    "outletOther": "{count} outlets"
   },
   "settings": {
     "title": "Settings",
@@ -202,7 +205,9 @@
       "confusing": "Confusing",
       "slow": "Too slow",
       "other": "Other"
-    }
+    },
+    "toastOffline": "You're offline. Try again once you're connected.",
+    "toastRateLimited": "We've had a lot of messages just now. Please try again in a bit."
   },
   "common": {
     "loading": "Loading...",
@@ -407,7 +412,10 @@
     "loading": "Loading...",
     "empty": "No new news",
     "yesterday": "Yesterday",
-    "tomorrow": "Tomorrow"
+    "tomorrow": "Tomorrow",
+    "fromReis": "reIS",
+    "sectionDeadlines": "Upcoming deadlines",
+    "sectionSocieties": "From societies"
   },
   "deadlines": {
     "title": "Upcoming deadlines",
@@ -554,7 +562,8 @@
     "native": {
       "button": "Set up eduroam",
       "working": "Opening Wi-Fi setup…",
-      "saved": "Done — eduroam is saved. You'll connect automatically on campus.",
+      "saved": "Done — eduroam is saved.",
+      "savedNote": "Ignore any “couldn't join” message — eduroam isn't in range here. On campus you'll connect by yourself.",
       "already": "eduroam is already set up on this device.",
       "staleAssociation": "You're connected to eduroam, so it can't be set up right now. If it stops connecting later, forget the network in Settings → Wi‑Fi and tap again.",
       "cancelled": "Setup wasn't finished. Tap again to retry.",
@@ -895,7 +904,13 @@
     },
     "studyRooms": "Study rooms",
     "reminderLead": "In 2 hours",
-    "finished": "finished"
+    "finished": "finished",
+    "openInMaps": "Open in Maps",
+    "openInAppleMaps": "Apple Maps",
+    "openInGoogleMaps": "Google Maps",
+    "rememberChoice": "Don't ask again",
+    "mapApp": "Maps",
+    "mapAppAsk": "Always ask"
   },
   "admin": {
     "email": "Email",
@@ -1025,14 +1040,15 @@
     "map": {
       "searchPlaceholder": "Find a room, building, event…",
       "tabEvents": "Events",
-      "tabBuilding": "Building {name}",
       "peekHint": "Campus events",
       "thisWeek": "This week",
       "emptyTitle": "Map didn't load",
       "emptyBody": "Please try again.",
       "sheetExpand": "Expand map sheet",
       "sheetCollapse": "Collapse map sheet",
-      "noRoomsOnFloor": "No rooms on this floor."
+      "railResize": "Resize the panel",
+      "railClose": "Hide panel",
+      "railOpen": "Show panel"
     },
     "welcome": {
       "title": "Welcome to reIS",
@@ -1055,7 +1071,8 @@
       "eduroam": "Eduroam",
       "eduroamSub": "university Wi-Fi",
       "documents": "Documents",
-      "documentsSub": "proof of study"
+      "documentsSub": "proof of study",
+      "recentSubjects": "Recently opened"
     },
     "sheet": {
       "close": "Close",
@@ -1096,5 +1113,10 @@
     "bannerLabel": "Demo",
     "bannerExit": "Sign in",
     "toast": "This is only a demo."
+  },
+  "about": {
+    "partnersLabel": "Companies we work with",
+    "partnersBody": "We pick them ourselves, for the subjects people study here. It is about internships and events. They see nothing from your IS.",
+    "eyBody": "They keep reIS running."
   }
 }

@@ -1,0 +1,95 @@
+name: Release gate
+
+# Gates every PR into `main`. Only the release train may reach production:
+# a merge into `main` pushes the `v*` tag the App Store build is cut from, and
+# a build uploaded under a version number can never be reused.
+#
+#   head == test   -> this repo's own `test`, and CI's `Build web preview` job
+#                     must have PASSED for this exact SHA. That job builds the
+#                     app and runs `check:app`, which loads the built bundle in a
+#                     real browser. `test` can hold a commit whose CI is still
+#                     running or has failed, so the branch name alone proves
+#                     nothing.
+#
+#                     This used to require a green Vercel deployment. Vercel was
+#                     dropped: it only ever served synthetic data, found no
+#                     defect in the period it ran, and "it deployed" is a weaker
+#                     claim than "it booted and worked".
+#   otherwise      -> rejected. `main` is not the default PR base, so a
+#                     mis-targeted PR is normal and this is the thing that
+#                     catches it.
+
+on:
+  pull_request:
+    # `edited` fires when a PR's base branch changes. Without it, a PR
+    # retargeted from `test` to `main` never runs this workflow, and a required
+    # check that has never reported blocks the merge with "Expected — waiting
+    # for status" that re-running cannot clear.
+    types: [opened, edited, synchronize, reopened]
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+# Never cancel in progress: branch protection reads this check's conclusion, and
+# a cancelled run leaves no conclusion at all.
+concurrency:
+  group: release-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  # The job NAME is the required-check context in branch protection. Renaming it
+  # without updating the protection rule in the same change silently
+  # un-enforces the gate.
+  gate:
+    name: Release gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # `permissions:` sets every unlisted scope to none, and reading another
+      # workflow's check runs needs its own scope.
+      checks: read
+      actions: read
+    timeout-minutes: 10
+    steps:
+      - name: Check this PR's path into main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          # The same-repo guard matters: a fork branch merely named `test` must
+          # not claim the release lane.
+          if [ "$HEAD_REF" != "test" ] || [ "$HEAD_REPO" != "$GH_REPO" ]; then
+            echo "::error::Head branch '$HEAD_REF' may not target main. Only this repository's 'test' branch may — that is what the release train is. Retarget this PR at 'test'."
+            exit 1
+          fi
+
+          # The gate is "CI proved this commit works", not "something was
+          # deployed". `Build web preview` builds the app AND runs check:app,
+          # which loads the built bundle in a browser and fails on a page stuck
+          # on skeletons, a call to IS Mendelu, a Supabase write, or the raw
+          # scrape reaching the output.
+          CHECK_NAME='Build web preview'
+
+          conclusion="$(gh api "repos/$GH_REPO/commits/$HEAD_SHA/check-runs" \
+            --jq ".check_runs[] | select(.name == \"$CHECK_NAME\") | .conclusion" \
+            | head -1)"
+
+          if [ "$conclusion" = "success" ]; then
+            echo "✓ '$CHECK_NAME' passed for $HEAD_SHA"
+            exit 0
+          fi
+
+          if [ -z "$conclusion" ]; then
+            echo "::error::'$CHECK_NAME' has not reported for $HEAD_SHA. A release needs CI to have built and browser-checked exactly this commit. If it is still running, wait and re-run this check. If someone merged into 'test' after this PR was opened, the tip moved — 'test' is meant to be frozen while a release PR is open."
+            exit 1
+          fi
+
+          echo "::error::'$CHECK_NAME' concluded '$conclusion' for $HEAD_SHA, not success. The app did not build or did not pass the browser health check, so this commit must not be released."
+          exit 1

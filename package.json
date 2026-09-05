@@ -1,7 +1,7 @@
 {
   "name": "reis",
   "private": true,
-  "version": "5.1.0",
+  "version": "5.1.1",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
@@ -26,6 +26,7 @@
     "typecheck:nuia": "tsc -p tsconfig.app.json --noUncheckedIndexedAccess --noEmit",
     "nuia:gate": "node scripts/nuia-gate.mjs",
     "scrape:real": "tsx --tsconfig tsconfig.app.json scripts/scrape-real-data.ts",
+    "sanitise:snapshot": "tsx --tsconfig tsconfig.app.json scripts/sanitise-snapshot.mjs",
     "dev:web": "vite --config vite.web.config.ts",
     "dev:web:admin": "VITE_DEV_SOCIETY= node scripts/with-secrets.mjs vite --config vite.web.config.ts",
     "dev:web:reis-admin": "VITE_DEV_SOCIETY=reis VITE_DEV_ADMIN_ROLE=reis_admin vite --config vite.web.config.ts",
@@ -34,7 +35,10 @@
     "format:check": "prettier --check .",
     "verify:ui": "tsx --tsconfig tsconfig.app.json scripts/shot.ts",
     "dev:web:exams": "REIS_FIXTURE=examSeason vite --config vite.web.config.ts",
+    "dev:web:deadlines": "REIS_FIXTURE=notificationFeed vite --config vite.web.config.ts",
     "dev:web:week": "REIS_FIXTURE=teachingWeek vite --config vite.web.config.ts",
+    "build:web": "node scripts/assert-web-build-env.mjs && VITE_DEV_SOCIETY=reis VITE_PREVIEW_BUILD=true vite build --config vite.web.build.config.ts",
+    "build:web:real": "test -f public/preview-data.json || (echo 'Missing public/preview-data.json — run npm run sanitise:snapshot first' && exit 1) && VITE_PREVIEW_DATA=real npm run build:web",
     "build:capacitor": "node scripts/with-secrets.mjs vite build --config vite.capacitor.config.ts",
     "cap:sync": "npm run check:native && npm run build:capacitor && npx cap sync && npm run ios:version",
     "cap:android": "npm run cap:sync && npx cap run android",
@@ -42,9 +46,14 @@
     "android:apk": "node scripts/android-release.mjs apk",
     "android:aab": "node scripts/android-release.mjs aab",
     "android:feature-graphic": "node scripts/gen-feature-graphic.mjs",
+    "release:ios": "node scripts/with-secrets.mjs tsx --tsconfig tsconfig.app.json scripts/release-ios.ts",
     "ios:version": "tsx --tsconfig tsconfig.app.json scripts/sync-ios-version.ts",
     "store:shots": "node scripts/store-shots.mjs",
-    "check:native": "node scripts/check-native-plugins.mjs"
+    "check:native": "node scripts/check-native-plugins.mjs",
+    "preview:real": "npm run scrape:real && npm run sanitise:snapshot && npm run build:web:real && vite preview --config vite.web.build.config.ts",
+    "check:app": "tsx --tsconfig tsconfig.app.json scripts/check-app.ts",
+    "preview:real:lan": "echo \"\n⚠  Serving YOUR real academic record to every device on this network.\n   On eduroam or any shared Wi-Fi that is everyone.\n   Use this only on a network you trust, and stop it when you are done.\n\" && npm run scrape:real && npm run sanitise:snapshot && npm run build:web:real && vite preview --config vite.web.build.config.ts --host",
+    "gen:splash": "tsx scripts/gen-splash.mts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

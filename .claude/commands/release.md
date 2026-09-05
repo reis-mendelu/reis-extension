@@ -1,52 +1,61 @@
 # /release
 
-Automates the full release flow: version bump → commit → tag → push → CI publishes to Chrome, Firefox, and Edge.
+Ships a release off `test`: version bump → release PR into `main` → merge tags
+`vX.Y.Z` → **the iOS App Store build is cut from that tag**. The browser
+extension is NOT part of this — see "Publishing the extension" at the bottom.
 
 ## Steps
 
 1. **Preflight** — run these and abort if anything is wrong:
-   - `git status` — must be clean (no uncommitted changes)
-   - `git log --oneline -3` — confirm on main
-   - Read current version from `package.json`
+   - `git status` — clean working tree
+   - on `test`, up to date with `personal/test`
+   - no release PR into `main` already open (`gh pr list --base main`)
+   - read the current version from `package.json`
 
 2. **Ask the user** (AskUserQuestion, both in one message):
-   - New version number (suggest next patch increment, e.g. if current is 5.0.0 suggest 5.0.1)
-   - One-line description for the commit (e.g. "improve exam card UI")
+   - New version number (suggest the next patch increment)
+   - One-line description for the commit
 
-3. **Apply changes**:
-   - Edit `package.json`: update `"version"` field
-   - Edit `wxt.config.ts`: update `version:` field inside `manifest:` block
-   - Commit: `chore: bump to X.Y.Z - <description>` — no Co-Authored-By
-   - `git tag vX.Y.Z`
-   - `git push origin main vX.Y.Z`
+3. **Bump on a branch off `test`**:
+   - `package.json` `version` and `wxt.config.ts` `manifest.version` — same value,
+     or `release-tag.yml` refuses to tag
+   - Commit `chore: bump to X.Y.Z - <description>`, PR into `test`, merge it
 
-4. **Report** the triggered Actions run:
-   - Run `gh run list --repo reis-mendelu/reis-extension --limit 1` to get the run ID
-   - Tell the user to watch with: `gh run watch <id> --repo reis-mendelu/reis-extension`
+4. **Open the release PR** `test` → `main`. `release-checklist.yml` injects the
+   checklist; `release-gate.yml` requires CI's *Build web preview* to have passed
+   for that exact SHA. Walk the checklist — the device item is the one that
+   actually catches things.
+
+5. **Merge it.** `release-tag.yml` pushes `vX.Y.Z` and stops. Nothing is
+   submitted to any store by any workflow.
+
+6. **Cut the iOS build** on the Mac:
+   ```bash
+   git fetch --tags && git checkout vX.Y.Z && npm ci
+   npm run release:ios -- --tag vX.Y.Z
+   ```
+   It picks a build number App Store Connect has not seen, syncs the web assets,
+   archives, exports, verifies the .ipa (distribution-signed, right
+   CFBundleVersion, no error telemetry) and uploads. It stops there.
+
+7. **Submit by hand** in App Store Connect once processing finishes (~3 min):
+   add the build to the version → Add for Review → Submit. Confirm the build
+   picker really selected the new number; it lists stale builds first.
+   `docs/ios-release.md` has the traps, `docs/app-store-listing.md` the listing.
 
 ## Rules
-- Never skip the preflight — a dirty working tree means uncommitted work gets left out of the release
-- Both `package.json` and `wxt.config.ts` must be updated together — mismatch causes the extension manifest to show the wrong version
-- Commit message format is load-bearing for the git log pattern used by the team
+- Never skip the preflight — a dirty tree means uncommitted work ships as part of the release.
+- Both `package.json` and `wxt.config.ts` move together.
+- Merging without a version change releases nothing, on purpose. The bump is the release.
+- Do not submit for review from a script. Upload is reversible; submission is not.
 
-## Reference
+## Publishing the extension
 
-Pushing a `v*` tag triggers `.github/workflows/publish.yml` → builds Chrome + Firefox zips → submits to all three stores via `wxt submit`.
+`publish.yml` is `workflow_dispatch`-only and submits to Chrome, Firefox and
+Edge. Run it deliberately, against a tag:
 
-**Store review SLAs** (version goes live after review):
+```bash
+gh workflow run publish.yml --ref vX.Y.Z -f tag=vX.Y.Z
+```
 
-| Store | Typical review time |
-|-------|-------------------|
-| Chrome Web Store | 1–3 days |
-| Firefox AMO | days–weeks (manual review) |
-| Edge Add-ons | 1–7 days |
-
-**GitHub Secrets** (repo → Settings → Secrets → Actions):
-
-| Store | Secrets |
-|-------|---------|
-| Chrome | `CHROME_EXTENSION_ID`, `CHROME_CLIENT_ID`, `CHROME_CLIENT_SECRET`, `CHROME_REFRESH_TOKEN` |
-| Firefox | `FIREFOX_EXTENSION_ID`, `FIREFOX_API_KEY`, `FIREFOX_API_SECRET` |
-| Edge | `EDGE_PRODUCT_ID`, `EDGE_CLIENT_ID`, `EDGE_API_KEY` |
-
-> `CHROME_REFRESH_TOKEN` is permanent only while the Google OAuth consent screen is set to **"In production"** (currently set). If it ever reverts to "Testing", tokens expire after 7 days.
+Review SLAs: Chrome 1–3 days, Edge 1–7 days, Firefox AMO days–weeks.

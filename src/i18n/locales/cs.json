@@ -15,7 +15,10 @@
   },
   "menu": {
     "title": "Jídelníček",
-    "unavailable": "Menu není k dispozici"
+    "unavailable": "Menu není k dispozici",
+    "outletOne": "1 výdejna",
+    "outletFew": "{count} výdejny",
+    "outletOther": "{count} výdejen"
   },
   "settings": {
     "title": "Nastavení",
@@ -247,7 +250,9 @@
       "confusing": "Nepřehledné",
       "slow": "Pomalé",
       "other": "Jiné"
-    }
+    },
+    "toastOffline": "Nejsi online. Zkus to znovu, až budeš připojený.",
+    "toastRateLimited": "Teď jsme přijali hodně zpráv. Zkus to prosím za chvíli."
   },
   "course": {
     "setNickname": "Nastavit přezdívku",
@@ -407,7 +412,10 @@
     "loading": "Načítá se...",
     "empty": "Žádné nové novinky",
     "yesterday": "Včera",
-    "tomorrow": "Zítra"
+    "tomorrow": "Zítra",
+    "fromReis": "reIS",
+    "sectionDeadlines": "Blížící se termíny",
+    "sectionSocieties": "Od spolků"
   },
   "deadlines": {
     "title": "Blížící se termíny",
@@ -554,7 +562,8 @@
     "native": {
       "button": "Nastavit eduroam",
       "working": "Otevírám nastavení Wi-Fi…",
-      "saved": "Hotovo — eduroam je uložený. Na fakultě se připojíš automaticky.",
+      "saved": "Hotovo — eduroam je uložený.",
+      "savedNote": "Hláška, že se připojit nepovedlo, nic neznamená — eduroam tady není v dosahu. Na fakultě se připojíš sám.",
       "already": "eduroam už na tomto zařízení nastavený je.",
       "staleAssociation": "Jsi připojený k eduroamu, takže ho teď nastavit nejde. Kdyby se později nepřipojil, zapomeň síť v Nastavení → Wi‑Fi a klepni znovu.",
       "cancelled": "Nastavení nebylo dokončeno. Klepni znovu.",
@@ -895,7 +904,13 @@
     },
     "studyRooms": "Studovny",
     "reminderLead": "Za 2 hodiny",
-    "finished": "proběhlo"
+    "finished": "proběhlo",
+    "openInMaps": "Otevřít v mapách",
+    "openInAppleMaps": "Apple Mapy",
+    "openInGoogleMaps": "Google Maps",
+    "rememberChoice": "Příště se neptat",
+    "mapApp": "Mapy",
+    "mapAppAsk": "Vždy se zeptat"
   },
   "admin": {
     "email": "E-mail",
@@ -1025,14 +1040,15 @@
     "map": {
       "searchPlaceholder": "Najdi místnost, budovu, akci…",
       "tabEvents": "Akce",
-      "tabBuilding": "Budova {name}",
       "peekHint": "Akce na kampusu",
       "thisWeek": "Tenhle týden",
       "emptyTitle": "Mapa se nenačetla",
       "emptyBody": "Zkus to prosím znovu.",
       "sheetExpand": "Rozbalit panel mapy",
       "sheetCollapse": "Sbalit panel mapy",
-      "noRoomsOnFloor": "Na tomto patře nejsou žádné místnosti."
+      "railResize": "Změnit šířku panelu",
+      "railClose": "Skrýt panel",
+      "railOpen": "Zobrazit panel"
     },
     "welcome": {
       "title": "Vítej v reISu",
@@ -1055,7 +1071,8 @@
       "eduroam": "Eduroam",
       "eduroamSub": "univerzitní Wi-Fi",
       "documents": "Dokumenty",
-      "documentsSub": "potvrzení o studiu"
+      "documentsSub": "potvrzení o studiu",
+      "recentSubjects": "Naposledy otevřené"
     },
     "sheet": {
       "close": "Zavřít",
@@ -1096,5 +1113,10 @@
     "bannerLabel": "Ukázka",
     "bannerExit": "Přihlásit se",
     "toast": "Toto je jen ukázka."
+  },
+  "about": {
+    "partnersLabel": "Spolupracujeme s firmami",
+    "partnersBody": "Vybíráme si je sami, podle oborů, které se tu studují. Jde nám o stáže a akce. Nevidí žádná data z tvého ISu.",
+    "eyBody": "Díky nim reIS běží."
   }
 }

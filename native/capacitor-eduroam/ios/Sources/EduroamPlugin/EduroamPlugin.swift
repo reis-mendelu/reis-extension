@@ -228,7 +228,30 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
         default:
             // invalidEAPSettings (4), internal (8), systemConfiguration (10),
             // unknown (11) and anything newer: a real failure, fail closed.
-            call.resolve(["outcome": "failed", "detail": "NEHotspotConfigurationError \(ns.code)"])
+            //
+            // This branch briefly asked `getConfiguredSSIDs` here and reported
+            // success when eduroam was configured, on the theory that an
+            // out-of-range `apply` errors over a configuration that installed
+            // anyway. Both halves of that were wrong.
+            //
+            // It masks real failures. `getConfiguredSSIDs` lists what this app
+            // installed at any point, and nothing removes the old
+            // configuration before `apply`. So a genuine invalidEAPSettings —
+            // a renewed certificate that will not install — arrives over a
+            // configuration from the last successful run, and the student is
+            // told the new one took. That is inferring from state instead of
+            // from the operation, which is exactly the #261 mistake in a new
+            // place.
+            //
+            // And it was not needed. Measured on the device: setting eduroam
+            // up off campus completes with NO error, reports plain `saved`,
+            // and iOS raises its own "Unable to join the network" alert
+            // separately. So the case this was written for never reaches here;
+            // the sheet's copy handles it instead.
+            call.resolve([
+                "outcome": "failed",
+                "detail": "NEHotspotConfigurationError \(ns.code)",
+            ])
         }
     }
 

@@ -43,6 +43,22 @@ export type EduroamConfigOutcome =
    */
   | 'stale-association';
 
+/**
+ * Did setup actually install the network?
+ *
+ * One predicate for every surface that asks, because they had to agree and
+ * were each spelling the list out: `WelcomeScreen`, `WelcomeWifiCard` and
+ * `EduroamSheet` all compared against `'saved' || 'already-configured'`
+ * separately, which is two places too many for one question and how a new
+ * success once reached a `done` status that no banner recognised.
+ *
+ * `stale-association` is deliberately NOT here (#261): iOS installs nothing on
+ * that path.
+ */
+export function isEduroamConfigured(outcome: EduroamConfigOutcome | null): boolean {
+  return outcome === 'saved' || outcome === 'already-configured';
+}
+
 /** Android: raw shape the Java plugin resolves with. `perNetwork` is comma-joined ints. */
 export interface NativeAddResult {
   resultCode: number;

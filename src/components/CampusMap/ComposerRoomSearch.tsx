@@ -40,7 +40,11 @@ export function ComposerRoomSearch({
 
   return (
     <div className="mt-2">
-      <label className="input input-bordered flex items-center gap-2">
+      {/* w-full: DaisyUI's `.input` is 20rem, so this measured 320px in a
+          375px composer where the title input, both time fields and the
+          date picker all measured 351px — the one control that did not
+          reach the edge. */}
+      <label className="input input-bordered flex w-full items-center gap-2">
         <Search size={15} className="opacity-60" />
         <input
           className="grow"

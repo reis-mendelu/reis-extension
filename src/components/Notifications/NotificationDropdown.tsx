@@ -30,10 +30,13 @@ export function NotificationDropdown({
   const isMobile = useIsMobile();
   const hasContent = notifications.length > 0 || deadlineAlerts.length > 0;
 
+  // Cards in a gapped column, not `divide-y` rows: the two row components are
+  // now self-contained `ExamRowCard`-style cards (see NotificationItem), and a
+  // divider between two bordered cards draws a third line between them.
   const notificationList = (
-    <>
+    <div className="flex flex-col gap-2 p-3">
       {deadlineAlerts.length > 0 && (
-        <div className="divide-y divide-base-300">
+        <div className="flex flex-col gap-2">
           {deadlineAlerts.map((alert) => (
             <DeadlineAlertItem key={alert.id} alert={alert} />
           ))}
@@ -47,7 +50,7 @@ export function NotificationDropdown({
           <p>{t('notifications.empty')}</p>
         </div>
       ) : (
-        <div className="divide-y divide-base-300">
+        <div className="flex flex-col gap-2">
           {notifications.map((n) => (
             <NotificationItem
               key={n.id}
@@ -69,7 +72,7 @@ export function NotificationDropdown({
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 
   if (isMobile) {

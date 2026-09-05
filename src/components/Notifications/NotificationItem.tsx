@@ -1,6 +1,8 @@
 import { useRef, useEffect } from 'react';
-import { Bell, Users } from 'lucide-react';
+import { Bell, ChevronRight } from 'lucide-react';
 import type { SpolekNotification } from '../../services/spolky';
+import { ASSOCIATION_PROFILES } from '../../services/spolky/config';
+import { SOCIETIES } from '../../data/societies';
 import { useTranslation } from '../../hooks/useTranslation';
 
 /**
@@ -9,6 +11,23 @@ import { useTranslation } from '../../hooks/useTranslation';
  * whether or not the author set a `url` — a control that acts has to look like
  * it does. It defaults to the link, which is exactly what the desktop dropdown
  * (where a linkless notification is still inert) relied on before this prop.
+ *
+ * The row itself is `ExamRowCard`'s: accent rail, title over muted subtitle,
+ * right column of meta. It used to be a 40px circular avatar and a single bold
+ * line, which put its text 48px right of the deadline rows it was stacked
+ * against — the misalignment students reported.
+ *
+ * The society's logo leads the row, because on this surface the sender IS the
+ * message: "SU PEF sent you something" is mostly a question of WHO, not what.
+ * It was briefly removed on the grounds that the glyph carried nothing — true
+ * of the generic admin bell, wrong about a society mark, which is the fastest
+ * thing on the row to recognise.
+ *
+ * What it does NOT go back to is the 40px circle. That indented this row's text
+ * 48px further than the deadline rows stacked against it, which is the
+ * misalignment students reported. The mark now sits in the same 32px slot a
+ * deadline's icon occupies, so both kinds of row share one left edge and the
+ * slot means the same thing in both: what kind of thing is this, at a glance.
  */
 export function NotificationItem({
   notification,
@@ -40,21 +59,35 @@ export function NotificationItem({
   }, [onVisible]);
 
   const assocId = notification.associationId || 'admin';
-  const iconUrl =
-    !assocId.startsWith('academic_') && assocId !== 'admin' ? `/spolky/${assocId}.jpg` : null;
+  // Academic rows are reIS's own — the deadline feed, not a society's — and
+  // there is no profile to name. `t` gives them the app's name instead of a
+  // blank line, which would collapse the row to a different height.
+  const source = ASSOCIATION_PROFILES[assocId]?.name ?? t('notifications.fromReis');
+  // SOCIETIES, not societyById: that helper falls back to ESN for an unknown
+  // id, which would badge every reIS announcement with somebody else's logo.
+  // A row with no society keeps the tinted bell.
+  const logo = SOCIETIES[assocId]?.logo ?? null;
 
-  const formatEventDate = (expiresAt: string) => {
-    const d = new Date(expiresAt);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const eventDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const diffDays = Math.round((eventDay.getTime() - today.getTime()) / 86400000);
-    if (diffDays === 0) return t('common.today');
-    if (diffDays === 1) return t('notifications.tomorrow');
-    return `${d.getDate()}.${d.getMonth() + 1}.`;
-  };
+  const d = new Date(notification.expiresAt);
+  const now = new Date();
+  const diffDays = Math.round(
+    (new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() -
+      new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) /
+      86400000
+  );
+  const dateLabel =
+    diffDays === 0
+      ? t('common.today')
+      : diffDays === 1
+        ? t('notifications.tomorrow')
+        : `${d.getDate()}.${d.getMonth() + 1}.`;
 
   const isClickable = clickable ?? !!notification.link;
+  // Today and tomorrow are the rows a student is deciding about right now, so
+  // they get the full-strength weight; a date three weeks out is reference, not
+  // a prompt. Weight rather than colour, for the same reason the deadline row's
+  // time is not amber — lime on the light theme's base-100 does not reach AA.
+  const isSoon = diffDays <= 1;
 
   return (
     <button
@@ -65,40 +98,40 @@ export function NotificationItem({
       // then swallows its own activation — so the row is disabled outright, and
       // the cursor rule is what a pointer sees of the same decision.
       disabled={!isClickable}
-      className={`w-full p-4 transition-colors text-left flex items-center gap-3 ${isClickable ? 'hover:bg-base-200 cursor-pointer' : 'cursor-default'}`}
+      className={`flex w-full items-center gap-2.5 rounded-2xl border border-base-300 bg-base-100 px-3.5 py-2.5 text-left transition-colors ${isClickable ? 'cursor-pointer hover:bg-base-200' : 'cursor-default'}`}
     >
-      <div className="flex-shrink-0">
-        {iconUrl ? (
-          <img
-            src={iconUrl}
-            alt={assocId}
-            className="w-10 h-10 rounded-full object-cover"
-            onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
-        ) : null}
-        <div className={iconUrl ? 'hidden' : ''}>
-          {assocId === 'admin' ? (
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <Bell size={20} />
-            </div>
-          ) : (
-            <Users size={24} className="text-primary" />
-          )}
-        </div>
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <div className="font-semibold text-sm text-base-content line-clamp-1 flex-1">
-            {notification.title}
-          </div>
-          <div className="text-sm text-base-content flex-shrink-0">
-            {formatEventDate(notification.expiresAt)}
-          </div>
-        </div>
-      </div>
+      {logo ? (
+        <img
+          src={logo}
+          alt=""
+          className="h-8 w-8 flex-shrink-0 rounded-lg object-cover"
+          // The logos ship beside the app, but the extension serves them from
+          // its own origin and a bare path can miss. Falling back to the tinted
+          // bell keeps the slot filled at the same size, so a missing image
+          // cannot shift the row's text out of line with its neighbours.
+          onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+            e.currentTarget.style.display = 'none';
+            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+          }}
+        />
+      ) : null}
+      <span
+        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ${logo ? 'hidden' : ''}`}
+      >
+        <Bell size={16} />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate text-md font-bold text-base-content">{notification.title}</span>
+        <span className="truncate text-2sm text-base-content/60">{source}</span>
+      </span>
+      <span
+        className={`flex-shrink-0 whitespace-nowrap text-2sm ${isSoon ? 'font-bold text-base-content' : 'text-base-content/60'}`}
+      >
+        {dateLabel}
+      </span>
+      {isClickable && (
+        <ChevronRight size={16} className="flex-shrink-0 text-base-content/40" aria-hidden />
+      )}
     </button>
   );
 }

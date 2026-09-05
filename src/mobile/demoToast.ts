@@ -24,6 +24,6 @@ import { getCurrentLanguage } from '../i18n/currentLanguage';
 export function handleDemoError(error: unknown): boolean {
   if (!(error instanceof DemoModeError)) return false;
 
-  toast(translate(getCurrentLanguage(), 'demo.toast'));
+  toast(translate(getCurrentLanguage(), 'demo.toast'), { id: 'demo-mode-notice' });
   return true;
 }

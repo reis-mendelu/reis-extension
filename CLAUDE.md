@@ -44,6 +44,31 @@ fakes a session **and routes every write to an in-memory store** — publishes
 there never reach Supabase, so never cite them as evidence a write works.
 `dev:web:admin` clears that flag.
 
+## Branches and releasing
+
+`feature branch → test → main`. Never commit directly on `test` or `main`.
+
+- **Base every PR on `test`**: `gh pr create --base test`. `main` is still the
+  repository default branch — this is a public repo, and the default branch is
+  what a visitor's Code tab, a fresh clone and every load-unpacked instruction
+  resolve to, so it points at released code. The cost is that PRs open with the
+  wrong base; the release gate catches it.
+- A branch cut from `main` must merge `origin/test` in and retarget before
+  going further, or it goes stale and conflicts at the next release.
+- Every PR runs `check:app`: CI builds the app and loads it in a real browser,
+  failing if it boots onto skeletons, calls IS Mendelu, writes to Supabase, or
+  carries a real snapshot in the output. That check passing for the exact commit
+  is what the release gate requires.
+- `main` accepts only the `test` → `main` release PR, and merging it submits to
+  the stores. Use `/release`.
+- **Do not merge into `test` while a release PR is open.**
+- **Testing against your own data is local.** `npm run preview:real` scrapes
+  your IS data, strips other students' identities, builds the production bundle
+  and serves it on localhost. `npm run preview:real:lan` adds `--host` for a
+  phone or iPad — that exposes your academic record to **everyone on the
+  network**, so use it only on a network you trust. Your MENDELU credentials
+  never leave the laptop and are never in CI. Nothing is ever hosted.
+
 ## Architecture
 
 The manifest is generated from `wxt.config.ts` — never hand-edited.

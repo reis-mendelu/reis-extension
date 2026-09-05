@@ -5,6 +5,7 @@ import { submitSuggestion } from '../../api/suggestions';
 import { toast } from 'sonner';
 import { useTranslation } from '../../hooks/useTranslation';
 import { logError } from '../../utils/reportError';
+import { feedbackErrorKey } from './feedbackErrorKey';
 import { useAppStore } from '../../store/useAppStore';
 
 interface FeedbackModalProps {
@@ -51,11 +52,11 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         setIsSuccess(true);
         toast.success(t('feedback.toastSuccess'));
       } else {
-        toast.error(t('feedback.toastError'));
+        toast.error(t(feedbackErrorKey(result.error)));
       }
     } catch (err) {
       logError('FeedbackModal.handleSubmit', err);
-      toast.error(t('feedback.toastError'));
+      toast.error(t(feedbackErrorKey(undefined)));
     } finally {
       setIsSending(false);
     }
