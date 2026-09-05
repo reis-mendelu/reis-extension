@@ -81,7 +81,7 @@ function PlanRow({
   const displayName = useCourseName(subject.code, subject.name);
   return (
     <div
-      className={`${ROW_CLS} ${isHovered ? 'bg-primary/10 border-primary/30 shadow-[inset_3px_0_0_oklch(var(--p))]' : 'hover:bg-base-200/30'}`}
+      className={`${ROW_CLS} ${isHovered ? 'bg-primary/10 border-primary/30 shadow-[inset_3px_0_0_oklch(var(--p))]' : 'hover:bg-base-200'}`}
     >
       <ReorderButtons
         onUp={onMoveUp}
@@ -117,7 +117,7 @@ function ManualRow({
   onRemove: () => void;
 }) {
   return (
-    <div className={`${ROW_CLS} hover:bg-base-200/30`}>
+    <div className={`${ROW_CLS} hover:bg-base-200`}>
       <ReorderButtons
         onUp={onMoveUp}
         onDown={onMoveDown}
@@ -221,7 +221,7 @@ export function LATableB({
         </div>
       ) : (
         <div className="border border-base-300 rounded-xl overflow-hidden bg-base-100 shadow-sm">
-          <div className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-2 px-3 py-2 bg-base-200/50 border-b border-base-300 text-[10px] uppercase tracking-wider font-bold text-base-content/70">
+          <div className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-2 px-3 py-2 bg-base-200 border-b border-base-300 text-[10px] uppercase tracking-wider font-bold text-base-content/70">
             <span className="w-4" />
             <span className="w-20">{t('erasmus.colCode')}</span>
             <span>{t('erasmus.colMendeluCourse')}</span>
@@ -256,7 +256,7 @@ export function LATableB({
           ))}
 
           {adding && (
-            <div className="grid grid-cols-[auto_1fr_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 bg-base-200/20">
+            <div className="grid grid-cols-[auto_1fr_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 bg-base-200">
               <input
                 ref={codeRef}
                 autoFocus
@@ -290,7 +290,7 @@ export function LATableB({
           )}
 
           {hasRows && (
-            <div className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-2 items-center px-3 py-2 bg-base-200/30 border-t border-base-300 text-xs">
+            <div className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-2 items-center px-3 py-2 bg-base-200 border-t border-base-300 text-xs">
               <span className="w-4" />
               <span className="font-bold text-base-content/70 w-20">{t('erasmus.total')}</span>
               <span />

@@ -99,7 +99,7 @@ function LATableAOption({
 
       <div className="bg-base-100 border border-base-300 rounded-xl overflow-hidden shadow-sm flex flex-col">
         {/* Institution header */}
-        <div className="p-4 flex flex-col gap-3 border-b border-base-300/50 bg-base-200/20">
+        <div className="p-4 flex flex-col gap-3 border-b border-base-300/50 bg-base-200">
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] uppercase tracking-wider font-bold text-base-content/70 ml-1">
@@ -201,7 +201,7 @@ function LATableAOption({
         </div>
 
         {/* Table A header */}
-        <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] gap-2 px-3 py-2 bg-base-200/50 border-b border-base-300 text-[10px] uppercase tracking-wider font-bold text-base-content/70">
+        <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] gap-2 px-3 py-2 bg-base-200 border-b border-base-300 text-[10px] uppercase tracking-wider font-bold text-base-content/70">
           <span className="w-4" />
           <span className="w-20">{t('erasmus.colCode')}</span>
           <span>{t('erasmus.colCourse')}</span>
@@ -216,7 +216,7 @@ function LATableAOption({
             key={i}
             onMouseEnter={() => setHoveredRowIndex(i)}
             onMouseLeave={() => setHoveredRowIndex(null)}
-            className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 text-xs hover:bg-base-200/50 transition-colors"
+            className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 text-xs hover:bg-base-200 transition-colors"
           >
             <div className="flex flex-col gap-0">
               <button
@@ -250,7 +250,7 @@ function LATableAOption({
 
         {/* Add row form */}
         {adding && (
-          <div className="grid grid-cols-[auto_1fr_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 bg-base-200/20">
+          <div className="grid grid-cols-[auto_1fr_auto_auto] gap-2 items-center px-3 py-2 border-b border-base-300/50 bg-base-200">
             <input
               ref={codeInputRef}
               autoFocus
@@ -294,7 +294,7 @@ function LATableAOption({
 
         {/* Table A total */}
         {option.courses.length > 0 && (
-          <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] gap-2 items-center px-3 py-2 bg-base-200/30 text-xs border-b border-base-300/50">
+          <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] gap-2 items-center px-3 py-2 bg-base-200 text-xs border-b border-base-300/50">
             <span className="w-4" />
             <span className="font-bold text-base-content/70 w-20">{t('erasmus.total')}</span>
             <span />
@@ -323,7 +323,7 @@ function LATableAOption({
       <div className="flex flex-col gap-0">
         <button
           onClick={() => setBuilderOpen(!builderOpen)}
-          className="flex items-center gap-2 px-2 py-2 text-xs font-bold text-primary/70 hover:text-[var(--btn-tonal-primary)] transition-colors group w-full"
+          className="flex items-center gap-2 px-2 py-2 text-xs font-bold text-[var(--btn-tonal-primary)] hover:text-[var(--btn-tonal-primary)] transition-colors group w-full"
         >
           {builderOpen ? (
             <ChevronDown size={14} className="transition-transform rotate-180" />

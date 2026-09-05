@@ -175,8 +175,8 @@ export function ErasmusPanel({
             onClick={() => handleTabChange(tab)}
             className={`px-3 py-1.5 rounded-t-lg text-xs font-bold transition-all border-b-2 ${
               currentTab === tab
-                ? 'border-primary text-[var(--btn-tonal-primary)] bg-primary/5'
-                : 'border-transparent text-base-content/70 hover:text-base-content/60'
+                ? 'border-primary text-[var(--btn-tonal-primary)] bg-primary/12'
+                : 'border-transparent text-base-content/70 hover:text-base-content'
             }`}
           >
             {tab === 'plan' ? t('erasmus.tabPlan') : t('erasmus.tabExplore')}
@@ -232,7 +232,7 @@ export function ErasmusPanel({
             <Info size={12} className="shrink-0 mt-0.5 text-info" />
             <span>{t('erasmus.exploreDisclaimer')}</span>
           </div>
-          <div className="bg-base-200/50 rounded-xl p-2 border border-base-300 flex-1 min-h-0">
+          <div className="bg-base-200 rounded-xl p-2 border border-base-300 flex-1 min-h-0">
             <EuropeMap
               selectedCountryId={drawerOpen ? currentCountryId : ''}
               onSelectCountry={(id) => {

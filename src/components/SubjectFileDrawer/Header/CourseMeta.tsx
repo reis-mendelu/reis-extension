@@ -21,7 +21,7 @@ export function CourseMeta({
   if (!isSearchContext) {
     return (
       <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-4 text-sm text-base-content/60 flex-wrap">
+        <div className="flex items-center gap-4 text-sm text-base-content/75 flex-wrap">
           {/* ... teachers, rooms, etc. */}
           {lesson?.teachers && lesson.teachers.length > 0 && (
             <span className="inline-flex items-center gap-1.5">
@@ -86,11 +86,11 @@ export function CourseMeta({
   }
   const displayed = expanded ? courseInfo?.teachers : courseInfo?.teachers?.slice(0, 3);
   return (
-    <div className="flex flex-col gap-2 w-full mt-1 text-sm text-base-content/60">
+    <div className="flex flex-col gap-2 w-full mt-1 text-sm text-base-content/75">
       {courseInfo?.garant && (
         <div className="flex items-center gap-2">
-          <User size={14} className="text-base-content/30" />
-          <span className="text-[13px] text-base-content/40 italic font-bold">
+          <User size={14} className="text-base-content/70" />
+          <span className="text-[13px] text-base-content/70 italic font-bold">
             {t('course.garant')}{' '}
             <span className="font-bold text-base-content/70 not-italic">
               {courseInfo.garant.id ? (
@@ -113,7 +113,7 @@ export function CourseMeta({
       )}
       {(courseInfo?.teachers?.length ?? 0) > 0 && (
         <div className="flex items-start gap-2">
-          <span className="text-[13px] text-base-content/40 italic font-bold mt-0.5">
+          <span className="text-[13px] text-base-content/70 italic font-bold mt-0.5">
             {t('course.teachers')}
           </span>
           <div className="flex flex-col gap-1.5 flex-1">
@@ -136,7 +136,7 @@ export function CourseMeta({
                   )}
                 </span>
                 {teacher.roles && (
-                  <span className="hidden sm:inline text-[11px] text-base-content/40">
+                  <span className="hidden sm:inline text-[11px] text-base-content/70">
                     ({teacher.roles.toLowerCase()})
                   </span>
                 )}

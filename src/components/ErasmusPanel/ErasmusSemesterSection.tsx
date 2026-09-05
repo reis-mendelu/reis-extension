@@ -36,7 +36,7 @@ function SelectableRow({
 
   return (
     <div
-      className={`flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors group ${selected ? 'bg-primary/10 hover:bg-primary/20' : 'hover:bg-base-200/50'}`}
+      className={`flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors group ${selected ? 'bg-primary/10 hover:bg-primary/20' : 'hover:bg-base-200'}`}
     >
       <button onClick={onToggle} className="flex-1 min-w-0 flex items-center gap-2 text-left">
         <input
@@ -152,7 +152,7 @@ export function ErasmusSemesterSection({
                   {group.name}
                 </div>
                 {isCompulsory && (
-                  <span className="text-[9px] uppercase font-black text-primary/40 tracking-widest shrink-0">
+                  <span className="text-[9px] uppercase font-black text-[var(--btn-tonal-primary)] tracking-widest shrink-0">
                     {t('erasmus.coreSubject')}
                   </span>
                 )}

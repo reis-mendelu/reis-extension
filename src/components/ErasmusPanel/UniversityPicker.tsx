@@ -132,7 +132,7 @@ export function UniversityPicker({
                       {u.name}
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-primary/70 font-mono font-bold">
+                      <span className="text-[10px] text-[var(--btn-tonal-primary)] font-mono font-bold">
                         {u.erasmusCode}
                       </span>
                       {u.city && (

@@ -242,6 +242,13 @@ async function run(): Promise<number> {
       if (opts.theme) seed['reis_theme'] = opts.theme === 'light' ? 'mendelu' : 'mendelu-dark';
       await seedMeta(page, seed);
 
+      // Settle BEFORE the first click, not only after the last one. seedMeta
+      // reloads the page, so without this a --click races the app's boot and
+      // fails on anything data-driven — the subject rows are painted from
+      // IndexedDB, and every drawer run died with "no visible element" against
+      // a screen that renders it perfectly a moment later.
+      if (opts.clicks.length > 0) await page.waitForTimeout(opts.wait);
+
       for (const click of opts.clicks) {
         await clickByTextOrLabel(page, click);
         // Settle between steps: each click may mount the surface the next one
