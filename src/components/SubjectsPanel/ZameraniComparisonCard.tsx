@@ -22,10 +22,10 @@ interface Props {
 }
 
 function rateClass(rate: number | null): string {
-  if (rate == null) return 'bg-base-content/5 text-base-content/40';
+  if (rate == null) return 'bg-base-content/5 text-base-content/70';
   if (rate >= 25) return 'bg-error/10 text-error';
   if (rate >= 20) return 'bg-warning/15 text-warning-content';
-  return 'bg-base-content/5 text-base-content/40';
+  return 'bg-base-content/5 text-base-content/70';
 }
 
 interface RowProps {
@@ -69,26 +69,26 @@ function ZameraniRow({
           className="shrink-0 p-1 rounded cursor-pointer"
         >
           <PickIcon
-            className={`w-4 h-4 ${picked ? 'text-primary' : 'text-base-content/30 hover:text-primary'}`}
+            className={`w-4 h-4 ${picked ? 'text-primary' : 'text-base-content/70 hover:text-primary'}`}
           />
         </span>
         <span className="flex-1 flex items-center gap-2 min-w-0">
           <span className="flex-1 text-sm font-medium truncate">{cleanName}</span>
           {insight.totalCredits > 0 && (
-            <span className="text-[10px] text-base-content/40 font-mono shrink-0">
+            <span className="text-[10px] text-base-content/70 font-mono shrink-0">
               {insight.totalCredits}
               <span className="hidden md:inline"> kr.</span>
             </span>
           )}
           <ChevronDown
-            className={`w-3.5 h-3.5 text-base-content/40 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`}
+            className={`w-3.5 h-3.5 text-base-content/70 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`}
           />
         </span>
       </button>
       {open && (
         <div className="px-2 pb-2 flex flex-col">
           {insight.description && (
-            <p className="px-2 pt-1 pb-2 text-[11px] text-base-content/60 leading-relaxed">
+            <p className="px-2 pt-1 pb-2 text-[11px] text-base-content/75 leading-relaxed">
               {insight.description}
             </p>
           )}
@@ -103,12 +103,12 @@ function ZameraniRow({
                 onClick={handleClick}
                 className="flex items-center gap-2 px-2 py-1 rounded hover:bg-base-200 transition-colors text-left"
               >
-                <span className="font-mono text-[10px] text-base-content/50 shrink-0">
+                <span className="font-mono text-[10px] text-base-content/70 shrink-0">
                   {s.code}
                 </span>
                 <span className="flex-1 text-[11px] truncate">{s.name}</span>
                 {semLabel && (
-                  <span className="text-[10px] text-base-content/40 shrink-0">
+                  <span className="text-[10px] text-base-content/70 shrink-0">
                     {semLabel}
                     <span className="hidden md:inline"> sem.</span>
                   </span>
@@ -160,7 +160,7 @@ export function ZameraniComparisonCard({
       >
         <Layers className="w-4 h-4 text-primary shrink-0" />
         <span className="text-sm font-semibold flex-1">{t('subjects.insights.zameraniTitle')}</span>
-        <span className="text-[10px] text-base-content/50 font-medium mr-1">
+        <span className="text-[10px] text-base-content/70 font-medium mr-1">
           {minRequired && minRequired > 0 ? (
             <>
               <span className="md:hidden">
@@ -180,7 +180,7 @@ export function ZameraniComparisonCard({
           )}
         </span>
         <ChevronDown
-          className={`w-4 h-4 text-base-content/40 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-base-content/70 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         />
       </button>
       {open && (
