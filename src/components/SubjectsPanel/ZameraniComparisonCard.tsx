@@ -51,15 +51,25 @@ function ZameraniRow({
   onSearch,
 }: RowProps) {
   const { t } = useTranslation();
-  const cleanName = insight.name.replace(/^zaměření:\s*/i, '').replace(/^specialization:\s*/i, '');
+  const cleanName = insight.name
+    .replace(/^zaměření:\s*/i, '')
+    .replace(/^specialization:\s*/i, '')
+    .replace(/^scope:\s*/i, '');
   const PickIcon = picked ? CheckSquare : Square;
+  // Only offer the chevron when opening it would show something. `studyPlan.en`
+  // arrives with every specialization empty — no subjects, no description —
+  // and the row used to toggle, flip its arrow and reveal nothing at all.
+  const hasDetail = Boolean(insight.description) || insight.subjects.length > 0;
   return (
     <div
       className={`rounded-md border overflow-hidden transition-colors ${picked ? 'border-primary/30 bg-primary/5' : 'border-base-300/60'}`}
     >
       <button
-        onClick={onToggle}
-        className="w-full flex items-center gap-2 pl-2 pr-3 py-2 hover:bg-base-200/50 transition-colors text-left"
+        onClick={hasDetail ? onToggle : undefined}
+        aria-expanded={hasDetail ? open : undefined}
+        className={`w-full flex items-center gap-2 pl-2 pr-3 py-2 text-left transition-colors ${
+          hasDetail ? 'hover:bg-base-200' : 'cursor-default'
+        }`}
       >
         <span
           onClick={(e) => {
@@ -81,12 +91,14 @@ function ZameraniRow({
               <span className="hidden md:inline"> kr.</span>
             </span>
           )}
-          <ChevronDown
-            className={`w-3.5 h-3.5 text-base-content/70 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`}
-          />
+          {hasDetail && (
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-base-content/70 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`}
+            />
+          )}
         </span>
       </button>
-      {open && (
+      {open && hasDetail && (
         <div className="px-2 pb-2 flex flex-col">
           {insight.description && (
             <p className="px-2 pt-1 pb-2 text-[11px] text-base-content/75 leading-relaxed">
