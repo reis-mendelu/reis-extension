@@ -50,8 +50,13 @@ describe('OSM tile requests are identified on every platform', () => {
       condition: { urlFilter?: string; resourceTypes?: string[] };
     }>;
 
-    const rule = rules.find((r) => r.condition.urlFilter?.includes('tile.openstreetmap.org'));
-    expect(rule, 'no rule targets tile.openstreetmap.org').toBeDefined();
+    // Matched EXACTLY, not by substring. `||host/` is DNR's domain anchor, and
+    // anchoring is the whole security property: a loose filter mentioning the
+    // host would also append reIS's name to `tile.openstreetmap.org.evil.com`,
+    // the same trap `noStudentDataLeaves` keeps a negative example for.
+    const TILE_FILTER = '||tile.openstreetmap.org/';
+    const rule = rules.find((r) => r.condition.urlFilter === TILE_FILTER);
+    expect(rule, `no rule with the domain-anchored filter ${TILE_FILTER}`).toBeDefined();
     expect(rule!.action.type).toBe('modifyHeaders');
 
     const ua = rule!.action.requestHeaders?.find((h) => h.header === 'user-agent');
