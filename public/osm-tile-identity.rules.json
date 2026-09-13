@@ -1,0 +1,21 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "user-agent",
+          "operation": "append",
+          "value": "reIS/5 (+https://github.com/reis-mendelu/reis-extension)"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||tile.openstreetmap.org/",
+      "resourceTypes": ["image"],
+      "excludedInitiatorDomains": ["openstreetmap.org"]
+    }
+  }
+]
