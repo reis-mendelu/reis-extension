@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
   extractManifestVersion,
   checkManifestVersionMatches,
@@ -107,5 +108,31 @@ describe('checkManifestVersionMatches', () => {
     });
     if (result.ok) throw new Error('expected checkManifestVersionMatches to fail');
     expect(result.reason).toMatch(/not valid JSON/);
+  });
+});
+
+/**
+ * The fixtures above prove the extractor works on well-shaped input. They do
+ * NOT prove it can read THIS repo's wxt.config.ts — and that is the failure
+ * that actually happens, because `assert-manifest-version-matches.mjs` runs
+ * only in release-tag.yml, i.e. AFTER the release PR has merged into `main`.
+ *
+ * It has now bitten twice in one release. First `manifest` was refactored into
+ * an arrow function, which the extractor cannot parse. Then the comment
+ * explaining that regression itself contained the manifest key followed by an
+ * open brace, and since the regex takes the FIRST match in the file, comments
+ * included, it captured the comment instead of the real object.
+ *
+ * Both times the build was fine and every PR check was green; the tag job
+ * failed after the merge, stranding a version number in `main` that was never
+ * tagged or shipped. This test moves that failure back to PR time.
+ */
+describe('the real repository files', () => {
+  it('can still be read by the release tag guard', () => {
+    const result = checkManifestVersionMatches({
+      packageJson: readFileSync('package.json', 'utf8'),
+      wxtConfig: readFileSync('wxt.config.ts', 'utf8'),
+    });
+    expect(result.ok ? null : result.reason).toBeNull();
   });
 });
