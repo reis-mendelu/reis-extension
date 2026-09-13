@@ -16,13 +16,41 @@ export default defineConfig({
         if (i !== -1) files.splice(i, 1);
       }
     },
+    // Strip the MV3-only OSM tile-identity keys from the MV2 (Firefox) build.
+    //
+    // This is done HERE rather than by making `manifest` a function of
+    // `manifestVersion`, because scripts/assert-manifest-version-matches.mjs
+    // reads the version straight out of the manifest object literal below with
+    // a regex. A function manifest is unreadable to it and it fails closed —
+    // correctly — which is what blocked the v5.2.2 tag. Keep it a plain object.
+    //
+    // That regex matches the FIRST occurrence in the file, comments included,
+    // so do not write the manifest key followed by an open brace in prose
+    // anywhere above the real one: it silently captures the comment instead and
+    // the release fails with "Could not find manifest.version". Learned the
+    // hard way, twice, in one release.
+    'build:manifestGenerated'(wxt, manifest) {
+      if (wxt.config.manifestVersion === 3) return;
+      delete manifest.declarative_net_request;
+      const dropped = ['declarativeNetRequestWithHostAccess', 'https://tile.openstreetmap.org/*'];
+      // MV2 has no declarativeNetRequest at all, so the permission would be an
+      // unknown string in front of an AMO reviewer and the host permission
+      // would buy nothing (tiles are plain <img> loads). WXT folds
+      // host_permissions into permissions for MV2, so filter both.
+      if (manifest.permissions)
+        manifest.permissions = manifest.permissions.filter((p: string) => !dropped.includes(p));
+      if (manifest.host_permissions)
+        manifest.host_permissions = manifest.host_permissions.filter(
+          (p: string) => !dropped.includes(p)
+        );
+    },
   },
   webExt: {
     disabled: process.env.WXT_RUNNER_DISABLED === 'true',
   },
-  manifest: ({ manifestVersion }) => ({
+  manifest: {
     name: 'reIS',
-    version: '5.2.2',
+    version: '5.2.3',
     description: 'Modernizovaný reIS rozšířený pro IS Mendelu',
     icons: {
       16: 'reIS_logo_16.png',
@@ -34,17 +62,8 @@ export default defineConfig({
     // whole of what the OSM rule below needs and reads far better in a store
     // review than blanket request-blocking would.
     //
-    // MV3 only. The Firefox build is still MV2 (`.output/firefox-mv2`), where
-    // declarativeNetRequest does not exist at all — shipping the key there
-    // would be an unknown permission string in front of an AMO reviewer buying
-    // nothing. Firefox's campus map stays blocked until either that build moves
-    // to MV3 or a webRequest equivalent is written.
-    permissions: [
-      'storage',
-      'unlimitedStorage',
-      'alarms',
-      ...(manifestVersion === 3 ? (['declarativeNetRequestWithHostAccess'] as const) : []),
-    ],
+    // MV3 only — the Firefox build is MV2 and the hook above strips it.
+    permissions: ['storage', 'unlimitedStorage', 'alarms', 'declarativeNetRequestWithHostAccess'],
     // The campus map's basemap comes from OpenStreetMap, whose tile usage
     // policy blocks traffic it cannot attribute to a named app — and the block
     // is silent: every tile returns a 403 "not following the tile usage policy"
@@ -69,22 +88,17 @@ export default defineConfig({
     // (verified with testMatchOutcome — our origin matches, other sites and
     // other extensions do not). It is not used here because a dynamic rule only
     // exists once the worker has run, and a static one is live from install.
-    ...(manifestVersion === 3
-      ? {
-          declarative_net_request: {
-            rule_resources: [
-              { id: 'osm-tile-identity', enabled: true, path: 'osm-tile-identity.rules.json' },
-            ],
-          },
-        }
-      : {}),
+    declarative_net_request: {
+      rule_resources: [
+        { id: 'osm-tile-identity', enabled: true, path: 'osm-tile-identity.rules.json' },
+      ],
+    },
     host_permissions: [
       'https://is.mendelu.cz/*',
       // Not for fetching — tiles are plain <img> loads and need no permission.
       // This is what makes the modifyHeaders rule above legal; without it the
-      // rule is silently ignored. MV2 has no rule to legalise, so asking a
-      // Firefox user to grant the host would buy nothing.
-      ...(manifestVersion === 3 ? ['https://tile.openstreetmap.org/*'] : []),
+      // rule is silently ignored.
+      'https://tile.openstreetmap.org/*',
       'https://raw.githubusercontent.com/reis-mendelu/reis-data/*',
       'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main/*',
       'https://skm.mendelu.cz/*',
@@ -126,7 +140,7 @@ export default defineConfig({
         matches: ['https://is.mendelu.cz/*'],
       },
     ],
-  }),
+  },
   vite: () => ({
     plugins: [tailwindcss()],
     resolve: {
