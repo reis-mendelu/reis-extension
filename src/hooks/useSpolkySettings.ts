@@ -99,19 +99,28 @@ export function useSpolkySettings() {
       }
 
       if (saved) {
-        // Rename migration, before anything reads the list. Unconditional on
-        // CHOSEN_KEY: picking the old society by hand is the commonest way to
-        // hold its id, and that is precisely what sets the flag. Cheap — the
-        // helper hands back the same array when nothing was renamed, so there
-        // is no write for the students who hold none.
-        const migrated = migrateAssociationIds(saved);
-        if (migrated !== saved) {
-          saved = migrated;
-          await IndexedDBService.set('meta', STORAGE_KEY, saved);
-        }
+        // Renamed society ids, before anything reads the list. Unconditional on
+        // CHOSEN_KEY: picking the old society by hand is both the commonest way
+        // to hold its id and the thing that sets the flag.
+        const before = saved;
+        saved = migrateAssociationIds(saved);
 
         if (!mountedRef.current) return;
         setSubscribedAssociations(saved);
+
+        // Hydrate first, persist second, in its own catch. Awaiting the write
+        // BEFORE the setState meant a failed transaction fell through to the
+        // outer catch and skipped hydration — a student with a good saved list
+        // spent the session subscribed to nothing, the exact failure the rest
+        // of this function exists to prevent. Losing only the write is
+        // harmless: the map is permanent, so the next boot migrates again.
+        if (saved !== before) {
+          try {
+            await IndexedDBService.set('meta', STORAGE_KEY, saved);
+          } catch (err) {
+            logError('useSpolkySettings.migrateIds', err);
+          }
+        }
 
         // NEW: Robust auto-subscription for existing users who haven't been auto-subscribed yet
         const userParams = await getUserParams();

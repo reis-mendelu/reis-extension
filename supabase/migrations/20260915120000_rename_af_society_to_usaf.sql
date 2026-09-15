@@ -10,6 +10,16 @@
 -- Everything here is an UPDATE, never a delete + insert: user_id is the FK to
 -- auth.users that authorization resolves through, and the password hash lives
 -- on that row. The society's password does not change.
+--
+-- ROLLOUT ORDER MATTERS. Already-released clients resolve society ids from a
+-- catalog compiled into the build, so a client older than this rename cannot
+-- resolve 'usaf': societyById() falls back to ESN, and a USAF post would be
+-- filtered out of an AF-filtered view and misbranded as ESN in an unfiltered
+-- one. Nothing in the database can fix a shipped client, so the mitigation is
+-- timing — apply this as close to the release as possible. The exposure is
+-- bounded: USAF had zero posts when this was written, so only posts published
+-- after the rename can be seen wrong, and only by clients that have not yet
+-- updated.
 
 begin;
 
@@ -17,10 +27,21 @@ do $$
 declare
   v_user_id uuid;
 begin
+  -- Posts first, and NOT gated on the account existing. spolky_events has no
+  -- foreign key to spolky_accounts (verified: the table has none at all), so
+  -- deleting an account leaves its posts behind with the old id. Gating this on
+  -- the account would strand them under an id that the new catalog resolves to
+  -- the wrong society and that no account can manage. Zero rows today; correct
+  -- whatever order the two ever happen in.
+  update public.spolky_events
+     set association_id = 'usaf'
+   where association_id = 'af';
+
   -- Idempotent by design: a re-run, or a branch database that never carried the
-  -- old id, is a no-op rather than a failed migration.
+  -- old id, is a no-op rather than a failed migration. Reached with the posts
+  -- above already renamed, which is what repairs an orphaned set.
   if not exists (select 1 from public.spolky_accounts where association_id = 'af') then
-    raise notice 'no society with association_id ''af'' — nothing to rename';
+    raise notice 'no society account with association_id ''af'' — posts (if any) renamed, nothing else to do';
     return;
   end if;
 
@@ -52,13 +73,6 @@ begin
    where user_id = v_user_id
      and provider = 'email';
 
-  -- 4. Their posts. Zero rows at the time of writing, but this column is what
-  --    the insert/update/delete policies compare against get_my_association(),
-  --    so anything published between now and this shipping would otherwise
-  --    become uneditable by its own author.
-  update public.spolky_events
-     set association_id = 'usaf'
-   where association_id = 'af';
 end $$;
 
 commit;

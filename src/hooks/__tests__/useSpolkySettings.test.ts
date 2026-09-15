@@ -228,6 +228,26 @@ describe('renamed society ids are migrated in the saved list', () => {
     expect(result.current.subscribedAssociations).toEqual(['usaf']);
   });
 
+  // Reported by review on #333. The write was awaited BEFORE the list reached
+  // React state, so a failed IndexedDB transaction fell through to the outer
+  // catch and hydration never ran — leaving a student who has a perfectly good
+  // saved list subscribed to NOTHING for the rest of the session. That is the
+  // very failure this hook's comments are about, reintroduced by the fix for it.
+  it('still hydrates the migrated list when persisting it fails', async () => {
+    mockIDBGet.mockImplementation((store: string, key: string) => {
+      if (store === 'meta' && key === 'reis_subscribed_associations')
+        return Promise.resolve(['af', 'esn']);
+      return Promise.resolve(undefined);
+    });
+    mockIDBSet.mockRejectedValue(new Error('QuotaExceededError'));
+    mockGetUserParams.mockResolvedValue(makeUser('AF', false));
+
+    const { result } = renderHook(() => useSpolkySettings());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.subscribedAssociations).toEqual(['usaf', 'esn']);
+  });
+
   it('does not write when no saved id was renamed', async () => {
     mockIDBGet.mockImplementation((store: string, key: string) => {
       if (store === 'meta' && key === 'reis_subscribed_associations')
