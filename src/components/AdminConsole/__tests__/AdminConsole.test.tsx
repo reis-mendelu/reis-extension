@@ -162,6 +162,30 @@ describe('AdminConsole', () => {
     expect(screen.getByRole('tab', { name: 'Statistiky' })).toBeInTheDocument();
   });
 
+  // Statistiky is a page, not a pane. The charts need the width, and the map
+  // answers none of the questions on that tab — so it gives up its half.
+  it('gives Statistiky the full width and drops the map', () => {
+    loggedIn({ adminRole: 'reis_admin', adminAssociationId: null, adminActiveAssociationId: null });
+    const { container } = render(<AdminConsole />);
+    expect(screen.getByTestId('console-map')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Statistiky' }));
+
+    expect(screen.queryByTestId('console-map')).toBeNull();
+    expect(container.querySelector('aside')!.className).toContain('w-full');
+  });
+
+  it('gives the width back when leaving Statistiky', () => {
+    loggedIn({ adminRole: 'reis_admin', adminAssociationId: null, adminActiveAssociationId: null });
+    const { container } = render(<AdminConsole />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Statistiky' }));
+
+    fireEvent.click(screen.getByRole('tab', { name: /Akce/ }));
+
+    expect(screen.getByTestId('console-map')).toBeInTheDocument();
+    expect(container.querySelector('aside')!.className).toContain('w-96');
+  });
+
   // Same bug as MobileAdminConsole's tab bar (see MobileAdminConsole.test.tsx):
   // DaisyUI's inactive-.tab default (base-content at 60% opacity) measured
   // 3.37:1 by hand, below the 4.5:1 WCAG AA floor.
