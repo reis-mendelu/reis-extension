@@ -12,7 +12,12 @@ vi.mock('../../../api/societyAccounts', () => ({
   createSocietyAccount: (...a: unknown[]) => createSocietyAccount(...a),
 }));
 
-const supef = { association_id: 'supef', association_name: 'SUPEF', is_active: true };
+const supef = {
+  association_id: 'supef',
+  association_name: 'SUPEF',
+  is_active: true,
+  email: 'supef@societies.invalid',
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -90,8 +95,18 @@ describe('SocietyAccountsPanel', () => {
   it('never offers to reset the account you are signed in as', async () => {
     useAppStore.setState({
       societyAccounts: [
-        { association_id: 'reis', association_name: 'REIS team', is_active: true },
-        { association_id: 'supef', association_name: 'SU PEF', is_active: true },
+        {
+          association_id: 'reis',
+          association_name: 'REIS team',
+          is_active: true,
+          email: 'reis@societies.invalid',
+        },
+        {
+          association_id: 'supef',
+          association_name: 'SU PEF',
+          is_active: true,
+          email: 'supef@societies.invalid',
+        },
       ],
     });
     render(<SocietyAccountsPanel />);
@@ -105,8 +120,18 @@ describe('SocietyAccountsPanel', () => {
   it('still lets one admin reset a different admin', async () => {
     useAppStore.setState({
       societyAccounts: [
-        { association_id: 'reis', association_name: 'REIS team', is_active: true },
-        { association_id: 'reis2', association_name: 'REIS team 2', is_active: true },
+        {
+          association_id: 'reis',
+          association_name: 'REIS team',
+          is_active: true,
+          email: 'reis@societies.invalid',
+        },
+        {
+          association_id: 'reis2',
+          association_name: 'REIS team 2',
+          is_active: true,
+          email: 'reis2@societies.invalid',
+        },
       ],
     });
     render(<SocietyAccountsPanel />);
@@ -122,8 +147,18 @@ describe('SocietyAccountsPanel', () => {
   it('shows each account its login name', async () => {
     useAppStore.setState({
       societyAccounts: [
-        { association_id: 'au_frrms', association_name: 'AU FRRMS', is_active: true },
-        { association_id: 'usaf', association_name: 'USAF', is_active: true },
+        {
+          association_id: 'au_frrms',
+          association_name: 'AU FRRMS',
+          is_active: true,
+          email: 'au_frrms@societies.invalid',
+        },
+        {
+          association_id: 'usaf',
+          association_name: 'USAF',
+          is_active: true,
+          email: 'usaf@societies.invalid',
+        },
       ],
     });
     render(<SocietyAccountsPanel />);
@@ -158,5 +193,28 @@ describe('SocietyAccountsPanel', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('Fresh2345Pass6789Xyz')).toBeInTheDocument();
     expect(within(dialog).getByText('esn')).toBeInTheDocument();
+  });
+
+  // Greptile on #335. societyLogin.ts keeps a documented break-glass exception:
+  // an address with "@" passes through, so an admin account can hold a REAL
+  // mailbox while its association_id stays short. Deriving the login from the
+  // id would print "reis2" for an account that signs in as a gmail address —
+  // the one thing this feature exists to prevent.
+  it('shows the real mailbox when an account does not use the synthetic domain', async () => {
+    useAppStore.setState({
+      societyAccounts: [
+        {
+          association_id: 'reis2',
+          association_name: 'REIS team 2',
+          is_active: true,
+          email: 'reis.mendelu@gmail.com',
+        },
+      ],
+    });
+    render(<SocietyAccountsPanel />);
+
+    const row = await screen.findByRole('button', { name: /REIS team 2/ });
+    expect(within(row).getByText('login: reis.mendelu@gmail.com')).toBeInTheDocument();
+    expect(within(row).queryByText('login: reis2')).not.toBeInTheDocument();
   });
 });

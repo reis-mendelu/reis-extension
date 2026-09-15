@@ -4,6 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { createSocietyAccount, resetSocietyPassword } from '../../api/societyAccounts';
 import { GeneratedPasswordDialog } from './GeneratedPasswordDialog';
 import { ALL_SOCIETIES } from '../../data/societies';
+import { loginFromAuthEmail } from '../../services/admin/societyLogin';
 
 /**
  * reIS-admin-only. Resetting runs in the society-accounts edge function, which
@@ -27,6 +28,12 @@ export function SocietyAccountsPanel() {
   // The login the issued password belongs to. A password on its own cannot be
   // handed over, and this dialog is the only place the pair ever coexists.
   const [issuedFor, setIssuedFor] = useState<string | null>(null);
+
+  // What to TYPE to sign in as an account. Read off the stored address, never
+  // rebuilt from association_id: an account may hold a real mailbox while its
+  // id stays short, and the two then name different Auth identities.
+  const loginOf = (a: { email?: string; association_id: string }) =>
+    a.email ? loginFromAuthEmail(a.email) : a.association_id;
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [newName, setNewName] = useState('');
@@ -40,7 +47,8 @@ export function SocietyAccountsPanel() {
     const res = await resetSocietyPassword(selected);
     if (res.password) {
       setPassword(res.password);
-      setIssuedFor(selected);
+      const account = accounts.find((a) => a.association_id === selected);
+      setIssuedFor(account ? loginOf(account) : selected);
     } else setFailed(true);
     setBusy(false);
   };
@@ -82,7 +90,7 @@ export function SocietyAccountsPanel() {
         >
           <span className="truncate">{a.association_name}</span>
           <span className="ml-auto shrink-0 font-mono text-xs font-normal opacity-70">
-            {t('admin.loginName')}: {a.association_id}
+            {t('admin.loginName')}: {loginOf(a)}
           </span>
         </button>
       ))}
