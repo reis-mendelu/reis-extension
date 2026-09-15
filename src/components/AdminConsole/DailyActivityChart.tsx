@@ -48,12 +48,18 @@ export function DailyActivityChart({
           // A day with activity must never render as nothing: floor each
           // non-zero segment at 2px so a 3-device day is still clickable.
           const px = (n: number) => (n > 0 ? Math.max(2, Math.round((n / max) * BAR_PX)) : 0);
+          // The scale stays linear, because the spike IS the shape of the data
+          // and a log axis would flatter it. The cost is that a quiet day next
+          // to a launch day is a few pixels tall — so every bar carries its own
+          // numbers, readable on hover without having to pick the day first.
+          const readout = `${shortDay(d.day)} — ${d.active} ${t('admin.stats.activeDevices')}, ${d.newDevices} ${t('admin.stats.new')}, ${d.returningDevices} ${t('admin.stats.returning')}`;
           return (
             <li key={d.day} className="flex h-full flex-1 flex-col justify-end">
               <button
                 type="button"
                 aria-pressed={d.day === current}
-                aria-label={`${shortDay(d.day)} — ${d.active} ${t('admin.stats.activeDevices')}, ${d.newDevices} ${t('admin.stats.new')}, ${d.returningDevices} ${t('admin.stats.returning')}`}
+                aria-label={readout}
+                title={readout}
                 onClick={() => onPick(d.day)}
                 className={`flex h-full cursor-pointer flex-col justify-end rounded-t-sm ${
                   d.day === current ? 'ring-base-content ring-2 ring-offset-1' : ''

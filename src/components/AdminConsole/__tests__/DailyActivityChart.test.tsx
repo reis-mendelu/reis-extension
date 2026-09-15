@@ -48,6 +48,17 @@ describe('DailyActivityChart', () => {
     ).toBeInTheDocument();
   });
 
+  // A quiet day next to a launch day is a few pixels tall on a linear scale,
+  // and the scale stays linear on purpose. The numbers therefore have to be
+  // readable without picking the day first.
+  it('carries its numbers in a hover readout, not only in the day detail', () => {
+    render(<DailyActivityChart daily={DAILY} selectedDay={null} onPick={() => {}} />);
+    expect(screen.getByRole('button', { name: /^13\.9\./ })).toHaveAttribute(
+      'title',
+      '13.9. — 94 aktivních zařízení, 83 noví, 11 vracející se'
+    );
+  });
+
   // A quiet day is data. Rendering it as nothing would make the day
   // unclickable and read as a gap in the series rather than a zero.
   it('renders a zero day as a clickable bar with no segments', () => {
