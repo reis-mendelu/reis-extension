@@ -34,13 +34,17 @@ export const SOCIETIES: Record<string, Society> = {
     logo: '/spolky/au_frrms.jpg',
     facultyKey: 'frrms',
   },
-  af: {
-    id: 'af',
-    name: 'AF Spolek',
-    shortName: 'AF',
+  // `facultyKey` stays 'af' — that is the Agronomická fakulta, which did not
+  // rename; only the society did ('af' → 'usaf', 2026-09-15). The pin colour
+  // is still the faculty orange rather than anything from the new mark, whose
+  // artwork is black on white and unusable as a pin against the light basemap.
+  usaf: {
+    id: 'usaf',
+    name: 'USAF',
+    shortName: 'USAF',
     color: '#c87800',
-    glyph: 'AF',
-    logo: '/spolky/af.jpg',
+    glyph: 'USAF',
+    logo: '/spolky/usaf.jpg',
     facultyKey: 'af',
   },
   ldf: {
