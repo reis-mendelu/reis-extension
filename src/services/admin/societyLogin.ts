@@ -26,3 +26,19 @@ export function toAuthEmail(input: string): string {
   }
   return `${trimmed}@${SOCIETY_EMAIL_DOMAIN}`;
 }
+
+/**
+ * The inverse of `toAuthEmail`, for DISPLAY: what a person actually types to
+ * sign in as this account.
+ *
+ * Must be fed the account's stored `email`, never its `association_id`. The
+ * break-glass exception above means the two can disagree — an account may keep
+ * a real mailbox while its id stays short — and deriving the login from the id
+ * would print a username that resolves to a DIFFERENT Auth identity. Handing
+ * that out with a freshly reset password locks the holder out.
+ */
+export function loginFromAuthEmail(email: string): string {
+  const trimmed = email.trim().toLowerCase();
+  const suffix = `@${SOCIETY_EMAIL_DOMAIN}`;
+  return trimmed.endsWith(suffix) ? trimmed.slice(0, -suffix.length) : trimmed;
+}

@@ -980,7 +980,8 @@
       "under5": "under 5",
       "unknown": "not set",
       "loadFailed": "Could not load statistics."
-    }
+    },
+    "loginName": "login"
   },
   "mobile": {
     "header": {
