@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { IndexedDBService } from './IndexedDBService';
+import { IndexedDBService, INSTALL_ID_KEY } from './IndexedDBService';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const internal = IndexedDBService as any;
@@ -50,5 +50,39 @@ describe('IndexedDBService self-healing', () => {
 
         const result = await IndexedDBService.get('meta', 'closing_token');
         expect(result).toEqual({ n: 2 });
+    });
+});
+
+/**
+ * Sign-out clears every store. `meta` holds the random install id, and wiping
+ * it made each sign-out/sign-in cycle arrive in the admin console as a brand
+ * new install — the same overcount the development-build rows caused, by
+ * another route. `createDemoSlice.ts` already states the rule this broke:
+ * `meta` is deleted by key, never cleared wholesale, because it holds values
+ * that have to survive.
+ *
+ * The id is a random UUID with no relationship to the student (see
+ * services/identity/installId.ts), so keeping it across a sign-out retains
+ * nothing about the person who signed out.
+ */
+describe('IndexedDBService.clearAll', () => {
+    it('keeps the install id so a sign-out is not a new install', async () => {
+        await IndexedDBService.set('meta', INSTALL_ID_KEY, 'install-abc');
+        await IndexedDBService.set('meta', 'reis_user_params', { name: 'student' });
+        await IndexedDBService.set('exams', 'reis_exams', []);
+
+        await IndexedDBService.clearAll();
+
+        expect(await IndexedDBService.get('meta', INSTALL_ID_KEY)).toBe('install-abc');
+        expect(await IndexedDBService.get('meta', 'reis_user_params')).toBeUndefined();
+        expect(await IndexedDBService.get('exams', 'reis_exams')).toBeUndefined();
+    });
+
+    it('is a no-op for the install id when there is not one yet', async () => {
+        await IndexedDBService.delete('meta', INSTALL_ID_KEY);
+
+        await IndexedDBService.clearAll();
+
+        expect(await IndexedDBService.get('meta', INSTALL_ID_KEY)).toBeUndefined();
     });
 });
