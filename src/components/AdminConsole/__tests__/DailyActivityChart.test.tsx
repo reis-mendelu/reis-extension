@@ -67,8 +67,9 @@ describe('DailyActivityChart', () => {
       <DailyActivityChart daily={withZero} selectedDay={null} onPick={() => {}} />
     );
     expect(screen.getByRole('button', { name: /^16\.9\./ })).toBeInTheDocument();
-    const spans = container.querySelectorAll('button span');
-    expect(Array.from(spans).every((s) => (s as HTMLElement).style.height === '0px')).toBe(true);
+    const rects = container.querySelectorAll('button svg rect');
+    expect(rects.length).toBe(2);
+    expect(Array.from(rects).every((r) => r.getAttribute('height') === '0')).toBe(true);
   });
 
   // A three-device day against a 330-device peak rounds to under a pixel.
@@ -81,8 +82,21 @@ describe('DailyActivityChart', () => {
     const { container } = render(
       <DailyActivityChart daily={daily} selectedDay={null} onPick={() => {}} />
     );
-    const tiny = container.querySelectorAll('li')[1]!.querySelectorAll('span');
-    expect(parseInt((tiny[0] as HTMLElement).style.height, 10)).toBeGreaterThanOrEqual(2);
+    const tiny = container.querySelectorAll('li')[1]!.querySelectorAll('svg rect');
+    expect(Number(tiny[0]!.getAttribute('height'))).toBeGreaterThanOrEqual(2);
+  });
+
+  // CLAUDE.md: no custom CSS. The bars are SVG geometry with DaisyUI fill
+  // classes, the same shape StatsBars uses — data-driven inline `style` is not
+  // an exception to that rule.
+  it('draws the bars as SVG geometry with semantic fills, not inline CSS', () => {
+    const { container } = render(
+      <DailyActivityChart daily={DAILY} selectedDay={null} onPick={() => {}} />
+    );
+    expect(container.querySelector('[style*="height"]')).toBeNull();
+    const [newRect, retRect] = Array.from(container.querySelectorAll('li svg rect'));
+    expect(newRect!.getAttribute('class')).toContain('fill-primary');
+    expect(retRect!.getAttribute('class')).toContain('fill-accent');
   });
 
   it('says so when the window holds no days at all', () => {

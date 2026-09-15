@@ -1,7 +1,8 @@
 import { useTranslation } from '../../hooks/useTranslation';
 import type { DailyUsage } from '../../api/usageStats';
 
-const BAR_PX = 120;
+/** Bar height in viewBox units, not pixels — the SVG scales to its box. */
+const BAR_UNITS = 120;
 
 /** "2026-09-15" -> "15.9." — the axis label, short enough for 30 of them. */
 function shortDay(iso: string): string {
@@ -47,32 +48,49 @@ export function DailyActivityChart({
         {daily.map((d) => {
           // A day with activity must never render as nothing: floor each
           // non-zero segment at 2px so a 3-device day is still clickable.
-          const px = (n: number) => (n > 0 ? Math.max(2, Math.round((n / max) * BAR_PX)) : 0);
+          const px = (n: number) => (n > 0 ? Math.max(2, Math.round((n / max) * BAR_UNITS)) : 0);
           // The scale stays linear, because the spike IS the shape of the data
           // and a log axis would flatter it. The cost is that a quiet day next
           // to a launch day is a few pixels tall — so every bar carries its own
           // numbers, readable on hover without having to pick the day first.
           const readout = `${shortDay(d.day)} — ${d.active} ${t('admin.stats.activeDevices')}, ${d.newDevices} ${t('admin.stats.new')}, ${d.returningDevices} ${t('admin.stats.returning')}`;
           return (
-            <li key={d.day} className="flex h-full flex-1 flex-col justify-end">
+            <li key={d.day} className="h-full flex-1">
               <button
                 type="button"
                 aria-pressed={d.day === current}
                 aria-label={readout}
                 title={readout}
                 onClick={() => onPick(d.day)}
-                className={`flex h-full cursor-pointer flex-col justify-end rounded-t-sm ${
+                className={`h-full w-full cursor-pointer rounded-t-sm ${
                   d.day === current ? 'ring-base-content ring-2 ring-offset-1' : ''
                 }`}
               >
-                <span
-                  className="bg-primary block w-full rounded-t-sm"
-                  style={{ height: `${px(d.newDevices)}px` }}
-                />
-                <span
-                  className="bg-accent block w-full"
-                  style={{ height: `${px(d.returningDevices)}px` }}
-                />
+                {/* SVG geometry with DaisyUI fill classes, the same shape
+                    StatsBars uses — no inline CSS. The button stays, because a
+                    <rect> cannot take keyboard focus and picking a day has to
+                    be reachable without a mouse. */}
+                <svg
+                  viewBox={`0 0 10 ${BAR_UNITS}`}
+                  preserveAspectRatio="none"
+                  className="h-full w-full"
+                  aria-hidden
+                >
+                  <rect
+                    x="0"
+                    y={BAR_UNITS - px(d.returningDevices) - px(d.newDevices)}
+                    width="10"
+                    height={px(d.newDevices)}
+                    className="fill-primary"
+                  />
+                  <rect
+                    x="0"
+                    y={BAR_UNITS - px(d.returningDevices)}
+                    width="10"
+                    height={px(d.returningDevices)}
+                    className="fill-accent"
+                  />
+                </svg>
               </button>
             </li>
           );

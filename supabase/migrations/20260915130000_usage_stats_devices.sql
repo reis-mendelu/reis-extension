@@ -51,6 +51,61 @@ begin
   end loop;
 end $$;
 
+-- Suppression that actually suppresses.
+--
+-- A single hidden bucket is not hidden at all: the dashboard publishes the
+-- window total next to the breakdown, so subtracting the visible buckets
+-- recovers the hidden one exactly. Measured on live data 2026-09-15 —
+-- day.active 293 less ios 259 less extension 33 left 1, and d30 533 less the
+-- six visible faculties left 4. The k = 5 floor was decorative.
+--
+-- So: walk the buckets smallest-first and keep hiding while the hidden mass is
+-- still attributable — while exactly one bucket is hidden, or while the hidden
+-- total is itself under the floor. The result is that whatever a reader can
+-- derive by subtraction is a sum of at least two buckets totalling at least 5,
+-- which pins no one.
+--
+-- The cost is real and deliberate: hiding a small bucket can take its
+-- next-smallest neighbour with it, so a breakdown may show fewer numbers than
+-- it used to. That is the correct trade for a count of students.
+create or replace function public.usage_suppress_groups(p_groups jsonb)
+returns json
+language plpgsql immutable set search_path = public as $$
+declare
+  n bigint;
+  hidden_cnt int := 0;
+  hidden_sum bigint := 0;
+  rank int := 0;
+  cutoff int := 0;
+begin
+  for n in
+    select (e->>'n')::bigint from jsonb_array_elements(p_groups) e
+     order by (e->>'n')::bigint asc
+  loop
+    rank := rank + 1;
+    if n < 5 or hidden_cnt = 1 or (hidden_cnt > 0 and hidden_sum < 5) then
+      hidden_cnt := hidden_cnt + 1;
+      hidden_sum := hidden_sum + n;
+      cutoff := rank;
+    else
+      exit;
+    end if;
+  end loop;
+
+  return coalesce((
+    select json_agg(json_build_object(
+             'key', key, 'devices', case when rn <= cutoff then -1 else cnt end
+           ) order by cnt desc)
+      from (
+        select e->>'key' as key,
+               (e->>'n')::bigint as cnt,
+               row_number() over (order by (e->>'n')::bigint asc) as rn
+          from jsonb_array_elements(p_groups) e
+      ) ranked
+  ), '[]'::json);
+end $$;
+revoke all on function public.usage_suppress_groups(jsonb) from public, anon, authenticated;
+
 create or replace function public.usage_stats_unchecked(p_days int, p_day date default null)
 returns json
 language sql stable security definer set search_path = public as $$
@@ -152,19 +207,16 @@ language sql stable security definer set search_path = public as $$
     'd30',   (select count(distinct student_id) from shown, now_day where usage_date >= now_day.d - 29),
 
     -- Daily totals carry no dimension to narrow on, so they are not suppressed —
-    -- consistent with today/d7/d30, which have never been. The k=5 floor below
-    -- applies where it does work: the breakdowns, where a small faculty on a
-    -- rare platform could otherwise be narrowed to one person.
+    -- consistent with today/d7/d30, which have never been. Suppression applies
+    -- where it does work: the breakdowns, via usage_suppress_groups above.
     'daily', coalesce((select json_agg(json_build_object(
                 'day', day, 'active', active, 'new', new_devices, 'returning', returning_devices
               ) order by day) from daily), '[]'::json),
 
-    'by_platform', coalesce((select json_agg(json_build_object(
-                     'key', key, 'devices', case when n < 5 then -1 else n end
-                   ) order by n desc) from plat), '[]'::json),
-    'by_faculty',  coalesce((select json_agg(json_build_object(
-                     'key', key, 'devices', case when n < 5 then -1 else n end
-                   ) order by n desc) from fac), '[]'::json),
+    'by_platform', public.usage_suppress_groups(
+                     coalesce((select jsonb_agg(jsonb_build_object('key', key, 'n', n)) from plat), '[]'::jsonb)),
+    'by_faculty',  public.usage_suppress_groups(
+                     coalesce((select jsonb_agg(jsonb_build_object('key', key, 'n', n)) from fac), '[]'::jsonb)),
 
     'day', (select json_build_object(
               'day', p.d,
@@ -173,9 +225,8 @@ language sql stable security definer set search_path = public as $$
                        join seen f on f.student_id = r.student_id where f.first_day = p.d),
               'returning', (select count(distinct r.student_id) from day_rows r
                              join seen f on f.student_id = r.student_id where f.first_day < p.d),
-              'by_platform', coalesce((select json_agg(json_build_object(
-                               'key', key, 'devices', case when n < 5 then -1 else n end
-                             ) order by n desc) from day_plat), '[]'::json)
+              'by_platform', public.usage_suppress_groups(
+                               coalesce((select jsonb_agg(jsonb_build_object('key', key, 'n', n)) from day_plat), '[]'::jsonb))
             ) from pick p)
   );
 $$;

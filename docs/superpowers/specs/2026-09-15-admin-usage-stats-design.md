@@ -105,8 +105,23 @@ a total of 423.
 collapsed into a real category, never dropped from the denominator. After the
 2026-09-07 epoch it falls to 7 devices on platform and 15 on faculty.
 
-**k = 5 suppression stays**, returned as `-1` and rendered `< 5`. The total is
-still shown, so a suppressed cell is visibly missing rather than silently zero.
+**Suppression is complementary**, not a simple floor. A single hidden bucket is
+not hidden at all: the dashboard publishes the window total beside the breakdown,
+so subtracting the visible buckets recovers the hidden one exactly. Measured on
+live data 2026-09-15 — `day.active` 293 − ios 259 − extension 33 left **1**, and
+`d30` 533 − the six visible faculties left **4**. The k = 5 floor was decorative.
+
+`usage_suppress_groups` therefore walks buckets smallest-first and keeps hiding
+while the hidden mass is still attributable: while exactly one bucket is hidden,
+or while the hidden total is itself under 5. Whatever a reader can derive by
+subtraction is then a sum of at least two buckets totalling at least 5, which
+pins no one. Suppressed buckets return `-1` and render `< 5`, and the total stays
+visible so a hidden cell reads as missing rather than zero.
+
+The cost is deliberate: hiding a small bucket can take its next-smallest
+neighbour with it, so a breakdown may show fewer numbers than before. On
+2026-09-15 that meant ICV (4) also hid ZF (13). That is the correct trade for a
+count of students.
 
 ## UI
 
