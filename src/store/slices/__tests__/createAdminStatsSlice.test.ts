@@ -18,7 +18,11 @@ const stats = {
 describe('createAdminStatsSlice', () => {
   beforeEach(() => {
     fetchUsageStats.mockReset().mockResolvedValue(stats);
-    useAppStore.setState({ adminStats: null, adminStatsDay: null } as never);
+    useAppStore.setState({
+      adminStats: null,
+      adminStatsDay: null,
+      adminStatsRequestId: 0,
+    } as never);
   });
 
   it('asks for today when no day is picked', async () => {
