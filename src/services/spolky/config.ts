@@ -9,7 +9,6 @@ export const FACULTY_TO_ASSOCIATION: Record<string, string> = {
   AF: 'usaf',
   ZF: 'zf',
   LDF: 'ldf',
-  ICV: 'icv',
 };
 
 /**
@@ -51,12 +50,6 @@ export const ASSOCIATION_PROFILES: Record<string, AssociationProfile> = {
     name: 'LDF Spolek',
     websiteUrl: 'https://ldf.mendelu.cz',
     facultyIds: ['LDF'],
-  },
-  icv: {
-    id: 'icv',
-    name: 'ICV',
-    websiteUrl: 'https://icv.mendelu.cz',
-    facultyIds: ['ICV'],
   },
 };
 

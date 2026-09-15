@@ -25,7 +25,7 @@ beforeEach(() => {
 describe('SocietyAccountsPanel', () => {
   it('reads the accounts from the store and never fetches on mount', async () => {
     render(<SocietyAccountsPanel />);
-    expect(await screen.findByRole('button', { name: 'SUPEF' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /SUPEF/ })).toBeInTheDocument();
     expect(listSocietyAccounts).not.toHaveBeenCalled();
   });
 
@@ -33,7 +33,7 @@ describe('SocietyAccountsPanel', () => {
     resetSocietyPassword.mockResolvedValueOnce({ password: 'Abcd2345Efgh6789Jkmn' });
     render(<SocietyAccountsPanel />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'SUPEF' }));
+    fireEvent.click(await screen.findByRole('button', { name: /SUPEF/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Obnovit heslo' }));
 
     expect(await screen.findByText('Abcd2345Efgh6789Jkmn')).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe('SocietyAccountsPanel', () => {
     resetSocietyPassword.mockResolvedValueOnce({ error: 'forbidden' });
     render(<SocietyAccountsPanel />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'SUPEF' }));
+    fireEvent.click(await screen.findByRole('button', { name: /SUPEF/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Obnovit heslo' }));
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
@@ -98,8 +98,8 @@ describe('SocietyAccountsPanel', () => {
 
     // Resetting yourself here would issue a password you must copy from a
     // dialog or lose the account you are signed in as.
-    expect(await screen.findByRole('button', { name: 'SU PEF' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'REIS team' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /SU PEF/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /REIS team(?! 2)/ })).not.toBeInTheDocument();
   });
 
   it('still lets one admin reset a different admin', async () => {
@@ -111,7 +111,52 @@ describe('SocietyAccountsPanel', () => {
     });
     render(<SocietyAccountsPanel />);
 
-    expect(await screen.findByRole('button', { name: 'REIS team 2' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'REIS team' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /REIS team 2/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /REIS team(?! 2)/ })).not.toBeInTheDocument();
+  });
+
+  // Dominik: "we can reset the passwords, but I just forgot the login". The
+  // login is the association_id — the console derives <id>@societies.invalid
+  // from it — and it was nowhere in this panel, so the one screen that hands
+  // out credentials never said which account they were for.
+  it('shows each account its login name', async () => {
+    useAppStore.setState({
+      societyAccounts: [
+        { association_id: 'au_frrms', association_name: 'AU FRRMS', is_active: true },
+        { association_id: 'usaf', association_name: 'USAF', is_active: true },
+      ],
+    });
+    render(<SocietyAccountsPanel />);
+
+    const row = await screen.findByRole('button', { name: /AU FRRMS/ });
+    expect(within(row).getByText('login: au_frrms')).toBeInTheDocument();
+    const other = screen.getByRole('button', { name: /USAF/ });
+    expect(within(other).getByText('login: usaf')).toBeInTheDocument();
+  });
+
+  it('names the account a reset password belongs to', async () => {
+    resetSocietyPassword.mockResolvedValueOnce({ password: 'Abcd2345Efgh6789Jkmn' });
+    render(<SocietyAccountsPanel />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /SUPEF/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Obnovit heslo' }));
+
+    const dialog = await screen.findByRole('dialog');
+    // Both halves of the credential, together, at the only moment the password
+    // exists — it is shown once and then gone.
+    expect(within(dialog).getByText('Abcd2345Efgh6789Jkmn')).toBeInTheDocument();
+    expect(within(dialog).getByText('supef')).toBeInTheDocument();
+  });
+
+  it('names the account a newly created password belongs to', async () => {
+    createSocietyAccount.mockResolvedValueOnce({ password: 'Fresh2345Pass6789Xyz' });
+    render(<SocietyAccountsPanel />);
+
+    fireEvent.change(await screen.findByLabelText('Název spolku'), { target: { value: 'esn' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Vytvořit účet' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Fresh2345Pass6789Xyz')).toBeInTheDocument();
+    expect(within(dialog).getByText('esn')).toBeInTheDocument();
   });
 });

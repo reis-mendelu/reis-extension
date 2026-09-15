@@ -980,7 +980,8 @@
       "under5": "méně než 5",
       "unknown": "neuvedeno",
       "loadFailed": "Statistiky se nepodařilo načíst."
-    }
+    },
+    "loginName": "login"
   },
   "mobile": {
     "header": {

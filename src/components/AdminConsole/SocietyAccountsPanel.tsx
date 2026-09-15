@@ -24,6 +24,9 @@ export function SocietyAccountsPanel() {
   const loadSocietyAccounts = useAppStore((s) => s.loadSocietyAccounts);
   const [selected, setSelected] = useState<string | null>(null);
   const [password, setPassword] = useState<string | null>(null);
+  // The login the issued password belongs to. A password on its own cannot be
+  // handed over, and this dialog is the only place the pair ever coexists.
+  const [issuedFor, setIssuedFor] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [newName, setNewName] = useState('');
@@ -35,8 +38,10 @@ export function SocietyAccountsPanel() {
     setBusy(true);
     setFailed(false);
     const res = await resetSocietyPassword(selected);
-    if (res.password) setPassword(res.password);
-    else setFailed(true);
+    if (res.password) {
+      setPassword(res.password);
+      setIssuedFor(selected);
+    } else setFailed(true);
     setBusy(false);
   };
 
@@ -55,6 +60,7 @@ export function SocietyAccountsPanel() {
     const res = await createSocietyAccount(chosen.id, chosen.name);
     if (res.password) {
       setPassword(res.password);
+      setIssuedFor(chosen.id);
       setNewName('');
       await loadSocietyAccounts();
     } else {
@@ -74,7 +80,10 @@ export function SocietyAccountsPanel() {
           }`}
           onClick={() => setSelected(a.association_id)}
         >
-          {a.association_name}
+          <span className="truncate">{a.association_name}</span>
+          <span className="ml-auto shrink-0 font-mono text-xs font-normal opacity-70">
+            {t('admin.loginName')}: {a.association_id}
+          </span>
         </button>
       ))}
 
@@ -122,7 +131,14 @@ export function SocietyAccountsPanel() {
       </button>
 
       {password && (
-        <GeneratedPasswordDialog password={password} onClose={() => setPassword(null)} />
+        <GeneratedPasswordDialog
+          password={password}
+          login={issuedFor}
+          onClose={() => {
+            setPassword(null);
+            setIssuedFor(null);
+          }}
+        />
       )}
     </div>
   );
