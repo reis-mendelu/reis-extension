@@ -59,16 +59,14 @@ vi.mock('../../../api/societyPosts', async (orig) => ({
 // The account list is reIS-admin-only and lives in the store so the accounts
 // panel never fetches in a component.
 vi.mock('../../../api/societyAccounts', () => ({
-  listSocietyAccounts: vi
-    .fn()
-    .mockResolvedValue([
-      {
-        association_id: 'supef',
-        association_name: 'SU PEF',
-        is_active: true,
-        email: 'supef@societies.invalid',
-      },
-    ]),
+  listSocietyAccounts: vi.fn().mockResolvedValue([
+    {
+      association_id: 'supef',
+      association_name: 'SU PEF',
+      is_active: true,
+      email: 'supef@societies.invalid',
+    },
+  ]),
 }));
 
 import { createAdminSlice, type AdminSlice } from '../createAdminSlice';
