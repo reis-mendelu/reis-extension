@@ -34,6 +34,7 @@ export function AdminConsole() {
   const unread = useAppStore((s) => s.suggestionsUnread);
   const loadAdminStats = useAppStore((s) => s.loadAdminStats);
   const [pane, setPane] = useState<'events' | 'suggestions' | 'accounts' | 'stats'>('events');
+  const fullWidth = pane === 'stats';
   const { t } = useTranslation();
 
   if (!session) {
@@ -62,7 +63,16 @@ export function AdminConsole() {
       <Toaster position="top-center" />
       <AdminConsoleHeader />
       <div className="flex min-h-0 flex-1">
-        <aside className="flex w-96 shrink-0 flex-col border-r border-base-300 bg-base-100">
+        {/* Statistiky is a page, not a pane: the charts need the width, and the
+            map answers none of the questions on that tab. The map unmounts
+            rather than hiding, so its zoom and centre reset on the way back —
+            cheaper than keeping a hidden Leaflet instance alive and calling
+            invalidateSize() on return. */}
+        <aside
+          className={`flex shrink-0 flex-col bg-base-100 ${
+            fullWidth ? 'w-full' : 'w-96 border-r border-base-300'
+          }`}
+        >
           <div role="tablist" className="tabs tabs-box tabs-sm m-1 mb-0 shrink-0 flex-nowrap">
             <button
               type="button"
@@ -125,9 +135,11 @@ export function AdminConsole() {
             {pane === 'events' && <AdminEventList />}
           </div>
         </aside>
-        <div className="min-w-0 flex-1">
-          <AdminConsoleMap />
-        </div>
+        {!fullWidth && (
+          <div className="min-w-0 flex-1">
+            <AdminConsoleMap />
+          </div>
+        )}
       </div>
     </div>
   );

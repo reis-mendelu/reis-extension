@@ -122,6 +122,15 @@ interface ReisDB extends DBSchema {
 const DB_NAME = import.meta.env?.VITE_USE_MOCK_DATA === 'true' ? 'reis_db_mock' : 'reis_db';
 const DB_VERSION = 22;
 
+/**
+ * The `meta` key holding the random per-install id.
+ *
+ * Declared here rather than in `services/identity/installId.ts` so `clearAll`
+ * can spare it without importing that module — which imports this one, and
+ * would close a cycle.
+ */
+export const INSTALL_ID_KEY = 'install_id';
+
 // True for the "database connection is closing" / InvalidStateError family that
 // a stale handle throws after the underlying connection was closed.
 function isConnectionClosing(e: unknown): boolean {
@@ -292,13 +301,35 @@ class IndexedDBServiceImpl {
     await this.run((db) => db.clear(storeName as any));
   }
 
+  /**
+   * Clears every store, except the random install id.
+   *
+   * Sign-out is the caller (`api/proxyClient.ts`, `mobile/signOut.ts`), and a
+   * wholesale wipe used to take `meta`'s `install_id` with it. The next open
+   * then minted a fresh UUID and the admin console counted the same device as a
+   * brand new install — an overcount with no upside, since the id is a random
+   * 128-bit value with no relationship to the student (see
+   * `services/identity/installId.ts`). Keeping it therefore retains nothing
+   * about the person signing out. `createDemoSlice.ts` states the general rule:
+   * `meta` is deleted by key, never cleared wholesale.
+   *
+   * Read and rewrite happen inside the same readwrite transaction, so there is
+   * no window in which a concurrent `getInstallId()` sees the store empty and
+   * mints a replacement.
+   */
   async clearAll(): Promise<void> {
     await this.run(async (db) => {
       const stores = Array.from(db.objectStoreNames);
       if (stores.length === 0) return;
       const tx = db.transaction(stores, 'readwrite');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const meta = stores.includes('meta') ? tx.objectStore('meta' as any) : null;
+      const installId = meta ? await meta.get(INSTALL_ID_KEY) : undefined;
       for (const store of stores) {
         tx.objectStore(store).clear();
+      }
+      if (meta && typeof installId === 'string' && installId.length > 0) {
+        meta.put(installId, INSTALL_ID_KEY);
       }
       await tx.done;
     });
