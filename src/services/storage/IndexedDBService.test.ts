@@ -16,41 +16,41 @@ import { IndexedDBService, INSTALL_ID_KEY } from './IndexedDBService';
 const internal = IndexedDBService as any;
 
 describe('IndexedDBService self-healing', () => {
-    it('reopens for writes after the connection is closed', async () => {
-        await IndexedDBService.set('meta', 'vc_token', { first: true });
+  it('reopens for writes after the connection is closed', async () => {
+    await IndexedDBService.set('meta', 'vc_token', { first: true });
 
-        // Close the live handle, then write through the service. The write path
-        // (set) must reopen rather than fail against the dead connection.
-        const db = await internal.getDB();
-        db.close();
+    // Close the live handle, then write through the service. The write path
+    // (set) must reopen rather than fail against the dead connection.
+    const db = await internal.getDB();
+    db.close();
 
-        await IndexedDBService.set('meta', 'vc_token', { second: true });
-        const result = await IndexedDBService.get('meta', 'vc_token');
-        expect(result).toEqual({ second: true });
-    });
+    await IndexedDBService.set('meta', 'vc_token', { second: true });
+    const result = await IndexedDBService.get('meta', 'vc_token');
+    expect(result).toEqual({ second: true });
+  });
 
-    it('serves repeated operations after a close (handle is durably restored)', async () => {
-        const db = await internal.getDB();
-        db.close();
+  it('serves repeated operations after a close (handle is durably restored)', async () => {
+    const db = await internal.getDB();
+    db.close();
 
-        await IndexedDBService.set('meta', 'a', { v: 1 });
-        await IndexedDBService.set('meta', 'b', { v: 2 });
-        expect(await IndexedDBService.get('meta', 'a')).toEqual({ v: 1 });
-        expect(await IndexedDBService.get('meta', 'b')).toEqual({ v: 2 });
-    });
+    await IndexedDBService.set('meta', 'a', { v: 1 });
+    await IndexedDBService.set('meta', 'b', { v: 2 });
+    expect(await IndexedDBService.get('meta', 'a')).toEqual({ v: 1 });
+    expect(await IndexedDBService.get('meta', 'b')).toEqual({ v: 2 });
+  });
 
-    it('retries an operation that fails because the connection is closing', async () => {
-        await IndexedDBService.set('meta', 'closing_token', { n: 2 });
+  it('retries an operation that fails because the connection is closing', async () => {
+    await IndexedDBService.set('meta', 'closing_token', { n: 2 });
 
-        // Hard-close the live handle so the next op on it throws
-        // InvalidStateError ("connection is closing"). run() must catch,
-        // reopen, and retry once.
-        const db = await internal.getDB();
-        db.close();
+    // Hard-close the live handle so the next op on it throws
+    // InvalidStateError ("connection is closing"). run() must catch,
+    // reopen, and retry once.
+    const db = await internal.getDB();
+    db.close();
 
-        const result = await IndexedDBService.get('meta', 'closing_token');
-        expect(result).toEqual({ n: 2 });
-    });
+    const result = await IndexedDBService.get('meta', 'closing_token');
+    expect(result).toEqual({ n: 2 });
+  });
 });
 
 /**
@@ -66,23 +66,23 @@ describe('IndexedDBService self-healing', () => {
  * nothing about the person who signed out.
  */
 describe('IndexedDBService.clearAll', () => {
-    it('keeps the install id so a sign-out is not a new install', async () => {
-        await IndexedDBService.set('meta', INSTALL_ID_KEY, 'install-abc');
-        await IndexedDBService.set('meta', 'reis_user_params', { name: 'student' });
-        await IndexedDBService.set('exams', 'reis_exams', []);
+  it('keeps the install id so a sign-out is not a new install', async () => {
+    await IndexedDBService.set('meta', INSTALL_ID_KEY, 'install-abc');
+    await IndexedDBService.set('meta', 'reis_user_params', { name: 'student' });
+    await IndexedDBService.set('exams', 'reis_exams', []);
 
-        await IndexedDBService.clearAll();
+    await IndexedDBService.clearAll();
 
-        expect(await IndexedDBService.get('meta', INSTALL_ID_KEY)).toBe('install-abc');
-        expect(await IndexedDBService.get('meta', 'reis_user_params')).toBeUndefined();
-        expect(await IndexedDBService.get('exams', 'reis_exams')).toBeUndefined();
-    });
+    expect(await IndexedDBService.get('meta', INSTALL_ID_KEY)).toBe('install-abc');
+    expect(await IndexedDBService.get('meta', 'reis_user_params')).toBeUndefined();
+    expect(await IndexedDBService.get('exams', 'reis_exams')).toBeUndefined();
+  });
 
-    it('is a no-op for the install id when there is not one yet', async () => {
-        await IndexedDBService.delete('meta', INSTALL_ID_KEY);
+  it('is a no-op for the install id when there is not one yet', async () => {
+    await IndexedDBService.delete('meta', INSTALL_ID_KEY);
 
-        await IndexedDBService.clearAll();
+    await IndexedDBService.clearAll();
 
-        expect(await IndexedDBService.get('meta', INSTALL_ID_KEY)).toBeUndefined();
-    });
+    expect(await IndexedDBService.get('meta', INSTALL_ID_KEY)).toBeUndefined();
+  });
 });
