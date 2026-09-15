@@ -35,6 +35,29 @@ describe('createAdminStatsSlice', () => {
     expect(useAppStore.getState().adminStatsDay).toBe('2026-09-14');
   });
 
+  // Two quick clicks on the chart race. Without a guard the SLOWER response
+  // wins simply by landing last, and the panel then shows one day's numbers
+  // under another day's heading — the drill-down silently lying about which
+  // day it is describing.
+  it('lets the newest request win, however the responses interleave', async () => {
+    const slow = { ...stats, today: 111 };
+    const fast = { ...stats, today: 222 };
+    let releaseSlow: (v: unknown) => void = () => {};
+    fetchUsageStats
+      .mockImplementationOnce(() => new Promise((r) => (releaseSlow = r)))
+      .mockResolvedValueOnce(fast);
+
+    const first = useAppStore.getState().selectAdminStatsDay('2026-09-13');
+    const second = useAppStore.getState().selectAdminStatsDay('2026-09-14');
+    await second;
+    releaseSlow(slow);
+    await first;
+
+    expect(useAppStore.getState().adminStats?.today).toBe(222);
+    expect(useAppStore.getState().adminStatsDay).toBe('2026-09-14');
+    expect(useAppStore.getState().adminStatsLoading).toBe(false);
+  });
+
   // A failed refetch used to be indistinguishable from a successful empty one:
   // the old slice spread `...(stats ? {...} : {})`, silently keeping the stale
   // payload on screen. Keeping it is right, but the day must not move to one

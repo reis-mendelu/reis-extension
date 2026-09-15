@@ -21,6 +21,7 @@ export function AdminStatsPanel() {
   const reload = useAppStore((s) => s.loadAdminStats);
   const pickDay = useAppStore((s) => s.selectAdminStatsDay);
   const label = (k: string) => (k === 'unknown' ? t('admin.stats.unknown') : k);
+  const today = stats?.daily.at(-1) ?? null;
 
   // --color-warning-content is now #111827 in both themes (index.css),
   // 8.26:1 on --color-warning — the DaisyUI alert-warning fill already
@@ -43,6 +44,17 @@ export function AdminStatsPanel() {
             <div key={k} className="stat p-3">
               <div className="stat-title text-xs">{t(`admin.stats.${k}`)}</div>
               <div className="stat-value text-2xl">{v}</div>
+              {/* "86 today" says nothing about whether reIS is being discovered
+                  or actually kept, which is the question the redesign exists to
+                  answer. The RPC's date spine always ends on today, so the last
+                  daily row is today's — but an empty window must not crash the
+                  tile. */}
+              {k === 'today' && today && (
+                <div className="stat-desc text-xs">
+                  {today.newDevices} {t('admin.stats.new')} · {today.returningDevices}{' '}
+                  {t('admin.stats.returning')}
+                </div>
+              )}
             </div>
           ))}
         </div>

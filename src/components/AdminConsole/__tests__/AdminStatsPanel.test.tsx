@@ -47,6 +47,22 @@ describe('AdminStatsPanel', () => {
     expect(screen.getByText(/Aktivní zařízení, ne lidé/)).toBeInTheDocument();
   });
 
+  // The split is the point of the whole redesign — "86 today" says nothing
+  // about whether reIS is being discovered or actually kept.
+  it("shows today's new/returning split under the Dnes tile", () => {
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('21 noví · 65 vracející se')).toBeInTheDocument();
+  });
+
+  // The RPC's date spine always ends on today, but a caller that hands back an
+  // empty window must not take the panel down with it.
+  it('omits the split when the window has no days', () => {
+    useAppStore.setState({ adminStats: { ...STATS, daily: [] } } as never);
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('86')).toBeInTheDocument();
+    expect(screen.queryByText(/noví ·/)).not.toBeInTheDocument();
+  });
+
   it('renders a suppressed group as "under 5" rather than a number', () => {
     render(<AdminStatsPanel />);
     expect(screen.getByText('méně než 5')).toBeInTheDocument();

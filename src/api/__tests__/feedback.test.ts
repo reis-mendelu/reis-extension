@@ -5,7 +5,9 @@ import { useAppStore } from '../../store/useAppStore';
 // imports) can close over it without a temporal-dead-zone error.
 const { rpc, getUserParams, isHarnessEnabled } = vi.hoisted(() => ({
   isHarnessEnabled: vi.fn<(...args: unknown[]) => boolean>(() => false),
-  rpc: vi.fn<(...args: unknown[]) => Promise<{ error: null }>>(async () => ({ error: null })),
+  rpc: vi.fn<(...args: unknown[]) => Promise<{ error: { message: string } | null }>>(async () => ({
+    error: null,
+  })),
   // Real shape: `facultyId` is always '' (see src/utils/userParams/fetchers.ts);
   // the faculty acronym ('PEF', 'AF', ...) lives in `facultyLabel`, optional
   // exactly like the real UserParams type.
@@ -108,6 +110,19 @@ describe('feedback', () => {
     await trackDailyUsage();
 
     expect(rpc).not.toHaveBeenCalled();
+  });
+
+  // Latching BEFORE the write succeeded would cost a device its place in the
+  // day's count for one bad moment of campus wi-fi — the failure mode is a
+  // silent undercount of real students, which is the very thing this whole
+  // change exists to stop.
+  it('does not latch a failed write, so a later call can still count this device', async () => {
+    rpc.mockResolvedValueOnce({ error: { message: 'offline' } });
+
+    await trackDailyUsage();
+    await trackDailyUsage();
+
+    expect(rpc).toHaveBeenCalledTimes(2);
   });
 
   // `initializeStore()` runs from a bare `useEffect(..., [])` under

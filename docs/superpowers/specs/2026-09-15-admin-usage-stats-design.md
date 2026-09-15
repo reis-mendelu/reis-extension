@@ -1,7 +1,7 @@
 # Admin usage statistics: count devices, honestly
 
 **Date:** 2026-09-15
-**Status:** approved, not yet implemented
+**Status:** implemented — reis-mendelu/reis-extension#334 (migration parked, see Rollout)
 
 ## Why
 
@@ -174,10 +174,15 @@ needs to run under automation.
 
 ## Testing
 
-- SQL: the exclusion CTE and the new/returning split get fixture-based assertions.
-  A device seen on two days is new once and returning once; a device whose label
-  changed lands in one bucket; a bucket of 3 returns `-1`; breakdown buckets sum to
-  the window total.
+- SQL: **no fixture tests, and that is a gap, not a decision.** The repo has no
+  SQL test harness — nothing spins up a Postgres for CI — and building one was
+  out of scope here. What was done instead: the function body was executed
+  read-only against production before the migration was written down, and the
+  results reconciled by hand (platform 349 + 70 + 7 = 426 = `d30`; the picked
+  day 77 + 9 = 86 = `active`; a 3-device bucket returned `-1`). That checks the
+  SQL once, against one day's data. It does **not** protect the exclusion CTE or
+  the new/returning split from a later edit, which is what a fixture test would
+  do. Anyone changing this SQL should re-run the same read-only reconciliation.
 - `src/api/usageStats.ts`: schema parse of the new shape, `-1` passed through
   unclamped.
 - Components: tiles render the split; a bar click updates the day detail;
