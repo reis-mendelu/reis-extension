@@ -17,10 +17,10 @@ vi.mock('../../services/storage', () => ({
   },
 }));
 
-// FACULTY_TO_ASSOCIATION: '1'->af, '2'->supef, '3'->au_frrms, '4'->zf, '5'->ldf
+// FACULTY_TO_ASSOCIATION: '1'->usaf, '2'->supef, '3'->au_frrms, '4'->zf, '5'->ldf
 vi.mock('../../services/spolky/config', () => ({
   FACULTY_TO_ASSOCIATION: {
-    AF: 'af',
+    AF: 'usaf',
     PEF: 'supef',
     FRRMS: 'au_frrms',
     ZF: 'zf',
@@ -67,7 +67,7 @@ describe('fresh user — faculty auto-subscription', () => {
   });
 
   it.each([
-    ['AF', 'AF', 'af'],
+    ['AF', 'AF', 'usaf'],
     ['PEF', 'PEF', 'supef'],
     ['AU/FRRMS', 'FRRMS', 'au_frrms'],
     ['ZF', 'ZF', 'zf'],
@@ -141,7 +141,7 @@ describe('returning Erasmus user — legacy ESN back-fill', () => {
   it('back-fills ESN when flag not set and ESN missing', async () => {
     mockIDBGet.mockImplementation((store: string, key: string) => {
       if (store === 'meta' && key === 'reis_subscribed_associations')
-        return Promise.resolve(['af']);
+        return Promise.resolve(['ldf']);
       if (store === 'meta' && key === 'reis_erasmus_auto_subscribed')
         return Promise.resolve(undefined);
       return Promise.resolve(undefined);
@@ -151,13 +151,13 @@ describe('returning Erasmus user — legacy ESN back-fill', () => {
     const { result } = renderHook(() => useSpolkySettings());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.subscribedAssociations).toEqual(['af', 'esn']);
+    expect(result.current.subscribedAssociations).toEqual(['ldf', 'esn']);
   });
 
   it('does NOT back-fill ESN when flag already set', async () => {
     mockIDBGet.mockImplementation((store: string, key: string) => {
       if (store === 'meta' && key === 'reis_subscribed_associations')
-        return Promise.resolve(['af']);
+        return Promise.resolve(['ldf']);
       if (store === 'meta' && key === 'reis_erasmus_auto_subscribed') return Promise.resolve(true);
       return Promise.resolve(undefined);
     });
@@ -166,13 +166,13 @@ describe('returning Erasmus user — legacy ESN back-fill', () => {
     const { result } = renderHook(() => useSpolkySettings());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.subscribedAssociations).toEqual(['af']);
+    expect(result.current.subscribedAssociations).toEqual(['ldf']);
   });
 
   it('does NOT back-fill ESN when ESN already present', async () => {
     mockIDBGet.mockImplementation((store: string, key: string) => {
       if (store === 'meta' && key === 'reis_subscribed_associations')
-        return Promise.resolve(['af', 'esn']);
+        return Promise.resolve(['ldf', 'esn']);
       return Promise.resolve(undefined);
     });
     mockGetUserParams.mockResolvedValue(makeUser('1', true));
@@ -180,7 +180,71 @@ describe('returning Erasmus user — legacy ESN back-fill', () => {
     const { result } = renderHook(() => useSpolkySettings());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.subscribedAssociations).toEqual(['af', 'esn']);
+    expect(result.current.subscribedAssociations).toEqual(['ldf', 'esn']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A renamed society must not orphan the students already subscribed to it
+// ---------------------------------------------------------------------------
+describe('renamed society ids are migrated in the saved list', () => {
+  // Subscriptions persist as bare ids, so renaming 'af' to 'usaf' in the
+  // catalog would leave every AF student holding an id that matches no
+  // society: the checkbox reads unchecked and their events vanish from
+  // Novinky. Silent, and it hits exactly the people the rename is for.
+  it('rewrites a stored "af" to "usaf" and persists it', async () => {
+    mockIDBGet.mockImplementation((store: string, key: string) => {
+      if (store === 'meta' && key === 'reis_subscribed_associations')
+        return Promise.resolve(['af', 'esn']);
+      return Promise.resolve(undefined);
+    });
+    mockGetUserParams.mockResolvedValue(makeUser('AF', false));
+
+    const { result } = renderHook(() => useSpolkySettings());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.subscribedAssociations).toEqual(['usaf', 'esn']);
+    expect(mockIDBSet).toHaveBeenCalledWith('meta', 'reis_subscribed_associations', [
+      'usaf',
+      'esn',
+    ]);
+  });
+
+  // Picking AF by hand is the commonest way to hold the old id, and it is
+  // exactly the case that sets CHOSEN_KEY — so the rename cannot be gated on
+  // that flag the way the empty-list re-resolution is.
+  it('rewrites it even when the list was chosen by hand', async () => {
+    mockIDBGet.mockImplementation((store: string, key: string) => {
+      if (store === 'meta' && key === 'reis_subscribed_associations')
+        return Promise.resolve(['af']);
+      if (store === 'meta' && key === 'reis_associations_chosen') return Promise.resolve(true);
+      return Promise.resolve(undefined);
+    });
+    mockGetUserParams.mockResolvedValue(makeUser('AF', false));
+
+    const { result } = renderHook(() => useSpolkySettings());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.subscribedAssociations).toEqual(['usaf']);
+  });
+
+  it('does not write when no saved id was renamed', async () => {
+    mockIDBGet.mockImplementation((store: string, key: string) => {
+      if (store === 'meta' && key === 'reis_subscribed_associations')
+        return Promise.resolve(['ldf', 'esn']);
+      return Promise.resolve(undefined);
+    });
+    mockGetUserParams.mockResolvedValue(makeUser('LDF', false));
+
+    const { result } = renderHook(() => useSpolkySettings());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.subscribedAssociations).toEqual(['ldf', 'esn']);
+    expect(mockIDBSet).not.toHaveBeenCalledWith(
+      'meta',
+      'reis_subscribed_associations',
+      expect.anything()
+    );
   });
 });
 

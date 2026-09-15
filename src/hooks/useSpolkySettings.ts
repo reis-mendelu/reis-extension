@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { IndexedDBService } from '../services/storage';
 import { FACULTY_TO_ASSOCIATION } from '../services/spolky/config';
+import { migrateAssociationIds } from '../services/spolky/renamedAssociations';
 import { getUserParams } from '../utils/userParams';
 import { logError } from '../utils/reportError';
 
@@ -98,6 +99,17 @@ export function useSpolkySettings() {
       }
 
       if (saved) {
+        // Rename migration, before anything reads the list. Unconditional on
+        // CHOSEN_KEY: picking the old society by hand is the commonest way to
+        // hold its id, and that is precisely what sets the flag. Cheap — the
+        // helper hands back the same array when nothing was renamed, so there
+        // is no write for the students who hold none.
+        const migrated = migrateAssociationIds(saved);
+        if (migrated !== saved) {
+          saved = migrated;
+          await IndexedDBService.set('meta', STORAGE_KEY, saved);
+        }
+
         if (!mountedRef.current) return;
         setSubscribedAssociations(saved);
 

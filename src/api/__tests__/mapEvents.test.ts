@@ -74,8 +74,8 @@ describe('toMapEvent', () => {
   it('maps a null coord when either coordinate is missing', () => {
     const row = {
       id: 'ghi',
-      association_id: 'af',
-      title: 'AF Den',
+      association_id: 'usaf',
+      title: 'USAF Den',
       category: 'culture',
       date: '2026-08-01',
       end_date: null,
