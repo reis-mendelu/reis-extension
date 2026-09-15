@@ -77,7 +77,20 @@ declare
   hidden_sum bigint := 0;
   rank int := 0;
   cutoff int := 0;
+  grand_total bigint;
 begin
+  -- A breakdown of a sub-floor population tells you everything about it, and
+  -- the loop below cannot help: with a SINGLE bucket the bucket IS the total,
+  -- so replacing it with -1 hides nothing once the total is published beside
+  -- it. That case arises exactly when the group total is itself under the
+  -- floor. Publish no breakdown at all there — the bare total stays, carrying
+  -- no dimension to narrow on, which is the same line today/d7/d30 hold.
+  select coalesce(sum((e->>'n')::bigint), 0) into grand_total
+    from jsonb_array_elements(p_groups) e;
+  if grand_total < 5 then
+    return '[]'::json;
+  end if;
+
   for n in
     select (e->>'n')::bigint from jsonb_array_elements(p_groups) e
      order by (e->>'n')::bigint asc

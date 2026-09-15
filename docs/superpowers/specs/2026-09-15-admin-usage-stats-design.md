@@ -118,6 +118,12 @@ subtraction is then a sum of at least two buckets totalling at least 5, which
 pins no one. Suppressed buckets return `-1` and render `< 5`, and the total stays
 visible so a hidden cell reads as missing rather than zero.
 
+Hiding cannot rescue a **single-bucket** breakdown: the one bucket *is* the
+total, so `-1` conceals nothing once the total is published beside it. That case
+arises exactly when the group total is itself under the floor, so a group
+totalling under 5 returns no breakdown at all. The bare total stays — it carries
+no dimension to narrow on, the same line `today`/`d7`/`d30` have always held.
+
 The cost is deliberate: hiding a small bucket can take its next-smallest
 neighbour with it, so a breakdown may show fewer numbers than before. On
 2026-09-15 that meant ICV (4) also hid ZF (13). That is the correct trade for a
