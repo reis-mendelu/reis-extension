@@ -70,6 +70,36 @@ describe('createNotificationSlice: the cache must not outrank the network', () =
     expect(state.notifications.data).toEqual(CACHED);
   });
 
+  it('keeps the cache when the service reports a failure rather than an empty feed', async () => {
+    // Supabase reports an error instead of rejecting, so the service cannot
+    // throw for it — it answers `null`. Recording that as a successful empty
+    // feed wrote `[]` over the cache, and the student's Novinky were gone on
+    // this launch and every later one until a fetch happened to succeed.
+    fetchNotifications.mockResolvedValue(null);
+    await state.fetchNotifications();
+
+    expect(state.notifications.status).toBe('error');
+    expect(IndexedDBService.set).not.toHaveBeenCalledWith(
+      'meta',
+      'notifications_cache',
+      expect.anything()
+    );
+
+    await state.loadNotificationState();
+    expect(state.notifications.data).toEqual(CACHED);
+  });
+
+  it('lets a genuinely empty feed empty the screen', async () => {
+    // The other half: a feed that has run out has to be able to say so, or the
+    // last event of the term would be pinned there for good.
+    fetchNotifications.mockResolvedValue([]);
+    await state.fetchNotifications();
+
+    expect(state.notifications.status).toBe('success');
+    expect(state.notifications.data).toEqual([]);
+    expect(IndexedDBService.set).toHaveBeenCalledWith('meta', 'notifications_cache', []);
+  });
+
   it('keeps the read and viewed sets whichever way the race went', async () => {
     fetchNotifications.mockResolvedValue(FRESH);
     await state.fetchNotifications();

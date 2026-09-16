@@ -53,7 +53,18 @@ export async function trackNotificationClick(notificationId: string): Promise<vo
 /**
  * Fetch all active notifications from Supabase
  */
-export async function fetchNotifications(): Promise<SpolekNotification[]> {
+/**
+ * The upcoming society events, or `null` when the answer is not known.
+ *
+ * The distinction is load-bearing and used to be missing. Every failure —
+ * a Supabase error, a row the schema rejects, a thrown exception — returned
+ * `[]`, which is also what a student with no upcoming events legitimately
+ * gets. The caller could not tell them apart, so it recorded a transient
+ * network blip as a successful empty feed and wrote that over the cache: one
+ * failed request and the student's Novinky were gone until the next fetch
+ * succeeded. `null` is "ask again later"; `[]` is "there is nothing on".
+ */
+export async function fetchNotifications(): Promise<SpolekNotification[] | null> {
   try {
     const { data, error } = await supabase
       .from('spolky_events')
@@ -64,13 +75,14 @@ export async function fetchNotifications(): Promise<SpolekNotification[]> {
       .limit(50);
 
     if (error) {
-      return [];
+      logError('Spolky.fetchNotifications', error);
+      return null;
     }
 
     const parsed = z.array(NotificationRowSchema).safeParse(data ?? []);
     if (!parsed.success) {
       logError('Spolky.fetchNotifications', parsed.error);
-      return [];
+      return null;
     }
 
     return parsed.data.map((n) => ({
@@ -83,8 +95,9 @@ export async function fetchNotifications(): Promise<SpolekNotification[]> {
       expiresAt: n.end_date || n.date, // events use their date as natural expiry
       priority: 'normal' as const,
     }));
-  } catch {
-    return [];
+  } catch (err) {
+    logError('Spolky.fetchNotifications', err);
+    return null;
   }
 }
 

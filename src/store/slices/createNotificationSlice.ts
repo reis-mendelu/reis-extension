@@ -43,6 +43,20 @@ export const createNotificationSlice: AppSlice<NotificationSlice> = (set, get) =
     set((state) => ({ notifications: { ...state.notifications, status: 'loading' } }));
     try {
       const data = await fetchNotifications();
+      // `null` is a failure the service could not throw on — Supabase reports
+      // an error rather than rejecting, and a row the schema turns down is not
+      // an exception either. It used to come back as `[]`, indistinguishable
+      // from a student who simply has nothing on, and that took the same path
+      // as a good answer: `success`, an empty feed, and `[]` written over the
+      // cache. One blocked request and Novinky were empty, on this launch and
+      // the next. Treated as the error it is, the cache survives it.
+      //
+      // A genuinely empty `[]` still goes through and still overwrites: a feed
+      // that has run out has to be allowed to say so.
+      if (data === null) {
+        set((state) => ({ notifications: { ...state.notifications, status: 'error' } }));
+        return;
+      }
       set((state) => ({
         notifications: {
           ...state.notifications,
