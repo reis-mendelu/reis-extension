@@ -10,12 +10,12 @@ export function StatsBars({
   labelFor: (key: string) => string;
   under5: string;
 }) {
-  const max = Math.max(1, ...groups.map((g) => g.installs));
+  const max = Math.max(1, ...groups.map((g) => g.devices));
   return (
     <ul className="flex flex-col gap-1">
       {groups.map((g) => {
-        const suppressed = g.installs < 0;
-        const w = suppressed ? 4 : Math.max(2, Math.round((g.installs / max) * 100));
+        const suppressed = g.devices < 0;
+        const w = suppressed ? 4 : Math.max(2, Math.round((g.devices / max) * 100));
         // Suppressed groups used to be the same green rect at 30% opacity —
         // measured (verify-ui, by hand: the automated probe skips SVG fills)
         // at 1.77:1 in the dark theme and 1.27:1 in light, both far under the
@@ -36,7 +36,7 @@ export function StatsBars({
                 className={suppressed ? 'fill-base-content/50' : 'fill-primary'}
               />
             </svg>
-            <span className="text-right tabular-nums">{suppressed ? under5 : g.installs}</span>
+            <span className="text-right tabular-nums">{suppressed ? under5 : g.devices}</span>
           </li>
         );
       })}

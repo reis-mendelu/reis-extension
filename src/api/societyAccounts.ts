@@ -5,12 +5,18 @@ export interface SocietyAccountRow {
   association_id: string;
   association_name: string;
   is_active: boolean;
+  /**
+   * The address this account actually signs in with. Selected rather than
+   * derived from `association_id`, because `toAuthEmail`'s break-glass
+   * exception lets the two disagree — see `loginFromAuthEmail`.
+   */
+  email: string;
 }
 
 export async function listSocietyAccounts(): Promise<SocietyAccountRow[]> {
   const { data, error } = await adminAuthClient
     .from('spolky_accounts')
-    .select('association_id, association_name, is_active')
+    .select('association_id, association_name, is_active, email')
     .order('association_name');
   if (error) {
     logError('Api.listSocietyAccounts', error);

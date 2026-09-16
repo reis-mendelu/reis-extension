@@ -1,40 +1,104 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { AdminStatsPanel } from '../AdminStatsPanel';
+
+const STATS = {
+  today: 86,
+  d7: 420,
+  d30: 426,
+  daily: [
+    { day: '2026-09-14', active: 330, newDevices: 283, returningDevices: 47 },
+    { day: '2026-09-15', active: 86, newDevices: 21, returningDevices: 65 },
+  ],
+  byPlatform: [
+    { key: 'ios', devices: 349 },
+    { key: 'unknown', devices: 7 },
+  ],
+  byFaculty: [
+    { key: 'PEF', devices: 224 },
+    { key: 'ICV', devices: -1 },
+  ],
+  day: {
+    day: '2026-09-15',
+    active: 86,
+    newDevices: 21,
+    returningDevices: 65,
+    byPlatform: [{ key: 'ios', devices: 77 }],
+  },
+};
 
 describe('AdminStatsPanel', () => {
   beforeEach(() => {
     useAppStore.setState({
       language: 'cz',
       adminStatsLoading: false,
-      adminStats: {
-        today: 12,
-        d7: 40,
-        d30: 90,
-        byFaculty: [
-          { key: 'PEF', installs: 50 },
-          { key: 'LDF', installs: -1 },
-        ],
-        byPlatform: [{ key: 'extension', installs: 70 }],
-        weekly: [{ weekStart: '2026-08-31', installs: 40 }],
-      },
+      adminStatsDay: null,
+      adminStats: STATS,
+      selectAdminStatsDay: vi.fn(async () => {}),
     } as never);
   });
 
-  it('shows the three totals, renders suppressed groups as "under 5", and says it counts installs', () => {
+  it('shows the three totals and says it counts devices, not people', () => {
     render(<AdminStatsPanel />);
-    expect(screen.getByText('12')).toBeInTheDocument();
-    expect(screen.getByText('40')).toBeInTheDocument();
-    expect(screen.getByText('90')).toBeInTheDocument();
-    expect(screen.getByText('méně než 5')).toBeInTheDocument();
-    expect(screen.getByText(/Počítáme instalace, ne lidi/)).toBeInTheDocument();
+    expect(screen.getByText('86')).toBeInTheDocument();
+    expect(screen.getByText('420')).toBeInTheDocument();
+    expect(screen.getByText('426')).toBeInTheDocument();
+    expect(screen.getByText(/Aktivní zařízení, ne lidé/)).toBeInTheDocument();
   });
 
-  // The contrast fix now lives in the theme tokens (index.css) —
+  // The split is the point of the whole redesign — "86 today" says nothing
+  // about whether reIS is being discovered or actually kept.
+  it("shows today's new/returning split under the Dnes tile", () => {
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('21 noví · 65 vracející se')).toBeInTheDocument();
+  });
+
+  // The RPC's date spine always ends on today, but a caller that hands back an
+  // empty window must not take the panel down with it.
+  it('omits the split when the window has no days', () => {
+    useAppStore.setState({ adminStats: { ...STATS, daily: [] } } as never);
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('86')).toBeInTheDocument();
+    expect(screen.queryByText(/noví ·/)).not.toBeInTheDocument();
+  });
+
+  it('renders a suppressed group as "under 5" rather than a number', () => {
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('méně než 5')).toBeInTheDocument();
+    expect(screen.queryByText('-1')).not.toBeInTheDocument();
+  });
+
+  // GA4's "(not set)" convention: a dimension that was added after launch has
+  // legitimately-unknown rows, and they stay a labelled bar rather than being
+  // dropped from the denominator — bars that do not sum to the total are a lie.
+  it('labels the unknown bucket instead of hiding it', () => {
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('neuvedeno')).toBeInTheDocument();
+    expect(screen.getByText('7')).toBeInTheDocument();
+  });
+
+  it('renders the picked day with its split and platform breakdown', () => {
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('2026-09-15')).toBeInTheDocument();
+    expect(screen.getByText('21')).toBeInTheDocument();
+    expect(screen.getByText('65')).toBeInTheDocument();
+    expect(screen.getByText('77')).toBeInTheDocument();
+  });
+
+  // "76 %" is the share of one day's actives that are not new. Calling that
+  // "retention" would claim an earlier cohort came back, which it does not
+  // measure — hence the deliberately flatter label.
+  it('labels the returning share as a composition, not as retention', () => {
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('76 %')).toBeInTheDocument();
+    expect(screen.getByText('z toho vracející se')).toBeInTheDocument();
+    expect(screen.queryByText(/[Nn]ávratnost/)).not.toBeInTheDocument();
+  });
+
+  // The contrast fix lives in the theme tokens (index.css) —
   // --color-warning-content is #111827 (8.26:1 on --color-warning) in both
-  // themes — so the component no longer needs a text-black override; the
-  // semantic alert-warning class alone carries readable text.
+  // themes — so the semantic alert-warning class alone carries readable text.
   it('keeps the load-failed alert readable — no white-on-amber', () => {
     useAppStore.setState({ adminStats: null, adminStatsLoading: false } as never);
     render(<AdminStatsPanel />);
@@ -43,39 +107,13 @@ describe('AdminStatsPanel', () => {
     );
   });
 
-  it('paints a suppressed week in the weekly chart with a base-content fill, not the low-contrast primary-at-0.3', () => {
+  it('renders an empty window without crashing or claiming a failure', () => {
     useAppStore.setState({
-      adminStats: {
-        today: 1,
-        d7: 1,
-        d30: 1,
-        byFaculty: [],
-        byPlatform: [],
-        weekly: [{ weekStart: '2026-08-31', installs: -1 }],
-      },
+      adminStats: { ...STATS, daily: [], byPlatform: [], byFaculty: [], day: null },
     } as never);
-    const { container } = render(<AdminStatsPanel />);
-    const rect = container.querySelector('svg[aria-label] rect')!;
-    expect(rect.getAttribute('class') ?? '').toContain('fill-base-content/50');
-    expect(rect.getAttribute('fill')).not.toBe('currentColor');
-  });
-
-  // The SVG's viewBox was a hardcoded "0 0 120 40" (room for 12 bars at 10
-  // units each). The backing query can return 12 Monday-weeks PLUS whatever
-  // partial week is in progress — 13 rows — clipping the 13th bar. Width
-  // must track the data, not a guess at the query's row count.
-  it('sizes the weekly chart viewBox from the data, so no bar clips', () => {
-    const weekly = Array.from({ length: 13 }, (_, i) => ({
-      weekStart: `2026-06-${String(i + 1).padStart(2, '0')}`,
-      installs: 10 + i,
-    }));
-    useAppStore.setState({
-      adminStats: { today: 1, d7: 1, d30: 1, byFaculty: [], byPlatform: [], weekly },
-    } as never);
-    const { container } = render(<AdminStatsPanel />);
-    const svg = container.querySelector('svg[aria-label]')!;
-    expect(svg.getAttribute('viewBox')).toBe('0 0 130 40');
-    expect(container.querySelectorAll('svg[aria-label] rect').length).toBe(13);
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('Zatím žádná data.')).toBeInTheDocument();
+    expect(screen.queryByText('Statistiky se nepodařilo načíst.')).not.toBeInTheDocument();
   });
 
   // The refresh button's only content is the "↻" glyph, unreadable to a

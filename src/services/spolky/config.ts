@@ -4,12 +4,11 @@ import type { AssociationProfile } from './types';
  * Mapping of faculty labels (found in study details) to their corresponding student associations
  */
 export const FACULTY_TO_ASSOCIATION: Record<string, string> = {
-  'PEF': 'supef',
-  'FRRMS': 'au_frrms',
-  'AF': 'af',
-  'ZF': 'zf',
-  'LDF': 'ldf',
-  'ICV': 'icv',
+  PEF: 'supef',
+  FRRMS: 'au_frrms',
+  AF: 'usaf',
+  ZF: 'zf',
+  LDF: 'ldf',
 };
 
 /**
@@ -34,9 +33,9 @@ export const ASSOCIATION_PROFILES: Record<string, AssociationProfile> = {
     websiteUrl: 'https://au.mendelu.cz',
     facultyIds: ['FRRMS'],
   },
-  af: {
-    id: 'af',
-    name: 'AF Spolek',
+  usaf: {
+    id: 'usaf',
+    name: 'USAF',
     websiteUrl: 'https://af.mendelu.cz',
     facultyIds: ['AF'],
   },
@@ -52,15 +51,10 @@ export const ASSOCIATION_PROFILES: Record<string, AssociationProfile> = {
     websiteUrl: 'https://ldf.mendelu.cz',
     facultyIds: ['LDF'],
   },
-  icv: {
-    id: 'icv',
-    name: 'ICV',
-    websiteUrl: 'https://icv.mendelu.cz',
-    facultyIds: ['ICV'],
-  },
 };
 
 /**
  * API endpoint for spolky notifications
  */
-export const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbwSgl46V4HnYiAnE7ZET2lPP5v0ekV9G_KZkdREkZ2GrIpOlUsaHGn_1JmIh1XCqcqD/exec';
+export const API_BASE_URL =
+  'https://script.google.com/macros/s/AKfycbwSgl46V4HnYiAnE7ZET2lPP5v0ekV9G_KZkdREkZ2GrIpOlUsaHGn_1JmIh1XCqcqD/exec';

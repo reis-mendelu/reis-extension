@@ -968,12 +968,20 @@
       "d30": "30 days",
       "byFaculty": "By faculty (30 days)",
       "byPlatform": "By platform (30 days)",
-      "weekly": "Weekly active installs (12 weeks)",
-      "installsNote": "We count installs, not people: a student on a phone and a laptop counts twice.",
+      "daily": "Daily active devices",
+      "devicesNote": "Active devices, not people: a student on a phone and a laptop counts twice.",
+      "epochNote": "Data from 7 Sep 2026",
+      "new": "new",
+      "returning": "returning",
+      "ofWhichReturning": "of which returning",
+      "activeDevices": "active devices",
+      "pickDay": "Show day",
+      "noData": "No data yet.",
       "under5": "under 5",
-      "unknown": "unknown",
+      "unknown": "not set",
       "loadFailed": "Could not load statistics."
-    }
+    },
+    "loginName": "login"
   },
   "mobile": {
     "header": {

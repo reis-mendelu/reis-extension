@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toAuthEmail, SOCIETY_EMAIL_DOMAIN } from '../societyLogin';
+import { toAuthEmail, loginFromAuthEmail, SOCIETY_EMAIL_DOMAIN } from '../societyLogin';
 
 describe('toAuthEmail', () => {
   it('maps a bare username to the synthetic domain', () => {
@@ -29,5 +29,32 @@ describe('toAuthEmail', () => {
 
   it('exports the domain it uses', () => {
     expect(SOCIETY_EMAIL_DOMAIN).toBe('societies.invalid');
+  });
+});
+
+describe('loginFromAuthEmail', () => {
+  it('gives back the short username for a synthetic address', () => {
+    expect(loginFromAuthEmail('supef@societies.invalid')).toBe('supef');
+  });
+
+  // The break-glass case this exists for: an account may keep a REAL mailbox
+  // while carrying a short association_id, so the login cannot be derived from
+  // the id — deriving it would tell an admin to type something that resolves to
+  // a different Auth identity, and they would be unable to sign in.
+  it('gives back the whole address for a real mailbox', () => {
+    expect(loginFromAuthEmail('reis.mendelu@gmail.com')).toBe('reis.mendelu@gmail.com');
+  });
+
+  it('round-trips with toAuthEmail', () => {
+    for (const username of ['supef', 'au_frrms', 'usaf', 'reis']) {
+      expect(loginFromAuthEmail(toAuthEmail(username))).toBe(username);
+    }
+    expect(loginFromAuthEmail(toAuthEmail('reis.mendelu@gmail.com'))).toBe(
+      'reis.mendelu@gmail.com'
+    );
+  });
+
+  it('trims and lowercases like its inverse', () => {
+    expect(loginFromAuthEmail('  SuPeF@Societies.Invalid \n')).toBe('supef');
   });
 });

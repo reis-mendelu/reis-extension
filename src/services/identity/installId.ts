@@ -1,6 +1,5 @@
 import { IndexedDBService } from '../storage';
-
-const KEY = 'install_id';
+import { INSTALL_ID_KEY as KEY } from '../storage/IndexedDBService';
 
 /**
  * A random, per-install identifier — deliberately NOT derived from the student.

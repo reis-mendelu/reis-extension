@@ -13,7 +13,7 @@ import { StatsBars } from '../StatsBars';
 describe('StatsBars — suppressed ("under 5") bar contrast', () => {
   it('paints a suppressed group with a base-content fill, not the low-contrast primary-at-0.3', () => {
     const { container } = render(
-      <StatsBars groups={[{ key: 'unknown', installs: -1 }]} labelFor={(k) => k} under5="under 5" />
+      <StatsBars groups={[{ key: 'unknown', devices: -1 }]} labelFor={(k) => k} under5="under 5" />
     );
     const rect = container.querySelector('rect')!;
     expect(rect.getAttribute('class') ?? '').toContain('fill-base-content/50');
@@ -22,7 +22,7 @@ describe('StatsBars — suppressed ("under 5") bar contrast', () => {
 
   it('still paints a normal group at full strength in the primary colour', () => {
     const { container } = render(
-      <StatsBars groups={[{ key: 'PEF', installs: 50 }]} labelFor={(k) => k} under5="under 5" />
+      <StatsBars groups={[{ key: 'PEF', devices: 50 }]} labelFor={(k) => k} under5="under 5" />
     );
     const rect = container.querySelector('rect')!;
     expect(rect.getAttribute('class') ?? '').toContain('fill-primary');

@@ -1,10 +1,13 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useAppStore } from '../../store/useAppStore';
 
 // Hoisted so the vi.mock factories below (which vitest hoists above these
 // imports) can close over it without a temporal-dead-zone error.
-const { rpc, getUserParams } = vi.hoisted(() => ({
-  rpc: vi.fn<(...args: unknown[]) => Promise<{ error: null }>>(async () => ({ error: null })),
+const { rpc, getUserParams, isHarnessEnabled } = vi.hoisted(() => ({
+  isHarnessEnabled: vi.fn<(...args: unknown[]) => boolean>(() => false),
+  rpc: vi.fn<(...args: unknown[]) => Promise<{ error: { message: string } | null }>>(async () => ({
+    error: null,
+  })),
   // Real shape: `facultyId` is always '' (see src/utils/userParams/fetchers.ts);
   // the faculty acronym ('PEF', 'AF', ...) lives in `facultyLabel`, optional
   // exactly like the real UserParams type.
@@ -26,10 +29,22 @@ vi.mock('../../platform', () => ({
 vi.mock('../../utils/userParams', () => ({
   getUserParams,
 }));
+// A real student's build, unless a test says otherwise. Mocked rather than
+// stubbed through `import.meta.env`, because vitest itself runs with DEV true —
+// so without this every test in this file would exercise the harness branch and
+// assert nothing about what reIS actually sends.
+vi.mock('../../utils/harnessEnabled', () => ({
+  isHarnessEnabled: (...a: unknown[]) => isHarnessEnabled(...a),
+}));
 
-import { submitFeedback, trackDailyUsage } from '../feedback';
+import { submitFeedback, trackDailyUsage, __resetUsageTrackedForTests } from '../feedback';
 
 describe('feedback', () => {
+  beforeEach(() => {
+    __resetUsageTrackedForTests();
+    isHarnessEnabled.mockReturnValue(false);
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
     useAppStore.setState({ demoMode: false });
@@ -81,6 +96,44 @@ describe('feedback', () => {
       p_faculty: null,
       p_platform: 'extension',
     });
+  });
+
+  // A `npm run dev:web` server and the deployed preview are not installs. Both
+  // used to file a real `track_daily_usage` against production Supabase on
+  // every boot, and every fresh browser profile — each headless context in a
+  // screenshot sweep — minted a new install id, so each one arrived in the
+  // admin console as another "unique install". Measured 2026-09-15: every one
+  // of the 164 rows ever labelled `platform = 'web'` came from such a build.
+  it('does not track usage from a development or preview build', async () => {
+    isHarnessEnabled.mockReturnValue(true);
+
+    await trackDailyUsage();
+
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  // Latching BEFORE the write succeeded would cost a device its place in the
+  // day's count for one bad moment of campus wi-fi — the failure mode is a
+  // silent undercount of real students, which is the very thing this whole
+  // change exists to stop.
+  it('does not latch a failed write, so a later call can still count this device', async () => {
+    rpc.mockResolvedValueOnce({ error: { message: 'offline' } });
+
+    await trackDailyUsage();
+    await trackDailyUsage();
+
+    expect(rpc).toHaveBeenCalledTimes(2);
+  });
+
+  // `initializeStore()` runs from a bare `useEffect(..., [])` under
+  // <StrictMode>, which double-invokes effects in development. That turned one
+  // boot into two RPCs and left `open_count` at roughly twice the real number.
+  // One write per page session, so a boot is a boot whatever the build does.
+  it('writes at most once per page session', async () => {
+    await trackDailyUsage();
+    await trackDailyUsage();
+
+    expect(rpc).toHaveBeenCalledTimes(1);
   });
 });
 

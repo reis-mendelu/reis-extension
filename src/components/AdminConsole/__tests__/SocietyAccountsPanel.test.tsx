@@ -12,7 +12,12 @@ vi.mock('../../../api/societyAccounts', () => ({
   createSocietyAccount: (...a: unknown[]) => createSocietyAccount(...a),
 }));
 
-const supef = { association_id: 'supef', association_name: 'SUPEF', is_active: true };
+const supef = {
+  association_id: 'supef',
+  association_name: 'SUPEF',
+  is_active: true,
+  email: 'supef@societies.invalid',
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -25,7 +30,7 @@ beforeEach(() => {
 describe('SocietyAccountsPanel', () => {
   it('reads the accounts from the store and never fetches on mount', async () => {
     render(<SocietyAccountsPanel />);
-    expect(await screen.findByRole('button', { name: 'SUPEF' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /SUPEF/ })).toBeInTheDocument();
     expect(listSocietyAccounts).not.toHaveBeenCalled();
   });
 
@@ -33,7 +38,7 @@ describe('SocietyAccountsPanel', () => {
     resetSocietyPassword.mockResolvedValueOnce({ password: 'Abcd2345Efgh6789Jkmn' });
     render(<SocietyAccountsPanel />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'SUPEF' }));
+    fireEvent.click(await screen.findByRole('button', { name: /SUPEF/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Obnovit heslo' }));
 
     expect(await screen.findByText('Abcd2345Efgh6789Jkmn')).toBeInTheDocument();
@@ -47,7 +52,7 @@ describe('SocietyAccountsPanel', () => {
     resetSocietyPassword.mockResolvedValueOnce({ error: 'forbidden' });
     render(<SocietyAccountsPanel />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'SUPEF' }));
+    fireEvent.click(await screen.findByRole('button', { name: /SUPEF/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Obnovit heslo' }));
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
@@ -90,28 +95,48 @@ describe('SocietyAccountsPanel', () => {
   it('never offers to reset the account you are signed in as', async () => {
     useAppStore.setState({
       societyAccounts: [
-        { association_id: 'reis', association_name: 'REIS team', is_active: true },
-        { association_id: 'supef', association_name: 'SU PEF', is_active: true },
+        {
+          association_id: 'reis',
+          association_name: 'REIS team',
+          is_active: true,
+          email: 'reis@societies.invalid',
+        },
+        {
+          association_id: 'supef',
+          association_name: 'SU PEF',
+          is_active: true,
+          email: 'supef@societies.invalid',
+        },
       ],
     });
     render(<SocietyAccountsPanel />);
 
     // Resetting yourself here would issue a password you must copy from a
     // dialog or lose the account you are signed in as.
-    expect(await screen.findByRole('button', { name: 'SU PEF' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'REIS team' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /SU PEF/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /REIS team(?! 2)/ })).not.toBeInTheDocument();
   });
 
   it('still lets one admin reset a different admin', async () => {
     useAppStore.setState({
       societyAccounts: [
-        { association_id: 'reis', association_name: 'REIS team', is_active: true },
-        { association_id: 'reis2', association_name: 'REIS team 2', is_active: true },
+        {
+          association_id: 'reis',
+          association_name: 'REIS team',
+          is_active: true,
+          email: 'reis@societies.invalid',
+        },
+        {
+          association_id: 'reis2',
+          association_name: 'REIS team 2',
+          is_active: true,
+          email: 'reis2@societies.invalid',
+        },
       ],
     });
     render(<SocietyAccountsPanel />);
 
-    expect(await screen.findByRole('button', { name: 'REIS team 2' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'REIS team' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /REIS team 2/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /REIS team(?! 2)/ })).not.toBeInTheDocument();
   });
 });
