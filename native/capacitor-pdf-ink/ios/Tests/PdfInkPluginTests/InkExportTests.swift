@@ -53,6 +53,35 @@ final class InkExportTests: XCTestCase {
         XCTAssertEqual(InkExport.fileName(for: "   "), "reIS.pdf")
     }
 
+    /**
+     * Ink is baked light whatever appearance the app is in.
+     *
+     * PencilKit adapts ink to the appearance: a black pen renders WHITE in dark
+     * mode. The reader has always pinned its canvases with
+     * `overrideUserInterfaceStyle = .light`; the export renders the same drawing
+     * through `PKDrawing.image(from:scale:)`, which reads
+     * `UITraitCollection.current`, and did NOT pin it. A student working in dark
+     * mode got white strokes baked onto white paper — reported as "the ink is
+     * missing, or dimmed", and invisible rather than merely wrong.
+     *
+     * The whole original suite ran light, which is why it never saw this.
+     */
+    func testInkStaysDarkWhenTheAppIsInDarkMode() throws {
+        let document = try whitePage(size: CGSize(width: 200, height: 200))
+        let drawing = horizontalStroke(y: 100, from: 40, to: 160)
+        let url = tempURL()
+
+        try UITraitCollection(userInterfaceStyle: .dark).performAsCurrent {
+            try? InkExport.flatten(document, drawings: [0: drawing], to: url)
+        }
+
+        let out = try XCTUnwrap(PDFDocument(url: url))
+        let pixels = try render(out.page(at: 0), size: CGSize(width: 200, height: 200))
+        XCTAssertLessThan(
+            pixels(CGPoint(x: 100, y: 100)), 128,
+            "ink baked light — it is invisible on white paper")
+    }
+
     // MARK: - Helpers
 
     private func tempURL() -> URL {
