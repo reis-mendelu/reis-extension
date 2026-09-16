@@ -1206,7 +1206,7 @@ checklist requires "What's New" to describe what actually changed.
 
 ### 14.2 What 5.2.4 carries for an Apple user
 
-Fifteen commits span `v5.2.0..v5.2.4`; three are user-visible on iOS/Mac. The campus-map
+Fifteen commits span `v5.2.0..v5.2.4`; four are user-visible on iOS/Mac. The campus-map
 fix (#329) is desktop-extension only, and #334/#335 are admin-console.
 
 | PR | change |
@@ -1236,7 +1236,7 @@ because that fix had never actually reached anyone.
 
 Every mutation was read back before the next one. `relationships/build` returns `204`
 with no body, so the attached build **must** be re-fetched — this is the step that in
-§12 nearly shipped a nine-day-old binary under new release notes.
+§13.6 nearly shipped a stale binary under new release notes.
 
 ```
 POST  /v1/appStoreVersions                       -> 201, id aa351aa6…, PREPARE_FOR_SUBMISSION
