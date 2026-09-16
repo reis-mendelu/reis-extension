@@ -28,9 +28,10 @@ export function useVisibleMapEvents(): MapEvent[] {
   const { subscribedAssociations, isLoading } = useSpolkySettings();
 
   return useMemo(
-    // `null` while the settings are still coming out of IndexedDB — an empty
-    // list then means "not loaded", not "follows nothing", and hiding on it
-    // would blink every restricted event off the map and back on a cold open.
+    // `null` while the settings are still coming out of IndexedDB. Distinct
+    // from `[]` — "not loaded" rather than "follows nothing" — though both
+    // hide the restricted events, so the map errs towards showing a student
+    // too little rather than flashing up somebody else's event.
     () => visibleToStudent(events, isLoading ? null : subscribedAssociations),
     [events, subscribedAssociations, isLoading]
   );

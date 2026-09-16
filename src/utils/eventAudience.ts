@@ -19,16 +19,23 @@ import type { MapEvent } from '../types/events';
  * `subscribed` is `null` while the answer is not known yet — `useSpolkySettings`
  * reads IndexedDB, so on a cold open there are a couple of ticks where the list
  * is empty because nothing has loaded, not because the student follows nothing.
- * Hiding then would blink every restricted event off the map and back, and an
- * empty ARRAY is a real answer that must be honoured. So the caller says which
- * it has; this never guesses.
+ * An empty ARRAY is the opposite: a real answer, meaning the student follows
+ * nothing. The caller says which it has; this never guesses.
+ *
+ * Both hide the restricted events, and only the reason differs. Unknown resolves
+ * the same way as "follows nothing" because of which direction the flicker runs:
+ * showing everything and then taking events away makes pins and rows vanish from
+ * under a thumb already moving towards one, while hiding and then adding is the
+ * ordinary shape of a screen finishing its load. In practice neither is visible —
+ * the events arrive over the network and the subscriptions come off the disk, so
+ * the answer is nearly always known before there is anything to filter.
  */
 export function visibleToStudent(
   events: MapEvent[],
   subscribed: readonly string[] | null
 ): MapEvent[] {
-  if (subscribed === null) return events;
-  return events.filter((event) => !event.subscribersOnly || subscribed.includes(event.societyId));
+  const follows = subscribed ?? [];
+  return events.filter((event) => !event.subscribersOnly || follows.includes(event.societyId));
 }
 
 /** What to call a society's own audience, as an i18n key plus its one variable. */

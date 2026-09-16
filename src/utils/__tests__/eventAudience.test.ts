@@ -56,14 +56,21 @@ describe('visibleToStudent', () => {
     expect(visibleToStudent([legacy], [])).toEqual([legacy]);
   });
 
-  it('hides nothing while the subscription list is still unknown', () => {
-    // `useSpolkySettings` reads IndexedDB, so the list is empty for a tick or
-    // two on a cold open. Hiding then would blink every restricted event off
-    // the map and back — and an empty list is also a legitimate "I follow
-    // nothing", which is exactly when a restricted event SHOULD be hidden. The
-    // caller distinguishes them; this function is told, never guesses.
+  it('hides a restricted event while the subscription list is still unknown', () => {
+    // `useSpolkySettings` reads IndexedDB, so the list is unknown for a tick or
+    // two on a cold open. It resolves the same way as "follows nothing"
+    // because of which direction the flicker runs: showing the event and then
+    // taking it away pulls a pin out from under a thumb already moving
+    // towards it, where hiding and then adding is just a screen loading.
     const restricted = event({ subscribersOnly: true });
-    expect(visibleToStudent([restricted], null)).toEqual([restricted]);
+    expect(visibleToStudent([restricted], null)).toEqual([]);
+  });
+
+  it('still shows an unrestricted event while the list is unknown', () => {
+    // Failing closed applies to the restricted events and nothing else: the
+    // open ones are for everybody, so there is nothing to wait to find out.
+    const open = event({ subscribersOnly: false });
+    expect(visibleToStudent([open], null)).toEqual([open]);
   });
 });
 
