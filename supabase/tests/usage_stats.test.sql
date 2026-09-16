@@ -70,19 +70,18 @@ begin
   -- 1. `usage_stats_unchecked` drops `platform = 'web'` rows (it is the dev
   --    server, not an install). A 'web' fixture therefore never reaches
   --    by_faculty at all, so every lookup below returns NULL.
-  -- 2. `usage_suppress_groups` hides a SECOND group whenever it hides a first
-  --    (`hidden_cnt = 1` in its loop), so that the hidden value cannot be
-  --    recovered by subtracting from the published total. With only LDF and AF
-  --    present, AF is therefore suppressed too, and the old `af >= 6`
-  --    expectation could never have held. Verified against the deployed
-  --    function:
-  --      usage_suppress_groups('[{"LDF":3},{"AF":6}]')        -> both -1
-  --      usage_suppress_groups('[{"LDF":3},{"ZF":4},{"AF":6}]') -> AF 6, rest -1
-  --    ZF exists to absorb that second suppression so AF stays countable.
+  -- 2. `usage_suppress_groups` hides more than the sub-threshold group, so a
+  --    hidden count cannot be recovered by subtracting from the published
+  --    total. With only LDF and AF seeded, AF was suppressed too, and the old
+  --    `af >= 6` expectation could never have held. ZF is the third group that
+  --    absorbs the extra suppression and leaves AF countable.
   --
-  -- Assumes a database with no other usage rows: the cascade consumes the two
-  -- SMALLEST groups, so a stray faculty smaller than ZF would shift which ones
-  -- are hidden.
+  -- What this block does NOT prove: ZF has four devices, so plain `n < 5`
+  -- suppresses it whether or not the anti-subtraction logic exists. The
+  -- earlier blocks in this file also seed PEF and faculty-less rows, so the
+  -- exact set of hidden groups here depends on fixture history. The cascade
+  -- itself is therefore pinned separately, in the block below, against the
+  -- pure function with literal input — where no fixture can shift the answer.
   for i in 1..3 loop
     perform public.track_daily_usage(gen_random_uuid()::text, 'LDF', 'ios');
   end loop;
@@ -114,8 +113,46 @@ begin
   end if;
 
   if ldf <> -1 then raise exception 'small faculty group LDF not suppressed (got %)', ldf; end if;
-  if zf <> -1 then raise exception 'second group ZF not suppressed by the anti-subtraction cascade (got %)', zf; end if;
+  if zf <> -1 then raise exception 'sub-threshold group ZF not suppressed (got %)', zf; end if;
   if af <> 6 then raise exception 'large faculty group AF miscounted (expected 6, got %)', af; end if;
+end $$;
+
+-- The anti-subtraction cascade, pinned in isolation.
+--
+-- `usage_suppress_groups` is immutable and pure, so literal input tests it
+-- exactly — no seeded rows, no platform filter, no dependence on what earlier
+-- blocks in this transaction left behind. That matters: in the by_faculty
+-- block above every suppressed group is ALSO under the `n < 5` threshold, so
+-- those assertions would still pass if the cascade were deleted.
+--
+-- Here BIG is 9 — far above the threshold — and must STILL be suppressed,
+-- because publishing it beside a total of 12 would reveal SMALL by subtraction.
+-- Deleting the anti-subtraction logic makes BIG report 9 and fails this block,
+-- which is the whole point of it.
+do $$
+declare got json; small int; big int; a int; b int;
+begin
+  got := public.usage_suppress_groups('[{"key":"SMALL","n":3},{"key":"BIG","n":9}]'::jsonb);
+  select (e->>'devices')::int into small
+    from json_array_elements(got) e where e->>'key' = 'SMALL';
+  select (e->>'devices')::int into big
+    from json_array_elements(got) e where e->>'key' = 'BIG';
+  if small is null or big is null then
+    raise exception 'usage_suppress_groups dropped a key or renamed "devices": %', got;
+  end if;
+  if small <> -1 then raise exception 'sub-threshold group was published (got %)', small; end if;
+  if big <> -1 then
+    raise exception 'anti-subtraction cascade gone: BIG (9, above the floor) was published as %, which reveals SMALL by subtraction', big;
+  end if;
+
+  -- Control: with nothing under the floor, nothing is hidden. Without this a
+  -- function that suppressed EVERYTHING would satisfy the assertions above.
+  got := public.usage_suppress_groups('[{"key":"A","n":7},{"key":"B","n":9}]'::jsonb);
+  select (e->>'devices')::int into a from json_array_elements(got) e where e->>'key' = 'A';
+  select (e->>'devices')::int into b from json_array_elements(got) e where e->>'key' = 'B';
+  if a <> 7 or b <> 9 then
+    raise exception 'groups above the floor must be published unchanged (a=%, b=%): %', a, b, got;
+  end if;
 end $$;
 
 -- the unchecked helper is not reachable by untrusted roles
