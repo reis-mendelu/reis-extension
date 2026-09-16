@@ -150,7 +150,7 @@ begin
   got := public.usage_suppress_groups('[{"key":"A","n":7},{"key":"B","n":9}]'::jsonb);
   select (e->>'devices')::int into a from json_array_elements(got) e where e->>'key' = 'A';
   select (e->>'devices')::int into b from json_array_elements(got) e where e->>'key' = 'B';
-  if a <> 7 or b <> 9 then
+  if a is distinct from 7 or b is distinct from 9 then
     raise exception 'groups above the floor must be published unchanged (a=%, b=%): %', a, b, got;
   end if;
 end $$;
