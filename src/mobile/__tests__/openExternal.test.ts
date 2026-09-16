@@ -2,6 +2,23 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('../../platform', () => ({ getPlatform: vi.fn(() => ({ kind: 'capacitor' })) }));
 vi.mock('../../utils/reportError', () => ({ logError: vi.fn() }));
+// openExternal raises a store flag so the app can show that a link is opening.
+// The real store drags its whole graph — and its dev-seed fetches, which tried
+// to reach localhost:3000 — into a test about link handling. Two edges are all
+// this file needs: the flag setter, and the demoMode push the real store does
+// through its own subscription (see errors/demoMode).
+const setExternalOpening = vi.hoisted(() => vi.fn());
+vi.mock('../../store/useAppStore', async () => {
+  const { setDemoModeFlag } = await import('../../errors/demoMode');
+  return {
+    useAppStore: {
+      getState: () => ({ setExternalOpening }),
+      setState: (patch: { demoMode?: boolean }) => {
+        if (patch.demoMode !== undefined) setDemoModeFlag(patch.demoMode);
+      },
+    },
+  };
+});
 
 import { logError } from '../../utils/reportError';
 import { getPlatform } from '../../platform';
@@ -363,6 +380,40 @@ describe('openExternal — the in-app browser needs the session on the request',
     expect(openWebView).toHaveBeenCalledWith(
       expect.objectContaining({ isPresentAfterPageLoad: true })
     );
+  });
+
+  /**
+   * The app says it is working, because the browser cannot say it any sooner.
+   *
+   * The in-app browser is withheld until a desktop IS page has loaded (see the
+   * flag above, which cannot be flipped), so for those seconds the only thing
+   * that can answer the tap is reIS itself.
+   */
+  it('flags that a link is opening, and clears it when the browser is up', async () => {
+    let present!: () => void;
+    openWebView.mockReturnValue(
+      new Promise<void>((resolve) => {
+        present = resolve;
+      })
+    );
+    const { openExternal } = await import('../openExternal');
+
+    const opening = openExternal('https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl');
+    await vi.waitFor(() => expect(setExternalOpening).toHaveBeenCalledWith(true));
+    expect(setExternalOpening).not.toHaveBeenCalledWith(false);
+
+    present();
+    await opening;
+    expect(setExternalOpening).toHaveBeenLastCalledWith(false);
+  });
+
+  it('clears the flag when the browser fails to open, so nothing is left spinning', async () => {
+    openWebView.mockRejectedValue(new Error('plugin exploded'));
+    const { openExternal } = await import('../openExternal');
+
+    await openExternal('https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl');
+
+    expect(setExternalOpening).toHaveBeenLastCalledWith(false);
   });
 
   // Capacitor's cookie API is what corrupted the token. Nothing may route it

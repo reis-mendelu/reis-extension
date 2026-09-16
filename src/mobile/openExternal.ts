@@ -2,6 +2,7 @@ import { getPlatform } from '../platform';
 import { UIS_AUTH_COOKIE, buildRestoreScript, isPlausibleToken } from '../platform/sessionToken';
 import { logError } from '../utils/reportError';
 import { DemoModeError, isDemoMode } from '../errors/demoMode';
+import { useAppStore } from '../store/useAppStore';
 
 /**
  * Opening external links without escaping to the system browser.
@@ -122,6 +123,13 @@ export async function openExternal(url: string): Promise<void> {
     return;
   }
 
+  // Raised around the WHOLE open, including the dynamic import and the token
+  // read, and lowered whether it succeeds or throws. The in-app browser is
+  // withheld until a desktop IS page has loaded end to end and the plugin
+  // refuses to present it any earlier, so without this the tap has no answer
+  // at all for those seconds: "there's no loading so it seems the button is
+  // not working". Read by ExternalLinkOverlay, which is what the student sees.
+  useAppStore.getState().setExternalOpening(true);
   try {
     const { InAppBrowser } = await import('@capgo/capacitor-inappbrowser');
 
@@ -217,8 +225,12 @@ export async function openExternal(url: string): Promise<void> {
     // No toast: this runs from a document listener with no React context, so
     // there is no `t` to translate with. A plugin that fails to open is a
     // fault rather than a condition the student can act on, so telemetry is
-    // the right destination — but it does mean the tap looks inert.
+    // the right destination.
     logError('Mobile.openExternal', e);
+  } finally {
+    // In `finally`, not after the await: a throw must not leave the overlay up
+    // over an app that has stopped trying.
+    useAppStore.getState().setExternalOpening(false);
   }
 }
 

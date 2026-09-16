@@ -1141,7 +1141,8 @@
       "page": "Strana",
       "noMatches": "Nic nenalezeno",
       "removePage": "Odstranit stránku"
-    }
+    },
+    "openingLink": "Otevírám…"
   },
   "session": {
     "expired": "Přihlášení do IS vypršelo.",

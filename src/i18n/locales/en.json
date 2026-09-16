@@ -1141,7 +1141,8 @@
       "page": "Page",
       "noMatches": "Nothing found",
       "removePage": "Remove page"
-    }
+    },
+    "openingLink": "Opening…"
   },
   "session": {
     "expired": "Your IS session has expired.",

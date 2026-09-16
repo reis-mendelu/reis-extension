@@ -1,4 +1,5 @@
 import { Toaster } from '../ui/sonner';
+import { ExternalLinkOverlay } from './ExternalLinkOverlay';
 import { toastOffset } from './toastOffset';
 import { useAppStore } from '../../store/useAppStore';
 import { DemoBanner } from './DemoBanner';
@@ -90,6 +91,10 @@ export function MobileApp() {
       </div>
       <BottomNav />
       <SheetHost />
+      {/* Last child and z-50: an IS link is most often tapped from inside a
+          sheet (the vývěska, notifications), and the scrim has to cover that
+          sheet or the student can tap the link again underneath it. */}
+      <ExternalLinkOverlay />
     </div>
   );
 }
