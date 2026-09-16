@@ -169,6 +169,12 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
             coord_lat: input.coordLat,
             location: input.location ?? null,
             url: input.url ?? null,
+            // Editable, so it has to be in the patch. Left out, an audience
+            // change saved cleanly and kept the old value in the database: the
+            // form reads `subscribers_only` back through `toMapEvent`, so the
+            // control showed the society its new choice while the map went on
+            // honouring the previous one.
+            subscribers_only: input.subscribersOnly ?? false,
           })
         : await createPost(input, associationId, email);
       if (res.error) {

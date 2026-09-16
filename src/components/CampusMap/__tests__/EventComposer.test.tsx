@@ -204,6 +204,70 @@ describe('EventComposer publish', () => {
 });
 
 /**
+ * Who the event is for, saved as well as chosen.
+ *
+ * The control is offered when editing, and the form reads the existing value
+ * back through `toMapEvent`, so the society sees its choice reflected either
+ * way. The patch sent to Supabase left `subscribers_only` out: changing the
+ * audience of a published event reported "Uloženo" and changed nothing, and
+ * the map went on honouring the old answer while the form showed the new one.
+ * The worst shape a bug can take — it looks like it worked.
+ */
+describe('EventComposer — the audience survives an edit', () => {
+  const restricted = {
+    id: 'a1',
+    title: 'Kvíz v S-klubu',
+    url: '',
+    date: '2026-07-08',
+    endDate: null,
+    time: '19:30',
+    location: null,
+    imageUrl: null,
+    organizerKey: 'pef',
+    societyId: 'supef',
+    coord: [16.614, 49.209] as [number, number],
+    roomCode: 'BA39N6006',
+    venueKind: 'campus' as const,
+    category: 'quiz' as const,
+    subscribersOnly: true,
+  };
+
+  it('sends the audience in the patch when it is widened to everyone', async () => {
+    useAppStore.setState({ editEventId: 'a1', societyMapEvents: [restricted] } as never);
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Všichni' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1].subscribers_only).toBe(false);
+  });
+
+  it('sends the audience in the patch when it is narrowed to followers', async () => {
+    useAppStore.setState({
+      editEventId: 'a1',
+      societyMapEvents: [{ ...restricted, subscribersOnly: false }],
+    } as never);
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Jen studenti PEF' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1].subscribers_only).toBe(true);
+  });
+
+  it('carries the stored audience through an edit that does not touch it', async () => {
+    // The other half of the same bug: an omitted field is not a preserved one
+    // once the form starts sending it, so a title-only edit must not quietly
+    // widen a restricted event back to the whole map.
+    useAppStore.setState({ editEventId: 'a1', societyMapEvents: [restricted] } as never);
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Kvíz II' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1].title).toBe('Kvíz II');
+    expect(updatePost.mock.calls[0][1].subscribers_only).toBe(true);
+  });
+});
+
+/**
  * Sprint 08: "Spolky se nemůžou podívat, kde plánují akci na mapě před
  * publikem." The draft pin was never the problem — EventLayer has always drawn
  * one from `draftCoord`. A CAMPUS venue simply never wrote its coordinate
