@@ -167,6 +167,11 @@ export function FileListItem({
           )}
           {isPdfFile(subFile) && onViewPdf && (
             <button
+              // Both `onViewPdf` implementations already refuse a second call
+              // while the first is in flight, so this is about the affordance,
+              // not the fetch: the row is showing a spinner and this button
+              // should not still look like it is offering to do something.
+              disabled={isOpening}
               onClick={(e) => {
                 e.stopPropagation();
                 onViewPdf(subFile.link, { name: displayName, date });
