@@ -42,11 +42,13 @@ const localStorageMock = (() => {
 vi.stubGlobal('localStorage', localStorageMock);
 
 // Mock IntersectionObserver
- 
+
 const observers = new Map<Element, any>();
 
- 
-const mockIntersectionObserver = vi.fn(function(this: any, callback: IntersectionObserverCallback) {
+const mockIntersectionObserver = vi.fn(function (
+  this: any,
+  callback: IntersectionObserverCallback
+) {
   this.callback = callback;
   this.observe = vi.fn((element: Element) => {
     observers.set(element, this);
@@ -58,20 +60,20 @@ vi.stubGlobal('IntersectionObserver', mockIntersectionObserver);
 
 // Helper to trigger intersection
 const triggerIntersection = (element: Element, isIntersecting = true) => {
-    const observer = observers.get(element);
-    if (observer) {
-        // Wrap in simple object matching IntersectionObserverEntry interface needs
-        const entry = {
-            isIntersecting,
-            target: element,
-            intersectionRatio: isIntersecting ? 1 : 0,
-            boundingClientRect: {} as DOMRectReadOnly,
-            intersectionRect: {} as DOMRectReadOnly,
-            rootBounds: null,
-            time: Date.now()
-        };
-        observer.callback([entry], observer);
-    }
+  const observer = observers.get(element);
+  if (observer) {
+    // Wrap in simple object matching IntersectionObserverEntry interface needs
+    const entry = {
+      isIntersecting,
+      target: element,
+      intersectionRatio: isIntersecting ? 1 : 0,
+      boundingClientRect: {} as DOMRectReadOnly,
+      intersectionRect: {} as DOMRectReadOnly,
+      rootBounds: null,
+      time: Date.now(),
+    };
+    observer.callback([entry], observer);
+  }
 };
 
 describe('NotificationFeed', () => {
@@ -84,7 +86,7 @@ describe('NotificationFeed', () => {
       expiresAt: new Date(Date.now() + 86400000).toISOString(),
       priority: 'normal' as const,
       associationId: 'test-assoc',
-      link: 'https://example.com'
+      link: 'https://example.com',
     },
     {
       id: '2',
@@ -94,16 +96,16 @@ describe('NotificationFeed', () => {
       expiresAt: new Date(Date.now() + 86400000).toISOString(),
       priority: 'normal' as const,
       associationId: 'test-assoc-2',
-    }
+    },
   ];
 
-// Mock IndexedDBService
-vi.mock('../services/storage', () => ({
-  IndexedDBService: {
-    get: vi.fn().mockResolvedValue(null),
-    set: vi.fn().mockResolvedValue(undefined),
-  },
-}));
+  // Mock IndexedDBService
+  vi.mock('../services/storage', () => ({
+    IndexedDBService: {
+      get: vi.fn().mockResolvedValue(null),
+      set: vi.fn().mockResolvedValue(undefined),
+    },
+  }));
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -122,35 +124,35 @@ vi.mock('../services/storage', () => ({
 
   it('should track views when notification becomes visible', async () => {
     // Mock user has NOT viewed anything yet
-     
+
     (IndexedDBService.get as any).mockImplementation((_store: string, key: string) => {
-        if (key === 'viewed_notifications_analytics') return Promise.resolve(null);
-        return Promise.resolve(null);
+      if (key === 'viewed_notifications_analytics') return Promise.resolve(null);
+      return Promise.resolve(null);
     });
-    
+
     render(<NotificationFeed />);
-    
+
     // Open dropdown
     const bellButton = screen.getByLabelText('Notifications');
     await act(async () => {
-        fireEvent.click(bellButton);
+      fireEvent.click(bellButton);
     });
 
     await waitFor(() => {
-        expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
+      expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
     });
-    
+
     // Simulate intersection
     const notificationItem = screen.getByText('Test Notification 1').closest('button');
     if (notificationItem) {
-        await act(async () => {
-             triggerIntersection(notificationItem, true);
-        });
+      await act(async () => {
+        triggerIntersection(notificationItem, true);
+      });
     }
 
     // Check if view tracking was called for item 1
     await waitFor(() => {
-        expect(spolkyService.trackNotificationsViewed).toHaveBeenCalledWith(['1']);
+      expect(spolkyService.trackNotificationsViewed).toHaveBeenCalledWith(['1']);
     });
   });
 
@@ -166,21 +168,21 @@ vi.mock('../services/storage', () => ({
     });
 
     render(<NotificationFeed />);
-    
+
     const bellButton = screen.getByLabelText('Notifications');
     await act(async () => {
-        fireEvent.click(bellButton);
+      fireEvent.click(bellButton);
     });
 
     await waitFor(() => {
-        expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
+      expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
     });
 
     const notificationItem = screen.getByText('Test Notification 1').closest('button');
     if (notificationItem) {
-        await act(async () => {
-             triggerIntersection(notificationItem, true);
-        });
+      await act(async () => {
+        triggerIntersection(notificationItem, true);
+      });
     }
 
     // Should NOT have called trackNotificationsViewed for '1'
@@ -189,19 +191,19 @@ vi.mock('../services/storage', () => ({
 
   it('should track click when a notification is clicked', async () => {
     render(<NotificationFeed />);
-    
+
     const bellButton = screen.getByLabelText('Notifications');
     await act(async () => {
-        fireEvent.click(bellButton);
+      fireEvent.click(bellButton);
     });
 
     await waitFor(() => {
-        expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
+      expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
     });
 
     const notificationItem = screen.getByText('Test Notification 1');
     await act(async () => {
-        fireEvent.click(notificationItem);
+      fireEvent.click(notificationItem);
     });
 
     expect(spolkyService.trackNotificationClick).toHaveBeenCalledWith('1');
