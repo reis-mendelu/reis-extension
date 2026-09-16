@@ -12,8 +12,6 @@ vi.mock('../services/spolky', () => ({
   trackNotificationsViewed: vi.fn(),
   trackNotificationClick: vi.fn(),
   filterNotificationsByFaculty: vi.fn((notifications) => notifications),
-  dropPastEvents: vi.fn((notifications) => notifications),
-  localDayIso: vi.fn(() => '2026-09-16'),
   getUserAssociation: vi.fn(),
   useSpolkySettings: vi.fn(() => ({ subscribedAssociations: [] })),
 }));

@@ -2,8 +2,6 @@ export {
   fetchNotifications,
   getUserAssociation,
   filterNotificationsByFaculty,
-  dropPastEvents,
-  localDayIso,
   trackNotificationsViewed,
   trackNotificationClick,
 } from './spolkyService';

@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { filterNotificationsByFaculty, dropPastEvents, localDayIso } from '../services/spolky';
+import { filterNotificationsByFaculty } from '../services/spolky';
+// Straight from the implementation file, not the barrel beside it: the Iron
+// Rule in CLAUDE.md forbids adding to a re-export, and `services/spolky/index`
+// is one. The pre-existing entries stay where they are.
+import { dropPastEvents, localDayIso } from '../services/spolky/spolkyService';
 import { useSpolkySettings } from '../hooks/useSpolkySettings';
 import { useAppStore } from '../store/useAppStore';
 
