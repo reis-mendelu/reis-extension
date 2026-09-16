@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createTeachingWeekSlice } from '../createTeachingWeekSlice';
 import type { TeachingWeekSlice } from '../../types';
-import { IndexedDBService } from '../../../services/storage';
+import { IndexedDBService } from '../../../services/storage/IndexedDBService';
 import { fetchTeachingWeeks } from '../../../api/teachingWeek';
 
-vi.mock('../../../services/storage', () => ({
+vi.mock('../../../services/storage/IndexedDBService', () => ({
   IndexedDBService: { get: vi.fn(), set: vi.fn().mockResolvedValue(undefined) },
 }));
 vi.mock('../../../api/teachingWeek', () => ({ fetchTeachingWeeks: vi.fn() }));

@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createNotificationSlice } from '../createNotificationSlice';
 import type { NotificationSlice } from '../../types';
-import { IndexedDBService } from '../../../services/storage';
+import { IndexedDBService } from '../../../services/storage/IndexedDBService';
 
-vi.mock('../../../services/storage', () => ({
+vi.mock('../../../services/storage/IndexedDBService', () => ({
   IndexedDBService: { get: vi.fn(), set: vi.fn().mockResolvedValue(undefined) },
 }));
 const fetchNotifications = vi.hoisted(() => vi.fn());

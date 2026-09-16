@@ -1,6 +1,6 @@
 import type { TeachingWeekSlice, AppSlice } from '../types';
 import { fetchTeachingWeeks, type TeachingWeekData } from '../../api/teachingWeek';
-import { IndexedDBService } from '../../services/storage';
+import { IndexedDBService } from '../../services/storage/IndexedDBService';
 import { logError } from '../../utils/reportError';
 
 /** One key in the shared `meta` bucket — the table is a few hundred bytes. */
