@@ -917,7 +917,8 @@
     "mapAppAsk": "Always ask",
     "audienceLabel": "WHO SEES IT",
     "audienceEveryone": "Everyone",
-    "audienceHint": "Seen by students who follow {{society}}."
+    "audienceHint": "Seen by students who follow {society}.",
+    "audienceHintGeneric": "Seen only by students who follow this society."
   },
   "admin": {
     "email": "Email",
@@ -986,7 +987,7 @@
     },
     "loginName": "login",
     "audience": {
-      "faculty": "Only {{faculty}} students",
+      "faculty": "Only {faculty} students",
       "erasmus": "Erasmus students only",
       "followers": "Followers only"
     }

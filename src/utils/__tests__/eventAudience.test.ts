@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { visibleToStudent, audienceLabelKey } from '../eventAudience';
+import { visibleToStudent, audienceLabelKey, audienceHint } from '../eventAudience';
+import { translate } from '../../i18n/translate';
 import type { MapEvent } from '../../types/events';
 
 /**
@@ -80,5 +81,57 @@ describe('audienceLabelKey', () => {
 
   it('falls back to something true for a society it does not know', () => {
     expect(audienceLabelKey('brand_new_spolek')).toEqual({ key: 'admin.audience.followers' });
+  });
+});
+
+describe('audienceHint', () => {
+  it('names the society when there is a name to print', () => {
+    expect(audienceHint('supef')).toEqual({ key: 'map.audienceHint', society: 'SUPEF' });
+  });
+
+  it('uses a sentence with no hole in it when there is not', () => {
+    // The reis_admin super-admin and the dev session both carry ids that are
+    // not associations. Interpolating the empty name rendered "Uvidí studenti,
+    // kteří odebírají ." on screen.
+    expect(audienceHint('reis')).toEqual({ key: 'map.audienceHintGeneric' });
+  });
+});
+
+/**
+ * The strings themselves, resolved.
+ *
+ * Asserting the KEY is not enough and this is why: the keys were right and the
+ * copy still rendered "odebírají {}." — the placeholders were written as
+ * `{{society}}` while `translate` interpolates `{society}`, so the regex
+ * replaced the inner braces and left the outer pair on screen. Only reading the
+ * finished sentence catches that.
+ */
+describe('the audience copy resolves, in both languages', () => {
+  it.each(['cz', 'en'])('leaves no braces behind in the hint (%s)', (lang) => {
+    const hint = audienceHint('supef');
+    const text = translate(lang, hint.key, hint.society ? { society: hint.society } : undefined);
+    expect(text).toContain('SUPEF');
+    expect(text).not.toMatch(/[{}]/);
+  });
+
+  it.each(['cz', 'en'])('leaves no braces behind in the faculty label (%s)', (lang) => {
+    const label = audienceLabelKey('supef');
+    const text = translate(lang, label.key, label.faculty ? { faculty: label.faculty } : undefined);
+    expect(text).toContain('PEF');
+    expect(text).not.toMatch(/[{}]/);
+  });
+
+  it.each(['cz', 'en'])('has real copy for every audience key (%s)', (lang) => {
+    // `translate` returns the KEY when it cannot find a string, so a missing
+    // translation is silent on screen — it just looks like a dotted id.
+    for (const key of [
+      'map.audienceLabel',
+      'map.audienceEveryone',
+      'map.audienceHintGeneric',
+      'admin.audience.erasmus',
+      'admin.audience.followers',
+    ]) {
+      expect(translate(lang, key)).not.toBe(key);
+    }
   });
 });

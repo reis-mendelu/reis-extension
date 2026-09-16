@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { CalendarPlus, Check, Globe, MapPin, X } from 'lucide-react';
-import { audienceLabelKey } from '../../utils/eventAudience';
-import { ASSOCIATION_PROFILES } from '../../services/spolky/config';
+import { audienceHint, audienceLabelKey } from '../../utils/eventAudience';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { createPost, updatePost, type PostInput } from '../../api/societyPosts';
@@ -32,7 +31,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   // no society and picks one in the console header. RLS accepts either.
   const associationId = useAppStore((s) => s.adminActiveAssociationId);
   const audience = audienceLabelKey(associationId ?? '');
-  const societyName = ASSOCIATION_PROFILES[associationId ?? '']?.name ?? '';
+  const hint = audienceHint(associationId ?? '');
   const email = useAppStore((s) => s.adminSession?.user.email ?? '');
   const draftCoord = useAppStore((s) => s.draftCoord);
   const beginPlacing = useAppStore((s) => s.beginPlacing);
@@ -324,8 +323,8 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
           seeds the default — so "students of PEF" is an approximation, and a
           society choosing who sees its event deserves to know by what. */}
       {subscribersOnly && (
-        <p className="mt-1 text-[11px] leading-snug text-base-content/60">
-          {t('map.audienceHint', { society: societyName })}
+        <p className="mt-1 text-[11px] leading-snug text-base-content/70">
+          {t(hint.key, hint.society ? { society: hint.society } : undefined)}
         </p>
       )}
 

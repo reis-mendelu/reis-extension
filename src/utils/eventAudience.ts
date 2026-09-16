@@ -60,3 +60,24 @@ export function audienceLabelKey(societyId: string): AudienceLabel {
   if (faculties.length === 1) return { key: 'admin.audience.faculty', faculty: faculties[0] };
   return { key: 'admin.audience.followers' };
 }
+
+/** The hint under the control, as an i18n key plus its one variable. */
+export interface AudienceHint {
+  key: 'map.audienceHint' | 'map.audienceHintGeneric';
+  society?: string;
+}
+
+/**
+ * The line that keeps the button's promise honest.
+ *
+ * Named when we know the name. A session whose society is not in
+ * `ASSOCIATION_PROFILES` — the reis_admin super-admin, and the dev session,
+ * which both carry ids that are not associations — has no name to print, and
+ * the first version of this interpolated the empty string into the sentence
+ * and rendered "Uvidí studenti, kteří odebírají ." So the nameless case gets
+ * its own sentence rather than a hole in this one.
+ */
+export function audienceHint(societyId: string): AudienceHint {
+  const name = ASSOCIATION_PROFILES[societyId]?.name;
+  return name ? { key: 'map.audienceHint', society: name } : { key: 'map.audienceHintGeneric' };
+}

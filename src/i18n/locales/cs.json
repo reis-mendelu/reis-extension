@@ -917,7 +917,8 @@
     "mapAppAsk": "Vždy se zeptat",
     "audienceLabel": "KDO TO UVIDÍ",
     "audienceEveryone": "Všichni",
-    "audienceHint": "Uvidí studenti, kteří odebírají {{society}}."
+    "audienceHint": "Uvidí studenti, kteří odebírají {society}.",
+    "audienceHintGeneric": "Uvidí jen studenti, kteří tento spolek odebírají."
   },
   "admin": {
     "email": "E-mail",
@@ -986,7 +987,7 @@
     },
     "loginName": "login",
     "audience": {
-      "faculty": "Jen studenti {{faculty}}",
+      "faculty": "Jen studenti {faculty}",
       "erasmus": "Jen erasmáci",
       "followers": "Jen naši"
     }
