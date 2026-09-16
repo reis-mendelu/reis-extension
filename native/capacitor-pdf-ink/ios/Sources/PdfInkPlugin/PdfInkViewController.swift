@@ -338,7 +338,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         harvestCanvases()
         drawings = InkPages.shifted(drawings, insertingAt: at)
         insertedPages = InkPages.shifted(insertedPages, insertingAt: at)
-        document.insert(InkPages.blank(size: current.bounds(for: .mediaBox).size), at: at)
+        document.insert(InkPages.blank(size: InkPages.displayedSize(of: current)), at: at)
         reloadDocumentKeepingZoom()
         if let page = document.page(at: at) { pdfView.go(to: page) }
         updatePageItem()

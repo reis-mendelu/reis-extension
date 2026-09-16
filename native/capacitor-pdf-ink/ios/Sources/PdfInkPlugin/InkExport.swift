@@ -15,8 +15,10 @@ import UIKit
  */
 enum InkExport {
     /// The box PDFKit lays the reader's canvases out in, so the box the strokes
-    /// are positioned against. It has to be the same one on both sides here.
-    static let box = PDFDisplayBox.cropBox
+    /// are positioned against. It has to be the same one on both sides here —
+    /// which is why it is `InkPages`' to define, not this file's: an added page
+    /// is measured in it too.
+    static let box = InkPages.displayBox
     static let inkScale: CGFloat = 2
 
     static func flatten(_ document: PDFDocument, drawings: [Int: PKDrawing], to url: URL) throws {
@@ -58,16 +60,9 @@ enum InkExport {
         }
     }
 
-    /// The page as the reader shows it: the display box, turned on its side when
-    /// the page is rotated a quarter turn.
+    /// The page as the reader shows it, as a rect at the origin.
     static func pageRect(_ page: PDFPage?) -> CGRect {
-        guard let page else { return CGRect(x: 0, y: 0, width: 612, height: 792) }
-        let bounds = page.bounds(for: box)
-        let turned = page.rotation % 180 != 0
-        return CGRect(
-            origin: .zero,
-            size: turned
-                ? CGSize(width: bounds.height, height: bounds.width) : bounds.size)
+        CGRect(origin: .zero, size: InkPages.displayedSize(of: page))
     }
 
     /**
