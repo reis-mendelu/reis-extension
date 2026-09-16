@@ -25,7 +25,18 @@ export const createNotificationSlice: AppSlice<NotificationSlice> = (set, get) =
                 readIds: new Set(readIds || []),
                 viewedIds: new Set(viewedIds || []),
                 seenDeadlineAlertIds: new Set(seenIds || []),
-                data: cache || [],
+                // A HEAD START, not an answer. Boot fires this and
+                // `fetchNotifications` side by side and awaits neither, so on a
+                // cold start four IndexedDB reads can finish AFTER a warm HTTP
+                // response — and this used to drop the stale cache back on top
+                // of it. A student then saw an event from a fortnight ago,
+                // unread and highlighted, until the next refetch five minutes
+                // later. `success` is the only state that means the network has
+                // actually answered; after an error the cache is still the best
+                // thing available.
+                data: state.notifications.status === 'success'
+                    ? state.notifications.data
+                    : cache || [],
             },
         }));
     },

@@ -110,6 +110,55 @@ export function getUserAssociation(facultyId: string | null): AssociationProfile
  * @param optedInAssociations - List of manually subscribed association IDs
  * @returns Filtered notifications
  */
+/**
+ * Today, as the STUDENT's calendar has it — not UTC.
+ *
+ * `toISOString().slice(0, 10)` is the obvious version and is wrong east of
+ * Greenwich: at 00:30 in Brno it still answers yesterday, which is exactly the
+ * window in which "is this event over?" changes its answer.
+ */
+export function localDayIso(now: Date = new Date()): string {
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+/**
+ * Drops society events that are over.
+ *
+ * The server query already asks for `date >= today`, so a fresh fetch never
+ * carries a past event. The feed is also served from `notifications_cache` in
+ * IndexedDB though — written whenever a fetch lands, and never re-examined —
+ * so an event that was current when the cache was written stayed in the list,
+ * unread and highlighted, long after it happened: "deskovky notification still
+ * shows and highlights even a day after they happened". Asking the question at
+ * READ time is what makes the answer independent of where the list came from,
+ * and of how long the app has been open.
+ *
+ * Judged on `expiresAt`, which is `end_date || date`, so a multi-day event is
+ * judged on its end. Day granularity: the rows carry no time, and an event at
+ * 19:00 is still news at 09:00 the same day.
+ *
+ * `todayIso` is the student's LOCAL day, deliberately. The server builds its
+ * filter from `new Date().toISOString()`, which is UTC — between local midnight
+ * and 02:00 CEST that is still yesterday, so even a fresh fetch keeps a
+ * finished event for a couple of hours. The client is where the student is.
+ *
+ * Anything undateable is KEPT. Hiding a society's announcement because a field
+ * could not be parsed is a worse failure than showing a stale one.
+ */
+export function dropPastEvents(
+  notifications: SpolekNotification[],
+  todayIso: string
+): SpolekNotification[] {
+  return notifications.filter((n) => {
+    const day = (n.expiresAt ?? '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return true;
+    // ISO dates compare lexicographically, which for YYYY-MM-DD is chronological.
+    return day >= todayIso;
+  });
+}
+
 export function filterNotificationsByFaculty(
   notifications: SpolekNotification[],
   subscribedAssociations: string[] = []
