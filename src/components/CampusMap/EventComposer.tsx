@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { CalendarPlus, Check, Globe, MapPin, X } from 'lucide-react';
-import { audienceHint, audienceLabelKey } from '../../utils/eventAudience';
+import { CalendarPlus, Check, MapPin, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { createPost, updatePost, type PostInput } from '../../api/societyPosts';
@@ -11,6 +10,7 @@ import { MiniCalendar } from './MiniCalendar';
 import { ComposerRoomSearch } from './ComposerRoomSearch';
 import { ComposerPlaceSearch } from './ComposerPlaceSearch';
 import { ComposerTimeField } from './ComposerTimeField';
+import { ComposerAudienceField } from './ComposerAudienceField';
 import { roomCodeToName } from './mapHelpers';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import type { RoomIndexEntry } from '../../types/campusMap';
@@ -30,8 +30,6 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   // The society being authored, not the account's own — a reIS admin belongs to
   // no society and picks one in the console header. RLS accepts either.
   const associationId = useAppStore((s) => s.adminActiveAssociationId);
-  const audience = audienceLabelKey(associationId ?? '');
-  const hint = audienceHint(associationId ?? '');
   const email = useAppStore((s) => s.adminSession?.user.email ?? '');
   const draftCoord = useAppStore((s) => s.draftCoord);
   const beginPlacing = useAppStore((s) => s.beginPlacing);
@@ -305,34 +303,11 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         </button>
       </div>
 
-      <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
-        {t('map.audienceLabel')}
-      </label>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          className={`btn btn-sm flex-1 gap-1 ${!subscribersOnly ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
-          onClick={() => setSubscribersOnly(false)}
-        >
-          <Globe size={13} /> {t('map.audienceEveryone')}
-        </button>
-        <button
-          type="button"
-          className={`btn btn-sm flex-1 gap-1 ${subscribersOnly ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
-          onClick={() => setSubscribersOnly(true)}
-        >
-          {t(audience.key, audience.faculty ? { faculty: audience.faculty } : undefined)}
-        </button>
-      </div>
-      {/* The button names the audience the society recognises; this line keeps
-          the promise honest. The filter runs on SUBSCRIPTIONS — a faculty only
-          seeds the default — so "students of PEF" is an approximation, and a
-          society choosing who sees its event deserves to know by what. */}
-      {subscribersOnly && (
-        <p className="mt-1 text-[11px] leading-snug text-base-content/70">
-          {t(hint.key, hint.society ? { society: hint.society } : undefined)}
-        </p>
-      )}
+      <ComposerAudienceField
+        societyId={associationId ?? ''}
+        value={subscribersOnly}
+        onChange={setSubscribersOnly}
+      />
 
       {venue === 'campus' ? (
         <ComposerRoomSearch
