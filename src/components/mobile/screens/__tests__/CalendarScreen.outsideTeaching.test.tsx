@@ -202,4 +202,34 @@ describe('CalendarScreen landing day', () => {
     render(<CalendarScreen />);
     expect(screen.getByText('Středa 16. září')).toBeInTheDocument();
   });
+
+  it('skips a hidden first lesson and lands on the first day the student can see', () => {
+    // The landing day is read off the schedule the student actually gets, not
+    // the raw one. Land on a day whose only lesson is hidden and the agenda is
+    // empty when you arrive — the blank calendar this rule exists to prevent,
+    // reached by a different road.
+    useAppStore.setState({
+      hiddenItems: { events: [], courses: [{ courseCode: 'EBC-MAN', type: 'all' }] },
+      schedule: {
+        data: [
+          lesson({ id: 'l1', date: '20260921' }),
+          lesson({ id: 'l2', date: '20260923', courseCode: 'EBC-STA', courseName: 'Statistika' }),
+        ],
+        status: 'success',
+      },
+    } as never);
+    render(<CalendarScreen />);
+    expect(screen.getByText('Středa 23. září')).toBeInTheDocument();
+    expect(screen.getByText('Statistika')).toBeInTheDocument();
+  });
+
+  it('stays on today when every lesson is hidden', () => {
+    // Nothing visible means no first day to name, which is the same answer as
+    // an empty schedule: stay where the student is.
+    useAppStore.setState({
+      hiddenItems: { events: [], courses: [{ courseCode: 'EBC-MAN', type: 'all' }] },
+    } as never);
+    render(<CalendarScreen />);
+    expect(screen.getByText('Středa 16. září')).toBeInTheDocument();
+  });
 });

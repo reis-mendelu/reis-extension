@@ -65,12 +65,18 @@ export function CalendarScreen() {
   // utils/mobile/landingDay. Resolved HERE rather than in the store so it
   // re-derives every render: `null` stays "wherever the calendar opens", so the
   // day still rolls over at midnight and still follows a late sync.
-  const defaultIso = defaultCalendarDay(schedule, teachingWeekData, new Date());
-  const selectedIso = mobileSelectedDayIso ?? defaultIso;
-  // Lifted above `chrome` so it is computed once for the strip below, in every
-  // state including the skeleton — with no schedule the set is simply empty,
-  // and the strip falls back to Mon–Fri.
+  //
+  // Computed from the VISIBLE schedule, not the raw one. A student who hid the
+  // course that happens to start earliest would otherwise land on a day whose
+  // agenda is empty once the hidden lessons are taken out — the blank calendar
+  // this rule exists to prevent, arrived at by a different road.
+  //
+  // Lifted above `chrome` so the set is computed once for the strip below too,
+  // in every state including the skeleton — with no schedule it is simply
+  // empty, and the strip falls back to Mon–Fri.
   const visibleSchedule = schedule.filter((l) => !isLessonHidden(l, hiddenItems));
+  const defaultIso = defaultCalendarDay(visibleSchedule, teachingWeekData, new Date());
+  const selectedIso = mobileSelectedDayIso ?? defaultIso;
   const lessonDates = new Set(visibleSchedule.map((l) => l.date));
   const chrome = (
     <>
