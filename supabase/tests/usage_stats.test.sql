@@ -61,7 +61,7 @@ end $$;
 
 -- usage_stats suppresses groups under five (runs as the connection's own role, which owns the function, so the role check inside usage_stats is bypassed by calling the unchecked helper directly)
 do $$
-declare v json; i int;
+declare v json; i int; ldf int; af int;
 begin
   for i in 1..3 loop
     perform public.track_daily_usage(gen_random_uuid()::text, 'LDF', 'web');
@@ -70,10 +70,28 @@ begin
     perform public.track_daily_usage(gen_random_uuid()::text, 'AF', 'extension');
   end loop;
   v := public.usage_stats_unchecked(30);
-  if (select (e->>'installs')::int from json_array_elements(v->'by_faculty') e where e->>'key' = 'LDF') <> -1
-    then raise exception 'small faculty group not suppressed'; end if;
-  if (select (e->>'installs')::int from json_array_elements(v->'by_faculty') e where e->>'key' = 'AF') < 6
-    then raise exception 'large faculty group miscounted'; end if;
+
+  -- Read the count field ONCE, into a variable, and assert it is not null
+  -- before comparing. This is not defensive noise: when the field was renamed
+  -- 'installs' -> 'devices', `e->>'installs'` started yielding NULL, and every
+  -- comparison below became `NULL <> -1` — which is NULL, not true, so no
+  -- `raise` fired and this whole block passed while asserting nothing. A test
+  -- that cannot fail is worse than no test, because it reads as coverage.
+  -- The null guards are what make a future rename LOUD instead of silent.
+  select (e->>'devices')::int into ldf
+    from json_array_elements(v->'by_faculty') e where e->>'key' = 'LDF';
+  select (e->>'devices')::int into af
+    from json_array_elements(v->'by_faculty') e where e->>'key' = 'AF';
+
+  if ldf is null then
+    raise exception 'by_faculty.LDF has no "devices" field — the response shape changed: %', v;
+  end if;
+  if af is null then
+    raise exception 'by_faculty.AF has no "devices" field — the response shape changed: %', v;
+  end if;
+
+  if ldf <> -1 then raise exception 'small faculty group not suppressed (got %)', ldf; end if;
+  if af < 6 then raise exception 'large faculty group miscounted (got %)', af; end if;
 end $$;
 
 -- the unchecked helper is not reachable by untrusted roles
