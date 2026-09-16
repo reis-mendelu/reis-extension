@@ -224,6 +224,11 @@ describe('openExternal', () => {
 describe('openExternal — which browser', () => {
   const openWebView = vi.fn();
   const open = vi.fn();
+  // Same presentation wait as the block below; here it only has to not hang.
+  const addListener = vi.fn(async (event: string, fn: () => void) => {
+    if (event === 'browserPageLoaded') setTimeout(fn, 0);
+    return { remove: async () => {} };
+  });
 
   beforeEach(() => {
     setAppOrigin();
@@ -232,7 +237,7 @@ describe('openExternal — which browser', () => {
       kind: 'capacitor',
     } as unknown as ReturnType<typeof getPlatform>);
     vi.doMock('@capgo/capacitor-inappbrowser', () => ({
-      InAppBrowser: { openWebView, open },
+      InAppBrowser: { openWebView, open, addListener },
     }));
   });
 
@@ -275,6 +280,21 @@ describe('openExternal — the in-app browser needs the session on the request',
   const openWebView = vi.fn();
   const open = vi.fn();
   const setCookie = vi.fn();
+  /**
+   * openExternal now waits for the browser to be PRESENTED, which the plugin
+   * announces with 'browserPageLoaded'. By default this stub fires it on the
+   * next tick, so every test that only cares about the open call still
+   * completes; the one test about the flag's lifetime holds it back.
+   */
+  let autoPresent = true;
+  let firePageLoaded: () => void = () => {};
+  const addListener = vi.fn(async (event: string, fn: () => void) => {
+    if (event === 'browserPageLoaded') {
+      firePageLoaded = fn;
+      if (autoPresent) setTimeout(fn, 0);
+    }
+    return { remove: async () => {} };
+  });
 
   beforeEach(() => {
     setAppOrigin();
@@ -284,7 +304,7 @@ describe('openExternal — the in-app browser needs the session on the request',
       kind: 'capacitor',
     } as unknown as ReturnType<typeof getPlatform>);
     vi.doMock('@capgo/capacitor-inappbrowser', () => ({
-      InAppBrowser: { openWebView, open },
+      InAppBrowser: { openWebView, open, addListener },
     }));
     vi.doMock('@capacitor/core', () => ({ CapacitorCookies: { setCookie } }));
     vi.doMock('../../platform/tokenStore', () => ({
@@ -389,21 +409,48 @@ describe('openExternal — the in-app browser needs the session on the request',
    * flag above, which cannot be flipped), so for those seconds the only thing
    * that can answer the tap is reIS itself.
    */
-  it('flags that a link is opening, and clears it when the browser is up', async () => {
-    let present!: () => void;
-    openWebView.mockReturnValue(
-      new Promise<void>((resolve) => {
-        present = resolve;
-      })
-    );
+  /**
+   * The flag has to outlive `openWebView`, which is the whole difficulty.
+   *
+   * That call resolves as soon as the native side accepts it: in
+   * InAppBrowserPlugin.swift `call.resolve` runs at the end of the setup block,
+   * and with `isPresentAfterPageLoad` true the `presentView` beside it is
+   * SKIPPED — presentation happens later, when the page has loaded. So awaiting
+   * the call says nothing about whether the student can see anything yet, and
+   * clearing the flag on it put the spinner on screen for a few milliseconds,
+   * which is to say never. Reported: "I don't see any spinner".
+   */
+  it('keeps the flag up until the browser is actually on screen', async () => {
+    autoPresent = false;
+    openWebView.mockResolvedValue({ id: 'w1' });
     const { openExternal } = await import('../openExternal');
 
     const opening = openExternal('https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl');
-    await vi.waitFor(() => expect(setExternalOpening).toHaveBeenCalledWith(true));
-    expect(setExternalOpening).not.toHaveBeenCalledWith(false);
+    await vi.waitFor(() => expect(openWebView).toHaveBeenCalled());
+    // openWebView has already resolved here, and the flag must still be up.
+    expect(setExternalOpening).toHaveBeenLastCalledWith(true);
 
-    present();
+    firePageLoaded();
     await opening;
+    expect(setExternalOpening).toHaveBeenLastCalledWith(false);
+  });
+
+  it('subscribes before opening, so a page that loads at once is not missed', async () => {
+    openWebView.mockResolvedValue({ id: 'w1' });
+    const { openExternal } = await import('../openExternal');
+    void openExternal('https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl');
+
+    await vi.waitFor(() => expect(openWebView).toHaveBeenCalled());
+    expect(addListener.mock.invocationCallOrder[0]).toBeLessThan(
+      openWebView.mock.invocationCallOrder[0]!
+    );
+  });
+
+  it('clears the flag on a link that never needed the session, which presents at once', async () => {
+    open.mockResolvedValue(undefined);
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://example.org/whatever');
+
     expect(setExternalOpening).toHaveBeenLastCalledWith(false);
   });
 
