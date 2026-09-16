@@ -302,6 +302,7 @@ describe('society events', () => {
           url: null,
           created_by: null,
           visible_from: null,
+          subscribers_only: false,
         },
       ],
     });

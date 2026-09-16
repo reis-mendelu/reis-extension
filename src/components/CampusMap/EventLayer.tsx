@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type L from 'leaflet';
+import { useVisibleMapEvents } from '../../hooks/useVisibleMapEvents';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { effectiveFilter, filterEvents, groupEventsByVenue, type VenueGroup } from './eventHelpers';
@@ -55,8 +56,13 @@ export function EventLayer({ chipsShown = true }: EventLayerProps = {}) {
   // console's map draws the active society's own events (including the ones
   // still scheduled and hidden from students).
   const authoring = useAppStore((s) => s.adminConsoleOpen);
-  const publicEvents = useAppStore((s) => s.mapEvents);
+  // The student's own view of the public feed: a society can mark an event for
+  // its followers only, and this is where that is honoured.
+  const publicEvents = useVisibleMapEvents();
   const societyEvents = useAppStore((s) => s.societyMapEvents);
+  // NOT filtered while authoring. A society composing an event has to see the
+  // one it just marked for its followers — hiding it from its own author would
+  // read as the publish having failed.
   const events = authoring ? societyEvents : publicEvents;
   const eventFilter = useAppStore((s) => s.eventFilter);
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);

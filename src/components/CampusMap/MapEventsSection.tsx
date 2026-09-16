@@ -1,4 +1,5 @@
 import { CalendarOff } from 'lucide-react';
+import { useVisibleMapEvents } from '../../hooks/useVisibleMapEvents';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useEventsFacultySettings } from '../../hooks/useEventsFacultySettings';
@@ -23,8 +24,9 @@ export interface MapEventsSectionProps {
 
 export function MapEventsSection({ showFilter = true }: MapEventsSectionProps) {
   // This panel only ever renders on the student map — the admin console has its
-  // own list — so the public feed is the only source.
-  const events = useAppStore((s) => s.mapEvents);
+  // own list — so the public feed is the only source, filtered to what this
+  // student should be shown (a society can mark an event for its followers).
+  const events = useVisibleMapEvents();
   const filter = useAppStore((s) => s.eventFilter);
   const setFilter = useAppStore((s) => s.setEventFilter);
   const selection = useAppStore((s) => s.mapSelection);

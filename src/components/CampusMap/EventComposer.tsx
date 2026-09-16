@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { CalendarPlus, Check, MapPin, X } from 'lucide-react';
+import { CalendarPlus, Check, Globe, MapPin, X } from 'lucide-react';
+import { audienceLabelKey } from '../../utils/eventAudience';
+import { ASSOCIATION_PROFILES } from '../../services/spolky/config';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { createPost, updatePost, type PostInput } from '../../api/societyPosts';
@@ -29,6 +31,8 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   // The society being authored, not the account's own — a reIS admin belongs to
   // no society and picks one in the console header. RLS accepts either.
   const associationId = useAppStore((s) => s.adminActiveAssociationId);
+  const audience = audienceLabelKey(associationId ?? '');
+  const societyName = ASSOCIATION_PROFILES[associationId ?? '']?.name ?? '';
   const email = useAppStore((s) => s.adminSession?.user.email ?? '');
   const draftCoord = useAppStore((s) => s.draftCoord);
   const beginPlacing = useAppStore((s) => s.beginPlacing);
@@ -63,6 +67,10 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       : null
   );
   const [category, setCategory] = useState<EventCategory>(editing?.category ?? 'party');
+  // Everyone unless the society says otherwise: an event published without a
+  // thought for this reaches the whole map, exactly as every event did before
+  // the column existed.
+  const [subscribersOnly, setSubscribersOnly] = useState(editing?.subscribersOnly ?? false);
   // Display name for an off-campus venue (from the Photon place search). Null
   // when the point was dropped on the map by hand rather than searched.
   const [placeName, setPlaceName] = useState<string | null>(
@@ -147,6 +155,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       coordLat: coord[1],
       location: venue === 'campus' ? null : placeName,
       url: url.trim() || null,
+      subscribersOnly,
     };
     try {
       const res = editId
@@ -290,6 +299,35 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
           {t('map.venueCampus')}
         </button>
       </div>
+
+      <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
+        {t('map.audienceLabel')}
+      </label>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className={`btn btn-sm flex-1 gap-1 ${!subscribersOnly ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
+          onClick={() => setSubscribersOnly(false)}
+        >
+          <Globe size={13} /> {t('map.audienceEveryone')}
+        </button>
+        <button
+          type="button"
+          className={`btn btn-sm flex-1 gap-1 ${subscribersOnly ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
+          onClick={() => setSubscribersOnly(true)}
+        >
+          {t(audience.key, audience.faculty ? { faculty: audience.faculty } : undefined)}
+        </button>
+      </div>
+      {/* The button names the audience the society recognises; this line keeps
+          the promise honest. The filter runs on SUBSCRIPTIONS — a faculty only
+          seeds the default — so "students of PEF" is an approximation, and a
+          society choosing who sees its event deserves to know by what. */}
+      {subscribersOnly && (
+        <p className="mt-1 text-[11px] leading-snug text-base-content/60">
+          {t('map.audienceHint', { society: societyName })}
+        </p>
+      )}
 
       {venue === 'campus' ? (
         <ComposerRoomSearch

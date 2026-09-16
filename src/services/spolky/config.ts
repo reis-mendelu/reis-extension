@@ -26,6 +26,7 @@ export const ASSOCIATION_PROFILES: Record<string, AssociationProfile> = {
     name: 'ESN Mendelu',
     websiteUrl: 'https://esn.mendelu.cz',
     facultyIds: [], // Cross-faculty - for Erasmus students
+    audienceLabelKey: 'erasmus',
   },
   au_frrms: {
     id: 'au_frrms',
