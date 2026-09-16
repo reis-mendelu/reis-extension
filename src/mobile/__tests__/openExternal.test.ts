@@ -336,10 +336,25 @@ describe('openExternal — the in-app browser needs the session on the request',
   });
 
   /**
-   * capgo injects `preShowScript` only when `isPresentAfterPageLoad` is true
-   * (see its definitions). So the two are coupled: dropping the presentation
-   * flag would silently stop the cookie being set and bring the login screen
-   * back, with nothing failing anywhere.
+   * capgo injects `preShowScript` only when `isPresentAfterPageLoad` is true.
+   * So the two are coupled: dropping the presentation flag would stop the
+   * cookie being set and bring the login screen back.
+   *
+   * Do not flip this to buy a faster-feeling tap. The wait IS a real complaint
+   * — "while waiting for a vyveska item to open in IS there's no loading so it
+   * seems the button is not working" — and `false` looks like the fix, but both
+   * platforms VALIDATE the pair at the plugin entry point and reject the call
+   * outright: `InAppBrowserPlugin.swift:1343` and
+   * `CapgoInAppBrowserPlugin.java:1238`, both "preShowScript requires
+   * isPresentAfterPageLoad to be true". Tried on an iPad simulator 2026-09-16:
+   * the browser did not appear at all, which is a worse version of the bug.
+   *
+   * (The iOS WKWebViewController's own documentStart injection does not read
+   * the flag, which makes the pair look decoupled if that is the only file you
+   * read. The rejection happens a layer above it.)
+   *
+   * Feedback for that wait therefore has to come from the app side, not from
+   * presenting the browser earlier.
    */
   it('keeps the flag preShowScript depends on', async () => {
     const { openExternal } = await import('../openExternal');

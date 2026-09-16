@@ -43,6 +43,50 @@ describe('usePdfPreview', () => {
     URL.createObjectURL = vi.fn(() => 'blob:from-ink');
   });
 
+  /**
+   * Which file is being fetched, for as long as the fetch runs.
+   *
+   * The hook computed a bare `isPreviewLoading` that no caller ever read, so a
+   * tapped row showed nothing at all while a whole PDF came down the IS session
+   * — "there's no loading so it seems the button is not working". The row needs
+   * to know WHICH file, not merely that something is happening.
+   */
+  it('names the file it is fetching, and stops when the fetch ends', async () => {
+    let finish!: (v: string) => void;
+    openPdfInline.mockReturnValue(
+      new Promise<string>((resolve) => {
+        finish = resolve;
+      })
+    );
+    const { result } = renderHook(() => usePdfPreview());
+
+    let done!: Promise<void>;
+    await act(async () => {
+      done = result.current.viewPdf('/lecture.pdf', { name: 'Lecture' });
+    });
+    expect(result.current.openingLink).toBe('/lecture.pdf');
+
+    await act(async () => {
+      finish('blob:abc');
+      await done;
+    });
+    expect(result.current.openingLink).toBeNull();
+  });
+
+  it('ignores a second tap while the first file is still coming down', async () => {
+    openPdfInline.mockReturnValue(new Promise<string>(() => {}));
+    const { result } = renderHook(() => usePdfPreview());
+    await act(async () => {
+      void result.current.viewPdf('/first.pdf');
+    });
+    await act(async () => {
+      void result.current.viewPdf('/second.pdf');
+    });
+
+    expect(openPdfInline).toHaveBeenCalledTimes(1);
+    expect(result.current.openingLink).toBe('/first.pdf');
+  });
+
   it('shows the blob it fetched', async () => {
     openPdfInline.mockResolvedValue('blob:abc');
     const { result } = renderHook(() => usePdfPreview());

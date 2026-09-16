@@ -50,7 +50,11 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
   const { t } = useTranslation();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<PdfPreviewFile | null>(null);
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  // The LINK, not a bare boolean. A boolean cannot say which row to mark, and
+  // the row is where the student is looking — `isPreviewLoading` existed for a
+  // year and no caller ever read it, so a tap on a file showed nothing at all
+  // while a whole PDF came down the IS session.
+  const [openingLink, setOpeningLink] = useState<string | null>(null);
 
   // Blob URLs are held by the document until revoked; a drawer opened and
   // closed a dozen times would otherwise pin every PDF it ever showed in memory.
@@ -113,8 +117,8 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
 
   const viewPdf = useCallback(
     async (link: string, meta?: PdfPreviewMeta) => {
-      if (isPreviewLoading) return;
-      setIsPreviewLoading(true);
+      if (openingLink) return;
+      setOpeningLink(link);
       const name = meta?.name ?? 'PDF';
       try {
         let blobUrl: string | null;
@@ -137,10 +141,10 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
           await openFile(link);
         }
       } finally {
-        if (alive.current) setIsPreviewLoading(false);
+        if (alive.current) setOpeningLink(null);
       }
     },
-    [courseCode, tryNativeReader, openPdfInline, openFile, isPreviewLoading]
+    [courseCode, tryNativeReader, openPdfInline, openFile, openingLink]
   );
 
   const closePreview = useCallback(() => {
@@ -151,7 +155,8 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
   return {
     previewUrl,
     previewFile,
-    isPreviewLoading,
+    openingLink,
+    isPreviewLoading: openingLink !== null,
     viewPdf,
     closePreview,
     openFile,

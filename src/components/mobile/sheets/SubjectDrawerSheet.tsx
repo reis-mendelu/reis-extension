@@ -78,13 +78,11 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   // The course keys the iPad reader's ink and PDF cache, and its PDFs fill the
   // reader's sidebar so a student can switch files without coming back here —
   // in the drawer's grouped order, so both lists read the same.
-  const { previewUrl, viewPdf, closePreview, openFile, downloadSingle } = usePdfPreview(
-    courseCode,
-    {
+  const { previewUrl, viewPdf, closePreview, openFile, downloadSingle, openingLink } =
+    usePdfPreview(courseCode, {
       title: courseName || courseCode,
       files: listSubjectPdfs(groupedFiles.flatMap((g) => g.files)),
-    }
-  );
+    });
   const { classmates } = useClassmates(courseCode);
   const pushSheet = useAppStore((s) => s.pushSheet);
   const { data: zaznamnikData } = useZaznamnik(courseCode);
@@ -157,6 +155,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           toggleSelect={toggleSelect}
           openFile={openFile}
           onViewPdf={viewPdf}
+          openingLink={openingLink}
           onDownloadSingle={downloadSingle}
           resolvedCourseId={resolvedCourseId}
           syllabusResult={syllabusResult}

@@ -30,6 +30,7 @@ interface DrawerTabBodyProps {
   toggleSelect: (id: string, e: React.SyntheticEvent) => void;
   openFile: (link: string) => void;
   onViewPdf?: (link: string, meta: PdfRowMeta) => void;
+  openingLink?: string | null;
   onDownloadSingle?: (link: string) => void;
   resolvedCourseId: string;
   syllabusResult: { syllabus: SyllabusRequirements | null; isLoading: boolean };
@@ -71,6 +72,7 @@ export function DrawerTabBody({
   toggleSelect,
   openFile,
   onViewPdf,
+  openingLink,
   onDownloadSingle,
   resolvedCourseId,
   syllabusResult,
@@ -131,6 +133,7 @@ export function DrawerTabBody({
             onToggleSelect={toggleSelect}
             onOpenFile={openFile}
             onViewPdf={onViewPdf}
+            openingLink={openingLink}
             onDownloadSingle={onDownloadSingle}
             folderUrl={folderUrl}
             lastVisitedAt={lastVisitedAt}
