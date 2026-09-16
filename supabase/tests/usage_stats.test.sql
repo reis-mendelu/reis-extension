@@ -61,37 +61,61 @@ end $$;
 
 -- usage_stats suppresses groups under five (runs as the connection's own role, which owns the function, so the role check inside usage_stats is bypassed by calling the unchecked helper directly)
 do $$
-declare v json; i int; ldf int; af int;
+declare v json; i int; ldf int; zf int; af int;
 begin
+  -- THREE groups, not two, and none of them on platform 'web'. Both details are
+  -- load-bearing, and both were wrong here before — which is why this block
+  -- asserted nothing for a full release cycle.
+  --
+  -- 1. `usage_stats_unchecked` drops `platform = 'web'` rows (it is the dev
+  --    server, not an install). A 'web' fixture therefore never reaches
+  --    by_faculty at all, so every lookup below returns NULL.
+  -- 2. `usage_suppress_groups` hides a SECOND group whenever it hides a first
+  --    (`hidden_cnt = 1` in its loop), so that the hidden value cannot be
+  --    recovered by subtracting from the published total. With only LDF and AF
+  --    present, AF is therefore suppressed too, and the old `af >= 6`
+  --    expectation could never have held. Verified against the deployed
+  --    function:
+  --      usage_suppress_groups('[{"LDF":3},{"AF":6}]')        -> both -1
+  --      usage_suppress_groups('[{"LDF":3},{"ZF":4},{"AF":6}]') -> AF 6, rest -1
+  --    ZF exists to absorb that second suppression so AF stays countable.
+  --
+  -- Assumes a database with no other usage rows: the cascade consumes the two
+  -- SMALLEST groups, so a stray faculty smaller than ZF would shift which ones
+  -- are hidden.
   for i in 1..3 loop
-    perform public.track_daily_usage(gen_random_uuid()::text, 'LDF', 'web');
+    perform public.track_daily_usage(gen_random_uuid()::text, 'LDF', 'ios');
+  end loop;
+  for i in 1..4 loop
+    perform public.track_daily_usage(gen_random_uuid()::text, 'ZF', 'android');
   end loop;
   for i in 1..6 loop
     perform public.track_daily_usage(gen_random_uuid()::text, 'AF', 'extension');
   end loop;
   v := public.usage_stats_unchecked(30);
 
-  -- Read the count field ONCE, into a variable, and assert it is not null
-  -- before comparing. This is not defensive noise: when the field was renamed
-  -- 'installs' -> 'devices', `e->>'installs'` started yielding NULL, and every
-  -- comparison below became `NULL <> -1` — which is NULL, not true, so no
-  -- `raise` fired and this whole block passed while asserting nothing. A test
-  -- that cannot fail is worse than no test, because it reads as coverage.
-  -- The null guards are what make a future rename LOUD instead of silent.
+  -- Read each count ONCE into a variable and assert it is not null before
+  -- comparing. When the field was renamed 'installs' -> 'devices',
+  -- `e->>'installs'` began yielding NULL, and every comparison became
+  -- `NULL <> -1` — which is NULL, not true, so no `raise` fired and the block
+  -- passed while testing nothing. A test that cannot fail is worse than no
+  -- test, because it reads as coverage. These guards are what make the next
+  -- rename, or the next silent exclusion, LOUD.
   select (e->>'devices')::int into ldf
     from json_array_elements(v->'by_faculty') e where e->>'key' = 'LDF';
+  select (e->>'devices')::int into zf
+    from json_array_elements(v->'by_faculty') e where e->>'key' = 'ZF';
   select (e->>'devices')::int into af
     from json_array_elements(v->'by_faculty') e where e->>'key' = 'AF';
 
-  if ldf is null then
-    raise exception 'by_faculty.LDF has no "devices" field — the response shape changed: %', v;
-  end if;
-  if af is null then
-    raise exception 'by_faculty.AF has no "devices" field — the response shape changed: %', v;
+  if ldf is null or zf is null or af is null then
+    raise exception 'by_faculty is missing a seeded group or its "devices" field (ldf=%, zf=%, af=%): %',
+      ldf, zf, af, v;
   end if;
 
-  if ldf <> -1 then raise exception 'small faculty group not suppressed (got %)', ldf; end if;
-  if af < 6 then raise exception 'large faculty group miscounted (got %)', af; end if;
+  if ldf <> -1 then raise exception 'small faculty group LDF not suppressed (got %)', ldf; end if;
+  if zf <> -1 then raise exception 'second group ZF not suppressed by the anti-subtraction cascade (got %)', zf; end if;
+  if af <> 6 then raise exception 'large faculty group AF miscounted (expected 6, got %)', af; end if;
 end $$;
 
 -- the unchecked helper is not reachable by untrusted roles
