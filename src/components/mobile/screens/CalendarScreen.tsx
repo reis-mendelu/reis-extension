@@ -10,7 +10,7 @@ import { isLessonHidden } from '../../../utils/hiddenLessons';
 import { getCzechHoliday } from '../../../utils/holidays';
 import { isOutsideTeaching } from '../../../utils/mobile/teachingPeriod';
 import { semesterStart } from '../../../utils/mobile/semesterStart';
-import { toIso } from '../../../utils/mobile/weekDays';
+import { defaultCalendarDay } from '../../../utils/mobile/landingDay';
 import { roomCodeFor } from '../../../utils/mobile/lessonActions';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
@@ -61,7 +61,12 @@ export function CalendarScreen() {
   // the vývěska. Returning a bare skeleton or error in its place left a
   // student with no route to any of them for as long as a crawl took, which on
   // a first sign-in is minutes.
-  const selectedIso = mobileSelectedDayIso ?? toIso(new Date());
+  // Today, except before term, when it is the first teaching day — see
+  // utils/mobile/landingDay. Resolved HERE rather than in the store so it
+  // re-derives every render: `null` stays "wherever the calendar opens", so the
+  // day still rolls over at midnight and still follows a late sync.
+  const defaultIso = defaultCalendarDay(schedule, teachingWeekData, new Date());
+  const selectedIso = mobileSelectedDayIso ?? defaultIso;
   // Lifted above `chrome` so it is computed once for the strip below, in every
   // state including the skeleton — with no schedule the set is simply empty,
   // and the strip falls back to Mon–Fri.
@@ -85,7 +90,7 @@ export function CalendarScreen() {
     <div data-testid="calendar-screen" className="relative flex flex-1 flex-col overflow-hidden">
       {chrome}
       {body}
-      <TodayPill selectedIso={selectedIso} />
+      <TodayPill selectedIso={selectedIso} defaultIso={defaultIso} />
     </div>
   );
 
