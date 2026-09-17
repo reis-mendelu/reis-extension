@@ -177,20 +177,22 @@ final class ReaderBarTests: XCTestCase {
         XCTAssertNotNil(exit.image, "an exit with no glyph is the empty circle again")
     }
 
-    func testTheBarCarriesTheFourFileToolsAndNothingElse() throws {
+    func testTheBarCarriesTheFiveFileToolsAndNothingElse() throws {
         let strings = PdfInkStrings(nil)
         let reader = PdfInkViewController(strings: strings)
         reader.loadViewIfNeeded()
 
         // Right to left, so this reads share on the edge and the counter
-        // nearest the title.
+        // nearest the title. `focus` sits between adding a page and the two
+        // ways of getting somewhere in the file: it is the last thing you reach
+        // for before you settle down to draw.
         // `map`, not `compactMap`: an item added without an accessibility label
         // would be dropped by compactMap and this assertion would still pass
         // while a fifth button sat in the bar.
         let trailing = try XCTUnwrap(reader.navigationItem.rightBarButtonItems)
         XCTAssertEqual(
             trailing.map(\.accessibilityLabel),
-            [strings.export, strings.addPage, strings.search, strings.pages],
+            [strings.export, strings.addPage, strings.focus, strings.search, strings.pages],
             "the reader's bar gained or lost a tool")
     }
 }

@@ -1148,7 +1148,9 @@
       "search": "Search",
       "page": "Page",
       "noMatches": "Nothing found",
-      "removePage": "Remove page"
+      "removePage": "Remove page",
+      "focus": "Hide the toolbar",
+      "exitFocus": "Show the toolbar"
     },
     "openingLink": "Opening…"
   },

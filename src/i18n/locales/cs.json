@@ -1148,7 +1148,9 @@
       "search": "Hledat",
       "page": "Strana",
       "noMatches": "Nic nenalezeno",
-      "removePage": "Odstranit stránku"
+      "removePage": "Odstranit stránku",
+      "focus": "Skrýt lištu",
+      "exitFocus": "Zobrazit lištu"
     },
     "openingLink": "Otevírám…"
   },

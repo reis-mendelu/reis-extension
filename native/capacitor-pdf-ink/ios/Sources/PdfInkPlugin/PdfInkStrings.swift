@@ -21,6 +21,8 @@ struct PdfInkStrings {
     let page: String
     let noMatches: String
     let removePage: String
+    let focus: String
+    let exitFocus: String
     let cancel: String
 
     init(_ object: JSObject?) {
@@ -40,6 +42,8 @@ struct PdfInkStrings {
         page = object?["page"] as? String ?? "Page"
         noMatches = object?["noMatches"] as? String ?? "Nothing found"
         removePage = object?["removePage"] as? String ?? "Remove page"
+        focus = object?["focus"] as? String ?? "Hide the toolbar"
+        exitFocus = object?["exitFocus"] as? String ?? "Show the toolbar"
         cancel = object?["cancel"] as? String ?? "Cancel"
     }
 }
