@@ -63,46 +63,74 @@ export function AgendaEvent({ lesson, onOpenSubject, onShowOnMap }: AgendaEventP
   const teacher = lesson.teachers[0]?.shortName || lesson.teachers[0]?.fullName;
   const styles = eventStyles(lesson);
 
+  // A custom event is the student's own entry, not a course: it has no
+  // courseCode, so `subjectSheetFor` would push a subject drawer for the empty
+  // string — files, syllabus and classmates for a subject that does not exist.
+  // The row still renders; it simply is not a door.
+  const opensSubject = !lesson.isCustom && lesson.courseCode !== '';
+  // Same rule for the pin: `focusRoomByCode('')` focuses nothing, and a
+  // control that cannot act is worse than an absent one. A custom event that
+  // DOES name a room keeps its pin.
+  const hasRoom = room.trim() !== '';
+
+  // Assembled rather than interpolated: a missing room used to leave the line
+  // starting with an orphan " · ".
+  const meta = [room, `${lesson.startTime} – ${lesson.endTime}`, teacher]
+    .filter((part): part is string => Boolean(part && part.trim()))
+    .join(' · ');
+
+  const body = (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate text-md font-semibold leading-snug text-content-primary">
+          {courseName}
+        </span>
+        {lesson.isExam && (
+          <span className={`flex-shrink-0 text-xs font-bold uppercase ${styles.text}`}>
+            {t('course.badge.exam')}
+          </span>
+        )}
+      </div>
+      <span className="truncate text-2sm leading-snug text-content-secondary">{meta}</span>
+    </>
+  );
+
   return (
     <div
+      data-testid="agenda-event"
       className={`flex w-full items-stretch rounded-xl border border-l-4 ${styles.bg} ${styles.border} ${styles.rail}`}
     >
-      <button
-        type="button"
-        onClick={onOpenSubject}
-        className="flex min-h-11 min-w-0 flex-1 cursor-pointer flex-col justify-center gap-0.5 py-2.5 pl-3 pr-1 text-left"
-      >
-        <div className="flex items-center justify-between gap-2">
-          <span className="truncate text-md font-semibold leading-snug text-content-primary">
-            {courseName}
-          </span>
-          {lesson.isExam && (
-            <span className={`flex-shrink-0 text-xs font-bold uppercase ${styles.text}`}>
-              {t('course.badge.exam')}
-            </span>
-          )}
+      {opensSubject ? (
+        <button
+          type="button"
+          onClick={onOpenSubject}
+          className="flex min-h-11 min-w-0 flex-1 cursor-pointer flex-col justify-center gap-0.5 py-2.5 pl-3 pr-1 text-left"
+        >
+          {body}
+        </button>
+      ) : (
+        <div className="flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-0.5 py-2.5 pl-3 pr-1 text-left">
+          {body}
         </div>
-        <span className="truncate text-2sm leading-snug text-content-secondary">
-          {room} · {lesson.startTime} – {lesson.endTime}
-          {teacher && ` · ${teacher}`}
-        </span>
-      </button>
+      )}
       {/* A split button, not a decoration: the hairline and the filled circle
           are what tell a thumb this is its own control. On the device the bare
           glyph read as part of the card and nobody would have found the map. */}
-      <button
-        type="button"
-        aria-label={t('mobile.sheet.showOnMap')}
-        onClick={(e) => {
-          e.stopPropagation();
-          onShowOnMap();
-        }}
-        className="my-1.5 flex min-h-11 min-w-11 flex-shrink-0 cursor-pointer items-center justify-center border-l border-content-primary/10 px-1.5"
-      >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-content-primary/10 text-content-primary">
-          <MapPin size={16} />
-        </span>
-      </button>
+      {hasRoom && (
+        <button
+          type="button"
+          aria-label={t('mobile.sheet.showOnMap')}
+          onClick={(e) => {
+            e.stopPropagation();
+            onShowOnMap();
+          }}
+          className="my-1.5 flex min-h-11 min-w-11 flex-shrink-0 cursor-pointer items-center justify-center border-l border-content-primary/10 px-1.5"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-content-primary/10 text-content-primary">
+            <MapPin size={16} />
+          </span>
+        </button>
+      )}
     </div>
   );
 }

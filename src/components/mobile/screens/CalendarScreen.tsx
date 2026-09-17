@@ -7,6 +7,7 @@ import { useSchedule } from '../../../hooks/data/useSchedule';
 import { resolveNowNext } from '../../../utils/mobile/nowNext';
 import { buildDayAgenda } from '../../../utils/mobile/dayAgenda';
 import { isLessonHidden } from '../../../utils/hiddenLessons';
+import { customEventToLesson } from '../../../utils/customEventLesson';
 import { getCzechHoliday } from '../../../utils/holidays';
 import { isOutsideTeaching } from '../../../utils/mobile/teachingPeriod';
 import { semesterStart } from '../../../utils/mobile/semesterStart';
@@ -49,6 +50,7 @@ export function CalendarScreen() {
   const syncLoaded = useAppStore((s) => s.syncLoaded);
   const hiddenItems = useAppStore((s) => s.hiddenItems);
   const teachingWeekData = useAppStore((s) => s.teachingWeekData);
+  const customEvents = useAppStore((s) => s.customEvents);
 
   // The vývěska is no longer mounted here. It was a portal owned by this one
   // screen while the button that opens it ships with every screen's header, so
@@ -75,9 +77,25 @@ export function CalendarScreen() {
   // in every state including the skeleton — with no schedule it is simply
   // empty, and the strip falls back to Mon–Fri.
   const visibleSchedule = schedule.filter((l) => !isLessonHidden(l, hiddenItems));
+  // The student's own entries — a hand-made event, or the 90-minute block
+  // "Mám zájem" writes for a society event. NOT run through isLessonHidden:
+  // the desktop appends them after that filter too (useCalendarData), and a
+  // `hiddenItems.courses` entry with an empty courseCode would otherwise erase
+  // every one of them at once.
+  const customLessons = customEvents.map(customEventToLesson);
+  // Deliberately NOT part of what the landing day, the semester start or the
+  // now/next hero are derived from. All three answer questions about TEACHING
+  // — which day to open on, when term begins, what lesson is running — and an
+  // August society block is not an answer to any of them.
   const defaultIso = defaultCalendarDay(visibleSchedule, teachingWeekData, new Date());
   const selectedIso = mobileSelectedDayIso ?? defaultIso;
-  const lessonDates = new Set(visibleSchedule.map((l) => l.date));
+  // The chip dots do include them: a day whose only entry is a society block
+  // is not an empty day, and a dot is the only thing that says so from a
+  // week away.
+  const lessonDates = new Set([
+    ...visibleSchedule.map((l) => l.date),
+    ...customLessons.map((l) => l.date),
+  ]);
   const chrome = (
     <>
       {/* The date IS the title, and the eyebrow stays empty. It was the
@@ -137,7 +155,7 @@ export function CalendarScreen() {
 
   const now = new Date();
   const nowNext = resolveNowNext(schedule, now);
-  const agenda = buildDayAgenda(visibleSchedule, selectedIso);
+  const agenda = buildDayAgenda([...visibleSchedule, ...customLessons], selectedIso);
   // The util has existed since the desktop calendar shipped; the phone simply
   // never asked. Without it a public holiday reads as an ordinary free day —
   // "Nic nemáš, pohodička" over 28 September.
