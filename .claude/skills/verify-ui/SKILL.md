@@ -72,6 +72,43 @@ npm run verify:ui -- <label>-tablet --widths 834,1024,1194 --url http://localhos
 
 To measure the narrow *desktop* tree instead, append `?mobile=0` to `--url`.
 
+### Reaching a phone screen at all
+
+`--view` seeds `meta.reis_current_view`, which is the **desktop** view and means
+nothing to the phone tree: `--view exams` on a phone width screenshots the
+calendar and reports it clean. The phone's tab and sheet stack live in the
+store, so they are seeded with `--seed-store`:
+
+| Want            | Flag                                                              |
+| --------------- | ----------------------------------------------------------------- |
+| A phone tab     | `--seed-store '{"mobileTab":"exams"}'`                             |
+| A phone sheet   | `--seed-store '{"mobileTab":"subjects","mobileSheets":[{"kind":"studyPlan"}]}'` |
+| The desktop tree| `--view subjects --widths 1280 --url 'http://localhost:3000/?mobile=0'` |
+
+A `--click` is the fallback when no store key reaches the state, but it is
+brittle here — a chip that Playwright can see but not reach retries for 30s and
+then fails the whole run.
+
+### Screens the dev webapp cannot reach
+
+Capacitor-gated screens (the boot-failure screen, the login gate) never render
+in a browser run. Rather than declaring them unmeasured, mount the component
+through the dev server's own module graph — the app's CSS is already loaded, so
+the pixels are real:
+
+```js
+const W = '/@fs/<absolute-worktree-path>';
+const [mod, React, RD] = await Promise.all([
+  import(W + '/src/components/mobile/BootErrorScreen.tsx'),
+  import(W + '/node_modules/.vite/deps/react.js?v=<hash>'),
+  import(W + '/node_modules/.vite/deps/react-dom_client.js?v=<hash>'),
+]);
+```
+
+Get the `?v=` hash from `performance.getEntriesByType('resource')` — the bare
+specifiers (`import('react')`) do not resolve in the page. Remove the probe node
+afterwards.
+
 ## Reading the output
 
 Output always lands in `.verify/` (gitignored), **wiped at the start of every
@@ -102,8 +139,11 @@ Occluded elements are skipped, so findings describe what is actually on screen.
   clean report says nothing about it. The eduroam card on the welcome screen is
   the standing example; it has a dev override (`?eduroam=ios` / `?eduroam=android`,
   DEV-only, in `src/mobile/eduroamNative.ts`) so the real screen is reachable.
-  Where no such override exists, **say the screen was not measured** rather than
-  reporting the run clean, and treat the device build as the gate.
+  Where no such override exists, mount the component directly — see "Screens the
+  dev webapp cannot reach" above, which gets real pixels for a screen the app
+  itself will not route to in a browser. Only when neither route works, **say the
+  screen was not measured** rather than reporting the run clean, and treat the
+  device build as the gate.
 - **`--theme light` used to be a silent no-op** — it seeded the literal string
   `light`, and `createThemeSlice` accepts only `mendelu` / `mendelu-dark` and
   falls back to dark for anything else, so the "light" run measured the dark
@@ -125,6 +165,12 @@ Occluded elements are skipped, so findings describe what is actually on screen.
 
 - **Never judge a change from a screenshot alone.** Read the findings. Pixels
   in a stale or hidden frame have produced false reports before.
+- **A run that does not put your change on screen reports clean.** This script
+  measures overflow, collision and contrast — never *presence*. Before trusting
+  a clean report, confirm the changed element is actually rendered: serve a
+  fixture that contains the case, then read the pixels or the DOM. An exam
+  fixture with no not-yet-open section produced three clean runs of a feature
+  that was not on screen at all.
 - **Re-run after every visual change**, not once at the end.
 - **Never report a finding you have not seen in the current run's output.**
   Check the printed absolute path matches the run you are talking about. The
@@ -135,15 +181,20 @@ Occluded elements are skipped, so findings describe what is actually on screen.
 - Real exam data is seasonal and usually absent from the snapshot — a July
   scrape leaves the Exams screen permanently empty. Serve the exam fixture for a
   populated screen instead of hand-editing `public/dev-real-data.json`.
-  `REIS_FIXTURE` is read from the process env at server start, so this one needs
-  a background Bash server — there is no launch config for it:
+  `REIS_FIXTURE` is read from the process env at server start, so it cannot be
+  changed on a server that is already up — but it does NOT need a Bash server:
+  `.claude/launch.json` carries a config per fixture server, so this is an
+  ordinary `preview_start`:
 
-  ```bash
-  npm run dev:web:exams
+  ```
+  preview_start { name: "reis-webapp-exams" }
   ```
 
-  This is the documented exception to "never start the dev webapp with Bash";
-  every other run uses the `reis-webapp` preview config.
+  A fixture with no launch config of its own (`REIS_FIXTURE=<name> npm run
+  dev:web`) is the only case that needs a background Bash server — and adding a
+  config to `.claude/launch.json` is usually the better answer. Changing a
+  fixture file while its server runs also needs a restart: `preview_stop`, then
+  `preview_start` again, or the run screenshots the old data.
 
 ## Fixtures
 
