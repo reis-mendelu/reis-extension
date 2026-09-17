@@ -89,6 +89,45 @@ describe('SubjectDrawerSheet', () => {
     expect(screen.getByText('Žádné soubory nejsou k dispozici.')).toBeInTheDocument();
   });
 
+  /**
+   * The drawer's bottom "Otevřít v IS MENDELU" bar is gone.
+   *
+   * It was one link for a sheet with four tabs, and it always went to the
+   * subject's folder — the file structure — so a student reading Spolužáci or
+   * the syllabus tapped it and landed somewhere else entirely. A link that
+   * ignores which tab you are on is not a shortcut to the page you are reading.
+   */
+  it('offers no bottom link into IS', () => {
+    const enrolledSubject: SubjectInfo = {
+      displayName: 'ALG',
+      fullName: 'Algoritmizace',
+      subjectCode: 'ALG',
+      subjectId: '159410',
+      folderUrl: 'https://is.mendelu.cz/auth/katalog/predmety.pl?predmet=159410',
+      fetchedAt: new Date().toISOString(),
+    };
+
+    useAppStore.setState({
+      subjects: {
+        version: 1,
+        lastUpdated: new Date().toISOString(),
+        data: { ALG: enrolledSubject },
+      },
+      files: { ALG: [] },
+      lastFilesFetchedAt: { ALG: Date.now() },
+    } as never);
+
+    const { container } = render(
+      <SubjectDrawerSheet
+        sheet={{ kind: 'subjectDrawer', courseCode: 'ALG', courseName: 'Algoritmizace' }}
+        onClose={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByText(/Otev\u0159\u00edt v IS/i)).not.toBeInTheDocument();
+    expect(container.querySelector('a[href*="is.mendelu.cz"]')).toBeNull();
+  });
+
   it('opens on the stats tab when the subject has no subjectId (not enrolled)', () => {
     const unenrolledSubject: SubjectInfo = {
       displayName: 'BIO',

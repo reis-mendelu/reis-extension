@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, CheckCircle2, ChevronDown, XCircle } from 'lucide-react';
+import { BookOpen, CheckCircle2, ChevronDown } from 'lucide-react';
 import type { StudyPlan, SubjectStatus } from '@/types/studyPlan';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SubjectRow } from './SubjectRow';
@@ -108,11 +108,13 @@ export function EnrolledNowSection({
         <span className="text-xs font-semibold text-base-content/70 uppercase tracking-wider">
           {t('subjects.enrolledNow')}
         </span>
+        {/* No counter for the subjects in progress. It was a red ⊗ and a
+            number — the error tone, over every subject the student was
+            currently taking, none of which had gone wrong. The count is also
+            the length of the list directly underneath. The passed count stays:
+            those rows are collapsed by default, so it is the only place that
+            progress shows. */}
         <span className="ml-auto flex items-center gap-3">
-          <span className="flex items-center gap-1.5 text-xs text-base-content/70 font-mono font-normal">
-            <XCircle className="w-3.5 h-3.5 text-error" />
-            {inProgress.length}
-          </span>
           {passed.length > 0 && (
             <span className="flex items-center gap-1.5 text-xs text-base-content/70 font-mono font-normal">
               <CheckCircle2 className="w-3.5 h-3.5 text-success" />

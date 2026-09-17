@@ -4,7 +4,7 @@ import type L from 'leaflet';
 import { useVisibleMapEvents } from '../../hooks/useVisibleMapEvents';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { effectiveFilter, filterEvents, groupEventsByVenue, type VenueGroup } from './eventHelpers';
+import { groupEventsByVenue, type VenueGroup } from './eventHelpers';
 import { subscribeMapInstance } from './mapInstance';
 import { EventPin } from './EventPin';
 import { DraftPin } from './DraftPin';
@@ -38,20 +38,7 @@ const PANE_NAME = 'reisEvents';
 // each pin to its post-zoom layer point and the `leaflet-zoom-animated` class
 // transitions the transform in sync with the basemap. zoomend/viewreset settle
 // the exact positions. Pins only show in campus overview, not floor-view.
-export interface EventLayerProps {
-  /**
-   * Whether the society chips that drive `eventFilter` are on screen.
-   *
-   * False on the phone map, which has no chips: `eventFilter` persists in the
-   * shared store, so without this the layer drew pins for whatever society a
-   * student last picked on the desktop while the sheet beside it listed every
-   * one of them. Raised in review on this PR — and it is the same shape as the
-   * admin-console case the `groups` comment below already describes.
-   */
-  chipsShown?: boolean;
-}
-
-export function EventLayer({ chipsShown = true }: EventLayerProps = {}) {
+export function EventLayer() {
   // One layer, two hosts: the student map draws the public feed, the admin
   // console's map draws the active society's own events (including the ones
   // still scheduled and hidden from students).
@@ -64,7 +51,6 @@ export function EventLayer({ chipsShown = true }: EventLayerProps = {}) {
   // one it just marked for its followers — hiding it from its own author would
   // read as the publish having failed.
   const events = authoring ? societyEvents : publicEvents;
-  const eventFilter = useAppStore((s) => s.eventFilter);
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const selection = useAppStore((s) => s.mapSelection);
   const focusEvent = useAppStore((s) => s.focusEventById);
@@ -83,16 +69,12 @@ export function EventLayer({ chipsShown = true }: EventLayerProps = {}) {
   // fetch-in-useEffect here — this layer stays presentational over store state.
 
   const groups = useMemo(() => {
-    // `eventFilter` belongs to the student map's society chips and persists in
-    // the shared store. Applying it while authoring hides the society's OWN
-    // events behind whatever a student last picked: filter to ESN, then open
-    // the console as SU PEF, and filterEvents matches nothing — every pin
-    // disappears while the list beside it still shows the events.
-    const visible = authoring
-      ? events
-      : filterEvents(events, effectiveFilter(eventFilter, chipsShown));
-    return groupEventsByVenue(visible);
-  }, [events, eventFilter, authoring, chipsShown]);
+    // Every event the caller's source gave us. The society filter that used to
+    // narrow this is gone with its chips, which also ends the class of bug it
+    // kept producing: a stored choice applied to a surface with no control to
+    // clear it, so the pins and the list beside them disagreed.
+    return groupEventsByVenue(events);
+  }, [events]);
 
   // Re-place pins when the visible groups change (filter toggle, data load).
   const groupsRef = useRef(groups);

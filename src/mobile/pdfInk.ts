@@ -38,6 +38,10 @@ export interface PdfInkStrings {
   noMatches: string;
   /** Taking back a page the student added, and the generic Cancel beside it. */
   removePage: string;
+  /** Bar button that hides the reader's toolbar so the page has the screen. */
+  focus: string;
+  /** The floating button that brings the toolbar back. */
+  exitFocus: string;
   cancel: string;
   /** The tool that blocks out an answer so it can be recalled before looking. */
 }

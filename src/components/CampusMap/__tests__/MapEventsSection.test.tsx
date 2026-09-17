@@ -1,8 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
-vi.mock('../../../hooks/useEventsFacultySettings', () => ({
-  useEventsFacultySettings: () => ({ subscribedFaculties: ['mendelu', 'pef'], isLoading: false }),
-}));
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MapEventsSection } from '../MapEventsSection';
@@ -12,7 +9,6 @@ import { MOCK_MAP_EVENTS } from './fixtures/mockMapEvents';
 beforeEach(() => {
   useAppStore.setState({
     mapEvents: MOCK_MAP_EVENTS,
-    eventFilter: 'all',
     mapSelection: null,
     language: 'en',
   });
@@ -29,22 +25,6 @@ describe('MapEventsSection', () => {
     render(<MapEventsSection />);
     await userEvent.click(screen.getByText('PEF Kvíz'));
     expect(useAppStore.getState().mapSelection?.kind).toBe('event');
-  });
-
-  it('selecting a society chip filters the list to that society', async () => {
-    render(<MapEventsSection />);
-    // SUPEF chip → only SU PEF events (PEF Kvíz); other societies drop out.
-    await userEvent.click(screen.getByRole('button', { name: 'SUPEF' }));
-    expect(useAppStore.getState().eventFilter).toBe('supef');
-    expect(screen.getByText('PEF Kvíz')).toBeTruthy();
-    expect(screen.queryByText('Karaoke Night')).toBeNull();
-  });
-
-  it('my-faculty spolek chip (SUPEF) is ordered before the others', () => {
-    render(<MapEventsSection />);
-    const names = screen.getAllByRole('button').map((b) => b.textContent);
-    // subscribed faculties = mendelu + pef (mocked) → SUPEF leads the societies.
-    expect(names.indexOf('SUPEF')).toBeLessThan(names.indexOf('ESN'));
   });
 
   it('shows an empty state when there are no events', () => {

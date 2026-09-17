@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sortByDate, filterEvents, groupEventsByVenue, weekSections, relativeDayLabel } from '../eventHelpers';
+import { sortByDate, groupEventsByVenue, weekSections, relativeDayLabel } from '../eventHelpers';
 import { MOCK_MAP_EVENTS } from './fixtures/mockMapEvents';
 import type { MapEvent } from '../../../types/events';
 
@@ -11,16 +11,6 @@ describe('eventHelpers', () => {
       const b = `${sorted[i].date}${sorted[i].time ?? ''}`;
       expect(a <= b).toBe(true);
     }
-  });
-
-  it('filterEvents "all" keeps everything', () => {
-    expect(filterEvents(MOCK_MAP_EVENTS, 'all')).toHaveLength(MOCK_MAP_EVENTS.length);
-  });
-
-  it('filterEvents by societyId keeps only that society', () => {
-    const out = filterEvents(MOCK_MAP_EVENTS, 'supef');
-    expect(out.length).toBeGreaterThan(0);
-    expect(out.every((e) => e.societyId === 'supef')).toBe(true);
   });
 
   it('groupEventsByVenue excludes off-campus and keeps every pinnable event', () => {
@@ -49,7 +39,7 @@ describe('eventHelpers', () => {
     const now = new Date('2026-01-05T12:00:00'); // a Monday
     const sections = weekSections(
       [ev('a', '2026-01-07'), ev('b', '2026-01-13'), ev('c', '2026-01-20')],
-      now,
+      now
     );
     expect(sections.map((s) => s.key)).toEqual(['thisWeek', 'nextWeek']);
     expect(sections[0].events.map((e) => e.id)).toEqual(['a']);

@@ -848,9 +848,7 @@
     "moreHere": "more here",
     "moreInfo": "More info",
     "hostedBy": "Hosted by",
-    "going": "going",
     "interested": "interested",
-    "rsvpGoing": "Going",
     "rsvpInterested": "Interested",
     "myEvents": "My events",
     "prevMonth": "Previous month",
@@ -918,7 +916,9 @@
     "audienceLabel": "WHO SEES IT",
     "audienceEveryone": "Everyone",
     "audienceHint": "Seen by students who follow {society}.",
-    "audienceHintGeneric": "Seen only by students who follow this society."
+    "audienceHintGeneric": "Seen only by students who follow this society.",
+    "panelCollapse": "Collapse map panel",
+    "panelExpand": "Expand map panel"
   },
   "admin": {
     "email": "Email",
@@ -1115,7 +1115,6 @@
     "sheet": {
       "close": "Close",
       "cancel": "Not now",
-      "openInIsMendelu": "Open in IS MENDELU",
       "showOnMap": "Show on map",
       "personLoading": "Loading…",
       "personLoadError": "Couldn't load this person.",
@@ -1149,7 +1148,9 @@
       "search": "Search",
       "page": "Page",
       "noMatches": "Nothing found",
-      "removePage": "Remove page"
+      "removePage": "Remove page",
+      "focus": "Hide the toolbar",
+      "exitFocus": "Show the toolbar"
     },
     "openingLink": "Opening…"
   },

@@ -548,10 +548,10 @@ export interface MapSlice {
   /** Create a real reservation for a room + 1-hour slot; on success, force-refetch availability so the panel reflects it. Always an explicit, confirmed user action. */
   /** Which tab the top-right panel shows. */
   mapPanelTab: 'places' | 'events';
-  /** Event scope: 'all' societies, or a specific societyId. */
-  eventFilter: string;
+  /** Whether the desktop map panel is collapsed to its tab bar, clearing the map behind it. */
+  mapPanelCollapsed: boolean;
   setMapPanelTab: (tab: 'places' | 'events') => void;
-  setEventFilter: (filter: string) => void;
+  toggleMapPanelCollapsed: () => void;
   loadMapEvents: () => Promise<void>;
   /** Refetch the public feed unconditionally (bypasses the load-once guard). Call after a society create/update/delete so the public map/"Akce" tab reflects the change without a full reload. */
   reloadMapEvents: () => Promise<void>;

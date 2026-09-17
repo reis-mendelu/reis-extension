@@ -87,7 +87,6 @@ beforeEach(() => {
     mapEvents: [],
     mapEventsLoaded: false,
     mapPanelTab: 'places',
-    eventFilter: 'all',
     placingEvent: false,
     draftCoord: null,
   });
@@ -202,11 +201,9 @@ describe('mapSlice', () => {
     expect(useAppStore.getState().mapSearchResults.length).toBeGreaterThan(0);
   });
 
-  it('setMapPanelTab and setEventFilter update state', () => {
+  it('setMapPanelTab updates state', () => {
     useAppStore.getState().setMapPanelTab('events');
-    useAppStore.getState().setEventFilter('esn');
     expect(useAppStore.getState().mapPanelTab).toBe('events');
-    expect(useAppStore.getState().eventFilter).toBe('esn');
   });
 
   it('loadMapEvents populates events once', async () => {

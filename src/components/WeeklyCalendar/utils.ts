@@ -36,8 +36,34 @@ export function timeToPercent(time: string): number {
  */
 export const MIN_VISUAL_BLOCK_MINUTES = 90;
 
-/** Grid space a block actually occupies — its real length, floored for legibility. */
-export function renderedBlockMinutes(startTime: string, endTime: string): number {
+/**
+ * The shortest block that can still carry its own label.
+ *
+ * `CalendarEventCard` gates the subject and the room on `>= 60`, so a block
+ * drawn under this is the unlabelled sliver the floor exists to prevent. It is
+ * the floor on the floor: a cap that would go below it is not worth taking.
+ */
+export const MIN_LEGIBLE_BLOCK_MINUTES = 60;
+
+/**
+ * Grid space a block actually occupies — its real length, floored for
+ * legibility, and stopped at whatever comes next.
+ *
+ * `nextStartTime` is the start of the following block on the same day. Without
+ * it the floor invented clashes: a 14:00-14:50 lesson was drawn down to 15:30,
+ * so a 15:00 lesson read as overlapping and the two were squeezed into
+ * half-width columns — side by side, over a gap of ten minutes, with nothing in
+ * the data to justify it. The floor is for legibility; it has no business
+ * changing what the day looks like it contains.
+ *
+ * `Math.max(real, …)` keeps a REAL clash real: a block that genuinely runs past
+ * the next one still does, and still gets its own lane.
+ */
+export function renderedBlockMinutes(
+  startTime: string,
+  endTime: string,
+  nextStartTime?: string
+): number {
   const real = timeToMinutes(endTime) - timeToMinutes(startTime);
   // The grid stops at 21:00 and the calendar is overflow-hidden, so a floor
   // applied blindly to a 20:30 block would push the card off the bottom and
@@ -45,13 +71,44 @@ export function renderedBlockMinutes(startTime: string, endTime: string): number
   // what is left of the grid — but never below the real length, so a genuinely
   // long late event still runs over exactly as it did before any floor existed.
   const toGridEnd = TOTAL_HOURS * 60 - (timeToMinutes(startTime) - GRID_START_HOUR * 60);
-  return Math.max(real, Math.min(MIN_VISUAL_BLOCK_MINUTES, toGridEnd));
+  const floor = Math.min(MIN_VISUAL_BLOCK_MINUTES, toGridEnd);
+  const toNext = nextStartTime
+    ? timeToMinutes(nextStartTime) - timeToMinutes(startTime)
+    : Number.POSITIVE_INFINITY;
+  const capped = Math.min(floor, toNext);
+  // Cap, unless capping would leave the block too small to say what it is. A
+  // 10-minute exam followed twenty minutes later cannot both keep the full
+  // width and stay readable, and an unlabelled sliver is the worse of the two —
+  // so it keeps the floor and lane assignment puts it BESIDE its neighbour,
+  // which is what the floor and the lanes were doing together before the cap
+  // existed. Above the legibility line the cap wins, which is the ordinary
+  // case: a 50-minute lesson before a 15:00 one is drawn for its 60 and the two
+  // sit one above the other.
+  return Math.max(real, capped >= MIN_LEGIBLE_BLOCK_MINUTES ? capped : floor);
 }
 
-export function getEventStyle(startTime: string, endTime: string): { top: string; height: string } {
+export function getEventStyle(
+  startTime: string,
+  endTime: string,
+  nextStartTime?: string
+): { top: string; height: string } {
+  return styleFromMinutes(startTime, renderedBlockMinutes(startTime, endTime, nextStartTime));
+}
+
+/**
+ * The style for a block whose occupied space is already known.
+ *
+ * `organizeLessons` works it out to assign lanes; the day column draws from the
+ * same number rather than recomputing it. Two copies of this rule are what let
+ * the lanes and the heights disagree in the first place.
+ */
+export function styleFromMinutes(
+  startTime: string,
+  minutes: number
+): { top: string; height: string } {
   return {
     top: `${timeToPercent(startTime)}%`,
-    height: `${(renderedBlockMinutes(startTime, endTime) / (TOTAL_HOURS * 60)) * 100}%`,
+    height: `${(minutes / (TOTAL_HOURS * 60)) * 100}%`,
   };
 }
 
@@ -82,14 +139,19 @@ export function organizeLessons(lessons: BlockLesson[]): OrganizedLessons {
   let maxEndInCluster = 0;
   let rows: number[] = [];
 
-  sortedLessons.forEach((lesson) => {
+  sortedLessons.forEach((lesson, i) => {
     const start = timeToMinutes(lesson.startTime);
     // The space the block OCCUPIES, not when it ends. getEventStyle floors a
     // short block's height for legibility, so laying lanes out by the true end
     // let a 10-minute exam drawn down to 13:30 sit in the same lane as a 12:30
     // lesson and cover it. `lesson.endTime` is untouched — the card and its
     // tooltip still read the real time.
-    const end = start + renderedBlockMinutes(lesson.startTime, lesson.endTime);
+    const renderedMinutes = renderedBlockMinutes(
+      lesson.startTime,
+      lesson.endTime,
+      sortedLessons[i + 1]?.startTime
+    );
+    const end = start + renderedMinutes;
 
     // Skip invalid times
     if (isNaN(start) || isNaN(end)) return;
@@ -108,7 +170,7 @@ export function organizeLessons(lessons: BlockLesson[]): OrganizedLessons {
     for (let i = 0; i < rows.length; i++) {
       if (rows[i] <= start) {
         rows[i] = end;
-        const lessonWithRow = { ...lesson, row: i, maxColumns: 0 };
+        const lessonWithRow = { ...lesson, row: i, maxColumns: 0, renderedMinutes };
         currentCluster.push(lessonWithRow);
         placed = true;
         break;
@@ -118,7 +180,7 @@ export function organizeLessons(lessons: BlockLesson[]): OrganizedLessons {
     // Create a new row if not placed
     if (!placed) {
       rows.push(end);
-      const lessonWithRow = { ...lesson, row: rows.length - 1, maxColumns: 0 };
+      const lessonWithRow = { ...lesson, row: rows.length - 1, maxColumns: 0, renderedMinutes };
       currentCluster.push(lessonWithRow);
     }
 

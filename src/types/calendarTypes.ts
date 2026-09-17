@@ -1,122 +1,124 @@
 export interface CalendarSubject {
-    day: string;
-    date: string;
-    startTime: string;
-    endTime: string;
-    subject: string;
-    subjectCode: string;
-    faculty: string;
-    type: string;
-    room: string;
-    teacher: string;
+  day: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  subject: string;
+  subjectCode: string;
+  faculty: string;
+  type: string;
+  room: string;
+  teacher: string;
 }
 
 export interface Teacher {
-    fullName: string;
-    shortName: string;
-    id: string,
+  fullName: string;
+  shortName: string;
+  id: string;
 }
 
 export interface RoomStructured {
-    name: string;
-    id: string;
+  name: string;
+  id: string;
 }
 
 export interface BlockLesson {
-    id: string;
-    date: string; // YYYYMMDD format, e.g., "20251022"
-    startTime: string; // HH:MM format, e.g., "15:00"
-    endTime: string; // HH:MM format, e.g., "16:50"
-    courseName: string;
-    courseCode: string;
-    courseId: string;
-    sectionName?: string;
-    room: string;
-    roomStructured: RoomStructured;
-    teachers: Teacher[];
-    periodId: string;
-    studyId: string;
-    campus: string;
-    isDefaultCampus: string;
-    facultyCode: string;
-    isSeminar: string; // 'true' or 'false' as string
-    isConsultation: string; // 'true' or 'false' as string
-    isExam?: boolean;
-    examEvent?: any;
-    isFromSearch?: boolean; // Indicates drawer opened from search (not a calendar event)
-    isCustom?: boolean;
-    customEventId?: string;
-    // Dual-language support
-    courseNameCs?: string;
-    courseNameEn?: string;
-    roomCs?: string;
-    roomEn?: string;
+  id: string;
+  date: string; // YYYYMMDD format, e.g., "20251022"
+  startTime: string; // HH:MM format, e.g., "15:00"
+  endTime: string; // HH:MM format, e.g., "16:50"
+  courseName: string;
+  courseCode: string;
+  courseId: string;
+  sectionName?: string;
+  room: string;
+  roomStructured: RoomStructured;
+  teachers: Teacher[];
+  periodId: string;
+  studyId: string;
+  campus: string;
+  isDefaultCampus: string;
+  facultyCode: string;
+  isSeminar: string; // 'true' or 'false' as string
+  isConsultation: string; // 'true' or 'false' as string
+  isExam?: boolean;
+  examEvent?: any;
+  isFromSearch?: boolean; // Indicates drawer opened from search (not a calendar event)
+  isCustom?: boolean;
+  customEventId?: string;
+  // Dual-language support
+  courseNameCs?: string;
+  courseNameEn?: string;
+  roomCs?: string;
+  roomEn?: string;
 }
 
 export interface CalendarCustomEvent {
-    id: string;
-    title: string;
-    date: string;       // YYYYMMDD
-    startTime: string;  // HH:MM
-    endTime: string;    // HH:MM
-    room?: string;
+  id: string;
+  title: string;
+  date: string; // YYYYMMDD
+  startTime: string; // HH:MM
+  endTime: string; // HH:MM
+  room?: string;
 }
 
 export interface FileObject {
-    subfolder: string;
-    file_name: string;
-    file_comment: string;
-    author: string;
-    date: string;
-    files: {
-        name: string;
-        type: string;
-        link: string;
-    }[];
+  subfolder: string;
+  file_name: string;
+  file_comment: string;
+  author: string;
+  date: string;
+  files: {
+    name: string;
+    type: string;
+    link: string;
+  }[];
 }
 
 export interface StoredSubject {
-    fullName: string;
-    folderUrl: string;
-    // Add other properties if needed based on usage
+  fullName: string;
+  folderUrl: string;
+  // Add other properties if needed based on usage
 }
 
 export interface ScheduleData {
-    blockLessons: BlockLesson[];
+  blockLessons: BlockLesson[];
 }
 
 export interface LessonWithRow extends BlockLesson {
-    row: number;
-    maxColumns: number;
+  row: number;
+  maxColumns: number;
+  /** Grid minutes the block occupies — its real length, floored for legibility and stopped at the next block. */
+  renderedMinutes: number;
 }
 
 export interface OrganizedLessons {
-    lessons: LessonWithRow[];
-    totalRows: number;
+  lessons: LessonWithRow[];
+  totalRows: number;
 }
 
 export interface DateInfo {
-    weekday: string;
-    day: string;
-    month: string;
-    year: string;
-    full: string;
+  weekday: string;
+  day: string;
+  month: string;
+  year: string;
+  full: string;
 }
 
 export interface HiddenEvent {
-    id: string;
-    courseCode: string;
-    courseName: string;
-    date: string;
+  id: string;
+  courseCode: string;
+  courseName: string;
+  date: string;
 }
 
 export interface HiddenCourse {
-    courseCode: string;
-    courseName: string;
-    type?: 'lecture' | 'seminar' | 'all';
+  courseCode: string;
+  courseName: string;
+  type?: 'lecture' | 'seminar' | 'all';
 }
 
 export interface HiddenItems {
-    courses: HiddenCourse[];
-    events: HiddenEvent[];
+  courses: HiddenCourse[];
+  events: HiddenEvent[];
 }

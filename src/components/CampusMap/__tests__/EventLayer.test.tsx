@@ -64,7 +64,6 @@ beforeEach(() => {
   };
   useAppStore.setState({
     mapEvents: MOCK_MAP_EVENTS,
-    eventFilter: 'all',
     activeBuildingId: null,
     mapSelection: null,
     language: 'en',
@@ -150,7 +149,6 @@ describe('EventLayer', () => {
         },
       ],
       mapEvents: [],
-      eventFilter: 'all',
       activeBuildingId: null,
     });
     render(<EventLayer />);
@@ -158,16 +156,9 @@ describe('EventLayer', () => {
     expect(btn).toBeTruthy();
   });
 
-  // Regression: eventFilter is the STUDENT map's society chip and persists in
-  // the shared store. Applying it while authoring hid the society's own events
-  // behind whatever a student last picked — the admin map went blank while the
-  // list beside it still listed the events.
-  it("ignores the student's society filter while the admin console is open", () => {
+  it('draws the authoring society\u2019s own events while the admin console is open', () => {
     useAppStore.setState({
       adminConsoleOpen: true,
-      // A student left the map filtered to ESN...
-      eventFilter: 'esn',
-      // ...and this admin authors for SU PEF.
       societyMapEvents: [
         {
           id: 's1',
@@ -200,7 +191,6 @@ describe('EventLayer', () => {
       adminActiveAssociationId: 'supef',
       societyMapEvents: [],
       mapEvents: [],
-      eventFilter: 'all',
       activeBuildingId: null,
       composerOpen: true,
       draftCoord: [16.61, 49.21],
@@ -219,7 +209,6 @@ describe('EventLayer', () => {
       adminActiveAssociationId: 'supef',
       societyMapEvents: [],
       mapEvents: [],
-      eventFilter: 'all',
       activeBuildingId: null,
       composerOpen: true,
       draftCoord: [16.61, 49.21],
@@ -238,7 +227,6 @@ describe('EventLayer', () => {
       adminActiveAssociationId: 'supef',
       societyMapEvents: [],
       mapEvents: [],
-      eventFilter: 'all',
       activeBuildingId: null,
       composerOpen: false,
       draftCoord: [16.61, 49.21],
@@ -289,7 +277,6 @@ describe('EventLayer', () => {
         },
       ],
       mapEvents: [],
-      eventFilter: 'all',
       activeBuildingId: null,
     });
     render(<EventLayer />);

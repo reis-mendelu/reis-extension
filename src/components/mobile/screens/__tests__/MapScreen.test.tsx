@@ -43,7 +43,6 @@ beforeEach(() => {
     roomsByBuilding: {},
     mapEvents: [],
     societyMapEvents: [],
-    eventFilter: 'all',
     mapSelection: null,
     adminConsoleOpen: false,
     adminRole: null,

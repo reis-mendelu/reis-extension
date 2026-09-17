@@ -1,3 +1,4 @@
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { LandmarkPicker } from './LandmarkPicker';
@@ -13,6 +14,12 @@ type TabKey = 'events' | 'places';
 export function MapSidePanel() {
   const tab = useAppStore((s) => s.mapPanelTab);
   const setTab = useAppStore((s) => s.setMapPanelTab);
+  // Collapsed, this is the tab bar and nothing else — the iPad sheet's peek
+  // state, which is the one the panel was missing. The map is the thing being
+  // covered, so the toggle takes the panel out of the way rather than making
+  // it bigger.
+  const collapsed = useAppStore((s) => s.mapPanelCollapsed);
+  const toggleCollapsed = useAppStore((s) => s.toggleMapPanelCollapsed);
   const { t } = useTranslation();
 
   // Text-only, equal-width tabs so both fit one row in the narrow panel.
@@ -36,18 +43,32 @@ export function MapSidePanel() {
 
   return (
     <div className="flex max-h-[80vh] w-72 flex-col overflow-hidden rounded-box border border-base-300 bg-base-100/95 shadow-popover-heavy backdrop-blur-sm">
-      <div role="tablist" className="tabs tabs-box tabs-sm m-1 mb-0 shrink-0 flex-nowrap">
-        {tabBtn('events', t('map.events'))}
-        {tabBtn('places', t('map.places'))}
+      <div className="flex shrink-0 items-center gap-1 m-1 mb-0">
+        <div role="tablist" className="tabs tabs-box tabs-sm min-w-0 flex-1 flex-nowrap">
+          {tabBtn('events', t('map.events'))}
+          {tabBtn('places', t('map.places'))}
+        </div>
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-expanded={!collapsed}
+          aria-controls="map-tabpanel"
+          aria-label={t(collapsed ? 'map.panelExpand' : 'map.panelCollapse')}
+          className="btn btn-ghost btn-xs btn-square shrink-0 text-base-content/70"
+        >
+          {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+        </button>
       </div>
-      <div
-        id="map-tabpanel"
-        role="tabpanel"
-        aria-labelledby={`map-tab-${tab}`}
-        className="min-h-0 flex-1 overflow-y-auto"
-      >
-        {tab === 'places' ? <LandmarkPicker /> : <MapEventsSection />}
-      </div>
+      {!collapsed && (
+        <div
+          id="map-tabpanel"
+          role="tabpanel"
+          aria-labelledby={`map-tab-${tab}`}
+          className="min-h-0 flex-1 overflow-y-auto"
+        >
+          {tab === 'places' ? <LandmarkPicker /> : <MapEventsSection />}
+        </div>
+      )}
     </div>
   );
 }
