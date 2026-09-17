@@ -163,17 +163,17 @@ describe('organizeLessons and the visual block floor', () => {
   const block = (id: string, startTime: string, endTime: string): BlockLesson =>
     ({ id, date: '20260601', startTime, endTime }) as BlockLesson;
 
-  // The floor no longer solves this by splitting lanes. It stops at the next
-  // block's start instead, so the exam is drawn 12:00-12:30 — shorter than the
-  // 90-minute floor would like, but it covers nothing and keeps the full width.
-  it('keeps a short exam and the lesson after it in one lane, uncovered', () => {
+  it('gives a short exam and the lesson under its floored height separate lanes', () => {
     const { lessons, totalRows } = organizeLessons([
       block('exam', '12:00', '12:10'),
       block('lesson', '12:30', '14:00'),
     ]);
-    expect(totalRows).toBe(1);
-    expect(lessons[0]!.row).toBe(lessons[1]!.row);
-    expect(lessons[0]!.renderedMinutes).toBe(30);
+    expect(totalRows).toBe(2);
+    expect(lessons[0]!.row).not.toBe(lessons[1]!.row);
+    // Capping at 12:30 would draw it for 30 minutes, under the 60 the card
+    // needs to show a subject and a room at all — so it keeps the floor and
+    // takes a lane instead of becoming an unlabelled sliver.
+    expect(lessons[0]!.renderedMinutes).toBe(90);
   });
 
   it('still shares a lane once the later block clears the floored height', () => {
@@ -278,5 +278,36 @@ describe('the visual floor never reaches into the next block', () => {
     ]);
     expect(lessons[0]!.renderedMinutes).toBe(60);
     expect(lessons[1]!.renderedMinutes).toBe(230);
+  });
+});
+
+/**
+ * The cap has a floor of its own.
+ *
+ * Raised in review: capping at the next block can take a short block under the
+ * 60 minutes `CalendarEventCard` needs before it will draw a subject and a
+ * room, which is exactly the unlabelled sliver the visual floor was added to
+ * prevent. So the cap applies only while the result is still legible; below
+ * that the block keeps its full floor and lane assignment separates the two,
+ * which is what happened before the cap existed.
+ */
+describe('the cap never makes a block unreadable', () => {
+  const block = (id: string, startTime: string, endTime: string): BlockLesson =>
+    ({ id, date: '20260601', startTime, endTime }) as BlockLesson;
+
+  it('takes the cap while it stays at or above the legibility line', () => {
+    expect(renderedBlockMinutes('14:00', '14:50', '15:00')).toBe(60);
+  });
+
+  it('keeps the full floor when the cap would go under it', () => {
+    expect(renderedBlockMinutes('14:00', '14:10', '14:20')).toBe(90);
+  });
+
+  it('so the tight pair take separate lanes rather than one illegible row', () => {
+    const { totalRows } = organizeLessons([
+      block('exam', '14:00', '14:10'),
+      block('lesson', '14:20', '15:50'),
+    ]);
+    expect(totalRows).toBe(2);
   });
 });

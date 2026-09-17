@@ -37,6 +37,15 @@ export function timeToPercent(time: string): number {
 export const MIN_VISUAL_BLOCK_MINUTES = 90;
 
 /**
+ * The shortest block that can still carry its own label.
+ *
+ * `CalendarEventCard` gates the subject and the room on `>= 60`, so a block
+ * drawn under this is the unlabelled sliver the floor exists to prevent. It is
+ * the floor on the floor: a cap that would go below it is not worth taking.
+ */
+export const MIN_LEGIBLE_BLOCK_MINUTES = 60;
+
+/**
  * Grid space a block actually occupies — its real length, floored for
  * legibility, and stopped at whatever comes next.
  *
@@ -62,10 +71,20 @@ export function renderedBlockMinutes(
   // what is left of the grid — but never below the real length, so a genuinely
   // long late event still runs over exactly as it did before any floor existed.
   const toGridEnd = TOTAL_HOURS * 60 - (timeToMinutes(startTime) - GRID_START_HOUR * 60);
+  const floor = Math.min(MIN_VISUAL_BLOCK_MINUTES, toGridEnd);
   const toNext = nextStartTime
     ? timeToMinutes(nextStartTime) - timeToMinutes(startTime)
     : Number.POSITIVE_INFINITY;
-  return Math.max(real, Math.min(MIN_VISUAL_BLOCK_MINUTES, toGridEnd, toNext));
+  const capped = Math.min(floor, toNext);
+  // Cap, unless capping would leave the block too small to say what it is. A
+  // 10-minute exam followed twenty minutes later cannot both keep the full
+  // width and stay readable, and an unlabelled sliver is the worse of the two —
+  // so it keeps the floor and lane assignment puts it BESIDE its neighbour,
+  // which is what the floor and the lanes were doing together before the cap
+  // existed. Above the legibility line the cap wins, which is the ordinary
+  // case: a 50-minute lesson before a 15:00 one is drawn for its 60 and the two
+  // sit one above the other.
+  return Math.max(real, capped >= MIN_LEGIBLE_BLOCK_MINUTES ? capped : floor);
 }
 
 export function getEventStyle(

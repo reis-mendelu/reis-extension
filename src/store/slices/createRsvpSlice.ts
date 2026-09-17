@@ -1,6 +1,6 @@
 import type { AppSlice } from '../types';
 import { fetchEventRsvps, setEventRsvp, type RsvpStatus } from '../../api/eventRsvp';
-import { planRsvpBlocks, isRsvpBlock } from '../../utils/rsvpBlocks';
+import { createRsvpBlockSync } from './rsvpBlockSync';
 import { IndexedDBService } from '../../services/storage';
 import { planReminders } from '../../services/eventReminders/plan';
 import { syncReminders } from '../../services/eventReminders/sync';
@@ -149,51 +149,8 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
    * Detached from its caller: a notification is a courtesy and must not be able
    * to fail an RSVP.
    */
-  /**
-   * Re-derive the calendar blocks from the current answers, the same way
-   * `refreshReminders` re-derives the notifications.
-   *
-   * Reconciled, not accumulated: what the plan no longer contains is removed,
-   * which is what makes un-answering take the block off the calendar. It only
-   * ever touches ids carrying the `rsvp:` prefix, so a block a student typed in
-   * themselves is never a candidate for deletion.
-   *
-   * Detached, like the reminders: a calendar write must not be able to fail the
-   * RSVP the student just made.
-   */
-  const refreshRsvpBlocks = () => {
-    void (async () => {
-      try {
-        const st = get();
-        const planned = planRsvpBlocks(st.mapEvents, st.rsvp);
-        const wanted = new Map(planned.map((b) => [b.id, b]));
-        const mine = st.customEvents.filter((e) => isRsvpBlock(e.id));
-
-        for (const existing of mine) {
-          const next = wanted.get(existing.id);
-          if (!next) {
-            await st.removeCalendarCustomEvent(existing.id);
-          } else if (
-            next.title !== existing.title ||
-            next.date !== existing.date ||
-            next.startTime !== existing.startTime ||
-            next.endTime !== existing.endTime ||
-            next.room !== existing.room
-          ) {
-            // A society can move its event after a student has answered.
-            await st.updateCalendarCustomEvent(existing.id, next);
-          }
-          wanted.delete(existing.id);
-        }
-
-        for (const block of wanted.values()) {
-          await get().addCalendarCustomEvent(block);
-        }
-      } catch (err) {
-        logError('RsvpSlice.refreshRsvpBlocks', err);
-      }
-    })();
-  };
+  // Serialised and self-contained — see `rsvpBlockSync`.
+  const refreshRsvpBlocks = createRsvpBlockSync(get);
 
   const refreshReminders = () => {
     // `translate` rather than useTranslation: this runs in the store, outside
