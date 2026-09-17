@@ -83,7 +83,14 @@ export function WelcomeModal() {
             transition={{ duration: 0.4, type: 'spring', bounce: 0.3 }}
             className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] w-[calc(100%-2rem)] max-w-sm sm:max-w-lg"
           >
-            <div className="bg-base-100 rounded-3xl shadow-2xl border border-base-200 p-6 sm:p-8 flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
+            {/* The marker `verify:ui --onboarding` waits for: the modal is
+                shown 800ms after mount, which is longer than the harness's
+                default settle, so a run without it photographs the page the
+                modal has not covered yet. */}
+            <div
+              data-testid="welcome-modal"
+              className="bg-base-100 rounded-3xl shadow-2xl border border-base-200 p-6 sm:p-8 flex flex-col gap-4 max-h-[90dvh] overflow-y-auto"
+            >
               <div className="text-center">
                 <div className="w-12 h-12 rounded-xl overflow-hidden mx-auto mb-4 shadow-md flex items-center justify-center">
                   <ReisLogo className="w-full h-full" />

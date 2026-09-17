@@ -362,6 +362,23 @@ async function run(): Promise<number> {
       if (opts.theme) seed['reis_theme'] = opts.theme === 'light' ? 'mendelu' : 'mendelu-dark';
       await seedMeta(page, seed);
 
+      // The modal appears 800ms after mount, which outlasts the default 600ms
+      // settle — an `--onboarding` run used to need a hand-tuned `--wait` and
+      // silently measured the uncovered page without one. Waiting for the
+      // element rather than for a number: it is also the only thing that
+      // proves the flag worked at all. A miss is not fatal — a desktop-only
+      // modal legitimately never appears at a phone width — so the run goes
+      // on and the screenshot says what happened.
+      if (opts.onboarding) {
+        await page.waitForSelector('[data-testid="welcome-modal"]', { timeout: 5000 }).catch(() => {
+          console.warn(
+            '  --onboarding: no welcome modal appeared. It is desktop-only — at the ' +
+              'default phone widths the phone shell renders WelcomeScreen instead. ' +
+              'Pass --widths 1024,1440 --url <url>?mobile=0 to measure it.'
+          );
+        });
+      }
+
       // Settle BEFORE the first click, not only after the last one. seedMeta
       // reloads the page, so without this a --click races the app's boot and
       // fails on anything data-driven — the subject rows are painted from
