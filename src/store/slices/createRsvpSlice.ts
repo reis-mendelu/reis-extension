@@ -254,14 +254,17 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
           rsvp: hydrated,
         };
       });
-      // Only reconcile once the answers are actually known — from BOTH sides.
-      // Reconciling from a failed load means an empty plan, and syncReminders
-      // cancels everything not in the plan, silently wiping reminders for
-      // events still attended. An unread `stored` is exactly that empty plan.
-      if (ok && stored) {
-        refreshReminders();
-        refreshRsvpBlocks();
-      }
+      // Both of these must not run from an UNREAD `stored`: that is an empty
+      // plan, and reconciling against it cancels every reminder and deletes
+      // every calendar block for events the student is still going to.
+      //
+      // They part company on `ok`, which says only whether the server's COUNTS
+      // arrived. The blocks are planned from the answers and the events, and
+      // neither is a count — so a load where the disk succeeded and the count
+      // request failed can still reconcile them, and gating it on `ok` left
+      // them stale until the next answer. Raised in review by CodeRabbit.
+      if (stored) refreshRsvpBlocks();
+      if (ok && stored) refreshReminders();
     },
 
     setRsvp: async (eventId, status) => {

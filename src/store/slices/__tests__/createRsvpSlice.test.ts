@@ -700,4 +700,69 @@ describe('createRsvpSlice — failure handling', () => {
     expect(state.rsvp.e1).toBe('going');
     expect(idb.get('event_rsvps_mine')).toEqual({ e1: 'going' });
   });
+
+  /**
+   * The calendar blocks and the reminders part company on `ok`.
+   *
+   * `ok` says only whether the server's COUNTS arrived. The blocks are planned
+   * from the student's own answers and the events, neither of which is a count,
+   * so a load where the disk succeeded and the count request failed must still
+   * reconcile them. Gating both on `ok` left a withdrawn or newly answered
+   * event's block stale until something else happened. Raised in review.
+   */
+  describe('reconciling after a load', () => {
+    const event = {
+      id: 'e1',
+      title: 'Flag Party',
+      date: '2026-09-21',
+      time: '19:00',
+      location: 'Zlatá loď',
+    } as MapEvent;
+
+    // The calendar slice is a neighbour in the composed store, so the test
+    // supplies it the same way it supplies `mapEvents`.
+    const withCalendar = (existing: unknown[] = []) => {
+      const added: string[] = [];
+      const removeCalendarCustomEvent = vi.fn(async () => {});
+      Object.assign(state, {
+        mapEvents: [event],
+        customEvents: existing,
+        addCalendarCustomEvent: vi.fn(async (e: { id: string }) => void added.push(e.id)),
+        updateCalendarCustomEvent: vi.fn(async () => {}),
+        removeCalendarCustomEvent,
+      });
+      return { added, removeCalendarCustomEvent };
+    };
+
+    it('still writes the block when the counts fail but the disk answers arrive', async () => {
+      idb.set('event_rsvps_mine', { e1: 'interested' });
+      fetchEventRsvps.mockResolvedValue({ counts: {}, ok: false });
+      const { added } = withCalendar();
+
+      await state.loadRsvps(['e1']);
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(added).toEqual(['rsvp:e1']);
+    });
+
+    it('reconciles nothing when the disk read itself fails', async () => {
+      fetchEventRsvps.mockResolvedValue({ counts: {}, ok: true });
+      const { added, removeCalendarCustomEvent } = withCalendar([
+        {
+          id: 'rsvp:e1',
+          title: 'Flag Party',
+          date: '20260921',
+          startTime: '19:00',
+          endTime: '20:30',
+        },
+      ]);
+
+      // No stored answers at all — an unread disk, not "answered nothing".
+      await state.loadRsvps([]);
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(added).toEqual([]);
+      expect(removeCalendarCustomEvent).not.toHaveBeenCalled();
+    });
+  });
 });
