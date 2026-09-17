@@ -51,3 +51,52 @@ describe('createSubjectsSlice', () => {
         expect(slice.subjects).toBeNull();
     });
 });
+
+/**
+ * The rates start coming down as soon as the SUBJECTS land, not when the plan
+ * does.
+ *
+ * Reported as "clicking on subjects for the first time doesn't show the list of
+ * subject success rates immediately". The batch was triggered from one place —
+ * `fetchStudyPlan` — so on a first run the fetch could not start until a full
+ * sync had written the study plan, and each subject is its own file on the CDN.
+ * The subjects arrive earlier and are what the screen is listing, so they are
+ * the honest trigger for the rates that go on their rows.
+ *
+ * Not awaited, rejection swallowed, exactly as the study-plan trigger is: the
+ * rates are a chip on a row, and the subject list is the screen.
+ */
+describe('createSubjectsSlice prefetching the rates', () => {
+    it('asks for the rates of every subject it just loaded', async () => {
+        const fetchSuccessRateBatch = vi.fn().mockResolvedValue(undefined);
+        const set2 = vi.fn();
+        const slice2 = createSubjectsSlice(
+            set2,
+            (() => ({ subjects: null, fetchSuccessRateBatch })) as never,
+            {} as never
+        );
+        vi.mocked(IndexedDBService.get).mockImplementation(async (store: string) =>
+            store === 'subjects'
+                ? { version: 1, lastUpdated: 'now', data: { ALG: {}, 'EBC-PS': {} } }
+                : undefined
+        );
+
+        await slice2.fetchSubjects();
+
+        expect(fetchSuccessRateBatch).toHaveBeenCalledWith(['ALG', 'EBC-PS']);
+    });
+
+    it('asks for nothing when there are no subjects', async () => {
+        const fetchSuccessRateBatch = vi.fn().mockResolvedValue(undefined);
+        const slice2 = createSubjectsSlice(
+            vi.fn(),
+            (() => ({ subjects: null, fetchSuccessRateBatch })) as never,
+            {} as never
+        );
+        vi.mocked(IndexedDBService.get).mockResolvedValue(undefined);
+
+        await slice2.fetchSubjects();
+
+        expect(fetchSuccessRateBatch).not.toHaveBeenCalled();
+    });
+});

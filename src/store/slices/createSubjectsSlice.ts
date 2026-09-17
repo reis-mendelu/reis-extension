@@ -28,6 +28,27 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
                 attendance: (attendance as Record<string, SubjectAttendance[]>) || {},
                 subjectsLoading: false,
             });
+
+            // The failure rates for the subjects just loaded, started HERE as
+            // well as from `fetchStudyPlan`. Each subject is its own file on the
+            // CDN, so the wait is proportional to how late the first request
+            // goes out — and the plan was the only trigger, which on a first run
+            // means after a full sync has written it. The subjects arrive
+            // earlier and are what the screen is listing.
+            //
+            // `fetchSuccessRateBatch` skips codes it already has or already has
+            // in flight, so overlapping with the plan's call costs nothing.
+            //
+            // Not awaited, rejection swallowed: the rates are a chip on a row,
+            // and the subject list is the screen. A CDN outage must not cost a
+            // student their subjects.
+            const codes = Object.keys(
+                (data as { data?: Record<string, unknown> } | null)?.data ?? {}
+            );
+            if (codes.length > 0)
+                void get()
+                    .fetchSuccessRateBatch(codes)
+                    .catch(() => {});
         } catch (e) {
             logError('SubjectsSlice.fetchSubjects', e);
             set({ subjectsLoading: false });
