@@ -918,7 +918,9 @@
     "audienceLabel": "KDO TO UVIDÍ",
     "audienceEveryone": "Všichni",
     "audienceHint": "Uvidí studenti, kteří odebírají {society}.",
-    "audienceHintGeneric": "Uvidí jen studenti, kteří tento spolek odebírají."
+    "audienceHintGeneric": "Uvidí jen studenti, kteří tento spolek odebírají.",
+    "panelCollapse": "Sbalit panel mapy",
+    "panelExpand": "Rozbalit panel mapy"
   },
   "admin": {
     "email": "E-mail",

@@ -201,7 +201,9 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     }
   },
 
+  mapPanelCollapsed: false,
   setMapPanelTab: (tab) => set({ mapPanelTab: tab }),
+  toggleMapPanelCollapsed: () => set((st) => ({ mapPanelCollapsed: !st.mapPanelCollapsed })),
 
   refreshSocietyMapEvents: () => {
     const rows = get().societyPosts;

@@ -918,7 +918,9 @@
     "audienceLabel": "WHO SEES IT",
     "audienceEveryone": "Everyone",
     "audienceHint": "Seen by students who follow {society}.",
-    "audienceHintGeneric": "Seen only by students who follow this society."
+    "audienceHintGeneric": "Seen only by students who follow this society.",
+    "panelCollapse": "Collapse map panel",
+    "panelExpand": "Expand map panel"
   },
   "admin": {
     "email": "Email",
