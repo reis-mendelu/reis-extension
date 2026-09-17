@@ -1115,7 +1115,6 @@
     "sheet": {
       "close": "Zavřít",
       "cancel": "Radši ne",
-      "openInIsMendelu": "Otevřít v IS MENDELU",
       "showOnMap": "Ukázat na mapě",
       "personLoading": "Načítání…",
       "personLoadError": "Osobu se nepodařilo načíst.",

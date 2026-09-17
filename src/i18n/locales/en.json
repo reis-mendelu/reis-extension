@@ -1115,7 +1115,6 @@
     "sheet": {
       "close": "Close",
       "cancel": "Not now",
-      "openInIsMendelu": "Open in IS MENDELU",
       "showOnMap": "Show on map",
       "personLoading": "Loading…",
       "personLoadError": "Couldn't load this person.",
