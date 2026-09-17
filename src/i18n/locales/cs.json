@@ -1158,7 +1158,7 @@
   },
   "boot": {
     "failedTitle": "reIS se nepodařilo spustit",
-    "failedBody": "Zkuste to prosím znovu. Pokud se to opakuje, prohlédněte si zatím ukázku.",
+    "failedBody": "Zkuste to prosím znovu.",
     "retry": "Zkusit znovu"
   },
   "demo": {

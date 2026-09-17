@@ -147,6 +147,7 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // evaluation, so a static import would boot the app BEFORE a session exists
   // and every sync request would fail its auth check.
   await import('@/entrypoints/main/main');
+  appMounted = true;
   await SplashScreen.hide();
 
   // Demo data is seeded, static and complete. Syncing would only produce
@@ -182,19 +183,45 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
  * can be replaced by a retry — and mounting a second root over a live one is
  * how you get two trees fighting over `#root`. Cleared (not just unmounted)
  * before `startApp`, whose own entry module mounts the real app here.
+ *
+ * It mounts into a CHILD of `#root` rather than into `#root` itself. The app's
+ * entry (`entrypoints/main/main`) calls `createRoot(#root)` at module scope and
+ * exports nothing, so once it has run there is a root on that container that
+ * this file cannot reach, let alone unmount. Rendering the failure screen onto
+ * the same container would leave the two of them writing to one node; a fresh
+ * child is a container React has never seen, and emptying `#root` first takes
+ * the dead tree's DOM away with it.
  */
 let preAppRoot: Root | null = null;
+let preAppHost: HTMLElement | null = null;
 
 function renderPreApp(node: ReactNode): void {
-  preAppRoot?.unmount();
-  preAppRoot = createRoot(document.getElementById('root')!);
+  unmountPreApp();
+  const container = document.getElementById('root')!;
+  container.replaceChildren();
+  preAppHost = document.createElement('div');
+  container.appendChild(preAppHost);
+  preAppRoot = createRoot(preAppHost);
   preAppRoot.render(node);
 }
 
 function unmountPreApp(): void {
   preAppRoot?.unmount();
   preAppRoot = null;
+  preAppHost?.remove();
+  preAppHost = null;
 }
+
+/**
+ * Whether `entrypoints/main/main` has been evaluated.
+ *
+ * A dynamic import runs a module once; the second `await import(...)` resolves
+ * from cache and renders nothing. So after the app has mounted, "start the demo
+ * from here" is a button that cannot work — it would unmount the failure screen
+ * and leave a blank page. Past that point a reload is the only real recovery,
+ * and the screen offers only that.
+ */
+let appMounted = false;
 
 /**
  * The last-resort screen.
@@ -222,13 +249,21 @@ function showFatalError(e: unknown): void {
         // retry: whatever failed may have been the token read, the session
         // probe or the login itself, and each of them is upstream of here.
         onRetry={() => window.location.reload()}
-        onDemo={() => {
-          void (async () => {
-            await useAppStore.getState().enterDemo();
-            unmountPreApp();
-            await startApp({ demo: true });
-          })().catch(showFatalError);
-        }}
+        // Only while the app has never mounted — see `appMounted`. Demo mode
+        // lives in memory (`errors/demoMode`), so a reload cannot carry it
+        // either; there is no honest demo route left once the entry module has
+        // run, and offering a dead button is worse than offering one route.
+        onDemo={
+          appMounted
+            ? undefined
+            : () => {
+                void (async () => {
+                  await useAppStore.getState().enterDemo();
+                  unmountPreApp();
+                  await startApp({ demo: true });
+                })().catch(showFatalError);
+              }
+        }
       />
     );
   } catch {
@@ -279,7 +314,17 @@ export async function showLoginGate(): Promise<void> {
 }
 
 void boot().catch(async (e) => {
-  await SplashScreen.hide();
+  // try/catch rather than `.catch()`: a throw HERE would abandon the handler
+  // and leave the splash screen over a page with no error on it — the blank
+  // screen this whole path exists to remove, reached by way of the handler for
+  // it. The statement form also survives a `hide()` that returns no promise at
+  // all, which is how the plugin behaves under a stub.
+  try {
+    await SplashScreen.hide();
+  } catch {
+    // Nothing to do about it, and nothing worth saying: the error below is the
+    // one the student needs.
+  }
 
   // Backing out of login is not a failure — it is the only path someone
   // without a MENDELU account has, App Store reviewers included. Anything

@@ -94,6 +94,16 @@ export function EnrolledNowSection({
 
   if (inProgress.length === 0 && passed.length === 0) return null;
 
+  // Same rule as the study plan's: the caption goes only where the column it
+  // names actually appears. Every row here is visible, so this is simply "does
+  // any of them carry a rate" — SubjectRow additionally hides the pill behind a
+  // grade badge, which costs a spurious line on a section where every enrolled
+  // subject is already graded, and that is the narrow case worth living with
+  // rather than lifting a per-row hook up here.
+  const anyFailRate = [...inProgress, ...passed].some(
+    ({ subject }) => !subject.isFulfilled && failRates?.[subject.code] != null
+  );
+
   const slotProps = {
     failRates,
     subjectSemesters,
@@ -128,9 +138,11 @@ export function EnrolledNowSection({
       <div className="px-2 py-1.5">
         {/* The rows below show the fail rate as a bare number; this names it
             once for the section — see FailRateLegend. */}
-        <div className="px-1 pb-1">
-          <FailRateLegend />
-        </div>
+        {anyFailRate && (
+          <div className="px-1 pb-1">
+            <FailRateLegend />
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-0.5">
           {inProgress.map(({ subject, semLabel }) => (
             <SubjectSlot key={subject.code} subject={subject} semLabel={semLabel} {...slotProps} />

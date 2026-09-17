@@ -34,11 +34,18 @@ export interface DayBodyProps {
  *
  * The same hook the strip uses, deliberately: one set of distance, velocity and
  * reversal rules for both, so the two gestures cannot start disagreeing about
- * how hard a swipe has to be. What is NOT shared is `touch-none`: this element
- * scrolls, and taking the browser's pan away here would break the agenda. The
- * hook's axis arbitration is what makes that safe — it claims a gesture only
- * once it has decided the finger is going sideways, and a vertical drag is
- * never claimed at all.
+ * how hard a swipe has to be. The hook's axis arbitration is what makes it safe
+ * to put ON a scroller: it claims a gesture only once it has decided the finger
+ * is going sideways, and a vertical drag is never claimed at all.
+ *
+ * `touch-pan-y`, not the strip's `touch-none` and not the default either. The
+ * strip can take the browser's pan away outright because nothing inside it
+ * scrolls; this element is the agenda, so the vertical pan has to stay native.
+ * Leaving `touch-action` at its default was the first attempt and it is the bug
+ * DayChips already documents from device testing: partway through a horizontal
+ * drag the WebView decides the gesture is a page pan, fires `pointercancel`,
+ * and no `preventDefault` after that point can win it back — the swipe simply
+ * dies. `pan-y` concedes the axis we do not want and keeps the one we do.
  */
 export function DayBody({
   agenda,
@@ -90,7 +97,7 @@ export function DayBody({
       ref={bodyRef}
       data-testid="day-body"
       {...handlers}
-      className="flex-1 overflow-y-auto pb-36 transition-transform duration-200 ease-out"
+      className="flex-1 touch-pan-y overflow-y-auto pb-36 transition-transform duration-200 ease-out"
     >
       {agenda.length === 0 ? (
         <CalendarEmptyDay

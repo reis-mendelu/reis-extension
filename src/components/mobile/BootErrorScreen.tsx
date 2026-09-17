@@ -5,7 +5,13 @@ export interface BootErrorScreenProps {
    *  be able to read the cause out rather than describe a blank screen. */
   detail: string;
   onRetry: () => void;
-  onDemo: () => void;
+  /**
+   * Omitted once the app's entry module has run: a dynamic import evaluates
+   * once, so "start the demo" from that point would unmount this screen and
+   * render nothing. A reload is then the only route, and it is the only one
+   * offered.
+   */
+  onDemo?: () => void;
 }
 
 /**
@@ -43,9 +49,11 @@ export function BootErrorScreen({ detail, onRetry, onDemo }: BootErrorScreenProp
         <button className="btn btn-primary" onClick={onRetry}>
           {t('boot.retry')}
         </button>
-        <button className="btn btn-ghost" onClick={onDemo}>
-          {t('demo.tryDemo')}
-        </button>
+        {onDemo && (
+          <button className="btn btn-ghost" onClick={onDemo}>
+            {t('demo.tryDemo')}
+          </button>
+        )}
 
         <p className="select-text break-words pt-2 font-mono text-xs text-base-content/50">
           {detail}

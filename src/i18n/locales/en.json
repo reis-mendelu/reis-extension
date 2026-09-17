@@ -1158,7 +1158,7 @@
   },
   "boot": {
     "failedTitle": "reIS couldn't start",
-    "failedBody": "Please try again. If it keeps happening, take a look at the demo in the meantime.",
+    "failedBody": "Please try again.",
     "retry": "Try again"
   },
   "demo": {
