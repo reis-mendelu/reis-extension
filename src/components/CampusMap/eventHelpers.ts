@@ -20,32 +20,6 @@ export function sortByDate(events: MapEvent[]): MapEvent[] {
   );
 }
 
-// 'all' → every event. Otherwise `filter` is a societyId and only that society's
-// events are kept.
-/**
- * The filter that actually applies, given whether the chips are on screen.
- *
- * `eventFilter` is the student map's society chips and it PERSISTS in the
- * shared store, so a surface without those chips inherits whatever was last
- * picked elsewhere and offers no way to clear it. That has now bitten twice:
- * the admin console hid a society's own pins behind a student's stored choice,
- * and the phone map listed every society in its sheet while showing only one
- * society's pins — `MapEventsSection` was passed `showFilter={false}` and
- * defaulted itself to 'all', while `EventLayer` read the stored filter
- * directly. Raised in review on this PR.
- *
- * One function both consumers call, so the list and the pins cannot disagree
- * again.
- */
-export function effectiveFilter(filter: string, chipsShown: boolean): string {
-  return chipsShown ? filter : 'all';
-}
-
-export function filterEvents(events: MapEvent[], filter: string): MapEvent[] {
-  if (filter === 'all') return events;
-  return events.filter((e) => e.societyId === filter);
-}
-
 // Only pinnable (on-campus) events become balloons; off-campus events are
 // list-only. Grouping key is the rounded coord so co-located events share a pin.
 export function groupEventsByVenue(events: MapEvent[]): VenueGroup[] {

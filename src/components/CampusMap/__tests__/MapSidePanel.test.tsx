@@ -21,7 +21,6 @@ beforeEach(() => {
     adminActiveAssociationId: null,
     mapEvents: [],
     societyMapEvents: [],
-    eventFilter: 'all',
     mapSelection: null,
     setMapPanelTab: vi.fn(),
   });

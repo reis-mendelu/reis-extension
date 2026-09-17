@@ -68,11 +68,7 @@ export function MapScreen() {
           on a student's phone. Same component the desktop map and the admin
           console use — it portals into a Leaflet pane, so it renders nothing
           here and does not affect this element's layout. */}
-      {/* chipsShown={false}: the phone map has no society chips, and
-          `eventFilter` persists in the shared store — so without this the pins
-          were filtered by a choice made on the desktop while the Akce sheet
-          beside them listed every society. */}
-      <EventLayer chipsShown={false} />
+      <EventLayer />
       <FloorSwitcher />
       {/* marginTop carries --safe-top because this floating bar is the topmost
           element on the map screen and targetSdk 36 forces edge-to-edge: without

@@ -34,52 +34,37 @@ const ev = (id: string, societyId: string, title: string): MapEvent =>
   }) as MapEvent;
 
 /**
- * The society filter chips leave the phone's Akce sheet.
+ * The society filter chips are gone from every surface.
  *
- * Nine chips ("Vše ESN SUPEF AU FRRMS AF LDF ZF EY reIS") in a horizontally
- * scrolling row above a list that is usually two or three events long: the
- * filter cost more room than the thing it filtered.
+ * They were hidden on the phone first ("nine chips above a list that is usually
+ * two or three events long"), and the desktop side panel kept them. The desktop
+ * row was no better: nine names, wrapped over two lines, above a list a student
+ * reads top to bottom anyway. So the control leaves rather than moves, and with
+ * it the `eventFilter` store state that persisted a choice across surfaces and
+ * twice made pins and rows disagree about what was on the map.
  *
- * Hidden, not deleted — the desktop side panel keeps it, where the row has
- * space and the list is longer.
- *
- * The important half is the second test. `eventFilter` is shared store state,
- * so a filter set on the desktop would still be narrowing the phone's list with
- * no control left to clear it — events would simply be missing. Hiding the
- * chips has to mean showing everything.
+ * Deleted, not defaulted to 'all': state nothing can set is state that will be
+ * read wrong later.
  */
-describe('MapEventsSection without the filter', () => {
+describe('MapEventsSection', () => {
   beforeEach(() => {
     useAppStore.setState({
       language: 'cz',
       mapEvents: [ev('a', 'esn', 'Beánie PEF'), ev('b', 'supef', 'Koncert na kampusu')],
       mapSelection: null,
-      eventFilter: 'all',
     } as never);
   });
 
-  it('renders no chips when the filter is hidden', () => {
-    render(<MapEventsSection showFilter={false} />);
+  it('renders no society chips', () => {
+    render(<MapEventsSection />);
     expect(screen.queryByRole('button', { name: 'Vše' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'ESN' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'SUPEF' })).not.toBeInTheDocument();
   });
 
-  it('ignores a stored filter, so no event is hidden without a way back', () => {
-    useAppStore.setState({ eventFilter: 'esn' } as never);
-    render(<MapEventsSection showFilter={false} />);
+  it('lists every society’s events, because nothing narrows them any more', () => {
+    render(<MapEventsSection />);
     expect(screen.getByText('Beánie PEF')).toBeInTheDocument();
     expect(screen.getByText('Koncert na kampusu')).toBeInTheDocument();
-  });
-
-  it('still offers the chips where they are wanted', () => {
-    render(<MapEventsSection />);
-    expect(screen.getByRole('button', { name: 'Vše' })).toBeInTheDocument();
-  });
-
-  it('still honours the filter when the chips are shown', () => {
-    useAppStore.setState({ eventFilter: 'esn' } as never);
-    render(<MapEventsSection />);
-    expect(screen.getByText('Beánie PEF')).toBeInTheDocument();
-    expect(screen.queryByText('Koncert na kampusu')).not.toBeInTheDocument();
   });
 });

@@ -51,7 +51,6 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   mapEvents: [],
   mapEventsLoaded: false,
   mapPanelTab: 'events',
-  eventFilter: 'all',
   societyMapEvents: [],
   placingEvent: false,
   draftCoord: null,
@@ -203,7 +202,6 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   },
 
   setMapPanelTab: (tab) => set({ mapPanelTab: tab }),
-  setEventFilter: (filter) => set({ eventFilter: filter }),
 
   refreshSocietyMapEvents: () => {
     const rows = get().societyPosts;
